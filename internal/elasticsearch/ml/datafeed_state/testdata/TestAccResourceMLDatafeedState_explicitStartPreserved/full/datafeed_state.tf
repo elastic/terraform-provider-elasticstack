@@ -64,9 +64,9 @@ resource "elasticstack_elasticsearch_ml_datafeed" "test" {
   query       = jsonencode({ match_all = {} })
 }
 
-# start = var.planned_start (e.g. "2022-01-01T00:07:30Z") vs
-# SearchInterval.StartMs = "2022-01-01T00:10:00Z" (first data record) →
-# inconsistency error (issue 2353).
+# start stays at var.planned_start (e.g. "2022-01-01T00:07:30Z"); effective_search_start
+# reflects SearchInterval.StartMs from the first indexed document (e.g. "2022-01-01T00:10:00Z").
+# See issue #2353.
 resource "elasticstack_elasticsearch_ml_datafeed_state" "test" {
   datafeed_id = elasticstack_elasticsearch_ml_datafeed.test.datafeed_id
   state       = "started"

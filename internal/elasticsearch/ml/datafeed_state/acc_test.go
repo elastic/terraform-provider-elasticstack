@@ -124,6 +124,7 @@ func TestAccResourceMLDatafeedState_import(t *testing.T) {
 					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "state", "started"),
 					resource.TestCheckNoResourceAttr(mlDatafeedStateResourceName, "start"),
 					resource.TestCheckResourceAttrSet(mlDatafeedStateResourceName, "effective_search_start"),
+					resource.TestCheckNoResourceAttr(mlDatafeedStateResourceName, "effective_search_end"),
 				),
 			},
 		},
@@ -149,7 +150,8 @@ func TestAccResourceMLDatafeedState_explicitStartRoundTrip(t *testing.T) {
 				ConfigVariables:          configVars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "start", "2024-01-01T00:00:00Z"),
-					resource.TestCheckResourceAttrSet(mlDatafeedStateResourceName, "effective_search_start"),
+					// start is on a 1h bucket boundary; with no indexed data ES typically reports the same effective start.
+					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "effective_search_start", "2024-01-01T00:00:00Z"),
 				),
 			},
 			{
@@ -185,6 +187,7 @@ func TestAccResourceMLDatafeedState_explicitEndRoundTrip(t *testing.T) {
 				ConfigVariables:          configVars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "end", "2024-01-02T00:00:00Z"),
+					resource.TestCheckResourceAttrSet(mlDatafeedStateResourceName, "effective_search_end"),
 				),
 			},
 			{
@@ -225,6 +228,8 @@ func TestAccResourceMLDatafeedState_withTimes(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "end", "2024-01-02T00:00:00Z"),
 					resource.TestCheckResourceAttr(resourceName, "datafeed_timeout", "60s"),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "effective_search_start"),
+					resource.TestCheckResourceAttrSet(resourceName, "effective_search_end"),
 				),
 			},
 			{
@@ -239,6 +244,8 @@ func TestAccResourceMLDatafeedState_withTimes(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "state", "stopped"),
 					resource.TestCheckResourceAttr(resourceName, "datafeed_timeout", "90s"),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckNoResourceAttr(resourceName, "effective_search_start"),
+					resource.TestCheckNoResourceAttr(resourceName, "effective_search_end"),
 				),
 			},
 		},

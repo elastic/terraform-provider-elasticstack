@@ -193,4 +193,10 @@ func TestGetSchema_effectiveSearchAttributes(t *testing.T) {
 		assert.False(t, stringAttr.Optional)
 		assert.IsType(t, timetypes.RFC3339Type{}, stringAttr.CustomType)
 	}
+
+	startAttr, ok := s.Attributes["start"].(schema.StringAttribute)
+	require.True(t, ok)
+	assert.True(t, startAttr.Optional)
+	assert.False(t, startAttr.Computed)
+	assert.Empty(t, startAttr.PlanModifiers)
 }
