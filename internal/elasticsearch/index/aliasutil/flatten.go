@@ -22,8 +22,10 @@ import (
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -82,6 +84,27 @@ func NormalizeAliasFilterFromAny(v any) (jsontypes.Normalized, diag.Diagnostics)
 		return jsontypes.NewNormalizedNull(), diags
 	}
 	return NormalizeAliasFilterMap(filterMap)
+}
+
+// AliasAttrsFromModel builds the shared attribute map for a single alias from its models.IndexAlias
+// representation. The returned map contains name, index_routing, routing, search_routing, is_hidden,
+// is_write_index, and filter. Callers may override individual entries (e.g. routing for the
+// componenttemplate preservedRouting fallback) before constructing the final ObjectValue.
+func AliasAttrsFromModel(name string, a models.IndexAlias) (map[string]attr.Value, diag.Diagnostics) {
+	attrs := map[string]attr.Value{
+		"name":           types.StringValue(name),
+		"index_routing":  types.StringValue(a.IndexRouting),
+		"routing":        types.StringValue(a.Routing),
+		"search_routing": types.StringValue(a.SearchRouting),
+		"is_hidden":      types.BoolValue(a.IsHidden),
+		"is_write_index": types.BoolValue(a.IsWriteIndex),
+	}
+	filter, diags := NormalizeAliasFilterMap(a.Filter)
+	if diags.HasError() {
+		return nil, diags
+	}
+	attrs["filter"] = filter
+	return attrs, nil
 }
 
 // NewAliasModelFromAPI constructs an AliasModel from an API Alias response.

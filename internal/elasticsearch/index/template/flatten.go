@@ -254,21 +254,10 @@ func flattenTemplateBody(ctx context.Context, t *models.Template) (types.Object,
 }
 
 func flattenAliasElement(name string, a models.IndexAlias) (attr.Value, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	attrs := map[string]attr.Value{
-		"name":           types.StringValue(name),
-		"index_routing":  types.StringValue(a.IndexRouting),
-		"routing":        types.StringValue(a.Routing),
-		"search_routing": types.StringValue(a.SearchRouting),
-		"is_hidden":      types.BoolValue(a.IsHidden),
-		"is_write_index": types.BoolValue(a.IsWriteIndex),
-	}
-	filter, d := aliasutil.NormalizeAliasFilterMap(a.Filter)
-	diags.Append(d...)
+	attrs, diags := aliasutil.AliasAttrsFromModel(name, a)
 	if diags.HasError() {
 		return nil, diags
 	}
-	attrs["filter"] = filter
 	aliasObj, d := NewAliasObjectValue(attrs)
 	diags.Append(d...)
 	return aliasObj, diags
