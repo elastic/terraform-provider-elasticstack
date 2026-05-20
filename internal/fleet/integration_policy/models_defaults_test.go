@@ -293,7 +293,7 @@ func TestApiPolicyTemplateDefaults(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, diags := tt.templates.defaults()
+			result, diags := tt.templates.defaults("")
 
 			if tt.expectError {
 				require.True(t, diags.HasError(), "Expected error but got none")
@@ -303,7 +303,7 @@ func TestApiPolicyTemplateDefaults(t *testing.T) {
 
 				for _, key := range tt.expectedKeys {
 					assert.Contains(t, result, key, "Expected key %s not found", key)
-					assert.False(t, result[key].IsNull(), "Expected non-null value for key %s", key)
+					assert.False(t, result[key].Vars.IsNull(), "Expected non-null vars for key %s", key)
 				}
 			}
 		})
