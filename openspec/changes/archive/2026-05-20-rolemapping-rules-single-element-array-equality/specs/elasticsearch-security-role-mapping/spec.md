@@ -4,7 +4,7 @@ Extends [`openspec/specs/elasticsearch-security-role-mapping/spec.md`](../../../
 
 ## MODIFIED Requirements
 
-### Requirement: JSON state mapping for rules (REQ-019, amended)
+### Requirement: JSON state mapping (REQ-019–REQ-021)
 
 The base requirement specifies that on read the resource SHALL serialize `rules` into a normalized JSON string and store it in state. In the prior implementation, the read path in `read.go` also collapsed single-element arrays inside `field` objects to strings before storing `rules`, even though that behavior was not stated in REQ-019. This amendment changes the required behavior so that state preserves the raw JSON shape produced by the typed API client, including array form for single-element field values.
 
