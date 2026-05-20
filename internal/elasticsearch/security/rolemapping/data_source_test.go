@@ -40,7 +40,7 @@ func TestAccDataSourceSecurityRoleMapping(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"data.elasticstack_elasticsearch_security_role_mapping.test",
 						"rules",
-						`{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`,
+						`{"any":[{"field":{"username":["esadmin"]}},{"field":{"groups":["cn=admins,dc=example,dc=com"]}}]}`,
 					),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role_mapping.test", "metadata", `{"version":1}`),
 				),
@@ -56,7 +56,7 @@ func TestAccDataSourceSecurityRoleMapping(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"data.elasticstack_elasticsearch_security_role_mapping.test",
 						"rules",
-						`{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`,
+						`{"any":[{"field":{"username":["esadmin"]}},{"field":{"groups":["cn=admins,dc=example,dc=com"]}}]}`,
 					),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role_mapping.test", "metadata", `{}`),
 				),
@@ -77,7 +77,7 @@ func TestAccDataSourceSecurityRoleMapping(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"data.elasticstack_elasticsearch_security_role_mapping.test",
 						"rules",
-						`{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`,
+						`{"any":[{"field":{"username":["esadmin"]}},{"field":{"groups":["cn=admins,dc=example,dc=com"]}}]}`,
 					),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role_mapping.test", "metadata", `{}`),
 				),

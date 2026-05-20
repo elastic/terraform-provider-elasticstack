@@ -28,7 +28,7 @@ type Data struct {
 	ID            types.String         `tfsdk:"id"`
 	Name          types.String         `tfsdk:"name"`
 	Enabled       types.Bool           `tfsdk:"enabled"`
-	Rules         jsontypes.Normalized `tfsdk:"rules"`
+	Rules         NormalizedRulesValue `tfsdk:"rules"`
 	Roles         types.Set            `tfsdk:"roles"`
 	RoleTemplates jsontypes.Normalized `tfsdk:"role_templates"`
 	Metadata      jsontypes.Normalized `tfsdk:"metadata"`

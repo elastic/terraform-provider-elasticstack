@@ -120,10 +120,50 @@ func TestAccResourceSecurityRoleMapping(t *testing.T) {
 					ResourceName:      roleMappingResourceName,
 					ImportState:       true,
 					ImportStateVerify: true,
+					// Elasticsearch normalizes single-element field rule arrays
+					// to strings on storage; the typed client unmarshals them
+					// back to arrays on read. NormalizedRulesValue's semantic
+					// equality lets plan/apply preserve the user's string-form
+					// config, so post-apply state stores string form while a
+					// fresh import read stores array form. ImportStateVerify
+					// performs strict (non-semantic) comparison, so ignore
+					// rules here.
+					ImportStateVerifyIgnore: []string{"rules"},
 				},
 			},
 		})
 	}
+}
+
+func TestAccResourceSecurityRoleMappingRulesSingleElementArray(t *testing.T) {
+	roleMappingName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSecurityRoleMappingDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(roleMappingName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(roleMappingResourceName, "id"),
+					resource.TestCheckResourceAttr(roleMappingResourceName, "name", roleMappingName),
+					resource.TestCheckResourceAttr(roleMappingResourceName, "rules", `{"field":{"groups":["project1"]}}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(roleMappingName),
+				},
+				PlanOnly: true,
+			},
+		},
+	})
 }
 
 func TestAccResourceSecurityRoleMappingFromSDK(t *testing.T) {
