@@ -679,6 +679,33 @@ func TestAccResourceILMColdAllocateAndDownsample(t *testing.T) {
 	})
 }
 
+func TestAccResourceILMAllocateRoutingFilterOnly(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceILMDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_allocate_filter_only", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_allocate_filter_only", "warm.allocate.require", `{"zone":"zone-1"}`),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_allocate_filter_only", "warm.allocate.number_of_replicas"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_allocate_filter_only", "warm.allocate.total_shards_per_node"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_allocate_filter_only", "warm.allocate.include"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_allocate_filter_only", "warm.allocate.exclude"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_allocate_filter_only", "modified_date"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceILMPhaseActionToggles(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
