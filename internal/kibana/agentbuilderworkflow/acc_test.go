@@ -118,7 +118,9 @@ func TestAccResourceAgentBuilderWorkflow(t *testing.T) {
 				),
 			},
 			{
-				// Verify description is empty when YAML omits the description field.
+				// Verify description is null in state when YAML omits the description field.
+				// populateFromAPI maps a missing/empty description to types.StringNull(), which
+				// in Plugin Framework state means the attribute is not present (not "").
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_no_description"),
 				ConfigVariables: config.Variables{
@@ -126,7 +128,7 @@ func TestAccResourceAgentBuilderWorkflow(t *testing.T) {
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "workflow_id", workflowID),
-					resource.TestCheckResourceAttr(resourceID, "description", ""),
+					resource.TestCheckNoResourceAttr(resourceID, "description"),
 					resource.TestCheckResourceAttr(resourceID, "valid", "true"),
 				),
 			},
