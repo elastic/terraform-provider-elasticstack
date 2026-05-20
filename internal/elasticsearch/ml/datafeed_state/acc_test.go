@@ -123,12 +123,13 @@ func TestAccResourceMLDatafeedState_import(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "state", "started"),
 					resource.TestCheckNoResourceAttr(mlDatafeedStateResourceName, "start"),
-					// Without indexed data ES does not populate
-					// running_state.search_interval (especially on older
-					// versions like 8.0.x), so effective_search_start stays
-					// null. The dedicated explicitStartPreserved regression
-					// test indexes a document and asserts the populated path.
-					resource.TestCheckNoResourceAttr(mlDatafeedStateResourceName, "effective_search_start"),
+					// effective_search_start population depends on the ES
+					// version (8.0.x leaves it null for an empty index; 8.1+
+					// populates it). Assertions on the populated path live in
+					// the dedicated TestAccResourceMLDatafeedState_explicitStartPreserved
+					// test, which indexes a document. effective_search_end is
+					// always null for a real-time started datafeed
+					// (real_time_configured = true).
 					resource.TestCheckNoResourceAttr(mlDatafeedStateResourceName, "effective_search_end"),
 				),
 			},
