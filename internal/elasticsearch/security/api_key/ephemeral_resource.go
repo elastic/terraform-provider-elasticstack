@@ -240,15 +240,13 @@ func (r *EphemeralResource) Open(ctx context.Context, req ephemeral.OpenRequest,
 		return
 	}
 
-	model.Type = effectiveAPIKeyType(model.Type)
-
 	client, clientDiags := r.client.GetElasticsearchClient(ctx, model.ElasticsearchConnection)
 	resp.Diagnostics.Append(clientDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if model.Type.ValueString() == crossClusterAPIKeyType {
+	if effectiveAPIKeyType(model.Type).ValueString() == crossClusterAPIKeyType {
 		resp.Diagnostics.Append(r.openCrossClusterAPIKey(ctx, client, &model)...)
 	} else {
 		resp.Diagnostics.Append(r.openRESTAPIKey(ctx, client, &model)...)
@@ -318,7 +316,7 @@ func (m ephemeralTfModel) toTfModel() tfModel {
 		ElasticsearchConnection: m.ElasticsearchConnection,
 		KeyID:                   m.KeyID,
 		Name:                    m.Name,
-		Type:                    m.Type,
+		Type:                    effectiveAPIKeyType(m.Type),
 		RoleDescriptors:         m.RoleDescriptors,
 		Expiration:              m.Expiration,
 		ExpirationTimestamp:     m.ExpirationTimestamp,
