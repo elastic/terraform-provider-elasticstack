@@ -166,31 +166,16 @@ func flattenAliasSet(ctx context.Context, aliases map[string]models.IndexAlias, 
 
 // flattenAliasElement maps a single Elasticsearch alias API response to a types.Object.
 func flattenAliasElement(name string, a models.IndexAlias, preservedRouting map[string]string) (attr.Value, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	routing := a.Routing
-	if routing == "" {
-		if pr, ok := preservedRouting[name]; ok {
-			routing = pr
-		}
-	}
-
-	attrs := map[string]attr.Value{
-		"name":           types.StringValue(name),
-		"index_routing":  types.StringValue(a.IndexRouting),
-		"routing":        types.StringValue(routing),
-		"search_routing": types.StringValue(a.SearchRouting),
-		"is_hidden":      types.BoolValue(a.IsHidden),
-		"is_write_index": types.BoolValue(a.IsWriteIndex),
-	}
-
-	filter, d := aliasutil.NormalizeAliasFilterMap(a.Filter)
-	diags.Append(d...)
+	attrs, diags := aliasutil.AliasAttrsFromModel(name, a)
 	if diags.HasError() {
 		return nil, diags
 	}
-	attrs["filter"] = filter
-
+	// componenttemplate preserves user-configured routing when the API omits it on round-trip.
+	if a.Routing == "" {
+		if pr, ok := preservedRouting[name]; ok {
+			attrs["routing"] = types.StringValue(pr)
+		}
+	}
 	obj, d := types.ObjectValue(aliasAttrTypes(), attrs)
 	diags.Append(d...)
 	return obj, diags
