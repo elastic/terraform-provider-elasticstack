@@ -71,6 +71,12 @@ func TestNormalizedRulesValue_StringSemanticEquals(t *testing.T) {
 			b:         `{"any":[{"field":{"groups":"x"}}]}`,
 			wantEqual: true,
 		},
+		{
+			name:      "nested all with single-element array vs string",
+			a:         `{"all":[{"field":{"groups":["x"]}}]}`,
+			b:         `{"all":[{"field":{"groups":"x"}}]}`,
+			wantEqual: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -103,6 +109,28 @@ func TestNormalizedRulesValue_StringSemanticEquals_null(t *testing.T) {
 	require.True(t, eq)
 
 	eq, diags = nullA.StringSemanticEquals(ctx, known)
+	require.False(t, diags.HasError())
+	require.False(t, eq)
+}
+
+func TestNormalizedRulesValue_StringSemanticEquals_unknown(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	unknownA := NewNormalizedRulesUnknown()
+	unknownB := NewNormalizedRulesUnknown()
+	known := NewNormalizedRulesValue(`{"field":{"groups":"x"}}`)
+	null := NewNormalizedRulesNull()
+
+	eq, diags := unknownA.StringSemanticEquals(ctx, unknownB)
+	require.False(t, diags.HasError())
+	require.True(t, eq)
+
+	eq, diags = known.StringSemanticEquals(ctx, unknownA)
+	require.False(t, diags.HasError())
+	require.False(t, eq)
+
+	eq, diags = null.StringSemanticEquals(ctx, unknownA)
 	require.False(t, diags.HasError())
 	require.False(t, eq)
 }
