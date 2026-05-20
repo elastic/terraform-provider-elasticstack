@@ -5,6 +5,10 @@
 
 `elasticstack_kibana_security_detection_rule` `actions.alerts_filter` is now a structured nested attribute with `query` (`kql`, `filters_json`) and optional `timeframe` (`days`, `timezone`, `hours_start`, `hours_end`), replacing the broken `map(string)` shape.
 
+### Fixed
+
+- Fix "Provider produced inconsistent result after apply" when `elasticstack_elasticsearch_ml_datafeed_state` is configured with an explicit `start` or `end` ([#2353](https://github.com/elastic/terraform-provider-elasticstack/issues/2353)). User-supplied `start`/`end` are now preserved in state; add computed `effective_search_start` and `effective_search_end` for Elasticsearch's active search interval. Existing state may show a one-time plan diff on `start` when it previously held the ES-reported value.
+
 ### Changes
 
 - Fix silent failure when updating `elasticstack_kibana_data_view.data_view.namespaces` for a data view that lives in a non-default Kibana space. The namespace reconciliation request now uses space-aware URL construction, and per-object errors returned in the HTTP 200 response body are surfaced as Terraform error diagnostics.

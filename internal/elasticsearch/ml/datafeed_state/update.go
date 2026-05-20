@@ -177,9 +177,8 @@ func (r *mlDatafeedStateResource) updateAfterMissedTransition(
 		return nil, diags
 	}
 
-	if data.Start.IsUnknown() {
-		data.Start = timetypes.NewRFC3339Null()
-	}
+	data.EffectiveSearchStart = timetypes.NewRFC3339Null()
+	data.EffectiveSearchEnd = timetypes.NewRFC3339Null()
 
 	return &data, diags
 }

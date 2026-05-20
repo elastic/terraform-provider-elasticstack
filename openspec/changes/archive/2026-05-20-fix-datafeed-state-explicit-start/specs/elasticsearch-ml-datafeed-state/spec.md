@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: Read — start and end from API (REQ-017)
+### Requirement: Read — preserve configured start and end (REQ-017)
 
 On read, the resource SHALL NOT overwrite the `start` or `end` attribute with values returned by the Get Datafeed Stats API. The `start` and `end` attributes SHALL round-trip from configuration (or from prior state when no configuration value is supplied) so that practitioner-declared values are preserved verbatim — even when Elasticsearch reports a different effective search interval (e.g. after bucket alignment or first-document snap-forward). Read SHALL still call the Get Datafeed Stats API to populate `state` and the computed `effective_search_start` / `effective_search_end` attributes (see new requirement below).
 

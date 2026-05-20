@@ -13,11 +13,6 @@ variable "index_name" {
   type        = string
 }
 
-variable "planned_start" {
-  description = "The explicit start timestamp for the datafeed state resource"
-  type        = string
-}
-
 provider "elasticstack" {
   elasticsearch {}
 }
@@ -27,17 +22,21 @@ resource "elasticstack_elasticsearch_index" "test" {
   deletion_protection = false
   mappings = jsonencode({
     properties = {
-      "@timestamp" = { type = "date" }
-      value        = { type = "double" }
+      "@timestamp" = {
+        type = "date"
+      }
+      value = {
+        type = "double"
+      }
     }
   })
 }
 
 resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
   job_id      = var.job_id
-  description = "Reproducer for issue 2353"
+  description = "Test job for explicit start round-trip"
   analysis_config = {
-    bucket_span = "15m"
+    bucket_span = "1h"
     detectors = [{
       function             = "count"
       detector_description = "count"
@@ -55,25 +54,34 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
 resource "elasticstack_elasticsearch_ml_job_state" "test" {
   job_id = elasticstack_elasticsearch_ml_anomaly_detection_job.test.job_id
   state  = "opened"
+
+  lifecycle {
+    ignore_changes = ["state"]
+  }
 }
 
 resource "elasticstack_elasticsearch_ml_datafeed" "test" {
   datafeed_id = var.datafeed_id
   job_id      = elasticstack_elasticsearch_ml_anomaly_detection_job.test.job_id
   indices     = [elasticstack_elasticsearch_index.test.name]
-  query       = jsonencode({ match_all = {} })
+  query = jsonencode({
+    match_all = {}
+  })
 }
 
-# start = var.planned_start (e.g. "2022-01-01T00:07:30Z") vs
-# SearchInterval.StartMs = "2022-01-01T00:10:00Z" (first data record) →
-# inconsistency error (issue 2353).
 resource "elasticstack_elasticsearch_ml_datafeed_state" "test" {
-  datafeed_id = elasticstack_elasticsearch_ml_datafeed.test.datafeed_id
-  state       = "started"
-  start       = var.planned_start
+  datafeed_id      = elasticstack_elasticsearch_ml_datafeed.test.datafeed_id
+  state            = "started"
+  start            = "2024-01-01T00:00:00Z"
+  end              = "2024-01-02T00:00:00Z"
+  datafeed_timeout = "60s"
 
   depends_on = [
     elasticstack_elasticsearch_ml_datafeed.test,
-    elasticstack_elasticsearch_ml_job_state.test,
+    elasticstack_elasticsearch_ml_job_state.test
   ]
+
+  lifecycle {
+    ignore_changes = ["state"]
+  }
 }

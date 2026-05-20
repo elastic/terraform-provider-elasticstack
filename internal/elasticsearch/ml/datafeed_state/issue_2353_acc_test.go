@@ -17,14 +17,11 @@
 
 package datafeedstate_test
 
-// TestAccReproduceIssue2353 reproduces the "Provider produced inconsistent
-// result after apply" error when an explicit start timestamp is provided to
-// elasticstack_elasticsearch_ml_datafeed_state.
-//
-// When the datafeed runs it sets SearchInterval.StartMs to the timestamp of
-// the first data record it finds (which is later than the requested start).
-// The provider reads this back and overwrites d.Start with the new value,
-// producing a mismatch against the planned start value.
+// TestAccResourceMLDatafeedState_explicitStartPreserved verifies that an
+// explicit start timestamp is preserved in state while Elasticsearch's
+// effective search start (the timestamp of the first matching data record,
+// which is later than the requested start) is surfaced separately through
+// the computed effective_search_start attribute.
 //
 // Related: https://github.com/elastic/terraform-provider-elasticstack/issues/2353
 
@@ -32,7 +29,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -45,22 +41,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-// minVersionIssue2353 gates this reproducer to ES >= 8.1.0. On 8.0.x the
-// datafeed running_state / search_interval shape used by the reproducer is
-// not reliably available and the test fails for unrelated reasons.
+// minVersionIssue2353 gates this test to ES >= 8.1.0. On 8.0.x the
+// running_state.search_interval shape this test depends on is not
+// reliably available, so effective_search_start cannot be asserted.
 var minVersionIssue2353 = version.Must(version.NewVersion("8.1.0"))
 
-func TestAccReproduceIssue2353(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minVersionIssue2353, versionutils.FlavorAny)
-
+func TestAccResourceMLDatafeedState_explicitStartPreserved(t *testing.T) {
 	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	datafeedID := fmt.Sprintf("datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	indexName := fmt.Sprintf("test-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
-	// docTimestamp is AFTER start but not on any 15m bucket boundary.
-	// The datafeed will find this record and set SearchInterval.StartMs to this
-	// time, which differs from the planned start ("2022-01-01T00:07:30Z"),
-	// triggering the "Provider produced inconsistent result after apply" error.
+	// docTimestamp is AFTER plannedStart but not on any 15m bucket boundary,
+	// so the datafeed reports SearchInterval.StartMs = docTimestamp. The fix
+	// asserts that state.start stays at plannedStart while
+	// effective_search_start surfaces docTimestamp. Before the fix this same
+	// scenario produced "Provider produced inconsistent result after apply".
 	const docTimestamp = "2022-01-01T00:10:00Z"
 	const plannedStart = "2022-01-01T00:07:30Z"
 
@@ -78,7 +73,10 @@ func TestAccReproduceIssue2353(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			versionutils.SkipIfUnsupported(t, minVersionIssue2353, versionutils.FlavorAny)
+		},
 		Steps: []resource.TestStep{
 			{
 				// Step 1: create prerequisite resources (index, job, job state,
@@ -93,15 +91,15 @@ func TestAccReproduceIssue2353(t *testing.T) {
 				),
 			},
 			{
-				// Step 2: add the datafeed_state resource with an explicit
-				// start that precedes the indexed document. The datafeed finds
-				// the document and reports SearchInterval.StartMs = docTimestamp,
-				// which differs from plannedStart. The framework detects the
-				// plan/state mismatch and produces the inconsistency error.
+				// Step 2: explicit start is preserved; effective_search_start
+				// reports SearchInterval.StartMs = docTimestamp.
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("full"),
 				ConfigVariables:          fullConfigVars,
-				ExpectError:              regexp.MustCompile(`Provider produced inconsistent result after apply`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "start", plannedStart),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "effective_search_start", docTimestamp),
+				),
 			},
 		},
 	})
