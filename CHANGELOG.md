@@ -2,34 +2,15 @@
 
 ### Breaking changes
 
-#### `elasticstack_kibana_security_detection_rule` `actions.alerts_filter`
 
-`actions.alerts_filter` is now a structured nested attribute with a `query` sub-attribute (`kql`, `filters_json`) and an optional `timeframe` sub-attribute (`days`, `timezone`, `hours_start`, `hours_end`), replacing the broken `map(string)` shape. The previous shape was non-functional, so any existing configuration must be rewritten:
+`elasticstack_kibana_security_detection_rule` `actions.alerts_filter` is now a structured nested attribute with `query` (`kql`, `filters_json`) and optional `timeframe` (`days`, `timezone`, `hours_start`, `hours_end`), replacing the broken `map(string)` shape.
 
-```hcl
-actions = [{
-  action_type_id = ".slack"
-  id             = elasticstack_kibana_action_connector.example.connector_id
-  params         = jsonencode({ message = "Alert" })
-  frequency = {
-    notify_when = "onActiveAlert"
-    summary     = true
-    throttle    = "10m"
-  }
-  alerts_filter = {
-    query = {
-      kql          = "event.action : \"test\""
-      filters_json = jsonencode([])
-    }
-    timeframe = {
-      days        = [1, 2, 3, 4, 5]
-      timezone    = "UTC"
-      hours_start = "08:00"
-      hours_end   = "17:00"
-    }
-  }
-}]
-```
+### Changes
+
+- Fix `elasticstack_kibana_security_detection_rule` `actions.alerts_filter` with structured nested blocks; migrate `actions` and `frequency` to block syntax. ([#3123](https://github.com/elastic/terraform-provider-elasticstack/pull/3123))
+- Add support for configuring Agent Builder skills ([#3006](https://github.com/elastic/terraform-provider-elasticstack/pull/3006))
+- Add `elasticstack_elasticsearch_index_mappings` resource for managing a subset of mappings on an existing index ([#3121](https://github.com/elastic/terraform-provider-elasticstack/pull/3121))
+- Fix drift in elasticstack_elasticsearch_ingest_pipeline when a processor contains fields not modeled by the go-elasticsearch typed client (e.g. override on rename processor) ([#3122](https://github.com/elastic/terraform-provider-elasticstack/pull/3122))
 
 ## [0.15.2] - 2026-05-18
 
