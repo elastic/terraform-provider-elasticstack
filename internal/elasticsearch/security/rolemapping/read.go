@@ -63,7 +63,7 @@ func readRoleMapping(ctx context.Context, stateData Data, roleMappingName string
 	// treats array and string forms as equal during plan comparison.
 	rulesJSON, err := json.Marshal(roleMapping.Rules)
 	if err != nil {
-		diags.AddError("Failed to marshal rules", err.Error())
+		diags.AddAttributeError(path.Root("rules"), "Failed to marshal rules", err.Error())
 		return nil, diags
 	}
 	data.Rules = NewNormalizedRulesValue(string(rulesJSON))
