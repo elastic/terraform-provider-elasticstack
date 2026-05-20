@@ -7,6 +7,7 @@
 
 ### Changes
 
+- Fix silent failure when updating `elasticstack_kibana_data_view.data_view.namespaces` for a data view that lives in a non-default Kibana space. The namespace reconciliation request now uses space-aware URL construction, and per-object errors returned in the HTTP 200 response body are surfaced as Terraform error diagnostics.
 - Fix `elasticstack_kibana_security_detection_rule` `actions.alerts_filter` with structured nested blocks; migrate `actions` and `frequency` to block syntax. ([#3123](https://github.com/elastic/terraform-provider-elasticstack/pull/3123))
 - Add support for configuring Agent Builder skills ([#3006](https://github.com/elastic/terraform-provider-elasticstack/pull/3006))
 - Add `elasticstack_elasticsearch_index_mappings` resource for managing a subset of mappings on an existing index ([#3121](https://github.com/elastic/terraform-provider-elasticstack/pull/3121))
