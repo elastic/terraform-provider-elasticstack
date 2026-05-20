@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
@@ -54,12 +55,12 @@ func migrateComponentTemplateStateV0ToV1(_ context.Context, req resource.Upgrade
 
 	if tmpl, ok := stateMap["template"].(map[string]any); ok {
 		ensureTemplateObjectKeysForV1(tmpl)
-		normalizeTemplateAliasesInV1State(tmpl)
+		aliasutil.NormalizeTemplateAliasesInV1State(tmpl)
 	}
 
 	// SDKv2 may persist version = 0 when the field is omitted in HCL; Elasticsearch readback and
 	// the Plugin Framework schema treat that as unset (null). Drop the key so migrated state matches.
-	if v, ok := stateMap["version"]; ok && jsonNumberish(v) == 0 {
+	if v, ok := stateMap["version"]; ok && aliasutil.JSONNumberish(v) == 0 {
 		delete(stateMap, "version")
 	}
 
@@ -103,22 +104,6 @@ func collapseListPath(m map[string]any, key, pathLabel string) diag.Diagnostics 
 	return nil
 }
 
-func jsonNumberish(v any) float64 {
-	switch x := v.(type) {
-	case float64:
-		return x
-	case int:
-		return float64(x)
-	case int64:
-		return float64(x)
-	case json.Number:
-		f, _ := x.Float64()
-		return f
-	default:
-		return 0
-	}
-}
-
 func ensureTemplateObjectKeysForV1(tmpl map[string]any) {
 	if _, ok := tmpl["alias"]; !ok {
 		// Empty nested sets are null in Terraform JSON state, not [].
@@ -133,50 +118,4 @@ func ensureTemplateObjectKeysForV1(tmpl map[string]any) {
 	if _, ok := tmpl["data_stream_options"]; !ok {
 		tmpl["data_stream_options"] = nil
 	}
-}
-
-// normalizeTemplateAliasesInV1State collapses SDK-style echoed index_routing/search_routing (same
-// non-empty value, routing empty or equal) into the Plugin Framework routing-only shape so migrated
-// state matches configuration and avoids spurious refresh plans after upgrade.
-func normalizeTemplateAliasesInV1State(tmpl map[string]any) {
-	av, ok := tmpl["alias"]
-	if !ok || av == nil {
-		return
-	}
-	list, ok := av.([]any)
-	if !ok {
-		return
-	}
-	for i, el := range list {
-		am, ok := el.(map[string]any)
-		if !ok {
-			continue
-		}
-		// Plugin Framework jsontypes.Normalized rejects ""; SDK state may store the literal empty string.
-		if fv, ok := am["filter"]; ok {
-			if s, ok := fv.(string); ok && s == "" {
-				am["filter"] = nil
-			}
-		}
-		ir := stringishJSONState(am["index_routing"])
-		sr := stringishJSONState(am["search_routing"])
-		rt := stringishJSONState(am["routing"])
-		if ir != "" && ir == sr && (rt == "" || rt == ir) {
-			am["routing"] = ir
-			am["index_routing"] = ""
-			am["search_routing"] = ""
-			list[i] = am
-		}
-	}
-	tmpl["alias"] = list
-}
-
-func stringishJSONState(v any) string {
-	if v == nil {
-		return ""
-	}
-	if s, ok := v.(string); ok {
-		return s
-	}
-	return fmt.Sprint(v)
 }
