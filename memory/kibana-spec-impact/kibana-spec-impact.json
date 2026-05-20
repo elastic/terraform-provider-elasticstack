@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "last_analyzed_target_sha": "f764503867a03c9a30f938c3250f5dcc621990b2",
+  "last_analyzed_target_sha": "b647d830bcf24a338ee83860c97e9cc9ff865505",
   "reported_fingerprints": {
     "sha256:1b830a86ef754a055f71a024c38355902714a1a3c4d6c3c5f22e0c182c54f138": {
       "entity_name": "elasticstack_kibana_dashboard",
@@ -9,6 +9,22 @@
       "target_sha": "3f9f3e963392972169d166c3461e4dafee6a1a7a",
       "recorded_at": "2026-05-12T00:12:53.856401894Z",
       "fingerprint": "sha256:1b830a86ef754a055f71a024c38355902714a1a3c4d6c3c5f22e0c182c54f138"
+    },
+    "sha256:39879a69741023498a477c8a5565289528927a9524b1df5a9fae5eb754aae041": {
+      "entity_name": "elasticstack_kibana_security_detection_rule",
+      "entity_type": "resource",
+      "baseline_sha": "f764503867a03c9a30f938c3250f5dcc621990b2",
+      "target_sha": "b647d830bcf24a338ee83860c97e9cc9ff865505",
+      "recorded_at": "2026-05-20T02:24:52.415988468Z",
+      "fingerprint": "sha256:39879a69741023498a477c8a5565289528927a9524b1df5a9fae5eb754aae041"
+    },
+    "sha256:e9fd81c617aa5ccbd96442217bfffcda08b02ebbd778e764c93421f314cb14f2": {
+      "entity_name": "elasticstack_kibana_action_connector",
+      "entity_type": "resource",
+      "baseline_sha": "f764503867a03c9a30f938c3250f5dcc621990b2",
+      "target_sha": "b647d830bcf24a338ee83860c97e9cc9ff865505",
+      "recorded_at": "2026-05-20T02:24:52.415986245Z",
+      "fingerprint": "sha256:e9fd81c617aa5ccbd96442217bfffcda08b02ebbd778e764c93421f314cb14f2"
     },
     "sha256:ee9f43fe2c6aa21376d85868bf139b4031bfbea1f05e2a5547d26894b259e703": {
       "entity_name": "elasticstack_kibana_dashboard",
