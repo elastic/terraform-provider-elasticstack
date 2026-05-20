@@ -98,9 +98,9 @@ Optional:
 
 - `exclude` (String) Assigns an index to nodes that have none of the specified custom attributes. Must be valid JSON document.
 - `include` (String) Assigns an index to nodes that have at least one of the specified custom attributes. Must be valid JSON document.
-- `number_of_replicas` (Number) Number of replicas to assign to the index. Default: `0`
+- `number_of_replicas` (Number) Number of replicas to assign to the index.
 - `require` (String) Assigns an index to nodes that have all of the specified custom attributes. Must be valid JSON document.
-- `total_shards_per_node` (Number) The maximum number of shards for the index on a single Elasticsearch node. Defaults to `-1` (unlimited).
+- `total_shards_per_node` (Number) The maximum number of shards for the index on a single Elasticsearch node. When omitted, the existing index setting is left unchanged.
 
 
 <a id="nestedblock--cold--downsample"></a>
@@ -343,9 +343,9 @@ Optional:
 
 - `exclude` (String) Assigns an index to nodes that have none of the specified custom attributes. Must be valid JSON document.
 - `include` (String) Assigns an index to nodes that have at least one of the specified custom attributes. Must be valid JSON document.
-- `number_of_replicas` (Number) Number of replicas to assign to the index. Default: `0`
+- `number_of_replicas` (Number) Number of replicas to assign to the index.
 - `require` (String) Assigns an index to nodes that have all of the specified custom attributes. Must be valid JSON document.
-- `total_shards_per_node` (Number) The maximum number of shards for the index on a single Elasticsearch node. Defaults to `-1` (unlimited).
+- `total_shards_per_node` (Number) The maximum number of shards for the index on a single Elasticsearch node. When omitted, the existing index setting is left unchanged.
 
 
 <a id="nestedblock--warm--downsample"></a>

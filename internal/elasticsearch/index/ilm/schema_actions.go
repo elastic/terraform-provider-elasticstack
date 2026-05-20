@@ -27,7 +27,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
@@ -50,16 +51,20 @@ func blockAllocate() schema.SingleNestedBlock {
 	return singleNestedBlock("Updates the index settings to change which nodes are allowed to host the index shards and change the number of replicas.", schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
 			"number_of_replicas": schema.Int64Attribute{
-				Description: "Number of replicas to assign to the index. Default: `0`",
+				Description: "Number of replicas to assign to the index.",
 				Optional:    true,
 				Computed:    true,
-				Default:     int64default.StaticInt64(0),
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 			"total_shards_per_node": schema.Int64Attribute{
-				Description: "The maximum number of shards for the index on a single Elasticsearch node. Defaults to `-1` (unlimited).",
+				Description: "The maximum number of shards for the index on a single Elasticsearch node. When omitted, the existing index setting is left unchanged.",
 				Optional:    true,
 				Computed:    true,
-				Default:     int64default.StaticInt64(-1),
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 			"include": schema.StringAttribute{
 				Description: "Assigns an index to nodes that have at least one of the specified custom attributes. Must be valid JSON document.",
