@@ -7,7 +7,10 @@ Base spec: `openspec/specs/elasticsearch-index-component-template/spec.md`
 
 ### Requirement: Empty-object normalisation for mappings and settings on read (REQ-022)
 
-The provider SHALL treat a non-nil empty `"mappings": {}` or `"settings": {}` object returned by Elasticsearch as equivalent to an absent field, and SHALL set `template.mappings` or `template.settings` to `null` in Terraform state accordingly. `flattenTemplateBlock` SHALL use `len(t.Mappings) > 0` (instead of `t.Mappings != nil`) and `len(t.Settings) > 0` (instead of `t.Settings != nil`) as the guards for producing non-null values; both nil and empty maps MUST produce null Terraform values.
+The provider SHALL treat an empty `"mappings": {}` or `"settings": {}` object returned by Elasticsearch as semantically equivalent to an absent value (`null`).
+
+- **Flatten-layer normalisation**: `flattenTemplateBlock` SHALL use `len(t.Mappings) > 0` (instead of `t.Mappings != nil`) and `len(t.Settings) > 0` (instead of `t.Settings != nil`) guards so that both nil and empty-map API responses produce `null` Terraform state values.
+- **Semantic equality**: To avoid perpetual drift for practitioners who explicitly configure `mappings = jsonencode({})` or `settings = jsonencode({})`, `StringSemanticEquals` SHALL treat `null` and `"{}"` as equivalent, ensuring neither direction causes a false diff.
 
 #### Scenario: Empty-object mappings response is null in state
 

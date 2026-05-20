@@ -40,7 +40,7 @@
           Steps: []resource.TestStep{
               {
                   ProtoV6ProviderFactories: acctest.Providers,
-                  ConfigDirectory:          acctest.NamedTestCaseDirectory("issue-609"),
+                  ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
                   ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
                   Check: resource.ComposeTestCheckFunc(
                       resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
@@ -48,7 +48,7 @@
               },
               {
                   ProtoV6ProviderFactories: acctest.Providers,
-                  ConfigDirectory:          acctest.NamedTestCaseDirectory("issue-609"),
+                  ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
                   ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
                   PlanOnly:                 true,
                   ExpectNonEmptyPlan:       false,

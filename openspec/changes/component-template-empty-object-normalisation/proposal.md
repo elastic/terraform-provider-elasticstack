@@ -44,7 +44,7 @@ None.
   `t.Mappings != nil` to `len(t.Mappings) > 0` and `t.Settings != nil` to `len(t.Settings) > 0`.
 - `internal/elasticsearch/index/componenttemplate/acc_test.go` — add no-drift `PlanOnly` step to
   `TestAccResourceComponentTemplate`; add a new `TestAccResourceComponentTemplateIssue609NoDrift`
-  test using the `issue-609` config directory.
+  test using the `apply` config directory.
 - `internal/elasticsearch/index/componenttemplate/testdata/TestAccResourceComponentTemplateIssue609NoDrift/apply/main.tf` —
   new test config mirroring the original issue: alias, top-level `number_of_shards = "3"` in
   settings, no mappings block.
