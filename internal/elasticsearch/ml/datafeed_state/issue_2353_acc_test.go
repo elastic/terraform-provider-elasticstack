@@ -37,12 +37,22 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+// minVersionIssue2353 gates this reproducer to ES >= 8.1.0. On 8.0.x the
+// datafeed running_state / search_interval shape used by the reproducer is
+// not reliably available and the test fails for unrelated reasons.
+var minVersionIssue2353 = version.Must(version.NewVersion("8.1.0"))
+
 func TestAccReproduceIssue2353(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIssue2353, versionutils.FlavorAny)
+
 	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	datafeedID := fmt.Sprintf("datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	indexName := fmt.Sprintf("test-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
@@ -54,6 +64,19 @@ func TestAccReproduceIssue2353(t *testing.T) {
 	const docTimestamp = "2022-01-01T00:10:00Z"
 	const plannedStart = "2022-01-01T00:07:30Z"
 
+	configVars := config.Variables{
+		"job_id":      config.StringVariable(jobID),
+		"datafeed_id": config.StringVariable(datafeedID),
+		"index_name":  config.StringVariable(indexName),
+	}
+
+	fullConfigVars := config.Variables{
+		"job_id":        config.StringVariable(jobID),
+		"datafeed_id":   config.StringVariable(datafeedID),
+		"index_name":    config.StringVariable(indexName),
+		"planned_start": config.StringVariable(plannedStart),
+	}
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -62,7 +85,8 @@ func TestAccReproduceIssue2353(t *testing.T) {
 				// datafeed). After apply, index a document so the datafeed has
 				// data to consume in step 2.
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccMLDatafeedStateIssue2353SetupConfig(jobID, datafeedID, indexName),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("setup"),
+				ConfigVariables:          configVars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test", "id"),
 					testAccIssue2353IndexDocument(indexName, docTimestamp),
@@ -75,7 +99,8 @@ func TestAccReproduceIssue2353(t *testing.T) {
 				// which differs from plannedStart. The framework detects the
 				// plan/state mismatch and produces the inconsistency error.
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccMLDatafeedStateIssue2353FullConfig(jobID, datafeedID, indexName, plannedStart),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("full"),
+				ConfigVariables:          fullConfigVars,
 				ExpectError:              regexp.MustCompile(`Provider produced inconsistent result after apply`),
 			},
 		},
@@ -117,123 +142,4 @@ func testAccIssue2353IndexDocument(indexName, docTimestamp string) resource.Test
 		}
 		return nil
 	}
-}
-
-// testAccMLDatafeedStateIssue2353SetupConfig creates the prerequisite resources
-// (index, anomaly detection job, job state, datafeed) without the state resource.
-func testAccMLDatafeedStateIssue2353SetupConfig(jobID, datafeedID, indexName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "test" {
-  name                = %q
-  deletion_protection = false
-  mappings = jsonencode({
-    properties = {
-      "@timestamp" = { type = "date" }
-      value        = { type = "double" }
-    }
-  })
-}
-
-resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
-  job_id      = %q
-  description = "Reproducer for issue 2353"
-  analysis_config = {
-    bucket_span = "15m"
-    detectors = [{
-      function             = "count"
-      detector_description = "count"
-    }]
-  }
-  data_description = {
-    time_field  = "@timestamp"
-    time_format = "epoch_ms"
-  }
-  analysis_limits = {
-    model_memory_limit = "10mb"
-  }
-}
-
-resource "elasticstack_elasticsearch_ml_job_state" "test" {
-  job_id = elasticstack_elasticsearch_ml_anomaly_detection_job.test.job_id
-  state  = "opened"
-}
-
-resource "elasticstack_elasticsearch_ml_datafeed" "test" {
-  datafeed_id = %q
-  job_id      = elasticstack_elasticsearch_ml_anomaly_detection_job.test.job_id
-  indices     = [elasticstack_elasticsearch_index.test.name]
-  query       = jsonencode({ match_all = {} })
-}
-`, indexName, jobID, datafeedID)
-}
-
-// testAccMLDatafeedStateIssue2353FullConfig extends the setup config with the
-// datafeed_state resource using an explicit start timestamp. The start value
-// (plannedStart) precedes the indexed document timestamp, so Elasticsearch
-// reports SearchInterval.StartMs = docTimestamp ≠ plannedStart after apply.
-func testAccMLDatafeedStateIssue2353FullConfig(jobID, datafeedID, indexName, plannedStart string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "test" {
-  name                = %q
-  deletion_protection = false
-  mappings = jsonencode({
-    properties = {
-      "@timestamp" = { type = "date" }
-      value        = { type = "double" }
-    }
-  })
-}
-
-resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
-  job_id      = %q
-  description = "Reproducer for issue 2353"
-  analysis_config = {
-    bucket_span = "15m"
-    detectors = [{
-      function             = "count"
-      detector_description = "count"
-    }]
-  }
-  data_description = {
-    time_field  = "@timestamp"
-    time_format = "epoch_ms"
-  }
-  analysis_limits = {
-    model_memory_limit = "10mb"
-  }
-}
-
-resource "elasticstack_elasticsearch_ml_job_state" "test" {
-  job_id = elasticstack_elasticsearch_ml_anomaly_detection_job.test.job_id
-  state  = "opened"
-}
-
-resource "elasticstack_elasticsearch_ml_datafeed" "test" {
-  datafeed_id = %q
-  job_id      = elasticstack_elasticsearch_ml_anomaly_detection_job.test.job_id
-  indices     = [elasticstack_elasticsearch_index.test.name]
-  query       = jsonencode({ match_all = {} })
-}
-
-# start = "2022-01-01T00:07:30Z" (planned) vs SearchInterval.StartMs =
-# "2022-01-01T00:10:00Z" (first data record) → inconsistency error (issue 2353)
-resource "elasticstack_elasticsearch_ml_datafeed_state" "test" {
-  datafeed_id = elasticstack_elasticsearch_ml_datafeed.test.datafeed_id
-  state       = "started"
-  start       = %q
-
-  depends_on = [
-    elasticstack_elasticsearch_ml_datafeed.test,
-    elasticstack_elasticsearch_ml_job_state.test,
-  ]
-}
-`, indexName, jobID, datafeedID, plannedStart)
 }
