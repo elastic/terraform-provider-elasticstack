@@ -118,7 +118,7 @@ func testAccIssue2353IndexDocument(indexName, docTimestamp string) resource.Test
 			return fmt.Errorf("ELASTICSEARCH_ENDPOINTS not set")
 		}
 		endpoint := strings.TrimRight(strings.Split(rawEndpoints, ",")[0], "/")
-		url := fmt.Sprintf("%s/%s/_doc", endpoint, indexName)
+		url := fmt.Sprintf("%s/%s/_doc?refresh=wait_for", endpoint, indexName)
 
 		body := fmt.Sprintf(`{"@timestamp":%q,"value":42}`, docTimestamp)
 		req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(body))
@@ -126,10 +126,14 @@ func testAccIssue2353IndexDocument(indexName, docTimestamp string) resource.Test
 			return err
 		}
 		req.Header.Set("Content-Type", "application/json")
-		req.SetBasicAuth(
-			os.Getenv("ELASTICSEARCH_USERNAME"),
-			os.Getenv("ELASTICSEARCH_PASSWORD"),
-		)
+		if apiKey := os.Getenv("ELASTICSEARCH_API_KEY"); apiKey != "" {
+			req.Header.Set("Authorization", "ApiKey "+apiKey)
+		} else {
+			req.SetBasicAuth(
+				os.Getenv("ELASTICSEARCH_USERNAME"),
+				os.Getenv("ELASTICSEARCH_PASSWORD"),
+			)
+		}
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
