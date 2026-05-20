@@ -322,6 +322,17 @@ func TestAccResourceDataViewNamespaces(t *testing.T) {
 		}
 		return nil
 	}
+	checkNamespacesMembership := func(expected ...string) resource.TestCheckFunc {
+		checks := []resource.TestCheckFunc{
+			resource.TestCheckResourceAttr("elasticstack_kibana_data_view.ns_dv", "space_id", space1),
+			resource.TestCheckResourceAttr("elasticstack_kibana_data_view.ns_dv", "data_view.namespaces.#", fmt.Sprintf("%d", len(expected))),
+		}
+		for _, ns := range expected {
+			checks = append(checks, resource.TestCheckTypeSetElemAttr(
+				"elasticstack_kibana_data_view.ns_dv", "data_view.namespaces.*", ns))
+		}
+		return resource.ComposeTestCheckFunc(checks...)
+	}
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -331,7 +342,7 @@ func TestAccResourceDataViewNamespaces(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("initial"),
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.ns_dv", "data_view.namespaces.#", "3"),
+					checkNamespacesMembership(space1, space2, "default"),
 					captureID,
 				),
 			},
@@ -340,7 +351,7 @@ func TestAccResourceDataViewNamespaces(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("add_space"),
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.ns_dv", "data_view.namespaces.#", "4"),
+					checkNamespacesMembership(space1, space2, "default", space3),
 					checkIDUnchanged,
 				),
 			},
@@ -349,7 +360,7 @@ func TestAccResourceDataViewNamespaces(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_space"),
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.ns_dv", "data_view.namespaces.#", "3"),
+					checkNamespacesMembership(space1, space2, space3),
 					checkIDUnchanged,
 				),
 			},
@@ -358,7 +369,7 @@ func TestAccResourceDataViewNamespaces(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("add_remove_space"),
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.ns_dv", "data_view.namespaces.#", "3"),
+					checkNamespacesMembership(space1, "default", space3),
 					checkIDUnchanged,
 				),
 			},
