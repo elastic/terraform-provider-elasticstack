@@ -42,7 +42,7 @@ var ilmActionSettingOptions = map[string]struct {
 	"min_size":                 {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
 	"min_primary_shard_docs":   {def: 0, minVersion: RolloverMinConditionsMinSupportedVersion},
 	"min_primary_shard_size":   {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
-	"total_shards_per_node":    {skipEmptyCheck: true, def: -1},
+	"total_shards_per_node":    {skipEmptyCheck: true},
 }
 
 func expandPhase(p map[string]any, serverVersion *version.Version) (*models.Phase, diag.Diagnostics) {
