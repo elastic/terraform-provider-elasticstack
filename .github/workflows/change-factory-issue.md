@@ -221,6 +221,7 @@ checkout:
   fetch-depth: 0
 safe-outputs:
   create-pull-request:
+    draft: false
     labels: [change-factory, no-changelog]
     max: 1
     patch-format: am
