@@ -51,7 +51,7 @@ The existing security client functions `CreateAPIKey`, `CreateCrossClusterAPIKey
 
 ## Open Questions
 
-1. **Should `expiration` emit a warning validator when `invalidate_on_close = false`?** A `schema.Validator` that adds a warning diagnostic when `expiration` is absent and `invalidate_on_close = false` would help guide practitioners without being a hard error. Decision deferred to implementation.
+1. **Should `expiration` emit a warning validator when `invalidate_on_close = false`?** **Resolved: no.** Keep parity with the managed resource (which does not warn) and rely on documentation (REQ-EPH-009) to recommend setting `expiration` when `invalidate_on_close = false`.
 2. **Should `invalidate_on_close` default to `false` or be an explicit required attribute?** Decided: optional with default `false`. Recorded here for auditability.
 3. **Should cross-cluster API keys (`type = "cross_cluster"`) be in scope?** Decided: yes, in scope.
 4. **Should the ephemeral resource be gated behind `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL`?** Decided: no, ship unconditionally.
