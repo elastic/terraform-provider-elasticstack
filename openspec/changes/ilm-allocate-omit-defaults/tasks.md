@@ -26,8 +26,8 @@
 - [ ] 4.1 Add a test case to `TestExpandAction` (or a companion test function) that exercises the allocate-filter-only path:
   - Input: `allocate` action with only `require` set (e.g. `{"zone": "zone-1"}`); `number_of_replicas` and `total_shards_per_node` absent from the action map (i.e. null/not present).
   - Expected output: expanded map contains `require` but does **not** contain `number_of_replicas` or `total_shards_per_node`.
-  - This confirms that removing `skipEmptyCheck` is NOT correct for the routing filter fields, and that the expand path correctly skips null/absent int64 values when `skipEmptyCheck` is false (the default).
+  - This confirms that a routing-filter-only allocate action expands correctly, and that absent/null int64 allocate settings are still skipped by the default expand behavior unless explicitly provided.
 
 ## 5. Delta spec
 
-- [ ] 5.1 Keep `openspec/changes/ilm-allocate-omit-defaults/specs/elasticsearch-index-lifecycle/spec.md` aligned with the implementation changes (REQ-023 or next available number — verify against the current main spec).
+- [ ] 5.1 Keep `openspec/changes/ilm-allocate-omit-defaults/specs/elasticsearch-index-lifecycle/spec.md` aligned with the implementation changes (REQ-034).
