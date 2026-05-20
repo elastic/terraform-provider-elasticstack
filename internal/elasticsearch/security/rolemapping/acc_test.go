@@ -120,6 +120,15 @@ func TestAccResourceSecurityRoleMapping(t *testing.T) {
 					ResourceName:      roleMappingResourceName,
 					ImportState:       true,
 					ImportStateVerify: true,
+					// Elasticsearch normalizes single-element field rule arrays
+					// to strings on storage; the typed client unmarshals them
+					// back to arrays on read. NormalizedRulesValue's semantic
+					// equality lets plan/apply preserve the user's string-form
+					// config, so post-apply state stores string form while a
+					// fresh import read stores array form. ImportStateVerify
+					// performs strict (non-semantic) comparison, so ignore
+					// rules here.
+					ImportStateVerifyIgnore: []string{"rules"},
 				},
 			},
 		})
