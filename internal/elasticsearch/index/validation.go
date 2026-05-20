@@ -28,20 +28,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
-func stringIsJSONObject(i any, s string) []error {
-	iStr, ok := i.(string)
-	if !ok {
-		return []error{fmt.Errorf("expected type of %s to be string", s)}
-	}
-
-	m := map[string]any{}
-	if err := json.Unmarshal([]byte(iStr), &m); err != nil {
-		return []error{fmt.Errorf("expected %s to be a JSON object. Check the documentation for the expected format. %w", s, err)}
-	}
-
-	return nil
-}
-
 type StringIsJSONObject struct{}
 
 func (s StringIsJSONObject) Description(_ context.Context) string {
