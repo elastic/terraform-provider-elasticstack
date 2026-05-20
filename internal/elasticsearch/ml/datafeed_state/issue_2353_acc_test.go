@@ -19,10 +19,9 @@ package datafeedstate_test
 
 // TestAccResourceMLDatafeedState_explicitStartPreserved verifies that an
 // explicit start timestamp is preserved in state while Elasticsearch's
-// effective search start is reported separately.
-//
-// When the datafeed runs it sets SearchInterval.StartMs to the timestamp of
-// the first data record it finds (which is later than the requested start).
+// effective search start (the timestamp of the first matching data record,
+// which is later than the requested start) is surfaced separately through
+// the computed effective_search_start attribute.
 //
 // Related: https://github.com/elastic/terraform-provider-elasticstack/issues/2353
 
@@ -42,9 +41,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-// minVersionIssue2353 gates this reproducer to ES >= 8.1.0. On 8.0.x the
-// datafeed running_state / search_interval shape used by the reproducer is
-// not reliably available and the test fails for unrelated reasons.
+// minVersionIssue2353 gates this test to ES >= 8.1.0. On 8.0.x the
+// running_state.search_interval shape this test depends on is not
+// reliably available, so effective_search_start cannot be asserted.
 var minVersionIssue2353 = version.Must(version.NewVersion("8.1.0"))
 
 func TestAccResourceMLDatafeedState_explicitStartPreserved(t *testing.T) {
@@ -52,10 +51,11 @@ func TestAccResourceMLDatafeedState_explicitStartPreserved(t *testing.T) {
 	datafeedID := fmt.Sprintf("datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	indexName := fmt.Sprintf("test-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
-	// docTimestamp is AFTER start but not on any 15m bucket boundary.
-	// The datafeed will find this record and set SearchInterval.StartMs to this
-	// time, which differs from the planned start ("2022-01-01T00:07:30Z"),
-	// triggering the "Provider produced inconsistent result after apply" error.
+	// docTimestamp is AFTER plannedStart but not on any 15m bucket boundary,
+	// so the datafeed reports SearchInterval.StartMs = docTimestamp. The fix
+	// asserts that state.start stays at plannedStart while
+	// effective_search_start surfaces docTimestamp. Before the fix this same
+	// scenario produced "Provider produced inconsistent result after apply".
 	const docTimestamp = "2022-01-01T00:10:00Z"
 	const plannedStart = "2022-01-01T00:07:30Z"
 

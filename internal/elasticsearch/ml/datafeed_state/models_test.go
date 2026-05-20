@@ -37,7 +37,7 @@ func mustUnmarshalDatafeedStats(t *testing.T, raw string) *estypes.DatafeedStats
 	return &stats
 }
 
-func TestSetStartAndEndFromAPI_startedWithSearchInterval(t *testing.T) {
+func TestSetEffectiveSearchIntervalFromAPI_startedWithSearchInterval(t *testing.T) {
 	stats := mustUnmarshalDatafeedStats(t, `{
 		"datafeed_id": "df-1",
 		"state": "started",
@@ -58,7 +58,7 @@ func TestSetStartAndEndFromAPI_startedWithSearchInterval(t *testing.T) {
 		End:   timetypes.NewRFC3339TimeValue(userEnd),
 	}
 
-	diags := data.SetStartAndEndFromAPI(stats)
+	diags := data.SetEffectiveSearchIntervalFromAPI(stats)
 	require.False(t, diags.HasError())
 
 	startTime, startDiags := data.Start.ValueRFC3339Time()
@@ -78,7 +78,7 @@ func TestSetStartAndEndFromAPI_startedWithSearchInterval(t *testing.T) {
 	assert.Equal(t, time.UnixMilli(1640998800000).UTC(), effectiveEnd.UTC())
 }
 
-func TestSetStartAndEndFromAPI_preservesConfiguredTimezoneOnEffectiveFields(t *testing.T) {
+func TestSetEffectiveSearchIntervalFromAPI_preservesConfiguredTimezoneOnEffectiveFields(t *testing.T) {
 	stats := mustUnmarshalDatafeedStats(t, `{
 		"datafeed_id": "df-1",
 		"state": "started",
@@ -97,7 +97,7 @@ func TestSetStartAndEndFromAPI_preservesConfiguredTimezoneOnEffectiveFields(t *t
 		Start: timetypes.NewRFC3339TimeValue(time.Date(2022, 1, 1, 0, 0, 0, 0, cet)),
 	}
 
-	diags := data.SetStartAndEndFromAPI(stats)
+	diags := data.SetEffectiveSearchIntervalFromAPI(stats)
 	require.False(t, diags.HasError())
 
 	effectiveStart, effStartDiags := data.EffectiveSearchStart.ValueRFC3339Time()
@@ -106,7 +106,7 @@ func TestSetStartAndEndFromAPI_preservesConfiguredTimezoneOnEffectiveFields(t *t
 	assert.Equal(t, 3600, offset)
 }
 
-func TestSetStartAndEndFromAPI_startedRealTimeConfigured(t *testing.T) {
+func TestSetEffectiveSearchIntervalFromAPI_startedRealTimeConfigured(t *testing.T) {
 	stats := mustUnmarshalDatafeedStats(t, `{
 		"datafeed_id": "df-1",
 		"state": "started",
@@ -121,14 +121,14 @@ func TestSetStartAndEndFromAPI_startedRealTimeConfigured(t *testing.T) {
 	}`)
 
 	data := MLDatafeedStateData{}
-	diags := data.SetStartAndEndFromAPI(stats)
+	diags := data.SetEffectiveSearchIntervalFromAPI(stats)
 	require.False(t, diags.HasError())
 
 	assert.False(t, data.EffectiveSearchStart.IsNull())
 	assert.True(t, data.EffectiveSearchEnd.IsNull())
 }
 
-func TestSetStartAndEndFromAPI_stopped(t *testing.T) {
+func TestSetEffectiveSearchIntervalFromAPI_stopped(t *testing.T) {
 	stats := mustUnmarshalDatafeedStats(t, `{
 		"datafeed_id": "df-1",
 		"state": "stopped"
@@ -139,7 +139,7 @@ func TestSetStartAndEndFromAPI_stopped(t *testing.T) {
 		End:   timetypes.NewRFC3339TimeValue(time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC)),
 	}
 
-	diags := data.SetStartAndEndFromAPI(stats)
+	diags := data.SetEffectiveSearchIntervalFromAPI(stats)
 	require.False(t, diags.HasError())
 
 	assert.True(t, data.EffectiveSearchStart.IsNull())
@@ -150,20 +150,20 @@ func TestSetStartAndEndFromAPI_stopped(t *testing.T) {
 	assert.Equal(t, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), startTime)
 }
 
-func TestSetStartAndEndFromAPI_startedNilRunningState(t *testing.T) {
+func TestSetEffectiveSearchIntervalFromAPI_startedNilRunningState(t *testing.T) {
 	stats := mustUnmarshalDatafeedStats(t, `{
 		"datafeed_id": "df-1",
 		"state": "started"
 	}`)
 
 	data := MLDatafeedStateData{}
-	diags := data.SetStartAndEndFromAPI(stats)
+	diags := data.SetEffectiveSearchIntervalFromAPI(stats)
 	require.NotEmpty(t, diags.Warnings())
 	assert.True(t, data.EffectiveSearchStart.IsNull())
 	assert.True(t, data.EffectiveSearchEnd.IsNull())
 }
 
-func TestSetStartAndEndFromAPI_startedNilSearchInterval(t *testing.T) {
+func TestSetEffectiveSearchIntervalFromAPI_startedNilSearchInterval(t *testing.T) {
 	stats := mustUnmarshalDatafeedStats(t, `{
 		"datafeed_id": "df-1",
 		"state": "started",
@@ -174,7 +174,7 @@ func TestSetStartAndEndFromAPI_startedNilSearchInterval(t *testing.T) {
 	}`)
 
 	data := MLDatafeedStateData{}
-	diags := data.SetStartAndEndFromAPI(stats)
+	diags := data.SetEffectiveSearchIntervalFromAPI(stats)
 	require.False(t, diags.HasError())
 	assert.True(t, data.EffectiveSearchStart.IsNull())
 	assert.True(t, data.EffectiveSearchEnd.IsNull())

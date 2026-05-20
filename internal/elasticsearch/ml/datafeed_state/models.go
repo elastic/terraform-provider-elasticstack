@@ -65,7 +65,11 @@ func timeInSameLocation(ms int64, source timetypes.RFC3339) (time.Time, diag.Dia
 	return t, nil
 }
 
-func (d *MLDatafeedStateData) SetStartAndEndFromAPI(datafeedStats *estypes.DatafeedStats) diag.Diagnostics {
+// SetEffectiveSearchIntervalFromAPI populates EffectiveSearchStart /
+// EffectiveSearchEnd from running_state.search_interval. Start and End are not
+// touched: they round-trip from config (or prior state) so explicitly-supplied
+// values are never overwritten by the API response.
+func (d *MLDatafeedStateData) SetEffectiveSearchIntervalFromAPI(datafeedStats *estypes.DatafeedStats) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	d.EffectiveSearchStart = timetypes.NewRFC3339Null()
@@ -84,20 +88,16 @@ func (d *MLDatafeedStateData) SetStartAndEndFromAPI(datafeedStats *estypes.Dataf
 	}
 
 	if datafeedStats.RunningState.SearchInterval != nil {
-		start, timeDiags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.StartMs, d.Start)
-		diags.Append(timeDiags...)
+		startTime, startDiags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.StartMs, d.Start)
+		endTime, endDiags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.EndMs, d.End)
+		diags.Append(startDiags...)
+		diags.Append(endDiags...)
 		if diags.HasError() {
 			return diags
 		}
 
-		end, timeDiags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.EndMs, d.End)
-		diags.Append(timeDiags...)
-		if diags.HasError() {
-			return diags
-		}
-
-		d.EffectiveSearchStart = timetypes.NewRFC3339TimeValue(start)
-		d.EffectiveSearchEnd = timetypes.NewRFC3339TimeValue(end)
+		d.EffectiveSearchStart = timetypes.NewRFC3339TimeValue(startTime)
+		d.EffectiveSearchEnd = timetypes.NewRFC3339TimeValue(endTime)
 	}
 
 	if datafeedStats.RunningState.RealTimeConfigured {
