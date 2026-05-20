@@ -35,14 +35,6 @@ type mlCalendarEventsPageFetcher interface {
 	FetchMLCalendarEventsPage(ctx context.Context, calendarID string, from, size int) ([]calendarEventWire, error)
 }
 
-type typedClientCalendarEventsFetcher struct {
-	client *elasticsearch.TypedClient
-}
-
-func (f typedClientCalendarEventsFetcher) FetchMLCalendarEventsPage(ctx context.Context, calendarID string, from, size int) ([]calendarEventWire, error) {
-	return fetchMLCalendarEventsPage(ctx, f.client, calendarID, from, size, "", "")
-}
-
 type typedClientCalendarEventsWindowFetcher struct {
 	client     *elasticsearch.TypedClient
 	start, end string
@@ -81,12 +73,9 @@ func fetchMLCalendarEventsPage(ctx context.Context, client *elasticsearch.TypedC
 	return envelope.Events, nil
 }
 
-// walkMLCalendarEventPages calls fn for each page of calendar events until fn returns true,
-// an error occurs, or there are no more events.
-func walkMLCalendarEventPages(ctx context.Context, typedClient *elasticsearch.TypedClient, calendarID string, fn func([]calendarEventWire) (stop bool)) fwdiags.Diagnostics {
-	return walkMLCalendarEventPagesWith(ctx, typedClientCalendarEventsFetcher{client: typedClient}, calendarID, fn)
-}
-
+// walkMLCalendarEventPagesWithWindow calls fn for each page of calendar events until fn returns
+// true, an error occurs, or there are no more events. When startRFC3339 and endRFC3339 are empty,
+// the full calendar is listed (no start/end query params).
 func walkMLCalendarEventPagesWithWindow(
 	ctx context.Context,
 	typedClient *elasticsearch.TypedClient,

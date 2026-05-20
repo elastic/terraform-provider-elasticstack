@@ -117,11 +117,7 @@ func readCalendarEvent(ctx context.Context, client *clients.ElasticsearchScopedC
 			}
 			return false
 		}
-		if startRFC3339 != "" && endRFC3339 != "" {
-			inner.Append(walkMLCalendarEventPagesWithWindow(ctx, typedClient, calendarID, startRFC3339, endRFC3339, walk)...)
-		} else {
-			inner.Append(walkMLCalendarEventPages(ctx, typedClient, calendarID, walk)...)
-		}
+		inner.Append(walkMLCalendarEventPagesWithWindow(ctx, typedClient, calendarID, startRFC3339, endRFC3339, walk)...)
 		return matched, inner
 	}
 
