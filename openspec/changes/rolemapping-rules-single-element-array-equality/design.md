@@ -34,7 +34,7 @@ The codebase already has multiple well-established examples of the custom-type p
 
 - **Keep local to `rolemapping` package**: Per operator direction ("Keep it local for now, we can move it easily"). `normalizeRuleNode` and related helpers move from `read.go` to `rules_value.go`.
 
-- **`normalizeRoleNode` collapsing logic**: The `normalizeRuleNode` function remains as the normalization primitive inside `rules_value.go`, but is no longer called from the read path. `normalizeRoleMappingRules` (the marshal+walk+unmarshal wrapper) can be removed from `read.go`; the custom type uses a string-in / string-out variant.
+- **`normalizeRuleNode` collapsing logic**: The `normalizeRuleNode` function remains as the normalization primitive inside `rules_value.go`, but is no longer called from the read path. `normalizeRoleMappingRules` (the marshal+walk+unmarshal wrapper) can be removed from `read.go`; the custom type uses a string-in / string-out variant.
 
 ## Implementation Sketch
 

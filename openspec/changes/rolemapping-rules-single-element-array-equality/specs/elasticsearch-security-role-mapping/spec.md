@@ -6,16 +6,16 @@ Extends [`openspec/specs/elasticsearch-security-role-mapping/spec.md`](../../../
 
 ### Requirement: JSON state mapping for rules (REQ-019, amended)
 
-The existing requirement specifies that on read the resource SHALL serialize `rules` into a normalized JSON string and store it in state. This amendment removes the constraint that single-element arrays inside `field` objects are collapsed to strings before storage. State SHALL now store the raw JSON produced by the typed API client (which returns array form for single-element field values).
+The base requirement specifies that on read the resource SHALL serialize `rules` into a normalized JSON string and store it in state. In the prior implementation, the read path in `read.go` also collapsed single-element arrays inside `field` objects to strings before storing `rules`, even though that behavior was not stated in REQ-019. This amendment changes the required behavior so that state preserves the raw JSON shape produced by the typed API client, including array form for single-element field values.
 
-> **Rationale**: Collapsing arrays to strings in the read path caused perpetual diffs when the user's config encoded the same value as an array. Removing the collapsing simplifies the read path; semantic equality (REQ-023) handles the mismatch transparently.
+> **Rationale**: Collapsing arrays to strings in the read path caused perpetual diffs when the user's config encoded the same value as an array. Preserving the typed-client output in state simplifies the read path; semantic equality (REQ-023) handles the mismatch transparently.
 
 #### Scenario: Rules stored as raw typed client output
 
-- GIVEN ES returns a role mapping with `{"groups":"project1"}` (string form)
-- AND the typed client deserializes it to `{"groups":["project1"]}` (array form)
+- GIVEN ES returns a role mapping with `rules` containing `{"field":{"groups":"project1"}}` (string form inside the `field` map)
+- AND the typed client deserializes it to `{"field":{"groups":["project1"]}}` (array form inside the `field` map)
 - WHEN the read path stores the value in state
-- THEN state SHALL contain `{"groups":["project1"]}` (array form, no single-element collapsing)
+- THEN state SHALL contain `{"field":{"groups":["project1"]}}` (array form, no single-element collapsing)
 
 ## ADDED Requirements
 
