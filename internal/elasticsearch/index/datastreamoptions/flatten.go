@@ -19,6 +19,7 @@ package datastreamoptions
 
 import (
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -41,6 +42,45 @@ func Flatten(dso *estypes.DataStreamOptions) (types.Object, diag.Diagnostics) {
 			if dr, ok := fs.Lifecycle.DataRetention.(string); ok && dr != "" {
 				dataRetention = types.StringValue(dr)
 			}
+		}
+		lcAttrs := map[string]attr.Value{
+			"data_retention": dataRetention,
+		}
+		lcObj, d := types.ObjectValue(FailureStoreLifecycleAttrTypes(), lcAttrs)
+		diags.Append(d...)
+		if diags.HasError() {
+			return types.ObjectUnknown(AttrTypes()), diags
+		}
+		fsAttrs["lifecycle"] = lcObj
+	}
+	fsObj, d := types.ObjectValue(FailureStoreAttrTypes(), fsAttrs)
+	diags.Append(d...)
+	if diags.HasError() {
+		return types.ObjectUnknown(AttrTypes()), diags
+	}
+	outer := map[string]attr.Value{
+		"failure_store": fsObj,
+	}
+	obj, d := types.ObjectValue(AttrTypes(), outer)
+	diags.Append(d...)
+	return obj, diags
+}
+
+// FlattenLocal converts a data_stream_options object decoded into the local
+// models.DataStreamOptions shape (used by index/component template reads that
+// avoid the typed go-elasticsearch decoder, see issue #3124) back into a
+// Terraform object. Caller must verify dso != nil and dso.FailureStore != nil.
+func FlattenLocal(dso *models.DataStreamOptions) (types.Object, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	fs := dso.FailureStore
+	fsAttrs := map[string]attr.Value{
+		"enabled":   types.BoolValue(fs.Enabled),
+		"lifecycle": types.ObjectNull(FailureStoreLifecycleAttrTypes()),
+	}
+	if fs.Lifecycle != nil {
+		dataRetention := types.StringNull()
+		if fs.Lifecycle.DataRetention != "" {
+			dataRetention = types.StringValue(fs.Lifecycle.DataRetention)
 		}
 		lcAttrs := map[string]attr.Value{
 			"data_retention": dataRetention,

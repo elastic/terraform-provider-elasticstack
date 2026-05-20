@@ -19,7 +19,6 @@ package template_test
 
 import (
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -27,17 +26,24 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-// TestAccReproduceIssue3124 reproduces the "Provider produced inconsistent result after apply"
-// error for elasticstack_elasticsearch_index_template when template.settings contains
-// index.search.slowlog.include.user.
+// TestAccReproduceIssue3124 is the regression test for
+// https://github.com/elastic/terraform-provider-elasticstack/issues/3124.
 //
-// Root cause: go-elasticsearch v8 SlowlogSettings type does not have an Include field,
-// so when the provider reads back the settings from Elasticsearch after apply,
-// the include sub-object is silently dropped. The resulting state is missing
-// index.search.slowlog.include.user, which does not match the planned state,
-// triggering Terraform's post-apply consistency check error.
+// An index_template whose template.settings JSON contained
+// index.search.slowlog.include.user previously failed apply with
+// "Provider produced inconsistent result after apply" because the read path
+// decoded the response through the typed go-elasticsearch SlowlogSettings
+// struct, which has no Include field and silently dropped it during
+// deserialization. The same class of bug affected
+// index.lifecycle.parse_origination_date, whose typed field is *bool and
+// coerced the user-supplied "true" string into a bool literal on read.
+//
+// The provider now decodes index template responses through
+// internal/models.IndexTemplate (settings as map[string]any) so unmodeled
+// fields and string-encoded scalars survive the refresh.
 func TestAccReproduceIssue3124(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	addr := "elasticstack_elasticsearch_index_template.test"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -46,7 +52,35 @@ func TestAccReproduceIssue3124(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				Config:                   testAccReproduceIssue3124Config(templateName),
-				ExpectError:              regexp.MustCompile(`Provider produced inconsistent result after apply`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckResourceAttrIndexSettingsSemantic(addr, `{
+						"index": {
+							"number_of_shards": "1",
+							"number_of_replicas": "0",
+							"search": {
+								"slowlog": {
+									"include": {
+										"user": "true"
+									},
+									"threshold": {
+										"query": {
+											"warn": "10s"
+										}
+									}
+								}
+							},
+							"lifecycle": {
+								"parse_origination_date": "true"
+							}
+						}
+					}`),
+				),
+			},
+			{
+				// Refresh must not introduce drift: a second plan must be empty.
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   testAccReproduceIssue3124Config(templateName),
+				PlanOnly:                 true,
 			},
 		},
 	})
@@ -72,7 +106,15 @@ resource "elasticstack_elasticsearch_index_template" "test" {
             include = {
               user = "true"
             }
+            threshold = {
+              query = {
+                warn = "10s"
+              }
+            }
           }
+        }
+        lifecycle = {
+          parse_origination_date = "true"
         }
       }
     })

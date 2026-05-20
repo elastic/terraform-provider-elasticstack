@@ -129,6 +129,20 @@ type ComponentTemplateResponse struct {
 	ComponentTemplate ComponentTemplate `json:"component_template"`
 }
 
+// IndexTemplatesResponse mirrors the GET /_index_template/<name> body so the read
+// path can decode index template settings as raw map[string]any rather than through
+// the typed go-elasticsearch structs, which silently drop fields they do not model
+// (e.g. index.search.slowlog.include) and coerce string-encoded values such as
+// index.lifecycle.parse_origination_date. See issue #3124.
+type IndexTemplatesResponse struct {
+	IndexTemplates []IndexTemplateResponse `json:"index_templates"`
+}
+
+type IndexTemplateResponse struct {
+	Name          string        `json:"name"`
+	IndexTemplate IndexTemplate `json:"index_template"`
+}
+
 type Policy struct {
 	Name     string           `json:"-"`
 	Metadata map[string]any   `json:"_meta,omitempty"`
