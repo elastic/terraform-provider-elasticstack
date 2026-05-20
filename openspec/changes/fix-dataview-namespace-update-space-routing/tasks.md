@@ -5,8 +5,8 @@
 
 ## 2. Fix `UpdateDataViewNamespaces` — per-object error surfacing
 
-- [ ] 2.1 After the HTTP status check, verify that `resp.JSON200` is non-nil. If it is nil (unexpected for HTTP 200), add an error diagnostic and return.
-- [ ] 2.2 Iterate `resp.JSON200.Objects`. For each element where the `Error` field is non-nil, add an error diagnostic that includes the object `Id`, `Type`, and the error `Message` (or `statusCode`/`error` sub-fields) from the per-object error struct. Return after appending all per-object errors so the caller sees every failed object in one apply.
+- [ ] 2.1 After the HTTP status check, do not use `resp.JSON200` (the generated `PostSpacesUpdateObjectsSpacesWithResponse` currently exposes `Body` and `HTTPResponse`, not a typed `JSON200` field). Instead, unmarshal `resp.Body` into a small local struct that models just the response fields needed here (for example, `objects[].id`, `objects[].type`, and `objects[].error`), or regenerate/update the client/spec so a typed `JSON200` is available.
+- [ ] 2.2 Verify the decoded payload contains the expected `objects` collection. Then iterate the decoded objects. For each element where the `error` field is non-nil, add an error diagnostic that includes the object `id`, `type`, and the error `message` (or `statusCode`/`error` sub-fields) from the per-object error struct. Return after appending all per-object errors so the caller sees every failed object in one apply.
 
 ## 3. Update call site in `update.go`
 
