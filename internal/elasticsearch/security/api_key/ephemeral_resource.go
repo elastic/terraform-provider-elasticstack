@@ -34,7 +34,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
 	eschema "github.com/hashicorp/terraform-plugin-framework/ephemeral/schema"
@@ -44,9 +43,9 @@ import (
 )
 
 var (
-	_ ephemeral.EphemeralResource               = (*EphemeralResource)(nil)
-	_ ephemeral.EphemeralResourceWithConfigure    = (*EphemeralResource)(nil)
-	_ ephemeral.EphemeralResourceWithClose        = (*EphemeralResource)(nil)
+	_ ephemeral.EphemeralResource              = (*EphemeralResource)(nil)
+	_ ephemeral.EphemeralResourceWithConfigure = (*EphemeralResource)(nil)
+	_ ephemeral.EphemeralResourceWithClose     = (*EphemeralResource)(nil)
 )
 
 const ephemeralPrivateDataKey = "elasticstack.security_api_key"
@@ -81,21 +80,10 @@ type ephemeralPrivateData struct {
 	ConnectionJSON    string `json:"connection_json,omitempty"`
 }
 
-type elasticsearchConnectionObject struct {
-	Username               types.String `tfsdk:"username"`
-	Password               types.String `tfsdk:"password"`
-	APIKey                 types.String `tfsdk:"api_key"`
-	BearerToken            types.String `tfsdk:"bearer_token"`
-	ESClientAuthentication types.String `tfsdk:"es_client_authentication"`
-	Endpoints              types.List   `tfsdk:"endpoints"`
-	Headers                types.Map    `tfsdk:"headers"`
-	Insecure               types.Bool   `tfsdk:"insecure"`
-	CAFile                 types.String `tfsdk:"ca_file"`
-	CAData                 types.String `tfsdk:"ca_data"`
-	CertFile               types.String `tfsdk:"cert_file"`
-	CertData               types.String `tfsdk:"cert_data"`
-	KeyFile                types.String `tfsdk:"key_file"`
-	KeyData                types.String `tfsdk:"key_data"`
+var deleteAPIKeyFn = elasticsearch.DeleteAPIKey
+
+type elasticsearchClientResolver interface {
+	GetElasticsearchClient(ctx context.Context, connection types.List) (*clients.ElasticsearchScopedClient, diag.Diagnostics)
 }
 
 func NewEphemeralResource() ephemeral.EphemeralResource {
@@ -304,6 +292,13 @@ func (r *EphemeralResource) Close(ctx context.Context, req ephemeral.CloseReques
 	resp.Diagnostics.Append(closeAPIKeyIfRequested(ctx, r.client, connection, privateData.InvalidateOnClose, privateData.KeyID)...)
 }
 
+func effectiveAPIKeyTypeFromOptionalString(typeAttr *string) string {
+	if typeAttr == nil || *typeAttr == "" {
+		return defaultAPIKeyType
+	}
+	return *typeAttr
+}
+
 func effectiveAPIKeyType(apiKeyType types.String) types.String {
 	if typeutils.IsKnown(apiKeyType) && apiKeyType.ValueString() != "" {
 		return apiKeyType
@@ -416,7 +411,7 @@ func (r *EphemeralResource) openCrossClusterAPIKey(ctx context.Context, client *
 
 func closeAPIKeyIfRequested(
 	ctx context.Context,
-	factory *clients.ProviderClientFactory,
+	factory elasticsearchClientResolver,
 	connection types.List,
 	invalidateOnClose bool,
 	keyID string,
@@ -430,7 +425,7 @@ func closeAPIKeyIfRequested(
 		return diags
 	}
 
-	return elasticsearch.DeleteAPIKey(ctx, client, keyID)
+	return deleteAPIKeyFn(ctx, client, keyID)
 }
 
 func saveEphemeralPrivateData(ctx context.Context, privateState ephemeralPrivateState, model ephemeralTfModel) diag.Diagnostics {
@@ -491,75 +486,4 @@ func elasticsearchConnectionFromPrivateJSON(ctx context.Context, connectionJSON 
 	}
 
 	return decodeElasticsearchConnection(ctx, connectionJSON)
-}
-
-func encodeElasticsearchConnection(ctx context.Context, connection types.List) (string, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if !typeutils.IsKnown(connection) || connection.IsNull() {
-		return "", diags
-	}
-
-	var connectionObjects []elasticsearchConnectionObject
-	diags.Append(connection.ElementsAs(ctx, &connectionObjects, false)...)
-	if diags.HasError() {
-		return "", diags
-	}
-
-	bytes, err := json.Marshal(connectionObjects)
-	if err != nil {
-		diags.AddError("Failed to marshal elasticsearch_connection for Close", err.Error())
-		return "", diags
-	}
-
-	return string(bytes), diags
-}
-
-func decodeElasticsearchConnection(ctx context.Context, connectionJSON string) (types.List, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if connectionJSON == "" {
-		return providerschema.ElasticsearchConnectionNullList(), diags
-	}
-
-	var connectionObjects []elasticsearchConnectionObject
-	if err := json.Unmarshal([]byte(connectionJSON), &connectionObjects); err != nil {
-		diags.AddError("Failed to parse elasticsearch_connection from ephemeral private data", err.Error())
-		return providerschema.ElasticsearchConnectionNullList(), diags
-	}
-
-	objectValues := make([]attr.Value, 0, len(connectionObjects))
-	for _, connectionObject := range connectionObjects {
-		objectValue, objectDiags := types.ObjectValueFrom(
-			ctx,
-			providerschema.ElasticsearchConnectionObjectType().AttrTypes,
-			map[string]attr.Value{
-				"username":                 connectionObject.Username,
-				"password":                 connectionObject.Password,
-				"api_key":                  connectionObject.APIKey,
-				"bearer_token":             connectionObject.BearerToken,
-				"es_client_authentication": connectionObject.ESClientAuthentication,
-				"endpoints":                connectionObject.Endpoints,
-				"headers":                  connectionObject.Headers,
-				"insecure":                 connectionObject.Insecure,
-				"ca_file":                  connectionObject.CAFile,
-				"ca_data":                  connectionObject.CAData,
-				"cert_file":                connectionObject.CertFile,
-				"cert_data":                connectionObject.CertData,
-				"key_file":                 connectionObject.KeyFile,
-				"key_data":                 connectionObject.KeyData,
-			},
-		)
-		diags.Append(objectDiags...)
-		if diags.HasError() {
-			return providerschema.ElasticsearchConnectionNullList(), diags
-		}
-		objectValues = append(objectValues, objectValue)
-	}
-
-	connection, listDiags := types.ListValue(providerschema.ElasticsearchConnectionObjectType(), objectValues)
-	diags.Append(listDiags...)
-	if diags.HasError() {
-		return providerschema.ElasticsearchConnectionNullList(), diags
-	}
-
-	return connection, diags
 }
