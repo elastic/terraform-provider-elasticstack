@@ -39,7 +39,7 @@ type ephemeralConnectionSnapshot struct {
 	ESClientAuthentication string            `json:"es_client_authentication,omitempty"`
 	Endpoints              []string          `json:"endpoints,omitempty"`
 	Headers                map[string]string `json:"headers,omitempty"`
-	Insecure               bool              `json:"insecure,omitempty"`
+	Insecure               *bool             `json:"insecure,omitempty"`
 	CAFile                 string            `json:"ca_file,omitempty"`
 	CAData                 string            `json:"ca_data,omitempty"`
 	CertFile               string            `json:"cert_file,omitempty"`
@@ -122,7 +122,8 @@ func snapshotFromElasticsearchConnection(ctx context.Context, conn clientconfig.
 		diags.Append(conn.Headers.ElementsAs(ctx, &snapshot.Headers, false)...)
 	}
 	if typeutils.IsKnown(conn.Insecure) && !conn.Insecure.IsNull() {
-		snapshot.Insecure = conn.Insecure.ValueBool()
+		insecure := conn.Insecure.ValueBool()
+		snapshot.Insecure = &insecure
 	}
 	if typeutils.IsKnown(conn.CAFile) && !conn.CAFile.IsNull() {
 		snapshot.CAFile = conn.CAFile.ValueString()
@@ -176,7 +177,7 @@ func elasticsearchConnectionFromSnapshot(snapshot *ephemeralConnectionSnapshot) 
 		APIKey:                 optionalStringValue(snapshot.APIKey),
 		BearerToken:            optionalStringValue(snapshot.BearerToken),
 		ESClientAuthentication: optionalStringValue(snapshot.ESClientAuthentication),
-		Insecure:               optionalBoolValue(snapshot.Insecure),
+		Insecure:               optionalBoolPointerValue(snapshot.Insecure),
 		CAFile:                 optionalStringValue(snapshot.CAFile),
 		CAData:                 optionalStringValue(snapshot.CAData),
 		CertFile:               optionalStringValue(snapshot.CertFile),
@@ -219,9 +220,9 @@ func optionalStringValue(value string) types.String {
 	return types.StringValue(value)
 }
 
-func optionalBoolValue(value bool) types.Bool {
-	if !value {
+func optionalBoolPointerValue(value *bool) types.Bool {
+	if value == nil {
 		return types.BoolNull()
 	}
-	return types.BoolValue(value)
+	return types.BoolValue(*value)
 }

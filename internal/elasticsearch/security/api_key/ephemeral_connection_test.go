@@ -79,3 +79,37 @@ func TestElasticsearchConnectionRoundTrip(t *testing.T) {
 	require.False(t, decodedConn.Headers.ElementsAs(ctx, &headers, false).HasError())
 	require.Equal(t, map[string]string{"X-Custom": "header-value"}, headers)
 }
+
+func TestElasticsearchConnectionRoundTripExplicitInsecureFalse(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	connection, diags := types.ListValueFrom(ctx, providerschema.ElasticsearchConnectionObjectType(), []clientconfig.ElasticsearchConnection{
+		{
+			Username: types.StringValue("elastic"),
+			Password: types.StringValue("secret"),
+			Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+				types.StringValue("https://es.example:9200"),
+			}),
+			Headers:  types.MapNull(types.StringType),
+			Insecure: types.BoolValue(false),
+		},
+	})
+	require.False(t, diags.HasError())
+
+	encoded, encodeDiags := encodeElasticsearchConnection(ctx, connection)
+	require.False(t, encodeDiags.HasError())
+	require.Contains(t, encoded, `"insecure":false`)
+
+	decoded, decodeDiags := decodeElasticsearchConnection(ctx, encoded)
+	require.False(t, decodeDiags.HasError())
+
+	var decodedConnections []clientconfig.ElasticsearchConnection
+	require.False(t, decoded.ElementsAs(ctx, &decodedConnections, false).HasError())
+	require.Len(t, decodedConnections, 1)
+
+	decodedConn := decodedConnections[0]
+	require.False(t, decodedConn.Insecure.IsNull())
+	require.False(t, decodedConn.Insecure.ValueBool())
+}
