@@ -23,7 +23,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -36,7 +35,7 @@ func Test_connectorResponseToModel(t *testing.T) {
 	type testCase struct {
 		name          string
 		spaceID       string
-		response      *kbapi.ConnectorResponse
+		response      *kibanaoapi.ConnectorResponse
 		expectedModel *models.KibanaActionConnector
 		expectedError fwdiag.Diagnostics
 	}
@@ -51,9 +50,9 @@ func Test_connectorResponseToModel(t *testing.T) {
 		{
 			name:    "should map valid connector response to model",
 			spaceID: "default",
-			response: &kbapi.ConnectorResponse{
-				Id:               "test-id",
-				ConnectorTypeId:  ".slack",
+			response: &kibanaoapi.ConnectorResponse{
+				ID:               "test-id",
+				ConnectorTypeID:  ".slack",
 				Name:             "test-connector",
 				IsPreconfigured:  false,
 				IsDeprecated:     false,
@@ -79,9 +78,9 @@ func Test_connectorResponseToModel(t *testing.T) {
 		{
 			name:    "should handle empty config",
 			spaceID: "default",
-			response: &kbapi.ConnectorResponse{
-				Id:               "empty-id",
-				ConnectorTypeId:  ".webhook",
+			response: &kibanaoapi.ConnectorResponse{
+				ID:               "empty-id",
+				ConnectorTypeID:  ".webhook",
 				Name:             "empty-connector",
 				IsPreconfigured:  false,
 				IsDeprecated:     false,
@@ -103,9 +102,9 @@ func Test_connectorResponseToModel(t *testing.T) {
 		{
 			name:    "should handle missing optional fields",
 			spaceID: "default",
-			response: &kbapi.ConnectorResponse{
-				Id:              "missing-fields",
-				ConnectorTypeId: ".webhook",
+			response: &kibanaoapi.ConnectorResponse{
+				ID:              "missing-fields",
+				ConnectorTypeID: ".webhook",
 				Name:            "missing-connector",
 			},
 			expectedModel: &models.KibanaActionConnector{
@@ -123,9 +122,9 @@ func Test_connectorResponseToModel(t *testing.T) {
 		{
 			name:    "should handle non-default spaceId",
 			spaceID: "custom-space",
-			response: &kbapi.ConnectorResponse{
-				Id:               "custom-id",
-				ConnectorTypeId:  ".webhook",
+			response: &kibanaoapi.ConnectorResponse{
+				ID:               "custom-id",
+				ConnectorTypeID:  ".webhook",
 				Name:             "custom-connector",
 				IsPreconfigured:  true,
 				IsDeprecated:     true,
