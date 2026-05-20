@@ -20,6 +20,7 @@ package componenttemplate
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
@@ -67,7 +68,8 @@ func flattenToData(ctx context.Context, tpl *models.ComponentTemplateResponse, p
 	}
 
 	preservedRouting := extractAliasRoutingFromData(prior)
-	templateObj, d := flattenTemplateBlock(ctx, tpl.ComponentTemplate.Template, preservedRouting)
+	priorMappings, priorSettings := extractEmptyObjectOverridesFromData(prior)
+	templateObj, d := flattenTemplateBlock(ctx, tpl.ComponentTemplate.Template, preservedRouting, priorMappings, priorSettings)
 	diags.Append(d...)
 	if diags.HasError() {
 		return out, diags
@@ -78,35 +80,39 @@ func flattenToData(ctx context.Context, tpl *models.ComponentTemplateResponse, p
 }
 
 // flattenTemplateBlock maps the component template's template block into a types.Object.
-func flattenTemplateBlock(ctx context.Context, t *models.Template, preservedRouting map[string]string) (types.Object, diag.Diagnostics) {
+//
+// priorMappings and priorSettings carry the prior Terraform values for
+// `template.mappings` and `template.settings`. They are only consulted when the
+// API response contains no mappings/settings (nil or empty map): if the prior
+// value was a known, semantically-empty JSON object (for example because the
+// practitioner explicitly wrote `mappings = jsonencode({})` in HCL), the prior
+// value is preserved in state. This avoids the post-apply consistency error
+// the Plugin Framework raises when the planned value `"{}"` collides with a
+// flattened state value of `null`, since the framework short-circuits its
+// semantic-equality check when either side of the comparison is null.
+func flattenTemplateBlock(
+	ctx context.Context,
+	t *models.Template,
+	preservedRouting map[string]string,
+	priorMappings esindex.MappingsValue,
+	priorSettings customtypes.IndexSettingsValue,
+) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if t == nil {
 		return types.ObjectNull(templateAttrTypes()), diags
 	}
 
-	var mappings esindex.MappingsValue
-	if len(t.Mappings) > 0 {
-		b, err := json.Marshal(t.Mappings)
-		if err != nil {
-			diags.AddError("Failed to marshal template.mappings", err.Error())
-			return types.ObjectNull(templateAttrTypes()), diags
-		}
-		mappings = esindex.NewMappingsValue(string(b))
-	} else {
-		mappings = esindex.NewMappingsNull()
+	mappings, mappingsDiags := flattenMappings(t.Mappings, priorMappings)
+	diags.Append(mappingsDiags...)
+	if diags.HasError() {
+		return types.ObjectNull(templateAttrTypes()), diags
 	}
 
-	var settings customtypes.IndexSettingsValue
-	if len(t.Settings) > 0 {
-		b, err := json.Marshal(t.Settings)
-		if err != nil {
-			diags.AddError("Failed to marshal template.settings", err.Error())
-			return types.ObjectNull(templateAttrTypes()), diags
-		}
-		settings = customtypes.NewIndexSettingsValue(string(b))
-	} else {
-		settings = customtypes.NewIndexSettingsNull()
+	settings, settingsDiags := flattenSettings(t.Settings, priorSettings)
+	diags.Append(settingsDiags...)
+	if diags.HasError() {
+		return types.ObjectNull(templateAttrTypes()), diags
 	}
 
 	aliasSet, d := flattenAliasSet(ctx, t.Aliases, preservedRouting)
@@ -194,6 +200,109 @@ func flattenAliasElement(name string, a models.IndexAlias, preservedRouting map[
 	obj, d := types.ObjectValue(aliasAttrTypes(), attrs)
 	diags.Append(d...)
 	return obj, diags
+}
+
+// flattenMappings maps the API mappings response onto a MappingsValue, applying
+// the prior-preservation rule when the API returns no mappings.
+func flattenMappings(apiMappings map[string]any, prior esindex.MappingsValue) (esindex.MappingsValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if len(apiMappings) > 0 {
+		b, err := json.Marshal(apiMappings)
+		if err != nil {
+			diags.AddError("Failed to marshal template.mappings", err.Error())
+			return esindex.NewMappingsNull(), diags
+		}
+		return esindex.NewMappingsValue(string(b)), diags
+	}
+	if isKnownSemanticallyEmptyMappings(prior) {
+		return prior, diags
+	}
+	return esindex.NewMappingsNull(), diags
+}
+
+// flattenSettings maps the API settings response onto an IndexSettingsValue,
+// applying the prior-preservation rule when the API returns no settings.
+func flattenSettings(apiSettings map[string]any, prior customtypes.IndexSettingsValue) (customtypes.IndexSettingsValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if len(apiSettings) > 0 {
+		b, err := json.Marshal(apiSettings)
+		if err != nil {
+			diags.AddError("Failed to marshal template.settings", err.Error())
+			return customtypes.NewIndexSettingsNull(), diags
+		}
+		return customtypes.NewIndexSettingsValue(string(b)), diags
+	}
+	if isKnownSemanticallyEmptySettings(prior) {
+		return prior, diags
+	}
+	return customtypes.NewIndexSettingsNull(), diags
+}
+
+// isKnownSemanticallyEmptyMappings reports whether a prior MappingsValue is a
+// known, non-empty string that nevertheless decodes to a zero-length JSON
+// object (for example `{}` or whitespace-padded variants). The flatten layer
+// uses this signal to preserve a practitioner-authored empty-object value in
+// state when the Elasticsearch GET response omits the mappings field entirely.
+func isKnownSemanticallyEmptyMappings(v esindex.MappingsValue) bool {
+	if v.IsNull() || v.IsUnknown() {
+		return false
+	}
+	return isEmptyJSONObject(v.ValueString())
+}
+
+// isKnownSemanticallyEmptySettings is the IndexSettingsValue counterpart to
+// isKnownSemanticallyEmptyMappings.
+func isKnownSemanticallyEmptySettings(v customtypes.IndexSettingsValue) bool {
+	if v.IsNull() || v.IsUnknown() {
+		return false
+	}
+	return isEmptyJSONObject(v.ValueString())
+}
+
+// isEmptyJSONObject reports whether s is a semantically-empty JSON object —
+// either whitespace-only, the literal `{}`, or any JSON object that unmarshals
+// to a zero-length, non-nil map. It returns false when the value is non-empty,
+// an array, a scalar, the JSON literal `null`, or invalid JSON, so a malformed
+// or non-object payload never falsely counts as empty.
+func isEmptyJSONObject(s string) bool {
+	trimmed := strings.TrimSpace(s)
+	if trimmed == "" {
+		return true
+	}
+	var m map[string]any
+	if err := json.Unmarshal([]byte(trimmed), &m); err != nil {
+		return false
+	}
+	// JSON `null` unmarshals to a nil map; reject it explicitly so the
+	// practitioner-empty-object check only fires for actual `{}` payloads.
+	if m == nil {
+		return false
+	}
+	return len(m) == 0
+}
+
+// extractEmptyObjectOverridesFromData pulls the prior mappings and settings
+// values out of a prior Data so flattenTemplateBlock can preserve them when
+// the API omits the corresponding field. Returns null values when the prior
+// template block is absent or carries a non-string attribute shape.
+func extractEmptyObjectOverridesFromData(prior Data) (esindex.MappingsValue, customtypes.IndexSettingsValue) {
+	if prior.Template.IsNull() || prior.Template.IsUnknown() {
+		return esindex.NewMappingsNull(), customtypes.NewIndexSettingsNull()
+	}
+
+	tplAttrs := prior.Template.Attributes()
+
+	mappings := esindex.NewMappingsNull()
+	if mv, ok := tplAttrs["mappings"].(esindex.MappingsValue); ok {
+		mappings = mv
+	}
+
+	settings := customtypes.NewIndexSettingsNull()
+	if sv, ok := tplAttrs["settings"].(customtypes.IndexSettingsValue); ok {
+		settings = sv
+	}
+
+	return mappings, settings
 }
 
 // extractAliasRoutingFromData extracts user-configured alias routing values from
