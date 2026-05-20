@@ -28,6 +28,10 @@ description: |-
 
 {{ tffile "examples/resources/elasticstack_fleet_output/remote_elasticsearch.tf" }}
 
+### Logstash output
+
+{{ tffile "examples/resources/elasticstack_fleet_output/logstash.tf" }}
+
 {{ .SchemaMarkdown | trimspace }}
 {{- if or .HasImport .HasImportIDConfig .HasImportIdentityConfig }}
 
