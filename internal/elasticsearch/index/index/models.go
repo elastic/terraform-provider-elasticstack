@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -189,15 +190,7 @@ type tfModel struct {
 	Settings                           types.List           `tfsdk:"settings"`
 }
 
-type aliasTfModel struct {
-	Name          types.String         `tfsdk:"name"`
-	Filter        jsontypes.Normalized `tfsdk:"filter"`
-	IndexRouting  types.String         `tfsdk:"index_routing"`
-	IsHidden      types.Bool           `tfsdk:"is_hidden"`
-	IsWriteIndex  types.Bool           `tfsdk:"is_write_index"`
-	Routing       types.String         `tfsdk:"routing"`
-	SearchRouting types.String         `tfsdk:"search_routing"`
-}
+type aliasTfModel = aliasutil.AliasModel
 
 type settingsTfSet struct {
 	Setting types.Set `tfsdk:"setting"`
@@ -273,7 +266,7 @@ func (model *tfModel) populateFromAPI(ctx context.Context, indexName string, api
 func aliasesFromAPI(ctx context.Context, apiModel estypes.IndexState) (basetypes.SetValue, diag.Diagnostics) {
 	aliases := []aliasTfModel{}
 	for name, alias := range apiModel.Aliases {
-		tfAlias, diags := newAliasModelFromAPI(name, alias)
+		tfAlias, diags := aliasutil.NewAliasModelFromAPI(name, alias)
 		if diags.HasError() {
 			return basetypes.SetValue{}, diags
 		}
@@ -323,7 +316,7 @@ func (model tfModel) toAPIModel(ctx context.Context) (models.Index, diag.Diagnos
 		}
 
 		for _, planAlias := range planAliases {
-			apiAlias, diags := planAlias.toAPIModel()
+			apiAlias, diags := aliasTfModelToAPIModel(planAlias)
 			if diags.HasError() {
 				return models.Index{}, diags
 			}
@@ -585,7 +578,7 @@ func convertSettingsKeyToTFFieldKey(settingKey string) string {
 	return strings.ReplaceAll(settingKey, ".", "_")
 }
 
-func (model aliasTfModel) toAPIModel() (models.IndexAlias, diag.Diagnostics) {
+func aliasTfModelToAPIModel(model aliasutil.AliasModel) (models.IndexAlias, diag.Diagnostics) {
 	apiModel := models.IndexAlias{
 		Name:          model.Name.ValueString(),
 		IndexRouting:  model.IndexRouting.ValueString(),
@@ -602,40 +595,6 @@ func (model aliasTfModel) toAPIModel() (models.IndexAlias, diag.Diagnostics) {
 	}
 
 	return apiModel, nil
-}
-
-func newAliasModelFromAPI(name string, apiModel estypes.Alias) (aliasTfModel, diag.Diagnostics) {
-	tfAlias := aliasTfModel{
-		Name:          types.StringValue(name),
-		IndexRouting:  types.StringValue(typeutils.Deref(apiModel.IndexRouting)),
-		IsHidden:      types.BoolValue(typeutils.Deref(apiModel.IsHidden)),
-		IsWriteIndex:  types.BoolValue(typeutils.Deref(apiModel.IsWriteIndex)),
-		Routing:       types.StringValue(typeutils.Deref(apiModel.Routing)),
-		SearchRouting: types.StringValue(typeutils.Deref(apiModel.SearchRouting)),
-	}
-
-	if apiModel.Filter != nil {
-		filterBytes, err := json.Marshal(apiModel.Filter)
-		if err != nil {
-			return aliasTfModel{}, diag.Diagnostics{
-				diag.NewErrorDiagnostic("failed to marshal alias filter", err.Error()),
-			}
-		}
-		var filterMap map[string]any
-		if err := json.Unmarshal(filterBytes, &filterMap); err != nil {
-			return aliasTfModel{}, diag.Diagnostics{
-				diag.NewErrorDiagnostic("failed to unmarshal alias filter", err.Error()),
-			}
-		}
-		normalized := elasticsearch.NormalizeQueryFilter(filterMap)
-		if nm, ok := normalized.(map[string]any); ok {
-			filterMap = nm
-		}
-		normalizedBytes, _ := json.Marshal(filterMap)
-		tfAlias.Filter = jsontypes.NewNormalizedValue(string(normalizedBytes))
-	}
-
-	return tfAlias, nil
 }
 
 func indexStateToModel(state estypes.IndexState) (models.Index, diag.Diagnostics) {
