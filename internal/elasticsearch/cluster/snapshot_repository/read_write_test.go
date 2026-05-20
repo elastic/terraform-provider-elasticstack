@@ -91,9 +91,9 @@ func TestStrSettingNull(t *testing.T) {
 
 	settings := map[string]any{"present": "value", "empty": ""}
 
-	require.True(t, strSettingNull(settings, "missing").IsNull())
-	require.Equal(t, "value", strSettingNull(settings, "present").ValueString())
-	require.Empty(t, strSettingNull(settings, "empty").ValueString())
+	require.True(t, StrSettingNull(settings, "missing").IsNull())
+	require.Equal(t, "value", StrSettingNull(settings, "present").ValueString())
+	require.Empty(t, StrSettingNull(settings, "empty").ValueString())
 }
 
 func TestFsToSettingsDefaults(t *testing.T) {
