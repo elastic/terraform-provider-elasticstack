@@ -837,6 +837,51 @@ func TestPolicyTemplateAndDataStreamsFromPackageInfo_GCP_VertexAI(t *testing.T) 
 	assert.True(t, auditDatastream.Streams[0].Enabled)
 }
 
+func TestPackageInfoToDefaults_InputPackage(t *testing.T) {
+	// Input-type packages (e.g. gcp_pubsub) declare a single `input` and a
+	// flat `vars` list on each policy template. Kibana materialises these as
+	// a stream named "<package>.<template>" under an input keyed
+	// "<template>-<input>". Verify defaults extraction surfaces those stream
+	// vars (including server-injected ones like data_stream.dataset) so that
+	// semantic equality can reconcile planned vs applied state.
+	pkgJSON := `{
+		"name": "gcp_pubsub",
+		"version": "2.31.1",
+		"policy_templates": [
+			{
+				"name": "gcp",
+				"input": "gcp-pubsub",
+				"vars": [
+					{"name": "data_stream.dataset", "type": "text", "default": "gcp_pubsub.generic"},
+					{"name": "project_id", "type": "text"},
+					{"name": "tags", "type": "text", "multi": true, "default": ["forwarded"]}
+				]
+			}
+		]
+	}`
+
+	var pkg kbapi.PackageInfo
+	require.NoError(t, json.Unmarshal([]byte(pkgJSON), &pkg))
+
+	result, diags := packageInfoToDefaults(&pkg)
+	require.False(t, diags.HasError(), "Expected no error but got: %v", diags)
+
+	inputDefaults, ok := result["gcp-gcp-pubsub"]
+	require.True(t, ok, "Expected input id 'gcp-gcp-pubsub' in defaults, got: %v", result)
+
+	streamDefaults, ok := inputDefaults.Streams["gcp_pubsub.gcp"]
+	require.True(t, ok, "Expected stream id 'gcp_pubsub.gcp' for input")
+	assert.Equal(t, types.BoolValue(true), streamDefaults.Enabled)
+
+	var streamVars map[string]any
+	require.NoError(t, json.Unmarshal([]byte(streamDefaults.Vars.ValueString()), &streamVars))
+	assert.Equal(t, "gcp_pubsub.generic", streamVars["data_stream.dataset"])
+	assert.Equal(t, []any{"forwarded"}, streamVars["tags"])
+	// project_id has no default; it should not appear in defaults.
+	_, hasProjectID := streamVars["project_id"]
+	assert.False(t, hasProjectID, "vars without defaults should be omitted")
+}
+
 func TestInputDefaultsModel_Integration(t *testing.T) {
 	// This test ensures that the defaults model structure correctly represents
 	// the data needed for integration policies

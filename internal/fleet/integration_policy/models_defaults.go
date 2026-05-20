@@ -39,8 +39,15 @@ type inputDefaultsStreamModel struct {
 
 type apiPolicyTemplates []apiPolicyTemplate
 type apiPolicyTemplate struct {
-	Name   string                   `json:"name"`
+	Name string `json:"name"`
+	// Inputs is populated for integration-type packages where each policy template
+	// declares one or more nested inputs with their own vars.
 	Inputs []apiPolicyTemplateInput `json:"inputs"`
+	// Input and Vars are populated for input-type packages where the policy template
+	// declares a single input and vars are defined at the policy-template level.
+	// Kibana copies these vars onto an implicit stream named "<package>.<template>".
+	Input string  `json:"input"`
+	Vars  apiVars `json:"vars"`
 }
 
 type apiPolicyTemplateInput struct {
@@ -179,7 +186,84 @@ func packageInfoToDefaults(pkg *kbapi.PackageInfo) (map[string]inputDefaultsMode
 		}
 	}
 
+	// For input-type packages, vars are declared on the policy template itself
+	// and Kibana exposes them on an implicit stream named "<package>.<template>"
+	// attached to an input keyed "<template>-<input>".
+	inputPackageDefaults, inputPkgDiags := inputPackagePolicyTemplatesToDefaults(pkg, policyTemplates)
+	diags.Append(inputPkgDiags...)
+	if diags.HasError() {
+		return nil, diags
+	}
+	for inputID, inputDefaults := range inputPackageDefaults {
+		existing, ok := defaults[inputID]
+		if !ok {
+			defaults[inputID] = inputDefaults
+			continue
+		}
+
+		if !existing.Vars.IsNull() && !existing.Vars.IsUnknown() {
+			inputDefaults.Vars = existing.Vars
+		}
+		if existing.Streams != nil {
+			merged := make(map[string]inputDefaultsStreamModel, len(existing.Streams)+len(inputDefaults.Streams))
+			for k, v := range existing.Streams {
+				merged[k] = v
+			}
+			for k, v := range inputDefaults.Streams {
+				if _, present := merged[k]; !present {
+					merged[k] = v
+				}
+			}
+			inputDefaults.Streams = merged
+		}
+		defaults[inputID] = inputDefaults
+	}
+
 	return defaults, diags
+}
+
+// inputPackagePolicyTemplatesToDefaults derives default input/stream entries for
+// input-type Fleet packages. Such packages declare a single `input` and a flat
+// `vars` list on each policy template; Kibana materialises these as a stream
+// named "<package>.<template>" under an input keyed "<template>-<input>".
+func inputPackagePolicyTemplatesToDefaults(pkg *kbapi.PackageInfo, policyTemplates apiPolicyTemplates) (map[string]inputDefaultsModel, diag.Diagnostics) {
+	if pkg == nil || pkg.Name == "" {
+		return nil, nil
+	}
+
+	defaults := map[string]inputDefaultsModel{}
+	for _, policyTemplate := range policyTemplates {
+		if policyTemplate.Input == "" || len(policyTemplate.Vars) == 0 {
+			continue
+		}
+
+		varDefaults, diags := policyTemplate.Vars.defaults()
+		if diags.HasError() {
+			return nil, diags
+		}
+
+		inputID := fmt.Sprintf("%s-%s", policyTemplate.Name, policyTemplate.Input)
+		streamID := fmt.Sprintf("%s.%s", pkg.Name, policyTemplate.Name)
+
+		streams, ok := defaults[inputID].Streams, true
+		if streams == nil {
+			streams = map[string]inputDefaultsStreamModel{}
+			ok = false
+		}
+		streams[streamID] = inputDefaultsStreamModel{
+			Enabled: types.BoolValue(true),
+			Vars:    varDefaults,
+		}
+
+		existing := defaults[inputID]
+		if !ok {
+			existing.Vars = jsontypes.NewNormalizedNull()
+		}
+		existing.Streams = streams
+		defaults[inputID] = existing
+	}
+
+	return defaults, nil
 }
 
 func varsFromPackageInfo(pkg *kbapi.PackageInfo) (apiVars, diag.Diagnostics) {

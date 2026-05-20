@@ -818,6 +818,58 @@ func TestAccResourceIntegrationPolicyGCPVertexAI(t *testing.T) {
 	})
 }
 
+func TestAccResourceIntegrationPolicyGCPPubSub(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegrationPolicy, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.pubsub", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.pubsub", "namespace", ""),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.pubsub", "integration_name", "gcp_pubsub"),
+					resource.TestCheckResourceAttrPair(
+						"elasticstack_fleet_integration_policy.pubsub", "integration_version",
+						"data.elasticstack_fleet_integration.pubsub", "version",
+					),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration_policy.pubsub", "agent_policy_id"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.pubsub", "inputs.gcp-gcp-pubsub.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.pubsub", "inputs.gcp-gcp-pubsub.streams.gcp_pubsub.gcp.enabled", "true"),
+					resource.TestMatchResourceAttr(
+						"elasticstack_fleet_integration_policy.pubsub",
+						"inputs.gcp-gcp-pubsub.streams.gcp_pubsub.gcp.vars",
+						regexp.MustCompile(`"project_id":"my-project"`),
+					),
+					resource.TestMatchResourceAttr(
+						"elasticstack_fleet_integration_policy.pubsub",
+						"inputs.gcp-gcp-pubsub.streams.gcp_pubsub.gcp.vars",
+						regexp.MustCompile(`"topic":"my-topic"`),
+					),
+					resource.TestMatchResourceAttr(
+						"elasticstack_fleet_integration_policy.pubsub",
+						"inputs.gcp-gcp-pubsub.streams.gcp_pubsub.gcp.vars",
+						regexp.MustCompile(`"subscription_name":"my-sub"`),
+					),
+					resource.TestMatchResourceAttr(
+						"elasticstack_fleet_integration_policy.pubsub",
+						"inputs.gcp-gcp-pubsub.streams.gcp_pubsub.gcp.vars",
+						regexp.MustCompile(`"tags":\["forwarded"\]`),
+					),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceIntegrationPolicy_VersionUpdate(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionIntegrationPolicy, versionutils.FlavorAny)
 
