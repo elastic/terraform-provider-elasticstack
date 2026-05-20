@@ -7,6 +7,7 @@
 
 ### Changes
 
+- Fix "Provider produced inconsistent result after apply" when `elasticstack_elasticsearch_ml_datafeed_state` is configured with an explicit `start` or `end` ([#2353](https://github.com/elastic/terraform-provider-elasticstack/issues/2353)). User-supplied `start`/`end` are now preserved in state; add computed `effective_search_start` and `effective_search_end` for Elasticsearch's active search interval. Existing state may show a one-time plan diff on `start` when it previously held the ES-reported value.
 - Fix `elasticstack_kibana_security_detection_rule` `actions.alerts_filter` with structured nested blocks; migrate `actions` and `frequency` to block syntax. ([#3123](https://github.com/elastic/terraform-provider-elasticstack/pull/3123))
 - Add support for configuring Agent Builder skills ([#3006](https://github.com/elastic/terraform-provider-elasticstack/pull/3006))
 - Add `elasticstack_elasticsearch_index_mappings` resource for managing a subset of mappings on an existing index ([#3121](https://github.com/elastic/terraform-provider-elasticstack/pull/3121))

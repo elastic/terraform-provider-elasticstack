@@ -114,3 +114,8 @@ resource "elasticstack_elasticsearch_ml_datafeed_state" "non-realtime" {
     ignore_changes = ["state"]
   }
 }
+
+output "effective_search_start" {
+  description = "Elasticsearch's effective search start (may differ from the configured start after bucket alignment or first-document snap-forward)."
+  value       = elasticstack_elasticsearch_ml_datafeed_state.non-realtime.effective_search_start
+}
