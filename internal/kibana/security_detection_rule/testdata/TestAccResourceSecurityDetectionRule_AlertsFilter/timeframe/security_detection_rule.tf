@@ -40,7 +40,7 @@ resource "elasticstack_kibana_action_connector" "test" {
 
 resource "elasticstack_kibana_security_detection_rule" "test" {
   name        = var.name
-  description = "Test security detection rule with connector action"
+  description = "Test security detection rule with alerts_filter timeframe"
   type        = "query"
   severity    = "medium"
   risk_score  = 50
@@ -51,22 +51,12 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   to          = "now"
   interval    = "5m"
   index       = ["logs-*"]
-  namespace   = "connector-action-namespace"
-
-  risk_score_mapping = [
-    {
-      field      = "user.privileged"
-      operator   = "equals"
-      value      = "true"
-      risk_score = 75
-    }
-  ]
 
   actions = [{
     action_type_id = ".cases-webhook"
     id             = elasticstack_kibana_action_connector.test.connector_id
     params = jsonencode({
-      message = "CRITICAL EQL Alert: PowerShell process detected"
+      message = "Alert with alerts_filter timeframe"
     })
     group = "default"
     frequency = {
@@ -74,6 +64,17 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       summary     = true
       throttle    = "10m"
     }
+    alerts_filter = {
+      query = {
+        kql          = "event.action : \"test_case_b\""
+        filters_json = jsonencode([])
+      }
+      timeframe = {
+        days        = [1, 2, 3, 4, 5]
+        timezone    = "UTC"
+        hours_start = "08:00"
+        hours_end   = "17:00"
+      }
+    }
   }]
 }
-
