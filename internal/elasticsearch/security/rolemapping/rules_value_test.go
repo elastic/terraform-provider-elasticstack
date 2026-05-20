@@ -30,9 +30,9 @@ func TestNormalizedRulesValue_StringSemanticEquals(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name     string
-		a        string
-		b        string
+		name      string
+		a         string
+		b         string
 		wantEqual bool
 	}{
 		{
