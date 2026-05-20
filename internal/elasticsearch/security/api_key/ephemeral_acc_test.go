@@ -19,10 +19,10 @@ package apikey_test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"maps"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -220,16 +220,12 @@ func ephemeralESEndpoints() []string {
 
 func checkEchoCaptureInt64Equals(field string, expected int64) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
-		rawValue, err := echoCaptureValue(state, field)
+		value, err := echoCaptureInt64(state, field)
 		if err != nil {
 			return err
 		}
-		value, ok := rawValue.(float64)
-		if !ok {
-			return fmt.Errorf("expected echo.capture.data.%s to be a number, got %#v", field, rawValue)
-		}
-		if int64(value) != expected {
-			return fmt.Errorf("expected echo.capture.data.%s to be %d, got %d", field, expected, int64(value))
+		if value != expected {
+			return fmt.Errorf("expected echo.capture.data.%s to be %d, got %d", field, expected, value)
 		}
 		return nil
 	}
@@ -286,13 +282,12 @@ func checkEphemeralAPIKeyExistsInElasticsearch(expectInvalidated bool) resource.
 
 func checkEchoCaptureInt64GreaterThanZero(field string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
-		rawValue, err := echoCaptureValue(state, field)
+		value, err := echoCaptureInt64(state, field)
 		if err != nil {
 			return err
 		}
-		value, ok := rawValue.(float64)
-		if !ok || value <= 0 {
-			return fmt.Errorf("expected echo.capture.data.%s to be a positive number, got %#v", field, rawValue)
+		if value <= 0 {
+			return fmt.Errorf("expected echo.capture.data.%s to be a positive number, got %d", field, value)
 		}
 		return nil
 	}
@@ -321,32 +316,37 @@ func echoCaptureString(state *terraform.State, field string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	stringValue, ok := value.(string)
-	if !ok || stringValue == "" {
-		return "", fmt.Errorf("expected echo.capture.data.%s to be a non-empty string, got %#v", field, value)
+	if value == "" {
+		return "", fmt.Errorf("expected echo.capture.data.%s to be a non-empty string", field)
 	}
-	return stringValue, nil
+	return value, nil
 }
 
-func echoCaptureValue(state *terraform.State, field string) (any, error) {
+func echoCaptureInt64(state *terraform.State, field string) (int64, error) {
+	value, err := echoCaptureValue(state, field)
+	if err != nil {
+		return 0, err
+	}
+
+	parsed, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("expected echo.capture.data.%s to be a number, got %q", field, value)
+	}
+	return parsed, nil
+}
+
+func echoCaptureValue(state *terraform.State, field string) (string, error) {
 	resourceState, ok := state.RootModule().Resources["echo.capture"]
 	if !ok {
-		return nil, fmt.Errorf("echo.capture resource not found in state")
+		return "", fmt.Errorf("echo.capture resource not found in state")
 	}
 
-	dataJSON, ok := resourceState.Primary.Attributes["data"]
+	// The echo provider stores dynamic object data in state as flattened
+	// attributes (for example data.key_id), not as a single JSON blob.
+	attrKey := fmt.Sprintf("data.%s", field)
+	value, ok := resourceState.Primary.Attributes[attrKey]
 	if !ok {
-		return nil, fmt.Errorf("echo.capture.data attribute not found in state")
-	}
-
-	var data map[string]any
-	if err := json.Unmarshal([]byte(dataJSON), &data); err != nil {
-		return nil, fmt.Errorf("failed to parse echo.capture.data: %w", err)
-	}
-
-	value, ok := data[field]
-	if !ok {
-		return nil, fmt.Errorf("field %q not found in echo.capture.data", field)
+		return "", fmt.Errorf("echo.capture.data.%s attribute not found in state", field)
 	}
 	return value, nil
 }
