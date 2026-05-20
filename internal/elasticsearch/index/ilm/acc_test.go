@@ -616,7 +616,7 @@ func TestAccResourceILMWarmDownsampleAndShrink(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "name", policyName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "warm.allocate.number_of_replicas", "1"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "warm.allocate.total_shards_per_node", "-1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "warm.allocate.total_shards_per_node", "5"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "warm.allocate.exclude", `{"box_type":"hot"}`),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "warm.allocate.include"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "warm.allocate.require"),
@@ -667,7 +667,7 @@ func TestAccResourceILMColdAllocateAndDownsample(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "name", policyName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "cold.allocate.number_of_replicas", "0"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "cold.allocate.total_shards_per_node", "-1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "cold.allocate.total_shards_per_node", "4"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "cold.allocate.include"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "cold.allocate.exclude"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "cold.allocate.require"),
