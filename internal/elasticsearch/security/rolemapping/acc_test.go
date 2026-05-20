@@ -60,7 +60,7 @@ func TestAccResourceSecurityRoleMapping(t *testing.T) {
 						resource.TestCheckResourceAttr(roleMappingResourceName, "name", roleMappingName),
 						resource.TestCheckResourceAttr(roleMappingResourceName, "enabled", "true"),
 						checks.TestCheckResourceListAttr(roleMappingResourceName, "roles", []string{"admin"}),
-						resource.TestCheckResourceAttr(roleMappingResourceName, "rules", `{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`),
+						resource.TestCheckResourceAttr(roleMappingResourceName, "rules", `{"any":[{"field":{"username":["esadmin"]}},{"field":{"groups":["cn=admins,dc=example,dc=com"]}}]}`),
 						resource.TestCheckResourceAttr(roleMappingResourceName, "metadata", `{"version":1}`),
 					),
 				},
@@ -75,7 +75,7 @@ func TestAccResourceSecurityRoleMapping(t *testing.T) {
 						resource.TestCheckResourceAttr(roleMappingResourceName, "name", roleMappingName),
 						resource.TestCheckResourceAttr(roleMappingResourceName, "enabled", "false"),
 						checks.TestCheckResourceListAttr(roleMappingResourceName, "roles", []string{"admin", "user"}),
-						resource.TestCheckResourceAttr(roleMappingResourceName, "rules", `{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`),
+						resource.TestCheckResourceAttr(roleMappingResourceName, "rules", `{"any":[{"field":{"username":["esadmin"]}},{"field":{"groups":["cn=admins,dc=example,dc=com"]}}]}`),
 						resource.TestCheckResourceAttr(roleMappingResourceName, "metadata", `{}`),
 					),
 				},
@@ -91,7 +91,7 @@ func TestAccResourceSecurityRoleMapping(t *testing.T) {
 						resource.TestCheckResourceAttr(roleMappingResourceName, "enabled", "false"),
 						resource.TestCheckResourceAttr(roleMappingResourceName, "roles.#", "0"),
 						resource.TestCheckResourceAttr(roleMappingResourceName, "role_templates", `[{"format":"json","template":"{\"source\":\"{{#tojson}}groups{{/tojson}}\"}"}]`),
-						resource.TestCheckResourceAttr(roleMappingResourceName, "rules", `{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`),
+						resource.TestCheckResourceAttr(roleMappingResourceName, "rules", `{"any":[{"field":{"username":["esadmin"]}},{"field":{"groups":["cn=admins,dc=example,dc=com"]}}]}`),
 						resource.TestCheckResourceAttr(roleMappingResourceName, "metadata", `{}`),
 					),
 				},
@@ -107,7 +107,7 @@ func TestAccResourceSecurityRoleMapping(t *testing.T) {
 						resource.TestCheckResourceAttr(roleMappingResourceName, "enabled", "true"),
 						resource.TestCheckResourceAttr(roleMappingResourceName, "roles.#", "0"),
 						resource.TestCheckResourceAttr(roleMappingResourceName, "role_templates", `[{"format":"json","template":"{\"source\":\"{{#tojson}}roles{{/tojson}}\"}"}]`),
-						resource.TestCheckResourceAttr(roleMappingResourceName, "rules", `{"any":[{"field":{"username":"poweruser"}},{"field":{"groups":"cn=operators,dc=example,dc=com"}}]}`),
+						resource.TestCheckResourceAttr(roleMappingResourceName, "rules", `{"any":[{"field":{"username":["poweruser"]}},{"field":{"groups":["cn=operators,dc=example,dc=com"]}}]}`),
 						resource.TestCheckResourceAttr(roleMappingResourceName, "metadata", `{}`),
 					),
 				},
@@ -124,6 +124,37 @@ func TestAccResourceSecurityRoleMapping(t *testing.T) {
 			},
 		})
 	}
+}
+
+func TestAccResourceSecurityRoleMappingRulesSingleElementArray(t *testing.T) {
+	roleMappingName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSecurityRoleMappingDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(roleMappingName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(roleMappingResourceName, "id"),
+					resource.TestCheckResourceAttr(roleMappingResourceName, "name", roleMappingName),
+					resource.TestCheckResourceAttr(roleMappingResourceName, "rules", `{"field":{"groups":["project1"]}}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(roleMappingName),
+				},
+				PlanOnly: true,
+			},
+		},
+	})
 }
 
 func TestAccResourceSecurityRoleMappingFromSDK(t *testing.T) {
