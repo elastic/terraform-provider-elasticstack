@@ -35,7 +35,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 var (
@@ -216,7 +215,7 @@ func (model *tfModel) populateFromAPI(ctx context.Context, indexName string, api
 		model.Name = types.StringValue(indexName)
 	}
 
-	modelAliases, diags := aliasesFromAPI(ctx, apiModel)
+	modelAliases, diags := aliasutil.AliasesFromAPI(ctx, apiModel.Aliases, aliasElementType(ctx))
 	if diags.HasError() {
 		return diags
 	}
@@ -258,25 +257,6 @@ func (model *tfModel) populateFromAPI(ctx context.Context, indexName string, api
 	}
 
 	return nil
-}
-
-func aliasesFromAPI(ctx context.Context, apiModel estypes.IndexState) (basetypes.SetValue, diag.Diagnostics) {
-	aliases := []aliasutil.AliasModel{}
-	for name, alias := range apiModel.Aliases {
-		tfAlias, diags := aliasutil.NewAliasModelFromAPI(name, alias)
-		if diags.HasError() {
-			return basetypes.SetValue{}, diags
-		}
-
-		aliases = append(aliases, tfAlias)
-	}
-
-	modelAliases, diags := types.SetValueFrom(ctx, aliasElementType(ctx), aliases)
-	if diags.HasError() {
-		return basetypes.SetValue{}, diags
-	}
-
-	return modelAliases, nil
 }
 
 func setSettingsFromAPI(model *tfModel, apiModel estypes.IndexState) diag.Diagnostics {

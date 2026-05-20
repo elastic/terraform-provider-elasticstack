@@ -187,7 +187,7 @@ func (model *indexTfModel) populateFromAPI(ctx context.Context, indexName string
 	if diags.HasError() {
 		return diags
 	}
-	modelAliases, diags := aliasesFromAPI(ctx, apiModel)
+	modelAliases, diags := aliasutil.AliasesFromAPI(ctx, apiModel.Aliases, aliasElementType())
 	if diags.HasError() {
 		return diags
 	}
@@ -216,25 +216,6 @@ func mappingsFromAPI(apiModel estypes.IndexState) (jsontypes.Normalized, diag.Di
 	}
 
 	return jsontypes.NewNormalizedNull(), nil
-}
-
-func aliasesFromAPI(ctx context.Context, apiModel estypes.IndexState) (basetypes.SetValue, diag.Diagnostics) {
-	aliases := []aliasutil.AliasModel{}
-	for name, alias := range apiModel.Aliases {
-		tfAlias, diags := aliasutil.NewAliasModelFromAPI(name, alias)
-		if diags.HasError() {
-			return basetypes.SetValue{}, diags
-		}
-
-		aliases = append(aliases, tfAlias)
-	}
-
-	modelAliases, diags := types.SetValueFrom(ctx, aliasElementType(), aliases)
-	if diags.HasError() {
-		return basetypes.SetValue{}, diags
-	}
-
-	return modelAliases, nil
 }
 
 func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel estypes.IndexState) diag.Diagnostics {

@@ -18,14 +18,17 @@
 package aliasutil
 
 import (
+	"context"
 	"encoding/json"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // NormalizeAliasFilterMap applies NormalizeQueryFilter to an already-decoded map
@@ -102,4 +105,25 @@ func NewAliasModelFromAPI(name string, apiModel estypes.Alias) (AliasModel, diag
 	tfAlias.Filter = filter
 
 	return tfAlias, nil
+}
+
+// AliasesFromAPI converts an API aliases map into a Terraform types.Set value using the
+// provided element type. The elemType parameter accommodates callers whose aliasElementType
+// helper takes a context argument and those that do not.
+func AliasesFromAPI(ctx context.Context, apiAliases map[string]estypes.Alias, elemType attr.Type) (basetypes.SetValue, diag.Diagnostics) {
+	aliases := []AliasModel{}
+	for name, alias := range apiAliases {
+		tfAlias, diags := NewAliasModelFromAPI(name, alias)
+		if diags.HasError() {
+			return basetypes.SetValue{}, diags
+		}
+		aliases = append(aliases, tfAlias)
+	}
+
+	modelAliases, diags := types.SetValueFrom(ctx, elemType, aliases)
+	if diags.HasError() {
+		return basetypes.SetValue{}, diags
+	}
+
+	return modelAliases, nil
 }
