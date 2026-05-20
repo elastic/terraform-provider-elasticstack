@@ -29,7 +29,7 @@ The normalization algorithm:
 3. Recurse into all child nodes.
 4. Marshal the resulting tree back to a JSON string.
 
-On null or unknown values, or on JSON parse errors, the function SHALL fall back to the standard `jsontypes.Normalized` semantic equality.
+On null or unknown values, the function SHALL compare null-to-null and unknown-to-unknown as equal and any other combination as not equal without diagnostics. On JSON parse errors, the function SHALL fall back to the standard `jsontypes.Normalized` semantic equality.
 
 #### Scenario: Single-element array equals string form
 
