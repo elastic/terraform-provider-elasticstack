@@ -33,13 +33,12 @@ import (
 func deleteILMAttachment(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ tfModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	existingRaw, getTplDiags := elasticsearch.GetComponentTemplate(ctx, client, resourceID)
+	existing, getTplDiags := elasticsearch.GetComponentTemplate(ctx, client, resourceID)
 	if getTplDiags.HasError() {
 		diags.Append(getTplDiags...)
 		return diags
 	}
 
-	existing := toModelComponentTemplateResponse(existingRaw)
 	if existing == nil {
 		tflog.Debug(ctx, "Component template already deleted", map[string]any{
 			"name": resourceID,

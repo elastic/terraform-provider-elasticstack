@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -50,23 +49,45 @@ func PutComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchS
 }
 
 // GetComponentTemplate returns a component template by name.
-func GetComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) (*types.ClusterComponentTemplate, fwdiags.Diagnostics) {
+//
+// We use .Perform() instead of .Do() because the typed client decodes the
+// response through *types.ComponentTemplateSummary, whose Settings field is
+// map[string]IndexSettings and whose hand-coded UnmarshalJSON implementations
+// silently drop any setting sub-key not modeled by the typed structs (e.g.
+// index.search.slowlog.include) and coerce string-encoded scalars such as
+// index.lifecycle.parse_origination_date "true" into typed bool. Decoding
+// into models.ComponentTemplate preserves the raw JSON shape Elasticsearch
+// returns. See issue #3124.
+func GetComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) (*models.ComponentTemplateResponse, fwdiags.Diagnostics) {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	res, err := typedClient.Cluster.GetComponentTemplate().Name(templateName).Do(ctx)
+	res, err := typedClient.Cluster.GetComponentTemplate().Name(templateName).Perform(ctx)
 	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, nil
-		}
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	if len(res.ComponentTemplates) != 1 {
-		detail := fmt.Sprintf("Elasticsearch API returned %d when requested '%s' component template.", len(res.ComponentTemplates), templateName)
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+
+	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to find component template on cluster"); d.HasError() {
+		return nil, d
+	}
+
+	var resp struct {
+		ComponentTemplates []models.ComponentTemplateResponse `json:"component_templates"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&resp); err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	if len(resp.ComponentTemplates) != 1 {
+		detail := fmt.Sprintf("Elasticsearch API returned %d when requested '%s' component template.", len(resp.ComponentTemplates), templateName)
 		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic("Wrong number of templates returned", detail)}
 	}
-	tpl := res.ComponentTemplates[0]
+	tpl := resp.ComponentTemplates[0]
 	return &tpl, nil
 }
 
