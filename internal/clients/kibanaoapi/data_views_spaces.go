@@ -112,6 +112,14 @@ func UpdateDataViewNamespaces(
 		return diags
 	}
 
+	if len(parsed.Objects) == 0 {
+		diags.AddError(
+			"Unexpected response from data view namespace update",
+			responseBodySnippet(resp.Body),
+		)
+		return diags
+	}
+
 	for _, obj := range parsed.Objects {
 		if obj.Error == nil {
 			continue
@@ -130,4 +138,12 @@ func UpdateDataViewNamespaces(
 	}
 
 	return diags
+}
+
+func responseBodySnippet(body []byte) string {
+	const maxLen = 1024
+	if len(body) <= maxLen {
+		return string(body)
+	}
+	return string(body[:maxLen]) + "..."
 }
