@@ -67,11 +67,13 @@ resp, err := client.API.PostSpacesUpdateObjectsSpacesWithResponse(ctx, reqBody, 
 
 This follows the exact pattern used by `UpdateFieldMetadata` in `data_views.go` and other kibanaoapi wrappers. `SpaceAwarePathRequestEditor` is a no-op when `spaceID` is `""` or `"default"`, so the default-space behavior is preserved without any conditional logic.
 
-### Decision 2: Parse and surface per-object errors from the JSON200 body
+### Decision 2: Parse and surface per-object errors from the response body
 
-After the HTTP status check, iterate `resp.JSON200.Objects` and collect any entries where the `Error` field is non-nil. Surface each as a Terraform error diagnostic. This ensures Kibana's soft-failure mode is visible to users.
+After the HTTP status check, parse `resp.Body` and inspect the per-object results returned by Kibana. The generated type for this endpoint is currently `kbapi.PostSpacesUpdateObjectsSpacesResponse`, which exposes the raw `Body`/`HTTPResponse` rather than a typed `JSON200` field, so the implementation should not assume `resp.JSON200.Objects` exists.
 
-The generated type for the response is `kbapi.PostSpacesUpdateObjectsSpacesResponse`. Its `JSON200` field is of type `*kbapi.SpacesUpdateObjectsSpacesResponse`, which has an `Objects` slice. Each element has an `Error` field of a pointer-to-struct type. The implementer should check if `JSON200` is non-nil before iterating, and if `JSON200` is nil but status is 200, treat it as an unexpected response (surface an error diagnostic).
+In `internal/clients/kibanaoapi/data_views_spaces.go`, unmarshal `resp.Body` with `encoding/json` into a small local response struct that models the response shape needed here, for example an `Objects` slice whose elements contain `ID`, `Type`, and optional `Error` fields (`statusCode`, `error`, `message`). After decoding, iterate the parsed objects and collect any entries where `Error` is non-nil, surfacing each as a Terraform error diagnostic. If `json.Unmarshal` fails, or if the response is HTTP 200 but the body cannot be interpreted as the expected object-result payload, treat that as an unexpected response and return an error diagnostic.
+
+If the OpenAPI spec/generator is updated later to emit a typed `JSON200` response for this endpoint, the implementation may use that generated type instead, but this change does not require generator/spec work.
 
 ### Decision 3: Pass `spaceID` from the `Update` call site
 
