@@ -103,6 +103,7 @@ func TestAccResourceIndexMappings_update(t *testing.T) {
 					},
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestMatchResourceAttr(mappingsResourceName, "id", indexMappingsIDRegexp),
 					checkStateMappingsProperties([]string{"title", "body"}, nil),
 				),
 			},
@@ -170,6 +171,7 @@ func TestAccResourceIndexMappings_allTopLevelKeys(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mappingsResourceName, "index", indexName),
+					resource.TestCheckResourceAttrSet(mappingsResourceName, "mappings"),
 					checkStateMappingsTopLevelKeys("dynamic", "_source", "dynamic_templates", "runtime", "properties"),
 					checkStateMappingsDynamic(false),
 					checkStateMappingsSourceEnabled(true),
@@ -343,6 +345,128 @@ func TestAccResourceIndexMappings_indexNotFound(t *testing.T) {
 					"index_name": config.StringVariable(indexName),
 				},
 				ExpectError: regexp.MustCompile(`Index not found`),
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexMappings_indexForceNew(t *testing.T) {
+	indexA := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	indexB := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexMappingsDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexA),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mappingsResourceName, "index", indexA),
+					resource.TestMatchResourceAttr(mappingsResourceName, "id", indexMappingsIDRegexp),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexB),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(mappingsResourceName, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mappingsResourceName, "index", indexB),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexMappings_emptyMappings(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexMappingsDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mappingsResourceName, "index", indexName),
+					resource.TestMatchResourceAttr(mappingsResourceName, "id", indexMappingsIDRegexp),
+					resource.TestCheckResourceAttrSet(mappingsResourceName, "mappings"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexMappings_updateTopLevelKey(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexMappingsDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("base"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					checkStateMappingsProperties([]string{"title"}, nil),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_dynamic"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					checkStateMappingsDynamic(false),
+					checkStateMappingsProperties([]string{"title"}, nil),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_dynamic"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
 			},
 		},
 	})
