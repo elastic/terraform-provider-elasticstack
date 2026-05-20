@@ -75,24 +75,37 @@ func GetSchema(ctx context.Context) schema.Schema {
 				Default:             booldefault.StaticBool(false),
 			},
 			"start": schema.StringAttribute{
-				MarkdownDescription: "The time that the datafeed should start collecting data. When not specified, the datafeed starts in real-time. This value is preserved verbatim in state and is passed to the Start Datafeed API; Elasticsearch may use a different effective search start, which is reported in `effective_search_start`. This property must be specified in RFC 3339 format.",
-				CustomType:          timetypes.RFC3339Type{},
-				Optional:            true,
+				MarkdownDescription: "The time that the datafeed should start collecting data. " +
+					"When not specified, the datafeed starts in real-time. " +
+					"This value is preserved verbatim in state and is passed to the Start Datafeed API; " +
+					"Elasticsearch may use a different effective search start, which is reported in `effective_search_start`. " +
+					"This property must be specified in RFC 3339 format.",
+				CustomType: timetypes.RFC3339Type{},
+				Optional:   true,
 			},
 			"end": schema.StringAttribute{
-				MarkdownDescription: "The time that the datafeed should end collecting data. When not specified, the datafeed continues in real-time. This value is preserved verbatim in state and is passed to the Start Datafeed API; Elasticsearch may use a different effective search end, which is reported in `effective_search_end`. This property must be specified in RFC 3339 format.",
-				CustomType:          timetypes.RFC3339Type{},
-				Optional:            true,
+				MarkdownDescription: "The time that the datafeed should end collecting data. " +
+					"When not specified, the datafeed continues in real-time. " +
+					"This value is preserved verbatim in state and is passed to the Start Datafeed API; " +
+					"Elasticsearch may use a different effective search end, which is reported in `effective_search_end`. " +
+					"This property must be specified in RFC 3339 format.",
+				CustomType: timetypes.RFC3339Type{},
+				Optional:   true,
 			},
 			"effective_search_start": schema.StringAttribute{
-				MarkdownDescription: "The effective search start time reported by Elasticsearch for a started datafeed (`running_state.search_interval.start_ms`). Null when the datafeed is stopped or when `running_state` / `search_interval` is absent.",
-				CustomType:          timetypes.RFC3339Type{},
-				Computed:            true,
+				MarkdownDescription: "The effective search start time reported by Elasticsearch for a started datafeed " +
+					"(`running_state.search_interval.start_ms`). " +
+					"Null when the datafeed is stopped or when `running_state` / `search_interval` is absent.",
+				CustomType: timetypes.RFC3339Type{},
+				Computed:   true,
 			},
 			"effective_search_end": schema.StringAttribute{
-				MarkdownDescription: "The effective search end time reported by Elasticsearch for a started datafeed (`running_state.search_interval.end_ms`). Null when the datafeed is stopped, when `running_state.real_time_configured` is true, or when `running_state` / `search_interval` is absent.",
-				CustomType:          timetypes.RFC3339Type{},
-				Computed:            true,
+				MarkdownDescription: "The effective search end time reported by Elasticsearch for a started datafeed " +
+					"(`running_state.search_interval.end_ms`). " +
+					"Null when the datafeed is stopped, when `running_state.real_time_configured` is true, " +
+					"or when `running_state` / `search_interval` is absent.",
+				CustomType: timetypes.RFC3339Type{},
+				Computed:   true,
 			},
 			"datafeed_timeout": schema.StringAttribute{
 				MarkdownDescription: "Timeout for the operation. Examples: `30s`, `5m`, `1h`. Default is `30s`.",
