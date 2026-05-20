@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -51,6 +52,9 @@ func readMLDatafeedState(ctx context.Context, client *clients.ElasticsearchScope
 	}
 
 	state.ID = types.StringValue(compID.String())
+
+	state.EffectiveSearchStart = timetypes.NewRFC3339Null()
+	state.EffectiveSearchEnd = timetypes.NewRFC3339Null()
 
 	diags.Append(state.SetStartAndEndFromAPI(datafeedStats)...)
 	if diags.HasError() {
