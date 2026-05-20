@@ -22,6 +22,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -76,6 +78,7 @@ func TestAccEphemeralResourceSecurityAPIKey(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					checkElasticstackStateHasNoAPIKeySecrets,
+					checkEchoCaptureInt64Equals("expiration_timestamp", 0),
 					checkEphemeralAPIKeyExistsInElasticsearch(false),
 					cleanupEphemeralAPIKeyFromEchoCapture,
 				),
@@ -160,6 +163,76 @@ func TestAccEphemeralResourceSecurityAPIKeyCrossCluster(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccEphemeralResourceSecurityAPIKeyExplicitConnection(t *testing.T) {
+	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	endpoints := ephemeralESEndpoints()
+	if len(endpoints) == 0 {
+		t.Fatal("ELASTICSEARCH_ENDPOINTS must contain at least one endpoint")
+	}
+
+	versionutils.SkipIfUnsupported(t, apikey.MinVersion, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:               func() { acctest.PreCheck(t) },
+		TerraformVersionChecks: ephemeralTerraformVersionChecks(),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: ephemeralTestProviders(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: func() config.Variables {
+					endpointVars := make([]config.Variable, len(endpoints))
+					for i, ep := range endpoints {
+						endpointVars[i] = config.StringVariable(ep)
+					}
+					return config.Variables{
+						"api_key_name": config.StringVariable(apiKeyName),
+						"endpoints":    config.ListVariable(endpointVars...),
+						"api_key":      config.StringVariable(os.Getenv("ELASTICSEARCH_API_KEY")),
+						"username":     config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")),
+						"password":     config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD")),
+					}
+				}(),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue("echo.capture", tfjsonpath.New("data").AtMapKey("key_id"), knownvalue.NotNull()),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					checkEphemeralAPIKeyExistsInElasticsearch(true),
+				),
+			},
+		},
+	})
+}
+
+func ephemeralESEndpoints() []string {
+	rawEndpoints := os.Getenv("ELASTICSEARCH_ENDPOINTS")
+	parts := strings.Split(rawEndpoints, ",")
+	endpoints := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			endpoints = append(endpoints, part)
+		}
+	}
+	return endpoints
+}
+
+func checkEchoCaptureInt64Equals(field string, expected int64) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		rawValue, err := echoCaptureValue(state, field)
+		if err != nil {
+			return err
+		}
+		value, ok := rawValue.(float64)
+		if !ok {
+			return fmt.Errorf("expected echo.capture.data.%s to be a number, got %#v", field, rawValue)
+		}
+		if int64(value) != expected {
+			return fmt.Errorf("expected echo.capture.data.%s to be %d, got %d", field, expected, int64(value))
+		}
+		return nil
+	}
 }
 
 func checkElasticstackStateHasNoAPIKeySecrets(state *terraform.State) error {
