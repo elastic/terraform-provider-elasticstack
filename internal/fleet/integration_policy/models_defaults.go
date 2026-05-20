@@ -20,6 +20,7 @@ package integrationpolicy
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -206,9 +207,7 @@ func packageInfoToDefaults(pkg *kbapi.PackageInfo) (map[string]inputDefaultsMode
 		}
 		if existing.Streams != nil {
 			merged := make(map[string]inputDefaultsStreamModel, len(existing.Streams)+len(inputDefaults.Streams))
-			for k, v := range existing.Streams {
-				merged[k] = v
-			}
+			maps.Copy(merged, existing.Streams)
 			for k, v := range inputDefaults.Streams {
 				if _, present := merged[k]; !present {
 					merged[k] = v
