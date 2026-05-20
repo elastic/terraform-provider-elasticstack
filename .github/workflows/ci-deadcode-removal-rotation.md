@@ -230,15 +230,6 @@ After recording the filtered candidates, proceed with the main task below.
      - Stop without creating a PR.
 5. **Format** the cleaned files:
    - Run `make fmt`.
-   - If it fails:
-     - Record the attempt as `fmt_failed`:
-       ```
-       go run ./scripts/ci-deadcode-removal-rotation record \
-         --memory /tmp/gh-aw/repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json \
-         --symbol "${{ needs.pre_activation.outputs.symbol }}" \
-         --package "${{ needs.pre_activation.outputs.package }}" \
-         --reason fmt_failed
-       ```
 6. **Open a cleanup PR** using the `create-pull-request` safe output **only** if verification succeeds.
    - Title format: `[deadcode] Remove ${{ needs.pre_activation.outputs.symbol }}`
    - Body must include:
