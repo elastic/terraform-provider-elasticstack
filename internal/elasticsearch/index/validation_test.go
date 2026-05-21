@@ -16,3 +16,80 @@
 // under the License.
 
 package index
+
+import (
+	"context"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+func TestStringIsJSONObject(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name      string
+		validator StringIsJSONObject
+		value     string
+		wantError bool
+	}{
+		{
+			name:      "empty object with zero-value passes",
+			validator: StringIsJSONObject{},
+			value:     "{}",
+			wantError: false,
+		},
+		{
+			name:      "empty object with NonEmpty fails",
+			validator: StringIsJSONObject{NonEmpty: true},
+			value:     "{}",
+			wantError: true,
+		},
+		{
+			name:      "array fails",
+			validator: StringIsJSONObject{},
+			value:     "[]",
+			wantError: true,
+		},
+		{
+			name:      "string fails",
+			validator: StringIsJSONObject{},
+			value:     `"hello"`,
+			wantError: true,
+		},
+		{
+			name:      "number fails",
+			validator: StringIsJSONObject{},
+			value:     "123",
+			wantError: true,
+		},
+		{
+			name:      "valid object with keys and zero-value passes",
+			validator: StringIsJSONObject{},
+			value:     `{"properties":{"title":{"type":"keyword"}}}`,
+			wantError: false,
+		},
+		{
+			name:      "valid object with keys and NonEmpty passes",
+			validator: StringIsJSONObject{NonEmpty: true},
+			value:     `{"properties":{"title":{"type":"keyword"}}}`,
+			wantError: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := validator.StringRequest{
+				ConfigValue: types.StringValue(tc.value),
+			}
+			var resp validator.StringResponse
+			tc.validator.ValidateString(context.Background(), req, &resp)
+
+			hasError := resp.Diagnostics.HasError()
+			if hasError != tc.wantError {
+				t.Errorf("ValidateString(%q) error = %v, wantError = %v; diagnostics: %v", tc.value, hasError, tc.wantError, resp.Diagnostics)
+			}
+		})
+	}
+}
