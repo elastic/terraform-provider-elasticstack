@@ -13,6 +13,8 @@ resource "elasticstack_kibana_agentbuilder_skill" "test" {
   description = "A skill for data source export."
   content     = "Sample content for export."
 
+  tool_ids = ["platform.core.index_explorer"]
+
   referenced_content = [
     {
       name          = "Exported"

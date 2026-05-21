@@ -114,8 +114,8 @@ func TestCalendarEventWireWindowRFC3339(t *testing.T) {
 	start := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
 	end := time.Date(2026, 6, 1, 6, 0, 0, 0, time.UTC)
 	w := calendarEventWire{
-		StartTime: []byte(fmt.Sprintf("%d", start.UnixMilli())),
-		EndTime:   []byte(fmt.Sprintf("%d", end.UnixMilli())),
+		StartTime: fmt.Appendf(nil, "%d", start.UnixMilli()),
+		EndTime:   fmt.Appendf(nil, "%d", end.UnixMilli()),
 	}
 	ws, we, ok := calendarEventWireWindowRFC3339(w)
 	require.True(t, ok)

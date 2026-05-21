@@ -19,12 +19,11 @@ package alias
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 
 	esTypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -144,21 +143,9 @@ func aliasDefinitionToConfig(indexName string, aliasData esTypes.AliasDefinition
 		config.SearchRouting = *aliasData.SearchRouting
 	}
 	if aliasData.Filter != nil {
-		filterBytes, err := json.Marshal(aliasData.Filter)
-		if err != nil {
-			return IndexConfig{}, diag.Diagnostics{
-				diag.NewErrorDiagnostic("failed to marshal alias filter", err.Error()),
-			}
-		}
-		var filterMap map[string]any
-		if err := json.Unmarshal(filterBytes, &filterMap); err != nil {
-			return IndexConfig{}, diag.Diagnostics{
-				diag.NewErrorDiagnostic("failed to unmarshal alias filter", err.Error()),
-			}
-		}
-		normalized := elasticsearch.NormalizeQueryFilter(filterMap)
-		if nm, ok := normalized.(map[string]any); ok {
-			filterMap = nm
+		filterMap, diags := aliasutil.NormalizeAliasFilterAnyToMap(aliasData.Filter)
+		if diags.HasError() {
+			return IndexConfig{}, diags
 		}
 		config.Filter = filterMap
 	}
@@ -219,26 +206,11 @@ func indexFromAlias(indexName string, aliasData esTypes.AliasDefinition) (indexM
 		SearchRouting: typeutils.NonEmptyStringishPointerValue(aliasData.SearchRouting),
 	}
 
-	if aliasData.Filter != nil {
-		filterBytes, err := json.Marshal(aliasData.Filter)
-		if err != nil {
-			return indexModel{}, diag.Diagnostics{
-				diag.NewErrorDiagnostic("failed to marshal alias filter", err.Error()),
-			}
-		}
-		var filterMap map[string]any
-		if err := json.Unmarshal(filterBytes, &filterMap); err != nil {
-			return indexModel{}, diag.Diagnostics{
-				diag.NewErrorDiagnostic("failed to unmarshal alias filter", err.Error()),
-			}
-		}
-		normalized := elasticsearch.NormalizeQueryFilter(filterMap)
-		if nm, ok := normalized.(map[string]any); ok {
-			filterMap = nm
-		}
-		normalizedBytes, _ := json.Marshal(filterMap)
-		index.Filter = jsontypes.NewNormalizedValue(string(normalizedBytes))
+	filter, diags := aliasutil.NormalizeAliasFilterFromAny(aliasData.Filter)
+	if diags.HasError() {
+		return indexModel{}, diags
 	}
+	index.Filter = filter
 
 	return index, nil
 }

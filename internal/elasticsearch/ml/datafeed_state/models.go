@@ -39,6 +39,8 @@ type MLDatafeedStateData struct {
 	Timeout                 customtypes.Duration `tfsdk:"datafeed_timeout"`
 	Start                   timetypes.RFC3339    `tfsdk:"start"`
 	End                     timetypes.RFC3339    `tfsdk:"end"`
+	EffectiveSearchStart    timetypes.RFC3339    `tfsdk:"effective_search_start"`
+	EffectiveSearchEnd      timetypes.RFC3339    `tfsdk:"effective_search_end"`
 	Timeouts                timeouts.Value       `tfsdk:"timeouts"`
 }
 
@@ -63,46 +65,43 @@ func timeInSameLocation(ms int64, source timetypes.RFC3339) (time.Time, diag.Dia
 	return t, nil
 }
 
-func (d *MLDatafeedStateData) SetStartAndEndFromAPI(datafeedStats *estypes.DatafeedStats) diag.Diagnostics {
+// SetEffectiveSearchIntervalFromAPI populates EffectiveSearchStart /
+// EffectiveSearchEnd from running_state.search_interval. Start and End are not
+// touched: they round-trip from config (or prior state) so explicitly-supplied
+// values are never overwritten by the API response.
+func (d *MLDatafeedStateData) SetEffectiveSearchIntervalFromAPI(datafeedStats *estypes.DatafeedStats) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	if datafeed.State(datafeedStats.State.String()) == datafeed.StateStarted {
-		if datafeedStats.RunningState == nil {
-			diags.AddWarning(
-				"Running state was empty for a started datafeed",
-				"The Elasticsearch API returned an empty running state for a Datafeed which was successfully started. Ignoring start and end response values.",
-			)
+	d.EffectiveSearchStart = timetypes.NewRFC3339Null()
+	d.EffectiveSearchEnd = timetypes.NewRFC3339Null()
+
+	if datafeed.State(datafeedStats.State.String()) != datafeed.StateStarted {
+		return diags
+	}
+
+	if datafeedStats.RunningState == nil {
+		diags.AddWarning(
+			"Running state was empty for a started datafeed",
+			"The Elasticsearch API returned an empty running state for a Datafeed which was successfully started. Ignoring effective search interval response values.",
+		)
+		return diags
+	}
+
+	if datafeedStats.RunningState.SearchInterval != nil {
+		startTime, startDiags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.StartMs, d.Start)
+		endTime, endDiags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.EndMs, d.End)
+		diags.Append(startDiags...)
+		diags.Append(endDiags...)
+		if diags.HasError() {
 			return diags
 		}
 
-		if datafeedStats.RunningState.SearchInterval != nil {
-			start, timeDiags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.StartMs, d.Start)
-			diags.Append(timeDiags...)
-			if diags.HasError() {
-				return diags
-			}
-
-			end, timeDiags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.EndMs, d.End)
-			diags.Append(timeDiags...)
-			if diags.HasError() {
-				return diags
-			}
-
-			d.Start = timetypes.NewRFC3339TimeValue(start)
-			d.End = timetypes.NewRFC3339TimeValue(end)
-		}
-
-		if datafeedStats.RunningState.RealTimeConfigured {
-			d.End = timetypes.NewRFC3339Null()
-		}
+		d.EffectiveSearchStart = timetypes.NewRFC3339TimeValue(startTime)
+		d.EffectiveSearchEnd = timetypes.NewRFC3339TimeValue(endTime)
 	}
 
-	if d.Start.IsUnknown() {
-		d.Start = timetypes.NewRFC3339Null()
-	}
-
-	if d.End.IsUnknown() {
-		d.End = timetypes.NewRFC3339Null()
+	if datafeedStats.RunningState.RealTimeConfigured {
+		d.EffectiveSearchEnd = timetypes.NewRFC3339Null()
 	}
 
 	return diags

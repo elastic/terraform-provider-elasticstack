@@ -42,7 +42,7 @@ func TestCompositeIDFromStr(t *testing.T) {
 	t.Run("legacy empty cluster segment", func(t *testing.T) {
 		compID, diags := CompositeIDFromStr("/legacy-resource")
 		require.False(t, diags.HasError())
-		assert.Equal(t, "", compID.ClusterID)
+		assert.Empty(t, compID.ClusterID)
 		assert.Equal(t, "legacy-resource", compID.ResourceID)
 	})
 

@@ -65,6 +65,17 @@ func TestExpandAction(t *testing.T) {
 			},
 		},
 		{
+			name:          "omits replica and shard settings when only routing filter is set",
+			serverVersion: v80,
+			action: []any{map[string]any{
+				"require": `{"zone":"zone-1"}`,
+			}},
+			settings: []string{"number_of_replicas", "total_shards_per_node", "include", "exclude", "require"},
+			expected: map[string]any{
+				"require": map[string]any{"zone": "zone-1"},
+			},
+		},
+		{
 			name:          "filters empty values but keeps skip empty settings",
 			serverVersion: v80,
 			action: []any{map[string]any{

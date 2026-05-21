@@ -206,3 +206,17 @@ The workflow SHALL declare a network policy that allows the default allowlist pl
 - **WHEN** maintainers inspect the authored workflow frontmatter
 - **THEN** `network.allowed` SHALL include `defaults`, `node`, `go`, `elastic.litellm-prod.ai`, and `www.elastic.co`
 
+### Requirement: Reproduction pull requests are created as non-draft
+
+The `reproducer-factory` workflow SHALL configure `safe-outputs.create-pull-request.draft: false` so that every reproduction pull request is created in ready-for-review state. Draft pull requests cannot receive review until manually converted, which prevents the reproduction from being immediately actionable.
+
+#### Scenario: Reproduction PR is immediately reviewable
+- **WHEN** the `reproducer-factory` agent creates the linked reproduction pull request (outcome A)
+- **THEN** the pull request SHALL be created as non-draft (ready for review)
+- **AND** reviewers SHALL be able to start reviewing the reproduction without the maintainer first converting it from draft state
+
+#### Scenario: Maintainer inspects authored workflow safe-output configuration for draft policy
+- **WHEN** maintainers inspect the authored `reproducer-factory` issue-intake workflow `safe-outputs` block
+- **THEN** `safe-outputs.create-pull-request.draft` SHALL be set to `false`
+- **AND** generated workflow artifacts derived from that source SHALL preserve the non-draft policy
+

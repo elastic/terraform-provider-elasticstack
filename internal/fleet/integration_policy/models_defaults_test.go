@@ -35,6 +35,12 @@ var kafkaIntegrationJSON []byte
 //go:embed testdata/integration_gcp_vertexai.json
 var gcpVertexAIIntegrationJSON []byte
 
+//go:embed testdata/integration_gcp_pubsub.json
+var gcpPubSubIntegrationJSON []byte
+
+//go:embed testdata/integration_gcp_pubsub_with_datastreams.json
+var gcpPubSubWithDataStreamsIntegrationJSON []byte
+
 func TestApiVarsDefaults(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -287,7 +293,7 @@ func TestApiPolicyTemplateDefaults(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, diags := tt.templates.defaults()
+			result, diags := tt.templates.defaults("")
 
 			if tt.expectError {
 				require.True(t, diags.HasError(), "Expected error but got none")
@@ -297,7 +303,7 @@ func TestApiPolicyTemplateDefaults(t *testing.T) {
 
 				for _, key := range tt.expectedKeys {
 					assert.Contains(t, result, key, "Expected key %s not found", key)
-					assert.False(t, result[key].IsNull(), "Expected non-null value for key %s", key)
+					assert.False(t, result[key].Vars.IsNull(), "Expected non-null vars for key %s", key)
 				}
 			}
 		})
@@ -835,6 +841,60 @@ func TestPolicyTemplateAndDataStreamsFromPackageInfo_GCP_VertexAI(t *testing.T) 
 	assert.Len(t, auditDatastream.Streams, 1, "Expected 1 stream in gcp_vertexai.auditlogs datastream")
 	assert.Equal(t, "gcp-pubsub", auditDatastream.Streams[0].Input)
 	assert.True(t, auditDatastream.Streams[0].Enabled)
+}
+
+func TestPackageInfoToDefaults_InputPackage(t *testing.T) {
+	// Verify that policy-template vars become stream defaults for input-type packages.
+	var pkg kbapi.PackageInfo
+	require.NoError(t, json.Unmarshal(gcpPubSubIntegrationJSON, &pkg))
+
+	result, diags := packageInfoToDefaults(&pkg)
+	require.False(t, diags.HasError(), "Expected no error but got: %v", diags)
+
+	inputDefaults, ok := result["gcp-gcp-pubsub"]
+	require.True(t, ok, "Expected input id 'gcp-gcp-pubsub' in defaults, got: %v", result)
+
+	streamDefaults, ok := inputDefaults.Streams["gcp_pubsub.gcp"]
+	require.True(t, ok, "Expected stream id 'gcp_pubsub.gcp' for input")
+	assert.Equal(t, types.BoolValue(true), streamDefaults.Enabled)
+
+	var streamVars map[string]any
+	require.NoError(t, json.Unmarshal([]byte(streamDefaults.Vars.ValueString()), &streamVars))
+	assert.Equal(t, "gcp_pubsub.generic", streamVars["data_stream.dataset"])
+	assert.Equal(t, []any{"forwarded"}, streamVars["tags"])
+	// project_id has no default; it should not appear in defaults.
+	_, hasProjectID := streamVars["project_id"]
+	assert.False(t, hasProjectID, "vars without defaults should be omitted")
+}
+
+func TestPackageInfoToDefaults_InputPackage_WithDataStreams(t *testing.T) {
+	// Verify merging of policy-template stream defaults with existing data_stream defaults.
+	var pkg kbapi.PackageInfo
+	require.NoError(t, json.Unmarshal(gcpPubSubWithDataStreamsIntegrationJSON, &pkg))
+
+	result, diags := packageInfoToDefaults(&pkg)
+	require.False(t, diags.HasError(), "Expected no error but got: %v", diags)
+
+	inputDefaults, ok := result["gcp-gcp-pubsub"]
+	require.True(t, ok, "Expected input id 'gcp-gcp-pubsub' in defaults, got: %v", result)
+
+	streamDefaults, ok := inputDefaults.Streams["gcp_pubsub.gcp"]
+	require.True(t, ok, "Expected stream id 'gcp_pubsub.gcp' for input")
+	assert.Equal(t, types.BoolValue(true), streamDefaults.Enabled)
+
+	var streamVars map[string]any
+	require.NoError(t, json.Unmarshal([]byte(streamDefaults.Vars.ValueString()), &streamVars))
+
+	// Datastream default.
+	assert.Equal(t, "default_pipeline", streamVars["pipeline"])
+
+	// Policy-template defaults (merged into existing stream).
+	assert.Equal(t, "gcp_pubsub.generic", streamVars["data_stream.dataset"])
+	assert.Equal(t, []any{"forwarded"}, streamVars["tags"])
+
+	// project_id has no default; it should not appear in defaults.
+	_, hasProjectID := streamVars["project_id"]
+	assert.False(t, hasProjectID, "vars without defaults should be omitted")
 }
 
 func TestInputDefaultsModel_Integration(t *testing.T) {

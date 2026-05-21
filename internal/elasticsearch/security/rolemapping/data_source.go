@@ -58,7 +58,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 			"rules": schema.StringAttribute{
 				MarkdownDescription: "The rules that determine which users should be matched by the mapping. A rule is a logical condition that is expressed by using a JSON DSL.",
 				Computed:            true,
-				CustomType:          jsontypes.NormalizedType{},
+				CustomType:          NormalizedRulesType{},
 			},
 			"roles": schema.SetAttribute{
 				MarkdownDescription: "A list of role names that are granted to the users that match the role mapping rules.",

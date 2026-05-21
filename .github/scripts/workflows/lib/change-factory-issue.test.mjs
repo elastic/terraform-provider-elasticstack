@@ -546,7 +546,7 @@ test('change-factory-issue workflow source wiring matches intake contract', () =
 
   assert.match(
     workflowTmpl,
-    /create-pull-request:\s*\n\s*labels: \[change-factory, no-changelog\]\s*\n\s*max: 1/,
+    /create-pull-request:\s*\n(?:\s+draft: false\s*\n)?\s*labels: \[change-factory, no-changelog\]\s*\n\s*max: 1/,
   );
   assert.match(
     workflowTmpl,

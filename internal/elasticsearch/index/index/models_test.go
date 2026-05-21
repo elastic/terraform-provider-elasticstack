@@ -26,6 +26,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -39,7 +40,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 	validAliases, diags := basetypes.NewSetValueFrom(
 		context.Background(),
 		aliasElementType(context.Background()),
-		[]aliasTfModel{
+		[]aliasutil.AliasModel{
 			{Name: basetypes.NewStringValue("alias-0")},
 			{
 				Name:          basetypes.NewStringValue("alias-1"),

@@ -52,7 +52,7 @@ func readMLDatafeedState(ctx context.Context, client *clients.ElasticsearchScope
 
 	state.ID = types.StringValue(compID.String())
 
-	diags.Append(state.SetStartAndEndFromAPI(datafeedStats)...)
+	diags.Append(state.SetEffectiveSearchIntervalFromAPI(datafeedStats)...)
 	if diags.HasError() {
 		return state, false, diags
 	}

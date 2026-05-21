@@ -25,7 +25,7 @@ import (
 	"strconv"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -177,16 +177,6 @@ type indexTfModel struct {
 	Alias                              types.Set            `tfsdk:"alias"`
 }
 
-type aliasTfModel struct {
-	Name          types.String         `tfsdk:"name"`
-	Filter        jsontypes.Normalized `tfsdk:"filter"`
-	IndexRouting  types.String         `tfsdk:"index_routing"`
-	IsHidden      types.Bool           `tfsdk:"is_hidden"`
-	IsWriteIndex  types.Bool           `tfsdk:"is_write_index"`
-	Routing       types.String         `tfsdk:"routing"`
-	SearchRouting types.String         `tfsdk:"search_routing"`
-}
-
 func (model *indexTfModel) populateFromAPI(ctx context.Context, indexName string, apiModel estypes.IndexState) diag.Diagnostics {
 	model.Name = types.StringValue(indexName)
 	model.SortField = types.SetValueMust(types.StringType, []attr.Value{})
@@ -197,7 +187,7 @@ func (model *indexTfModel) populateFromAPI(ctx context.Context, indexName string
 	if diags.HasError() {
 		return diags
 	}
-	modelAliases, diags := aliasesFromAPI(ctx, apiModel)
+	modelAliases, diags := aliasutil.AliasesFromAPI(ctx, apiModel.Aliases, aliasElementType())
 	if diags.HasError() {
 		return diags
 	}
@@ -226,59 +216,6 @@ func mappingsFromAPI(apiModel estypes.IndexState) (jsontypes.Normalized, diag.Di
 	}
 
 	return jsontypes.NewNormalizedNull(), nil
-}
-
-func aliasesFromAPI(ctx context.Context, apiModel estypes.IndexState) (basetypes.SetValue, diag.Diagnostics) {
-	aliases := []aliasTfModel{}
-	for name, alias := range apiModel.Aliases {
-		tfAlias, diags := newAliasModelFromAPI(name, alias)
-		if diags.HasError() {
-			return basetypes.SetValue{}, diags
-		}
-
-		aliases = append(aliases, tfAlias)
-	}
-
-	modelAliases, diags := types.SetValueFrom(ctx, aliasElementType(), aliases)
-	if diags.HasError() {
-		return basetypes.SetValue{}, diags
-	}
-
-	return modelAliases, nil
-}
-
-func newAliasModelFromAPI(name string, apiModel estypes.Alias) (aliasTfModel, diag.Diagnostics) {
-	tfAlias := aliasTfModel{
-		Name:          types.StringValue(name),
-		IndexRouting:  types.StringValue(typeutils.Deref(apiModel.IndexRouting)),
-		IsHidden:      types.BoolValue(typeutils.Deref(apiModel.IsHidden)),
-		IsWriteIndex:  types.BoolValue(typeutils.Deref(apiModel.IsWriteIndex)),
-		Routing:       types.StringValue(typeutils.Deref(apiModel.Routing)),
-		SearchRouting: types.StringValue(typeutils.Deref(apiModel.SearchRouting)),
-	}
-
-	if apiModel.Filter != nil {
-		filterBytes, err := json.Marshal(apiModel.Filter)
-		if err != nil {
-			return aliasTfModel{}, diag.Diagnostics{
-				diag.NewErrorDiagnostic("failed to marshal alias filter", err.Error()),
-			}
-		}
-		var filterMap map[string]any
-		if err := json.Unmarshal(filterBytes, &filterMap); err != nil {
-			return aliasTfModel{}, diag.Diagnostics{
-				diag.NewErrorDiagnostic("failed to unmarshal alias filter", err.Error()),
-			}
-		}
-		normalized := elasticsearch.NormalizeQueryFilter(filterMap)
-		if nm, ok := normalized.(map[string]any); ok {
-			filterMap = nm
-		}
-		normalizedBytes, _ := json.Marshal(filterMap)
-		tfAlias.Filter = jsontypes.NewNormalizedValue(string(normalizedBytes))
-	}
-
-	return tfAlias, nil
 }
 
 func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel estypes.IndexState) diag.Diagnostics {
