@@ -33,7 +33,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	tfvalidator "github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
@@ -231,12 +231,12 @@ func Test_rangeSliderControlValueListSizeValidator(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			req := tfvalidator.ListRequest{
+			req := validator.ListRequest{
 				Path:           path.Root("value"),
 				PathExpression: path.MatchRoot("value"),
 				ConfigValue:    tc.value,
 			}
-			resp := tfvalidator.ListResponse{}
+			resp := validator.ListResponse{}
 
 			for _, v := range valueAttr.Validators {
 				v.ValidateList(context.Background(), req, &resp)
@@ -330,12 +330,12 @@ func Test_optionsListControlSearchTechniqueValidator(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			req := tfvalidator.StringRequest{
+			req := validator.StringRequest{
 				Path:           path.Root("search_technique"),
 				PathExpression: path.MatchRoot("search_technique"),
 				ConfigValue:    types.StringValue(tc.value),
 			}
-			resp := tfvalidator.StringResponse{}
+			resp := validator.StringResponse{}
 
 			for _, v := range searchTechAttr.Validators {
 				v.ValidateString(context.Background(), req, &resp)
@@ -381,12 +381,12 @@ func Test_timeSliderControlPercentageValidators(t *testing.T) {
 			require.True(t, ok)
 			require.NotEmpty(t, attr.Validators)
 
-			req := tfvalidator.Float32Request{
+			req := validator.Float32Request{
 				Path:           path.Root(tc.attrName),
 				PathExpression: path.MatchRoot(tc.attrName),
 				ConfigValue:    types.Float32Value(float32(tc.value)),
 			}
-			resp := tfvalidator.Float32Response{}
+			resp := validator.Float32Response{}
 
 			for _, v := range attr.Validators {
 				v.ValidateFloat32(context.Background(), req, &resp)
@@ -474,4 +474,21 @@ func Test_slo_overview_ValidatePanelConfig(t *testing.T) {
 		require.Len(t, diags, 1)
 		require.Equal(t, "Missing SLO overview panel configuration", diags[0].Summary())
 	})
+}
+
+func Test_panelConfigValidator_rejectsRemovedLensDashboardApp(t *testing.T) {
+	ctx := context.Background()
+	v := panelConfigValidator{}
+	req := validator.ObjectRequest{
+		ConfigValue: types.ObjectValueMust(map[string]attr.Type{
+			"type": types.StringType,
+		}, map[string]attr.Value{
+			"type": types.StringValue("lens-dashboard-app"),
+		}),
+		Path: testAttrPathPanel,
+	}
+	var resp validator.ObjectResponse
+	v.ValidateObject(ctx, req, &resp)
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Removed panel type")
 }
