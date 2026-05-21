@@ -588,7 +588,7 @@ func (s Slice) atoi(key string) int {
 type TransformFunc func(schema *Schema)
 
 var transformers = []TransformFunc{
-	mergeDashboardsSchema,
+	injectDashboardAPIPaths,
 	transformRemoveKbnXsrf,
 	transformRemoveApiVersionParam,
 	transformSimplifyContentType,
@@ -615,26 +615,19 @@ var transformers = []TransformFunc{
 	transformOmitEmptyNullable,
 }
 
-//go:embed dashboards.json
-var dashboardsJSON string
+//go:embed dashboard-paths.json
+var dashboardPathsJSON string
 
-func mergeDashboardsSchema(schema *Schema) {
-	var dashboardsSchema Schema
-	err := yaml.Unmarshal([]byte(dashboardsJSON), &dashboardsSchema)
-	if err != nil {
-		log.Fatalf("failed to unmarshal schema from dashboards.yaml: %v", err)
+// injectDashboardAPIPaths merges dashboard HTTP path definitions that are not
+// yet fully described in the upstream Kibana OpenAPI export (redirect stubs only).
+// Component schemas come from upstream under the Kibana_HTTP_APIs_* prefix.
+func injectDashboardAPIPaths(schema *Schema) {
+	var dashboardPaths Schema
+	if err := yaml.Unmarshal([]byte(dashboardPathsJSON), &dashboardPaths); err != nil {
+		log.Fatalf("failed to unmarshal dashboard-paths.json: %v", err)
 	}
-
-	// Merge paths, preferring declarations in dashboards.json
-	for path, pathInfo := range dashboardsSchema.Paths {
+	for path, pathInfo := range dashboardPaths.Paths {
 		schema.Paths[path] = pathInfo
-	}
-
-	// Merge component schemas, preferring declarations in dashboards.json
-	dashboardSchemas := dashboardsSchema.Components.MustGetMap("schemas")
-	schemaSchemas := schema.Components.MustGetMap("schemas")
-	for key, schemaInfo := range dashboardSchemas {
-		schemaSchemas[key] = schemaInfo
 	}
 }
 
@@ -1069,7 +1062,7 @@ func fixSpaceResponseSchemas(schema *Schema) {
 }
 
 // fixVisualizationIdParam injects the missing {id} path parameter for
-// /api/visualizations/{id}, which dashboards.json declares without parameters.
+// /api/visualizations/{id} redirect stubs in the upstream Kibana OpenAPI export.
 func fixVisualizationIdParam(schema *Schema) {
 	path := schema.GetPath("/api/visualizations/{id}")
 	if path == nil {
@@ -1096,16 +1089,21 @@ func fixVisualizationIdParam(schema *Schema) {
 }
 
 func fixDashboardPanelItemRefs(schema *Schema) {
-	schema.Components.Move("schemas.kbn-dashboard-data.properties.panels.items.anyOf.0.anyOf", "schemas.kbn-dashboard-data.properties.panels.items.anyOf.0.oneOf")
-	schema.Components.Set(
-		"schemas.kbn-dashboard-data.properties.panels.items.anyOf.0.discriminator",
-		schema.Components.MustGetMap("schemas.kbn-dashboard-section.properties.panels.items.discriminator"),
+	const (
+		dashboardDataSchema    = "schemas.Kibana_HTTP_APIs_kbn-dashboard-data"
+		dashboardSectionSchema = "schemas.Kibana_HTTP_APIs_kbn-dashboard-section"
 	)
-	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.kbn-dashboard-section.properties.panels.items")
-	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.kbn-dashboard-data.properties.panels.items.anyOf.0")
-	schema.Components.CreateRef(schema, "dashboard_panels", "schemas.kbn-dashboard-data.properties.panels")
-	schema.Components.CreateRef(schema, "dashboard_filters", "schemas.kbn-dashboard-data.properties.filters")
-	schema.Components.CreateRef(schema, "dashboard_pinned_panels", "schemas.kbn-dashboard-data.properties.pinned_panels")
+
+	schema.Components.Move(dashboardDataSchema+".properties.panels.items.anyOf.0.anyOf", dashboardDataSchema+".properties.panels.items.anyOf.0.oneOf")
+	schema.Components.Set(
+		dashboardDataSchema+".properties.panels.items.anyOf.0.discriminator",
+		schema.Components.MustGetMap(dashboardSectionSchema+".properties.panels.items.discriminator"),
+	)
+	schema.Components.CreateRef(schema, "dashboard_panel_item", dashboardDataSchema+".properties.panels.items.anyOf.0")
+	schema.Components.Set(dashboardSectionSchema+".properties.panels.items", Map{"$ref": "#/components/schemas/dashboard_panel_item"})
+	schema.Components.CreateRef(schema, "dashboard_panels", dashboardDataSchema+".properties.panels")
+	schema.Components.CreateRef(schema, "dashboard_filters", dashboardDataSchema+".properties.filters")
+	schema.Components.CreateRef(schema, "dashboard_pinned_panels", dashboardDataSchema+".properties.pinned_panels")
 
 	dashboardIDPath := schema.MustGetPath("/api/dashboards/{id}")
 	dashboardIDPath.Put.Move("requestBody.content.application/json.schema.properties.panels.items.anyOf.0.anyOf", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0.oneOf")
@@ -1113,12 +1111,17 @@ func fixDashboardPanelItemRefs(schema *Schema) {
 		"requestBody.content.application/json.schema.properties.panels.items.anyOf.0.discriminator",
 		schema.Components.MustGetMap("schemas.dashboard_panel_item.discriminator"),
 	)
-	dashboardIDPath.Put.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0")
+	if dashboardIDPath.Put.Has("requestBody.content.application/json.schema.properties.panels.items.anyOf.0") {
+		dashboardIDPath.Put.Set(
+			"requestBody.content.application/json.schema.properties.panels.items.anyOf.0",
+			Map{"$ref": "#/components/schemas/dashboard_panel_item"},
+		)
+	}
 	dashboardIDPath.Put.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.panels")
 	dashboardIDPath.Put.CreateRef(schema, "dashboard_filters", "requestBody.content.application/json.schema.properties.filters")
 	dashboardIDPath.Put.CreateRef(schema, "dashboard_pinned_panels", "requestBody.content.application/json.schema.properties.pinned_panels")
 
-	const panelTypePrefix = "kbn-dashboard-panel-type-"
+	const panelTypePrefix = "Kibana_HTTP_APIs_kbn-dashboard-panel-type-"
 	panelOneOf := schema.Components.MustGetSlice("schemas.dashboard_panel_item.oneOf")
 	panelTypeMapping := Map{}
 	for _, entry := range panelOneOf {
