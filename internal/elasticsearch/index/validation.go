@@ -22,9 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/hashicorp/go-version"
-	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
@@ -52,17 +49,4 @@ func (s StringIsJSONObject) ValidateString(_ context.Context, req validator.Stri
 		)
 		return
 	}
-}
-
-// validateDataStreamOptionsVersion returns an error diagnostic if data_stream_options is configured and the server is too old.
-func validateDataStreamOptionsVersion(serverVersion *version.Version, templ *models.Template) fwdiag.Diagnostics {
-	if templ != nil && templ.DataStreamOptions != nil && serverVersion.LessThan(MinSupportedDataStreamOptionsVersion) {
-		return fwdiag.Diagnostics{
-			fwdiag.NewErrorDiagnostic(
-				fmt.Sprintf("'data_stream_options' is supported only for Elasticsearch v%s and above", MinSupportedDataStreamOptionsVersion.String()),
-				"",
-			),
-		}
-	}
-	return nil
 }

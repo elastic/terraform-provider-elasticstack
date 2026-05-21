@@ -31,6 +31,7 @@ var (
 	_ resource.ResourceWithConfigure      = (*calendarEventResource)(nil)
 	_ resource.ResourceWithImportState    = (*calendarEventResource)(nil)
 	_ resource.ResourceWithValidateConfig = (*calendarEventResource)(nil)
+	_ resource.ResourceWithModifyPlan     = (*calendarEventResource)(nil)
 )
 
 type calendarEventResource struct {
