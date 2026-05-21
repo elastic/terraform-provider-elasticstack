@@ -34,7 +34,7 @@ func Test_populateFromAPIByValue_mapsAllFields(t *testing.T) {
 	title := "panel title"
 	hideFalse := false
 	openLinks := false
-	cfg := kbapi.KbnDashboardPanelTypeMarkdownConfig0{
+	cfg := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0{
 		Content:     content,
 		Description: &description,
 		HideTitle:   &hideTitle,
@@ -60,7 +60,7 @@ func Test_populateFromAPIByValue_mapsAllFields(t *testing.T) {
 
 func Test_populateFromAPIByValue_openLinksNullPreservedWhenAPIDefaultTrue(t *testing.T) {
 	apiTrue := true
-	cfg := kbapi.KbnDashboardPanelTypeMarkdownConfig0{Content: "hi"}
+	cfg := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0{Content: "hi"}
 	cfg.Settings.OpenLinksInNewTab = &apiTrue
 
 	tfPanel := &models.PanelModel{
@@ -79,7 +79,7 @@ func Test_populateFromAPIByValue_openLinksNullPreservedWhenAPIDefaultTrue(t *tes
 
 func Test_populateFromAPIByValue_hideBorderNullPreservedWhenAPIEchoesFalse(t *testing.T) {
 	apiFalse := false
-	cfg := kbapi.KbnDashboardPanelTypeMarkdownConfig0{Content: "hi"}
+	cfg := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0{Content: "hi"}
 	cfg.HideBorder = &apiFalse
 
 	tfPanel := &models.PanelModel{
@@ -98,7 +98,7 @@ func Test_populateFromAPIByValue_hideBorderNullPreservedWhenAPIEchoesFalse(t *te
 
 func Test_populateFromAPIByValue_hideBorderNullPreservedWhenAPIEchoesTrue(t *testing.T) {
 	apiTrue := true
-	cfg := kbapi.KbnDashboardPanelTypeMarkdownConfig0{Content: "hi"}
+	cfg := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0{Content: "hi"}
 	cfg.HideBorder = &apiTrue
 
 	tfPanel := &models.PanelModel{
@@ -147,7 +147,7 @@ func Test_populateFromAPIByReference_mapsPresentationFields(t *testing.T) {
 	hide := true
 	title := "overlay"
 	border := false
-	cfg := kbapi.KbnDashboardPanelTypeMarkdownConfig1{
+	cfg := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig1{
 		RefId:       "lib-md-1",
 		Description: &desc,
 		HideTitle:   &hide,
@@ -168,7 +168,7 @@ func Test_populateFromAPIByReference_mapsPresentationFields(t *testing.T) {
 
 func Test_populateFromAPIByReference_hideBorderNullPreservedWhenAPIFalse(t *testing.T) {
 	apiFalse := false
-	cfg := kbapi.KbnDashboardPanelTypeMarkdownConfig1{RefId: "r1"}
+	cfg := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig1{RefId: "r1"}
 	cfg.HideBorder = &apiFalse
 
 	tfPanel := &models.PanelModel{
@@ -194,9 +194,9 @@ func Test_markdownByReferenceRoundTripViaUnion(t *testing.T) {
 		},
 	}
 	cfg1 := BuildConfigByReference(pm)
-	var union kbapi.KbnDashboardPanelTypeMarkdown_Config
-	require.NoError(t, union.FromKbnDashboardPanelTypeMarkdownConfig1(cfg1))
-	decoded, err := union.AsKbnDashboardPanelTypeMarkdownConfig1()
+	var union kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdown_Config
+	require.NoError(t, union.FromKibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig1(cfg1))
+	decoded, err := union.AsKibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig1()
 	require.NoError(t, err)
 	pm2 := &models.PanelModel{}
 	populateFromAPIByReference(pm2, nil, decoded)
@@ -274,10 +274,10 @@ func Test_markdownConfigByValueRoundTripViaUnion(t *testing.T) {
 	}
 
 	cfg0 := BuildConfigByValue(pm)
-	var union kbapi.KbnDashboardPanelTypeMarkdown_Config
-	require.NoError(t, union.FromKbnDashboardPanelTypeMarkdownConfig0(cfg0))
+	var union kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdown_Config
+	require.NoError(t, union.FromKibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0(cfg0))
 
-	decoded, err := union.AsKbnDashboardPanelTypeMarkdownConfig0()
+	decoded, err := union.AsKibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0()
 	require.NoError(t, err)
 
 	pm2 := &models.PanelModel{}

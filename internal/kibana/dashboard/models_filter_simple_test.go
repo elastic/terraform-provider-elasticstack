@@ -29,14 +29,17 @@ import (
 func Test_filterSimpleModel_fromAPI_toAPI(t *testing.T) {
 	tests := []struct {
 		name     string
-		apiQuery kbapi.FilterSimple
+		apiQuery kbapi.KibanaHTTPAPIsFilterSimple
 		expected *models.FilterSimpleModel
 	}{
 		{
 			name: "all fields populated",
-			apiQuery: kbapi.FilterSimple{
+			apiQuery: kbapi.KibanaHTTPAPIsFilterSimple{
 				Expression: "test query",
-				Language:   func() *kbapi.FilterSimpleLanguage { l := kbapi.FilterSimpleLanguage("kql"); return &l }(),
+				Language: func() *kbapi.KibanaHTTPAPIsFilterSimpleLanguage {
+					l := kbapi.KibanaHTTPAPIsFilterSimpleLanguage("kql")
+					return &l
+				}(),
 			},
 			expected: &models.FilterSimpleModel{
 				Expression: types.StringValue("test query"),
@@ -45,7 +48,7 @@ func Test_filterSimpleModel_fromAPI_toAPI(t *testing.T) {
 		},
 		{
 			name: "only required field",
-			apiQuery: kbapi.FilterSimple{
+			apiQuery: kbapi.KibanaHTTPAPIsFilterSimple{
 				Expression: "simple query",
 				Language:   nil,
 			},

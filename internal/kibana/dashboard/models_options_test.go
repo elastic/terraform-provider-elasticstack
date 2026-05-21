@@ -31,7 +31,7 @@ func Test_dashboardModel_optionsToAPI(t *testing.T) {
 	tests := []struct {
 		name      string
 		options   *models.OptionsModel
-		want      *kbapi.KbnDashboardOptions
+		want      *kbapi.KibanaHTTPAPIsKbnDashboardOptions
 		wantDiags bool
 	}{
 		{
@@ -50,7 +50,7 @@ func Test_dashboardModel_optionsToAPI(t *testing.T) {
 				AutoApplyFilters: types.BoolValue(true),
 				HidePanelBorders: types.BoolValue(true),
 			},
-			want: &kbapi.KbnDashboardOptions{
+			want: &kbapi.KibanaHTTPAPIsKbnDashboardOptions{
 				HidePanelTitles:  new(true),
 				UseMargins:       new(true),
 				SyncColors:       new(true),
@@ -69,7 +69,7 @@ func Test_dashboardModel_optionsToAPI(t *testing.T) {
 				SyncTooltips:    types.BoolValue(false),
 				SyncCursor:      types.BoolValue(false),
 			},
-			want: &kbapi.KbnDashboardOptions{
+			want: &kbapi.KibanaHTTPAPIsKbnDashboardOptions{
 				HidePanelTitles: new(false),
 				UseMargins:      new(false),
 				SyncColors:      new(false),
@@ -86,7 +86,7 @@ func Test_dashboardModel_optionsToAPI(t *testing.T) {
 				SyncTooltips:    types.BoolNull(),
 				SyncCursor:      types.BoolValue(true),
 			},
-			want: &kbapi.KbnDashboardOptions{
+			want: &kbapi.KibanaHTTPAPIsKbnDashboardOptions{
 				HidePanelTitles: new(true),
 				UseMargins:      nil,
 				SyncColors:      new(false),
@@ -103,7 +103,7 @@ func Test_dashboardModel_optionsToAPI(t *testing.T) {
 				SyncTooltips:    types.BoolValue(false),
 				SyncCursor:      types.BoolUnknown(),
 			},
-			want: &kbapi.KbnDashboardOptions{
+			want: &kbapi.KibanaHTTPAPIsKbnDashboardOptions{
 				HidePanelTitles: nil,
 				UseMargins:      new(true),
 				SyncColors:      nil,
@@ -127,7 +127,7 @@ func Test_dashboardModel_optionsToAPI(t *testing.T) {
 			}
 
 			if tt.want == nil {
-				assert.Equal(t, kbapi.KbnDashboardOptions{}, got)
+				assert.Equal(t, kbapi.KibanaHTTPAPIsKbnDashboardOptions{}, got)
 			} else {
 				assert.Equal(t, *tt.want, got)
 			}
@@ -139,12 +139,12 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 	tests := []struct {
 		name         string
 		stateOptions *models.OptionsModel
-		options      *kbapi.KbnDashboardOptions
+		options      *kbapi.KibanaHTTPAPIsKbnDashboardOptions
 		want         *models.OptionsModel
 	}{
 		{
 			name: "keeps options nil for API defaults when state omitted options",
-			options: &kbapi.KbnDashboardOptions{
+			options: &kbapi.KibanaHTTPAPIsKbnDashboardOptions{
 				HidePanelTitles:  new(false),
 				UseMargins:       new(true),
 				SyncColors:       new(false),
@@ -166,7 +166,7 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 				AutoApplyFilters: types.BoolValue(true),
 				HidePanelBorders: types.BoolValue(false),
 			},
-			options: &kbapi.KbnDashboardOptions{
+			options: &kbapi.KibanaHTTPAPIsKbnDashboardOptions{
 				HidePanelTitles:  new(false),
 				UseMargins:       new(true),
 				SyncColors:       new(false),
@@ -187,7 +187,7 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 		},
 		{
 			name: "converts all fields when set to true",
-			options: &kbapi.KbnDashboardOptions{
+			options: &kbapi.KibanaHTTPAPIsKbnDashboardOptions{
 				HidePanelTitles: new(true),
 				UseMargins:      new(true),
 				SyncColors:      new(true),
@@ -206,7 +206,7 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 		},
 		{
 			name: "converts all fields when set to false",
-			options: &kbapi.KbnDashboardOptions{
+			options: &kbapi.KibanaHTTPAPIsKbnDashboardOptions{
 				HidePanelTitles: new(false),
 				UseMargins:      new(false),
 				SyncColors:      new(false),
@@ -225,7 +225,7 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 		},
 		{
 			name: "handles mixed nil and set values",
-			options: &kbapi.KbnDashboardOptions{
+			options: &kbapi.KibanaHTTPAPIsKbnDashboardOptions{
 				HidePanelTitles: new(true),
 				UseMargins:      nil,
 				SyncColors:      new(false),
@@ -244,7 +244,7 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 		},
 		{
 			name: "handles all nil values",
-			options: &kbapi.KbnDashboardOptions{
+			options: &kbapi.KibanaHTTPAPIsKbnDashboardOptions{
 				HidePanelTitles: nil,
 				UseMargins:      nil,
 				SyncColors:      nil,
@@ -263,7 +263,7 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 		},
 		{
 			name:    "handles empty struct",
-			options: &kbapi.KbnDashboardOptions{},
+			options: &kbapi.KibanaHTTPAPIsKbnDashboardOptions{},
 			want: &models.OptionsModel{
 				HidePanelTitles:  types.BoolNull(),
 				UseMargins:       types.BoolNull(),
@@ -281,7 +281,7 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 			m := &models.DashboardModel{
 				Options: tt.stateOptions,
 			}
-			apiOpts := kbapi.KbnDashboardOptions{}
+			apiOpts := kbapi.KibanaHTTPAPIsKbnDashboardOptions{}
 			if tt.options != nil {
 				apiOpts = *tt.options
 			}
@@ -295,7 +295,7 @@ func Test_optionsModel_toAPI(t *testing.T) {
 	tests := []struct {
 		name  string
 		model models.OptionsModel
-		want  *kbapi.KbnDashboardOptions
+		want  *kbapi.KibanaHTTPAPIsKbnDashboardOptions
 	}{
 		{
 			name: "converts all fields when set to true",
@@ -306,7 +306,7 @@ func Test_optionsModel_toAPI(t *testing.T) {
 				SyncTooltips:    types.BoolValue(true),
 				SyncCursor:      types.BoolValue(true),
 			},
-			want: &kbapi.KbnDashboardOptions{
+			want: &kbapi.KibanaHTTPAPIsKbnDashboardOptions{
 				HidePanelTitles: new(true),
 				UseMargins:      new(true),
 				SyncColors:      new(true),
@@ -323,7 +323,7 @@ func Test_optionsModel_toAPI(t *testing.T) {
 				SyncTooltips:    types.BoolValue(false),
 				SyncCursor:      types.BoolValue(false),
 			},
-			want: &kbapi.KbnDashboardOptions{
+			want: &kbapi.KibanaHTTPAPIsKbnDashboardOptions{
 				HidePanelTitles: new(false),
 				UseMargins:      new(false),
 				SyncColors:      new(false),
@@ -340,7 +340,7 @@ func Test_optionsModel_toAPI(t *testing.T) {
 				SyncTooltips:    types.BoolNull(),
 				SyncCursor:      types.BoolValue(true),
 			},
-			want: &kbapi.KbnDashboardOptions{
+			want: &kbapi.KibanaHTTPAPIsKbnDashboardOptions{
 				HidePanelTitles: new(true),
 				UseMargins:      nil,
 				SyncColors:      new(false),
@@ -357,7 +357,7 @@ func Test_optionsModel_toAPI(t *testing.T) {
 				SyncTooltips:    types.BoolValue(false),
 				SyncCursor:      types.BoolUnknown(),
 			},
-			want: &kbapi.KbnDashboardOptions{
+			want: &kbapi.KibanaHTTPAPIsKbnDashboardOptions{
 				HidePanelTitles: nil,
 				UseMargins:      new(true),
 				SyncColors:      nil,
@@ -374,7 +374,7 @@ func Test_optionsModel_toAPI(t *testing.T) {
 				SyncTooltips:    types.BoolNull(),
 				SyncCursor:      types.BoolNull(),
 			},
-			want: &kbapi.KbnDashboardOptions{
+			want: &kbapi.KibanaHTTPAPIsKbnDashboardOptions{
 				HidePanelTitles: nil,
 				UseMargins:      nil,
 				SyncColors:      nil,
@@ -391,7 +391,7 @@ func Test_optionsModel_toAPI(t *testing.T) {
 				SyncTooltips:    types.BoolUnknown(),
 				SyncCursor:      types.BoolUnknown(),
 			},
-			want: &kbapi.KbnDashboardOptions{
+			want: &kbapi.KibanaHTTPAPIsKbnDashboardOptions{
 				HidePanelTitles: nil,
 				UseMargins:      nil,
 				SyncColors:      nil,
@@ -402,7 +402,7 @@ func Test_optionsModel_toAPI(t *testing.T) {
 		{
 			name:  "handles zero-value model",
 			model: models.OptionsModel{},
-			want: &kbapi.KbnDashboardOptions{
+			want: &kbapi.KibanaHTTPAPIsKbnDashboardOptions{
 				HidePanelTitles: nil,
 				UseMargins:      nil,
 				SyncColors:      nil,
@@ -419,7 +419,7 @@ func Test_optionsModel_toAPI(t *testing.T) {
 				SyncTooltips:    types.BoolNull(),
 				SyncCursor:      types.BoolNull(),
 			},
-			want: &kbapi.KbnDashboardOptions{
+			want: &kbapi.KibanaHTTPAPIsKbnDashboardOptions{
 				HidePanelTitles: new(true),
 				UseMargins:      nil,
 				SyncColors:      nil,

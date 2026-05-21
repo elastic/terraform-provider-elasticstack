@@ -135,8 +135,8 @@ func TestSloOverview_singleMode_drilldowns_roundTrip_viaHandler(t *testing.T) {
 	require.Len(t, d1, len(d0))
 	require.Equal(t, d0[0]["url"], d1[0]["url"])
 	require.Equal(t, d0[0]["label"], d1[0]["label"])
-	require.Equal(t, string(kbapi.SloSingleOverviewEmbeddableDrilldownsTriggerOnOpenPanelMenu), d1[0]["trigger"])
-	require.Equal(t, string(kbapi.SloSingleOverviewEmbeddableDrilldownsTypeUrlDrilldown), d1[0]["type"])
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddableDrilldownsTriggerOnOpenPanelMenu), d1[0]["trigger"])
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddableDrilldownsTypeUrlDrilldown), d1[0]["type"])
 	require.Equal(t, true, d1[1]["encode_url"])
 	require.Equal(t, false, d1[1]["open_in_new_tab"])
 }

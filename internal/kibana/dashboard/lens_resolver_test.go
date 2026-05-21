@@ -32,17 +32,17 @@ func testLensChartResolver() lenscommon.Resolver {
 	return &chartPresentationResolver{dashboard: nil}
 }
 
-func (r *chartPresentationResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
+func (r *chartPresentationResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
 	return resolveChartTimeRange(r.dashboard, chartLevel)
 }
 
-func (r *chartPresentationResolver) DashboardLensComparableTimeRange() (kbapi.KbnEsQueryServerTimeRangeSchema, bool) {
+func (r *chartPresentationResolver) DashboardLensComparableTimeRange() (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, bool) {
 	return dashboardLensComparableTimeRange(r.dashboard)
 }
 
-func dashboardLensComparableTimeRange(dashboard *models.DashboardModel) (kbapi.KbnEsQueryServerTimeRangeSchema, bool) {
+func dashboardLensComparableTimeRange(dashboard *models.DashboardModel) (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, bool) {
 	if dashboard == nil || dashboard.TimeRange == nil {
-		return kbapi.KbnEsQueryServerTimeRangeSchema{}, false
+		return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}, false
 	}
 	return timeRangeModelToAPI(dashboard.TimeRange), true
 }

@@ -37,7 +37,7 @@ func ByValueChartNestedAttribute(chartConfigName string, attrs map[string]schema
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: "Typed Lens visualization inside `vis_config.by_value`. " +
 			"Mutually exclusive with the other chart blocks in the same `by_value` block. " +
-			"Shares the attribute shape with `lens_dashboard_app_config.by_value." + chartConfigName + "`.",
+			"Shares the attribute shape with `vis_config.by_value." + chartConfigName + "`.",
 		Optional:   true,
 		Attributes: attrs,
 	}

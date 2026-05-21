@@ -50,7 +50,7 @@ func Test_sloSingleToAPI_basic(t *testing.T) {
 	api, diags := singleToAPI(m)
 	require.False(t, diags.HasError())
 
-	assert.Equal(t, kbapi.SloSingleOverviewEmbeddableOverviewModeSingle, api.OverviewMode)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddableOverviewModeSingle, api.OverviewMode)
 	assert.Equal(t, "my-slo-id", api.SloId)
 	require.NotNil(t, api.SloInstanceId)
 	assert.Equal(t, "instance-1", *api.SloInstanceId)
@@ -114,7 +114,7 @@ func Test_sloGroupsToAPI_with_group_filters(t *testing.T) {
 	assert.Equal(t, "Groups Overview", *api.Title)
 	require.NotNil(t, api.GroupFilters)
 	require.NotNil(t, api.GroupFilters.GroupBy)
-	assert.Equal(t, kbapi.SloGroupOverviewEmbeddableGroupFiltersGroupByStatus, *api.GroupFilters.GroupBy)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddableGroupFiltersGroupByStatus, *api.GroupFilters.GroupBy)
 	require.NotNil(t, api.GroupFilters.KqlQuery)
 	assert.Equal(t, "slo.name: my-*", *api.GroupFilters.KqlQuery)
 }
@@ -122,19 +122,19 @@ func Test_sloGroupsToAPI_with_group_filters(t *testing.T) {
 func Test_sloSingleFromAPI_roundtrip(t *testing.T) {
 	instanceID := "instance-abc"
 	title := "SLO Panel"
-	apiSingle := kbapi.SloSingleOverviewEmbeddable{
-		OverviewMode:  kbapi.SloSingleOverviewEmbeddableOverviewModeSingle,
+	apiSingle := kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddable{
+		OverviewMode:  kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddableOverviewModeSingle,
 		SloId:         "slo-123",
 		SloInstanceId: &instanceID,
 		Title:         &title,
 	}
 
-	var config kbapi.KbnDashboardPanelTypeSloOverview_Config
-	require.NoError(t, config.FromSloSingleOverviewEmbeddable(apiSingle))
+	var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview_Config
+	require.NoError(t, config.FromKibanaHTTPAPIsSloSingleOverviewEmbeddable(apiSingle))
 
-	panel := kbapi.KbnDashboardPanelTypeSloOverview{
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview{
 		Config: config,
-		Grid:   kbapi.KbnDashboardPanelGrid{X: 0, Y: 0},
+		Grid:   kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
 		Type:   kbapi.SloOverview,
 	}
 
@@ -153,25 +153,25 @@ func Test_sloSingleFromAPI_roundtrip(t *testing.T) {
 }
 
 func Test_sloGroupsFromAPI_roundtrip(t *testing.T) {
-	groupBy := kbapi.SloGroupOverviewEmbeddableGroupFiltersGroupByStatus
+	groupBy := kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddableGroupFiltersGroupByStatus
 	kql := "slo.name: *"
-	apiGroups := kbapi.SloGroupOverviewEmbeddable{
+	apiGroups := kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable{
 		OverviewMode: kbapi.Groups,
 		GroupFilters: &struct {
-			Filters  *[]kbapi.SloGroupOverviewEmbeddable_GroupFilters_Filters_Item `json:"filters,omitempty"`
-			GroupBy  *kbapi.SloGroupOverviewEmbeddableGroupFiltersGroupBy          `json:"group_by,omitempty"`
-			Groups   *[]string                                                     `json:"groups,omitempty"`
-			KqlQuery *string                                                       `json:"kql_query,omitempty"`
+			Filters  *[]kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable_GroupFilters_Filters_Item `json:"filters,omitempty"`
+			GroupBy  *kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddableGroupFiltersGroupBy          `json:"group_by,omitempty"`
+			Groups   *[]string                                                                   `json:"groups,omitempty"`
+			KqlQuery *string                                                                     `json:"kql_query,omitempty"`
 		}{
 			GroupBy:  &groupBy,
 			KqlQuery: &kql,
 		},
 	}
 
-	var config kbapi.KbnDashboardPanelTypeSloOverview_Config
-	require.NoError(t, config.FromSloGroupOverviewEmbeddable(apiGroups))
+	var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview_Config
+	require.NoError(t, config.FromKibanaHTTPAPIsSloGroupOverviewEmbeddable(apiGroups))
 
-	panel := kbapi.KbnDashboardPanelTypeSloOverview{
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview{
 		Config: config,
 		Grid: struct {
 			H *float32 `json:"h,omitempty"`
@@ -198,16 +198,16 @@ func Test_sloGroupsFromAPI_roundtrip(t *testing.T) {
 
 func Test_sloInstanceID_null_preservation(t *testing.T) {
 	defaultInstanceID := "*"
-	apiSingle := kbapi.SloSingleOverviewEmbeddable{
-		OverviewMode:  kbapi.SloSingleOverviewEmbeddableOverviewModeSingle,
+	apiSingle := kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddable{
+		OverviewMode:  kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddableOverviewModeSingle,
 		SloId:         "slo-456",
 		SloInstanceId: &defaultInstanceID,
 	}
 
-	var config kbapi.KbnDashboardPanelTypeSloOverview_Config
-	require.NoError(t, config.FromSloSingleOverviewEmbeddable(apiSingle))
+	var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview_Config
+	require.NoError(t, config.FromKibanaHTTPAPIsSloSingleOverviewEmbeddable(apiSingle))
 
-	panel := kbapi.KbnDashboardPanelTypeSloOverview{
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview{
 		Config: config,
 		Grid: struct {
 			H *float32 `json:"h,omitempty"`
@@ -239,16 +239,16 @@ func Test_sloInstanceID_null_preservation(t *testing.T) {
 
 func Test_sloInstanceID_explicit_value_preserved(t *testing.T) {
 	instanceID := "instance-1"
-	apiSingle := kbapi.SloSingleOverviewEmbeddable{
-		OverviewMode:  kbapi.SloSingleOverviewEmbeddableOverviewModeSingle,
+	apiSingle := kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddable{
+		OverviewMode:  kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddableOverviewModeSingle,
 		SloId:         "slo-789",
 		SloInstanceId: &instanceID,
 	}
 
-	var config kbapi.KbnDashboardPanelTypeSloOverview_Config
-	require.NoError(t, config.FromSloSingleOverviewEmbeddable(apiSingle))
+	var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview_Config
+	require.NoError(t, config.FromKibanaHTTPAPIsSloSingleOverviewEmbeddable(apiSingle))
 
-	panel := kbapi.KbnDashboardPanelTypeSloOverview{
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview{
 		Config: config,
 		Grid: struct {
 			H *float32 `json:"h,omitempty"`
@@ -303,13 +303,13 @@ func Test_sloOverview_handlerToAPI_single(t *testing.T) {
 	item, diags := h.ToAPI(pm, nil)
 	require.False(t, diags.HasError())
 
-	panel, err := item.AsKbnDashboardPanelTypeSloOverview()
+	panel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloOverview()
 	require.NoError(t, err)
-	assert.Equal(t, kbapi.KbnDashboardPanelTypeSloOverviewType("slo_overview"), panel.Type)
-	single, err := panel.Config.AsSloSingleOverviewEmbeddable()
+	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverviewType("slo_overview"), panel.Type)
+	single, err := panel.Config.AsKibanaHTTPAPIsSloSingleOverviewEmbeddable()
 	require.NoError(t, err)
 	assert.Equal(t, "test-slo", single.SloId)
-	assert.Equal(t, kbapi.SloSingleOverviewEmbeddableOverviewModeSingle, single.OverviewMode)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddableOverviewModeSingle, single.OverviewMode)
 }
 
 func Test_sloOverview_handlerToAPI_groups(t *testing.T) {
@@ -340,12 +340,12 @@ func Test_sloOverview_handlerToAPI_groups(t *testing.T) {
 	item, diags := h.ToAPI(pm, nil)
 	require.False(t, diags.HasError())
 
-	panel, err := item.AsKbnDashboardPanelTypeSloOverview()
+	panel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloOverview()
 	require.NoError(t, err)
-	groups, err := panel.Config.AsSloGroupOverviewEmbeddable()
+	groups, err := panel.Config.AsKibanaHTTPAPIsSloGroupOverviewEmbeddable()
 	require.NoError(t, err)
 	assert.Equal(t, kbapi.Groups, groups.OverviewMode)
 	require.NotNil(t, groups.GroupFilters)
 	require.NotNil(t, groups.GroupFilters.GroupBy)
-	assert.Equal(t, kbapi.SloGroupOverviewEmbeddableGroupFiltersGroupBySloTags, *groups.GroupFilters.GroupBy)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddableGroupFiltersGroupBySloTags, *groups.GroupFilters.GroupBy)
 }

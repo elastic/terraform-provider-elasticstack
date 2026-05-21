@@ -17,16 +17,7 @@
 
 package dashboard
 
-import (
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-)
+import "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 
-func filterSimpleFromAPI(m *models.FilterSimpleModel, apiQuery kbapi.KibanaHTTPAPIsFilterSimple) {
-	lenscommon.FilterSimpleFromAPI(m, apiQuery)
-}
-
-func filterSimpleToAPI(m *models.FilterSimpleModel) kbapi.KibanaHTTPAPIsFilterSimple {
-	return lenscommon.FilterSimpleToAPI(m)
-}
+// Section is a dashboard section payload from the Kibana Dashboard API.
+type Section = kbapi.KibanaHTTPAPIsKbnDashboardSection

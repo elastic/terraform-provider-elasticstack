@@ -87,7 +87,7 @@ func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Valu
 
 // FromAPI maps a kbapi vis panel into Terraform panel models (mirrors legacy dashboard.models_panels vis branch).
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	visPanel, err := item.AsKbnDashboardPanelTypeVis()
+	visPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeVis()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -119,7 +119,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 
 	switch classifyLensConfigFromRoot(root) {
 	case lensConfigClassByReference:
-		cfg1, err1 := visPanel.Config.AsKbnDashboardPanelTypeVisConfig1()
+		cfg1, err1 := visPanel.Config.AsKibanaHTTPAPIsKbnDashboardPanelTypeVisConfig1()
 		if err1 != nil {
 			diags.AddError("Invalid visualization panel configuration on read", err1.Error())
 			break
@@ -127,7 +127,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 		diags.Append(populateVisByReferenceFromAPI(ctx, visPrior, pm, cfg1)...)
 
 	case lensConfigClassByValueChart:
-		config0, err0 := visPanel.Config.AsKbnDashboardPanelTypeVisConfig0()
+		config0, err0 := visPanel.Config.AsKibanaHTTPAPIsKbnDashboardPanelTypeVisConfig0()
 		if err0 != nil {
 			diags.AddError("Invalid visualization panel configuration on read", err0.Error())
 			break
@@ -141,7 +141,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 		if visPrior != nil && visPrior.ByReference != nil {
 			break
 		}
-		config0, err0 := visPanel.Config.AsKbnDashboardPanelTypeVisConfig0()
+		config0, err0 := visPanel.Config.AsKibanaHTTPAPIsKbnDashboardPanelTypeVisConfig0()
 		if err0 != nil {
 			break
 		}
@@ -182,19 +182,19 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	if cfg == nil {
 		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
 			configJSON := []byte(pm.ConfigJSON.ValueString())
-			var config kbapi.KbnDashboardPanelTypeVis_Config
+			var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis_Config
 			if err := config.UnmarshalJSON(configJSON); err != nil {
 				diags.AddError("Failed to unmarshal visualization panel config", err.Error())
 				return kbapi.DashboardPanelItem{}, diags
 			}
-			visPanel := kbapi.KbnDashboardPanelTypeVis{
+			visPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis{
 				Config: config,
 				Grid:   grid,
 				Id:     id,
 				Type:   kbapi.Vis,
 			}
 			var panelItem kbapi.DashboardPanelItem
-			if err := panelItem.FromKbnDashboardPanelTypeVis(visPanel); err != nil {
+			if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeVis(visPanel); err != nil {
 				diags.AddError("Failed to create visualization panel", err.Error())
 			}
 			return panelItem, diags
@@ -217,19 +217,19 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 		if d.HasError() {
 			return kbapi.DashboardPanelItem{}, diags
 		}
-		var config kbapi.KbnDashboardPanelTypeVis_Config
-		if err := config.FromKbnDashboardPanelTypeVisConfig0(config0); err != nil {
+		var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis_Config
+		if err := config.FromKibanaHTTPAPIsKbnDashboardPanelTypeVisConfig0(config0); err != nil {
 			diags.AddError("Failed to create visualization panel config", err.Error())
 			return kbapi.DashboardPanelItem{}, diags
 		}
-		visPanel := kbapi.KbnDashboardPanelTypeVis{
+		visPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis{
 			Config: config,
 			Grid:   grid,
 			Id:     id,
 			Type:   kbapi.Vis,
 		}
 		var panelItem kbapi.DashboardPanelItem
-		if err := panelItem.FromKbnDashboardPanelTypeVis(visPanel); err != nil {
+		if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeVis(visPanel); err != nil {
 			diags.AddError("Failed to create visualization panel", err.Error())
 		}
 		return panelItem, diags
@@ -243,23 +243,14 @@ func populateVisByReferenceFromAPI(
 	ctx context.Context,
 	prior *models.VisConfigModel,
 	pm *models.PanelModel,
-	cfg1 kbapi.KbnDashboardPanelTypeVisConfig1,
+	cfg1 kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVisConfig1,
 ) diag.Diagnostics {
-	var priorBR *models.LensDashboardAppByReferenceModel
+	var priorBR *models.VisByReferenceModel
 	if prior != nil {
 		priorBR = prior.ByReference
 	}
 
-	var lensCfg kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1
-	payload, err := json.Marshal(cfg1)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	if err := json.Unmarshal(payload, &lensCfg); err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	by, diags := lenscommon.PopulateLensByReferenceTFModelFromLensAppConfig1(ctx, lensCfg, priorBR)
+	by, diags := lenscommon.PopulateVisByReferenceTFModelFromAPIConfig1(ctx, cfg1, priorBR)
 	if diags.HasError() {
 		return diags
 	}
@@ -272,7 +263,7 @@ func populateVisByReferenceFromAPI(
 }
 
 func visByReferenceToAPI(
-	byRef models.LensDashboardAppByReferenceModel,
+	byRef models.VisByReferenceModel,
 	grid struct {
 		H *float32 `json:"h,omitempty"`
 		W *float32 `json:"w,omitempty"`
@@ -282,29 +273,24 @@ func visByReferenceToAPI(
 	panelID *string,
 ) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api1Lens, d := lenscommon.LensDashboardAppByReferenceModelToAPIConfig1(byRef, "vis_config.by_reference.references_json")
+	api1, d := lenscommon.VisByReferenceModelToAPIConfig1(byRef, "vis_config.by_reference.references_json")
 	diags.Append(d...)
 	if d.HasError() {
 		return kbapi.DashboardPanelItem{}, diags
 	}
-	api1, convDiags := lenscommon.VisByReferenceConfig1FromLens(api1Lens)
-	diags.Append(convDiags...)
-	if convDiags.HasError() {
-		return kbapi.DashboardPanelItem{}, diags
-	}
-	var config kbapi.KbnDashboardPanelTypeVis_Config
-	if err := config.FromKbnDashboardPanelTypeVisConfig1(api1); err != nil {
+	var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis_Config
+	if err := config.FromKibanaHTTPAPIsKbnDashboardPanelTypeVisConfig1(api1); err != nil {
 		diags.AddError("Failed to set vis by_reference config", err.Error())
 		return kbapi.DashboardPanelItem{}, diags
 	}
-	visPanel := kbapi.KbnDashboardPanelTypeVis{
+	visPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis{
 		Config: config,
 		Grid:   grid,
 		Id:     panelID,
 		Type:   kbapi.Vis,
 	}
 	var panelItem kbapi.DashboardPanelItem
-	if err := panelItem.FromKbnDashboardPanelTypeVis(visPanel); err != nil {
+	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeVis(visPanel); err != nil {
 		diags.AddError("Failed to create visualization panel", err.Error())
 	}
 	return panelItem, diags

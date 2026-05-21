@@ -140,7 +140,7 @@ func Test_BuildConfig_knownFields(t *testing.T) {
 			IsAnchored:                 types.BoolValue(true),
 		},
 	}
-	tsPanel := kbapi.KbnDashboardPanelTypeTimeSliderControl{
+	tsPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeTimeSliderControl{
 		Config: struct {
 			EndPercentageOfTimeRange   *float32 `json:"end_percentage_of_time_range,omitempty"`
 			IsAnchored                 *bool    `json:"is_anchored,omitempty"`
@@ -166,7 +166,7 @@ func Test_BuildConfig_nullFields(t *testing.T) {
 			IsAnchored:                 types.BoolNull(),
 		},
 	}
-	tsPanel := kbapi.KbnDashboardPanelTypeTimeSliderControl{
+	tsPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeTimeSliderControl{
 		Config: struct {
 			EndPercentageOfTimeRange   *float32 `json:"end_percentage_of_time_range,omitempty"`
 			IsAnchored                 *bool    `json:"is_anchored,omitempty"`
@@ -188,7 +188,7 @@ func Test_BuildConfig_boundaryValues(t *testing.T) {
 			IsAnchored:                 types.BoolNull(),
 		},
 	}
-	tsPanel := kbapi.KbnDashboardPanelTypeTimeSliderControl{
+	tsPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeTimeSliderControl{
 		Config: struct {
 			EndPercentageOfTimeRange   *float32 `json:"end_percentage_of_time_range,omitempty"`
 			IsAnchored                 *bool    `json:"is_anchored,omitempty"`
@@ -213,7 +213,7 @@ func Test_timeSliderPercentage_float32RoundTrip_writeThenRead(t *testing.T) {
 			IsAnchored:                 types.BoolValue(false),
 		},
 	}
-	tsPanel := kbapi.KbnDashboardPanelTypeTimeSliderControl{
+	tsPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeTimeSliderControl{
 		Config: struct {
 			EndPercentageOfTimeRange   *float32 `json:"end_percentage_of_time_range,omitempty"`
 			IsAnchored                 *bool    `json:"is_anchored,omitempty"`

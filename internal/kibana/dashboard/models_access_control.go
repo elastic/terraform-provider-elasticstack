@@ -25,14 +25,14 @@ import (
 )
 
 // toCreateAPI converts the Terraform model to the POST API model
-func accessControlValueToCreateAPI(m *models.AccessControlValue) kbapi.KbnDashboardAccessControl {
-	result := kbapi.KbnDashboardAccessControl{}
+func accessControlValueToCreateAPI(m *models.AccessControlValue) kbapi.KibanaHTTPAPIsKbnDashboardAccessControl {
+	result := kbapi.KibanaHTTPAPIsKbnDashboardAccessControl{}
 	if m == nil {
 		return result
 	}
 
 	if typeutils.IsKnown(m.AccessMode) {
-		mode := kbapi.KbnDashboardAccessControlAccessMode(m.AccessMode.ValueString())
+		mode := kbapi.KibanaHTTPAPIsKbnDashboardAccessControlAccessMode(m.AccessMode.ValueString())
 		result.AccessMode = &mode
 	}
 

@@ -34,7 +34,7 @@ import (
 
 const jsonNullString = "null"
 
-func isGaugeNoESQLCandidateActuallyESQL(api kbapi.GaugeNoESQL) bool {
+func isGaugeNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsGaugeNoESQL) bool {
 	return lenscommon.LensDataSourceIsESQLOrTable(api.DataSource.MarshalJSON())
 }
 
@@ -48,7 +48,7 @@ func gaugeConfigUsesESQL(m *models.GaugeConfigModel) bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, resolver lenscommon.Resolver, prior *models.GaugeConfigModel, api kbapi.GaugeNoESQL) diag.Diagnostics {
+func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, resolver lenscommon.Resolver, prior *models.GaugeConfigModel, api kbapi.KibanaHTTPAPIsGaugeNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -114,7 +114,7 @@ func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, resolve
 	return diags
 }
 
-func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, resolver lenscommon.Resolver, prior *models.GaugeConfigModel, api kbapi.GaugeESQL) diag.Diagnostics {
+func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, resolver lenscommon.Resolver, prior *models.GaugeConfigModel, api kbapi.KibanaHTTPAPIsGaugeESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)
@@ -257,8 +257,8 @@ func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, res
 	return diags
 }
 
-func gaugeConfigToAPI(m *models.GaugeConfigModel, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+func gaugeConfigToAPI(m *models.GaugeConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 
 	if m == nil {
@@ -271,7 +271,7 @@ func gaugeConfigToAPI(m *models.GaugeConfigModel, resolver lenscommon.Resolver) 
 		if diags.HasError() {
 			return attrs, diags
 		}
-		if err := attrs.FromGaugeESQL(esql); err != nil {
+		if err := attrs.FromKibanaHTTPAPIsGaugeESQL(esql); err != nil {
 			diags.AddError("Failed to create gauge ES|QL attributes", err.Error())
 		}
 		return attrs, diags
@@ -282,17 +282,17 @@ func gaugeConfigToAPI(m *models.GaugeConfigModel, resolver lenscommon.Resolver) 
 	if diags.HasError() {
 		return attrs, diags
 	}
-	if err := attrs.FromGaugeNoESQL(noESQL); err != nil {
+	if err := attrs.FromKibanaHTTPAPIsGaugeNoESQL(noESQL); err != nil {
 		diags.AddError("Failed to create gauge attributes", err.Error())
 	}
 	return attrs, diags
 }
 
-func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel, resolver lenscommon.Resolver) (kbapi.GaugeNoESQL, diag.Diagnostics) {
+func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsGaugeNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var api kbapi.GaugeNoESQL
+	var api kbapi.KibanaHTTPAPIsGaugeNoESQL
 
-	api.Type = kbapi.GaugeNoESQLTypeGauge
+	api.Type = kbapi.KibanaHTTPAPIsGaugeNoESQLTypeGauge
 
 	if !m.Title.IsNull() {
 		api.Title = m.Title.ValueStringPointer()
@@ -336,7 +336,7 @@ func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel, resolver lenscommon.Reso
 	}
 
 	if m.Styling != nil && typeutils.IsKnown(m.Styling.ShapeJSON) {
-		var shape kbapi.GaugeStyling_Shape
+		var shape kbapi.KibanaHTTPAPIsGaugeStyling_Shape
 		shapeDiags := m.Styling.ShapeJSON.Unmarshal(&shape)
 		diags.Append(shapeDiags...)
 		if !shapeDiags.HasError() {
@@ -361,7 +361,7 @@ func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel, resolver lenscommon.Reso
 		api.References = writes.References
 	}
 	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.GaugeNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsGaugeNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
 		diags.Append(ddDiags...)
 		if !ddDiags.HasError() {
 			api.Drilldowns = &items
@@ -371,10 +371,10 @@ func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel, resolver lenscommon.Reso
 	return api, diags
 }
 
-func gaugeConfigToAPIESQL(m *models.GaugeConfigModel, resolver lenscommon.Resolver) (kbapi.GaugeESQL, diag.Diagnostics) {
+func gaugeConfigToAPIESQL(m *models.GaugeConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsGaugeESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var api kbapi.GaugeESQL
-	api.Type = kbapi.GaugeESQLTypeGauge
+	var api kbapi.KibanaHTTPAPIsGaugeESQL
+	api.Type = kbapi.KibanaHTTPAPIsGaugeESQLTypeGauge
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = m.Title.ValueStringPointer()
@@ -415,7 +415,7 @@ func gaugeConfigToAPIESQL(m *models.GaugeConfigModel, resolver lenscommon.Resolv
 		api.Metric.Label = &l
 	}
 	if typeutils.IsKnown(m.EsqlMetric.ColorJSON) {
-		var color kbapi.GaugeESQL_Metric_Color
+		var color kbapi.KibanaHTTPAPIsGaugeESQL_Metric_Color
 		if err := json.Unmarshal([]byte(m.EsqlMetric.ColorJSON.ValueString()), &color); err != nil {
 			diags.AddError("Failed to unmarshal esql_metric.color_json", err.Error())
 			return api, diags
@@ -458,11 +458,11 @@ func gaugeConfigToAPIESQL(m *models.GaugeConfigModel, resolver lenscommon.Resolv
 	}
 	if m.EsqlMetric.Ticks != nil {
 		api.Metric.Ticks = &struct {
-			Mode    *kbapi.GaugeESQLMetricTicksMode `json:"mode,omitempty"`
-			Visible *bool                           `json:"visible,omitempty"`
+			Mode    *kbapi.KibanaHTTPAPIsGaugeESQLMetricTicksMode `json:"mode,omitempty"`
+			Visible *bool                                         `json:"visible,omitempty"`
 		}{}
 		if typeutils.IsKnown(m.EsqlMetric.Ticks.Mode) {
-			mode := kbapi.GaugeESQLMetricTicksMode(m.EsqlMetric.Ticks.Mode.ValueString())
+			mode := kbapi.KibanaHTTPAPIsGaugeESQLMetricTicksMode(m.EsqlMetric.Ticks.Mode.ValueString())
 			api.Metric.Ticks.Mode = &mode
 		}
 		if typeutils.IsKnown(m.EsqlMetric.Ticks.Visible) {
@@ -486,7 +486,7 @@ func gaugeConfigToAPIESQL(m *models.GaugeConfigModel, resolver lenscommon.Resolv
 	}
 
 	if m.Styling != nil && typeutils.IsKnown(m.Styling.ShapeJSON) {
-		var shape kbapi.GaugeStyling_Shape
+		var shape kbapi.KibanaHTTPAPIsGaugeStyling_Shape
 		shapeDiags := m.Styling.ShapeJSON.Unmarshal(&shape)
 		diags.Append(shapeDiags...)
 		if !shapeDiags.HasError() {
@@ -511,7 +511,7 @@ func gaugeConfigToAPIESQL(m *models.GaugeConfigModel, resolver lenscommon.Resolv
 		api.References = writes.References
 	}
 	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.GaugeESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsGaugeESQL_Drilldowns_Item](writes.DrilldownsRaw)
 		diags.Append(ddDiags...)
 		if !ddDiags.HasError() {
 			api.Drilldowns = &items

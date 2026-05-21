@@ -47,7 +47,7 @@ func TestAccessControlValue_toCreateAPI(t *testing.T) {
 			AccessMode: types.StringValue("write_restricted"),
 		}
 		apiModel := accessControlValueToCreateAPI(m)
-		mode := kbapi.KbnDashboardAccessControlAccessMode("write_restricted")
+		mode := kbapi.KibanaHTTPAPIsKbnDashboardAccessControlAccessMode("write_restricted")
 		assert.Equal(t, &mode, apiModel.AccessMode)
 	})
 }
@@ -75,19 +75,19 @@ func TestDashboardModel_populateFromAPI_clearsAccessControlWhenAccessModeMissing
 
 	resp := &kbapi.GetDashboardsIdResponse{
 		JSON200: &struct {
-			Data     kbapi.KbnDashboardData                   `json:"data"`
-			Id       string                                   `json:"id"` //nolint:revive // var-naming: API struct field
-			Meta     kbapi.KbnAsCodeMeta                      `json:"meta"`
-			Warnings *[]kbapi.KbnDashboardDroppedPanelWarning `json:"warnings,omitempty"`
+			Data     kbapi.KibanaHTTPAPIsKbnDashboardData                   `json:"data"`
+			Id       string                                                 `json:"id"` //nolint:revive // var-naming: API struct field
+			Meta     kbapi.KibanaHTTPAPIsKbnAsCodeMeta                      `json:"meta"`
+			Warnings *[]kbapi.KibanaHTTPAPIsKbnDashboardDroppedPanelWarning `json:"warnings,omitempty"`
 		}{
-			Data: kbapi.KbnDashboardData{
+			Data: kbapi.KibanaHTTPAPIsKbnDashboardData{
 				Title: "test dashboard",
-				Query: kbapi.KbnAsCodeQuery{},
-				TimeRange: kbapi.KbnEsQueryServerTimeRangeSchema{
+				Query: kbapi.KibanaHTTPAPIsKbnAsCodeQuery{},
+				TimeRange: kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
 					From: "now-15m",
 					To:   "now",
 				},
-				RefreshInterval: kbapi.KbnDataServiceServerRefreshIntervalSchema{
+				RefreshInterval: kbapi.KibanaHTTPAPIsKbnDataServiceServerRefreshIntervalSchema{
 					Pause: true,
 					Value: 0,
 				},

@@ -33,10 +33,10 @@ import (
 
 // LensChartPresentationWrites holds normalized API write material for typed Lens chart roots.
 type LensChartPresentationWrites struct {
-	TimeRange     kbapi.KbnEsQueryServerTimeRangeSchema
+	TimeRange     kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema
 	HideTitle     *bool
 	HideBorder    *bool
-	References    *[]kbapi.KbnContentManagementUtilsReferenceSchema
+	References    *[]CMReferenceSchema
 	DrilldownsRaw [][]byte
 }
 
@@ -75,7 +75,7 @@ func LensChartPresentationWritesFor(resolver Resolver, in models.LensChartPresen
 }
 
 // LensChartPresentationReferencesWrites unmarshals references_json into API reference objects when present.
-func LensChartPresentationReferencesWrites(referencesJSON jsontypes.Normalized, fieldLabel string) (*[]kbapi.KbnContentManagementUtilsReferenceSchema, diag.Diagnostics) {
+func LensChartPresentationReferencesWrites(referencesJSON jsontypes.Normalized, fieldLabel string) (*[]CMReferenceSchema, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	b, d := JSONBytesFromOptionalNormalizedArray(referencesJSON, fieldLabel)
 	diags.Append(d...)
@@ -83,7 +83,7 @@ func LensChartPresentationReferencesWrites(referencesJSON jsontypes.Normalized, 
 		return nil, diags
 	}
 
-	var refs []kbapi.KbnContentManagementUtilsReferenceSchema
+	var refs []kbapi.KibanaHTTPAPIsKbnContentManagementUtilsReferenceSchema
 	if err := json.Unmarshal(b, &refs); err != nil {
 		diags.AddError("Invalid "+fieldLabel, err.Error())
 		return nil, diags
@@ -223,7 +223,7 @@ func optionalBoolForDrilldownJSON(b types.Bool, defaultIfUnknown bool) bool {
 	return b.ValueBool()
 }
 
-func lensTimeRangeModeString(mode *kbapi.KbnEsQueryServerTimeRangeSchemaMode) string {
+func lensTimeRangeModeString(mode *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode) string {
 	if mode == nil {
 		return ""
 	}
@@ -231,7 +231,7 @@ func lensTimeRangeModeString(mode *kbapi.KbnEsQueryServerTimeRangeSchemaMode) st
 }
 
 // LensTimeRangesAPILiteralEqual reports whether two API time range payloads match including mode.
-func LensTimeRangesAPILiteralEqual(a, b kbapi.KbnEsQueryServerTimeRangeSchema) bool {
+func LensTimeRangesAPILiteralEqual(a, b kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema) bool {
 	if a.From != b.From || a.To != b.To {
 		return false
 	}
@@ -239,7 +239,7 @@ func LensTimeRangesAPILiteralEqual(a, b kbapi.KbnEsQueryServerTimeRangeSchema) b
 }
 
 // chartTimeRangeFromAPI maps a chart-root API time range into Terraform state with REQ-038/REQ-009 null-preservation semantics.
-func chartTimeRangeFromAPI(resolver Resolver, apiTimeRange kbapi.KbnEsQueryServerTimeRangeSchema, priorState *models.TimeRangeModel) *models.TimeRangeModel {
+func chartTimeRangeFromAPI(resolver Resolver, apiTimeRange kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, priorState *models.TimeRangeModel) *models.TimeRangeModel {
 	if apiTimeRange.From == "" && apiTimeRange.To == "" && (apiTimeRange.Mode == nil || lensTimeRangeModeString(apiTimeRange.Mode) == "") {
 		return nil
 	}
@@ -254,7 +254,7 @@ func chartTimeRangeFromAPI(resolver Resolver, apiTimeRange kbapi.KbnEsQueryServe
 	return timeRangeModelFromAPIWithModePreservation(apiTimeRange, priorState)
 }
 
-func timeRangeModelFromAPIWithModePreservation(api kbapi.KbnEsQueryServerTimeRangeSchema, prior *models.TimeRangeModel) *models.TimeRangeModel {
+func timeRangeModelFromAPIWithModePreservation(api kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, prior *models.TimeRangeModel) *models.TimeRangeModel {
 	out := &models.TimeRangeModel{
 		From: types.StringValue(api.From),
 		To:   types.StringValue(api.To),
@@ -285,7 +285,7 @@ func lensPresentationOptionalBoolRead(api *bool, prior types.Bool) types.Bool {
 	return prior
 }
 
-func lensPresentationReferencesJSONRead(ctx context.Context, prior jsontypes.Normalized, refs *[]kbapi.KbnContentManagementUtilsReferenceSchema) (jsontypes.Normalized, diag.Diagnostics) {
+func lensPresentationReferencesJSONRead(ctx context.Context, prior jsontypes.Normalized, refs *[]CMReferenceSchema) (jsontypes.Normalized, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	refsOmitted := refs == nil || len(*refs) == 0
@@ -457,10 +457,10 @@ func LensChartPresentationReadsFor(
 	ctx context.Context,
 	resolver Resolver,
 	prior *models.LensChartPresentationTFModel,
-	apiTimeRange kbapi.KbnEsQueryServerTimeRangeSchema,
+	apiTimeRange kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema,
 	hideTitle *bool,
 	hideBorder *bool,
-	refs *[]kbapi.KbnContentManagementUtilsReferenceSchema,
+	refs *[]CMReferenceSchema,
 	drilldownWire [][]byte,
 	drilldownsOmitted bool,
 ) (models.LensChartPresentationTFModel, diag.Diagnostics) {

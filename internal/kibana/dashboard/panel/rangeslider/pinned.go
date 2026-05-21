@@ -30,12 +30,12 @@ type pinnedHandler struct{}
 
 func (pinnedHandler) FromAPI(ctx context.Context, prior *models.PinnedPanelModel, raw kbapi.DashboardPinnedPanels_Item) (models.PinnedPanelModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	group, err := raw.AsKbnControlsSchemasControlsGroupSchemaRangeSliderControl()
+	group, err := raw.AsKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl()
 	if err != nil {
 		diags.AddError("Failed to parse pinned range slider control", err.Error())
 		return models.PinnedPanelModel{}, diags
 	}
-	var rsPanel kbapi.KbnDashboardPanelTypeRangeSliderControl
+	var rsPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl
 	if err := panelkit.RemapViaJSON(group, &rsPanel); err != nil {
 		diags.AddError("Failed to remap pinned range slider control from API", err.Error())
 		return models.PinnedPanelModel{}, diags
@@ -51,17 +51,17 @@ func (pinnedHandler) FromAPI(ctx context.Context, prior *models.PinnedPanelModel
 func (pinnedHandler) ToAPI(ppm models.PinnedPanelModel) (kbapi.DashboardPinnedPanels_Item, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	pm := ppm.SyntheticPanel()
-	rsPanel := kbapi.KbnDashboardPanelTypeRangeSliderControl{
-		Grid: kbapi.KbnDashboardPanelGrid{X: 0, Y: 0},
+	rsPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{
+		Grid: kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
 	}
 	BuildConfig(pm, &rsPanel)
-	var group kbapi.KbnControlsSchemasControlsGroupSchemaRangeSliderControl
+	var group kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl
 	if err := panelkit.RemapViaJSON(rsPanel, &group); err != nil {
 		diags.AddError("Failed to remap pinned range slider control", err.Error())
 		return kbapi.DashboardPinnedPanels_Item{}, diags
 	}
 	var item kbapi.DashboardPinnedPanels_Item
-	if err := item.FromKbnControlsSchemasControlsGroupSchemaRangeSliderControl(group); err != nil {
+	if err := item.FromKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl(group); err != nil {
 		diags.AddError("Failed to build pinned range slider control payload", err.Error())
 		return kbapi.DashboardPinnedPanels_Item{}, diags
 	}

@@ -33,18 +33,18 @@ import (
 
 type stubResolver struct{}
 
-func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
+func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
 	_ = chartLevel
-	return kbapi.KbnEsQueryServerTimeRangeSchema{}
+	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}
 }
 
-func (stubResolver) DashboardLensComparableTimeRange() (kbapi.KbnEsQueryServerTimeRangeSchema, bool) {
-	return kbapi.KbnEsQueryServerTimeRangeSchema{}, false
+func (stubResolver) DashboardLensComparableTimeRange() (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, bool) {
+	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}, false
 }
 
 func TestConverter_VizType(t *testing.T) {
 	var c converter
-	require.Equal(t, string(kbapi.PieNoESQLTypePie), c.VizType())
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsPieNoESQLTypePie), c.VizType())
 }
 
 func TestConverter_HandlesBlocks(t *testing.T) {
@@ -68,8 +68,8 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 		Description:         types.StringValue("d"),
 		IgnoreGlobalFilters: types.BoolValue(true),
 		Sampling:            types.Float64Value(0.75),
-		DonutHole:           types.StringValue(string(kbapi.PieStylingDonutHoleS)),
-		LabelPosition:       types.StringValue(string(kbapi.PieStylingLabelsPositionInside)),
+		DonutHole:           types.StringValue(string(kbapi.KibanaHTTPAPIsPieStylingDonutHoleS)),
+		LabelPosition:       types.StringValue(string(kbapi.KibanaHTTPAPIsPieStylingLabelsPositionInside)),
 		DataSourceJSON:      jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"logs-*"}`),
 		Query: &models.FilterSimpleModel{
 			Language:   types.StringValue("kql"),
@@ -79,7 +79,7 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 			Size:              types.StringValue("auto"),
 			Nested:            types.BoolValue(nested),
 			TruncateAfterLine: types.Int64Value(truncate),
-			Visible:           types.StringValue(string(kbapi.PieLegendVisibilityVisible)),
+			Visible:           types.StringValue(string(kbapi.KibanaHTTPAPIsPieLegendVisibilityVisible)),
 		},
 		Metrics: []models.PieMetricModel{
 			{
@@ -127,11 +127,11 @@ func TestConverter_roundTrip_ESQL(t *testing.T) {
 		"metrics": [{"operation":"value","column":"bytes","color":{"type":"static","color":"#54B399"},"format":{"type":"number"}}],
 		"group_by": [{"operation":"value","column":"host.name","collapse_by":"avg","color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]
 	}`
-	var apiESQL kbapi.PieESQL
+	var apiESQL kbapi.KibanaHTTPAPIsPieESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &apiESQL))
 
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
-	require.NoError(t, attrs.FromPieESQL(apiESQL))
+	var attrs lenscommon.VisByValueConfig0
+	require.NoError(t, attrs.FromKibanaHTTPAPIsPieESQL(apiESQL))
 
 	out := &models.LensByValueChartBlocks{}
 	diags := c.PopulateFromAttributes(ctx, resolver, out, attrs)
@@ -141,7 +141,7 @@ func TestConverter_roundTrip_ESQL(t *testing.T) {
 	attrs2, diags := c.BuildAttributes(out, resolver)
 	require.False(t, diags.HasError())
 
-	p2, err := attrs2.AsPieESQL()
+	p2, err := attrs2.AsKibanaHTTPAPIsPieESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "ESQL Pie Chart", *p2.Title)
 	assert.Len(t, p2.Metrics, 1)

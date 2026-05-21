@@ -29,59 +29,59 @@ import (
 
 // helpers
 
-func makeSloErrorBudgetAPIConfig(opts ...func(*kbapi.SloErrorBudgetEmbeddable)) kbapi.SloErrorBudgetEmbeddable {
-	cfg := kbapi.SloErrorBudgetEmbeddable{SloId: "my-slo-id"}
+func makeSloErrorBudgetAPIConfig(opts ...func(*kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable)) kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable {
+	cfg := kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable{SloId: "my-slo-id"}
 	for _, opt := range opts {
 		opt(&cfg)
 	}
 	return cfg
 }
 
-func sebWithSloInstanceID(id string) func(*kbapi.SloErrorBudgetEmbeddable) {
-	return func(c *kbapi.SloErrorBudgetEmbeddable) { c.SloInstanceId = new(id) }
+func sebWithSloInstanceID(id string) func(*kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) {
+	return func(c *kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) { c.SloInstanceId = new(id) }
 }
 
-func sebWithSloTitle(t string) func(*kbapi.SloErrorBudgetEmbeddable) {
-	return func(c *kbapi.SloErrorBudgetEmbeddable) { c.Title = new(t) }
+func sebWithSloTitle(t string) func(*kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) {
+	return func(c *kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) { c.Title = new(t) }
 }
 
-func sebWithSloDescription(d string) func(*kbapi.SloErrorBudgetEmbeddable) {
-	return func(c *kbapi.SloErrorBudgetEmbeddable) { c.Description = new(d) }
+func sebWithSloDescription(d string) func(*kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) {
+	return func(c *kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) { c.Description = new(d) }
 }
 
-func sebWithHideTitle(v bool) func(*kbapi.SloErrorBudgetEmbeddable) {
-	return func(c *kbapi.SloErrorBudgetEmbeddable) { c.HideTitle = new(v) }
+func sebWithHideTitle(v bool) func(*kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) {
+	return func(c *kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) { c.HideTitle = new(v) }
 }
 
-func sebWithHideBorder(v bool) func(*kbapi.SloErrorBudgetEmbeddable) {
-	return func(c *kbapi.SloErrorBudgetEmbeddable) { c.HideBorder = new(v) }
+func sebWithHideBorder(v bool) func(*kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) {
+	return func(c *kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) { c.HideBorder = new(v) }
 }
 
-func withSloDrilldown(url, label string, encodeURL, openInNewTab *bool) func(*kbapi.SloErrorBudgetEmbeddable) {
-	return func(c *kbapi.SloErrorBudgetEmbeddable) {
+func withSloDrilldown(url, label string, encodeURL, openInNewTab *bool) func(*kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) {
+	return func(c *kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) {
 		d := struct {
-			EncodeUrl    *bool                                           `json:"encode_url,omitempty"` //nolint:revive
-			Label        string                                          `json:"label"`
-			OpenInNewTab *bool                                           `json:"open_in_new_tab,omitempty"`
-			Trigger      kbapi.SloErrorBudgetEmbeddableDrilldownsTrigger `json:"trigger"`
-			Type         kbapi.SloErrorBudgetEmbeddableDrilldownsType    `json:"type"`
-			Url          string                                          `json:"url"` //nolint:revive
+			EncodeUrl    *bool                                                         `json:"encode_url,omitempty"` //nolint:revive
+			Label        string                                                        `json:"label"`
+			OpenInNewTab *bool                                                         `json:"open_in_new_tab,omitempty"`
+			Trigger      kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTrigger `json:"trigger"`
+			Type         kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsType    `json:"type"`
+			Url          string                                                        `json:"url"` //nolint:revive
 		}{
 			Url:          url,
 			Label:        label,
-			Trigger:      kbapi.SloErrorBudgetEmbeddableDrilldownsTriggerOnOpenPanelMenu,
-			Type:         kbapi.SloErrorBudgetEmbeddableDrilldownsTypeUrlDrilldown,
+			Trigger:      kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTriggerOnOpenPanelMenu,
+			Type:         kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTypeUrlDrilldown,
 			EncodeUrl:    encodeURL,
 			OpenInNewTab: openInNewTab,
 		}
 		if c.Drilldowns == nil {
 			c.Drilldowns = &[]struct {
-				EncodeUrl    *bool                                           `json:"encode_url,omitempty"` //nolint:revive
-				Label        string                                          `json:"label"`
-				OpenInNewTab *bool                                           `json:"open_in_new_tab,omitempty"`
-				Trigger      kbapi.SloErrorBudgetEmbeddableDrilldownsTrigger `json:"trigger"`
-				Type         kbapi.SloErrorBudgetEmbeddableDrilldownsType    `json:"type"`
-				Url          string                                          `json:"url"` //nolint:revive
+				EncodeUrl    *bool                                                         `json:"encode_url,omitempty"` //nolint:revive
+				Label        string                                                        `json:"label"`
+				OpenInNewTab *bool                                                         `json:"open_in_new_tab,omitempty"`
+				Trigger      kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTrigger `json:"trigger"`
+				Type         kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsType    `json:"type"`
+				Url          string                                                        `json:"url"` //nolint:revive
 			}{}
 		}
 		*c.Drilldowns = append(*c.Drilldowns, d)
@@ -96,7 +96,7 @@ func Test_buildSloErrorBudgetConfig_minimal(t *testing.T) {
 			SloID: types.StringValue("my-slo-id"),
 		},
 	}
-	var sebPanel kbapi.KbnDashboardPanelTypeSloErrorBudget
+	var sebPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget
 	bdc := BuildConfig(pm, &sebPanel)
 	require.False(t, bdc.HasError(), "%v", bdc)
 	assert.Equal(t, "my-slo-id", sebPanel.Config.SloId)
@@ -115,7 +115,7 @@ func Test_buildSloErrorBudgetConfig_sebWithSloInstanceID(t *testing.T) {
 			SloInstanceID: types.StringValue("my-instance"),
 		},
 	}
-	var sebPanel kbapi.KbnDashboardPanelTypeSloErrorBudget
+	var sebPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget
 	bdc := BuildConfig(pm, &sebPanel)
 	require.False(t, bdc.HasError(), "%v", bdc)
 	require.NotNil(t, sebPanel.Config.SloInstanceId)
@@ -129,7 +129,7 @@ func Test_buildSloErrorBudgetConfig_nullSloInstanceID(t *testing.T) {
 			SloInstanceID: types.StringNull(),
 		},
 	}
-	var sebPanel kbapi.KbnDashboardPanelTypeSloErrorBudget
+	var sebPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget
 	bdc := BuildConfig(pm, &sebPanel)
 	require.False(t, bdc.HasError(), "%v", bdc)
 	assert.Nil(t, sebPanel.Config.SloInstanceId)
@@ -145,7 +145,7 @@ func Test_buildSloErrorBudgetConfig_withDisplayFields(t *testing.T) {
 			HideBorder:  types.BoolValue(false),
 		},
 	}
-	var sebPanel kbapi.KbnDashboardPanelTypeSloErrorBudget
+	var sebPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget
 	bdc := BuildConfig(pm, &sebPanel)
 	require.False(t, bdc.HasError(), "%v", bdc)
 	require.NotNil(t, sebPanel.Config.Title)
@@ -172,7 +172,7 @@ func Test_buildSloErrorBudgetConfig_withDrilldowns(t *testing.T) {
 			},
 		},
 	}
-	var sebPanel kbapi.KbnDashboardPanelTypeSloErrorBudget
+	var sebPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget
 	bdc := BuildConfig(pm, &sebPanel)
 	require.False(t, bdc.HasError(), "%v", bdc)
 	require.NotNil(t, sebPanel.Config.Drilldowns)
@@ -180,8 +180,8 @@ func Test_buildSloErrorBudgetConfig_withDrilldowns(t *testing.T) {
 	ddr := (*sebPanel.Config.Drilldowns)[0]
 	assert.Equal(t, "https://example.com", ddr.Url)
 	assert.Equal(t, "Open in example", ddr.Label)
-	assert.Equal(t, kbapi.SloErrorBudgetEmbeddableDrilldownsTriggerOnOpenPanelMenu, ddr.Trigger)
-	assert.Equal(t, kbapi.SloErrorBudgetEmbeddableDrilldownsTypeUrlDrilldown, ddr.Type)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTriggerOnOpenPanelMenu, ddr.Trigger)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTypeUrlDrilldown, ddr.Type)
 	require.NotNil(t, ddr.EncodeUrl)
 	assert.True(t, *ddr.EncodeUrl)
 	require.NotNil(t, ddr.OpenInNewTab)
@@ -202,7 +202,7 @@ func Test_buildSloErrorBudgetConfig_drilldownsWithNullOptionalBools(t *testing.T
 			},
 		},
 	}
-	var sebPanel kbapi.KbnDashboardPanelTypeSloErrorBudget
+	var sebPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget
 	bdc := BuildConfig(pm, &sebPanel)
 	require.False(t, bdc.HasError(), "%v", bdc)
 	require.NotNil(t, sebPanel.Config.Drilldowns)

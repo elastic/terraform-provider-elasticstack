@@ -51,7 +51,7 @@ func (Handler) AlignStateFromPlan(ctx context.Context, plan, state *models.Panel
 }
 
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	olPanel, err := item.AsKbnDashboardPanelTypeOptionsListControl()
+	olPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl()
 	if err != nil {
 		var d diag.Diagnostics
 		d.AddError("Dashboard panel decode", err.Error())
@@ -72,13 +72,13 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	_ = dashboard
 	grid := panelkit.GridToAPI(pm.Grid)
 	id := panelkit.IDToAPI(pm.ID)
-	panel := kbapi.KbnDashboardPanelTypeOptionsListControl{
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{
 		Grid: grid,
 		Id:   id,
 	}
 	BuildConfig(pm, &panel)
 	var panelItem kbapi.DashboardPanelItem
-	if err := panelItem.FromKbnDashboardPanelTypeOptionsListControl(panel); err != nil {
+	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl(panel); err != nil {
 		var diags diag.Diagnostics
 		diags.AddError("Failed to create options list control panel", err.Error())
 		return panelItem, diags

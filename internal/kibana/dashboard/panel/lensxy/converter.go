@@ -36,7 +36,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.XyChartNoESQLTypeXy)
+	return string(kbapi.KibanaHTTPAPIsXyChartNoESQLTypeXy)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -47,7 +47,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("xy_chart_config", xyChartConfigSchemaAttrs(true))
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
 	var prior *models.XYChartConfigModel
 	if blocks != nil && blocks.XYChartConfig != nil {
 		cpy := *blocks.XYChartConfig
@@ -60,18 +60,18 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 	}
 	blocks.XYChartConfig = &models.XYChartConfigModel{}
 
-	if xyChart, err := attrs.AsXyChartNoESQL(); err == nil {
+	if xyChart, err := attrs.AsKibanaHTTPAPIsXyChartNoESQL(); err == nil {
 		return xyChartConfigFromAPINoESQL(ctx, blocks.XYChartConfig, resolver, prior, xyChart)
 	}
-	xyChart, err := attrs.AsXyChartESQL()
+	xyChart, err := attrs.AsKibanaHTTPAPIsXyChartESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 	return xyChartConfigFromAPIESQL(ctx, blocks.XYChartConfig, resolver, prior, xyChart)
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags

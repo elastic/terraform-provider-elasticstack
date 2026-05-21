@@ -25,18 +25,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func dashboardOptionsToAPI(m *models.DashboardModel) (kbapi.KbnDashboardOptions, diag.Diagnostics) {
+func dashboardOptionsToAPI(m *models.DashboardModel) (kbapi.KibanaHTTPAPIsKbnDashboardOptions, diag.Diagnostics) {
 	if m.Options == nil {
-		return kbapi.KbnDashboardOptions{}, diag.Diagnostics{}
+		return kbapi.KibanaHTTPAPIsKbnDashboardOptions{}, diag.Diagnostics{}
 	}
 	o := optionsToAPI(*m.Options)
 	if o == nil {
-		return kbapi.KbnDashboardOptions{}, diag.Diagnostics{}
+		return kbapi.KibanaHTTPAPIsKbnDashboardOptions{}, diag.Diagnostics{}
 	}
 	return *o, diag.Diagnostics{}
 }
 
-func dashboardMapOptionsFromAPI(m *models.DashboardModel, options kbapi.KbnDashboardOptions) *models.OptionsModel {
+func dashboardMapOptionsFromAPI(m *models.DashboardModel, options kbapi.KibanaHTTPAPIsKbnDashboardOptions) *models.OptionsModel {
 	// Kibana snapshots can materialize dashboard option defaults even when the
 	// options block was omitted in Terraform config. Preserve a nil options block
 	// in that case to avoid "inconsistent result after apply".
@@ -57,8 +57,8 @@ func dashboardMapOptionsFromAPI(m *models.DashboardModel, options kbapi.KbnDashb
 	return &model
 }
 
-func optionsToAPI(m models.OptionsModel) *kbapi.KbnDashboardOptions {
-	options := kbapi.KbnDashboardOptions{}
+func optionsToAPI(m models.OptionsModel) *kbapi.KibanaHTTPAPIsKbnDashboardOptions {
+	options := kbapi.KibanaHTTPAPIsKbnDashboardOptions{}
 	if typeutils.IsKnown(m.HidePanelTitles) {
 		options.HidePanelTitles = m.HidePanelTitles.ValueBoolPointer()
 	}
@@ -84,7 +84,7 @@ func optionsToAPI(m models.OptionsModel) *kbapi.KbnDashboardOptions {
 	return &options
 }
 
-func isDashboardOptionsDefaultSet(options *kbapi.KbnDashboardOptions) bool {
+func isDashboardOptionsDefaultSet(options *kbapi.KibanaHTTPAPIsKbnDashboardOptions) bool {
 	if options == nil {
 		return false
 	}

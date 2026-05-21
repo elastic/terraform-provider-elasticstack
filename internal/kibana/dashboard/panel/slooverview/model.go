@@ -43,14 +43,14 @@ type sloDrilldownWireJSON struct {
 }
 
 // BuildConfig writes Terraform panel state into the typed API panel's config union (Grid/Id are set separately).
-func BuildConfig(pm models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSloOverview) diag.Diagnostics {
+func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview) diag.Diagnostics {
 	var diags diag.Diagnostics
 	cfg := pm.SloOverviewConfig
 	if cfg == nil {
 		return nil
 	}
 
-	var config kbapi.KbnDashboardPanelTypeSloOverview_Config
+	var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview_Config
 
 	if cfg.Single != nil {
 		single, d := singleToAPI(cfg.Single)
@@ -88,10 +88,10 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSloOver
 	return diags
 }
 
-func singleToAPI(m *models.SloOverviewSingleModel) (kbapi.SloSingleOverviewEmbeddable, diag.Diagnostics) {
+func singleToAPI(m *models.SloOverviewSingleModel) (kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddable, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.SloSingleOverviewEmbeddable{
-		OverviewMode: kbapi.SloSingleOverviewEmbeddableOverviewModeSingle,
+	api := kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddable{
+		OverviewMode: kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddableOverviewModeSingle,
 		SloId:        m.SloID.ValueString(),
 	}
 
@@ -122,13 +122,13 @@ func singleToAPI(m *models.SloOverviewSingleModel) (kbapi.SloSingleOverviewEmbed
 	return api, diags
 }
 
-func setDrilldownsOnSingle(api *kbapi.SloSingleOverviewEmbeddable, drilldowns []models.URLDrilldownModel) diag.Diagnostics {
+func setDrilldownsOnSingle(api *kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddable, drilldowns []models.URLDrilldownModel) diag.Diagnostics {
 	return injectDrilldownsJSON(api, drilldowns)
 }
 
-func groupsToAPI(m *models.SloOverviewGroupsModel) (kbapi.SloGroupOverviewEmbeddable, diag.Diagnostics) {
+func groupsToAPI(m *models.SloOverviewGroupsModel) (kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.SloGroupOverviewEmbeddable{
+	api := kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable{
 		OverviewMode: kbapi.Groups,
 	}
 
@@ -161,7 +161,7 @@ func groupsToAPI(m *models.SloOverviewGroupsModel) (kbapi.SloGroupOverviewEmbedd
 	return api, diags
 }
 
-func setDrilldownsOnGroups(api *kbapi.SloGroupOverviewEmbeddable, drilldowns []models.URLDrilldownModel) diag.Diagnostics {
+func setDrilldownsOnGroups(api *kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable, drilldowns []models.URLDrilldownModel) diag.Diagnostics {
 	return injectDrilldownsJSON(api, drilldowns)
 }
 
@@ -209,21 +209,21 @@ func buildDrilldownsWire(drilldowns []models.URLDrilldownModel) []sloDrilldownWi
 }
 
 func groupFiltersToAPI(m *models.SloGroupFiltersModel) (*struct {
-	Filters  *[]kbapi.SloGroupOverviewEmbeddable_GroupFilters_Filters_Item `json:"filters,omitempty"`
-	GroupBy  *kbapi.SloGroupOverviewEmbeddableGroupFiltersGroupBy          `json:"group_by,omitempty"`
-	Groups   *[]string                                                     `json:"groups,omitempty"`
-	KqlQuery *string                                                       `json:"kql_query,omitempty"`
+	Filters  *[]kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable_GroupFilters_Filters_Item `json:"filters,omitempty"`
+	GroupBy  *kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddableGroupFiltersGroupBy          `json:"group_by,omitempty"`
+	Groups   *[]string                                                                   `json:"groups,omitempty"`
+	KqlQuery *string                                                                     `json:"kql_query,omitempty"`
 }, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	gf := &struct {
-		Filters  *[]kbapi.SloGroupOverviewEmbeddable_GroupFilters_Filters_Item `json:"filters,omitempty"`
-		GroupBy  *kbapi.SloGroupOverviewEmbeddableGroupFiltersGroupBy          `json:"group_by,omitempty"`
-		Groups   *[]string                                                     `json:"groups,omitempty"`
-		KqlQuery *string                                                       `json:"kql_query,omitempty"`
+		Filters  *[]kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable_GroupFilters_Filters_Item `json:"filters,omitempty"`
+		GroupBy  *kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddableGroupFiltersGroupBy          `json:"group_by,omitempty"`
+		Groups   *[]string                                                                   `json:"groups,omitempty"`
+		KqlQuery *string                                                                     `json:"kql_query,omitempty"`
 	}{}
 
 	if typeutils.IsKnown(m.GroupBy) {
-		gb := kbapi.SloGroupOverviewEmbeddableGroupFiltersGroupBy(m.GroupBy.ValueString())
+		gb := kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddableGroupFiltersGroupBy(m.GroupBy.ValueString())
 		gf.GroupBy = &gb
 	}
 
@@ -240,7 +240,7 @@ func groupFiltersToAPI(m *models.SloGroupFiltersModel) (*struct {
 	}
 
 	if typeutils.IsKnown(m.FiltersJSON) && !m.FiltersJSON.IsNull() {
-		var filters []kbapi.SloGroupOverviewEmbeddable_GroupFilters_Filters_Item
+		var filters []kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable_GroupFilters_Filters_Item
 		if err := json.Unmarshal([]byte(m.FiltersJSON.ValueString()), &filters); err != nil {
 			diags.AddError("Failed to unmarshal filters_json", err.Error())
 			return nil, diags
@@ -252,7 +252,7 @@ func groupFiltersToAPI(m *models.SloGroupFiltersModel) (*struct {
 }
 
 // PopulateFromAPI maps an SLO overview API panel into Terraform panel state. prior is TF plan/state (nil on import).
-func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, panel kbapi.KbnDashboardPanelTypeSloOverview) diag.Diagnostics {
+func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	discriminator, err := panel.Config.Discriminator()
@@ -263,14 +263,14 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, panel kbap
 
 	switch discriminator {
 	case "slo-single-overview-embeddable", "single":
-		single, err := panel.Config.AsSloSingleOverviewEmbeddable()
+		single, err := panel.Config.AsKibanaHTTPAPIsSloSingleOverviewEmbeddable()
 		if err != nil {
 			diags.AddError("Failed to read SLO single overview config", err.Error())
 			return diags
 		}
 		return sloSingleFromAPI(pm, prior, single)
 	case "slo-group-overview-embeddable", "groups":
-		groups, err := panel.Config.AsSloGroupOverviewEmbeddable()
+		groups, err := panel.Config.AsKibanaHTTPAPIsSloGroupOverviewEmbeddable()
 		if err != nil {
 			diags.AddError("Failed to read SLO groups overview config", err.Error())
 			return diags
@@ -302,7 +302,7 @@ func sloBoolFromAPIOrPrior(apiVal *bool, priorVal types.Bool) types.Bool {
 	return types.BoolNull()
 }
 
-func sloSingleFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kbapi.SloSingleOverviewEmbeddable) diag.Diagnostics {
+func sloSingleFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddable) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	var priorSingle *models.SloOverviewSingleModel
@@ -372,7 +372,7 @@ func sloSingleFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kba
 	return diags
 }
 
-func sloGroupsFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kbapi.SloGroupOverviewEmbeddable) diag.Diagnostics {
+func sloGroupsFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	var priorGroups *models.SloOverviewGroupsModel
@@ -475,6 +475,6 @@ func drilldownsFromWireJSON(b []byte) []models.URLDrilldownModel {
 	return result
 }
 
-func populateFiltersJSONFromAPI(filters []kbapi.SloGroupOverviewEmbeddable_GroupFilters_Filters_Item, out *jsontypes.Normalized) diag.Diagnostics {
+func populateFiltersJSONFromAPI(filters []kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable_GroupFilters_Filters_Item, out *jsontypes.Normalized) diag.Diagnostics {
 	return populateFilterJSONFromMarshaled(filters, out)
 }

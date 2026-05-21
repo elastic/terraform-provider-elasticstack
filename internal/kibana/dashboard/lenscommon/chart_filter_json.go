@@ -94,7 +94,7 @@ func populateFilterJSONFromMarshaled(item any, out *jsontypes.Normalized) diag.D
 }
 
 // PopulateFiltersFromAPI converts kbapi lens panel filters into Terraform models, appending errors to diags.
-func PopulateFiltersFromAPI(filters []kbapi.LensPanelFilters_Item, diags *diag.Diagnostics) []models.ChartFilterJSONModel {
+func PopulateFiltersFromAPI(filters []kbapi.KibanaHTTPAPIsLensPanelFilters_Item, diags *diag.Diagnostics) []models.ChartFilterJSONModel {
 	if len(filters) == 0 {
 		return nil
 	}
@@ -111,14 +111,14 @@ func PopulateFiltersFromAPI(filters []kbapi.LensPanelFilters_Item, diags *diag.D
 }
 
 // BuildFiltersForAPI converts model filters into the kbapi slice; the returned slice is never nil.
-func BuildFiltersForAPI(filters []models.ChartFilterJSONModel, diags *diag.Diagnostics) []kbapi.LensPanelFilters_Item {
+func BuildFiltersForAPI(filters []models.ChartFilterJSONModel, diags *diag.Diagnostics) []kbapi.KibanaHTTPAPIsLensPanelFilters_Item {
 	if len(filters) == 0 {
-		return []kbapi.LensPanelFilters_Item{}
+		return []kbapi.KibanaHTTPAPIsLensPanelFilters_Item{}
 	}
 
-	items := make([]kbapi.LensPanelFilters_Item, 0, len(filters))
+	items := make([]kbapi.KibanaHTTPAPIsLensPanelFilters_Item, 0, len(filters))
 	for _, f := range filters {
-		var item kbapi.LensPanelFilters_Item
+		var item kbapi.KibanaHTTPAPIsLensPanelFilters_Item
 		fd := DecodeChartFilterJSON(f.FilterJSON, &item)
 		diags.Append(fd...)
 		if !fd.HasError() {
