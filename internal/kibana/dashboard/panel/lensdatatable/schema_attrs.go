@@ -28,7 +28,7 @@ import (
 )
 
 // getDatatableSchema returns the schema for datatable chart configuration.
-// includePresentation merges REQ-037 fields for vis panels only; lens-dashboard-app by_value passes false.
+// includePresentation merges REQ-037 fields for vis panels only.
 func getDatatableSchema(includePresentation bool) map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"no_esql": schema.SingleNestedAttribute{

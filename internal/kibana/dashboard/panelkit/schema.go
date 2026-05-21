@@ -224,9 +224,8 @@ func ImageDrilldownSchema(opts ImageDrilldownOptions) schema.NestedAttributeObje
 }
 
 // StructuredDrilldownsAttribute returns the ListNestedAttribute used for by-reference
-// `drilldowns` entries, shared by `vis_config.by_reference` and
-// `lens_dashboard_app_config.by_reference` panels. Each list element must contain exactly
-// one of `dashboard`, `discover`, or `url`.
+// `drilldowns` entries on `vis_config.by_reference` panels. Each list element must contain
+// exactly one of `dashboard`, `discover`, or `url`.
 func StructuredDrilldownsAttribute() schema.Attribute {
 	return schema.ListNestedAttribute{
 		MarkdownDescription: "Structured dashboard, Discover, or URL drilldown entries for by-reference panels — " +
