@@ -36,13 +36,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-// TestAccResourceDashboardUnknownPanel tests that unknown panel types (e.g. image)
-// are preserved during refresh. The dashboard is first created via Terraform with a
-// markdown panel, then the Kibana API is called outside Terraform to replace the
-// panels with an image panel (unknown type). A subsequent plan-only step verifies
-// the unknown panel is preserved in state and that Terraform detects the drift.
-func TestAccResourceDashboardUnknownPanel(t *testing.T) {
-	dashboardTitle := "Test Dashboard Unknown Panel " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+// TestAccResourceDashboardUnknownPanel_lensDashboardApp verifies read-time unknown-panel
+// fallback when Kibana still returns a lens-dashboard-app panel (no registered handler).
+func TestAccResourceDashboardUnknownPanel_lensDashboardApp(t *testing.T) {
+	dashboardTitle := "Test Dashboard lens-dashboard-app fallback " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
 	var dashboardID string
 
@@ -63,7 +60,6 @@ func TestAccResourceDashboardUnknownPanel(t *testing.T) {
 						if !ok {
 							return fmt.Errorf("resource not found in state")
 						}
-						// The composite ID is <space_id>/<dashboard_uuid>; use the shared helper.
 						parsedID, diags := clients.CompositeIDFromStr(rs.Primary.ID)
 						if diags.HasError() {
 							return fmt.Errorf("could not parse dashboard composite ID %q", rs.Primary.ID)
@@ -79,7 +75,7 @@ func TestAccResourceDashboardUnknownPanel(t *testing.T) {
 					if dashboardID == "" {
 						t.Fatal("dashboardID not set from step 1")
 					}
-					if err := replaceDashboardPanelWithImage(t, dashboardID); err != nil {
+					if err := replaceDashboardPanelWithLensDashboardApp(t, dashboardID); err != nil {
 						t.Fatalf("failed to replace dashboard panels: %v", err)
 					}
 				},
@@ -89,27 +85,26 @@ func TestAccResourceDashboardUnknownPanel(t *testing.T) {
 				},
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
-				// Expect the image panel to be read back and preserved in state.
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "image"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "lens-dashboard-app"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.x", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.y", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "48"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.h", "15"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.id"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.config_json"),
-					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.config_json", `{"image_config":{}}`),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.markdown_config"),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.config_json", `"type":"metric"`),
 				),
 			},
 		},
 	})
 }
 
-// replaceDashboardPanelWithImage replaces all panels on an existing dashboard with a single
-// image panel (an unknown panel type that the provider doesn't have a typed config block for).
-func replaceDashboardPanelWithImage(t *testing.T, dashboardID string) error {
+func replaceDashboardPanelWithLensDashboardApp(t *testing.T, dashboardID string) error {
 	t.Helper()
 
 	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
@@ -122,7 +117,6 @@ func replaceDashboardPanelWithImage(t *testing.T, dashboardID string) error {
 		return fmt.Errorf("failed to get Kibana OAPI client: %w", err)
 	}
 
-	// First, GET the current dashboard to retrieve its full state for the PUT body.
 	getURL := fmt.Sprintf("%s/api/dashboards/%s", kibanaClient.URL, dashboardID)
 	getReq, err := http.NewRequestWithContext(context.Background(), http.MethodGet, getURL, nil)
 	if err != nil {
@@ -154,8 +148,8 @@ func replaceDashboardPanelWithImage(t *testing.T, dashboardID string) error {
 	}
 	data["panels"] = []map[string]any{
 		{
-			"id":   "tf-acc-image-1",
-			"type": "image",
+			"id":   "tf-acc-lens-app-1",
+			"type": "lens-dashboard-app",
 			"grid": map[string]any{
 				"x": 0,
 				"y": 0,
@@ -163,10 +157,20 @@ func replaceDashboardPanelWithImage(t *testing.T, dashboardID string) error {
 				"h": 15,
 			},
 			"config": map[string]any{
-				"image_config": map[string]any{
-					"src": map[string]any{
-						"type": "url",
-						"url":  "https://example.com/image.png",
+				"time_range": map[string]any{"from": "now-15m", "to": "now"},
+				"title":      "API lens-dashboard-app metric",
+				"type":       "metric",
+				"data_source": map[string]any{
+					"type":          "data_view_spec",
+					"index_pattern": "metrics-*",
+					"time_field":    "@timestamp",
+				},
+				"query": map[string]any{"language": "kql", "expression": ""},
+				"metrics": []map[string]any{
+					{
+						"type":      "primary",
+						"operation": "count",
+						"format":    map[string]any{"type": "number"},
 					},
 				},
 			},
