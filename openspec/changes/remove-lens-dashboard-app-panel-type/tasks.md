@@ -8,11 +8,12 @@
 - [x] 2.1 Delete `generated/kbapi/dashboards.json`
 - [x] 2.2 In `generated/kbapi/transform_schema.go`: remove `mergeDashboardsSchema` from the `transformers` slice, and remove the `//go:embed dashboards.json` directive and `var dashboardsJSON string` variable
 - [x] 2.3 In `generated/kbapi/transform_schema.go`: remove the `mergeDashboardsSchema` function body
-- [x] 2.4 In `generated/kbapi/transform_schema.go`: remove `fixVisualizationIdParam` from the `transformers` slice and delete its function body (the `/api/visualizations/{id}` path was provided exclusively by `dashboards.json`)
+- [x] 2.4 Confirm `fixVisualizationIdParam` is retained in `generated/kbapi/transform_schema.go` because upstream `/api/visualizations/{id}` redirect stubs lack `{id}` parameters and would break `oapi-codegen` without the transformer
 - [x] 2.5 Run `make -C generated/kbapi transform` and inspect `oas-filtered.yaml` to confirm the exact `Kibana_HTTP_APIs_kbn-dashboard-*` schema key names used by `fixDashboardPanelItemRefs`
 - [x] 2.6 In `generated/kbapi/transform_schema.go`: update `fixDashboardPanelItemRefs` to use the upstream-native `Kibana_HTTP_APIs_kbn-dashboard-data` and `Kibana_HTTP_APIs_kbn-dashboard-section` key names (and any other renamed dashboard schema keys confirmed in 2.5)
 - [x] 2.7 Update `panelTypePrefix` logic in `transform_schema.go` if upstream panel-type schemas are now named `Kibana_HTTP_APIs_kbn-dashboard-panel-type-*` (confirm by inspecting `oas-filtered.yaml`)
 - [x] 2.8 Run `make -C generated/kbapi generate` and verify `kibana.gen.go` compiles cleanly; confirm that `KbnDashboardPanelTypeLensDashboardApp` no longer appears in the output
+- [x] 2.9 Extract dashboard HTTP paths from the prior `dashboards.json` overlay into `generated/kbapi/dashboard-paths.json` and inject via `injectDashboardAPIPaths` because upstream `oas.yaml` only has redirect stubs for those routes
 
 ## 3. Provider resource cleanup
 

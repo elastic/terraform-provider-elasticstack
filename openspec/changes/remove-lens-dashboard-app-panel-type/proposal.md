@@ -6,7 +6,7 @@ The Kibana Dashboard API included `lens-dashboard-app` as a panel type in its pu
 
 ## What Changes
 
-- **Remove `dashboards.json` and its merge infrastructure** from the kbapi generator: delete `generated/kbapi/dashboards.json`, remove `mergeDashboardsSchema` and `fixVisualizationIdParam` from the transformer pipeline in `generated/kbapi/transform_schema.go`, and update `fixDashboardPanelItemRefs` to use the upstream-native `Kibana_HTTP_APIs_` schema key prefix that applies once the supplementary file is absent.
+- **Remove `dashboards.json` and its schema-merge infrastructure** from the kbapi generator: delete `generated/kbapi/dashboards.json`, remove `mergeDashboardsSchema` from the transformer pipeline in `generated/kbapi/transform_schema.go`, add a paths-only `generated/kbapi/dashboard-paths.json` overlay injected via `injectDashboardAPIPaths`, retain `fixVisualizationIdParam` (upstream redirect stubs still lack `{id}` parameters), and update `fixDashboardPanelItemRefs` to use the upstream-native `Kibana_HTTP_APIs_` schema key prefix.
 - **Regenerate `generated/kbapi/kibana.gen.go`** so that `KbnDashboardPanelTypeLensDashboardApp` and any other dashboard types renamed by the upstream key-prefix change are emitted correctly by the generator.
 - **Delete `internal/kibana/dashboard/panel/lensdashboardapp/`** — the full panel handler implementation.
 - **Remove `lens_dashboard_app_config`** from the panel schema (`schema.go`), from `PanelModel` (`models/panel.go`), and from the model types in `models/lens.go`.
@@ -27,7 +27,7 @@ After this change:
 ## Implementation Notes
 
 - **Run `make -C generated/kbapi transform` before writing provider code.** The transform step produces `oas-filtered.yaml`, which reveals the exact post-removal key names under `schemas.Kibana_HTTP_APIs_kbn-dashboard-*`. These names must be confirmed before updating `fixDashboardPanelItemRefs` and any provider-side references to generated structs.
-- **`fixVisualizationIdParam` must also be removed**: the `/api/visualizations/{id}` path was provided exclusively by `dashboards.json` and will not exist in the upstream spec after removal. The function already has a nil-guard so it would become a no-op, but removal is cleaner and avoids dead code.
+- **`fixVisualizationIdParam` is retained**: upstream `oas.yaml` still exposes `/api/visualizations/{id}` as redirect stubs without `{id}` path parameters; the transformer injects them so `oapi-codegen` succeeds. Dashboard HTTP routes use a separate paths-only `dashboard-paths.json` overlay (not schema merging).
 - **Unknown-panel fallback is the safety net**: the read path for unrecognized panel types already falls back to `config_json`. No new fallback code is needed.
 - **Shared Lens infrastructure stays**: `lenscommon/` and `vis_config` packages remain in use for `type = "vis"` panels and are not in scope for removal.
 
