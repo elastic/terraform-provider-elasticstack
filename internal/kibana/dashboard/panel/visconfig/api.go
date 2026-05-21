@@ -101,7 +101,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 	if err == nil {
 		configJSON := customtypes.NewJSONWithDefaultsValue(string(configBytes), panelkit.PanelJSONDefaultsFunc())
 		if prior != nil {
-			configJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, prior.ConfigJSON, configJSON, &diags)
+			configJSON = panelkit.PreservePriorPanelConfigJSON(ctx, prior.ConfigJSON, configJSON, &diags)
 		}
 		pm.ConfigJSON = configJSON
 	}
