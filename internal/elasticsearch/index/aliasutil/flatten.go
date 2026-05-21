@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -39,7 +38,7 @@ func NormalizeAliasFilterMap(filterMap map[string]any) (jsontypes.Normalized, di
 	if len(filterMap) == 0 {
 		return jsontypes.NewNormalizedNull(), nil
 	}
-	if nm, ok := elasticsearch.NormalizeQueryFilter(filterMap).(map[string]any); ok {
+	if nm, ok := normalizeQueryFilter(filterMap).(map[string]any); ok {
 		filterMap = nm
 	}
 	normalizedBytes, err := json.Marshal(filterMap)
@@ -69,7 +68,7 @@ func NormalizeAliasFilterAnyToMap(v any) (map[string]any, diag.Diagnostics) {
 			diag.NewErrorDiagnostic("failed to unmarshal alias filter", err.Error()),
 		}
 	}
-	if nm, ok := elasticsearch.NormalizeQueryFilter(filterMap).(map[string]any); ok {
+	if nm, ok := normalizeQueryFilter(filterMap).(map[string]any); ok {
 		return nm, nil
 	}
 	return filterMap, nil
@@ -148,4 +147,34 @@ func AliasesFromAPI(ctx context.Context, apiAliases map[string]estypes.Alias, el
 	}
 
 	return modelAliases, nil
+}
+
+// normalizeQueryFilter recursively compacts expanded single-key query values
+// produced by the typed client back to their shorthand form.
+// For example: {"term":{"field":{"value":"x"}}} → {"term":{"field":"x"}}
+func normalizeQueryFilter(v any) any {
+	switch val := v.(type) {
+	case map[string]any:
+		if len(val) == 1 {
+			if inner, ok := val["value"]; ok {
+				switch inner.(type) {
+				case string, float64, bool, int, int64:
+					return inner
+				}
+			}
+		}
+		out := make(map[string]any, len(val))
+		for k, vv := range val {
+			out[k] = normalizeQueryFilter(vv)
+		}
+		return out
+	case []any:
+		out := make([]any, len(val))
+		for i, vv := range val {
+			out[i] = normalizeQueryFilter(vv)
+		}
+		return out
+	default:
+		return v
+	}
 }

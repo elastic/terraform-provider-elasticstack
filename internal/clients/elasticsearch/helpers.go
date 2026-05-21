@@ -75,34 +75,3 @@ func formatDuration(d time.Duration) string {
 	}
 	return strconv.FormatInt(int64(d)/int64(time.Millisecond), 10) + "ms"
 }
-
-// NormalizeQueryFilter recursively compacts expanded single-key query values
-// produced by the typed client back to their shorthand form.
-// For example: {"term":{"field":{"value":"x"}}} → {"term":{"field":"x"}}
-func NormalizeQueryFilter(v any) any {
-	switch val := v.(type) {
-	case map[string]any:
-		// If this map has exactly one key "value" with a scalar value, compact it.
-		if len(val) == 1 {
-			if inner, ok := val["value"]; ok {
-				switch inner.(type) {
-				case string, float64, bool, int, int64:
-					return inner
-				}
-			}
-		}
-		out := make(map[string]any, len(val))
-		for k, vv := range val {
-			out[k] = NormalizeQueryFilter(vv)
-		}
-		return out
-	case []any:
-		out := make([]any, len(val))
-		for i, vv := range val {
-			out[i] = NormalizeQueryFilter(vv)
-		}
-		return out
-	default:
-		return v
-	}
-}
