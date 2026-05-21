@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -45,7 +46,11 @@ func TestAccResourceMLCalendar(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "calendar_id", calendarID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "description", "Test calendar"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_calendar.test", "id"),
+					resource.TestMatchResourceAttr(
+						"elasticstack_elasticsearch_ml_calendar.test",
+						"id",
+						regexp.MustCompile(`^[^/]+/`+regexp.QuoteMeta(calendarID)+`$`),
+					),
 				),
 			},
 			{
@@ -54,10 +59,22 @@ func TestAccResourceMLCalendar(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"calendar_id": config.StringVariable(calendarID),
 				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							"elasticstack_elasticsearch_ml_calendar.test",
+							plancheck.ResourceActionReplace,
+						),
+					},
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "calendar_id", calendarID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "description", "Updated calendar description"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_calendar.test", "id"),
+					resource.TestMatchResourceAttr(
+						"elasticstack_elasticsearch_ml_calendar.test",
+						"id",
+						regexp.MustCompile(`^[^/]+/`+regexp.QuoteMeta(calendarID)+`$`),
+					),
 				),
 			},
 		},
@@ -80,6 +97,32 @@ func TestAccResourceMLCalendarNoJobs(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "calendar_id", calendarID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "description", "Calendar with no jobs"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_calendar.test", "id"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLCalendarNoDescription(t *testing.T) {
+	calendarID := fmt.Sprintf("test-cal-nodesc-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"calendar_id": config.StringVariable(calendarID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "calendar_id", calendarID),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "description", ""),
+					resource.TestMatchResourceAttr(
+						"elasticstack_elasticsearch_ml_calendar.test",
+						"id",
+						regexp.MustCompile(`^[^/]+/`+regexp.QuoteMeta(calendarID)+`$`),
+					),
 				),
 			},
 		},
