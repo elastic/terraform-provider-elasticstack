@@ -65,6 +65,18 @@ func TestStringIsJSONObject(t *testing.T) {
 			wantError: true,
 		},
 		{
+			name:      "null with zero-value fails",
+			validator: StringIsJSONObject{},
+			value:     "null",
+			wantError: true,
+		},
+		{
+			name:      "null with NonEmpty fails as non-object",
+			validator: StringIsJSONObject{NonEmpty: true},
+			value:     "null",
+			wantError: true,
+		},
+		{
 			name:      "valid object with keys and zero-value passes",
 			validator: StringIsJSONObject{},
 			value:     `{"properties":{"title":{"type":"keyword"}}}`,

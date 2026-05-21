@@ -55,6 +55,15 @@ func (s StringIsJSONObject) ValidateString(_ context.Context, req validator.Stri
 		return
 	}
 
+	if m == nil {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"expected value to be a JSON object",
+			"This value must be an object, not a simple type or array. Check the documentation for the expected format.",
+		)
+		return
+	}
+
 	if s.NonEmpty && len(m) == 0 {
 		resp.Diagnostics.AddAttributeError(
 			req.Path,
