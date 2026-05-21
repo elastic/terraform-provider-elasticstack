@@ -599,6 +599,7 @@ var transformers = []TransformFunc{
 	fixPutSecurityRoleName,
 	fixGetSpacesParams,
 	fixSpaceResponseSchemas,
+	fixVisualizationIdParam,
 	fixSecurityExceptionListItems,
 	removeDuplicateOneOfRefs,
 	transformRemoveAnyOfWhenOneOfPresent,
@@ -624,22 +625,16 @@ func mergeDashboardsSchema(schema *Schema) {
 		log.Fatalf("failed to unmarshal schema from dashboards.yaml: %v", err)
 	}
 
-	// Merge paths
+	// Merge paths, preferring declarations in dashboards.json
 	for path, pathInfo := range dashboardsSchema.Paths {
-		// Only add the path if it doesn't already exist
-		if _, ok := schema.Paths[path]; !ok {
-			schema.Paths[path] = pathInfo
-		}
+		schema.Paths[path] = pathInfo
 	}
 
-	// Merge component schemas
+	// Merge component schemas, preferring declarations in dashboards.json
 	dashboardSchemas := dashboardsSchema.Components.MustGetMap("schemas")
 	schemaSchemas := schema.Components.MustGetMap("schemas")
 	for key, schemaInfo := range dashboardSchemas {
-		// Only add the schema if it doesn't already exist
-		if _, ok := schemaSchemas[key]; !ok {
-			schemaSchemas[key] = schemaInfo
-		}
+		schemaSchemas[key] = schemaInfo
 	}
 }
 
@@ -1071,6 +1066,33 @@ func fixSpaceResponseSchemas(schema *Schema) {
 	// PUT /api/spaces/space/{id} — returns the updated space
 	put := schema.MustGetPath("/api/spaces/space/{id}").MustGetEndpoint("put")
 	put.Set("responses.200.content.application/json.schema", spaceRef)
+}
+
+// fixVisualizationIdParam injects the missing {id} path parameter for
+// /api/visualizations/{id}, which dashboards.json declares without parameters.
+func fixVisualizationIdParam(schema *Schema) {
+	path := schema.GetPath("/api/visualizations/{id}")
+	if path == nil {
+		return
+	}
+	idParam := Map{
+		"in":       "path",
+		"name":     "id",
+		"required": true,
+		"schema":   Map{"type": "string"},
+	}
+	for _, method := range []string{"get", "put", "post", "patch", "delete"} {
+		endpoint := path.GetEndpoint(method)
+		if endpoint == nil {
+			continue
+		}
+		if params, ok := endpoint.GetSlice("parameters"); ok {
+			params = append(params, idParam)
+			endpoint.Set("parameters", params)
+		} else {
+			endpoint.Set("parameters", Slice{idParam})
+		}
+	}
 }
 
 func fixDashboardPanelItemRefs(schema *Schema) {
