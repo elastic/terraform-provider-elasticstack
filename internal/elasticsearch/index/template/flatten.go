@@ -22,8 +22,8 @@ import (
 	"encoding/json"
 	"sort"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -254,29 +254,9 @@ func flattenTemplateBody(ctx context.Context, t *models.Template) (types.Object,
 }
 
 func flattenAliasElement(name string, a models.IndexAlias) (attr.Value, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	attrs := map[string]attr.Value{
-		"name":           types.StringValue(name),
-		"index_routing":  types.StringValue(a.IndexRouting),
-		"routing":        types.StringValue(a.Routing),
-		"search_routing": types.StringValue(a.SearchRouting),
-		"is_hidden":      types.BoolValue(a.IsHidden),
-		"is_write_index": types.BoolValue(a.IsWriteIndex),
-	}
-	if len(a.Filter) > 0 {
-		filterMap := a.Filter
-		normalized := elasticsearch.NormalizeQueryFilter(filterMap)
-		if nm, ok := normalized.(map[string]any); ok {
-			filterMap = nm
-		}
-		normalizedBytes, err := json.Marshal(filterMap)
-		if err != nil {
-			diags.AddError("Failed to marshal alias filter", err.Error())
-			return nil, diags
-		}
-		attrs["filter"] = jsontypes.NewNormalizedValue(string(normalizedBytes))
-	} else {
-		attrs["filter"] = jsontypes.NewNormalizedNull()
+	attrs, diags := aliasutil.AliasAttrsFromModel(name, a)
+	if diags.HasError() {
+		return nil, diags
 	}
 	aliasObj, d := NewAliasObjectValue(attrs)
 	diags.Append(d...)

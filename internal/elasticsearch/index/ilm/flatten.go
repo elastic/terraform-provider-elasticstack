@@ -66,8 +66,6 @@ func flattenPhase(ctx context.Context, phaseName string, minAge string, actions 
 			}
 			if v, ok := action["total_shards_per_node"]; ok {
 				allocateAction["total_shards_per_node"] = v
-			} else {
-				allocateAction["total_shards_per_node"] = int64(-1)
 			}
 			for _, f := range []string{"include", "require", "exclude"} {
 				if v, ok := action[f]; ok {

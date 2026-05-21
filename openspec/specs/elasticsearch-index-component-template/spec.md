@@ -121,6 +121,11 @@ For `template.mappings`, the resource SHALL treat Elasticsearch stringified scal
 
 For `template.settings`, the resource SHALL treat Elasticsearch stringified scalar echoes as semantically equal to practitioner-authored scalar JSON values when the effective setting value is otherwise unchanged. This equivalence SHALL include JSON `null`, so a practitioner-authored `null` setting value SHALL compare equal to an Elasticsearch `"null"` string echo.
 
+The provider SHALL treat an empty `"mappings": {}` or `"settings": {}` object returned by Elasticsearch as semantically equivalent to an absent value (`null`), and SHALL preserve a practitioner-authored empty-object value through the post-write read.
+
+- **Flatten-layer normalisation**: `flattenTemplateBlock` SHALL use `len(t.Mappings) > 0` (instead of `t.Mappings != nil`) and `len(t.Settings) > 0` (instead of `t.Settings != nil`) guards so that both nil and empty-map API responses produce `null` Terraform state values when there is no prior practitioner-authored empty-object value to preserve.
+- **Prior preservation for explicit empty objects**: when the API response carries no mappings or settings AND the prior Terraform value for that attribute is a known, semantically-empty JSON object (the literal `{}`, any JSON object that unmarshals to a zero-length map, or a whitespace-only string), `flattenTemplateBlock` SHALL emit that prior value in state instead of `null`. This prevents the Plugin Framework's post-apply consistency check from raising "produced an unexpected new value: was `cty.StringVal(\"{}\")`, but now null" for practitioners who write `mappings = jsonencode({})` or `settings = jsonencode({})`, because the framework's `ValueSemanticEquality` walker short-circuits when either side is null and never invokes `StringSemanticEquals`.
+
 #### Scenario: Routing preserved on refresh
 
 - GIVEN user-configured alias `routing` and API omits routing fields
@@ -142,6 +147,51 @@ For `template.settings`, the resource SHALL treat Elasticsearch stringified scal
 - WHEN apply completes or a later refresh runs
 - THEN the provider SHALL treat the settings values as semantically equal
 - AND Terraform SHALL NOT report a provider inconsistent-result error or follow-up drift for that difference alone
+
+#### Scenario: Empty-object mappings response is null in state
+
+- GIVEN a component template was created without a `template.mappings` block
+- AND Elasticsearch returns `"mappings": {}` in the GET response
+- WHEN read runs
+- THEN `template.mappings` SHALL be `null` in state
+- AND Terraform SHALL NOT report a provider inconsistent-result error or drift
+
+#### Scenario: Empty-object settings response is null in state
+
+- GIVEN a component template was created without a `template.settings` block
+- AND Elasticsearch returns `"settings": {}` in the GET response
+- WHEN read runs
+- THEN `template.settings` SHALL be `null` in state
+- AND Terraform SHALL NOT report a provider inconsistent-result error or drift
+
+#### Scenario: Explicit `jsonencode({})` mappings configuration is preserved on read
+
+- GIVEN `template.mappings = jsonencode({})` is configured in HCL
+- AND Elasticsearch returns `"mappings": {}` (or omits the field entirely) in the GET response
+- AND the prior Terraform value for `template.mappings` is the known string `"{}"`
+- WHEN `terraform apply` creates or updates the resource and the envelope reads it back
+- THEN `template.mappings` SHALL remain `"{}"` in state (matching the planned value)
+- AND Terraform SHALL NOT report a provider inconsistent-result error or drift on subsequent plans
+
+#### Scenario: Explicit `jsonencode({})` settings configuration is preserved on read
+
+- GIVEN `template.settings = jsonencode({})` is configured in HCL
+- AND Elasticsearch returns `"settings": {}` (or omits the field entirely) in the GET response
+- AND the prior Terraform value for `template.settings` is the known string `"{}"`
+- WHEN `terraform apply` creates or updates the resource and the envelope reads it back
+- THEN `template.settings` SHALL remain `"{}"` in state (matching the planned value)
+- AND Terraform SHALL NOT report a provider inconsistent-result error or drift on subsequent plans
+
+#### Scenario: No drift after create with alias and short-form settings (issue-609 regression)
+
+- GIVEN a component template configured with:
+  - an alias block (`name = "my_template_test"`)
+  - `settings = jsonencode({ number_of_shards = "3" })` (short-form, keys not nested under `index`)
+  - no `mappings` block
+- WHEN `terraform apply` creates the resource
+- AND a subsequent `terraform plan` runs
+- THEN the plan SHALL be empty (no changes detected)
+- AND Terraform SHALL NOT report a provider inconsistent-result error
 
 ### Requirement: Data stream options support (REQ-027–REQ-031)
 

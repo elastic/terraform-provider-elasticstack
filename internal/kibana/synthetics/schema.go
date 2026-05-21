@@ -43,12 +43,21 @@ func GetCompositeID(id string) (*clients.CompositeID, diag.Diagnostics) {
 
 // TryReadCompositeID parses a composite ID when the id contains "/".
 // Plain IDs are treated as legacy non-composite identifiers and return nil
-// without diagnostics.
+// without diagnostics. Kibana synthetics IDs allow at most one slash (for example
+// "<space_id>/<monitor_id>" or legacy "/<monitor_id>"); additional slashes are rejected.
 func TryReadCompositeID(id string) (*clients.CompositeID, diag.Diagnostics) {
-	if strings.Contains(id, "/") {
-		return GetCompositeID(id)
+	if !strings.Contains(id, "/") {
+		return nil, diag.Diagnostics{}
 	}
-	return nil, diag.Diagnostics{}
+	if strings.Count(id, "/") > 1 {
+		dg := diag.Diagnostics{}
+		dg.AddError(
+			fmt.Sprintf("Failed to parse monitor ID %s", id),
+			fmt.Sprintf("Resource ID must have following format: <cluster_uuid>/<resource identifier>. Current value: %s", id),
+		)
+		return nil, dg
+	}
+	return GetCompositeID(id)
 }
 
 // Shared utility functions for type conversions

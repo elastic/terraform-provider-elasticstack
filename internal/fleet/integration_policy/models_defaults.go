@@ -39,8 +39,15 @@ type inputDefaultsStreamModel struct {
 
 type apiPolicyTemplates []apiPolicyTemplate
 type apiPolicyTemplate struct {
-	Name   string                   `json:"name"`
+	Name string `json:"name"`
+	// Inputs is populated for integration-type packages where each policy template
+	// declares one or more nested inputs with their own vars.
 	Inputs []apiPolicyTemplateInput `json:"inputs"`
+	// Input and Vars are populated for input-type packages where the policy template
+	// declares a single input and vars are defined at the policy-template level.
+	// Kibana copies these vars onto an implicit stream named "<package>.<template>".
+	Input string  `json:"input"`
+	Vars  apiVars `json:"vars"`
 }
 
 type apiPolicyTemplateInput struct {
@@ -48,22 +55,62 @@ type apiPolicyTemplateInput struct {
 	Vars apiVars `json:"vars"`
 }
 
-func (policyTemplates apiPolicyTemplates) defaults() (map[string]jsontypes.Normalized, diag.Diagnostics) {
-	defaults := map[string]jsontypes.Normalized{}
+// inputID builds the identifier Kibana uses for an input:
+// "<policyTemplate.Name>-<inputType>".
+func inputID(templateName, inputType string) string {
+	return fmt.Sprintf("%s-%s", templateName, inputType)
+}
+
+// streamID builds the identifier Kibana uses for an input-type stream:
+// "<pkgName>.<templateName>".
+func streamID(pkgName, templateName string) string {
+	return fmt.Sprintf("%s.%s", pkgName, templateName)
+}
+
+func (policyTemplates apiPolicyTemplates) defaults(pkgName string) (map[string]inputDefaultsModel, diag.Diagnostics) {
+	defaults := map[string]inputDefaultsModel{}
 
 	if len(policyTemplates) == 0 {
 		return defaults, nil
 	}
 
 	for _, policyTemplate := range policyTemplates {
+		// Integration-type packages: nested inputs with their own vars.
 		for _, inputTemplate := range policyTemplate.Inputs {
-			name := fmt.Sprintf("%s-%s", policyTemplate.Name, inputTemplate.Type)
+			id := inputID(policyTemplate.Name, inputTemplate.Type)
 			varDefaults, diags := inputTemplate.Vars.defaults()
 			if diags.HasError() {
 				return nil, diags
 			}
 
-			defaults[name] = varDefaults
+			defaults[id] = inputDefaultsModel{
+				Vars: varDefaults,
+			}
+		}
+
+		// Input-type packages: single input and vars at the policy-template level.
+		if pkgName != "" && policyTemplate.Input != "" && len(policyTemplate.Vars) > 0 {
+			varDefaults, diags := policyTemplate.Vars.defaults()
+			if diags.HasError() {
+				return nil, diags
+			}
+
+			id := inputID(policyTemplate.Name, policyTemplate.Input)
+			sid := streamID(pkgName, policyTemplate.Name)
+
+			existing, ok := defaults[id]
+			if !ok {
+				existing.Vars = jsontypes.NewNormalizedNull()
+				existing.Streams = map[string]inputDefaultsStreamModel{}
+			} else if existing.Streams == nil {
+				existing.Streams = map[string]inputDefaultsStreamModel{}
+			}
+
+			existing.Streams[sid] = inputDefaultsStreamModel{
+				Enabled: types.BoolValue(true),
+				Vars:    varDefaults,
+			}
+			defaults[id] = existing
 		}
 	}
 
@@ -149,7 +196,12 @@ func packageInfoToDefaults(pkg *kbapi.PackageInfo) (map[string]inputDefaultsMode
 		return nil, diags
 	}
 
-	defaultVarsByInput, inputVarsDiags := policyTemplates.defaults()
+	var pkgName string
+	if pkg != nil {
+		pkgName = pkg.Name
+	}
+
+	defaultInputsByID, inputVarsDiags := policyTemplates.defaults(pkgName)
 	diags.Append(inputVarsDiags...)
 
 	defaultStreamsByInput, streamsDiags := datastreams.defaults()
@@ -159,27 +211,48 @@ func packageInfoToDefaults(pkg *kbapi.PackageInfo) (map[string]inputDefaultsMode
 		return nil, diags
 	}
 
-	defaults := map[string]inputDefaultsModel{}
-	for inputID, vars := range defaultVarsByInput {
-		defaults[inputID] = inputDefaultsModel{
-			Vars: vars,
-		}
-	}
-
+	// Merge datastream defaults into policy template defaults.
+	// Datastream input suffixes (e.g. "kafka/metrics") are mapped to full
+	// input IDs using each policy template's name.
 	for inputIDSuffix, streams := range defaultStreamsByInput {
 		for _, policyTemplate := range policyTemplates {
-			inputID := fmt.Sprintf("%s-%s", policyTemplate.Name, inputIDSuffix)
-			inputDefaults, ok := defaults[inputID]
+			id := inputID(policyTemplate.Name, inputIDSuffix)
+			inputDefaults, ok := defaultInputsByID[id]
 			if !ok {
 				inputDefaults.Vars = jsontypes.NewNormalizedNull()
+				inputDefaults.Streams = streams
+				defaultInputsByID[id] = inputDefaults
+				continue
 			}
 
-			inputDefaults.Streams = streams
-			defaults[inputID] = inputDefaults
+			if inputDefaults.Streams == nil {
+				// Integration-type packages: datastreams define all streams.
+				inputDefaults.Streams = streams
+			} else {
+				// Input-type packages: merge datastream streams with policy-template
+				// stream defaults. Datastream vars take precedence, but missing keys
+				// are filled from policy-template defaults.
+				for streamID, stream := range streams {
+					if existingStream, present := inputDefaults.Streams[streamID]; present {
+						varsWithDefaults, streamVarDiags := applyDefaultsToVars(stream.Vars, existingStream.Vars)
+						diags.Append(streamVarDiags...)
+						if diags.HasError() {
+							return nil, diags
+						}
+						existingStream.Vars = varsWithDefaults
+						existingStream.Enabled = stream.Enabled
+						inputDefaults.Streams[streamID] = existingStream
+					} else {
+						inputDefaults.Streams[streamID] = stream
+					}
+				}
+			}
+
+			defaultInputsByID[id] = inputDefaults
 		}
 	}
 
-	return defaults, diags
+	return defaultInputsByID, diags
 }
 
 func varsFromPackageInfo(pkg *kbapi.PackageInfo) (apiVars, diag.Diagnostics) {

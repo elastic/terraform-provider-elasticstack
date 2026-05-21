@@ -58,16 +58,15 @@ func readRoleMapping(ctx context.Context, stateData Data, roleMappingName string
 	data.Name = types.StringValue(roleMappingName)
 	data.Enabled = types.BoolValue(roleMapping.Enabled)
 
-	// Handle rules
-	// The typed client normalizes string field values to single-element
-	// arrays during unmarshal. We normalize them back to strings so the
-	// state matches what users typically write in their config.
-	rulesJSON, err := normalizeRoleMappingRules(roleMapping.Rules)
+	// Handle rules — store the typed client's JSON as-is (Elasticsearch may
+	// return single-element field values as strings or arrays). StringSemanticEquals
+	// on NormalizedRulesValue treats both forms as equal during plan comparison.
+	rulesJSON, err := json.Marshal(roleMapping.Rules)
 	if err != nil {
-		diags.AddError("Failed to normalize rules", err.Error())
+		diags.AddAttributeError(path.Root("rules"), "Failed to marshal rules", err.Error())
 		return nil, diags
 	}
-	data.Rules = jsontypes.NewNormalizedValue(rulesJSON)
+	data.Rules = NewNormalizedRulesValue(string(rulesJSON))
 
 	// Handle roles
 	data.Roles = typeutils.SetValueFrom(ctx, roleMapping.Roles, types.StringType, path.Root("roles"), &diags)
@@ -112,53 +111,6 @@ func readRoleMappingResource(ctx context.Context, client *clients.ElasticsearchS
 		return state, false, nil
 	}
 	return *readData, true, diags
-}
-
-// normalizeRoleMappingRules marshals the typed rules and then walks the
-// resulting JSON tree to convert single-element arrays inside "field"
-// objects back to single string values. Elasticsearch accepts strings or
-// arrays for field rules, but the typed client always stores them as
-// []string. This normalization ensures the state matches typical config.
-func normalizeRoleMappingRules(rules any) (string, error) {
-	raw, err := json.Marshal(rules)
-	if err != nil {
-		return "", err
-	}
-
-	var tree map[string]any
-	if err := json.Unmarshal(raw, &tree); err != nil {
-		return "", err
-	}
-
-	normalizeRuleNode(tree)
-
-	out, err := json.Marshal(tree)
-	if err != nil {
-		return "", err
-	}
-	return string(out), nil
-}
-
-func normalizeRuleNode(node any) {
-	switch v := node.(type) {
-	case map[string]any:
-		if field, ok := v["field"]; ok {
-			if fieldMap, ok := field.(map[string]any); ok {
-				for key, val := range fieldMap {
-					if arr, ok := val.([]any); ok && len(arr) == 1 {
-						fieldMap[key] = arr[0]
-					}
-				}
-			}
-		}
-		for _, child := range v {
-			normalizeRuleNode(child)
-		}
-	case []any:
-		for _, child := range v {
-			normalizeRuleNode(child)
-		}
-	}
 }
 
 // roleTemplatesToJSON serializes typed role templates back to JSON by

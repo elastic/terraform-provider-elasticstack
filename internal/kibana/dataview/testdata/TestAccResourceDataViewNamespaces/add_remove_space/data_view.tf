@@ -19,9 +19,10 @@ resource "elasticstack_kibana_space" "space3" {
 }
 
 resource "elasticstack_kibana_data_view" "ns_dv" {
+  space_id = var.space1
   data_view = {
     title      = var.index_name
-    namespaces = ["default", var.space1, var.space3]
+    namespaces = [var.space1, "default", var.space3]
   }
   depends_on = [
     elasticstack_kibana_space.space1,

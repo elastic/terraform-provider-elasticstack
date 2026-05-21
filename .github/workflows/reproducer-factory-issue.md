@@ -387,6 +387,7 @@ safe-outputs:
               const fn = require('${{ github.workspace }}/.github/scripts/workflows/reproducer-factory/update-reproducer-comment.js');
               await fn({ github, context, core });
   create-pull-request:
+    draft: false
     labels: [reproducer-factory]
     max: 1
     auto-close-issue: false
