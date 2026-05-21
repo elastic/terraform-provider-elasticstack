@@ -51,6 +51,73 @@ func TestAccResourceComponentTemplate(t *testing.T) {
 					testAccCheckResourceAttrIndexSettingsSemantic("elasticstack_elasticsearch_component_template.test", `{"index":{"number_of_shards":"3"}}`),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+		},
+	})
+}
+
+// TestAccResourceComponentTemplateExplicitEmptyObjectNoDrift pins the
+// practitioner-authored empty-object path. With `mappings = jsonencode({})`
+// and `settings = jsonencode({})` in HCL, the request omits both fields,
+// Elasticsearch returns them as either absent or `"{}"`, and the flatten
+// layer stores `null` in state. The semantic-equality layer must treat the
+// planned `"{}"` and the `null` state as equal, otherwise every `terraform
+// plan` after apply would report drift.
+func TestAccResourceComponentTemplateExplicitEmptyObjectNoDrift(t *testing.T) {
+	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceComponentTemplateDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+		},
+	})
+}
+
+func TestAccResourceComponentTemplateIssue609NoDrift(t *testing.T) {
+	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceComponentTemplateDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_component_template.test", "template.mappings"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
 		},
 	})
 }
@@ -88,6 +155,8 @@ func TestAccResourceComponentTemplateAliasDetails(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.alias.#", "1"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_component_template.test", "template.mappings"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_component_template.test", "template.settings"),
 					resource.TestCheckTypeSetElemNestedAttrs(
 						"elasticstack_elasticsearch_component_template.test",
 						"template.alias.*",
@@ -101,6 +170,13 @@ func TestAccResourceComponentTemplateAliasDetails(t *testing.T) {
 						},
 					),
 				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
 			},
 		},
 	})
