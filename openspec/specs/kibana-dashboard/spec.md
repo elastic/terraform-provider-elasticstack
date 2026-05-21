@@ -1,6 +1,6 @@
 # `elasticstack_kibana_dashboard` — Schema and Functional Requirements
 
-Resource implementation: `internal/kibana/dashboard` (dashboard model and `mapPanelFromAPI` in `models_panels.go` and `models.go`; `lens-dashboard-app` / REQ-035 read-write, by-value adapter, and by-value preservation in `models_lens_dashboard_app_converters.go` and `models_lens_dashboard_app_by_value_adapter.go`).
+Resource implementation: `internal/kibana/dashboard` (dashboard model and `mapPanelFromAPI` in `models_panels.go` and `models.go`).
 
 ## Purpose
 
@@ -263,37 +263,6 @@ resource "elasticstack_kibana_dashboard" "example" {
       ignore_global_filters = <optional, bool>
     })> # only with type = "vis"
 
-    lens_dashboard_app_config = <optional, object({
-      by_value = <optional, object({
-        config_json         = <optional, json string, normalized> # full API by-value Lens chart config object; sent directly as panel config
-        xy_chart_config     = <optional, object(...)> # supported typed Lens chart block; sent as lens-dashboard-app config, not as type = "vis"
-        treemap_config      = <optional, object(...)>
-        mosaic_config       = <optional, object(...)>
-        datatable_config    = <optional, object(...)>
-        tagcloud_config     = <optional, object(...)>
-        heatmap_config      = <optional, object(...)>
-        waffle_config       = <optional, object(...)>
-        region_map_config   = <optional, object(...)>
-        gauge_config        = <optional, object(...)>
-        metric_chart_config = <optional, object(...)>
-        pie_chart_config    = <optional, object(...)>
-        legacy_metric_config = <optional, object(...)>
-      })>
-      by_reference = <optional, object({
-        ref_id          = <required, string> # API reference name for the linked library item
-        references_json = <optional, json string, normalized> # array of { id, name, type }
-        title           = <optional, string>
-        description     = <optional, string>
-        hide_title      = <optional, bool>
-        hide_border     = <optional, bool>
-        drilldowns      = <optional, list of structured drilldown items, see REQ-041>
-        time_range = <required, object({
-          from = <required, string>
-          to   = <required, string>
-          mode = <optional, string> # absolute | relative
-        })>
-      })>
-    })> # only with type = "lens-dashboard-app"; conflicts with all other config blocks; exactly one of by_value or by_reference must be set; by_value requires exactly one source
 
     synthetics_stats_overview_config = <optional, object({
       title       = <optional, string>
@@ -398,7 +367,7 @@ The resource SHALL use the provider's configured Kibana OpenAPI client by defaul
 
 ### Requirement: Replacement fields and schema validation (REQ-006)
 
-Schema validation SHALL enforce that `options_list_control_config` is valid only for panels with `type = "options_list_control"`, is mutually exclusive with all other panel configuration blocks and with `config_json`, and that `search_technique` is restricted to `prefix`, `wildcard`, or `exact` when set. Schema validation SHALL also enforce that `synthetics_monitors_config` is valid only for panels with `type = "synthetics_monitors"` and is mutually exclusive with all other panel configuration blocks and with `config_json`. Schema validation SHALL enforce that `synthetics_stats_overview_config` is valid only for panels with `type = "synthetics_stats_overview"` and is mutually exclusive with all other typed panel config blocks and with `config_json`. Schema validation SHALL enforce that `lens_dashboard_app_config` is valid only for panels with `type = "lens-dashboard-app"`, is mutually exclusive with all other panel configuration blocks, and that exactly one of `by_value` or `by_reference` is set. When `by_value` is set, schema validation SHALL enforce that exactly one by-value source is set: either `config_json` or one supported typed Lens chart block.
+Schema validation SHALL enforce that `options_list_control_config` is valid only for panels with `type = "options_list_control"`, is mutually exclusive with all other panel configuration blocks and with `config_json`, and that `search_technique` is restricted to `prefix`, `wildcard`, or `exact` when set. Schema validation SHALL also enforce that `synthetics_monitors_config` is valid only for panels with `type = "synthetics_monitors"` and is mutually exclusive with all other panel configuration blocks and with `config_json`. Schema validation SHALL enforce that `synthetics_stats_overview_config` is valid only for panels with `type = "synthetics_stats_overview"` and is mutually exclusive with all other typed panel config blocks and with `config_json`. The `lens_dashboard_app_config` block SHALL no longer be a recognized panel configuration block; attempting to set `type = "lens-dashboard-app"` SHALL be treated as an unsupported panel type.
 
 REQ-006 is extended to include:
 
@@ -409,13 +378,6 @@ REQ-006 is extended to include:
 - `synthetics_monitors_config` SHALL be mutually exclusive with all other panel configuration blocks and with `config_json`.
 - `synthetics_stats_overview_config` SHALL only be valid on panels with `type = "synthetics_stats_overview"`.
 - `synthetics_stats_overview_config` SHALL be mutually exclusive with all other typed panel config blocks and with `config_json`.
-- `lens_dashboard_app_config` SHALL be valid only for panels with `type = "lens-dashboard-app"`.
-- `lens_dashboard_app_config` SHALL be mutually exclusive with all other panel configuration blocks.
-- Within `lens_dashboard_app_config`, exactly one of `by_value` or `by_reference` SHALL be set; setting both or neither SHALL be rejected at plan time.
-- Within `lens_dashboard_app_config.by_value`, exactly one by-value source SHALL be set: either `config_json` or one supported typed Lens chart block.
-- `by_value.config_json` SHALL be valid only as the selected by-value source.
-- `by_reference.ref_id` and `by_reference.time_range` SHALL be required when `by_reference` is set.
-- `by_reference.time_range.mode` SHALL be restricted to `absolute` or `relative` when set.
 
 #### Scenario: options_list_control_config rejected for non-options_list_control panel
 
@@ -441,35 +403,17 @@ REQ-006 is extended to include:
 - WHEN Terraform validates the resource schema
 - THEN the configuration SHALL be rejected before any dashboard API call
 
-#### Scenario: lens_dashboard_app_config rejected for non-lens-dashboard-app panel
+#### Scenario: lens_dashboard_app_config rejected
 
-- GIVEN a panel whose `type` is not `lens-dashboard-app` and `lens_dashboard_app_config` is set (such as `type = "markdown"`, or `type = "vis"` with no other valid `vis` panel configuration / missing vis chart)
+- GIVEN a panel configuration that contains a `lens_dashboard_app_config` block
 - WHEN Terraform validates the resource schema
-- THEN the configuration SHALL be rejected before any dashboard API call (for example `Missing vis panel configuration` when `type = "vis"` and the vis panel is incomplete, and/or schema-level `Invalid Configuration` when `lens_dashboard_app_config` is not allowed for the current `type`)
+- THEN the configuration SHALL be rejected at plan time (the attribute no longer exists in the schema)
 
-#### Scenario: Both sub-blocks set simultaneously
+#### Scenario: type lens-dashboard-app no longer valid
 
-- GIVEN a `lens_dashboard_app_config` block with both `by_value` and `by_reference` set
-- WHEN Terraform validates the configuration
-- THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that `by_value` and `by_reference` are mutually exclusive
-
-#### Scenario: Neither sub-block set
-
-- GIVEN a `lens_dashboard_app_config` block with neither `by_value` nor `by_reference` set
-- WHEN Terraform validates the configuration
-- THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that exactly one of `by_value` or `by_reference` must be set
-
-#### Scenario: Multiple by-value sources set simultaneously
-
-- GIVEN a `lens_dashboard_app_config.by_value` block with both `config_json` and a typed Lens chart block set
-- WHEN Terraform validates the configuration
-- THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that exactly one by-value source must be set
-
-#### Scenario: No by-value source set
-
-- GIVEN a `lens_dashboard_app_config.by_value` block with no `config_json` and no typed Lens chart block
-- WHEN Terraform validates the configuration
-- THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that exactly one by-value source must be set
+- GIVEN a panel with `type = "lens-dashboard-app"` and no `lens_dashboard_app_config` block
+- WHEN Terraform validates the resource schema
+- THEN the provider SHALL treat the panel as an unsupported type and SHALL NOT attempt to use the removed `lensdashboardapp` handler
 
 ### Requirement: Dashboard root schema API naming (REQ-036)
 
@@ -539,7 +483,7 @@ The resource models only the currently supported Terraform subset of dashboard f
 
 The resource SHALL support top-level `panels`, section-contained `panels`, and `sections` in the order returned by the API and the order given in configuration when building requests. For panel reads, it SHALL distinguish sections from top-level panels and map each panel's `type`, `grid`, optional **`id`**, and configuration. For typed panel mappings, the resource SHALL seed from prior state or plan so that optional panel attributes omitted by Kibana on read can be preserved. When a panel is managed through `config_json` only, the resource SHALL preserve that JSON-centric representation and SHALL NOT populate typed configuration blocks from the API for that panel.
 
-On write, practitioner-authored panel-level `config_json` SHALL be supported only for `markdown` and `vis` panel types; using practitioner-authored panel-level `config_json` with any other panel type, including `slo_burn_rate`, `slo_error_budget`, `esql_control`, `lens-dashboard-app`, `image`, `slo_alerts`, and `discover_session`, or omitting all panel configuration blocks, SHALL return an error diagnostic. Exception: when a panel's `config_json` value was populated by the provider during a prior read to preserve an unknown panel type (see "Unknown panel-type preservation" below), the provider SHALL re-emit that preserved payload on write without error, because the value originates from the API rather than from the practitioner. The `esql_control` panel type SHALL be managed exclusively through the typed `esql_control_config` block. The `lens-dashboard-app` panel type SHALL be managed exclusively through the typed `lens_dashboard_app_config` block.
+On write, practitioner-authored panel-level `config_json` SHALL be supported only for `markdown` and `vis` panel types; using practitioner-authored panel-level `config_json` with any other panel type, including `slo_burn_rate`, `slo_error_budget`, `esql_control`, `image`, `slo_alerts`, and `discover_session`, or omitting all panel configuration blocks, SHALL return an error diagnostic. Exception: when a panel's `config_json` value was populated by the provider during a prior read to preserve an unknown panel type (see "Unknown panel-type preservation" below), the provider SHALL re-emit that preserved payload on write without error, because the value originates from the API rather than from the practitioner. The `esql_control` panel type SHALL be managed exclusively through the typed `esql_control_config` block.
 
 `config_json` SHALL NOT be supported for `options_list_control` panels; the `options_list_control` panel type SHALL be managed exclusively through the typed `options_list_control_config` block; using `config_json` with `type = "options_list_control"` SHALL return an error diagnostic.
 
@@ -916,19 +860,18 @@ For legacy-metric `vis` panels, the resource SHALL require `data_source_json.typ
 
 When a panel is authored through panel-level `config_json`, the resource SHALL accept only `markdown` and `vis` panel types for write. It SHALL deserialize the raw JSON into the corresponding dashboard panel config and SHALL fail if that JSON cannot be unmarshaled into the supported API config type. For read-back, it SHALL always refresh `config_json` from the API payload using the implementation's default-aware JSON semantics. When a `vis` panel is authored through raw `config_json`, the provider SHALL preserve that raw visualization-config path rather than re-expressing it through a typed panel block, and it SHALL not apply the typed `lensPanelTimeRange()` injection path used by the typed converters.
 
-On write, panel-level `config_json` SHALL NOT be supported for `lens-dashboard-app` panels; the `lens-dashboard-app` panel type SHALL be managed exclusively through the typed `lens_dashboard_app_config` block.
-
 #### Scenario: Unsupported raw config panel type
 
 - GIVEN a panel configured with `config_json` and a panel `type` other than `markdown` or `vis`
 - WHEN the provider builds the API request
 - THEN it SHALL return an error diagnostic for unsupported `config_json` panel type
 
-#### Scenario: config_json rejected for lens-dashboard-app panel type
+#### Scenario: config_json preserved for unrecognized panel types at read time
 
-- GIVEN a panel with `type = "lens-dashboard-app"` configured through `config_json`
-- WHEN the provider builds the API request on create or update
-- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `lens-dashboard-app`
+- GIVEN a panel with an unknown or unrecognized `type` value (including a Kibana-internal type such as `lens-dashboard-app`)
+- WHEN the provider reads such a panel back from the Kibana API
+- THEN the provider SHALL use the unknown-panel fallback and SHALL populate `config_json` in state
+- AND SHALL NOT return an error diagnostic for the unrecognized panel type
 
 ### Requirement: Time slider control panel behavior (REQ-029)
 
@@ -1419,119 +1362,6 @@ The filter structure used by `synthetics_monitors_config` (lists of `{ label, va
 - THEN the API MAY return an error; the provider SHALL surface that error as a diagnostic
 - AND the provider SHALL NOT enforce a plan-time validator for the 5000-item limit (this is an API-side constraint)
 
-### Requirement: `lens-dashboard-app` panel behavior (REQ-035)
-
-For `type = "lens-dashboard-app"` panels, the resource SHALL accept `lens_dashboard_app_config` with exactly one of the `by_value` or `by_reference` sub-blocks set. Within `by_value`, practitioners SHALL configure exactly one by-value source: either `config_json` containing a JSON object that maps directly to the generated by-value `KbnDashboardPanelTypeLensDashboardApp.config` union, or one supported typed Lens chart block. Within `by_reference`, the `ref_id` and `time_range` attributes are required. The optional by-reference attributes `references_json`, `title`, `description`, `hide_title`, `hide_border`, and `drilldowns` MAY be set; `drilldowns` is the structured 3-way drilldowns shape defined in REQ-041.
-
-**On write (create and update):**
-
-For by-value panels authored through `config_json`, the resource SHALL map `by_value.config_json` directly to the panel `config` object without wrapping it in an `attributes` object and without splitting out references. The JSON object SHALL be expected to match one of the current generated by-value Lens chart schemas, including that schema's required fields such as chart `type` and `time_range` where applicable.
-
-For by-value panels authored through a supported typed Lens chart block, the resource SHALL convert that typed chart model into the matching generated by-value Lens chart schema and SHALL send the resulting object directly as the panel API `config`. The provider SHALL NOT wrap the chart object in an `attributes` object and SHALL NOT change the dashboard panel discriminator to `vis`.
-
-For by-reference panels, the resource SHALL set the API `config.ref_id` field from `by_reference.ref_id`, set the API `config.time_range` object from `by_reference.time_range`, and include `references`, `title`, `description`, `hide_title`, `hide_border`, and `drilldowns` only when their corresponding Terraform attributes are set. `references_json` SHALL map to the API `references` array of `{ id, name, type }` objects. A saved Lens visualization reference SHALL be represented through `references_json`, typically with a reference whose `name` matches `ref_id`, whose `type` is `lens`, and whose `id` is the saved object ID.
-
-**On read:**
-
-The resource SHALL classify the API `config` JSON object in this order (relying on the raw object, not only generated union decode, which does not enforce a true oneOf on the wire): (1) **By-value:** if the object has a non-empty string at top-level `type` (the by-value Lens chart discriminator), the resource SHALL leave `by_reference` unset and populate `by_value` from the API read, including when `ref_id` and `time_range` are also present. When prior plan or state selected a supported typed by-value chart block and the API response can be represented by that same typed chart block, the resource SHALL repopulate that typed chart block. Otherwise, the resource SHALL populate `by_value.config_json` from the API read, including the practitioner string preservation rule in the next paragraph when plan or state includes a prior `by_value.config_json` object. (2) **By-reference:** otherwise, if the object omits that chart discriminator and has non-empty `ref_id` and a `time_range` with non-empty `from` and `to`, the resource SHALL populate `by_reference` and leave `by_value` unset. (3) **Neither (1) nor (2):** if prior plan or state had `by_reference`, the resource SHALL preserve that prior `by_reference` block per REQ-009 and SHALL NOT silently mode-flip to `by_value`. (4) Otherwise, the resource SHALL populate `by_value.config_json` from the API read (and the same preservation rule when applicable). Fields absent from the API response SHALL not be forced into state from the API response alone. Optional by-reference attributes SHALL also follow REQ-009 panel read seeding and alignment so prior practitioner intent is preserved when the API omits or differs on optional values.
-
-`by_value.config_json` and `by_reference.references_json` SHALL use semantic JSON equality for plan comparison. API-injected field ordering SHALL NOT create spurious plan diffs. For `by_value.config_json`, when a read of the Kibana `config` returns additional key paths and values the practitioner’s object did not set (Kibana default or enrichment) while every value path the practitioner’s `config_json` object sets is still present in the API object with the same value, the provider SHALL preserve the practitioner’s `by_value.config_json` string in state; the implementation may treat top-level `styling` as rewritable by Kibana, optional empty `filters` (including `null` or omission), a default KQL `query` (only `language` and/or `expression: ""` matching API omission), and related cases consistent with a non-destructive next write; if the response changes a value the user set, or the prior object cannot be read as a value-subset of the API in this sense, the provider SHALL use the read-back value to avoid a destructive next write. For ordered JSON arrays on that value-subset path, the API may only **append** after the practitioner’s last index; reordered or prepended content relative to the practitioner’s array is not treated as a safe enrichment match.
-
-The `lens-dashboard-app` panel type is distinct from the existing `vis` Lens panel path. Typed by-value Lens chart blocks under `lens_dashboard_app_config.by_value` SHALL use the `lens-dashboard-app` panel discriminator and `KbnDashboardPanelTypeLensDashboardApp.config` by-value shape. Existing top-level typed Lens panel blocks such as `xy_chart_config` and `metric_chart_config` SHALL remain valid only for `type = "vis"` panels. Existing `type = "vis"` Lens panel behavior SHALL remain unchanged.
-
-#### Scenario: Creation of a by-reference lens-dashboard-app panel
-
-- GIVEN a dashboard configuration containing a `lens-dashboard-app` panel with:
-  - `type = "lens-dashboard-app"`
-  - `lens_dashboard_app_config.by_reference.ref_id = "panel_0"`
-  - `lens_dashboard_app_config.by_reference.references_json = "[{\"id\":\"abc-123\",\"name\":\"panel_0\",\"type\":\"lens\"}]"`
-  - `lens_dashboard_app_config.by_reference.time_range.from = "now-15m"`
-  - `lens_dashboard_app_config.by_reference.time_range.to = "now"`
-  - `lens_dashboard_app_config.by_reference.title = "My Shared Visualization"`
-- WHEN the resource is created
-- THEN the provider SHALL send a panel payload with `config.ref_id = "panel_0"`, the references array, the time range object, and `title = "My Shared Visualization"` to the Kibana dashboard API
-- AND the panel SHALL appear in state with `by_reference.ref_id = "panel_0"` and `by_value` as null
-- AND the provider SHALL NOT populate panel-level `config_json` for this panel in state
-
-#### Scenario: Creation of a raw by-value lens-dashboard-app panel
-
-- GIVEN a dashboard configuration containing a `lens-dashboard-app` panel with:
-  - `type = "lens-dashboard-app"`
-  - `lens_dashboard_app_config.by_value.config_json = "<valid generated API Lens chart config JSON>"`
-- WHEN the resource is created
-- THEN the provider SHALL send the decoded JSON object directly as the panel API `config`
-- AND the panel SHALL appear in state with `by_value.config_json` populated and `by_reference` as null
-
-#### Scenario: Creation of a typed by-value lens-dashboard-app panel
-
-- GIVEN a dashboard configuration containing a `lens-dashboard-app` panel with:
-  - `type = "lens-dashboard-app"`
-  - one supported typed Lens chart block under `lens_dashboard_app_config.by_value`
-- WHEN the resource is created
-- THEN the provider SHALL convert the typed chart block into the matching generated by-value Lens chart object
-- AND the provider SHALL send that chart object directly as the panel API `config`
-- AND the panel SHALL appear in state with that typed by-value chart block populated and `by_reference` as null
-- AND the provider SHALL NOT populate panel-level `config_json` for this panel in state
-
-#### Scenario: by-reference panel with required time_range and optional structured drilldowns
-
-- GIVEN a `lens-dashboard-app` panel in by-reference mode with:
-  - `lens_dashboard_app_config.by_reference.ref_id = "panel_0"`
-  - `lens_dashboard_app_config.by_reference.time_range.from = "now-7d"`
-  - `lens_dashboard_app_config.by_reference.time_range.to = "now"`
-  - `lens_dashboard_app_config.by_reference.time_range.mode = "relative"`
-  - one `lens_dashboard_app_config.by_reference.drilldowns` entry with a `url` block (`label = "Open"`, `url = "https://example.com"`, `trigger = "on_click_value"`)
-- WHEN the resource is created or updated
-- THEN the provider SHALL include the `time_range` object and `drilldowns` array in the API payload
-- AND on read-back the provider SHALL repopulate both from the API response
-
-#### Scenario: Invalid mixed configuration — both sub-blocks set
-
-- GIVEN a `lens_dashboard_app_config` block with both `by_value` and `by_reference` configured
-- WHEN Terraform validates the configuration
-- THEN the configuration SHALL be rejected at plan time with a diagnostic indicating mutual exclusivity
-
-#### Scenario: Invalid mixed by-value configuration
-
-- GIVEN a `lens_dashboard_app_config.by_value` block with both `config_json` and a typed Lens chart block configured
-- WHEN Terraform validates the configuration
-- THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that exactly one by-value source must be set
-
-#### Scenario: Read-back detects by-reference mode from API response
-
-- GIVEN a managed `lens-dashboard-app` panel authored in by-reference mode
-- WHEN Kibana returns the panel config with `ref_id` and `time_range`
-- THEN the provider SHALL populate `by_reference` in state and leave `by_value` as null
-- AND SHALL NOT create a spurious diff on the next plan
-
-#### Scenario: Read-back preserves absent optional by-reference fields
-
-- GIVEN a managed `lens-dashboard-app` panel in by-reference mode that omits `description`, `hide_title`, and `hide_border`
-- WHEN Kibana returns the panel without those optional fields
-- THEN the provider SHALL keep those optional fields null/unset in state
-- AND SHALL NOT create a spurious diff on the next plan
-
-#### Scenario: Read-back preserves typed by-value representation
-
-- GIVEN a managed `lens-dashboard-app` panel authored with a supported typed Lens chart block under `by_value`
-- WHEN Kibana returns a by-value chart config with the same chart discriminator and the response can be represented by that typed chart block
-- THEN the provider SHALL populate that typed chart block in state
-- AND the provider SHALL NOT replace it with `by_value.config_json`
-
-#### Scenario: Read-back falls back to by_value config_json when prior typed by-value block cannot be preserved
-
-- GIVEN a managed `lens-dashboard-app` panel with prior state that selected a supported typed Lens chart block under `by_value` (and not `by_value.config_json`)
-- WHEN Kibana returns a by-value chart `config` that cannot be represented in that same typed chart block
-- THEN the provider SHALL populate `by_value.config_json` from the API read
-- AND the provider SHALL NOT keep the prior typed chart block in state when the response cannot be round-tripped to it
-
-#### Scenario: Read-back preserves raw by-value representation
-
-- GIVEN a managed `lens-dashboard-app` panel authored with `by_value.config_json`
-- WHEN Kibana returns a by-value chart config with a top-level chart `type`
-- THEN the provider SHALL populate `by_value.config_json` in state
-- AND the provider SHALL NOT convert it to a typed by-value chart block
-
 ### Requirement: Image panel behavior (REQ-040)
 
 When a panel entry sets `type = "image"`, the resource SHALL accept an `image_config` block and SHALL require that block to be present. The block SHALL require `src`, a nested object with mutually exclusive `file = object({ file_id = string })` and `url = object({ url = string })` sub-blocks; exactly one of `src.file` or `src.url` SHALL be set. `file_id` (when `file` is used) and `url` (when `url` is used) SHALL be required non-empty strings.
@@ -1867,7 +1697,7 @@ On read-back, the provider SHALL populate each attribute from the API response w
 
 ### Requirement: Chart-level `time_range` null-preservation and inheritance from dashboard (REQ-040)
 
-The resource SHALL preserve practitioner intent for the chart-level `time_range` block on every typed Lens chart reachable under `panels[].vis_config.by_value.<chart>_config` (for `type = "vis"`) and every typed Lens chart under `panels[].lens_dashboard_app_config.by_value.<chart>_config` (for `type = "lens-dashboard-app"`), using the same null-preservation pattern as REQ-009 for `time_range.mode`.
+The resource SHALL preserve practitioner intent for the chart-level `time_range` block on every typed Lens chart reachable under `panels[].vis_config.by_value.<chart>_config` (for `type = "vis"`), using the same null-preservation pattern as REQ-009 for `time_range.mode`.
 
 When prior state has `time_range = null` on that chart block AND the API-returned chart-level `time_range` equals the dashboard-level `time_range` (compared by literal `from`, `to`, and `mode` string equality, treating both nulls as equal), the provider SHALL preserve null in state. Otherwise, the provider SHALL populate state with the API-returned chart-level `time_range`.
 
@@ -1875,7 +1705,7 @@ The chart-level `time_range.mode` attribute SHALL follow the same null-preservat
 
 #### Scenario: Chart time_range null-preserved when equal to dashboard
 
-- GIVEN a typed Lens chart panel (under `vis_config.by_value` or `lens_dashboard_app_config.by_value`) whose prior state has `time_range = null`
+- GIVEN a `vis` panel with a typed Lens chart block under `vis_config.by_value` whose prior state has `time_range = null`
 - AND the dashboard-level `time_range` is `{ from = "now-7d", to = "now" }`
 - AND the Kibana API response returns `time_range = { from = "now-7d", to = "now" }` on that chart root
 - WHEN the provider reads the panel
@@ -1883,7 +1713,7 @@ The chart-level `time_range.mode` attribute SHALL follow the same null-preservat
 
 #### Scenario: Chart time_range populated when not equal to dashboard
 
-- GIVEN a typed Lens chart panel (under `vis_config.by_value` or `lens_dashboard_app_config.by_value`) whose prior state has `time_range = null`
+- GIVEN a `vis` panel with a typed Lens chart block under `vis_config.by_value` whose prior state has `time_range = null`
 - AND the dashboard-level `time_range` is `{ from = "now-7d", to = "now" }`
 - AND the Kibana API response returns `time_range = { from = "now-30d", to = "now-1d" }` on that chart root
 - WHEN the provider reads the panel
@@ -1900,10 +1730,8 @@ The chart-level `time_range.mode` attribute SHALL follow the same null-preservat
 
 The resource SHALL validate and serialize the `drilldowns` attribute whenever it is set on any of the following placements:
 
-- chart blocks under `panels[].vis_config.by_value.<chart>_config`,
-- chart blocks under `panels[].lens_dashboard_app_config.by_value.<chart>_config`,
-- `panels[].vis_config.by_reference`, or
-- `panels[].lens_dashboard_app_config.by_reference`.
+- chart blocks under `panels[].vis_config.by_value.<chart>_config`, or
+- `panels[].vis_config.by_reference`.
 
 For each such list, each list item SHALL be an object containing three mutually-exclusive optional sub-blocks modeling the API discriminated union: `dashboard_drilldown`, `discover_drilldown`, and `url_drilldown`. Each list item SHALL set exactly one variant sub-block; setting zero or multiple variants SHALL produce a plan-time validation error that identifies the offending list item and lists the allowable variants.
 
@@ -1967,7 +1795,7 @@ For `type = "vis"` panels, the resource SHALL accept a `vis_config` block with e
 
 - `ref_id` (required string) — saved-object reference name; maps to the API `config.ref_id` field.
 - `references_json` (optional normalized JSON string) — array of `{ id, name, type }` saved-object references; maps to the API `config.references` array. A saved Lens visualization reference SHALL typically have a reference whose `name` matches `ref_id`, whose `type` is `lens`, and whose `id` is the saved object ID.
-- `time_range` (required object with `from`, `to`, optional `mode` ∈ `absolute`/`relative`) — required even though the API marks it optional, for parity with `lens_dashboard_app_config.by_reference.time_range`.
+- `time_range` (required object with `from`, `to`, optional `mode` ∈ `absolute`/`relative`) — required even though the API marks it optional, for by-reference vis panels.
 - `title`, `description` (optional strings).
 - `hide_title`, `hide_border` (optional booleans).
 - `drilldowns` (optional list of structured drilldown blocks per REQ-041).
@@ -2211,11 +2039,9 @@ For composite Lens-backed dashboard panel types, the `elasticstack_kibana_dashbo
 
 For `type = "vis"` panels, the Terraform typed configuration block SHALL be named `vis_config`. The provider SHALL treat `vis_config` as the typed configuration entry point for `vis` panels and SHALL align routing and validation with the panel type discriminator `"vis"`.
 
-For the Lens dashboard app panel type, the Terraform typed configuration block SHALL remain `lens_dashboard_app_config` and SHALL continue to support its defined by-value and by-reference behavior.
-
 The handler architecture for these composite panel types SHALL consume the shared Lens converter registry for by-value Lens chart handling and shared by-reference conversion logic for by-reference handling.
 
-Except for the `viz_config` to `vis_config` rename, this architectural change SHALL preserve the previously defined Terraform-facing behavior for `vis` and `lens_dashboard_app` panels, including read/write semantics, validation, null-preservation, typed by-value chart handling, and by-reference handling.
+Except for the `viz_config` to `vis_config` rename, this architectural change SHALL preserve the previously defined Terraform-facing behavior for `vis` panels, including read/write semantics, validation, null-preservation, typed by-value chart handling, and by-reference handling.
 
 #### Scenario: `vis` panels use `vis_config` as the typed block name
 
@@ -2226,13 +2052,13 @@ Except for the `viz_config` to `vis_config` rename, this architectural change SH
 
 #### Scenario: Composite by-value Lens chart handling uses shared registry dispatch
 
-- GIVEN a `vis` or `lens_dashboard_app` panel configured with a supported typed by-value Lens chart block
+- GIVEN a `vis` panel configured with a supported typed by-value Lens chart block
 - WHEN the provider reads or writes that panel
 - THEN the provider SHALL dispatch the by-value Lens chart conversion through the shared Lens converter registry
 
 #### Scenario: Composite by-reference handling remains behaviorally unchanged
 
-- GIVEN a `vis` or `lens_dashboard_app` panel configured in by-reference mode
+- GIVEN a `vis` panel configured in by-reference mode
 - WHEN the provider plans, applies, reads, and refreshes that panel after the composite handler migration
 - THEN the panel SHALL preserve the same by-reference behavior already defined for that panel type
 
@@ -2253,7 +2079,6 @@ Except for the `viz_config` to `vis_config` rename, this architectural change SH
 | Options / access control mapping | `internal/kibana/dashboard/models_options.go`, `internal/kibana/dashboard/models_access_control.go` |
 | Panels / sections mapping | `internal/kibana/dashboard/models_panels.go` |
 | Visualization-specific panel converters | `internal/kibana/dashboard/models_*_panel.go` |
-| `lens-dashboard-app` panel / REQ-035 | `internal/kibana/dashboard/models/lens.go`, `internal/kibana/dashboard/models/panel.go`, `internal/kibana/dashboard/models_lens_panel.go`, `internal/kibana/dashboard/models_lens_dashboard_app_converters.go`, `internal/kibana/dashboard/models_lens_dashboard_app_by_value_adapter.go`, `internal/kibana/dashboard/models_lens_dashboard_app_by_value_adapter_test.go` |
 | `viz` panel / `vis_config` / REQ-042 | `internal/kibana/dashboard/models_panels.go`, `internal/kibana/dashboard/models_lens_panel.go`, `internal/kibana/dashboard/schema.go` |
 | Drift normalization | `internal/kibana/dashboard/panel_config_defaults.go`, `internal/kibana/dashboard/models_plan_state_alignment.go`, `internal/kibana/dashboard/models_xy_chart_panel.go` |
 | Waffle validation | `internal/kibana/dashboard/waffle_config_validator.go` |
