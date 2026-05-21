@@ -43,14 +43,17 @@ type calendarEventResource struct {
 // fit the generic envelope write path. Do not replace phCreate with a real createFunc without
 // migrating that logic.
 func newCalendarEventResource() *calendarEventResource {
-	placeholder := entitycore.PlaceholderElasticsearchWriteCallback[CalendarEventTFModel]()
 	return &calendarEventResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[CalendarEventTFModel]("ml_calendar_event", entitycore.ElasticsearchResourceOptions[CalendarEventTFModel]{
 			Schema: getSchema,
 			Read:   readCalendarEvent,
 			Delete: deleteCalendarEvent,
-			Create: placeholder,
-			Update: updateCalendarEventNoOp,
+			Create: entitycore.PlaceholderElasticsearchWriteCallback[CalendarEventTFModel](),
+			// Calendar events have no in-place update API; attribute changes use RequiresReplace.
+			// The envelope still invokes Update when only nested blocks such as
+			// elasticsearch_connection change, so returning the plan unchanged lets read-after-write
+			// refresh state without failing the apply.
+			Update: entitycore.NoOpElasticsearchWriteCallback[CalendarEventTFModel](),
 		}),
 	}
 }

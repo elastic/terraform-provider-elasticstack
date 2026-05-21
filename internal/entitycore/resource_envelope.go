@@ -158,6 +158,15 @@ func PlaceholderElasticsearchWriteCallback[T ElasticsearchResourceModel]() Write
 	}
 }
 
+// NoOpElasticsearchWriteCallback returns a write callback that returns the plan
+// unchanged. Use for resources where all mutable attributes carry RequiresReplace,
+// so Terraform never reaches an in-place update.
+func NoOpElasticsearchWriteCallback[T ElasticsearchResourceModel]() WriteFunc[T] {
+	return func(_ context.Context, _ *clients.ElasticsearchScopedClient, req WriteRequest[T]) (WriteResult[T], diag.Diagnostics) {
+		return WriteResult[T]{Model: req.Plan}, nil
+	}
+}
+
 // NewElasticsearchResource returns an [*ElasticsearchResource] that owns
 // Schema, Create, Read, Update, and Delete for the Elasticsearch namespace.
 // Concrete resources supply callbacks in opts; Schema, Read, Delete, Create,
