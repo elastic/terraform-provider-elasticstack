@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -476,5 +477,5 @@ func drilldownsFromWireJSON(b []byte) []models.URLDrilldownModel {
 }
 
 func populateFiltersJSONFromAPI(filters []kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable_GroupFilters_Filters_Item, out *jsontypes.Normalized) diag.Diagnostics {
-	return populateFilterJSONFromMarshaled(filters, out)
+	return lenscommon.PopulateFilterJSONFromMarshaled(filters, out)
 }

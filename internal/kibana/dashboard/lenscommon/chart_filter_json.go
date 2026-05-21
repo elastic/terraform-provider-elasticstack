@@ -69,10 +69,11 @@ func DecodeChartFilterJSON(n jsontypes.Normalized, dst any) diag.Diagnostics {
 
 // ChartFilterJSONPopulateFromAPIItem maps one API filter union item into ChartFilterJSONModel.
 func ChartFilterJSONPopulateFromAPIItem(m *models.ChartFilterJSONModel, item any) diag.Diagnostics {
-	return populateFilterJSONFromMarshaled(item, &m.FilterJSON)
+	return PopulateFilterJSONFromMarshaled(item, &m.FilterJSON)
 }
 
-func populateFilterJSONFromMarshaled(item any, out *jsontypes.Normalized) diag.Diagnostics {
+// PopulateFilterJSONFromMarshaled marshals item to canonical sorted JSON and writes it into out.
+func PopulateFilterJSONFromMarshaled(item any, out *jsontypes.Normalized) diag.Diagnostics {
 	var diags diag.Diagnostics
 	b, err := json.Marshal(item)
 	if err != nil {
