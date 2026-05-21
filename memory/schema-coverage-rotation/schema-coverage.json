@@ -17,6 +17,8 @@
     "elasticstack_elasticsearch_ingest_pipeline": "2026-03-19T02:29:37Z",
     "elasticstack_elasticsearch_logstash_pipeline": "2026-04-01T10:38:58Z",
     "elasticstack_elasticsearch_ml_anomaly_detection_job": "2026-04-29T11:02:39Z",
+    "elasticstack_elasticsearch_ml_calendar": "2026-05-21T07:12:49Z",
+    "elasticstack_elasticsearch_ml_calendar_event": "2026-05-21T07:12:49Z",
     "elasticstack_elasticsearch_ml_datafeed": "2026-04-29T11:02:39Z",
     "elasticstack_elasticsearch_ml_datafeed_state": "2026-04-29T11:02:39Z",
     "elasticstack_elasticsearch_ml_filter": "2026-05-14T06:53:07Z",
