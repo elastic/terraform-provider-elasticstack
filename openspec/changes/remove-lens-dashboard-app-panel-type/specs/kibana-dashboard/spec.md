@@ -35,7 +35,7 @@ The restriction on `config_json` for `lens-dashboard-app` panels is removed. `le
 
 ### Requirement: Chart-level `time_range` null-preservation and inheritance from dashboard (REQ-040)
 
-The chart-level `time_range` null-preservation rule applies only to typed Lens chart blocks reachable under `panels[].vis_config.by_value.<chart>_config` (for `type = "vis"`). The `panels[].lens_dashboard_app_config.by_value.<chart>_config` path SHALL no longer exist and SHALL NOT be referenced in this requirement. All other aspects of REQ-040 remain unchanged.
+The chart-level `time_range` null-preservation rule applies only to typed Lens chart blocks reachable under `panels[].vis_config.by_value.<chart>_config` (for `type = "vis"`). The `panels[].lens_dashboard_app_config.by_value.<chart>_config` path SHALL no longer exist and SHALL NOT be referenced in this requirement. All other aspects of the Chart-level `time_range` null-preservation and inheritance from dashboard requirement remain unchanged.
 
 #### Scenario: time_range null-preservation applies only to vis_config path
 

@@ -26,7 +26,7 @@
 
 ## 4. Tests, docs, and spec
 
-- [ ] 4.1 Remove or update acceptance tests covering `lens-dashboard-app` panels: `acc_lens_dashboard_app_panels_test.go`, relevant cases in `acc_drilldowns_test.go`, and `lens_by_value_embed_wiring_test.go`
+- [ ] 4.1 Remove or update acceptance tests covering `lens-dashboard-app` panels: `internal/kibana/dashboard/panel/lensdashboardapp/acc_panels_test.go`, relevant cases in `internal/kibana/dashboard/panel/lensdashboardapp/acc_drilldowns_test.go`, and `lens_by_value_embed_wiring_test.go`
 - [ ] 4.2 Update `openspec/specs/kibana-dashboard/spec.md`: remove REQ-035 entirely, drop all occurrences of `lens-dashboard-app` (including in the schema overview, REQ-006 validation rules, REQ-010, REQ-025, REQ-040, and the implementation cross-reference table)
 - [ ] 4.3 Remove `lens-dashboard-app` examples from `examples/resources/elasticstack_kibana_dashboard/resource.tf`
 - [ ] 4.4 Write an upgrade guide section documenting the migration from `type = "lens-dashboard-app"` to `type = "vis"`, including the `config_json` attribute relocation note for `by_value.config_json` users (see `design.md` for the full before/after HCL examples)
