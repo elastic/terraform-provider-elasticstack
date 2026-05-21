@@ -491,4 +491,6 @@ func Test_panelConfigValidator_rejectsRemovedLensDashboardApp(t *testing.T) {
 	v.ValidateObject(ctx, req, &resp)
 	require.True(t, resp.Diagnostics.HasError())
 	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Removed panel type")
+	require.Contains(t, resp.Diagnostics.Errors()[0].Detail(),
+		"https://registry.terraform.io/providers/elastic/elasticstack/latest/docs/guides/elasticstack-kibana-dashboard-remove-lens-dashboard-app")
 }

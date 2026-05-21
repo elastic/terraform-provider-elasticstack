@@ -32,7 +32,7 @@ var _ validator.Object = panelConfigValidator{}
 var removedPanelTypes = map[string]string{
 	"lens-dashboard-app": "The `lens-dashboard-app` panel type was removed; migrate to `type = \"vis\"` with `vis_config` " +
 		"(or panel-level `config_json` for opaque by-value charts). See the upgrade guide: " +
-		"docs/guides/elasticstack-kibana-dashboard-remove-lens-dashboard-app.md",
+		"https://registry.terraform.io/providers/elastic/elasticstack/latest/docs/guides/elasticstack-kibana-dashboard-remove-lens-dashboard-app",
 }
 
 // panelConfigValidator delegates panel-type validation to iface.Handler.ValidatePanelConfig implementations.
