@@ -48,7 +48,7 @@ func newCalendarResource() *calendarResource {
 			// Terraform runs delete+create. ML put calendar is create-only on Elasticsearch
 			// 8.0.x, so an in-place PUT would return "calendar already exists". Job
 			// associations live on `elasticstack_elasticsearch_ml_calendar_job`.
-			Update: entitycore.NoOpElasticsearchWriteCallback[TFModel](),
+			Update: entitycore.UpdateNotSupportedWriteCallback[TFModel](),
 		}),
 	}
 }

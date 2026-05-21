@@ -158,12 +158,15 @@ func PlaceholderElasticsearchWriteCallback[T ElasticsearchResourceModel]() Write
 	}
 }
 
-// NoOpElasticsearchWriteCallback returns a write callback that returns the plan
-// unchanged. Use for resources where all mutable attributes carry RequiresReplace,
-// so Terraform never reaches an in-place update.
-func NoOpElasticsearchWriteCallback[T ElasticsearchResourceModel]() WriteFunc[T] {
-	return func(_ context.Context, _ *clients.ElasticsearchScopedClient, req WriteRequest[T]) (WriteResult[T], diag.Diagnostics) {
-		return WriteResult[T]{Model: req.Plan}, nil
+// UpdateNotSupportedWriteCallback returns a write callback that always returns
+// an error diagnostic. Use for resources where all mutable attributes carry
+// RequiresReplace, so Terraform never reaches an in-place update.
+func UpdateNotSupportedWriteCallback[T ElasticsearchResourceModel]() WriteFunc[T] {
+	return func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ WriteRequest[T]) (WriteResult[T], diag.Diagnostics) {
+		var diags diag.Diagnostics
+		diags.AddError("Update not supported", "Update not supported")
+		var zero T
+		return WriteResult[T]{Model: zero}, diags
 	}
 }
 

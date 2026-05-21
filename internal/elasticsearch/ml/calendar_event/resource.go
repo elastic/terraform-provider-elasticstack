@@ -49,11 +49,7 @@ func newCalendarEventResource() *calendarEventResource {
 			Read:   readCalendarEvent,
 			Delete: deleteCalendarEvent,
 			Create: entitycore.PlaceholderElasticsearchWriteCallback[CalendarEventTFModel](),
-			// Calendar events have no in-place update API; attribute changes use RequiresReplace.
-			// The envelope still invokes Update when only nested blocks such as
-			// elasticsearch_connection change, so returning the plan unchanged lets read-after-write
-			// refresh state without failing the apply.
-			Update: entitycore.NoOpElasticsearchWriteCallback[CalendarEventTFModel](),
+			Update: entitycore.UpdateNotSupportedWriteCallback[CalendarEventTFModel](),
 		}),
 	}
 }
