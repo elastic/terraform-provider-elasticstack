@@ -57,6 +57,12 @@ func TestAccResourceMLCalendarEvent(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar_event.test", "end_time", "2026-06-01T06:00:00Z"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_calendar_event.test", "event_id"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_calendar_event.test", "id"),
+					// Gap 1: confirm force_time_shift is absent when not configured.
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_ml_calendar_event.test", "force_time_shift"),
+					// Gaps 2 & 3: skip_result and skip_model_update are Optional+Computed; verify
+					// the server populates them even when omitted from the configuration.
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_calendar_event.test", "skip_result"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_calendar_event.test", "skip_model_update"),
 				),
 			},
 		},
@@ -174,6 +180,38 @@ func TestAccResourceMLCalendarEvent_validation_invalidCalendarIDRegex(t *testing
 				},
 				PlanOnly:    true,
 				ExpectError: regexp.MustCompile(`(?i)(calendar_id|invalid|match|lowercase|alphanumeric)`),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLCalendarEvent_optionalSchedulingFieldsFalse(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, mlCalendarEventOptionalSchedulingMinElasticsearch, versionutils.FlavorAny)
+	calendarID := fmt.Sprintf("test-cal-evt-fls-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	vars := config.Variables{
+		"calendar_id": config.StringVariable(calendarID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar_event.test", "calendar_id", calendarID),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar_event.test", "description", "False scheduling flags test"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar_event.test", "start_time", "2026-11-01T00:00:00Z"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar_event.test", "end_time", "2026-11-01T02:00:00Z"),
+					// Gap 4: verify skip_result=false and skip_model_update=false round-trip.
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar_event.test", "skip_result", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar_event.test", "skip_model_update", "false"),
+					// Gap 5: second force_time_shift value (7200) confirms different durations are accepted.
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar_event.test", "force_time_shift", "7200"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_calendar_event.test", "event_id"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_calendar_event.test", "id"),
+				),
 			},
 		},
 	})
