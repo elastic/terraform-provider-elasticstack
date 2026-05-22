@@ -2,14 +2,14 @@
 
 - [x] 1.1 Add `KibanaResourceModel` interface methods to `proxyModel` (`GetID`, `GetResourceID`, `GetSpaceID`, `GetKibanaConnection`)
 - [x] 1.2 Add `GetVersionRequirements()` to `proxyModel` implementing `entitycore.WithVersionRequirements` (returns min version 8.7.1 with error message matching current `assertVersionSupported`)
-- [ ] 1.3 Remove `kibana_connection` block from `getSchema()` (envelope injects it)
-- [ ] 1.4 Convert `Create` receiver method to package-level `KibanaCreateFunc[proxyModel]` callback
-- [ ] 1.5 Convert `Read` receiver method to package-level `kibanaReadFunc[proxyModel]` callback
-- [ ] 1.6 Convert `Update` receiver method to package-level `KibanaUpdateFunc[proxyModel]` callback
-- [ ] 1.7 Convert `Delete` receiver method to package-level `kibanaDeleteFunc[proxyModel]` callback
-- [ ] 1.8 Rewrite `resource.go`: embed `*entitycore.KibanaResource[proxyModel]`, wire `NewKibanaResource` with all four callbacks, retain `ImportState` concrete method
-- [ ] 1.9 Delete `version.go`
-- [ ] 1.10 Verify `make build` passes and unit tests in the package pass
+- [x] 1.3 Remove `kibana_connection` block from `getSchema()` (envelope injects it)
+- [x] 1.4 Convert `Create` receiver method to package-level `KibanaCreateFunc[proxyModel]` callback
+- [x] 1.5 Convert `Read` receiver method to package-level `kibanaReadFunc[proxyModel]` callback
+- [x] 1.6 Convert `Update` receiver method to package-level `KibanaUpdateFunc[proxyModel]` callback
+- [x] 1.7 Convert `Delete` receiver method to package-level `kibanaDeleteFunc[proxyModel]` callback
+- [x] 1.8 Rewrite `resource.go`: embed `*entitycore.KibanaResource[proxyModel]`, wire `NewKibanaResource` with all four callbacks, retain `ImportState` concrete method
+- [x] 1.9 Delete `version.go`
+- [x] 1.10 Verify `make build` passes and unit tests in the package pass
 
 ## 2. Migrate `fleet/agentdownloadsource`
 
