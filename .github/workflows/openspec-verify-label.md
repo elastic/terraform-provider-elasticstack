@@ -91,7 +91,9 @@ jobs:
       archive_push_allowed: ${{ steps.classify_and_select.outputs.archive_push_allowed }}
       archive_push_allowed_reason: ${{ steps.classify_and_select.outputs.archive_push_allowed_reason }}
 tools:
+  cli-proxy: true
   github:
+    mode: gh-proxy
     toolsets: [repos, pull_requests]
 network:
   allowed: [defaults, node, go, elastic.litellm-prod.ai]

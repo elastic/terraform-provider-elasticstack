@@ -77,10 +77,10 @@ test('semantic-function-refactor source workflow includes LiteLLM in allowed net
 test('workflow configures Serena MCP server for semantic Go analysis', () => {
   const source = workflowSource();
   const lock = lockSource();
-  assert.match(source, /mcp-servers:/);
-  assert.match(source, /container:\s*ghcr\.io\/github\/serena-mcp-server:latest/);
-  assert.match(source, /entrypoint:\s*serena/);
-  assert.match(source, /allowed:/);
+  // Serena MCP configuration is provided via the shared/go-source-analysis import,
+  // which transitively imports shared/serena-go.md and shared/serena.md. Verify the
+  // source declares the import and the compiled lock contains the resolved config.
+  assert.match(source, /shared\/go-source-analysis\.md/);
   assert.match(lock, /"serena":\s*\{/);
   assert.match(lock, /"container":\s*"ghcr\.io\/github\/serena-mcp-server:latest"/);
   assert.match(lock, /"entrypoint":\s*"serena"/);
@@ -88,20 +88,21 @@ test('workflow configures Serena MCP server for semantic Go analysis', () => {
 
 test('compiled lock includes Serena tools in agent allowed-tools', () => {
   const lock = lockSource();
-  assert.match(lock, /mcp__serena__activate_project/);
-  assert.match(lock, /mcp__serena__get_symbols_overview/);
-  assert.match(lock, /mcp__serena__find_symbol/);
-  assert.match(lock, /mcp__serena__search_for_pattern/);
-  assert.match(lock, /mcp__serena__find_referencing_symbols/);
-  assert.match(lock, /mcp__serena__read_file/);
+  // The compiled lock exposes Serena as a single bundled MCP allowed-tool entry
+  // (`mcp__serena`) plus registration in GH_AW_MCP_CLI_SERVERS.
+  assert.match(lock, /mcp__serena/);
+  assert.match(lock, /GH_AW_MCP_CLI_SERVERS=.*serena/);
 });
 
 test('workflow configures bash tools for Go source navigation', () => {
   const source = workflowSource();
-  assert.match(source, /tools:/);
-  assert.match(source, /bash:/);
-  assert.match(source, /find \. -name "\*\.go" ! -name "\*_test\.go" -type f/);
-  assert.match(source, /grep -r "\^func " \. --include="\*\.go"/);
+  const lock = lockSource();
+  // Bash tooling for Go source navigation is provided via the shared
+  // go-source-analysis import; verify the import on the source and the compiled
+  // bash allowlist entries in the lock.
+  assert.match(source, /shared\/go-source-analysis\.md/);
+  assert.match(lock, /Bash\(find internal provider -name '\*\.go' ! -name '\*_test\.go' -type f\)/);
+  assert.match(lock, /Bash\(grep -r 'func ' internal provider --include='\*\.go'\)/);
 });
 
 test('compiled lock preserves LiteLLM model and allowed domains', () => {

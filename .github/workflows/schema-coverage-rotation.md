@@ -39,7 +39,12 @@ permissions:
   issues: read
   pull-requests: read
   actions: read
+
 tools:
+  cli-proxy: true
+  github:
+    mode: gh-proxy
+    toolsets: [default, issues]
   timeout: 300
   repo-memory:
     - id: schema-coverage-rotation

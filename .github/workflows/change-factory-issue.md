@@ -209,7 +209,9 @@ jobs:
       phase_label_name: ${{ steps.set_phase_label.outputs.phase_label_name }}
       gate_reason: ${{ steps.finalize_gate.outputs.gate_reason }}
 tools:
+  cli-proxy: true
   github:
+    mode: gh-proxy
     toolsets: [issues, pull_requests, repos]
 network:
   allowed: [defaults, node, elastic.litellm-prod.ai, www.elastic.co]
