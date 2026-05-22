@@ -113,6 +113,18 @@ func TestAccResourceAgentBuilderSkill(t *testing.T) {
 				},
 				ImportStateVerify: true,
 			},
+			{
+				// Revert: remove tool_ids and referenced_content to verify set→clear transitions.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("revert"),
+				ConfigVariables: config.Variables{
+					"skill_id": config.StringVariable(skillID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckNoResourceAttr(testResourceID, "tool_ids"),
+					resource.TestCheckNoResourceAttr(testResourceID, "referenced_content"),
+				),
+			},
 		},
 	})
 }
@@ -137,6 +149,7 @@ func TestAccResourceAgentBuilderSkillFull(t *testing.T) {
 					resource.TestCheckResourceAttr(testResourceID, "referenced_content.#", "1"),
 					resource.TestCheckResourceAttr(testResourceID, "referenced_content.0.name", "Initial"),
 					resource.TestCheckResourceAttr(testResourceID, "referenced_content.0.relative_path", "./initial/path.md"),
+					resource.TestCheckResourceAttr(testResourceID, "referenced_content.0.content", "Initial referenced content."),
 				),
 			},
 			{
@@ -152,6 +165,19 @@ func TestAccResourceAgentBuilderSkillFull(t *testing.T) {
 					return s.RootModule().Resources[testResourceID].Primary.ID, nil
 				},
 				ImportStateVerify: true,
+			},
+			{
+				// Update to two tool IDs to verify multi-item set behavior.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_multi_tools"),
+				ConfigVariables: config.Variables{
+					"skill_id": config.StringVariable(skillID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceID, "tool_ids.#", "2"),
+					resource.TestCheckTypeSetElemAttr(testResourceID, "tool_ids.*", "platform.core.index_explorer"),
+					resource.TestCheckTypeSetElemAttr(testResourceID, "tool_ids.*", "platform.core.search"),
+				),
 			},
 		},
 	})
@@ -219,7 +245,7 @@ func TestAccResourceAgentBuilderSkillKibanaConnection(t *testing.T) {
 					resource.TestCheckResourceAttr(testResourceID, "skill_id", skillID),
 					resource.TestCheckResourceAttr(testResourceID, "space_id", "default"),
 					resource.TestCheckResourceAttr(testResourceID, "kibana_connection.#", "1"),
-					resource.TestCheckResourceAttrSet(testResourceID, "kibana_connection.0.endpoints.0"),
+					resource.TestCheckResourceAttr(testResourceID, "kibana_connection.0.endpoints.0", strings.TrimSpace(os.Getenv("KIBANA_ENDPOINT"))),
 				),
 			},
 			{
