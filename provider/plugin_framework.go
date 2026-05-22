@@ -53,7 +53,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/filter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/jobstate"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
-	apikey "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
+	apikeyephemeral "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey/ephemeral"
+	apikeyresource "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey/resource"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/rolemapping"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/systemuser"
@@ -190,7 +191,7 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 
 func (p *Provider) EphemeralResources(_ context.Context) []func() ephemeral.EphemeralResource {
 	return []func() ephemeral.EphemeralResource{
-		apikey.NewEphemeralResource,
+		apikeyephemeral.NewResource,
 	}
 }
 
@@ -208,7 +209,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		index.NewResource,
 		componenttemplate.NewResource,
 		monitor.NewResource,
-		apikey.NewResource,
+		apikeyresource.NewResource,
 		datastream.NewDataStreamResource,
 		datastreamlifecycle.NewResource,
 		ilm.NewResource,

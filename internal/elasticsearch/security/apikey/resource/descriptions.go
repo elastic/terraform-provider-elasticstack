@@ -15,31 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package agentdownloadsource
+package resource
 
-import (
-	"context"
+import _ "embed"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-)
-
-func deleteAgentDownloadSource(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	resourceID string,
-	spaceID string,
-	_ model,
-) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		diags.AddError(err.Error(), "")
-		return diags
-	}
-
-	diags.Append(fleet.DeleteAgentDownloadSource(ctx, fleetClient, resourceID, spaceID)...)
-	return diags
-}
+//go:embed descriptions/resource.md
+var resourceDescription string

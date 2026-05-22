@@ -15,31 +15,16 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package agentdownloadsource
+package apikey
 
-import (
-	"context"
+import "github.com/hashicorp/go-version"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+// Minimum Elasticsearch versions for various API key capabilities. These are
+// used by both the resource and ephemeral resource paths.
+var (
+	MinVersion                         = version.Must(version.NewVersion("8.0.0"))  // Enabled in 8.0
+	MinVersionWithUpdate               = version.Must(version.NewVersion("8.4.0"))  // Update API Key endpoint
+	MinVersionReturningRoleDescriptors = version.Must(version.NewVersion("8.5.0"))  // Get API Key returns role_descriptors
+	MinVersionWithRestriction          = version.Must(version.NewVersion("8.9.0"))  // role descriptor `restriction` block
+	MinVersionWithCrossCluster         = version.Must(version.NewVersion("8.10.0")) // Cross-cluster API keys
 )
-
-func deleteAgentDownloadSource(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	resourceID string,
-	spaceID string,
-	_ model,
-) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		diags.AddError(err.Error(), "")
-		return diags
-	}
-
-	diags.Append(fleet.DeleteAgentDownloadSource(ctx, fleetClient, resourceID, spaceID)...)
-	return diags
-}

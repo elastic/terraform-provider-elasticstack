@@ -26,21 +26,33 @@ import (
 )
 
 var (
-	_ resource.Resource                = &Resource{}
-	_ resource.ResourceWithConfigure   = &Resource{}
-	_ resource.ResourceWithImportState = &Resource{}
+	_ resource.Resource                = newResource()
+	_ resource.ResourceWithConfigure   = newResource()
+	_ resource.ResourceWithImportState = newResource()
 )
 
 // Resource is the fleet proxy resource.
 type Resource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[proxyModel]
+}
+
+func newResource() *Resource {
+	return &Resource{
+		KibanaResource: entitycore.NewKibanaResource[proxyModel](
+			entitycore.ComponentFleet,
+			"proxy",
+			getSchema,
+			readProxy,
+			deleteProxy,
+			createProxy,
+			updateProxy,
+		),
+	}
 }
 
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
-	return &Resource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentFleet, "proxy"),
-	}
+	return newResource()
 }
 
 // ImportState implements resource.ResourceWithImportState.

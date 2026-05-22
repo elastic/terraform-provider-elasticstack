@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -97,23 +96,7 @@ func GetSecurityRole(ctx context.Context, client *Client, name string) (*Securit
 		}
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		var role SecurityRole
-		if err := json.Unmarshal(resp.Body, &role); err != nil {
-			return nil, fwdiag.Diagnostics{
-				fwdiag.NewErrorDiagnostic(
-					"Failed to parse Kibana security role response",
-					fmt.Sprintf("JSON decode error: %s. Body: %s", err.Error(), string(resp.Body)),
-				),
-			}
-		}
-		return &role, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleGetResponse[SecurityRole](resp.StatusCode(), resp.Body)
 }
 
 // PutSecurityRole creates or updates a Kibana security role using the supplied body.

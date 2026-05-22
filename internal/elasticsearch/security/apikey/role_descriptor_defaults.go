@@ -15,31 +15,25 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package agentdownloadsource
+package apikey
 
-import (
-	"context"
+import "github.com/elastic/terraform-provider-elasticstack/internal/models"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-)
+// PopulateRoleDescriptorsDefaults ensures that all role descriptors have proper defaults
+func PopulateRoleDescriptorsDefaults(model map[string]models.APIKeyRoleDescriptor) map[string]models.APIKeyRoleDescriptor {
+	for role, descriptor := range model {
+		resultDescriptor := descriptor
 
-func deleteAgentDownloadSource(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	resourceID string,
-	spaceID string,
-	_ model,
-) diag.Diagnostics {
-	var diags diag.Diagnostics
+		// Ensure AllowRestrictedIndices is set to false for all indices that don't have it set
+		for i, index := range resultDescriptor.Indices {
+			if index.AllowRestrictedIndices == nil {
+				resultDescriptor.Indices[i].AllowRestrictedIndices = new(bool)
+				*resultDescriptor.Indices[i].AllowRestrictedIndices = false
+			}
+		}
 
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		diags.AddError(err.Error(), "")
-		return diags
+		model[role] = resultDescriptor
 	}
 
-	diags.Append(fleet.DeleteAgentDownloadSource(ctx, fleetClient, resourceID, spaceID)...)
-	return diags
+	return model
 }

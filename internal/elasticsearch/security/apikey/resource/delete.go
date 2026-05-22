@@ -15,41 +15,20 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package proxy
+package resource
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func createProxy(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, plan proxyModel) (proxyModel, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		diags.AddError(err.Error(), "")
-		return proxyModel{}, diags
-	}
-
-	body, bodyDiags := plan.toAPICreateModel()
-	diags.Append(bodyDiags...)
-	if diags.HasError() {
-		return proxyModel{}, diags
-	}
-
-	created, createDiags := fleetclient.CreateProxy(ctx, fleetClient, spaceID, body)
-	diags.Append(createDiags...)
-	if diags.HasError() {
-		return proxyModel{}, diags
-	}
-
-	diags.Append(plan.populateFromAPI(spaceID, *created)...)
-	if diags.HasError() {
-		return proxyModel{}, diags
-	}
-
-	return plan, diags
+// deleteAPIKey is the package-level delete callback passed to the
+// ElasticsearchResource envelope. The envelope handles state removal after a
+// successful delete.
+func deleteAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ apikey.TfModel) diag.Diagnostics {
+	return elasticsearch.DeleteAPIKey(ctx, client, resourceID)
 }

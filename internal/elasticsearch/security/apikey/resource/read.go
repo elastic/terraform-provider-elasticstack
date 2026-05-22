@@ -15,41 +15,40 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package proxy
+package resource
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func createProxy(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, plan proxyModel) (proxyModel, diag.Diagnostics) {
+// readAPIKey is the envelope read callback for API key reads.
+func readAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state apikey.TfModel) (apikey.TfModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		diags.AddError(err.Error(), "")
-		return proxyModel{}, diags
-	}
-
-	body, bodyDiags := plan.toAPICreateModel()
-	diags.Append(bodyDiags...)
+	apiKey, apiKeyDiags := elasticsearch.GetAPIKey(ctx, client, resourceID)
+	diags.Append(apiKeyDiags...)
 	if diags.HasError() {
-		return proxyModel{}, diags
+		return state, false, diags
+	}
+	if apiKey == nil {
+		return state, false, diags
 	}
 
-	created, createDiags := fleetclient.CreateProxy(ctx, fleetClient, spaceID, body)
-	diags.Append(createDiags...)
+	ver, verDiags := client.ServerVersion(ctx)
+	diags.Append(verDiags...)
 	if diags.HasError() {
-		return proxyModel{}, diags
+		return state, false, diags
 	}
 
-	diags.Append(plan.populateFromAPI(spaceID, *created)...)
+	diags.Append(state.PopulateFromAPI(apiKey, ver)...)
 	if diags.HasError() {
-		return proxyModel{}, diags
+		return state, false, diags
 	}
 
-	return plan, diags
+	return state, true, diags
 }
