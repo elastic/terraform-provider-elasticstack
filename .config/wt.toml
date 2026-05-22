@@ -37,6 +37,9 @@ env_path.write_text(chr(10).join(lines) + chr(10))
 PY
 """
 
+[[post-start]]
+custom-lint = "make golangci-lint-custom"
+
 [pre-commit]
 check = "make check-lint"
 

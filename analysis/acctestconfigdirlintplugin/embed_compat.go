@@ -29,7 +29,7 @@ import (
 // isValidEmbeddedCompatConfig reports whether expr is a reference to a package-level
 // string variable populated by //go:embed from a Terraform file under testdata/
 // (repository convention for ExternalProviders compatibility steps).
-func isValidEmbeddedCompatConfig(pass *analysis.Pass, expr ast.Expr) bool {
+func isValidEmbeddedCompatConfig(pass *analysis.Pass, fileLineCache map[string][]string, varSpecIndex map[*types.Var]*ast.ValueSpec, expr ast.Expr) bool {
 	expr = unwrapParenExpr(expr)
 	id, ok := expr.(*ast.Ident)
 	if !ok {
@@ -48,12 +48,12 @@ func isValidEmbeddedCompatConfig(pass *analysis.Pass, expr ast.Expr) bool {
 	if !isStringKind(v.Type()) {
 		return false
 	}
-	vs, ok := findValueSpecForVar(pass, v)
+	vs, ok := findValueSpecForVar(varSpecIndex, v)
 	if !ok || vs == nil || len(vs.Names) == 0 || vs.Names[0] == nil {
 		return false
 	}
 	pos := pass.Fset.Position(vs.Names[0].Pos())
-	paths := goEmbedPathsAboveValueSpec(pass, pos.Filename, pos.Line)
+	paths := goEmbedPathsAboveValueSpec(pass, fileLineCache, pos.Filename, pos.Line)
 	for _, p := range paths {
 		if isTestdataTFEmbedPath(p) {
 			return true
@@ -80,7 +80,8 @@ func isStringKind(typ types.Type) bool {
 	return ok && b.Kind() == types.String
 }
 
-func findValueSpecForVar(pass *analysis.Pass, v *types.Var) (*ast.ValueSpec, bool) {
+func buildVarSpecIndex(pass *analysis.Pass) map[*types.Var]*ast.ValueSpec {
+	idx := make(map[*types.Var]*ast.ValueSpec)
 	for _, f := range pass.Files {
 		for _, decl := range f.Decls {
 			gd, ok := decl.(*ast.GenDecl)
@@ -96,14 +97,37 @@ func findValueSpecForVar(pass *analysis.Pass, v *types.Var) (*ast.ValueSpec, boo
 					if name == nil {
 						continue
 					}
-					if pass.TypesInfo.Defs[name] == v {
-						return vs, true
+					if v, ok := pass.TypesInfo.Defs[name].(*types.Var); ok {
+						idx[v] = vs
 					}
 				}
 			}
 		}
 	}
-	return nil, false
+	return idx
+}
+
+func findValueSpecForVar(index map[*types.Var]*ast.ValueSpec, v *types.Var) (*ast.ValueSpec, bool) {
+	vs, ok := index[v]
+	return vs, ok
+}
+
+func cachedLines(pass *analysis.Pass, cache map[string][]string, filename string) []string {
+	if lines, ok := cache[filename]; ok {
+		return lines
+	}
+	if pass.ReadFile == nil {
+		cache[filename] = nil
+		return nil
+	}
+	content, err := pass.ReadFile(filename)
+	if err != nil {
+		cache[filename] = nil
+		return nil
+	}
+	lines := strings.Split(string(content), "\n")
+	cache[filename] = lines
+	return lines
 }
 
 // goEmbedPathsAboveValueSpec collects //go:embed path tokens from directive lines above the
@@ -111,15 +135,11 @@ func findValueSpecForVar(pass *analysis.Pass, v *types.Var) (*ast.ValueSpec, boo
 // //go:embed and the declaration are skipped, matching allowed go:embed layouts. For
 // parenthesized `var (` blocks, lines containing only `(`, `)`, or `var` / `var (` are skipped
 // so a //go:embed placed directly above an inner declaration is still found.
-func goEmbedPathsAboveValueSpec(pass *analysis.Pass, filename string, valueSpecNameLine1Based int) []string {
-	if pass.ReadFile == nil {
+func goEmbedPathsAboveValueSpec(pass *analysis.Pass, fileLineCache map[string][]string, filename string, valueSpecNameLine1Based int) []string {
+	lines := cachedLines(pass, fileLineCache, filename)
+	if lines == nil {
 		return nil
 	}
-	content, err := pass.ReadFile(filename)
-	if err != nil {
-		return nil
-	}
-	lines := strings.Split(string(content), "\n")
 	var paths []string
 	for i := valueSpecNameLine1Based - 2; i >= 0; i-- {
 		if i >= len(lines) {
