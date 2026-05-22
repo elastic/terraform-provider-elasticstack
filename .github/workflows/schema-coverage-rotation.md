@@ -1,5 +1,7 @@
 ---
-imports: [shared/setup-dev.md]
+imports:
+  - shared/setup-dev.md
+  - shared/dispatch-code-factory.md
 name: Schema Coverage Rotation
 description: Rotates schema-coverage analysis across stale provider entities and opens actionable test-improvement issues.
 on:
@@ -57,37 +59,6 @@ safe-outputs:
     title-prefix: "[schema-coverage] "
     labels: [testing, acceptance-tests, schema-coverage, triaged]
     max: 3
-  jobs:
-    dispatch-code-factory:
-      needs: safe_outputs
-      description: "Dispatch code-factory for each created issue"
-      permissions:
-        actions: write
-        contents: read
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout repository
-          uses: actions/checkout@v6
-          with:
-            persist-credentials: false
-            sparse-checkout: .github/scripts/workflows/lib
-            sparse-checkout-cone-mode: true
-            fetch-depth: 1
-        - name: Download safe-outputs artifact
-          uses: actions/download-artifact@v8
-          with:
-            name: safe-outputs-items
-            path: /tmp/gh-aw/safe-outputs
-            if-no-files-found: warn
-        - name: Dispatch code-factory runs
-          env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            GITHUB_REPOSITORY: ${{ github.repository }}
-            SOURCE_WORKFLOW: schema-coverage-rotation
-          run: |
-            node .github/scripts/workflows/lib/producer-dispatch.js \
-              /tmp/gh-aw/safe-outputs/temporary-id-map.json \
-              "$SOURCE_WORKFLOW"
 network:
   allowed: [defaults, node, go, elastic.litellm-prod.ai]
 if: >-
