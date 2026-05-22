@@ -1,3 +1,11 @@
+# `acctestconfigdirlint-perf` — Analyzer performance requirements
+
+Script implementation: `analysis/acctestconfigdirlintplugin/` (and `analysis/acctestconfigdirlintplugin/plugin/` for golangci load mode)
+
+## Purpose
+
+Define behavior-preserving performance requirements for the `acctestconfigdirlint` analyzer (traversal strategy, file-read caching, and lookup strategy).
+
 ## ADDED Requirements
 
 ### Requirement: Analyzer uses syntactic import-path check for acceptance-test call detection
