@@ -181,16 +181,23 @@ func (r *KibanaResource[T]) Schema(ctx context.Context, _ resource.SchemaRequest
 	resp.Schema = schema
 }
 
-// resolveResourceIdentity uses the composite-ID-or-fallback rule to determine
-// the resourceID and spaceID for a model. It attempts to parse GetID() as a
-// composite ID; on failure (nil result) it falls back to GetResourceID() and
-// GetSpaceID(). Any diagnostics from the composite parse are discarded.
-func (r *KibanaResource[T]) resolveResourceIdentity(model T) (resourceID string, spaceID string) {
+// resolveKibanaResourceIdentity uses the composite-ID-or-fallback rule to
+// determine the resourceID and spaceID for a model. It attempts to parse
+// GetID() as a composite ID; on failure (nil result) it falls back to
+// GetResourceID() and GetSpaceID(). Composite-parse diagnostics are discarded.
+func resolveKibanaResourceIdentity[T KibanaResourceModel](model T) (resourceID string, spaceID string) {
 	compID, _ := clients.CompositeIDFromStr(model.GetID().ValueString())
 	if compID != nil {
 		return compID.ResourceID, compID.ClusterID
 	}
 	return model.GetResourceID().ValueString(), model.GetSpaceID().ValueString()
+}
+
+// isKibanaUnscoped reports whether model opts out of space-identifier
+// validation via the [KibanaUnscopedSpace] interface.
+func isKibanaUnscoped[T KibanaResourceModel](model T) bool {
+	u, ok := any(model).(KibanaUnscopedSpace)
+	return ok && u.IsUnscopedSpace()
 }
 
 func (r *KibanaResource[T]) validateSpaceID(plan T) diag.Diagnostics {
@@ -203,11 +210,7 @@ func (r *KibanaResource[T]) validateSpaceID(plan T) diag.Diagnostics {
 		)
 		return diags
 	}
-	unscoped := false
-	if u, ok := any(plan).(KibanaUnscopedSpace); ok && u.IsUnscopedSpace() {
-		unscoped = true
-	}
-	if !unscoped && spaceID.ValueString() == "" {
+	if !isKibanaUnscoped(plan) && spaceID.ValueString() == "" {
 		diags.AddError(
 			"Invalid space identifier",
 			"The space identifier from configuration is unknown or empty; cannot create or update.",
@@ -234,11 +237,8 @@ func (r *KibanaResource[T]) Create(ctx context.Context, req resource.CreateReque
 // reports found==true, the returned model is persisted via resp.State.Set;
 // when found==false, the resource is removed from state.
 func (r *KibanaResource[T]) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	if r.readFunc == nil {
-		resp.Diagnostics.AddError(
-			"Kibana envelope configuration error",
-			"The read callback passed via KibanaResourceOptions must not be nil.",
-		)
+	if d := r.requireReadFunc(); d.HasError() {
+		resp.Diagnostics.Append(d...)
 		return
 	}
 
@@ -248,7 +248,7 @@ func (r *KibanaResource[T]) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	resourceID, spaceID := r.resolveResourceIdentity(model)
+	resourceID, spaceID := resolveKibanaResourceIdentity(model)
 	if resourceID == "" {
 		resp.Diagnostics.AddError(
 			"Invalid resource identifier",
@@ -360,7 +360,7 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv kibanaWriteI
 	spaceID := planModel.GetSpaceID().ValueString()
 
 	if inv.isUpdate {
-		writeID, spaceID = r.resolveResourceIdentity(planModel)
+		writeID, spaceID = resolveKibanaResourceIdentity(planModel)
 		if writeID == "" {
 			diags.AddError(
 				"Invalid resource identifier",
@@ -417,11 +417,7 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv kibanaWriteI
 		return diags
 	}
 
-	unscoped := false
-	if u, ok := any(written.Model).(KibanaUnscopedSpace); ok && u.IsUnscopedSpace() {
-		unscoped = true
-	}
-	if !unscoped && readSpaceID == "" {
+	if !isKibanaUnscoped(written.Model) && readSpaceID == "" {
 		diags.AddError(
 			"Invalid space identifier",
 			"The resolved read space is empty after write; cannot refresh.",
@@ -476,7 +472,7 @@ func (r *KibanaResource[T]) Delete(ctx context.Context, req resource.DeleteReque
 		return
 	}
 
-	resourceID, spaceID := r.resolveResourceIdentity(model)
+	resourceID, spaceID := resolveKibanaResourceIdentity(model)
 	if resourceID == "" {
 		resp.Diagnostics.AddError(
 			"Invalid resource identifier",
