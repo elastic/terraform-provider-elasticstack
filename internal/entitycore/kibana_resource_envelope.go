@@ -360,8 +360,8 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv kibanaWriteI
 	spaceID := planModel.GetSpaceID().ValueString()
 
 	if inv.isUpdate {
-		resourceID, _ := r.resolveResourceIdentity(planModel)
-		if resourceID == "" {
+		writeID, spaceID = r.resolveResourceIdentity(planModel)
+		if writeID == "" {
 			diags.AddError(
 				"Invalid resource identifier",
 				"The resource identifier is empty; cannot update.",
@@ -417,6 +417,18 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv kibanaWriteI
 		return diags
 	}
 
+	unscoped := false
+	if u, ok := any(written.Model).(KibanaUnscopedSpace); ok && u.IsUnscopedSpace() {
+		unscoped = true
+	}
+	if !unscoped && readSpaceID == "" {
+		diags.AddError(
+			"Invalid space identifier",
+			"The resolved read space is empty after write; cannot refresh.",
+		)
+		return diags
+	}
+
 	stateModel, found, readDiags := r.readFunc(ctx, client, readResourceID, readSpaceID, written.Model)
 	diags.Append(readDiags...)
 	if diags.HasError() {
@@ -424,9 +436,13 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv kibanaWriteI
 	}
 
 	if !found {
+		notFoundDetail := fmt.Sprintf("%s_%s %q was not found after write", r.component, r.resourceName, readResourceID)
+		if readSpaceID != "" {
+			notFoundDetail = fmt.Sprintf("%s_%s %q in space %q was not found after write", r.component, r.resourceName, readResourceID, readSpaceID)
+		}
 		diags.AddError(
 			"Resource not found",
-			fmt.Sprintf("%s_%s %q was not found after write", r.component, r.resourceName, readResourceID),
+			notFoundDetail,
 		)
 		return diags
 	}

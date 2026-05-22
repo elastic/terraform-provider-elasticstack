@@ -835,6 +835,50 @@ func TestNewKibanaResource_Read_compositeIDWinsOverDifferentResourceID(t *testin
 	require.Equal(t, "foo", receivedSpaceID, "composite ID spaceID should win")
 }
 
+func TestNewKibanaResource_Update_writeIDFromResolvedIdentity(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	updateCalled := false
+	var receivedWriteID, receivedSpaceID string
+	opts := defaultTestKibanaResourceOptions()
+	opts.Update = func(_ context.Context, _ *clients.KibanaScopedClient, req KibanaWriteRequest[testKibanaResourceModel]) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+		updateCalled = true
+		receivedWriteID = req.WriteID
+		receivedSpaceID = req.SpaceID
+		return KibanaWriteResult[testKibanaResourceModel]{Model: req.Plan}, nil
+	}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	connBlockType := kibanaConnectionBlockType()
+	objType := tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"id":                tftypes.String,
+			"name":              tftypes.String,
+			"space_id":          tftypes.String,
+			"kibana_connection": connBlockType,
+		},
+	}
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                tftypes.NewValue(tftypes.String, "foo/bar"),
+		"name":              tftypes.NewValue(tftypes.String, "different-name"),
+		"space_id":          tftypes.NewValue(tftypes.String, "different-space"),
+		"kibana_connection": tftypes.NewValue(connBlockType, nil),
+	})
+	plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
+	prior := makeTestKibanaResourceState(ctx, t, "foo/bar")
+	resp := resource.UpdateResponse{State: prior}
+	req := resource.UpdateRequest{Plan: plan, State: prior, Config: kibanaTestConfig(plan)}
+
+	r.Update(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.True(t, updateCalled, "update callback should be called")
+	require.Equal(t, "bar", receivedWriteID, "update WriteID should come from resolved composite identity")
+	require.Equal(t, "foo", receivedSpaceID, "update SpaceID should come from resolved composite identity")
+}
+
 // =============================================================================
 // Subtask 2.11: Read not-found removes resource from state
 // =============================================================================
@@ -1750,7 +1794,7 @@ func TestNewKibanaResource_Create_notFoundAfterWrite(t *testing.T) {
 
 	require.True(t, resp.Diagnostics.HasError())
 	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Resource not found")
-	require.Contains(t, resp.Diagnostics.Errors()[0].Detail(), `kibana_test_entity "server-id" was not found after write`)
+	require.Contains(t, resp.Diagnostics.Errors()[0].Detail(), `kibana_test_entity "server-id" in space "server-space" was not found after write`)
 	require.NotContains(t, resp.Diagnostics.Errors()[0].Detail(), "my-resource")
 	require.True(t, resp.State.Raw.IsNull(), "state should not be mutated when resource not found after create")
 }
@@ -1787,8 +1831,131 @@ func TestNewKibanaResource_Update_notFoundAfterWrite(t *testing.T) {
 
 	require.True(t, resp.Diagnostics.HasError())
 	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Resource not found")
-	require.Contains(t, resp.Diagnostics.Errors()[0].Detail(), `kibana_test_entity "server-id" was not found after write`)
+	require.Contains(t, resp.Diagnostics.Errors()[0].Detail(), `kibana_test_entity "server-id" in space "server-space" was not found after write`)
 	require.False(t, resp.State.Get(ctx, &testKibanaResourceModel{}).HasError())
+}
+
+func TestNewKibanaResource_Create_emptyReadSpaceIDAfterWriteScopedResource(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	readCalled := false
+	createFn := func(
+		_ context.Context,
+		_ *clients.KibanaScopedClient,
+		req KibanaWriteRequest[testKibanaResourceModel],
+	) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+		model := req.Plan
+		model.Name = types.StringValue("server-id")
+		model.SpaceID = types.StringValue("")
+		return KibanaWriteResult[testKibanaResourceModel]{Model: model}, nil
+	}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", KibanaResourceOptions[testKibanaResourceModel]{
+		Schema: getTestKibanaResourceSchema,
+		Read: func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
+			readCalled = true
+			return testKibanaResourceModel{}, false, nil
+		},
+		Delete: testKibanaDeleteFunc,
+		Create: createFn,
+		Update: testKibanaWriteFuncFound,
+	})
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	objType := testKibanaResourceObjectType()
+	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
+	resp := resource.CreateResponse{State: respState}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Invalid space identifier")
+	require.Contains(t, resp.Diagnostics.Errors()[0].Detail(), "resolved read space is empty after write")
+	require.False(t, readCalled, "readFunc should not run when read space is empty on a scoped resource")
+	require.True(t, resp.State.Raw.IsNull(), "state should not be mutated")
+}
+
+func TestNewKibanaResource_Update_emptyReadSpaceIDAfterWriteScopedResource(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	readCalled := false
+	updateFn := func(
+		_ context.Context,
+		_ *clients.KibanaScopedClient,
+		req KibanaWriteRequest[testKibanaResourceModel],
+	) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+		model := req.Plan
+		model.Name = types.StringValue("server-id")
+		model.SpaceID = types.StringValue("")
+		return KibanaWriteResult[testKibanaResourceModel]{Model: model}, nil
+	}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", KibanaResourceOptions[testKibanaResourceModel]{
+		Schema: getTestKibanaResourceSchema,
+		Read: func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
+			readCalled = true
+			return testKibanaResourceModel{}, false, nil
+		},
+		Delete: testKibanaDeleteFunc,
+		Create: testKibanaWriteFuncFound,
+		Update: updateFn,
+	})
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
+	prior := makeTestKibanaResourceState(ctx, t, "default/my-resource")
+	resp := resource.UpdateResponse{State: prior}
+	r.Update(ctx, resource.UpdateRequest{Plan: plan, State: prior, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Invalid space identifier")
+	require.Contains(t, resp.Diagnostics.Errors()[0].Detail(), "resolved read space is empty after write")
+	require.False(t, readCalled, "readFunc should not run when read space is empty on a scoped resource")
+	var after testKibanaResourceModel
+	require.False(t, resp.State.Get(ctx, &after).HasError())
+	require.Equal(t, "default/my-resource", after.ID.ValueString(), "state should not change")
+}
+
+func TestNewKibanaResource_Create_emptyReadSpaceIDAfterWriteUnscopedResource(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	readCalled := false
+	createFn := func(
+		_ context.Context,
+		_ *clients.KibanaScopedClient,
+		req KibanaWriteRequest[testKibanaResourceModelUnscoped],
+	) (KibanaWriteResult[testKibanaResourceModelUnscoped], diag.Diagnostics) {
+		plan := req.Plan
+		plan.SpaceID = types.StringValue("")
+		return KibanaWriteResult[testKibanaResourceModelUnscoped]{Model: plan}, nil
+	}
+	r := NewKibanaResource[testKibanaResourceModelUnscoped](ComponentKibana, "test_entity", KibanaResourceOptions[testKibanaResourceModelUnscoped]{
+		Schema: getTestKibanaResourceSchema,
+		Read: func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, model testKibanaResourceModelUnscoped) (testKibanaResourceModelUnscoped, bool, diag.Diagnostics) {
+			readCalled = true
+			return model, true, nil
+		},
+		Delete: testKibanaDeleteFuncUnscoped,
+		Create: createFn,
+		Update: testKibanaWriteFuncUnscoped,
+	})
+	r.client = factory
+
+	objType := testKibanaResourceObjectType()
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"name":              tftypes.NewValue(tftypes.String, "my-resource"),
+		"space_id":          tftypes.NewValue(tftypes.String, ""),
+		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+	})
+	plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
+	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
+	resp := resource.CreateResponse{State: respState}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.True(t, readCalled, "readFunc should run when empty read space is allowed for KibanaUnscopedSpace")
 }
 
 func TestNewKibanaResource_Create_readFuncErrorAfterWrite(t *testing.T) {
