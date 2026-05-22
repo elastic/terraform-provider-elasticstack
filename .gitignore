@@ -1,3 +1,4 @@
+false
 node_modules/
 
 # pr-monitoring-loop watcher state (per-PR seen IDs, last-poll timestamps)
