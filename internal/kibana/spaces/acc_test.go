@@ -119,12 +119,14 @@ func TestAccResourceSpace_disabledFeaturesSolutionValidation(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("omitted_solution"),
 				ConfigVariables:          baseVars,
 				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       true,
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("classic_solution"),
 				ConfigVariables:          baseVars,
 				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       true,
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
