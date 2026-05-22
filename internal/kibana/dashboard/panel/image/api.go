@@ -48,7 +48,7 @@ func (Handler) AlignStateFromPlan(ctx context.Context, plan, state *models.Panel
 }
 
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	imgPanel, err := item.AsKbnDashboardPanelTypeImage()
+	imgPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeImage()
 	if err != nil {
 		var d diag.Diagnostics
 		d.AddError("Dashboard panel decode", err.Error())
@@ -79,7 +79,7 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 	)
 	grid := panelkit.GridToAPI(pm.Grid)
 	id := panelkit.IDToAPI(pm.ID)
-	panel := kbapi.KbnDashboardPanelTypeImage{
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage{
 		Grid: grid,
 		Id:   id,
 		Type: kbapi.Image,
@@ -88,7 +88,7 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 	if diags.HasError() {
 		return kbapi.DashboardPanelItem{}, diags
 	}
-	if err := panelItem.FromKbnDashboardPanelTypeImage(panel); err != nil {
+	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeImage(panel); err != nil {
 		diags.AddError("Failed to create image panel", err.Error())
 	}
 	return panelItem, diags

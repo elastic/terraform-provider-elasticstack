@@ -29,30 +29,30 @@ import (
 
 func Test_chartFilterJSONModel_roundTrip_xyChart(t *testing.T) {
 	raw := `{"type":"condition","condition":{"field":"host.name","operator":"is","value":"staging"}}`
-	var item kbapi.LensPanelFilters_Item
+	var item kbapi.KibanaHTTPAPIsLensPanelFilters_Item
 	require.NoError(t, json.Unmarshal([]byte(raw), &item))
 
 	m := models.ChartFilterJSONModel{}
 	diags := chartFilterJSONPopulateFromAPIItem(&m, item)
 	require.False(t, diags.HasError())
 
-	var out kbapi.LensPanelFilters_Item
+	var out kbapi.KibanaHTTPAPIsLensPanelFilters_Item
 	diags = decodeChartFilterJSON(m.FilterJSON, &out)
 	require.False(t, diags.HasError())
 
-	cond, err := out.AsKbnAsCodeFiltersSchemaAsCodeConditionFilterSchema()
+	cond, err := out.AsKibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeConditionFilterSchema()
 	require.NoError(t, err)
 	require.Equal(t, kbapi.Condition, cond.Type)
-	isCond, err := cond.Condition.AsKbnAsCodeFiltersSchemaConditionIs()
+	isCond, err := cond.Condition.AsKibanaHTTPAPIsKbnAsCodeFiltersSchemaConditionIs()
 	require.NoError(t, err)
 	require.Equal(t, "host.name", isCond.Field)
-	val, err := isCond.Value.AsKbnAsCodeFiltersSchemaConditionIsValue0()
+	val, err := isCond.Value.AsKibanaHTTPAPIsKbnAsCodeFiltersSchemaConditionIsValue0()
 	require.NoError(t, err)
 	require.Equal(t, "staging", val)
 }
 
 func Test_decodeChartFilterJSON_rejects_empty(t *testing.T) {
-	var item kbapi.LensPanelFilters_Item
+	var item kbapi.KibanaHTTPAPIsLensPanelFilters_Item
 	diags := decodeChartFilterJSON(jsontypes.NewNormalizedNull(), &item)
 	require.True(t, diags.HasError())
 }

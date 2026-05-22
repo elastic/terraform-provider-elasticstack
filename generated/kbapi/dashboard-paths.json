@@ -1,0 +1,591 @@
+{
+  "paths": {
+    "/api/dashboards": {
+      "post": {
+        "summary": "Create a dashboard",
+        "tags": [
+          "Dashboards"
+        ],
+        "description": "Creates a new dashboard and returns its ID, full state, and metadata.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-data"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "The unique ID of the dashboard, as returned by the create or search endpoints."
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-data"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-as-code-meta"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid request"
+          },
+          "403": {
+            "description": "forbidden"
+          }
+        },
+        "parameters": [
+          {
+            "description": "A required header to protect against CSRF attacks",
+            "in": "header",
+            "name": "kbn-xsrf",
+            "required": true,
+            "schema": {
+              "example": "true",
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "post-dashboards",
+        "x-state": "Technical Preview; added in 9.4.0"
+      },
+      "get": {
+        "summary": "Search dashboards",
+        "tags": [
+          "Dashboards"
+        ],
+        "description": "Returns a paginated list of dashboards. Each result includes title, description, tags, and metadata, but not the full panel layout. Use `GET /api/dashboards/{id}` to retrieve the complete state.",
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "dashboards": {
+                      "type": "array",
+                      "description": "List of dashboards matching the query. Each entry includes summary fields but not the full panel layout.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "The dashboard ID."
+                          },
+                          "data": {
+                            "type": "object",
+                            "properties": {
+                              "description": {
+                                "type": "string",
+                                "description": "A short description of the dashboard."
+                              },
+                              "tags": {
+                                "type": "array",
+                                "description": "Tag IDs associated with this dashboard.",
+                                "maxItems": 100,
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "time_range": {
+                                "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-es-query-server-timeRangeSchema"
+                              },
+                              "title": {
+                                "type": "string",
+                                "description": "The dashboard title."
+                              },
+                              "access_control": {
+                                "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-access-control"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "time_range",
+                              "title",
+                              "access_control"
+                            ]
+                          },
+                          "meta": {
+                            "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-as-code-meta"
+                          }
+                        },
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "data",
+                          "meta"
+                        ]
+                      }
+                    },
+                    "total": {
+                      "type": "number",
+                      "description": "The total number of dashboards matching the query."
+                    },
+                    "page": {
+                      "type": "number",
+                      "description": "The current page number."
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "dashboards",
+                    "total",
+                    "page"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden"
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            },
+            "description": "The page of results to return. Defaults to `1`."
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            },
+            "description": "The number of results to return per page. Defaults to `20`."
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filters results by `title` and `description` using Elasticsearch [`simple_query_string`](https://www.elastic.co/docs/reference/query-languages/query-dsl/simple-query-string-query) syntax. Multi-word terms require all words to match."
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "A tag ID to include. Accepts a single tag ID or multiple tag IDs. When multiple are specified, dashboards matching any of the tag IDs are included."
+          },
+          {
+            "name": "excluded_tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "A tag ID to exclude. Accepts a single tag ID or multiple tag IDs. When multiple are specified, dashboards matching any of the tag IDs are excluded."
+          }
+        ],
+        "operationId": "get-dashboards",
+        "x-state": "Technical Preview; added in 9.4.0"
+      }
+    },
+    "/api/dashboards/{id}": {
+      "get": {
+        "summary": "Get a dashboard",
+        "tags": [
+          "Dashboards"
+        ],
+        "description": "Returns the complete state of a dashboard by ID.",
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "The unique ID of the dashboard, as returned by the create or search endpoints."
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-data"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-as-code-meta"
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "description": "Panels dropped because their type is not supported by the API. Present only when one or more panels could not be returned.",
+                      "maxItems": 100,
+                      "items": {
+                        "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-dropped-panel-warning"
+                      }
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden"
+          },
+          "404": {
+            "description": "not found"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The dashboard ID, as returned by the create or search endpoints."
+          }
+        ],
+        "operationId": "get-dashboards-id",
+        "x-state": "Technical Preview; added in 9.4.0"
+      },
+      "put": {
+        "summary": "Upsert a dashboard",
+        "tags": [
+          "Dashboards"
+        ],
+        "description": "This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pinned_panels": {
+                    "type": "array",
+                    "description": "An array of control panels and their state in the control group.",
+                    "default": [],
+                    "maxItems": 100,
+                    "items": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-controls-schemas-controls-group-schema-esql-control"
+                        },
+                        {
+                          "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-controls-schemas-controls-group-schema-options-list-control"
+                        },
+                        {
+                          "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-controls-schemas-controls-group-schema-range-slider-control"
+                        },
+                        {
+                          "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-controls-schemas-controls-group-schema-time-slider-control"
+                        }
+                      ],
+                      "discriminator": {
+                        "propertyName": "type",
+                        "mapping": {
+                          "esql_control": "#/components/schemas/Kibana_HTTP_APIs_kbn-controls-schemas-controls-group-schema-esql-control",
+                          "options_list_control": "#/components/schemas/Kibana_HTTP_APIs_kbn-controls-schemas-controls-group-schema-options-list-control",
+                          "range_slider_control": "#/components/schemas/Kibana_HTTP_APIs_kbn-controls-schemas-controls-group-schema-range-slider-control",
+                          "time_slider_control": "#/components/schemas/Kibana_HTTP_APIs_kbn-controls-schemas-controls-group-schema-time-slider-control"
+                        }
+                      }
+                    }
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "A short description of the dashboard."
+                  },
+                  "filters": {
+                    "type": "array",
+                    "description": "Filters applied across all panels, including pinned panels.",
+                    "maxItems": 500,
+                    "items": {
+                      "description": "A filter applied to query results. Can be a field condition (`condition`), a logical group of conditions (`group`), a raw Elasticsearch DSL query (`dsl`), or a geo spatial query (`spatial`).",
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-as-code-filters-schema_asCodeConditionFilterSchema"
+                        },
+                        {
+                          "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-as-code-filters-schema_asCodeGroupFilterSchema"
+                        },
+                        {
+                          "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-as-code-filters-schema_asCodeDSLFilterSchema"
+                        },
+                        {
+                          "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-as-code-filters-schema_asCodeSpatialFilterSchema"
+                        }
+                      ]
+                    }
+                  },
+                  "options": {
+                    "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-options"
+                  },
+                  "panels": {
+                    "type": "array",
+                    "description": "Panels and sections in the dashboard. Each entry is either a panel (with a `type` and `config`) or a collapsible section (with a `title`, `collapsed` state, and nested `panels`).",
+                    "default": [],
+                    "maxItems": 100,
+                    "items": {
+                      "anyOf": [
+                        {
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-apm_service_map"
+                            },
+                            {
+                              "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-discover_session"
+                            },
+                            {
+                              "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-esql_control"
+                            },
+                            {
+                              "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-image"
+                            },
+                            {
+                              "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-links"
+                            },
+                            {
+                              "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-markdown"
+                            },
+                            {
+                              "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-options_list_control"
+                            },
+                            {
+                              "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-range_slider_control"
+                            },
+                            {
+                              "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-slo_alerts"
+                            },
+                            {
+                              "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-slo_burn_rate"
+                            },
+                            {
+                              "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-slo_error_budget"
+                            },
+                            {
+                              "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-slo_overview"
+                            },
+                            {
+                              "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-synthetics_monitors"
+                            },
+                            {
+                              "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-synthetics_stats_overview"
+                            },
+                            {
+                              "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-time_slider_control"
+                            },
+                            {
+                              "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-vis"
+                            }
+                          ]
+                        },
+                        {
+                          "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-section"
+                        }
+                      ]
+                    }
+                  },
+                  "project_routing": {
+                    "type": "string",
+                    "description": "Controls [cross-project search](https://www.elastic.co/docs/explore-analyze/cross-project-search/cross-project-search-project-routing) behavior for this dashboard (Serverless only). Set to `_alias:_origin` to scope data to the current project, or `_alias:*` to search across all projects. When omitted, the space default applies."
+                  },
+                  "query": {
+                    "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-as-code-query"
+                  },
+                  "refresh_interval": {
+                    "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-data-service-server-refreshIntervalSchema"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "description": "Tag IDs to associate with this dashboard.",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "time_range": {
+                    "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-es-query-server-timeRangeSchema"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "A human-readable title for the dashboard."
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "options",
+                  "query",
+                  "refresh_interval",
+                  "time_range",
+                  "title"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "The unique ID of the dashboard, as returned by the create or search endpoints."
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-data"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-as-code-meta"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "The unique ID of the dashboard, as returned by the create or search endpoints."
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-data"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-as-code-meta"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid request"
+          },
+          "403": {
+            "description": "forbidden"
+          }
+        },
+        "parameters": [
+          {
+            "description": "A required header to protect against CSRF attacks",
+            "in": "header",
+            "name": "kbn-xsrf",
+            "required": true,
+            "schema": {
+              "example": "true",
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "put-dashboards-id",
+        "x-state": "Technical Preview; added in 9.4.0"
+      },
+      "delete": {
+        "summary": "Delete a dashboard",
+        "tags": [
+          "Dashboards"
+        ],
+        "description": "Permanently deletes a dashboard by ID.",
+        "responses": {
+          "200": {
+            "description": "deleted"
+          },
+          "403": {
+            "description": "forbidden"
+          },
+          "404": {
+            "description": "not found"
+          }
+        },
+        "parameters": [
+          {
+            "description": "A required header to protect against CSRF attacks",
+            "in": "header",
+            "name": "kbn-xsrf",
+            "required": true,
+            "schema": {
+              "example": "true",
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The dashboard ID, as returned by the create or search endpoints."
+          }
+        ],
+        "operationId": "delete-dashboards-id",
+        "x-state": "Technical Preview; added in 9.4.0"
+      }
+    }
+  }
+}

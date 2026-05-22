@@ -46,7 +46,7 @@ func (Handler) AlignStateFromPlan(ctx context.Context, plan, state *models.Panel
 }
 
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	apiPanel, err := item.AsKbnDashboardPanelTypeSloAlerts()
+	apiPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts()
 	if err != nil {
 		var d diag.Diagnostics
 		d.AddError("Dashboard panel decode", err.Error())
@@ -80,7 +80,7 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 
 	grid := panelkit.GridToAPI(pm.Grid)
 	id := panelkit.IDToAPI(pm.ID)
-	panel := kbapi.KbnDashboardPanelTypeSloAlerts{
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts{
 		Grid: grid,
 		Id:   id,
 		Type: kbapi.SloAlerts,
@@ -88,7 +88,7 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 	BuildConfig(&pm, &panel)
 
 	var panelItem kbapi.DashboardPanelItem
-	if err := panelItem.FromKbnDashboardPanelTypeSloAlerts(panel); err != nil {
+	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts(panel); err != nil {
 		diags.AddError("Failed to create SLO alerts panel", err.Error())
 	}
 	return panelItem, diags

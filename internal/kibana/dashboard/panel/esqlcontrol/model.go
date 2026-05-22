@@ -48,10 +48,10 @@ type esqlControlAPIData struct {
 	ok               bool
 }
 
-func esqlControlAPIDataFromConfig(cfg kbapi.KbnDashboardPanelTypeEsqlControl_Config) esqlControlAPIData {
+func esqlControlAPIDataFromConfig(cfg kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl_Config) esqlControlAPIData {
 	// Prefer static-values first: the VALUES_FROM_QUERY union branch is permissive enough that it
 	// can incorrectly match some STATIC_VALUES payloads, dropping fields like available_options.
-	if sv, err := cfg.AsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues(); err == nil {
+	if sv, err := cfg.AsKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues(); err == nil {
 		return esqlControlAPIData{
 			SelectedOptions:  sv.SelectedOptions,
 			VariableName:     sv.VariableName,
@@ -65,7 +65,7 @@ func esqlControlAPIDataFromConfig(cfg kbapi.KbnDashboardPanelTypeEsqlControl_Con
 			ok:               true,
 		}
 	}
-	if vq, err := cfg.AsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery(); err == nil {
+	if vq, err := cfg.AsKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery(); err == nil {
 		return esqlControlAPIData{
 			SelectedOptions: vq.SelectedOptions,
 			VariableName:    vq.VariableName,
@@ -108,7 +108,7 @@ func listToStrings(list types.List) []string {
 //
 // tfPanel is the prior TF state/plan panel, or nil on import. When nil, the function
 // populates all API-returned fields unconditionally (no prior intent to preserve).
-func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfig kbapi.KbnDashboardPanelTypeEsqlControl_Config) {
+func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfig kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl_Config) {
 	api := esqlControlAPIDataFromConfig(apiConfig)
 	if !api.ok {
 		return
@@ -203,7 +203,7 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 }
 
 // BuildConfig writes TF model fields into the API panel union.
-func BuildConfig(pm models.PanelModel, esqlPanel *kbapi.KbnDashboardPanelTypeEsqlControl) diag.Diagnostics {
+func BuildConfig(pm models.PanelModel, esqlPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl) diag.Diagnostics {
 	var diags diag.Diagnostics
 	cfg := pm.EsqlControlConfig
 	if cfg == nil {
@@ -234,11 +234,11 @@ func BuildConfig(pm models.PanelModel, esqlPanel *kbapi.KbnDashboardPanelTypeEsq
 	}
 
 	ct := cfg.ControlType.ValueString()
-	if kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQueryControlType(ct) == kbapi.VALUESFROMQUERY {
-		vq := kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery{
+	if kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQueryControlType(ct) == kbapi.VALUESFROMQUERY {
+		vq := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery{
 			SelectedOptions: listToStrings(cfg.SelectedOptions),
 			VariableName:    cfg.VariableName.ValueString(),
-			VariableType: kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQueryVariableType(
+			VariableType: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQueryVariableType(
 				cfg.VariableType.ValueString(),
 			),
 			EsqlQuery:   cfg.EsqlQuery.ValueString(),
@@ -251,19 +251,19 @@ func BuildConfig(pm models.PanelModel, esqlPanel *kbapi.KbnDashboardPanelTypeEsq
 			vq.SingleSelect = cfg.SingleSelect.ValueBoolPointer()
 		}
 		vq.DisplaySettings = displayToAPI(cfg.DisplaySettings)
-		if err := esqlPanel.Config.FromKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery(vq); err != nil {
+		if err := esqlPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery(vq); err != nil {
 			diags.AddError("Failed to build esql control values_from_query config", err.Error())
 		}
 		return diags
 	}
 
-	sv := kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValues{
+	sv := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues{
 		SelectedOptions: listToStrings(cfg.SelectedOptions),
 		VariableName:    cfg.VariableName.ValueString(),
-		VariableType: kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesVariableType(
+		VariableType: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesVariableType(
 			cfg.VariableType.ValueString(),
 		),
-		ControlType: kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesControlType(ct),
+		ControlType: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesControlType(ct),
 	}
 	if typeutils.IsKnown(cfg.Title) {
 		sv.Title = cfg.Title.ValueStringPointer()
@@ -275,7 +275,7 @@ func BuildConfig(pm models.PanelModel, esqlPanel *kbapi.KbnDashboardPanelTypeEsq
 		sv.AvailableOptions = listToStrings(cfg.AvailableOptions)
 	}
 	sv.DisplaySettings = displayToAPI(cfg.DisplaySettings)
-	if err := esqlPanel.Config.FromKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues(sv); err != nil {
+	if err := esqlPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues(sv); err != nil {
 		diags.AddError("Failed to build esql control static_values config", err.Error())
 	}
 	return diags

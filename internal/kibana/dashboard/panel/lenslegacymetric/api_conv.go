@@ -42,7 +42,7 @@ func legacyMetricConfigPopulateCommonFields(
 	sampling *float32,
 	datasetBytes []byte,
 	datasetErr error,
-	filters []kbapi.LensPanelFilters_Item,
+	filters []kbapi.KibanaHTTPAPIsLensPanelFilters_Item,
 	diags *diag.Diagnostics,
 ) bool {
 	m.Title = types.StringPointerValue(title)
@@ -67,7 +67,7 @@ func legacyMetricConfigFromAPINoESQL(
 	m *models.LegacyMetricConfigModel,
 	resolver lenscommon.Resolver,
 	prior *models.LegacyMetricConfigModel,
-	api kbapi.LegacyMetricNoESQL,
+	api kbapi.KibanaHTTPAPIsLegacyMetricNoESQL,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
@@ -105,9 +105,9 @@ func legacyMetricConfigFromAPINoESQL(
 	return diags
 }
 
-func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var result kbapi.KbnDashboardPanelTypeVisConfig0
+	var result lenscommon.VisByValueConfig0
 
 	if m == nil {
 		diags.AddError("Legacy metric config is nil", "Legacy metric configuration is required")
@@ -122,7 +122,7 @@ func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel, resolver lenscom
 
 	switch datasetType {
 	case datasetTypeDataViewReference, datasetTypeDataViewSpec:
-		api := kbapi.LegacyMetricNoESQL{
+		api := kbapi.KibanaHTTPAPIsLegacyMetricNoESQL{
 			Type: kbapi.LegacyMetric,
 		}
 
@@ -182,14 +182,14 @@ func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel, resolver lenscom
 			api.References = writes.References
 		}
 		if len(writes.DrilldownsRaw) > 0 {
-			items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.LegacyMetricNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+			items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsLegacyMetricNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
 			diags.Append(ddDiags...)
 			if !ddDiags.HasError() {
 				api.Drilldowns = &items
 			}
 		}
 
-		if err := result.FromLegacyMetricNoESQL(api); err != nil {
+		if err := result.FromKibanaHTTPAPIsLegacyMetricNoESQL(api); err != nil {
 			diags.AddError("Failed to marshal legacy metric", err.Error())
 		}
 		return result, diags

@@ -51,7 +51,7 @@ func Test_dashboardModel_queryToAPI_jsonBranch(t *testing.T) {
 	}
 	q, diags := dashboardQueryToAPI(m)
 	require.False(t, diags.HasError())
-	assert.Equal(t, kbapi.KbnAsCodeQueryLanguage("kql"), q.Language)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnAsCodeQueryLanguage("kql"), q.Language)
 	assert.JSONEq(t, `{"match_all":{}}`, q.Expression)
 }
 

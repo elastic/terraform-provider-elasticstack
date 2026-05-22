@@ -41,13 +41,13 @@ func drilldownBoolImportPreserving(api *bool, serverDefault bool) types.Bool {
 }
 
 // BuildConfig fills panel.Config from Terraform state.
-func BuildConfig(pm *models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSloAlerts) {
+func BuildConfig(pm *models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts) {
 	cfg := pm.SloAlertsConfig
 	if cfg == nil {
 		return
 	}
 
-	embeddable := kbapi.SloAlertsEmbeddable{}
+	embeddable := kbapi.KibanaHTTPAPIsSloAlertsEmbeddable{}
 
 	slos := make([]struct {
 		SloId         string  `json:"slo_id"`                    //nolint:revive
@@ -76,18 +76,18 @@ func BuildConfig(pm *models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSloAle
 
 	if len(cfg.Drilldowns) > 0 {
 		drilldowns := make([]struct {
-			EncodeUrl    *bool                                      `json:"encode_url,omitempty"` //nolint:revive
-			Label        string                                     `json:"label"`
-			OpenInNewTab *bool                                      `json:"open_in_new_tab,omitempty"`
-			Trigger      kbapi.SloAlertsEmbeddableDrilldownsTrigger `json:"trigger"`
-			Type         kbapi.SloAlertsEmbeddableDrilldownsType    `json:"type"`
-			Url          string                                     `json:"url"` //nolint:revive
+			EncodeUrl    *bool                                                    `json:"encode_url,omitempty"` //nolint:revive
+			Label        string                                                   `json:"label"`
+			OpenInNewTab *bool                                                    `json:"open_in_new_tab,omitempty"`
+			Trigger      kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsTrigger `json:"trigger"`
+			Type         kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsType    `json:"type"`
+			Url          string                                                   `json:"url"` //nolint:revive
 		}, len(cfg.Drilldowns))
 		for i, d := range cfg.Drilldowns {
 			drilldowns[i].Url = d.URL.ValueString()
 			drilldowns[i].Label = d.Label.ValueString()
-			drilldowns[i].Trigger = kbapi.SloAlertsEmbeddableDrilldownsTriggerOnOpenPanelMenu
-			drilldowns[i].Type = kbapi.SloAlertsEmbeddableDrilldownsTypeUrlDrilldown
+			drilldowns[i].Trigger = kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsTriggerOnOpenPanelMenu
+			drilldowns[i].Type = kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsTypeUrlDrilldown
 			if typeutils.IsKnown(d.EncodeURL) {
 				drilldowns[i].EncodeUrl = d.EncodeURL.ValueBoolPointer()
 			}
@@ -102,7 +102,7 @@ func BuildConfig(pm *models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSloAle
 }
 
 // PopulateFromAPI merges API config into practitioner state seeded from tfPanel.
-func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel kbapi.KbnDashboardPanelTypeSloAlerts) {
+func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts) {
 	apiCfg := apiPanel.Config
 
 	if tfPanel == nil {
@@ -129,7 +129,7 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel
 	existing.Drilldowns = readDrilldownsFromAPI(apiCfg.Drilldowns, existing.Drilldowns)
 }
 
-func sloAlertsPanelConfigFromAPIImport(apiCfg kbapi.SloAlertsEmbeddable) *models.SloAlertsPanelConfigModel {
+func sloAlertsPanelConfigFromAPIImport(apiCfg kbapi.KibanaHTTPAPIsSloAlertsEmbeddable) *models.SloAlertsPanelConfigModel {
 	cfg := &models.SloAlertsPanelConfigModel{
 		Title:       types.StringPointerValue(apiCfg.Title),
 		Description: types.StringPointerValue(apiCfg.Description),
@@ -177,12 +177,12 @@ func readSlosFromAPI(
 
 func readDrilldownsFromAPI(
 	apiDrilldowns *[]struct {
-		EncodeUrl    *bool                                      `json:"encode_url,omitempty"` //nolint:revive
-		Label        string                                     `json:"label"`
-		OpenInNewTab *bool                                      `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.SloAlertsEmbeddableDrilldownsTrigger `json:"trigger"`
-		Type         kbapi.SloAlertsEmbeddableDrilldownsType    `json:"type"`
-		Url          string                                     `json:"url"` //nolint:revive
+		EncodeUrl    *bool                                                    `json:"encode_url,omitempty"` //nolint:revive
+		Label        string                                                   `json:"label"`
+		OpenInNewTab *bool                                                    `json:"open_in_new_tab,omitempty"`
+		Trigger      kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsTrigger `json:"trigger"`
+		Type         kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsType    `json:"type"`
+		Url          string                                                   `json:"url"` //nolint:revive
 	},
 	priorDrilldowns []models.URLDrilldownModel,
 ) []models.URLDrilldownModel {

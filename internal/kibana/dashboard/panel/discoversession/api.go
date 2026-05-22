@@ -33,7 +33,7 @@ import (
 )
 
 // Registry panel type key (`discover_session` + `_config` => `discover_session_config` on PanelModel).
-// Matches kbapi.KbnDashboardPanelTypeDiscoverSessionType (`discover_session`).
+// Matches kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionType (`discover_session`).
 const panelType = "discover_session"
 
 // Handler implements iface.Handler for `discover_session` dashboard panels (`discover_session_config`).
@@ -65,7 +65,7 @@ func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Valu
 
 // FromAPI maps a kbapi discover_session panel into Terraform panel models (parity with legacy populateDiscoverSessionPanelFromAPI).
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	dsPanel, err := item.AsKbnDashboardPanelTypeDiscoverSession()
+	dsPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}

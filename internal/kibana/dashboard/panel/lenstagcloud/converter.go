@@ -40,7 +40,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.TagcloudNoESQLTypeTagCloud)
+	return string(kbapi.KibanaHTTPAPIsTagcloudNoESQLTypeTagCloud)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -138,7 +138,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("tagcloud_config", attrs)
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
 	var prior *models.TagcloudConfigModel
 	if blocks != nil && blocks.TagcloudConfig != nil {
 		cpy := *blocks.TagcloudConfig
@@ -151,19 +151,19 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 	}
 	blocks.TagcloudConfig = &models.TagcloudConfigModel{}
 
-	if noESQL, err := attrs.AsTagcloudNoESQL(); err == nil && !isTagcloudNoESQLCandidateActuallyESQL(noESQL) {
+	if noESQL, err := attrs.AsKibanaHTTPAPIsTagcloudNoESQL(); err == nil && !isTagcloudNoESQLCandidateActuallyESQL(noESQL) {
 		return tagcloudConfigFromAPI(ctx, blocks.TagcloudConfig, resolver, prior, noESQL)
 	}
 
-	esql, err := attrs.AsTagcloudESQL()
+	esql, err := attrs.AsKibanaHTTPAPIsTagcloudESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 	return tagcloudConfigFromAPIESQL(ctx, blocks.TagcloudConfig, resolver, prior, esql)
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags

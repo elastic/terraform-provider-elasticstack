@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,18 +30,18 @@ import (
 
 type stubResolver struct{}
 
-func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
+func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
 	_ = chartLevel
-	return kbapi.KbnEsQueryServerTimeRangeSchema{}
+	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}
 }
 
-func (stubResolver) DashboardLensComparableTimeRange() (kbapi.KbnEsQueryServerTimeRangeSchema, bool) {
-	return kbapi.KbnEsQueryServerTimeRangeSchema{}, false
+func (stubResolver) DashboardLensComparableTimeRange() (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, bool) {
+	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}, false
 }
 
 func TestConverter_VizType(t *testing.T) {
 	var c converter
-	require.Equal(t, string(kbapi.TreemapNoESQLTypeTreemap), c.VizType())
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsTreemapNoESQLTypeTreemap), c.VizType())
 }
 
 func TestConverter_HandlesBlocks(t *testing.T) {
@@ -69,11 +70,11 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 		"metrics": [{"operation":"count"}],
 		"group_by": ` + groupBy + `
 	}`
-	var api kbapi.TreemapNoESQL
+	var api kbapi.KibanaHTTPAPIsTreemapNoESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
-	require.NoError(t, attrs.FromTreemapNoESQL(api))
+	var attrs lenscommon.VisByValueConfig0
+	require.NoError(t, attrs.FromKibanaHTTPAPIsTreemapNoESQL(api))
 
 	var c converter
 	resolver := stubResolver{}
@@ -85,8 +86,8 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	attrs2, diags := c.BuildAttributes(blocks, resolver)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	noESQL2, err := attrs2.AsTreemapNoESQL()
+	noESQL2, err := attrs2.AsKibanaHTTPAPIsTreemapNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Treemap NoESQL Round-Trip", *noESQL2.Title)
-	assert.Equal(t, kbapi.TreemapNoESQLTypeTreemap, noESQL2.Type)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsTreemapNoESQLTypeTreemap, noESQL2.Type)
 }

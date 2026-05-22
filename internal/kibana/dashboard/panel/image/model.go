@@ -42,7 +42,7 @@ func drilldownBoolImportPreserving(api *bool, serverDefault bool) types.Bool {
 }
 
 // BuildConfig writes Terraform image panel state into the API panel's config (Grid/Id set separately).
-func BuildConfig(pm *models.PanelModel, panel *kbapi.KbnDashboardPanelTypeImage, diags *diag.Diagnostics) {
+func BuildConfig(pm *models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage, diags *diag.Diagnostics) {
 	cfg := pm.ImageConfig
 	if cfg == nil {
 		diags.AddError("Missing image panel configuration", "Image panels require `image_config`.")
@@ -70,26 +70,26 @@ func BuildConfig(pm *models.PanelModel, panel *kbapi.KbnDashboardPanelTypeImage,
 		img.BackgroundColor = cfg.BackgroundColor.ValueStringPointer()
 	}
 	if typeutils.IsKnown(cfg.ObjectFit) {
-		fit := kbapi.KbnDashboardPanelTypeImageConfigImageConfigObjectFit(cfg.ObjectFit.ValueString())
+		fit := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigObjectFit(cfg.ObjectFit.ValueString())
 		img.ObjectFit = &fit
 	}
 
 	switch {
 	case cfg.Src.File != nil:
-		src0 := kbapi.KbnDashboardPanelTypeImageConfigImageConfigSrc0{
+		src0 := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc0{
 			Type:   kbapi.File,
 			FileId: cfg.Src.File.FileID.ValueString(),
 		}
-		if err := img.Src.FromKbnDashboardPanelTypeImageConfigImageConfigSrc0(src0); err != nil {
+		if err := img.Src.FromKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc0(src0); err != nil {
 			diags.AddError("Invalid image src", err.Error())
 			return
 		}
 	case cfg.Src.URL != nil:
-		src1 := kbapi.KbnDashboardPanelTypeImageConfigImageConfigSrc1{
+		src1 := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc1{
 			Type: kbapi.Url,
 			Url:  cfg.Src.URL.URL.ValueString(),
 		}
-		if err := img.Src.FromKbnDashboardPanelTypeImageConfigImageConfigSrc1(src1); err != nil {
+		if err := img.Src.FromKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc1(src1); err != nil {
 			diags.AddError("Invalid image src", err.Error())
 			return
 		}
@@ -99,7 +99,7 @@ func BuildConfig(pm *models.PanelModel, panel *kbapi.KbnDashboardPanelTypeImage,
 	}
 
 	if len(cfg.Drilldowns) > 0 {
-		items := make([]kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item, 0, len(cfg.Drilldowns))
+		items := make([]kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item, 0, len(cfg.Drilldowns))
 		for _, d := range cfg.Drilldowns {
 			item, dDiags := drilldownItemToAPI(d)
 			diags.Append(dDiags...)
@@ -112,18 +112,18 @@ func BuildConfig(pm *models.PanelModel, panel *kbapi.KbnDashboardPanelTypeImage,
 	}
 }
 
-func drilldownItemToAPI(d models.ImagePanelDrilldownModel) (kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item, diag.Diagnostics) {
+func drilldownItemToAPI(d models.ImagePanelDrilldownModel) (kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var item kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item
+	var item kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item
 
 	switch {
 	case d.DashboardDrilldown != nil:
 		dd := d.DashboardDrilldown
-		wire := kbapi.KbnDashboardPanelTypeImageConfigDrilldowns0{
+		wire := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0{
 			DashboardId: dd.DashboardID.ValueString(),
 			Label:       dd.Label.ValueString(),
-			Trigger:     kbapi.KbnDashboardPanelTypeImageConfigDrilldowns0Trigger(dd.Trigger.ValueString()),
-			Type:        kbapi.KbnDashboardPanelTypeImageConfigDrilldowns0TypeDashboardDrilldown,
+			Trigger:     kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0Trigger(dd.Trigger.ValueString()),
+			Type:        kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0TypeDashboardDrilldown,
 		}
 		if typeutils.IsKnown(dd.UseFilters) {
 			wire.UseFilters = dd.UseFilters.ValueBoolPointer()
@@ -134,16 +134,16 @@ func drilldownItemToAPI(d models.ImagePanelDrilldownModel) (kbapi.KbnDashboardPa
 		if typeutils.IsKnown(dd.OpenInNewTab) {
 			wire.OpenInNewTab = dd.OpenInNewTab.ValueBoolPointer()
 		}
-		if err := item.FromKbnDashboardPanelTypeImageConfigDrilldowns0(wire); err != nil {
+		if err := item.FromKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0(wire); err != nil {
 			diags.AddError("Invalid dashboard drilldown", err.Error())
 		}
 	case d.URLDrilldown != nil:
 		ud := d.URLDrilldown
-		wire := kbapi.KbnDashboardPanelTypeImageConfigDrilldowns1{
+		wire := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1{
 			Url:     ud.URL.ValueString(),
 			Label:   ud.Label.ValueString(),
-			Trigger: kbapi.KbnDashboardPanelTypeImageConfigDrilldowns1Trigger(ud.Trigger.ValueString()),
-			Type:    kbapi.KbnDashboardPanelTypeImageConfigDrilldowns1TypeUrlDrilldown,
+			Trigger: kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1Trigger(ud.Trigger.ValueString()),
+			Type:    kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1TypeUrlDrilldown,
 		}
 		if typeutils.IsKnown(ud.EncodeURL) {
 			wire.EncodeUrl = ud.EncodeURL.ValueBoolPointer()
@@ -151,7 +151,7 @@ func drilldownItemToAPI(d models.ImagePanelDrilldownModel) (kbapi.KbnDashboardPa
 		if typeutils.IsKnown(ud.OpenInNewTab) {
 			wire.OpenInNewTab = ud.OpenInNewTab.ValueBoolPointer()
 		}
-		if err := item.FromKbnDashboardPanelTypeImageConfigDrilldowns1(wire); err != nil {
+		if err := item.FromKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1(wire); err != nil {
 			diags.AddError("Invalid URL drilldown", err.Error())
 		}
 	default:
@@ -161,7 +161,7 @@ func drilldownItemToAPI(d models.ImagePanelDrilldownModel) (kbapi.KbnDashboardPa
 }
 
 // PopulateFromAPI maps API panel into practitioner state seeded from tfPanel.
-func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel kbapi.KbnDashboardPanelTypeImage) {
+func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage) {
 	apiCfg := apiPanel.Config
 
 	if tfPanel == nil {
@@ -199,13 +199,13 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel
 	existing.Drilldowns = readImageDrilldownsFromAPI(apiCfg.Drilldowns, existing.Drilldowns)
 }
 
-func nullPreservingImageObjectFit(prior types.String, api *kbapi.KbnDashboardPanelTypeImageConfigImageConfigObjectFit) types.String {
+func nullPreservingImageObjectFit(prior types.String, api *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigObjectFit) types.String {
 	if api == nil {
 		return types.StringNull()
 	}
 	v := string(*api)
 	if prior.IsNull() || !typeutils.IsKnown(prior) {
-		if v == string(kbapi.KbnDashboardPanelTypeImageConfigImageConfigObjectFitContain) {
+		if v == string(kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigObjectFitContain) {
 			return types.StringNull()
 		}
 		return types.StringValue(v)
@@ -213,7 +213,7 @@ func nullPreservingImageObjectFit(prior types.String, api *kbapi.KbnDashboardPan
 	return types.StringValue(v)
 }
 
-func imagePanelConfigFromAPIImport(apiPanel kbapi.KbnDashboardPanelTypeImage) *models.ImagePanelConfigModel {
+func imagePanelConfigFromAPIImport(apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage) *models.ImagePanelConfigModel {
 	apiCfg := apiPanel.Config
 	return &models.ImagePanelConfigModel{
 		Src:             panelSrcFromAPI(apiCfg.ImageConfig.Src),
@@ -228,16 +228,16 @@ func imagePanelConfigFromAPIImport(apiPanel kbapi.KbnDashboardPanelTypeImage) *m
 	}
 }
 
-func panelSrcFromAPI(src kbapi.KbnDashboardPanelTypeImage_Config_ImageConfig_Src) models.ImagePanelSrcModel {
+func panelSrcFromAPI(src kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_ImageConfig_Src) models.ImagePanelSrcModel {
 	var out models.ImagePanelSrcModel
-	src0, err := src.AsKbnDashboardPanelTypeImageConfigImageConfigSrc0()
+	src0, err := src.AsKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc0()
 	if err == nil && src0.Type == kbapi.File {
 		out.File = &models.ImagePanelSrcFileModel{
 			FileID: types.StringValue(src0.FileId),
 		}
 		return out
 	}
-	src1, err := src.AsKbnDashboardPanelTypeImageConfigImageConfigSrc1()
+	src1, err := src.AsKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc1()
 	if err == nil && src1.Type == kbapi.Url {
 		out.URL = &models.ImagePanelSrcURLModel{
 			URL: types.StringValue(src1.Url),
@@ -247,7 +247,7 @@ func panelSrcFromAPI(src kbapi.KbnDashboardPanelTypeImage_Config_ImageConfig_Src
 }
 
 func readImageDrilldownsFromAPI(
-	api *[]kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item,
+	api *[]kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item,
 	prior []models.ImagePanelDrilldownModel,
 ) []models.ImagePanelDrilldownModel {
 	if api == nil || len(*api) == 0 {
@@ -264,9 +264,9 @@ func readImageDrilldownsFromAPI(
 	return out
 }
 
-func readImageDrilldownFromAPI(item kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item, prior *models.ImagePanelDrilldownModel) models.ImagePanelDrilldownModel {
-	dd0, err0 := item.AsKbnDashboardPanelTypeImageConfigDrilldowns0()
-	if err0 == nil && dd0.Type == kbapi.KbnDashboardPanelTypeImageConfigDrilldowns0TypeDashboardDrilldown {
+func readImageDrilldownFromAPI(item kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item, prior *models.ImagePanelDrilldownModel) models.ImagePanelDrilldownModel {
+	dd0, err0 := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0()
+	if err0 == nil && dd0.Type == kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0TypeDashboardDrilldown {
 		var priorDash *models.ImagePanelDashboardDrilldownModel
 		if prior != nil {
 			priorDash = prior.DashboardDrilldown
@@ -276,8 +276,8 @@ func readImageDrilldownFromAPI(item kbapi.KbnDashboardPanelTypeImage_Config_Dril
 		}
 	}
 
-	dd1, err1 := item.AsKbnDashboardPanelTypeImageConfigDrilldowns1()
-	if err1 == nil && dd1.Type == kbapi.KbnDashboardPanelTypeImageConfigDrilldowns1TypeUrlDrilldown {
+	dd1, err1 := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1()
+	if err1 == nil && dd1.Type == kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1TypeUrlDrilldown {
 		var priorURL *models.ImagePanelURLDrilldownModel
 		if prior != nil {
 			priorURL = prior.URLDrilldown
@@ -291,7 +291,7 @@ func readImageDrilldownFromAPI(item kbapi.KbnDashboardPanelTypeImage_Config_Dril
 }
 
 func readImageDashboardDrilldownFromAPI(
-	api kbapi.KbnDashboardPanelTypeImageConfigDrilldowns0,
+	api kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0,
 	prior *models.ImagePanelDashboardDrilldownModel,
 ) *models.ImagePanelDashboardDrilldownModel {
 	m := &models.ImagePanelDashboardDrilldownModel{
@@ -337,7 +337,7 @@ func readImageDashboardDrilldownFromAPI(
 	return m
 }
 
-func readImageURLDrilldownFromAPI(api kbapi.KbnDashboardPanelTypeImageConfigDrilldowns1, prior *models.ImagePanelURLDrilldownModel) *models.ImagePanelURLDrilldownModel {
+func readImageURLDrilldownFromAPI(api kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1, prior *models.ImagePanelURLDrilldownModel) *models.ImagePanelURLDrilldownModel {
 	m := &models.ImagePanelURLDrilldownModel{
 		URL:     types.StringValue(api.Url),
 		Label:   types.StringValue(api.Label),

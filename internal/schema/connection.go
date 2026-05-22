@@ -44,9 +44,15 @@ func KibanaConnectionNullList() types.List {
 // elasticsearch_connection block. Use when building state in ImportState so the
 // framework list element type matches the resource schema.
 func ElasticsearchConnectionNullList() types.List {
-	return types.ListNull(types.ObjectType{
+	return types.ListNull(ElasticsearchConnectionObjectType())
+}
+
+// ElasticsearchConnectionObjectType returns the object type for elasticsearch_connection
+// list elements. Managed and ephemeral resources use the same connection block shape.
+func ElasticsearchConnectionObjectType() types.ObjectType {
+	return types.ObjectType{
 		AttrTypes: elasticsearchConnectionBlockObjectAttrTypes(),
-	})
+	}
 }
 
 func GetEsFWConnectionBlock() fwschema.Block {

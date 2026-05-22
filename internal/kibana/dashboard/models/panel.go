@@ -36,7 +36,6 @@ type PanelModel struct {
 	RangeSliderControlConfig      *RangeSliderControlConfigModel                    `tfsdk:"range_slider_control_config"`
 	SyntheticsStatsOverviewConfig *SyntheticsStatsOverviewConfigModel               `tfsdk:"synthetics_stats_overview_config"`
 	SyntheticsMonitorsConfig      *SyntheticsMonitorsConfigModel                    `tfsdk:"synthetics_monitors_config"`
-	LensDashboardAppConfig        *LensDashboardAppConfigModel                      `tfsdk:"lens_dashboard_app_config"`
 	VisConfig                     *VisConfigModel                                   `tfsdk:"vis_config"`
 	ImageConfig                   *ImagePanelConfigModel                            `tfsdk:"image_config"`
 	SloAlertsConfig               *SloAlertsPanelConfigModel                        `tfsdk:"slo_alerts_config"`
