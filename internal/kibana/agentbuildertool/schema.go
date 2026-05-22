@@ -40,7 +40,7 @@ func getResourceSchema(_ context.Context) schema.Schema {
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "The composite ID of the tool: `<tool_id>/<space_id>`.",
+				MarkdownDescription: "The composite ID of the tool: `<space_id>/<tool_id>`.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

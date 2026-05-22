@@ -33,7 +33,7 @@ func getResourceSchema(_ context.Context) schema.Schema {
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "The composite ID of the workflow: `<workflow_id>/<space_id>`.",
+				MarkdownDescription: "The composite ID of the workflow: `<space_id>/<workflow_id>`.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

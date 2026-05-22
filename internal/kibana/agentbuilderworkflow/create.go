@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func createWorkflow(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, plan workflowModel) (workflowModel, diag.Diagnostics) {
@@ -48,7 +49,7 @@ func createWorkflow(ctx context.Context, client *clients.KibanaScopedClient, spa
 		return plan, diags
 	}
 
-	plan.SpaceID = spaceID
+	plan.SpaceID = types.StringValue(spaceID)
 	plan.populateFromAPI(workflow)
 
 	if !workflow.Valid {
