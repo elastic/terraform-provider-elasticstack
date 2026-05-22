@@ -23,6 +23,7 @@ import (
 
 	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestElasticsearchConnectionNullList_objectMatchesGetEsFWConnectionBlock(t *testing.T) {
@@ -62,6 +63,17 @@ func TestElasticsearchConnectionNullList_objectMatchesGetEsFWConnectionBlock(t *
 			t.Fatalf("attribute %q: got %#v want %#v", name, gt, wt)
 		}
 	}
+}
+
+func TestElasticsearchConnectionBlockObjectAttrTypes_returnsCopy(t *testing.T) {
+	t.Parallel()
+
+	first := elasticsearchConnectionBlockObjectAttrTypes()
+	second := elasticsearchConnectionBlockObjectAttrTypes()
+
+	require.Equal(t, first, second)
+	first["mutated"] = types.BoolType
+	require.NotEqual(t, first, second)
 }
 
 func TestKibanaConnectionNullList_objectMatchesGetKbFWConnectionBlock(t *testing.T) {

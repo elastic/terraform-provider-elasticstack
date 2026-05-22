@@ -26,20 +26,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// ListShouldRequiresReplaceFunc decides whether a list attribute change should force
+// ListRequiresReplacePredicate decides whether a list attribute change should force
 // resource replacement during plan modification.
-type ListShouldRequiresReplaceFunc func(ctx context.Context, plan, state types.List) bool
+type ListRequiresReplacePredicate func(ctx context.Context, plan, state types.List) bool
 
 // ListRequiresReplaceIf returns a planmodifier.List that marks the attribute for
 // replacement when shouldReplace returns true. Unknown plan or state values are
 // ignored so computed connection blocks do not spuriously force replace.
-func ListRequiresReplaceIf(description string, shouldReplace ListShouldRequiresReplaceFunc) planmodifier.List {
+func ListRequiresReplaceIf(description string, shouldReplace ListRequiresReplacePredicate) planmodifier.List {
 	return listRequiresReplaceIf{description: description, shouldReplace: shouldReplace}
 }
 
 type listRequiresReplaceIf struct {
 	description   string
-	shouldReplace ListShouldRequiresReplaceFunc
+	shouldReplace ListRequiresReplacePredicate
 }
 
 func (m listRequiresReplaceIf) Description(context.Context) string { return m.description }
@@ -49,10 +49,11 @@ func (m listRequiresReplaceIf) MarkdownDescription(ctx context.Context) string {
 }
 
 func (m listRequiresReplaceIf) PlanModifyList(ctx context.Context, req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
-	if req.StateValue.IsNull() || req.PlanValue.IsNull() {
+	if req.StateValue.IsUnknown() || req.PlanValue.IsUnknown() {
 		return
 	}
-	if req.StateValue.IsUnknown() || req.PlanValue.IsUnknown() {
+	// New resource: nothing in state to compare yet.
+	if req.StateValue.IsNull() {
 		return
 	}
 	if m.shouldReplace(ctx, req.PlanValue, req.StateValue) {
@@ -80,6 +81,11 @@ func ModifyPlanRequiresReplaceOnConnectionChange(
 	resp *resource.ModifyPlanResponse,
 ) {
 	if planConn.IsUnknown() || stateConn.IsUnknown() {
+		return
+	}
+	// Removing a configured per-resource connection block forces replacement.
+	if !stateConn.IsNull() && planConn.IsNull() {
+		resp.RequiresReplace = append(resp.RequiresReplace, connectionPath)
 		return
 	}
 	if !planConn.Equal(stateConn) {

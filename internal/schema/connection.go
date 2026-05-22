@@ -300,36 +300,78 @@ var (
 	kibanaConnectionBlockObjectAttrTypesVal  map[string]attr.Type
 )
 
+func copyAttrTypes(src map[string]attr.Type) map[string]attr.Type {
+	if src == nil {
+		return nil
+	}
+	out := make(map[string]attr.Type, len(src))
+	for name, t := range src {
+		out[name] = t
+	}
+	return out
+}
+
+func connectionBlockObjectAttrTypes(block fwschema.Block) (map[string]attr.Type, error) {
+	lb, ok := block.(fwschema.ListNestedBlock)
+	if !ok {
+		return nil, fmt.Errorf("connection block is %T, want ListNestedBlock", block)
+	}
+	return fwNestedBlockAttributesToAttrTypes(lb.NestedObject.Attributes)
+}
+
+func elasticsearchConnectionBlockObjectAttrTypesFallback() map[string]attr.Type {
+	return map[string]attr.Type{
+		"username":                 types.StringType,
+		"password":                 types.StringType,
+		"api_key":                  types.StringType,
+		"bearer_token":             types.StringType,
+		"es_client_authentication": types.StringType,
+		"endpoints":                types.ListType{ElemType: types.StringType},
+		"headers":                  types.MapType{ElemType: types.StringType},
+		"insecure":                 types.BoolType,
+		"ca_file":                  types.StringType,
+		"ca_data":                  types.StringType,
+		"cert_file":                types.StringType,
+		"key_file":                 types.StringType,
+		"cert_data":                types.StringType,
+		"key_data":                 types.StringType,
+	}
+}
+
+func kibanaConnectionBlockObjectAttrTypesFallback() map[string]attr.Type {
+	return map[string]attr.Type{
+		"api_key":      types.StringType,
+		"bearer_token": types.StringType,
+		"username":     types.StringType,
+		"password":     types.StringType,
+		"endpoints":    types.ListType{ElemType: types.StringType},
+		"ca_certs":     types.ListType{ElemType: types.StringType},
+		"insecure":     types.BoolType,
+	}
+}
+
 func elasticsearchConnectionBlockObjectAttrTypes() map[string]attr.Type {
 	elasticsearchConnectionBlockObjectAttrTypesOnce.Do(func() {
-		b := GetEsFWConnectionBlock()
-		lb, ok := b.(fwschema.ListNestedBlock)
-		if !ok {
-			panic("internal/schema: GetEsFWConnectionBlock must be a ListNestedBlock")
-		}
-		m, err := fwNestedBlockAttributesToAttrTypes(lb.NestedObject.Attributes)
+		m, err := connectionBlockObjectAttrTypes(GetEsFWConnectionBlock())
 		if err != nil {
-			panic(fmt.Sprintf("internal/schema: elasticsearch_connection attr types: %v", err))
+			elasticsearchConnectionBlockObjectAttrTypesVal = elasticsearchConnectionBlockObjectAttrTypesFallback()
+			return
 		}
 		elasticsearchConnectionBlockObjectAttrTypesVal = m
 	})
-	return elasticsearchConnectionBlockObjectAttrTypesVal
+	return copyAttrTypes(elasticsearchConnectionBlockObjectAttrTypesVal)
 }
 
 func kibanaConnectionBlockObjectAttrTypes() map[string]attr.Type {
 	kibanaConnectionBlockObjectAttrTypesOnce.Do(func() {
-		b := GetKbFWConnectionBlock()
-		lb, ok := b.(fwschema.ListNestedBlock)
-		if !ok {
-			panic("internal/schema: GetKbFWConnectionBlock must be a ListNestedBlock")
-		}
-		m, err := fwNestedBlockAttributesToAttrTypes(lb.NestedObject.Attributes)
+		m, err := connectionBlockObjectAttrTypes(GetKbFWConnectionBlock())
 		if err != nil {
-			panic(fmt.Sprintf("internal/schema: kibana_connection attr types: %v", err))
+			kibanaConnectionBlockObjectAttrTypesVal = kibanaConnectionBlockObjectAttrTypesFallback()
+			return
 		}
 		kibanaConnectionBlockObjectAttrTypesVal = m
 	})
-	return kibanaConnectionBlockObjectAttrTypesVal
+	return copyAttrTypes(kibanaConnectionBlockObjectAttrTypesVal)
 }
 
 func fwNestedBlockAttributesToAttrTypes(attrs map[string]fwschema.Attribute) (map[string]attr.Type, error) {
