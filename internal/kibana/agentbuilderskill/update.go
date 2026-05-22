@@ -48,12 +48,5 @@ func updateSkill(ctx context.Context, client *clients.KibanaScopedClient, req en
 		return entitycore.KibanaWriteResult[skillModel]{}, diags
 	}
 
-	skill, d := kibanaoapi.GetSkill(ctx, oapiClient, req.SpaceID, req.WriteID)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[skillModel]{}, diags
-	}
-
-	diags.Append(plan.populateFromAPI(ctx, req.SpaceID, skill)...)
 	return entitycore.KibanaWriteResult[skillModel]{Model: plan}, diags
 }

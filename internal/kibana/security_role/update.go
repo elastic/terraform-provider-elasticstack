@@ -56,7 +56,5 @@ func updateRole(ctx context.Context, client *clients.KibanaScopedClient, req ent
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[resourceModel]{Model: prior}, diags
 	}
-	updated, _, rd := readRoleResourceWithHint(ctx, client, roleName, prior, hintFromResourceModel(plan))
-	diags.Append(rd...)
-	return entitycore.KibanaWriteResult[resourceModel]{Model: updated}, diags
+	return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 }

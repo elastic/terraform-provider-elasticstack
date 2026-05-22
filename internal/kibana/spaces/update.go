@@ -62,16 +62,9 @@ func updateSpace(ctx context.Context, client *clients.KibanaScopedClient, req en
 		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 	}
 
-	space, found, fwDiags := fetchSpace(ctx, oapiClient, req.WriteID)
-	diags.Append(fwDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
-	}
-	if !found {
-		diags.AddError("Update space", "space was not found after update")
-		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
-	}
-
-	result, resultDiags := finalizeResourceModelFromAPIResponse(ctx, plan, space)
-	return entitycore.KibanaWriteResult[resourceModel]{Model: result}, resultDiags
+	// The envelope's read-after-write step refreshes the model and surfaces
+	// "not found" when the space disappears between update and read. Only the
+	// resource identity needs to be set here so the read can resolve it.
+	plan.ID = plan.SpaceID
+	return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 }

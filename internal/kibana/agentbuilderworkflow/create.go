@@ -45,16 +45,9 @@ func createWorkflow(ctx context.Context, client *clients.KibanaScopedClient, req
 		return entitycore.KibanaWriteResult[workflowModel]{}, diags
 	}
 
-	workflow, d := kibanaoapi.GetWorkflow(ctx, oapiClient, req.SpaceID, created.ID)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[workflowModel]{}, diags
-	}
-
 	plan.SpaceID = types.StringValue(req.SpaceID)
-	plan.populateFromAPI(workflow)
 
-	if !workflow.Valid {
+	if created != nil && !created.Valid {
 		diags.AddError("Invalid workflow", "The workflow was created but its configuration is invalid. Please check the YAML definition.")
 	}
 

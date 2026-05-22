@@ -45,18 +45,11 @@ func createTool(ctx context.Context, client *clients.KibanaScopedClient, req ent
 		return entitycore.KibanaWriteResult[toolModel]{}, diags
 	}
 
-	created, d := kibanaoapi.CreateTool(ctx, oapiClient, req.SpaceID, body)
+	_, d = kibanaoapi.CreateTool(ctx, oapiClient, req.SpaceID, body)
 	diags.Append(d...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[toolModel]{}, diags
 	}
 
-	tool, d := kibanaoapi.GetTool(ctx, oapiClient, req.SpaceID, created.ID)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[toolModel]{}, diags
-	}
-
-	diags.Append(plan.populateFromAPI(ctx, tool)...)
 	return entitycore.KibanaWriteResult[toolModel]{Model: plan}, diags
 }

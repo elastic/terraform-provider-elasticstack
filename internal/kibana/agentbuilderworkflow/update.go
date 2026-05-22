@@ -39,22 +39,15 @@ func updateWorkflow(ctx context.Context, client *clients.KibanaScopedClient, req
 		return entitycore.KibanaWriteResult[workflowModel]{}, diags
 	}
 
-	d := kibanaoapi.UpdateWorkflow(ctx, oapiClient, req.SpaceID, req.WriteID, body)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[workflowModel]{}, diags
-	}
-
-	workflow, d := kibanaoapi.GetWorkflow(ctx, oapiClient, req.SpaceID, req.WriteID)
+	updated, d := kibanaoapi.UpdateWorkflow(ctx, oapiClient, req.SpaceID, req.WriteID, body)
 	diags.Append(d...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[workflowModel]{}, diags
 	}
 
 	plan.SpaceID = types.StringValue(req.SpaceID)
-	plan.populateFromAPI(workflow)
 
-	if !workflow.Valid {
+	if updated != nil && !updated.Valid {
 		diags.AddError("Invalid workflow", "The workflow was updated but its configuration is invalid. Please check the YAML definition.")
 	}
 

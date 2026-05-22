@@ -48,18 +48,11 @@ func createAgent(ctx context.Context, client *clients.KibanaScopedClient, req en
 		return entitycore.KibanaWriteResult[agentModel]{}, diags
 	}
 
-	created, d := kibanaoapi.CreateAgent(ctx, oapiClient, req.SpaceID, body)
+	_, d = kibanaoapi.CreateAgent(ctx, oapiClient, req.SpaceID, body)
 	diags.Append(d...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[agentModel]{}, diags
 	}
 
-	agent, d := kibanaoapi.GetAgent(ctx, oapiClient, req.SpaceID, created.ID)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[agentModel]{}, diags
-	}
-
-	diags.Append(plan.populateFromAPI(ctx, req.SpaceID, agent)...)
 	return entitycore.KibanaWriteResult[agentModel]{Model: plan}, diags
 }

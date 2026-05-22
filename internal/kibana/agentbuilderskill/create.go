@@ -42,18 +42,11 @@ func createSkill(ctx context.Context, client *clients.KibanaScopedClient, req en
 		return entitycore.KibanaWriteResult[skillModel]{}, diags
 	}
 
-	created, d := kibanaoapi.CreateSkill(ctx, oapiClient, req.SpaceID, body)
+	_, d = kibanaoapi.CreateSkill(ctx, oapiClient, req.SpaceID, body)
 	diags.Append(d...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[skillModel]{}, diags
 	}
 
-	skill, d := kibanaoapi.GetSkill(ctx, oapiClient, req.SpaceID, created.ID)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[skillModel]{}, diags
-	}
-
-	diags.Append(plan.populateFromAPI(ctx, req.SpaceID, skill)...)
 	return entitycore.KibanaWriteResult[skillModel]{Model: plan}, diags
 }

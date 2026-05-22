@@ -63,18 +63,11 @@ func createSpace(ctx context.Context, client *clients.KibanaScopedClient, req en
 		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 	}
 
-	space, found, fwDiags := fetchSpace(ctx, oapiClient, plan.SpaceID.ValueString())
-	diags.Append(fwDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
-	}
-	if !found {
-		diags.AddError("Create space", "space was not found immediately after create")
-		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
-	}
-
-	result, resultDiags := finalizeResourceModelFromAPIResponse(ctx, plan, space)
-	return entitycore.KibanaWriteResult[resourceModel]{Model: result}, resultDiags
+	// The envelope's read-after-write step refreshes the model and surfaces
+	// "not found" when the space disappears between create and read. Only the
+	// resource identity needs to be set here so the read can resolve it.
+	plan.ID = plan.SpaceID
+	return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 }
 
 func disabledFeaturesSlice(ctx context.Context, s types.Set) ([]string, diag.Diagnostics) {
