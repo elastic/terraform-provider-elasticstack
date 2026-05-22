@@ -27,5 +27,5 @@
 
 ## 3. Final verification
 
-- [ ] 3.1 Run `make check-lint` (includes `make check-openspec`) and resolve any issues
-- [ ] 3.2 Confirm neither package imports `assertVersionSupported` or the `version` file references remain
+- [x] 3.1 Run `make check-lint` (includes `make check-openspec`) and resolve any issues
+- [x] 3.2 Confirm neither package imports `assertVersionSupported` or the `version` file references remain
