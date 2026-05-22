@@ -91,28 +91,28 @@ func getSchema() schema.Schema {
 				Sensitive:   true,
 				Validators: []validator.String{
 					validators.RequiredIfDependentPathEquals(path.Root("type"), "remote_elasticsearch"),
-					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch"),
+					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch", validators.AllowedIfOptions{}),
 				},
 			},
 			"sync_integrations": schema.BoolAttribute{
 				Description: "When type is remote_elasticsearch, whether Fleet synchronizes integration assets to the remote cluster. Subscription and version requirements apply per Elastic documentation.",
 				Optional:    true,
 				Validators: []validator.Bool{
-					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch"),
+					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch", validators.AllowedIfOptions{}),
 				},
 			},
 			"sync_uninstalled_integrations": schema.BoolAttribute{
 				Description: "When type is remote_elasticsearch, whether to sync uninstalled integrations. Only meaningful when sync_integrations is enabled.",
 				Optional:    true,
 				Validators: []validator.Bool{
-					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch"),
+					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch", validators.AllowedIfOptions{}),
 				},
 			},
 			"write_to_logs_streams": schema.BoolAttribute{
 				Description: "When type is remote_elasticsearch, whether agents using this output send data to wired logs streams (preview in newer stacks).",
 				Optional:    true,
 				Validators: []validator.Bool{
-					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch"),
+					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch", validators.AllowedIfOptions{}),
 				},
 			},
 			"ca_sha256": schema.StringAttribute{
@@ -231,7 +231,7 @@ func getSchema() schema.Schema {
 							int64planmodifier.UseStateForUnknown(),
 						},
 						Validators: []validator.Int64{
-							validators.AllowedIfDependentPathEquals(path.Root("kafka").AtName("compression"), "gzip"),
+							validators.AllowedIfDependentPathEquals(path.Root("kafka").AtName("compression"), "gzip", validators.AllowedIfOptions{}),
 						},
 					},
 					"connection_type": schema.StringAttribute{
@@ -242,6 +242,7 @@ func getSchema() schema.Schema {
 							validators.AllowedIfDependentPathEquals(
 								path.Root("kafka").AtName("auth_type"),
 								"none",
+								validators.AllowedIfOptions{},
 							),
 						},
 					},
