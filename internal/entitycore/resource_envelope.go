@@ -158,6 +158,18 @@ func PlaceholderElasticsearchWriteCallback[T ElasticsearchResourceModel]() Write
 	}
 }
 
+// UpdateNotSupportedWriteCallback returns a write callback that always returns
+// an error diagnostic. Use for resources where all mutable attributes carry
+// RequiresReplace, so Terraform never reaches an in-place update.
+func UpdateNotSupportedWriteCallback[T ElasticsearchResourceModel]() WriteFunc[T] {
+	return func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ WriteRequest[T]) (WriteResult[T], diag.Diagnostics) {
+		var diags diag.Diagnostics
+		diags.AddError("Update not supported", "Update not supported")
+		var zero T
+		return WriteResult[T]{Model: zero}, diags
+	}
+}
+
 // NewElasticsearchResource returns an [*ElasticsearchResource] that owns
 // Schema, Create, Read, Update, and Delete for the Elasticsearch namespace.
 // Concrete resources supply callbacks in opts; Schema, Read, Delete, Create,
