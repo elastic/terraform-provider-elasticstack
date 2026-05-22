@@ -19,6 +19,7 @@ package schema
 
 import (
 	"fmt"
+	"maps"
 	"sync"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -311,9 +312,7 @@ func copyAttrTypes(src map[string]attr.Type) map[string]attr.Type {
 		return nil
 	}
 	out := make(map[string]attr.Type, len(src))
-	for name, t := range src {
-		out[name] = t
-	}
+	maps.Copy(out, src)
 	return out
 }
 
