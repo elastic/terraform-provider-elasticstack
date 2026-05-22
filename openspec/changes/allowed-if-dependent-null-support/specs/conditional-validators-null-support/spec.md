@@ -7,17 +7,21 @@
 - **WHEN** an `AllowedIf` validator evaluates a configured attribute and the dependent attribute value is unknown
 - **THEN** the validator SHALL return no validation error for that dependency state
 
-### Requirement: AllowedIf equals-or-null helper
-The validators package SHALL expose a helper that allows an attribute when a dependent path equals a required string value or when the dependent path is null/unset.
+### Requirement: AllowedIf validators support explicit null handling options
+The validators package SHALL require an options argument on `AllowedIf` validator constructors that explicitly controls whether a null or unset dependent path is accepted.
 
 #### Scenario: Dependent value equals required value
-- **WHEN** the equals-or-null `AllowedIf` helper evaluates a configured attribute and the dependent path equals the required value
+- **WHEN** an options-enabled `AllowedIf` validator evaluates a configured attribute and the dependent path equals the required value
 - **THEN** the validator SHALL return no validation error
 
-#### Scenario: Dependent value is null
-- **WHEN** the equals-or-null `AllowedIf` helper evaluates a configured attribute and the dependent path is null or unset
+#### Scenario: Dependent value is null and null is allowed
+- **WHEN** an options-enabled `AllowedIf` validator evaluates a configured attribute, the dependent path is null or unset, and the options allow null
 - **THEN** the validator SHALL return no validation error
+
+#### Scenario: Dependent value is null and null is not allowed
+- **WHEN** an options-enabled `AllowedIf` validator evaluates a configured attribute, the dependent path is null or unset, and the options do not allow null
+- **THEN** the validator SHALL return a validation error
 
 #### Scenario: Dependent value is a different concrete value
-- **WHEN** the equals-or-null `AllowedIf` helper evaluates a configured attribute and the dependent path has a known value that does not equal the required value
+- **WHEN** an options-enabled `AllowedIf` validator evaluates a configured attribute and the dependent path has a known value that does not equal the required value
 - **THEN** the validator SHALL return a validation error

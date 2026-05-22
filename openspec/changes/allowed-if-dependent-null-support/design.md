@@ -5,7 +5,7 @@ The provider already exposes a family of conditional validators in `internal/uti
 ## Goals / Non-Goals
 
 **Goals:**
-- Add an explicit conditional-validator path for "equals or null" behavior without overloading `nil` or changing existing caller signatures broadly.
+- Add an explicit conditional-validator path for "equals or null" behavior using a required options argument without overloading `nil`.
 - Make `AllowedIf...` validators treat an unknown dependent value as allowed so computed values do not cause premature validation failures.
 - Reuse the new validator behavior in `elasticstack_kibana_space` so `disabled_features` is validated conditionally instead of with unconditional conflicts.
 - Cover the validator and resource schema behavior with focused tests.
@@ -17,8 +17,10 @@ The provider already exposes a family of conditional validators in `internal/uti
 
 ## Decisions
 
-### Add a dedicated `AllowedIfDependentPathEqualsOrNull` helper
-A new helper will wrap the existing `AllowedIfDependentPathOneOf` behavior and mark that a null dependent value is acceptable. This keeps call sites explicit and self-documenting, avoids using `nil` as an overloaded signal, and limits the scope of change to the `AllowedIf` path that needs the new behavior.
+### Add a required options argument to `AllowedIf` constructors
+The existing `AllowedIfDependentPathOneOf` / `AllowedIfDependentPathEquals` constructors will gain a required options argument that explicitly controls whether a null dependent value is acceptable. This keeps null-handling explicit at call sites, avoids overloading `nil`, and extends the existing API shape rather than introducing a one-off helper.
+
+Alternative considered: add a dedicated `AllowedIfDependentPathEqualsOrNull` helper. Rejected because the chosen direction is to keep behavior selection on the existing constructors via required options rather than multiplying helper variants.
 
 Alternative considered: overload `nil` in the existing `[]string` API to mean "allow null". Rejected because it is ambiguous, difficult to discover, and does not cleanly capture unknown/computed semantics.
 
@@ -30,12 +32,12 @@ The internal dependent-value evaluation for `AllowedIf...` will consider an unkn
 Alternative considered: add an `AllowUnknown` option. Rejected because unknown should always pass for `AllowedIf` validation and an extra option would add complexity without meaningful control.
 
 ### Update Kibana space schema to use conditional validation instead of reciprocal conflicts
-The `disabled_features` attribute in `internal/kibana/spaces/resource_schema.go` will use the new helper against `solution`. The reciprocal `ConflictsWith` validators between `disabled_features` and `solution` will be removed so the resource accepts `solution = "classic"` and omitted `solution` while still rejecting concrete non-`classic` values through the conditional validator.
+The `disabled_features` attribute in `internal/kibana/spaces/resource_schema.go` will use the options-enabled conditional validator against `solution`. The reciprocal `ConflictsWith` validators between `disabled_features` and `solution` will be removed so the resource accepts `solution = "classic"` and omitted `solution` while still rejecting concrete non-`classic` values through the conditional validator.
 
 Alternative considered: implement the rule in resource-level `ValidateConfig`. Rejected because the conditional validator utilities can express the rule directly and keep the validation logic colocated with the schema.
 
 ## Risks / Trade-offs
 
 - [Broader `AllowedIf` semantics for unknown dependents] → Mitigation: constrain the semantic change to treating unknown as allowed only for `AllowedIf...`, add targeted tests, and avoid changing `RequiredIf` / `ForbiddenIf` behavior.
-- [New helper adds another API surface] → Mitigation: keep the helper narrowly scoped to the concrete requirement (`equals or null`) and document its intended use through tests and descriptive naming.
+- [Required options argument changes existing constructor signatures] → Mitigation: update all call sites in the same change, keep the options structure narrow, and cover the new semantics with focused tests.
 - [Resource behavior may diverge from current tests or assumptions] → Mitigation: update `elasticstack_kibana_space` schema tests or acceptance coverage to explicitly cover `classic`, unset, unknown, and non-`classic` cases.

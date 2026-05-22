@@ -5,7 +5,7 @@ The `elasticstack_kibana_space` resource needs conditional validation that allow
 ## What Changes
 
 - Extend the conditional validator utilities in `internal/utils/validators/conditional.go` so `AllowedIf...` validation treats an unknown dependent value as allowed.
-- Add explicit support for allowing a null/unset dependent value in `AllowedIf` validation via a dedicated helper for the equals case.
+- Add explicit support for allowing a null/unset dependent value in `AllowedIf` validation via a required options argument on the existing validator constructors.
 - Update the Kibana space resource schema to use the conditional validator helper instead of unconditional conflict validation for the `solution` / `disabled_features` relationship.
 - Add tests covering null, unknown, matching, and non-matching dependent values for the validator utility and for the `elasticstack_kibana_space` schema behavior.
 
@@ -20,5 +20,5 @@ The `elasticstack_kibana_space` resource needs conditional validation that allow
 ## Impact
 
 - Affected code: `internal/utils/validators/conditional.go`, `internal/utils/validators/conditional_test.go`, `internal/kibana/spaces/resource_schema.go`, and associated resource tests.
-- Affected behavior: plan-time validation for any schema that adopts the new helper, and specifically `elasticstack_kibana_space` configuration validation.
+- Affected behavior: plan-time validation for any schema that adopts the new options-enabled validator API, and specifically `elasticstack_kibana_space` configuration validation.
 - No external API or dependency changes are required.
