@@ -85,7 +85,7 @@ resource "elasticstack_kibana_agentbuilder_tool" "workflow_tool" {
 
 ### Read-Only
 
-- `id` (String) The composite ID of the tool: `<tool_id>/<space_id>`.
+- `id` (String) The composite ID of the tool: `<space_id>/<tool_id>`.
 
 <a id="nestedblock--kibana_connection"></a>
 ### Nested Schema for `kibana_connection`

@@ -18,14 +18,34 @@
 package agentbuilderworkflow
 
 import (
+	"fmt"
+
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+func (model workflowModel) GetID() types.String             { return model.ID }
+func (model workflowModel) GetResourceID() types.String     { return model.WorkflowID }
+func (model workflowModel) GetSpaceID() types.String        { return model.SpaceID }
+func (model workflowModel) GetKibanaConnection() types.List { return model.KibanaConnection }
+
+var _ entitycore.KibanaResourceModel = workflowModel{}
+var _ entitycore.WithVersionRequirements = workflowModel{}
+
+func (model workflowModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{
+		{
+			MinVersion:   *minKibanaAgentBuilderAPIVersion,
+			ErrorMessage: fmt.Sprintf("Agent Builder workflows require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
+		},
+	}, nil
+}
 
 type workflowDataSourceModel struct {
 	entitycore.KibanaConnectionField

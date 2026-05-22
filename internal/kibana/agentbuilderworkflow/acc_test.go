@@ -90,7 +90,7 @@ func TestAccResourceAgentBuilderWorkflow(t *testing.T) {
 				),
 			},
 			{
-				// Import by composite id: <workflow_id>/<space_id>
+				// Import by composite id: <space_id>/<workflow_id>
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -165,7 +165,7 @@ func TestAccResourceAgentBuilderWorkflowSpace(t *testing.T) {
 				),
 			},
 			{
-				// Import by composite id: <workflow_id>/<space_id>
+				// Import by composite id: <space_id>/<workflow_id>
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{

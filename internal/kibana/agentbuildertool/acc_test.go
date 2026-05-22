@@ -78,7 +78,7 @@ func TestAccResourceAgentBuilderToolEsql(t *testing.T) {
 				),
 			},
 			{
-				// Import by composite id: <tool_id>/<space_id>
+				// Import by composite id: <space_id>/<tool_id>
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -227,7 +227,7 @@ func TestAccResourceAgentBuilderToolEsqlSpace(t *testing.T) {
 				),
 			},
 			{
-				// Import by composite id: <tool_id>/<space_id>
+				// Import by composite id: <space_id>/<tool_id>
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -270,7 +270,7 @@ func TestAccResourceAgentBuilderToolIndexSearch(t *testing.T) {
 				),
 			},
 			{
-				// Import by composite id: <tool_id>/<space_id>
+				// Import by composite id: <space_id>/<tool_id>
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -311,7 +311,7 @@ func TestAccResourceAgentBuilderToolWorkflow(t *testing.T) {
 				),
 			},
 			{
-				// Import by composite id: <tool_id>/<space_id>
+				// Import by composite id: <space_id>/<tool_id>
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{

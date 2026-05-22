@@ -30,6 +30,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+func (model agentModel) GetID() types.String             { return model.ID }
+func (model agentModel) GetResourceID() types.String     { return model.AgentID }
+func (model agentModel) GetSpaceID() types.String        { return model.SpaceID }
+func (model agentModel) GetKibanaConnection() types.List { return model.KibanaConnection }
+
+var _ entitycore.KibanaResourceModel = agentModel{}
+var _ entitycore.WithVersionRequirements = agentModel{}
+
+func (model agentModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{
+		{
+			MinVersion:   *minKibanaAgentBuilderAPIVersion,
+			ErrorMessage: fmt.Sprintf("Agent Builder agents require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
+		},
+	}, nil
+}
+
 type agentModel struct {
 	ID               types.String `tfsdk:"id"`
 	KibanaConnection types.List   `tfsdk:"kibana_connection"`

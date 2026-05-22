@@ -22,41 +22,13 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *WorkflowResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var stateModel workflowModel
-
-	diags := req.State.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderAPIVersion, "workflows", &resp.Diagnostics) {
-		return
-	}
-
-	compID, idDiags := clients.CompositeIDFromStr(stateModel.ID.ValueString())
-	resp.Diagnostics.Append(idDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
+func deleteWorkflow(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, _ workflowModel) diag.Diagnostics {
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
+		return diag.Diagnostics{diag.NewErrorDiagnostic(err.Error(), "")}
 	}
-
-	diags = kibanaoapi.DeleteWorkflow(ctx, oapiClient, compID.ClusterID, compID.ResourceID)
-	resp.Diagnostics.Append(diags...)
+	return kibanaoapi.DeleteWorkflow(ctx, oapiClient, spaceID, resourceID)
 }

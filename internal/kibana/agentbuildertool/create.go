@@ -20,62 +20,41 @@ package agentbuildertool
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *ToolResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var planModel toolModel
+func createTool(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, plan toolModel) (toolModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	diags := req.Plan.Get(ctx, &planModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	plan.SpaceID = types.StringValue(spaceID)
 
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderAPIVersion, "tools", &resp.Diagnostics) {
-		return
-	}
-
-	body, diags := planModel.toAPICreateModel(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	body, d := plan.toAPICreateModel(ctx)
+	diags.Append(d...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
+		diags.AddError(err.Error(), "")
+		return plan, diags
 	}
 
-	spaceID := planModel.SpaceID.ValueString()
-
-	created, diags := kibanaoapi.CreateTool(ctx, oapiClient, spaceID, body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	created, d := kibanaoapi.CreateTool(ctx, oapiClient, spaceID, body)
+	diags.Append(d...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	tool, diags := kibanaoapi.GetTool(ctx, oapiClient, spaceID, created.ID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	tool, d := kibanaoapi.GetTool(ctx, oapiClient, spaceID, created.ID)
+	diags.Append(d...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	diags = planModel.populateFromAPI(ctx, tool)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = resp.State.Set(ctx, planModel)
-	resp.Diagnostics.Append(diags...)
+	diags.Append(plan.populateFromAPI(ctx, tool)...)
+	return plan, diags
 }

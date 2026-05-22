@@ -22,69 +22,39 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *ToolResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var planModel toolModel
+func updateTool(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, plan toolModel, _ toolModel) (toolModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	diags := req.Plan.Get(ctx, &planModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	plan.SpaceID = types.StringValue(spaceID)
+
+	body, d := plan.toAPIUpdateModel(ctx)
+	diags.Append(d...)
+	if diags.HasError() {
+		return plan, diags
 	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderAPIVersion, "tools", &resp.Diagnostics) {
-		return
-	}
-
-	compID, idDiags := clients.CompositeIDFromStr(planModel.ID.ValueString())
-	resp.Diagnostics.Append(idDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Restore space_id from the composite ID so populateFromAPI can use it.
-	planModel.SpaceID = types.StringValue(compID.ClusterID)
 
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
+		diags.AddError(err.Error(), "")
+		return plan, diags
 	}
 
-	body, diags := planModel.toAPIUpdateModel(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	_, d = kibanaoapi.UpdateTool(ctx, oapiClient, spaceID, resourceID, body)
+	diags.Append(d...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	_, diags = kibanaoapi.UpdateTool(ctx, oapiClient, compID.ClusterID, compID.ResourceID, body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	tool, d := kibanaoapi.GetTool(ctx, oapiClient, spaceID, resourceID)
+	diags.Append(d...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	tool, diags := kibanaoapi.GetTool(ctx, oapiClient, compID.ClusterID, compID.ResourceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = planModel.populateFromAPI(ctx, tool)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = resp.State.Set(ctx, planModel)
-	resp.Diagnostics.Append(diags...)
+	diags.Append(plan.populateFromAPI(ctx, tool)...)
+	return plan, diags
 }
