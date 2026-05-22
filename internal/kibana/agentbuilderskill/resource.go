@@ -44,11 +44,13 @@ func newSkillResource() *SkillResource {
 		KibanaResource: entitycore.NewKibanaResource[skillModel](
 			entitycore.ComponentKibana,
 			"agentbuilder_skill",
-			getResourceSchema,
-			readSkill,
-			deleteSkill,
-			createSkill,
-			updateSkill,
+			entitycore.KibanaResourceOptions[skillModel]{
+				Schema: getResourceSchema,
+				Read:   readSkill,
+				Delete: deleteSkill,
+				Create: createSkill,
+				Update: updateSkill,
+			},
 		),
 	}
 }

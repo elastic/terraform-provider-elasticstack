@@ -22,11 +22,13 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func createWorkflow(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, plan workflowModel) (workflowModel, diag.Diagnostics) {
+func createWorkflow(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[workflowModel]) (entitycore.KibanaWriteResult[workflowModel], diag.Diagnostics) {
+	plan := req.Plan
 	var diags diag.Diagnostics
 
 	body := plan.toAPICreateModel()
@@ -34,27 +36,27 @@ func createWorkflow(ctx context.Context, client *clients.KibanaScopedClient, spa
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		diags.AddError(err.Error(), "")
-		return plan, diags
+		return entitycore.KibanaWriteResult[workflowModel]{}, diags
 	}
 
-	created, d := kibanaoapi.CreateWorkflow(ctx, oapiClient, spaceID, body)
+	created, d := kibanaoapi.CreateWorkflow(ctx, oapiClient, req.SpaceID, body)
 	diags.Append(d...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.KibanaWriteResult[workflowModel]{}, diags
 	}
 
-	workflow, d := kibanaoapi.GetWorkflow(ctx, oapiClient, spaceID, created.ID)
+	workflow, d := kibanaoapi.GetWorkflow(ctx, oapiClient, req.SpaceID, created.ID)
 	diags.Append(d...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.KibanaWriteResult[workflowModel]{}, diags
 	}
 
-	plan.SpaceID = types.StringValue(spaceID)
+	plan.SpaceID = types.StringValue(req.SpaceID)
 	plan.populateFromAPI(workflow)
 
 	if !workflow.Valid {
 		diags.AddError("Invalid workflow", "The workflow was created but its configuration is invalid. Please check the YAML definition.")
 	}
 
-	return plan, diags
+	return entitycore.KibanaWriteResult[workflowModel]{Model: plan}, diags
 }

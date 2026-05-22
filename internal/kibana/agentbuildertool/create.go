@@ -22,39 +22,41 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func createTool(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, plan toolModel) (toolModel, diag.Diagnostics) {
+func createTool(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[toolModel]) (entitycore.KibanaWriteResult[toolModel], diag.Diagnostics) {
+	plan := req.Plan
 	var diags diag.Diagnostics
 
-	plan.SpaceID = types.StringValue(spaceID)
+	plan.SpaceID = types.StringValue(req.SpaceID)
 
 	body, d := plan.toAPICreateModel(ctx)
 	diags.Append(d...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.KibanaWriteResult[toolModel]{}, diags
 	}
 
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		diags.AddError(err.Error(), "")
-		return plan, diags
+		return entitycore.KibanaWriteResult[toolModel]{}, diags
 	}
 
-	created, d := kibanaoapi.CreateTool(ctx, oapiClient, spaceID, body)
+	created, d := kibanaoapi.CreateTool(ctx, oapiClient, req.SpaceID, body)
 	diags.Append(d...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.KibanaWriteResult[toolModel]{}, diags
 	}
 
-	tool, d := kibanaoapi.GetTool(ctx, oapiClient, spaceID, created.ID)
+	tool, d := kibanaoapi.GetTool(ctx, oapiClient, req.SpaceID, created.ID)
 	diags.Append(d...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.KibanaWriteResult[toolModel]{}, diags
 	}
 
 	diags.Append(plan.populateFromAPI(ctx, tool)...)
-	return plan, diags
+	return entitycore.KibanaWriteResult[toolModel]{Model: plan}, diags
 }

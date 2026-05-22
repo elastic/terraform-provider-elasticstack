@@ -22,42 +22,44 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func updateAgent(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, plan agentModel, _ agentModel) (agentModel, diag.Diagnostics) {
+func updateAgent(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[agentModel]) (entitycore.KibanaWriteResult[agentModel], diag.Diagnostics) {
+	plan := req.Plan
 	var diags diag.Diagnostics
 
 	supportsSkillIDs, d := client.EnforceMinVersion(ctx, minVersionAdvancedAgentConfig)
 	diags.Append(d...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.KibanaWriteResult[agentModel]{}, diags
 	}
 
 	body, d := plan.toAPIUpdateModel(ctx, supportsSkillIDs)
 	diags.Append(d...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.KibanaWriteResult[agentModel]{}, diags
 	}
 
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		diags.AddError(err.Error(), "")
-		return plan, diags
+		return entitycore.KibanaWriteResult[agentModel]{}, diags
 	}
 
-	_, d = kibanaoapi.UpdateAgent(ctx, oapiClient, spaceID, resourceID, body)
+	_, d = kibanaoapi.UpdateAgent(ctx, oapiClient, req.SpaceID, req.WriteID, body)
 	diags.Append(d...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.KibanaWriteResult[agentModel]{}, diags
 	}
 
-	agent, d := kibanaoapi.GetAgent(ctx, oapiClient, spaceID, resourceID)
+	agent, d := kibanaoapi.GetAgent(ctx, oapiClient, req.SpaceID, req.WriteID)
 	diags.Append(d...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.KibanaWriteResult[agentModel]{}, diags
 	}
 
-	diags.Append(plan.populateFromAPI(ctx, spaceID, agent)...)
-	return plan, diags
+	diags.Append(plan.populateFromAPI(ctx, req.SpaceID, agent)...)
+	return entitycore.KibanaWriteResult[agentModel]{Model: plan}, diags
 }

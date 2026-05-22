@@ -22,36 +22,38 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func updateSkill(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, plan skillModel, _ skillModel) (skillModel, diag.Diagnostics) {
+func updateSkill(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[skillModel]) (entitycore.KibanaWriteResult[skillModel], diag.Diagnostics) {
+	plan := req.Plan
 	var diags diag.Diagnostics
 
 	body, d := plan.toAPIUpdateModel(ctx)
 	diags.Append(d...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.KibanaWriteResult[skillModel]{}, diags
 	}
 
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		diags.AddError(err.Error(), "")
-		return plan, diags
+		return entitycore.KibanaWriteResult[skillModel]{}, diags
 	}
 
-	_, d = kibanaoapi.UpdateSkill(ctx, oapiClient, spaceID, resourceID, body)
+	_, d = kibanaoapi.UpdateSkill(ctx, oapiClient, req.SpaceID, req.WriteID, body)
 	diags.Append(d...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.KibanaWriteResult[skillModel]{}, diags
 	}
 
-	skill, d := kibanaoapi.GetSkill(ctx, oapiClient, spaceID, resourceID)
+	skill, d := kibanaoapi.GetSkill(ctx, oapiClient, req.SpaceID, req.WriteID)
 	diags.Append(d...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.KibanaWriteResult[skillModel]{}, diags
 	}
 
-	diags.Append(plan.populateFromAPI(ctx, spaceID, skill)...)
-	return plan, diags
+	diags.Append(plan.populateFromAPI(ctx, req.SpaceID, skill)...)
+	return entitycore.KibanaWriteResult[skillModel]{Model: plan}, diags
 }
