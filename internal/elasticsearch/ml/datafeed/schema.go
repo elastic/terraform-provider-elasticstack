@@ -180,7 +180,7 @@ func getSchema(_ context.Context) schema.Schema {
 						},
 						Validators: []validator.String{
 							stringvalidator.RegexMatches(regexp.MustCompile(`^\d+[nsumdh]$`), "must be a valid duration (e.g., 1h, 1d)"),
-							validators.AllowedIfDependentPathEquals(path.Root("chunking_config").AtName("mode"), "manual"),
+							validators.AllowedIfDependentPathEquals(path.Root("chunking_config").AtName("mode"), "manual", validators.AllowedIfOptions{}),
 						},
 					},
 				},
