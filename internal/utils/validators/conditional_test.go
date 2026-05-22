@@ -38,45 +38,61 @@ func TestAllowedIfDependentPathOneOf(t *testing.T) {
 		name           string
 		currentValue   types.String
 		dependentValue types.String
+		options        AllowedIfOptions
 		expectedError  bool
 	}
+
+	defaultOptions := AllowedIfOptions{AllowNullDependent: false}
 
 	testCases := []testCase{
 		{
 			name:           "valid - current null, dependent any value",
 			currentValue:   types.StringNull(),
 			dependentValue: types.StringValue("user_pass"),
+			options:        defaultOptions,
 			expectedError:  false,
 		},
 		{
 			name:           "valid - current unknown, dependent any value",
 			currentValue:   types.StringUnknown(),
 			dependentValue: types.StringValue("user_pass"),
+			options:        defaultOptions,
 			expectedError:  false,
 		},
 		{
 			name:           "valid - current set, dependent matches required value",
 			currentValue:   types.StringValue("plaintext"),
 			dependentValue: types.StringValue("none"),
+			options:        defaultOptions,
 			expectedError:  false,
 		},
 		{
 			name:           "invalid - current set, dependent doesn't match required value",
 			currentValue:   types.StringValue("plaintext"),
 			dependentValue: types.StringValue("user_pass"),
+			options:        defaultOptions,
 			expectedError:  true,
 		},
 		{
-			name:           "invalid - current set, dependent is null",
+			name:           "invalid - current set, dependent is null and null not allowed",
 			currentValue:   types.StringValue("plaintext"),
 			dependentValue: types.StringNull(),
+			options:        defaultOptions,
 			expectedError:  true,
 		},
 		{
-			name:           "invalid - current set, dependent is unknown",
+			name:           "valid - current set, dependent is null and null allowed",
+			currentValue:   types.StringValue("plaintext"),
+			dependentValue: types.StringNull(),
+			options:        AllowedIfOptions{AllowNullDependent: true},
+			expectedError:  false,
+		},
+		{
+			name:           "valid - current set, dependent is unknown",
 			currentValue:   types.StringValue("plaintext"),
 			dependentValue: types.StringUnknown(),
-			expectedError:  true,
+			options:        defaultOptions,
+			expectedError:  false,
 		},
 	}
 
@@ -130,6 +146,7 @@ func TestAllowedIfDependentPathOneOf(t *testing.T) {
 			v := AllowedIfDependentPathOneOf(
 				path.Root("auth_type"),
 				[]string{"none"},
+				testCase.options,
 			)
 
 			// Create validation request
@@ -161,10 +178,26 @@ func TestAllowedIfDependentPathOneOf_Description(t *testing.T) {
 	v := AllowedIfDependentPathOneOf(
 		path.Root("auth_type"),
 		[]string{"none"},
+		AllowedIfOptions{},
 	)
 
 	description := v.Description(context.Background())
 	expected := "value can only be set when auth_type equals \"none\""
+
+	if description != expected {
+		t.Errorf("Expected description %q, got %q", expected, description)
+	}
+}
+
+func TestAllowedIfDependentPathEquals_Description(t *testing.T) {
+	v := AllowedIfDependentPathEquals(
+		path.Root("solution"),
+		"classic",
+		AllowedIfOptions{AllowNullDependent: true},
+	)
+
+	description := v.Description(context.Background())
+	expected := "value can only be set when solution equals \"classic\""
 
 	if description != expected {
 		t.Errorf("Expected description %q, got %q", expected, description)
@@ -636,45 +669,61 @@ func TestAllowedIfDependentPathExpressionOneOf(t *testing.T) {
 		name           string
 		currentValue   types.String
 		dependentValue types.String
+		options        AllowedIfOptions
 		expectedError  bool
 	}
+
+	defaultOptions := AllowedIfOptions{AllowNullDependent: false}
 
 	testCases := []testCase{
 		{
 			name:           "valid - current null, dependent any value",
 			currentValue:   types.StringNull(),
 			dependentValue: types.StringValue("user_pass"),
+			options:        defaultOptions,
 			expectedError:  false,
 		},
 		{
 			name:           "valid - current unknown, dependent any value",
 			currentValue:   types.StringUnknown(),
 			dependentValue: types.StringValue("user_pass"),
+			options:        defaultOptions,
 			expectedError:  false,
 		},
 		{
 			name:           "valid - current set, dependent matches required value",
 			currentValue:   types.StringValue("plaintext"),
 			dependentValue: types.StringValue("none"),
+			options:        defaultOptions,
 			expectedError:  false,
 		},
 		{
 			name:           "invalid - current set, dependent doesn't match required value",
 			currentValue:   types.StringValue("plaintext"),
 			dependentValue: types.StringValue("user_pass"),
+			options:        defaultOptions,
 			expectedError:  true,
 		},
 		{
-			name:           "invalid - current set, dependent is null",
+			name:           "invalid - current set, dependent is null and null not allowed",
 			currentValue:   types.StringValue("plaintext"),
 			dependentValue: types.StringNull(),
+			options:        defaultOptions,
 			expectedError:  true,
 		},
 		{
-			name:           "invalid - current set, dependent is unknown",
+			name:           "valid - current set, dependent is null and null allowed",
+			currentValue:   types.StringValue("plaintext"),
+			dependentValue: types.StringNull(),
+			options:        AllowedIfOptions{AllowNullDependent: true},
+			expectedError:  false,
+		},
+		{
+			name:           "valid - current set, dependent is unknown",
 			currentValue:   types.StringValue("plaintext"),
 			dependentValue: types.StringUnknown(),
-			expectedError:  true,
+			options:        defaultOptions,
+			expectedError:  false,
 		},
 	}
 
@@ -724,6 +773,7 @@ func TestAllowedIfDependentPathExpressionOneOf(t *testing.T) {
 			v := AllowedIfDependentPathExpressionOneOf(
 				path.MatchRelative().AtParent().AtName("auth_type"),
 				[]string{"none"},
+				testCase.options,
 			)
 
 			// Create validation request
@@ -751,6 +801,7 @@ func TestAllowedIfDependentPathExpressionOneOf_Description(t *testing.T) {
 	v := AllowedIfDependentPathExpressionOneOf(
 		path.MatchRelative().AtParent().AtName("auth_type"),
 		[]string{"none"},
+		AllowedIfOptions{},
 	)
 
 	description := v.Description(context.Background())
