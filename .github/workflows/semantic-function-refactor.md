@@ -2,6 +2,7 @@
 imports: 
   - shared/setup-dev.md
   - shared/go-source-analysis.md
+  - shared/dispatch-code-factory.md
 on:
   schedule:
   - cron: daily
@@ -44,37 +45,6 @@ safe-outputs:
     - triaged
     max: 3
     title-prefix: "[semantic-refactor] "
-  jobs:
-    dispatch-code-factory:
-      description: Dispatch code-factory for each created issue
-      needs: safe_outputs
-      permissions:
-        actions: write
-        contents: read
-      runs-on: ubuntu-latest
-      steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 1
-          persist-credentials: false
-          sparse-checkout: .github/scripts/workflows/lib
-          sparse-checkout-cone-mode: true
-      - name: Download safe-outputs artifact
-        uses: actions/download-artifact@v8
-        with:
-          if-no-files-found: warn
-          name: safe-outputs-items
-          path: /tmp/gh-aw/safe-outputs
-      - env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          SOURCE_WORKFLOW: semantic-function-refactor
-        name: Dispatch code-factory runs
-        run: |
-          node .github/scripts/workflows/lib/producer-dispatch.js \
-            /tmp/gh-aw/safe-outputs/temporary-id-map.json \
-            "$SOURCE_WORKFLOW"
 checkout:
   fetch-depth: 0
 description: Analyzes Go source organization and identifies actionable semantic refactoring opportunities

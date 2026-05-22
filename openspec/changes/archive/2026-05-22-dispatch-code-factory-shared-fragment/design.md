@@ -19,10 +19,13 @@ The precedent for shared gh-aw fragments already exists in this repository: `sha
 
 ### 1. Dynamic `SOURCE_WORKFLOW` derivation via `${{ github.workflow }}`
 
-Replace the hardcoded `SOURCE_WORKFLOW: <slug>` literal in each consumer with a bash one-liner:
+Replace the hardcoded `SOURCE_WORKFLOW: <slug>` literal in each consumer with a runtime slug derived from the calling workflow's display name. `gh aw compile` rejects `${{ }}` inside `run:` scripts, so the fragment uses env indirection:
 
-```bash
-SOURCE_WORKFLOW=$(echo "${{ github.workflow }}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+```yaml
+env:
+  GITHUB_WORKFLOW_NAME: ${{ github.workflow }}
+run: |
+  SOURCE_WORKFLOW=$(echo "$GITHUB_WORKFLOW_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
 ```
 
 The four workflow `name:` values produce the expected identifier strings:

@@ -20,11 +20,16 @@ The shared fragment SHALL define a `safe-outputs.jobs.dispatch-code-factory` ent
 
 ### Requirement: SOURCE_WORKFLOW is derived dynamically from the calling workflow's name
 
-The shared fragment SHALL derive `SOURCE_WORKFLOW` at runtime from the calling workflow's display name using a bash transformation:
+The shared fragment SHALL derive `SOURCE_WORKFLOW` at runtime from the calling workflow's display name. Because `gh aw compile` rejects `${{ }}` expressions inside `run:` scripts, the workflow display name is passed via `env` and slugified in bash:
 
-```bash
-SOURCE_WORKFLOW=$(echo "${{ github.workflow }}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+```yaml
+env:
+  GITHUB_WORKFLOW_NAME: ${{ github.workflow }}
+run: |
+  SOURCE_WORKFLOW=$(echo "$GITHUB_WORKFLOW_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
 ```
+
+This is equivalent to `SOURCE_WORKFLOW=$(echo "${{ github.workflow }}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')` but compiles successfully.
 
 The derivation SHALL produce the correct slug for all four consumer workflows:
 - `"Flaky Test Catcher"` → `flaky-test-catcher`

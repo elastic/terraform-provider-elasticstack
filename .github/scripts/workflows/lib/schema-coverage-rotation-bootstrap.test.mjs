@@ -43,7 +43,8 @@ test('schema-coverage rotation workflow installs Go from go.mod and exports Go p
   assert.match(lock, /GOMODCACHE=\$\(go env GOMODCACHE\)/);
   // Source workflow declares the import.
   const source = workflowSource();
-  assert.match(source, /imports: \[shared\/setup-dev\.md\]/);
+  assert.match(source, /shared\/setup-dev\.md/);
+  assert.match(source, /shared\/dispatch-code-factory\.md/);
 });
 
 test('schema-coverage rotation workflow installs Node from package.json and allows bootstrap ecosystems', () => {
@@ -92,10 +93,14 @@ test('schema-coverage rotation prompt documents deterministic toolchain without 
 test('workflow includes dispatch instruction and compiled lock contains dispatch_code_factory job', () => {
   const source = workflowSource();
   const lock = lockSource();
+  assert.match(source, /shared\/dispatch-code-factory\.md/);
   assert.match(source, /dispatch_code_factory/);
   assert.match(source, /Dispatch/);
+  assert.doesNotMatch(source, /safe-outputs:[\s\S]*?jobs:[\s\S]*?dispatch-code-factory:/);
   assert.match(lock, /dispatch_code_factory/);
   assert.match(lock, /"dispatch-code-factory":\{"description":"Dispatch code-factory for each created issue"\}/);
   assert.match(lock, /"dispatch_code_factory"/);
+  assert.match(lock, /SOURCE_WORKFLOW=\$\(echo "\$GITHUB_WORKFLOW_NAME"/);
+  assert.doesNotMatch(lock, /SOURCE_WORKFLOW: (?:flaky-test-catcher|semantic-function-refactor|schema-coverage-rotation|duplicate-code-detector)\b/);
   assert.match(lock, /"labels":\["testing","acceptance-tests","schema-coverage","triaged"\]/);
 });
