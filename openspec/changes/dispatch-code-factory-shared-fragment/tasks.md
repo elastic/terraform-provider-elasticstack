@@ -21,7 +21,7 @@
 ## 5. Update tests
 
 - [ ] 5.1 In `duplicate-code-detector.test.mjs`: add a new test case that asserts `dispatch_code_factory` appears in the workflow source and compiled lock, and that the lock contains the `dispatch-code-factory` job descriptor — matching the pattern used in `flaky-test-catcher.test.mjs` (line 209) and `schema-coverage-rotation-bootstrap.test.mjs` (line 92).
-- [ ] 5.2 Verify that existing test assertions in `flaky-test-catcher.test.mjs`, `semantic-function-refactor.test.mjs` (or equivalent), and `schema-coverage-rotation-bootstrap.test.mjs` still pass against the updated source and recompiled locks. Update any assertions that checked for the inline block structure if they no longer match the import-based source.
+- [ ] 5.2 Verify that existing test assertions in `flaky-test-catcher.test.mjs`, `.github/scripts/workflows/lib/semantic-function-refactor.test.mjs` (or equivalent), and `schema-coverage-rotation-bootstrap.test.mjs` still pass against the updated source and recompiled locks. Update any assertions that checked for the inline block structure if they no longer match the import-based source.
 
 ## 6. Validate
 
