@@ -87,6 +87,52 @@
 //     is migrated into envelope callbacks. Constructor shape and callback types are
 //     defined on [NewKibanaResource] in kibana_resource_envelope.go.
 //
+// # Ephemeral resource patterns
+//
+// Ephemeral resources use **envelope generics** — [NewElasticsearchEphemeralResource]
+// or [NewKibanaEphemeralResource] — which eliminate Open/Close orchestration
+// boilerplate. The constructor owns config decode, scoped client resolution,
+// version-requirement enforcement, connection-block injection, and private-state
+// round-tripping between Open and Close. Concrete packages supply a schema factory
+// (without connection blocks), a model embedding [ElasticsearchConnectionField] or
+// [KibanaConnectionField], a plain-Go close-state type S, and Open/Close callbacks.
+//
+// The close-state type parameter S must contain only plain Go types (string, int,
+// bool, slices, maps, embedded structs). It must not use terraform-plugin-framework
+// types such as types.String; the constructor enforces this at construction time
+// via reflection and panics with a precise field path if violated.
+//
+// Open() is invoked by Terraform during terraform plan as well as terraform apply.
+// Resource authors should document this in generated resource documentation when
+// Open performs side effects (for example creating an API key).
+//
+// Close() is not guaranteed to run if Terraform is interrupted between Open and
+// Close. Design close-time behavior accordingly (for example optional invalidation).
+//
+// Example ephemeral resource (see internal/elasticsearch/security/apikey/ephemeral):
+//
+//	type tfModel struct {
+//	    entitycore.ElasticsearchConnectionField
+//	    Name types.String `tfsdk:"name"`
+//	    // … computed result attributes …
+//	}
+//
+//	type closeState struct {
+//	    KeyID             string
+//	    InvalidateOnClose bool
+//	}
+//
+//	func NewResource() ephemeral.EphemeralResource {
+//	    return entitycore.NewElasticsearchEphemeralResource[tfModel, closeState](
+//	        "security_api_key",
+//	        entitycore.ElasticsearchEphemeralOptions[tfModel, closeState]{
+//	            Schema: getSchema,
+//	            Open:   openAPIKey,
+//	            Close:  closeAPIKey,
+//	        },
+//	    )
+//	}
+//
 // Component is a typed Terraform resource type-name namespace segment (for example
 // "elasticsearch", "kibana"). It is not a client-resolution kind: the same API family
 // can use different component strings for Terraform naming, such as APM resources
