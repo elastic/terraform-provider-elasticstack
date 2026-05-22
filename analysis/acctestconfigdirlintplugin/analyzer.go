@@ -43,7 +43,7 @@ func run(pass *analysis.Pass) (any, error) {
 	varSpecIndex := buildVarSpecIndex(pass)
 
 	for _, file := range pass.Files {
-		// Skip non-test files early, before any typed lookup.
+		// Skip non-test files early; varSpecIndex already used TypesInfo once up-front.
 		filename := pass.Fset.File(file.Pos()).Name()
 		if !strings.HasSuffix(filename, "_test.go") {
 			continue
@@ -113,7 +113,7 @@ func buildResourceImportAliases(file *ast.File) map[string]bool {
 }
 
 // isCandidateCallExpr returns true if call is syntactically a selector call whose
-// selector name is "Test" or "ParallelTest". This is a cheap guard before typed lookup.
+// selector name is "Test" or "ParallelTest". This is a cheap guard before import-alias matching.
 func isCandidateCallExpr(call *ast.CallExpr) bool {
 	sel, ok := call.Fun.(*ast.SelectorExpr)
 	if !ok {

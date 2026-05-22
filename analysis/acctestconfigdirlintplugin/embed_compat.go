@@ -117,10 +117,12 @@ func cachedLines(pass *analysis.Pass, cache map[string][]string, filename string
 		return lines
 	}
 	if pass.ReadFile == nil {
+		cache[filename] = nil
 		return nil
 	}
 	content, err := pass.ReadFile(filename)
 	if err != nil {
+		cache[filename] = nil
 		return nil
 	}
 	lines := strings.Split(string(content), "\n")
