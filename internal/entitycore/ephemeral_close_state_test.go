@@ -18,6 +18,7 @@
 package entitycore
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -62,6 +63,30 @@ func TestMustBePlainGoCloseState_acceptsSelfReferentialStruct(t *testing.T) {
 	require.NotPanics(t, func() {
 		mustBePlainGoCloseState[cycle]()
 	})
+}
+
+func TestRootCloseStateTypeName_namedStruct(t *testing.T) {
+	t.Parallel()
+	require.Equal(t, "plainGoCloseState", rootCloseStateTypeName(reflect.TypeFor[plainGoCloseState]()))
+}
+
+func TestRootCloseStateTypeName_anonymousStruct(t *testing.T) {
+	t.Parallel()
+	typeName := rootCloseStateTypeName(reflect.TypeOf(struct {
+		KeyID types.String
+	}{}))
+	require.NotEmpty(t, typeName)
+	require.Contains(t, typeName, "struct")
+}
+
+func TestMustBePlainGoCloseState_rejectsAnonymousStructTfsdkField(t *testing.T) {
+	t.Parallel()
+
+	assertCloseStatePanic(t, func() {
+		mustBePlainGoCloseState[struct {
+			KeyID types.String
+		}]()
+	}, "struct", "KeyID", "github.com/hashicorp/terraform-plugin-framework/types", "Close state must be plain Go types only")
 }
 
 func TestMustBePlainGoCloseState_rejectsTfsdkField(t *testing.T) {

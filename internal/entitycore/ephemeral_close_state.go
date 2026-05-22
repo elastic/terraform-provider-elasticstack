@@ -106,7 +106,10 @@ func rootCloseStateTypeName(t reflect.Type) string {
 	if t == nil {
 		return "unknown"
 	}
-	return t.Name()
+	if name := t.Name(); name != "" {
+		return name
+	}
+	return t.String()
 }
 
 func appendPath(prefix, suffix string) string {
