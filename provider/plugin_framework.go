@@ -53,7 +53,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/filter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/jobstate"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
-	apikey "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
+	apikeyephemeral "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey/ephemeral"
+	apikeyresource "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey/resource"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/rolemapping"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/systemuser"
@@ -101,6 +102,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/privatelocation"
 	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
 	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -118,7 +120,8 @@ const (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ fwprovider.Provider = &Provider{}
+	_ fwprovider.Provider                       = &Provider{}
+	_ fwprovider.ProviderWithEphemeralResources = &Provider{}
 )
 
 type Provider struct {
@@ -163,6 +166,7 @@ func (p *Provider) Configure(ctx context.Context, req fwprovider.ConfigureReques
 
 	res.DataSourceData = factory
 	res.ResourceData = factory
+	res.EphemeralResourceData = factory
 }
 
 func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSource {
@@ -185,6 +189,12 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 	return resources
 }
 
+func (p *Provider) EphemeralResources(_ context.Context) []func() ephemeral.EphemeralResource {
+	return []func() ephemeral.EphemeralResource{
+		apikeyephemeral.NewResource,
+	}
+}
+
 func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		agentconfiguration.NewAgentConfigurationResource,
@@ -199,7 +209,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		index.NewResource,
 		componenttemplate.NewResource,
 		monitor.NewResource,
-		apikey.NewResource,
+		apikeyresource.NewResource,
 		datastream.NewDataStreamResource,
 		datastreamlifecycle.NewResource,
 		ilm.NewResource,
