@@ -41,9 +41,9 @@ type model struct {
 
 var agentDownloadSourceMinVersion = version.Must(version.NewVersion("8.13.0"))
 
-func (m model) GetID() types.String               { return m.ID }
-func (m model) GetResourceID() types.String       { return m.SourceID }
-func (m model) GetKibanaConnection() types.List   { return m.KibanaConnection }
+func (m model) GetID() types.String             { return m.ID }
+func (m model) GetResourceID() types.String     { return m.SourceID }
+func (m model) GetKibanaConnection() types.List { return m.KibanaConnection }
 
 func (m model) GetSpaceID() types.String {
 	if m.SpaceIDs.IsNull() || m.SpaceIDs.IsUnknown() {
