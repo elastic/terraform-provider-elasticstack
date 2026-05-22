@@ -113,7 +113,11 @@ type testKibanaResourceModelUnscoped struct {
 
 func (testKibanaResourceModelUnscoped) IsUnscopedSpace() bool { return true }
 
-func testKibanaWriteFuncUnscoped(_ context.Context, _ *clients.KibanaScopedClient, req KibanaWriteRequest[testKibanaResourceModelUnscoped]) (KibanaWriteResult[testKibanaResourceModelUnscoped], diag.Diagnostics) {
+func testKibanaWriteFuncUnscoped(
+	_ context.Context,
+	_ *clients.KibanaScopedClient,
+	req KibanaWriteRequest[testKibanaResourceModelUnscoped],
+) (KibanaWriteResult[testKibanaResourceModelUnscoped], diag.Diagnostics) {
 	plan := req.Plan
 	plan.ID = types.StringValue(plan.GetResourceID().ValueString())
 	return KibanaWriteResult[testKibanaResourceModelUnscoped]{Model: plan}, nil
@@ -630,8 +634,8 @@ func TestNewKibanaResource_Create_nilCallbackPrecedesOtherPreludeErrors(t *testi
 		t.Parallel()
 		var nilCreate KibanaWriteFunc[testKibanaResourceModel]
 		opts := defaultTestKibanaResourceOptions()
-	opts.Create = nilCreate
-	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+		opts.Create = nilCreate
+		r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
 		r.client = nonNilTestFactory()
 
 		plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
@@ -651,8 +655,8 @@ func TestNewKibanaResource_Create_nilCallbackPrecedesOtherPreludeErrors(t *testi
 		t.Parallel()
 		var nilCreate KibanaWriteFunc[testKibanaResourceModel]
 		opts := defaultTestKibanaResourceOptions()
-	opts.Create = nilCreate
-	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+		opts.Create = nilCreate
+		r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
 		r.client = newTestConfiguredFactory(ctx, t)
 
 		objType := testKibanaResourceObjectType()
@@ -713,11 +717,11 @@ func TestNewKibanaResource_Read_happyPath_fallback(t *testing.T) {
 	var receivedResourceID, receivedSpaceID string
 	opts := defaultTestKibanaResourceOptions()
 	opts.Read = func(_ context.Context, _ *clients.KibanaScopedClient, resourceID string, spaceID string, model testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
-			readCalled = true
-			receivedResourceID = resourceID
-			receivedSpaceID = spaceID
-			return model, true, nil
-		}
+		readCalled = true
+		receivedResourceID = resourceID
+		receivedSpaceID = spaceID
+		return model, true, nil
+	}
 	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
 	r.client = factory
 
@@ -745,11 +749,11 @@ func TestNewKibanaResource_Read_multiSlashIDFallback(t *testing.T) {
 	var receivedResourceID, receivedSpaceID string
 	opts := defaultTestKibanaResourceOptions()
 	opts.Read = func(_ context.Context, _ *clients.KibanaScopedClient, resourceID string, spaceID string, model testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
-			readCalled = true
-			receivedResourceID = resourceID
-			receivedSpaceID = spaceID
-			return model, true, nil
-		}
+		readCalled = true
+		receivedResourceID = resourceID
+		receivedSpaceID = spaceID
+		return model, true, nil
+	}
 	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
 	r.client = factory
 
@@ -793,11 +797,11 @@ func TestNewKibanaResource_Read_compositeIDWinsOverDifferentResourceID(t *testin
 	var receivedResourceID, receivedSpaceID string
 	opts := defaultTestKibanaResourceOptions()
 	opts.Read = func(_ context.Context, _ *clients.KibanaScopedClient, resourceID string, spaceID string, model testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
-			readCalled = true
-			receivedResourceID = resourceID
-			receivedSpaceID = spaceID
-			return model, true, nil
-		}
+		readCalled = true
+		receivedResourceID = resourceID
+		receivedSpaceID = spaceID
+		return model, true, nil
+	}
 	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
 	r.client = factory
 
@@ -1305,8 +1309,8 @@ func TestNewKibanaResource_Update_nilCallbackPrecedesOtherPreludeErrors(t *testi
 		t.Parallel()
 		var nilUpdate KibanaWriteFunc[testKibanaResourceModel]
 		opts := defaultTestKibanaResourceOptions()
-	opts.Update = nilUpdate
-	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+		opts.Update = nilUpdate
+		r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
 		r.client = nonNilTestFactory()
 
 		plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
@@ -1323,8 +1327,8 @@ func TestNewKibanaResource_Update_nilCallbackPrecedesOtherPreludeErrors(t *testi
 		t.Parallel()
 		var nilUpdate KibanaWriteFunc[testKibanaResourceModel]
 		opts := defaultTestKibanaResourceOptions()
-	opts.Update = nilUpdate
-	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+		opts.Update = nilUpdate
+		r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
 		r.client = newTestConfiguredFactory(ctx, t)
 
 		objType := testKibanaResourceObjectType()
@@ -1357,11 +1361,11 @@ func TestNewKibanaResource_Delete_happyPath(t *testing.T) {
 	var receivedResourceID, receivedSpaceID string
 	opts := defaultTestKibanaResourceOptions()
 	opts.Delete = func(_ context.Context, _ *clients.KibanaScopedClient, resourceID string, spaceID string, _ testKibanaResourceModel) diag.Diagnostics {
-			deleteCalled = true
-			receivedResourceID = resourceID
-			receivedSpaceID = spaceID
-			return nil
-		}
+		deleteCalled = true
+		receivedResourceID = resourceID
+		receivedSpaceID = spaceID
+		return nil
+	}
 	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
 	r.client = factory
 
@@ -1385,11 +1389,11 @@ func TestNewKibanaResource_Delete_happyPath_fallback(t *testing.T) {
 	var receivedResourceID, receivedSpaceID string
 	opts := defaultTestKibanaResourceOptions()
 	opts.Delete = func(_ context.Context, _ *clients.KibanaScopedClient, resourceID string, spaceID string, _ testKibanaResourceModel) diag.Diagnostics {
-			deleteCalled = true
-			receivedResourceID = resourceID
-			receivedSpaceID = spaceID
-			return nil
-		}
+		deleteCalled = true
+		receivedResourceID = resourceID
+		receivedSpaceID = spaceID
+		return nil
+	}
 	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
 	r.client = factory
 
@@ -1416,9 +1420,9 @@ func TestNewKibanaResource_Delete_shortCircuitStateGetError(t *testing.T) {
 	deleteCalled := false
 	opts := defaultTestKibanaResourceOptions()
 	opts.Delete = func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) diag.Diagnostics {
-			deleteCalled = true
-			return nil
-		}
+		deleteCalled = true
+		return nil
+	}
 	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
 	r.client = factory
 
@@ -1455,9 +1459,9 @@ func TestNewKibanaResource_Delete_shortCircuitEmptyResourceID(t *testing.T) {
 	deleteCalled := false
 	opts := defaultTestKibanaResourceOptions()
 	opts.Delete = func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) diag.Diagnostics {
-			deleteCalled = true
-			return nil
-		}
+		deleteCalled = true
+		return nil
+	}
 	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
 	r.client = factory
 
@@ -1495,9 +1499,9 @@ func TestNewKibanaResource_Delete_shortCircuitClientError(t *testing.T) {
 	deleteCalled := false
 	opts := defaultTestKibanaResourceOptions()
 	opts.Delete = func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) diag.Diagnostics {
-			deleteCalled = true
-			return nil
-		}
+		deleteCalled = true
+		return nil
+	}
 	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
 	r.client = factory
 
@@ -1518,10 +1522,10 @@ func TestNewKibanaResource_Delete_appendsDeleteFuncDiagnostics(t *testing.T) {
 	factory := newTestConfiguredFactory(ctx, t)
 	opts := defaultTestKibanaResourceOptions()
 	opts.Delete = func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) diag.Diagnostics {
-			var diags diag.Diagnostics
-			diags.AddError("delete error", "something went wrong")
-			return diags
-		}
+		var diags diag.Diagnostics
+		diags.AddError("delete error", "something went wrong")
+		return diags
+	}
 	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
 	r.client = factory
 
@@ -1558,6 +1562,105 @@ func TestNewKibanaResource_Delete_nilDeleteCallback(t *testing.T) {
 // =============================================================================
 // Read-after-write and PostRead
 // =============================================================================
+
+func TestNewKibanaResource_Create_readAfterWriteUsesWrittenModelIdentity(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	var capturedResourceID, capturedSpaceID string
+	createFn := func(
+		_ context.Context,
+		_ *clients.KibanaScopedClient,
+		req KibanaWriteRequest[testKibanaResourceModel],
+	) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+		model := req.Plan
+		model.Name = types.StringValue("server-id")
+		model.SpaceID = types.StringValue("server-space")
+		return KibanaWriteResult[testKibanaResourceModel]{Model: model}, nil
+	}
+	readFn := func(
+		_ context.Context,
+		_ *clients.KibanaScopedClient,
+		resourceID string,
+		spaceID string,
+		model testKibanaResourceModel,
+	) (testKibanaResourceModel, bool, diag.Diagnostics) {
+		capturedResourceID = resourceID
+		capturedSpaceID = spaceID
+		model.Name = types.StringValue(model.Name.ValueString() + "-refreshed")
+		return model, true, nil
+	}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", KibanaResourceOptions[testKibanaResourceModel]{
+		Schema: getTestKibanaResourceSchema,
+		Read:   readFn,
+		Delete: testKibanaDeleteFunc,
+		Create: createFn,
+		Update: testKibanaWriteFuncFound,
+	})
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "plan-space"))
+	objType := testKibanaResourceObjectType()
+	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
+	resp := resource.CreateResponse{State: respState}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, "server-id", capturedResourceID)
+	require.Equal(t, "server-space", capturedSpaceID)
+	var result testKibanaResourceModel
+	require.False(t, resp.State.Get(ctx, &result).HasError())
+	require.Equal(t, "server-id-refreshed", result.Name.ValueString())
+}
+
+func TestNewKibanaResource_Update_readAfterWriteUsesWrittenModelIdentity(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	var capturedResourceID, capturedSpaceID string
+	updateFn := func(
+		_ context.Context,
+		_ *clients.KibanaScopedClient,
+		req KibanaWriteRequest[testKibanaResourceModel],
+	) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+		model := req.Plan
+		model.Name = types.StringValue("server-id")
+		model.SpaceID = types.StringValue("server-space")
+		return KibanaWriteResult[testKibanaResourceModel]{Model: model}, nil
+	}
+	readFn := func(
+		_ context.Context,
+		_ *clients.KibanaScopedClient,
+		resourceID string,
+		spaceID string,
+		model testKibanaResourceModel,
+	) (testKibanaResourceModel, bool, diag.Diagnostics) {
+		capturedResourceID = resourceID
+		capturedSpaceID = spaceID
+		model.Name = types.StringValue(model.Name.ValueString() + "-refreshed")
+		return model, true, nil
+	}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", KibanaResourceOptions[testKibanaResourceModel]{
+		Schema: getTestKibanaResourceSchema,
+		Read:   readFn,
+		Delete: testKibanaDeleteFunc,
+		Create: testKibanaWriteFuncFound,
+		Update: updateFn,
+	})
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "plan-space"))
+	prior := makeTestKibanaResourceState(ctx, t, "default/my-resource")
+	resp := resource.UpdateResponse{State: prior}
+	r.Update(ctx, resource.UpdateRequest{Plan: plan, State: prior, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, "server-id", capturedResourceID)
+	require.Equal(t, "server-space", capturedSpaceID)
+	var result testKibanaResourceModel
+	require.False(t, resp.State.Get(ctx, &result).HasError())
+	require.Equal(t, "server-id-refreshed", result.Name.ValueString())
+}
 
 func TestNewKibanaResource_Create_readAfterWriteHappyPath(t *testing.T) {
 	t.Parallel()
@@ -1618,18 +1721,28 @@ func TestNewKibanaResource_Create_notFoundAfterWrite(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
+	createFn := func(
+		_ context.Context,
+		_ *clients.KibanaScopedClient,
+		req KibanaWriteRequest[testKibanaResourceModel],
+	) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+		model := req.Plan
+		model.Name = types.StringValue("server-id")
+		model.SpaceID = types.StringValue("server-space")
+		return KibanaWriteResult[testKibanaResourceModel]{Model: model}, nil
+	}
 	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", KibanaResourceOptions[testKibanaResourceModel]{
 		Schema: getTestKibanaResourceSchema,
 		Read: func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
 			return testKibanaResourceModel{}, false, nil
 		},
 		Delete: testKibanaDeleteFunc,
-		Create: testKibanaWriteFuncFound,
+		Create: createFn,
 		Update: testKibanaWriteFuncFound,
 	})
 	r.client = factory
 
-	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "plan-space"))
 	objType := testKibanaResourceObjectType()
 	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
 	resp := resource.CreateResponse{State: respState}
@@ -1637,7 +1750,8 @@ func TestNewKibanaResource_Create_notFoundAfterWrite(t *testing.T) {
 
 	require.True(t, resp.Diagnostics.HasError())
 	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Resource not found")
-	require.Contains(t, resp.Diagnostics.Errors()[0].Detail(), `kibana_test_entity "my-resource" was not found after write`)
+	require.Contains(t, resp.Diagnostics.Errors()[0].Detail(), `kibana_test_entity "server-id" was not found after write`)
+	require.NotContains(t, resp.Diagnostics.Errors()[0].Detail(), "my-resource")
 	require.True(t, resp.State.Raw.IsNull(), "state should not be mutated when resource not found after create")
 }
 
@@ -1645,6 +1759,16 @@ func TestNewKibanaResource_Update_notFoundAfterWrite(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
+	updateFn := func(
+		_ context.Context,
+		_ *clients.KibanaScopedClient,
+		req KibanaWriteRequest[testKibanaResourceModel],
+	) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+		model := req.Plan
+		model.Name = types.StringValue("server-id")
+		model.SpaceID = types.StringValue("server-space")
+		return KibanaWriteResult[testKibanaResourceModel]{Model: model}, nil
+	}
 	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", KibanaResourceOptions[testKibanaResourceModel]{
 		Schema: getTestKibanaResourceSchema,
 		Read: func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
@@ -1652,17 +1776,18 @@ func TestNewKibanaResource_Update_notFoundAfterWrite(t *testing.T) {
 		},
 		Delete: testKibanaDeleteFunc,
 		Create: testKibanaWriteFuncFound,
-		Update: testKibanaWriteFuncFound,
+		Update: updateFn,
 	})
 	r.client = factory
 
-	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "plan-space"))
 	prior := makeTestKibanaResourceState(ctx, t, "default/my-resource")
 	resp := resource.UpdateResponse{State: prior}
 	r.Update(ctx, resource.UpdateRequest{Plan: plan, State: prior, Config: kibanaTestConfig(plan)}, &resp)
 
 	require.True(t, resp.Diagnostics.HasError())
 	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Resource not found")
+	require.Contains(t, resp.Diagnostics.Errors()[0].Detail(), `kibana_test_entity "server-id" was not found after write`)
 	require.False(t, resp.State.Get(ctx, &testKibanaResourceModel{}).HasError())
 }
 
@@ -2056,13 +2181,21 @@ func versionReqTestKibanaResourceOptions(createCalled, updateCalled *bool) Kiban
 		Delete: func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModelWithVersionReqs) diag.Diagnostics {
 			return nil
 		},
-		Create: func(_ context.Context, _ *clients.KibanaScopedClient, _ KibanaWriteRequest[testKibanaResourceModelWithVersionReqs]) (KibanaWriteResult[testKibanaResourceModelWithVersionReqs], diag.Diagnostics) {
+		Create: func(
+			_ context.Context,
+			_ *clients.KibanaScopedClient,
+			_ KibanaWriteRequest[testKibanaResourceModelWithVersionReqs],
+		) (KibanaWriteResult[testKibanaResourceModelWithVersionReqs], diag.Diagnostics) {
 			if createCalled != nil {
 				*createCalled = true
 			}
 			return KibanaWriteResult[testKibanaResourceModelWithVersionReqs]{}, nil
 		},
-		Update: func(_ context.Context, _ *clients.KibanaScopedClient, _ KibanaWriteRequest[testKibanaResourceModelWithVersionReqs]) (KibanaWriteResult[testKibanaResourceModelWithVersionReqs], diag.Diagnostics) {
+		Update: func(
+			_ context.Context,
+			_ *clients.KibanaScopedClient,
+			_ KibanaWriteRequest[testKibanaResourceModelWithVersionReqs],
+		) (KibanaWriteResult[testKibanaResourceModelWithVersionReqs], diag.Diagnostics) {
 			if updateCalled != nil {
 				*updateCalled = true
 			}

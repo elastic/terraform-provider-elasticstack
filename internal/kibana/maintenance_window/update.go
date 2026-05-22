@@ -48,10 +48,6 @@ func updateMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedCl
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	/*
-	* In create/update paths we typically follow the write operation with a read, and then set the state from the read.
-	* We want to avoid a dirty plan immediately after an apply.
-	 */
 	readMaintenanceWindowResponse, readDiags := kibanaoapi.GetMaintenanceWindow(ctx, oapiClient, req.SpaceID, req.WriteID)
 	diags.Append(readDiags...)
 	if diags.HasError() {
