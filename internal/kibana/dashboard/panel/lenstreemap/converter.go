@@ -37,7 +37,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.TreemapNoESQLTypeTreemap)
+	return string(kbapi.KibanaHTTPAPIsTreemapNoESQLTypeTreemap)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -90,7 +90,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("treemap_config", attrs)
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
 	var prior *models.TreemapConfigModel
 	if blocks != nil && blocks.TreemapConfig != nil {
 		cpy := *blocks.TreemapConfig
@@ -103,19 +103,19 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 	}
 	blocks.TreemapConfig = &models.TreemapConfigModel{}
 
-	if noESQL, err := attrs.AsTreemapNoESQL(); err == nil && !isTreemapNoESQLCandidateActuallyESQL(noESQL) {
+	if noESQL, err := attrs.AsKibanaHTTPAPIsTreemapNoESQL(); err == nil && !isTreemapNoESQLCandidateActuallyESQL(noESQL) {
 		return treemapConfigFromAPINoESQL(ctx, blocks.TreemapConfig, resolver, prior, noESQL)
 	}
 
-	esql, err := attrs.AsTreemapESQL()
+	esql, err := attrs.AsKibanaHTTPAPIsTreemapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 	return treemapConfigFromAPIESQL(ctx, blocks.TreemapConfig, resolver, prior, esql)
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags

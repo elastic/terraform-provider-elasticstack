@@ -247,8 +247,7 @@ func xyLegendSchemaAttrs() map[string]schema.Attribute {
 }
 
 // getXYChartConfigAttributes returns attributes for an `xy_chart_config` block.
-// When includePresentation is true, optional chart-root presentation fields (REQ-037) are merged in for `type = vis` panels only;
-// lens-dashboard-app `by_value` mirrors pass false.
+// When includePresentation is true, optional chart-root presentation fields (REQ-037) are merged in for `type = vis` panels only.
 func xyChartConfigSchemaAttrs(includePresentation bool) map[string]schema.Attribute {
 	attrs := map[string]schema.Attribute{
 		"title": schema.StringAttribute{

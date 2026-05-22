@@ -31,25 +31,25 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func isHeatmapNoESQLCandidateActuallyESQL(apiChart kbapi.HeatmapNoESQL) bool {
+func isHeatmapNoESQLCandidateActuallyESQL(apiChart kbapi.KibanaHTTPAPIsHeatmapNoESQL) bool {
 	body, err := apiChart.DataSource.MarshalJSON()
 	return lenscommon.LensDataSourceIsESQLOrTable(body, err)
 }
 
-func inferHeatmapXAxisScale(xAxisJSON string) kbapi.HeatmapXAxisScale {
+func inferHeatmapXAxisScale(xAxisJSON string) kbapi.KibanaHTTPAPIsHeatmapXAxisScale {
 	var axis map[string]any
 	if err := json.Unmarshal([]byte(xAxisJSON), &axis); err != nil {
-		return kbapi.HeatmapXAxisScaleOrdinal
+		return kbapi.KibanaHTTPAPIsHeatmapXAxisScaleOrdinal
 	}
 
 	operation, _ := axis["operation"].(string)
 	switch operation {
 	case "date_histogram":
-		return kbapi.HeatmapXAxisScaleTemporal
+		return kbapi.KibanaHTTPAPIsHeatmapXAxisScaleTemporal
 	case "histogram":
-		return kbapi.HeatmapXAxisScaleLinear
+		return kbapi.KibanaHTTPAPIsHeatmapXAxisScaleLinear
 	default:
-		return kbapi.HeatmapXAxisScaleOrdinal
+		return kbapi.KibanaHTTPAPIsHeatmapXAxisScaleOrdinal
 	}
 }
 
@@ -59,10 +59,10 @@ func heatmapConfigPopulateCommonFields(m *models.HeatmapConfigModel,
 	sampling *float32,
 	datasetBytes []byte,
 	datasetErr error,
-	filters []kbapi.LensPanelFilters_Item,
-	axis kbapi.HeatmapAxes,
-	styling kbapi.HeatmapStyling,
-	legend kbapi.HeatmapLegend,
+	filters []kbapi.KibanaHTTPAPIsLensPanelFilters_Item,
+	axis kbapi.KibanaHTTPAPIsHeatmapAxes,
+	styling kbapi.KibanaHTTPAPIsHeatmapStyling,
+	legend kbapi.KibanaHTTPAPIsHeatmapLegend,
 	prior *models.HeatmapConfigModel,
 	diags *diag.Diagnostics,
 ) bool {
@@ -94,7 +94,13 @@ func heatmapConfigPopulateCommonFields(m *models.HeatmapConfigModel,
 	return !diags.HasError()
 }
 
-func heatmapConfigFromAPINoESQL(ctx context.Context, m *models.HeatmapConfigModel, resolver lenscommon.Resolver, prior *models.HeatmapConfigModel, api kbapi.HeatmapNoESQL) diag.Diagnostics {
+func heatmapConfigFromAPINoESQL(
+	ctx context.Context,
+	m *models.HeatmapConfigModel,
+	resolver lenscommon.Resolver,
+	prior *models.HeatmapConfigModel,
+	api kbapi.KibanaHTTPAPIsHeatmapNoESQL,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -151,7 +157,7 @@ func heatmapConfigFromAPINoESQL(ctx context.Context, m *models.HeatmapConfigMode
 	return diags
 }
 
-func heatmapConfigFromAPIESQL(ctx context.Context, m *models.HeatmapConfigModel, resolver lenscommon.Resolver, prior *models.HeatmapConfigModel, api kbapi.HeatmapESQL) diag.Diagnostics {
+func heatmapConfigFromAPIESQL(ctx context.Context, m *models.HeatmapConfigModel, resolver lenscommon.Resolver, prior *models.HeatmapConfigModel, api kbapi.KibanaHTTPAPIsHeatmapESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -205,9 +211,9 @@ func heatmapConfigFromAPIESQL(ctx context.Context, m *models.HeatmapConfigModel,
 	return diags
 }
 
-func heatmapConfigToAPI(m *models.HeatmapConfigModel, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func heatmapConfigToAPI(m *models.HeatmapConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	var attrs lenscommon.VisByValueConfig0
 
 	if m == nil {
 		return attrs, diags
@@ -219,7 +225,7 @@ func heatmapConfigToAPI(m *models.HeatmapConfigModel, resolver lenscommon.Resolv
 		if diags.HasError() {
 			return attrs, diags
 		}
-		if err := attrs.FromHeatmapESQL(esql); err != nil {
+		if err := attrs.FromKibanaHTTPAPIsHeatmapESQL(esql); err != nil {
 			diags.AddError("Failed to create heatmap ESQL schema", err.Error())
 		}
 		return attrs, diags
@@ -230,7 +236,7 @@ func heatmapConfigToAPI(m *models.HeatmapConfigModel, resolver lenscommon.Resolv
 	if diags.HasError() {
 		return attrs, diags
 	}
-	if err := attrs.FromHeatmapNoESQL(noESQL); err != nil {
+	if err := attrs.FromKibanaHTTPAPIsHeatmapNoESQL(noESQL); err != nil {
 		diags.AddError("Failed to create heatmap schema", err.Error())
 	}
 
@@ -247,10 +253,10 @@ func heatmapConfigUsesESQL(m *models.HeatmapConfigModel) bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel, resolver lenscommon.Resolver) (kbapi.HeatmapNoESQL, diag.Diagnostics) {
+func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsHeatmapNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.HeatmapNoESQL{
-		Type: kbapi.HeatmapNoESQLTypeHeatmap,
+	api := kbapi.KibanaHTTPAPIsHeatmapNoESQL{
+		Type: kbapi.KibanaHTTPAPIsHeatmapNoESQLTypeHeatmap,
 	}
 
 	if typeutils.IsKnown(m.Title) {
@@ -294,7 +300,7 @@ func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel, resolver lenscommon.
 	}
 
 	if !m.YAxisJSON.IsNull() {
-		var yAxis kbapi.HeatmapNoESQL_Y
+		var yAxis kbapi.KibanaHTTPAPIsHeatmapNoESQL_Y
 		if err := json.Unmarshal([]byte(m.YAxisJSON.ValueString()), &yAxis); err != nil {
 			diags.AddError("Failed to unmarshal y_axis_json", err.Error())
 			return api, diags
@@ -352,7 +358,7 @@ func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel, resolver lenscommon.
 		api.References = writes.References
 	}
 	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.HeatmapNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsHeatmapNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
 		diags.Append(ddDiags...)
 		if !ddDiags.HasError() {
 			api.Drilldowns = &items
@@ -362,10 +368,10 @@ func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel, resolver lenscommon.
 	return api, diags
 }
 
-func heatmapConfigToAPIESQL(m *models.HeatmapConfigModel, resolver lenscommon.Resolver) (kbapi.HeatmapESQL, diag.Diagnostics) {
+func heatmapConfigToAPIESQL(m *models.HeatmapConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsHeatmapESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.HeatmapESQL{
-		Type: kbapi.HeatmapESQLTypeHeatmap,
+	api := kbapi.KibanaHTTPAPIsHeatmapESQL{
+		Type: kbapi.KibanaHTTPAPIsHeatmapESQLTypeHeatmap,
 	}
 
 	if typeutils.IsKnown(m.Title) {
@@ -410,9 +416,9 @@ func heatmapConfigToAPIESQL(m *models.HeatmapConfigModel, resolver lenscommon.Re
 
 	if !m.YAxisJSON.IsNull() {
 		yAxis := new(struct {
-			Column string           `json:"column"`
-			Format kbapi.FormatType `json:"format"`
-			Label  *string          `json:"label,omitempty"`
+			Column string                         `json:"column"`
+			Format kbapi.KibanaHTTPAPIsFormatType `json:"format"`
+			Label  *string                        `json:"label,omitempty"`
 		})
 		if err := json.Unmarshal([]byte(m.YAxisJSON.ValueString()), yAxis); err != nil {
 			diags.AddError("Failed to unmarshal y_axis_json", err.Error())
@@ -465,7 +471,7 @@ func heatmapConfigToAPIESQL(m *models.HeatmapConfigModel, resolver lenscommon.Re
 		api.References = writes.References
 	}
 	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.HeatmapESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsHeatmapESQL_Drilldowns_Item](writes.DrilldownsRaw)
 		diags.Append(ddDiags...)
 		if !ddDiags.HasError() {
 			api.Drilldowns = &items
@@ -475,7 +481,7 @@ func heatmapConfigToAPIESQL(m *models.HeatmapConfigModel, resolver lenscommon.Re
 	return api, diags
 }
 
-func heatmapAxesFromAPI(m *models.HeatmapAxesModel, api kbapi.HeatmapAxes, prior *models.HeatmapAxesModel) diag.Diagnostics {
+func heatmapAxesFromAPI(m *models.HeatmapAxesModel, api kbapi.KibanaHTTPAPIsHeatmapAxes, prior *models.HeatmapAxesModel) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	m.X = &models.HeatmapXAxisModel{}
@@ -495,9 +501,9 @@ func heatmapAxesFromAPI(m *models.HeatmapAxesModel, api kbapi.HeatmapAxes, prior
 	return diags
 }
 
-func heatmapAxesToAPI(m *models.HeatmapAxesModel) (kbapi.HeatmapAxes, diag.Diagnostics) {
+func heatmapAxesToAPI(m *models.HeatmapAxesModel) (kbapi.KibanaHTTPAPIsHeatmapAxes, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	axis := kbapi.HeatmapAxes{}
+	axis := kbapi.KibanaHTTPAPIsHeatmapAxes{}
 
 	if m == nil {
 		diags.AddError("Missing axis", "heatmap_config.axis must be provided")
@@ -514,7 +520,7 @@ func heatmapAxesToAPI(m *models.HeatmapAxesModel) (kbapi.HeatmapAxes, diag.Diagn
 	return axis, diags
 }
 
-func heatmapXAxisFromAPI(m *models.HeatmapXAxisModel, api kbapi.HeatmapXAxis, _ *models.HeatmapXAxisModel) {
+func heatmapXAxisFromAPI(m *models.HeatmapXAxisModel, api kbapi.KibanaHTTPAPIsHeatmapXAxis, _ *models.HeatmapXAxisModel) {
 	if api.Labels != nil {
 		m.Labels = &models.HeatmapXAxisLabelsModel{}
 		heatmapXAxisLabelsFromAPI(m.Labels, api.Labels)
@@ -525,8 +531,8 @@ func heatmapXAxisFromAPI(m *models.HeatmapXAxisModel, api kbapi.HeatmapXAxis, _ 
 	}
 }
 
-func heatmapXAxisToAPI(m *models.HeatmapXAxisModel) kbapi.HeatmapXAxis {
-	axis := kbapi.HeatmapXAxis{}
+func heatmapXAxisToAPI(m *models.HeatmapXAxisModel) kbapi.KibanaHTTPAPIsHeatmapXAxis {
+	axis := kbapi.KibanaHTTPAPIsHeatmapXAxis{}
 	if m == nil {
 		return axis
 	}
@@ -540,8 +546,8 @@ func heatmapXAxisToAPI(m *models.HeatmapXAxisModel) kbapi.HeatmapXAxis {
 }
 
 func heatmapXAxisLabelsFromAPI(m *models.HeatmapXAxisLabelsModel, api *struct {
-	Orientation kbapi.VisApiOrientation `json:"orientation"`
-	Visible     *bool                   `json:"visible,omitempty"`
+	Orientation kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation"`
+	Visible     *bool                                 `json:"visible,omitempty"`
 }) {
 	if api == nil {
 		return
@@ -551,18 +557,18 @@ func heatmapXAxisLabelsFromAPI(m *models.HeatmapXAxisLabelsModel, api *struct {
 }
 
 func heatmapXAxisLabelsToAPI(m *models.HeatmapXAxisLabelsModel) *struct {
-	Orientation kbapi.VisApiOrientation `json:"orientation"`
-	Visible     *bool                   `json:"visible,omitempty"`
+	Orientation kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation"`
+	Visible     *bool                                 `json:"visible,omitempty"`
 } {
 	if m == nil {
 		return nil
 	}
 	labels := &struct {
-		Orientation kbapi.VisApiOrientation `json:"orientation"`
-		Visible     *bool                   `json:"visible,omitempty"`
+		Orientation kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation"`
+		Visible     *bool                                 `json:"visible,omitempty"`
 	}{}
 	if typeutils.IsKnown(m.Orientation) {
-		labels.Orientation = kbapi.VisApiOrientation(m.Orientation.ValueString())
+		labels.Orientation = kbapi.KibanaHTTPAPIsVisApiOrientation(m.Orientation.ValueString())
 	}
 	if typeutils.IsKnown(m.Visible) {
 		labels.Visible = new(m.Visible.ValueBool())
@@ -570,7 +576,7 @@ func heatmapXAxisLabelsToAPI(m *models.HeatmapXAxisLabelsModel) *struct {
 	return labels
 }
 
-func heatmapYAxisFromAPI(m *models.HeatmapYAxisModel, api kbapi.HeatmapYAxis, prior *models.HeatmapYAxisModel) {
+func heatmapYAxisFromAPI(m *models.HeatmapYAxisModel, api kbapi.KibanaHTTPAPIsHeatmapYAxis, prior *models.HeatmapYAxisModel) {
 	if api.Labels != nil {
 		m.Labels = &models.HeatmapYAxisLabelsModel{}
 		heatmapYAxisLabelsFromAPI(m.Labels, api.Labels)
@@ -589,8 +595,8 @@ func heatmapYAxisFromAPI(m *models.HeatmapYAxisModel, api kbapi.HeatmapYAxis, pr
 	}
 }
 
-func heatmapYAxisToAPI(m *models.HeatmapYAxisModel) kbapi.HeatmapYAxis {
-	axis := kbapi.HeatmapYAxis{}
+func heatmapYAxisToAPI(m *models.HeatmapYAxisModel) kbapi.KibanaHTTPAPIsHeatmapYAxis {
+	axis := kbapi.KibanaHTTPAPIsHeatmapYAxis{}
 	if m == nil {
 		return axis
 	}
@@ -627,15 +633,15 @@ func heatmapYAxisLabelsToAPI(m *models.HeatmapYAxisLabelsModel) *struct {
 	return labels
 }
 
-func heatmapCellsFromAPI(m *models.HeatmapCellsModel, api kbapi.HeatmapCells) {
+func heatmapCellsFromAPI(m *models.HeatmapCellsModel, api kbapi.KibanaHTTPAPIsHeatmapCells) {
 	if api.Labels != nil {
 		m.Labels = &models.HeatmapCellsLabelsModel{}
 		heatmapCellsLabelsFromAPI(m.Labels, api.Labels)
 	}
 }
 
-func heatmapCellsToAPI(m *models.HeatmapCellsModel) kbapi.HeatmapCells {
-	cells := kbapi.HeatmapCells{}
+func heatmapCellsToAPI(m *models.HeatmapCellsModel) kbapi.KibanaHTTPAPIsHeatmapCells {
+	cells := kbapi.KibanaHTTPAPIsHeatmapCells{}
 	if m == nil {
 		return cells
 	}
@@ -645,13 +651,13 @@ func heatmapCellsToAPI(m *models.HeatmapCellsModel) kbapi.HeatmapCells {
 	return cells
 }
 
-func heatmapStylingFromAPI(m *models.HeatmapStylingModel, api kbapi.HeatmapStyling) {
+func heatmapStylingFromAPI(m *models.HeatmapStylingModel, api kbapi.KibanaHTTPAPIsHeatmapStyling) {
 	m.Cells = &models.HeatmapCellsModel{}
 	heatmapCellsFromAPI(m.Cells, api.Cells)
 }
 
-func heatmapStylingToAPI(m *models.HeatmapStylingModel) kbapi.HeatmapStyling {
-	styling := kbapi.HeatmapStyling{}
+func heatmapStylingToAPI(m *models.HeatmapStylingModel) kbapi.KibanaHTTPAPIsHeatmapStyling {
+	styling := kbapi.KibanaHTTPAPIsHeatmapStyling{}
 	if m == nil || m.Cells == nil {
 		return styling
 	}
@@ -683,7 +689,7 @@ func heatmapCellsLabelsToAPI(m *models.HeatmapCellsLabelsModel) *struct {
 	return labels
 }
 
-func heatmapLegendFromAPI(m *models.HeatmapLegendModel, api kbapi.HeatmapLegend) {
+func heatmapLegendFromAPI(m *models.HeatmapLegendModel, api kbapi.KibanaHTTPAPIsHeatmapLegend) {
 	if api.Visibility != nil {
 		m.Visibility = types.StringValue(string(*api.Visibility))
 	} else {
@@ -698,9 +704,9 @@ func heatmapLegendFromAPI(m *models.HeatmapLegendModel, api kbapi.HeatmapLegend)
 	}
 }
 
-func heatmapLegendToAPI(m *models.HeatmapLegendModel) (kbapi.HeatmapLegend, diag.Diagnostics) {
+func heatmapLegendToAPI(m *models.HeatmapLegendModel) (kbapi.KibanaHTTPAPIsHeatmapLegend, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	legend := kbapi.HeatmapLegend{}
+	legend := kbapi.KibanaHTTPAPIsHeatmapLegend{}
 
 	if m == nil {
 		diags.AddError("Missing legend", "heatmap_config.legend must be provided")
@@ -708,11 +714,11 @@ func heatmapLegendToAPI(m *models.HeatmapLegendModel) (kbapi.HeatmapLegend, diag
 	}
 
 	if typeutils.IsKnown(m.Visibility) {
-		visibility := kbapi.HeatmapLegendVisibility(m.Visibility.ValueString())
+		visibility := kbapi.KibanaHTTPAPIsHeatmapLegendVisibility(m.Visibility.ValueString())
 		legend.Visibility = &visibility
 	}
 	if typeutils.IsKnown(m.Size) {
-		legend.Size = kbapi.LegendSize(m.Size.ValueString())
+		legend.Size = kbapi.KibanaHTTPAPIsLegendSize(m.Size.ValueString())
 	} else {
 		diags.AddError("Missing legend size", "heatmap_config.legend.size must be provided")
 	}

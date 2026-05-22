@@ -28,7 +28,7 @@ import (
 
 var MinVersionFleetAgentDownloadSource = version.Must(version.NewVersion("8.13.0"))
 
-func (r *Resource) assertVersionSupported(ctx context.Context, client clients.MinVersionEnforceable) diag.Diagnostics {
+func assertVersionSupported(ctx context.Context, client clients.MinVersionEnforceable) diag.Diagnostics {
 	supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionFleetAgentDownloadSource)
 	if versionDiags.HasError() {
 		return versionDiags

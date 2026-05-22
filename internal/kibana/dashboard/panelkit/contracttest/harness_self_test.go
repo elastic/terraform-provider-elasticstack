@@ -52,7 +52,7 @@ func (synthStatsHandler) SchemaAttribute() schema.Attribute {
 }
 
 func (synthStatsHandler) FromAPI(_ context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	apiPanel, err := item.AsKbnDashboardPanelTypeSyntheticsStatsOverview()
+	apiPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview()
 	if err != nil {
 		var d diag.Diagnostics
 		d.AddError("panel union", err.Error())
@@ -90,7 +90,7 @@ func (synthStatsHandler) ToAPI(pm models.PanelModel, dashboard *models.Dashboard
 	_ = dashboard
 	grid := panelkit.GridToAPI(pm.Grid)
 	id := panelkit.IDToAPI(pm.ID)
-	sso := kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview{
+	sso := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview{
 		Grid: grid,
 		Id:   id,
 		Type: kbapi.SyntheticsStatsOverview,
@@ -101,7 +101,7 @@ func (synthStatsHandler) ToAPI(pm models.PanelModel, dashboard *models.Dashboard
 	}
 
 	var out kbapi.DashboardPanelItem
-	if err := out.FromKbnDashboardPanelTypeSyntheticsStatsOverview(sso); err != nil {
+	if err := out.FromKibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview(sso); err != nil {
 		var d diag.Diagnostics
 		d.AddError("ToAPI", err.Error())
 		return kbapi.DashboardPanelItem{}, d
@@ -137,7 +137,7 @@ func sloBurnRateHarnessSchema() schema.Attribute {
 	}
 }
 
-func populateSLOBurnHarness(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfig kbapi.SloBurnRateEmbeddable) {
+func populateSLOBurnHarness(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfig kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable) {
 	if tfPanel == nil {
 		cfg := &models.SloBurnRateConfigModel{
 			SloID:    types.StringValue(apiConfig.SloId),
@@ -168,10 +168,10 @@ func populateSLOBurnHarness(pm *models.PanelModel, tfPanel *models.PanelModel, a
 	}
 }
 
-func buildSLOBurnHarnessPanel(pm models.PanelModel) kbapi.KbnDashboardPanelTypeSloBurnRate {
+func buildSLOBurnHarnessPanel(pm models.PanelModel) kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate {
 	grid := panelkit.GridToAPI(pm.Grid)
 	id := panelkit.IDToAPI(pm.ID)
-	panel := kbapi.KbnDashboardPanelTypeSloBurnRate{
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate{
 		Grid: grid,
 		Id:   id,
 		Type: kbapi.SloBurnRate,
@@ -180,7 +180,7 @@ func buildSLOBurnHarnessPanel(pm models.PanelModel) kbapi.KbnDashboardPanelTypeS
 	if cfg == nil {
 		return panel
 	}
-	embed := kbapi.SloBurnRateEmbeddable{
+	embed := kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable{
 		SloId:    cfg.SloID.ValueString(),
 		Duration: cfg.Duration.ValueString(),
 	}
@@ -200,8 +200,12 @@ func (sloBurnHarnessBase) PanelType() string { return "slo_burn_rate" }
 
 func (sloBurnHarnessBase) SchemaAttribute() schema.Attribute { return sloBurnRateHarnessSchema() }
 
-func (sloBurnHarnessBase) sloFromAPI(pm, prior *models.PanelModel, item kbapi.DashboardPanelItem, mut func(*models.SloBurnRateConfigModel, kbapi.SloBurnRateEmbeddable)) diag.Diagnostics {
-	apiPanel, err := item.AsKbnDashboardPanelTypeSloBurnRate()
+func (sloBurnHarnessBase) sloFromAPI(
+	pm, prior *models.PanelModel,
+	item kbapi.DashboardPanelItem,
+	mut func(*models.SloBurnRateConfigModel, kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable),
+) diag.Diagnostics {
+	apiPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate()
 	if err != nil {
 		var d diag.Diagnostics
 		d.AddError("panel union", err.Error())
@@ -221,7 +225,7 @@ func (sloBurnHarnessBase) sloFromAPI(pm, prior *models.PanelModel, item kbapi.Da
 func (sloBurnHarnessBase) sloToAPI(pm models.PanelModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	panel := buildSLOBurnHarnessPanel(pm)
 	var out kbapi.DashboardPanelItem
-	if err := out.FromKbnDashboardPanelTypeSloBurnRate(panel); err != nil {
+	if err := out.FromKibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate(panel); err != nil {
 		var d diag.Diagnostics
 		d.AddError("ToAPI", err.Error())
 		return kbapi.DashboardPanelItem{}, d
@@ -253,7 +257,7 @@ func (sloBurnHarnessBase) PinnedHandler() iface.PinnedHandler { return nil }
 type brokenSLOBurnReflect struct{ sloBurnHarnessBase }
 
 func (brokenSLOBurnReflect) FromAPI(_ context.Context, pm *models.PanelModel, _ *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	apiPanel, err := item.AsKbnDashboardPanelTypeSloBurnRate()
+	apiPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate()
 	if err != nil {
 		var d diag.Diagnostics
 		d.AddError("panel union", err.Error())
@@ -311,7 +315,7 @@ func (brokenSLOBurnSchema) ValidatePanelConfig(_ context.Context, _ map[string]a
 type brokenSLOBurnNullPreserve struct{ sloBurnHarnessBase }
 
 func (h brokenSLOBurnNullPreserve) FromAPI(_ context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	return h.sloFromAPI(pm, prior, item, func(cfg *models.SloBurnRateConfigModel, api kbapi.SloBurnRateEmbeddable) {
+	return h.sloFromAPI(pm, prior, item, func(cfg *models.SloBurnRateConfigModel, api kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable) {
 		cfg.Title = types.StringPointerValue(api.Title)
 	})
 }

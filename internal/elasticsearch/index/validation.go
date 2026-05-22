@@ -25,9 +25,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
-type StringIsJSONObject struct{}
+type StringIsJSONObject struct {
+	NonEmpty bool
+}
 
 func (s StringIsJSONObject) Description(_ context.Context) string {
+	if s.NonEmpty {
+		return "Ensure that the attribute contains a non-empty JSON object, and not a simple value"
+	}
 	return "Ensure that the attribute contains a valid JSON object, and not a simple value"
 }
 
@@ -48,5 +53,22 @@ func (s StringIsJSONObject) ValidateString(_ context.Context, req validator.Stri
 			fmt.Sprintf("This value must be an object, not a simple type or array. Check the documentation for the expected format. %s", err),
 		)
 		return
+	}
+
+	if m == nil {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"expected value to be a JSON object",
+			"This value must be an object, not a simple type or array. Check the documentation for the expected format.",
+		)
+		return
+	}
+
+	if s.NonEmpty && len(m) == 0 {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"expected value to be a non-empty JSON object",
+			"This value must be a JSON object containing at least one key.",
+		)
 	}
 }

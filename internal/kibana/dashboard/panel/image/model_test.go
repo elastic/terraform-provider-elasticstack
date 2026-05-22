@@ -52,16 +52,16 @@ func Test_imagePanelToAPI_fileSrc(t *testing.T) {
 	item, diags := Handler{}.ToAPI(pm, nil)
 	require.False(t, diags.HasError())
 
-	img, err := item.AsKbnDashboardPanelTypeImage()
+	img, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeImage()
 	require.NoError(t, err)
-	src0, err := img.Config.ImageConfig.Src.AsKbnDashboardPanelTypeImageConfigImageConfigSrc0()
+	src0, err := img.Config.ImageConfig.Src.AsKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc0()
 	require.NoError(t, err)
 	assert.Equal(t, kbapi.File, src0.Type)
 	assert.Equal(t, "file-abc", src0.FileId)
 	require.NotNil(t, img.Config.ImageConfig.AltText)
 	assert.Equal(t, "diagram", *img.Config.ImageConfig.AltText)
 	require.NotNil(t, img.Config.ImageConfig.ObjectFit)
-	assert.Equal(t, kbapi.KbnDashboardPanelTypeImageConfigImageConfigObjectFitCover, *img.Config.ImageConfig.ObjectFit)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigObjectFitCover, *img.Config.ImageConfig.ObjectFit)
 }
 
 func Test_imagePanelToAPI_urlSrc(t *testing.T) {
@@ -73,9 +73,9 @@ func Test_imagePanelToAPI_urlSrc(t *testing.T) {
 	item, diags := Handler{}.ToAPI(pm, nil)
 	require.False(t, diags.HasError())
 
-	img, err := item.AsKbnDashboardPanelTypeImage()
+	img, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeImage()
 	require.NoError(t, err)
-	src1, err := img.Config.ImageConfig.Src.AsKbnDashboardPanelTypeImageConfigImageConfigSrc1()
+	src1, err := img.Config.ImageConfig.Src.AsKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc1()
 	require.NoError(t, err)
 	assert.Equal(t, kbapi.Url, src1.Type)
 	assert.Equal(t, "https://example.com/x.png", src1.Url)
@@ -109,20 +109,20 @@ func Test_imagePanelToAPI_drilldowns(t *testing.T) {
 	item, diags := Handler{}.ToAPI(pm, nil)
 	require.False(t, diags.HasError())
 
-	img, err := item.AsKbnDashboardPanelTypeImage()
+	img, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeImage()
 	require.NoError(t, err)
 	require.NotNil(t, img.Config.Drilldowns)
 	require.Len(t, *img.Config.Drilldowns, 2)
 
-	dd0, err := (*img.Config.Drilldowns)[0].AsKbnDashboardPanelTypeImageConfigDrilldowns0()
+	dd0, err := (*img.Config.Drilldowns)[0].AsKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0()
 	require.NoError(t, err)
 	assert.Equal(t, "dash-1", dd0.DashboardId)
 	require.NotNil(t, dd0.UseFilters)
 	assert.True(t, *dd0.UseFilters)
 
-	dd1, err := (*img.Config.Drilldowns)[1].AsKbnDashboardPanelTypeImageConfigDrilldowns1()
+	dd1, err := (*img.Config.Drilldowns)[1].AsKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1()
 	require.NoError(t, err)
-	assert.Equal(t, kbapi.KbnDashboardPanelTypeImageConfigDrilldowns1TriggerOnOpenPanelMenu, dd1.Trigger)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1TriggerOnOpenPanelMenu, dd1.Trigger)
 	require.NotNil(t, dd1.EncodeUrl)
 	assert.False(t, *dd1.EncodeUrl)
 }
@@ -132,39 +132,39 @@ func Test_populateImagePanelFromAPI_nullPreservation(t *testing.T) {
 	tr := false
 	tab := false
 	encode := true
-	objFit := kbapi.KbnDashboardPanelTypeImageConfigImageConfigObjectFitContain
+	objFit := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigObjectFitContain
 
-	apiPanel := kbapi.KbnDashboardPanelTypeImage{}
+	apiPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage{}
 	title := "t"
 	apiPanel.Config.Title = &title
 	apiPanel.Config.ImageConfig.ObjectFit = &objFit
-	src := kbapi.KbnDashboardPanelTypeImageConfigImageConfigSrc0{Type: kbapi.File, FileId: "img-1"}
-	require.NoError(t, apiPanel.Config.ImageConfig.Src.FromKbnDashboardPanelTypeImageConfigImageConfigSrc0(src))
+	src := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc0{Type: kbapi.File, FileId: "img-1"}
+	require.NoError(t, apiPanel.Config.ImageConfig.Src.FromKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc0(src))
 
-	d0 := kbapi.KbnDashboardPanelTypeImageConfigDrilldowns0{
+	d0 := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0{
 		DashboardId:  "d1",
 		Label:        "l",
-		Trigger:      kbapi.KbnDashboardPanelTypeImageConfigDrilldowns0TriggerOnClickImage,
-		Type:         kbapi.KbnDashboardPanelTypeImageConfigDrilldowns0TypeDashboardDrilldown,
+		Trigger:      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0TriggerOnClickImage,
+		Type:         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0TypeDashboardDrilldown,
 		UseFilters:   &useF,
 		UseTimeRange: &tr,
 		OpenInNewTab: &tab,
 	}
-	var dashItem kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item
-	require.NoError(t, dashItem.FromKbnDashboardPanelTypeImageConfigDrilldowns0(d0))
+	var dashItem kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item
+	require.NoError(t, dashItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0(d0))
 
-	d1 := kbapi.KbnDashboardPanelTypeImageConfigDrilldowns1{
+	d1 := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1{
 		Url:          "https://example.com",
 		Label:        "u",
-		Trigger:      kbapi.KbnDashboardPanelTypeImageConfigDrilldowns1TriggerOnClickImage,
-		Type:         kbapi.KbnDashboardPanelTypeImageConfigDrilldowns1TypeUrlDrilldown,
+		Trigger:      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1TriggerOnClickImage,
+		Type:         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1TypeUrlDrilldown,
 		EncodeUrl:    &encode,
 		OpenInNewTab: &tab,
 	}
-	var urlItem kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item
-	require.NoError(t, urlItem.FromKbnDashboardPanelTypeImageConfigDrilldowns1(d1))
+	var urlItem kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item
+	require.NoError(t, urlItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1(d1))
 
-	items := []kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item{dashItem, urlItem}
+	items := []kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item{dashItem, urlItem}
 	apiPanel.Config.Drilldowns = &items
 
 	prior := models.PanelModel{
@@ -219,37 +219,37 @@ func Test_populateImagePanelFromAPI_import_drilldownDefaultsAndObjectFitNull(t *
 	tr := false
 	tab := false
 	encode := true
-	objFit := kbapi.KbnDashboardPanelTypeImageConfigImageConfigObjectFitContain
+	objFit := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigObjectFitContain
 
-	apiPanel := kbapi.KbnDashboardPanelTypeImage{}
+	apiPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage{}
 	apiPanel.Config.ImageConfig.ObjectFit = &objFit
-	src := kbapi.KbnDashboardPanelTypeImageConfigImageConfigSrc0{Type: kbapi.File, FileId: "img-1"}
-	require.NoError(t, apiPanel.Config.ImageConfig.Src.FromKbnDashboardPanelTypeImageConfigImageConfigSrc0(src))
+	src := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc0{Type: kbapi.File, FileId: "img-1"}
+	require.NoError(t, apiPanel.Config.ImageConfig.Src.FromKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc0(src))
 
-	d0 := kbapi.KbnDashboardPanelTypeImageConfigDrilldowns0{
+	d0 := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0{
 		DashboardId:  "d1",
 		Label:        "l",
-		Trigger:      kbapi.KbnDashboardPanelTypeImageConfigDrilldowns0TriggerOnClickImage,
-		Type:         kbapi.KbnDashboardPanelTypeImageConfigDrilldowns0TypeDashboardDrilldown,
+		Trigger:      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0TriggerOnClickImage,
+		Type:         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0TypeDashboardDrilldown,
 		UseFilters:   &useF,
 		UseTimeRange: &tr,
 		OpenInNewTab: &tab,
 	}
-	var dashItem kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item
-	require.NoError(t, dashItem.FromKbnDashboardPanelTypeImageConfigDrilldowns0(d0))
+	var dashItem kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item
+	require.NoError(t, dashItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0(d0))
 
-	d1 := kbapi.KbnDashboardPanelTypeImageConfigDrilldowns1{
+	d1 := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1{
 		Url:          "https://example.com",
 		Label:        "u",
-		Trigger:      kbapi.KbnDashboardPanelTypeImageConfigDrilldowns1TriggerOnClickImage,
-		Type:         kbapi.KbnDashboardPanelTypeImageConfigDrilldowns1TypeUrlDrilldown,
+		Trigger:      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1TriggerOnClickImage,
+		Type:         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1TypeUrlDrilldown,
 		EncodeUrl:    &encode,
 		OpenInNewTab: &tab,
 	}
-	var urlItem kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item
-	require.NoError(t, urlItem.FromKbnDashboardPanelTypeImageConfigDrilldowns1(d1))
+	var urlItem kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item
+	require.NoError(t, urlItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1(d1))
 
-	apiPanel.Config.Drilldowns = &[]kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item{dashItem, urlItem}
+	apiPanel.Config.Drilldowns = &[]kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item{dashItem, urlItem}
 
 	pm := models.PanelModel{}
 	PopulateFromAPI(&pm, nil, apiPanel)
@@ -272,9 +272,9 @@ func Test_populateImagePanelFromAPI_import_drilldownDefaultsAndObjectFitNull(t *
 }
 
 func Test_populateImagePanelFromAPI_import_setsSrcBranches(t *testing.T) {
-	apiPanel := kbapi.KbnDashboardPanelTypeImage{}
-	src := kbapi.KbnDashboardPanelTypeImageConfigImageConfigSrc0{Type: kbapi.File, FileId: "fid"}
-	require.NoError(t, apiPanel.Config.ImageConfig.Src.FromKbnDashboardPanelTypeImageConfigImageConfigSrc0(src))
+	apiPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage{}
+	src := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc0{Type: kbapi.File, FileId: "fid"}
+	require.NoError(t, apiPanel.Config.ImageConfig.Src.FromKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc0(src))
 
 	pm := models.PanelModel{}
 	PopulateFromAPI(&pm, nil, apiPanel)

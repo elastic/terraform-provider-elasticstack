@@ -73,7 +73,7 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 }
 
 // BuildConfig writes TF fields into tsPanel.Config.
-func BuildConfig(pm models.PanelModel, tsPanel *kbapi.KbnDashboardPanelTypeTimeSliderControl) {
+func BuildConfig(pm models.PanelModel, tsPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeTimeSliderControl) {
 	cfg := pm.TimeSliderControlConfig
 	if cfg == nil {
 		return

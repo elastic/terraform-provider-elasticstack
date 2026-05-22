@@ -44,7 +44,7 @@ func dashboardMapPanelsFromAPI(ctx context.Context, m *models.DashboardModel, ap
 
 	for _, item := range *apiPanels {
 		// Try section first; this avoids treating section items as panels.
-		section, err := item.AsKbnDashboardSection()
+		section, err := item.AsKibanaHTTPAPIsKbnDashboardSection()
 		if err == nil && section.Title != "" {
 			tfSectionIndex := len(sections)
 			var tfSection *models.SectionModel
@@ -81,7 +81,7 @@ func dashboardMapPanelsFromAPI(ctx context.Context, m *models.DashboardModel, ap
 	return panels, sections, diags
 }
 
-func dashboardMapSectionFromAPI(ctx context.Context, m *models.DashboardModel, tfSection *models.SectionModel, section kbapi.KbnDashboardSection) (models.SectionModel, diag.Diagnostics) {
+func dashboardMapSectionFromAPI(ctx context.Context, m *models.DashboardModel, tfSection *models.SectionModel, section Section) (models.SectionModel, diag.Diagnostics) {
 	collapsed := types.BoolPointerValue(section.Collapsed)
 	if tfSection != nil && !typeutils.IsKnown(tfSection.Collapsed) && section.Collapsed != nil && !*section.Collapsed {
 		collapsed = types.BoolNull()
@@ -131,7 +131,6 @@ func clearPanelConfigBlocks(pm *models.PanelModel) {
 	pm.RangeSliderControlConfig = nil
 	pm.SyntheticsStatsOverviewConfig = nil
 	pm.SyntheticsMonitorsConfig = nil
-	pm.LensDashboardAppConfig = nil
 	pm.VisConfig = nil
 	pm.ImageConfig = nil
 	pm.SloAlertsConfig = nil
@@ -167,16 +166,16 @@ func dashboardMapPanelFromAPI(ctx context.Context, _ *models.DashboardModel, tfP
 	return pm, diags
 }
 
-func timeRangeModelToAPI(tr *models.TimeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
+func timeRangeModelToAPI(tr *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
 	if tr == nil {
-		return kbapi.KbnEsQueryServerTimeRangeSchema{}
+		return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}
 	}
-	out := kbapi.KbnEsQueryServerTimeRangeSchema{
+	out := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
 		From: tr.From.ValueString(),
 		To:   tr.To.ValueString(),
 	}
 	if typeutils.IsKnown(tr.Mode) {
-		mode := kbapi.KbnEsQueryServerTimeRangeSchemaMode(tr.Mode.ValueString())
+		mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode(tr.Mode.ValueString())
 		out.Mode = &mode
 	}
 	return out
@@ -192,17 +191,17 @@ func timeRangeModelToAPI(tr *models.TimeRangeModel) kbapi.KbnEsQueryServerTimeRa
 // no parent `models.DashboardModel` is in scope (e.g. isolated unit tests call `buildAttributes(..., nil)`),
 // or `dashboard != nil` but `dashboard.TimeRange == nil` (unusual in production: the dashboard
 // schema requires `time_range`). Optional tooling may also construct chart payloads without a parent
-// dashboard. The lens-dashboard-app typed `by_value` path threads the parent dashboard via the
-// `lensdashboardapp` handler ToAPI implementation so it inherits like other typed charts;
-// it does not rely on this fallback during normal resource updates.
-func resolveChartTimeRange(dashboard *models.DashboardModel, chartLevel *models.TimeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
+// dashboard. Typed `vis` by-value charts thread the parent dashboard through the vis handler
+// ToAPI implementation so they inherit like other typed charts; they do not rely on this
+// fallback during normal resource updates.
+func resolveChartTimeRange(dashboard *models.DashboardModel, chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
 	if chartLevel != nil {
 		return timeRangeModelToAPI(chartLevel)
 	}
 	if dashboard != nil && dashboard.TimeRange != nil {
 		return timeRangeModelToAPI(dashboard.TimeRange)
 	}
-	return kbapi.KbnEsQueryServerTimeRangeSchema{
+	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
 		From: "now-15m",
 		To:   "now",
 	}
@@ -235,7 +234,7 @@ func dashboardPanelsToAPI(ctx context.Context, m *models.DashboardModel) (*kbapi
 
 	// Process sections
 	for _, sm := range m.Sections {
-		section := kbapi.KbnDashboardSection{
+		section := Section{
 			Title: sm.Title.ValueString(),
 			Grid: struct {
 				Y float32 `json:"y"`
@@ -267,7 +266,7 @@ func dashboardPanelsToAPI(ctx context.Context, m *models.DashboardModel) (*kbapi
 		}
 
 		var item kbapi.DashboardPanels_Item
-		err := item.FromKbnDashboardSection(section)
+		err := item.FromKibanaHTTPAPIsKbnDashboardSection(section)
 		if err != nil {
 			diags.AddError("Failed to create dashboard section item", err.Error())
 		}

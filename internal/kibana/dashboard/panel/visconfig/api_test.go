@@ -34,13 +34,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func mustVisPanelItem(t *testing.T, cfg0 kbapi.KbnDashboardPanelTypeVisConfig0) kbapi.DashboardPanelItem {
+func mustVisPanelItem(t *testing.T, cfg0 lenscommon.VisByValueConfig0) kbapi.DashboardPanelItem {
 	t.Helper()
-	var cfg kbapi.KbnDashboardPanelTypeVis_Config
-	require.NoError(t, cfg.FromKbnDashboardPanelTypeVisConfig0(cfg0))
+	var cfg kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis_Config
+	require.NoError(t, cfg.FromKibanaHTTPAPIsKbnDashboardPanelTypeVisConfig0(cfg0))
 	w, h := float32(24), float32(12)
 	id := "panel-id"
-	panel := kbapi.KbnDashboardPanelTypeVis{
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis{
 		Config: cfg,
 		Grid: struct {
 			H *float32 `json:"h,omitempty"`
@@ -52,7 +52,7 @@ func mustVisPanelItem(t *testing.T, cfg0 kbapi.KbnDashboardPanelTypeVisConfig0) 
 		Type: kbapi.Vis,
 	}
 	var item kbapi.DashboardPanelItem
-	require.NoError(t, item.FromKbnDashboardPanelTypeVis(panel))
+	require.NoError(t, item.FromKibanaHTTPAPIsKbnDashboardPanelTypeVis(panel))
 	return item
 }
 
@@ -72,7 +72,7 @@ func TestHandler_FromAPI_byValue_metric(t *testing.T) {
 		"query": { "expression": "*", "language": "kql" },
 		"metrics": []
 	}`
-	var cfg0 kbapi.KbnDashboardPanelTypeVisConfig0
+	var cfg0 lenscommon.VisByValueConfig0
 	require.NoError(t, json.Unmarshal([]byte(inner), &cfg0))
 	item := mustVisPanelItem(t, cfg0)
 
@@ -91,10 +91,10 @@ func TestHandler_FromAPI_byValue_datatable(t *testing.T) {
 		`"rows":[{"column":"r","collapse_by":"avg","format":{"type":"number"}}],` +
 		`"styling":{"density":{"mode":"default","height":{"header":{"type":"auto"},"value":{"type":"auto"}}}},` +
 		`"time_range":{"from":"now-7d","to":"now"}}`
-	var api kbapi.DatatableESQL
+	var api kbapi.KibanaHTTPAPIsDatatableESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
-	var cfg0 kbapi.KbnDashboardPanelTypeVisConfig0
-	require.NoError(t, cfg0.FromDatatableESQL(api))
+	var cfg0 lenscommon.VisByValueConfig0
+	require.NoError(t, cfg0.FromKibanaHTTPAPIsDatatableESQL(api))
 	item := mustVisPanelItem(t, cfg0)
 
 	var pm models.PanelModel
@@ -110,10 +110,10 @@ func TestHandler_FromAPI_configJSONOnlyPreservesUnsetVisConfig(t *testing.T) {
 		"grid": { "x": 0, "y": 0, "w": 8, "h": 8 },
 		"config": { "wrapped": {} }
 	}`
-	var vis kbapi.KbnDashboardPanelTypeVis
+	var vis kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis
 	require.NoError(t, json.Unmarshal([]byte(apiPanelsJSON), &vis))
 	var item kbapi.DashboardPanelItem
-	require.NoError(t, item.FromKbnDashboardPanelTypeVis(vis))
+	require.NoError(t, item.FromKibanaHTTPAPIsKbnDashboardPanelTypeVis(vis))
 
 	raw := `{"wrapped": {}}`
 	tfPrior := models.PanelModel{
@@ -139,10 +139,10 @@ func TestHandler_roundTrip_byReference(t *testing.T) {
 			"title": "Linked lens"
 		}
 	}`
-	var vis kbapi.KbnDashboardPanelTypeVis
+	var vis kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis
 	require.NoError(t, json.Unmarshal([]byte(apiPanelsJSON), &vis))
 	var item kbapi.DashboardPanelItem
-	require.NoError(t, item.FromKbnDashboardPanelTypeVis(vis))
+	require.NoError(t, item.FromKibanaHTTPAPIsKbnDashboardPanelTypeVis(vis))
 
 	var pm models.PanelModel
 	diags := visconfig.Handler{}.FromAPI(ctx, &pm, nil, item)
@@ -150,9 +150,9 @@ func TestHandler_roundTrip_byReference(t *testing.T) {
 
 	out, d2 := visconfig.Handler{}.ToAPI(pm, nil)
 	require.False(t, d2.HasError(), "%s", d2)
-	back, err := out.AsKbnDashboardPanelTypeVis()
+	back, err := out.AsKibanaHTTPAPIsKbnDashboardPanelTypeVis()
 	require.NoError(t, err)
-	cfg1, err := back.Config.AsKbnDashboardPanelTypeVisConfig1()
+	cfg1, err := back.Config.AsKibanaHTTPAPIsKbnDashboardPanelTypeVisConfig1()
 	require.NoError(t, err)
 	assert.Equal(t, "lens:a1b2c3", cfg1.RefId)
 	require.NotNil(t, cfg1.Title)
@@ -167,7 +167,7 @@ func TestHandler_ToAPI_byValue_xy_roundTripGrid(t *testing.T) {
 		"query": { "expression": "*", "language": "kql" },
 		"layers": [{"type": "line", "y": [{"operation": "count", "axis": "left"}]}]
 	}`
-	var cfg0 kbapi.KbnDashboardPanelTypeVisConfig0
+	var cfg0 lenscommon.VisByValueConfig0
 	require.NoError(t, json.Unmarshal([]byte(inner), &cfg0))
 	item := mustVisPanelItem(t, cfg0)
 
@@ -176,7 +176,7 @@ func TestHandler_ToAPI_byValue_xy_roundTripGrid(t *testing.T) {
 
 	out, d2 := visconfig.Handler{}.ToAPI(pm, nil)
 	require.False(t, d2.HasError())
-	v, err := out.AsKbnDashboardPanelTypeVis()
+	v, err := out.AsKibanaHTTPAPIsKbnDashboardPanelTypeVis()
 	require.NoError(t, err)
 	require.NotNil(t, v.Grid.W)
 	assert.InDelta(t, float64(24), float64(*v.Grid.W), 1e-6)

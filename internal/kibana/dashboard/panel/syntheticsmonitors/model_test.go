@@ -31,15 +31,15 @@ import (
 // buildSyntheticsMonitorsPanel (write path) tests
 // ─────────────────────────────────────────────────────────────────────────────
 
-func makeSynthAPIGrid() kbapi.KbnDashboardPanelGrid {
+func makeSynthAPIGrid() kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid {
 	w := float32(24)
 	h := float32(15)
-	return kbapi.KbnDashboardPanelGrid{H: &h, W: &w, X: 0, Y: 0}
+	return kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{H: &h, W: &w, X: 0, Y: 0}
 }
 
-func buildSynthMonitorsAPI(t *testing.T, pm models.PanelModel, grid kbapi.KbnDashboardPanelGrid, id *string) kbapi.KbnDashboardPanelTypeSyntheticsMonitors {
+func buildSynthMonitorsAPI(t *testing.T, pm models.PanelModel, grid kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, id *string) kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors {
 	t.Helper()
-	p := kbapi.KbnDashboardPanelTypeSyntheticsMonitors{
+	p := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors{
 		Grid: grid,
 		Id:   id,
 		Type: kbapi.SyntheticsMonitors,
@@ -161,8 +161,8 @@ func Test_buildSyntheticsMonitorsPanel_allFilterDimensions(t *testing.T) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // makeSyntheticsPanel builds a KbnDashboardPanelTypeSyntheticsMonitors for use in tests.
-func makeSyntheticsPanel() kbapi.KbnDashboardPanelTypeSyntheticsMonitors {
-	return kbapi.KbnDashboardPanelTypeSyntheticsMonitors{
+func makeSyntheticsPanel() kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors {
+	return kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors{
 		Type: kbapi.SyntheticsMonitors,
 	}
 }

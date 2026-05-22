@@ -49,7 +49,7 @@ func (Handler) AlignStateFromPlan(ctx context.Context, plan, state *models.Panel
 
 // FromAPI fills pm from kbapi DashboardPanelItem for this panel discriminator.
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	apiPanel, err := item.AsKbnDashboardPanelTypeSloErrorBudget()
+	apiPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget()
 	if err != nil {
 		var d diag.Diagnostics
 		d.AddError("Dashboard panel decode", err.Error())
@@ -69,14 +69,14 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	_ = dashboard
 	grid := panelkit.GridToAPI(pm.Grid)
 	id := panelkit.IDToAPI(pm.ID)
-	panel := kbapi.KbnDashboardPanelTypeSloErrorBudget{
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget{
 		Grid: grid,
 		Id:   id,
 		Type: kbapi.SloErrorBudget,
 	}
 	diags := BuildConfig(pm, &panel)
 	var panelItem kbapi.DashboardPanelItem
-	if err := panelItem.FromKbnDashboardPanelTypeSloErrorBudget(panel); err != nil {
+	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget(panel); err != nil {
 		diags.AddError("Failed to create SLO error budget panel", err.Error())
 	}
 	return panelItem, diags

@@ -53,7 +53,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	resp.Diagnostics.Append(r.assertVersionSupported(ctx, client)...)
+	resp.Diagnostics.Append(assertVersionSupported(ctx, client)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

@@ -28,6 +28,13 @@ import (
 
 var _ validator.Object = panelConfigValidator{}
 
+// removedPanelTypes lists panel type strings removed from the provider with a migration path.
+var removedPanelTypes = map[string]string{
+	"lens-dashboard-app": "The `lens-dashboard-app` panel type was removed; migrate to `type = \"vis\"` with `vis_config` " +
+		"(or panel-level `config_json` for opaque by-value charts). See the upgrade guide: " +
+		"https://registry.terraform.io/providers/elastic/elasticstack/latest/docs/guides/elasticstack-kibana-dashboard-remove-lens-dashboard-app",
+}
+
 // panelConfigValidator delegates panel-type validation to iface.Handler.ValidatePanelConfig implementations.
 type panelConfigValidator struct{}
 
@@ -75,6 +82,14 @@ func (v panelConfigValidator) ValidateObject(ctx context.Context, req validator.
 	}
 
 	panel := typeValue.ValueString()
+	if msg, removed := removedPanelTypes[panel]; removed {
+		resp.Diagnostics.AddAttributeError(
+			req.Path.AtName("type"),
+			"Removed panel type",
+			msg,
+		)
+		return
+	}
 	if h := LookupHandler(panel); h != nil {
 		resp.Diagnostics.Append(h.ValidatePanelConfig(ctx, attrs, req.Path)...)
 	}

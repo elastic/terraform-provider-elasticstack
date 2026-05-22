@@ -42,7 +42,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.PieNoESQLTypePie)
+	return string(kbapi.KibanaHTTPAPIsPieNoESQLTypePie)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -112,7 +112,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("pie_chart_config", attrs)
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
 	var prior *models.PieChartConfigModel
 	if blocks != nil && blocks.PieChartConfig != nil {
 		cpy := *blocks.PieChartConfig
@@ -125,19 +125,19 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 	}
 	blocks.PieChartConfig = &models.PieChartConfigModel{}
 
-	if noESQL, err := attrs.AsPieNoESQL(); err == nil && !isPieNoESQLCandidateActuallyESQL(noESQL) {
+	if noESQL, err := attrs.AsKibanaHTTPAPIsPieNoESQL(); err == nil && !isPieNoESQLCandidateActuallyESQL(noESQL) {
 		return pieChartConfigFromAPINoESQL(ctx, blocks.PieChartConfig, resolver, prior, noESQL)
 	}
 
-	esql, err := attrs.AsPieESQL()
+	esql, err := attrs.AsKibanaHTTPAPIsPieESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 	return pieChartConfigFromAPIESQL(ctx, blocks.PieChartConfig, resolver, prior, esql)
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags

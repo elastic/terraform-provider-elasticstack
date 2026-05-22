@@ -54,7 +54,6 @@ const (
 	panelTypeRangeSlider             = "range_slider_control"
 	panelTypeSyntheticsStatsOverview = "synthetics_stats_overview"
 	panelTypeSyntheticsMonitors      = "synthetics_monitors"
-	panelTypeLensDashboardApp        = "lens-dashboard-app"
 	panelTypeSloOverview             = "slo_overview"
 )
 
@@ -323,8 +322,8 @@ func getPanelSchema() schema.NestedAttributeObject {
 		MarkdownDescription: panelkit.PanelConfigDescription(
 			"The configuration of the panel as a JSON string. "+
 				"Practitioner-authored panel-level `config_json` is valid only when `type` is `markdown` or `vis`. "+
-				"Typed panel kinds such as `lens-dashboard-app`, `image`, `slo_alerts`, and `discover_session` use their dedicated blocks "+
-				"(`lens_dashboard_app_config`, `image_config`, `slo_alerts_config`, `discover_session_config`), not panel-level `config_json`.",
+				"Typed panel kinds such as `image`, `slo_alerts`, and `discover_session` use their dedicated blocks "+
+				"(`image_config`, `slo_alerts_config`, `discover_session_config`), not panel-level `config_json`.",
 			"config_json",
 			names,
 		),

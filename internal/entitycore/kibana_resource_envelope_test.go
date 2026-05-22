@@ -884,7 +884,7 @@ func TestNewKibanaResource_Read_multiSlashIDFallback(t *testing.T) {
 		},
 	}
 	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
-		"id":                tftypes.NewValue(tftypes.String, "a/b/c"),
+		"id":                tftypes.NewValue(tftypes.String, "not-a-composite-id"),
 		"name":              tftypes.NewValue(tftypes.String, "fallback-name"),
 		"space_id":          tftypes.NewValue(tftypes.String, "fallback-space"),
 		"kibana_connection": tftypes.NewValue(connBlockType, nil),

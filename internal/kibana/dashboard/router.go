@@ -64,7 +64,7 @@ func unknownPanelFromAPI(ctx context.Context, tfPanel *models.PanelModel, pm *mo
 			configJSON := customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
 			if tfPanel != nil {
 				var wrap diag.Diagnostics
-				configJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, tfPanel.ConfigJSON, configJSON, &wrap)
+				configJSON = panelkit.PreservePriorPanelConfigJSON(ctx, tfPanel.ConfigJSON, configJSON, &wrap)
 			}
 			pm.ConfigJSON = configJSON
 		}

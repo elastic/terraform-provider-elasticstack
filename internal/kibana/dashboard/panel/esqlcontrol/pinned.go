@@ -30,12 +30,12 @@ type pinnedHandler struct{}
 
 func (pinnedHandler) FromAPI(ctx context.Context, prior *models.PinnedPanelModel, raw kbapi.DashboardPinnedPanels_Item) (models.PinnedPanelModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	group, err := raw.AsKbnControlsSchemasControlsGroupSchemaEsqlControl()
+	group, err := raw.AsKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControl()
 	if err != nil {
 		diags.AddError("Failed to parse pinned ES|QL control", err.Error())
 		return models.PinnedPanelModel{}, diags
 	}
-	var esqlPanel kbapi.KbnDashboardPanelTypeEsqlControl
+	var esqlPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl
 	if err := panelkit.RemapViaJSON(group, &esqlPanel); err != nil {
 		diags.AddError("Failed to remap pinned ES|QL control from API", err.Error())
 		return models.PinnedPanelModel{}, diags
@@ -52,20 +52,20 @@ func (pinnedHandler) FromAPI(ctx context.Context, prior *models.PinnedPanelModel
 func (pinnedHandler) ToAPI(ppm models.PinnedPanelModel) (kbapi.DashboardPinnedPanels_Item, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	pm := ppm.SyntheticPanel()
-	esqlPanel := kbapi.KbnDashboardPanelTypeEsqlControl{
-		Grid: kbapi.KbnDashboardPanelGrid{X: 0, Y: 0},
+	esqlPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl{
+		Grid: kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
 	}
 	diags.Append(BuildConfig(pm, &esqlPanel)...)
 	if diags.HasError() {
 		return kbapi.DashboardPinnedPanels_Item{}, diags
 	}
-	var group kbapi.KbnControlsSchemasControlsGroupSchemaEsqlControl
+	var group kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControl
 	if err := panelkit.RemapViaJSON(esqlPanel, &group); err != nil {
 		diags.AddError("Failed to remap pinned ES|QL control", err.Error())
 		return kbapi.DashboardPinnedPanels_Item{}, diags
 	}
 	var item kbapi.DashboardPinnedPanels_Item
-	if err := item.FromKbnControlsSchemasControlsGroupSchemaEsqlControl(group); err != nil {
+	if err := item.FromKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControl(group); err != nil {
 		diags.AddError("Failed to build pinned ES|QL control payload", err.Error())
 		return kbapi.DashboardPinnedPanels_Item{}, diags
 	}

@@ -39,7 +39,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	resp.Diagnostics.Append(r.assertVersionSupported(ctx, client)...)
+	resp.Diagnostics.Append(assertVersionSupported(ctx, client)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

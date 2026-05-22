@@ -401,23 +401,7 @@ func TestAccResourceIndexMappings_emptyMappings(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(mappingsResourceName, "index", indexName),
-					resource.TestMatchResourceAttr(mappingsResourceName, "id", indexMappingsIDRegexp),
-					resource.TestCheckResourceAttrSet(mappingsResourceName, "mappings"),
-				),
-			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
-				ConfigVariables: config.Variables{
-					"index_name": config.StringVariable(indexName),
-				},
-				ConfigPlanChecks: resource.ConfigPlanChecks{
-					PreApply: []plancheck.PlanCheck{
-						plancheck.ExpectEmptyPlan(),
-					},
-				},
+				ExpectError: regexp.MustCompile(`expected value to be a non-empty JSON object`),
 			},
 		},
 	})

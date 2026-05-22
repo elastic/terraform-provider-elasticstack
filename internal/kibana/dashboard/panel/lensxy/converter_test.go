@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -31,13 +32,13 @@ import (
 
 type stubResolver struct{}
 
-func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
+func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
 	_ = chartLevel
-	return kbapi.KbnEsQueryServerTimeRangeSchema{}
+	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}
 }
 
-func (stubResolver) DashboardLensComparableTimeRange() (kbapi.KbnEsQueryServerTimeRangeSchema, bool) {
-	return kbapi.KbnEsQueryServerTimeRangeSchema{}, false
+func (stubResolver) DashboardLensComparableTimeRange() (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, bool) {
+	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}, false
 }
 
 func minimalXYNoESQLChartForRoundTrip() *models.XYChartConfigModel {
@@ -73,7 +74,7 @@ func minimalXYNoESQLChartForRoundTrip() *models.XYChartConfigModel {
 
 func TestConverter_VizType(t *testing.T) {
 	var c converter
-	require.Equal(t, string(kbapi.XyChartNoESQLTypeXy), c.VizType())
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsXyChartNoESQLTypeXy), c.VizType())
 }
 
 func TestConverter_HandlesBlocks(t *testing.T) {
@@ -140,11 +141,11 @@ func TestConverter_roundTrip_ESQL_xy(t *testing.T) {
 		"styling": { "line": { "curve": "linear" } },
 		"time_range": { "from": "now-7d", "to": "now" }
 	}`
-	var chart kbapi.XyChartESQL
+	var chart kbapi.KibanaHTTPAPIsXyChartESQL
 	require.NoError(t, json.Unmarshal([]byte(xyESQLJSON), &chart))
 
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
-	require.NoError(t, attrs.FromXyChartESQL(chart))
+	var attrs lenscommon.VisByValueConfig0
+	require.NoError(t, attrs.FromKibanaHTTPAPIsXyChartESQL(chart))
 
 	blocks := &models.LensByValueChartBlocks{}
 	diags := c.PopulateFromAttributes(ctx, resolver, blocks, attrs)
@@ -156,9 +157,9 @@ func TestConverter_roundTrip_ESQL_xy(t *testing.T) {
 	attrs2, diags := c.BuildAttributes(blocks, resolver)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	out, err := attrs2.AsXyChartESQL()
+	out, err := attrs2.AsKibanaHTTPAPIsXyChartESQL()
 	require.NoError(t, err)
-	assert.Equal(t, kbapi.XyChartESQLTypeXy, out.Type)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsXyChartESQLTypeXy, out.Type)
 	require.NotNil(t, out.Title)
 	assert.Equal(t, "XY ESQL RT", *out.Title)
 	require.Len(t, out.Layers, 1)
