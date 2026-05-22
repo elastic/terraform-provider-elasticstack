@@ -47,7 +47,6 @@ mcp-servers:
 
 The Serena MCP server is configured for **${{ github.aw.import-inputs.languages }}** analysis in this workspace:
 - **Workspace**: `${{ github.workspace }}`
-- **Memory**: `/tmp/gh-aw/cache-memory/serena/`
 
 ### Project Activation
 

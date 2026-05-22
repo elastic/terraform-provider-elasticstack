@@ -100,13 +100,6 @@ tools:
   github:
     mode: gh-proxy
     toolsets: [default, issues]
-  repo-memory:
-  - create-orphan: true
-    file-glob:
-    - memory/semantic-function-refactor/serena-state.json
-    id: semantic-function-refactor
-    max-file-size: 524288
-    max-patch-size: 102400
 ---
 # Semantic Function Refactor
 
@@ -148,7 +141,6 @@ Detect and report semantic refactoring opportunities by:
 
 The Serena MCP server is configured for this workspace:
 - **Workspace**: ${{ github.workspace }}
-- **Memory**: repo-memory/semantic-function-refactor/serena-state.json
 - **Context**: claude-code
 - **Language service**: Go (gopls)
 
@@ -416,7 +408,6 @@ Args: { "file_path": "pkg/workflow/compiler.go" }
 
 ### Efficiency
 - Use Serena's semantic analysis capabilities effectively
-- Cache Serena results in the memory folder
 - Balance thoroughness with timeout constraints
 - Focus on meaningful patterns, not trivial similarities
 

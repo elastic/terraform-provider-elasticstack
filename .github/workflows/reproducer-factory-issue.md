@@ -347,7 +347,9 @@ jobs:
       source_workflow: ${{ steps.normalize_context.outputs.source_workflow }}
       gate_reason: ${{ steps.finalize_gate.outputs.gate_reason }}
 tools:
+  cli-proxy: true
   github:
+    mode: gh-proxy
     toolsets: [issues, pull_requests, repos]
 network:
   allowed: [defaults, node, go, elastic.litellm-prod.ai, www.elastic.co]

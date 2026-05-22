@@ -1,4 +1,4 @@
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"0dd949ca4c053b9b4b79cd341d5c0f63b6270c32c3f02b175ea7672e0e067196","compiler_version":"v0.74.8","strict":true,"agent_id":"claude","agent_model":"llm-gateway/claude-sonnet-4-6"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"378c74f1276cbf48a5a6c92aa5d9122f3b7102153a005ab27e53b15147f1cf3f","compiler_version":"v0.74.8","strict":true,"agent_id":"claude","agent_model":"llm-gateway/claude-sonnet-4-6"}
 # gh-aw-manifest: {"version":1,"secrets":["CLAUDE_LITELLM_PROXY_API_KEY","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/github-script","sha":"3a2844b7e9c422d3c10d287c895573f7108da1b3","version":"v9.0.0"},{"repo":"actions/setup-go","sha":"4a3601121dd01d1626a1e23e37211e3254c1c06c","version":"v6.4.0 (source v6)"},{"repo":"actions/setup-node","sha":"48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e","version":"v6.4.0"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"github/gh-aw-actions/setup","sha":"efa55847f72aadb03490d955263ff911bf758700","version":"v0.74.8"},{"repo":"hashicorp/setup-terraform","sha":"dfe3c3f87815947d99a8997f908cb6525fc44e9e","version":"v4"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.49","digest":"sha256:9e4b936d4215af09fa412e12a5fc82f97f2cde4993eefc85980a900122fa9062","pinned_image":"ghcr.io/github/gh-aw-firewall/agent:0.25.49@sha256:9e4b936d4215af09fa412e12a5fc82f97f2cde4993eefc85980a900122fa9062"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.49","digest":"sha256:b795506f6b4fd12694a29f964b4d38d2d29ac3aaafe3394131619ce36020b646","pinned_image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.49@sha256:b795506f6b4fd12694a29f964b4d38d2d29ac3aaafe3394131619ce36020b646"},{"image":"ghcr.io/github/gh-aw-firewall/cli-proxy:0.25.49"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.49","digest":"sha256:f6c6998edfb9f58b6e12d3f148e6f2104747a7702d563a9e8b13d4b2ae6997dd","pinned_image":"ghcr.io/github/gh-aw-firewall/squid:0.25.49@sha256:f6c6998edfb9f58b6e12d3f148e6f2104747a7702d563a9e8b13d4b2ae6997dd"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.3.9","digest":"sha256:64828b42a4482f58fab16509d7f8f495a6d97c972a98a68aff20543531ac0388","pinned_image":"ghcr.io/github/gh-aw-mcpg:v0.3.9@sha256:64828b42a4482f58fab16509d7f8f495a6d97c972a98a68aff20543531ac0388"},{"image":"ghcr.io/github/github-mcp-server:v1.0.4","digest":"sha256:e3816a476a977cfb836e7d221510011436c654d11861db66ecfd826601aba6a4","pinned_image":"ghcr.io/github/github-mcp-server:v1.0.4@sha256:e3816a476a977cfb836e7d221510011436c654d11861db66ecfd826601aba6a4"},{"image":"ghcr.io/github/serena-mcp-server:latest","digest":"sha256:bf343399e3725c45528f531a230f3a04521d4cdef29f9a5af6282ff0d3c393c5","pinned_image":"ghcr.io/github/serena-mcp-server:latest@sha256:bf343399e3725c45528f531a230f3a04521d4cdef29f9a5af6282ff0d3c393c5"},{"image":"node:lts-alpine","digest":"sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f","pinned_image":"node:lts-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f"}]}
 #    ___                   _   _      
 #   / _ \                 | | (_)     
@@ -224,21 +224,20 @@ jobs:
         run: |
           bash "${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh"
           {
-          cat << 'GH_AW_PROMPT_6900423982232daf_EOF'
+          cat << 'GH_AW_PROMPT_bee897b82878f397_EOF'
           <system>
-          GH_AW_PROMPT_6900423982232daf_EOF
+          GH_AW_PROMPT_bee897b82878f397_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
-          cat "${RUNNER_TEMP}/gh-aw/prompts/repo_memory_prompt_multi.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_6900423982232daf_EOF'
+          cat << 'GH_AW_PROMPT_bee897b82878f397_EOF'
           <safe-output-tools>
           Tools: create_issue(max:3), missing_tool, missing_data, noop, dispatch_code_factory
           </safe-output-tools>
-          GH_AW_PROMPT_6900423982232daf_EOF
+          GH_AW_PROMPT_bee897b82878f397_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/mcp_cli_tools_prompt.md"
-          cat << 'GH_AW_PROMPT_6900423982232daf_EOF'
+          cat << 'GH_AW_PROMPT_bee897b82878f397_EOF'
           <github-context>
           The following GitHub context information is available for this workflow:
           {{#if github.actor}}
@@ -270,15 +269,14 @@ jobs:
             - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
-          GH_AW_PROMPT_6900423982232daf_EOF
+          GH_AW_PROMPT_bee897b82878f397_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/cli_proxy_with_safeoutputs_prompt.md"
-          cat << 'GH_AW_PROMPT_6900423982232daf_EOF'
+          cat << 'GH_AW_PROMPT_bee897b82878f397_EOF'
           </system>
           ## Serena Code Analysis
           
           The Serena MCP server is configured for **["go"]** analysis in this workspace:
           - **Workspace**: `__GH_AW_GITHUB_WORKSPACE__`
-          - **Memory**: `/tmp/gh-aw/cache-memory/serena/`
           
           ### Project Activation
           
@@ -309,7 +307,7 @@ jobs:
           {{#runtime-import .github/workflows/shared/go-source-analysis.md}}
           {{#runtime-import .github/workflows/shared/serena-go.md}}
           {{#runtime-import .github/workflows/semantic-function-refactor.md}}
-          GH_AW_PROMPT_6900423982232daf_EOF
+          GH_AW_PROMPT_bee897b82878f397_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -340,8 +338,6 @@ jobs:
           GH_AW_GITHUB_RUN_ID: ${{ github.run_id }}
           GH_AW_GITHUB_WORKSPACE: ${{ github.workspace }}
           GH_AW_MCP_CLI_SERVERS_LIST: "- `safeoutputs` — run `safeoutputs --help` to see available tools\n- `serena` — run `serena --help` to see available tools"
-          GH_AW_MEMORY_ALLOWED_EXTENSIONS: ''
-          GH_AW_MEMORY_LIST: "- **semantic-function-refactor**: `/tmp/gh-aw/repo-memory/semantic-function-refactor/` (branch: `memory/semantic-function-refactor`)\n"
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED: ${{ needs.pre_activation.outputs.activated }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON: ${{ needs.pre_activation.outputs.gate_reason }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_SLOTS_AVAILABLE: ${{ needs.pre_activation.outputs.issue_slots_available }}
@@ -366,8 +362,6 @@ jobs:
                 GH_AW_GITHUB_RUN_ID: process.env.GH_AW_GITHUB_RUN_ID,
                 GH_AW_GITHUB_WORKSPACE: process.env.GH_AW_GITHUB_WORKSPACE,
                 GH_AW_MCP_CLI_SERVERS_LIST: process.env.GH_AW_MCP_CLI_SERVERS_LIST,
-                GH_AW_MEMORY_ALLOWED_EXTENSIONS: process.env.GH_AW_MEMORY_ALLOWED_EXTENSIONS,
-                GH_AW_MEMORY_LIST: process.env.GH_AW_MEMORY_LIST,
                 GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED,
                 GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON,
                 GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_SLOTS_AVAILABLE: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_SLOTS_AVAILABLE,
@@ -480,16 +474,6 @@ jobs:
       - name: Setup repository dependencies
         run: make setup
 
-      # Repo memory git-based storage configuration from frontmatter processed below
-      - name: Clone repo-memory branch (semantic-function-refactor)
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GITHUB_SERVER_URL: ${{ github.server_url }}
-          BRANCH_NAME: memory/semantic-function-refactor
-          TARGET_REPO: ${{ github.repository }}
-          MEMORY_DIR: /tmp/gh-aw/repo-memory/semantic-function-refactor
-          CREATE_ORPHAN: true
-        run: bash "${RUNNER_TEMP}/gh-aw/actions/clone_repo_memory_branch.sh"
       - name: Configure Git credentials
         env:
           REPO_NAME: ${{ github.repository }}
@@ -559,9 +543,9 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/gh-aw/safeoutputs"
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_367b597dc1f15f8f_EOF'
-          {"create_issue":{"labels":["semantic-refactor","refactoring","code-quality","automated-analysis","triaged"],"max":3,"title_prefix":"[semantic-refactor] "},"create_report_incomplete_issue":{},"dispatch-code-factory":{"description":"Dispatch code-factory for each created issue"},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"true"},"push_repo_memory":{"memories":[{"dir":"/tmp/gh-aw/repo-memory/semantic-function-refactor","id":"semantic-function-refactor","max_file_count":100,"max_file_size":524288,"max_patch_size":102400}]},"report_incomplete":{}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_367b597dc1f15f8f_EOF
+          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_3df355477d69514e_EOF'
+          {"create_issue":{"labels":["semantic-refactor","refactoring","code-quality","automated-analysis","triaged"],"max":3,"title_prefix":"[semantic-refactor] "},"create_report_incomplete_issue":{},"dispatch-code-factory":{"description":"Dispatch code-factory for each created issue"},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"true"},"report_incomplete":{}}
+          GH_AW_SAFE_OUTPUTS_CONFIG_3df355477d69514e_EOF
       - name: Generate Safe Outputs Tools
         env:
           GH_AW_TOOLS_META_JSON: |
@@ -777,7 +761,7 @@ jobs:
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host --add-host host.docker.internal:127.0.0.1 --user '"${MCP_GATEWAY_UID}"':'"${MCP_GATEWAY_GID}"' --group-add '"${DOCKER_SOCK_GID}"' -v '"${DOCKER_SOCK_PATH}"':/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DOCKER_HOST=unix:///var/run/docker.sock -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.3.9'
           
           GH_AW_NODE=$(which node 2>/dev/null || command -v node 2>/dev/null || echo node)
-          cat << GH_AW_MCP_CONFIG_391408a8cd92ae79_EOF | "$GH_AW_NODE" "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.cjs"
+          cat << GH_AW_MCP_CONFIG_642918af4f3f73b9_EOF | "$GH_AW_NODE" "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.cjs"
           {
             "mcpServers": {
               "safeoutputs": {
@@ -828,7 +812,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_391408a8cd92ae79_EOF
+          GH_AW_MCP_CONFIG_642918af4f3f73b9_EOF
       - name: Mount MCP servers as CLIs
         id: mount-mcp-clis
         continue-on-error: true
@@ -1125,21 +1109,6 @@ jobs:
           if [ ! -f /tmp/gh-aw/agent_output.json ]; then
             echo '{"items":[]}' > /tmp/gh-aw/agent_output.json
           fi
-      # Upload repo memory as artifacts for push job
-      - name: Sanitize repo-memory filenames (semantic-function-refactor)
-        if: always()
-        continue-on-error: true
-        env:
-          MEMORY_DIR: /tmp/gh-aw/repo-memory/semantic-function-refactor
-        run: bash "${RUNNER_TEMP}/gh-aw/actions/sanitize_repo_memory_filenames.sh"
-      - name: Upload repo-memory artifact (semantic-function-refactor)
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: repo-memory-semanticfunctionrefactor
-          path: /tmp/gh-aw/repo-memory/semantic-function-refactor
-          retention-days: 1
-          if-no-files-found: ignore
       - name: Upload agent artifacts
         if: always()
         continue-on-error: true
@@ -1170,7 +1139,6 @@ jobs:
       - agent
       - detection
       - dispatch_code_factory
-      - push_repo_memory
       - safe_outputs
     if: >
       always() && (needs.agent.result != 'skipped' || needs.activation.outputs.lockdown_check_failed == 'true' ||
@@ -1296,10 +1264,6 @@ jobs:
           GH_AW_ENGINE_API_HOSTS: "api.anthropic.com"
           GH_AW_LOCKDOWN_CHECK_FAILED: ${{ needs.activation.outputs.lockdown_check_failed }}
           GH_AW_STALE_LOCK_FILE_FAILED: ${{ needs.activation.outputs.stale_lock_file_failed }}
-          GH_AW_PUSH_REPO_MEMORY_RESULT: ${{ needs.push_repo_memory.result }}
-          GH_AW_REPO_MEMORY_VALIDATION_FAILED_semantic-function-refactor: ${{ needs.push_repo_memory.outputs.validation_failed_semantic-function-refactor }}
-          GH_AW_REPO_MEMORY_VALIDATION_ERROR_semantic-function-refactor: ${{ needs.push_repo_memory.outputs.validation_error_semantic-function-refactor }}
-          GH_AW_REPO_MEMORY_PATCH_SIZE_EXCEEDED_semantic-function-refactor: ${{ needs.push_repo_memory.outputs.patch_size_exceeded_semantic-function-refactor }}
           GH_AW_GROUP_REPORTS: "false"
           GH_AW_FAILURE_REPORT_AS_ISSUE: "true"
           GH_AW_MISSING_TOOL_REPORT_AS_FAILURE: "true"
@@ -1622,86 +1586,6 @@ jobs:
           script: |
             const fn = require('${{ github.workspace }}/.github/scripts/workflows/issue-slots/compute.js');
             await fn({ github, context, core });
-
-  push_repo_memory:
-    needs:
-      - activation
-      - agent
-      - detection
-    if: >
-      always() && (!cancelled()) && (needs.detection.result == 'success' || needs.detection.result == 'skipped') &&
-      needs.agent.result == 'success'
-    runs-on: ubuntu-slim
-    permissions:
-      contents: write
-    concurrency:
-      group: "push-repo-memory-${{ github.repository }}|memory/semantic-function-refactor"
-      cancel-in-progress: false
-    outputs:
-      patch_size_exceeded_semantic-function-refactor: ${{ steps.push_repo_memory_semantic-function-refactor.outputs.patch_size_exceeded }}
-      validation_error_semantic-function-refactor: ${{ steps.push_repo_memory_semantic-function-refactor.outputs.validation_error }}
-      validation_failed_semantic-function-refactor: ${{ steps.push_repo_memory_semantic-function-refactor.outputs.validation_failed }}
-    steps:
-      - name: Setup Scripts
-        id: setup
-        uses: github/gh-aw-actions/setup@efa55847f72aadb03490d955263ff911bf758700 # v0.74.8
-        with:
-          destination: ${{ runner.temp }}/gh-aw/actions
-          job-name: ${{ github.job }}
-          trace-id: ${{ needs.activation.outputs.setup-trace-id }}
-          parent-span-id: ${{ needs.activation.outputs.setup-parent-span-id || needs.activation.outputs.setup-span-id }}
-        env:
-          GH_AW_SETUP_WORKFLOW_NAME: "Semantic Function Refactor"
-          GH_AW_CURRENT_WORKFLOW_REF: ${{ github.repository }}/.github/workflows/semantic-function-refactor.lock.yml@${{ github.ref }}
-          GH_AW_INFO_VERSION: "2.1.142"
-          GH_AW_INFO_ENGINE_ID: "claude"
-      - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
-          sparse-checkout: .
-      - name: Configure Git credentials
-        env:
-          REPO_NAME: ${{ github.repository }}
-          SERVER_URL: ${{ github.server_url }}
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
-          git config --global am.keepcr true
-          # Re-authenticate git with GitHub token
-          SERVER_URL_STRIPPED="${SERVER_URL#https://}"
-          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@${SERVER_URL_STRIPPED}/${REPO_NAME}.git"
-          echo "Git configured with standard GitHub Actions identity"
-      - name: Download repo-memory artifact (semantic-function-refactor)
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        continue-on-error: true
-        with:
-          name: repo-memory-semanticfunctionrefactor
-          path: /tmp/gh-aw/repo-memory/semantic-function-refactor
-      - name: Push repo-memory changes (semantic-function-refactor)
-        id: push_repo_memory_semantic-function-refactor
-        if: always()
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
-          GITHUB_SERVER_URL: ${{ github.server_url }}
-          ARTIFACT_DIR: /tmp/gh-aw/repo-memory/semantic-function-refactor
-          MEMORY_ID: semantic-function-refactor
-          TARGET_REPO: ${{ github.repository }}
-          BRANCH_NAME: memory/semantic-function-refactor
-          MAX_FILE_SIZE: 524288
-          MAX_FILE_COUNT: 100
-          MAX_PATCH_SIZE: 102400
-          ALLOWED_EXTENSIONS: '[]'
-          FILE_GLOB_FILTER: "memory/semantic-function-refactor/serena-state.json"
-        with:
-          script: |
-            const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
-            setupGlobals(core, github, context, exec, io, getOctokit);
-            const { main } = require('${{ runner.temp }}/gh-aw/actions/push_repo_memory.cjs');
-            await main();
 
   safe_outputs:
     needs:
