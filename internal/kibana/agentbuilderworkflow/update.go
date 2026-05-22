@@ -48,6 +48,7 @@ func updateWorkflow(ctx context.Context, client *clients.KibanaScopedClient, res
 		return plan, diags
 	}
 
+	plan.SpaceID = spaceID
 	plan.populateFromAPI(workflow)
 
 	if !workflow.Valid {
