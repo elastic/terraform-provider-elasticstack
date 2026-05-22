@@ -133,7 +133,7 @@ func TestElasticsearchConnectionSnapshotNullConnection(t *testing.T) {
 
 	encoded, encodeDiags := encodeElasticsearchConnection(ctx, providerschema.ElasticsearchConnectionNullList())
 	require.False(t, encodeDiags.HasError())
-	require.Equal(t, elasticsearchConnectionNullMarker, encoded)
+	require.Equal(t, ephemeralConnectionNullMarker, encoded)
 
 	decoded, decodeDiags := decodeElasticsearchConnection(ctx, encoded)
 	require.False(t, decodeDiags.HasError())
@@ -196,7 +196,7 @@ func TestKibanaConnectionSnapshotNullConnection(t *testing.T) {
 
 	encoded, encodeDiags := encodeKibanaConnection(ctx, providerschema.KibanaConnectionNullList())
 	require.False(t, encodeDiags.HasError())
-	require.Equal(t, elasticsearchConnectionNullMarker, encoded)
+	require.Equal(t, ephemeralConnectionNullMarker, encoded)
 
 	decoded, decodeDiags := decodeKibanaConnection(ctx, encoded)
 	require.False(t, decodeDiags.HasError())
@@ -228,7 +228,7 @@ func TestElasticsearchConnectionSnapshotUnknownListEncodesNullMarker(t *testing.
 	unknown := types.ListUnknown(providerschema.ElasticsearchConnectionObjectType())
 	encoded, encodeDiags := encodeElasticsearchConnection(ctx, unknown)
 	require.False(t, encodeDiags.HasError())
-	require.Equal(t, elasticsearchConnectionNullMarker, encoded)
+	require.Equal(t, ephemeralConnectionNullMarker, encoded)
 
 	decoded, decodeDiags := decodeElasticsearchConnection(ctx, encoded)
 	require.False(t, decodeDiags.HasError())
@@ -244,7 +244,7 @@ func TestElasticsearchConnectionSnapshotEmptyListEncodesNullMarker(t *testing.T)
 
 	encoded, encodeDiags := encodeElasticsearchConnection(ctx, empty)
 	require.False(t, encodeDiags.HasError())
-	require.Equal(t, elasticsearchConnectionNullMarker, encoded)
+	require.Equal(t, ephemeralConnectionNullMarker, encoded)
 
 	decoded, decodeDiags := decodeElasticsearchConnection(ctx, encoded)
 	require.False(t, decodeDiags.HasError())
@@ -258,7 +258,7 @@ func TestKibanaConnectionSnapshotUnknownListEncodesNullMarker(t *testing.T) {
 	unknown := types.ListUnknown(providerschema.KibanaConnectionObjectType())
 	encoded, encodeDiags := encodeKibanaConnection(ctx, unknown)
 	require.False(t, encodeDiags.HasError())
-	require.Equal(t, elasticsearchConnectionNullMarker, encoded)
+	require.Equal(t, ephemeralConnectionNullMarker, encoded)
 
 	decoded, decodeDiags := decodeKibanaConnection(ctx, encoded)
 	require.False(t, decodeDiags.HasError())
@@ -274,7 +274,7 @@ func TestKibanaConnectionSnapshotEmptyListEncodesNullMarker(t *testing.T) {
 
 	encoded, encodeDiags := encodeKibanaConnection(ctx, empty)
 	require.False(t, encodeDiags.HasError())
-	require.Equal(t, elasticsearchConnectionNullMarker, encoded)
+	require.Equal(t, ephemeralConnectionNullMarker, encoded)
 
 	decoded, decodeDiags := decodeKibanaConnection(ctx, encoded)
 	require.False(t, decodeDiags.HasError())

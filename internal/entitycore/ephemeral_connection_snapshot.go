@@ -31,7 +31,7 @@ import (
 
 const ephemeralConnectionKey = "entitycore.ephemeral.connection"
 
-var elasticsearchConnectionNullMarker = []byte("null")
+var ephemeralConnectionNullMarker = []byte("null")
 
 // ephemeralESConnectionSnapshot stores elasticsearch_connection values as plain
 // Go types so they round-trip through JSON private state without loss.
@@ -65,13 +65,13 @@ type ephemeralKibanaConnectionSnapshot struct {
 func encodeElasticsearchConnection(ctx context.Context, connection types.List) ([]byte, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if !typeutils.IsKnown(connection) {
-		return elasticsearchConnectionNullMarker, diags
+		return ephemeralConnectionNullMarker, diags
 	}
 
 	snapshot, snapshotDiags := esConnectionSnapshotFromList(ctx, connection)
 	diags.Append(snapshotDiags...)
 	if diags.HasError() || snapshot == nil {
-		return elasticsearchConnectionNullMarker, diags
+		return ephemeralConnectionNullMarker, diags
 	}
 
 	data, err := json.Marshal(snapshot)
@@ -100,13 +100,13 @@ func decodeElasticsearchConnection(ctx context.Context, data []byte) (types.List
 func encodeKibanaConnection(ctx context.Context, connection types.List) ([]byte, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if !typeutils.IsKnown(connection) {
-		return elasticsearchConnectionNullMarker, diags
+		return ephemeralConnectionNullMarker, diags
 	}
 
 	snapshot, snapshotDiags := kibanaConnectionSnapshotFromList(ctx, connection)
 	diags.Append(snapshotDiags...)
 	if diags.HasError() || snapshot == nil {
-		return elasticsearchConnectionNullMarker, diags
+		return ephemeralConnectionNullMarker, diags
 	}
 
 	data, err := json.Marshal(snapshot)
