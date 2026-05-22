@@ -51,8 +51,7 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 	}
 
 	// Respect an explicit configuration value for disabled_features. The
-	// ConflictsWith validator already prevents this from coexisting with
-	// solution in config.
+	// conditional validator permits this alongside omitted or classic solution.
 	if typeutils.IsKnown(config.DisabledFeatures) {
 		return
 	}
