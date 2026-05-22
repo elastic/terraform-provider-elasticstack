@@ -17,6 +17,26 @@ The system SHALL provide a generic constructor `NewKibanaResource[T]()` that acc
 
 ---
 
+### Requirement: Nil create or update callback surfaces a configuration error diagnostic
+
+The system SHALL check that the `Create` and `Update` callbacks in `KibanaResourceOptions[T]` are non-nil before invoking them. If either is nil at invocation time, the envelope SHALL append a configuration error diagnostic and SHALL NOT proceed with other prelude checks (spaceID validation, client resolution). This nil check SHALL take precedence over all other pre-invocation checks.
+
+#### Scenario: Nil create callback produces configuration error before other checks
+
+- **WHEN** `KibanaResourceOptions.Create` is nil and `Create` is invoked
+- **THEN** an error diagnostic describing the nil callback configuration SHALL be appended
+- **AND** no other Create prelude checks (spaceID, client resolution) SHALL produce diagnostics
+
+#### Scenario: Nil update callback produces configuration error before other checks
+
+- **WHEN** `KibanaResourceOptions.Update` is nil and `Update` is invoked
+- **THEN** an error diagnostic describing the nil callback configuration SHALL be appended
+- **AND** no other Update prelude checks (resourceID, client resolution) SHALL produce diagnostics
+
+---
+
+## NEW Requirements
+
 ### Requirement: Write callbacks use unified KibanaWriteFunc type
 
 The system SHALL define a single `KibanaWriteFunc[T KibanaResourceModel]` type for both Create and Update callbacks. Write callbacks SHALL receive a `KibanaWriteRequest[T]` struct and return a `KibanaWriteResult[T]` and diagnostics. Separate `KibanaCreateFunc[T]` and `KibanaUpdateFunc[T]` types SHALL be removed.
@@ -151,24 +171,6 @@ The system SHALL provide `PlaceholderKibanaWriteCallback[T]()` that returns a si
 
 - **WHEN** the placeholder `KibanaWriteFunc[T]` is invoked (for any Create or Update path)
 - **THEN** it SHALL return a non-empty `diag.Diagnostics` with an error-level diagnostic describing the misconfiguration
-
----
-
-### Requirement: Nil create or update callback surfaces a configuration error diagnostic
-
-The system SHALL check that the `Create` and `Update` callbacks in `KibanaResourceOptions[T]` are non-nil before invoking them. If either is nil at invocation time, the envelope SHALL append a configuration error diagnostic and SHALL NOT proceed with other prelude checks (spaceID validation, client resolution). This nil check SHALL take precedence over all other pre-invocation checks.
-
-#### Scenario: Nil create callback produces configuration error before other checks
-
-- **WHEN** `KibanaResourceOptions.Create` is nil and `Create` is invoked
-- **THEN** an error diagnostic describing the nil callback configuration SHALL be appended
-- **AND** no other Create prelude checks (spaceID, client resolution) SHALL produce diagnostics
-
-#### Scenario: Nil update callback produces configuration error before other checks
-
-- **WHEN** `KibanaResourceOptions.Update` is nil and `Update` is invoked
-- **THEN** an error diagnostic describing the nil callback configuration SHALL be appended
-- **AND** no other Update prelude checks (resourceID, client resolution) SHALL produce diagnostics
 
 ---
 
