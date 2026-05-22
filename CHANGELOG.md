@@ -2,20 +2,18 @@
 
 ### Breaking changes
 
+
 `elasticstack_kibana_security_detection_rule` `actions.alerts_filter` is now a structured nested attribute with `query` (`kql`, `filters_json`) and optional `timeframe` (`days`, `timezone`, `hours_start`, `hours_end`), replacing the broken `map(string)` shape.
-
-### Added
-
-- Add `elasticstack_elasticsearch_ml_calendar` and `elasticstack_elasticsearch_ml_calendar_event` resources for ML calendars and scheduled calendar events ([#1969](https://github.com/elastic/terraform-provider-elasticstack/pull/1969))
-  - `CompositeIDFromStr` splits only on the first `/`, so the resource segment may contain further slashes (for example ML calendar event ids `<calendar_id>/<event_id>`). Legacy ids with an empty cluster segment (for example `/<resource_id>`) remain accepted.
-
-### Fixed
-
-- Fix "Provider produced inconsistent result after apply" when `elasticstack_elasticsearch_ml_datafeed_state` is configured with an explicit `start` or `end` ([#2353](https://github.com/elastic/terraform-provider-elasticstack/issues/2353)). User-supplied `start`/`end` are now preserved in state; add computed `effective_search_start` and `effective_search_end` for Elasticsearch's active search interval. Existing state may show a one-time plan diff on `start` when it previously held the ES-reported value.
 
 ### Changes
 
-- Fix silent failure when updating `elasticstack_kibana_data_view.data_view.namespaces` for a data view that lives in a non-default Kibana space. The namespace reconciliation request now uses space-aware URL construction, and per-object errors returned in the HTTP 200 response body are surfaced as Terraform error diagnostics.
+- Normalise empty-object mappings/settings on read for component templates to prevent inconsistent state after apply (issue #609). ([#3175](https://github.com/elastic/terraform-provider-elasticstack/pull/3175))
+- Omit ILM allocate `number_of_replicas` and `total_shards_per_node` from API requests when not explicitly configured, so routing-filter-only policies no longer override index template settings. ([#3174](https://github.com/elastic/terraform-provider-elasticstack/pull/3174))
+- Fix perpetual plan diff on role mapping `rules` when field values use single-element arrays (e.g. `groups = ["project1"]`). ([#3172](https://github.com/elastic/terraform-provider-elasticstack/pull/3172))
+- Fix perpetual plan diff for Fleet input-type integrations (e.g., gcp_pubsub) by extracting package-level variable defaults. ([#3145](https://github.com/elastic/terraform-provider-elasticstack/pull/3145))
+- Preserve explicit `start`/`end` on `elasticstack_elasticsearch_ml_datafeed_state` and expose ES-effective search bounds via `effective_search_start` / `effective_search_end`. ([#3151](https://github.com/elastic/terraform-provider-elasticstack/pull/3151))
+- `elasticstack_kibana_data_view` namespace updates now apply correctly for data views in non-default Kibana spaces. ([#3150](https://github.com/elastic/terraform-provider-elasticstack/pull/3150))
+- Fix "Provider produced inconsistent result after apply" for elasticstack_elasticsearch_index_template and elasticstack_elasticsearch_component_template when template.settings contains keys not modeled by the go-elasticsearch typed client (e.g. index.search.slowlog.include) or string-encoded scalars coerced by typed structs (e.g. index.lifecycle.parse_origination_date). ([#3126](https://github.com/elastic/terraform-provider-elasticstack/pull/3126))
 - Fix `elasticstack_kibana_security_detection_rule` `actions.alerts_filter` with structured nested blocks; migrate `actions` and `frequency` to block syntax. ([#3123](https://github.com/elastic/terraform-provider-elasticstack/pull/3123))
 - Add support for configuring Agent Builder skills ([#3006](https://github.com/elastic/terraform-provider-elasticstack/pull/3006))
 - Add `elasticstack_elasticsearch_index_mappings` resource for managing a subset of mappings on an existing index ([#3121](https://github.com/elastic/terraform-provider-elasticstack/pull/3121))
