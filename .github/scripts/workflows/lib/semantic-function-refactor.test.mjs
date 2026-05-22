@@ -115,9 +115,13 @@ test('compiled lock preserves LiteLLM model and allowed domains', () => {
 test('workflow includes dispatch instruction and compiled lock contains dispatch_code_factory job', () => {
   const source = workflowSource();
   const lock = lockSource();
+  assert.match(source, /^\s+-\s+shared\/dispatch-code-factory\.md/m);
   assert.match(source, /dispatch_code_factory/);
   assert.match(source, /Dispatch/);
+  assert.doesNotMatch(source, /safe-outputs:[\s\S]*?jobs:[\s\S]*?dispatch-code-factory:/);
   assert.match(lock, /dispatch_code_factory/);
   assert.match(lock, /"dispatch-code-factory":\{"description":"Dispatch code-factory for each created issue"\}/);
   assert.match(lock, /"dispatch_code_factory"/);
+  assert.match(lock, /SOURCE_WORKFLOW=\$\(echo "\$GITHUB_WORKFLOW_NAME"/);
+  assert.doesNotMatch(lock, /SOURCE_WORKFLOW: (?:flaky-test-catcher|semantic-function-refactor|schema-coverage-rotation|duplicate-code-detector)\b/);
 });
