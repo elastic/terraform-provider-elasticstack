@@ -12,10 +12,10 @@
 #
 # Usage:
 #   imports:
-#     - shared/mcp/serena-go.md
+#     - shared/serena-go.md
 
 imports:
-  - uses: ./serena.md
+  - uses: shared/serena.md
     with:
       languages: ["go"]
 ---
@@ -37,5 +37,5 @@ Args: { "path": "${{ github.workspace }}" }
 
 1. **Only analyze `.go` files** — Ignore all other file types
 2. **Skip test files** — Never analyze files ending in `_test.go`
-3. **Focus on `pkg/` directory** — Primary analysis area
+3. **Focus on `internal/` and `provider/` directories** — Primary analysis areas
 4. **Use Serena for semantic analysis** — Leverage LSP capabilities for deeper insights

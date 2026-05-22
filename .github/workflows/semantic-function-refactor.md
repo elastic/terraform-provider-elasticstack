@@ -141,7 +141,7 @@ Detect and report semantic refactoring opportunities by:
 
 The Serena MCP server is configured for this workspace:
 - **Workspace**: ${{ github.workspace }}
-- **Context**: claude-code
+- **Context**: codex
 - **Language service**: Go (gopls)
 
 ## Analysis Workflow

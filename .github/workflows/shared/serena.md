@@ -7,7 +7,7 @@
 #
 # Usage:
 #   imports:
-#     - uses: shared/mcp/serena.md
+#     - uses: shared/serena.md
 #       with:
 #         languages: ["go"]                          # one language
 #         languages: ["go", "typescript"]            # multiple languages
