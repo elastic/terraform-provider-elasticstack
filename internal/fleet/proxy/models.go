@@ -23,6 +23,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -42,43 +44,59 @@ type proxyModel struct {
 	IsPreconfigured        types.Bool   `tfsdk:"is_preconfigured"`
 }
 
-func (model *proxyModel) populateFromAPI(spaceID string, item kbapi.FleetProxyItem) diag.Diagnostics {
+var proxyMinVersion = version.Must(version.NewVersion("8.7.1"))
+
+func (m proxyModel) GetID() types.String             { return m.ID }
+func (m proxyModel) GetResourceID() types.String     { return m.ProxyID }
+func (m proxyModel) GetSpaceID() types.String        { return m.SpaceID }
+func (m proxyModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+
+func (m proxyModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{
+		{
+			MinVersion:   *proxyMinVersion,
+			ErrorMessage: fmt.Sprintf("Fleet proxies require Elastic Stack v%s or later.", proxyMinVersion),
+		},
+	}, nil
+}
+
+func (m *proxyModel) populateFromAPI(spaceID string, item kbapi.FleetProxyItem) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: item.Id}).String())
-	model.ProxyID = types.StringValue(item.Id)
-	model.SpaceID = types.StringValue(spaceID)
-	model.Name = types.StringValue(item.Name)
-	model.URL = types.StringValue(item.Url)
+	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: item.Id}).String())
+	m.ProxyID = types.StringValue(item.Id)
+	m.SpaceID = types.StringValue(spaceID)
+	m.Name = types.StringValue(item.Name)
+	m.URL = types.StringValue(item.Url)
 
 	if item.Certificate != nil && *item.Certificate != "" {
-		model.Certificate = types.StringValue(*item.Certificate)
+		m.Certificate = types.StringValue(*item.Certificate)
 	} else {
-		model.Certificate = types.StringNull()
+		m.Certificate = types.StringNull()
 	}
 
 	if item.CertificateKey != nil && *item.CertificateKey != "" {
-		model.CertificateKey = types.StringValue(*item.CertificateKey)
+		m.CertificateKey = types.StringValue(*item.CertificateKey)
 	} else {
-		model.CertificateKey = types.StringNull()
+		m.CertificateKey = types.StringNull()
 	}
 
 	if item.CertificateAuthorities != nil && *item.CertificateAuthorities != "" {
-		model.CertificateAuthorities = types.StringValue(*item.CertificateAuthorities)
+		m.CertificateAuthorities = types.StringValue(*item.CertificateAuthorities)
 	} else {
-		model.CertificateAuthorities = types.StringNull()
+		m.CertificateAuthorities = types.StringNull()
 	}
 
 	if item.IsPreconfigured != nil {
-		model.IsPreconfigured = types.BoolValue(*item.IsPreconfigured)
+		m.IsPreconfigured = types.BoolValue(*item.IsPreconfigured)
 	} else {
-		model.IsPreconfigured = types.BoolValue(false)
+		m.IsPreconfigured = types.BoolValue(false)
 	}
 
 	headersMap, headerDiags := proxyHeadersToModel(item.ProxyHeaders)
 	diags.Append(headerDiags...)
 	if !diags.HasError() {
-		model.ProxyHeaders = headersMap
+		m.ProxyHeaders = headersMap
 	}
 
 	return diags
@@ -143,32 +161,32 @@ func proxyHeadersFromModel(m types.Map) (*map[string]kbapi.FleetProxyHeaderValue
 	return &out, diags
 }
 
-func (model proxyModel) toAPICreateModel() (kbapi.PostFleetProxiesJSONRequestBody, diag.Diagnostics) {
+func (m proxyModel) toAPICreateModel() (kbapi.PostFleetProxiesJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	body := kbapi.PostFleetProxiesJSONRequestBody{
-		Name: model.Name.ValueString(),
-		Url:  model.URL.ValueString(),
+		Name: m.Name.ValueString(),
+		Url:  m.URL.ValueString(),
 	}
 
-	if !model.ProxyID.IsNull() && !model.ProxyID.IsUnknown() {
-		body.Id = model.ProxyID.ValueStringPointer()
+	if !m.ProxyID.IsNull() && !m.ProxyID.IsUnknown() {
+		body.Id = m.ProxyID.ValueStringPointer()
 	}
 
-	if !model.Certificate.IsNull() && !model.Certificate.IsUnknown() {
-		body.Certificate = model.Certificate.ValueStringPointer()
+	if !m.Certificate.IsNull() && !m.Certificate.IsUnknown() {
+		body.Certificate = m.Certificate.ValueStringPointer()
 	}
 
-	if !model.CertificateAuthorities.IsNull() && !model.CertificateAuthorities.IsUnknown() {
-		body.CertificateAuthorities = model.CertificateAuthorities.ValueStringPointer()
+	if !m.CertificateAuthorities.IsNull() && !m.CertificateAuthorities.IsUnknown() {
+		body.CertificateAuthorities = m.CertificateAuthorities.ValueStringPointer()
 	}
 
-	if !model.CertificateKey.IsNull() && !model.CertificateKey.IsUnknown() {
-		body.CertificateKey = model.CertificateKey.ValueStringPointer()
+	if !m.CertificateKey.IsNull() && !m.CertificateKey.IsUnknown() {
+		body.CertificateKey = m.CertificateKey.ValueStringPointer()
 	}
 
-	if !model.ProxyHeaders.IsNull() && !model.ProxyHeaders.IsUnknown() {
-		headers, headerDiags := proxyHeadersFromModel(model.ProxyHeaders)
+	if !m.ProxyHeaders.IsNull() && !m.ProxyHeaders.IsUnknown() {
+		headers, headerDiags := proxyHeadersFromModel(m.ProxyHeaders)
 		diags.Append(headerDiags...)
 		if diags.HasError() {
 			return body, diags
@@ -179,30 +197,30 @@ func (model proxyModel) toAPICreateModel() (kbapi.PostFleetProxiesJSONRequestBod
 	return body, diags
 }
 
-func (model proxyModel) toAPIUpdateModel() (kbapi.PutFleetProxiesItemidJSONRequestBody, diag.Diagnostics) {
+func (m proxyModel) toAPIUpdateModel() (kbapi.PutFleetProxiesItemidJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	emptyHeaders := map[string]kbapi.FleetProxyHeaderValue{}
 	body := kbapi.PutFleetProxiesItemidJSONRequestBody{
-		Name:         model.Name.ValueStringPointer(),
-		Url:          model.URL.ValueStringPointer(),
+		Name:         m.Name.ValueStringPointer(),
+		Url:          m.URL.ValueStringPointer(),
 		ProxyHeaders: &emptyHeaders,
 	}
 
-	if !model.Certificate.IsNull() && !model.Certificate.IsUnknown() {
-		body.Certificate = model.Certificate.ValueStringPointer()
+	if !m.Certificate.IsNull() && !m.Certificate.IsUnknown() {
+		body.Certificate = m.Certificate.ValueStringPointer()
 	}
 
-	if !model.CertificateAuthorities.IsNull() && !model.CertificateAuthorities.IsUnknown() {
-		body.CertificateAuthorities = model.CertificateAuthorities.ValueStringPointer()
+	if !m.CertificateAuthorities.IsNull() && !m.CertificateAuthorities.IsUnknown() {
+		body.CertificateAuthorities = m.CertificateAuthorities.ValueStringPointer()
 	}
 
-	if !model.CertificateKey.IsNull() && !model.CertificateKey.IsUnknown() {
-		body.CertificateKey = model.CertificateKey.ValueStringPointer()
+	if !m.CertificateKey.IsNull() && !m.CertificateKey.IsUnknown() {
+		body.CertificateKey = m.CertificateKey.ValueStringPointer()
 	}
 
-	if !model.ProxyHeaders.IsNull() && !model.ProxyHeaders.IsUnknown() && len(model.ProxyHeaders.Elements()) > 0 {
-		headers, headerDiags := proxyHeadersFromModel(model.ProxyHeaders)
+	if !m.ProxyHeaders.IsNull() && !m.ProxyHeaders.IsUnknown() && len(m.ProxyHeaders.Elements()) > 0 {
+		headers, headerDiags := proxyHeadersFromModel(m.ProxyHeaders)
 		diags.Append(headerDiags...)
 		if diags.HasError() {
 			return body, diags

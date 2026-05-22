@@ -32,14 +32,23 @@ var (
 
 // Resource implements the Fleet Agent Download Source resource.
 type Resource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[model]
 	*fleet.SpaceImporter
 }
 
 func newResource() *Resource {
+	createFn, updateFn := entitycore.PlaceholderKibanaWriteCallbacks[model]()
 	return &Resource{
-		ResourceBase:  entitycore.NewResourceBase(entitycore.ComponentFleet, "agent_download_source"),
-		SpaceImporter: fleet.NewSpaceImporter(path.Root("source_id")),
+		KibanaResource: entitycore.NewKibanaResource[model](
+			entitycore.ComponentFleet,
+			"agent_download_source",
+			getSchema,
+			readAgentDownloadSource,
+			deleteAgentDownloadSource,
+			createFn,
+			updateFn,
+		),
+		SpaceImporter: fleet.NewSpaceImporter(path.Root("source_id"), path.Root("id")),
 	}
 }
 

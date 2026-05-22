@@ -25,9 +25,7 @@ resource "elasticstack_fleet_agent_download_source" "example" {
   space_ids = ["default"] # optional+computed, set(string); when set, the resource is managed in the first space ID
 }
 ```
-
 ## Requirements
-
 ### Requirement: Fleet Agent Download Source CRUD APIs
 
 The resource SHALL use the Kibana Fleet **Agent binary download sources** APIs to manage Agent Binary Download Source objects: create with `POST /api/fleet/agent_download_sources`, list with `GET /api/fleet/agent_download_sources`, read by ID with `GET /api/fleet/agent_download_sources/{source_id}`, update with `PUT /api/fleet/agent_download_sources/{source_id}`, and delete with `DELETE /api/fleet/agent_download_sources/{source_id}`.
@@ -173,9 +171,17 @@ The initial implementation SHALL NOT expose the Fleet download source `auth` and
 
 ### Requirement: Minimum Kibana version guard
 
-The resource SHALL be guarded by a minimum Kibana/Fleet version that supports the Agent Binary Download Sources API. If the connected Kibana is below that version, the provider SHALL emit a clear diagnostic during plan or apply indicating that the resource is not supported.
+The resource SHALL be guarded by a minimum Kibana/Fleet version that supports the Agent Binary Download Sources API. If the connected Kibana is below that version, the provider SHALL emit a clear diagnostic during Create, Read, or Update indicating that the resource is not supported. Version enforcement is not required on Delete.
 
 #### Scenario: Unsupported stack version
 
 - **WHEN** the connected Kibana is below the supported minimum version
+- **AND** the operation is Create, Read, or Update
 - **THEN** the provider SHALL emit a diagnostic that the resource is not supported on this version
+
+#### Scenario: Delete on unsupported version
+
+- **WHEN** the connected Kibana is below the supported minimum version
+- **AND** the operation is Delete
+- **THEN** the provider SHALL proceed with the delete without a version diagnostic
+

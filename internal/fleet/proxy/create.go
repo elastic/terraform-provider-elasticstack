@@ -20,56 +20,36 @@ package proxy
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var planModel proxyModel
-
-	diags := req.Plan.Get(ctx, &planModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(assertVersionSupported(ctx, client)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func createProxy(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, plan proxyModel) (proxyModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
 	fleetClient, err := client.GetFleetClient()
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
+		diags.AddError(err.Error(), "")
+		return proxyModel{}, diags
 	}
 
-	spaceID := planModel.SpaceID.ValueString()
-
-	body, diags := planModel.toAPICreateModel()
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	body, bodyDiags := plan.toAPICreateModel()
+	diags.Append(bodyDiags...)
+	if diags.HasError() {
+		return proxyModel{}, diags
 	}
 
-	created, diags := fleetclient.CreateProxy(ctx, fleetClient, spaceID, body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	created, createDiags := fleetclient.CreateProxy(ctx, fleetClient, spaceID, body)
+	diags.Append(createDiags...)
+	if diags.HasError() {
+		return proxyModel{}, diags
 	}
 
-	diags = planModel.populateFromAPI(spaceID, *created)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(plan.populateFromAPI(spaceID, *created)...)
+	if diags.HasError() {
+		return proxyModel{}, diags
 	}
 
-	diags = resp.State.Set(ctx, planModel)
-	resp.Diagnostics.Append(diags...)
+	return plan, diags
 }
