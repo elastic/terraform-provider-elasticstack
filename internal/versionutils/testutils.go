@@ -20,6 +20,7 @@ package versionutils
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -123,6 +124,9 @@ func skipContext(t *testing.T) context.Context {
 // Serverless clusters bypass minimum-version checks. Infrastructure failures call t.Fatal.
 func SkipIfUnsupported(t *testing.T, minVersion *version.Version, flavor Flavor) {
 	t.Helper()
+	if os.Getenv("TF_ACC") == "" {
+		return
+	}
 	skip, reason, err := checkSkip(skipContext(t), minVersion, nil, flavor, fetchAcceptanceServerInfo)
 	if err != nil {
 		t.Fatal(err)
@@ -137,6 +141,9 @@ func SkipIfUnsupported(t *testing.T, minVersion *version.Version, flavor Flavor)
 // constraint checks. Infrastructure failures call t.Fatal.
 func SkipIfUnsupportedConstraints(t *testing.T, constraints version.Constraints, flavor Flavor) {
 	t.Helper()
+	if os.Getenv("TF_ACC") == "" {
+		return
+	}
 	skip, reason, err := checkSkip(skipContext(t), nil, constraints, flavor, fetchAcceptanceServerInfo)
 	if err != nil {
 		t.Fatal(err)
