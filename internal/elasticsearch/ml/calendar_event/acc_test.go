@@ -39,6 +39,9 @@ import (
 var mlCalendarEventOptionalSchedulingMinElasticsearch = version.Must(version.NewVersion("8.16.0"))
 
 func TestAccResourceMLCalendarEvent(t *testing.T) {
+	// The Check block asserts skip_result and skip_model_update are populated by the
+	// server, which only happens on Elasticsearch 8.16+ (see ES #112837 / backport #113209).
+	versionutils.SkipIfUnsupported(t, mlCalendarEventOptionalSchedulingMinElasticsearch, versionutils.FlavorAny)
 	calendarID := fmt.Sprintf("test-cal-evt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
