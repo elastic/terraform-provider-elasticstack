@@ -190,15 +190,14 @@ func (v Condition) evaluateStaticPath(ctx context.Context, config tfsdk.Config) 
 // configuration context and compares it against the condition's allowedValues slice.
 //
 // The method returns three values:
-//   - bool: true if the dependent field has a non-null, non-unknown value that matches
-//     one of the allowed values; false otherwise
-//   - string: the string representation of the dependent field's current value
+//   - bool: true when the dependent field satisfies the AllowedIf condition; false otherwise
+//   - dependentEvaluation: metadata about the dependent value (match result, null/unknown flags,
+//     and a string form for error messages via valueForErrorMessage)
 //   - diag.Diagnostics: any diagnostics encountered while retrieving the field value
 //
-// If the dependent field is null, unknown, or its value doesn't match any of the
-// allowed values, the condition is considered not met and the method returns false.
-// AllowedIf validators treat unknown dependents as satisfying the condition; null
-// dependents are allowed only when AllowedIfOptions.AllowNullDependent is true.
+// For AllowedIf validators, unknown dependents satisfy the condition. Null dependents
+// satisfy the condition only when AllowedIfOptions.AllowNullDependent is true. Otherwise
+// the bool is true only when the dependent has a known value matching allowedValues.
 func (v Condition) dependentFieldHasAllowedValue(ctx context.Context, config tfsdk.Config, currentPath path.Path) (bool, dependentEvaluation, diag.Diagnostics) {
 	var eval dependentEvaluation
 	var diags diag.Diagnostics
