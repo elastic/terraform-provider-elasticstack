@@ -23,6 +23,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -40,6 +42,22 @@ type proxyModel struct {
 	CertificateKey         types.String `tfsdk:"certificate_key"`
 	ProxyHeaders           types.Map    `tfsdk:"proxy_headers"`
 	IsPreconfigured        types.Bool   `tfsdk:"is_preconfigured"`
+}
+
+var proxyMinVersion = version.Must(version.NewVersion("8.7.1"))
+
+func (m proxyModel) GetID() types.String                { return m.ID }
+func (m proxyModel) GetResourceID() types.String        { return m.ProxyID }
+func (m proxyModel) GetSpaceID() types.String           { return m.SpaceID }
+func (m proxyModel) GetKibanaConnection() types.List    { return m.KibanaConnection }
+
+func (m proxyModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{
+		{
+			MinVersion:   *proxyMinVersion,
+			ErrorMessage: fmt.Sprintf("Fleet proxies require Elastic Stack v%s or later.", proxyMinVersion),
+		},
+	}, nil
 }
 
 func (model *proxyModel) populateFromAPI(spaceID string, item kbapi.FleetProxyItem) diag.Diagnostics {
