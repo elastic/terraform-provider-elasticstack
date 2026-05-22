@@ -49,12 +49,14 @@ func (m model) GetSpaceID() types.String {
 	if m.SpaceIDs.IsNull() || m.SpaceIDs.IsUnknown() {
 		return types.StringValue("default")
 	}
-	elems := m.SpaceIDs.Elements()
-	if len(elems) == 0 {
-		return types.StringValue("default")
-	}
-	if s, ok := elems[0].(types.String); ok {
-		return s
+	for _, elem := range m.SpaceIDs.Elements() {
+		s, ok := elem.(types.String)
+		if !ok || s.IsNull() || s.IsUnknown() {
+			continue
+		}
+		if v := s.ValueString(); v != "" {
+			return s
+		}
 	}
 	return types.StringValue("default")
 }
