@@ -46,3 +46,19 @@ func Float64PointerValue(value types.Float64) *float64 {
 	}
 	return value.ValueFloat64Pointer()
 }
+
+// OptStringPtr returns nil if the value is null or unknown, otherwise returns a pointer to the string value.
+func OptStringPtr(v types.String) *string {
+	if v.IsNull() || v.IsUnknown() {
+		return nil
+	}
+	return v.ValueStringPointer()
+}
+
+// OptBoolPtr returns nil if the value is null or unknown, otherwise returns a pointer to the bool value.
+func OptBoolPtr(v types.Bool) *bool {
+	if v.IsNull() || v.IsUnknown() {
+		return nil
+	}
+	return v.ValueBoolPointer()
+}
