@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -280,6 +281,7 @@ func TestAccResourceDashboardPanels_with_sections(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.title", "My Section"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.0.id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.collapsed", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.grid.y", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.type", "markdown"),
@@ -453,7 +455,7 @@ func TestAccResourceDashboardRootQueryJSON(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kql"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "query.json"),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "query.json", `{"match_all":{}}`),
 				),
 			},
 		},
@@ -518,6 +520,54 @@ func TestAccResourceDashboardPanelsJSONConfig(t *testing.T) {
 					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.config_json", regexp.MustCompile(`"type"\s*:\s*"legacy_metric"`)),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.legacy_metric_config.data_source_json"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.legacy_metric_config.metric_json"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_tags"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "tags"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardQueryTransition(t *testing.T) {
+	dashboardTitle := "Test Dashboard Query Transition " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_text"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.text", "http.response.status_code:200"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_json"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kql"),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "query.json", `{"match_all":{}}`),
 				),
 			},
 		},
