@@ -38,8 +38,7 @@ The analyzer's own logic contributes zero measurable flat CPU samples; all savin
 
 **Alternative considered**: Keep `NeedTypesInfo` but add a pre-filter that exits `run()` early if the package has no `_test.go` files. This is simpler but still pays the full type-check cost for packages that do have test files (including non-acceptance-test packages with unit tests).
 
-**Trade-off**: The syntactic check will produce a false positive if user code shadows the import alias with a local variable also named `resource` — an extremely unlikely pattern in acceptance test files, and even then the impact is a missed lint issue (false negative), not a false positive.
-
+**Trade-off**: The syntactic check can produce a false positive if user code shadows the import alias with a local variable also named `resource` — an extremely unlikely pattern in acceptance test files. In that case, the analyzer may attempt to inspect a non-acceptance-test call until later guards reject it.
 ### Decision 2 — Per-pass `ReadFile` + line-split cache in `goEmbedPathsAboveValueSpec`
 
 **Problem**: `goEmbedPathsAboveValueSpec` calls `pass.ReadFile(filename)` and `strings.Split(..., "\n")` on every invocation, which is once per `ExternalProviders`+`Config` match. In a package with multiple compat steps in the same file this causes repeated syscalls and allocations.
@@ -52,10 +51,7 @@ The analyzer's own logic contributes zero measurable flat CPU samples; all savin
 
 **Problem**: `findValueSpecForVar` iterates over all files, all `GenDecl`s, all `ValueSpec`s, and all names to find one `*ast.ValueSpec`. Called once per compat-config expression, it is O(N) in package size.
 
-**Chosen approach**: At `run()` entry, build a `map[*types.Var]*ast.ValueSpec` by walking `pass.Files` once. `findValueSpecForVar` is replaced by an O(1) map lookup. Because the `TypesInfo.Defs` map is keyed by `*ast.Ident` already, the scan cost is paid only once regardless of how many compat matches are found.
-
-**Note**: This decision still requires `pass.TypesInfo` for the `Defs` lookup — but only in packages where the analyzer actually runs its full logic (i.e. packages with `_test.go` files containing acceptance test calls). Combined with Decision 1's syntactic guard, packages without candidates skip this entirely.
-
+**Note**: Any dependence on `pass.TypesInfo` requires golangci/go/packages to load packages with `NeedTypesInfo`, which triggers type-checking before `run()` executes. To skip type-checking for non-candidate packages, the optimized analyzer path MUST avoid using `TypesInfo` entirely (including helpers like `calledFunction` and `isValidEmbeddedCompatConfig`), and the golangci plugin load mode MUST be reduced accordingly.
 ### Decision 4 — Targeted function-body traversal replacing `ast.Inspect`
 
 **Problem**: `ast.Inspect(file, ...)` visits every node in the file. Most are rejected immediately by `isCandidateCallExpr`. For large test files with thousands of expressions this wastes visitor allocations and time.
@@ -78,8 +74,7 @@ The existing `strings.HasSuffix(filename, "_test.go")` guard in `run()` is kept.
 
 ## Risks / Trade-offs
 
-- **Syntactic import check mis-fires on aliased imports** → Mitigation: the check is conservative — it collects all import specs whose path is the resource package, including aliased ones (using `imp.Name` if set, else the last path segment). Blank imports (`. "..."`) resolve the selector-X check differently but are disallowed by goimports conventions for this package.
-- **Targeted walk misses deeply nested `resource.Test` calls** → Mitigation: by convention acceptance tests always call `resource.Test` at function-body top level; this is enforced by the existing rule structure and would be caught by the `analysistest` test suite if violated.
+- **Syntactic import check mis-fires on aliased imports** → Mitigation: the check is conservative — it collects all import specs whose path is the resource package, including aliased ones (using `imp.Name` if set, else the last path segment). Dot-imports (`. "..."`) resolve calls without a selector and need explicit handling (or can be treated as out of scope if the repo forbids them).
 - **Index-building cost in large packages** → Building the `*types.Var` → `*ast.ValueSpec` map costs one pass over all `GenDecl`s, which is O(package declarations). This replaces the existing repeated O(N) scans and is strictly better.
 - **Cache invalidation** → The per-pass `ReadFile` cache is scoped to a single `run()` invocation; it is not shared across packages or runs. There is no stale-data risk.
 

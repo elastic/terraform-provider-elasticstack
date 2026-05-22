@@ -9,8 +9,7 @@ Define behavior-preserving performance requirements for the `acctestconfigdirlin
 ## ADDED Requirements
 
 ### Requirement: Analyzer uses syntactic import-path check for acceptance-test call detection
-The analyzer SHALL identify `resource.Test` and `resource.ParallelTest` calls using a syntactic check against the imported package path (`github.com/hashicorp/terraform-plugin-testing/helper/resource`) rather than a full `go/types` type-info lookup. The check SHALL handle standard imports, aliased imports, and dot-imports correctly.
-
+The analyzer SHALL identify `resource.Test` and `resource.ParallelTest` calls using a syntactic check against the imported package path (`github.com/hashicorp/terraform-plugin-testing/helper/resource`) rather than a full `go/types` type-info lookup. The check SHALL handle standard imports and explicit aliases correctly.
 #### Scenario: Standard import alias resolved syntactically
 - **WHEN** a test file imports `"github.com/hashicorp/terraform-plugin-testing/helper/resource"` without an explicit alias
 - **THEN** the analyzer SHALL recognize calls of the form `resource.Test(...)` and `resource.ParallelTest(...)` as acceptance-test call candidates without requiring full package type-checking

@@ -2,9 +2,10 @@
 
 - [ ] 1.1 Add `buildResourceImportAliases(file *ast.File) map[string]bool` helper that iterates `file.Imports` and returns the set of local names that resolve to the `github.com/hashicorp/terraform-plugin-testing/helper/resource` import path (handling explicit alias, no alias, and dot-import)
 - [ ] 1.2 Replace `isAcceptanceTestCall(pass, call)` with a syntactic check: look up the selector's `X` identifier in the alias set returned by 1.1, confirm method name is `"Test"` or `"ParallelTest"`
-- [ ] 1.3 Remove the `calledFunction` usage from `isAcceptanceTestCall` (keep `calledFunction` only for `isNamedTestCaseDirectoryCall`)
-- [ ] 1.4 Update the `run()` function to compute the alias set per file before the inner walk (or pass it as a parameter)
-- [ ] 1.5 Verify all existing `analysistest` tests still pass: `go test ./analysis/acctestconfigdirlint/...`
+- [ ] 1.3 Update `analysis/acctestconfigdirlintplugin/plugin/plugin.go` `GetLoadMode()` to stop requesting `LoadModeTypesInfo` globally, and ensure the analyzer does not depend on `pass.TypesInfo` in the optimized path
+- [ ] 1.4 Remove the `calledFunction` usage from `isAcceptanceTestCall` (and plan follow-up work to remove or rewrite other `TypesInfo`-dependent helpers)
+- [ ] 1.5 Update the `run()` function to compute the alias set per file before the inner walk (or pass it as a parameter)
+- [ ] 1.6 Verify all existing `analysistest` tests still pass: `go test ./analysis/acctestconfigdirlint/...`
 
 ## 2. Targeted Function-Body Traversal (replace `ast.Inspect`)
 
