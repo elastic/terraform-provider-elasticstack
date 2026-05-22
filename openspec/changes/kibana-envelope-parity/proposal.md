@@ -10,7 +10,7 @@ The Kibana resource envelope (`entitycore.KibanaResource[T]`) is structurally be
 - Add `KibanaWriteRequest[T]` struct carrying `Plan`, `Prior *T`, `Config`, `WriteID`, and `SpaceID`.
 - Add `KibanaWriteResult[T]` struct carrying the written model used for read-after-write identity resolution.
 - Add `KibanaPostReadFunc[T]` and a `PostRead` field in `KibanaResourceOptions[T]` (optional).
-- Enforce read-after-write: after every Create and Update, the envelope calls `readFunc` and persists the read result into state. If not found after write, a "Resource not found after write" error is returned.
+- Enforce read-after-write: after every Create and Update, the envelope calls `readFunc` and persists the read result into state. If not found after write, it returns a diagnostic with summary "Resource not found" and detail indicating the resource was not found after write.
 - Pass decoded Terraform `Config T` to write callbacks (required for write-only attributes).
 - Invoke `PostRead` hook after every successful read (including read-after-write) when configured.
 - Migrate all 6 concrete Kibana resources to the new callback contract. `maintenance_window` is simplified — its manual internal read-after-write is removed as the envelope absorbs the responsibility.

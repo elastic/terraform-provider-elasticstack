@@ -25,8 +25,8 @@ The system SHALL define a single `KibanaWriteFunc[T KibanaResourceModel]` type f
 - `Plan T`: the decoded Terraform plan
 - `Prior *T`: nil for Create invocations; a pointer to the decoded prior state model for Update invocations
 - `Config T`: the Terraform configuration decoded into T by the envelope
-- `WriteID string`: the value of `plan.GetResourceID()`
-- `SpaceID string`: the value of `plan.GetSpaceID()`
+- `WriteID string`: the string value returned by `plan.GetResourceID().ValueString()`
+- `SpaceID string`: the string value returned by `plan.GetSpaceID().ValueString()`
 
 `KibanaWriteResult[T]` SHALL carry:
 - `Model T`: the model returned from the write operation, used for read-after-write identity resolution
