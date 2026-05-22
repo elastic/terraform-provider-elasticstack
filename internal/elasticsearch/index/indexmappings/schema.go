@@ -24,6 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 // getSchemaFactory returns the schema for the index mappings resource without the
@@ -53,6 +54,9 @@ func getSchemaFactory(_ context.Context) schema.Schema {
 					"dynamic extras added by Elasticsearch are ignored. Destroying this resource does not remove mappings from the index (a no-op).",
 				Required:   true,
 				CustomType: index.MappingsType{},
+				Validators: []validator.String{
+					index.StringIsJSONObject{NonEmpty: true},
+				},
 			},
 		},
 	}

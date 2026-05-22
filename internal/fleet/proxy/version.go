@@ -28,7 +28,7 @@ import (
 
 var minVersion = version.Must(version.NewVersion("8.7.1"))
 
-func (r *Resource) assertVersionSupported(ctx context.Context, client clients.MinVersionEnforceable) diag.Diagnostics {
+func assertVersionSupported(ctx context.Context, client clients.MinVersionEnforceable) diag.Diagnostics {
 	supported, versionDiags := client.EnforceMinVersion(ctx, minVersion)
 	if versionDiags.HasError() {
 		return versionDiags
