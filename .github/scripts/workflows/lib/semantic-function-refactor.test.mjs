@@ -101,8 +101,8 @@ test('workflow configures bash tools for Go source navigation', () => {
   // go-source-analysis import; verify the import on the source and the compiled
   // bash allowlist entries in the lock.
   assert.match(source, /shared\/go-source-analysis\.md/);
-  assert.match(lock, /Bash\(find pkg -name '\*\.go' ! -name '\*_test\.go' -type f\)/);
-  assert.match(lock, /Bash\(grep -r 'func ' pkg --include='\*\.go'\)/);
+  assert.match(lock, /Bash\(find internal provider -name '\*\.go' ! -name '\*_test\.go' -type f\)/);
+  assert.match(lock, /Bash\(grep -r 'func ' internal provider --include='\*\.go'\)/);
 });
 
 test('compiled lock preserves LiteLLM model and allowed domains', () => {
