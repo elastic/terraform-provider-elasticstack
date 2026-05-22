@@ -24,7 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey"
-	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwephemeral "github.com/hashicorp/terraform-plugin-framework/ephemeral"
@@ -40,7 +40,7 @@ import (
 func TestEphemeralSchemaNameValidation(t *testing.T) {
 	t.Parallel()
 
-	s := getSchema()
+	s := getSchema(context.Background())
 	nameAttr, diags := s.AttributeAtPath(context.Background(), path.Root("name"))
 	require.False(t, diags.HasError())
 
@@ -98,7 +98,7 @@ func TestEphemeralSchemaNameValidation(t *testing.T) {
 func TestEphemeralSchemaTypeValidation(t *testing.T) {
 	t.Parallel()
 
-	s := getSchema()
+	s := getSchema(context.Background())
 	typeAttr, diags := s.AttributeAtPath(context.Background(), path.Root("type"))
 	require.False(t, diags.HasError())
 
@@ -252,21 +252,45 @@ func TestEphemeralSchemaAccessRequiresTypeValidation(t *testing.T) {
 	}
 }
 
-func TestCloseAPIKeyIfRequested(t *testing.T) {
+func TestCloseAPIKey(t *testing.T) {
 	t.Parallel()
 
 	t.Run("does not call delete when invalidate_on_close is false", func(t *testing.T) {
 		t.Parallel()
 
-		diags := closeAPIKeyIfRequested(context.Background(), nil, schema.ElasticsearchConnectionNullList(), false, "key-id")
+		originalDelete := deleteAPIKeyFn
+		t.Cleanup(func() { deleteAPIKeyFn = originalDelete })
+
+		deleteCalled := false
+		deleteAPIKeyFn = func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string) diag.Diagnostics {
+			deleteCalled = true
+			return nil
+		}
+
+		_, diags := closeAPIKey(context.Background(), &clients.ElasticsearchScopedClient{}, entitycore.CloseRequest[closeState]{
+			State: closeState{KeyID: "key-id", InvalidateOnClose: false},
+		})
 		require.False(t, diags.HasError())
+		require.False(t, deleteCalled)
 	})
 
 	t.Run("does not call delete when key id is empty", func(t *testing.T) {
 		t.Parallel()
 
-		diags := closeAPIKeyIfRequested(context.Background(), nil, schema.ElasticsearchConnectionNullList(), true, "")
+		originalDelete := deleteAPIKeyFn
+		t.Cleanup(func() { deleteAPIKeyFn = originalDelete })
+
+		deleteCalled := false
+		deleteAPIKeyFn = func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string) diag.Diagnostics {
+			deleteCalled = true
+			return nil
+		}
+
+		_, diags := closeAPIKey(context.Background(), &clients.ElasticsearchScopedClient{}, entitycore.CloseRequest[closeState]{
+			State: closeState{KeyID: "", InvalidateOnClose: true},
+		})
 		require.False(t, diags.HasError())
+		require.False(t, deleteCalled)
 	})
 
 	t.Run("calls delete when invalidate_on_close is true", func(t *testing.T) {
@@ -285,18 +309,13 @@ func TestCloseAPIKeyIfRequested(t *testing.T) {
 			return nil
 		}
 
-		factory := stubElasticsearchClientResolver{}
-		diags := closeAPIKeyIfRequested(context.Background(), factory, schema.ElasticsearchConnectionNullList(), true, "key-to-delete")
+		_, diags := closeAPIKey(context.Background(), &clients.ElasticsearchScopedClient{}, entitycore.CloseRequest[closeState]{
+			State: closeState{KeyID: "key-to-delete", InvalidateOnClose: true},
+		})
 		require.False(t, diags.HasError())
 		require.True(t, deleteCalled)
 		require.Equal(t, "key-to-delete", deleteKeyID)
 	})
-}
-
-type stubElasticsearchClientResolver struct{}
-
-func (stubElasticsearchClientResolver) GetElasticsearchClient(_ context.Context, _ types.List) (*clients.ElasticsearchScopedClient, diag.Diagnostics) {
-	return &clients.ElasticsearchScopedClient{}, nil
 }
 
 func TestInvalidateOnCloseValue(t *testing.T) {
