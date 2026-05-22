@@ -1,4 +1,5 @@
 ---
+imports: [shared/dispatch-code-factory.md]
 name: Flaky Test Catcher
 description: Detects broken and flaky acceptance tests on main and opens GitHub issues for automated remediation.
 on:
@@ -40,37 +41,6 @@ safe-outputs:
   noop:
     max: 1
     report-as-issue: false
-  jobs:
-    dispatch-code-factory:
-      needs: safe_outputs
-      description: "Dispatch code-factory for each created issue"
-      permissions:
-        actions: write
-        contents: read
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout repository
-          uses: actions/checkout@v6
-          with:
-            persist-credentials: false
-            sparse-checkout: .github/scripts/workflows/lib
-            sparse-checkout-cone-mode: true
-            fetch-depth: 1
-        - name: Download safe-outputs artifact
-          uses: actions/download-artifact@v8
-          with:
-            name: safe-outputs-items
-            path: /tmp/gh-aw/safe-outputs
-            if-no-files-found: warn
-        - name: Dispatch code-factory runs
-          env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            GITHUB_REPOSITORY: ${{ github.repository }}
-            SOURCE_WORKFLOW: flaky-test-catcher
-          run: |
-            node .github/scripts/workflows/lib/producer-dispatch.js \
-              /tmp/gh-aw/safe-outputs/temporary-id-map.json \
-              "$SOURCE_WORKFLOW"
 checkout:
   fetch-depth: 0
 network:
