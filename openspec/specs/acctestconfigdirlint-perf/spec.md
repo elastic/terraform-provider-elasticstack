@@ -1,17 +1,10 @@
-# `acctestconfigdirlint-perf` — Analyzer performance requirements
-
-Script implementation: `analysis/acctestconfigdirlintplugin/` (and `analysis/acctestconfigdirlintplugin/plugin/` for golangci load mode)
+# acctestconfigdirlint-perf Specification
 
 ## Purpose
-
-Define behavior-preserving performance requirements for the `acctestconfigdirlint` analyzer (traversal strategy, file-read caching, and lookup strategy).
-
-## ADDED Requirements
-
+TBD - created by archiving change acctestconfigdirlint-perf. Update Purpose after archive.
+## Requirements
 ### Requirement: Analyzer uses syntactic import-path check for acceptance-test call detection
 The analyzer SHALL identify `resource.Test` and `resource.ParallelTest` calls using a syntactic check against the imported package path (`github.com/hashicorp/terraform-plugin-testing/helper/resource`) rather than a full `go/types` type-info lookup. The check SHALL handle standard imports and explicit aliases correctly.
-
-This requirement scopes the `TypesInfo`-free path to acceptance-test call detection only. Other analyzer helpers (type assertions on `resource.TestCase` / `resource.TestStep` composite literals, the `*types.Var` → `*ast.ValueSpec` package-level var index, and compat-config variable resolution) MAY still consult `pass.TypesInfo`, so the analyzer's overall load mode continues to require type information. Migrating the remaining helpers and reducing the load mode is out of scope for this requirement.
 #### Scenario: Standard import alias resolved syntactically
 - **WHEN** a test file imports `"github.com/hashicorp/terraform-plugin-testing/helper/resource"` without an explicit alias
 - **THEN** the analyzer SHALL recognize calls of the form `resource.Test(...)` and `resource.ParallelTest(...)` as acceptance-test call candidates without requiring full package type-checking
@@ -60,3 +53,4 @@ The analyzer SHALL build a complete `*types.Var` → `*ast.ValueSpec` index at p
 #### Scenario: Lookup resolves immediately
 - **WHEN** the analyzer needs the `ValueSpec` for a given `*types.Var`
 - **THEN** it SHALL retrieve it via a single map lookup without iterating over any file, declaration, or spec list
+
