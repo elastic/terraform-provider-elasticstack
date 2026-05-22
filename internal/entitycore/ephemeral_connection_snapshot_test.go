@@ -202,3 +202,81 @@ func TestKibanaConnectionSnapshotNullConnection(t *testing.T) {
 	require.False(t, decodeDiags.HasError())
 	require.True(t, decoded.IsNull())
 }
+
+func TestDecodeElasticsearchConnection_invalidJSON(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	_, diags := decodeElasticsearchConnection(ctx, []byte("not json"))
+	require.True(t, diags.HasError())
+	require.Contains(t, diags.Errors()[0].Summary(), "Failed to parse elasticsearch_connection")
+}
+
+func TestDecodeKibanaConnection_invalidJSON(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	_, diags := decodeKibanaConnection(ctx, []byte("not json"))
+	require.True(t, diags.HasError())
+	require.Contains(t, diags.Errors()[0].Summary(), "Failed to parse kibana_connection")
+}
+
+func TestElasticsearchConnectionSnapshotUnknownListEncodesNullMarker(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	unknown := types.ListUnknown(providerschema.ElasticsearchConnectionObjectType())
+	encoded, encodeDiags := encodeElasticsearchConnection(ctx, unknown)
+	require.False(t, encodeDiags.HasError())
+	require.Equal(t, elasticsearchConnectionNullMarker, encoded)
+
+	decoded, decodeDiags := decodeElasticsearchConnection(ctx, encoded)
+	require.False(t, decodeDiags.HasError())
+	require.True(t, decoded.IsNull())
+}
+
+func TestElasticsearchConnectionSnapshotEmptyListEncodesNullMarker(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	empty, diags := types.ListValueFrom(ctx, providerschema.ElasticsearchConnectionObjectType(), []clientconfig.ElasticsearchConnection{})
+	require.False(t, diags.HasError())
+
+	encoded, encodeDiags := encodeElasticsearchConnection(ctx, empty)
+	require.False(t, encodeDiags.HasError())
+	require.Equal(t, elasticsearchConnectionNullMarker, encoded)
+
+	decoded, decodeDiags := decodeElasticsearchConnection(ctx, encoded)
+	require.False(t, decodeDiags.HasError())
+	require.True(t, decoded.IsNull())
+}
+
+func TestKibanaConnectionSnapshotUnknownListEncodesNullMarker(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	unknown := types.ListUnknown(providerschema.KibanaConnectionObjectType())
+	encoded, encodeDiags := encodeKibanaConnection(ctx, unknown)
+	require.False(t, encodeDiags.HasError())
+	require.Equal(t, elasticsearchConnectionNullMarker, encoded)
+
+	decoded, decodeDiags := decodeKibanaConnection(ctx, encoded)
+	require.False(t, decodeDiags.HasError())
+	require.True(t, decoded.IsNull())
+}
+
+func TestKibanaConnectionSnapshotEmptyListEncodesNullMarker(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	empty, diags := types.ListValueFrom(ctx, providerschema.KibanaConnectionObjectType(), []clientconfig.KibanaConnection{})
+	require.False(t, diags.HasError())
+
+	encoded, encodeDiags := encodeKibanaConnection(ctx, empty)
+	require.False(t, encodeDiags.HasError())
+	require.Equal(t, elasticsearchConnectionNullMarker, encoded)
+
+	decoded, decodeDiags := decodeKibanaConnection(ctx, encoded)
+	require.False(t, decodeDiags.HasError())
+	require.True(t, decoded.IsNull())
+}

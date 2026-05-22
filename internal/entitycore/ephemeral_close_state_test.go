@@ -51,6 +51,19 @@ func TestMustBePlainGoCloseState_acceptsPlainGoTypes(t *testing.T) {
 	})
 }
 
+func TestMustBePlainGoCloseState_acceptsSelfReferentialStruct(t *testing.T) {
+	t.Parallel()
+
+	type cycle struct {
+		Next *cycle
+		Name string
+	}
+
+	require.NotPanics(t, func() {
+		mustBePlainGoCloseState[cycle]()
+	})
+}
+
 func TestMustBePlainGoCloseState_rejectsTfsdkField(t *testing.T) {
 	t.Parallel()
 
@@ -58,9 +71,9 @@ func TestMustBePlainGoCloseState_rejectsTfsdkField(t *testing.T) {
 		KeyID types.String
 	}
 
-	require.Panics(t, func() {
+	assertCloseStatePanic(t, func() {
 		mustBePlainGoCloseState[badState]()
-	})
+	}, "badState", "KeyID", "github.com/hashicorp/terraform-plugin-framework/types", "Close state must be plain Go types only")
 }
 
 func TestMustBePlainGoCloseState_rejectsEmbeddedTfsdkField(t *testing.T) {
@@ -73,9 +86,9 @@ func TestMustBePlainGoCloseState_rejectsEmbeddedTfsdkField(t *testing.T) {
 		Inner inner
 	}
 
-	require.Panics(t, func() {
+	assertCloseStatePanic(t, func() {
 		mustBePlainGoCloseState[badState]()
-	})
+	}, "badState", "Inner.Field", "github.com/hashicorp/terraform-plugin-framework/types", "Close state must be plain Go types only")
 }
 
 func TestMustBePlainGoCloseState_rejectsSliceElementTfsdk(t *testing.T) {
@@ -85,9 +98,21 @@ func TestMustBePlainGoCloseState_rejectsSliceElementTfsdk(t *testing.T) {
 		Items []types.List
 	}
 
-	require.Panics(t, func() {
+	assertCloseStatePanic(t, func() {
 		mustBePlainGoCloseState[badState]()
-	})
+	}, "badState", "Items[]", "github.com/hashicorp/terraform-plugin-framework/types")
+}
+
+func TestMustBePlainGoCloseState_rejectsArrayElementTfsdk(t *testing.T) {
+	t.Parallel()
+
+	type badState struct {
+		Items [1]types.String
+	}
+
+	assertCloseStatePanic(t, func() {
+		mustBePlainGoCloseState[badState]()
+	}, "badState", "Items[]", "github.com/hashicorp/terraform-plugin-framework/types")
 }
 
 func TestMustBePlainGoCloseState_rejectsMapValueTfsdk(t *testing.T) {
@@ -97,9 +122,21 @@ func TestMustBePlainGoCloseState_rejectsMapValueTfsdk(t *testing.T) {
 		Values map[string]types.Object
 	}
 
-	require.Panics(t, func() {
+	assertCloseStatePanic(t, func() {
 		mustBePlainGoCloseState[badState]()
-	})
+	}, "badState", "Values<value>", "github.com/hashicorp/terraform-plugin-framework/types")
+}
+
+func TestMustBePlainGoCloseState_rejectsMapKeyTfsdk(t *testing.T) {
+	t.Parallel()
+
+	type badState struct {
+		Values map[types.String]string
+	}
+
+	assertCloseStatePanic(t, func() {
+		mustBePlainGoCloseState[badState]()
+	}, "badState", "Values<key>", "github.com/hashicorp/terraform-plugin-framework/types")
 }
 
 func TestMustBePlainGoCloseState_rejectsPointerTfsdk(t *testing.T) {
@@ -109,9 +146,9 @@ func TestMustBePlainGoCloseState_rejectsPointerTfsdk(t *testing.T) {
 		Field *types.String
 	}
 
-	require.Panics(t, func() {
+	assertCloseStatePanic(t, func() {
 		mustBePlainGoCloseState[badState]()
-	})
+	}, "badState", "Field", "github.com/hashicorp/terraform-plugin-framework/types")
 }
 
 func TestMustBePlainGoCloseState_rejectsJsontypesNormalized(t *testing.T) {
@@ -121,9 +158,9 @@ func TestMustBePlainGoCloseState_rejectsJsontypesNormalized(t *testing.T) {
 		Metadata jsontypes.Normalized
 	}
 
-	require.Panics(t, func() {
+	assertCloseStatePanic(t, func() {
 		mustBePlainGoCloseState[badState]()
-	})
+	}, "badState", "Metadata", "github.com/hashicorp/terraform-plugin-framework")
 }
 
 func TestEncodeDecodeUserCloseState_roundTrip(t *testing.T) {
@@ -156,4 +193,12 @@ func TestEncodeDecodeUserCloseState_roundTrip(t *testing.T) {
 	require.Equal(t, original.Headers, decoded.Headers)
 	require.Equal(t, original.Nested.Field, decoded.Nested.Field)
 	require.Equal(t, original.EmbeddedField, decoded.EmbeddedField)
+}
+
+func TestDecodeUserCloseState_invalidJSON(t *testing.T) {
+	t.Parallel()
+
+	_, diags := decodeUserCloseState[plainGoCloseState]([]byte("not json"))
+	require.True(t, diags.HasError())
+	require.Contains(t, diags.Errors()[0].Summary(), "Failed to parse ephemeral close state")
 }

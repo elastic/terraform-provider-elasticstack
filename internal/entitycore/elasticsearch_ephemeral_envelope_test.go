@@ -122,10 +122,10 @@ func TestNewElasticsearchEphemeralResource_panicsOnTfsdkCloseState(t *testing.T)
 	t.Parallel()
 
 	type badCloseState struct {
-		Field types.String
+		KeyID types.String
 	}
 
-	require.Panics(t, func() {
+	assertCloseStatePanic(t, func() {
 		NewElasticsearchEphemeralResource[testEphemeralModel, badCloseState]("test_entity", ElasticsearchEphemeralOptions[testEphemeralModel, badCloseState]{
 			Schema: testEphemeralSchema,
 			Open: func(_ context.Context, _ *clients.ElasticsearchScopedClient, req OpenRequest[testEphemeralModel]) (OpenResult[testEphemeralModel, badCloseState], diag.Diagnostics) {
@@ -135,7 +135,7 @@ func TestNewElasticsearchEphemeralResource_panicsOnTfsdkCloseState(t *testing.T)
 				return CloseResponse{}, nil
 			},
 		})
-	})
+	}, "badCloseState", "KeyID", "github.com/hashicorp/terraform-plugin-framework/types")
 }
 
 func TestNewElasticsearchEphemeralResource_panicsOnNilCallbacks(t *testing.T) {
@@ -166,6 +166,23 @@ func TestNewElasticsearchEphemeralResource_typeAssertions(t *testing.T) {
 	require.Implements(t, (*ephemeral.EphemeralResource)(nil), r)
 	require.Implements(t, (*ephemeral.EphemeralResourceWithConfigure)(nil), r)
 	require.Implements(t, (*ephemeral.EphemeralResourceWithClose)(nil), r)
+}
+
+func TestNewElasticsearchEphemeralResource_doesNotImplementRenew(t *testing.T) {
+	t.Parallel()
+
+	r := NewElasticsearchEphemeralResource[testEphemeralModel, testEphemeralCloseState]("test_entity", ElasticsearchEphemeralOptions[testEphemeralModel, testEphemeralCloseState]{
+		Schema: testEphemeralSchema,
+		Open: func(_ context.Context, _ *clients.ElasticsearchScopedClient, req OpenRequest[testEphemeralModel]) (OpenResult[testEphemeralModel, testEphemeralCloseState], diag.Diagnostics) {
+			return OpenResult[testEphemeralModel, testEphemeralCloseState]{Model: req.Config}, nil
+		},
+		Close: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ CloseRequest[testEphemeralCloseState]) (CloseResponse, diag.Diagnostics) {
+			return CloseResponse{}, nil
+		},
+	})
+
+	_, ok := any(r).(ephemeral.EphemeralResourceWithRenew)
+	require.False(t, ok)
 }
 
 func TestNewElasticsearchEphemeralResource_schemaInjection(t *testing.T) {
@@ -205,6 +222,68 @@ func TestNewElasticsearchEphemeralResource_Metadata(t *testing.T) {
 	var resp ephemeral.MetadataResponse
 	r.Metadata(context.Background(), ephemeral.MetadataRequest{ProviderTypeName: "elasticstack"}, &resp)
 	require.Equal(t, "elasticstack_elasticsearch_security_api_key", resp.TypeName)
+}
+
+func TestElasticsearchEphemeralResource_Open_happyPath(t *testing.T) {
+	ctx := context.Background()
+
+	var (
+		openCalls int
+		gotClient *clients.ElasticsearchScopedClient
+		gotConfig testEphemeralModel
+	)
+
+	r := NewElasticsearchEphemeralResource[testEphemeralModel, testEphemeralCloseState]("test_entity", ElasticsearchEphemeralOptions[testEphemeralModel, testEphemeralCloseState]{
+		Schema: testEphemeralSchema,
+		Open: func(_ context.Context, client *clients.ElasticsearchScopedClient, req OpenRequest[testEphemeralModel]) (OpenResult[testEphemeralModel, testEphemeralCloseState], diag.Diagnostics) {
+			openCalls++
+			gotClient = client
+			gotConfig = req.Config
+			model := req.Config
+			model.Value = types.StringValue("opened")
+			return OpenResult[testEphemeralModel, testEphemeralCloseState]{
+				Model:      model,
+				CloseState: testEphemeralCloseState{Value: "close-me"},
+			}, nil
+		},
+		Close: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ CloseRequest[testEphemeralCloseState]) (CloseResponse, diag.Diagnostics) {
+			return CloseResponse{}, nil
+		},
+	})
+
+	factory := newElasticsearchFactoryMinimal(t)
+	configureElasticsearchEphemeral(t, r, factory)
+
+	schema := testEphemeralSchemaWithConnection(ctx)
+	cfg := buildEphemeralOpenConfig(t, schema, map[string]tftypes.Value{
+		"value": tftypes.NewValue(tftypes.String, "hello"),
+	})
+
+	private := make(ephemeralTestPrivateData)
+	var resp ephemeral.OpenResponse
+	resp.Result.Schema = schema
+	resp.Result.Raw = cfg.Raw
+	wrapped := r.(*ElasticsearchEphemeralResource[testEphemeralModel, testEphemeralCloseState])
+	wrapped.openWithPrivate(ctx, ephemeral.OpenRequest{Config: cfg}, &resp, private)
+
+	require.Equal(t, 1, openCalls)
+	require.NotNil(t, gotClient)
+	require.Equal(t, "hello", gotConfig.Value.ValueString())
+	require.False(t, resp.Diagnostics.HasError())
+
+	var result testEphemeralModel
+	require.False(t, resp.Result.Get(ctx, &result).HasError())
+	require.Equal(t, "opened", result.Value.ValueString())
+
+	require.NotEmpty(t, private[ephemeralConnectionKey])
+	require.NotEmpty(t, private[ephemeralUserStateKey])
+
+	_, connDiags := decodeElasticsearchConnection(ctx, private[ephemeralConnectionKey])
+	require.False(t, connDiags.HasError())
+
+	decodedState, stateDiags := decodeUserCloseState[testEphemeralCloseState](private[ephemeralUserStateKey])
+	require.False(t, stateDiags.HasError())
+	require.Equal(t, "close-me", decodedState.Value)
 }
 
 func TestElasticsearchEphemeralResource_Open_decodeErrorShortCircuits(t *testing.T) {
@@ -300,10 +379,15 @@ func TestElasticsearchEphemeralResource_Open_userCallbackDiagnostics(t *testing.
 	})
 
 	var resp ephemeral.OpenResponse
-	r.(ephemeral.EphemeralResourceWithClose).Open(ctx, ephemeral.OpenRequest{Config: cfg}, &resp)
+	private := make(ephemeralTestPrivateData)
+	wrapped := r.(*ElasticsearchEphemeralResource[testEphemeralModel, testEphemeralCloseState])
+	wrapped.openWithPrivate(ctx, ephemeral.OpenRequest{Config: cfg}, &resp, private)
 
 	require.True(t, resp.Diagnostics.HasError())
 	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "open failed")
+	require.True(t, resp.Result.Raw.IsNull() || !resp.Result.Raw.IsKnown())
+	require.Empty(t, private[ephemeralConnectionKey])
+	require.Empty(t, private[ephemeralUserStateKey])
 }
 
 func TestElasticsearchEphemeralResource_persistOpenPrivateState(t *testing.T) {
@@ -353,6 +437,94 @@ func TestElasticsearchEphemeralResource_Close_missingPrivateStateNoOp(t *testing
 	r.(ephemeral.EphemeralResourceWithClose).Close(ctx, ephemeral.CloseRequest{}, &resp)
 
 	require.False(t, resp.Diagnostics.HasError())
+	require.False(t, closeCalled)
+}
+
+func TestElasticsearchEphemeralResource_Close_onlyConnectionSlotNoOp(t *testing.T) {
+	ctx := context.Background()
+
+	closeCalled := false
+	r := NewElasticsearchEphemeralResource[testEphemeralModel, testEphemeralCloseState]("test_entity", ElasticsearchEphemeralOptions[testEphemeralModel, testEphemeralCloseState]{
+		Schema: testEphemeralSchema,
+		Open: func(_ context.Context, _ *clients.ElasticsearchScopedClient, req OpenRequest[testEphemeralModel]) (OpenResult[testEphemeralModel, testEphemeralCloseState], diag.Diagnostics) {
+			return OpenResult[testEphemeralModel, testEphemeralCloseState]{Model: req.Config}, nil
+		},
+		Close: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ CloseRequest[testEphemeralCloseState]) (CloseResponse, diag.Diagnostics) {
+			closeCalled = true
+			return CloseResponse{}, nil
+		},
+	})
+
+	factory := newElasticsearchFactoryMinimal(t)
+	configureElasticsearchEphemeral(t, r, factory)
+
+	private := make(ephemeralTestPrivateData)
+	connData, _ := encodeElasticsearchConnection(ctx, providerschema.ElasticsearchConnectionNullList())
+	private[ephemeralConnectionKey] = connData
+
+	var resp ephemeral.CloseResponse
+	r.(*ElasticsearchEphemeralResource[testEphemeralModel, testEphemeralCloseState]).closeFromPrivate(ctx, private, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.False(t, closeCalled)
+}
+
+func TestElasticsearchEphemeralResource_Close_onlyUserStateSlotNoOp(t *testing.T) {
+	ctx := context.Background()
+
+	closeCalled := false
+	r := NewElasticsearchEphemeralResource[testEphemeralModel, testEphemeralCloseState]("test_entity", ElasticsearchEphemeralOptions[testEphemeralModel, testEphemeralCloseState]{
+		Schema: testEphemeralSchema,
+		Open: func(_ context.Context, _ *clients.ElasticsearchScopedClient, req OpenRequest[testEphemeralModel]) (OpenResult[testEphemeralModel, testEphemeralCloseState], diag.Diagnostics) {
+			return OpenResult[testEphemeralModel, testEphemeralCloseState]{Model: req.Config}, nil
+		},
+		Close: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ CloseRequest[testEphemeralCloseState]) (CloseResponse, diag.Diagnostics) {
+			closeCalled = true
+			return CloseResponse{}, nil
+		},
+	})
+
+	factory := newElasticsearchFactoryMinimal(t)
+	configureElasticsearchEphemeral(t, r, factory)
+
+	private := make(ephemeralTestPrivateData)
+	stateData, _ := encodeUserCloseState(testEphemeralCloseState{Value: "x"})
+	private[ephemeralUserStateKey] = stateData
+
+	var resp ephemeral.CloseResponse
+	r.(*ElasticsearchEphemeralResource[testEphemeralModel, testEphemeralCloseState]).closeFromPrivate(ctx, private, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.False(t, closeCalled)
+}
+
+func TestElasticsearchEphemeralResource_Close_malformedConnectionJSON(t *testing.T) {
+	ctx := context.Background()
+
+	closeCalled := false
+	r := NewElasticsearchEphemeralResource[testEphemeralModel, testEphemeralCloseState]("test_entity", ElasticsearchEphemeralOptions[testEphemeralModel, testEphemeralCloseState]{
+		Schema: testEphemeralSchema,
+		Open: func(_ context.Context, _ *clients.ElasticsearchScopedClient, req OpenRequest[testEphemeralModel]) (OpenResult[testEphemeralModel, testEphemeralCloseState], diag.Diagnostics) {
+			return OpenResult[testEphemeralModel, testEphemeralCloseState]{Model: req.Config}, nil
+		},
+		Close: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ CloseRequest[testEphemeralCloseState]) (CloseResponse, diag.Diagnostics) {
+			closeCalled = true
+			return CloseResponse{}, nil
+		},
+	})
+
+	factory := newElasticsearchFactoryMinimal(t)
+	configureElasticsearchEphemeral(t, r, factory)
+
+	private := make(ephemeralTestPrivateData)
+	private[ephemeralConnectionKey] = []byte("not json")
+	stateData, _ := encodeUserCloseState(testEphemeralCloseState{Value: "x"})
+	private[ephemeralUserStateKey] = stateData
+
+	var resp ephemeral.CloseResponse
+	r.(*ElasticsearchEphemeralResource[testEphemeralModel, testEphemeralCloseState]).closeFromPrivate(ctx, private, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
 	require.False(t, closeCalled)
 }
 
@@ -463,4 +635,57 @@ func TestElasticsearchEphemeralResource_Open_versionRequirementErrorShortCircuit
 	require.True(t, resp.Diagnostics.HasError())
 	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Unsupported server version")
 	require.False(t, openCalled)
+}
+
+func TestElasticsearchEphemeralResource_Configure_invalidProviderDataLeavesPriorClient(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	r := NewElasticsearchEphemeralResource[testEphemeralModel, testEphemeralCloseState]("test_entity", ElasticsearchEphemeralOptions[testEphemeralModel, testEphemeralCloseState]{
+		Schema: testEphemeralSchema,
+		Open: func(_ context.Context, _ *clients.ElasticsearchScopedClient, req OpenRequest[testEphemeralModel]) (OpenResult[testEphemeralModel, testEphemeralCloseState], diag.Diagnostics) {
+			return OpenResult[testEphemeralModel, testEphemeralCloseState]{Model: req.Config}, nil
+		},
+		Close: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ CloseRequest[testEphemeralCloseState]) (CloseResponse, diag.Diagnostics) {
+			return CloseResponse{}, nil
+		},
+	})
+
+	f := nonNilTestFactory()
+	var okResp ephemeral.ConfigureResponse
+	r.(ephemeral.EphemeralResourceWithConfigure).Configure(ctx, ephemeral.ConfigureRequest{ProviderData: f}, &okResp)
+	require.False(t, okResp.Diagnostics.HasError())
+	require.Same(t, f, r.(*ElasticsearchEphemeralResource[testEphemeralModel, testEphemeralCloseState]).Client())
+
+	var badResp ephemeral.ConfigureResponse
+	r.(ephemeral.EphemeralResourceWithConfigure).Configure(ctx, ephemeral.ConfigureRequest{ProviderData: "wrong-type"}, &badResp)
+	require.True(t, badResp.Diagnostics.HasError())
+	require.Same(t, f, r.(*ElasticsearchEphemeralResource[testEphemeralModel, testEphemeralCloseState]).Client())
+}
+
+func TestElasticsearchEphemeralResource_Configure_typedNilFactoryLeavesPriorClient(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	r := NewElasticsearchEphemeralResource[testEphemeralModel, testEphemeralCloseState]("test_entity", ElasticsearchEphemeralOptions[testEphemeralModel, testEphemeralCloseState]{
+		Schema: testEphemeralSchema,
+		Open: func(_ context.Context, _ *clients.ElasticsearchScopedClient, req OpenRequest[testEphemeralModel]) (OpenResult[testEphemeralModel, testEphemeralCloseState], diag.Diagnostics) {
+			return OpenResult[testEphemeralModel, testEphemeralCloseState]{Model: req.Config}, nil
+		},
+		Close: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ CloseRequest[testEphemeralCloseState]) (CloseResponse, diag.Diagnostics) {
+			return CloseResponse{}, nil
+		},
+	})
+
+	f := nonNilTestFactory()
+	var okResp ephemeral.ConfigureResponse
+	r.(ephemeral.EphemeralResourceWithConfigure).Configure(ctx, ephemeral.ConfigureRequest{ProviderData: f}, &okResp)
+	require.False(t, okResp.Diagnostics.HasError())
+	require.Same(t, f, r.(*ElasticsearchEphemeralResource[testEphemeralModel, testEphemeralCloseState]).Client())
+
+	var nilFactory *clients.ProviderClientFactory
+	var badResp ephemeral.ConfigureResponse
+	r.(ephemeral.EphemeralResourceWithConfigure).Configure(ctx, ephemeral.ConfigureRequest{ProviderData: nilFactory}, &badResp)
+	require.True(t, badResp.Diagnostics.HasError())
+	require.Same(t, f, r.(*ElasticsearchEphemeralResource[testEphemeralModel, testEphemeralCloseState]).Client())
 }
