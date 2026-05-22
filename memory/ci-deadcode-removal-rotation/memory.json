@@ -108,6 +108,12 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.CompositeIDFromStrForElasticsearch",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-05-22T04:39:21.808333958Z",
+      "reason": "pr_created"
     }
   ]
 }
