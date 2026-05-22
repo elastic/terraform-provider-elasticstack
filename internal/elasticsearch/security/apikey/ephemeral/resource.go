@@ -19,14 +19,12 @@ package ephemeral
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -37,84 +35,48 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-var (
-	_ fwephemeral.EphemeralResource              = (*Resource)(nil)
-	_ fwephemeral.EphemeralResourceWithConfigure = (*Resource)(nil)
-	_ fwephemeral.EphemeralResourceWithClose     = (*Resource)(nil)
-)
-
-const ephemeralPrivateDataKey = "elasticstack.security_api_key"
-
-// Resource implements the ephemeral resource for `elasticstack_elasticsearch_security_api_key`.
-type Resource struct {
-	client *clients.ProviderClientFactory
-}
-
 type tfModel struct {
-	ElasticsearchConnection types.List                                                                `tfsdk:"elasticsearch_connection"`
-	KeyID                   types.String                                                              `tfsdk:"key_id"`
-	Name                    types.String                                                              `tfsdk:"name"`
-	Type                    types.String                                                              `tfsdk:"type"`
-	RoleDescriptors         customtypes.JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor] `tfsdk:"role_descriptors"`
-	Expiration              types.String                                                              `tfsdk:"expiration"`
-	ExpirationTimestamp     types.Int64                                                               `tfsdk:"expiration_timestamp"`
-	Metadata                jsontypes.Normalized                                                      `tfsdk:"metadata"`
-	Access                  types.Object                                                              `tfsdk:"access"`
-	InvalidateOnClose       types.Bool                                                                `tfsdk:"invalidate_on_close"`
-	APIKey                  types.String                                                              `tfsdk:"api_key"`
-	Encoded                 types.String                                                              `tfsdk:"encoded"`
+	entitycore.ElasticsearchConnectionField
+	KeyID               types.String                                                              `tfsdk:"key_id"`
+	Name                types.String                                                              `tfsdk:"name"`
+	Type                types.String                                                              `tfsdk:"type"`
+	RoleDescriptors     customtypes.JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor] `tfsdk:"role_descriptors"`
+	Expiration          types.String                                                              `tfsdk:"expiration"`
+	ExpirationTimestamp types.Int64                                                               `tfsdk:"expiration_timestamp"`
+	Metadata            jsontypes.Normalized                                                      `tfsdk:"metadata"`
+	Access              types.Object                                                              `tfsdk:"access"`
+	InvalidateOnClose   types.Bool                                                                `tfsdk:"invalidate_on_close"`
+	APIKey              types.String                                                              `tfsdk:"api_key"`
+	Encoded             types.String                                                              `tfsdk:"encoded"`
 }
 
-type ephemeralPrivateState interface {
-	GetKey(ctx context.Context, key string) ([]byte, diag.Diagnostics)
-	SetKey(ctx context.Context, key string, value []byte) diag.Diagnostics
-}
-
-type ephemeralPrivateData struct {
+type closeState struct {
 	KeyID             string `json:"key_id"`
 	InvalidateOnClose bool   `json:"invalidate_on_close"`
-	ConnectionJSON    string `json:"connection_json,omitempty"`
 }
 
 // deleteAPIKeyFn is overridable in tests.
 var deleteAPIKeyFn = elasticsearch.DeleteAPIKey
 
-type elasticsearchClientResolver interface {
-	GetElasticsearchClient(ctx context.Context, connection types.List) (*clients.ElasticsearchScopedClient, diag.Diagnostics)
-}
-
 func NewResource() fwephemeral.EphemeralResource {
-	return &Resource{}
-}
-
-func (r *Resource) Metadata(_ context.Context, req fwephemeral.MetadataRequest, resp *fwephemeral.MetadataResponse) {
-	resp.TypeName = fmt.Sprintf("%s_elasticsearch_security_api_key", req.ProviderTypeName)
-}
-
-func (r *Resource) Configure(_ context.Context, req fwephemeral.ConfigureRequest, resp *fwephemeral.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	r.client = factory
-}
-
-func (r *Resource) Schema(_ context.Context, _ fwephemeral.SchemaRequest, resp *fwephemeral.SchemaResponse) {
-	resp.Schema = getSchema()
+	return entitycore.NewElasticsearchEphemeralResource[tfModel, closeState](
+		"security_api_key",
+		entitycore.ElasticsearchEphemeralOptions[tfModel, closeState]{
+			Schema: getSchema,
+			Open:   openAPIKey,
+			Close:  closeAPIKey,
+		},
+	)
 }
 
 // ephemeralExpirationDescription overrides the shared ExpirationDescription
 // because the ephemeral flavor cross-references invalidate_on_close.
 const ephemeralExpirationDescription = apikey.ExpirationDescription + " Strongly recommended when invalidate_on_close is false."
 
-func getSchema() eschema.Schema {
+func getSchema(_ context.Context) eschema.Schema {
 	return eschema.Schema{
 		Description:         resourceDescription,
 		MarkdownDescription: resourceDescription,
-		Blocks: map[string]eschema.Block{
-			"elasticsearch_connection": providerschema.GetEsEphemeralConnectionBlock(),
-		},
 		Attributes: map[string]eschema.Attribute{
 			"name": eschema.StringAttribute{
 				Description: apikey.NameDescription,
@@ -173,69 +135,33 @@ func getSchema() eschema.Schema {
 	}
 }
 
-func (r *Resource) Open(ctx context.Context, req fwephemeral.OpenRequest, resp *fwephemeral.OpenResponse) {
-	if r.client == nil {
-		resp.Diagnostics.AddError(
-			"Unconfigured Ephemeral Resource",
-			"The ephemeral resource was not configured. Configure must run before Open.",
-		)
-		return
-	}
-
-	var model tfModel
-	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, clientDiags := r.client.GetElasticsearchClient(ctx, model.ElasticsearchConnection)
-	resp.Diagnostics.Append(clientDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func openAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.OpenRequest[tfModel]) (entitycore.OpenResult[tfModel, closeState], diag.Diagnostics) {
+	model := req.Config
+	var diags diag.Diagnostics
 
 	if effectiveAPIKeyType(model.Type).ValueString() == apikey.CrossClusterAPIKeyType {
-		resp.Diagnostics.Append(r.openCrossClusterAPIKey(ctx, client, &model)...)
+		diags.Append(openCrossClusterAPIKey(ctx, client, &model)...)
 	} else {
-		resp.Diagnostics.Append(r.openRESTAPIKey(ctx, client, &model)...)
+		diags.Append(openRESTAPIKey(ctx, client, &model)...)
 	}
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(saveEphemeralPrivateData(ctx, resp.Private, model)...)
-	if resp.Diagnostics.HasError() {
-		return
+	if diags.HasError() {
+		return entitycore.OpenResult[tfModel, closeState]{}, diags
 	}
 
-	resp.Diagnostics.Append(resp.Result.Set(ctx, &model)...)
+	return entitycore.OpenResult[tfModel, closeState]{
+		Model: model,
+		CloseState: closeState{
+			KeyID:             model.KeyID.ValueString(),
+			InvalidateOnClose: invalidateOnCloseValue(model.InvalidateOnClose),
+		},
+	}, diags
 }
 
-func (r *Resource) Close(ctx context.Context, req fwephemeral.CloseRequest, resp *fwephemeral.CloseResponse) {
-	if r.client == nil {
-		resp.Diagnostics.AddError(
-			"Unconfigured Ephemeral Resource",
-			"The ephemeral resource was not configured. Configure must run before Close.",
-		)
-		return
+func closeAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.CloseRequest[closeState]) (entitycore.CloseResponse, diag.Diagnostics) {
+	if !req.State.InvalidateOnClose || req.State.KeyID == "" {
+		return entitycore.CloseResponse{}, nil
 	}
-
-	privateData, diags := loadEphemeralPrivateData(ctx, req.Private)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if privateData == nil {
-		return
-	}
-
-	connection, connDiags := elasticsearchConnectionFromPrivateJSON(ctx, privateData.ConnectionJSON)
-	resp.Diagnostics.Append(connDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(closeAPIKeyIfRequested(ctx, r.client, connection, privateData.InvalidateOnClose, privateData.KeyID)...)
+	return entitycore.CloseResponse{}, deleteAPIKeyFn(ctx, client, req.State.KeyID)
 }
 
 func effectiveAPIKeyType(apiKeyType types.String) types.String {
@@ -287,7 +213,7 @@ func (m *tfModel) fromShared(t apikey.TfModel) {
 	m.Encoded = t.Encoded
 }
 
-func (r *Resource) openRESTAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, model *tfModel) diag.Diagnostics {
+func openRESTAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, model *tfModel) diag.Diagnostics {
 	shared := model.toShared()
 	diags := apikey.CreateRESTAPIKeyOperation(ctx, client, &shared)
 	if diags.HasError() {
@@ -297,7 +223,7 @@ func (r *Resource) openRESTAPIKey(ctx context.Context, client *clients.Elasticse
 	return diags
 }
 
-func (r *Resource) openCrossClusterAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, model *tfModel) diag.Diagnostics {
+func openCrossClusterAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, model *tfModel) diag.Diagnostics {
 	shared := model.toShared()
 	diags := apikey.CreateCrossClusterAPIKeyOperation(ctx, client, &shared)
 	if diags.HasError() {
@@ -305,81 +231,4 @@ func (r *Resource) openCrossClusterAPIKey(ctx context.Context, client *clients.E
 	}
 	model.fromShared(shared)
 	return diags
-}
-
-func closeAPIKeyIfRequested(
-	ctx context.Context,
-	factory elasticsearchClientResolver,
-	connection types.List,
-	invalidateOnClose bool,
-	keyID string,
-) diag.Diagnostics {
-	if !invalidateOnClose || keyID == "" {
-		return nil
-	}
-
-	client, diags := factory.GetElasticsearchClient(ctx, connection)
-	if diags.HasError() {
-		return diags
-	}
-
-	return deleteAPIKeyFn(ctx, client, keyID)
-}
-
-func saveEphemeralPrivateData(ctx context.Context, privateState ephemeralPrivateState, model tfModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-	// Close() is a no-op unless invalidate_on_close is true, so skip persisting
-	// private state (including the connection snapshot) in the common case.
-	if privateState == nil || !invalidateOnCloseValue(model.InvalidateOnClose) {
-		return diags
-	}
-
-	connectionJSON, encodeDiags := encodeElasticsearchConnection(ctx, model.ElasticsearchConnection)
-	diags.Append(encodeDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	payload, err := json.Marshal(ephemeralPrivateData{
-		KeyID:             model.KeyID.ValueString(),
-		InvalidateOnClose: true,
-		ConnectionJSON:    connectionJSON,
-	})
-	if err != nil {
-		diags.AddError("Failed to marshal ephemeral private data", err.Error())
-		return diags
-	}
-
-	diags.Append(privateState.SetKey(ctx, ephemeralPrivateDataKey, payload)...)
-	return diags
-}
-
-func loadEphemeralPrivateData(ctx context.Context, privateState ephemeralPrivateState) (*ephemeralPrivateData, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if privateState == nil {
-		return nil, diags
-	}
-
-	raw, keyDiags := privateState.GetKey(ctx, ephemeralPrivateDataKey)
-	diags.Append(keyDiags...)
-	if diags.HasError() || len(raw) == 0 {
-		return nil, diags
-	}
-
-	var data ephemeralPrivateData
-	if err := json.Unmarshal(raw, &data); err != nil {
-		diags.AddError("Failed to parse ephemeral private data", err.Error())
-		return nil, diags
-	}
-
-	return &data, diags
-}
-
-func elasticsearchConnectionFromPrivateJSON(ctx context.Context, connectionJSON string) (types.List, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if connectionJSON == "" {
-		return providerschema.ElasticsearchConnectionNullList(), diags
-	}
-
-	return decodeElasticsearchConnection(ctx, connectionJSON)
 }

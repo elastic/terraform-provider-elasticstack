@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -127,4 +128,47 @@ func (d *DataSourceBase) Client() *clients.ProviderClientFactory {
 		return nil
 	}
 	return d.client
+}
+
+// configureFactoryFromProviderData converts provider data to a client factory.
+// Ephemeral envelopes share this helper because their Configure receiver types
+// differ from [ResourceBase.Configure] and cannot embed [ResourceBase] directly.
+func configureFactoryFromProviderData(providerData any) (*clients.ProviderClientFactory, diag.Diagnostics) {
+	return clients.ConvertProviderDataToFactory(providerData)
+}
+
+// EphemeralBase holds shared Plugin Framework ephemeral resource wiring:
+// typed naming parts and the provider client factory from Configure.
+type EphemeralBase struct {
+	component     Component
+	ephemeralName string
+	client        *clients.ProviderClientFactory
+}
+
+// NewEphemeralBase returns an [EphemeralBase] for the given namespace segment
+// and literal ephemeral resource name suffix.
+func NewEphemeralBase(component Component, ephemeralName string) *EphemeralBase {
+	return &EphemeralBase{component: component, ephemeralName: ephemeralName}
+}
+
+// Metadata sets the Terraform type name to "<providerTypeName>_<component>_<ephemeralName>".
+func (e *EphemeralBase) Metadata(providerTypeName string) string {
+	return fmt.Sprintf("%s_%s_%s", providerTypeName, e.component, e.ephemeralName)
+}
+
+// Client returns the client factory from the last successful Configure call,
+// or nil if none has been stored yet.
+func (e *EphemeralBase) Client() *clients.ProviderClientFactory {
+	if e == nil {
+		return nil
+	}
+	return e.client
+}
+
+// SetClient assigns the configured client factory when Configure succeeds.
+func (e *EphemeralBase) SetClient(factory *clients.ProviderClientFactory) {
+	if e == nil {
+		return
+	}
+	e.client = factory
 }
