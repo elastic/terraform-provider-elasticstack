@@ -42,11 +42,13 @@ func newAgentResource() *AgentResource {
 		KibanaResource: entitycore.NewKibanaResource[agentModel](
 			entitycore.ComponentKibana,
 			"agentbuilder_agent",
-			getResourceSchema,
-			readAgent,
-			deleteAgent,
-			createAgent,
-			updateAgent,
+			entitycore.KibanaResourceOptions[agentModel]{
+				Schema: getResourceSchema,
+				Read:   readAgent,
+				Delete: deleteAgent,
+				Create: createAgent,
+				Update: updateAgent,
+			},
 		),
 	}
 }

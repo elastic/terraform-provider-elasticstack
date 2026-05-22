@@ -140,13 +140,3 @@ func mapSpaceResponseToResourceModel(ctx context.Context, space *kbapi.SpaceResp
 
 	return m, diags
 }
-
-func finalizeResourceModelFromAPIResponse(ctx context.Context, plan resourceModel, space *kbapi.SpaceResponse) (resourceModel, diag.Diagnostics) {
-	out, diags := mapSpaceResponseToResourceModel(ctx, space, plan.SpaceID.ValueString())
-	if diags.HasError() {
-		return out, diags
-	}
-	out.KibanaConnectionField = plan.KibanaConnectionField
-	out.ImageURL = plan.ImageURL
-	return out, diags
-}

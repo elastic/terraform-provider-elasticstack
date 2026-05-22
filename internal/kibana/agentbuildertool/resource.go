@@ -45,11 +45,13 @@ func newToolResource() *ToolResource {
 		KibanaResource: entitycore.NewKibanaResource[toolModel](
 			entitycore.ComponentKibana,
 			"agentbuilder_tool",
-			getResourceSchema,
-			readTool,
-			deleteTool,
-			createTool,
-			updateTool,
+			entitycore.KibanaResourceOptions[toolModel]{
+				Schema: getResourceSchema,
+				Read:   readTool,
+				Delete: deleteTool,
+				Create: createTool,
+				Update: updateTool,
+			},
 		),
 	}
 }

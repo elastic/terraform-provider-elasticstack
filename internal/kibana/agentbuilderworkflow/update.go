@@ -22,11 +22,13 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func updateWorkflow(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, plan workflowModel, _ workflowModel) (workflowModel, diag.Diagnostics) {
+func updateWorkflow(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[workflowModel]) (entitycore.KibanaWriteResult[workflowModel], diag.Diagnostics) {
+	plan := req.Plan
 	var diags diag.Diagnostics
 
 	body := plan.toAPIUpdateModel()
@@ -34,27 +36,20 @@ func updateWorkflow(ctx context.Context, client *clients.KibanaScopedClient, res
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		diags.AddError(err.Error(), "")
-		return plan, diags
+		return entitycore.KibanaWriteResult[workflowModel]{}, diags
 	}
 
-	d := kibanaoapi.UpdateWorkflow(ctx, oapiClient, spaceID, resourceID, body)
+	updated, d := kibanaoapi.UpdateWorkflow(ctx, oapiClient, req.SpaceID, req.WriteID, body)
 	diags.Append(d...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.KibanaWriteResult[workflowModel]{}, diags
 	}
 
-	workflow, d := kibanaoapi.GetWorkflow(ctx, oapiClient, spaceID, resourceID)
-	diags.Append(d...)
-	if diags.HasError() {
-		return plan, diags
-	}
+	plan.SpaceID = types.StringValue(req.SpaceID)
 
-	plan.SpaceID = types.StringValue(spaceID)
-	plan.populateFromAPI(workflow)
-
-	if !workflow.Valid {
+	if updated != nil && !updated.Valid {
 		diags.AddError("Invalid workflow", "The workflow was updated but its configuration is invalid. Please check the YAML definition.")
 	}
 
-	return plan, diags
+	return entitycore.KibanaWriteResult[workflowModel]{Model: plan}, diags
 }

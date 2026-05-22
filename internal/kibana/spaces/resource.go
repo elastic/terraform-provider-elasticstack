@@ -41,11 +41,13 @@ func newResource() *Resource {
 		KibanaResource: entitycore.NewKibanaResource[resourceModel](
 			entitycore.ComponentKibana,
 			"space",
-			getResourceSchema,
-			readSpaceResource,
-			deleteSpace,
-			createSpace,
-			updateSpace,
+			entitycore.KibanaResourceOptions[resourceModel]{
+				Schema: getResourceSchema,
+				Read:   readSpaceResource,
+				Delete: deleteSpace,
+				Create: createSpace,
+				Update: updateSpace,
+			},
 		),
 	}
 }

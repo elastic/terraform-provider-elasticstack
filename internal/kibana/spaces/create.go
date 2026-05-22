@@ -23,22 +23,24 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func createSpace(ctx context.Context, client *clients.KibanaScopedClient, _ string, plan resourceModel) (resourceModel, diag.Diagnostics) {
+func createSpace(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[resourceModel]) (entitycore.KibanaWriteResult[resourceModel], diag.Diagnostics) {
+	plan := req.Plan
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		var diags diag.Diagnostics
 		diags.AddError("unable to get Kibana OpenAPI client", err.Error())
-		return plan, diags
+		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 	}
 
 	features, d := disabledFeaturesSlice(ctx, plan.DisabledFeatures)
 	if d.HasError() {
-		return plan, d
+		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, d
 	}
 
 	body := kbapi.PostSpacesSpaceJSONRequestBody{
@@ -58,20 +60,14 @@ func createSpace(ctx context.Context, client *clients.KibanaScopedClient, _ stri
 	_, apiDiags := kibanaoapi.CreateSpace(ctx, oapiClient, body)
 	diags.Append(apiDiags...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 	}
 
-	space, found, fwDiags := fetchSpace(ctx, oapiClient, plan.SpaceID.ValueString())
-	diags.Append(fwDiags...)
-	if diags.HasError() {
-		return plan, diags
-	}
-	if !found {
-		diags.AddError("Create space", "space was not found immediately after create")
-		return plan, diags
-	}
-
-	return finalizeResourceModelFromAPIResponse(ctx, plan, space)
+	// The envelope's read-after-write step refreshes the model and surfaces
+	// "not found" when the space disappears between create and read. Only the
+	// resource identity needs to be set here so the read can resolve it.
+	plan.ID = plan.SpaceID
+	return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 }
 
 func disabledFeaturesSlice(ctx context.Context, s types.Set) ([]string, diag.Diagnostics) {

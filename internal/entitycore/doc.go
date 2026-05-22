@@ -75,15 +75,15 @@
 //     composite or plain state ID, GetResourceID for the write key such as name
 //     or API-assigned UUID, GetSpaceID for the Kibana space, and
 //     GetKibanaConnection). Supply a schema factory (without kibana_connection
-//     block), read and delete callbacks, and required create and update callbacks
-//     ([KibanaCreateFunc], [KibanaUpdateFunc]). The envelope injects the
-//     kibana_connection block, resolves resource identity via composite-ID-or-fallback
-//     for Read, Update, and Delete, validates spaceID for Create, resolves the
-//     scoped Kibana client, and owns state persistence. Create callbacks receive
-//     the plan model (and can call plan.GetResourceID() for user-ID resources);
-//     Update callbacks receive both plan and prior state. It does not implement
+//     block), and callbacks via [KibanaResourceOptions] (read, delete, create, update,
+//     optional post-read). The envelope injects the kibana_connection block, resolves
+//     resource identity via composite-ID-or-fallback for Read, Update, and Delete,
+//     validates spaceID for Create and Update, resolves the scoped Kibana client,
+//     enforces read-after-write on Create and Update, and owns state persistence.
+//     Write callbacks receive [KibanaWriteRequest] (plan, prior, config, write ID,
+//     space ID); inspect Prior == nil to detect Create. It does not implement
 //     ImportState; concrete resources add that when needed. Resources that override
-//     Create or Update may pass [PlaceholderKibanaWriteCallbacks] until their logic
+//     Create or Update may pass [PlaceholderKibanaWriteCallback] until their logic
 //     is migrated into envelope callbacks. Constructor shape and callback types are
 //     defined on [NewKibanaResource] in kibana_resource_envelope.go.
 //

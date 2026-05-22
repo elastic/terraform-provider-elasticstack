@@ -43,11 +43,13 @@ func newWorkflowResource() *WorkflowResource {
 		KibanaResource: entitycore.NewKibanaResource[workflowModel](
 			entitycore.ComponentKibana,
 			"agentbuilder_workflow",
-			getResourceSchema,
-			readWorkflow,
-			deleteWorkflow,
-			createWorkflow,
-			updateWorkflow,
+			entitycore.KibanaResourceOptions[workflowModel]{
+				Schema: getResourceSchema,
+				Read:   readWorkflow,
+				Delete: deleteWorkflow,
+				Create: createWorkflow,
+				Update: updateWorkflow,
+			},
 		),
 	}
 }
