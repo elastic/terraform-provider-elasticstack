@@ -21,7 +21,7 @@ import (
 	"context"
 	"regexp"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -67,7 +67,11 @@ func getResourceSchema(_ context.Context) schema.Schema {
 				Computed:    true,
 				ElementType: types.StringType,
 				Validators: []validator.Set{
-					setvalidator.ConflictsWith(path.MatchRoot("solution")),
+					validators.AllowedIfDependentPathEquals(
+						path.Root("solution"),
+						"classic",
+						validators.AllowedIfOptions{AllowNullDependent: true},
+					),
 				},
 				PlanModifiers: []planmodifier.Set{
 					setplanmodifier.UseStateForUnknown(),
@@ -105,7 +109,6 @@ func getResourceSchema(_ context.Context) schema.Schema {
 				Computed:    true,
 				Validators: []validator.String{
 					stringvalidator.OneOf("security", "oblt", "es", "classic"),
-					stringvalidator.ConflictsWith(path.MatchRoot("disabled_features")),
 				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
