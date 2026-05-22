@@ -114,6 +114,10 @@ func (r *KibanaEphemeralResource[T, S]) Schema(ctx context.Context, _ ephemeral.
 }
 
 func (r *KibanaEphemeralResource[T, S]) Open(ctx context.Context, req ephemeral.OpenRequest, resp *ephemeral.OpenResponse) {
+	r.openWithPrivate(ctx, req, resp, resp.Private)
+}
+
+func (r *KibanaEphemeralResource[T, S]) openWithPrivate(ctx context.Context, req ephemeral.OpenRequest, resp *ephemeral.OpenResponse, private ephemeralPrivateState) {
 	var model T
 	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
@@ -137,7 +141,7 @@ func (r *KibanaEphemeralResource[T, S]) Open(ctx context.Context, req ephemeral.
 		return
 	}
 
-	resp.Diagnostics.Append(r.persistOpenPrivateState(ctx, resp.Private, result)...)
+	resp.Diagnostics.Append(r.persistOpenPrivateState(ctx, private, result)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

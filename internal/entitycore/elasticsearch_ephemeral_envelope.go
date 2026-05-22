@@ -133,6 +133,10 @@ func (r *ElasticsearchEphemeralResource[T, S]) Schema(ctx context.Context, _ eph
 }
 
 func (r *ElasticsearchEphemeralResource[T, S]) Open(ctx context.Context, req ephemeral.OpenRequest, resp *ephemeral.OpenResponse) {
+	r.openWithPrivate(ctx, req, resp, resp.Private)
+}
+
+func (r *ElasticsearchEphemeralResource[T, S]) openWithPrivate(ctx context.Context, req ephemeral.OpenRequest, resp *ephemeral.OpenResponse, private ephemeralPrivateState) {
 	var model T
 	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
@@ -156,7 +160,7 @@ func (r *ElasticsearchEphemeralResource[T, S]) Open(ctx context.Context, req eph
 		return
 	}
 
-	resp.Diagnostics.Append(r.persistOpenPrivateState(ctx, resp.Private, result)...)
+	resp.Diagnostics.Append(r.persistOpenPrivateState(ctx, private, result)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
