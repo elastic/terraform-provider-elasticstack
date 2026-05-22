@@ -33,6 +33,7 @@ const baseContext = {
   repo: { owner: 'acme', repo: 'demo' },
   payload: {
     pull_request: { number: 42 },
+    repository: { default_branch: 'main' },
   },
 };
 
@@ -63,6 +64,10 @@ test('posts a comment with selection reason and remediation guidance when PR is 
   assert.match(args.body, /How to fix/);
   assert.match(args.body, /openspec\/changes\/<id>\//);
   assert.match(args.body, /OpenSpec authoring guide/);
+  assert.match(
+    args.body,
+    /https:\/\/github\.com\/acme\/demo\/blob\/[^/]+\/dev-docs\/high-level\/openspec-requirements\.md/
+  );
   assert.ok(core.infos.some((m) => m.includes('posted ineligibility comment on PR #42')));
 });
 
@@ -86,6 +91,18 @@ test('short-circuits when the PR number is absent (no API call, no throw)', asyn
   assert.ok(
     core.infos.some((m) => m.includes('no pull request number')),
     'expected info log mentioning missing PR number'
+  );
+});
+
+test('comment body uses an absolute docs guide URL', () => {
+  const body = buildCommentBody('ineligible', {
+    owner: 'acme',
+    repo: 'demo',
+    defaultBranch: 'develop',
+  });
+  assert.match(
+    body,
+    /https:\/\/github\.com\/acme\/demo\/blob\/develop\/dev-docs\/high-level\/openspec-requirements\.md/
   );
 });
 

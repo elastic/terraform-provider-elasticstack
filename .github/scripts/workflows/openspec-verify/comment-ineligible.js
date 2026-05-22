@@ -1,7 +1,16 @@
-function buildCommentBody(selectionReason) {
+function buildDocsGuideUrl(owner, repo, defaultBranch) {
+  const branch = defaultBranch && String(defaultBranch).trim() !== '' ? defaultBranch : 'main';
+  return `https://github.com/${owner}/${repo}/blob/${branch}/dev-docs/high-level/openspec-requirements.md`;
+}
+
+function buildCommentBody(selectionReason, { owner, repo, defaultBranch } = {}) {
   const reason = typeof selectionReason === 'string' && selectionReason.trim() !== ''
     ? selectionReason
     : '(no reason provided by classify_and_select)';
+
+  const docsUrl = owner && repo
+    ? buildDocsGuideUrl(owner, repo, defaultBranch)
+    : 'https://github.com/elastic/terraform-provider-elasticstack/blob/main/dev-docs/high-level/openspec-requirements.md';
 
   return [
     '**OpenSpec verify skipped** ⚠️',
@@ -17,7 +26,7 @@ function buildCommentBody(selectionReason) {
     '- All changed files under that path have status `added` or `modified` only (no renames, deletes, etc.).',
     '- No other OpenSpec change directories (non-archive) appear in the PR.',
     '',
-    'See the [OpenSpec authoring guide](../../dev-docs/high-level/openspec-requirements.md) for details.',
+    `See the [OpenSpec authoring guide](${docsUrl}) for details.`,
   ].join('\n');
 }
 
@@ -29,7 +38,12 @@ module.exports = async function ({ github, context, core }) {
   }
 
   const selectionReason = process.env.SELECTION_REASON ?? '';
-  const body = buildCommentBody(selectionReason);
+  const defaultBranch = context.payload.repository?.default_branch;
+  const body = buildCommentBody(selectionReason, {
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    defaultBranch,
+  });
 
   await github.rest.issues.createComment({
     owner: context.repo.owner,
