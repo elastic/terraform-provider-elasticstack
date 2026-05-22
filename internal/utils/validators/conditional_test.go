@@ -174,6 +174,55 @@ func TestAllowedIfDependentPathOneOf(t *testing.T) {
 	}
 }
 
+func TestAllowedIfDependentPathOneOf_NullDependentErrorMessage(t *testing.T) {
+	t.Parallel()
+
+	testSchema := schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"connection_type": schema.StringAttribute{Optional: true},
+			"auth_type":       schema.StringAttribute{Optional: true},
+		},
+	}
+
+	currentValue := types.StringValue("plaintext")
+	dependentValue := types.StringNull()
+
+	currentTfValue, err := currentValue.ToTerraformValue(context.Background())
+	require.NoError(t, err)
+	dependentTfValue, err := dependentValue.ToTerraformValue(context.Background())
+	require.NoError(t, err)
+
+	rawConfig := tftypes.NewValue(
+		tftypes.Object{
+			AttributeTypes: map[string]tftypes.Type{
+				"connection_type": tftypes.String,
+				"auth_type":       tftypes.String,
+			},
+		},
+		map[string]tftypes.Value{
+			"connection_type": currentTfValue,
+			"auth_type":       dependentTfValue,
+		},
+	)
+
+	config := tfsdk.Config{Raw: rawConfig, Schema: testSchema}
+	v := AllowedIfDependentPathOneOf(
+		path.Root("auth_type"),
+		[]string{"none"},
+		AllowedIfOptions{AllowNullDependent: false},
+	)
+
+	response := &validator.StringResponse{}
+	v.ValidateString(context.Background(), validator.StringRequest{
+		Path:        path.Root("connection_type"),
+		ConfigValue: currentValue,
+		Config:      config,
+	}, response)
+
+	require.True(t, response.Diagnostics.HasError())
+	require.Contains(t, response.Diagnostics.Errors()[0].Detail(), `auth_type is "<unset>"`)
+}
+
 func TestAllowedIfDependentPathOneOf_Description(t *testing.T) {
 	v := AllowedIfDependentPathOneOf(
 		path.Root("auth_type"),

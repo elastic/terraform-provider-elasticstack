@@ -47,7 +47,16 @@ func attrValueIsUnsetForConditionalValidation(val attr.Value) bool {
 	return false
 }
 
-type valueValidator func(dependentFieldHasAllowedValue bool, dependentValueStr string, val attr.Value, p path.Path) diag.Diagnostics
+type valueValidator func(dependentFieldHasAllowedValue bool, dependentEval dependentEvaluation, val attr.Value, p path.Path) diag.Diagnostics
+
+const unsetDependentValueLabel = "<unset>"
+
+func (eval dependentEvaluation) valueForErrorMessage() string {
+	if eval.isNull {
+		return unsetDependentValueLabel
+	}
+	return eval.valueStr
+}
 
 // AllowedIfOptions configures AllowedIf conditional validators.
 type AllowedIfOptions struct {
@@ -190,7 +199,7 @@ func (v Condition) evaluateStaticPath(ctx context.Context, config tfsdk.Config) 
 // allowed values, the condition is considered not met and the method returns false.
 // AllowedIf validators treat unknown dependents as satisfying the condition; null
 // dependents are allowed only when AllowedIfOptions.AllowNullDependent is true.
-func (v Condition) dependentFieldHasAllowedValue(ctx context.Context, config tfsdk.Config, currentPath path.Path) (bool, string, diag.Diagnostics) {
+func (v Condition) dependentFieldHasAllowedValue(ctx context.Context, config tfsdk.Config, currentPath path.Path) (bool, dependentEvaluation, diag.Diagnostics) {
 	var eval dependentEvaluation
 	var diags diag.Diagnostics
 
@@ -200,28 +209,28 @@ func (v Condition) dependentFieldHasAllowedValue(ctx context.Context, config tfs
 		eval, diags = v.evaluateStaticPath(ctx, config)
 	}
 	if diags.HasError() {
-		return false, "", diags
+		return false, dependentEvaluation{}, diags
 	}
 
 	if v.allowedIfOptions != nil {
 		if eval.isUnknown {
-			return true, eval.valueStr, diags
+			return true, eval, diags
 		}
 		if eval.isNull && v.allowedIfOptions.AllowNullDependent {
-			return true, eval.valueStr, diags
+			return true, eval, diags
 		}
 	}
 
-	return eval.matchesAllowed, eval.valueStr, diags
+	return eval.matchesAllowed, eval, diags
 }
 
 func (v Condition) validate(ctx context.Context, config tfsdk.Config, val attr.Value, p path.Path) diag.Diagnostics {
-	dependentFieldHasAllowedValue, dependentValueStr, diags := v.dependentFieldHasAllowedValue(ctx, config, p)
+	dependentFieldHasAllowedValue, dependentEval, diags := v.dependentFieldHasAllowedValue(ctx, config, p)
 	if diags.HasError() {
 		return diags
 	}
 
-	return v.validateValue(dependentFieldHasAllowedValue, dependentValueStr, val, p)
+	return v.validateValue(dependentFieldHasAllowedValue, dependentEval, val, p)
 }
 
 func (v Condition) ValidateString(ctx context.Context, request validator.StringRequest, response *validator.StringResponse) {
@@ -273,14 +282,14 @@ func DependantPathOneOf(dependentPath path.Path, allowedValues []string) Conditi
 				allowedValues,
 			)
 		},
-		validateValue: func(dependentFieldHasAllowedValue bool, dependentValueStr string, _ attr.Value, p path.Path) diag.Diagnostics {
+		validateValue: func(dependentFieldHasAllowedValue bool, dependentEval dependentEvaluation, _ attr.Value, p path.Path) diag.Diagnostics {
 			if !dependentFieldHasAllowedValue {
 				var diags diag.Diagnostics
 				diags.AddAttributeError(p, "Invalid Configuration", fmt.Sprintf("Attribute '%s' is not one of %v, %s is %q",
 					dependentPath,
 					allowedValues,
 					dependentPath,
-					dependentValueStr,
+					dependentEval.valueStr,
 				))
 
 				return diags
@@ -316,7 +325,7 @@ func AllowedIfDependentPathOneOf(dependentPath path.Path, allowedValues []string
 			}
 			return fmt.Sprintf("value can only be set when %s is one of %v", dependentPath, allowedValues)
 		},
-		validateValue: func(dependentFieldHasAllowedValue bool, dependentValueStr string, val attr.Value, p path.Path) diag.Diagnostics {
+		validateValue: func(dependentFieldHasAllowedValue bool, dependentEval dependentEvaluation, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
 			isSet := !attrValueIsUnsetForConditionalValidation(val)
 
@@ -325,6 +334,7 @@ func AllowedIfDependentPathOneOf(dependentPath path.Path, allowedValues []string
 			}
 
 			if isSet {
+				dependentValueLabel := dependentEval.valueForErrorMessage()
 				if len(allowedValues) == 1 {
 					diags.AddAttributeError(p, "Invalid Configuration",
 						fmt.Sprintf("Attribute %s can only be set when %s equals %q, but %s is %q",
@@ -332,7 +342,7 @@ func AllowedIfDependentPathOneOf(dependentPath path.Path, allowedValues []string
 							dependentPath,
 							allowedValues[0],
 							dependentPath,
-							dependentValueStr,
+							dependentValueLabel,
 						),
 					)
 				} else {
@@ -342,7 +352,7 @@ func AllowedIfDependentPathOneOf(dependentPath path.Path, allowedValues []string
 							dependentPath,
 							allowedValues,
 							dependentPath,
-							dependentValueStr,
+							dependentValueLabel,
 						),
 					)
 				}
@@ -414,7 +424,7 @@ func RequiredIfDependentPathOneOf(dependentPath path.Path, allowedValues []strin
 			}
 			return fmt.Sprintf("value required when %s is one of %v", dependentPath, allowedValues)
 		},
-		validateValue: func(dependentFieldHasAllowedValue bool, _ string, val attr.Value, p path.Path) diag.Diagnostics {
+		validateValue: func(dependentFieldHasAllowedValue bool, _ dependentEvaluation, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
 			if val == nil || val.IsUnknown() {
 				return diags
@@ -471,7 +481,7 @@ func ForbiddenIfDependentPathOneOf(dependentPath path.Path, allowedValues []stri
 			}
 			return fmt.Sprintf("value cannot be set when %s is one of %v", dependentPath, allowedValues)
 		},
-		validateValue: func(dependentFieldHasAllowedValue bool, _ string, val attr.Value, p path.Path) diag.Diagnostics {
+		validateValue: func(dependentFieldHasAllowedValue bool, _ dependentEvaluation, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
 
 			if !dependentFieldHasAllowedValue {
@@ -520,7 +530,7 @@ func AllowedIfDependentPathExpressionOneOf(dependentPathExpression path.Expressi
 			}
 			return fmt.Sprintf("value can only be set when %s is one of %v", descStr, allowedValues)
 		},
-		validateValue: func(dependentFieldHasAllowedValue bool, dependentValueStr string, val attr.Value, p path.Path) diag.Diagnostics {
+		validateValue: func(dependentFieldHasAllowedValue bool, dependentEval dependentEvaluation, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
 			isSet := !attrValueIsUnsetForConditionalValidation(val)
 
@@ -529,6 +539,7 @@ func AllowedIfDependentPathExpressionOneOf(dependentPathExpression path.Expressi
 			}
 
 			if isSet {
+				dependentValueLabel := dependentEval.valueForErrorMessage()
 				if len(allowedValues) == 1 {
 					diags.AddAttributeError(p, "Invalid Configuration",
 						fmt.Sprintf("Attribute %s can only be set when %s equals %q, but %s is %q",
@@ -536,7 +547,7 @@ func AllowedIfDependentPathExpressionOneOf(dependentPathExpression path.Expressi
 							descStr,
 							allowedValues[0],
 							descStr,
-							dependentValueStr,
+							dependentValueLabel,
 						),
 					)
 				} else {
@@ -546,7 +557,7 @@ func AllowedIfDependentPathExpressionOneOf(dependentPathExpression path.Expressi
 							descStr,
 							allowedValues,
 							descStr,
-							dependentValueStr,
+							dependentValueLabel,
 						),
 					)
 				}
@@ -586,7 +597,7 @@ func RequiredIfDependentPathExpressionOneOf(dependentPathExpression path.Express
 			}
 			return fmt.Sprintf("value required when %s is one of %v", descStr, allowedValues)
 		},
-		validateValue: func(dependentFieldHasAllowedValue bool, _ string, val attr.Value, p path.Path) diag.Diagnostics {
+		validateValue: func(dependentFieldHasAllowedValue bool, _ dependentEvaluation, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
 			if val == nil || val.IsUnknown() {
 				return diags
@@ -656,7 +667,7 @@ func ForbiddenIfDependentPathExpressionOneOf(dependentPathExpression path.Expres
 			}
 			return fmt.Sprintf("value cannot be set when %s is one of %v", descStr, allowedValues)
 		},
-		validateValue: func(dependentFieldHasAllowedValue bool, _ string, val attr.Value, p path.Path) diag.Diagnostics {
+		validateValue: func(dependentFieldHasAllowedValue bool, _ dependentEvaluation, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
 
 			if !dependentFieldHasAllowedValue {
@@ -712,7 +723,7 @@ func OneOfWhenDependentPathExpressionEquals(dependentPathExpression path.Express
 		description: func() string {
 			return fmt.Sprintf("value must be one of %v when %s equals %q", allowedValues, descStr, dependentValue)
 		},
-		validateValue: func(dependentFieldHasAllowedValue bool, dependentValueStr string, val attr.Value, p path.Path) diag.Diagnostics {
+		validateValue: func(dependentFieldHasAllowedValue bool, dependentEval dependentEvaluation, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
 
 			if !dependentFieldHasAllowedValue {
@@ -734,7 +745,7 @@ func OneOfWhenDependentPathExpressionEquals(dependentPathExpression path.Express
 						p,
 						strings.Join(allowedValues, ", "),
 						descStr,
-						dependentValueStr,
+						dependentEval.valueStr,
 						currentValueStr,
 					),
 				)
@@ -756,7 +767,7 @@ func ForbiddenIfDrilldownVariantSiblingNestedPresent(dependentPathExpression pat
 		description: func() string {
 			return fmt.Sprintf("value cannot be set when %s is also configured", descStr)
 		},
-		validateValue: func(dependentFieldHasAllowedValue bool, _ string, val attr.Value, p path.Path) diag.Diagnostics {
+		validateValue: func(dependentFieldHasAllowedValue bool, _ dependentEvaluation, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
 			if !dependentFieldHasAllowedValue {
 				return diags
