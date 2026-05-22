@@ -2,7 +2,7 @@
 
 ### Requirement: Provider gate evaluates golangci-lint as a distinct job result
 
-The `gateProvider` function in `lib/gate-provider.js` SHALL accept a `golangciLintResult` parameter alongside the existing `lintResult` parameter. Both results SHALL be included in the set of job results that the gate validates and evaluates. The gate SHALL fail if either `lintResult` or `golangciLintResult` is `failure` or `cancelled`. The gate SHALL pass when both are `success`. The gate SHALL treat both as legitimately skipped (returning `passed: true`) when `classifyResult` is `false` and all job results — including both lint results — are `skipped`.
+The `gateProvider` function in `lib/gate-provider.js` SHALL accept a `golangciLintResult` parameter alongside the existing `lintResult` parameter. Both results SHALL be included in the set of job results that the gate validates and evaluates, together with `buildResult` and `testResult`. The gate SHALL pass only when `classifyResult=true` and all evaluated job results (`buildResult`, `lintResult`, `golangciLintResult`, and `testResult`) are `success`. The gate SHALL fail if any evaluated job result is `failure` or `cancelled`. The gate SHALL treat all four jobs as legitimately skipped (returning `passed: true`) when `classifyResult` is `false` and all job results — including both lint results — are `skipped`.
 
 The `fields` array for the `provider` gate in `lib/runners/gate.js` SHALL include `GOLANGCI_LINT_RESULT` alongside `LINT_RESULT`.
 

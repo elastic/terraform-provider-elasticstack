@@ -22,7 +22,7 @@ Add a new job named `golangci-lint` with the following properties:
 - Steps:
   1. `actions/checkout` (pinned SHA, `persist-credentials: false`)
   2. `actions/setup-go` (pinned SHA, `go-version-file: 'go.mod'`, `cache: true`)
-  3. `golangci/golangci-lint-action` — use the latest pinned SHA for `v9`, with `version: v2.12.2`
+  3. `golangci/golangci-lint-action` — pin to commit `1e7e51e771db61008b38414a730f564565cf7c20` (`v9.2.0`), with `version: v2.12.2`
 
 The action will auto-detect `.custom-gcl.yml` and build/run the custom binary.
 
@@ -32,11 +32,11 @@ The action will auto-detect `.custom-gcl.yml` and build/run the custom binary.
 
 **File:** `.github/workflows/provider.yml`
 
-Replace the single `run: make check-lint` step with a step that calls the remaining targets directly:
+Replace the single `run: make check-lint` step with a step that keeps the required setup prerequisites while calling only the remaining targets:
 
 ```yaml
 - name: Lint
-  run: make check-openspec check-fmt gen check-docs
+  run: make setup check-openspec check-fmt gen check-docs
 ```
 
 No other steps in the `lint` job change (Node, Go, Terraform setup remain).
@@ -48,7 +48,7 @@ No other steps in the `lint` job change (Node, Go, Terraform setup remain).
 **File:** `.github/workflows/provider.yml`
 
 1. Add `golangci-lint` to the `needs` list of the `gate` job (alongside `classify`, `build`, `lint`, `test`).
-2. Add `PROVIDER_GATE_GOLANGCI_LINT_RESULT: ${{ needs.golangci-lint.result }}` to the `env` block of the `gate` step.
+2. Add `PROVIDER_GATE_GOLANGCI_LINT_RESULT: ${{ needs['golangci-lint'].result }}` to the `env` block of the `gate` step.
 
 ---
 

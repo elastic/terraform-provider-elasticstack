@@ -28,7 +28,7 @@ None — this is a CI infrastructure change only.
 
 ### Modified Capabilities
 
-None — no spec-level behaviour changes.
+- `workflow-script-modules` — to require the provider gate to evaluate `golangci-lint` as a distinct job result alongside the existing lint, build, and test jobs.
 
 ## Impact
 

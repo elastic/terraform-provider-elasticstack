@@ -35,6 +35,11 @@ linters:
       - third_party$
       - builtin$
       - examples$
+    rules:
+      - path: '(.+)_test\.go'
+        linters:
+          - goconst
+          - govet
   settings:
     lll:
       line-length: 200

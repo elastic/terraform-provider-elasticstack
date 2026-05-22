@@ -77,7 +77,7 @@ jobs:
           terraform_wrapper: false
 
       - name: Lint
-        run: make check-openspec check-fmt gen check-docs
+        run: make setup check-openspec check-fmt gen check-docs
 
   golangci-lint:
     name: Go Lint (golangci-lint)
