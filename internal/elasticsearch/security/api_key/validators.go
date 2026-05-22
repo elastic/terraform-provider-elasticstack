@@ -64,18 +64,16 @@ func (v requiresTypeValidator) validateType(ctx context.Context, config tfsdk.Co
 		return
 	}
 
-	// If type is unknown or empty, we can't validate
-	if typeAttr == nil {
-		return
-	}
+	// Treat unset type the same as Open(): default to rest.
+	apiKeyType := effectiveAPIKeyTypeFromOptionalString(typeAttr)
 
 	// Check if the current type matches the expected type
-	if *typeAttr != v.expectedType {
+	if apiKeyType != v.expectedType {
 		diagnostics.AddAttributeError(
 			attrPath,
-			fmt.Sprintf("Attribute not valid for API key type '%s'", *typeAttr),
+			fmt.Sprintf("Attribute not valid for API key type '%s'", apiKeyType),
 			fmt.Sprintf("The %s attribute can only be used when type='%s', but type='%s' was specified.",
-				attrPath.String(), v.expectedType, *typeAttr),
+				attrPath.String(), v.expectedType, apiKeyType),
 		)
 		return
 	}

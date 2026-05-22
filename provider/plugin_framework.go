@@ -101,6 +101,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/privatelocation"
 	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
 	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -118,7 +119,8 @@ const (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ fwprovider.Provider = &Provider{}
+	_ fwprovider.Provider                       = &Provider{}
+	_ fwprovider.ProviderWithEphemeralResources = &Provider{}
 )
 
 type Provider struct {
@@ -163,6 +165,7 @@ func (p *Provider) Configure(ctx context.Context, req fwprovider.ConfigureReques
 
 	res.DataSourceData = factory
 	res.ResourceData = factory
+	res.EphemeralResourceData = factory
 }
 
 func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSource {
@@ -183,6 +186,12 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 	}
 
 	return resources
+}
+
+func (p *Provider) EphemeralResources(_ context.Context) []func() ephemeral.EphemeralResource {
+	return []func() ephemeral.EphemeralResource{
+		apikey.NewEphemeralResource,
+	}
 }
 
 func (p *Provider) resources(_ context.Context) []func() resource.Resource {
