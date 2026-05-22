@@ -36,6 +36,6 @@
 ## 5. Benchmark Coverage and Validation
 
 - [x] 5.1 Extend `benchmark_test.go` with a `BenchmarkAnalyzer_LargePackage` case (or document that the existing benches now reflect post-optimisation numbers) and run `go test ./analysis/acctestconfigdirlint/... -bench=. -benchmem -count=5` to capture stable before/after numbers
-- [ ] 5.2 Run `make lint-perf` and verify wall-clock golangci time is meaningfully reduced; commit the new `lint-perf-output/` snapshot as a reference baseline
-- [ ] 5.3 Run `make build` to confirm the full provider still compiles
-- [ ] 5.4 Run `go vet ./analysis/...` and `make lint` (or `golangci-lint run ./analysis/...`) to confirm no new lint issues
+- [x] 5.2 Run `make lint-perf` and verify wall-clock golangci time is meaningfully reduced; commit the new `lint-perf-output/` snapshot as a reference baseline (golangci wall-clock dropped from ~29.5s to ~6.5s; baseline snapshot committed at `analysis/lint-perf-output/baseline-acctestconfigdirlint-perf/` with timestamped runs gitignored)
+- [x] 5.3 Run `make build` to confirm the full provider still compiles
+- [x] 5.4 Run `go vet ./analysis/...` and `make lint` (or `golangci-lint run ./analysis/...`) to confirm no new lint issues

@@ -2,7 +2,6 @@ node_modules/
 
 # pr-monitoring-loop watcher state (per-PR seen IDs, last-poll timestamps)
 .agents/skills/pr-monitoring-loop/scripts/state/
-false
 
 *.dll
 *.exe
@@ -50,8 +49,12 @@ certs
 .ci/.github_*
 .terraform.lock.hcl
 
-# Custom linter performance measurement artifacts
-analysis/lint-perf-output/
+# Custom linter performance measurement artifacts.
+# Timestamped runs from `make lint-perf` are local-only; the committed baseline
+# lives at analysis/lint-perf-output/baseline-*/ and is preserved by the
+# explicit unignore below.
+/analysis/lint-perf-output/*
+!/analysis/lint-perf-output/baseline-*/
 
 
 # Local env file (template is .env.template)
