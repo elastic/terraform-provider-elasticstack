@@ -1,4 +1,7 @@
 ---
+imports: 
+  - shared/setup-dev.md
+  - shared/go-source-analysis.md
 on:
   schedule:
   - cron: daily
@@ -90,40 +93,13 @@ jobs:
       gate_reason: ${{ steps.compute_issue_slots.outputs.gate_reason }}
       issue_slots_available: ${{ steps.compute_issue_slots.outputs.issue_slots_available }}
       open_issues: ${{ steps.compute_issue_slots.outputs.open_issues }}
-mcp-servers:
-  serena:
-    allowed:
-    - activate_project
-    - get_symbols_overview
-    - find_symbol
-    - search_for_pattern
-    - find_referencing_symbols
-    - read_file
-    - get_symbol_documentation
-    args:
-    - --network
-    - host
-    container: ghcr.io/github/serena-mcp-server:latest
-    entrypoint: serena
-    entrypointArgs:
-    - start-mcp-server
-    - --context
-    - claude-code
-    - --project
-    - ${{ github.workspace }}
-    mounts:
-    - ${{ github.workspace }}:${{ github.workspace }}:rw
 name: Semantic Function Refactor
 timeout-minutes: 35
 tools:
-  bash:
-  - find . -name "*.go" ! -name "*_test.go" -type f
-  - find . -type f -name "*.go" ! -name "*_test.go"
-  - find . -maxdepth 2 -ls
-  - wc -l ./**/*.go
-  - head -n * ./**/*.go
-  - grep -r "^func " . --include="*.go"
-  - cat ./**/*.go
+  cli-proxy: true
+  github:
+    mode: gh-proxy
+    toolsets: [default, issues]
   repo-memory:
   - create-orphan: true
     file-glob:

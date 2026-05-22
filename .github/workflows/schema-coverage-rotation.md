@@ -1,7 +1,5 @@
 ---
-imports: 
-  - shared/setup-dev.md
-  - shared/go-source-analysis.md
+imports: [shared/setup-dev.md]
 name: Schema Coverage Rotation
 description: Rotates schema-coverage analysis across stale provider entities and opens actionable test-improvement issues.
 on:
