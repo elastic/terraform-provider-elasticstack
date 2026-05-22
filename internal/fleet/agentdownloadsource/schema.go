@@ -20,8 +20,6 @@ package agentdownloadsource
 import (
 	"context"
 
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -30,8 +28,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+func getSchema(_ context.Context) schema.Schema {
+	return schema.Schema{
 		Description: "Creates a new Fleet Agent Binary Download Source.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -78,9 +76,6 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 					setplanmodifier.UseStateForUnknown(),
 				},
 			},
-		},
-		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 		},
 	}
 }
