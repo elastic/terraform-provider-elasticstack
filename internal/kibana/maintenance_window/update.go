@@ -48,17 +48,6 @@ func updateMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedCl
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	readMaintenanceWindowResponse, readDiags := kibanaoapi.GetMaintenanceWindow(ctx, oapiClient, req.SpaceID, req.WriteID)
-	diags.Append(readDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	diags.Append(plan.fromAPIReadResponse(ctx, readMaintenanceWindowResponse)...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
 	plan.ID = types.StringValue(req.WriteID)
 	plan.SpaceID = types.StringValue(req.SpaceID)
 

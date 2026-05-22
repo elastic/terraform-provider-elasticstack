@@ -29,15 +29,10 @@ func updateStream(ctx context.Context, client *clients.KibanaScopedClient, req e
 	plan := req.Plan
 	var diags diag.Diagnostics
 
-	readModel, upsertDiags := upsertStream(ctx, client, plan)
-	diags.Append(upsertDiags...)
+	diags.Append(writeStream(ctx, client, plan)...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[streamModel]{}, diags
 	}
-	if readModel == nil {
-		diags.AddError("Error reading stream after update", "The stream was updated but could not be read back.")
-		return entitycore.KibanaWriteResult[streamModel]{}, diags
-	}
 
-	return entitycore.KibanaWriteResult[streamModel]{Model: *readModel}, diags
+	return entitycore.KibanaWriteResult[streamModel]{Model: plan}, diags
 }
