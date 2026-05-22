@@ -426,7 +426,7 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv kibanaWriteI
 	if !found {
 		diags.AddError(
 			"Resource not found",
-			fmt.Sprintf("%s_%s %q was not found after write", r.component, r.resourceName, writeID),
+			fmt.Sprintf("%s_%s %q was not found after write", r.component, r.resourceName, readResourceID),
 		)
 		return diags
 	}
