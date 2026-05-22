@@ -15,33 +15,19 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package apikey
+package resource
 
 import (
 	"context"
-	"regexp"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/planmodifiers"
-)
-
-const (
-	currentSchemaVersion   int64 = 2
-	restAPIKeyType               = "rest"
-	crossClusterAPIKeyType       = "cross_cluster"
-	defaultAPIKeyType            = restAPIKeyType
-
-	apiKeyNameInvalidMessage = "must contain alphanumeric characters (a-z, A-Z, 0-9), spaces, punctuation, and printable symbols in the Basic Latin (ASCII) block. " +
-		"Leading or trailing whitespace is not allowed"
 )
 
 // getSchema returns the schema for the given version. The elasticsearch_connection
@@ -60,47 +46,37 @@ func getSchema(version int64) schema.Schema {
 				},
 			},
 			"key_id": schema.StringAttribute{
-				Description: "Unique id for this API key.",
+				Description: apikey.KeyIDDescription,
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"name": schema.StringAttribute{
-				Description: "Specifies the name for this API key.",
+				Description: apikey.NameDescription,
 				Required:    true,
-				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 1024),
-					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^([[:graph:]]| )+$`),
-						apiKeyNameInvalidMessage,
-					),
-				},
+				Validators:  apikey.NameValidators(),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"type": schema.StringAttribute{
-				Description: "The type of API key. Valid values are 'rest' (default) and 'cross_cluster'. Cross-cluster API keys are used for cross-cluster search and replication.",
+				Description: apikey.TypeDescription,
 				Optional:    true,
 				Computed:    true,
-				Validators: []validator.String{
-					stringvalidator.OneOf(defaultAPIKeyType, crossClusterAPIKeyType),
-				},
+				Validators:  apikey.TypeValidators(),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 					stringplanmodifier.UseStateForUnknown(),
-					planmodifiers.StringUseDefaultIfUnknown(defaultAPIKeyType),
+					planmodifiers.StringUseDefaultIfUnknown(apikey.DefaultAPIKeyType),
 				},
 			},
 			"role_descriptors": schema.StringAttribute{
-				Description: "Role descriptors for this API key.",
-				CustomType:  customtypes.NewJSONWithDefaultsType(populateRoleDescriptorsDefaults),
+				Description: apikey.RoleDescriptorsDescription,
+				CustomType:  apikey.RoleDescriptorsCustomType(),
 				Optional:    true,
 				Computed:    true,
-				Validators: []validator.String{
-					requiresType(defaultAPIKeyType),
-				},
+				Validators:  apikey.RoleDescriptorsValidators(),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					requiresReplaceIfUpdateNotSupported(),
@@ -108,21 +84,21 @@ func getSchema(version int64) schema.Schema {
 				},
 			},
 			"expiration": schema.StringAttribute{
-				Description: "Expiration time for the API key. By default, API keys never expire.",
+				Description: apikey.ExpirationDescription,
 				Optional:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"expiration_timestamp": schema.Int64Attribute{
-				Description: "Expiration time in milliseconds for the API key. By default, API keys never expire.",
+				Description: apikey.ExpirationTimestampDescription,
 				Computed:    true,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.UseStateForUnknown(),
 				},
 			},
 			"metadata": schema.StringAttribute{
-				Description: "Arbitrary metadata that you want to associate with the API key.",
+				Description: apikey.MetadataDescription,
 				Optional:    true,
 				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
@@ -132,56 +108,13 @@ func getSchema(version int64) schema.Schema {
 				},
 			},
 			"access": schema.SingleNestedAttribute{
-				Description: "Access configuration for cross-cluster API keys. Only applicable when type is 'cross_cluster'.",
+				Description: apikey.AccessDescription,
 				Optional:    true,
-				Validators: []validator.Object{
-					requiresType(crossClusterAPIKeyType),
-				},
-				Attributes: map[string]schema.Attribute{
-					"search": schema.ListNestedAttribute{
-						Description: "A list of search configurations for which the cross-cluster API key will have search privileges.",
-						Optional:    true,
-						NestedObject: schema.NestedAttributeObject{
-							Attributes: map[string]schema.Attribute{
-								"names": schema.ListAttribute{
-									Description: "A list of index patterns for search.",
-									Required:    true,
-									ElementType: types.StringType,
-								},
-								"field_security": schema.StringAttribute{
-									Description: "Field-level security configuration in JSON format.",
-									Optional:    true,
-									CustomType:  jsontypes.NormalizedType{},
-								},
-								"query": schema.StringAttribute{
-									Description: "Query to filter documents for search operations in JSON format.",
-									Optional:    true,
-									CustomType:  jsontypes.NormalizedType{},
-								},
-								"allow_restricted_indices": schema.BoolAttribute{
-									Description: "Whether to allow access to restricted indices.",
-									Optional:    true,
-								},
-							},
-						},
-					},
-					"replication": schema.ListNestedAttribute{
-						Description: "A list of replication configurations for which the cross-cluster API key will have replication privileges.",
-						Optional:    true,
-						NestedObject: schema.NestedAttributeObject{
-							Attributes: map[string]schema.Attribute{
-								"names": schema.ListAttribute{
-									Description: "A list of index patterns for replication.",
-									Required:    true,
-									ElementType: types.StringType,
-								},
-							},
-						},
-					},
-				},
+				Validators:  apikey.AccessValidators(),
+				Attributes:  apikey.AccessAttributesResource(),
 			},
 			"api_key": schema.StringAttribute{
-				Description: "Generated API Key.",
+				Description: apikey.APIKeyDescription,
 				Sensitive:   true,
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
@@ -189,7 +122,7 @@ func getSchema(version int64) schema.Schema {
 				},
 			},
 			"encoded": schema.StringAttribute{
-				Description: "API key credentials which is the Base64-encoding of the UTF-8 representation of the id and api_key joined by a colon (:).",
+				Description: apikey.EncodedDescription,
 				Sensitive:   true,
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
@@ -205,7 +138,7 @@ func requiresReplaceIfUpdateNotSupported() planmodifier.String {
 		func(ctx context.Context, res planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
 			ver, _ := clusterVersionOfLastRead(ctx, res.Private)
 
-			resp.RequiresReplace = ver != nil && ver.LessThan(MinVersionWithUpdate)
+			resp.RequiresReplace = ver != nil && ver.LessThan(apikey.MinVersionWithUpdate)
 		},
 		"Requires replace if the server does not support update",
 		"Requires replace if the server does not support update",

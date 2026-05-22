@@ -279,7 +279,7 @@ func TestPopulateRoleDescriptorsDefaults(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := populateRoleDescriptorsDefaults(tt.input)
+			result := PopulateRoleDescriptorsDefaults(tt.input)
 			assert.Equal(t, tt.expected, result)
 
 			// Verify that the function modifies the input map
@@ -290,6 +290,6 @@ func TestPopulateRoleDescriptorsDefaults(t *testing.T) {
 
 func TestPopulateRoleDescriptorsDefaults_NilInput(t *testing.T) {
 	var input map[string]models.APIKeyRoleDescriptor
-	result := populateRoleDescriptorsDefaults(input)
+	result := PopulateRoleDescriptorsDefaults(input)
 	assert.Nil(t, result)
 }

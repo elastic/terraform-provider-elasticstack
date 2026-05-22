@@ -100,7 +100,7 @@ func TestRequiresTypeValidator(t *testing.T) {
 			}
 
 			response := &validator.StringResponse{}
-			requiresType("rest").ValidateString(context.Background(), request, response)
+			RequiresType("rest").ValidateString(context.Background(), request, response)
 
 			if testCase.expectError && !response.Diagnostics.HasError() {
 				t.Errorf("Expected error but got none")

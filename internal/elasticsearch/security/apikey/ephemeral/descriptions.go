@@ -15,9 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package apikey
+package ephemeral
 
 import _ "embed"
 
 //go:embed descriptions/ephemeral_resource.md
-var ephemeralResourceDescription string
+var resourceDescription string

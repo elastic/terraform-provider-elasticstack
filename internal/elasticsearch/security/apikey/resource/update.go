@@ -15,32 +15,33 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package apikey
+package resource
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func writeAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[tfModel]) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
+func writeAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[apikey.TfModel]) (entitycore.WriteResult[apikey.TfModel], diag.Diagnostics) {
 	planModel := req.Plan
 	var diags diag.Diagnostics
-	if planModel.Type.ValueString() == crossClusterAPIKeyType {
+	if planModel.Type.ValueString() == apikey.CrossClusterAPIKeyType {
 		diags.Append(updateCrossClusterAPIKey(ctx, client, planModel)...)
 	} else {
 		diags.Append(updateAPIKey(ctx, client, planModel)...)
 	}
-	return entitycore.WriteResult[tfModel]{Model: planModel}, diags
+	return entitycore.WriteResult[apikey.TfModel]{Model: planModel}, diags
 }
 
-func updateCrossClusterAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, planModel tfModel) diag.Diagnostics {
+func updateCrossClusterAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, planModel apikey.TfModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	updateRequest, modelDiags := planModel.toUpdateCrossClusterAPIRequest(ctx)
+	updateRequest, modelDiags := planModel.ToUpdateCrossClusterAPIRequest(ctx)
 	diags.Append(modelDiags...)
 	if diags.HasError() {
 		return diags
@@ -50,15 +51,15 @@ func updateCrossClusterAPIKey(ctx context.Context, client *clients.Elasticsearch
 	return diags
 }
 
-func updateAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, planModel tfModel) diag.Diagnostics {
+func updateAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, planModel apikey.TfModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	diags.Append(validateRestrictionSupport(ctx, client, planModel)...)
+	diags.Append(apikey.ValidateRestrictionSupport(ctx, client, planModel)...)
 	if diags.HasError() {
 		return diags
 	}
 
-	updateRequest, modelDiags := planModel.toUpdateAPIRequest()
+	updateRequest, modelDiags := planModel.ToUpdateAPIRequest()
 	diags.Append(modelDiags...)
 	if diags.HasError() {
 		return diags

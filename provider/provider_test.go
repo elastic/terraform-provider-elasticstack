@@ -24,7 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
-	apikey "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/elastic/terraform-provider-elasticstack/provider"
 	"github.com/hashicorp/go-version"

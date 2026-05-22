@@ -28,12 +28,12 @@ func TestTfModelGetReadResourceID(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		model tfModel
+		model TfModel
 		want  string
 	}{
 		{
 			name: "returns_key_id_when_known_nonempty",
-			model: tfModel{
+			model: TfModel{
 				KeyID: types.StringValue("U-abc"),
 				Name:  types.StringValue("friendly-name"),
 				ID:    types.StringValue("cluster-uuid/U-other"),
@@ -42,7 +42,7 @@ func TestTfModelGetReadResourceID(t *testing.T) {
 		},
 		{
 			name: "parses_resource_id_from_composite_when_key_id_empty",
-			model: tfModel{
+			model: TfModel{
 				KeyID: types.StringValue(""),
 				Name:  types.StringValue("friendly-name"),
 				ID:    types.StringValue("cluster-uuid/the-key-id-segment"),
@@ -51,7 +51,7 @@ func TestTfModelGetReadResourceID(t *testing.T) {
 		},
 		{
 			name: "parses_resource_id_from_composite_when_key_id_unknown",
-			model: tfModel{
+			model: TfModel{
 				KeyID: types.StringUnknown(),
 				ID:    types.StringValue("cluster-uuid/k-from-composite"),
 			},
@@ -59,7 +59,7 @@ func TestTfModelGetReadResourceID(t *testing.T) {
 		},
 		{
 			name: "empty_when_no_key_id_and_no_id",
-			model: tfModel{
+			model: TfModel{
 				KeyID: types.StringNull(),
 				Name:  types.StringValue("only-name"),
 				ID:    types.StringNull(),
@@ -68,7 +68,7 @@ func TestTfModelGetReadResourceID(t *testing.T) {
 		},
 		{
 			name: "empty_when_composite_id_invalid",
-			model: tfModel{
+			model: TfModel{
 				KeyID: types.StringValue(""),
 				ID:    types.StringValue("not-a-composite-id"),
 			},

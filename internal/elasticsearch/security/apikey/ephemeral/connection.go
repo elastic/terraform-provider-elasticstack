@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package apikey
+package ephemeral
 
 import (
 	"context"
@@ -50,7 +50,7 @@ type ephemeralConnectionSnapshot struct {
 
 func encodeElasticsearchConnection(ctx context.Context, connection types.List) (string, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	if !typeutils.IsKnown(connection) || connection.IsNull() {
+	if !typeutils.IsKnown(connection) {
 		return "", diags
 	}
 
@@ -98,53 +98,39 @@ func connectionSnapshotFromList(ctx context.Context, connection types.List) (*ep
 
 func snapshotFromElasticsearchConnection(ctx context.Context, conn clientconfig.ElasticsearchConnection) (*ephemeralConnectionSnapshot, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	snapshot := &ephemeralConnectionSnapshot{}
+	snapshot := &ephemeralConnectionSnapshot{
+		Username:               knownString(conn.Username),
+		Password:               knownString(conn.Password),
+		APIKey:                 knownString(conn.APIKey),
+		BearerToken:            knownString(conn.BearerToken),
+		ESClientAuthentication: knownString(conn.ESClientAuthentication),
+		CAFile:                 knownString(conn.CAFile),
+		CAData:                 knownString(conn.CAData),
+		CertFile:               knownString(conn.CertFile),
+		CertData:               knownString(conn.CertData),
+		KeyFile:                knownString(conn.KeyFile),
+		KeyData:                knownString(conn.KeyData),
+	}
 
-	if typeutils.IsKnown(conn.Username) && !conn.Username.IsNull() {
-		snapshot.Username = conn.Username.ValueString()
-	}
-	if typeutils.IsKnown(conn.Password) && !conn.Password.IsNull() {
-		snapshot.Password = conn.Password.ValueString()
-	}
-	if typeutils.IsKnown(conn.APIKey) && !conn.APIKey.IsNull() {
-		snapshot.APIKey = conn.APIKey.ValueString()
-	}
-	if typeutils.IsKnown(conn.BearerToken) && !conn.BearerToken.IsNull() {
-		snapshot.BearerToken = conn.BearerToken.ValueString()
-	}
-	if typeutils.IsKnown(conn.ESClientAuthentication) && !conn.ESClientAuthentication.IsNull() {
-		snapshot.ESClientAuthentication = conn.ESClientAuthentication.ValueString()
-	}
-	if typeutils.IsKnown(conn.Endpoints) && !conn.Endpoints.IsNull() {
+	if typeutils.IsKnown(conn.Endpoints) {
 		diags.Append(conn.Endpoints.ElementsAs(ctx, &snapshot.Endpoints, false)...)
 	}
-	if typeutils.IsKnown(conn.Headers) && !conn.Headers.IsNull() {
+	if typeutils.IsKnown(conn.Headers) {
 		diags.Append(conn.Headers.ElementsAs(ctx, &snapshot.Headers, false)...)
 	}
-	if typeutils.IsKnown(conn.Insecure) && !conn.Insecure.IsNull() {
+	if typeutils.IsKnown(conn.Insecure) {
 		insecure := conn.Insecure.ValueBool()
 		snapshot.Insecure = &insecure
 	}
-	if typeutils.IsKnown(conn.CAFile) && !conn.CAFile.IsNull() {
-		snapshot.CAFile = conn.CAFile.ValueString()
-	}
-	if typeutils.IsKnown(conn.CAData) && !conn.CAData.IsNull() {
-		snapshot.CAData = conn.CAData.ValueString()
-	}
-	if typeutils.IsKnown(conn.CertFile) && !conn.CertFile.IsNull() {
-		snapshot.CertFile = conn.CertFile.ValueString()
-	}
-	if typeutils.IsKnown(conn.CertData) && !conn.CertData.IsNull() {
-		snapshot.CertData = conn.CertData.ValueString()
-	}
-	if typeutils.IsKnown(conn.KeyFile) && !conn.KeyFile.IsNull() {
-		snapshot.KeyFile = conn.KeyFile.ValueString()
-	}
-	if typeutils.IsKnown(conn.KeyData) && !conn.KeyData.IsNull() {
-		snapshot.KeyData = conn.KeyData.ValueString()
-	}
 
 	return snapshot, diags
+}
+
+func knownString(value types.String) string {
+	if !typeutils.IsKnown(value) {
+		return ""
+	}
+	return value.ValueString()
 }
 
 func connectionListFromSnapshot(ctx context.Context, snapshot *ephemeralConnectionSnapshot) (types.List, diag.Diagnostics) {

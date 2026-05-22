@@ -15,46 +15,42 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package apikey
+package ephemeral
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"regexp"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/security/createapikey"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/security/createcrossclusterapikey"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
+	fwephemeral "github.com/hashicorp/terraform-plugin-framework/ephemeral"
 	eschema "github.com/hashicorp/terraform-plugin-framework/ephemeral/schema"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 var (
-	_ ephemeral.EphemeralResource              = (*EphemeralResource)(nil)
-	_ ephemeral.EphemeralResourceWithConfigure = (*EphemeralResource)(nil)
-	_ ephemeral.EphemeralResourceWithClose     = (*EphemeralResource)(nil)
+	_ fwephemeral.EphemeralResource              = (*Resource)(nil)
+	_ fwephemeral.EphemeralResourceWithConfigure = (*Resource)(nil)
+	_ fwephemeral.EphemeralResourceWithClose     = (*Resource)(nil)
 )
 
 const ephemeralPrivateDataKey = "elasticstack.security_api_key"
 
-type EphemeralResource struct {
+// Resource implements the ephemeral resource for `elasticstack_elasticsearch_security_api_key`.
+type Resource struct {
 	client *clients.ProviderClientFactory
 }
 
-type ephemeralTfModel struct {
+type tfModel struct {
 	ElasticsearchConnection types.List                                                                `tfsdk:"elasticsearch_connection"`
 	KeyID                   types.String                                                              `tfsdk:"key_id"`
 	Name                    types.String                                                              `tfsdk:"name"`
@@ -80,21 +76,22 @@ type ephemeralPrivateData struct {
 	ConnectionJSON    string `json:"connection_json,omitempty"`
 }
 
+// deleteAPIKeyFn is overridable in tests.
 var deleteAPIKeyFn = elasticsearch.DeleteAPIKey
 
 type elasticsearchClientResolver interface {
 	GetElasticsearchClient(ctx context.Context, connection types.List) (*clients.ElasticsearchScopedClient, diag.Diagnostics)
 }
 
-func NewEphemeralResource() ephemeral.EphemeralResource {
-	return &EphemeralResource{}
+func NewResource() fwephemeral.EphemeralResource {
+	return &Resource{}
 }
 
-func (r *EphemeralResource) Metadata(_ context.Context, req ephemeral.MetadataRequest, resp *ephemeral.MetadataResponse) {
+func (r *Resource) Metadata(_ context.Context, req fwephemeral.MetadataRequest, resp *fwephemeral.MetadataResponse) {
 	resp.TypeName = fmt.Sprintf("%s_elasticsearch_security_api_key", req.ProviderTypeName)
 }
 
-func (r *EphemeralResource) Configure(_ context.Context, req ephemeral.ConfigureRequest, resp *ephemeral.ConfigureResponse) {
+func (r *Resource) Configure(_ context.Context, req fwephemeral.ConfigureRequest, resp *fwephemeral.ConfigureResponse) {
 	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -103,129 +100,80 @@ func (r *EphemeralResource) Configure(_ context.Context, req ephemeral.Configure
 	r.client = factory
 }
 
-func (r *EphemeralResource) Schema(_ context.Context, _ ephemeral.SchemaRequest, resp *ephemeral.SchemaResponse) {
-	resp.Schema = getEphemeralSchema()
+func (r *Resource) Schema(_ context.Context, _ fwephemeral.SchemaRequest, resp *fwephemeral.SchemaResponse) {
+	resp.Schema = getSchema()
 }
 
-func getEphemeralSchema() eschema.Schema {
+// ephemeralExpirationDescription overrides the shared ExpirationDescription
+// because the ephemeral flavor cross-references invalidate_on_close.
+const ephemeralExpirationDescription = apikey.ExpirationDescription + " Strongly recommended when invalidate_on_close is false."
+
+func getSchema() eschema.Schema {
 	return eschema.Schema{
-		Description:         ephemeralResourceDescription,
-		MarkdownDescription: ephemeralResourceDescription,
+		Description:         resourceDescription,
+		MarkdownDescription: resourceDescription,
 		Blocks: map[string]eschema.Block{
 			"elasticsearch_connection": providerschema.GetEsEphemeralConnectionBlock(),
 		},
 		Attributes: map[string]eschema.Attribute{
 			"name": eschema.StringAttribute{
-				Description: "Specifies the name for this API key.",
+				Description: apikey.NameDescription,
 				Required:    true,
-				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 1024),
-					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^([[:graph:]]| )+$`),
-						apiKeyNameInvalidMessage,
-					),
-				},
+				Validators:  apikey.NameValidators(),
 			},
 			"type": eschema.StringAttribute{
-				Description: "The type of API key. Valid values are 'rest' (default) and 'cross_cluster'. Cross-cluster API keys are used for cross-cluster search and replication.",
+				Description: apikey.TypeDescription,
 				Optional:    true,
-				Validators: []validator.String{
-					stringvalidator.OneOf(defaultAPIKeyType, crossClusterAPIKeyType),
-				},
+				Validators:  apikey.TypeValidators(),
 			},
 			"role_descriptors": eschema.StringAttribute{
-				Description: "Role descriptors for this API key.",
-				CustomType:  customtypes.NewJSONWithDefaultsType(populateRoleDescriptorsDefaults),
+				Description: apikey.RoleDescriptorsDescription,
+				CustomType:  apikey.RoleDescriptorsCustomType(),
 				Optional:    true,
-				Validators: []validator.String{
-					requiresType(defaultAPIKeyType),
-				},
+				Validators:  apikey.RoleDescriptorsValidators(),
 			},
 			"expiration": eschema.StringAttribute{
-				Description: "Expiration time for the API key. By default, API keys never expire. Strongly recommended when invalidate_on_close is false.",
+				Description: ephemeralExpirationDescription,
 				Optional:    true,
 			},
 			"metadata": eschema.StringAttribute{
-				Description: "Arbitrary metadata that you want to associate with the API key.",
+				Description: apikey.MetadataDescription,
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
 			},
 			"access": eschema.SingleNestedAttribute{
-				Description: "Access configuration for cross-cluster API keys. Only applicable when type is 'cross_cluster'.",
+				Description: apikey.AccessDescription,
 				Optional:    true,
-				Validators: []validator.Object{
-					requiresType(crossClusterAPIKeyType),
-				},
-				Attributes: map[string]eschema.Attribute{
-					"search": eschema.ListNestedAttribute{
-						Description: "A list of search configurations for which the cross-cluster API key will have search privileges.",
-						Optional:    true,
-						NestedObject: eschema.NestedAttributeObject{
-							Attributes: map[string]eschema.Attribute{
-								"names": eschema.ListAttribute{
-									Description: "A list of index patterns for search.",
-									Required:    true,
-									ElementType: types.StringType,
-								},
-								"field_security": eschema.StringAttribute{
-									Description: "Field-level security configuration in JSON format.",
-									Optional:    true,
-									CustomType:  jsontypes.NormalizedType{},
-								},
-								"query": eschema.StringAttribute{
-									Description: "Query to filter documents for search operations in JSON format.",
-									Optional:    true,
-									CustomType:  jsontypes.NormalizedType{},
-								},
-								"allow_restricted_indices": eschema.BoolAttribute{
-									Description: "Whether to allow access to restricted indices.",
-									Optional:    true,
-								},
-							},
-						},
-					},
-					"replication": eschema.ListNestedAttribute{
-						Description: "A list of replication configurations for which the cross-cluster API key will have replication privileges.",
-						Optional:    true,
-						NestedObject: eschema.NestedAttributeObject{
-							Attributes: map[string]eschema.Attribute{
-								"names": eschema.ListAttribute{
-									Description: "A list of index patterns for replication.",
-									Required:    true,
-									ElementType: types.StringType,
-								},
-							},
-						},
-					},
-				},
+				Validators:  apikey.AccessValidators(),
+				Attributes:  apikey.AccessAttributesEphemeral(),
 			},
 			"invalidate_on_close": eschema.BoolAttribute{
 				Description: "When true, invalidates the API key after the Terraform run completes. Defaults to false.",
 				Optional:    true,
 			},
 			"key_id": eschema.StringAttribute{
-				Description: "Unique id for this API key.",
+				Description: apikey.KeyIDDescription,
 				Computed:    true,
 			},
 			"api_key": eschema.StringAttribute{
-				Description: "Generated API Key.",
+				Description: apikey.APIKeyDescription,
 				Sensitive:   true,
 				Computed:    true,
 			},
 			"encoded": eschema.StringAttribute{
-				Description: "API key credentials which is the Base64-encoding of the UTF-8 representation of the id and api_key joined by a colon (:).",
+				Description: apikey.EncodedDescription,
 				Sensitive:   true,
 				Computed:    true,
 			},
 			"expiration_timestamp": eschema.Int64Attribute{
-				Description: "Expiration time in milliseconds for the API key. By default, API keys never expire.",
+				Description: apikey.ExpirationTimestampDescription,
 				Computed:    true,
 			},
 		},
 	}
 }
 
-func (r *EphemeralResource) Open(ctx context.Context, req ephemeral.OpenRequest, resp *ephemeral.OpenResponse) {
+func (r *Resource) Open(ctx context.Context, req fwephemeral.OpenRequest, resp *fwephemeral.OpenResponse) {
 	if r.client == nil {
 		resp.Diagnostics.AddError(
 			"Unconfigured Ephemeral Resource",
@@ -234,7 +182,7 @@ func (r *EphemeralResource) Open(ctx context.Context, req ephemeral.OpenRequest,
 		return
 	}
 
-	var model ephemeralTfModel
+	var model tfModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -246,7 +194,7 @@ func (r *EphemeralResource) Open(ctx context.Context, req ephemeral.OpenRequest,
 		return
 	}
 
-	if effectiveAPIKeyType(model.Type).ValueString() == crossClusterAPIKeyType {
+	if effectiveAPIKeyType(model.Type).ValueString() == apikey.CrossClusterAPIKeyType {
 		resp.Diagnostics.Append(r.openCrossClusterAPIKey(ctx, client, &model)...)
 	} else {
 		resp.Diagnostics.Append(r.openRESTAPIKey(ctx, client, &model)...)
@@ -263,7 +211,7 @@ func (r *EphemeralResource) Open(ctx context.Context, req ephemeral.OpenRequest,
 	resp.Diagnostics.Append(resp.Result.Set(ctx, &model)...)
 }
 
-func (r *EphemeralResource) Close(ctx context.Context, req ephemeral.CloseRequest, resp *ephemeral.CloseResponse) {
+func (r *Resource) Close(ctx context.Context, req fwephemeral.CloseRequest, resp *fwephemeral.CloseResponse) {
 	if r.client == nil {
 		resp.Diagnostics.AddError(
 			"Unconfigured Ephemeral Resource",
@@ -290,18 +238,11 @@ func (r *EphemeralResource) Close(ctx context.Context, req ephemeral.CloseReques
 	resp.Diagnostics.Append(closeAPIKeyIfRequested(ctx, r.client, connection, privateData.InvalidateOnClose, privateData.KeyID)...)
 }
 
-func effectiveAPIKeyTypeFromOptionalString(typeAttr *string) string {
-	if typeAttr == nil || *typeAttr == "" {
-		return defaultAPIKeyType
-	}
-	return *typeAttr
-}
-
 func effectiveAPIKeyType(apiKeyType types.String) types.String {
 	if typeutils.IsKnown(apiKeyType) && apiKeyType.ValueString() != "" {
 		return apiKeyType
 	}
-	return basetypes.NewStringValue(defaultAPIKeyType)
+	return basetypes.NewStringValue(apikey.DefaultAPIKeyType)
 }
 
 func invalidateOnCloseValue(value types.Bool) bool {
@@ -311,8 +252,8 @@ func invalidateOnCloseValue(value types.Bool) bool {
 	return value.ValueBool()
 }
 
-func (m ephemeralTfModel) toTfModel() tfModel {
-	return tfModel{
+func (m tfModel) toShared() apikey.TfModel {
+	return apikey.TfModel{
 		ElasticsearchConnection: m.ElasticsearchConnection,
 		KeyID:                   m.KeyID,
 		Name:                    m.Name,
@@ -327,83 +268,42 @@ func (m ephemeralTfModel) toTfModel() tfModel {
 	}
 }
 
-func (m *ephemeralTfModel) populateFromCreate(apiKey *createapikey.Response) {
-	m.KeyID = basetypes.NewStringValue(apiKey.Id)
-	m.Name = basetypes.NewStringValue(apiKey.Name)
-	m.APIKey = basetypes.NewStringValue(apiKey.ApiKey)
-	m.Encoded = basetypes.NewStringValue(apiKey.Encoded)
-	m.ExpirationTimestamp = basetypes.NewInt64Value(0)
-	if apiKey.Expiration != nil && *apiKey.Expiration > 0 {
-		m.ExpirationTimestamp = basetypes.NewInt64Value(*apiKey.Expiration)
-	}
+// fromShared copies the shared fields back from an apikey.TfModel into this
+// ephemeral model. The connection-block list and InvalidateOnClose are
+// ephemeral-only and not touched.
+func (m *tfModel) fromShared(t apikey.TfModel) {
+	m.KeyID = t.KeyID
+	m.Name = t.Name
+	// Intentionally do not copy t.Type: the shared model normalizes unset
+	// type to the default ("rest"), but `type` is Optional (non-computed) on
+	// the ephemeral schema, so the framework would reject a planned value
+	// that differs from the user's config. Preserve the original m.Type.
+	m.RoleDescriptors = t.RoleDescriptors
+	m.Expiration = t.Expiration
+	m.ExpirationTimestamp = t.ExpirationTimestamp
+	m.Metadata = t.Metadata
+	m.Access = t.Access
+	m.APIKey = t.APIKey
+	m.Encoded = t.Encoded
 }
 
-func (m *ephemeralTfModel) populateFromCrossClusterCreate(apiKey *createcrossclusterapikey.Response) {
-	m.KeyID = basetypes.NewStringValue(apiKey.Id)
-	m.Name = basetypes.NewStringValue(apiKey.Name)
-	m.APIKey = basetypes.NewStringValue(apiKey.ApiKey)
-	m.Encoded = basetypes.NewStringValue(apiKey.Encoded)
-	m.ExpirationTimestamp = basetypes.NewInt64Value(0)
-	if apiKey.Expiration != nil && *apiKey.Expiration > 0 {
-		m.ExpirationTimestamp = basetypes.NewInt64Value(*apiKey.Expiration)
-	}
-}
-
-func (r *EphemeralResource) openRESTAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, model *ephemeralTfModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	tfModel := model.toTfModel()
-	diags.Append(validateRestrictionSupport(ctx, client, tfModel)...)
+func (r *Resource) openRESTAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, model *tfModel) diag.Diagnostics {
+	shared := model.toShared()
+	diags := apikey.CreateRESTAPIKeyOperation(ctx, client, &shared)
 	if diags.HasError() {
 		return diags
 	}
-
-	createRequest, modelDiags := tfModel.toAPICreateRequest()
-	diags.Append(modelDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	putResponse, createDiags := elasticsearch.CreateAPIKey(ctx, client, createRequest)
-	diags.Append(createDiags...)
-	if diags.HasError() {
-		return diags
-	}
-	if putResponse == nil {
-		diags.AddError("API Key Creation Failed", "API key creation returned nil response")
-		return diags
-	}
-
-	model.populateFromCreate(putResponse)
+	model.fromShared(shared)
 	return diags
 }
 
-func (r *EphemeralResource) openCrossClusterAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, model *ephemeralTfModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	tfModel := model.toTfModel()
-	diags.Append(entitycore.EnforceVersionRequirements(ctx, client, &tfModel)...)
+func (r *Resource) openCrossClusterAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, model *tfModel) diag.Diagnostics {
+	shared := model.toShared()
+	diags := apikey.CreateCrossClusterAPIKeyOperation(ctx, client, &shared)
 	if diags.HasError() {
 		return diags
 	}
-
-	createRequest, modelDiags := tfModel.toCrossClusterAPICreateRequest(ctx)
-	diags.Append(modelDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	putResponse, createDiags := elasticsearch.CreateCrossClusterAPIKey(ctx, client, createRequest)
-	diags.Append(createDiags...)
-	if diags.HasError() {
-		return diags
-	}
-	if putResponse == nil {
-		diags.AddError("API Key Creation Failed", "Cross-cluster API key creation returned nil response")
-		return diags
-	}
-
-	model.populateFromCrossClusterCreate(putResponse)
+	model.fromShared(shared)
 	return diags
 }
 
@@ -426,25 +326,23 @@ func closeAPIKeyIfRequested(
 	return deleteAPIKeyFn(ctx, client, keyID)
 }
 
-func saveEphemeralPrivateData(ctx context.Context, privateState ephemeralPrivateState, model ephemeralTfModel) diag.Diagnostics {
+func saveEphemeralPrivateData(ctx context.Context, privateState ephemeralPrivateState, model tfModel) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if privateState == nil {
+	// Close() is a no-op unless invalidate_on_close is true, so skip persisting
+	// private state (including the connection snapshot) in the common case.
+	if privateState == nil || !invalidateOnCloseValue(model.InvalidateOnClose) {
 		return diags
 	}
 
-	connectionJSON := ""
-	if typeutils.IsKnown(model.ElasticsearchConnection) && !model.ElasticsearchConnection.IsNull() {
-		encodedConnection, encodeDiags := encodeElasticsearchConnection(ctx, model.ElasticsearchConnection)
-		diags.Append(encodeDiags...)
-		if diags.HasError() {
-			return diags
-		}
-		connectionJSON = encodedConnection
+	connectionJSON, encodeDiags := encodeElasticsearchConnection(ctx, model.ElasticsearchConnection)
+	diags.Append(encodeDiags...)
+	if diags.HasError() {
+		return diags
 	}
 
 	payload, err := json.Marshal(ephemeralPrivateData{
 		KeyID:             model.KeyID.ValueString(),
-		InvalidateOnClose: invalidateOnCloseValue(model.InvalidateOnClose),
+		InvalidateOnClose: true,
 		ConnectionJSON:    connectionJSON,
 	})
 	if err != nil {

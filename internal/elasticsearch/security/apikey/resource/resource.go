@@ -15,50 +15,44 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package apikey
+package resource
 
 import (
 	"context"
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
 var (
-	_ resource.Resource                 = newResource()
-	_ resource.ResourceWithConfigure    = newResource()
-	_ resource.ResourceWithUpgradeState = newResource()
+	_ fwresource.Resource                 = newResource()
+	_ fwresource.ResourceWithConfigure    = newResource()
+	_ fwresource.ResourceWithUpgradeState = newResource()
 )
 
-var (
-	MinVersion                         = version.Must(version.NewVersion("8.0.0")) // Enabled in 8.0
-	MinVersionWithUpdate               = version.Must(version.NewVersion("8.4.0"))
-	MinVersionReturningRoleDescriptors = version.Must(version.NewVersion("8.5.0"))
-	MinVersionWithRestriction          = version.Must(version.NewVersion("8.9.0"))  // Enabled in 8.0
-	MinVersionWithCrossCluster         = version.Must(version.NewVersion("8.10.0")) // Cross-cluster API keys enabled in 8.10
-)
-
-// Resource embeds ElasticsearchResource[tfModel] to inherit Configure, Metadata,
-// Schema, Read, Update (via writeAPIKey), Delete, and PostRead cluster-version caching.
-// Create is defined on the concrete type to bypass the envelope write path.
+// Resource embeds ElasticsearchResource[apikey.TfModel] to inherit Configure,
+// Metadata, Schema, Read, Update (via writeAPIKey), Delete, and PostRead
+// cluster-version caching. Create is defined on the concrete type to bypass
+// the envelope write path.
 type Resource struct {
-	*entitycore.ElasticsearchResource[tfModel]
+	*entitycore.ElasticsearchResource[apikey.TfModel]
 }
 
 func schemaFactory(_ context.Context) rschema.Schema {
-	return getSchema(currentSchemaVersion)
+	return getSchema(apikey.CurrentSchemaVersion)
 }
 
 func newResource() *Resource {
-	placeholder := entitycore.PlaceholderElasticsearchWriteCallback[tfModel]()
+	placeholder := entitycore.PlaceholderElasticsearchWriteCallback[apikey.TfModel]()
 	return &Resource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("security_api_key", entitycore.ElasticsearchResourceOptions[tfModel]{
+		ElasticsearchResource: entitycore.NewElasticsearchResource[apikey.TfModel]("security_api_key", entitycore.ElasticsearchResourceOptions[apikey.TfModel]{
 			Schema:   schemaFactory,
 			Read:     readAPIKey,
 			Delete:   deleteAPIKey,
@@ -69,7 +63,7 @@ func newResource() *Resource {
 	}
 }
 
-func NewResource() resource.Resource {
+func NewResource() fwresource.Resource {
 	return newResource()
 }
 
@@ -111,7 +105,7 @@ func saveClusterVersion(ctx context.Context, client *clients.ElasticsearchScoped
 func postReadPersistClusterVersion(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
-	_ tfModel,
+	_ apikey.TfModel,
 	privateState any,
 ) diag.Diagnostics {
 	priv, ok := privateState.(privateData)
