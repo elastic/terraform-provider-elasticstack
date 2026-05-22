@@ -13,6 +13,9 @@
 - [x] 2.2 For each top-level `*ast.ExprStmt`, extract `X` as `*ast.CallExpr`, apply `isCandidateCallExpr` and the new syntactic import check, then call `inspectTestCase`
 - [x] 2.3 Confirm that the non-test-function guard (Decision 4 trade-off) is tested: add a `testdata` case where a helper function (not prefixed `"Test"`) calls `resource.Test` to document the known scope boundary
 - [x] 2.4 Verify all existing `analysistest` tests still pass
+- [x] 2.5 Add compliant testdata for nested calls inside t.Run / if / for blocks (proves nested calls are evaluated)
+- [x] 2.6 Add violations testdata for a nested call inside t.Run (regression guard that traversal descends into nested blocks)
+- [x] 2.7 Add compliant + violations testdata with an explicit import alias (regression guard for buildResourceImportAliases explicit-alias branch)
 
 ## 3. Per-Pass `ReadFile` + Line-Split Cache
 

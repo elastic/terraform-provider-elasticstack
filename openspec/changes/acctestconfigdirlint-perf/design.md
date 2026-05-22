@@ -52,21 +52,20 @@ The analyzer's own logic contributes zero measurable flat CPU samples; all savin
 **Problem**: `findValueSpecForVar` iterates over all files, all `GenDecl`s, all `ValueSpec`s, and all names to find one `*ast.ValueSpec`. Called once per compat-config expression, it is O(N) in package size.
 
 **Note**: Any dependence on `pass.TypesInfo` requires golangci/go/packages to load packages with `NeedTypesInfo`, which triggers type-checking before `run()` executes. To skip type-checking for non-candidate packages, the optimized analyzer path MUST avoid using `TypesInfo` entirely (including helpers like `calledFunction` and `isValidEmbeddedCompatConfig`), and the golangci plugin load mode MUST be reduced accordingly.
-### Decision 4 — Targeted function-body traversal replacing `ast.Inspect`
+### Decision 4 — Targeted function-body traversal replacing full-file `ast.Inspect`
 
-**Problem**: `ast.Inspect(file, ...)` visits every node in the file. Most are rejected immediately by `isCandidateCallExpr`. For large test files with thousands of expressions this wastes visitor allocations and time.
+**Problem**: `ast.Inspect(file, ...)` visits every node in the file, including declarations outside test functions and deep subtrees in non-test helpers. Most nodes are rejected immediately by `isCandidateCallExpr`.
 
-**Chosen approach**: Replace the `ast.Inspect` loop with an explicit walk:
-1. For each file: iterate `file.Decls`.
-2. For each `*ast.FuncDecl` whose name begins with `"Test"` (fast string prefix check): iterate `Body.List` (top-level statements).
-3. For each `*ast.ExprStmt`: check if its `X` is a `*ast.CallExpr` — these are the only positions where `resource.Test(t, ...)` can appear.
-4. Apply `isCandidateCallExpr` and the syntactic import check, then `inspectTestCase`.
+**Chosen approach**: Replace the full-file `ast.Inspect` loop with a two-level walk that keeps the high-level filters for the perf win:
+1. For each file: skip non-`_test.go` files and files without a resource-package import.
+2. For each `*ast.FuncDecl` whose name begins with `"Test"`: run `ast.Inspect` on the function body only.
+3. Within that body, visit all nodes (including nested blocks such as `t.Run` closures, `if`, and `for`) and apply `isCandidateCallExpr`, the syntactic import check, then `inspectTestCase`.
 
-This avoids allocating closure state for nodes that will never be acceptance-test calls.
+This avoids visiting nodes in non-test functions and non-test files while still finding `resource.Test` / `resource.ParallelTest` calls anywhere inside a test entry point.
 
-**Alternative considered**: Keep `ast.Inspect` but add an early-exit return `false` for non-call nodes at depth > 2. This is fragile and would miss calls inside `if`/`for` blocks (though those are rare in practice). The explicit walk is cleaner.
+**Alternative considered**: Iterate only `Body.List` top-level `*ast.ExprStmt` nodes. Rejected because real acceptance tests nest `resource.Test` inside `t.Run` closures and loop/conditional blocks.
 
-**Trade-off**: The targeted walk will miss `resource.Test` calls that appear inside nested blocks (e.g., inside an `if` or helper function defined in the test file). In practice, acceptance tests always call `resource.Test` / `resource.ParallelTest` at the top level of the test function body. If this assumption is violated the analyzer produces false negatives (missed issues), not false positives. The existing `isCandidateCallExpr` + typed-lookup path already had the same implicit scope assumption.
+**Trade-off**: Helper functions not prefixed with `"Test"` are still not traversed (by design). Nested calls inside `Test*` functions—including `t.Run` subtests—are correctly handled because `ast.Inspect` descends within the test function body.
 
 ### Decision 5 — Early exit for files with no `_test.go` suffix (unchanged, but documented)
 
