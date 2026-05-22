@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package apikey
+package ephemeral
 
 import (
 	"context"
@@ -23,10 +23,11 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey"
 	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
+	fwephemeral "github.com/hashicorp/terraform-plugin-framework/ephemeral"
 	eschema "github.com/hashicorp/terraform-plugin-framework/ephemeral/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -39,8 +40,8 @@ import (
 func TestEphemeralSchemaNameValidation(t *testing.T) {
 	t.Parallel()
 
-	schema := getEphemeralSchema()
-	nameAttr, diags := schema.AttributeAtPath(context.Background(), path.Root("name"))
+	s := getSchema()
+	nameAttr, diags := s.AttributeAtPath(context.Background(), path.Root("name"))
 	require.False(t, diags.HasError())
 
 	stringAttr, ok := nameAttr.(eschema.StringAttribute)
@@ -97,8 +98,8 @@ func TestEphemeralSchemaNameValidation(t *testing.T) {
 func TestEphemeralSchemaTypeValidation(t *testing.T) {
 	t.Parallel()
 
-	schema := getEphemeralSchema()
-	typeAttr, diags := schema.AttributeAtPath(context.Background(), path.Root("type"))
+	s := getSchema()
+	typeAttr, diags := s.AttributeAtPath(context.Background(), path.Root("type"))
 	require.False(t, diags.HasError())
 
 	stringAttr := typeAttr.(eschema.StringAttribute)
@@ -184,7 +185,7 @@ func TestEphemeralSchemaRequiresTypeValidation(t *testing.T) {
 				Config:      config,
 			}
 			response := &validator.StringResponse{}
-			requiresType("rest").ValidateString(context.Background(), request, response)
+			apikey.RequiresType("rest").ValidateString(context.Background(), request, response)
 			if testCase.expectError {
 				require.True(t, response.Diagnostics.HasError())
 				return
@@ -240,7 +241,7 @@ func TestEphemeralSchemaAccessRequiresTypeValidation(t *testing.T) {
 				Config:      config,
 			}
 			response := &validator.ObjectResponse{}
-			requiresType(crossClusterAPIKeyType).ValidateObject(context.Background(), request, response)
+			apikey.RequiresType(apikey.CrossClusterAPIKeyType).ValidateObject(context.Background(), request, response)
 
 			if testCase.expectError {
 				require.True(t, response.Diagnostics.HasError())
@@ -310,16 +311,16 @@ func TestInvalidateOnCloseValue(t *testing.T) {
 func TestEffectiveAPIKeyType(t *testing.T) {
 	t.Parallel()
 
-	require.Equal(t, defaultAPIKeyType, effectiveAPIKeyType(types.StringNull()).ValueString())
-	require.Equal(t, defaultAPIKeyType, effectiveAPIKeyType(types.StringValue("")).ValueString())
-	require.Equal(t, crossClusterAPIKeyType, effectiveAPIKeyType(types.StringValue(crossClusterAPIKeyType)).ValueString())
+	require.Equal(t, apikey.DefaultAPIKeyType, effectiveAPIKeyType(types.StringNull()).ValueString())
+	require.Equal(t, apikey.DefaultAPIKeyType, effectiveAPIKeyType(types.StringValue("")).ValueString())
+	require.Equal(t, apikey.CrossClusterAPIKeyType, effectiveAPIKeyType(types.StringValue(apikey.CrossClusterAPIKeyType)).ValueString())
 }
 
-func TestNewEphemeralResourceImplementsInterfaces(t *testing.T) {
+func TestNewResourceImplementsInterfaces(t *testing.T) {
 	t.Parallel()
 
-	resource := NewEphemeralResource()
-	require.Implements(t, (*ephemeral.EphemeralResource)(nil), resource)
-	require.Implements(t, (*ephemeral.EphemeralResourceWithConfigure)(nil), resource)
-	require.Implements(t, (*ephemeral.EphemeralResourceWithClose)(nil), resource)
+	r := NewResource()
+	require.Implements(t, (*fwephemeral.EphemeralResource)(nil), r)
+	require.Implements(t, (*fwephemeral.EphemeralResourceWithConfigure)(nil), r)
+	require.Implements(t, (*fwephemeral.EphemeralResourceWithClose)(nil), r)
 }

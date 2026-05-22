@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package apikey_test
+package ephemeral_test
 
 import (
 	"context"
@@ -29,7 +29,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	apikey "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/config"

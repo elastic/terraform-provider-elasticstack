@@ -17,7 +17,14 @@
 
 package apikey
 
-import _ "embed"
+import "github.com/hashicorp/go-version"
 
-//go:embed descriptions/resource.md
-var resourceDescription string
+// Minimum Elasticsearch versions for various API key capabilities. These are
+// used by both the resource and ephemeral resource paths.
+var (
+	MinVersion                         = version.Must(version.NewVersion("8.0.0"))  // Enabled in 8.0
+	MinVersionWithUpdate               = version.Must(version.NewVersion("8.4.0"))  // Update API Key endpoint
+	MinVersionReturningRoleDescriptors = version.Must(version.NewVersion("8.5.0"))  // Get API Key returns role_descriptors
+	MinVersionWithRestriction          = version.Must(version.NewVersion("8.9.0"))  // role descriptor `restriction` block
+	MinVersionWithCrossCluster         = version.Must(version.NewVersion("8.10.0")) // Cross-cluster API keys
+)

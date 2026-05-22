@@ -15,15 +15,16 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package apikey
+package resource
 
 import (
 	"context"
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -37,14 +38,14 @@ func schemaWithConnection(version int64) schema.Schema {
 	return s
 }
 
-func (r *Resource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
+func (r *Resource) UpgradeState(context.Context) map[int64]fwresource.StateUpgrader {
 	schema0 := schemaWithConnection(0)
 	schema1 := schemaWithConnection(1)
-	return map[int64]resource.StateUpgrader{
+	return map[int64]fwresource.StateUpgrader{
 		0: {
 			PriorSchema: &schema0,
-			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-				var model tfModel
+			StateUpgrader: func(ctx context.Context, req fwresource.UpgradeStateRequest, resp *fwresource.UpgradeStateResponse) {
+				var model apikey.TfModel
 				resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
 				if resp.Diagnostics.HasError() {
 					return
@@ -59,14 +60,14 @@ func (r *Resource) UpgradeState(context.Context) map[int64]resource.StateUpgrade
 		},
 		1: {
 			PriorSchema: &schema1,
-			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-				var model tfModel
+			StateUpgrader: func(ctx context.Context, req fwresource.UpgradeStateRequest, resp *fwresource.UpgradeStateResponse) {
+				var model apikey.TfModel
 				resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
 				if resp.Diagnostics.HasError() {
 					return
 				}
 
-				model.Type = basetypes.NewStringValue(defaultAPIKeyType)
+				model.Type = basetypes.NewStringValue(apikey.DefaultAPIKeyType)
 
 				resp.State.Set(ctx, model)
 			},

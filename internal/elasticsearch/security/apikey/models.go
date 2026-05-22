@@ -42,23 +42,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-type searchModel struct {
+type SearchModel struct {
 	Names                  types.List           `tfsdk:"names"`
 	FieldSecurity          jsontypes.Normalized `tfsdk:"field_security"`
 	Query                  jsontypes.Normalized `tfsdk:"query"`
 	AllowRestrictedIndices types.Bool           `tfsdk:"allow_restricted_indices"`
 }
 
-type replicationModel struct {
+type ReplicationModel struct {
 	Names types.List `tfsdk:"names"`
 }
 
-type accessModel struct {
+type AccessModel struct {
 	Search      types.List `tfsdk:"search"`
 	Replication types.List `tfsdk:"replication"`
 }
 
-type tfModel struct {
+type TfModel struct {
 	ID                      types.String                                                              `tfsdk:"id"`
 	ElasticsearchConnection types.List                                                                `tfsdk:"elasticsearch_connection"`
 	KeyID                   types.String                                                              `tfsdk:"key_id"`
@@ -73,22 +73,22 @@ type tfModel struct {
 	Encoded                 types.String                                                              `tfsdk:"encoded"`
 }
 
-func (model tfModel) GetID() types.String {
+func (model TfModel) GetID() types.String {
 	return model.ID
 }
 
-func (model tfModel) GetResourceID() types.String {
+func (model TfModel) GetResourceID() types.String {
 	return model.Name
 }
 
-func (model tfModel) GetElasticsearchConnection() types.List {
+func (model TfModel) GetElasticsearchConnection() types.List {
 	return model.ElasticsearchConnection
 }
 
 // GetReadResourceID satisfies entitycore.WithReadResourceID: the API key read
 // identity is the immutable key_id (not the user-supplied Name) because the
 // Elasticsearch Get/Update API key APIs are keyed by id.
-func (model tfModel) GetReadResourceID() string {
+func (model TfModel) GetReadResourceID() string {
 	if typeutils.IsKnown(model.KeyID) && model.KeyID.ValueString() != "" {
 		return model.KeyID.ValueString()
 	}
@@ -101,19 +101,19 @@ func (model tfModel) GetReadResourceID() string {
 	return ""
 }
 
-var _ entitycore.WithReadResourceID = tfModel{}
+var _ entitycore.WithReadResourceID = TfModel{}
 
-var _ entitycore.WithVersionRequirements = tfModel{}
+var _ entitycore.WithVersionRequirements = TfModel{}
 
 // GetVersionRequirements declares the conditional Elasticsearch version
 // requirements implied by the planned model: cross-cluster API keys require
 // MinVersionWithCrossCluster, and any role descriptor carrying a `restriction`
 // block requires MinVersionWithRestriction.
-func (model tfModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (model TfModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var reqs []entitycore.VersionRequirement
 
-	if model.Type.ValueString() == crossClusterAPIKeyType {
+	if model.Type.ValueString() == CrossClusterAPIKeyType {
 		reqs = append(reqs, entitycore.VersionRequirement{
 			MinVersion:   *MinVersionWithCrossCluster,
 			ErrorMessage: fmt.Sprintf("Cross-cluster API keys are only supported in Elasticsearch version %s and above.", MinVersionWithCrossCluster.String()),
@@ -149,7 +149,7 @@ func (model tfModel) GetVersionRequirements() ([]entitycore.VersionRequirement, 
 	return reqs, diags
 }
 
-func (model tfModel) buildTypedRoleDescriptors() (map[string]estypes.RoleDescriptor, diag.Diagnostics) {
+func (model TfModel) buildTypedRoleDescriptors() (map[string]estypes.RoleDescriptor, diag.Diagnostics) {
 	if !typeutils.IsKnown(model.RoleDescriptors) {
 		return nil, nil
 	}
@@ -172,7 +172,7 @@ func (model tfModel) buildTypedRoleDescriptors() (map[string]estypes.RoleDescrip
 	return typedDescriptors, nil
 }
 
-func (model tfModel) buildTypedMetadata() (estypes.Metadata, diag.Diagnostics) {
+func (model TfModel) buildTypedMetadata() (estypes.Metadata, diag.Diagnostics) {
 	if !typeutils.IsKnown(model.Metadata) {
 		return nil, nil
 	}
@@ -188,7 +188,7 @@ func (model tfModel) buildTypedMetadata() (estypes.Metadata, diag.Diagnostics) {
 	return typedMetadata, nil
 }
 
-func (model tfModel) toAPICreateRequest() (*createapikey.Request, diag.Diagnostics) {
+func (model TfModel) toAPICreateRequest() (*createapikey.Request, diag.Diagnostics) {
 	req := createapikey.NewRequest()
 
 	if model.Name.ValueString() != "" {
@@ -213,7 +213,7 @@ func (model tfModel) toAPICreateRequest() (*createapikey.Request, diag.Diagnosti
 	return req, nil
 }
 
-func (model tfModel) toUpdateAPIRequest() (*updateapikey.Request, diag.Diagnostics) {
+func (model TfModel) ToUpdateAPIRequest() (*updateapikey.Request, diag.Diagnostics) {
 	req := updateapikey.NewRequest()
 
 	// Note: the Update API Key endpoint does not accept expiration.
@@ -234,21 +234,21 @@ func (model tfModel) toUpdateAPIRequest() (*updateapikey.Request, diag.Diagnosti
 	return req, nil
 }
 
-func (model tfModel) buildCrossClusterAccess(ctx context.Context) (*models.CrossClusterAPIKeyAccess, diag.Diagnostics) {
+func (model TfModel) buildCrossClusterAccess(ctx context.Context) (*models.CrossClusterAPIKeyAccess, diag.Diagnostics) {
 	if !typeutils.IsKnown(model.Access) {
 		return nil, nil
 	}
 
 	access := &models.CrossClusterAPIKeyAccess{}
 
-	var accessData accessModel
+	var accessData AccessModel
 	diags := model.Access.As(ctx, &accessData, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return nil, diags
 	}
 
 	if typeutils.IsKnown(accessData.Search) {
-		var searchObjects []searchModel
+		var searchObjects []SearchModel
 		diags := accessData.Search.ElementsAs(ctx, &searchObjects, false)
 		if diags.HasError() {
 			return nil, diags
@@ -294,7 +294,7 @@ func (model tfModel) buildCrossClusterAccess(ctx context.Context) (*models.Cross
 	}
 
 	if typeutils.IsKnown(accessData.Replication) {
-		var replicationObjects []replicationModel
+		var replicationObjects []ReplicationModel
 		diags := accessData.Replication.ElementsAs(ctx, &replicationObjects, false)
 		if diags.HasError() {
 			return nil, diags
@@ -323,7 +323,7 @@ func (model tfModel) buildCrossClusterAccess(ctx context.Context) (*models.Cross
 	return access, nil
 }
 
-func (model tfModel) toCrossClusterAPICreateRequest(ctx context.Context) (*createcrossclusterapikey.Request, diag.Diagnostics) {
+func (model TfModel) toCrossClusterAPICreateRequest(ctx context.Context) (*createcrossclusterapikey.Request, diag.Diagnostics) {
 	req := createcrossclusterapikey.NewRequest()
 	req.Name = model.Name.ValueString()
 
@@ -352,7 +352,7 @@ func (model tfModel) toCrossClusterAPICreateRequest(ctx context.Context) (*creat
 	return req, nil
 }
 
-func (model tfModel) toUpdateCrossClusterAPIRequest(ctx context.Context) (*updatecrossclusterapikey.Request, diag.Diagnostics) {
+func (model TfModel) ToUpdateCrossClusterAPIRequest(ctx context.Context) (*updatecrossclusterapikey.Request, diag.Diagnostics) {
 	req := updatecrossclusterapikey.NewRequest()
 
 	// Note: the Update Cross-Cluster API Key endpoint does not accept expiration.
@@ -379,24 +379,31 @@ func (model tfModel) toUpdateCrossClusterAPIRequest(ctx context.Context) (*updat
 	return req, nil
 }
 
-func (model *tfModel) populateFromCreate(apiKey *createapikey.Response) {
-	model.KeyID = basetypes.NewStringValue(apiKey.Id)
-	model.Name = basetypes.NewStringValue(apiKey.Name)
-	model.APIKey = basetypes.NewStringValue(apiKey.ApiKey)
-	model.Encoded = basetypes.NewStringValue(apiKey.Encoded)
+func (model *TfModel) populateFromCreate(apiKey *createapikey.Response) {
+	model.populateCommonCreateFields(apiKey.Id, apiKey.Name, apiKey.ApiKey, apiKey.Encoded, apiKey.Expiration)
 }
 
-func (model *tfModel) populateFromCrossClusterCreate(apiKey *createcrossclusterapikey.Response) {
-	model.KeyID = basetypes.NewStringValue(apiKey.Id)
-	model.Name = basetypes.NewStringValue(apiKey.Name)
-	model.APIKey = basetypes.NewStringValue(apiKey.ApiKey)
-	model.Encoded = basetypes.NewStringValue(apiKey.Encoded)
-	if apiKey.Expiration != nil && *apiKey.Expiration > 0 {
-		model.ExpirationTimestamp = basetypes.NewInt64Value(*apiKey.Expiration)
+func (model *TfModel) populateFromCrossClusterCreate(apiKey *createcrossclusterapikey.Response) {
+	model.populateCommonCreateFields(apiKey.Id, apiKey.Name, apiKey.ApiKey, apiKey.Encoded, apiKey.Expiration)
+}
+
+// populateCommonCreateFields writes the fields returned by both the REST and
+// cross-cluster create API key responses into the model. ExpirationTimestamp is
+// set to zero when the upstream API returns no expiration so the field is
+// always known after a successful create; the resource read path subsequently
+// overwrites it from the Get API Key response.
+func (model *TfModel) populateCommonCreateFields(id, name, apiKey, encoded string, expiration *int64) {
+	model.KeyID = basetypes.NewStringValue(id)
+	model.Name = basetypes.NewStringValue(name)
+	model.APIKey = basetypes.NewStringValue(apiKey)
+	model.Encoded = basetypes.NewStringValue(encoded)
+	model.ExpirationTimestamp = basetypes.NewInt64Value(0)
+	if expiration != nil && *expiration > 0 {
+		model.ExpirationTimestamp = basetypes.NewInt64Value(*expiration)
 	}
 }
 
-func (model *tfModel) populateFromAPI(apiKey *estypes.ApiKey, serverVersion *version.Version) diag.Diagnostics {
+func (model *TfModel) PopulateFromAPI(apiKey *estypes.ApiKey, serverVersion *version.Version) diag.Diagnostics {
 	model.KeyID = basetypes.NewStringValue(apiKey.Id)
 	model.Name = basetypes.NewStringValue(apiKey.Name)
 	model.ExpirationTimestamp = basetypes.NewInt64Value(0)
@@ -406,7 +413,7 @@ func (model *tfModel) populateFromAPI(apiKey *estypes.ApiKey, serverVersion *ver
 	model.Metadata = jsontypes.NewNormalizedNull()
 
 	if serverVersion.GreaterThanOrEqual(MinVersionReturningRoleDescriptors) {
-		model.RoleDescriptors = customtypes.NewJSONWithDefaultsNull(populateRoleDescriptorsDefaults)
+		model.RoleDescriptors = customtypes.NewJSONWithDefaultsNull(PopulateRoleDescriptorsDefaults)
 
 		if apiKey.RoleDescriptors != nil {
 			modelDescriptors, err := toModelRoleDescriptors(apiKey.RoleDescriptors)
@@ -414,18 +421,18 @@ func (model *tfModel) populateFromAPI(apiKey *estypes.ApiKey, serverVersion *ver
 				return diagutil.FrameworkDiagFromError(err)
 			}
 
-			descriptors, diags := marshalNormalizedJSONValue(modelDescriptors)
-			if diags.HasError() {
-				return diags
+			descriptors, descDiags := marshalNormalizedJSONValue(modelDescriptors)
+			if descDiags.HasError() {
+				return descDiags
 			}
 
-			model.RoleDescriptors = customtypes.NewJSONWithDefaultsValue(descriptors.ValueString(), populateRoleDescriptorsDefaults)
+			model.RoleDescriptors = customtypes.NewJSONWithDefaultsValue(descriptors.ValueString(), PopulateRoleDescriptorsDefaults)
 		}
 	} else if !typeutils.IsKnown(model.RoleDescriptors) {
 		// The Get API Key endpoint does not return role_descriptors prior to 8.5.0.
 		// If the value is unknown (e.g. not specified in config during Create), set
 		// it to null so Terraform receives a known value after apply.
-		model.RoleDescriptors = customtypes.NewJSONWithDefaultsNull(populateRoleDescriptorsDefaults)
+		model.RoleDescriptors = customtypes.NewJSONWithDefaultsNull(PopulateRoleDescriptorsDefaults)
 	}
 
 	if apiKey.Metadata != nil {

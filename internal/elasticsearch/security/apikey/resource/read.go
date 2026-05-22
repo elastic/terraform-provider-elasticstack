@@ -15,18 +15,19 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package apikey
+package resource
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // readAPIKey is the envelope read callback for API key reads.
-func readAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state tfModel) (tfModel, bool, diag.Diagnostics) {
+func readAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state apikey.TfModel) (apikey.TfModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	apiKey, apiKeyDiags := elasticsearch.GetAPIKey(ctx, client, resourceID)
@@ -44,7 +45,7 @@ func readAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, 
 		return state, false, diags
 	}
 
-	diags.Append(state.populateFromAPI(apiKey, ver)...)
+	diags.Append(state.PopulateFromAPI(apiKey, ver)...)
 	if diags.HasError() {
 		return state, false, diags
 	}

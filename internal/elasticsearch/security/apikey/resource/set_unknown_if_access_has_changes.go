@@ -15,11 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package apikey
+package resource
 
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/planmodifiers"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -38,7 +39,7 @@ func SetUnknownIfAccessHasChanges() planmodifier.String {
 				return false
 			}
 
-			if keyType.ValueString() != crossClusterAPIKeyType {
+			if keyType.ValueString() != apikey.CrossClusterAPIKeyType {
 				return false
 			}
 
