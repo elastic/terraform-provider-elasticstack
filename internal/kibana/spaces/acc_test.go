@@ -21,6 +21,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -98,6 +99,40 @@ func TestAccResourceSpace(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("Name %s", spaceID)),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Test Space"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "color", "#FFFFFF"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSpace_disabledFeaturesSolutionValidation(t *testing.T) {
+	spaceID := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	baseVars := config.Variables{
+		"space_id": config.StringVariable(spaceID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omitted_solution"),
+				ConfigVariables:          baseVars,
+				PlanOnly:                 true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("classic_solution"),
+				ConfigVariables:          baseVars,
+				PlanOnly:                 true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("security_solution"),
+				ConfigVariables:          baseVars,
+				PlanOnly:                 true,
+				ExpectError: regexp.MustCompile(
+					`Attribute disabled_features can only be set when solution equals "classic"`,
 				),
 			},
 		},
