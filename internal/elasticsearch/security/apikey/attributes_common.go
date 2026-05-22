@@ -60,7 +60,7 @@ func NameValidators() []validator.String {
 	return []validator.String{
 		stringvalidator.LengthBetween(1, 1024),
 		stringvalidator.RegexMatches(
-			regexp.MustCompile(`^([[:graph:]]| )+$`),
+			regexp.MustCompile(`^[[:graph:]]([[:graph:]]| )*[[:graph:]]$|^[[:graph:]]$`),
 			APIKeyNameInvalidMessage,
 		),
 	}
