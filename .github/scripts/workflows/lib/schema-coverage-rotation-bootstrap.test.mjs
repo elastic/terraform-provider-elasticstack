@@ -43,7 +43,8 @@ test('schema-coverage rotation workflow installs Go from go.mod and exports Go p
   assert.match(lock, /GOMODCACHE=\$\(go env GOMODCACHE\)/);
   // Source workflow declares the import.
   const source = workflowSource();
-  assert.match(source, /imports: \[shared\/setup-dev\.md\]/);
+  assert.match(source, /shared\/setup-dev\.md/);
+  assert.match(source, /shared\/dispatch-code-factory\.md/);
 });
 
 test('schema-coverage rotation workflow installs Node from package.json and allows bootstrap ecosystems', () => {

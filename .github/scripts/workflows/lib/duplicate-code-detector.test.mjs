@@ -47,3 +47,15 @@ test('duplicate-code detector workflow safe outputs and compiled lock keep dupli
   assert.match(lock, /"create_issue":\{"labels":\["duplicate-code","code-quality","automated-analysis","triaged"\],"max":3,"title_prefix":"\[duplicate-code\] "\}/);
   assert.match(lock, /Maximum 3 issue\(s\) can be created\./);
 });
+
+test('workflow includes dispatch instruction and compiled lock contains dispatch_code_factory job', () => {
+  const source = workflowSource();
+  const lock = lockSource();
+  assert.match(source, /dispatch_code_factory/);
+  assert.match(source, /Dispatch/);
+  assert.match(source, /imports:.*shared\/dispatch-code-factory\.md/);
+  assert.match(lock, /dispatch_code_factory/);
+  assert.match(lock, /"dispatch-code-factory":\{"description":"Dispatch code-factory for each created issue"\}/);
+  assert.match(lock, /"dispatch_code_factory"/);
+  assert.match(lock, /"labels":\["duplicate-code","code-quality","automated-analysis","triaged"\]/);
+});
