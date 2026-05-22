@@ -25,7 +25,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -64,12 +63,12 @@ func (fakeConverter) SchemaAttribute() schema.Attribute {
 	return schema.StringAttribute{Optional: true}
 }
 
-func (fakeConverter) PopulateFromAttributes(context.Context, Resolver, *models.LensByValueChartBlocks, kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (fakeConverter) PopulateFromAttributes(context.Context, Resolver, *models.LensByValueChartBlocks, VisByValueConfig0) diag.Diagnostics {
 	return nil
 }
 
-func (fakeConverter) BuildAttributes(*models.LensByValueChartBlocks, Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	return kbapi.KbnDashboardPanelTypeVisConfig0{}, nil
+func (fakeConverter) BuildAttributes(*models.LensByValueChartBlocks, Resolver) (VisByValueConfig0, diag.Diagnostics) {
+	return VisByValueConfig0{}, nil
 }
 
 func (fakeConverter) AlignStateFromPlan(context.Context, *models.LensByValueChartBlocks, *models.LensByValueChartBlocks) {

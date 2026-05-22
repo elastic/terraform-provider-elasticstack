@@ -129,9 +129,9 @@ func TestToAPI_configJSONPath(t *testing.T) {
 	}
 	item, diags := markdown.Handler{}.ToAPI(pm, nil)
 	require.False(t, diags.HasError(), "%v", diags)
-	md, err := item.AsKbnDashboardPanelTypeMarkdown()
+	md, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeMarkdown()
 	require.NoError(t, err)
-	cfg0, err := md.Config.AsKbnDashboardPanelTypeMarkdownConfig0()
+	cfg0, err := md.Config.AsKibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0()
 	require.NoError(t, err)
 	require.Equal(t, "## ok", cfg0.Content)
 }

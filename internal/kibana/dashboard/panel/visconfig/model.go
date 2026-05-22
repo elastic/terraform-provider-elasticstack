@@ -72,7 +72,6 @@ func panelHasTypedConfig(pm *models.PanelModel) bool {
 		pm.RangeSliderControlConfig != nil ||
 		pm.SyntheticsStatsOverviewConfig != nil ||
 		pm.SyntheticsMonitorsConfig != nil ||
-		pm.LensDashboardAppConfig != nil ||
 		pm.VisConfig != nil ||
 		pm.ImageConfig != nil ||
 		pm.SloAlertsConfig != nil ||

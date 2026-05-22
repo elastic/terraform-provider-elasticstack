@@ -24,7 +24,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/esqlcontrol"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/image"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensdashboardapp"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/markdown"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/optionslist"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/rangeslider"
@@ -53,19 +52,12 @@ var panelHandlers = []iface.Handler{
 	markdown.Handler{},
 	image.Handler{},
 	sloalerts.Handler{},
-	lensdashboardapp.Handler{},
 	visconfig.Handler{},
 	discoversession.Handler{},
 }
 
 var panelTypeToHandler map[string]iface.Handler
 var derivedPanelConfigNames []string
-
-// panelTypeAliases maps Kibana API panel discriminators to registry PanelType keys
-// when the wire-format string differs from the snake_case key used for *_config naming.
-var panelTypeAliases = map[string]string{
-	"lens-dashboard-app": "lens_dashboard_app",
-}
 
 func init() {
 	panelkit.GlobalPanelJSONDefaults = populatePanelConfigJSONDefaults
@@ -82,17 +74,13 @@ func init() {
 		derivedPanelConfigNames = append(derivedPanelConfigNames, block)
 	}
 
-	// Handler registration already produces vis_config, lens_dashboard_app_config,
-	// and discover_session_config via PanelType()+"_config"; do not append duplicates.
+	// Handler registration already produces vis_config and discover_session_config via PanelType()+"_config"; do not append duplicates.
 	panelkit.SetTypedSiblingPanelConfigBlockNames(append([]string(nil), derivedPanelConfigNames...))
 }
 
 func LookupHandler(panelType string) iface.Handler {
 	if h := panelTypeToHandler[panelType]; h != nil {
 		return h
-	}
-	if alias, ok := panelTypeAliases[panelType]; ok {
-		return panelTypeToHandler[alias]
 	}
 	return nil
 }

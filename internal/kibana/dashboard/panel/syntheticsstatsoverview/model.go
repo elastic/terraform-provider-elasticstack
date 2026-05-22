@@ -28,7 +28,7 @@ import (
 
 // BuildConfig writes the TF model into the API panel struct.
 // When the config block is nil or entirely null, an empty config object is sent (valid: shows all monitors).
-func BuildConfig(pm models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview) diag.Diagnostics {
+func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview) diag.Diagnostics {
 	cfg := pm.SyntheticsStatsOverviewConfig
 	if cfg == nil {
 		return nil
@@ -49,19 +49,19 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSynthet
 
 	if len(cfg.Drilldowns) > 0 {
 		drilldowns := make([]struct {
-			EncodeUrl    *bool                                                                     `json:"encode_url,omitempty"` //nolint:revive
-			Label        string                                                                    `json:"label"`
-			OpenInNewTab *bool                                                                     `json:"open_in_new_tab,omitempty"`
-			Trigger      kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
-			Type         kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
-			Url          string                                                                    `json:"url"` //nolint:revive
+			EncodeUrl    *bool                                                                                   `json:"encode_url,omitempty"` //nolint:revive
+			Label        string                                                                                  `json:"label"`
+			OpenInNewTab *bool                                                                                   `json:"open_in_new_tab,omitempty"`
+			Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
+			Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
+			Url          string                                                                                  `json:"url"` //nolint:revive
 		}, len(cfg.Drilldowns))
 
 		for i, d := range cfg.Drilldowns {
 			drilldowns[i].Url = d.URL.ValueString()
 			drilldowns[i].Label = d.Label.ValueString()
-			drilldowns[i].Trigger = kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu
-			drilldowns[i].Type = kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown
+			drilldowns[i].Trigger = kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu
+			drilldowns[i].Type = kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown
 			if typeutils.IsKnown(d.EncodeURL) {
 				drilldowns[i].EncodeUrl = d.EncodeURL.ValueBoolPointer()
 			}
@@ -130,7 +130,7 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSynthet
 }
 
 // PopulateFromAPI reads back a synthetics stats overview panel from the API response.
-func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview) diag.Diagnostics {
+func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview) diag.Diagnostics {
 	cfg := apiPanel.Config
 
 	if prior == nil {
@@ -204,7 +204,7 @@ func syntheticsFiltersHasAnyEntry(f *struct {
 }
 
 func readSyntheticsStatsOverviewDrilldownsFromAPI(
-	apiPanel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview,
+	apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview,
 	priorDrilldowns []models.URLDrilldownModel,
 ) []models.URLDrilldownModel {
 	apiDrilldowns := apiPanel.Config.Drilldowns
@@ -246,7 +246,7 @@ func readSyntheticsStatsOverviewDrilldownsFromAPI(
 }
 
 func readSyntheticsStatsOverviewFiltersFromAPI(
-	apiPanel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview,
+	apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview,
 	priorFilters *models.SyntheticsFiltersModel,
 ) *models.SyntheticsFiltersModel {
 	apiFilters := apiPanel.Config.Filters

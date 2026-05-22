@@ -79,7 +79,7 @@ func (Handler) AlignStateFromPlan(ctx context.Context, plan, state *models.Panel
 
 // FromAPI populates Terraform panel state from a markdown panel API item.
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	markdownPanel, err := item.AsKbnDashboardPanelTypeMarkdown()
+	markdownPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeMarkdown()
 	if err != nil {
 		var d diag.Diagnostics
 		d.AddError("Dashboard panel decode", err.Error())
@@ -118,23 +118,23 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 		switch {
 		case pm.MarkdownConfig.ByReference != nil:
 			config1 := BuildConfigByReference(pm)
-			var config kbapi.KbnDashboardPanelTypeMarkdown_Config
-			if err := config.FromKbnDashboardPanelTypeMarkdownConfig1(config1); err != nil {
+			var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdown_Config
+			if err := config.FromKibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig1(config1); err != nil {
 				return kbapi.DashboardPanelItem{}, diagutil.FrameworkDiagFromError(err)
 			}
-			panel := kbapi.KbnDashboardPanelTypeMarkdown{Config: config, Grid: grid, Id: id}
-			if err := panelItem.FromKbnDashboardPanelTypeMarkdown(panel); err != nil {
+			panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdown{Config: config, Grid: grid, Id: id}
+			if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeMarkdown(panel); err != nil {
 				diags.AddError("Failed to create markdown panel", err.Error())
 			}
 			return panelItem, diags
 		case pm.MarkdownConfig.ByValue != nil:
 			config0 := BuildConfigByValue(pm)
-			var config kbapi.KbnDashboardPanelTypeMarkdown_Config
-			if err := config.FromKbnDashboardPanelTypeMarkdownConfig0(config0); err != nil {
+			var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdown_Config
+			if err := config.FromKibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0(config0); err != nil {
 				return kbapi.DashboardPanelItem{}, diagutil.FrameworkDiagFromError(err)
 			}
-			panel := kbapi.KbnDashboardPanelTypeMarkdown{Config: config, Grid: grid, Id: id}
-			if err := panelItem.FromKbnDashboardPanelTypeMarkdown(panel); err != nil {
+			panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdown{Config: config, Grid: grid, Id: id}
+			if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeMarkdown(panel); err != nil {
 				diags.AddError("Failed to create markdown panel", err.Error())
 			}
 			return panelItem, diags
@@ -148,13 +148,13 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 
 	case typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull():
 		configJSONBytes := []byte(pm.ConfigJSON.ValueString())
-		var config kbapi.KbnDashboardPanelTypeMarkdown_Config
+		var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdown_Config
 		if err := config.UnmarshalJSON(configJSONBytes); err != nil {
 			diags.AddError("Failed to unmarshal markdown panel config", err.Error())
 			return kbapi.DashboardPanelItem{}, diags
 		}
-		panel := kbapi.KbnDashboardPanelTypeMarkdown{Config: config, Grid: grid, Id: id}
-		if err := panelItem.FromKbnDashboardPanelTypeMarkdown(panel); err != nil {
+		panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdown{Config: config, Grid: grid, Id: id}
+		if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeMarkdown(panel); err != nil {
 			diags.AddError("Failed to create markdown panel", err.Error())
 		}
 		return panelItem, diags

@@ -20,33 +20,33 @@ package lenscommon
 import "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 
 // TerraformChartBlockKey maps a kbapi Lens chart discriminator (the value of VizConverter.VizType())
-// to the Terraform attribute name used inside `vis_config.by_value` and `lens_dashboard_app_config.by_value`.
+// to the Terraform attribute name used inside `vis_config.by_value`.
 // Returns "" if vizType is not one of the supported Lens chart kinds.
 func TerraformChartBlockKey(vizType string) string {
 	switch vizType {
-	case string(kbapi.XyChartNoESQLTypeXy):
+	case string(kbapi.KibanaHTTPAPIsXyChartNoESQLTypeXy):
 		return "xy_chart_config"
-	case string(kbapi.DatatableNoESQLTypeDataTable):
+	case string(kbapi.KibanaHTTPAPIsDatatableNoESQLTypeDataTable):
 		return "datatable_config"
-	case string(kbapi.TagcloudNoESQLTypeTagCloud):
+	case string(kbapi.KibanaHTTPAPIsTagcloudNoESQLTypeTagCloud):
 		return "tagcloud_config"
-	case string(kbapi.RegionMapNoESQLTypeRegionMap):
+	case string(kbapi.KibanaHTTPAPIsRegionMapNoESQLTypeRegionMap):
 		return "region_map_config"
-	case string(kbapi.PieNoESQLTypePie):
+	case string(kbapi.KibanaHTTPAPIsPieNoESQLTypePie):
 		return "pie_chart_config"
-	case string(kbapi.MetricNoESQLTypeMetric):
+	case string(kbapi.KibanaHTTPAPIsMetricNoESQLTypeMetric):
 		return "metric_chart_config"
 	case string(kbapi.LegacyMetric):
 		return "legacy_metric_config"
-	case string(kbapi.GaugeNoESQLTypeGauge):
+	case string(kbapi.KibanaHTTPAPIsGaugeNoESQLTypeGauge):
 		return "gauge_config"
-	case string(kbapi.HeatmapNoESQLTypeHeatmap):
+	case string(kbapi.KibanaHTTPAPIsHeatmapNoESQLTypeHeatmap):
 		return "heatmap_config"
-	case string(kbapi.MosaicNoESQLTypeMosaic):
+	case string(kbapi.KibanaHTTPAPIsMosaicNoESQLTypeMosaic):
 		return "mosaic_config"
-	case string(kbapi.TreemapNoESQLTypeTreemap):
+	case string(kbapi.KibanaHTTPAPIsTreemapNoESQLTypeTreemap):
 		return "treemap_config"
-	case string(kbapi.WaffleNoESQLTypeWaffle):
+	case string(kbapi.KibanaHTTPAPIsWaffleNoESQLTypeWaffle):
 		return "waffle_config"
 	default:
 		return ""

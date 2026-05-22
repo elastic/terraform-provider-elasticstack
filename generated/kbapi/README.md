@@ -5,6 +5,20 @@ This client is very much a work in progress, there's opportunity for improvement
 
 This readme serves to document the status quo, contributions improving this current process are very much welcome.
 
+## `dashboard-paths.json` (paths-only overlay)
+
+The full `dashboards.json` schema overlay was removed when `lens-dashboard-app` left the upstream Kibana spec. Dashboard **schemas** now come only from upstream `oas.yaml` (with `fixDashboardPanelItemRefs` and related transforms).
+
+Upstream still ships **redirect stubs** for `/api/dashboards/*` routes without real operation definitions. `generated/kbapi/dashboard-paths.json` is a **paths-only** supplement: it injects dashboard HTTP paths (GET/POST/PUT/DELETE) via `injectDashboardAPIPaths` in `transform_schema.go`. It must not add or override component schemas or panel types.
+
+When extending dashboard API coverage:
+
+1. Confirm the path is missing or stubbed in `oas-filtered.yaml` after `make transform`.
+2. Add or adjust path entries in `dashboard-paths.json` only (use `$ref` to upstream `Kibana_HTTP_APIs_*` schemas).
+3. Run `make transform generate` and verify `kibana.gen.go` compiles.
+
+Do not recreate a schema-merging `dashboards.json`-style overlay unless upstream explicitly requires it.
+
 ## Adding new endpoints
 
 There's more detail on the full process below, this section aims to provide a tl;dr to what's required to cover new endpoints in the generated client.

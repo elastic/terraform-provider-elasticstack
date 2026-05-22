@@ -49,7 +49,7 @@ func (Handler) AlignStateFromPlan(_ context.Context, plan, state *models.PanelMo
 }
 
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	esqlPanel, err := item.AsKbnDashboardPanelTypeEsqlControl()
+	esqlPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl()
 	if err != nil {
 		var d diag.Diagnostics
 		d.AddError("Dashboard panel decode", err.Error())
@@ -68,7 +68,7 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	_ = dashboard
 	grid := panelkit.GridToAPI(pm.Grid)
 	id := panelkit.IDToAPI(pm.ID)
-	panel := kbapi.KbnDashboardPanelTypeEsqlControl{
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl{
 		Grid: grid,
 		Id:   id,
 	}
@@ -77,7 +77,7 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	if diags.HasError() {
 		return panelItem, diags
 	}
-	if err := panelItem.FromKbnDashboardPanelTypeEsqlControl(panel); err != nil {
+	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl(panel); err != nil {
 		diags.AddError("Failed to create esql control panel", err.Error())
 		return panelItem, diags
 	}

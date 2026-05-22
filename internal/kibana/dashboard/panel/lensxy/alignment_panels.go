@@ -43,10 +43,6 @@ func xyChartConfigFromLensOrVisPlanPanel(pm models.PanelModel) *models.XYChartCo
 	if pm.VisConfig != nil && pm.VisConfig.ByValue != nil && pm.VisConfig.ByValue.XYChartConfig != nil {
 		return pm.VisConfig.ByValue.XYChartConfig
 	}
-	if pm.LensDashboardAppConfig != nil && pm.LensDashboardAppConfig.ByValue != nil &&
-		pm.LensDashboardAppConfig.ByValue.XYChartConfig != nil {
-		return pm.LensDashboardAppConfig.ByValue.XYChartConfig
-	}
 	return nil
 }
 
@@ -91,7 +87,7 @@ func alignXYXAxisStateFromPlan(plan, state *models.XYAxisConfigModel) {
 	preserveNullBoolIfStateEquals(plan.Grid, &state.Grid, true)
 	preserveNullBoolIfStateEquals(plan.Ticks, &state.Ticks, true)
 	preserveNullStringIfStateEquals(plan.LabelOrientation, &state.LabelOrientation, "horizontal")
-	preserveNullStringIfStateEquals(plan.Scale, &state.Scale, string(kbapi.VisApiXyAxisConfigXScaleOrdinal))
+	preserveNullStringIfStateEquals(plan.Scale, &state.Scale, string(kbapi.KibanaHTTPAPIsVisApiXyAxisConfigXScaleOrdinal))
 	preserveKnownBoolIfStateNull(plan.Grid, &state.Grid)
 	preserveKnownBoolIfStateNull(plan.Ticks, &state.Ticks)
 	preserveKnownStringIfStateNull(plan.LabelOrientation, &state.LabelOrientation)

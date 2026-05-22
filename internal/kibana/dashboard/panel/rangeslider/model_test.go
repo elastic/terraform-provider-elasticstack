@@ -28,8 +28,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func apiRangeSliderConfig(opts ...func(*kbapi.KbnDashboardPanelTypeRangeSliderControl)) *kbapi.KbnDashboardPanelTypeRangeSliderControl {
-	p := &kbapi.KbnDashboardPanelTypeRangeSliderControl{}
+func apiRangeSliderConfig(opts ...func(*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl)) *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl {
+	p := &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{}
 	p.Config.DataViewId = "dv-1"
 	p.Config.FieldName = "bytes"
 	for _, o := range opts {
@@ -38,23 +38,23 @@ func apiRangeSliderConfig(opts ...func(*kbapi.KbnDashboardPanelTypeRangeSliderCo
 	return p
 }
 
-func rsWithTitle(t string) func(*kbapi.KbnDashboardPanelTypeRangeSliderControl) {
-	return func(p *kbapi.KbnDashboardPanelTypeRangeSliderControl) { p.Config.Title = &t }
+func rsWithTitle(t string) func(*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) {
+	return func(p *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) { p.Config.Title = &t }
 }
-func withUseGlobalFilters(b bool) func(*kbapi.KbnDashboardPanelTypeRangeSliderControl) {
-	return func(p *kbapi.KbnDashboardPanelTypeRangeSliderControl) { p.Config.UseGlobalFilters = &b }
+func withUseGlobalFilters(b bool) func(*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) {
+	return func(p *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) { p.Config.UseGlobalFilters = &b }
 }
-func withIgnoreValidations(b bool) func(*kbapi.KbnDashboardPanelTypeRangeSliderControl) {
-	return func(p *kbapi.KbnDashboardPanelTypeRangeSliderControl) { p.Config.IgnoreValidations = &b }
+func withIgnoreValidations(b bool) func(*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) {
+	return func(p *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) { p.Config.IgnoreValidations = &b }
 }
-func withValue(lo, hi string) func(*kbapi.KbnDashboardPanelTypeRangeSliderControl) {
-	return func(p *kbapi.KbnDashboardPanelTypeRangeSliderControl) {
+func withValue(lo, hi string) func(*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) {
+	return func(p *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) {
 		v := []string{lo, hi}
 		p.Config.Value = &v
 	}
 }
-func withStep(s float32) func(*kbapi.KbnDashboardPanelTypeRangeSliderControl) {
-	return func(p *kbapi.KbnDashboardPanelTypeRangeSliderControl) { p.Config.Step = &s }
+func withStep(s float32) func(*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) {
+	return func(p *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) { p.Config.Step = &s }
 }
 
 func mustStringList(elems ...string) types.List {
@@ -184,7 +184,7 @@ func Test_BuildConfig_knownFields(t *testing.T) {
 			Step:              types.Float32Value(5),
 		},
 	}
-	rsPanel := kbapi.KbnDashboardPanelTypeRangeSliderControl{}
+	rsPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{}
 	BuildConfig(pm, &rsPanel)
 	assert.Equal(t, "dv-1", rsPanel.Config.DataViewId)
 	assert.Equal(t, "bytes", rsPanel.Config.FieldName)
@@ -213,7 +213,7 @@ func Test_BuildConfig_nullOptionalFields(t *testing.T) {
 			Step:              types.Float32Null(),
 		},
 	}
-	rsPanel := kbapi.KbnDashboardPanelTypeRangeSliderControl{}
+	rsPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{}
 	BuildConfig(pm, &rsPanel)
 	assert.Equal(t, "dv-1", rsPanel.Config.DataViewId)
 	assert.Equal(t, "bytes", rsPanel.Config.FieldName)
@@ -236,7 +236,7 @@ func Test_rangeSliderControl_roundTrip(t *testing.T) {
 		Step:              types.Float32Value(10),
 	}
 	pm := models.PanelModel{RangeSliderControlConfig: &original}
-	rsPanel := kbapi.KbnDashboardPanelTypeRangeSliderControl{}
+	rsPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{}
 	BuildConfig(pm, &rsPanel)
 
 	out := &models.PanelModel{
@@ -272,7 +272,7 @@ func Test_rangeSliderControl_value_exactlyTwoElements(t *testing.T) {
 			Value:      mustStringList("0", "1000"),
 		},
 	}
-	rsPanel := kbapi.KbnDashboardPanelTypeRangeSliderControl{}
+	rsPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{}
 	BuildConfig(pm, &rsPanel)
 	require.NotNil(t, rsPanel.Config.Value)
 	assert.Len(t, *rsPanel.Config.Value, 2)

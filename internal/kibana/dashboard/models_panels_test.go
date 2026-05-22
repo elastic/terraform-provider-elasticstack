@@ -48,13 +48,13 @@ func buildLensMosaicPanelForTest(t *testing.T) models.PanelModel {
 		"group_by": ` + groupBy + `,
 		"group_breakdown_by": ` + groupBreakdownBy + `
 	}`
-	var api kbapi.MosaicNoESQL
+	var api kbapi.KibanaHTTPAPIsMosaicNoESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
-	require.NoError(t, attrs.FromMosaicNoESQL(api))
+	var attrs lenscommon.VisByValueConfig0
+	require.NoError(t, attrs.FromKibanaHTTPAPIsMosaicNoESQL(api))
 
-	c := lenscommon.ForType(string(kbapi.MosaicNoESQLTypeMosaic))
+	c := lenscommon.ForType(string(kbapi.KibanaHTTPAPIsMosaicNoESQLTypeMosaic))
 	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
 	diags := c.PopulateFromAttributes(context.Background(), testLensChartResolver(), &visBv.LensByValueChartBlocks, attrs)
@@ -83,13 +83,13 @@ func buildLensTreemapPanelForTest(t *testing.T) models.PanelModel {
 		"metrics": [{"operation":"count"}],
 		"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}]
 	}`
-	var api kbapi.TreemapNoESQL
+	var api kbapi.KibanaHTTPAPIsTreemapNoESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
-	require.NoError(t, attrs.FromTreemapNoESQL(api))
+	var attrs lenscommon.VisByValueConfig0
+	require.NoError(t, attrs.FromKibanaHTTPAPIsTreemapNoESQL(api))
 
-	c := lenscommon.ForType(string(kbapi.TreemapNoESQLTypeTreemap))
+	c := lenscommon.ForType(string(kbapi.KibanaHTTPAPIsTreemapNoESQLTypeTreemap))
 	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
 	diags := c.PopulateFromAttributes(context.Background(), testLensChartResolver(), &visBv.LensByValueChartBlocks, attrs)
@@ -117,13 +117,13 @@ func buildLensWafflePanelForTest(t *testing.T) models.PanelModel {
 		"legend": {"size":"small"},
 		"metrics": [{"operation":"count"}]
 	}`
-	var api kbapi.WaffleNoESQL
+	var api kbapi.KibanaHTTPAPIsWaffleNoESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
-	require.NoError(t, attrs.FromWaffleNoESQL(api))
+	var attrs lenscommon.VisByValueConfig0
+	require.NoError(t, attrs.FromKibanaHTTPAPIsWaffleNoESQL(api))
 
-	c := lenscommon.ForType(string(kbapi.WaffleNoESQLTypeWaffle))
+	c := lenscommon.ForType(string(kbapi.KibanaHTTPAPIsWaffleNoESQLTypeWaffle))
 	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
 	diags := c.PopulateFromAttributes(context.Background(), testLensChartResolver(), &visBv.LensByValueChartBlocks, attrs)
@@ -482,7 +482,6 @@ func assertPanelsEqual(t *testing.T, expected, actual models.PanelModel) {
 	assert.Equal(t, expected.ID, actual.ID)
 	assert.Equal(t, expected.MarkdownConfig, actual.MarkdownConfig)
 	assert.Equal(t, expected.VisConfig, actual.VisConfig)
-	assert.Equal(t, expected.LensDashboardAppConfig, actual.LensDashboardAppConfig)
 	// ConfigJSON: use semantic equality (handles formatting differences)
 	ctx := context.Background()
 	eq, diags := expected.ConfigJSON.StringSemanticEquals(ctx, actual.ConfigJSON)
@@ -778,16 +777,6 @@ func Test_panelModel_toAPI_configJSONErrors(t *testing.T) {
 		errorSummary  string
 		errorContains string
 	}{
-		{
-			name: "rejects panel-level config_json for lens-dashboard-app (REQ-025 write path)",
-			panel: models.PanelModel{
-				Type:       types.StringValue("lens-dashboard-app"),
-				Grid:       models.PanelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
-				ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{"x":1}`, populatePanelConfigJSONDefaults),
-			},
-			errorSummary:  "Unsupported panel type for config_json",
-			errorContains: "Panel-level `config_json` is not supported for `lens-dashboard-app`",
-		},
 		{
 			name: "rejects panel-level config_json for image",
 			panel: models.PanelModel{

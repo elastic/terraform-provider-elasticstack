@@ -31,7 +31,7 @@ const (
 	attrPanelType        = "type"
 	attrPanelGrid        = "grid"
 	attrPanelID          = "id"
-	expectedPanelConfigs = 16 // design D9: API panel kinds + universal config_json (plus image, slo_alerts, discover_session)
+	expectedPanelConfigs = 15 // design D9: API panel kinds + universal config_json (plus image, slo_alerts, discover_session)
 )
 
 func Test_panelConfigNames_matchesPanelSchemaAttributes(t *testing.T) {

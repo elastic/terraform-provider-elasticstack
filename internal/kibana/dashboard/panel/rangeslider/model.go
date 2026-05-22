@@ -34,7 +34,7 @@ import (
 //
 // tfPanel is the prior TF state/plan panel, or nil on import. When nil, the function
 // populates all API-returned fields unconditionally (no prior intent to preserve).
-func PopulateFromAPI(ctx context.Context, pm *models.PanelModel, tfPanel *models.PanelModel, rs *kbapi.KbnDashboardPanelTypeRangeSliderControl) {
+func PopulateFromAPI(ctx context.Context, pm *models.PanelModel, tfPanel *models.PanelModel, rs *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) {
 	if rs == nil {
 		return
 	}
@@ -95,7 +95,7 @@ func PopulateFromAPI(ctx context.Context, pm *models.PanelModel, tfPanel *models
 }
 
 // BuildConfig writes TF model fields into the API panel payload.
-func BuildConfig(pm models.PanelModel, rsPanel *kbapi.KbnDashboardPanelTypeRangeSliderControl) {
+func BuildConfig(pm models.PanelModel, rsPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) {
 	cfg := pm.RangeSliderControlConfig
 	if cfg == nil {
 		return

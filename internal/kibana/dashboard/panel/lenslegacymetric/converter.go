@@ -59,8 +59,8 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("legacy_metric_config", attrs)
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
-	legacyMetric, err := attrs.AsLegacyMetricNoESQL()
+func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+	legacyMetric, err := attrs.AsKibanaHTTPAPIsLegacyMetricNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -79,8 +79,8 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 	return legacyMetricConfigFromAPINoESQL(ctx, blocks.LegacyMetricConfig, resolver, prior, legacyMetric)
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags

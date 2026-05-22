@@ -52,7 +52,7 @@ func (Handler) AlignStateFromPlan(ctx context.Context, plan, state *models.Panel
 
 // FromAPI fills pm from kbapi DashboardPanelItem for this panel discriminator.
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	apiPanel, err := item.AsKbnDashboardPanelTypeSloBurnRate()
+	apiPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate()
 	if err != nil {
 		var d diag.Diagnostics
 		d.AddError("Dashboard panel decode", err.Error())
@@ -86,14 +86,14 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 
 	grid := panelkit.GridToAPI(pm.Grid)
 	id := panelkit.IDToAPI(pm.ID)
-	panel := kbapi.KbnDashboardPanelTypeSloBurnRate{
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate{
 		Grid: grid,
 		Id:   id,
 		Type: kbapi.SloBurnRate,
 	}
 	diags := BuildConfig(pm, &panel)
 	var panelItem kbapi.DashboardPanelItem
-	if err := panelItem.FromKbnDashboardPanelTypeSloBurnRate(panel); err != nil {
+	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate(panel); err != nil {
 		diags.AddError("Failed to create SLO burn rate panel", err.Error())
 	}
 	return panelItem, diags

@@ -27,7 +27,7 @@ import (
 )
 
 // BuildConfig writes Terraform monitors panel config onto the typed API panel (Grid/Id/Type must be set by the Handler).
-func BuildConfig(pm models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSyntheticsMonitors) diag.Diagnostics {
+func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors) diag.Diagnostics {
 	cfg := pm.SyntheticsMonitorsConfig
 	if cfg == nil {
 		return nil
@@ -46,7 +46,7 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSynthet
 		panel.Config.HideBorder = cfg.HideBorder.ValueBoolPointer()
 	}
 	if typeutils.IsKnown(cfg.View) {
-		view := kbapi.KbnDashboardPanelTypeSyntheticsMonitorsConfigView(cfg.View.ValueString())
+		view := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitorsConfigView(cfg.View.ValueString())
 		panel.Config.View = &view
 	}
 
@@ -169,7 +169,7 @@ func toSyntheticsFilterItems(items []models.SyntheticsFilterItemModel) []struct 
 }
 
 // PopulateFromAPI reads the Kibana API panel into Terraform panel state.
-func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel kbapi.KbnDashboardPanelTypeSyntheticsMonitors) diag.Diagnostics {
+func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors) diag.Diagnostics {
 	apiFilters := apiPanel.Config.Filters
 
 	if prior == nil {
@@ -284,7 +284,7 @@ func fromSyntheticsAPIItems(items *[]struct {
 	return result
 }
 
-func syntheticsMonitorsViewValue(view *kbapi.KbnDashboardPanelTypeSyntheticsMonitorsConfigView) types.String {
+func syntheticsMonitorsViewValue(view *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitorsConfigView) types.String {
 	if view == nil {
 		return types.StringNull()
 	}

@@ -35,7 +35,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.HeatmapNoESQLTypeHeatmap)
+	return string(kbapi.KibanaHTTPAPIsHeatmapNoESQLTypeHeatmap)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -46,7 +46,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("heatmap_config", heatmapSchemaAttrs(true))
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
 	var prior *models.HeatmapConfigModel
 	if blocks != nil && blocks.HeatmapConfig != nil {
 		cpy := *blocks.HeatmapConfig
@@ -59,18 +59,18 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 	}
 	blocks.HeatmapConfig = &models.HeatmapConfigModel{}
 
-	if heatmapNoESQL, err := attrs.AsHeatmapNoESQL(); err == nil && !isHeatmapNoESQLCandidateActuallyESQL(heatmapNoESQL) {
+	if heatmapNoESQL, err := attrs.AsKibanaHTTPAPIsHeatmapNoESQL(); err == nil && !isHeatmapNoESQLCandidateActuallyESQL(heatmapNoESQL) {
 		return heatmapConfigFromAPINoESQL(ctx, blocks.HeatmapConfig, resolver, prior, heatmapNoESQL)
 	}
-	heatmapESQL, err := attrs.AsHeatmapESQL()
+	heatmapESQL, err := attrs.AsKibanaHTTPAPIsHeatmapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 	return heatmapConfigFromAPIESQL(ctx, blocks.HeatmapConfig, resolver, prior, heatmapESQL)
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags

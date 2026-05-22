@@ -30,12 +30,12 @@ type pinnedHandler struct{}
 
 func (pinnedHandler) FromAPI(ctx context.Context, prior *models.PinnedPanelModel, raw kbapi.DashboardPinnedPanels_Item) (models.PinnedPanelModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	group, err := raw.AsKbnControlsSchemasControlsGroupSchemaTimeSliderControl()
+	group, err := raw.AsKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaTimeSliderControl()
 	if err != nil {
 		diags.AddError("Failed to parse pinned time slider control", err.Error())
 		return models.PinnedPanelModel{}, diags
 	}
-	var tsPanel kbapi.KbnDashboardPanelTypeTimeSliderControl
+	var tsPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeTimeSliderControl
 	if err := panelkit.RemapViaJSON(group, &tsPanel); err != nil {
 		diags.AddError("Failed to remap pinned time slider control from API", err.Error())
 		return models.PinnedPanelModel{}, diags
@@ -52,8 +52,8 @@ func (pinnedHandler) FromAPI(ctx context.Context, prior *models.PinnedPanelModel
 func (pinnedHandler) ToAPI(ppm models.PinnedPanelModel) (kbapi.DashboardPinnedPanels_Item, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	pm := ppm.SyntheticPanel()
-	tsPanel := kbapi.KbnDashboardPanelTypeTimeSliderControl{
-		Grid: kbapi.KbnDashboardPanelGrid{X: 0, Y: 0},
+	tsPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeTimeSliderControl{
+		Grid: kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
 		Config: struct {
 			EndPercentageOfTimeRange   *float32 `json:"end_percentage_of_time_range,omitempty"`
 			IsAnchored                 *bool    `json:"is_anchored,omitempty"`
@@ -61,13 +61,13 @@ func (pinnedHandler) ToAPI(ppm models.PinnedPanelModel) (kbapi.DashboardPinnedPa
 		}{},
 	}
 	BuildConfig(pm, &tsPanel)
-	var group kbapi.KbnControlsSchemasControlsGroupSchemaTimeSliderControl
+	var group kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaTimeSliderControl
 	if err := panelkit.RemapViaJSON(tsPanel, &group); err != nil {
 		diags.AddError("Failed to remap pinned time slider control", err.Error())
 		return kbapi.DashboardPinnedPanels_Item{}, diags
 	}
 	var item kbapi.DashboardPinnedPanels_Item
-	if err := item.FromKbnControlsSchemasControlsGroupSchemaTimeSliderControl(group); err != nil {
+	if err := item.FromKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaTimeSliderControl(group); err != nil {
 		diags.AddError("Failed to build pinned time slider control payload", err.Error())
 		return kbapi.DashboardPinnedPanels_Item{}, diags
 	}

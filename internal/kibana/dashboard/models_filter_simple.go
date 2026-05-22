@@ -23,10 +23,10 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 )
 
-func filterSimpleFromAPI(m *models.FilterSimpleModel, apiQuery kbapi.FilterSimple) {
+func filterSimpleFromAPI(m *models.FilterSimpleModel, apiQuery kbapi.KibanaHTTPAPIsFilterSimple) {
 	lenscommon.FilterSimpleFromAPI(m, apiQuery)
 }
 
-func filterSimpleToAPI(m *models.FilterSimpleModel) kbapi.FilterSimple {
+func filterSimpleToAPI(m *models.FilterSimpleModel) kbapi.KibanaHTTPAPIsFilterSimple {
 	return lenscommon.FilterSimpleToAPI(m)
 }

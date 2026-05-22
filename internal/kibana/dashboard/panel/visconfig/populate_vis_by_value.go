@@ -36,45 +36,45 @@ func lensChartResolver(dashboard *models.DashboardModel) lenscommon.Resolver {
 	return &chartPresentationResolver{dashboard: dashboard}
 }
 
-func (r *chartPresentationResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
+func (r *chartPresentationResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
 	return resolveChartTimeRange(r.dashboard, chartLevel)
 }
 
-func (r *chartPresentationResolver) DashboardLensComparableTimeRange() (kbapi.KbnEsQueryServerTimeRangeSchema, bool) {
+func (r *chartPresentationResolver) DashboardLensComparableTimeRange() (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, bool) {
 	return dashboardLensComparableTimeRange(r.dashboard)
 }
 
-func timeRangeModelToAPI(tr *models.TimeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
+func timeRangeModelToAPI(tr *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
 	if tr == nil {
-		return kbapi.KbnEsQueryServerTimeRangeSchema{}
+		return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}
 	}
-	out := kbapi.KbnEsQueryServerTimeRangeSchema{
+	out := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
 		From: tr.From.ValueString(),
 		To:   tr.To.ValueString(),
 	}
 	if typeutils.IsKnown(tr.Mode) {
-		mode := kbapi.KbnEsQueryServerTimeRangeSchemaMode(tr.Mode.ValueString())
+		mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode(tr.Mode.ValueString())
 		out.Mode = &mode
 	}
 	return out
 }
 
-func resolveChartTimeRange(dashboard *models.DashboardModel, chartLevel *models.TimeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
+func resolveChartTimeRange(dashboard *models.DashboardModel, chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
 	if chartLevel != nil {
 		return timeRangeModelToAPI(chartLevel)
 	}
 	if dashboard != nil && dashboard.TimeRange != nil {
 		return timeRangeModelToAPI(dashboard.TimeRange)
 	}
-	return kbapi.KbnEsQueryServerTimeRangeSchema{
+	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
 		From: "now-15m",
 		To:   "now",
 	}
 }
 
-func dashboardLensComparableTimeRange(dashboard *models.DashboardModel) (kbapi.KbnEsQueryServerTimeRangeSchema, bool) {
+func dashboardLensComparableTimeRange(dashboard *models.DashboardModel) (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, bool) {
 	if dashboard == nil || dashboard.TimeRange == nil {
-		return kbapi.KbnEsQueryServerTimeRangeSchema{}, false
+		return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}, false
 	}
 	return timeRangeModelToAPI(dashboard.TimeRange), true
 }
@@ -105,49 +105,49 @@ func seedLensChartPriorIntoBlocks(tfPanel *models.PanelModel, dest *models.LensB
 	}
 	prior := lensByValueChartBlocksFromPanel(tfPanel)
 	switch vizType {
-	case string(kbapi.XyChartNoESQLTypeXy):
+	case string(kbapi.KibanaHTTPAPIsXyChartNoESQLTypeXy):
 		if prior != nil && prior.XYChartConfig != nil {
 			cpy := *prior.XYChartConfig
 			dest.XYChartConfig = &cpy
 		} else {
 			dest.XYChartConfig = nil
 		}
-	case string(kbapi.TreemapNoESQLTypeTreemap):
+	case string(kbapi.KibanaHTTPAPIsTreemapNoESQLTypeTreemap):
 		if prior != nil && prior.TreemapConfig != nil {
 			cpy := *prior.TreemapConfig
 			dest.TreemapConfig = &cpy
 		} else {
 			dest.TreemapConfig = nil
 		}
-	case string(kbapi.MosaicNoESQLTypeMosaic):
+	case string(kbapi.KibanaHTTPAPIsMosaicNoESQLTypeMosaic):
 		if prior != nil && prior.MosaicConfig != nil {
 			cpy := *prior.MosaicConfig
 			dest.MosaicConfig = &cpy
 		} else {
 			dest.MosaicConfig = nil
 		}
-	case string(kbapi.DatatableNoESQLTypeDataTable):
+	case string(kbapi.KibanaHTTPAPIsDatatableNoESQLTypeDataTable):
 		if prior != nil && prior.DatatableConfig != nil {
 			cpy := *prior.DatatableConfig
 			dest.DatatableConfig = &cpy
 		} else {
 			dest.DatatableConfig = nil
 		}
-	case string(kbapi.TagcloudNoESQLTypeTagCloud):
+	case string(kbapi.KibanaHTTPAPIsTagcloudNoESQLTypeTagCloud):
 		if prior != nil && prior.TagcloudConfig != nil {
 			cpy := *prior.TagcloudConfig
 			dest.TagcloudConfig = &cpy
 		} else {
 			dest.TagcloudConfig = nil
 		}
-	case string(kbapi.HeatmapNoESQLTypeHeatmap):
+	case string(kbapi.KibanaHTTPAPIsHeatmapNoESQLTypeHeatmap):
 		if prior != nil && prior.HeatmapConfig != nil {
 			cpy := *prior.HeatmapConfig
 			dest.HeatmapConfig = &cpy
 		} else {
 			dest.HeatmapConfig = nil
 		}
-	case string(kbapi.RegionMapNoESQLTypeRegionMap):
+	case string(kbapi.KibanaHTTPAPIsRegionMapNoESQLTypeRegionMap):
 		if prior != nil && prior.RegionMapConfig != nil {
 			cpy := *prior.RegionMapConfig
 			dest.RegionMapConfig = &cpy
@@ -161,28 +161,28 @@ func seedLensChartPriorIntoBlocks(tfPanel *models.PanelModel, dest *models.LensB
 		} else {
 			dest.LegacyMetricConfig = nil
 		}
-	case string(kbapi.MetricNoESQLTypeMetric):
+	case string(kbapi.KibanaHTTPAPIsMetricNoESQLTypeMetric):
 		if prior != nil && prior.MetricChartConfig != nil {
 			cpy := *prior.MetricChartConfig
 			dest.MetricChartConfig = &cpy
 		} else {
 			dest.MetricChartConfig = nil
 		}
-	case string(kbapi.PieNoESQLTypePie):
+	case string(kbapi.KibanaHTTPAPIsPieNoESQLTypePie):
 		if prior != nil && prior.PieChartConfig != nil {
 			cpy := *prior.PieChartConfig
 			dest.PieChartConfig = &cpy
 		} else {
 			dest.PieChartConfig = nil
 		}
-	case string(kbapi.GaugeNoESQLTypeGauge):
+	case string(kbapi.KibanaHTTPAPIsGaugeNoESQLTypeGauge):
 		if prior != nil && prior.GaugeConfig != nil {
 			cpy := *prior.GaugeConfig
 			dest.GaugeConfig = &cpy
 		} else {
 			dest.GaugeConfig = nil
 		}
-	case string(kbapi.WaffleNoESQLTypeWaffle):
+	case string(kbapi.KibanaHTTPAPIsWaffleNoESQLTypeWaffle):
 	default:
 	}
 }
@@ -192,7 +192,7 @@ func populateLensVisByValueFromTypedChartAPI(
 	dashboard *models.DashboardModel,
 	tfPanel *models.PanelModel,
 	blocks *models.LensByValueChartBlocks,
-	config0 kbapi.KbnDashboardPanelTypeVisConfig0,
+	config0 lenscommon.VisByValueConfig0,
 	unknownTypeAddsError bool,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
