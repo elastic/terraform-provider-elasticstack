@@ -62,7 +62,7 @@ test('schema-coverage rotation workflow uses Claude through LiteLLM with secret-
   assert.match(source, /model: "?llm-gateway\/claude-sonnet-4-6"?/);
   assert.match(source, /ANTHROPIC_BASE_URL:\s*"?https:\/\/elastic\.litellm-prod\.ai\/?"?/);
   assert.match(source, /ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.CLAUDE_LITELLM_PROXY_API_KEY\s*\}\}/);
-  assert.match(source, /tools:\s*\n\s*timeout:\s*300/m);
+  assert.match(source, /tools:[\s\S]*?\n\s+timeout:\s*300/m);
 });
 
 test('schema-coverage rotation source workflow configures engine env with base URL and model', () => {
@@ -71,7 +71,7 @@ test('schema-coverage rotation source workflow configures engine env with base U
   assert.match(source, /model: "?llm-gateway\/claude-sonnet-4-6"?/);
   assert.match(source, /ANTHROPIC_BASE_URL:\s*"?https:\/\/elastic\.litellm-prod\.ai\/?"?/);
   assert.match(source, /ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.CLAUDE_LITELLM_PROXY_API_KEY\s*\}\}/);
-  assert.match(source, /tools:\s*\n\s*timeout:\s*300/m);
+  assert.match(source, /tools:[\s\S]*?\n\s+timeout:\s*300/m);
 });
 
 test('schema-coverage rotation workflow bootstraps the repo with make setup', () => {
