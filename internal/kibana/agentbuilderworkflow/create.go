@@ -46,9 +46,14 @@ func createWorkflow(ctx context.Context, client *clients.KibanaScopedClient, req
 	}
 
 	plan.SpaceID = types.StringValue(req.SpaceID)
-
-	if created != nil && !created.Valid {
-		diags.AddError("Invalid workflow", "The workflow was created but its configuration is invalid. Please check the YAML definition.")
+	// workflow_id is Computed+Optional: when the caller omits it, the API
+	// generates one and returns it on the POST response. Capture it on the
+	// plan so the envelope's read-after-write step can resolve the identity.
+	if created != nil {
+		plan.WorkflowID = types.StringValue(created.ID)
+		if !created.Valid {
+			diags.AddError("Invalid workflow", "The workflow was created but its configuration is invalid. Please check the YAML definition.")
+		}
 	}
 
 	return entitycore.KibanaWriteResult[workflowModel]{Model: plan}, diags
