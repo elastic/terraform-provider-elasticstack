@@ -1,5 +1,7 @@
 ---
-imports: [shared/setup-dev.md]
+imports: 
+  - shared/setup-dev.md
+  - shared/go-source-analysis.md
 name: Schema Coverage Rotation
 description: Rotates schema-coverage analysis across stale provider entities and opens actionable test-improvement issues.
 on:
@@ -39,7 +41,12 @@ permissions:
   issues: read
   pull-requests: read
   actions: read
+
 tools:
+  cli-proxy: true
+  github:
+    mode: gh-proxy
+    toolsets: [default, issues]
   timeout: 300
   repo-memory:
     - id: schema-coverage-rotation
