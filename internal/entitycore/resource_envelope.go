@@ -27,6 +27,7 @@ import (
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -489,7 +490,38 @@ func (r *ElasticsearchResource[T]) Delete(ctx context.Context, req resource.Dele
 	resp.Diagnostics.Append(r.deleteFunc(ctx, client, resourceID, model)...)
 }
 
+// ModifyPlan implements [resource.ResourceWithModifyPlan]. It marks
+// elasticsearch_connection for replacement when the connection value changes
+// between state and plan, ensuring Terraform destroys and recreates the resource
+// rather than attempting an in-place update against a different cluster.
+func (r *ElasticsearchResource[T]) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+
+	var plan, state T
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	planConn := plan.GetElasticsearchConnection()
+	stateConn := state.GetElasticsearchConnection()
+	if planConn.IsUnknown() || stateConn.IsUnknown() {
+		return
+	}
+
+	if !planConn.Equal(stateConn) {
+		resp.RequiresReplace = append(resp.RequiresReplace, path.Root("elasticsearch_connection"))
+	}
+}
+
 var (
-	_ resource.Resource              = (*ElasticsearchResource[ElasticsearchResourceModel])(nil)
-	_ resource.ResourceWithConfigure = (*ElasticsearchResource[ElasticsearchResourceModel])(nil)
+	_ resource.Resource               = (*ElasticsearchResource[ElasticsearchResourceModel])(nil)
+	_ resource.ResourceWithConfigure  = (*ElasticsearchResource[ElasticsearchResourceModel])(nil)
+	_ resource.ResourceWithModifyPlan = (*ElasticsearchResource[ElasticsearchResourceModel])(nil)
 )
