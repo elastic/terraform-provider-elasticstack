@@ -23,24 +23,17 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
 var validToolTypes = []string{"esql", "index_search", "workflow", "mcp"}
 
-func (r *ToolResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = getSchema()
-}
-
-func getSchema() schema.Schema {
+func getResourceSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages Kibana Agent Builder tools. Tools can be of type `esql`, `index_search`, or `workflow`. " +
 			"See the [Agent Builder API documentation](https://www.elastic.co/guide/en/kibana/current/agent-builder-api.html).",
@@ -96,9 +89,6 @@ func getSchema() schema.Schema {
 				MarkdownDescription: "The tool configuration as a JSON-encoded string. Use `jsonencode()` to pass a configuration object.",
 				CustomType:          jsontypes.NormalizedType{},
 			},
-		},
-		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 		},
 	}
 }

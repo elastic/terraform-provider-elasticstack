@@ -37,12 +37,20 @@ var (
 )
 
 type ToolResource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[toolModel]
 }
 
 func newToolResource() *ToolResource {
 	return &ToolResource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "agentbuilder_tool"),
+		KibanaResource: entitycore.NewKibanaResource[toolModel](
+			entitycore.ComponentKibana,
+			"agentbuilder_tool",
+			getResourceSchema,
+			readTool,
+			deleteTool,
+			createTool,
+			updateTool,
+		),
 	}
 }
 

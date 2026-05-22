@@ -21,20 +21,13 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
-func (r *WorkflowResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = getSchema()
-}
-
-func getSchema() schema.Schema {
+func getResourceSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages Kibana Agent Builder workflows. See the [Workflows documentation](https://www.elastic.co/docs/explore-analyze/workflows) for more information.",
 		Attributes: map[string]schema.Attribute{
@@ -85,9 +78,6 @@ func getSchema() schema.Schema {
 				Computed:            true,
 				MarkdownDescription: "Whether the workflow configuration is valid.",
 			},
-		},
-		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 		},
 	}
 }

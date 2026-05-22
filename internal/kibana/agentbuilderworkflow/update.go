@@ -22,65 +22,37 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *WorkflowResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var planModel workflowModel
+func updateWorkflow(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, plan workflowModel, _ workflowModel) (workflowModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	diags := req.Plan.Get(ctx, &planModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderAPIVersion, "workflows", &resp.Diagnostics) {
-		return
-	}
-
-	compID, idDiags := clients.CompositeIDFromStr(planModel.ID.ValueString())
-	resp.Diagnostics.Append(idDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Restore space_id from the composite ID so populateFromAPI can use it.
-	planModel.SpaceID = types.StringValue(compID.ClusterID)
+	body := plan.toAPIUpdateModel()
 
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
+		diags.AddError(err.Error(), "")
+		return plan, diags
 	}
 
-	body := planModel.toAPIUpdateModel()
-
-	diags = kibanaoapi.UpdateWorkflow(ctx, oapiClient, compID.ClusterID, compID.ResourceID, body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	d := kibanaoapi.UpdateWorkflow(ctx, oapiClient, spaceID, resourceID, body)
+	diags.Append(d...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	workflow, diags := kibanaoapi.GetWorkflow(ctx, oapiClient, compID.ClusterID, compID.ResourceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	workflow, d := kibanaoapi.GetWorkflow(ctx, oapiClient, spaceID, resourceID)
+	diags.Append(d...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	planModel.populateFromAPI(workflow)
-
-	diags = resp.State.Set(ctx, planModel)
-	resp.Diagnostics.Append(diags...)
+	plan.populateFromAPI(workflow)
 
 	if !workflow.Valid {
-		resp.Diagnostics.AddError("Invalid workflow", "The workflow was updated but its configuration is invalid. Please check the YAML definition.")
+		diags.AddError("Invalid workflow", "The workflow was updated but its configuration is invalid. Please check the YAML definition.")
 	}
+
+	return plan, diags
 }

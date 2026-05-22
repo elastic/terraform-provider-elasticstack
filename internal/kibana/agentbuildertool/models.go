@@ -20,6 +20,7 @@ package agentbuildertool
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -56,6 +57,23 @@ type toolDataSourceModel struct {
 	IncludeWorkflow           types.Bool                      `tfsdk:"include_workflow"`
 	WorkflowID                types.String                    `tfsdk:"workflow_id"`
 	WorkflowConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"workflow_configuration_yaml"`
+}
+
+func (model toolModel) GetID() types.String             { return model.ID }
+func (model toolModel) GetResourceID() types.String     { return model.ToolID }
+func (model toolModel) GetSpaceID() types.String        { return model.SpaceID }
+func (model toolModel) GetKibanaConnection() types.List { return model.KibanaConnection }
+
+var _ entitycore.KibanaResourceModel = toolModel{}
+var _ entitycore.WithVersionRequirements = toolModel{}
+
+func (model toolModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{
+		{
+			MinVersion:   *minKibanaAgentBuilderAPIVersion,
+			ErrorMessage: fmt.Sprintf("Agent Builder tools require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
+		},
+	}, nil
 }
 
 // toolBaseData holds fields shared between toolDataSourceModel and toolModel

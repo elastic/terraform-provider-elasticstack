@@ -20,58 +20,39 @@ package agentbuilderworkflow
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *WorkflowResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var planModel workflowModel
+func createWorkflow(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, plan workflowModel) (workflowModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	diags := req.Plan.Get(ctx, &planModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderAPIVersion, "workflows", &resp.Diagnostics) {
-		return
-	}
-
-	body := planModel.toAPICreateModel()
+	body := plan.toAPICreateModel()
 
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
+		diags.AddError(err.Error(), "")
+		return plan, diags
 	}
 
-	spaceID := planModel.SpaceID.ValueString()
-
-	created, diags := kibanaoapi.CreateWorkflow(ctx, oapiClient, spaceID, body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	created, d := kibanaoapi.CreateWorkflow(ctx, oapiClient, spaceID, body)
+	diags.Append(d...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	workflow, diags := kibanaoapi.GetWorkflow(ctx, oapiClient, spaceID, created.ID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	workflow, d := kibanaoapi.GetWorkflow(ctx, oapiClient, spaceID, created.ID)
+	diags.Append(d...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	planModel.populateFromAPI(workflow)
-
-	diags = resp.State.Set(ctx, planModel)
-	resp.Diagnostics.Append(diags...)
+	plan.populateFromAPI(workflow)
 
 	if !workflow.Valid {
-		resp.Diagnostics.AddError("Invalid workflow", "The workflow was created but its configuration is invalid. Please check the YAML definition.")
+		diags.AddError("Invalid workflow", "The workflow was created but its configuration is invalid. Please check the YAML definition.")
 	}
+
+	return plan, diags
 }

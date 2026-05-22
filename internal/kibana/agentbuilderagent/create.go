@@ -20,68 +20,44 @@ package agentbuilderagent
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *AgentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var planModel agentModel
+func createAgent(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, plan agentModel) (agentModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	diags := req.Plan.Get(ctx, &planModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	supportsSkillIDs, d := client.EnforceMinVersion(ctx, minVersionAdvancedAgentConfig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderAPIVersion, "agents", &resp.Diagnostics) {
-		return
-	}
-
-	supportsSkillIDs, verDiags := client.EnforceMinVersion(ctx, minVersionAdvancedAgentConfig)
-	resp.Diagnostics.Append(verDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	body, diags := planModel.toAPICreateModel(ctx, supportsSkillIDs)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	body, d := plan.toAPICreateModel(ctx, supportsSkillIDs)
+	diags.Append(d...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
+		diags.AddError(err.Error(), "")
+		return plan, diags
 	}
 
-	spaceID := planModel.SpaceID.ValueString()
-
-	created, diags := kibanaoapi.CreateAgent(ctx, oapiClient, spaceID, body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	created, d := kibanaoapi.CreateAgent(ctx, oapiClient, spaceID, body)
+	diags.Append(d...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	agent, diags := kibanaoapi.GetAgent(ctx, oapiClient, spaceID, created.ID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	agent, d := kibanaoapi.GetAgent(ctx, oapiClient, spaceID, created.ID)
+	diags.Append(d...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	diags = planModel.populateFromAPI(ctx, spaceID, agent)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = resp.State.Set(ctx, planModel)
-	resp.Diagnostics.Append(diags...)
+	diags.Append(plan.populateFromAPI(ctx, spaceID, agent)...)
+	return plan, diags
 }
