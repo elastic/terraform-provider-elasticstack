@@ -274,7 +274,10 @@ func (m tfModel) toShared() apikey.TfModel {
 func (m *tfModel) fromShared(t apikey.TfModel) {
 	m.KeyID = t.KeyID
 	m.Name = t.Name
-	m.Type = t.Type
+	// Intentionally do not copy t.Type: the shared model normalizes unset
+	// type to the default ("rest"), but `type` is Optional (non-computed) on
+	// the ephemeral schema, so the framework would reject a planned value
+	// that differs from the user's config. Preserve the original m.Type.
 	m.RoleDescriptors = t.RoleDescriptors
 	m.Expiration = t.Expiration
 	m.ExpirationTimestamp = t.ExpirationTimestamp

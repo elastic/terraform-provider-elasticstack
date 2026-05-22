@@ -28,20 +28,20 @@ import (
 )
 
 var (
-	_ validator.String = requiresTypeValidator{}
-	_ validator.Object = requiresTypeValidator{}
+	_ validator.String = RequiresTypeValidator{}
+	_ validator.Object = RequiresTypeValidator{}
 )
 
-// requiresTypeValidator validates that a string attribute is only provided
+// RequiresTypeValidator validates that a string attribute is only provided
 // when the resource has a specific value for the "type" attribute.
-type requiresTypeValidator struct {
+type RequiresTypeValidator struct {
 	expectedType string
 }
 
 // RequiresType returns a validator which ensures that the configured attribute
 // is only provided when the "type" attribute matches the expected value.
-func RequiresType(expectedType string) requiresTypeValidator {
-	return requiresTypeValidator{
+func RequiresType(expectedType string) RequiresTypeValidator {
+	return RequiresTypeValidator{
 		expectedType: expectedType,
 	}
 }
@@ -56,15 +56,15 @@ func EffectiveAPIKeyTypeFromOptionalString(typeAttr *string) string {
 	return *typeAttr
 }
 
-func (v requiresTypeValidator) Description(_ context.Context) string {
+func (v RequiresTypeValidator) Description(_ context.Context) string {
 	return fmt.Sprintf("Ensures that the attribute is only provided when type=%s", v.expectedType)
 }
 
-func (v requiresTypeValidator) MarkdownDescription(ctx context.Context) string {
+func (v RequiresTypeValidator) MarkdownDescription(ctx context.Context) string {
 	return v.Description(ctx)
 }
 
-func (v requiresTypeValidator) validateType(ctx context.Context, config tfsdk.Config, attrPath path.Path, diagnostics *diag.Diagnostics) {
+func (v RequiresTypeValidator) validateType(ctx context.Context, config tfsdk.Config, attrPath path.Path, diagnostics *diag.Diagnostics) {
 	var typeAttr *string
 	diagnostics.Append(config.GetAttribute(ctx, path.Root("type"), &typeAttr)...)
 	if diagnostics.HasError() {
@@ -85,14 +85,14 @@ func (v requiresTypeValidator) validateType(ctx context.Context, config tfsdk.Co
 	)
 }
 
-func (v requiresTypeValidator) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+func (v RequiresTypeValidator) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
 	v.validateType(ctx, req.Config, req.Path, &resp.Diagnostics)
 }
 
-func (v requiresTypeValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+func (v RequiresTypeValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
