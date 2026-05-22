@@ -56,29 +56,26 @@ func run(pass *analysis.Pass) (any, error) {
 
 		for _, decl := range file.Decls {
 			fn, ok := decl.(*ast.FuncDecl)
-			if !ok || fn.Body == nil || !strings.HasPrefix(fn.Name.Name, "Test") {
+			if !ok || fn.Body == nil || fn.Name == nil || !strings.HasPrefix(fn.Name.Name, "Test") {
 				continue
 			}
-			for _, stmt := range fn.Body.List {
-				exprStmt, ok := stmt.(*ast.ExprStmt)
+			ast.Inspect(fn.Body, func(n ast.Node) bool {
+				call, ok := n.(*ast.CallExpr)
 				if !ok {
-					continue
-				}
-				call, ok := exprStmt.X.(*ast.CallExpr)
-				if !ok {
-					continue
+					return true
 				}
 				if !isCandidateCallExpr(call) {
-					continue
+					return true
 				}
 				if !isAcceptanceTestCall(call, aliases) {
-					continue
+					return true
 				}
 				if len(call.Args) < 2 {
-					continue
+					return true
 				}
 				inspectTestCase(pass, fileLineCache, varSpecIndex, call.Args[1])
-			}
+				return true
+			})
 		}
 	}
 
