@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -43,11 +44,11 @@ func createSpace(ctx context.Context, client *clients.KibanaScopedClient, _ stri
 	body := kbapi.PostSpacesSpaceJSONRequestBody{
 		Id:               plan.SpaceID.ValueString(),
 		Name:             plan.Name.ValueString(),
-		Description:      optionalStringPtr(plan.Description),
+		Description:      typeutils.OptStringPtr(plan.Description),
 		DisabledFeatures: &features,
-		Initials:         optionalStringPtr(plan.Initials),
-		Color:            optionalStringPtr(plan.Color),
-		ImageUrl:         optionalStringPtr(plan.ImageURL),
+		Initials:         typeutils.OptStringPtr(plan.Initials),
+		Color:            typeutils.OptStringPtr(plan.Color),
+		ImageUrl:         typeutils.OptStringPtr(plan.ImageURL),
 	}
 	if sol := solutionForPostBody(plan.Solution); sol != nil {
 		body.Solution = sol
@@ -71,13 +72,6 @@ func createSpace(ctx context.Context, client *clients.KibanaScopedClient, _ stri
 	}
 
 	return finalizeResourceModelFromAPIResponse(ctx, plan, space)
-}
-
-func optionalStringPtr(v types.String) *string {
-	if v.IsNull() || v.IsUnknown() {
-		return nil
-	}
-	return v.ValueStringPointer()
 }
 
 func disabledFeaturesSlice(ctx context.Context, s types.Set) ([]string, diag.Diagnostics) {
