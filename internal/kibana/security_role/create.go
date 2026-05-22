@@ -23,20 +23,22 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func createRole(ctx context.Context, client *clients.KibanaScopedClient, _ string, plan resourceModel) (resourceModel, diag.Diagnostics) {
+func createRole(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[resourceModel]) (entitycore.KibanaWriteResult[resourceModel], diag.Diagnostics) {
+	plan := req.Plan
 	var diags diag.Diagnostics
 	roleName, body, d := expandResourceModel(ctx, plan)
 	diags.Append(d...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 	}
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		diags.AddError("Unable to get Kibana OpenAPI client", err.Error())
-		return plan, diags
+		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 	}
 	createOnly := true
 	params := kbapi.PutSecurityRoleNameParams{
@@ -44,9 +46,9 @@ func createRole(ctx context.Context, client *clients.KibanaScopedClient, _ strin
 	}
 	diags.Append(kibanaoapi.PutSecurityRole(ctx, oapiClient, roleName, params, body)...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 	}
 	updated, _, rd := readRoleResourceWithHint(ctx, client, roleName, plan, hintFromResourceModel(plan))
 	diags.Append(rd...)
-	return updated, diags
+	return entitycore.KibanaWriteResult[resourceModel]{Model: updated}, diags
 }

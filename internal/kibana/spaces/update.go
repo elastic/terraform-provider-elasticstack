@@ -23,25 +23,27 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func updateSpace(ctx context.Context, client *clients.KibanaScopedClient, resourceID, _ string, plan, _ resourceModel) (resourceModel, diag.Diagnostics) {
+func updateSpace(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[resourceModel]) (entitycore.KibanaWriteResult[resourceModel], diag.Diagnostics) {
+	plan := req.Plan
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
 		var diags diag.Diagnostics
 		diags.AddError("unable to get Kibana OpenAPI client", err.Error())
-		return plan, diags
+		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 	}
 
 	features, d := disabledFeaturesSlice(ctx, plan.DisabledFeatures)
 	if d.HasError() {
-		return plan, d
+		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, d
 	}
 
 	body := kbapi.PutSpacesSpaceIdJSONRequestBody{
-		Id:               resourceID,
+		Id:               req.WriteID,
 		Name:             plan.Name.ValueString(),
 		Description:      typeutils.OptStringPtr(plan.Description),
 		DisabledFeatures: &features,
@@ -53,22 +55,23 @@ func updateSpace(ctx context.Context, client *clients.KibanaScopedClient, resour
 		body.Solution = sol
 	}
 
-	_, apiDiags := kibanaoapi.UpdateSpace(ctx, oapiClient, resourceID, body)
+	_, apiDiags := kibanaoapi.UpdateSpace(ctx, oapiClient, req.WriteID, body)
 	var diags diag.Diagnostics
 	diags.Append(apiDiags...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 	}
 
-	space, found, fwDiags := fetchSpace(ctx, oapiClient, resourceID)
+	space, found, fwDiags := fetchSpace(ctx, oapiClient, req.WriteID)
 	diags.Append(fwDiags...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 	}
 	if !found {
 		diags.AddError("Update space", "space was not found after update")
-		return plan, diags
+		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 	}
 
-	return finalizeResourceModelFromAPIResponse(ctx, plan, space)
+	result, resultDiags := finalizeResourceModelFromAPIResponse(ctx, plan, space)
+	return entitycore.KibanaWriteResult[resourceModel]{Model: result}, resultDiags
 }

@@ -41,11 +41,13 @@ func newResource() *Resource {
 		KibanaResource: entitycore.NewKibanaResource[proxyModel](
 			entitycore.ComponentFleet,
 			"proxy",
-			getSchema,
-			readProxy,
-			deleteProxy,
-			createProxy,
-			updateProxy,
+			entitycore.KibanaResourceOptions[proxyModel]{
+				Schema: getSchema,
+				Read:   readProxy,
+				Delete: deleteProxy,
+				Create: createProxy,
+				Update: updateProxy,
+			},
 		),
 	}
 }

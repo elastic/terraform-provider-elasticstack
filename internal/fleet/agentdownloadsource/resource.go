@@ -37,16 +37,18 @@ type Resource struct {
 }
 
 func newResource() *Resource {
-	createFn, updateFn := entitycore.PlaceholderKibanaWriteCallbacks[model]()
+	placeholder := entitycore.PlaceholderKibanaWriteCallback[model]()
 	return &Resource{
 		KibanaResource: entitycore.NewKibanaResource[model](
 			entitycore.ComponentFleet,
 			"agent_download_source",
-			getSchema,
-			readAgentDownloadSource,
-			deleteAgentDownloadSource,
-			createFn,
-			updateFn,
+			entitycore.KibanaResourceOptions[model]{
+				Schema: getSchema,
+				Read:   readAgentDownloadSource,
+				Delete: deleteAgentDownloadSource,
+				Create: placeholder,
+				Update: placeholder,
+			},
 		),
 		SpaceImporter: fleet.NewSpaceImporter(path.Root("source_id"), path.Root("id")),
 	}

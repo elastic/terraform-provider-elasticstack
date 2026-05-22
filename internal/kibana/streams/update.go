@@ -21,21 +21,23 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func updateStream(ctx context.Context, client *clients.KibanaScopedClient, _, _ string, plan, _ streamModel) (streamModel, diag.Diagnostics) {
+func updateStream(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[streamModel]) (entitycore.KibanaWriteResult[streamModel], diag.Diagnostics) {
+	plan := req.Plan
 	var diags diag.Diagnostics
 
 	readModel, upsertDiags := upsertStream(ctx, client, plan)
 	diags.Append(upsertDiags...)
 	if diags.HasError() {
-		return streamModel{}, diags
+		return entitycore.KibanaWriteResult[streamModel]{}, diags
 	}
 	if readModel == nil {
 		diags.AddError("Error reading stream after update", "The stream was updated but could not be read back.")
-		return streamModel{}, diags
+		return entitycore.KibanaWriteResult[streamModel]{}, diags
 	}
 
-	return *readModel, diags
+	return entitycore.KibanaWriteResult[streamModel]{Model: *readModel}, diags
 }
