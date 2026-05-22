@@ -1,6 +1,6 @@
 ## 1. Create shared dispatch-code-factory fragment
 
-- [x] 1.1 Create `.github/workflows/shared/dispatch-code-factory.md` with the canonical `safe-outputs.jobs.dispatch-code-factory` block, replacing the hardcoded `SOURCE_WORKFLOW: <slug>` with a runtime bash derivation: `SOURCE_WORKFLOW=$(echo "${{ github.workflow }}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')`.
+- [x] 1.1 Create `.github/workflows/shared/dispatch-code-factory.md` with the canonical `safe-outputs.jobs.dispatch-code-factory` block, replacing the hardcoded `SOURCE_WORKFLOW: <slug>` with a compile-safe runtime derivation: `env: GITHUB_WORKFLOW_NAME: ${{ github.workflow }}` plus `SOURCE_WORKFLOW=$(echo "$GITHUB_WORKFLOW_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')` in the step `run:` (gh-aw rejects `${{ }}` inside `run:` scripts).
 - [x] 1.2 Smoke-test compiler support: add `imports: [shared/dispatch-code-factory.md]` to `schema-coverage-rotation.md`, run `gh aw compile` (or the repository's equivalent compile command), and verify the lock output is functionally identical to the current compiled lock. If `safe-outputs.jobs` merging is not supported, stop and document the blocker — do not proceed to 1.3+.
 
 ## 2. Update existing consumers to use the shared fragment
