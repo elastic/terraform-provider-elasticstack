@@ -30,11 +30,9 @@ import (
 
 func updateSpace(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[resourceModel]) (entitycore.KibanaWriteResult[resourceModel], diag.Diagnostics) {
 	plan := req.Plan
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		var diags diag.Diagnostics
-		diags.AddError("unable to get Kibana OpenAPI client", err.Error())
-		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
+	oapiClient, d := client.GetKibanaOapiClientDiag()
+	if d.HasError() {
+		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, d
 	}
 
 	features, d := disabledFeaturesSlice(ctx, plan.DisabledFeatures)

@@ -57,10 +57,9 @@ func (r *PrebuiltRuleResource) upsert(ctx context.Context, plan tfsdk.Plan, stat
 		return diags
 	}
 
-	client, err := apiClient.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError(err.Error(), "Failed to get Kibana client")
-		return diags
+	client, d := apiClient.GetKibanaOapiClientDiag()
+	if d.HasError() {
+		return d
 	}
 
 	spaceID := model.SpaceID.ValueString()

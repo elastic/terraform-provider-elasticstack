@@ -31,10 +31,9 @@ import (
 func readConnectorDataSource(ctx context.Context, client *clients.KibanaScopedClient, model connectorDataSourceModel) (connectorDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("unable to get Kibana OpenAPI client", err.Error())
-		return model, diags
+	oapiClient, d := client.GetKibanaOapiClientDiag()
+	if d.HasError() {
+		return model, d
 	}
 
 	spaceID := ""

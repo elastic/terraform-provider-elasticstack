@@ -69,10 +69,9 @@ func (r *Resource) readSloFromAPI(ctx context.Context, apiClient *clients.Kibana
 		return false, diags
 	}
 
-	oapi, err := apiClient.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Failed to get Kibana API client", err.Error())
-		return false, diags
+	oapi, d := apiClient.GetKibanaOapiClientDiag()
+	if d.HasError() {
+		return false, d
 	}
 
 	// CompositeID stores spaceID as ClusterID and sloID as ResourceID (see create.go).

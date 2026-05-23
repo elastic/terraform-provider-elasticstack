@@ -26,9 +26,9 @@ import (
 )
 
 func deleteTool(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, _ toolModel) diag.Diagnostics {
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic(err.Error(), "")}
+	oapiClient, d := client.GetKibanaOapiClientDiag()
+	if d.HasError() {
+		return d
 	}
 	return kibanaoapi.DeleteTool(ctx, oapiClient, spaceID, resourceID)
 }

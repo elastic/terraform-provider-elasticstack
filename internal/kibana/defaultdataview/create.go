@@ -45,10 +45,9 @@ func (r *Resource) setDefaultDataView(ctx context.Context, plan tfsdk.Plan, stat
 		return diags
 	}
 
-	client, err := apiClient.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("unable to get kibana client", err.Error())
-		return diags
+	client, d := apiClient.GetKibanaOapiClientDiag()
+	if d.HasError() {
+		return d
 	}
 
 	dataViewID := model.DataViewID.ValueStringPointer()

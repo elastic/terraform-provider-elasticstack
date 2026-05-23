@@ -28,11 +28,9 @@ import (
 )
 
 func fetchRole(ctx context.Context, client *clients.KibanaScopedClient, name string) (*kibanaoapi.SecurityRole, bool, diag.Diagnostics) {
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		return nil, false, diag.Diagnostics{
-			diag.NewErrorDiagnostic("Unable to get Kibana OpenAPI client", err.Error()),
-		}
+	oapiClient, d := client.GetKibanaOapiClientDiag()
+	if d.HasError() {
+		return nil, false, d
 	}
 	role, apiDiags := kibanaoapi.GetSecurityRole(ctx, oapiClient, name)
 	if apiDiags.HasError() {

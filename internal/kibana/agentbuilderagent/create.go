@@ -42,10 +42,9 @@ func createAgent(ctx context.Context, client *clients.KibanaScopedClient, req en
 		return entitycore.KibanaWriteResult[agentModel]{}, diags
 	}
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError(err.Error(), "")
-		return entitycore.KibanaWriteResult[agentModel]{}, diags
+	oapiClient, d := client.GetKibanaOapiClientDiag()
+	if d.HasError() {
+		return entitycore.KibanaWriteResult[agentModel]{}, d
 	}
 
 	_, d = kibanaoapi.CreateAgent(ctx, oapiClient, req.SpaceID, body)

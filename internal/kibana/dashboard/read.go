@@ -76,10 +76,9 @@ func (r *Resource) read(ctx context.Context, apiClient *clients.KibanaScopedClie
 	spaceID := composite.ClusterID
 
 	// Get the Kibana client
-	kibanaClient, err := apiClient.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Unable to get Kibana client", err.Error())
-		return nil, diags
+	kibanaClient, d := apiClient.GetKibanaOapiClientDiag()
+	if d.HasError() {
+		return nil, d
 	}
 
 	// Get the dashboard

@@ -41,9 +41,9 @@ func (r *securityListItemResource) Read(ctx context.Context, req resource.ReadRe
 	}
 
 	// Get Kibana client
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
+	oapiClient, d := client.GetKibanaOapiClientDiag()
+	if d.HasError() {
+		resp.Diagnostics.Append(d...)
 		return
 	}
 

@@ -57,9 +57,9 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
+	oapiClient, d := client.GetKibanaOapiClientDiag()
+	if d.HasError() {
+		resp.Diagnostics.Append(d...)
 		return
 	}
 

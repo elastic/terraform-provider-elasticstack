@@ -50,9 +50,9 @@ func (r *EnableRuleResource) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "Failed to get Kibana client")
+	oapiClient, d := client.GetKibanaOapiClientDiag()
+	if d.HasError() {
+		resp.Diagnostics.Append(d...)
 		return
 	}
 

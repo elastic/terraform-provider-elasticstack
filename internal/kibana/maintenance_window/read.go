@@ -29,10 +29,9 @@ import (
 func readMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model Model) (Model, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Unable to get Kibana client", err.Error())
-		return model, false, diags
+	oapiClient, d := client.GetKibanaOapiClientDiag()
+	if d.HasError() {
+		return model, false, d
 	}
 
 	maintenanceWindow, getDiags := kibanaoapi.GetMaintenanceWindow(ctx, oapiClient, spaceID, resourceID)

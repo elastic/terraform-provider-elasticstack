@@ -43,9 +43,9 @@ func GetKibanaOAPIClientFromScopedClient(client *clients.KibanaScopedClient, dg 
 		return nil
 	}
 
-	kibanaClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		dg.AddError("unable to get kibana oapi client", err.Error())
+	kibanaClient, d := client.GetKibanaOapiClientDiag()
+	if d.HasError() {
+		dg.Append(d...)
 		return nil
 	}
 	return kibanaClient

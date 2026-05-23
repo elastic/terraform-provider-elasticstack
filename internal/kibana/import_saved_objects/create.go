@@ -51,9 +51,9 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 		return
 	}
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("unable to get Kibana OpenAPI client", err.Error())
+	oapiClient, d := client.GetKibanaOapiClientDiag()
+	if d.HasError() {
+		diags.Append(d...)
 		return
 	}
 
