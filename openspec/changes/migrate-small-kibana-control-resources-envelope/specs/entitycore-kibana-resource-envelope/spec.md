@@ -12,7 +12,7 @@ The system SHALL provide a generic constructor `NewKibanaResource[T]()` that acc
 
 #### Scenario: Metadata builds the Terraform type name
 
-- **WHEN** an envelope is constructed via `NewKibanaResource[T](ComponentKibana, "maintenance_window", opts)
+- **WHEN** an envelope is constructed via `NewKibanaResource[T](ComponentKibana, "maintenance_window", opts)`
 - **THEN** its `Metadata` SHALL set the type name to `<provider_type_name>_kibana_maintenance_window`
 
 #### Scenario: Small control resources migration uses the envelope without changing behavior

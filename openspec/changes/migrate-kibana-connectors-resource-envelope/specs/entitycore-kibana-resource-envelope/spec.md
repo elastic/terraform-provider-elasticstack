@@ -17,6 +17,6 @@ The system SHALL provide a generic constructor `NewKibanaResource[T]()` that acc
 
 #### Scenario: Action connector migration uses the envelope without changing behavior
 
-- **WHEN** `internal/kibana/action_connector` is migrated to embed `*entitycore.KibanaResource[Model]` returned by `NewKibanaResource`
+- **WHEN** `internal/kibana/connectors/` is migrated to embed `*entitycore.KibanaResource[Model]` returned by `NewKibanaResource`
 - **THEN** the resource SHALL continue to expose the same schema, CRUD semantics, import behavior, and version-gated update behavior as before migration
 - **AND** the resource SHALL remain usable as a Terraform `resource.Resource` and `resource.ResourceWithConfigure` implementation

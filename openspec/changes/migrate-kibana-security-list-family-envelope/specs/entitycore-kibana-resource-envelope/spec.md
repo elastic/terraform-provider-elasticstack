@@ -17,6 +17,6 @@ The system SHALL provide a generic constructor `NewKibanaResource[T]()` that acc
 
 #### Scenario: Security list family migration uses the envelope without changing behavior
 
-- **WHEN** `internal/kibana/security` list-family resources are migrated to embed `*entitycore.KibanaResource[...]` returned by `NewKibanaResource`
+- **WHEN** list-family resources in `internal/kibana/securitylist/`, `internal/kibana/securitylistitem/`, `internal/kibana/securityexceptionlist/`, and `internal/kibana/security_list_data_streams/` are migrated to embed `*entitycore.KibanaResource[...]` returned by `NewKibanaResource`
 - **THEN** the resources SHALL continue to preserve their schema, import behavior, delete-as-no-op semantics where applicable, and other Terraform-visible behavior
 - **AND** the resources SHALL remain usable as Terraform `resource.Resource` and `resource.ResourceWithConfigure` implementations

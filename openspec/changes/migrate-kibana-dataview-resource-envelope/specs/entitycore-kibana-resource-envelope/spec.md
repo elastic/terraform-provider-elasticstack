@@ -17,6 +17,6 @@ The system SHALL provide a generic constructor `NewKibanaResource[T]()` that acc
 
 #### Scenario: Data view migration uses the envelope without changing behavior
 
-- **WHEN** `internal/kibana/data_view` is migrated to embed `*entitycore.KibanaResource[Model]` returned by `NewKibanaResource`
+- **WHEN** `internal/kibana/dataview` is migrated to embed `*entitycore.KibanaResource[Model]` returned by `NewKibanaResource`
 - **THEN** the resource SHALL continue to preserve its schema, read-after-write reconciliation, namespace handling, and Terraform state identity behavior
 - **AND** the resource SHALL remain usable as a Terraform `resource.Resource` and `resource.ResourceWithConfigure` implementation
