@@ -90,12 +90,19 @@ func TestAccResourceDataView(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.dv", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "override", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.title", indexName+"*"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.time_field_name", "@timestamp"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.allow_no_index", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.source_filters.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.source_filters.0", "event_time"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.source_filters.1", "machine.ram"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_formats.event_time.id", "date_nanos"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_formats.machine.ram.params.pattern", "0,0.[000] b"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.runtime_field_map.runtime_shape_name.type", "keyword"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.runtime_field_map.runtime_shape_name.script_source", "emit(doc['shape_name'].value)"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_attrs.ingest_failure.custom_label", "error.ingest_failure"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_attrs.ingest_failure.count", "6"),
 					captureID,
 				),
 			},
@@ -461,6 +468,16 @@ func TestAccResourceDataViewFieldAttrs(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_count"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					checkIDUnchanged,
+					testAccCheckFieldAttrsCustomLabel("host.hostname", "Host"),
+					testAccCheckFieldAttrsCount("host.hostname", 5),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("change_label"),
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
@@ -485,6 +502,124 @@ func TestAccResourceDataViewFieldAttrs(t *testing.T) {
 				ConfigVariables:          vars,
 				PlanOnly:                 true,
 				ExpectNonEmptyPlan:       false,
+			},
+		},
+	})
+}
+
+func TestAccResourceDataViewDurationFieldFormat(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minFullDataviewSupport, versionutils.FlavorAny)
+
+	indexName := "my-duration-index-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.duration_dv", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.duration_dv", "data_view.field_formats.response_time.id", "duration"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.duration_dv", "data_view.field_formats.response_time.params.input_format", "milliseconds"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.duration_dv", "data_view.field_formats.response_time.params.output_format", "humanizePrecise"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.duration_dv", "data_view.field_formats.response_time.params.output_precision", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.duration_dv", "data_view.field_formats.response_time.params.include_space_with_suffix", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.duration_dv", "data_view.field_formats.response_time.params.use_short_suffix", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"override"},
+				ResourceName:            "elasticstack_kibana_data_view.duration_dv",
+			},
+		},
+	})
+}
+
+func TestAccResourceDataViewURLFieldFormat(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minFullDataviewSupport, versionutils.FlavorAny)
+
+	indexName := "my-url-index-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.url_dv", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.url_dv", "data_view.field_formats.thumbnail.id", "url"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.url_dv", "data_view.field_formats.thumbnail.params.type", "img"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.url_dv", "data_view.field_formats.thumbnail.params.urltemplate", "https://example.com/images/{{value}}"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.url_dv", "data_view.field_formats.thumbnail.params.labeltemplate", "Image: {{value}}"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.url_dv", "data_view.field_formats.thumbnail.params.width", "200"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.url_dv", "data_view.field_formats.thumbnail.params.height", "150"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"override"},
+				ResourceName:            "elasticstack_kibana_data_view.url_dv",
+			},
+		},
+	})
+}
+
+func TestAccResourceDataViewStaticLookupFieldFormat(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minFullDataviewSupport, versionutils.FlavorAny)
+
+	indexName := "my-lookup-index-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.lookup_dv", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.lookup_dv", "data_view.field_formats.status_code.id", "static_lookup"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.lookup_dv", "data_view.field_formats.status_code.params.lookup_entries.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.lookup_dv", "data_view.field_formats.status_code.params.lookup_entries.0.key", "200"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.lookup_dv", "data_view.field_formats.status_code.params.lookup_entries.0.value", "OK"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.lookup_dv", "data_view.field_formats.status_code.params.lookup_entries.1.key", "404"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.lookup_dv", "data_view.field_formats.status_code.params.lookup_entries.1.value", "Not Found"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.lookup_dv", "data_view.field_formats.status_code.params.unknown_key_value", "Unknown"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"override"},
+				ResourceName:            "elasticstack_kibana_data_view.lookup_dv",
 			},
 		},
 	})
