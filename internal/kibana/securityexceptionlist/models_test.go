@@ -36,7 +36,7 @@ func TestExceptionListModel_GetResourceID(t *testing.T) {
 	t.Run("returns empty when id is not composite", func(t *testing.T) {
 		t.Parallel()
 		m := ExceptionListModel{ID: types.StringNull()}
-		require.Equal(t, "", m.GetResourceID().ValueString())
+		require.Empty(t, m.GetResourceID().ValueString())
 	})
 }
 
