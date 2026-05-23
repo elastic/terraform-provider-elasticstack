@@ -47,7 +47,7 @@ func createSearchSavedObjectForDiscoverRef(t *testing.T, id string) error {
 	}
 	kibanaClient, diags := client.GetKibanaOapiClient()
 	if diags.HasError() {
-		return fmt.Errorf("kibana oapi client: %s", diags[0].Summary())
+		return fmt.Errorf("kibana oapi client: %v", diags)
 	}
 
 	searchSource := map[string]any{

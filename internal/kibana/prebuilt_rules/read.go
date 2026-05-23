@@ -53,7 +53,7 @@ func (r *PrebuiltRuleResource) Read(ctx context.Context, req resource.ReadReques
 
 	client, getDiags := apiClient.GetKibanaOapiClient()
 	if getDiags.HasError() {
-		resp.Diagnostics.AddError(getDiags[0].Summary(), "")
+		resp.Diagnostics.Append(getDiags...)
 		return
 	}
 

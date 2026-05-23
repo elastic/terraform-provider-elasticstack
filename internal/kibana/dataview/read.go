@@ -41,7 +41,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 
 	oapiClient, getDiags := client.GetKibanaOapiClient()
 	if getDiags.HasError() {
-		resp.Diagnostics.AddError(getDiags[0].Summary(), "")
+		resp.Diagnostics.Append(getDiags...)
 		return
 	}
 

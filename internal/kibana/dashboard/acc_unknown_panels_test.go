@@ -114,7 +114,7 @@ func replaceDashboardPanelWithLensDashboardApp(t *testing.T, dashboardID string)
 
 	kibanaClient, diags := client.GetKibanaOapiClient()
 	if diags.HasError() {
-		return fmt.Errorf("failed to get Kibana OAPI client: %s", diags[0].Summary())
+		return fmt.Errorf("failed to get Kibana OAPI client: %v", diags)
 	}
 
 	getURL := fmt.Sprintf("%s/api/dashboards/%s", kibanaClient.URL, dashboardID)

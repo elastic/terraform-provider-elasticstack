@@ -28,7 +28,7 @@ import (
 func deleteWorkflow(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, _ workflowModel) diag.Diagnostics {
 	oapiClient, getDiags := client.GetKibanaOapiClient()
 	if getDiags.HasError() {
-		return diag.Diagnostics{diag.NewErrorDiagnostic(getDiags[0].Summary(), "")}
+		return getDiags
 	}
 	return kibanaoapi.DeleteWorkflow(ctx, oapiClient, spaceID, resourceID)
 }

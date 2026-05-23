@@ -30,7 +30,7 @@ func readAgent(ctx context.Context, client *clients.KibanaScopedClient, resource
 
 	oapiClient, getDiags := client.GetKibanaOapiClient()
 	if getDiags.HasError() {
-		diags.AddError(getDiags[0].Summary(), "")
+		diags.Append(getDiags...)
 		return prior, false, diags
 	}
 

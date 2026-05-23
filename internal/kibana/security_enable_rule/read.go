@@ -53,7 +53,7 @@ func (r *EnableRuleResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	oapiClient, getDiags := client.GetKibanaOapiClient()
 	if getDiags.HasError() {
-		resp.Diagnostics.AddError(getDiags[0].Summary(), "Failed to get Kibana client")
+		resp.Diagnostics.Append(getDiags...)
 		return
 	}
 

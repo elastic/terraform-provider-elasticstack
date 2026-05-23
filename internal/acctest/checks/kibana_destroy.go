@@ -43,7 +43,7 @@ func KibanaResourceDestroyCheck(
 		}
 		oapiClient, getDiags := apiClient.GetKibanaOapiClient()
 		if getDiags.HasError() {
-			return fmt.Errorf("get kibana oapi client: %s", getDiags[0].Summary())
+			return fmt.Errorf("get kibana oapi client: %v", getDiags)
 		}
 		for _, rs := range s.RootModule().Resources {
 			if rs.Type != resourceType {
@@ -78,7 +78,7 @@ func KibanaResourceDestroyCheckCompositeID(
 		}
 		oapiClient, getDiags := apiClient.GetKibanaOapiClient()
 		if getDiags.HasError() {
-			return fmt.Errorf("get kibana oapi client: %s", getDiags[0].Summary())
+			return fmt.Errorf("get kibana oapi client: %v", getDiags)
 		}
 		for _, rs := range s.RootModule().Resources {
 			if rs.Type != resourceType {

@@ -248,7 +248,7 @@ func checkRulesEnabled(spaceID, key, value string) resource.TestCheckFunc {
 
 		kbClient, diags := client.GetKibanaOapiClient()
 		if diags.HasError() {
-			return fmt.Errorf("failed to get Kibana client: %s", diags[0].Summary())
+			return fmt.Errorf("failed to get Kibana client: %v", diags)
 		}
 
 		ctx := context.Background()

@@ -53,10 +53,7 @@ func (r *securityDetectionRuleResource) Delete(ctx context.Context, req resource
 	// Get the rule using kbapi client
 	kbClient, getDiags := client.GetKibanaOapiClient()
 	if getDiags.HasError() {
-		resp.Diagnostics.AddError(
-			"Error getting Kibana client",
-			"Could not get Kibana OAPI client: "+getDiags[0].Summary(),
-		)
+		resp.Diagnostics.Append(getDiags...)
 		return
 	}
 

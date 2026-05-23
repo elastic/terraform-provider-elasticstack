@@ -92,9 +92,7 @@ func fetchSpace(ctx context.Context, oapiClient *kibanaoapi.Client, spaceID stri
 func readSpaceResource(ctx context.Context, client *clients.KibanaScopedClient, resourceID, _ string, model resourceModel) (resourceModel, bool, diag.Diagnostics) {
 	oapiClient, getDiags := client.GetKibanaOapiClient()
 	if getDiags.HasError() {
-		var diags diag.Diagnostics
-		diags.AddError("unable to get Kibana OpenAPI client", getDiags[0].Summary())
-		return model, false, diags
+		return model, false, getDiags
 	}
 
 	space, found, fwDiags := fetchSpace(ctx, oapiClient, resourceID)

@@ -83,10 +83,7 @@ func (r *securityDetectionRuleResource) read(ctx context.Context, apiClient *cli
 	// Get the rule using kbapi client
 	kbClient, getDiags := apiClient.GetKibanaOapiClient()
 	if getDiags.HasError() {
-		diags.AddError(
-			"Error getting Kibana client",
-			"Could not get Kibana OAPI client: "+getDiags[0].Summary(),
-		)
+		diags.Append(getDiags...)
 		return nil, diags
 	}
 

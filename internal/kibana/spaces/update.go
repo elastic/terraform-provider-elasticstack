@@ -32,9 +32,7 @@ func updateSpace(ctx context.Context, client *clients.KibanaScopedClient, req en
 	plan := req.Plan
 	oapiClient, getDiags := client.GetKibanaOapiClient()
 	if getDiags.HasError() {
-		var diags diag.Diagnostics
-		diags.AddError("unable to get Kibana OpenAPI client", getDiags[0].Summary())
-		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
+		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, getDiags
 	}
 
 	features, d := disabledFeaturesSlice(ctx, plan.DisabledFeatures)
