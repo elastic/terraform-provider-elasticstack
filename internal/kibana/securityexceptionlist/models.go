@@ -23,12 +23,25 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+func (m ExceptionListModel) GetID() types.String             { return m.ID }
+func (m ExceptionListModel) GetResourceID() types.String {
+	if compID, _ := clients.CompositeIDFromStr(m.ID.ValueString()); compID != nil {
+		return types.StringValue(compID.ResourceID)
+	}
+	return types.StringValue("")
+}
+func (m ExceptionListModel) GetSpaceID() types.String        { return m.SpaceID }
+func (m ExceptionListModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+
+var _ entitycore.KibanaResourceModel = ExceptionListModel{}
 
 type ExceptionListModel struct {
 	ID               types.String         `tfsdk:"id"`

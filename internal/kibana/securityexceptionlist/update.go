@@ -20,92 +20,38 @@ package securityexceptionlist
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *ExceptionListResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan ExceptionListModel
-
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func updateExceptionList(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[ExceptionListModel]) (entitycore.KibanaWriteResult[ExceptionListModel], diag.Diagnostics) {
+	m := req.Plan
+	var diags diag.Diagnostics
 
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
-		return
+		diags.AddError("Failed to get Kibana client", err.Error())
+		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
 	}
 
-	// Parse composite ID to get space_id and resource_id
-	compID, compIDDiags := clients.CompositeIDFromStr(plan.ID.ValueString())
-	resp.Diagnostics.Append(compIDDiags...)
-	if resp.Diagnostics.HasError() {
-		return
+	body, d := m.toUpdateRequest(ctx, req.WriteID)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
 	}
 
-	// Build the update request body using model method
-	body, diags := plan.toUpdateRequest(ctx, compID.ResourceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Update the exception list
-	updateResp, diags := kibanaoapi.UpdateExceptionList(ctx, oapiClient, plan.SpaceID.ValueString(), *body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	updateResp, d := kibanaoapi.UpdateExceptionList(ctx, oapiClient, req.SpaceID, *body)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
 	}
 
 	if updateResp == nil {
-		resp.Diagnostics.AddError("Failed to update exception list", "API returned empty response")
-		return
+		diags.AddError("Failed to update exception list", "API returned empty response")
+		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
 	}
 
-	/*
-	 * In create/update paths we typically follow the write operation with a read, and then set the state from the read.
-	 * We want to avoid a dirty plan immediately after an apply.
-	 */
-	// Read back the updated resource to get the final state
-	readParams := &kbapi.ReadExceptionListParams{
-		Id: &updateResp.Id,
-	}
-	// Include namespace_type if specified (required for agnostic lists)
-	if updateResp.NamespaceType != "" {
-		nsType := updateResp.NamespaceType
-		readParams.NamespaceType = &nsType
-	}
-
-	readResp, diags := kibanaoapi.GetExceptionList(ctx, oapiClient, plan.SpaceID.ValueString(), readParams)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if readResp == nil {
-		resp.State.RemoveResource(ctx)
-		resp.Diagnostics.AddError("Failed to fetch exception list", "API returned empty response")
-		return
-	}
-
-	// Update state with read response using model method
-	diags = plan.fromAPI(ctx, readResp)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = resp.State.Set(ctx, plan)
-	resp.Diagnostics.Append(diags...)
+	return entitycore.KibanaWriteResult[ExceptionListModel]{Model: m}, diags
 }
