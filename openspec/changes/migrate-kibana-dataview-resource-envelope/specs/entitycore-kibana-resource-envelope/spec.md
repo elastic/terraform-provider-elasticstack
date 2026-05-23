@@ -2,12 +2,21 @@
 
 ### Requirement: Envelope constructor produces shared Kibana resource behavior
 
-The system SHALL continue to provide a generic constructor `NewKibanaResource[T]()` for Kibana-backed Terraform resources, and additional Kibana resources that follow the envelope lifecycle SHALL migrate to it while preserving existing Terraform-visible behavior.
+The system SHALL provide a generic constructor `NewKibanaResource[T]()` that accepts a `KibanaResourceOptions[T]` options struct (not a positional callback list) and returns an envelope owning shared Kibana resource behavior. The envelope SHALL provide Metadata, Schema, Configure, Create, Read, Update, and Delete behavior, and SHALL satisfy `resource.Resource` and `resource.ResourceWithConfigure`. Concrete resources SHALL embed the envelope and may choose to implement additional Plugin Framework interfaces such as ImportState or state upgrade support.
 
-#### Scenario: Data view resource migrates to the Kibana envelope
+#### Scenario: Constructor returns complete resource envelope
 
-- **WHEN** `newResource()` is called for `internal/kibana/dataview`
-- **THEN** the returned resource SHALL embed `*entitycore.KibanaResource[dataViewModel]`
-- **AND** the resource SHALL satisfy `resource.Resource` and `resource.ResourceWithConfigure`
-- **AND** the wrapper SHALL continue to implement `resource.ResourceWithImportState`
-- **AND** the migration SHALL preserve the existing Terraform schema shape, import-state initialization, state ID format, namespace reconciliation semantics, and field metadata update behavior
+- **WHEN** `NewKibanaResource[T](component, name, opts)` is called with a `KibanaResourceOptions[T]` containing non-nil required callbacks
+- **THEN** the returned value SHALL satisfy `resource.Resource` and `resource.ResourceWithConfigure`
+- **AND** the returned value SHALL NOT satisfy `resource.ResourceWithImportState`
+
+#### Scenario: Metadata builds the Terraform type name
+
+- **WHEN** an envelope is constructed via `NewKibanaResource[T](ComponentKibana, "maintenance_window", opts)`
+- **THEN** its `Metadata` SHALL set the type name to `<provider_type_name>_kibana_maintenance_window`
+
+#### Scenario: Data view migration uses the envelope without changing behavior
+
+- **WHEN** `internal/kibana/data_view` is migrated to embed `*entitycore.KibanaResource[Model]` returned by `NewKibanaResource`
+- **THEN** the resource SHALL continue to preserve its schema, read-after-write reconciliation, namespace handling, and Terraform state identity behavior
+- **AND** the resource SHALL remain usable as a Terraform `resource.Resource` and `resource.ResourceWithConfigure` implementation

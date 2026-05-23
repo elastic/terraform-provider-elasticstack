@@ -2,12 +2,21 @@
 
 ### Requirement: Envelope constructor produces shared Kibana resource behavior
 
-The system SHALL continue to provide a generic constructor `NewKibanaResource[T]()` for Kibana-backed Terraform resources, and additional Kibana resources that follow the envelope lifecycle SHALL migrate to it while preserving existing Terraform-visible behavior.
+The system SHALL provide a generic constructor `NewKibanaResource[T]()` that accepts a `KibanaResourceOptions[T]` options struct (not a positional callback list) and returns an envelope owning shared Kibana resource behavior. The envelope SHALL provide Metadata, Schema, Configure, Create, Read, Update, and Delete behavior, and SHALL satisfy `resource.Resource` and `resource.ResourceWithConfigure`. Concrete resources SHALL embed the envelope and may choose to implement additional Plugin Framework interfaces such as ImportState or state upgrade support.
 
-#### Scenario: Security list family resources migrate to the Kibana envelope
+#### Scenario: Constructor returns complete resource envelope
 
-- **WHEN** `newResource()` is called for `internal/kibana/securitylist`, `internal/kibana/securitylistitem`, `internal/kibana/securityexceptionlist`, and `internal/kibana/security_list_data_streams`
-- **THEN** each returned resource SHALL embed `*entitycore.KibanaResource[...]`
-- **AND** each resource SHALL satisfy `resource.Resource` and `resource.ResourceWithConfigure`
-- **AND** any existing wrapper-level interfaces such as `resource.ResourceWithImportState` SHALL remain implemented where they were implemented before migration
-- **AND** the migration SHALL preserve the existing Terraform schema shape, state ID format, and import behavior for each resource
+- **WHEN** `NewKibanaResource[T](component, name, opts)` is called with a `KibanaResourceOptions[T]` containing non-nil required callbacks
+- **THEN** the returned value SHALL satisfy `resource.Resource` and `resource.ResourceWithConfigure`
+- **AND** the returned value SHALL NOT satisfy `resource.ResourceWithImportState`
+
+#### Scenario: Metadata builds the Terraform type name
+
+- **WHEN** an envelope is constructed via `NewKibanaResource[T](ComponentKibana, "maintenance_window", opts)`
+- **THEN** its `Metadata` SHALL set the type name to `<provider_type_name>_kibana_maintenance_window`
+
+#### Scenario: Security list family migration uses the envelope without changing behavior
+
+- **WHEN** `internal/kibana/security` list-family resources are migrated to embed `*entitycore.KibanaResource[...]` returned by `NewKibanaResource`
+- **THEN** the resources SHALL continue to preserve their schema, import behavior, delete-as-no-op semantics where applicable, and other Terraform-visible behavior
+- **AND** the resources SHALL remain usable as Terraform `resource.Resource` and `resource.ResourceWithConfigure` implementations
