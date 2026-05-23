@@ -1,12 +1,12 @@
 ## 1. Resource audit
 
-- [ ] 1.1 Confirm each resource schema already separates provider-managed `kibana_connection` handling cleanly enough for envelope injection, or capture the minimal schema reshaping needed
-- [ ] 1.2 Identify each resource's current state ID and import semantics and record any invariants that must remain unchanged
-- [ ] 1.3 Confirm all four resources can use full envelope migration (no placeholder write callbacks)
+- [x] 1.1 Confirm each resource schema already separates provider-managed `kibana_connection` handling cleanly enough for envelope injection, or capture the minimal schema reshaping needed
+- [x] 1.2 Identify each resource's current state ID and import semantics and record any invariants that must remain unchanged
+- [x] 1.3 Confirm all four resources can use full envelope migration (no placeholder write callbacks)
 
 ## 2. Envelope migration
 
-- [ ] 2.1 Migrate `internal/kibana/securitylist/` to `entitycore.NewKibanaResource`
+- [x] 2.1 Migrate `internal/kibana/securitylist/` to `entitycore.NewKibanaResource`
 - [ ] 2.2 Migrate `internal/kibana/securitylistitem/` to `entitycore.NewKibanaResource`
 - [ ] 2.3 Migrate `internal/kibana/securityexceptionlist/` to `entitycore.NewKibanaResource`
 - [ ] 2.4 Migrate `internal/kibana/security_list_data_streams/` to `entitycore.NewKibanaResource`
