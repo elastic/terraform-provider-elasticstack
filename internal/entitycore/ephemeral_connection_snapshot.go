@@ -62,13 +62,18 @@ type ephemeralKibanaConnectionSnapshot struct {
 	Insecure    *bool    `json:"insecure,omitempty"`
 }
 
-func encodeElasticsearchConnection(ctx context.Context, connection types.List) ([]byte, diag.Diagnostics) {
+func encodeEphemeralConnection[Snap any](
+	ctx context.Context,
+	connection types.List,
+	snapshotFrom func(context.Context, types.List) (*Snap, diag.Diagnostics),
+	errLabel string,
+) ([]byte, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if !typeutils.IsKnown(connection) {
 		return ephemeralConnectionNullMarker, diags
 	}
 
-	snapshot, snapshotDiags := esConnectionSnapshotFromList(ctx, connection)
+	snapshot, snapshotDiags := snapshotFrom(ctx, connection)
 	diags.Append(snapshotDiags...)
 	if diags.HasError() || snapshot == nil {
 		return ephemeralConnectionNullMarker, diags
@@ -76,60 +81,47 @@ func encodeElasticsearchConnection(ctx context.Context, connection types.List) (
 
 	data, err := json.Marshal(snapshot)
 	if err != nil {
-		diags.AddError("Failed to marshal elasticsearch_connection for Close", err.Error())
+		diags.AddError("Failed to marshal "+errLabel+" for Close", err.Error())
 		return nil, diags
 	}
 	return data, diags
+}
+
+func decodeEphemeralConnection[Snap any](
+	ctx context.Context,
+	data []byte,
+	nullList func() types.List,
+	errLabel string,
+	listFrom func(context.Context, *Snap) (types.List, diag.Diagnostics),
+) (types.List, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if len(data) == 0 || string(data) == "null" {
+		return nullList(), diags
+	}
+
+	var snapshot Snap
+	if err := json.Unmarshal(data, &snapshot); err != nil {
+		diags.AddError("Failed to parse "+errLabel+" from ephemeral private data", err.Error())
+		return nullList(), diags
+	}
+
+	return listFrom(ctx, &snapshot)
+}
+
+func encodeElasticsearchConnection(ctx context.Context, connection types.List) ([]byte, diag.Diagnostics) {
+	return encodeEphemeralConnection(ctx, connection, esConnectionSnapshotFromList, "elasticsearch_connection")
 }
 
 func decodeElasticsearchConnection(ctx context.Context, data []byte) (types.List, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if len(data) == 0 || string(data) == "null" {
-		return providerschema.ElasticsearchConnectionNullList(), diags
-	}
-
-	var snapshot ephemeralESConnectionSnapshot
-	if err := json.Unmarshal(data, &snapshot); err != nil {
-		diags.AddError("Failed to parse elasticsearch_connection from ephemeral private data", err.Error())
-		return providerschema.ElasticsearchConnectionNullList(), diags
-	}
-
-	return esConnectionListFromSnapshot(ctx, &snapshot)
+	return decodeEphemeralConnection(ctx, data, providerschema.ElasticsearchConnectionNullList, "elasticsearch_connection", esConnectionListFromSnapshot)
 }
 
 func encodeKibanaConnection(ctx context.Context, connection types.List) ([]byte, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if !typeutils.IsKnown(connection) {
-		return ephemeralConnectionNullMarker, diags
-	}
-
-	snapshot, snapshotDiags := kibanaConnectionSnapshotFromList(ctx, connection)
-	diags.Append(snapshotDiags...)
-	if diags.HasError() || snapshot == nil {
-		return ephemeralConnectionNullMarker, diags
-	}
-
-	data, err := json.Marshal(snapshot)
-	if err != nil {
-		diags.AddError("Failed to marshal kibana_connection for Close", err.Error())
-		return nil, diags
-	}
-	return data, diags
+	return encodeEphemeralConnection(ctx, connection, kibanaConnectionSnapshotFromList, "kibana_connection")
 }
 
 func decodeKibanaConnection(ctx context.Context, data []byte) (types.List, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if len(data) == 0 || string(data) == "null" {
-		return providerschema.KibanaConnectionNullList(), diags
-	}
-
-	var snapshot ephemeralKibanaConnectionSnapshot
-	if err := json.Unmarshal(data, &snapshot); err != nil {
-		diags.AddError("Failed to parse kibana_connection from ephemeral private data", err.Error())
-		return providerschema.KibanaConnectionNullList(), diags
-	}
-
-	return kibanaConnectionListFromSnapshot(ctx, &snapshot)
+	return decodeEphemeralConnection(ctx, data, providerschema.KibanaConnectionNullList, "kibana_connection", kibanaConnectionListFromSnapshot)
 }
 
 func esConnectionSnapshotFromList(ctx context.Context, connection types.List) (*ephemeralESConnectionSnapshot, diag.Diagnostics) {
