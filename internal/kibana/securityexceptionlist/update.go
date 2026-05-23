@@ -26,7 +26,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func updateExceptionList(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[ExceptionListModel]) (entitycore.KibanaWriteResult[ExceptionListModel], diag.Diagnostics) {
+func updateExceptionList(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[ExceptionListModel],
+) (entitycore.KibanaWriteResult[ExceptionListModel], diag.Diagnostics) {
 	m := req.Plan
 	var diags diag.Diagnostics
 

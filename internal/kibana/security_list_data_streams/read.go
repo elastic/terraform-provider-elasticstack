@@ -26,7 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func readSecurityListDataStreams(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, prior Model) (Model, bool, diag.Diagnostics) {
+func readSecurityListDataStreams(ctx context.Context, client *clients.KibanaScopedClient, _, spaceID string, prior Model) (Model, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	oapiClient, err := client.GetKibanaOapiClient()
