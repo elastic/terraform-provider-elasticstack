@@ -1084,8 +1084,8 @@ func checkSloAPIEnabled(want bool) resource.TestCheckFunc {
 		if err != nil {
 			return err
 		}
-		oapi, err := client.GetKibanaOapiClient()
-		if err != nil {
+		oapi, getDiags := client.GetKibanaOapiClient()
+		if getDiags.HasError() {
 			return err
 		}
 		apiSlo, getDiags := kibanaoapi.GetSlo(context.Background(), oapi, compID.ClusterID, compID.ResourceID)

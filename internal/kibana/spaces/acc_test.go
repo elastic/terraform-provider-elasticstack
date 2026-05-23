@@ -224,8 +224,8 @@ func checkResourceSpaceAPIDescription(spaceID, expected string) resource.TestChe
 		if err != nil {
 			return err
 		}
-		oapiClient, err := scopedClient.GetKibanaOapiClient()
-		if err != nil {
+		oapiClient, getDiags := scopedClient.GetKibanaOapiClient()
+		if getDiags.HasError() {
 			return err
 		}
 		space, diags := kibanaoapi.GetSpace(context.Background(), oapiClient, spaceID)

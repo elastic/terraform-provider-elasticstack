@@ -33,7 +33,7 @@ func createWorkflow(ctx context.Context, client *clients.KibanaScopedClient, req
 
 	body := plan.toAPICreateModel()
 
-	oapiClient, d := client.GetKibanaOapiClientDiag()
+	oapiClient, d := client.GetKibanaOapiClient()
 	diags.Append(d...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[workflowModel]{}, diags

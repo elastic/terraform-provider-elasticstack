@@ -120,9 +120,9 @@ func readSkillDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 		return config, diags
 	}
 
-	oapiClient, err := kbClient.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("unable to get Kibana client", err.Error())
+	oapiClient, d := kbClient.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
 		return config, diags
 	}
 

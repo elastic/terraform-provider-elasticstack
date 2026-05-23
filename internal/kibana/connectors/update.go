@@ -40,9 +40,9 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		response.Diagnostics.AddError("Failed to get Kibana client", err.Error())
+	oapiClient, d := client.GetKibanaOapiClient()
+	response.Diagnostics.Append(d...)
+	if response.Diagnostics.HasError() {
 		return
 	}
 

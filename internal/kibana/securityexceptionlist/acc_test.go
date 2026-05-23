@@ -289,8 +289,8 @@ func checkResourceExceptionListDestroy(s *terraform.State) error {
 		return err
 	}
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
+	oapiClient, getDiags := client.GetKibanaOapiClient()
+	if getDiags.HasError() {
 		return err
 	}
 

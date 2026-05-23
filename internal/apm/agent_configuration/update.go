@@ -40,9 +40,9 @@ func (r *resourceAgentConfiguration) Update(ctx context.Context, req resource.Up
 		return
 	}
 
-	kibana, err := scoped.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError("Unable to get Kibana client", err.Error())
+	kibana, d := scoped.GetKibanaOapiClient()
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

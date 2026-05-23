@@ -30,9 +30,9 @@ import (
 func writeStream(ctx context.Context, apiClient *clients.KibanaScopedClient, planModel streamModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	kibanaClient, err := apiClient.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Unable to get Kibana client", err.Error())
+	kibanaClient, d := apiClient.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
 		return diags
 	}
 

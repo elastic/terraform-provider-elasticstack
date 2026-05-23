@@ -1639,8 +1639,8 @@ func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
 		return err
 	}
 
-	kbClient, err := client.GetKibanaOapiClient()
-	if err != nil {
+	kbClient, getDiags := client.GetKibanaOapiClient()
+	if getDiags.HasError() {
 		return err
 	}
 
@@ -1681,8 +1681,8 @@ func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
 			compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
 			// Get connector client from the Kibana OAPI client
-			oapiClient, err := client.GetKibanaOapiClient()
-			if err != nil {
+			oapiClient, getDiags := client.GetKibanaOapiClient()
+			if getDiags.HasError() {
 				return err
 			}
 

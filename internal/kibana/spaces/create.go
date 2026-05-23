@@ -31,10 +31,10 @@ import (
 
 func createSpace(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[resourceModel]) (entitycore.KibanaWriteResult[resourceModel], diag.Diagnostics) {
 	plan := req.Plan
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
+	oapiClient, getDiags := client.GetKibanaOapiClient()
+	if getDiags.HasError() {
 		var diags diag.Diagnostics
-		diags.AddError("unable to get Kibana OpenAPI client", err.Error())
+		diags.AddError("unable to get Kibana OpenAPI client", getDiags[0].Summary())
 		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 	}
 

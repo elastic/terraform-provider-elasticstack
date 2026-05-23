@@ -46,8 +46,8 @@ func resolveFieldAttrsDataView(s *terraform.State) (*kibanaoapi.Client, string, 
 	if err != nil {
 		return nil, "", "", fmt.Errorf("acceptance kibana client: %w", err)
 	}
-	kc, err := apiClient.GetKibanaOapiClient()
-	if err != nil {
+	kc, getDiags := apiClient.GetKibanaOapiClient()
+	if getDiags.HasError() {
 		return nil, "", "", fmt.Errorf("kibana openapi client: %w", err)
 	}
 	return kc, composite.ClusterID, composite.ResourceID, nil

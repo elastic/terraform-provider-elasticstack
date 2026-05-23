@@ -37,7 +37,7 @@ func createTool(ctx context.Context, client *clients.KibanaScopedClient, req ent
 		return entitycore.KibanaWriteResult[toolModel]{}, diags
 	}
 
-	oapiClient, d := client.GetKibanaOapiClientDiag()
+	oapiClient, d := client.GetKibanaOapiClient()
 	diags.Append(d...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[toolModel]{}, diags

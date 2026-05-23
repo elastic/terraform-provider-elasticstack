@@ -38,9 +38,9 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		response.Diagnostics.AddError("Failed to get Kibana client", err.Error())
+	oapiClient, d := client.GetKibanaOapiClient()
+	response.Diagnostics.Append(d...)
+	if response.Diagnostics.HasError() {
 		return
 	}
 

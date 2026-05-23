@@ -246,9 +246,9 @@ func checkRulesEnabled(spaceID, key, value string) resource.TestCheckFunc {
 			return fmt.Errorf("failed to create client: %w", err)
 		}
 
-		kbClient, err := client.GetKibanaOapiClient()
-		if err != nil {
-			return fmt.Errorf("failed to get Kibana client: %w", err)
+		kbClient, diags := client.GetKibanaOapiClient()
+		if diags.HasError() {
+			return fmt.Errorf("failed to get Kibana client: %s", diags[0].Summary())
 		}
 
 		ctx := context.Background()
@@ -304,8 +304,8 @@ func disableOneRule(t *testing.T, spaceID, key, value string) {
 		t.Fatalf("failed to create client: %v", err)
 	}
 
-	kbClient, err := client.GetKibanaOapiClient()
-	if err != nil {
+	kbClient, getDiags := client.GetKibanaOapiClient()
+	if getDiags.HasError() {
 		t.Fatalf("failed to get Kibana client: %v", err)
 	}
 

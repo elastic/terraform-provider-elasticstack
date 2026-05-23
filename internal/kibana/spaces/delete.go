@@ -26,10 +26,10 @@ import (
 )
 
 func deleteSpace(ctx context.Context, client *clients.KibanaScopedClient, resourceID, _ string, _ resourceModel) diag.Diagnostics {
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
+	oapiClient, getDiags := client.GetKibanaOapiClient()
+	if getDiags.HasError() {
 		var diags diag.Diagnostics
-		diags.AddError("unable to get Kibana OpenAPI client", err.Error())
+		diags.AddError("unable to get Kibana OpenAPI client", getDiags[0].Summary())
 		return diags
 	}
 	return kibanaoapi.DeleteSpace(ctx, oapiClient, resourceID)

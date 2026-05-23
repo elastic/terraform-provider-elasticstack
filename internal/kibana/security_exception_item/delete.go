@@ -48,9 +48,9 @@ func (r *ExceptionItemResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
+	oapiClient, d := client.GetKibanaOapiClient()
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

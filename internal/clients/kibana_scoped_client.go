@@ -54,26 +54,17 @@ type KibanaScopedClient struct {
 }
 
 // GetKibanaOapiClient returns the Kibana OpenAPI client.
-func (k *KibanaScopedClient) GetKibanaOapiClient() (*kibanaoapi.Client, error) {
-	if k.kibanaEndpoint == "" {
-		return nil, errors.New("kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT")
-	}
-	if k.kibanaOapi == nil {
-		return nil, errors.New("kibanaoapi client not found")
-	}
-	return k.kibanaOapi, nil
-}
-
-// GetKibanaOapiClientDiag returns the Kibana OpenAPI client, converting any
-// error into a Diagnostics value so callers can stay in the diags pattern.
-func (k *KibanaScopedClient) GetKibanaOapiClientDiag() (*kibanaoapi.Client, fwdiag.Diagnostics) {
+func (k *KibanaScopedClient) GetKibanaOapiClient() (*kibanaoapi.Client, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
-	oapiClient, err := k.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError(err.Error(), "")
+	if k.kibanaEndpoint == "" {
+		diags.AddError("kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT", "")
 		return nil, diags
 	}
-	return oapiClient, diags
+	if k.kibanaOapi == nil {
+		diags.AddError("kibanaoapi client not found", "")
+		return nil, diags
+	}
+	return k.kibanaOapi, diags
 }
 
 // GetFleetClient returns the Fleet client.
@@ -94,12 +85,9 @@ func (k *KibanaScopedClient) GetFleetClient() (*fleetclient.Client, error) {
 // string and build flavor in a single HTTP call. It centralises GetKibanaOapiClient
 // setup and the GetKibanaStatus call so callers share one code path and one request.
 func (k *KibanaScopedClient) getServerStatusRaw(ctx context.Context) (rawVersion string, flavor string, diags fwdiag.Diagnostics) {
-	oapiClient, err := k.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError(
-			"failed to get version from Kibana API",
-			err.Error()+", please ensure a working 'kibana' endpoint is configured",
-		)
+	oapiClient, d := k.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
 		return "", "", diags
 	}
 
