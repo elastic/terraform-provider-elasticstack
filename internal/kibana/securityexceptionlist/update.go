@@ -24,6 +24,7 @@ import (
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func updateExceptionList(
@@ -55,6 +56,10 @@ func updateExceptionList(
 	if updateResp == nil {
 		diags.AddError("Failed to update exception list", "API returned empty response")
 		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
+	}
+
+	if updateResp.NamespaceType != "" {
+		m.NamespaceType = types.StringValue(string(updateResp.NamespaceType))
 	}
 
 	return entitycore.KibanaWriteResult[ExceptionListModel]{Model: m}, diags

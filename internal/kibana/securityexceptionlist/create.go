@@ -58,6 +58,10 @@ func createExceptionList(
 		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
 	}
 
+	if createResp.NamespaceType != "" {
+		m.NamespaceType = types.StringValue(string(createResp.NamespaceType))
+	}
+
 	m.ID = types.StringValue((&clients.CompositeID{
 		ClusterID:  req.SpaceID,
 		ResourceID: createResp.Id,
