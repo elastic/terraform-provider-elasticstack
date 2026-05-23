@@ -114,6 +114,12 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
       "attemptedAt": "2026-05-22T04:39:21.808333958Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions.Flatten",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions",
+      "attemptedAt": "2026-05-23T04:32:23.858865339Z",
+      "reason": "pr_created"
     }
   ]
 }
