@@ -34,13 +34,12 @@ import (
 func OpenMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, jobID string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Failed to get Elasticsearch client", err.Error())
-		return diags
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return d
 	}
 
-	_, err = typedClient.Ml.OpenJob(jobID).Do(ctx)
+	_, err := typedClient.Ml.OpenJob(jobID).Do(ctx)
 	if err != nil {
 		diags.AddError("Failed to open ML job", fmt.Sprintf("Unable to open ML job: %s — %s", jobID, err.Error()))
 		return diags
@@ -53,10 +52,9 @@ func OpenMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 func CloseMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, jobID string, force bool, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Failed to get Elasticsearch client", err.Error())
-		return diags
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return d
 	}
 
 	req := typedClient.Ml.CloseJob(jobID).
@@ -67,7 +65,7 @@ func CloseMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 		req.Timeout(durationToMsString(timeout))
 	}
 
-	_, err = req.Do(ctx)
+	_, err := req.Do(ctx)
 	if err != nil {
 		diags.AddError("Failed to close ML job", fmt.Sprintf("Unable to close ML job: %s — %s", jobID, err.Error()))
 		return diags
@@ -109,10 +107,9 @@ func WaitForMLJobClosed(ctx context.Context, apiClient *clients.ElasticsearchSco
 func GetMLJobStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, jobID string) (*types.JobStats, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Failed to get Elasticsearch client", err.Error())
-		return nil, diags
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return nil, d
 	}
 
 	res, err := typedClient.Ml.GetJobStats().JobId(jobID).AllowNoMatch(true).Do(ctx)

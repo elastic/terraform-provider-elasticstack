@@ -56,9 +56,9 @@ type SlmRetention struct {
 }
 
 func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyID string, slm *SlmPolicy) fwdiag.Diagnostics {
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return d
 	}
 
 	req := typedClient.Slm.PutLifecycle(policyID)
@@ -135,9 +135,9 @@ func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 }
 
 func GetSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slmName string) (*SlmPolicy, fwdiag.Diagnostics) {
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return nil, d
 	}
 	res, err := typedClient.Slm.GetLifecycle().PolicyId(slmName).Perform(ctx)
 	if err != nil {
@@ -173,11 +173,11 @@ func GetSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, s
 }
 
 func DeleteSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slmName string) fwdiag.Diagnostics {
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return d
 	}
-	_, err = typedClient.Slm.DeleteLifecycle(slmName).Do(ctx)
+	_, err := typedClient.Slm.DeleteLifecycle(slmName).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
 			return nil

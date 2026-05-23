@@ -32,9 +32,9 @@ import (
 )
 
 func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) (*models.EnrichPolicy, fwdiag.Diagnostics) {
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return nil, d
 	}
 
 	res, err := typedClient.Enrich.GetPolicy().Name(policyName).Do(ctx)
@@ -100,9 +100,9 @@ func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 }
 
 func PutEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policy *models.EnrichPolicy) fwdiag.Diagnostics {
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return d
 	}
 
 	enrichPolicy := &types.EnrichPolicy{
@@ -133,7 +133,7 @@ func PutEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 		}
 	}
 
-	_, err = req.Do(ctx)
+	_, err := req.Do(ctx)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -142,12 +142,12 @@ func PutEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 }
 
 func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) fwdiag.Diagnostics {
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return d
 	}
 
-	_, err = typedClient.Enrich.DeletePolicy(policyName).Do(ctx)
+	_, err := typedClient.Enrich.DeletePolicy(policyName).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
 			return nil
@@ -159,9 +159,9 @@ func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchSco
 }
 
 func ExecuteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) fwdiag.Diagnostics {
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return d
 	}
 
 	res, err := typedClient.Enrich.ExecutePolicy(policyName).WaitForCompletion(true).Do(ctx)

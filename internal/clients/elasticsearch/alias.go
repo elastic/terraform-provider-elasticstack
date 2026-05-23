@@ -31,11 +31,11 @@ import (
 )
 
 func DeleteIndexAlias(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index string, aliases []string) fwdiags.Diagnostics {
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return d
 	}
-	_, err = typedClient.Indices.DeleteAlias(index, strings.Join(aliases, ",")).Do(ctx)
+	_, err := typedClient.Indices.DeleteAlias(index, strings.Join(aliases, ",")).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
 			return nil
@@ -50,9 +50,9 @@ func UpdateIndexAlias(ctx context.Context, apiClient *clients.ElasticsearchScope
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return d
 	}
 	_, err = typedClient.Indices.PutAlias(index, alias.Name).Raw(bytes.NewReader(aliasBytes)).Do(ctx)
 	if err != nil {
@@ -62,9 +62,9 @@ func UpdateIndexAlias(ctx context.Context, apiClient *clients.ElasticsearchScope
 }
 
 func GetAlias(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, aliasName string) (map[string]types.IndexAliases, fwdiags.Diagnostics) {
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return nil, d
 	}
 	res, err := typedClient.Indices.GetAlias().Name(aliasName).Do(ctx)
 	if err != nil {
@@ -142,9 +142,9 @@ func UpdateAliasesAtomic(ctx context.Context, apiClient *clients.ElasticsearchSc
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return d
 	}
 	_, err = typedClient.Indices.UpdateAliases().Raw(bytes.NewReader(aliasBytes)).Do(ctx)
 	if err != nil {

@@ -34,10 +34,9 @@ import (
 func CreateAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, req *createapikey.Request) (*createapikey.Response, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return nil, diags
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return nil, d
 	}
 
 	res, err := typedClient.Security.CreateApiKey().Request(req).Do(ctx)
@@ -52,13 +51,12 @@ func CreateAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 func UpdateAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, req *updateapikey.Request) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return diags
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return d
 	}
 
-	_, err = typedClient.Security.UpdateApiKey(id).Request(req).Do(ctx)
+	_, err := typedClient.Security.UpdateApiKey(id).Request(req).Do(ctx)
 	if err != nil {
 		diags.AddError("Unable to update apikey", err.Error())
 		return diags
@@ -70,10 +68,9 @@ func UpdateAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 func GetAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) (*types.ApiKey, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return nil, diags
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return nil, d
 	}
 
 	res, err := typedClient.Security.GetApiKey().Id(id).Do(ctx)
@@ -100,13 +97,12 @@ func GetAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 func DeleteAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return diags
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return d
 	}
 
-	_, err = typedClient.Security.InvalidateApiKey().Request(&invalidateapikey.Request{
+	_, err := typedClient.Security.InvalidateApiKey().Request(&invalidateapikey.Request{
 		Ids: []string{id},
 	}).Do(ctx)
 	if err != nil {
@@ -123,10 +119,9 @@ func DeleteAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 func CreateCrossClusterAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, req *createcrossclusterapikey.Request) (*createcrossclusterapikey.Response, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return nil, diags
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return nil, d
 	}
 
 	res, err := typedClient.Security.CreateCrossClusterApiKey().Request(req).Do(ctx)
@@ -141,13 +136,12 @@ func CreateCrossClusterAPIKey(ctx context.Context, apiClient *clients.Elasticsea
 func UpdateCrossClusterAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, req *updatecrossclusterapikey.Request) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return diags
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return d
 	}
 
-	_, err = typedClient.Security.UpdateCrossClusterApiKey(id).Request(req).Do(ctx)
+	_, err := typedClient.Security.UpdateCrossClusterApiKey(id).Request(req).Do(ctx)
 	if err != nil {
 		diags.AddError("Unable to update cross cluster apikey", err.Error())
 		return diags

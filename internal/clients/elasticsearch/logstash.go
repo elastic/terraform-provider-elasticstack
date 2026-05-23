@@ -31,9 +31,9 @@ import (
 )
 
 func PutLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, logstashPipeline *models.LogstashPipeline) fwdiag.Diagnostics {
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return d
 	}
 
 	// The typed client's types.LogstashPipeline.PipelineSettings only supports
@@ -60,9 +60,9 @@ func PutLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchSc
 }
 
 func GetLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, pipelineID string) (*models.LogstashPipeline, fwdiag.Diagnostics) {
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return nil, d
 	}
 
 	// We use .Perform() instead of .Do() because types.LogstashPipeline only
@@ -102,9 +102,9 @@ func GetLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchSc
 }
 
 func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, pipelineID string) fwdiag.Diagnostics {
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClientDiag()
+	if d.HasError() {
+		return d
 	}
 
 	// Use .Perform() for explicit 404 handling, consistent with GetLogstashPipeline.
