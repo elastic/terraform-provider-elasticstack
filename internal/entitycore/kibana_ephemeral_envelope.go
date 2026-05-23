@@ -19,7 +19,6 @@ package entitycore
 
 import (
 	"context"
-	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
@@ -58,12 +57,7 @@ type KibanaEphemeralOptions[T KibanaEphemeralModel, S any] struct {
 
 // KibanaEphemeralResource implements [ephemeral.EphemeralResource] and related
 // interfaces for Kibana-backed ephemeral resources.
-type KibanaEphemeralResource[T KibanaEphemeralModel, S any] struct {
-	*EphemeralBase
-	schemaFactory func(context.Context) eschema.Schema
-	openFunc      KibanaEphemeralOpenFunc[T, S]
-	closeFunc     KibanaEphemeralCloseFunc[S]
-}
+type KibanaEphemeralResource[T KibanaEphemeralModel, S any] = genericEphemeralResource[T, S, *clients.KibanaScopedClient]
 
 // NewKibanaEphemeralResource returns an [ephemeral.EphemeralResource] that
 // owns Metadata, Configure, Schema (with kibana_connection block injection),
@@ -83,147 +77,23 @@ func NewKibanaEphemeralResource[T KibanaEphemeralModel, S any](
 	}
 	mustBePlainGoCloseState[S]()
 
-	return &KibanaEphemeralResource[T, S]{
+	return &genericEphemeralResource[T, S, *clients.KibanaScopedClient]{
 		EphemeralBase: NewEphemeralBase(ComponentKibana, name),
 		schemaFactory: opts.Schema,
 		openFunc:      opts.Open,
 		closeFunc:     opts.Close,
+		adapter: ephemeralAdapter[T, *clients.KibanaScopedClient]{
+			getConnection: func(model T) types.List { return model.GetKibanaConnection() },
+			getClient: func(ctx context.Context, factory *clients.ProviderClientFactory, connection types.List) (*clients.KibanaScopedClient, diag.Diagnostics) {
+				return factory.GetKibanaClient(ctx, connection)
+			},
+			encodeConn:         encodeKibanaConnection,
+			decodeConn:         decodeKibanaConnection,
+			schemaBlockKey:     "kibana_connection",
+			schemaBlockFactory: providerschema.GetKbEphemeralConnectionBlock,
+			errorSummary:       "Kibana ephemeral envelope internal error",
+		},
 	}
-}
-
-func (r *KibanaEphemeralResource[T, S]) Metadata(_ context.Context, req ephemeral.MetadataRequest, resp *ephemeral.MetadataResponse) {
-	resp.TypeName = r.EphemeralBase.Metadata(req.ProviderTypeName)
-}
-
-func (r *KibanaEphemeralResource[T, S]) Configure(_ context.Context, req ephemeral.ConfigureRequest, resp *ephemeral.ConfigureResponse) {
-	factory, diags := configureFactoryFromProviderData(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	r.SetClient(factory)
-}
-
-func (r *KibanaEphemeralResource[T, S]) Schema(ctx context.Context, _ ephemeral.SchemaRequest, resp *ephemeral.SchemaResponse) {
-	schema := r.schemaFactory(ctx)
-	blocks := make(map[string]eschema.Block, len(schema.Blocks)+1)
-	maps.Copy(blocks, schema.Blocks)
-	blocks["kibana_connection"] = providerschema.GetKbEphemeralConnectionBlock()
-	schema.Blocks = blocks
-	resp.Schema = schema
-}
-
-func (r *KibanaEphemeralResource[T, S]) Open(ctx context.Context, req ephemeral.OpenRequest, resp *ephemeral.OpenResponse) {
-	r.openWithPrivate(ctx, req, resp, resp.Private)
-}
-
-func (r *KibanaEphemeralResource[T, S]) openWithPrivate(ctx context.Context, req ephemeral.OpenRequest, resp *ephemeral.OpenResponse, private ephemeralPrivateState) {
-	var model T
-	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, connDiags := r.Client().GetKibanaClient(ctx, model.GetKibanaConnection())
-	resp.Diagnostics.Append(connDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if vDiags := EnforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
-		resp.Diagnostics.Append(vDiags...)
-		return
-	}
-
-	result, callDiags := r.openFunc(ctx, client, OpenRequest[T]{Config: model})
-	resp.Diagnostics.Append(callDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(r.persistOpenPrivateState(ctx, private, result)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.Result.Set(ctx, &result.Model)...)
-}
-
-func (r *KibanaEphemeralResource[T, S]) Close(ctx context.Context, req ephemeral.CloseRequest, resp *ephemeral.CloseResponse) {
-	if req.Private == nil {
-		return
-	}
-	r.closeFromPrivate(ctx, req.Private, resp)
-}
-
-func (r *KibanaEphemeralResource[T, S]) closeFromPrivate(ctx context.Context, private ephemeralPrivateState, resp *ephemeral.CloseResponse) {
-	if private == nil {
-		return
-	}
-
-	connectionData, connKeyDiags := private.GetKey(ctx, ephemeralConnectionKey)
-	resp.Diagnostics.Append(connKeyDiags...)
-	if resp.Diagnostics.HasError() || len(connectionData) == 0 {
-		return
-	}
-
-	userStateData, userKeyDiags := private.GetKey(ctx, ephemeralUserStateKey)
-	resp.Diagnostics.Append(userKeyDiags...)
-	if resp.Diagnostics.HasError() || len(userStateData) == 0 {
-		return
-	}
-
-	connection, connDiags := decodeKibanaConnection(ctx, connectionData)
-	resp.Diagnostics.Append(connDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, clientDiags := r.Client().GetKibanaClient(ctx, connection)
-	resp.Diagnostics.Append(clientDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	state, stateDiags := decodeUserCloseState[S](userStateData)
-	resp.Diagnostics.Append(stateDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	closeResult, closeDiags := r.closeFunc(ctx, client, CloseRequest[S]{State: state})
-	resp.Diagnostics.Append(closeDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	_ = closeResult
-}
-
-func (r *KibanaEphemeralResource[T, S]) persistOpenPrivateState(ctx context.Context, private ephemeralPrivateState, result OpenResult[T, S]) diag.Diagnostics {
-	var diags diag.Diagnostics
-	if private == nil {
-		diags.AddError(
-			"Kibana ephemeral envelope internal error",
-			"Open response Private must not be nil",
-		)
-		return diags
-	}
-
-	connectionData, connDiags := encodeKibanaConnection(ctx, result.Model.GetKibanaConnection())
-	diags.Append(connDiags...)
-	if diags.HasError() {
-		return diags
-	}
-	diags.Append(private.SetKey(ctx, ephemeralConnectionKey, connectionData)...)
-
-	closeStateData, closeDiags := encodeUserCloseState(result.CloseState)
-	diags.Append(closeDiags...)
-	if diags.HasError() {
-		return diags
-	}
-	diags.Append(private.SetKey(ctx, ephemeralUserStateKey, closeStateData)...)
-
-	return diags
 }
 
 var (
