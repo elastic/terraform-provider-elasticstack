@@ -31,7 +31,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (m ExceptionListModel) GetID() types.String             { return m.ID }
+func (m ExceptionListModel) GetID() types.String { return m.ID }
 func (m ExceptionListModel) GetResourceID() types.String {
 	if compID, _ := clients.CompositeIDFromStr(m.ID.ValueString()); compID != nil {
 		return types.StringValue(compID.ResourceID)
