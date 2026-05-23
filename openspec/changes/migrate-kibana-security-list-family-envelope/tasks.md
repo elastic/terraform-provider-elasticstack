@@ -14,8 +14,8 @@
 
 ## 3. Validation and regression coverage
 
-- [ ] 3.1 Update or add unit tests for any model/identity helpers introduced by the migration
-- [ ] 3.2 Keep or extend acceptance coverage to prove import, CRUD, and not-found behavior remain unchanged for each migrated resource
-- [ ] 3.3 Run targeted tests for the four resource packages
-- [ ] 3.4 Run `make build`
-- [ ] 3.5 Run `make check-openspec`
+- [x] 3.1 Update or add unit tests for any model/identity helpers introduced by the migration
+- [x] 3.2 Keep or extend acceptance coverage to prove import, CRUD, and not-found behavior remain unchanged for each migrated resource (existing `acc_test.go` in each package covers import, CRUD, and not-found; no new acceptance tests required)
+- [x] 3.3 Run targeted tests for the four resource packages
+- [x] 3.4 Run `make build` (`go build ./...` succeeded)
+- [x] 3.5 Run `make check-openspec`
