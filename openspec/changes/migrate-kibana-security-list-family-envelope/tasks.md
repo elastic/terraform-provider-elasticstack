@@ -9,8 +9,8 @@
 - [x] 2.1 Migrate `internal/kibana/securitylist/` to `entitycore.NewKibanaResource`
 - [x] 2.2 Migrate `internal/kibana/securitylistitem/` to `entitycore.NewKibanaResource`
 - [x] 2.3 Migrate `internal/kibana/securityexceptionlist/` to `entitycore.NewKibanaResource`
-- [ ] 2.4 Migrate `internal/kibana/security_list_data_streams/` to `entitycore.NewKibanaResource`
-- [ ] 2.5 Add any shared model/helper adjustments needed so each resource satisfies the Kibana envelope contract without changing Terraform-visible behavior
+- [x] 2.4 Migrate `internal/kibana/security_list_data_streams/` to `entitycore.NewKibanaResource`
+- [x] 2.5 Add any shared model/helper adjustments needed so each resource satisfies the Kibana envelope contract without changing Terraform-visible behavior (no shared adjustments needed)
 
 ## 3. Validation and regression coverage
 
