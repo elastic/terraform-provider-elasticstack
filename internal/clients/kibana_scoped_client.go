@@ -64,6 +64,18 @@ func (k *KibanaScopedClient) GetKibanaOapiClient() (*kibanaoapi.Client, error) {
 	return k.kibanaOapi, nil
 }
 
+// GetKibanaOapiClientDiag returns the Kibana OpenAPI client, converting any
+// error into a Diagnostics value so callers can stay in the diags pattern.
+func (k *KibanaScopedClient) GetKibanaOapiClientDiag() (*kibanaoapi.Client, fwdiag.Diagnostics) {
+	var diags fwdiag.Diagnostics
+	oapiClient, err := k.GetKibanaOapiClient()
+	if err != nil {
+		diags.AddError(err.Error(), "")
+		return nil, diags
+	}
+	return oapiClient, diags
+}
+
 // GetFleetClient returns the Fleet client.
 func (k *KibanaScopedClient) GetFleetClient() (*fleetclient.Client, error) {
 	if k.fleetEndpoint == "" {

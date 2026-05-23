@@ -181,6 +181,24 @@ func TestKibanaScopedClient_GetFleetClient_EndpointPresentNoAuth(t *testing.T) {
 	assert.NotNil(t, client)
 }
 
+// --- GetKibanaOapiClientDiag ---
+
+func TestKibanaScopedClient_GetKibanaOapiClientDiag_MissingEndpoint(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientNoEndpoint(t)
+	client, diags := sc.GetKibanaOapiClientDiag()
+	assert.Nil(t, client)
+	require.True(t, diags.HasError())
+}
+
+func TestKibanaScopedClient_GetKibanaOapiClientDiag_EndpointPresent(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientWithEndpointNoAuth(t, "http://kibana.example.com:5601")
+	client, diags := sc.GetKibanaOapiClientDiag()
+	require.False(t, diags.HasError())
+	assert.NotNil(t, client)
+}
+
 // --- getServerStatusRaw error propagation ---
 
 // TestKibanaScopedClient_getServerStatusRaw_MissingEndpoint verifies that when

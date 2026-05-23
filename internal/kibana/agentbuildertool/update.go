@@ -31,17 +31,15 @@ func updateTool(ctx context.Context, client *clients.KibanaScopedClient, req ent
 	plan := req.Plan
 	var diags diag.Diagnostics
 
-	plan.SpaceID = types.StringValue(req.SpaceID)
-
 	body, d := plan.toAPIUpdateModel(ctx)
 	diags.Append(d...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[toolModel]{}, diags
 	}
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError(err.Error(), "")
+	oapiClient, d := client.GetKibanaOapiClientDiag()
+	diags.Append(d...)
+	if diags.HasError() {
 		return entitycore.KibanaWriteResult[toolModel]{}, diags
 	}
 
@@ -50,6 +48,10 @@ func updateTool(ctx context.Context, client *clients.KibanaScopedClient, req ent
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[toolModel]{}, diags
 	}
+
+	// Set SpaceID after the API call so the returned model carries the resolved
+	// space for the envelope's read-after-write step.
+	plan.SpaceID = types.StringValue(req.SpaceID)
 
 	return entitycore.KibanaWriteResult[toolModel]{Model: plan}, diags
 }
