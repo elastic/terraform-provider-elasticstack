@@ -66,40 +66,39 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		IgnoreConstraints: planModel.IgnoreConstraints.ValueBool(),
 	}
 
-	// Check if version-dependent parameters are set and validate version support
-	needsVersionCheck := typeutils.IsKnown(planModel.IgnoreMappingUpdateErrors) || typeutils.IsKnown(planModel.SkipDataStreamRollover)
-	if needsVersionCheck {
-		serverVersion, versionDiags := apiClient.ServerVersion(ctx)
+	// Validate version-dependent parameters when set.
+	if typeutils.IsKnown(planModel.IgnoreMappingUpdateErrors) {
+		supported, versionDiags := apiClient.EnforceMinVersion(ctx, MinVersionIgnoreMappingUpdateErrors)
 		respDiags.Append(versionDiags...)
 		if respDiags.HasError() {
 			return
 		}
-
-		// Validate ignore_mapping_update_errors
-		if typeutils.IsKnown(planModel.IgnoreMappingUpdateErrors) {
-			if serverVersion.LessThan(MinVersionIgnoreMappingUpdateErrors) {
-				respDiags.AddError(
-					"Unsupported parameter for server version",
-					fmt.Sprintf("The 'ignore_mapping_update_errors' parameter requires server version %s or higher. Current version: %s",
-						MinVersionIgnoreMappingUpdateErrors.String(), serverVersion.String()),
-				)
-				return
-			}
-			installOptions.IgnoreMappingUpdateErrors = planModel.IgnoreMappingUpdateErrors.ValueBoolPointer()
+		if !supported {
+			respDiags.AddError(
+				"Unsupported parameter for server version",
+				fmt.Sprintf("The 'ignore_mapping_update_errors' parameter requires server version %s or higher.",
+					MinVersionIgnoreMappingUpdateErrors.String()),
+			)
+			return
 		}
+		installOptions.IgnoreMappingUpdateErrors = planModel.IgnoreMappingUpdateErrors.ValueBoolPointer()
+	}
 
-		// Validate skip_data_stream_rollover
-		if typeutils.IsKnown(planModel.SkipDataStreamRollover) {
-			if serverVersion.LessThan(MinVersionSkipDataStreamRollover) {
-				respDiags.AddError(
-					"Unsupported parameter for server version",
-					fmt.Sprintf("The 'skip_data_stream_rollover' parameter requires server version %s or higher. Current version: %s",
-						MinVersionSkipDataStreamRollover.String(), serverVersion.String()),
-				)
-				return
-			}
-			installOptions.SkipDataStreamRollover = planModel.SkipDataStreamRollover.ValueBoolPointer()
+	if typeutils.IsKnown(planModel.SkipDataStreamRollover) {
+		supported, versionDiags := apiClient.EnforceMinVersion(ctx, MinVersionSkipDataStreamRollover)
+		respDiags.Append(versionDiags...)
+		if respDiags.HasError() {
+			return
 		}
+		if !supported {
+			respDiags.AddError(
+				"Unsupported parameter for server version",
+				fmt.Sprintf("The 'skip_data_stream_rollover' parameter requires server version %s or higher.",
+					MinVersionSkipDataStreamRollover.String()),
+			)
+			return
+		}
+		installOptions.SkipDataStreamRollover = planModel.SkipDataStreamRollover.ValueBoolPointer()
 	}
 
 	// Pass the requested space through to the Fleet install API.

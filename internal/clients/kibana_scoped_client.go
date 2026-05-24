@@ -95,34 +95,6 @@ func (k *KibanaScopedClient) getServerStatusRaw(ctx context.Context) (rawVersion
 	return rawVersion, flavor, diags
 }
 
-// ServerVersion returns the version of the Kibana server. Version is always
-// derived from the Kibana status API; there is no Elasticsearch fallback.
-func (k *KibanaScopedClient) ServerVersion(ctx context.Context) (*version.Version, fwdiag.Diagnostics) {
-	rawVersion, _, diags := k.getServerStatusRaw(ctx)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	serverVersion, err := version.NewVersion(rawVersion)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	return serverVersion, nil
-}
-
-// ServerFlavor returns the flavor (e.g. "serverless", "default") of the Kibana
-// server. Flavor is always derived from the Kibana status API.
-// Returns an empty string when build_flavor is absent (older stateful deployments).
-func (k *KibanaScopedClient) ServerFlavor(ctx context.Context) (string, fwdiag.Diagnostics) {
-	_, flavor, diags := k.getServerStatusRaw(ctx)
-	if diags.HasError() {
-		return "", diags
-	}
-
-	return flavor, nil
-}
-
 // EnforceMinVersion returns true when the Kibana server version is greater than
 // or equal to minVersion, or when the server is running in serverless mode.
 func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, fwdiag.Diagnostics) {

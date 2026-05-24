@@ -40,10 +40,10 @@
 
 ## 6. Remove the public accessors
 
-- [ ] 6.1 `rg "\.ServerVersion\(|\.ServerFlavor\(" internal/kibana internal/clients` — confirm zero non-test references remain. Tests in `internal/clients/kibana_scoped_client_test.go` should now exercise only the public surface; if any direct method calls remain, return to the corresponding section above
-- [ ] 6.2 Delete `ServerVersion` method from `internal/clients/kibana_scoped_client.go`
-- [ ] 6.3 Delete `ServerFlavor` method from `internal/clients/kibana_scoped_client.go`
-- [ ] 6.4 Run `make build` — must compile cleanly
+- [x] 6.1 `rg "\.ServerVersion\(|\.ServerFlavor\(" internal/kibana internal/clients` — confirm zero non-test references remain. Tests in `internal/clients/kibana_scoped_client_test.go` should now exercise only the public surface; if any direct method calls remain, return to the corresponding section above
+- [x] 6.2 Delete `ServerVersion` method from `internal/clients/kibana_scoped_client.go`
+- [x] 6.3 Delete `ServerFlavor` method from `internal/clients/kibana_scoped_client.go`
+- [x] 6.4 Run `make build` — must compile cleanly
 
 ## 7. Spec update
 
