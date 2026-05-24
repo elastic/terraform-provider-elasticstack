@@ -19,6 +19,17 @@
       "depNameTemplate": "kibana-openapi-spec",
       "packageNameTemplate": "https://github.com/elastic/kibana",
       "datasourceTemplate": "git-refs"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": [
+        "^\\.custom-gcl\\.yml$"
+      ],
+      "matchStrings": [
+        "^version: (?<currentValue>v?\\d+\\.\\d+\\.\\d+)$"
+      ],
+      "depNameTemplate": "golangci/golangci-lint",
+      "datasourceTemplate": "github-releases"
     }
   ],
   "postUpgradeTasks": {
@@ -36,6 +47,15 @@
       "groupName": "hashicorp",
       "matchPackageNames": [
         "/^github\\.com/hashicorp//"
+      ]
+    },
+    {
+      "groupName": "golangci-lint",
+      "matchPackageNames": [
+        "golangci/golangci-lint"
+      ],
+      "matchDepNames": [
+        "golangci/golangci-lint"
       ]
     }
   ],

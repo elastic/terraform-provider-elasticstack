@@ -23,50 +23,28 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *ExceptionListResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state ExceptionListModel
+func deleteExceptionList(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, m ExceptionListModel) diag.Diagnostics {
+	var diags diag.Diagnostics
 
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	oapiClient, getDiags := client.GetKibanaOapiClient()
+	diags.Append(getDiags...)
+	if diags.HasError() {
+		return diags
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	oapiClient, d := client.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Parse composite ID to get space_id and resource_id
-	compID, compIDDiags := clients.CompositeIDFromStr(state.ID.ValueString())
-	resp.Diagnostics.Append(compIDDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Delete by resource ID from composite ID
-	id := compID.ResourceID
+	id := resourceID
 	params := &kbapi.DeleteExceptionListParams{
 		Id: &id,
 	}
 
-	// Include namespace_type if known (required for agnostic lists)
-	if state.NamespaceType.ValueString() != "" {
-		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(state.NamespaceType.ValueString())
+	if m.NamespaceType.ValueString() != "" {
+		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(m.NamespaceType.ValueString())
 		params.NamespaceType = &nsType
 	}
 
-	diags = kibanaoapi.DeleteExceptionList(ctx, oapiClient, compID.ClusterID, params)
-
-	resp.Diagnostics.Append(diags...)
+	diags.Append(kibanaoapi.DeleteExceptionList(ctx, oapiClient, spaceID, params)...)
+	return diags
 }
