@@ -306,8 +306,8 @@ func disableOneRule(t *testing.T, spaceID, key, value string) {
 
 	kbClient, getDiags := client.GetKibanaOapiClient()
 	if getDiags.HasError() {
-		t.Fatalf("failed to get Kibana client: %v", err)
-	}
+t.Fatalf("failed to get Kibana client: %v", getDiags)
+}
 
 	ctx := context.Background()
 	filter := fmt.Sprintf("alert.attributes.tags:(\"%s: %s\")", key, value)

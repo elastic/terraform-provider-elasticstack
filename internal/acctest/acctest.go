@@ -106,7 +106,7 @@ func PreCheckWithWorkflowsEnabled(t *testing.T, minVersion *version.Version) {
 
 	kibanaClient, getDiags := client.GetKibanaOapiClient()
 	if getDiags.HasError() {
-		t.Fatalf("Failed to get Kibana client: %v", err)
+		t.Fatalf("Failed to get Kibana client: %v", getDiags)
 	}
 
 	// Try the internal settings API endpoint
