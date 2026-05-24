@@ -172,6 +172,14 @@ func GetPackages(ctx context.Context, client *Client, prerelease bool, spaceID s
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
+		if resp.JSON200 == nil {
+			return nil, diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Unexpected Fleet response",
+					"Fleet returned HTTP 200 for the packages list endpoint but the response body could not be decoded as JSON. Verify the Kibana Fleet endpoint is reachable and returns a JSON Content-Type.",
+				),
+			}
+		}
 		return resp.JSON200.Items, nil
 	case http.StatusBadRequest:
 		// Older Kibana versions (pre-8.7) do not recognise the prerelease query
@@ -184,6 +192,14 @@ func GetPackages(ctx context.Context, client *Client, prerelease bool, spaceID s
 				return nil, diagutil.FrameworkDiagFromError(retryErr)
 			}
 			if retryResp.StatusCode() == http.StatusOK {
+				if retryResp.JSON200 == nil {
+					return nil, diag.Diagnostics{
+						diag.NewErrorDiagnostic(
+							"Unexpected Fleet response",
+							"Fleet returned HTTP 200 for the packages list endpoint but the response body could not be decoded as JSON. Verify the Kibana Fleet endpoint is reachable and returns a JSON Content-Type.",
+						),
+					}
+				}
 				return retryResp.JSON200.Items, nil
 			}
 			return nil, diagutil.ReportUnknownHTTPError(retryResp.StatusCode(), retryResp.Body)
