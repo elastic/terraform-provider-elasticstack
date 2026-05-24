@@ -20,14 +20,14 @@
 
 ## 3. Pattern C — `alertingRuleFeatures` capability struct
 
-- [ ] 3.1 Enumerate every `*version.Version` comparison inside `internal/kibana/alertingrule/models*.go` and `internal/kibana/alertingrule/toAPIModel`; produce a definitive list of capability bits
-- [ ] 3.2 Define `type alertingRuleFeatures struct { ... }` in `internal/kibana/alertingrule/features.go` with one field per identified capability bit, named `SupportsX`
-- [ ] 3.3 Implement `resolveAlertingRuleFeatures(ctx, *clients.KibanaScopedClient) (alertingRuleFeatures, diag.Diagnostics)` calling `client.EnforceMinVersion` once per bit
-- [ ] 3.4 Unit test `TestResolveAlertingRuleFeatures` using a stubbed `KibanaScopedClient` covering: server below all thresholds (all false), server above all thresholds (all true), serverless (all true)
-- [ ] 3.5 Change `alertingrule.toAPIModel` signature from `(ctx, serverVersion *version.Version)` to `(ctx, features alertingRuleFeatures)`; rewrite all version comparisons inside as `features.SupportsX` lookups
-- [ ] 3.6 Update unit tests under `internal/kibana/alertingrule/` that previously constructed `*version.Version` values to pass `alertingRuleFeatures{...}` instead
-- [ ] 3.7 Update callers `internal/kibana/alertingrule/create.go` and `internal/kibana/alertingrule/update.go` to call `resolveAlertingRuleFeatures(ctx, client)` and pass the result into `toAPIModel`
-- [ ] 3.8 Delete the now-unused `client.ServerVersion(ctx)` call in those files
+- [x] 3.1 Enumerate every `*version.Version` comparison inside `internal/kibana/alertingrule/models*.go` and `internal/kibana/alertingrule/toAPIModel`; produce a definitive list of capability bits
+- [x] 3.2 Define `type alertingRuleFeatures struct { ... }` in `internal/kibana/alertingrule/features.go` with one field per identified capability bit, named `SupportsX`
+- [x] 3.3 Implement `resolveAlertingRuleFeatures(ctx, *clients.KibanaScopedClient) (alertingRuleFeatures, diag.Diagnostics)` calling `client.EnforceMinVersion` once per bit
+- [x] 3.4 Unit test `TestResolveAlertingRuleFeatures` using a stubbed `KibanaScopedClient` covering: server below all thresholds (all false), server above all thresholds (all true), serverless (all true)
+- [x] 3.5 Change `alertingrule.toAPIModel` signature from `(ctx, serverVersion *version.Version)` to `(ctx, features alertingRuleFeatures)`; rewrite all version comparisons inside as `features.SupportsX` lookups
+- [x] 3.6 Update unit tests under `internal/kibana/alertingrule/` that previously constructed `*version.Version` values to pass `alertingRuleFeatures{...}` instead
+- [x] 3.7 Update callers `internal/kibana/alertingrule/create.go` and `internal/kibana/alertingrule/update.go` to call `resolveAlertingRuleFeatures(ctx, client)` and pass the result into `toAPIModel`
+- [x] 3.8 Delete the now-unused `client.ServerVersion(ctx)` call in those files
 
 ## 4. Acceptance test sweep
 
