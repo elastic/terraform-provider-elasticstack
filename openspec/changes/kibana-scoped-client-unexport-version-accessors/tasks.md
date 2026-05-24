@@ -47,8 +47,8 @@
 
 ## 7. Spec update
 
-- [ ] 7.1 Apply the `provider-client-factory` delta from this change to `openspec/specs/provider-client-factory/spec.md` (the `MODIFIED Requirements` block replaces the existing "Kibana scoped client contract" requirement)
-- [ ] 7.2 Apply the `elasticsearch-client-pf-diagnostics` delta to `openspec/specs/elasticsearch-client-pf-diagnostics/spec.md` (replaces the existing "KibanaScopedClient methods return Plugin Framework diagnostics" requirement and its scenarios)
+- [x] 7.1 Apply the `provider-client-factory` delta from this change to `openspec/specs/provider-client-factory/spec.md` (the `MODIFIED Requirements` block replaces the existing "Kibana scoped client contract" requirement)
+- [x] 7.2 Apply the `elasticsearch-client-pf-diagnostics` delta to `openspec/specs/elasticsearch-client-pf-diagnostics/spec.md` (replaces the existing "KibanaScopedClient methods return Plugin Framework diagnostics" requirement and its scenarios)
 
 ## 8. Validation
 
