@@ -230,10 +230,3 @@ func mergeProperties(stateProps, cfgProps map[string]any) map[string]any {
 
 	return merged
 }
-
-// mappingsSemanticallyEqual is retained here as a package-level helper so that
-// existing tests in this package can call it directly.  The implementation now
-// delegates to the shared customtypes helper.
-func mappingsSemanticallyEqual(userMappings, apiMappings map[string]any) bool {
-	return index.MappingsSemanticallyEqual(userMappings, apiMappings)
-}
