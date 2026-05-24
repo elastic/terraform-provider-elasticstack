@@ -160,6 +160,20 @@ func DeleteKibanaAssets(ctx context.Context, client *Client, name, version strin
 
 // GetPackages returns information about the latest packages known to Fleet.
 // If spaceID is non-empty and not "default", the request will be scoped to that Kibana space.
+func unpackGetPackagesItems(resp *struct {
+	Items []kbapi.PackageListItem `json:"items"`
+}, contentType string) ([]kbapi.PackageListItem, diag.Diagnostics) {
+	if resp == nil {
+		return nil, diag.Diagnostics{
+			diag.NewErrorDiagnostic(
+				"Unexpected Fleet response",
+				fmt.Sprintf("Fleet returned HTTP 200 for the packages list endpoint but the response body could not be decoded as JSON. Unexpected Content-Type: %q. Verify the Kibana Fleet endpoint is reachable and returns a JSON Content-Type.", contentType),
+			),
+		}
+	}
+	return resp.Items, nil
+}
+
 func GetPackages(ctx context.Context, client *Client, prerelease bool, spaceID string) ([]kbapi.PackageListItem, diag.Diagnostics) {
 	params := kbapi.GetFleetEpmPackagesParams{
 		Prerelease: &prerelease,
@@ -172,15 +186,11 @@ func GetPackages(ctx context.Context, client *Client, prerelease bool, spaceID s
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{
-				diag.NewErrorDiagnostic(
-					"Unexpected Fleet response",
-					"Fleet returned HTTP 200 for the packages list endpoint but the response body could not be decoded as JSON. Verify the Kibana Fleet endpoint is reachable and returns a JSON Content-Type.",
-				),
-			}
+		items, diags := unpackGetPackagesItems(resp.JSON200, resp.ContentType())
+		if diags.HasError() {
+			return nil, diags
 		}
-		return resp.JSON200.Items, nil
+		return items, nil
 	case http.StatusBadRequest:
 		// Older Kibana versions (pre-8.7) do not recognise the prerelease query
 		// parameter and return 400 with "definition for this key is missing".
@@ -192,15 +202,11 @@ func GetPackages(ctx context.Context, client *Client, prerelease bool, spaceID s
 				return nil, diagutil.FrameworkDiagFromError(retryErr)
 			}
 			if retryResp.StatusCode() == http.StatusOK {
-				if retryResp.JSON200 == nil {
-					return nil, diag.Diagnostics{
-						diag.NewErrorDiagnostic(
-							"Unexpected Fleet response",
-							"Fleet returned HTTP 200 for the packages list endpoint but the response body could not be decoded as JSON. Verify the Kibana Fleet endpoint is reachable and returns a JSON Content-Type.",
-						),
-					}
+				items, diags := unpackGetPackagesItems(retryResp.JSON200, retryResp.ContentType())
+				if diags.HasError() {
+					return nil, diags
 				}
-				return retryResp.JSON200.Items, nil
+				return items, nil
 			}
 			return nil, diagutil.ReportUnknownHTTPError(retryResp.StatusCode(), retryResp.Body)
 		}
