@@ -209,18 +209,6 @@ func TestKibanaScopedClient_GetFleetClient_EndpointPresentNoAuth(t *testing.T) {
 	assert.NotNil(t, client)
 }
 
-// --- getServerStatusRaw error propagation ---
-
-// TestKibanaScopedClient_getServerStatusRaw_MissingEndpoint verifies that when
-// kibanaEndpoint is empty, getServerStatusRaw returns a populated Diagnostics error
-// rather than a nil-pointer panic or a silent empty result.
-func TestKibanaScopedClient_getServerStatusRaw_MissingEndpoint(t *testing.T) {
-	t.Parallel()
-	sc := newKibanaScopedClientNoEndpoint(t)
-	_, _, diags := sc.getServerStatusRaw(t.Context())
-	require.True(t, diags.HasError(), "getServerStatusRaw must return an error when kibana endpoint is not configured")
-}
-
 // TestKibanaScopedClient_EnforceMinVersion_MissingEndpoint verifies that
 // EnforceMinVersion propagates the error from getServerStatusRaw when the endpoint
 // is not configured.

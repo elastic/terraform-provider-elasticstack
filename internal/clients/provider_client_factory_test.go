@@ -170,10 +170,10 @@ func newScopedClientFromFactory(t *testing.T, endpoint string) *KibanaScopedClie
 	return scoped
 }
 
-// TestKibanaScopedClient_EnforceMinVersion_ViaFactory verifies that
+// TestKibanaScopedClient_EnforceMinVersion_ViaFactory_Stateful verifies that
 // EnforceMinVersion on a scoped client obtained from the factory routes through
 // the Kibana status API (not Elasticsearch) and evaluates stateful version gates.
-func TestKibanaScopedClient_EnforceMinVersion_ViaFactory(t *testing.T) {
+func TestKibanaScopedClient_EnforceMinVersion_ViaFactory_Stateful(t *testing.T) {
 	const serverVersion = "8.19.0"
 	srv := newMockKibanaServer(serverVersion)
 	defer srv.Close()
@@ -193,9 +193,9 @@ func TestKibanaScopedClient_EnforceMinVersion_ViaFactory(t *testing.T) {
 	assert.False(t, ok, "8.19.0 must not satisfy min 9.0.0")
 }
 
-// TestKibanaScopedClient_ServerlessEnforceMinVersion verifies that
-// EnforceMinVersion always returns true for serverless Kibana.
-func TestKibanaScopedClient_ServerlessEnforceMinVersion(t *testing.T) {
+// TestKibanaScopedClient_EnforceMinVersion_ViaFactory_ServerlessShortCircuit verifies that
+// EnforceMinVersion always returns true for serverless Kibana obtained via the factory.
+func TestKibanaScopedClient_EnforceMinVersion_ViaFactory_ServerlessShortCircuit(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && r.URL.Path == kibanaStatusPath {
 			w.Header().Set("Content-Type", "application/json")
