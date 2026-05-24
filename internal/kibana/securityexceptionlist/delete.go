@@ -23,28 +23,18 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func deleteExceptionList(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, m ExceptionListModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	id := resourceID
-	params := &kbapi.DeleteExceptionListParams{
-		Id: &id,
-	}
-
-	if m.NamespaceType.ValueString() != "" {
-		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(m.NamespaceType.ValueString())
-		params.NamespaceType = &nsType
-	}
-
-	diags.Append(kibanaoapi.DeleteExceptionList(ctx, oapiClient, spaceID, params)...)
-	return diags
+	return entitycore.DeleteWithOapiClient(ctx, client, spaceID, resourceID,
+		func(ctx context.Context, c *kibanaoapi.Client, spaceID, id string) diag.Diagnostics {
+			params := &kbapi.DeleteExceptionListParams{Id: &id}
+			if m.NamespaceType.ValueString() != "" {
+				nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(m.NamespaceType.ValueString())
+				params.NamespaceType = &nsType
+			}
+			return kibanaoapi.DeleteExceptionList(ctx, c, spaceID, params)
+		})
 }

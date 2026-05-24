@@ -22,13 +22,10 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func deleteTool(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, _ toolModel) diag.Diagnostics {
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	if getDiags.HasError() {
-		return getDiags
-	}
-	return kibanaoapi.DeleteTool(ctx, oapiClient, spaceID, resourceID)
+	return entitycore.DeleteWithOapiClient(ctx, client, spaceID, resourceID, kibanaoapi.DeleteTool)
 }

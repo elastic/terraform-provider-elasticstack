@@ -23,22 +23,13 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func deleteSecurityList(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ Model) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	params := &kbapi.DeleteListParams{
-		Id: resourceID,
-	}
-
-	diags.Append(kibanaoapi.DeleteList(ctx, oapiClient, spaceID, params)...)
-	return diags
+	return entitycore.DeleteWithOapiClient(ctx, client, spaceID, resourceID,
+		func(ctx context.Context, c *kibanaoapi.Client, spaceID, id string) diag.Diagnostics {
+			return kibanaoapi.DeleteList(ctx, c, spaceID, &kbapi.DeleteListParams{Id: id})
+		})
 }

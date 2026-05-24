@@ -22,13 +22,10 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func deleteWorkflow(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, _ workflowModel) diag.Diagnostics {
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	if getDiags.HasError() {
-		return getDiags
-	}
-	return kibanaoapi.DeleteWorkflow(ctx, oapiClient, spaceID, resourceID)
+	return entitycore.DeleteWithOapiClient(ctx, client, spaceID, resourceID, kibanaoapi.DeleteWorkflow)
 }
