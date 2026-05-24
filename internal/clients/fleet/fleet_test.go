@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/stretchr/testify/require"
 )
 
 // newTestClient creates a fleet.Client backed by the given test server.
@@ -81,6 +82,54 @@ func TestGetPackages_SpaceAwarePath(t *testing.T) {
 
 			if !strings.HasPrefix(capturedPath, tc.wantPathPfx) {
 				t.Errorf("request path = %q, want prefix %q", capturedPath, tc.wantPathPfx)
+			}
+		})
+	}
+}
+
+func TestGetPackages_NonJSONHTTP200ReturnsDiagnostic(t *testing.T) {
+	tests := []struct {
+		name       string
+		prerelease bool
+	}{
+		{
+			name:       "primary path returns diagnostic",
+			prerelease: false,
+		},
+		{
+			name:       "retry path returns diagnostic",
+			prerelease: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			requestCount := 0
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requestCount++
+				w.Header().Set("Content-Type", "text/plain")
+				if tc.prerelease && requestCount == 1 {
+					w.WriteHeader(http.StatusBadRequest)
+					fmt.Fprint(w, `{"message":"definition for this key is missing: prerelease"}`)
+					return
+				}
+				w.WriteHeader(http.StatusOK)
+				fmt.Fprint(w, `{"items":[]}`)
+			}))
+			defer srv.Close()
+
+			client := newTestClient(t, srv)
+			items, diags := fleet.GetPackages(context.Background(), client, tc.prerelease, "")
+
+			require.Nil(t, items)
+			require.True(t, diags.HasError())
+			require.Len(t, diags, 1)
+			require.Equal(t, "Unexpected Fleet response", diags[0].Summary())
+			require.Contains(t, diags[0].Detail(), "Fleet returned HTTP 200 for the packages list endpoint but the response body could not be decoded as JSON")
+			if tc.prerelease {
+				require.Equal(t, 2, requestCount)
+			} else {
+				require.Equal(t, 1, requestCount)
 			}
 		})
 	}
