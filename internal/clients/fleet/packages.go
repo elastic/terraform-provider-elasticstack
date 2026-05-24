@@ -167,7 +167,11 @@ func unpackGetPackagesItems(resp *struct {
 		return nil, diag.Diagnostics{
 			diag.NewErrorDiagnostic(
 				"Unexpected Fleet response",
-				fmt.Sprintf("Fleet returned HTTP 200 for the packages list endpoint but the response body could not be decoded as JSON. Unexpected Content-Type: %q. Verify the Kibana Fleet endpoint is reachable and returns a JSON Content-Type.", contentType),
+				fmt.Sprintf(
+					"Fleet returned HTTP 200 for the packages list endpoint but the response body could not be decoded as JSON. "+
+						"Unexpected Content-Type: %q. Verify the Kibana Fleet endpoint is reachable and returns a JSON Content-Type.",
+					contentType,
+				),
 			),
 		}
 	}
