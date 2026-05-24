@@ -1,9 +1,9 @@
 ## 1. Schema changes
 
-- [ ] 1.1 Add `secrets_wo` (`schema.StringAttribute{Optional: true, Sensitive: true, WriteOnly: true}`) to `internal/kibana/connectors/schema.go`
+- [ ] 1.1 Add `secrets_wo` to `internal/kibana/connectors/schema.go` using the same JSON-aware type/validation as the existing `secrets` attribute (for example, `schema.StringAttribute` with `CustomType: jsontypes.NormalizedType{}`), while keeping it `Optional: true`, `Sensitive: true`, and `WriteOnly: true`
 - [ ] 1.2 Add `secrets_wo_version` (`schema.StringAttribute{Optional: true}`) with `AlsoRequires(secrets_wo)` validator
 - [ ] 1.3 Add `ConflictsWith(secrets_wo)` and `PreferWriteOnlyAttribute(secrets_wo)` validators to the existing `secrets` attribute
-- [ ] 1.4 Add `ConflictsWith(secrets)` validator to `secrets_wo`
+- [ ] 1.4 Add `ConflictsWith(secrets)` validator to `secrets_wo` and ensure `secrets_wo` preserves the same JSON normalization/validation behavior as `secrets`
 
 ## 2. Model changes
 

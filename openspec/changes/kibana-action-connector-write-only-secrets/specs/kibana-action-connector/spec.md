@@ -8,7 +8,7 @@ The `elasticstack_kibana_action_connector` resource SHALL expose an optional `se
 - `Sensitive: true`
 - `WriteOnly: true` (accepted by the Terraform Plugin Framework; never persisted to state)
 
-`secrets_wo` SHALL accept the same JSON string content as the existing `secrets` attribute. It is intended for practitioners who source connector secrets from ephemeral providers (e.g. Vault) and do not want the secret value to appear in the Terraform state file.
+`secrets_wo` SHALL accept the same JSON string content as the existing `secrets` attribute. The provider SHALL apply the same JSON validation and normalization behavior to `secrets_wo` as it does to `secrets`; any JSON string accepted, rejected, or normalized for `secrets` SHALL be accepted, rejected, or normalized identically for `secrets_wo`. It is intended for practitioners who source connector secrets from ephemeral providers (e.g. Vault) and do not want the secret value to appear in the Terraform state file.
 
 `secrets_wo` SHALL be mutually exclusive with `secrets`. Setting both simultaneously SHALL be invalid and the provider SHALL enforce this via a `ConflictsWith` validator.
 
