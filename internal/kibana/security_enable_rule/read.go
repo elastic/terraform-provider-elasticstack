@@ -20,41 +20,20 @@ package securityenablerule
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *EnableRuleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var model enableRuleModel
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, model.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	serverVersion, verDiags := client.ServerVersion(ctx)
-	resp.Diagnostics.Append(verDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if serverVersion.LessThan(minSupportedVersion) {
-		resp.Diagnostics.AddError("Unsupported server version", "Security detection rules bulk actions are not supported until Elastic Stack v8.11.0. Upgrade the target server to use this resource")
-		return
-	}
+func readSecurityEnableRule(ctx context.Context, client *clients.KibanaScopedClient, _, _ string, model enableRuleModel) (enableRuleModel, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "Failed to get Kibana client")
-		return
+		diags.AddError(err.Error(), "Failed to get Kibana client")
+		return model, false, diags
 	}
 
 	spaceID := model.SpaceID.ValueString()
@@ -62,9 +41,9 @@ func (r *EnableRuleResource) Read(ctx context.Context, req resource.ReadRequest,
 	value := model.Value.ValueString()
 
 	allEnabled, checkDiags := kibanaoapi.CheckRulesEnabledByTag(ctx, oapiClient, spaceID, key, value)
-	resp.Diagnostics.Append(checkDiags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(checkDiags...)
+	if diags.HasError() {
+		return model, false, diags
 	}
 
 	tflog.Debug(ctx, "Read rules enabled status", map[string]any{
@@ -76,5 +55,5 @@ func (r *EnableRuleResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	model.AllRulesEnabled = types.BoolValue(allEnabled)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+	return model, true, diags
 }

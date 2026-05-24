@@ -18,17 +18,29 @@
 package securityenablerule
 
 import (
-	"context"
+	"reflect"
+	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/stretchr/testify/require"
 )
 
-func updateSecurityEnableRule(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	req entitycore.KibanaWriteRequest[enableRuleModel],
-) (entitycore.KibanaWriteResult[enableRuleModel], diag.Diagnostics) {
-	return writeSecurityEnableRule(ctx, client, req)
+func TestEnableRuleModel_satisfiesKibanaResourceModel(t *testing.T) {
+	t.Parallel()
+	var _ entitycore.KibanaResourceModel = enableRuleModel{}
+}
+
+func TestEnableRuleResource_embedsEntityCoreKibanaResource(t *testing.T) {
+	t.Parallel()
+	rt := reflect.TypeFor[EnableRuleResource]()
+	field, ok := rt.FieldByName("KibanaResource")
+	require.True(t, ok)
+	require.True(t, field.Anonymous)
+	require.Equal(t, reflect.TypeFor[*entitycore.KibanaResource[enableRuleModel]](), field.Type)
+}
+
+func TestNewResource_satisfiesFrameworkInterfaces(t *testing.T) {
+	t.Parallel()
+	var _ resource.ResourceWithConfigure = newEnableRuleResource()
 }
