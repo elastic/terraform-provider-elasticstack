@@ -38,6 +38,7 @@ The methods `serverInfo`, `ClusterID`, `ID`, `ServerVersion`, `ServerFlavor`, an
 - **THEN** `EnforceMinVersion` SHALL return `(true, nil)` unchanged in behavior
 
 ### Requirement: KibanaScopedClient methods return Plugin Framework diagnostics
+
 The methods `EnforceMinVersion` and `EnforceVersionCheck` on `KibanaScopedClient` in `internal/clients/kibana_scoped_client.go` SHALL return `fwdiag.Diagnostics` instead of `diag.Diagnostics` (SDK). These methods SHALL consume PF diagnostics directly from `kibanaoapi.GetKibanaStatus` without bridging via `diagutil.FrameworkDiagsFromSDK`. `KibanaScopedClient` SHALL NOT expose `ServerVersion` or `ServerFlavor` as public methods; the package-private `getServerStatusRaw` helper that underpins `EnforceMinVersion` and `EnforceVersionCheck` SHALL likewise consume `fwdiag.Diagnostics` directly.
 
 #### Scenario: KibanaScopedClient.EnforceMinVersion returns PF diagnostics on error

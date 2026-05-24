@@ -26,6 +26,7 @@ During the Kibana/Fleet typed-client phase, the `*clients.ProviderClientFactory`
 - **THEN** the factory SHALL expose a transitional resolution path that preserves the existing broad-client and lint-enforced Elasticsearch behavior
 
 ### Requirement: Kibana scoped client contract
+
 The typed Kibana-scoped client returned by the factory SHALL expose the Kibana OpenAPI client, SLO client, Fleet client, Kibana auth-context helpers, and serverless-safe version-gating primitives required by covered Kibana and Fleet entities. The factory contract SHALL use the Kibana OpenAPI configuration surface as the only Kibana connection contract and SHALL NOT expose or require `github.com/disaster37/go-kibana-rest` as part of provider wiring.
 
 The Kibana scoped client's public version-gating surface SHALL consist of `EnforceMinVersion(ctx, minVersion) (bool, diag.Diagnostics)`, `EnforceVersionCheck(ctx, check) (bool, diag.Diagnostics)`, and automatic enforcement of `entitycore.WithVersionRequirements` by the Kibana resource envelope. Both `EnforceMinVersion` and `EnforceVersionCheck` SHALL short-circuit to `true` when the server build flavor is `"serverless"`. The Kibana scoped client SHALL NOT expose `ServerVersion()` or `ServerFlavor()` as public methods; raw version and flavor accessors SHALL be package-private to `internal/clients` so that all version-gated decisions go through serverless-aware primitives.
