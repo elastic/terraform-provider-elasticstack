@@ -18,17 +18,29 @@
 package defaultdataview
 
 import (
-	"context"
+	"reflect"
+	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/stretchr/testify/require"
 )
 
-func updateDefaultDataView(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	req entitycore.KibanaWriteRequest[defaultDataViewModel],
-) (entitycore.KibanaWriteResult[defaultDataViewModel], diag.Diagnostics) {
-	return writeDefaultDataView(ctx, client, req)
+func TestDefaultDataViewModel_satisfiesKibanaResourceModel(t *testing.T) {
+	t.Parallel()
+	var _ entitycore.KibanaResourceModel = defaultDataViewModel{}
+}
+
+func TestResource_embedsEntityCoreKibanaResource(t *testing.T) {
+	t.Parallel()
+	rt := reflect.TypeFor[Resource]()
+	field, ok := rt.FieldByName("KibanaResource")
+	require.True(t, ok)
+	require.True(t, field.Anonymous)
+	require.Equal(t, reflect.TypeFor[*entitycore.KibanaResource[defaultDataViewModel]](), field.Type)
+}
+
+func TestNewResource_satisfiesFrameworkInterfaces(t *testing.T) {
+	t.Parallel()
+	var _ resource.ResourceWithConfigure = newResource()
 }
