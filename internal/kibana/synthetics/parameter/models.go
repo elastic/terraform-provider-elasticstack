@@ -37,6 +37,9 @@ type Model struct {
 	ShareAcrossSpaces types.Bool     `tfsdk:"share_across_spaces"`
 }
 
+var _ entitycore.KibanaResourceModel = Model{}
+var _ entitycore.KibanaUnscopedSpace = Model{}
+
 func (m Model) GetID() types.String         { return m.ID }
 func (m Model) GetResourceID() types.String { return m.ID }
 func (m Model) GetSpaceID() types.String    { return types.StringValue("") }

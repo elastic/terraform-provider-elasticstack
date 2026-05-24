@@ -47,22 +47,18 @@ func readPrivateLocation(ctx context.Context, client *clients.KibanaScopedClient
 
 	readModel := modelFromAPI(*result, spaceID)
 	readModel.KibanaConnection = model.KibanaConnection
-	readModel.Geo = preserveGeoFromInput(model.Geo, readModel.Geo)
+	readModel.Geo = preserveGeoFromInput(ctx, model.Geo, readModel.Geo)
 
 	return readModel, true, diags
 }
 
 // preserveGeoFromInput keeps the input geo when it is semantically equal to the
 // API value under float32 precision; otherwise the API value is used.
-func preserveGeoFromInput(input, api *tfGeoConfigV0) *tfGeoConfigV0 {
-	if input == nil {
+func preserveGeoFromInput(ctx context.Context, input, api *tfGeoConfigV0) *tfGeoConfigV0 {
+	if input == nil || api == nil {
 		return api
 	}
-	if api == nil {
-		return input
-	}
 
-	ctx := context.Background()
 	latEqual, _ := input.Lat.Float64SemanticEquals(ctx, api.Lat)
 	lonEqual, _ := input.Lon.Float64SemanticEquals(ctx, api.Lon)
 	if latEqual && lonEqual {

@@ -38,6 +38,9 @@ type Model struct {
 	Geo           *tfGeoConfigV0 `tfsdk:"geo"`
 }
 
+var _ entitycore.KibanaResourceModel = Model{}
+var _ entitycore.WithVersionRequirements = Model{}
+
 func (m Model) GetID() types.String         { return m.ID }
 func (m Model) GetResourceID() types.String { return m.ID }
 func (m Model) GetSpaceID() types.String    { return m.SpaceID }
