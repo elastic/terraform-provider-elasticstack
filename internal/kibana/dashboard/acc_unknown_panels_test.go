@@ -112,9 +112,9 @@ func replaceDashboardPanelWithLensDashboardApp(t *testing.T, dashboardID string)
 		return fmt.Errorf("failed to create Kibana scoped client: %w", err)
 	}
 
-	kibanaClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		return fmt.Errorf("failed to get Kibana OAPI client: %w", err)
+	kibanaClient, diags := client.GetKibanaOapiClient()
+	if diags.HasError() {
+		return fmt.Errorf("failed to get Kibana OAPI client: %v", diags)
 	}
 
 	getURL := fmt.Sprintf("%s/api/dashboards/%s", kibanaClient.URL, dashboardID)

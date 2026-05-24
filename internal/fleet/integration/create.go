@@ -198,7 +198,7 @@ func waitForFleetIntegrationInstalled(ctx context.Context, fleetClient *fleet.Cl
 	return asyncutils.WaitForStateTransition(ctx, "fleet integration", getPackageID(name, version), func(ctx context.Context) (bool, error) {
 		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)
 		if getDiags.HasError() {
-			return false, fmt.Errorf("failed to read package installation status: %s", getDiags[0].Summary())
+			return false, fmt.Errorf("failed to read package installation status: %v", getDiags)
 		}
 		if pkg == nil {
 			return false, nil

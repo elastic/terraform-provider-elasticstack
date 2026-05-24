@@ -51,9 +51,9 @@ func (r *PrebuiltRuleResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	client, err := apiClient.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
+	client, getDiags := apiClient.GetKibanaOapiClient()
+	if getDiags.HasError() {
+		resp.Diagnostics.Append(getDiags...)
 		return
 	}
 

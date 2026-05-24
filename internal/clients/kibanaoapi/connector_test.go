@@ -242,8 +242,8 @@ func TestGetConnectorByName(t *testing.T) {
 	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 
-	oapiClient, err := apiClient.GetKibanaOapiClient()
-	require.NoError(t, err)
+	oapiClient, diags := apiClient.GetKibanaOapiClient()
+	require.Empty(t, diags)
 
 	connector, diags := kibanaoapi.SearchConnectors(t.Context(), oapiClient, "my-connector", "default", "")
 	require.False(t, diags.HasError())

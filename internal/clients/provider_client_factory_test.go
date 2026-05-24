@@ -82,8 +82,8 @@ func TestGetKibanaClient_EmptyList(t *testing.T) {
 	require.NotNil(t, scoped)
 
 	// The scoped client must expose a Kibana OpenAPI client.
-	_, err := scoped.GetKibanaOapiClient()
-	require.NoError(t, err, "Kibana OpenAPI client must be present on provider-default scoped client")
+	_, diags = scoped.GetKibanaOapiClient()
+	require.Empty(t, diags, "Kibana OpenAPI client must be present on provider-default scoped client")
 }
 
 // TestGetKibanaClient_NullList verifies that a null kibana_connection is treated
@@ -130,10 +130,10 @@ func TestGetKibanaClient_WithConnection(t *testing.T) {
 	require.NotNil(t, scoped)
 
 	// The scoped client must expose Kibana-derived surfaces.
-	_, err := scoped.GetKibanaOapiClient()
-	require.NoError(t, err)
+	_, diags = scoped.GetKibanaOapiClient()
+	require.Empty(t, diags)
 
-	_, err = scoped.GetFleetClient()
+	_, err := scoped.GetFleetClient()
 	require.NoError(t, err)
 }
 
@@ -237,8 +237,8 @@ func TestNewKibanaScopedClientFromFactory_Valid(t *testing.T) {
 	f := newTestFactory(t)
 	result := NewKibanaScopedClientFromFactory(f)
 	require.NotNil(t, result)
-	_, err := result.GetKibanaOapiClient()
-	require.NoError(t, err)
+	_, diags := result.GetKibanaOapiClient()
+	require.Empty(t, diags)
 }
 
 // --- Scenario 8: Entity-local elasticsearch_connection with missing endpoint ---
@@ -324,11 +324,11 @@ func TestGetKibanaClient_EntityLocalMissingEndpoint(t *testing.T) {
 
 	// Calling GetKibanaOapiClient on the scoped client must produce the actionable
 	// endpoint-missing error.
-	client, err := scoped.GetKibanaOapiClient()
+	client, diags := scoped.GetKibanaOapiClient()
 	assert.Nil(t, client)
-	require.Error(t, err)
+	require.True(t, diags.HasError())
 	assert.Equal(t,
 		"kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT",
-		err.Error(),
+		diags[0].Summary(),
 	)
 }

@@ -367,8 +367,8 @@ func TestAccResourceOutputRemoteElasticsearch(t *testing.T) {
 
 	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
-	kibanaOapiClient, err := client.GetKibanaOapiClient()
-	require.NoError(t, err)
+	kibanaOapiClient, diags := client.GetKibanaOapiClient()
+	require.Empty(t, diags)
 	remote := true
 	resp, err := kibanaOapiClient.API.PostFleetServiceTokensWithResponse(t.Context(), kbapi.PostFleetServiceTokensJSONRequestBody{
 		Remote: &remote,
@@ -662,8 +662,8 @@ func promoteFleetDefaultOutput(t *testing.T) func() {
 		t.Helper()
 		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 		require.NoError(t, err)
-		kbClient, err := client.GetKibanaOapiClient()
-		require.NoError(t, err)
+		kbClient, diags := client.GetKibanaOapiClient()
+		require.Empty(t, diags)
 
 		body := strings.NewReader(`{
 			"name": "default",

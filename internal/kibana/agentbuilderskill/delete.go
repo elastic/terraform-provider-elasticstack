@@ -26,9 +26,9 @@ import (
 )
 
 func deleteSkill(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, _ skillModel) diag.Diagnostics {
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic(err.Error(), "")}
+	oapiClient, getDiags := client.GetKibanaOapiClient()
+	if getDiags.HasError() {
+		return getDiags
 	}
 	return kibanaoapi.DeleteSkill(ctx, oapiClient, spaceID, resourceID)
 }

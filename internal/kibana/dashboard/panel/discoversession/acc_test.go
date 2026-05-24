@@ -45,9 +45,9 @@ func createSearchSavedObjectForDiscoverRef(t *testing.T, id string) error {
 	if err != nil {
 		return fmt.Errorf("kibana client: %w", err)
 	}
-	kibanaClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		return fmt.Errorf("kibana oapi client: %w", err)
+	kibanaClient, diags := client.GetKibanaOapiClient()
+	if diags.HasError() {
+		return fmt.Errorf("kibana oapi client: %v", diags)
 	}
 
 	searchSource := map[string]any{
@@ -111,9 +111,9 @@ func deleteSearchSavedObjectForDiscoverRef(t *testing.T, id string) {
 		t.Logf("discover_session acc cleanup: kibana client: %v", err)
 		return
 	}
-	kibanaClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		t.Logf("discover_session acc cleanup: kibana oapi client: %v", err)
+	kibanaClient, diags := client.GetKibanaOapiClient()
+	if diags.HasError() {
+		t.Logf("discover_session acc cleanup: kibana oapi client: %v", diags)
 		return
 	}
 

@@ -26,11 +26,9 @@ import (
 )
 
 func deleteRole(ctx context.Context, client *clients.KibanaScopedClient, resourceID, _ string, _ resourceModel) diag.Diagnostics {
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		return diag.Diagnostics{
-			diag.NewErrorDiagnostic("Unable to get Kibana OpenAPI client", err.Error()),
-		}
+	oapiClient, getDiags := client.GetKibanaOapiClient()
+	if getDiags.HasError() {
+		return getDiags
 	}
 	return kibanaoapi.DeleteSecurityRole(ctx, oapiClient, resourceID)
 }

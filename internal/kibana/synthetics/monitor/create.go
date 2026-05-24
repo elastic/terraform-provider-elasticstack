@@ -43,7 +43,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	oapiClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, response.Diagnostics)
+	oapiClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, &response.Diagnostics)
 	if oapiClient == nil {
 		return
 	}
