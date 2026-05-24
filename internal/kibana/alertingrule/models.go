@@ -330,90 +330,88 @@ var (
 )
 
 // toAPIModel converts the Terraform model to the API model.
-// It also validates version-specific requirements based on the provided server version.
-func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *version.Version) (models.AlertingRule, diag.Diagnostics) {
+// It also validates version-specific requirements based on the resolved feature flags.
+func (m alertingRuleModel) toAPIModel(ctx context.Context, features alertingRuleFeatures) (models.AlertingRule, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Validate version-specific requirements
-	if serverVersion != nil {
-		// notify_when is required until v8.6
-		if !typeutils.IsKnown(m.NotifyWhen) || m.NotifyWhen.ValueString() == "" {
-			if serverVersion.LessThan(frequencyMinSupportedVersion) {
+	// notify_when is required until v8.6
+	if !typeutils.IsKnown(m.NotifyWhen) || m.NotifyWhen.ValueString() == "" {
+		if !features.SupportsFrequency {
+			diags.AddError(
+				"notify_when is required until v8.6",
+				"notify_when is required until v8.6",
+			)
+			return models.AlertingRule{}, diags
+		}
+	}
+
+	// alert_delay is only supported from v8.13+
+	if typeutils.IsKnown(m.AlertDelay) && !m.AlertDelay.IsNull() {
+		if !features.SupportsAlertDelay {
+			diags.AddError(
+				"alert_delay is only supported for Elasticsearch v8.13 or higher",
+				"alert_delay is only supported for Elasticsearch v8.13 or higher",
+			)
+			return models.AlertingRule{}, diags
+		}
+	}
+
+	// flapping is only supported from Kibana v8.16+
+	if typeutils.IsKnown(m.Flapping) && !m.Flapping.IsNull() {
+		if !features.SupportsFlapping {
+			diags.AddError(
+				"flapping is only supported for Kibana v8.16 or higher",
+				"flapping is only supported for Kibana v8.16 or higher",
+			)
+			return models.AlertingRule{}, diags
+		}
+
+		var fm flappingModel
+		diags.Append(m.Flapping.As(ctx, &fm, basetypes.ObjectAsOptions{})...)
+		if diags.HasError() {
+			return models.AlertingRule{}, diags
+		}
+		// flapping.enabled is only supported from Elastic Stack 9.3+
+		if typeutils.IsKnown(fm.Enabled) && !fm.Enabled.IsNull() {
+			if !features.SupportsFlappingEnabled {
 				diags.AddError(
-					"notify_when is required until v8.6",
-					"notify_when is required until v8.6",
+					"flapping.enabled is only supported for Elastic Stack 9.3 or higher",
+					"flapping.enabled is only supported for Elastic Stack 9.3 or higher",
 				)
 				return models.AlertingRule{}, diags
 			}
 		}
+	}
 
-		// alert_delay is only supported from v8.13+
-		if typeutils.IsKnown(m.AlertDelay) && !m.AlertDelay.IsNull() {
-			if serverVersion.LessThan(alertDelayMinSupportedVersion) {
-				diags.AddError(
-					"alert_delay is only supported for Elasticsearch v8.13 or higher",
-					"alert_delay is only supported for Elasticsearch v8.13 or higher",
-				)
-				return models.AlertingRule{}, diags
-			}
+	// Validate version-specific requirements for actions
+	if typeutils.IsKnown(m.Actions) && !m.Actions.IsNull() {
+		var actions []actionModel
+		diags.Append(m.Actions.ElementsAs(ctx, &actions, false)...)
+		if diags.HasError() {
+			return models.AlertingRule{}, diags
 		}
 
-		// flapping is only supported from Kibana v8.16+
-		if typeutils.IsKnown(m.Flapping) && !m.Flapping.IsNull() {
-			if serverVersion.LessThan(flappingMinSupportedVersion) {
-				diags.AddError(
-					"flapping is only supported for Kibana v8.16 or higher",
-					"flapping is only supported for Kibana v8.16 or higher",
-				)
-				return models.AlertingRule{}, diags
-			}
-
-			var fm flappingModel
-			diags.Append(m.Flapping.As(ctx, &fm, basetypes.ObjectAsOptions{})...)
-			if diags.HasError() {
-				return models.AlertingRule{}, diags
-			}
-			// flapping.enabled is only supported from Elastic Stack 9.3+
-			if typeutils.IsKnown(fm.Enabled) && !fm.Enabled.IsNull() {
-				if serverVersion.LessThan(flappingEnabledMinSupportedVersion) {
+		for _, action := range actions {
+			// Check frequency version requirement
+			if typeutils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
+				if !features.SupportsFrequency {
 					diags.AddError(
-						"flapping.enabled is only supported for Elastic Stack 9.3 or higher",
-						"flapping.enabled is only supported for Elastic Stack 9.3 or higher",
+						"actions.frequency is only supported for Kibana v8.6 or higher",
+						"actions.frequency is only supported for Kibana v8.6 or higher",
 					)
 					return models.AlertingRule{}, diags
 				}
 			}
-		}
 
-		// Validate version-specific requirements for actions
-		if typeutils.IsKnown(m.Actions) && !m.Actions.IsNull() {
-			var actions []actionModel
-			diags.Append(m.Actions.ElementsAs(ctx, &actions, false)...)
-			if diags.HasError() {
-				return models.AlertingRule{}, diags
-			}
-
-			for _, action := range actions {
-				// Check frequency version requirement
-				if typeutils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
-					if serverVersion.LessThan(frequencyMinSupportedVersion) {
-						diags.AddError(
-							"actions.frequency is only supported for Kibana v8.6 or higher",
-							"actions.frequency is only supported for Kibana v8.6 or higher",
-						)
-						return models.AlertingRule{}, diags
-					}
-				}
-
-				// Check alerts_filter version requirement
-				if typeutils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
-					if serverVersion.LessThan(alertsFilterMinSupportedVersion) {
-						diags.AddError(
-							"actions.alerts_filter is only supported for Kibana v8.9 or higher",
-							"actions.alerts_filter is only supported for Kibana v8.9 or higher",
-						)
-						return models.AlertingRule{}, diags
-					}
+			// Check alerts_filter version requirement
+			if typeutils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
+				if !features.SupportsAlertsFilter {
+					diags.AddError(
+						"actions.alerts_filter is only supported for Kibana v8.9 or higher",
+						"actions.alerts_filter is only supported for Kibana v8.9 or higher",
+					)
+					return models.AlertingRule{}, diags
 				}
 			}
 		}
