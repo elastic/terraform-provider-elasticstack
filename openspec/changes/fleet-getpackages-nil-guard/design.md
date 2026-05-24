@@ -2,7 +2,7 @@
 
 The Fleet integration data source (`internal/fleet/integration_ds/read.go`) calls `GetPackages` (`internal/clients/fleet/packages.go`) to retrieve the list of available packages. The generated kbapi function `ParseGetFleetEpmPackagesResponse` (in `generated/kbapi/kibana.gen.go`) only populates the `JSON200` field of the response struct when both the HTTP status is 200 **and** the `Content-Type` header contains the string `"json"`. If `Content-Type` is absent or does not contain `"json"`, the field stays `nil`. `GetPackages` asserts a 200 status code in its `switch` branch but never checks whether `resp.JSON200` is non-nil before dereferencing it. The result is a nil pointer dereference (SIGSEGV) that crashes the provider.
 
-The same race exists in the prerelease-parameter compatibility retry path: if `retryResp.StatusCode() == http.StatusOK` is true but `retryResp.JSON200` is nil (for the same reason), the next line panics.
+The same issue exists in the prerelease-parameter compatibility retry path: if `retryResp.StatusCode() == http.StatusOK` is true but `retryResp.JSON200` is nil (for the same reason), the next line panics.
 
 ## Goals / Non-Goals
 
