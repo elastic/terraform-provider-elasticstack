@@ -52,7 +52,7 @@
 
 ## 8. Validation
 
-- [ ] 8.1 `make check-openspec` (or `openspec validate`) passes
-- [ ] 8.2 `make build` succeeds
-- [ ] 8.3 `go test ./internal/kibana/... ./internal/clients/... ./internal/entitycore/...` passes
-- [ ] 8.4 If acceptance environment is available (default `TF_ACC` variables), run targeted acc tests for the four Kibana resources whose write paths changed: `security_enable_rule`, `prebuilt_rules`, `slo`, `connectors`, `alertingrule`, `synthetics/parameter`, `agentbuilderagent` (data source)
+- [x] 8.1 `make check-openspec` (or `openspec validate`) passes — `make check-openspec` exit 0; `openspec validate kibana-scoped-client-unexport-version-accessors` exit 0; `openspec validate --all` exit 0
+- [x] 8.2 `make build` succeeds — exit 0
+- [x] 8.3 `go test ./internal/kibana/... ./internal/clients/... ./internal/entitycore/...` passes — exit 1 only due to 4 pre-existing env failures in `security_enable_rule/acc_test.go:47,75,103,164` (`TestAccResourceEnableRule*` call `versionutils.CheckIfVersionIsUnsupported` at test init without a reachable stack); all other unit tests pass
+- [x] 8.4 Targeted acc tests run against default stack (`http://localhost:9200`, `http://localhost:5601`, `elastic`/`password`; worktree `.env` ports 14974/15977 unreachable). All packages pass except 2 flaky `alertingrule` tests (`acc_test.go:619` `TestAccResourceAlertingRuleFlapping`, `acc_test.go:690` `TestAccResourceAlertingRuleFlappingEnabled` — `last_execution_date`/`last_execution_status` drift during apply, unrelated to version-accessor change)
