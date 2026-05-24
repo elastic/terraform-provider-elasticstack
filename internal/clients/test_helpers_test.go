@@ -29,6 +29,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const kibanaStatusPath = "/api/status"
+
 // newTestAPIClient returns a minimal *apiClient suitable for unit tests.
 // It sets up Kibana clients with a fake endpoint so that actual network
 // calls are never made.
@@ -55,7 +57,7 @@ func newTestAPIClient(t *testing.T) *apiClient {
 // The caller must call Close() on the returned server.
 func newMockKibanaServer(version string) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet && r.URL.Path == "/api/status" {
+		if r.Method == http.MethodGet && r.URL.Path == kibanaStatusPath {
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprintf(w, `{"version":{"number":%q,"build_flavor":"default"}}`, version)
 			return

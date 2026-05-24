@@ -197,7 +197,7 @@ func TestKibanaScopedClient_EnforceMinVersion_ViaFactory(t *testing.T) {
 // EnforceMinVersion always returns true for serverless Kibana.
 func TestKibanaScopedClient_ServerlessEnforceMinVersion(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet && r.URL.Path == "/api/status" {
+		if r.Method == http.MethodGet && r.URL.Path == kibanaStatusPath {
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprintf(w, `{"version":{"number":"8.19.0","build_flavor":"serverless"}}`)
 			return

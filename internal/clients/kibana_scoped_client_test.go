@@ -102,7 +102,7 @@ func newKibanaScopedClientFleetFromKibana(t *testing.T, kibanaURL string) *Kiban
 func newKibanaScopedClientWithStatusServer(t *testing.T, version, flavor string) *KibanaScopedClient {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet && r.URL.Path == "/api/status" {
+		if r.Method == http.MethodGet && r.URL.Path == kibanaStatusPath {
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprintf(w, `{"version":{"number":%q,"build_flavor":%q}}`, version, flavor)
 			return
@@ -306,7 +306,7 @@ func TestKibanaScopedClient_EnforceMinVersion_MalformedVersionResponse(t *testin
 func TestKibanaScopedClient_EnforceMinVersion_StatusAPIError(t *testing.T) {
 	t.Parallel()
 	sc := newKibanaScopedClientWithStatusHandler(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet && r.URL.Path == "/api/status" {
+		if r.Method == http.MethodGet && r.URL.Path == kibanaStatusPath {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -323,7 +323,7 @@ func TestKibanaScopedClient_EnforceMinVersion_StatusAPIError(t *testing.T) {
 func TestKibanaScopedClient_EnforceMinVersion_InvalidJSONResponse(t *testing.T) {
 	t.Parallel()
 	sc := newKibanaScopedClientWithStatusHandler(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet && r.URL.Path == "/api/status" {
+		if r.Method == http.MethodGet && r.URL.Path == kibanaStatusPath {
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprint(w, `{invalid json`)
 			return
@@ -404,7 +404,7 @@ func TestKibanaScopedClient_EnforceVersionCheck_MalformedVersionResponse(t *test
 func TestKibanaScopedClient_EnforceVersionCheck_StatusAPIError(t *testing.T) {
 	t.Parallel()
 	sc := newKibanaScopedClientWithStatusHandler(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet && r.URL.Path == "/api/status" {
+		if r.Method == http.MethodGet && r.URL.Path == kibanaStatusPath {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -419,7 +419,7 @@ func TestKibanaScopedClient_EnforceVersionCheck_StatusAPIError(t *testing.T) {
 func TestKibanaScopedClient_EnforceVersionCheck_InvalidJSONResponse(t *testing.T) {
 	t.Parallel()
 	sc := newKibanaScopedClientWithStatusHandler(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet && r.URL.Path == "/api/status" {
+		if r.Method == http.MethodGet && r.URL.Path == kibanaStatusPath {
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprint(w, `{invalid json`)
 			return
