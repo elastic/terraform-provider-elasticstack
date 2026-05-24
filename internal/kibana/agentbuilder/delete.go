@@ -15,17 +15,26 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package agentbuilderagent
+package agentbuilder
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func deleteAgent(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, m agentModel) diag.Diagnostics {
-	return agentbuilder.DeleteResource(ctx, client, resourceID, spaceID, m, kibanaoapi.DeleteAgent)
+// DeleteFunc is the signature for package-level kibanaoapi delete helpers.
+type DeleteFunc func(ctx context.Context, client *kibanaoapi.Client, spaceID, resourceID string) diag.Diagnostics
+
+// DeleteResource acquires the Kibana OpenAPI client and delegates to fn.
+// The model parameter is accepted but ignored; it exists solely so callers can
+// satisfy the entitycore kibanaDeleteFunc[T] signature without an adapter.
+func DeleteResource[M any](ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ M, fn DeleteFunc) diag.Diagnostics {
+	oapiClient, getDiags := client.GetKibanaOapiClient()
+	if getDiags.HasError() {
+		return getDiags
+	}
+	return fn(ctx, oapiClient, spaceID, resourceID)
 }
