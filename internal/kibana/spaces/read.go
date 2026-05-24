@@ -31,9 +31,9 @@ import (
 func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config dataSourceModel) (dataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	oapiClient, err := kbClient.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("unable to get Kibana OpenAPI client", err.Error())
+	oapiClient, d := kbClient.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
 		return config, diags
 	}
 
@@ -90,11 +90,9 @@ func fetchSpace(ctx context.Context, oapiClient *kibanaoapi.Client, spaceID stri
 
 // readSpaceResource is the resource read callback for a single Kibana space.
 func readSpaceResource(ctx context.Context, client *clients.KibanaScopedClient, resourceID, _ string, model resourceModel) (resourceModel, bool, diag.Diagnostics) {
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		var diags diag.Diagnostics
-		diags.AddError("unable to get Kibana OpenAPI client", err.Error())
-		return model, false, diags
+	oapiClient, getDiags := client.GetKibanaOapiClient()
+	if getDiags.HasError() {
+		return model, false, getDiags
 	}
 
 	space, found, fwDiags := fetchSpace(ctx, oapiClient, resourceID)

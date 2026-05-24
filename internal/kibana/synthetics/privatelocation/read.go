@@ -41,7 +41,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		return
 	}
 
-	kibanaClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, response.Diagnostics)
+	kibanaClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, &response.Diagnostics)
 	if kibanaClient == nil {
 		return
 	}

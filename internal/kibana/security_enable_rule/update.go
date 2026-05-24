@@ -52,9 +52,9 @@ func (r *EnableRuleResource) upsert(ctx context.Context, plan tfsdk.Plan, state 
 		return diags
 	}
 
-	client, err := apiClient.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError(err.Error(), "Failed to get Kibana client")
+	client, d := apiClient.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
 		return diags
 	}
 

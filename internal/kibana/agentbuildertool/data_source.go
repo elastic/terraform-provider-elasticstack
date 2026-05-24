@@ -101,9 +101,9 @@ func readToolDataSource(ctx context.Context, client *clients.KibanaScopedClient,
 		return config, diags
 	}
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("unable to get Kibana client", err.Error())
+	oapiClient, d := client.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
 		return config, diags
 	}
 

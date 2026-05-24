@@ -31,9 +31,9 @@ import (
 func readExceptionList(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, prior ExceptionListModel) (ExceptionListModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Failed to get Kibana client", err.Error())
+	oapiClient, getDiags := client.GetKibanaOapiClient()
+	diags.Append(getDiags...)
+	if diags.HasError() {
 		return prior, false, diags
 	}
 

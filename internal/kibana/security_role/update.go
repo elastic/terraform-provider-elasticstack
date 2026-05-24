@@ -43,9 +43,9 @@ func updateRole(ctx context.Context, client *clients.KibanaScopedClient, req ent
 		diags.AddError("Internal error", "resource name mismatch during update")
 		return entitycore.KibanaWriteResult[resourceModel]{Model: prior}, diags
 	}
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Unable to get Kibana OpenAPI client", err.Error())
+	oapiClient, d := client.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
 		return entitycore.KibanaWriteResult[resourceModel]{Model: prior}, diags
 	}
 	createOnly := false

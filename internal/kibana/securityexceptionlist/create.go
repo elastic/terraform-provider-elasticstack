@@ -35,9 +35,9 @@ func createExceptionList(
 	m := req.Plan
 	var diags diag.Diagnostics
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Failed to get Kibana client", err.Error())
+	oapiClient, getDiags := client.GetKibanaOapiClient()
+	diags.Append(getDiags...)
+	if diags.HasError() {
 		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
 	}
 

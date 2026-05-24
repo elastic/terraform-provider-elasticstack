@@ -41,12 +41,9 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 	}
 
 	// Create the rule using kbapi client
-	kbClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error getting Kibana client",
-			"Could not get Kibana OAPI client: "+err.Error(),
-		)
+	kbClient, getDiags := client.GetKibanaOapiClient()
+	if getDiags.HasError() {
+		resp.Diagnostics.Append(getDiags...)
 		return
 	}
 

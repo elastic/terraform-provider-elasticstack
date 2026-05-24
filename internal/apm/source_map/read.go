@@ -64,9 +64,9 @@ func (r *resourceSourceMap) read(ctx context.Context, state *SourceMap) (*Source
 		return nil, diags
 	}
 
-	kibana, err := scoped.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Unable to get Kibana client", err.Error())
+	kibana, d := scoped.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
 		return nil, diags
 	}
 

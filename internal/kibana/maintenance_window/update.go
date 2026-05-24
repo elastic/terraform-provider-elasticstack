@@ -31,9 +31,9 @@ func updateMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedCl
 	plan := req.Plan
 	var diags diag.Diagnostics
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Unable to get Kibana client", err.Error())
+	oapiClient, d := client.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 

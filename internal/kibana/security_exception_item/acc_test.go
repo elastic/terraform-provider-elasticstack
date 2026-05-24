@@ -1121,9 +1121,9 @@ func checkResourceExceptionItemDestroy(s *terraform.State) error {
 		return err
 	}
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		return err
+	oapiClient, getDiags := client.GetKibanaOapiClient()
+	if getDiags.HasError() {
+		return fmt.Errorf("failed to get kibana client: %v", getDiags)
 	}
 
 	for _, rs := range s.RootModule().Resources {

@@ -44,9 +44,9 @@ func writeDefaultDataView(
 	plan := req.Plan
 	var diags diag.Diagnostics
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("unable to get kibana client", err.Error())
+	oapiClient, d := client.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
 		return entitycore.KibanaWriteResult[defaultDataViewModel]{}, diags
 	}
 

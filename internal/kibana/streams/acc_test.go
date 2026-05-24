@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -62,9 +63,9 @@ func prepareStreamsEnvironment(t *testing.T) {
 		t.Logf("prepareStreamsEnvironment: could not create Kibana client: %v", err)
 		return
 	}
-	kibanaClient, err := kibanaAPIClient.GetKibanaOapiClient()
-	if err != nil {
-		t.Logf("prepareStreamsEnvironment: could not get Kibana client: %v", err)
+	kibanaClient, diags := kibanaAPIClient.GetKibanaOapiClient()
+	if diags.HasError() {
+		t.Logf("prepareStreamsEnvironment: could not get Kibana client: %v", diags)
 		return
 	}
 
@@ -143,7 +144,7 @@ func prepareStreamsEnvironment(t *testing.T) {
 		Rules:      []string{},
 		Queries:    []kibanaoapi.StreamQuery{},
 	}
-	_, diags := kibanaoapi.UpsertStream(context.Background(), kibanaClient, "default", logsRoot, req)
+	_, diags = kibanaoapi.UpsertStream(context.Background(), kibanaClient, "default", logsRoot, req)
 	if diags.HasError() {
 		t.Logf("prepareStreamsEnvironment: configuring %s failed: %s — %s",
 			logsRoot, diags[0].Summary(), diags[0].Detail())
@@ -302,9 +303,9 @@ func checkQueryStreamsEnabled() func() (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		kibanaClient, err := apiClient.GetKibanaOapiClient()
-		if err != nil {
-			return false, err
+		kibanaClient, getDiags := apiClient.GetKibanaOapiClient()
+		if getDiags.HasError() {
+			return false, fmt.Errorf("failed to get kibana client: %v", getDiags)
 		}
 		// Use logs.otel as parent (it is always present on 9.4+ SNAPSHOT installs).
 		// The view must be "$.{stream_name}" — the API enforces this convention.

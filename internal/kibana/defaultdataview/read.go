@@ -29,9 +29,9 @@ import (
 func readDefaultDataView(ctx context.Context, client *clients.KibanaScopedClient, _, spaceID string, model defaultDataViewModel) (defaultDataViewModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("unable to get kibana client", err.Error())
+	oapiClient, d := client.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
 		return model, false, diags
 	}
 

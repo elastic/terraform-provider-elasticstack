@@ -99,12 +99,12 @@ func newKibanaScopedClientFleetFromKibana(t *testing.T, kibanaURL string) *Kiban
 func TestKibanaScopedClient_GetKibanaOapiClient_MissingEndpoint(t *testing.T) {
 	t.Parallel()
 	sc := newKibanaScopedClientNoEndpoint(t)
-	client, err := sc.GetKibanaOapiClient()
+	client, diags := sc.GetKibanaOapiClient()
 	assert.Nil(t, client, "GetKibanaOapiClient must return nil client when kibana endpoint is missing")
-	require.Error(t, err)
+	require.True(t, diags.HasError())
 	assert.Equal(t,
 		"kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT",
-		err.Error(),
+		diags[0].Summary(),
 	)
 }
 
@@ -122,13 +122,13 @@ func TestKibanaScopedClient_GetKibanaOapiClient_NilClientNoEndpoint_BlocksLocalh
 		kibanaOapi:     nil,
 		kibanaEndpoint: "",
 	}
-	client, err := sc.GetKibanaOapiClient()
+	client, diags := sc.GetKibanaOapiClient()
 	assert.Nil(t, client)
-	require.Error(t, err,
+	require.True(t, diags.HasError(),
 		"GetKibanaOapiClient must return an error (not silently fall back to localhost) when endpoint is empty")
 	assert.Equal(t,
 		"kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT",
-		err.Error(),
+		diags[0].Summary(),
 	)
 }
 
@@ -166,8 +166,8 @@ func TestKibanaScopedClient_GetFleetClient_InheritedFromKibana(t *testing.T) {
 func TestKibanaScopedClient_GetKibanaOapiClient_EndpointPresentNoAuth(t *testing.T) {
 	t.Parallel()
 	sc := newKibanaScopedClientWithEndpointNoAuth(t, "http://kibana.example.com:5601")
-	client, err := sc.GetKibanaOapiClient()
-	require.NoError(t, err,
+	client, diags := sc.GetKibanaOapiClient()
+	require.Empty(t, diags,
 		"GetKibanaOapiClient must not fail when endpoint is present but auth fields are empty")
 	assert.NotNil(t, client)
 }

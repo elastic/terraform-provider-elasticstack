@@ -29,9 +29,9 @@ import (
 func deleteSecurityListItem(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ Model) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Failed to get Kibana client", err.Error())
+	oapiClient, getDiags := client.GetKibanaOapiClient()
+	diags.Append(getDiags...)
+	if diags.HasError() {
 		return diags
 	}
 
