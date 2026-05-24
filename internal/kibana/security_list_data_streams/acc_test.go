@@ -107,7 +107,7 @@ func checkResourceListDataStreamsDestroy(s *terraform.State) error {
 
 	oapiClient, getDiags := client.GetKibanaOapiClient()
 	if getDiags.HasError() {
-		return err
+		return fmt.Errorf("failed to get kibana client: %v", getDiags)
 	}
 
 	for _, rs := range s.RootModule().Resources {

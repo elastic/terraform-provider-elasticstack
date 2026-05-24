@@ -48,8 +48,8 @@ func resolveFieldAttrsDataView(s *terraform.State) (*kibanaoapi.Client, string, 
 	}
 	kc, getDiags := apiClient.GetKibanaOapiClient()
 	if getDiags.HasError() {
-return nil, "", "", fmt.Errorf("kibana openapi client: %v", diags)
-}
+		return nil, "", "", fmt.Errorf("kibana openapi client: %v", getDiags)
+	}
 	return kc, composite.ClusterID, composite.ResourceID, nil
 }
 

@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -304,7 +305,7 @@ func checkQueryStreamsEnabled() func() (bool, error) {
 		}
 		kibanaClient, getDiags := apiClient.GetKibanaOapiClient()
 		if getDiags.HasError() {
-			return false, err
+			return false, fmt.Errorf("failed to get kibana client: %v", getDiags)
 		}
 		// Use logs.otel as parent (it is always present on 9.4+ SNAPSHOT installs).
 		// The view must be "$.{stream_name}" — the API enforces this convention.
