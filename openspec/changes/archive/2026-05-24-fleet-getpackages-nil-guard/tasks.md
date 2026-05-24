@@ -1,6 +1,6 @@
 ## 1. Add nil guard on primary response
 
-- [ ] 1.1 In `internal/clients/fleet/packages.go`, inside `case http.StatusOK` of `GetPackages`, add a nil check before `return resp.JSON200.Items, nil`:
+- [x] 1.1 In `internal/clients/fleet/packages.go`, inside `case http.StatusOK` of `GetPackages`, add a nil check before `return resp.JSON200.Items, nil`:
 
   ```go
   case http.StatusOK:
@@ -17,7 +17,7 @@
 
 ## 2. Add nil guard on retry response
 
-- [ ] 2.1 In `internal/clients/fleet/packages.go`, inside the `if retryResp.StatusCode() == http.StatusOK` branch of `GetPackages`, add a nil check before `return retryResp.JSON200.Items, nil`:
+- [x] 2.1 In `internal/clients/fleet/packages.go`, inside the `if retryResp.StatusCode() == http.StatusOK` branch of `GetPackages`, add a nil check before `return retryResp.JSON200.Items, nil`:
 
   ```go
   if retryResp.StatusCode() == http.StatusOK {
@@ -35,6 +35,6 @@
 
 ## 3. OpenSpec
 
-- [ ] 3.1 Ensure the delta spec at `openspec/changes/fleet-getpackages-nil-guard/specs/fleet-integration/spec.md` is aligned with the implementation.
-- [ ] 3.2 Add a unit test in `internal/clients/fleet/*_test.go` using an `httptest` server that returns HTTP 200 with a non-JSON Content-Type, and verify `GetPackages` returns an error diagnostic instead of panicking.
+- [x] 3.1 Ensure the delta spec at `openspec/changes/fleet-getpackages-nil-guard/specs/fleet-integration/spec.md` is aligned with the implementation.
+- [x] 3.2 Add a unit test in `internal/clients/fleet/*_test.go` using an `httptest` server that returns HTTP 200 with a non-JSON Content-Type, and verify `GetPackages` returns an error diagnostic instead of panicking.
 - [ ] 3.3 After merge decision: sync into `openspec/specs/fleet-integration/spec.md` or archive the change per project workflow; run `make check-openspec`.
