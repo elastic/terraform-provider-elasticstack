@@ -347,9 +347,9 @@ func checkInferenceEndpointDestroy(s *terraform.State) error {
 
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		typedClient, err := client.GetESClient()
-		if err != nil {
-			return err
+		typedClient, diags := client.GetESClient()
+		if diags.HasError() {
+			return fmt.Errorf("failed to get elasticsearch client: %v", diags)
 		}
 
 		res, err := typedClient.Inference.Get().InferenceId(compID.ResourceID).Do(context.Background())

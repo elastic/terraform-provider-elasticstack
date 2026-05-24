@@ -44,14 +44,14 @@ func createAnomalyDetectionJob(ctx context.Context, client *clients.Elasticsearc
 
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML anomaly detection job: %s", jobID))
 
-	typedClient, err := client.GetESClient()
-	if err != nil {
-		diags.AddError("Failed to get Elasticsearch client", err.Error())
+	typedClient, clientDiags := client.GetESClient()
+	diags.Append(clientDiags...)
+	if diags.HasError() {
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
 	putReq := apiModel.toPutJobRequest()
-	_, err = typedClient.Ml.PutJob(jobID).Request(&putReq).Do(ctx)
+	_, err := typedClient.Ml.PutJob(jobID).Request(&putReq).Do(ctx)
 	if err != nil {
 		diags.AddError("Failed to create ML anomaly detection job", fmt.Sprintf("Unable to create ML anomaly detection job: %s — %s", jobID, err.Error()))
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags

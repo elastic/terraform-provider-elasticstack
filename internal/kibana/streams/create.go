@@ -22,11 +22,14 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func createStream(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, plan streamModel) (streamModel, diag.Diagnostics) {
+func createStream(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[streamModel]) (entitycore.KibanaWriteResult[streamModel], diag.Diagnostics) {
+	plan := req.Plan
+	spaceID := req.SpaceID
 	var diags diag.Diagnostics
 
 	// Classic streams cannot be created via the API — they must be imported.
@@ -38,22 +41,17 @@ func createStream(ctx context.Context, client *clients.KibanaScopedClient, space
 				fmt.Sprintf("To import: terraform import elasticstack_kibana_stream.<resource_name> '%s/%s'",
 					spaceID, plan.GetResourceID().ValueString()),
 		)
-		return streamModel{}, diags
+		return entitycore.KibanaWriteResult[streamModel]{}, diags
 	}
 
 	name := plan.GetResourceID().ValueString()
 	compositeID := clients.CompositeID{ClusterID: spaceID, ResourceID: name}
 	plan.ID = types.StringValue(compositeID.String())
 
-	readModel, upsertDiags := upsertStream(ctx, client, plan)
-	diags.Append(upsertDiags...)
+	diags.Append(writeStream(ctx, client, plan)...)
 	if diags.HasError() {
-		return streamModel{}, diags
-	}
-	if readModel == nil {
-		diags.AddError("Error reading stream after creation", "The stream was created but could not be read back.")
-		return streamModel{}, diags
+		return entitycore.KibanaWriteResult[streamModel]{}, diags
 	}
 
-	return *readModel, diags
+	return entitycore.KibanaWriteResult[streamModel]{Model: plan}, diags
 }

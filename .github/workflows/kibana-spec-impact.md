@@ -64,6 +64,9 @@ permissions:
   pull-requests: read
   actions: read
 tools:
+  cli-proxy: true
+  github:
+    mode: gh-proxy
   timeout: 300
   repo-memory:
     - id: kibana-spec-impact

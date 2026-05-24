@@ -20,62 +20,33 @@ package agentbuilderskill
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *SkillResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var planModel skillModel
+func createSkill(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[skillModel]) (entitycore.KibanaWriteResult[skillModel], diag.Diagnostics) {
+	plan := req.Plan
+	var diags diag.Diagnostics
 
-	diags := req.Plan.Get(ctx, &planModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	body, d := plan.toAPICreateModel(ctx)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[skillModel]{}, diags
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	oapiClient, d := client.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[skillModel]{}, diags
 	}
 
-	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderSkillsAPIVersion, "skills", &resp.Diagnostics) {
-		return
+	_, d = kibanaoapi.CreateSkill(ctx, oapiClient, req.SpaceID, body)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[skillModel]{}, diags
 	}
 
-	body, diags := planModel.toAPICreateModel(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
-
-	spaceID := planModel.SpaceID.ValueString()
-
-	created, diags := kibanaoapi.CreateSkill(ctx, oapiClient, spaceID, body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	skill, diags := kibanaoapi.GetSkill(ctx, oapiClient, spaceID, created.ID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = planModel.populateFromAPI(ctx, spaceID, skill)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = resp.State.Set(ctx, planModel)
-	resp.Diagnostics.Append(diags...)
+	return entitycore.KibanaWriteResult[skillModel]{Model: plan}, diags
 }

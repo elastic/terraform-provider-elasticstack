@@ -22,49 +22,35 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func createMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, plan Model) (Model, diag.Diagnostics) {
+func createMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
+	plan := req.Plan
 	var diags diag.Diagnostics
 
 	body, bodyDiags := plan.toAPICreateRequest(ctx)
 	diags.Append(bodyDiags...)
 	if diags.HasError() {
-		return Model{}, diags
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Unable to get Kibana client", err.Error())
-		return Model{}, diags
+	oapiClient, d := client.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	createMaintenanceWindowResponse, createDiags := kibanaoapi.CreateMaintenanceWindow(ctx, oapiClient, spaceID, body)
+	createMaintenanceWindowResponse, createDiags := kibanaoapi.CreateMaintenanceWindow(ctx, oapiClient, req.SpaceID, body)
 	diags.Append(createDiags...)
 	if diags.HasError() {
-		return Model{}, diags
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	/*
-	* In create/update paths we typically follow the write operation with a read, and then set the state from the read.
-	* We want to avoid a dirty plan immediately after an apply.
-	 */
-	maintenanceWindowID := createMaintenanceWindowResponse.JSON200.Id
-	readMaintenanceWindowResponse, readDiags := kibanaoapi.GetMaintenanceWindow(ctx, oapiClient, spaceID, maintenanceWindowID)
-	diags.Append(readDiags...)
-	if diags.HasError() {
-		return Model{}, diags
-	}
+	plan.ID = types.StringValue(createMaintenanceWindowResponse.JSON200.Id)
+	plan.SpaceID = types.StringValue(req.SpaceID)
 
-	diags.Append(plan.fromAPIReadResponse(ctx, readMaintenanceWindowResponse)...)
-	if diags.HasError() {
-		return Model{}, diags
-	}
-
-	plan.ID = types.StringValue(maintenanceWindowID)
-	plan.SpaceID = types.StringValue(spaceID)
-
-	return plan, diags
+	return entitycore.KibanaWriteResult[Model]{Model: plan}, diags
 }

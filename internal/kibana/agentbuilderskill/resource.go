@@ -36,12 +36,22 @@ var (
 )
 
 type SkillResource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[skillModel]
 }
 
 func newSkillResource() *SkillResource {
 	return &SkillResource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "agentbuilder_skill"),
+		KibanaResource: entitycore.NewKibanaResource[skillModel](
+			entitycore.ComponentKibana,
+			"agentbuilder_skill",
+			entitycore.KibanaResourceOptions[skillModel]{
+				Schema: getResourceSchema,
+				Read:   readSkill,
+				Delete: deleteSkill,
+				Create: createSkill,
+				Update: updateSkill,
+			},
+		),
 	}
 }
 

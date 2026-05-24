@@ -23,24 +23,30 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func updateRole(ctx context.Context, client *clients.KibanaScopedClient, resourceID, _ string, plan, prior resourceModel) (resourceModel, diag.Diagnostics) {
+func updateRole(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[resourceModel]) (entitycore.KibanaWriteResult[resourceModel], diag.Diagnostics) {
+	plan := req.Plan
+	prior := req.Plan
+	if req.Prior != nil {
+		prior = *req.Prior
+	}
 	var diags diag.Diagnostics
 	roleName, body, d := expandResourceModel(ctx, plan)
 	diags.Append(d...)
 	if diags.HasError() {
-		return prior, diags
+		return entitycore.KibanaWriteResult[resourceModel]{Model: prior}, diags
 	}
-	if roleName != resourceID {
+	if roleName != req.WriteID {
 		diags.AddError("Internal error", "resource name mismatch during update")
-		return prior, diags
+		return entitycore.KibanaWriteResult[resourceModel]{Model: prior}, diags
 	}
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Unable to get Kibana OpenAPI client", err.Error())
-		return prior, diags
+	oapiClient, d := client.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[resourceModel]{Model: prior}, diags
 	}
 	createOnly := false
 	params := kbapi.PutSecurityRoleNameParams{
@@ -48,9 +54,7 @@ func updateRole(ctx context.Context, client *clients.KibanaScopedClient, resourc
 	}
 	diags.Append(kibanaoapi.PutSecurityRole(ctx, oapiClient, roleName, params, body)...)
 	if diags.HasError() {
-		return prior, diags
+		return entitycore.KibanaWriteResult[resourceModel]{Model: prior}, diags
 	}
-	updated, _, rd := readRoleResourceWithHint(ctx, client, roleName, prior, hintFromResourceModel(plan))
-	diags.Append(rd...)
-	return updated, diags
+	return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 }

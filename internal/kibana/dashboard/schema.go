@@ -334,7 +334,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			stringvalidator.ConflictsWith(
 				panelkit.SiblingTypedPanelConfigConflictPathsExcept("config_json", names)...,
 			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis, panelTypeMarkdown}),
+			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis, panelTypeMarkdown}, validators.AllowedIfOptions{}),
 		},
 	}
 	return schema.NestedAttributeObject{

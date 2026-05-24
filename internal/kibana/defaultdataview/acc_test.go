@@ -48,6 +48,7 @@ func TestAccResourceDefaultDataView(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "id", "default"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_default_data_view.test", "data_view_id"),
+					resource.TestCheckResourceAttrPair("elasticstack_kibana_default_data_view.test", "data_view_id", "elasticstack_kibana_data_view.dv", "data_view.id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "force", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "skip_delete", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "space_id", "default"),
@@ -63,6 +64,7 @@ func TestAccResourceDefaultDataView(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "id", "default"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_default_data_view.test", "data_view_id"),
+					resource.TestCheckResourceAttrPair("elasticstack_kibana_default_data_view.test", "data_view_id", "elasticstack_kibana_data_view.dv2", "data_view.id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "space_id", "default"),
 				),
 			},
@@ -129,6 +131,60 @@ func TestAccResourceDefaultDataViewWithCustomSpace(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "force", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "skip_delete", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "space_id", spaceID),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDefaultDataViewForceFalse(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minDataViewAPISupport, versionutils.FlavorAny)
+
+	indexName := "my-index-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("force_true"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "id", "default"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_default_data_view.test", "data_view_id"),
+					resource.TestCheckResourceAttrPair("elasticstack_kibana_default_data_view.test", "data_view_id", "elasticstack_kibana_data_view.dv", "data_view.id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "force", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "space_id", "default"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("force_false"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "id", "default"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_default_data_view.test", "data_view_id"),
+					resource.TestCheckResourceAttrPair("elasticstack_kibana_default_data_view.test", "data_view_id", "elasticstack_kibana_data_view.dv", "data_view.id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "force", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "space_id", "default"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("force_nil"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "id", "default"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_default_data_view.test", "data_view_id"),
+					resource.TestCheckResourceAttrPair("elasticstack_kibana_default_data_view.test", "data_view_id", "elasticstack_kibana_data_view.dv", "data_view.id"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_default_data_view.test", "force"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_default_data_view.test", "space_id", "default"),
 				),
 			},
 		},

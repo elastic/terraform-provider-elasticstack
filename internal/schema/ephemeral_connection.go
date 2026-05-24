@@ -151,3 +151,65 @@ func GetEsEphemeralConnectionBlock() schema.Block {
 		},
 	}
 }
+
+// GetKbEphemeralConnectionBlock returns the kibana_connection block for
+// ephemeral resources, mirroring GetKbFWConnectionBlock for managed resources.
+func GetKbEphemeralConnectionBlock() schema.Block {
+	usernamePath := path.MatchRelative().AtParent().AtName("username")
+	passwordPath := path.MatchRelative().AtParent().AtName("password")
+	apiKeyPath := path.MatchRelative().AtParent().AtName("api_key")
+	bearerTokenPath := path.MatchRelative().AtParent().AtName("bearer_token")
+
+	return schema.ListNestedBlock{
+		MarkdownDescription: "Kibana connection configuration block.",
+		NestedObject: schema.NestedBlockObject{
+			Attributes: map[string]schema.Attribute{
+				"api_key": schema.StringAttribute{
+					MarkdownDescription: "API Key to use for authentication to Kibana",
+					Optional:            true,
+					Sensitive:           true,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(usernamePath, passwordPath, bearerTokenPath),
+					},
+				},
+				"bearer_token": schema.StringAttribute{
+					MarkdownDescription: "Bearer Token to use for authentication to Kibana",
+					Optional:            true,
+					Sensitive:           true,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
+					},
+				},
+				"username": schema.StringAttribute{
+					MarkdownDescription: "Username to use for API authentication to Kibana.",
+					Optional:            true,
+					Validators:          []validator.String{stringvalidator.AlsoRequires(passwordPath)},
+				},
+				"password": schema.StringAttribute{
+					MarkdownDescription: "Password to use for API authentication to Kibana.",
+					Optional:            true,
+					Sensitive:           true,
+					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
+				},
+				"endpoints": schema.ListAttribute{
+					MarkdownDescription: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
+					Optional:            true,
+					Sensitive:           true,
+					ElementType:         types.StringType,
+				},
+				"ca_certs": schema.ListAttribute{
+					MarkdownDescription: "A list of paths to CA certificates to validate the certificate presented by the Kibana server.",
+					Optional:            true,
+					ElementType:         types.StringType,
+				},
+				"insecure": schema.BoolAttribute{
+					MarkdownDescription: "Disable TLS certificate validation",
+					Optional:            true,
+				},
+			},
+		},
+		Validators: []validator.List{
+			listvalidator.SizeAtMost(1),
+		},
+	}
+}

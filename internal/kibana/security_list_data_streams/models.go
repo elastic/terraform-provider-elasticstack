@@ -18,8 +18,30 @@
 package securitylistdatastreams
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+func (m Model) GetID() types.String { return m.ID }
+
+func (m Model) GetResourceID() types.String {
+	if typeutils.IsKnown(m.SpaceID) {
+		return m.SpaceID
+	}
+	return m.ID
+}
+
+func (m Model) GetSpaceID() types.String {
+	if typeutils.IsKnown(m.SpaceID) {
+		return m.SpaceID
+	}
+	return m.ID
+}
+
+func (m Model) GetKibanaConnection() types.List { return m.KibanaConnection }
+
+var _ entitycore.KibanaResourceModel = Model{}
 
 // Model represents the Terraform state/config model for the
 // kibana_security_list_data_streams resource. This resource manages the creation of

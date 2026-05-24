@@ -20,55 +20,41 @@ package securitylistdatastreams
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *securityListDataStreamsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan Model
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
+func createSecurityListDataStreams(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
+	m := req.Plan
+	var diags diag.Diagnostics
+
+	oapiClient, getDiags := client.GetKibanaOapiClient()
+	diags.Append(getDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	_, d := kibanaoapi.CreateListIndex(ctx, oapiClient, req.SpaceID)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	// Get Kibana client
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
-		return
-	}
-
-	// Create the list data streams
-	spaceID := plan.SpaceID.ValueString()
-	_, diags = kibanaoapi.CreateListIndex(ctx, oapiClient, spaceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Read the data streams to get the actual state
-	listIndex, listItemIndex, diags := kibanaoapi.ReadListIndex(ctx, oapiClient, spaceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	listIndex, listItemIndex, d := kibanaoapi.ReadListIndex(ctx, oapiClient, req.SpaceID)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
 	if !listIndex || !listItemIndex {
-		resp.Diagnostics.AddError(
+		diags.AddError(
 			"Failed to verify list data streams",
 			"List data streams were created but could not be verified",
 		)
-		return
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	// Populate state using the fromAPIResponse helper method
-	plan.fromAPIResponse(spaceID, listIndex, listItemIndex)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	return entitycore.KibanaWriteResult[Model]{Model: m}, diags
 }

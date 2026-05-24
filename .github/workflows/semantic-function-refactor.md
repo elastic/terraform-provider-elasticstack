@@ -1,4 +1,8 @@
 ---
+imports: 
+  - shared/setup-dev.md
+  - shared/go-source-analysis.md
+  - shared/dispatch-code-factory.md
 on:
   schedule:
   - cron: daily
@@ -41,37 +45,6 @@ safe-outputs:
     - triaged
     max: 3
     title-prefix: "[semantic-refactor] "
-  jobs:
-    dispatch-code-factory:
-      description: Dispatch code-factory for each created issue
-      needs: safe_outputs
-      permissions:
-        actions: write
-        contents: read
-      runs-on: ubuntu-latest
-      steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 1
-          persist-credentials: false
-          sparse-checkout: .github/scripts/workflows/lib
-          sparse-checkout-cone-mode: true
-      - name: Download safe-outputs artifact
-        uses: actions/download-artifact@v8
-        with:
-          if-no-files-found: warn
-          name: safe-outputs-items
-          path: /tmp/gh-aw/safe-outputs
-      - env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          SOURCE_WORKFLOW: semantic-function-refactor
-        name: Dispatch code-factory runs
-        run: |
-          node .github/scripts/workflows/lib/producer-dispatch.js \
-            /tmp/gh-aw/safe-outputs/temporary-id-map.json \
-            "$SOURCE_WORKFLOW"
 checkout:
   fetch-depth: 0
 description: Analyzes Go source organization and identifies actionable semantic refactoring opportunities
@@ -90,47 +63,13 @@ jobs:
       gate_reason: ${{ steps.compute_issue_slots.outputs.gate_reason }}
       issue_slots_available: ${{ steps.compute_issue_slots.outputs.issue_slots_available }}
       open_issues: ${{ steps.compute_issue_slots.outputs.open_issues }}
-mcp-servers:
-  serena:
-    allowed:
-    - activate_project
-    - get_symbols_overview
-    - find_symbol
-    - search_for_pattern
-    - find_referencing_symbols
-    - read_file
-    - get_symbol_documentation
-    args:
-    - --network
-    - host
-    container: ghcr.io/github/serena-mcp-server:latest
-    entrypoint: serena
-    entrypointArgs:
-    - start-mcp-server
-    - --context
-    - claude-code
-    - --project
-    - ${{ github.workspace }}
-    mounts:
-    - ${{ github.workspace }}:${{ github.workspace }}:rw
 name: Semantic Function Refactor
 timeout-minutes: 35
 tools:
-  bash:
-  - find . -name "*.go" ! -name "*_test.go" -type f
-  - find . -type f -name "*.go" ! -name "*_test.go"
-  - find . -maxdepth 2 -ls
-  - wc -l ./**/*.go
-  - head -n * ./**/*.go
-  - grep -r "^func " . --include="*.go"
-  - cat ./**/*.go
-  repo-memory:
-  - create-orphan: true
-    file-glob:
-    - memory/semantic-function-refactor/serena-state.json
-    id: semantic-function-refactor
-    max-file-size: 524288
-    max-patch-size: 102400
+  cli-proxy: true
+  github:
+    mode: gh-proxy
+    toolsets: [default, issues]
 ---
 # Semantic Function Refactor
 
@@ -172,8 +111,7 @@ Detect and report semantic refactoring opportunities by:
 
 The Serena MCP server is configured for this workspace:
 - **Workspace**: ${{ github.workspace }}
-- **Memory**: repo-memory/semantic-function-refactor/serena-state.json
-- **Context**: claude-code
+- **Context**: codex
 - **Language service**: Go (gopls)
 
 ## Analysis Workflow
@@ -440,7 +378,6 @@ Args: { "file_path": "pkg/workflow/compiler.go" }
 
 ### Efficiency
 - Use Serena's semantic analysis capabilities effectively
-- Cache Serena results in the memory folder
 - Balance thoroughness with timeout constraints
 - Focus on meaningful patterns, not trivial similarities
 

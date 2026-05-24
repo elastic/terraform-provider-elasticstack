@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -47,7 +48,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
-	resp.Diagnostics.Append(assertVersionSupported(ctx, apiClient)...)
+	resp.Diagnostics.Append(entitycore.EnforceVersionRequirements(ctx, apiClient, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -80,7 +81,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		plan.SpaceIDs = types.SetNull(types.StringType)
 	}
 
-	readState, found, diags := r.readAndHydrateState(ctx, client, item.Id, spaceID, plan.SpaceIDs, plan.KibanaConnection)
+	readState, found, diags := readAndHydrateState(ctx, client, item.Id, spaceID, plan.SpaceIDs, plan.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

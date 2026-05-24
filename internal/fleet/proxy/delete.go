@@ -20,39 +20,20 @@ package proxy
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var stateModel proxyModel
-
-	diags := req.State.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(assertVersionSupported(ctx, client)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func deleteProxy(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ proxyModel) diag.Diagnostics {
+	var diags diag.Diagnostics
 
 	fleetClient, err := client.GetFleetClient()
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
+		diags.AddError(err.Error(), "")
+		return diags
 	}
 
-	spaceID := stateModel.SpaceID.ValueString()
-	proxyID := stateModel.ProxyID.ValueString()
-
-	diags = fleetclient.DeleteProxy(ctx, fleetClient, spaceID, proxyID)
-	resp.Diagnostics.Append(diags...)
+	diags.Append(fleetclient.DeleteProxy(ctx, fleetClient, spaceID, resourceID)...)
+	return diags
 }

@@ -690,9 +690,9 @@ func putMLJobReferencingFilter(ctx context.Context, t *testing.T, jobID, filterI
 	if err != nil {
 		t.Fatalf("acceptance ES client: %v", err)
 	}
-	typed, err := client.GetESClient()
-	if err != nil {
-		t.Fatalf("typed ES client: %v", err)
+	typed, diags := client.GetESClient()
+	if diags.HasError() {
+		t.Fatalf("typed ES client: %v", diags)
 	}
 
 	detectorFunction := "count"
@@ -736,9 +736,9 @@ func deleteMLJobBestEffort(ctx context.Context, t *testing.T, jobID string) {
 		t.Logf("Ml.DeleteJob cleanup: no client: %v", err)
 		return
 	}
-	typed, err := client.GetESClient()
-	if err != nil {
-		t.Logf("Ml.DeleteJob cleanup: %v", err)
+	typed, diags := client.GetESClient()
+	if diags.HasError() {
+		t.Logf("Ml.DeleteJob cleanup: %v", diags)
 		return
 	}
 
@@ -760,9 +760,9 @@ func putMLFilterOutOfBand(ctx context.Context, t *testing.T, filterID, descripti
 	if err != nil {
 		t.Fatalf("acceptance ES client: %v", err)
 	}
-	typed, err := client.GetESClient()
-	if err != nil {
-		t.Fatalf("typed ES client: %v", err)
+	typed, diags := client.GetESClient()
+	if diags.HasError() {
+		t.Fatalf("typed ES client: %v", diags)
 	}
 
 	put := typed.Ml.PutFilter(filterID).Description(description)
@@ -783,9 +783,9 @@ func deleteMLFilterBestEffort(ctx context.Context, t *testing.T, filterID string
 		t.Logf("Ml.DeleteFilter cleanup: no client: %v", err)
 		return
 	}
-	typed, err := client.GetESClient()
-	if err != nil {
-		t.Logf("Ml.DeleteFilter cleanup: %v", err)
+	typed, diags := client.GetESClient()
+	if diags.HasError() {
+		t.Logf("Ml.DeleteFilter cleanup: %v", diags)
 		return
 	}
 
@@ -807,9 +807,9 @@ func deleteMLFilterStrict(ctx context.Context, t *testing.T, filterID string) {
 	if err != nil {
 		t.Fatalf("acceptance ES client: %v", err)
 	}
-	typed, err := client.GetESClient()
-	if err != nil {
-		t.Fatalf("typed ES client: %v", err)
+	typed, diags := client.GetESClient()
+	if diags.HasError() {
+		t.Fatalf("typed ES client: %v", diags)
 	}
 
 	_, err = typed.Ml.DeleteFilter(filterID).Do(ctx)
@@ -830,9 +830,9 @@ func updateMLFilterDescriptionOutOfBand(ctx context.Context, t *testing.T, filte
 	if err != nil {
 		t.Fatalf("acceptance ES client: %v", err)
 	}
-	typed, err := client.GetESClient()
-	if err != nil {
-		t.Fatalf("typed ES client: %v", err)
+	typed, diags := client.GetESClient()
+	if diags.HasError() {
+		t.Fatalf("typed ES client: %v", diags)
 	}
 
 	_, err = typed.Ml.UpdateFilter(filterID).Description(newDescription).Do(ctx)
@@ -848,9 +848,9 @@ func assertMLFilterAbsentES(ctx context.Context, t *testing.T, filterID string) 
 	if err != nil {
 		return fmt.Errorf("acceptance ES client: %w", err)
 	}
-	typed, err := client.GetESClient()
-	if err != nil {
-		return fmt.Errorf("typed ES client: %w", err)
+	typed, diags := client.GetESClient()
+	if diags.HasError() {
+		return fmt.Errorf("typed ES client: %v", diags)
 	}
 
 	res, err := typed.Ml.GetFilters().FilterId(filterID).Do(ctx)
@@ -874,9 +874,9 @@ func assertMLFilterPresentES(ctx context.Context, t *testing.T, filterID string)
 	if err != nil {
 		return fmt.Errorf("acceptance ES client: %w", err)
 	}
-	typed, err := client.GetESClient()
-	if err != nil {
-		return fmt.Errorf("typed ES client: %w", err)
+	typed, diags := client.GetESClient()
+	if diags.HasError() {
+		return fmt.Errorf("typed ES client: %v", diags)
 	}
 
 	res, err := typed.Ml.GetFilters().FilterId(filterID).Do(ctx)

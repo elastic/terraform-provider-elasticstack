@@ -136,26 +136,10 @@ func (m *CalendarEventTFModel) toAPIModel(_ context.Context) (*CalendarEventAPIM
 		Description:     m.Description.ValueString(),
 		StartTime:       startTime.UnixMilli(),
 		EndTime:         endTime.UnixMilli(),
-		SkipResult:      optionalBoolToAPIPtr(m.SkipResult),
-		SkipModelUpdate: optionalBoolToAPIPtr(m.SkipModelUpdate),
-		ForceTimeShift:  optionalStringToAPIPtr(m.ForceTimeShift),
+		SkipResult:      typeutils.OptBoolPtr(m.SkipResult),
+		SkipModelUpdate: typeutils.OptBoolPtr(m.SkipModelUpdate),
+		ForceTimeShift:  typeutils.OptStringPtr(m.ForceTimeShift),
 	}, diags
-}
-
-func optionalBoolToAPIPtr(b types.Bool) *bool {
-	if b.IsNull() || b.IsUnknown() {
-		return nil
-	}
-	v := b.ValueBool()
-	return &v
-}
-
-func optionalStringToAPIPtr(s types.String) *string {
-	if s.IsNull() || s.IsUnknown() {
-		return nil
-	}
-	v := s.ValueString()
-	return &v
 }
 
 func (m *CalendarEventTFModel) fromAPIModel(_ context.Context, apiModel *CalendarEventAPIModel) fwdiags.Diagnostics {

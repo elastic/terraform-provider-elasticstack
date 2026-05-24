@@ -737,64 +737,51 @@ func (d *Data) updateSeverityMappingFromAPI(ctx context.Context, severityMapping
 	return diags
 }
 
+// stringSliceOrEmptyList converts a []string to a types.List, returning an empty
+// (non-null) list when strs is empty.
+func stringSliceOrEmptyList(ctx context.Context, strs []string, p path.Path, diags *diag.Diagnostics) types.List {
+	if len(strs) > 0 {
+		return typeutils.ListValueFrom(ctx, strs, types.StringType, p, diags)
+	}
+	return types.ListValueMust(types.StringType, []attr.Value{})
+}
+
 // Helper function to update index patterns from API response
 func (d *Data) updateIndexFromAPI(ctx context.Context, index *[]string) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	if index != nil && len(*index) > 0 {
-		d.Index = typeutils.ListValueFrom(ctx, *index, types.StringType, path.Root("index"), &diags)
-	} else {
-		d.Index = types.ListValueMust(types.StringType, []attr.Value{})
+	var strs []string
+	if index != nil {
+		strs = *index
 	}
-
+	d.Index = stringSliceOrEmptyList(ctx, strs, path.Root("index"), &diags)
 	return diags
 }
 
 // Helper function to update author from API response
 func (d *Data) updateAuthorFromAPI(ctx context.Context, author []string) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	if len(author) > 0 {
-		d.Author = typeutils.ListValueFrom(ctx, author, types.StringType, path.Root("author"), &diags)
-	} else {
-		d.Author = types.ListValueMust(types.StringType, []attr.Value{})
-	}
-
+	d.Author = stringSliceOrEmptyList(ctx, author, path.Root("author"), &diags)
 	return diags
 }
 
 // Helper function to update tags from API response
 func (d *Data) updateTagsFromAPI(ctx context.Context, tags []string) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	if len(tags) > 0 {
-		d.Tags = typeutils.ListValueFrom(ctx, tags, types.StringType, path.Root("tags"), &diags)
-	} else {
-		d.Tags = types.ListValueMust(types.StringType, []attr.Value{})
-	}
-
+	d.Tags = stringSliceOrEmptyList(ctx, tags, path.Root("tags"), &diags)
 	return diags
 }
 
 // Helper function to update false positives from API response
 func (d *Data) updateFalsePositivesFromAPI(ctx context.Context, falsePositives []string) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	d.FalsePositives = typeutils.ListValueFrom(ctx, falsePositives, types.StringType, path.Root("false_positives"), &diags)
-
+	d.FalsePositives = stringSliceOrEmptyList(ctx, falsePositives, path.Root("false_positives"), &diags)
 	return diags
 }
 
 // Helper function to update references from API response
 func (d *Data) updateReferencesFromAPI(ctx context.Context, references []string) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	if len(references) > 0 {
-		d.References = typeutils.ListValueFrom(ctx, references, types.StringType, path.Root("references"), &diags)
-	} else {
-		d.References = types.ListValueMust(types.StringType, []attr.Value{})
-	}
-
+	d.References = stringSliceOrEmptyList(ctx, references, path.Root("references"), &diags)
 	return diags
 }
 

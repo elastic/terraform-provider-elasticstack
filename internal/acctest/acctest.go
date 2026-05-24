@@ -104,9 +104,9 @@ func PreCheckWithWorkflowsEnabled(t *testing.T, minVersion *version.Version) {
 		t.Skipf("Skipping test: server version %s is below minimum %s", serverVersion, minVersion)
 	}
 
-	kibanaClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		t.Fatalf("Failed to get Kibana client: %v", err)
+	kibanaClient, getDiags := client.GetKibanaOapiClient()
+	if getDiags.HasError() {
+		t.Fatalf("Failed to get Kibana client: %v", getDiags)
 	}
 
 	// Try the internal settings API endpoint

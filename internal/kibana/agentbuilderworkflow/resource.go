@@ -35,12 +35,22 @@ var (
 )
 
 type WorkflowResource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[workflowModel]
 }
 
 func newWorkflowResource() *WorkflowResource {
 	return &WorkflowResource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "agentbuilder_workflow"),
+		KibanaResource: entitycore.NewKibanaResource[workflowModel](
+			entitycore.ComponentKibana,
+			"agentbuilder_workflow",
+			entitycore.KibanaResourceOptions[workflowModel]{
+				Schema: getResourceSchema,
+				Read:   readWorkflow,
+				Delete: deleteWorkflow,
+				Create: createWorkflow,
+				Update: updateWorkflow,
+			},
+		),
 	}
 }
 

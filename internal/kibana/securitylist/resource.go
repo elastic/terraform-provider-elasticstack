@@ -33,12 +33,22 @@ var (
 )
 
 type securityListResource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[Model]
 }
 
 func newSecurityListResource() *securityListResource {
 	return &securityListResource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "security_list"),
+		KibanaResource: entitycore.NewKibanaResource[Model](
+			entitycore.ComponentKibana,
+			"security_list",
+			entitycore.KibanaResourceOptions[Model]{
+				Schema: getSchema,
+				Read:   readSecurityList,
+				Delete: deleteSecurityList,
+				Create: createSecurityList,
+				Update: updateSecurityList,
+			},
+		),
 	}
 }
 

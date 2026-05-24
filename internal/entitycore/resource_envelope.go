@@ -31,7 +31,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -260,7 +259,7 @@ func (r *ElasticsearchResource[T]) ModifyPlan(ctx context.Context, req resource.
 // Create implements [resource.Resource]: decode plan, resolve client, invoke
 // the create callback, read-after-write, then persist state from readFunc.
 func (r *ElasticsearchResource[T]) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	resp.Diagnostics.Append(r.runWrite(ctx, writeInvocation[T]{
+	resp.Diagnostics.Append(r.runWrite(ctx, resourceWriteInvocation{
 		plan:         req.Plan,
 		config:       req.Config,
 		outState:     &resp.State,
@@ -333,7 +332,7 @@ func (r *ElasticsearchResource[T]) Read(ctx context.Context, req resource.ReadRe
 // Update implements [resource.Resource] with the same prelude as Create,
 // additionally decoding prior state for the update callback.
 func (r *ElasticsearchResource[T]) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.Append(r.runWrite(ctx, writeInvocation[T]{
+	resp.Diagnostics.Append(r.runWrite(ctx, resourceWriteInvocation{
 		plan:         req.Plan,
 		priorState:   &req.State,
 		config:       req.Config,
@@ -343,27 +342,14 @@ func (r *ElasticsearchResource[T]) Update(ctx context.Context, req resource.Upda
 	})...)
 }
 
-type writeInvocation[T ElasticsearchResourceModel] struct {
-	plan         tfsdk.Plan
-	priorState   *tfsdk.State
-	config       tfsdk.Config
-	outState     *tfsdk.State
-	privateState any
-	isUpdate     bool
-}
-
 func (r *ElasticsearchResource[T]) requireReadFunc() diag.Diagnostics {
-	var diags diag.Diagnostics
 	if r.readFunc == nil {
-		diags.AddError(
-			"Elasticsearch envelope configuration error",
-			"The read callback passed via ElasticsearchResourceOptions must not be nil.",
-		)
+		return requireReadFuncDiag(r.component)
 	}
-	return diags
+	return nil
 }
 
-func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv writeInvocation[T]) diag.Diagnostics {
+func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWriteInvocation) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if (inv.isUpdate && r.updateFunc == nil) || (!inv.isUpdate && r.createFunc == nil) {
 		op := "create"

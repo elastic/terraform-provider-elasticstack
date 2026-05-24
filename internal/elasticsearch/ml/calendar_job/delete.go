@@ -38,13 +38,13 @@ func deleteCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedC
 
 	tflog.Debug(ctx, fmt.Sprintf("Deleting ML calendar job assignment: calendar=%s job=%s", calendarID, jobID))
 
-	typedClient, err := client.GetESClient()
-	if err != nil {
-		diags.AddError("Failed to get Elasticsearch client", err.Error())
+	typedClient, clientDiags := client.GetESClient()
+	diags.Append(clientDiags...)
+	if diags.HasError() {
 		return diags
 	}
 
-	_, err = typedClient.Ml.DeleteCalendarJob(calendarID, jobID).Do(ctx)
+	_, err := typedClient.Ml.DeleteCalendarJob(calendarID, jobID).Do(ctx)
 	if err != nil {
 		if elasticsearch.IsNotFoundElasticsearchError(err) {
 			tflog.Debug(ctx, fmt.Sprintf("ML calendar job assignment already removed: calendar=%s job=%s", calendarID, jobID))

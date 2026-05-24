@@ -43,7 +43,8 @@ test('schema-coverage rotation workflow installs Go from go.mod and exports Go p
   assert.match(lock, /GOMODCACHE=\$\(go env GOMODCACHE\)/);
   // Source workflow declares the import.
   const source = workflowSource();
-  assert.match(source, /imports: \[shared\/setup-dev\.md\]/);
+  assert.match(source, /shared\/setup-dev\.md/);
+  assert.match(source, /shared\/dispatch-code-factory\.md/);
 });
 
 test('schema-coverage rotation workflow installs Node from package.json and allows bootstrap ecosystems', () => {
@@ -62,7 +63,7 @@ test('schema-coverage rotation workflow uses Claude through LiteLLM with secret-
   assert.match(source, /model: "?llm-gateway\/claude-sonnet-4-6"?/);
   assert.match(source, /ANTHROPIC_BASE_URL:\s*"?https:\/\/elastic\.litellm-prod\.ai\/?"?/);
   assert.match(source, /ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.CLAUDE_LITELLM_PROXY_API_KEY\s*\}\}/);
-  assert.match(source, /tools:\s*\n\s*timeout:\s*300/m);
+  assert.match(source, /tools:[\s\S]*?\n\s+timeout:\s*300/m);
 });
 
 test('schema-coverage rotation source workflow configures engine env with base URL and model', () => {
@@ -71,7 +72,7 @@ test('schema-coverage rotation source workflow configures engine env with base U
   assert.match(source, /model: "?llm-gateway\/claude-sonnet-4-6"?/);
   assert.match(source, /ANTHROPIC_BASE_URL:\s*"?https:\/\/elastic\.litellm-prod\.ai\/?"?/);
   assert.match(source, /ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.CLAUDE_LITELLM_PROXY_API_KEY\s*\}\}/);
-  assert.match(source, /tools:\s*\n\s*timeout:\s*300/m);
+  assert.match(source, /tools:[\s\S]*?\n\s+timeout:\s*300/m);
 });
 
 test('schema-coverage rotation workflow bootstraps the repo with make setup', () => {
@@ -92,10 +93,14 @@ test('schema-coverage rotation prompt documents deterministic toolchain without 
 test('workflow includes dispatch instruction and compiled lock contains dispatch_code_factory job', () => {
   const source = workflowSource();
   const lock = lockSource();
+  assert.match(source, /shared\/dispatch-code-factory\.md/);
   assert.match(source, /dispatch_code_factory/);
   assert.match(source, /Dispatch/);
+  assert.doesNotMatch(source, /safe-outputs:[\s\S]*?jobs:[\s\S]*?dispatch-code-factory:/);
   assert.match(lock, /dispatch_code_factory/);
   assert.match(lock, /"dispatch-code-factory":\{"description":"Dispatch code-factory for each created issue"\}/);
   assert.match(lock, /"dispatch_code_factory"/);
+  assert.match(lock, /SOURCE_WORKFLOW=\$\(echo "\$GITHUB_WORKFLOW_NAME"/);
+  assert.doesNotMatch(lock, /SOURCE_WORKFLOW: (?:flaky-test-catcher|semantic-function-refactor|schema-coverage-rotation|duplicate-code-detector)\b/);
   assert.match(lock, /"labels":\["testing","acceptance-tests","schema-coverage","triaged"\]/);
 });

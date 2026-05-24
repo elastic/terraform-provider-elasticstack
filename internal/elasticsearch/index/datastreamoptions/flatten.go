@@ -18,29 +18,11 @@
 package datastreamoptions
 
 import (
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-// Flatten converts a wire data_stream_options object back into a Terraform object.
-// The caller is responsible for checking dso != nil and dso.FailureStore != nil
-// before invoking Flatten; an absent block should map to types.ObjectNull(AttrTypes()).
-func Flatten(dso *estypes.DataStreamOptions) (types.Object, diag.Diagnostics) {
-	fs := dso.FailureStore
-	enabled := typeutils.Deref(fs.Enabled)
-	dataRetention := ""
-	hasLifecycle := fs.Lifecycle != nil
-	if hasLifecycle && fs.Lifecycle.DataRetention != nil {
-		if dr, ok := fs.Lifecycle.DataRetention.(string); ok {
-			dataRetention = dr
-		}
-	}
-	return flattenDataStreamOptions(enabled, dataRetention, hasLifecycle)
-}
 
 // FlattenLocal converts a data_stream_options object decoded into the local
 // models.DataStreamOptions shape (used by index/component template reads that

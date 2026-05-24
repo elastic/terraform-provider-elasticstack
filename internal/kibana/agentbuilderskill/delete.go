@@ -22,41 +22,13 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *SkillResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var stateModel skillModel
-
-	diags := req.State.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+func deleteSkill(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, _ skillModel) diag.Diagnostics {
+	oapiClient, getDiags := client.GetKibanaOapiClient()
+	if getDiags.HasError() {
+		return getDiags
 	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderSkillsAPIVersion, "skills", &resp.Diagnostics) {
-		return
-	}
-
-	compID, idDiags := clients.CompositeIDFromStr(stateModel.ID.ValueString())
-	resp.Diagnostics.Append(idDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
-
-	diags = kibanaoapi.DeleteSkill(ctx, oapiClient, compID.ClusterID, compID.ResourceID)
-	resp.Diagnostics.Append(diags...)
+	return kibanaoapi.DeleteSkill(ctx, oapiClient, spaceID, resourceID)
 }

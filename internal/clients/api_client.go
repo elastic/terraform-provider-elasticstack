@@ -67,11 +67,6 @@ func CompositeIDFromStr(id string) (*CompositeID, fwdiags.Diagnostics) {
 	}, nil
 }
 
-// CompositeIDFromStrForElasticsearch is an alias for [CompositeIDFromStr].
-func CompositeIDFromStrForElasticsearch(id string) (*CompositeID, fwdiags.Diagnostics) {
-	return CompositeIDFromStr(id)
-}
-
 func (c *CompositeID) String() string {
 	return fmt.Sprintf("%s/%s", c.ClusterID, c.ResourceID)
 }

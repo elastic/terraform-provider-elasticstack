@@ -21,42 +21,28 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state defaultDataViewModel
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+func deleteDefaultDataView(ctx context.Context, client *clients.KibanaScopedClient, _, spaceID string, model defaultDataViewModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if model.SkipDelete.ValueBool() {
+		return diags
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	oapiClient, d := client.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
 	}
 
-	// If skip_delete is true, leave the default data view unchanged
-	if state.SkipDelete.ValueBool() {
-		return
-	}
-
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError("unable to get kibana client", err.Error())
-		return
-	}
-
-	spaceID := state.SpaceID.ValueString()
-
-	// Unset the default data view by setting it to null
 	setReq := kbapi.SetDefaultDatailViewDefaultJSONRequestBody{
 		Force: new(true),
 	}
 
-	diags = kibanaoapi.SetDefaultDataView(ctx, oapiClient, spaceID, setReq)
-	resp.Diagnostics.Append(diags...)
+	diags.Append(kibanaoapi.SetDefaultDataView(ctx, oapiClient, spaceID, setReq)...)
+	return diags
 }

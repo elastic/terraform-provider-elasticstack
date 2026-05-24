@@ -47,6 +47,19 @@ on:
         script: |
           const fn = require('${{ github.workspace }}/.github/scripts/workflows/openspec-verify/classify-and-select.js');
           await fn({ github, context, core });
+    - name: Comment on ineligible PR
+      id: comment_ineligible
+      if: >-
+        steps.verify_label.outputs.label_verified == 'true' &&
+        steps.classify_and_select.outputs.selection_status == 'ineligible'
+      uses: actions/github-script@v9
+      env:
+        SELECTION_REASON: ${{ steps.classify_and_select.outputs.selection_reason }}
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/openspec-verify/comment-ineligible.js');
+          await fn({ github, context, core });
 if: >-
   needs.pre_activation.outputs.label_verified == 'true' &&
   needs.pre_activation.outputs.selection_status == 'eligible'
@@ -78,7 +91,9 @@ jobs:
       archive_push_allowed: ${{ steps.classify_and_select.outputs.archive_push_allowed }}
       archive_push_allowed_reason: ${{ steps.classify_and_select.outputs.archive_push_allowed_reason }}
 tools:
+  cli-proxy: true
   github:
+    mode: gh-proxy
     toolsets: [repos, pull_requests]
 network:
   allowed: [defaults, node, go, elastic.litellm-prod.ai]

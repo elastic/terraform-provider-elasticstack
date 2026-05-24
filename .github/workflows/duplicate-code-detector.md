@@ -1,4 +1,5 @@
 ---
+imports: [shared/dispatch-code-factory.md]
 name: Duplicate Code Detector
 description: Identifies duplicate code patterns across the codebase and suggests refactoring opportunities
 on:
@@ -265,5 +266,8 @@ For each distinct duplication pattern found, create a separate issue using this 
 - Suggest practical refactoring approaches
 - Assign issue to @copilot for automated remediation
 - Use descriptive titles that clearly identify the specific pattern (e.g., "Duplicate Code: Error Handling Pattern in Parser Module")
+
+## Dispatch
+After creating all issues for this run (or if no issues were created), call the `dispatch_code_factory` safe output tool once to dispatch the `code-factory` workflow for each created issue.
 
 **Objective**: Improve code quality by identifying and reporting meaningful code duplication that impacts maintainability. Focus on actionable findings that enable automated or manual refactoring.

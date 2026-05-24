@@ -307,20 +307,6 @@ func byValueOpenLinksFromAPI(api *bool, tfPanel *models.PanelModel) types.Bool {
 	return types.BoolNull()
 }
 
-func optStringPtr(v types.String) *string {
-	if typeutils.IsKnown(v) {
-		return v.ValueStringPointer()
-	}
-	return nil
-}
-
-func optBoolPtr(v types.Bool) *bool {
-	if typeutils.IsKnown(v) {
-		return v.ValueBoolPointer()
-	}
-	return nil
-}
-
 // BuildConfigByValue builds the API by-value markdown payload from Terraform state.
 func BuildConfigByValue(pm models.PanelModel) kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0 {
 	if pm.MarkdownConfig == nil || pm.MarkdownConfig.ByValue == nil {
@@ -329,10 +315,10 @@ func BuildConfigByValue(pm models.PanelModel) kbapi.KibanaHTTPAPIsKbnDashboardPa
 	bv := pm.MarkdownConfig.ByValue
 	config := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0{
 		Content:     bv.Content.ValueString(),
-		Description: optStringPtr(bv.Description),
-		HideTitle:   optBoolPtr(bv.HideTitle),
-		HideBorder:  optBoolPtr(bv.HideBorder),
-		Title:       optStringPtr(bv.Title),
+		Description: typeutils.OptStringPtr(bv.Description),
+		HideTitle:   typeutils.OptBoolPtr(bv.HideTitle),
+		HideBorder:  typeutils.OptBoolPtr(bv.HideBorder),
+		Title:       typeutils.OptStringPtr(bv.Title),
 	}
 	if bv.Settings != nil && typeutils.IsKnown(bv.Settings.OpenLinksInNewTab) {
 		config.Settings.OpenLinksInNewTab = bv.Settings.OpenLinksInNewTab.ValueBoolPointer()
@@ -348,9 +334,9 @@ func BuildConfigByReference(pm models.PanelModel) kbapi.KibanaHTTPAPIsKbnDashboa
 	br := pm.MarkdownConfig.ByReference
 	return kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig1{
 		RefId:       br.RefID.ValueString(),
-		Description: optStringPtr(br.Description),
-		HideTitle:   optBoolPtr(br.HideTitle),
-		HideBorder:  optBoolPtr(br.HideBorder),
-		Title:       optStringPtr(br.Title),
+		Description: typeutils.OptStringPtr(br.Description),
+		HideTitle:   typeutils.OptBoolPtr(br.HideTitle),
+		HideBorder:  typeutils.OptBoolPtr(br.HideBorder),
+		Title:       typeutils.OptStringPtr(br.Title),
 	}
 }

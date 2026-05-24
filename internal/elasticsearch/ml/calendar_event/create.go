@@ -69,9 +69,9 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML calendar event for calendar: %s", calendarID))
 
-	typedClient, err := client.GetESClient()
-	if err != nil {
-		diags.AddError("Failed to get Elasticsearch client", err.Error())
+	typedClient, clientDiags := client.GetESClient()
+	diags.Append(clientDiags...)
+	if diags.HasError() {
 		return plan, diags
 	}
 

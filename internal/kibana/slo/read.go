@@ -69,9 +69,9 @@ func (r *Resource) readSloFromAPI(ctx context.Context, apiClient *clients.Kibana
 		return false, diags
 	}
 
-	oapi, err := apiClient.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Failed to get Kibana API client", err.Error())
+	oapi, d := apiClient.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
 		return false, diags
 	}
 

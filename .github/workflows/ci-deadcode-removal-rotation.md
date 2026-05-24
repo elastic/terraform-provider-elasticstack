@@ -103,6 +103,7 @@ permissions:
   issues: read
   pull-requests: read
 tools:
+  cli-proxy: true
   timeout: 600
   repo-memory:
     - id: ci-deadcode-removal-rotation

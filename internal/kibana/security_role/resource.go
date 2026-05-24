@@ -42,11 +42,13 @@ func newResource() *Resource {
 		KibanaResource: entitycore.NewKibanaResource[resourceModel](
 			entitycore.ComponentKibana,
 			"security_role",
-			getResourceSchema,
-			readRoleResource,
-			deleteRole,
-			createRole,
-			updateRole,
+			entitycore.KibanaResourceOptions[resourceModel]{
+				Schema: getResourceSchema,
+				Read:   readRoleResource,
+				Delete: deleteRole,
+				Create: createRole,
+				Update: updateRole,
+			},
 		),
 	}
 }

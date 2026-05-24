@@ -20,9 +20,7 @@ package proxy
 import (
 	"context"
 
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -31,11 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = getSchema()
-}
-
-func getSchema() schema.Schema {
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages Fleet proxies. See the [Fleet Proxies API documentation](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-fleet-proxies) for more information.",
 		Attributes: map[string]schema.Attribute{
@@ -98,9 +92,6 @@ func getSchema() schema.Schema {
 				Computed:            true,
 				MarkdownDescription: "Whether the proxy is preconfigured.",
 			},
-		},
-		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 		},
 	}
 }

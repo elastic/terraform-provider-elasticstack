@@ -20,6 +20,7 @@ package dataview_test
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -46,9 +47,9 @@ func resolveFieldAttrsDataView(s *terraform.State) (*kibanaoapi.Client, string, 
 	if err != nil {
 		return nil, "", "", fmt.Errorf("acceptance kibana client: %w", err)
 	}
-	kc, err := apiClient.GetKibanaOapiClient()
-	if err != nil {
-		return nil, "", "", fmt.Errorf("kibana openapi client: %w", err)
+	kc, getDiags := apiClient.GetKibanaOapiClient()
+	if getDiags.HasError() {
+		return nil, "", "", fmt.Errorf("kibana openapi client: %v", getDiags)
 	}
 	return kc, composite.ClusterID, composite.ResourceID, nil
 }
@@ -69,6 +70,36 @@ func testAccInjectHostHostnameFieldCount(t *testing.T, s *terraform.State) error
 		return fmt.Errorf("inject host.hostname count: %v", diags)
 	}
 	return nil
+}
+
+// testAccCheckFieldAttrsCount matches the flattened state key for a dynamic map entry whose
+// key may contain dots (e.g. "host.hostname") and asserts the count attribute.
+func testAccCheckFieldAttrsCount(fieldKey string, want int64) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs := s.RootModule().Resources[testAccFieldAttrsDataViewAddress]
+		if rs == nil {
+			return fmt.Errorf("%s not found in state", testAccFieldAttrsDataViewAddress)
+		}
+		const prefix = "data_view.field_attrs."
+		const suffix = ".count"
+		for k, v := range rs.Primary.Attributes {
+			if !strings.HasPrefix(k, prefix) || !strings.HasSuffix(k, suffix) {
+				continue
+			}
+			mid := strings.TrimSuffix(strings.TrimPrefix(k, prefix), suffix)
+			if mid == fieldKey {
+				got, err := strconv.ParseInt(v, 10, 64)
+				if err != nil {
+					return fmt.Errorf("%s: count value %q is not an integer: %w", k, v, err)
+				}
+				if got == want {
+					return nil
+				}
+				return fmt.Errorf("%s: count is %d, want %d", k, got, want)
+			}
+		}
+		return fmt.Errorf("no field_attrs[%q].count in state (want %d)", fieldKey, want)
+	}
 }
 
 // testAccCheckFieldAttrsCustomLabel matches the flattened state key for a dynamic map entry whose

@@ -41,7 +41,9 @@ engine:
 permissions:
   issues: read
 tools:
+  cli-proxy: true
   github:
+    mode: gh-proxy
     toolsets: [issues]
     min-integrity: unapproved
 safe-outputs:

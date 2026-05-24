@@ -1,0 +1,9 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/elastic/terraform-provider-elasticstack/analysis/acctestconfigdirlint
+cpu: Apple M4 Pro
+BenchmarkAnalyzer_Compliant-14       	       1	1466472792 ns/op	315096288 B/op	 3353995 allocs/op
+BenchmarkAnalyzer_Violations-14      	       4	 302182156 ns/op	315055350 B/op	 3354577 allocs/op
+BenchmarkAnalyzer_LargePackage-14    	       4	 313648010 ns/op	316489416 B/op	 3359823 allocs/op
+PASS
+ok  	github.com/elastic/terraform-provider-elasticstack/analysis/acctestconfigdirlint	4.783s

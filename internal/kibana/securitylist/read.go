@@ -23,62 +23,35 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *securityListResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state Model
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
+func readSecurityList(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, prior Model) (Model, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	oapiClient, getDiags := client.GetKibanaOapiClient()
+	diags.Append(getDiags...)
+	if diags.HasError() {
+		return prior, false, diags
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
-		return
-	}
-
-	// Parse composite ID to get space_id and list_id
-	spaceID := state.SpaceID.ValueString()
-	listID := state.ListID.ValueString()
-
-	// Try to parse as composite ID from state.ID
-	if compID, diags := clients.CompositeIDFromStr(state.ID.ValueString()); !diags.HasError() {
-		spaceID = compID.ClusterID
-		listID = compID.ResourceID
-		// Update space_id in state if it was parsed from composite ID
-		state.SpaceID = types.StringValue(spaceID)
-	}
+	prior.SpaceID = types.StringValue(spaceID)
 
 	params := &kbapi.ReadListParams{
-		Id: listID,
+		Id: resourceID,
 	}
 
-	list, diags := kibanaoapi.GetList(ctx, oapiClient, spaceID, params)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	list, d := kibanaoapi.GetList(ctx, oapiClient, spaceID, params)
+	diags.Append(d...)
+	if diags.HasError() {
+		return prior, false, diags
 	}
 
 	if list == nil {
-		resp.State.RemoveResource(ctx)
-		return
+		return prior, false, diags
 	}
 
-	// Convert API response to model
-	diags = state.fromAPI(ctx, list)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	diags.Append(prior.fromAPI(ctx, list)...)
+	return prior, true, diags
 }

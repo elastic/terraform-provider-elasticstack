@@ -22,69 +22,36 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *ToolResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var planModel toolModel
+func updateTool(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[toolModel]) (entitycore.KibanaWriteResult[toolModel], diag.Diagnostics) {
+	plan := req.Plan
+	var diags diag.Diagnostics
 
-	diags := req.Plan.Get(ctx, &planModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	body, d := plan.toAPIUpdateModel(ctx)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[toolModel]{}, diags
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	oapiClient, d := client.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[toolModel]{}, diags
 	}
 
-	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderAPIVersion, "tools", &resp.Diagnostics) {
-		return
+	_, d = kibanaoapi.UpdateTool(ctx, oapiClient, req.SpaceID, req.WriteID, body)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[toolModel]{}, diags
 	}
 
-	compID, idDiags := clients.CompositeIDFromStr(planModel.ID.ValueString())
-	resp.Diagnostics.Append(idDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	// Set SpaceID after the API call so the returned model carries the resolved
+	// space for the envelope's read-after-write step.
+	plan.SpaceID = types.StringValue(req.SpaceID)
 
-	// Restore space_id from the composite ID so populateFromAPI can use it.
-	planModel.SpaceID = types.StringValue(compID.ClusterID)
-
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
-
-	body, diags := planModel.toAPIUpdateModel(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	_, diags = kibanaoapi.UpdateTool(ctx, oapiClient, compID.ClusterID, compID.ResourceID, body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	tool, diags := kibanaoapi.GetTool(ctx, oapiClient, compID.ClusterID, compID.ResourceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = planModel.populateFromAPI(ctx, tool)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = resp.State.Set(ctx, planModel)
-	resp.Diagnostics.Append(diags...)
+	return entitycore.KibanaWriteResult[toolModel]{Model: plan}, diags
 }

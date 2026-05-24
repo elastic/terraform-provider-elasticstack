@@ -50,9 +50,9 @@ func readCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedCli
 
 	tflog.Debug(ctx, fmt.Sprintf("Reading ML calendar job assignment: calendar=%s job=%s", calendarID, jobID))
 
-	typedClient, err := client.GetESClient()
-	if err != nil {
-		diags.AddError("Failed to get Elasticsearch client", err.Error())
+	typedClient, clientDiags := client.GetESClient()
+	diags.Append(clientDiags...)
+	if diags.HasError() {
 		return state, false, diags
 	}
 

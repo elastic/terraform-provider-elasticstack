@@ -54,14 +54,17 @@ type KibanaScopedClient struct {
 }
 
 // GetKibanaOapiClient returns the Kibana OpenAPI client.
-func (k *KibanaScopedClient) GetKibanaOapiClient() (*kibanaoapi.Client, error) {
+func (k *KibanaScopedClient) GetKibanaOapiClient() (*kibanaoapi.Client, fwdiag.Diagnostics) {
+	var diags fwdiag.Diagnostics
 	if k.kibanaEndpoint == "" {
-		return nil, errors.New("kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT")
+		diags.AddError("kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT", "")
+		return nil, diags
 	}
 	if k.kibanaOapi == nil {
-		return nil, errors.New("kibanaoapi client not found")
+		diags.AddError("kibanaoapi client not found", "")
+		return nil, diags
 	}
-	return k.kibanaOapi, nil
+	return k.kibanaOapi, diags
 }
 
 // GetFleetClient returns the Fleet client.
@@ -82,12 +85,9 @@ func (k *KibanaScopedClient) GetFleetClient() (*fleetclient.Client, error) {
 // string and build flavor in a single HTTP call. It centralises GetKibanaOapiClient
 // setup and the GetKibanaStatus call so callers share one code path and one request.
 func (k *KibanaScopedClient) getServerStatusRaw(ctx context.Context) (rawVersion string, flavor string, diags fwdiag.Diagnostics) {
-	oapiClient, err := k.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError(
-			"failed to get version from Kibana API",
-			err.Error()+", please ensure a working 'kibana' endpoint is configured",
-		)
+	oapiClient, d := k.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
 		return "", "", diags
 	}
 

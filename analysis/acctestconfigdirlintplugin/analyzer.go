@@ -20,6 +20,7 @@ package acctestconfigdirlint
 import (
 	"go/ast"
 	"go/types"
+	"strconv"
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
@@ -38,49 +39,81 @@ var Analyzer = &analysis.Analyzer{
 }
 
 func run(pass *analysis.Pass) (any, error) {
+	fileLineCache := make(map[string][]string)
+	varSpecIndex := buildVarSpecIndex(pass)
+
 	for _, file := range pass.Files {
-		// Skip non-test files early, before any typed lookup.
+		// Skip non-test files early; varSpecIndex already used TypesInfo once up-front.
 		filename := pass.Fset.File(file.Pos()).Name()
 		if !strings.HasSuffix(filename, "_test.go") {
 			continue
 		}
 
-		// Walk only this test file for candidate acceptance-test calls.
-		ast.Inspect(file, func(n ast.Node) bool {
-			call, ok := n.(*ast.CallExpr)
-			if !ok {
-				return true
-			}
+		aliases := buildResourceImportAliases(file)
+		if len(aliases) == 0 {
+			continue
+		}
 
-			// Cheap syntactic guard: only consider selector calls whose
-			// selector name is "Test" or "ParallelTest" before paying for
-			// the typed calledFunction lookup.
-			if !isCandidateCallExpr(call) {
-				return true
+		for _, decl := range file.Decls {
+			fn, ok := decl.(*ast.FuncDecl)
+			if !ok || fn.Body == nil || fn.Name == nil || !strings.HasPrefix(fn.Name.Name, "Test") {
+				continue
 			}
-
-			// Typed confirmation: the call must resolve to resource.Test or
-			// resource.ParallelTest from the testing helper package.
-			if !isAcceptanceTestCall(pass, call) {
+			ast.Inspect(fn.Body, func(n ast.Node) bool {
+				call, ok := n.(*ast.CallExpr)
+				if !ok {
+					return true
+				}
+				if !isCandidateCallExpr(call) {
+					return true
+				}
+				if !isAcceptanceTestCall(call, aliases) {
+					return true
+				}
+				if len(call.Args) < 2 {
+					return true
+				}
+				inspectTestCase(pass, fileLineCache, varSpecIndex, call.Args[1])
 				return true
-			}
-
-			// The call is resource.Test(t, testCase) or resource.ParallelTest(t, testCase).
-			// The second argument should be the resource.TestCase.
-			if len(call.Args) < 2 {
-				return true
-			}
-
-			inspectTestCase(pass, call.Args[1])
-			return true
-		})
+			})
+		}
 	}
 
 	return nil, nil
 }
 
+// buildResourceImportAliases returns the set of local names that refer to the
+// terraform-plugin-testing helper/resource package in file. Returns nil when
+// the package is not imported.
+func buildResourceImportAliases(file *ast.File) map[string]bool {
+	aliases := make(map[string]bool)
+	for _, imp := range file.Imports {
+		path, err := strconv.Unquote(imp.Path.Value)
+		if err != nil || path != resourcePkg {
+			continue
+		}
+		if imp.Name != nil {
+			switch imp.Name.Name {
+			case "_":
+				continue
+			case ".":
+				// Dot-import unqualified calls are out of scope; record sentinel only.
+				aliases["."] = true
+			default:
+				aliases[imp.Name.Name] = true
+			}
+			continue
+		}
+		aliases["resource"] = true
+	}
+	if len(aliases) == 0 {
+		return nil
+	}
+	return aliases
+}
+
 // isCandidateCallExpr returns true if call is syntactically a selector call whose
-// selector name is "Test" or "ParallelTest". This is a cheap guard before typed lookup.
+// selector name is "Test" or "ParallelTest". This is a cheap guard before import-alias matching.
 func isCandidateCallExpr(call *ast.CallExpr) bool {
 	sel, ok := call.Fun.(*ast.SelectorExpr)
 	if !ok {
@@ -90,23 +123,28 @@ func isCandidateCallExpr(call *ast.CallExpr) bool {
 	return name == "Test" || name == "ParallelTest"
 }
 
-// isAcceptanceTestCall returns true if call is resource.Test(...) or resource.ParallelTest(...).
-func isAcceptanceTestCall(pass *analysis.Pass, call *ast.CallExpr) bool {
-	fnObj := calledFunction(pass, call)
-	if fnObj == nil || fnObj.Pkg() == nil {
+// isAcceptanceTestCall returns true if call is resource.Test(...) or resource.ParallelTest(...)
+// based on syntactic import aliases (no TypesInfo lookup).
+func isAcceptanceTestCall(call *ast.CallExpr, aliases map[string]bool) bool {
+	sel, ok := call.Fun.(*ast.SelectorExpr)
+	if !ok {
 		return false
 	}
-	if fnObj.Pkg().Path() != resourcePkg {
+	ident, ok := sel.X.(*ast.Ident)
+	if !ok {
 		return false
 	}
-	name := fnObj.Name()
+	if !aliases[ident.Name] {
+		return false
+	}
+	name := sel.Sel.Name
 	return name == "Test" || name == "ParallelTest"
 }
 
 // inspectTestCase extracts the Steps slice from a resource.TestCase and inspects each step.
 // Only a composite literal is analyzed: patterns such as resource.Test(t, factory()) are not
 // followed, so acceptance tests should pass the TestCase literal directly as the second argument.
-func inspectTestCase(pass *analysis.Pass, expr ast.Expr) {
+func inspectTestCase(pass *analysis.Pass, fileLineCache map[string][]string, varSpecIndex map[*types.Var]*ast.ValueSpec, expr ast.Expr) {
 	lit, ok := expr.(*ast.CompositeLit)
 	if !ok {
 		return
@@ -147,7 +185,7 @@ func inspectTestCase(pass *analysis.Pass, expr ast.Expr) {
 		if !ok {
 			continue
 		}
-		inspectTestStep(pass, stepLit)
+		inspectTestStep(pass, fileLineCache, varSpecIndex, stepLit)
 	}
 }
 
@@ -164,7 +202,7 @@ func isTestCaseLit(pass *analysis.Pass, lit *ast.CompositeLit) bool {
 }
 
 // inspectTestStep inspects a single resource.TestStep composite literal for violations.
-func inspectTestStep(pass *analysis.Pass, lit *ast.CompositeLit) {
+func inspectTestStep(pass *analysis.Pass, fileLineCache map[string][]string, varSpecIndex map[*types.Var]*ast.ValueSpec, lit *ast.CompositeLit) {
 	// Confirm it's actually a resource.TestStep.
 	t := pass.TypesInfo.TypeOf(lit)
 	if !isNamedType(t, resourcePkg, "TestStep") {
@@ -243,7 +281,7 @@ func inspectTestStep(pass *analysis.Pass, lit *ast.CompositeLit) {
 
 	// ExternalProviders compatibility steps must source Config from an embedded testdata/.../*.tf fixture.
 	if hasExternalProviders && hasConfig && !hasConfigDir {
-		if !isValidEmbeddedCompatConfig(pass, configExpr) {
+		if !isValidEmbeddedCompatConfig(pass, fileLineCache, varSpecIndex, configExpr) {
 			pass.Reportf(configExpr.Pos(), msgCompatibilityConfigMustBeEmbeddedTF)
 		}
 	}

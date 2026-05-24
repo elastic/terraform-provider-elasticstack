@@ -34,12 +34,22 @@ var (
 )
 
 type AgentResource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[agentModel]
 }
 
 func newAgentResource() *AgentResource {
 	return &AgentResource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "agentbuilder_agent"),
+		KibanaResource: entitycore.NewKibanaResource[agentModel](
+			entitycore.ComponentKibana,
+			"agentbuilder_agent",
+			entitycore.KibanaResourceOptions[agentModel]{
+				Schema: getResourceSchema,
+				Read:   readAgent,
+				Delete: deleteAgent,
+				Create: createAgent,
+				Update: updateAgent,
+			},
+		),
 	}
 }
 

@@ -40,7 +40,7 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	oapiClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, response.Diagnostics)
+	oapiClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, &response.Diagnostics)
 	if oapiClient == nil {
 		return
 	}

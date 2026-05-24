@@ -162,9 +162,9 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					if err != nil {
 						return false, err
 					}
-					typedClient, err := client.GetESClient()
-					if err != nil {
-						return false, err
+					typedClient, diags := client.GetESClient()
+					if diags.HasError() {
+						return false, fmt.Errorf("failed to get elasticsearch client: %v", diags)
 					}
 					_, err = typedClient.Security.PutUser(username).
 						Roles("kibana_admin").
@@ -236,9 +236,9 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					if err != nil {
 						return false, err
 					}
-					typedClient, err := client.GetESClient()
-					if err != nil {
-						return false, err
+					typedClient, diags := client.GetESClient()
+					if diags.HasError() {
+						return false, fmt.Errorf("failed to get elasticsearch client: %v", diags)
 					}
 					_, err = typedClient.Security.ChangePassword().
 						Username(username).
@@ -362,9 +362,9 @@ func checkResourceSecurityUserDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		typedClient, err := client.GetESClient()
-		if err != nil {
-			return err
+		typedClient, diags := client.GetESClient()
+		if diags.HasError() {
+			return fmt.Errorf("failed to get elasticsearch client: %v", diags)
 		}
 		_, err = typedClient.Security.GetUser().Username(compID.ResourceID).Do(context.Background())
 		if err != nil {

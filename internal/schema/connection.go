@@ -36,9 +36,15 @@ import (
 // (e.g., in ImportState or state upgraders) so the framework can match the
 // list element type against the schema instead of encountering a zero-value.
 func KibanaConnectionNullList() types.List {
-	return types.ListNull(types.ObjectType{
+	return types.ListNull(KibanaConnectionObjectType())
+}
+
+// KibanaConnectionObjectType returns the object type for kibana_connection list
+// elements. Managed and ephemeral resources use the same connection block shape.
+func KibanaConnectionObjectType() types.ObjectType {
+	return types.ObjectType{
 		AttrTypes: kibanaConnectionBlockObjectAttrTypes(),
-	})
+	}
 }
 
 // ElasticsearchConnectionNullList returns a properly-typed null list value for the

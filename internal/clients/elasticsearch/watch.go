@@ -51,13 +51,12 @@ func PutWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 func PutWatchBodyJSON(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string, active bool, watchBodyJSON []byte) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return diags
+	typedClient, d := apiClient.GetESClient()
+	if d.HasError() {
+		return d
 	}
 
-	_, err = typedClient.Watcher.PutWatch(watchID).Active(active).Raw(bytes.NewReader(watchBodyJSON)).Do(ctx)
+	_, err := typedClient.Watcher.PutWatch(watchID).Active(active).Raw(bytes.NewReader(watchBodyJSON)).Do(ctx)
 	if err != nil {
 		diags.AddError("Unable to put watch '"+watchID+"'", err.Error())
 		return diags
@@ -68,10 +67,9 @@ func PutWatchBodyJSON(ctx context.Context, apiClient *clients.ElasticsearchScope
 func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) (*models.Watch, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return nil, diags
+	typedClient, d := apiClient.GetESClient()
+	if d.HasError() {
+		return nil, d
 	}
 
 	// We use .Perform() (raw *http.Response) instead of .Do() which would
@@ -109,13 +107,12 @@ func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 func DeleteWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return diags
+	typedClient, d := apiClient.GetESClient()
+	if d.HasError() {
+		return d
 	}
 
-	_, err = typedClient.Watcher.DeleteWatch(watchID).Do(ctx)
+	_, err := typedClient.Watcher.DeleteWatch(watchID).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
 			return diags // already gone, treat as success

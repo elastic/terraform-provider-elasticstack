@@ -22,62 +22,28 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *SkillResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var stateModel skillModel
+func readSkill(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, prior skillModel) (skillModel, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	diags := req.State.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	oapiClient, getDiags := client.GetKibanaOapiClient()
+	if getDiags.HasError() {
+		diags.Append(getDiags...)
+		return prior, false, diags
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderSkillsAPIVersion, "skills", &resp.Diagnostics) {
-		return
-	}
-
-	compID, idDiags := clients.CompositeIDFromStr(stateModel.ID.ValueString())
-	resp.Diagnostics.Append(idDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Restore space_id from the composite ID so populateFromAPI can use it.
-	stateModel.SpaceID = types.StringValue(compID.ClusterID)
-
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
-
-	skill, diags := kibanaoapi.GetSkill(ctx, oapiClient, compID.ClusterID, compID.ResourceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	skill, d := kibanaoapi.GetSkill(ctx, oapiClient, spaceID, resourceID)
+	diags.Append(d...)
+	if diags.HasError() {
+		return prior, false, diags
 	}
 
 	if skill == nil {
-		resp.State.RemoveResource(ctx)
-		return
+		return prior, false, diags
 	}
 
-	diags = stateModel.populateFromAPI(ctx, compID.ClusterID, skill)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = resp.State.Set(ctx, stateModel)
-	resp.Diagnostics.Append(diags...)
+	diags.Append(prior.populateFromAPI(ctx, spaceID, skill)...)
+	return prior, true, diags
 }

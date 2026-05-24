@@ -51,9 +51,9 @@ func setupAccMLCalendar(t *testing.T, calendarID string) {
 	if err != nil {
 		t.Fatalf("acceptance elasticsearch client: %v", err)
 	}
-	es, err := client.GetESClient()
-	if err != nil {
-		t.Fatalf("get elasticsearch client: %v", err)
+	es, clientDiags := client.GetESClient()
+	if clientDiags.HasError() {
+		t.Fatalf("get elasticsearch client: %v", clientDiags)
 	}
 	desc := fmt.Sprintf("terraform acc calendar %s", calendarID)
 	if _, err := es.Ml.PutCalendar(calendarID).Description(desc).Do(ctx); err != nil {
@@ -115,9 +115,9 @@ func accCleanupMLAnomalyJobAfterTest(t *testing.T, jobID string) {
 			t.Logf("cleanup ML job %q: acceptance client: %v", jobID, err)
 			return
 		}
-		es, err := client.GetESClient()
-		if err != nil {
-			t.Logf("cleanup ML job %q: typed client: %v", jobID, err)
+		es, clientDiags := client.GetESClient()
+		if clientDiags.HasError() {
+			t.Logf("cleanup ML job %q: typed client: %v", jobID, clientDiags)
 			return
 		}
 		if _, err := es.Ml.CloseJob(jobID).Force(true).AllowNoMatch(true).Do(ctx); err != nil {
@@ -491,9 +491,9 @@ func TestAccMLCalendarJob_getCalendarsMissingRepresentedAsNotFound(t *testing.T)
 	if err != nil {
 		t.Fatalf("acceptance elasticsearch client: %v", err)
 	}
-	es, err := client.GetESClient()
-	if err != nil {
-		t.Fatalf("get elasticsearch client: %v", err)
+	es, clientDiags := client.GetESClient()
+	if clientDiags.HasError() {
+		t.Fatalf("get elasticsearch client: %v", clientDiags)
 	}
 	calendarID := fmt.Sprintf("test-cal-job-nocal-%s", sdkacctest.RandStringFromCharSet(24, sdkacctest.CharSetAlphaNum))
 
@@ -541,9 +541,9 @@ func TestAccResourceMLCalendarJob_refreshRemovesAssignmentWhenCalendarDeleted(t 
 					if err != nil {
 						t.Fatalf("acceptance elasticsearch client: %v", err)
 					}
-					es, err := c.GetESClient()
-					if err != nil {
-						t.Fatalf("typed elasticsearch client: %v", err)
+					es, clientDiags := c.GetESClient()
+					if clientDiags.HasError() {
+						t.Fatalf("typed elasticsearch client: %v", clientDiags)
 					}
 					if _, err := es.Ml.DeleteCalendar(calendarID).Do(ctx); err != nil && !esclient.IsNotFoundElasticsearchError(err) {
 						t.Fatalf("delete ML calendar %q before refresh: %v", calendarID, err)
