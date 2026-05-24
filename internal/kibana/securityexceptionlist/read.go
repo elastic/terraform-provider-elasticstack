@@ -24,81 +24,50 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *ExceptionListResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state ExceptionListModel
-
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func readExceptionList(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, prior ExceptionListModel) (ExceptionListModel, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
-		return
+		diags.AddError("Failed to get Kibana client", err.Error())
+		return prior, false, diags
 	}
 
-	// Parse composite ID to get space_id and resource_id
-	compID, compIDDiags := clients.CompositeIDFromStr(state.ID.ValueString())
-	resp.Diagnostics.Append(compIDDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	prior.SpaceID = types.StringValue(spaceID)
 
-	state.SpaceID = types.StringValue(compID.ClusterID)
-
-	// Read by resource ID from composite ID
-	id := compID.ResourceID
+	id := resourceID
 	params := &kbapi.ReadExceptionListParams{
 		Id: &id,
 	}
-	// Include namespace_type if specified (required for agnostic lists)
-	if typeutils.IsKnown(state.NamespaceType) {
-		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(state.NamespaceType.ValueString())
+	if typeutils.IsKnown(prior.NamespaceType) {
+		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(prior.NamespaceType.ValueString())
 		params.NamespaceType = &nsType
 	}
 
-	readResp, diags := kibanaoapi.GetExceptionList(ctx, oapiClient, compID.ClusterID, params)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	readResp, d := kibanaoapi.GetExceptionList(ctx, oapiClient, spaceID, params)
+	diags.Append(d...)
+	if diags.HasError() {
+		return prior, false, diags
 	}
 
-	// If namespace_type was not known (e.g., during import) and the list was not found,
-	// try reading with namespace_type=agnostic
-	if readResp == nil && !typeutils.IsKnown(state.NamespaceType) {
+	if readResp == nil && !typeutils.IsKnown(prior.NamespaceType) {
 		agnosticNsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType("agnostic")
 		params.NamespaceType = &agnosticNsType
-		readResp, diags = kibanaoapi.GetExceptionList(ctx, oapiClient, compID.ClusterID, params)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
+		readResp, d = kibanaoapi.GetExceptionList(ctx, oapiClient, spaceID, params)
+		diags.Append(d...)
+		if diags.HasError() {
+			return prior, false, diags
 		}
 	}
 
 	if readResp == nil {
-		resp.State.RemoveResource(ctx)
-		return
+		return prior, false, diags
 	}
 
-	// Update state with response using model method
-	diags = state.fromAPI(ctx, readResp)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = resp.State.Set(ctx, state)
-	resp.Diagnostics.Append(diags...)
+	diags.Append(prior.fromAPI(ctx, readResp)...)
+	return prior, true, diags
 }

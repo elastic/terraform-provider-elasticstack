@@ -15,30 +15,25 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package securitylist
+package securitylistitem
 
 import (
-	"context"
+	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/require"
 )
 
-func deleteSecurityList(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ Model) diag.Diagnostics {
-	var diags diag.Diagnostics
+func TestModel_GetResourceID(t *testing.T) {
+	t.Parallel()
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Failed to get Kibana client", err.Error())
-		return diags
-	}
+	m := Model{ListItemID: types.StringValue("item-123")}
+	require.Equal(t, "item-123", m.GetResourceID().ValueString())
+}
 
-	params := &kbapi.DeleteListParams{
-		Id: resourceID,
-	}
+func TestModel_GetSpaceID(t *testing.T) {
+	t.Parallel()
 
-	diags.Append(kibanaoapi.DeleteList(ctx, oapiClient, spaceID, params)...)
-	return diags
+	m := Model{SpaceID: types.StringValue("custom")}
+	require.Equal(t, "custom", m.GetSpaceID().ValueString())
 }

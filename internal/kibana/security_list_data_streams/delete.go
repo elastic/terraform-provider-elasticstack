@@ -20,31 +20,20 @@ package securitylistdatastreams
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *securityListDataStreamsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state Model
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func deleteSecurityListDataStreams(ctx context.Context, client *clients.KibanaScopedClient, _, spaceID string, _ Model) diag.Diagnostics {
+	var diags diag.Diagnostics
 
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
-		return
+		diags.AddError("Failed to get Kibana client", err.Error())
+		return diags
 	}
 
-	spaceID := state.SpaceID.ValueString()
-
-	diags = kibanaoapi.DeleteListIndex(ctx, oapiClient, spaceID)
-	resp.Diagnostics.Append(diags...)
+	diags.Append(kibanaoapi.DeleteListIndex(ctx, oapiClient, spaceID)...)
+	return diags
 }

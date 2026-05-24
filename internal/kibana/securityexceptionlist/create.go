@@ -20,86 +20,52 @@ package securityexceptionlist
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *ExceptionListResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan ExceptionListModel
-
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func createExceptionList(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[ExceptionListModel],
+) (entitycore.KibanaWriteResult[ExceptionListModel], diag.Diagnostics) {
+	m := req.Plan
+	var diags diag.Diagnostics
 
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
-		return
+		diags.AddError("Failed to get Kibana client", err.Error())
+		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
 	}
 
-	// Build the request body using model method
-	body, diags := plan.toCreateRequest(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	body, d := m.toCreateRequest(ctx)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
 	}
 
-	// Create the exception list
-	createResp, diags := kibanaoapi.CreateExceptionList(ctx, oapiClient, plan.SpaceID.ValueString(), *body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	createResp, d := kibanaoapi.CreateExceptionList(ctx, oapiClient, req.SpaceID, *body)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
 	}
 
 	if createResp == nil {
-		resp.Diagnostics.AddError("Failed to create exception list", "API returned empty response")
-		return
+		diags.AddError("Failed to create exception list", "API returned empty response")
+		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
 	}
 
-	/*
-	 * In create/update paths we typically follow the write operation with a read, and then set the state from the read.
-	 * We want to avoid a dirty plan immediately after an apply.
-	 */
-	// Read back the created resource to get the final state
-	readParams := &kbapi.ReadExceptionListParams{
-		Id: &createResp.Id,
+	if createResp.NamespaceType != "" {
+		m.NamespaceType = types.StringValue(string(createResp.NamespaceType))
 	}
 
-	// Include namespace_type if specified (required for agnostic lists)
-	if typeutils.IsKnown(plan.NamespaceType) {
-		nsType := createResp.NamespaceType
-		readParams.NamespaceType = &nsType
-	}
+	m.ID = types.StringValue((&clients.CompositeID{
+		ClusterID:  req.SpaceID,
+		ResourceID: createResp.Id,
+	}).String())
 
-	readResp, diags := kibanaoapi.GetExceptionList(ctx, oapiClient, plan.SpaceID.ValueString(), readParams)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if readResp == nil {
-		resp.State.RemoveResource(ctx)
-		resp.Diagnostics.AddError("Failed to fetch exception list", "API returned empty response")
-		return
-	}
-
-	// Update state with read response using model method
-	diags = plan.fromAPI(ctx, readResp)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = resp.State.Set(ctx, plan)
-	resp.Diagnostics.Append(diags...)
+	return entitycore.KibanaWriteResult[ExceptionListModel]{Model: m}, diags
 }

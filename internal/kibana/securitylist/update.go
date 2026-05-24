@@ -20,80 +20,38 @@ package securitylist
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *securityListResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan Model
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func updateSecurityList(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
+	m := req.Plan
+	var diags diag.Diagnostics
 
-	client, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	var state Model
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Convert plan to API request
-	updateReq, diags := plan.toUpdateRequest()
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Get Kibana client
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
-		return
+		diags.AddError("Failed to get Kibana client", err.Error())
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	// Update the list
-	spaceID := plan.SpaceID.ValueString()
-	updatedList, diags := kibanaoapi.UpdateList(ctx, oapiClient, spaceID, *updateReq)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	updateReq, d := m.toUpdateRequest()
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[Model]{}, diags
+	}
+
+	updatedList, d := kibanaoapi.UpdateList(ctx, oapiClient, req.SpaceID, *updateReq)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
 	if updatedList == nil {
-		resp.Diagnostics.AddError("Failed to update security list", "API returned empty response")
-		return
+		diags.AddError("Failed to update security list", "API returned empty response")
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	// Read the updated list to populate state
-	readParams := &kbapi.ReadListParams{
-		Id: updatedList.Id,
-	}
-
-	list, diags := kibanaoapi.GetList(ctx, oapiClient, spaceID, readParams)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if list == nil {
-		resp.State.RemoveResource(ctx)
-		resp.Diagnostics.AddError("Failed to fetch security list", "API returned empty response")
-		return
-	}
-
-	// Update state with read response
-	diags = plan.fromAPI(ctx, list)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	return entitycore.KibanaWriteResult[Model]{Model: m}, diags
 }
