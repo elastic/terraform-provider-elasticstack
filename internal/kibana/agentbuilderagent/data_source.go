@@ -60,12 +60,11 @@ func NewDataSource() datasource.DataSource {
 func readAgentDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config agentDataSourceModel) (agentDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	serverVersion, verDiags := kbClient.ServerVersion(ctx)
+	supportsAdvancedConfig, verDiags := kbClient.EnforceMinVersion(ctx, minVersionAdvancedAgentConfig)
 	diags.Append(verDiags...)
 	if diags.HasError() {
 		return config, diags
 	}
-	supportsAdvancedConfig := !serverVersion.LessThan(minVersionAdvancedAgentConfig)
 
 	if !typeutils.IsKnown(config.AgentID) || config.AgentID.ValueString() == "" {
 		diags.AddError("Invalid configuration", "agent_id must be set.")

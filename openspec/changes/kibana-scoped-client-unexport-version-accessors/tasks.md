@@ -15,8 +15,8 @@
 
 ## 2. Pattern B — `EnforceMinVersion` boolean for feature toggles
 
-- [ ] 2.1 `internal/kibana/synthetics/parameter/delete.go`: replace `kibanaVersion.LessThan(minKibanaPerIDDeleteVersion)` with `client.EnforceMinVersion(ctx, minKibanaPerIDDeleteVersion)`; if true use per-ID endpoint, else bulk
-- [ ] 2.2 `internal/kibana/agentbuilderagent/data_source.go`: replace `!serverVersion.LessThan(minVersionAdvancedAgentConfig)` with `client.EnforceMinVersion(ctx, minVersionAdvancedAgentConfig)`; assign result to `supportsAdvancedConfig`
+- [x] 2.1 `internal/kibana/synthetics/parameter/delete.go`: replace `kibanaVersion.LessThan(minKibanaPerIDDeleteVersion)` with `client.EnforceMinVersion(ctx, minKibanaPerIDDeleteVersion)`; if true use per-ID endpoint, else bulk
+- [x] 2.2 `internal/kibana/agentbuilderagent/data_source.go`: replace `!serverVersion.LessThan(minVersionAdvancedAgentConfig)` with `client.EnforceMinVersion(ctx, minVersionAdvancedAgentConfig)`; assign result to `supportsAdvancedConfig`
 
 ## 3. Pattern C — `alertingRuleFeatures` capability struct
 
