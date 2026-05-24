@@ -36,4 +36,5 @@
 ## 3. OpenSpec
 
 - [ ] 3.1 Ensure the delta spec at `openspec/changes/fleet-getpackages-nil-guard/specs/fleet-integration/spec.md` is aligned with the implementation.
-- [ ] 3.2 After merge decision: sync into `openspec/specs/fleet-integration/spec.md` or archive the change per project workflow; run `make check-openspec`.
+- [ ] 3.2 Add a unit test in `internal/clients/fleet/*_test.go` using an `httptest` server that returns HTTP 200 with a non-JSON Content-Type, and verify `GetPackages` returns an error diagnostic instead of panicking.
+- [ ] 3.3 After merge decision: sync into `openspec/specs/fleet-integration/spec.md` or archive the change per project workflow; run `make check-openspec`.
