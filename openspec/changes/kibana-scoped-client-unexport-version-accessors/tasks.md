@@ -35,8 +35,8 @@
 
 ## 5. Tests in `internal/clients/`
 
-- [ ] 5.1 Rewrite `internal/clients/kibana_scoped_client_test.go`: remove `TestKibanaScopedClient_ServerVersion_*` and `TestKibanaScopedClient_ServerFlavor_MissingEndpoint`. Add tests for `EnforceMinVersion` and `EnforceVersionCheck` covering: missing endpoint, stateful below min, stateful at min, stateful above min, serverless short-circuit, malformed version response, status API error
-- [ ] 5.2 In `internal/clients/provider_client_factory_test.go` replace `TestKibanaScopedClient_ServerFlavor_ViaFactory` with `TestKibanaScopedClient_EnforceMinVersion_ViaFactory` asserting the serverless short-circuit through the factory-obtained client
+- [x] 5.1 Rewrite `internal/clients/kibana_scoped_client_test.go`: remove `TestKibanaScopedClient_ServerVersion_*` and `TestKibanaScopedClient_ServerFlavor_MissingEndpoint`. Add tests for `EnforceMinVersion` and `EnforceVersionCheck` covering: missing endpoint, stateful below min, stateful at min, stateful above min, serverless short-circuit, malformed version response, status API error
+- [x] 5.2 In `internal/clients/provider_client_factory_test.go` replace `TestKibanaScopedClient_ServerFlavor_ViaFactory` with `TestKibanaScopedClient_EnforceMinVersion_ViaFactory` asserting the serverless short-circuit through the factory-obtained client
 
 ## 6. Remove the public accessors
 

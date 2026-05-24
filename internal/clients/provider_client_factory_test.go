@@ -170,34 +170,27 @@ func newScopedClientFromFactory(t *testing.T, endpoint string) *KibanaScopedClie
 	return scoped
 }
 
-// TestKibanaScopedClient_ServerVersion_ViaFactory verifies that
-// ServerVersion on a scoped client obtained from the factory routes through
-// the Kibana status API and not Elasticsearch.
-func TestKibanaScopedClient_ServerVersion_ViaFactory(t *testing.T) {
-	const wantVersion = "8.19.0"
-	srv := newMockKibanaServer(wantVersion)
+// TestKibanaScopedClient_EnforceMinVersion_ViaFactory verifies that
+// EnforceMinVersion on a scoped client obtained from the factory routes through
+// the Kibana status API (not Elasticsearch) and evaluates stateful version gates.
+func TestKibanaScopedClient_EnforceMinVersion_ViaFactory(t *testing.T) {
+	const serverVersion = "8.19.0"
+	srv := newMockKibanaServer(serverVersion)
 	defer srv.Close()
 
 	scoped := newScopedClientFromFactory(t, srv.URL)
 
-	ver, diags := scoped.ServerVersion(context.Background())
+	minBelow, err := goversion.NewVersion("8.0.0")
+	require.NoError(t, err)
+	ok, diags := scoped.EnforceMinVersion(context.Background(), minBelow)
 	require.False(t, diags.HasError())
-	require.NotNil(t, ver)
-	assert.Equal(t, wantVersion, ver.Original())
-}
+	assert.True(t, ok, "8.19.0 must satisfy min 8.0.0")
 
-// TestKibanaScopedClient_ServerFlavor_ViaFactory verifies that
-// ServerFlavor on a factory-obtained scoped client routes through Kibana.
-func TestKibanaScopedClient_ServerFlavor_ViaFactory(t *testing.T) {
-	const wantVersion = "8.19.0"
-	srv := newMockKibanaServer(wantVersion)
-	defer srv.Close()
-
-	scoped := newScopedClientFromFactory(t, srv.URL)
-
-	flavor, diags := scoped.ServerFlavor(context.Background())
+	minAbove, err := goversion.NewVersion("9.0.0")
+	require.NoError(t, err)
+	ok, diags = scoped.EnforceMinVersion(context.Background(), minAbove)
 	require.False(t, diags.HasError())
-	assert.Equal(t, "default", flavor)
+	assert.False(t, ok, "8.19.0 must not satisfy min 9.0.0")
 }
 
 // TestKibanaScopedClient_ServerlessEnforceMinVersion verifies that
