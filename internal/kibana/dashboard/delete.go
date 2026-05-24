@@ -52,8 +52,7 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 	spaceID := composite.ClusterID
 
 	// Get the Kibana client
-	kibanaClient, d := client.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
+	kibanaClient := client.GetKibanaOapiClientDiag(&resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

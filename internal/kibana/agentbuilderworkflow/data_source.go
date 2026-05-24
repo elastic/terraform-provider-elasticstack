@@ -73,8 +73,7 @@ func readWorkflowDataSource(ctx context.Context, client *clients.KibanaScopedCli
 		return config, diags
 	}
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
+	oapiClient := client.GetKibanaOapiClientDiag(&diags)
 	if diags.HasError() {
 		return config, diags
 	}

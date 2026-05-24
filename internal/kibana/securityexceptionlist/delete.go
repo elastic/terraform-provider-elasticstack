@@ -29,8 +29,7 @@ import (
 func deleteExceptionList(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, m ExceptionListModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	diags.Append(getDiags...)
+	oapiClient := client.GetKibanaOapiClientDiag(&diags)
 	if diags.HasError() {
 		return diags
 	}

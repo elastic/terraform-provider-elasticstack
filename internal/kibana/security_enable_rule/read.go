@@ -30,8 +30,7 @@ import (
 func readSecurityEnableRule(ctx context.Context, client *clients.KibanaScopedClient, _, _ string, model enableRuleModel) (enableRuleModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
+	oapiClient := client.GetKibanaOapiClientDiag(&diags)
 	if diags.HasError() {
 		return model, false, diags
 	}

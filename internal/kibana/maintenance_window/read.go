@@ -29,8 +29,7 @@ import (
 func readMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model Model) (Model, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
+	oapiClient := client.GetKibanaOapiClientDiag(&diags)
 	if diags.HasError() {
 		return model, false, diags
 	}

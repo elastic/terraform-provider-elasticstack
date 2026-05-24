@@ -39,9 +39,8 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	if getDiags.HasError() {
-		resp.Diagnostics.Append(getDiags...)
+	oapiClient := client.GetKibanaOapiClientDiag(&resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

@@ -71,8 +71,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	rule.RuleID = ruleID
 	rule.SpaceID = spaceID
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
+	oapiClient := client.GetKibanaOapiClientDiag(&resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

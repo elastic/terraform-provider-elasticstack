@@ -28,9 +28,8 @@ import (
 func readAgent(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, prior agentModel) (agentModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	if getDiags.HasError() {
-		diags.Append(getDiags...)
+	oapiClient := client.GetKibanaOapiClientDiag(&diags)
+	if diags.HasError() {
 		return prior, false, diags
 	}
 

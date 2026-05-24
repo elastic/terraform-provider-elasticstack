@@ -50,8 +50,7 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
-	oapi, d := apiClient.GetKibanaOapiClient()
-	response.Diagnostics.Append(d...)
+	oapi := apiClient.GetKibanaOapiClientDiag(&response.Diagnostics)
 	if response.Diagnostics.HasError() {
 		return
 	}

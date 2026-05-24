@@ -49,8 +49,7 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
+	oapiClient := client.GetKibanaOapiClientDiag(&resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

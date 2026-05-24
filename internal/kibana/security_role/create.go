@@ -35,8 +35,7 @@ func createRole(ctx context.Context, client *clients.KibanaScopedClient, req ent
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 	}
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
+	oapiClient := client.GetKibanaOapiClientDiag(&diags)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 	}

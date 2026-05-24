@@ -49,8 +49,7 @@ func deleteSecurityEnableRule(ctx context.Context, client *clients.KibanaScopedC
 		return diags
 	}
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
+	oapiClient := client.GetKibanaOapiClientDiag(&diags)
 	if diags.HasError() {
 		return diags
 	}

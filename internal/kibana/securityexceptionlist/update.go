@@ -35,8 +35,7 @@ func updateExceptionList(
 	m := req.Plan
 	var diags diag.Diagnostics
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	diags.Append(getDiags...)
+	oapiClient := client.GetKibanaOapiClientDiag(&diags)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
 	}

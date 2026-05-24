@@ -67,6 +67,14 @@ func (k *KibanaScopedClient) GetKibanaOapiClient() (*kibanaoapi.Client, fwdiag.D
 	return k.kibanaOapi, diags
 }
 
+// GetKibanaOapiClientDiag appends any client-configuration diagnostics to diags
+// and returns the Kibana OpenAPI client (nil on error).
+func (k *KibanaScopedClient) GetKibanaOapiClientDiag(diags *fwdiag.Diagnostics) *kibanaoapi.Client {
+	c, d := k.GetKibanaOapiClient()
+	diags.Append(d...)
+	return c
+}
+
 // GetFleetClient returns the Fleet client.
 func (k *KibanaScopedClient) GetFleetClient() (*fleetclient.Client, error) {
 	if k.fleetEndpoint == "" {

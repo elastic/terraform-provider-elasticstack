@@ -78,8 +78,7 @@ func readAgentDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 		includeDeps = config.IncludeDependencies.ValueBool()
 	}
 
-	client, d := kbClient.GetKibanaOapiClient()
-	diags.Append(d...)
+	client := kbClient.GetKibanaOapiClientDiag(&diags)
 	if diags.HasError() {
 		return config, diags
 	}

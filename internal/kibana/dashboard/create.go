@@ -43,8 +43,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	}
 
 	// Get the Kibana client
-	kibanaClient, d := client.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
+	kibanaClient := client.GetKibanaOapiClientDiag(&resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

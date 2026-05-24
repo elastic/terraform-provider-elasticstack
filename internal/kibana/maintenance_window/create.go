@@ -37,8 +37,7 @@ func createMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedCl
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
+	oapiClient := client.GetKibanaOapiClientDiag(&diags)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}

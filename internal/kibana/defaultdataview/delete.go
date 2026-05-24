@@ -33,8 +33,7 @@ func deleteDefaultDataView(ctx context.Context, client *clients.KibanaScopedClie
 		return diags
 	}
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
+	oapiClient := client.GetKibanaOapiClientDiag(&diags)
 	if diags.HasError() {
 		return diags
 	}

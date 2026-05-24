@@ -30,8 +30,7 @@ func updateSecurityListItem(ctx context.Context, client *clients.KibanaScopedCli
 	m := req.Plan
 	var diags diag.Diagnostics
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	diags.Append(getDiags...)
+	oapiClient := client.GetKibanaOapiClientDiag(&diags)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}

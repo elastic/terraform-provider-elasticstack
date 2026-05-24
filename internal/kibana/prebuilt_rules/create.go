@@ -43,8 +43,7 @@ func writePrebuiltRules(
 	model := req.Plan
 	var diags diag.Diagnostics
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
+	oapiClient := client.GetKibanaOapiClientDiag(&diags)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[prebuiltRuleModel]{}, diags
 	}

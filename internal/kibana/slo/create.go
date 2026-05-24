@@ -100,8 +100,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	oapi, d := apiClient.GetKibanaOapiClient()
-	response.Diagnostics.Append(d...)
+	oapi := apiClient.GetKibanaOapiClientDiag(&response.Diagnostics)
 	if response.Diagnostics.HasError() {
 		return
 	}

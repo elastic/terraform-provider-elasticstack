@@ -76,8 +76,7 @@ func (r *Resource) read(ctx context.Context, apiClient *clients.KibanaScopedClie
 	spaceID := composite.ClusterID
 
 	// Get the Kibana client
-	kibanaClient, d := apiClient.GetKibanaOapiClient()
-	diags.Append(d...)
+	kibanaClient := apiClient.GetKibanaOapiClientDiag(&diags)
 	if diags.HasError() {
 		return nil, diags
 	}

@@ -44,9 +44,8 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	if getDiags.HasError() {
-		resp.Diagnostics.Append(getDiags...)
+	oapiClient := client.GetKibanaOapiClientDiag(&resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

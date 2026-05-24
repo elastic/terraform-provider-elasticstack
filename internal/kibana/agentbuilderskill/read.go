@@ -28,9 +28,8 @@ import (
 func readSkill(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, prior skillModel) (skillModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	if getDiags.HasError() {
-		diags.Append(getDiags...)
+	oapiClient := client.GetKibanaOapiClientDiag(&diags)
+	if diags.HasError() {
 		return prior, false, diags
 	}
 

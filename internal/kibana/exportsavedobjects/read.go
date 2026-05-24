@@ -36,8 +36,7 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, c
 	var diags diag.Diagnostics
 
 	// Get Kibana client
-	oapiClient, d := kbClient.GetKibanaOapiClient()
-	diags.Append(d...)
+	oapiClient := kbClient.GetKibanaOapiClientDiag(&diags)
 	if diags.HasError() {
 		return config, diags
 	}

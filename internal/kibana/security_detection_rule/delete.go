@@ -51,9 +51,8 @@ func (r *securityDetectionRuleResource) Delete(ctx context.Context, req resource
 	spaceID := compID.ClusterID
 
 	// Get the rule using kbapi client
-	kbClient, getDiags := client.GetKibanaOapiClient()
-	if getDiags.HasError() {
-		resp.Diagnostics.Append(getDiags...)
+	kbClient := client.GetKibanaOapiClientDiag(&resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
