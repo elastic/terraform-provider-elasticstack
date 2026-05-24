@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -53,31 +54,16 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	serverVersion, verDiags := apiClient.ServerVersion(ctx)
-	response.Diagnostics.Append(verDiags...)
+	response.Diagnostics.Append(entitycore.EnforceVersionRequirements(ctx, apiClient, &plan)...)
 	if response.Diagnostics.HasError() {
 		return
 	}
 
-	if apiModel.Settings != nil && apiModel.Settings.PreventInitialBackfill != nil {
-		if serverVersion.LessThan(SLOSupportsPreventInitialBackfillMinVersion) {
-			response.Diagnostics.AddError(
-				"Unsupported Elastic Stack version",
-				"The 'prevent_initial_backfill' setting requires Elastic Stack version "+SLOSupportsPreventInitialBackfillMinVersion.String()+" or higher.",
-			)
-			return
-		}
-	}
-
-	if plan.hasDataViewID() && serverVersion.LessThan(SLOSupportsDataViewIDMinVersion) {
-		response.Diagnostics.AddError(
-			"Unsupported Elastic Stack version",
-			"data_view_id is not supported on Elastic Stack versions < "+SLOSupportsDataViewIDMinVersion.String(),
-		)
+	supportsGroupBy, groupByDiags := apiClient.EnforceMinVersion(ctx, SLOSupportsGroupByMinVersion)
+	response.Diagnostics.Append(groupByDiags...)
+	if response.Diagnostics.HasError() {
 		return
 	}
-
-	supportsGroupBy := serverVersion.GreaterThanOrEqual(SLOSupportsGroupByMinVersion)
 	if !supportsGroupBy {
 		if len(apiModel.GroupBy) > 0 {
 			response.Diagnostics.AddError(
@@ -91,7 +77,14 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		apiModel.GroupBy = nil
 	}
 
-	supportsMultipleGroupBy := supportsGroupBy && serverVersion.GreaterThanOrEqual(SLOSupportsMultipleGroupByMinVersion)
+	supportsMultipleGroupBy := false
+	if supportsGroupBy {
+		supportsMultipleGroupBy, groupByDiags = apiClient.EnforceMinVersion(ctx, SLOSupportsMultipleGroupByMinVersion)
+		response.Diagnostics.Append(groupByDiags...)
+		if response.Diagnostics.HasError() {
+			return
+		}
+	}
 	if len(apiModel.GroupBy) > 1 && !supportsMultipleGroupBy {
 		response.Diagnostics.AddError(
 			"Unsupported Elastic Stack version",

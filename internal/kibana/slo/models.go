@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -71,6 +72,38 @@ type tfModel struct {
 	ApmAvailabilityIndicator []tfApmAvailabilityIndicator `tfsdk:"apm_availability_indicator"`
 	KqlCustomIndicator       []tfKqlCustomIndicator       `tfsdk:"kql_custom_indicator"`
 	TimesliceMetricIndicator []tfTimesliceMetricIndicator `tfsdk:"timeslice_metric_indicator"`
+}
+
+var _ entitycore.WithVersionRequirements = tfModel{}
+
+// GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
+func (m tfModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var reqs []entitycore.VersionRequirement
+
+	if typeutils.IsKnown(m.Settings) && !m.Settings.IsNull() {
+		settingsModel, settingsDiags := tfSettingsFromObject(m.Settings)
+		diags.Append(settingsDiags...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		if typeutils.IsKnown(settingsModel.PreventInitialBackfill) {
+			reqs = append(reqs, entitycore.VersionRequirement{
+				MinVersion: *SLOSupportsPreventInitialBackfillMinVersion,
+				ErrorMessage: "The 'prevent_initial_backfill' setting requires Elastic Stack version " +
+					SLOSupportsPreventInitialBackfillMinVersion.String() + " or higher.",
+			})
+		}
+	}
+
+	if m.hasDataViewID() {
+		reqs = append(reqs, entitycore.VersionRequirement{
+			MinVersion:   *SLOSupportsDataViewIDMinVersion,
+			ErrorMessage: "data_view_id is not supported on Elastic Stack versions < " + SLOSupportsDataViewIDMinVersion.String(),
+		})
+	}
+
+	return reqs, diags
 }
 
 type tfTimeWindow struct {
