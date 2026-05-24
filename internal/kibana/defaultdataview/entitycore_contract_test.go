@@ -18,31 +18,29 @@
 package defaultdataview
 
 import (
-	"context"
+	"reflect"
+	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/stretchr/testify/require"
 )
 
-func deleteDefaultDataView(ctx context.Context, client *clients.KibanaScopedClient, _, spaceID string, model defaultDataViewModel) diag.Diagnostics {
-	var diags diag.Diagnostics
+func TestDefaultDataViewModel_satisfiesKibanaResourceModel(t *testing.T) {
+	t.Parallel()
+	var _ entitycore.KibanaResourceModel = defaultDataViewModel{}
+}
 
-	if model.SkipDelete.ValueBool() {
-		return diags
-	}
+func TestResource_embedsEntityCoreKibanaResource(t *testing.T) {
+	t.Parallel()
+	rt := reflect.TypeFor[Resource]()
+	field, ok := rt.FieldByName("KibanaResource")
+	require.True(t, ok)
+	require.True(t, field.Anonymous)
+	require.Equal(t, reflect.TypeFor[*entitycore.KibanaResource[defaultDataViewModel]](), field.Type)
+}
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return diags
-	}
-
-	setReq := kbapi.SetDefaultDatailViewDefaultJSONRequestBody{
-		Force: new(true),
-	}
-
-	diags.Append(kibanaoapi.SetDefaultDataView(ctx, oapiClient, spaceID, setReq)...)
-	return diags
+func TestNewResource_satisfiesFrameworkInterfaces(t *testing.T) {
+	t.Parallel()
+	var _ resource.ResourceWithConfigure = newResource()
 }

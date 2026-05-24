@@ -20,53 +20,30 @@ package prebuiltrules
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *PrebuiltRuleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var model prebuiltRuleModel
+func readPrebuiltRules(ctx context.Context, client *clients.KibanaScopedClient, _, spaceID string, model prebuiltRuleModel) (prebuiltRuleModel, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
+	oapiClient, d := client.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
+		return model, false, diags
 	}
 
-	apiClient, clientDiags := r.Client().GetKibanaClient(ctx, model.KibanaConnection)
-	resp.Diagnostics.Append(clientDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	serverVersion, verDiags := apiClient.ServerVersion(ctx)
-	resp.Diagnostics.Append(verDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	minVersion := version.Must(version.NewVersion("8.0.0"))
-	if serverVersion.LessThan(minVersion) {
-		resp.Diagnostics.AddError("Unsupported server version", "Prebuilt rules are not supported until Elastic Stack v8.0.0. Upgrade the target server to use this resource")
-		return
-	}
-
-	client, getDiags := apiClient.GetKibanaOapiClient()
-	if getDiags.HasError() {
-		resp.Diagnostics.Append(getDiags...)
-		return
-	}
-
-	spaceID := model.ID.ValueString()
-
-	// Get current status
-	status, statusDiags := kibanaoapi.GetPrebuiltRulesStatus(ctx, client, spaceID)
-	resp.Diagnostics.Append(statusDiags...)
-	if resp.Diagnostics.HasError() {
-		return
+	status, statusDiags := kibanaoapi.GetPrebuiltRulesStatus(ctx, oapiClient, spaceID)
+	diags.Append(statusDiags...)
+	if diags.HasError() {
+		return model, false, diags
 	}
 
 	model.populateFromStatus(status)
+	model.ID = types.StringValue(spaceID)
+	model.SpaceID = types.StringValue(spaceID)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+	return model, true, diags
 }

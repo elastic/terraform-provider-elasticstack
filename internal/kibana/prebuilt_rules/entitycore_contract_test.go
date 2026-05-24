@@ -15,20 +15,33 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package defaultdataview
+package prebuiltrules
 
 import (
-	"context"
+	"reflect"
+	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/stretchr/testify/require"
 )
 
-func updateDefaultDataView(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	req entitycore.KibanaWriteRequest[defaultDataViewModel],
-) (entitycore.KibanaWriteResult[defaultDataViewModel], diag.Diagnostics) {
-	return writeDefaultDataView(ctx, client, req)
+func TestPrebuiltRuleModel_satisfiesKibanaResourceModel(t *testing.T) {
+	t.Parallel()
+	var _ entitycore.KibanaResourceModel = prebuiltRuleModel{}
+}
+
+func TestPrebuiltRuleResource_embedsEntityCoreKibanaResource(t *testing.T) {
+	t.Parallel()
+	rt := reflect.TypeFor[PrebuiltRuleResource]()
+	field, ok := rt.FieldByName("KibanaResource")
+	require.True(t, ok)
+	require.True(t, field.Anonymous)
+	require.Equal(t, reflect.TypeFor[*entitycore.KibanaResource[prebuiltRuleModel]](), field.Type)
+}
+
+func TestNewResource_satisfiesFrameworkInterfaces(t *testing.T) {
+	t.Parallel()
+	var _ resource.ResourceWithConfigure = newPrebuiltRuleResource()
+	var _ resource.ResourceWithModifyPlan = newPrebuiltRuleResource()
 }

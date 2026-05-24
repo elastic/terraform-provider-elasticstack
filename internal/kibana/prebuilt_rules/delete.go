@@ -20,10 +20,12 @@ package prebuiltrules
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *PrebuiltRuleResource) Delete(ctx context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
+func deletePrebuiltRules(ctx context.Context, _ *clients.KibanaScopedClient, _, _ string, _ prebuiltRuleModel) diag.Diagnostics {
 	tflog.Info(ctx, "Delete isn't supported for elasticstack_kibana_install_prebuilt_rules")
+	return nil
 }

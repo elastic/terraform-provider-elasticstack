@@ -21,56 +21,49 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	resp.Diagnostics.Append(r.setDefaultDataView(ctx, req.Plan, &resp.State)...)
+func createDefaultDataView(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[defaultDataViewModel],
+) (entitycore.KibanaWriteResult[defaultDataViewModel], diag.Diagnostics) {
+	return writeDefaultDataView(ctx, client, req)
 }
 
-// setDefaultDataView is a helper method that contains the core logic for setting the default data view.
-func (r *Resource) setDefaultDataView(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
-	var model defaultDataViewModel
-	diags := plan.Get(ctx, &model)
-	if diags.HasError() {
-		return diags
-	}
+func writeDefaultDataView(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[defaultDataViewModel],
+) (entitycore.KibanaWriteResult[defaultDataViewModel], diag.Diagnostics) {
+	plan := req.Plan
+	var diags diag.Diagnostics
 
-	apiClient, apiClientDiags := r.Client().GetKibanaClient(ctx, model.KibanaConnection)
-	diags.Append(apiClientDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	client, d := apiClient.GetKibanaOapiClient()
+	oapiClient, d := client.GetKibanaOapiClient()
 	diags.Append(d...)
 	if diags.HasError() {
-		return diags
+		return entitycore.KibanaWriteResult[defaultDataViewModel]{}, diags
 	}
 
-	dataViewID := model.DataViewID.ValueStringPointer()
-	force := model.Force.ValueBool()
-	spaceID := model.SpaceID.ValueString()
+	dataViewID := plan.DataViewID.ValueStringPointer()
+	force := plan.Force.ValueBool()
 	setReq := kbapi.SetDefaultDatailViewDefaultJSONRequestBody{
 		DataViewId: dataViewID,
 		Force:      &force,
 	}
 
-	apiDiags := kibanaoapi.SetDefaultDataView(ctx, client, spaceID, setReq)
-	diags.Append(apiDiags...)
+	diags.Append(kibanaoapi.SetDefaultDataView(ctx, oapiClient, req.SpaceID, setReq)...)
 	if diags.HasError() {
-		return diags
+		return entitycore.KibanaWriteResult[defaultDataViewModel]{}, diags
 	}
 
-	model, readDiags := r.read(ctx, client, model)
-	diags.Append(readDiags...)
-	if diags.HasError() {
-		return diags
-	}
+	plan.ID = types.StringValue(req.SpaceID)
+	plan.SpaceID = types.StringValue(req.SpaceID)
 
-	diags = state.Set(ctx, model)
-	return diags
+	return entitycore.KibanaWriteResult[defaultDataViewModel]{Model: plan}, diags
 }
