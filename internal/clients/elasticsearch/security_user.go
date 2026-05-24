@@ -30,7 +30,7 @@ import (
 func PutUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, user *types.User, password, passwordHash *string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return d
 	}
@@ -66,7 +66,7 @@ func PutUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 }
 
 func GetUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) (*types.User, fwdiag.Diagnostics) {
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return nil, d
 	}
@@ -94,7 +94,7 @@ func GetUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 func DeleteUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return d
 	}
@@ -114,7 +114,7 @@ func DeleteUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 func EnableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return d
 	}
@@ -134,7 +134,7 @@ func EnableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 func DisableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return d
 	}
@@ -154,7 +154,7 @@ func DisableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 func ChangeUserPassword(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string, password, passwordHash *string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return d
 	}

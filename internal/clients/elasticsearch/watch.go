@@ -51,7 +51,7 @@ func PutWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 func PutWatchBodyJSON(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string, active bool, watchBodyJSON []byte) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return d
 	}
@@ -67,7 +67,7 @@ func PutWatchBodyJSON(ctx context.Context, apiClient *clients.ElasticsearchScope
 func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) (*models.Watch, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return nil, d
 	}
@@ -107,7 +107,7 @@ func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 func DeleteWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return d
 	}

@@ -35,7 +35,7 @@ func PutIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return d
 	}
@@ -47,7 +47,7 @@ func PutIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 }
 
 func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*models.IngestPipeline, fwdiag.Diagnostics) {
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return nil, d
 	}
@@ -89,7 +89,7 @@ func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 }
 
 func DeleteIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) fwdiag.Diagnostics {
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return d
 	}

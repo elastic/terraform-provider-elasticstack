@@ -39,7 +39,7 @@ type SnapshotRepositoryInfo struct {
 }
 
 func PutSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, repoType string, settings map[string]any, verify bool) fwdiag.Diagnostics {
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return d
 	}
@@ -127,7 +127,7 @@ func PutSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsearch
 }
 
 func GetSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*SnapshotRepositoryInfo, fwdiag.Diagnostics) {
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return nil, d
 	}
@@ -261,7 +261,7 @@ func extractSnapshotRepositoryInfo(repo types.Repository) (*SnapshotRepositoryIn
 }
 
 func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) fwdiag.Diagnostics {
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return d
 	}

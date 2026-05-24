@@ -42,7 +42,7 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return d
 	}
@@ -73,7 +73,7 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 // types.ReindexDestination does not yet model the destination.aliases field.
 // We decode directly from the raw response body to preserve it.
 func GetTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) (*models.Transform, fwdiag.Diagnostics) {
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return nil, d
 	}
@@ -118,7 +118,7 @@ func GetTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 }
 
 func GetTransformStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) (*types.TransformStats, fwdiag.Diagnostics) {
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return nil, d
 	}
@@ -168,7 +168,7 @@ func UpdateTransform(
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return d
 	}
@@ -200,7 +200,7 @@ func UpdateTransform(
 }
 
 func DeleteTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) fwdiag.Diagnostics {
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return d
 	}
@@ -219,7 +219,7 @@ func DeleteTransform(ctx context.Context, apiClient *clients.ElasticsearchScoped
 }
 
 func startTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transformName string, timeout time.Duration) fwdiag.Diagnostics {
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return d
 	}
@@ -235,7 +235,7 @@ func startTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 }
 
 func stopTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transformName string, timeout time.Duration) fwdiag.Diagnostics {
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return d
 	}

@@ -39,7 +39,7 @@ func PutIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return d
 	}
@@ -55,7 +55,7 @@ func PutIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 }
 
 func GetIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) (*types.Lifecycle, fwdiags.Diagnostics) {
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return nil, d
 	}
@@ -89,7 +89,7 @@ func GetIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 // `in_use_by`, so this function uses Perform to obtain the raw HTTP response
 // and decodes the relevant subset of the body itself.
 func GetIndicesWithILMPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) ([]string, fwdiags.Diagnostics) {
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return nil, d
 	}
@@ -138,7 +138,7 @@ func ClearILMPolicyFromIndices(ctx context.Context, apiClient *clients.Elasticse
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return d
 	}
@@ -151,7 +151,7 @@ func ClearILMPolicyFromIndices(ctx context.Context, apiClient *clients.Elasticse
 }
 
 func DeleteIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) fwdiags.Diagnostics {
-	typedClient, d := apiClient.GetESClientDiag()
+	typedClient, d := apiClient.GetESClient()
 	if d.HasError() {
 		return d
 	}

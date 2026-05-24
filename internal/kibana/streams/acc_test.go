@@ -161,8 +161,8 @@ func prepareStreamsEnvironment(t *testing.T) {
 	// go-elasticsearch typed client; raw HTTP via GetESClient() is required here.
 	if esAPIErr != nil {
 		t.Logf("prepareStreamsEnvironment: could not create ES client: %v", esAPIErr)
-	} else if esClient, esErr := esAPIClient.GetESClient(); esErr != nil {
-		t.Logf("prepareStreamsEnvironment: could not get ES client: %v", esErr)
+	} else if esClient, esDiags := esAPIClient.GetESClient(); esDiags.HasError() {
+		t.Logf("prepareStreamsEnvironment: could not get ES client: %v", esDiags)
 	} else {
 		viewBody, _ := json.Marshal(map[string]string{"query": "FROM " + logsRoot})
 		viewReq := &http.Request{
