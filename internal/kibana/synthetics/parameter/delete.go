@@ -68,13 +68,13 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 	// supported on Kibana >= 8.17.0; it returns 404 on 8.12.x–8.16.x.
 	// DELETE /api/synthetics/params with {"ids":[...]} body (DeleteSyntheticsParamsWithResponse)
 	// works on all supported versions (>= 8.12.0), so that is used for older versions.
-	kibanaVersion, verDiags := apiClient.ServerVersion(ctx)
+	supportsPerID, verDiags := apiClient.EnforceMinVersion(ctx, minKibanaPerIDDeleteVersion)
 	response.Diagnostics.Append(verDiags...)
 	if response.Diagnostics.HasError() {
 		return
 	}
 
-	if kibanaVersion != nil && !kibanaVersion.LessThan(minKibanaPerIDDeleteVersion) {
+	if supportsPerID {
 		// Use the per-ID delete endpoint on Kibana >= 8.17.0.
 		deleteResult, err := kibanaClient.API.DeleteParameterWithResponse(ctx, resourceID)
 		if err != nil {
