@@ -19,53 +19,10 @@ package securityenablerule
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func createSecurityEnableRule(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	req entitycore.KibanaWriteRequest[enableRuleModel],
-) (entitycore.KibanaWriteResult[enableRuleModel], diag.Diagnostics) {
-	return writeSecurityEnableRule(ctx, client, req)
-}
-
-func writeSecurityEnableRule(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	req entitycore.KibanaWriteRequest[enableRuleModel],
-) (entitycore.KibanaWriteResult[enableRuleModel], diag.Diagnostics) {
-	model := req.Plan
-	var diags diag.Diagnostics
-
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError(err.Error(), "Failed to get Kibana client")
-		return entitycore.KibanaWriteResult[enableRuleModel]{}, diags
-	}
-
-	spaceID := model.SpaceID.ValueString()
-	key := model.Key.ValueString()
-	value := model.Value.ValueString()
-
-	if model.DisableOnDestroy.IsNull() {
-		model.DisableOnDestroy = types.BoolValue(true)
-	}
-
-	model.ID = types.StringValue(fmt.Sprintf("%s/%s:%s", spaceID, key, value))
-
-	diags.Append(kibanaoapi.EnableRulesByTag(ctx, oapiClient, spaceID, key, value)...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[enableRuleModel]{}, diags
-	}
-
-	model.AllRulesEnabled = types.BoolValue(true)
-
-	return entitycore.KibanaWriteResult[enableRuleModel]{Model: model}, diags
+func (r *EnableRuleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	resp.Diagnostics.Append(r.upsert(ctx, req.Plan, &resp.State)...)
 }

@@ -19,16 +19,62 @@ package securityenablerule
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func updateSecurityEnableRule(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	req entitycore.KibanaWriteRequest[enableRuleModel],
-) (entitycore.KibanaWriteResult[enableRuleModel], diag.Diagnostics) {
-	return writeSecurityEnableRule(ctx, client, req)
+func (r *EnableRuleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	resp.Diagnostics.Append(r.upsert(ctx, req.Plan, &resp.State)...)
+}
+
+func (r *EnableRuleResource) upsert(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
+	var model enableRuleModel
+
+	diags := plan.Get(ctx, &model)
+	if diags.HasError() {
+		return diags
+	}
+
+	apiClient, apiClientDiags := r.Client().GetKibanaClient(ctx, model.KibanaConnection)
+	diags.Append(apiClientDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	diags.Append(entitycore.EnforceVersionRequirements(ctx, apiClient, &model)...)
+	if diags.HasError() {
+		return diags
+	}
+
+	client, err := apiClient.GetKibanaOapiClient()
+	if err != nil {
+		diags.AddError(err.Error(), "Failed to get Kibana client")
+		return diags
+	}
+
+	spaceID := model.SpaceID.ValueString()
+	key := model.Key.ValueString()
+	value := model.Value.ValueString()
+
+	if model.DisableOnDestroy.IsNull() {
+		model.DisableOnDestroy = types.BoolValue(true)
+	}
+
+	model.ID = types.StringValue(fmt.Sprintf("%s/%s:%s", spaceID, key, value))
+
+	diags.Append(kibanaoapi.EnableRulesByTag(ctx, client, spaceID, key, value)...)
+	if diags.HasError() {
+		return diags
+	}
+
+	model.AllRulesEnabled = types.BoolValue(true)
+
+	diags.Append(state.Set(ctx, model)...)
+	return diags
 }

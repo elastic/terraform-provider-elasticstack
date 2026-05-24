@@ -32,6 +32,7 @@ type EnableRuleResource struct {
 }
 
 func newEnableRuleResource() *EnableRuleResource {
+	placeholder := entitycore.PlaceholderKibanaWriteCallback[enableRuleModel]()
 	return &EnableRuleResource{
 		KibanaResource: entitycore.NewKibanaResource[enableRuleModel](
 			entitycore.ComponentKibana,
@@ -40,8 +41,8 @@ func newEnableRuleResource() *EnableRuleResource {
 				Schema: getSchema,
 				Read:   readSecurityEnableRule,
 				Delete: deleteSecurityEnableRule,
-				Create: createSecurityEnableRule,
-				Update: updateSecurityEnableRule,
+				Create: placeholder,
+				Update: placeholder,
 			},
 		),
 	}
