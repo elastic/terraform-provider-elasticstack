@@ -120,6 +120,16 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions",
       "attemptedAt": "2026-05-23T04:32:23.858865339Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index.mappingsSemanticallyEqual",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index",
+      "attemptedAt": "2026-05-24T04:46:08.063793692Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
