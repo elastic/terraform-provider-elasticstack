@@ -105,7 +105,7 @@ func TestGetPackages_NonJSONHTTP200ReturnsDiagnostic(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			requestCount := 0
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				requestCount++
 				w.Header().Set("Content-Type", "text/plain")
 				if tc.prerelease && requestCount == 1 {
@@ -133,4 +133,21 @@ func TestGetPackages_NonJSONHTTP200ReturnsDiagnostic(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetPackages_JSONHTTP200ReturnsItems(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"items":[{"name":"system","version":"1.0.0"}]}`)
+	}))
+	defer srv.Close()
+
+	client := newTestClient(t, srv)
+	items, diags := fleet.GetPackages(context.Background(), client, false, "")
+
+	require.False(t, diags.HasError())
+	require.Len(t, items, 1)
+	require.Equal(t, "system", items[0].Name)
+	require.Equal(t, "1.0.0", items[0].Version)
 }
