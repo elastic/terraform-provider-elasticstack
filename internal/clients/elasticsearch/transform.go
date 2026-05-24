@@ -42,9 +42,9 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClient()
+	if d.HasError() {
+		return d
 	}
 
 	_, err = typedClient.Transform.PutTransform(transform.Name).
@@ -73,9 +73,9 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 // types.ReindexDestination does not yet model the destination.aliases field.
 // We decode directly from the raw response body to preserve it.
 func GetTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) (*models.Transform, fwdiag.Diagnostics) {
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClient()
+	if d.HasError() {
+		return nil, d
 	}
 
 	res, err := typedClient.Transform.GetTransform().TransformId(*name).Perform(ctx)
@@ -118,9 +118,9 @@ func GetTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 }
 
 func GetTransformStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) (*types.TransformStats, fwdiag.Diagnostics) {
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClient()
+	if d.HasError() {
+		return nil, d
 	}
 
 	statsRes, err := typedClient.Transform.GetTransformStats(*name).Do(ctx)
@@ -168,9 +168,9 @@ func UpdateTransform(
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClient()
+	if d.HasError() {
+		return d
 	}
 
 	_, err = typedClient.Transform.UpdateTransform(transform.Name).
@@ -200,12 +200,12 @@ func UpdateTransform(
 }
 
 func DeleteTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) fwdiag.Diagnostics {
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClient()
+	if d.HasError() {
+		return d
 	}
 
-	_, err = typedClient.Transform.DeleteTransform(*name).Force(true).Do(ctx)
+	_, err := typedClient.Transform.DeleteTransform(*name).Force(true).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
 			return nil
@@ -219,12 +219,12 @@ func DeleteTransform(ctx context.Context, apiClient *clients.ElasticsearchScoped
 }
 
 func startTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transformName string, timeout time.Duration) fwdiag.Diagnostics {
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClient()
+	if d.HasError() {
+		return d
 	}
 
-	_, err = typedClient.Transform.StartTransform(transformName).Timeout(formatDuration(timeout)).Do(ctx)
+	_, err := typedClient.Transform.StartTransform(transformName).Timeout(formatDuration(timeout)).Do(ctx)
 	if err != nil {
 		return fwdiag.Diagnostics{
 			fwdiag.NewErrorDiagnostic(fmt.Sprintf("Unable to start transform: %s", transformName), err.Error()),
@@ -235,12 +235,12 @@ func startTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 }
 
 func stopTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transformName string, timeout time.Duration) fwdiag.Diagnostics {
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClient()
+	if d.HasError() {
+		return d
 	}
 
-	_, err = typedClient.Transform.StopTransform(transformName).Timeout(formatDuration(timeout)).Do(ctx)
+	_, err := typedClient.Transform.StopTransform(transformName).Timeout(formatDuration(timeout)).Do(ctx)
 	if err != nil {
 		return fwdiag.Diagnostics{
 			fwdiag.NewErrorDiagnostic(fmt.Sprintf("Unable to stop transform: %s", transformName), err.Error()),

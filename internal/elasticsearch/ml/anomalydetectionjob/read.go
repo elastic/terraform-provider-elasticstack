@@ -40,9 +40,9 @@ func readAnomalyDetectionJob(ctx context.Context, client *clients.ElasticsearchS
 	}
 	tflog.Debug(ctx, fmt.Sprintf("Reading ML anomaly detection job: %s", jobID))
 
-	typedClient, err := client.GetESClient()
-	if err != nil {
-		diags.AddError("Failed to get Elasticsearch client", err.Error())
+	typedClient, clientDiags := client.GetESClient()
+	diags.Append(clientDiags...)
+	if diags.HasError() {
 		return state, false, diags
 	}
 

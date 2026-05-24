@@ -54,9 +54,9 @@ Please report this warning to the provider developers.`,
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
-	typedClient, err := client.GetESClient()
-	if err != nil {
-		diags.AddError("Failed to get Elasticsearch client", err.Error())
+	typedClient, clientDiags := client.GetESClient()
+	diags.Append(clientDiags...)
+	if diags.HasError() {
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 

@@ -137,8 +137,8 @@ func newMockScopedClient(t *testing.T, srv *httptest.Server) *ElasticsearchScope
 func TestElasticsearchScopedClient_GetESClient_Nil(t *testing.T) {
 	t.Parallel()
 	sc := &ElasticsearchScopedClient{}
-	_, err := sc.GetESClient()
-	assert.Error(t, err, "GetESClient must return an error when typedClient is nil")
+	_, diags := sc.GetESClient()
+	assert.NotEmpty(t, diags, "GetESClient must return diagnostics when typedClient is nil")
 }
 
 // --- Scenario 1: Missing ES endpoint returns actionable error ---
@@ -147,20 +147,20 @@ func TestElasticsearchScopedClient_GetESClient_MissingEndpoint(t *testing.T) {
 	t.Parallel()
 	// esEndpoints is empty: models a scoped client built with no endpoint configuration.
 	sc := &ElasticsearchScopedClient{esEndpoints: []string{}}
-	client, err := sc.GetESClient()
+	client, diags := sc.GetESClient()
 	assert.Nil(t, client, "GetESClient must return nil client when esEndpoints is empty")
-	require.Error(t, err)
-	assert.Equal(t, elasticsearchClientNotConfiguredError, err.Error())
+	require.NotEmpty(t, diags)
+	assert.Equal(t, elasticsearchClientNotConfiguredError, diags[0].Detail())
 }
 
 func TestElasticsearchScopedClient_GetESClient_OnlyEmptyEndpoints(t *testing.T) {
 	t.Parallel()
 	// esEndpoints contains only empty strings: must be treated as unconfigured.
 	sc := &ElasticsearchScopedClient{esEndpoints: []string{"", ""}}
-	client, err := sc.GetESClient()
+	client, diags := sc.GetESClient()
 	assert.Nil(t, client, "GetESClient must return nil client when all esEndpoints are empty strings")
-	require.Error(t, err)
-	assert.Equal(t, elasticsearchClientNotConfiguredError, err.Error())
+	require.NotEmpty(t, diags)
+	assert.Equal(t, elasticsearchClientNotConfiguredError, diags[0].Detail())
 }
 
 // --- Scenario 7 (ES): Endpoint present, auth empty → accessor succeeds ---
@@ -178,8 +178,8 @@ func TestElasticsearchScopedClient_GetESClient_EndpointPresentNoAuth(t *testing.
 		typedClient: esClient,
 		esEndpoints: []string{"http://elasticsearch.example.com:9200"},
 	}
-	client, err := sc.GetESClient()
-	require.NoError(t, err,
+	client, diags := sc.GetESClient()
+	require.Empty(t, diags,
 		"GetESClient must not fail when endpoint is present but auth fields are empty")
 	assert.NotNil(t, client)
 }
@@ -242,8 +242,8 @@ func TestGetElasticsearchClient_WithConnection(t *testing.T) {
 	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
 	require.NotNil(t, scoped)
 
-	esClient, err := scoped.GetESClient()
-	require.NoError(t, err, "GetESClient must return a valid client when connection is configured")
+	esClient, diags := scoped.GetESClient()
+	require.Empty(t, diags, "GetESClient must return a valid client when connection is configured")
 	require.NotNil(t, esClient)
 }
 
@@ -486,8 +486,8 @@ func TestGetESClient_ReturnsNonNil(t *testing.T) {
 		esEndpoints: []string{"http://localhost:9200"},
 	}
 
-	typedClient, err := scoped.GetESClient()
-	require.NoError(t, err, "GetESClient must not return an error when configured")
+	typedClient, diags := scoped.GetESClient()
+	require.Empty(t, diags, "GetESClient must not return diagnostics when configured")
 	require.NotNil(t, typedClient, "expected non-nil typed client, got nil")
 }
 
@@ -498,7 +498,7 @@ func TestGetESClient_ReturnsErrorWhenUnconfigured(t *testing.T) {
 		esEndpoints: []string{},
 	}
 
-	typedClient, err := scoped.GetESClient()
+	typedClient, diags := scoped.GetESClient()
 	assert.Nil(t, typedClient, "expected nil typed client when unconfigured")
-	assert.Error(t, err, "expected error when calling GetESClient on unconfigured client")
+	assert.NotEmpty(t, diags, "expected diagnostics when calling GetESClient on unconfigured client")
 }

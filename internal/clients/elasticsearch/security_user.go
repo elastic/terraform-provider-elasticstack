@@ -30,10 +30,9 @@ import (
 func PutUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, user *types.User, password, passwordHash *string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return diags
+	typedClient, d := apiClient.GetESClient()
+	if d.HasError() {
+		return d
 	}
 
 	req := typedClient.Security.PutUser(user.Username).
@@ -57,7 +56,7 @@ func PutUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 		req.PasswordHash(*passwordHash)
 	}
 
-	_, err = req.Do(ctx)
+	_, err := req.Do(ctx)
 	if err != nil {
 		diags.AddError("Unable to create or update a user", err.Error())
 		return diags
@@ -67,9 +66,9 @@ func PutUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 }
 
 func GetUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) (*types.User, fwdiag.Diagnostics) {
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	typedClient, d := apiClient.GetESClient()
+	if d.HasError() {
+		return nil, d
 	}
 
 	res, err := typedClient.Security.GetUser().Username(username).Do(ctx)
@@ -95,13 +94,12 @@ func GetUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 func DeleteUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return diags
+	typedClient, d := apiClient.GetESClient()
+	if d.HasError() {
+		return d
 	}
 
-	_, err = typedClient.Security.DeleteUser(username).Do(ctx)
+	_, err := typedClient.Security.DeleteUser(username).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
 			return diags
@@ -116,16 +114,12 @@ func DeleteUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 func EnableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError(
-			"Unable to get Elasticsearch client",
-			err.Error(),
-		)
-		return diags
+	typedClient, d := apiClient.GetESClient()
+	if d.HasError() {
+		return d
 	}
 
-	_, err = typedClient.Security.EnableUser(username).Do(ctx)
+	_, err := typedClient.Security.EnableUser(username).Do(ctx)
 	if err != nil {
 		diags.AddError(
 			"Unable to enable system user",
@@ -140,16 +134,12 @@ func EnableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 func DisableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError(
-			"Unable to get Elasticsearch client",
-			err.Error(),
-		)
-		return diags
+	typedClient, d := apiClient.GetESClient()
+	if d.HasError() {
+		return d
 	}
 
-	_, err = typedClient.Security.DisableUser(username).Do(ctx)
+	_, err := typedClient.Security.DisableUser(username).Do(ctx)
 	if err != nil {
 		diags.AddError(
 			"Unable to disable system user",
@@ -164,13 +154,9 @@ func DisableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 func ChangeUserPassword(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string, password, passwordHash *string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError(
-			"Unable to get Elasticsearch client",
-			err.Error(),
-		)
-		return diags
+	typedClient, d := apiClient.GetESClient()
+	if d.HasError() {
+		return d
 	}
 
 	req := typedClient.Security.ChangePassword().Username(username)
@@ -181,7 +167,7 @@ func ChangeUserPassword(ctx context.Context, apiClient *clients.ElasticsearchSco
 		req.PasswordHash(*passwordHash)
 	}
 
-	_, err = req.Do(ctx)
+	_, err := req.Do(ctx)
 	if err != nil {
 		diags.AddError(
 			"Unable to change user's password",
