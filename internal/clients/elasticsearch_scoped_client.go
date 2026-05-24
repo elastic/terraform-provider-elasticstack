@@ -73,6 +73,14 @@ func (e *ElasticsearchScopedClient) GetESClient() (*elasticsearch.TypedClient, f
 	return e.typedClient, nil
 }
 
+// GetESClientDiag appends any client-configuration diagnostics to diags
+// and returns the typed client (nil on error).
+func (e *ElasticsearchScopedClient) GetESClientDiag(diags *fwdiag.Diagnostics) *elasticsearch.TypedClient {
+	c, d := e.GetESClient()
+	diags.Append(d...)
+	return c
+}
+
 // serverInfo fetches and caches the Elasticsearch cluster info.
 // It is safe for concurrent use: the mutex ensures only one goroutine fetches
 // the info from the server, and subsequent callers use the cached result.

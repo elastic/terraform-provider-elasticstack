@@ -29,10 +29,9 @@ import (
 
 func PutInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, inferenceID, taskType string, endpoint *types.InferenceEndpoint) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
-
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	req := typedClient.Inference.Put(inferenceID).Request(endpoint)
@@ -51,10 +50,9 @@ func PutInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchS
 
 func GetInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, inferenceID string) (*types.InferenceEndpointInfo, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
-
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	res, err := typedClient.Inference.Get().InferenceId(inferenceID).Do(ctx)
@@ -75,10 +73,9 @@ func GetInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchS
 
 func UpdateInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, inferenceID, taskType string, update *types.InferenceEndpoint) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
-
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	// Build the update body manually, omitting Service which the API rejects as
@@ -137,10 +134,9 @@ func UpdateInferenceEndpoint(ctx context.Context, apiClient *clients.Elasticsear
 
 func DeleteInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, inferenceID string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
-
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	_, err := typedClient.Inference.Delete(inferenceID).Do(ctx)

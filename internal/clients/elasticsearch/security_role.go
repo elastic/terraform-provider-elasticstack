@@ -29,9 +29,10 @@ import (
 )
 
 func PutRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, role *types.Role) fwdiag.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	var diags fwdiag.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	req := typedClient.Security.PutRole(name)
@@ -66,9 +67,10 @@ func PutRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 }
 
 func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, rolename string) (*types.Role, fwdiag.Diagnostics) {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
+	var diags fwdiag.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	res, err := typedClient.Security.GetRole().Name(rolename).Do(ctx)
@@ -91,9 +93,10 @@ func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 }
 
 func DeleteRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, rolename string) fwdiag.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	var diags fwdiag.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	_, err := typedClient.Security.DeleteRole(rolename).Do(ctx)

@@ -27,9 +27,10 @@ import (
 )
 
 func GetClusterInfo(ctx context.Context, apiClient *clients.ElasticsearchScopedClient) (*info.Response, fwdiag.Diagnostics) {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
+	var diags fwdiag.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return nil, diags
 	}
 	res, err := typedClient.Core.Info().Do(ctx)
 	if err != nil {

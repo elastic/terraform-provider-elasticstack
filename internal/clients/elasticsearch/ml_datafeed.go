@@ -101,10 +101,9 @@ type rawDatafeedDocument struct {
 // preserved exactly as the user wrote it (see DatafeedRequest for details).
 func PutDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, req DatafeedRequest) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	body, err := json.Marshal(req)
@@ -131,10 +130,9 @@ func PutDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 // diff in Terraform state.
 func GetDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string) (*MLDatafeedResponse, diag.Diagnostics) {
 	var diags diag.Diagnostics
-
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	res, err := typedClient.Ml.GetDatafeeds().DatafeedId(datafeedID).AllowNoMatch(true).Perform(ctx)
@@ -195,10 +193,9 @@ func GetDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 // The caller must leave JobID empty — update_datafeed does not accept job_id.
 func UpdateDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, req DatafeedRequest) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	body, err := json.Marshal(req)
@@ -219,10 +216,9 @@ func UpdateDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 // DeleteDatafeed deletes a machine learning datafeed
 func DeleteDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, force bool) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	_, err := typedClient.Ml.DeleteDatafeed(datafeedID).Force(force).Do(ctx)
@@ -240,10 +236,9 @@ func DeleteDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 // StopDatafeed stops a machine learning datafeed
 func StopDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, force bool, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	req := typedClient.Ml.StopDatafeed(datafeedID).
@@ -266,10 +261,9 @@ func StopDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 // StartDatafeed starts a machine learning datafeed
 func StartDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, start string, end string, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	req := typedClient.Ml.StartDatafeed(datafeedID)
@@ -298,10 +292,9 @@ func StartDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 // GetDatafeedStats retrieves the statistics for a machine learning datafeed
 func GetDatafeedStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string) (*types.DatafeedStats, diag.Diagnostics) {
 	var diags diag.Diagnostics
-
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	res, err := typedClient.Ml.GetDatafeedStats().DatafeedId(datafeedID).AllowNoMatch(true).Do(ctx)

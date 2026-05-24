@@ -32,9 +32,10 @@ import (
 )
 
 func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) (*models.EnrichPolicy, fwdiag.Diagnostics) {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
+	var diags fwdiag.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	res, err := typedClient.Enrich.GetPolicy().Name(policyName).Do(ctx)
@@ -100,9 +101,10 @@ func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 }
 
 func PutEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policy *models.EnrichPolicy) fwdiag.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	var diags fwdiag.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	enrichPolicy := &types.EnrichPolicy{
@@ -142,9 +144,10 @@ func PutEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 }
 
 func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) fwdiag.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	var diags fwdiag.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	_, err := typedClient.Enrich.DeletePolicy(policyName).Do(ctx)
@@ -159,9 +162,10 @@ func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchSco
 }
 
 func ExecuteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) fwdiag.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	var diags fwdiag.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	res, err := typedClient.Enrich.ExecutePolicy(policyName).WaitForCompletion(true).Do(ctx)

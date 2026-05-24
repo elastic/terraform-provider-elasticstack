@@ -38,9 +38,10 @@ import (
 // math expression it is URI-encoded before being sent in the API request path so the Go
 // HTTP client does not rewrite the angle brackets or braces.
 func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index *models.Index, params *models.PutIndexParams) (string, fwdiags.Diagnostics) {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return "", d
+	var diags fwdiags.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return "", diags
 	}
 
 	indexBytes, err := json.Marshal(index)
@@ -109,9 +110,10 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 }
 
 func DeleteIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) fwdiags.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	var diags fwdiags.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 	_, err := typedClient.Indices.Delete(name).Do(ctx)
 	if err != nil {
@@ -141,9 +143,10 @@ func GetIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 }
 
 func GetIndices(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (map[string]types.IndexState, fwdiags.Diagnostics) {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
+	var diags fwdiags.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return nil, diags
 	}
 	res, err := typedClient.Indices.Get(name).FlatSettings(true).Do(ctx)
 	if err != nil {
@@ -160,9 +163,10 @@ func UpdateIndexSettings(ctx context.Context, apiClient *clients.ElasticsearchSc
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	var diags fwdiags.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 	_, err = typedClient.Indices.PutSettings().Indices(index).Raw(bytes.NewReader(settingsBytes)).Do(ctx)
 	if err != nil {
@@ -172,9 +176,10 @@ func UpdateIndexSettings(ctx context.Context, apiClient *clients.ElasticsearchSc
 }
 
 func UpdateIndexMappings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index, mappings string) fwdiags.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	var diags fwdiags.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 	_, err := typedClient.Indices.PutMapping(index).Raw(strings.NewReader(mappings)).Do(ctx)
 	if err != nil {

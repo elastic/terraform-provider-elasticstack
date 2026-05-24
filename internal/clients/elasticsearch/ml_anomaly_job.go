@@ -33,10 +33,9 @@ import (
 // OpenMLJob opens a machine learning job
 func OpenMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, jobID string) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	_, err := typedClient.Ml.OpenJob(jobID).Do(ctx)
@@ -51,10 +50,9 @@ func OpenMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 // CloseMLJob closes a machine learning job
 func CloseMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, jobID string, force bool, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	req := typedClient.Ml.CloseJob(jobID).
@@ -106,10 +104,9 @@ func WaitForMLJobClosed(ctx context.Context, apiClient *clients.ElasticsearchSco
 // GetMLJobStats retrieves the stats for a specific machine learning job
 func GetMLJobStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, jobID string) (*types.JobStats, diag.Diagnostics) {
 	var diags diag.Diagnostics
-
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	res, err := typedClient.Ml.GetJobStats().JobId(jobID).AllowNoMatch(true).Do(ctx)

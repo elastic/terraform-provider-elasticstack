@@ -50,10 +50,9 @@ func PutWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 // transport.
 func PutWatchBodyJSON(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string, active bool, watchBodyJSON []byte) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
-
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	_, err := typedClient.Watcher.PutWatch(watchID).Active(active).Raw(bytes.NewReader(watchBodyJSON)).Do(ctx)
@@ -66,10 +65,9 @@ func PutWatchBodyJSON(ctx context.Context, apiClient *clients.ElasticsearchScope
 
 func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) (*models.Watch, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
-
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	// We use .Perform() (raw *http.Response) instead of .Do() which would
@@ -106,10 +104,9 @@ func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 
 func DeleteWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
-
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	_, err := typedClient.Watcher.DeleteWatch(watchID).Do(ctx)

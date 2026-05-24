@@ -28,16 +28,16 @@ import (
 )
 
 func GetScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) (*types.StoredScript, fwdiag.Diagnostics) {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
+	var diags fwdiag.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return nil, diags
 	}
 	resp, err := typedClient.Core.GetScript(id).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
-		var diags fwdiag.Diagnostics
 		diags.AddError("Failed to get script", err.Error())
 		return nil, diags
 	}
@@ -46,9 +46,9 @@ func GetScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 
 func PutScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, context string, script *types.StoredScript, params map[string]any) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	req := typedClient.Core.PutScript(id)
@@ -86,9 +86,9 @@ func PutScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 
 func DeleteScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 	_, err := typedClient.Core.DeleteScript(id).Do(ctx)
 	if err != nil {

@@ -31,9 +31,10 @@ import (
 )
 
 func PutComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, template *models.ComponentTemplate) fwdiags.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	var diags fwdiags.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	templateBytes, err := json.Marshal(template)
@@ -59,9 +60,10 @@ func PutComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchS
 // into models.ComponentTemplate preserves the raw JSON shape Elasticsearch
 // returns. See issue #3124.
 func GetComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) (*models.ComponentTemplateResponse, fwdiags.Diagnostics) {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
+	var diags fwdiags.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return nil, diags
 	}
 	res, err := typedClient.Cluster.GetComponentTemplate().Name(templateName).Perform(ctx)
 	if err != nil {
@@ -92,9 +94,10 @@ func GetComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchS
 }
 
 func DeleteComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) fwdiags.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	var diags fwdiags.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 	_, err := typedClient.Cluster.DeleteComponentTemplate(templateName).Do(ctx)
 	if err != nil {
@@ -107,9 +110,10 @@ func DeleteComponentTemplate(ctx context.Context, apiClient *clients.Elasticsear
 }
 
 func PutIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, template *models.IndexTemplate) fwdiags.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	var diags fwdiags.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	templateBytes, err := json.Marshal(template)
@@ -125,9 +129,10 @@ func PutIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScope
 }
 
 func GetIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) (*models.IndexTemplateResponse, fwdiags.Diagnostics) {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
+	var diags fwdiags.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	// We use .Perform() instead of .Do() because the typed client decodes the
@@ -169,9 +174,10 @@ func GetIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScope
 }
 
 func DeleteIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) fwdiags.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	var diags fwdiags.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 	_, err := typedClient.Indices.DeleteIndexTemplate(templateName).Do(ctx)
 	if err != nil {

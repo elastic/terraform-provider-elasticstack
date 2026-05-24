@@ -39,9 +39,10 @@ func PutIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	var diags fwdiags.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 	var req putlifecycle.Request
 	if err := json.Unmarshal(policyBytes, &req); err != nil {
@@ -55,9 +56,10 @@ func PutIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 }
 
 func GetIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) (*types.Lifecycle, fwdiags.Diagnostics) {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
+	var diags fwdiags.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return nil, diags
 	}
 	res, err := typedClient.Ilm.GetLifecycle().Policy(policyName).Do(ctx)
 	if err != nil {
@@ -89,9 +91,10 @@ func GetIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 // `in_use_by`, so this function uses Perform to obtain the raw HTTP response
 // and decodes the relevant subset of the body itself.
 func GetIndicesWithILMPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) ([]string, fwdiags.Diagnostics) {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
+	var diags fwdiags.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	res, err := typedClient.Ilm.GetLifecycle().Policy(policyName).Perform(ctx)
@@ -138,9 +141,10 @@ func ClearILMPolicyFromIndices(ctx context.Context, apiClient *clients.Elasticse
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	var diags fwdiags.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	_, err = typedClient.Indices.PutSettings().Indices(strings.Join(indices, ",")).Raw(bytes.NewReader(settingsBytes)).Do(ctx)
@@ -151,9 +155,10 @@ func ClearILMPolicyFromIndices(ctx context.Context, apiClient *clients.Elasticse
 }
 
 func DeleteIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) fwdiags.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
+	var diags fwdiags.Diagnostics
+	typedClient := apiClient.GetESClientDiag(&diags)
+	if diags.HasError() {
+		return diags
 	}
 	_, err := typedClient.Ilm.DeleteLifecycle(policyName).Do(ctx)
 	if err != nil {
