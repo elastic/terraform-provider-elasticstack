@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -32,37 +33,38 @@ type alertingRuleFeatures struct {
 	SupportsFlappingEnabled bool
 }
 
-func resolveAlertingRuleFeatures(ctx context.Context, client *clients.KibanaScopedClient) (alertingRuleFeatures, diag.Diagnostics) {
-	supportsFrequency, diags := client.EnforceMinVersion(ctx, frequencyMinSupportedVersion)
-	if diags.HasError() {
-		return alertingRuleFeatures{}, diags
-	}
+var alertingRuleFeaturesAllSupported = alertingRuleFeatures{
+	SupportsFrequency:       true,
+	SupportsAlertsFilter:    true,
+	SupportsAlertDelay:      true,
+	SupportsFlapping:        true,
+	SupportsFlappingEnabled: true,
+}
 
-	supportsAlertsFilter, diags := client.EnforceMinVersion(ctx, alertsFilterMinSupportedVersion)
-	if diags.HasError() {
-		return alertingRuleFeatures{}, diags
-	}
-
-	supportsAlertDelay, diags := client.EnforceMinVersion(ctx, alertDelayMinSupportedVersion)
-	if diags.HasError() {
-		return alertingRuleFeatures{}, diags
-	}
-
-	supportsFlapping, diags := client.EnforceMinVersion(ctx, flappingMinSupportedVersion)
-	if diags.HasError() {
-		return alertingRuleFeatures{}, diags
-	}
-
-	supportsFlappingEnabled, diags := client.EnforceMinVersion(ctx, flappingEnabledMinSupportedVersion)
-	if diags.HasError() {
-		return alertingRuleFeatures{}, diags
-	}
-
+func alertingRuleFeaturesFromVersion(v *version.Version) alertingRuleFeatures {
 	return alertingRuleFeatures{
-		SupportsFrequency:       supportsFrequency,
-		SupportsAlertsFilter:    supportsAlertsFilter,
-		SupportsAlertDelay:      supportsAlertDelay,
-		SupportsFlapping:        supportsFlapping,
-		SupportsFlappingEnabled: supportsFlappingEnabled,
-	}, nil
+		SupportsFrequency:       v.GreaterThanOrEqual(frequencyMinSupportedVersion),
+		SupportsAlertsFilter:    v.GreaterThanOrEqual(alertsFilterMinSupportedVersion),
+		SupportsAlertDelay:      v.GreaterThanOrEqual(alertDelayMinSupportedVersion),
+		SupportsFlapping:        v.GreaterThanOrEqual(flappingMinSupportedVersion),
+		SupportsFlappingEnabled: v.GreaterThanOrEqual(flappingEnabledMinSupportedVersion),
+	}
+}
+
+func resolveAlertingRuleFeatures(ctx context.Context, client *clients.KibanaScopedClient) (alertingRuleFeatures, diag.Diagnostics) {
+	var features alertingRuleFeatures
+	populated := false
+
+	_, diags := client.EnforceVersionCheck(ctx, func(v *version.Version) bool {
+		populated = true
+		features = alertingRuleFeaturesFromVersion(v)
+		return true
+	})
+	if diags.HasError() {
+		return alertingRuleFeatures{}, diags
+	}
+	if !populated {
+		return alertingRuleFeaturesAllSupported, nil
+	}
+	return features, nil
 }

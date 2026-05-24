@@ -350,8 +350,8 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, features alertingRule
 	if typeutils.IsKnown(m.AlertDelay) && !m.AlertDelay.IsNull() {
 		if !features.SupportsAlertDelay {
 			diags.AddError(
-				"alert_delay is only supported for Elasticsearch v8.13 or higher",
-				"alert_delay is only supported for Elasticsearch v8.13 or higher",
+				"alert_delay is only supported for Kibana v8.13 or higher",
+				"alert_delay is only supported for Kibana v8.13 or higher",
 			)
 			return models.AlertingRule{}, diags
 		}
