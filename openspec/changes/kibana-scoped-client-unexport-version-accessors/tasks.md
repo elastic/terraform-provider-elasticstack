@@ -1,17 +1,17 @@
 ## 1. Pattern A — `WithVersionRequirements` on the model (add, then drop inline check)
 
-- [ ] 1.1 Add `GetVersionRequirements()` to the `security_enable_rule` model (`internal/kibana/security_enable_rule/models.go`), returning the existing `8.11.0` minimum with the existing "Security detection rules bulk actions are not supported until Elastic Stack v8.11.0" error message
-- [ ] 1.2 Add a unit test `TestModel_GetVersionRequirements` for `security_enable_rule` covering: empty model, populated model — both return the same single requirement
-- [ ] 1.3 Remove inline `ServerVersion`+`LessThan` blocks in `internal/kibana/security_enable_rule/{read,update,delete}.go`
-- [ ] 1.4 Add `GetVersionRequirements()` to `internal/kibana/prebuilt_rules/models.go` returning `8.0.0` with the existing message
-- [ ] 1.5 Unit test for prebuilt_rules `GetVersionRequirements`
-- [ ] 1.6 Remove inline checks in `internal/kibana/prebuilt_rules/{read,update}.go`
-- [ ] 1.7 Add `GetVersionRequirements()` to `internal/kibana/slo/models.go` — returns two conditional requirements: `SLOSupportsPreventInitialBackfillMinVersion` when `Settings.PreventInitialBackfill` set; `SLOSupportsDataViewIDMinVersion` when `hasDataViewID()`
-- [ ] 1.8 Unit test for slo `GetVersionRequirements` covering all four combinations of the two conditions
-- [ ] 1.9 Remove inline checks in `internal/kibana/slo/{create,update}.go`
-- [ ] 1.10 Add `GetVersionRequirements()` to `internal/kibana/connectors/models.go` — returns a single requirement (`MinVersionSupportingPreconfiguredIDs`) when `connector_id` is configured, empty otherwise
-- [ ] 1.11 Unit test for connectors `GetVersionRequirements` covering connector_id set/unset
-- [ ] 1.12 Remove inline check in `internal/kibana/connectors/create.go`
+- [x] 1.1 Add `GetVersionRequirements()` to the `security_enable_rule` model (`internal/kibana/security_enable_rule/models.go`), returning the existing `8.11.0` minimum with the existing "Security detection rules bulk actions are not supported until Elastic Stack v8.11.0" error message
+- [x] 1.2 Add a unit test `TestModel_GetVersionRequirements` for `security_enable_rule` covering: empty model, populated model — both return the same single requirement
+- [x] 1.3 Remove inline `ServerVersion`+`LessThan` blocks in `internal/kibana/security_enable_rule/{read,update,delete}.go`
+- [x] 1.4 Add `GetVersionRequirements()` to `internal/kibana/prebuilt_rules/models.go` returning `8.0.0` with the existing message
+- [x] 1.5 Unit test for prebuilt_rules `GetVersionRequirements`
+- [x] 1.6 Remove inline checks in `internal/kibana/prebuilt_rules/{read,update}.go`
+- [x] 1.7 Add `GetVersionRequirements()` to `internal/kibana/slo/models.go` — returns two conditional requirements: `SLOSupportsPreventInitialBackfillMinVersion` when `Settings.PreventInitialBackfill` set; `SLOSupportsDataViewIDMinVersion` when `hasDataViewID()`
+- [x] 1.8 Unit test for slo `GetVersionRequirements` covering all four combinations of the two conditions
+- [x] 1.9 Remove inline checks in `internal/kibana/slo/{create,update}.go`
+- [x] 1.10 Add `GetVersionRequirements()` to `internal/kibana/connectors/models.go` — returns a single requirement (`MinVersionSupportingPreconfiguredIDs`) when `connector_id` is configured, empty otherwise
+- [x] 1.11 Unit test for connectors `GetVersionRequirements` covering connector_id set/unset
+- [x] 1.12 Remove inline check in `internal/kibana/connectors/create.go`
 
 ## 2. Pattern B — `EnforceMinVersion` boolean for feature toggles
 
