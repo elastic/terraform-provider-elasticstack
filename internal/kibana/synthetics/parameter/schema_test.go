@@ -94,9 +94,9 @@ func Test_roundtrip(t *testing.T) {
 				Description: tt.request.Description,
 				Tags:        tt.request.Tags,
 			}
-			modelV0 := modelV0FromOAPI(response)
+			m := modelFromOAPI(response)
 
-			actual := modelV0.toParameterRequest(false)
+			actual := m.toParameterRequest(false)
 
 			assert.Equal(t, tt.request.Key, actual.Key)
 			assert.Equal(t, tt.request.Value, actual.Value)

@@ -22,74 +22,38 @@ import (
 	"fmt"
 	"net/http"
 
-	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) readState(ctx context.Context, kibanaClient *kibanaoapi.Client, resourceID string, kibanaConnection types.List, state *tfsdk.State, diagnostics *diag.Diagnostics) {
+func readParameter(ctx context.Context, client *clients.KibanaScopedClient, resourceID, _ string, model Model) (Model, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	kibanaClient, d := client.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
+		return model, false, diags
+	}
+
 	getResult, err := kibanaClient.API.GetParameterWithResponse(ctx, resourceID)
 	if err != nil {
-		diagnostics.AddError(fmt.Sprintf("Failed to get parameter `%s`", resourceID), err.Error())
-		return
+		diags.AddError(fmt.Sprintf("Failed to get parameter `%s`", resourceID), err.Error())
+		return model, false, diags
 	}
 
 	if getResult.StatusCode() == http.StatusNotFound {
-		state.RemoveResource(ctx)
-		return
+		return model, false, diags
 	}
 
 	unwrapped, unwrapDiags := diagutil.UnwrapJSON200(getResult.JSON200, "synthetics parameter")
-	diagnostics.Append(unwrapDiags...)
-	if diagnostics.HasError() {
-		return
+	diags.Append(unwrapDiags...)
+	if diags.HasError() {
+		return model, false, diags
 	}
 
-	model := modelV0FromOAPI(*unwrapped)
-	model.KibanaConnection = kibanaConnection
+	result := modelFromOAPI(*unwrapped)
+	result.KibanaConnection = model.KibanaConnection
 
-	// Set refreshed state
-	diags := state.Set(ctx, &model)
-	diagnostics.Append(diags...)
-	if diagnostics.HasError() {
-		return
-	}
-}
-
-func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
-	var state tfModelV0
-	diags := request.State.Get(ctx, &state)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	apiClient, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	kibanaClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, &response.Diagnostics)
-	if kibanaClient == nil {
-		return
-	}
-
-	resourceID := state.ID.ValueString()
-
-	compositeID, dg := synthetics.TryReadCompositeID(resourceID)
-	response.Diagnostics.Append(dg...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	if compositeID != nil {
-		resourceID = compositeID.ResourceID
-	}
-
-	r.readState(ctx, kibanaClient, resourceID, state.KibanaConnection, &response.State, &response.Diagnostics)
+	return result, true, diags
 }
