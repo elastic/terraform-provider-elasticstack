@@ -18,6 +18,9 @@
 package clients
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
@@ -92,6 +95,31 @@ func newKibanaScopedClientFleetFromKibana(t *testing.T, kibanaURL string) *Kiban
 		// fleetEndpoint derived from Kibana.
 		fleetEndpoint: kibanaURL,
 	}
+}
+
+// newKibanaScopedClientWithStatusServer returns a KibanaScopedClient backed by an
+// httptest.Server that responds to GET /api/status with the given version and flavor.
+func newKibanaScopedClientWithStatusServer(t *testing.T, version, flavor string) *KibanaScopedClient {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/api/status" {
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintf(w, `{"version":{"number":%q,"build_flavor":%q}}`, version, flavor)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(srv.Close)
+	return newKibanaScopedClientWithEndpointNoAuth(t, srv.URL)
+}
+
+// newKibanaScopedClientWithStatusHandler returns a KibanaScopedClient backed by an
+// httptest.Server that uses the given handler for all requests.
+func newKibanaScopedClientWithStatusHandler(t *testing.T, handler http.HandlerFunc) *KibanaScopedClient {
+	t.Helper()
+	srv := httptest.NewServer(handler)
+	t.Cleanup(srv.Close)
+	return newKibanaScopedClientWithEndpointNoAuth(t, srv.URL)
 }
 
 // --- Scenario 3: Missing Kibana endpoint → GetKibanaOapiClient error ---
@@ -193,26 +221,6 @@ func TestKibanaScopedClient_getServerStatusRaw_MissingEndpoint(t *testing.T) {
 	require.True(t, diags.HasError(), "getServerStatusRaw must return an error when kibana endpoint is not configured")
 }
 
-// TestKibanaScopedClient_ServerVersion_MissingEndpoint verifies that ServerVersion
-// propagates the error from getServerStatusRaw when the endpoint is not configured.
-func TestKibanaScopedClient_ServerVersion_MissingEndpoint(t *testing.T) {
-	t.Parallel()
-	sc := newKibanaScopedClientNoEndpoint(t)
-	v, diags := sc.ServerVersion(t.Context())
-	assert.Nil(t, v)
-	require.True(t, diags.HasError())
-}
-
-// TestKibanaScopedClient_ServerFlavor_MissingEndpoint verifies that ServerFlavor
-// propagates the error from getServerStatusRaw when the endpoint is not configured.
-func TestKibanaScopedClient_ServerFlavor_MissingEndpoint(t *testing.T) {
-	t.Parallel()
-	sc := newKibanaScopedClientNoEndpoint(t)
-	flavor, diags := sc.ServerFlavor(t.Context())
-	assert.Empty(t, flavor)
-	require.True(t, diags.HasError())
-}
-
 // TestKibanaScopedClient_EnforceMinVersion_MissingEndpoint verifies that
 // EnforceMinVersion propagates the error from getServerStatusRaw when the endpoint
 // is not configured.
@@ -233,6 +241,192 @@ func TestKibanaScopedClient_EnforceMinVersion_MissingEndpoint(t *testing.T) {
 func TestKibanaScopedClient_EnforceVersionCheck_MissingEndpoint(t *testing.T) {
 	t.Parallel()
 	sc := newKibanaScopedClientNoEndpoint(t)
+	ok, diags := sc.EnforceVersionCheck(t.Context(), func(_ *version.Version) bool { return true })
+	assert.False(t, ok)
+	require.True(t, diags.HasError())
+}
+
+// --- EnforceMinVersion: stateful version comparisons ---
+
+func TestKibanaScopedClient_EnforceMinVersion_StatefulBelowMin(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientWithStatusServer(t, "8.10.0", "default")
+	minVer, err := version.NewVersion("8.15.0")
+	require.NoError(t, err)
+
+	ok, diags := sc.EnforceMinVersion(t.Context(), minVer)
+	require.False(t, diags.HasError())
+	assert.False(t, ok)
+}
+
+func TestKibanaScopedClient_EnforceMinVersion_StatefulAtMin(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientWithStatusServer(t, "8.15.0", "default")
+	minVer, err := version.NewVersion("8.15.0")
+	require.NoError(t, err)
+
+	ok, diags := sc.EnforceMinVersion(t.Context(), minVer)
+	require.False(t, diags.HasError())
+	assert.True(t, ok)
+}
+
+func TestKibanaScopedClient_EnforceMinVersion_StatefulAboveMin(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientWithStatusServer(t, "9.0.0", "default")
+	minVer, err := version.NewVersion("8.15.0")
+	require.NoError(t, err)
+
+	ok, diags := sc.EnforceMinVersion(t.Context(), minVer)
+	require.False(t, diags.HasError())
+	assert.True(t, ok)
+}
+
+func TestKibanaScopedClient_EnforceMinVersion_ServerlessShortCircuit(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientWithStatusServer(t, "8.10.0", ServerlessFlavor)
+	minVer, err := version.NewVersion("8.15.0")
+	require.NoError(t, err)
+
+	ok, diags := sc.EnforceMinVersion(t.Context(), minVer)
+	require.False(t, diags.HasError())
+	assert.True(t, ok, "serverless must short-circuit to true regardless of version")
+}
+
+func TestKibanaScopedClient_EnforceMinVersion_MalformedVersionResponse(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientWithStatusServer(t, "not-a-version", "default")
+	minVer, err := version.NewVersion("8.15.0")
+	require.NoError(t, err)
+
+	ok, diags := sc.EnforceMinVersion(t.Context(), minVer)
+	assert.False(t, ok)
+	require.True(t, diags.HasError())
+}
+
+func TestKibanaScopedClient_EnforceMinVersion_StatusAPIError(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientWithStatusHandler(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/api/status" {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	})
+	minVer, err := version.NewVersion("8.15.0")
+	require.NoError(t, err)
+
+	ok, diags := sc.EnforceMinVersion(t.Context(), minVer)
+	assert.False(t, ok)
+	require.True(t, diags.HasError())
+}
+
+func TestKibanaScopedClient_EnforceMinVersion_InvalidJSONResponse(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientWithStatusHandler(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/api/status" {
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprint(w, `{invalid json`)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	})
+	minVer, err := version.NewVersion("8.15.0")
+	require.NoError(t, err)
+
+	ok, diags := sc.EnforceMinVersion(t.Context(), minVer)
+	assert.False(t, ok)
+	require.True(t, diags.HasError())
+}
+
+// --- EnforceVersionCheck: stateful version comparisons ---
+
+func TestKibanaScopedClient_EnforceVersionCheck_StatefulBelowMin(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientWithStatusServer(t, "8.10.0", "default")
+	minVer, err := version.NewVersion("8.15.0")
+	require.NoError(t, err)
+
+	ok, diags := sc.EnforceVersionCheck(t.Context(), func(v *version.Version) bool {
+		return v.GreaterThanOrEqual(minVer)
+	})
+	require.False(t, diags.HasError())
+	assert.False(t, ok)
+}
+
+func TestKibanaScopedClient_EnforceVersionCheck_StatefulAtMin(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientWithStatusServer(t, "8.15.0", "default")
+	minVer, err := version.NewVersion("8.15.0")
+	require.NoError(t, err)
+
+	ok, diags := sc.EnforceVersionCheck(t.Context(), func(v *version.Version) bool {
+		return v.GreaterThanOrEqual(minVer)
+	})
+	require.False(t, diags.HasError())
+	assert.True(t, ok)
+}
+
+func TestKibanaScopedClient_EnforceVersionCheck_StatefulAboveMin(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientWithStatusServer(t, "9.0.0", "default")
+	minVer, err := version.NewVersion("8.15.0")
+	require.NoError(t, err)
+
+	ok, diags := sc.EnforceVersionCheck(t.Context(), func(v *version.Version) bool {
+		return v.GreaterThanOrEqual(minVer)
+	})
+	require.False(t, diags.HasError())
+	assert.True(t, ok)
+}
+
+func TestKibanaScopedClient_EnforceVersionCheck_ServerlessShortCircuit(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientWithStatusServer(t, "8.10.0", ServerlessFlavor)
+
+	ok, diags := sc.EnforceVersionCheck(t.Context(), func(_ *version.Version) bool { return false })
+	require.False(t, diags.HasError())
+	assert.True(t, ok, "serverless must short-circuit to true even when check returns false")
+}
+
+func TestKibanaScopedClient_EnforceVersionCheck_MalformedVersionResponse(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientWithStatusServer(t, "not-a-version", "default")
+	minVer, err := version.NewVersion("8.15.0")
+	require.NoError(t, err)
+
+	ok, diags := sc.EnforceVersionCheck(t.Context(), func(v *version.Version) bool {
+		return v.GreaterThanOrEqual(minVer)
+	})
+	assert.False(t, ok)
+	require.True(t, diags.HasError())
+}
+
+func TestKibanaScopedClient_EnforceVersionCheck_StatusAPIError(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientWithStatusHandler(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/api/status" {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	})
+
+	ok, diags := sc.EnforceVersionCheck(t.Context(), func(_ *version.Version) bool { return true })
+	assert.False(t, ok)
+	require.True(t, diags.HasError())
+}
+
+func TestKibanaScopedClient_EnforceVersionCheck_InvalidJSONResponse(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientWithStatusHandler(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/api/status" {
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprint(w, `{invalid json`)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	})
+
 	ok, diags := sc.EnforceVersionCheck(t.Context(), func(_ *version.Version) bool { return true })
 	assert.False(t, ok)
 	require.True(t, diags.HasError())
