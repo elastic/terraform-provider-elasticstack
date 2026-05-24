@@ -40,6 +40,16 @@ type Model struct {
 
 var _ entitycore.KibanaResourceModel = Model{}
 var _ entitycore.WithVersionRequirements = Model{}
+var _ entitycore.KibanaUnscopedSpace = Model{}
+
+// IsUnscopedSpace tells the [entitycore.KibanaResource] envelope to bypass its
+// non-empty-space guard. The resource IS space-scoped — non-default spaces use
+// the /s/<space_id>/ URL prefix — but the historical state contract represents
+// the Kibana default space with an empty string (preserved across the
+// envelope migration). The envelope's space validation enforces a non-empty
+// configured space, which conflicts with that contract; opting into the
+// "unscoped" hook is the documented escape hatch.
+func (Model) IsUnscopedSpace() bool { return true }
 
 func (m Model) GetID() types.String         { return m.ID }
 func (m Model) GetResourceID() types.String { return m.ID }
