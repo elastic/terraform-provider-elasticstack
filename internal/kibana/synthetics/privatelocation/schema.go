@@ -18,12 +18,11 @@
 package privatelocation
 
 import (
+	"context"
 	_ "embed"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -31,17 +30,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type tfModelV0 struct {
-	ID               types.String   `tfsdk:"id"`
-	KibanaConnection types.List     `tfsdk:"kibana_connection"`
-	Label            types.String   `tfsdk:"label"`
-	AgentPolicyID    types.String   `tfsdk:"agent_policy_id"`
-	SpaceID          types.String   `tfsdk:"space_id"`
-	Tags             []types.String `tfsdk:"tags"` // > string
-	Geo              *tfGeoConfigV0 `tfsdk:"geo"`
-}
-
-func privateLocationSchema() schema.Schema {
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: syntheticsPrivateLocationDescription,
 		Attributes: map[string]schema.Attribute{
@@ -91,68 +80,6 @@ func privateLocationSchema() schema.Schema {
 			},
 			"geo": geoConfigSchema(),
 		},
-
-		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
-		}}
-}
-
-// privateLocationToCreateBody converts a Terraform model into a kbapi create request body.
-// Tags are passed as *[]string and geo coordinates preserve float64 precision.
-func privateLocationToCreateBody(m tfModelV0) kbapi.PostPrivateLocationJSONRequestBody {
-	body := kbapi.PostPrivateLocationJSONRequestBody{
-		Label:         m.Label.ValueString(),
-		AgentPolicyId: m.AgentPolicyID.ValueString(),
-	}
-
-	tags := synthetics.ValueStringSlice(m.Tags)
-	if len(tags) > 0 {
-		body.Tags = &tags
-	}
-
-	if m.Geo != nil {
-		body.Geo = &struct {
-			Lat float64 `json:"lat"`
-			Lon float64 `json:"lon"`
-		}{
-			Lat: m.Geo.Lat.ValueFloat64(),
-			Lon: m.Geo.Lon.ValueFloat64(),
-		}
-	}
-
-	return body
-}
-
-// privateLocationFromAPI maps a SyntheticsGetPrivateLocation API response onto a tfModelV0.
-// Tags are read from AdditionalProperties["tags"] when the field is not a first-class struct field.
-func privateLocationFromAPI(loc kbapi.SyntheticsGetPrivateLocation, spaceID string, kibanaConnection types.List) tfModelV0 {
-	id := ""
-	if loc.Id != nil {
-		id = *loc.Id
-	}
-
-	label := ""
-	if loc.Label != nil {
-		label = *loc.Label
-	}
-
-	agentPolicyID := ""
-	if loc.AgentPolicyId != nil {
-		agentPolicyID = *loc.AgentPolicyId
-	}
-
-	// Tags are not a first-class field on SyntheticsGetPrivateLocation; they may land
-	// in AdditionalProperties when the generated model omits them.
-	tags := tagsFromAdditionalProperties(loc)
-
-	return tfModelV0{
-		ID:               types.StringValue(id),
-		Label:            types.StringValue(label),
-		AgentPolicyID:    types.StringValue(agentPolicyID),
-		SpaceID:          types.StringValue(spaceID),
-		Tags:             synthetics.StringSliceValue(tags),
-		Geo:              geoFromAPIResponse(loc.Geo),
-		KibanaConnection: kibanaConnection,
 	}
 }
 

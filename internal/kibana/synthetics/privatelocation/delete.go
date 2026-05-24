@@ -19,62 +19,26 @@ package privatelocation
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) {
+func deletePrivateLocation(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model Model) diag.Diagnostics {
+	var diags diag.Diagnostics
 
-	var plan tfModelV0
-	diags := request.State.Get(ctx, &plan)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
+	if vDiags := entitycore.EnforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
+		return vDiags
 	}
 
-	apiClient, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
+	oapiClient, d := client.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
 	}
 
-	kibanaClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, &response.Diagnostics)
-	if kibanaClient == nil {
-		return
-	}
-
-	resourceID := plan.ID.ValueString()
-
-	compositeID, dg := synthetics.TryReadCompositeID(resourceID)
-	response.Diagnostics.Append(dg...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	if compositeID != nil {
-		resourceID = compositeID.ResourceID
-	}
-
-	spaceID := effectiveSpaceID(plan.SpaceID, compositeID)
-
-	if requiresSpaceIDMinVersion(spaceID) {
-		supported, verDiags := apiClient.EnforceMinVersion(ctx, MinVersionSpaceID)
-		response.Diagnostics.Append(verDiags...)
-		if response.Diagnostics.HasError() {
-			return
-		}
-		if !supported {
-			response.Diagnostics.AddError(
-				"Unsupported server version",
-				fmt.Sprintf("Synthetics private locations in a non-default Kibana space require Elastic Stack %s or later.", MinVersionSpaceID),
-			)
-			return
-		}
-	}
-
-	dg = kibanaoapi.DeletePrivateLocation(ctx, kibanaClient, spaceID, resourceID)
-	response.Diagnostics.Append(dg...)
+	diags.Append(kibanaoapi.DeletePrivateLocation(ctx, oapiClient, spaceID, resourceID)...)
+	return diags
 }

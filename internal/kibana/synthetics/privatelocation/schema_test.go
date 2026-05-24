@@ -90,7 +90,7 @@ func Test_roundtrip(t *testing.T) {
 					Lon: NewFloat32PrecisionValue(float64(tt.geo.Lon)),
 				}
 			}
-			model := tfModelV0{
+			model := Model{
 				ID:            types.StringValue(tt.id),
 				Label:         types.StringValue(tt.label),
 				AgentPolicyID: types.StringValue(tt.agentPolicyID),
@@ -99,7 +99,7 @@ func Test_roundtrip(t *testing.T) {
 				Geo:           geo,
 			}
 
-			body := privateLocationToCreateBody(model)
+			body := model.toCreateBody()
 			assert.Equal(t, tt.label, body.Label)
 			assert.Equal(t, tt.agentPolicyID, body.AgentPolicyId)
 
@@ -133,7 +133,7 @@ func Test_privateLocationFromAPI_tags(t *testing.T) {
 	var loc kbapi.SyntheticsGetPrivateLocation
 	require.NoError(t, json.Unmarshal([]byte(jsonPayload), &loc))
 
-	model := privateLocationFromAPI(loc, "my-space", types.List{})
+	model := modelFromAPI(loc, "my-space")
 
 	assert.Equal(t, "loc-id", model.ID.ValueString())
 	assert.Equal(t, "my-label", model.Label.ValueString())
@@ -158,7 +158,7 @@ func Test_privateLocationFromAPI_geo(t *testing.T) {
 	var loc kbapi.SyntheticsGetPrivateLocation
 	require.NoError(t, json.Unmarshal([]byte(jsonPayload), &loc))
 
-	model := privateLocationFromAPI(loc, "", types.List{})
+	model := modelFromAPI(loc, "")
 
 	require.NotNil(t, model.Geo)
 	assert.InDelta(t, 48.8566, model.Geo.Lat.ValueFloat64(), 1e-9)
@@ -179,7 +179,7 @@ func Test_privateLocationFromAPI_tagsAndGeo(t *testing.T) {
 	var loc kbapi.SyntheticsGetPrivateLocation
 	require.NoError(t, json.Unmarshal([]byte(jsonPayload), &loc))
 
-	model := privateLocationFromAPI(loc, "space-x", types.List{})
+	model := modelFromAPI(loc, "space-x")
 
 	assert.Equal(t, "full-loc", model.ID.ValueString())
 	require.Len(t, model.Tags, 2)
