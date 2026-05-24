@@ -19,6 +19,7 @@ package connectors
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -38,6 +39,23 @@ type tfModel struct {
 	IsDeprecated     types.Bool           `tfsdk:"is_deprecated"`
 	IsMissingSecrets types.Bool           `tfsdk:"is_missing_secrets"`
 	IsPreconfigured  types.Bool           `tfsdk:"is_preconfigured"`
+}
+
+var _ entitycore.WithVersionRequirements = tfModel{}
+
+// GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
+func (model tfModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	if typeutils.IsKnown(model.ConnectorID) && model.ConnectorID.ValueString() != "" {
+		return []entitycore.VersionRequirement{
+			{
+				MinVersion: *MinVersionSupportingPreconfiguredIDs,
+				ErrorMessage: "Preconfigured connector IDs are only supported for Elastic Stack v" +
+					MinVersionSupportingPreconfiguredIDs.String() +
+					" and above. Either remove the `connector_id` attribute or upgrade your target cluster to supported version",
+			},
+		}, nil
+	}
+	return nil, nil
 }
 
 func (model tfModel) GetID() (*clients.CompositeID, diag.Diagnostics) {

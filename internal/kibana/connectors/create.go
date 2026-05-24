@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -52,18 +53,8 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	version, verDiags := client.ServerVersion(ctx)
-	response.Diagnostics.Append(verDiags...)
+	response.Diagnostics.Append(entitycore.EnforceVersionRequirements(ctx, client, &plan)...)
 	if response.Diagnostics.HasError() {
-		return
-	}
-
-	if apiModel.ConnectorID != "" && version.LessThan(MinVersionSupportingPreconfiguredIDs) {
-		response.Diagnostics.AddError(
-			"Unsupported Elastic Stack version",
-			"Preconfigured connector IDs are only supported for Elastic Stack v"+MinVersionSupportingPreconfiguredIDs.String()+" and above."+
-				" Either remove the `connector_id` attribute or upgrade your target cluster to supported version",
-		)
 		return
 	}
 
