@@ -31,7 +31,7 @@
 
 ## 4. Acceptance test sweep
 
-- [ ] 4.1 `rg "ServerVersion|ServerFlavor" internal/kibana/**/acc_test.go` — for every hit, migrate to `versionutils.CheckIfNotServerless` or `EnforceMinVersion`. (If acceptance tests legitimately need the version itself for skip logic, route through `versionutils.SkipIfUnsupported` instead.)
+- [x] 4.1 `rg "ServerVersion|ServerFlavor" internal/kibana/**/acc_test.go` — for every hit, migrate to `versionutils.CheckIfNotServerless` or `EnforceMinVersion`. (If acceptance tests legitimately need the version itself for skip logic, route through `versionutils.SkipIfUnsupported` instead.) — Verified zero hits in `internal/kibana/**/acc_test.go`; existing tests already use `versionutils.CheckIfVersionIsUnsupported` / `versionutils.SkipIfUnsupported`.
 
 ## 5. Tests in `internal/clients/`
 
