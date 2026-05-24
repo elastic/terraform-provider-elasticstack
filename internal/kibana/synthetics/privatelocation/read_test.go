@@ -99,8 +99,8 @@ func TestPreserveGeoFromInput(t *testing.T) {
 			switch tt.wantSameAs {
 			case "input":
 				require.Same(t, tt.input, got)
-				require.Equal(t, tt.input.Lat.ValueFloat64(), got.Lat.ValueFloat64())
-				require.Equal(t, tt.input.Lon.ValueFloat64(), got.Lon.ValueFloat64())
+				require.InDelta(t, tt.input.Lat.ValueFloat64(), got.Lat.ValueFloat64(), 0)
+				require.InDelta(t, tt.input.Lon.ValueFloat64(), got.Lon.ValueFloat64(), 0)
 			case "api":
 				require.Same(t, tt.api, got)
 			default:
