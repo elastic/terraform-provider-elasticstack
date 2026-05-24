@@ -34,13 +34,13 @@ func TestTfModel_GetVersionRequirements(t *testing.T) {
 	dataViewIDMessage := "data_view_id is not supported on Elastic Stack versions < " +
 		SLOSupportsDataViewIDMinVersion.String()
 
-	settingsWithPreventInitialBackfill := func(t *testing.T) types.Object {
+	settingsWithPreventInitialBackfill := func(t *testing.T, value bool) types.Object {
 		t.Helper()
 		obj, diags := types.ObjectValue(tfSettingsAttrTypes, map[string]attr.Value{
 			"sync_delay":               types.StringNull(),
 			"frequency":                types.StringNull(),
 			"sync_field":               types.StringNull(),
-			"prevent_initial_backfill": types.BoolValue(true),
+			"prevent_initial_backfill": types.BoolValue(value),
 		})
 		require.False(t, diags.HasError())
 		return obj
@@ -73,11 +73,21 @@ func TestTfModel_GetVersionRequirements(t *testing.T) {
 
 	t.Run("only prevent_initial_backfill", func(t *testing.T) {
 		t.Parallel()
-		m := tfModel{Settings: settingsWithPreventInitialBackfill(t)}
+		m := tfModel{Settings: settingsWithPreventInitialBackfill(t, true)}
 		reqs, diags := m.GetVersionRequirements()
 		require.False(t, diags.HasError())
 		require.Len(t, reqs, 1)
 		require.Equal(t, *SLOSupportsPreventInitialBackfillMinVersion, reqs[0].MinVersion)
+		require.Equal(t, preventInitialBackfillMessage, reqs[0].ErrorMessage)
+	})
+
+	t.Run("prevent_initial_backfill known false", func(t *testing.T) {
+		t.Parallel()
+		m := tfModel{Settings: settingsWithPreventInitialBackfill(t, false)}
+		reqs, diags := m.GetVersionRequirements()
+		require.False(t, diags.HasError())
+		require.Len(t, reqs, 1)
+		require.True(t, reqs[0].MinVersion.Equal(SLOSupportsPreventInitialBackfillMinVersion))
 		require.Equal(t, preventInitialBackfillMessage, reqs[0].ErrorMessage)
 	})
 
@@ -93,9 +103,20 @@ func TestTfModel_GetVersionRequirements(t *testing.T) {
 	t.Run("both conditions set", func(t *testing.T) {
 		t.Parallel()
 		m := modelWithDataViewID
-		m.Settings = settingsWithPreventInitialBackfill(t)
+		m.Settings = settingsWithPreventInitialBackfill(t, true)
 		reqs, diags := m.GetVersionRequirements()
 		require.False(t, diags.HasError())
 		assertRequirements(t, reqs, 2, preventInitialBackfillMessage, dataViewIDMessage)
+
+		reqsByMessage := make(map[string]entitycore.VersionRequirement, len(reqs))
+		for _, req := range reqs {
+			reqsByMessage[req.ErrorMessage] = req
+		}
+		preventReq, ok := reqsByMessage[preventInitialBackfillMessage]
+		require.True(t, ok, "expected prevent_initial_backfill requirement")
+		require.True(t, preventReq.MinVersion.Equal(SLOSupportsPreventInitialBackfillMinVersion))
+		dataViewReq, ok := reqsByMessage[dataViewIDMessage]
+		require.True(t, ok, "expected data_view_id requirement")
+		require.True(t, dataViewReq.MinVersion.Equal(SLOSupportsDataViewIDMinVersion))
 	})
 }
