@@ -15,37 +15,26 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package sourcemap
+package agentconfiguration
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *resourceSourceMap) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state SourceMap
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
+func (r *resourceAgentConfiguration) getKibanaOapiClient(ctx context.Context, conn types.List) (*kibanaoapi.Client, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	scoped, kDiags := r.Client().GetKibanaClient(ctx, conn)
+	diags.Append(kDiags...)
+	if diags.HasError() {
+		return nil, diags
 	}
 
-	_, kibana, diags := r.getKibanaOapiClient(ctx, state.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	artifactID := state.ID.ValueString()
-	spaceID := state.SpaceID.ValueString()
-
-	resp.Diagnostics.Append(kibanaoapi.DeleteSourceMap(ctx, kibana, spaceID, artifactID)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	tflog.Trace(ctx, fmt.Sprintf("Deleted APM source map with ID: %s", artifactID))
+	kibana, d := scoped.GetKibanaOapiClient()
+	diags.Append(d...)
+	return kibana, diags
 }

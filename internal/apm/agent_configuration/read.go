@@ -53,14 +53,8 @@ func (r *resourceAgentConfiguration) Read(ctx context.Context, req resource.Read
 func (r *resourceAgentConfiguration) read(ctx context.Context, state *AgentConfiguration) (*AgentConfiguration, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	scoped, kDiags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
+	kibana, kDiags := r.getKibanaOapiClient(ctx, state.KibanaConnection)
 	diags.Append(kDiags...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	kibana, d := scoped.GetKibanaOapiClient()
-	diags.Append(d...)
 	if diags.HasError() {
 		return nil, diags
 	}

@@ -35,14 +35,8 @@ func (r *resourceAgentConfiguration) Delete(ctx context.Context, req resource.De
 		return
 	}
 
-	scoped, fwDiags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	resp.Diagnostics.Append(fwDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	kibana, d := scoped.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
+	kibana, diags := r.getKibanaOapiClient(ctx, state.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

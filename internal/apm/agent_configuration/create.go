@@ -36,14 +36,8 @@ func (r *resourceAgentConfiguration) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
-	scoped, fwDiags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	resp.Diagnostics.Append(fwDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	kibana, d := scoped.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
+	kibana, diags := r.getKibanaOapiClient(ctx, plan.KibanaConnection)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
