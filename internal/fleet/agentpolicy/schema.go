@@ -45,6 +45,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const (
+	globalDataTagStringValueAttr = "string_value"
+	globalDataTagNumberValueAttr = "number_value"
+)
+
 func (r *agentPolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = getSchema()
 }
@@ -161,25 +166,25 @@ func getSchema() schema.Schema {
 				Description: globalDataTagsDescription,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"string_value": schema.StringAttribute{
+						globalDataTagStringValueAttr: schema.StringAttribute{
 							Description: "String value for the field. If this is set, number_value must not be defined.",
 							Optional:    true,
 							Validators: []validator.String{
-								stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("number_value")),
+								stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr)),
 								stringvalidator.AtLeastOneOf(
-									path.MatchRelative().AtParent().AtName("string_value"),
-									path.MatchRelative().AtParent().AtName("number_value"),
+									path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr),
+									path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr),
 								),
 							},
 						},
-						"number_value": schema.Float32Attribute{
+						globalDataTagNumberValueAttr: schema.Float32Attribute{
 							Description: "Number value for the field. If this is set, string_value must not be defined.",
 							Optional:    true,
 							Validators: []validator.Float32{
-								float32validator.ConflictsWith(path.MatchRelative().AtParent().AtName("string_value")),
+								float32validator.ConflictsWith(path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr)),
 								float32validator.AtLeastOneOf(
-									path.MatchRelative().AtParent().AtName("string_value"),
-									path.MatchRelative().AtParent().AtName("number_value"),
+									path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr),
+									path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr),
 								),
 							},
 						},
@@ -189,8 +194,8 @@ func getSchema() schema.Schema {
 				Optional: true,
 				Default: mapdefault.StaticValue(types.MapValueMust(types.ObjectType{
 					AttrTypes: map[string]attr.Type{
-						"string_value": types.StringType,
-						"number_value": types.Float32Type,
+						globalDataTagStringValueAttr: types.StringType,
+						globalDataTagNumberValueAttr: types.Float32Type,
 					},
 				}, map[string]attr.Value{})),
 			},
