@@ -57,13 +57,13 @@ func fetchAcceptanceServerInfo(ctx context.Context) (*version.Version, string, e
 	if err != nil {
 		return nil, "", err
 	}
-	serverVersion, diags := client.ServerVersion(ctx)
+	serverVersion, isServerless, diags := clients.AcceptanceServerInfo(ctx, client)
 	if diags.HasError() {
-		return nil, "", fmt.Errorf("failed to parse elasticsearch server version: %v", diags)
+		return nil, "", fmt.Errorf("failed to get elasticsearch server info: %v", diags)
 	}
-	buildFlavor, diags := client.ServerFlavor(ctx)
-	if diags.HasError() {
-		return nil, "", fmt.Errorf("failed to get elasticsearch server flavor: %v", diags)
+	buildFlavor := "default"
+	if isServerless {
+		buildFlavor = clients.ServerlessFlavor
 	}
 	return serverVersion, buildFlavor, nil
 }
@@ -189,11 +189,11 @@ func CheckIfNotServerless() func() (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		serverFlavor, diags := client.ServerFlavor(context.Background())
+		isServerless, diags := client.IsServerless(context.Background())
 		if diags.HasError() {
 			return false, fmt.Errorf("failed to get the elasticsearch flavor %v", diags)
 		}
 
-		return serverFlavor != clients.ServerlessFlavor, nil
+		return !isServerless, nil
 	}
 }
