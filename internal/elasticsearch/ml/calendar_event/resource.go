@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -112,7 +113,7 @@ func (r *calendarEventResource) ImportState(ctx context.Context, req resource.Im
 		return
 	}
 
-	calendarID, eventID, splitDiags := splitCalendarEventResourcePath(compID.ResourceID)
+	calendarID, eventID, splitDiags := ml.SplitCalendarResourcePath(compID.ResourceID, "<event_id>")
 	resp.Diagnostics.Append(splitDiags...)
 	if resp.Diagnostics.HasError() {
 		return
