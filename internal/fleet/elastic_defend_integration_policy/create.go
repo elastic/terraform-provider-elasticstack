@@ -21,7 +21,7 @@ import (
 	"context"
 
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -48,7 +48,8 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 	}
 
 	// Determine space context for creating the package policy
-	spaceID := getSpaceIDFromPlan(ctx, planModel, &resp.Diagnostics)
+	spaceID, d := fleetutils.SpaceIDFromSet(ctx, planModel.SpaceIDs)
+	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -132,19 +133,4 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, planModel)...)
-}
-
-// getSpaceIDFromPlan extracts the first space ID from the plan's space_ids
-// attribute for use in the API request.
-func getSpaceIDFromPlan(ctx context.Context, model elasticDefendIntegrationPolicyModel, diags *diag.Diagnostics) string {
-	if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
-		return ""
-	}
-	var spaceIDs []types.String
-	d := model.SpaceIDs.ElementsAs(ctx, &spaceIDs, false)
-	diags.Append(d...)
-	if len(spaceIDs) > 0 {
-		return spaceIDs[0].ValueString()
-	}
-	return ""
 }
