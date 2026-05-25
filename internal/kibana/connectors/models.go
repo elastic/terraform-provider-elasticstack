@@ -41,9 +41,27 @@ type tfModel struct {
 	IsPreconfigured  types.Bool           `tfsdk:"is_preconfigured"`
 }
 
-var _ entitycore.WithVersionRequirements = tfModel{}
+var (
+	_ entitycore.KibanaResourceModel     = tfModel{}
+	_ entitycore.WithVersionRequirements = tfModel{}
+)
+
+func (model tfModel) GetID() types.String             { return model.ID }
+func (model tfModel) GetSpaceID() types.String        { return model.SpaceID }
+func (model tfModel) GetKibanaConnection() types.List { return model.KibanaConnection }
+
+// GetResourceID returns the plan-safe connector identity: the user-supplied
+// connector_id when known and non-empty, otherwise empty.
+func (model tfModel) GetResourceID() types.String {
+	if typeutils.IsKnown(model.ConnectorID) && model.ConnectorID.ValueString() != "" {
+		return model.ConnectorID
+	}
+	return types.StringValue("")
+}
 
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
+// The Kibana envelope calls [entitycore.EnforceVersionRequirements] before write
+// and read, so preconfigured connector ID validation stays on the model.
 func (model tfModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	if typeutils.IsKnown(model.ConnectorID) && model.ConnectorID.ValueString() != "" {
 		return []entitycore.VersionRequirement{
@@ -58,7 +76,7 @@ func (model tfModel) GetVersionRequirements() ([]entitycore.VersionRequirement, 
 	return nil, nil
 }
 
-func (model tfModel) GetID() (*clients.CompositeID, diag.Diagnostics) {
+func (model tfModel) GetCompositeID() (*clients.CompositeID, diag.Diagnostics) {
 	compID, compIDDiags := clients.CompositeIDFromStr(model.ID.ValueString())
 	if compIDDiags.HasError() {
 		return nil, compIDDiags
