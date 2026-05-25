@@ -72,6 +72,13 @@ func (e *ElasticsearchScopedClient) serverInfo(ctx context.Context) (*info.Respo
 		return e.elasticsearchClusterInfo, nil
 	}
 
+	if e.GetESClient() == nil {
+		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic(
+			"Elasticsearch client not configured",
+			"the scoped client was not produced by ProviderClientFactory.GetElasticsearchClient; this is a provider bug — please report it",
+		)}
+	}
+
 	res, err := e.GetESClient().Info().Do(ctx)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)

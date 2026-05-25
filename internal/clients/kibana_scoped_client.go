@@ -98,6 +98,13 @@ func (k *KibanaScopedClient) getServerStatusRaw(ctx context.Context) (rawVersion
 		return k.statusVer, k.statusFlavor, nil
 	}
 
+	if k.GetKibanaOapiClient() == nil {
+		return "", "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic(
+			"Kibana OpenAPI client not configured",
+			"the scoped client was not produced by ProviderClientFactory.GetKibanaClient; this is a provider bug — please report it",
+		)}
+	}
+
 	rawVersion, flavor, diags = kibanaoapi.GetKibanaStatus(ctx, k.GetKibanaOapiClient().API)
 	if diags.HasError() {
 		return "", "", diags

@@ -40,10 +40,12 @@ func GetKibanaOAPIClient(c ESAPIClient, dg *diag.Diagnostics) *kibanaoapi.Client
 // to dg so callers can surface them via response.Diagnostics.
 func GetKibanaOAPIClientFromScopedClient(client *clients.KibanaScopedClient, dg *diag.Diagnostics) *kibanaoapi.Client {
 	if client == nil {
-		dg.AddError(
-			"Unconfigured Client",
-			"Expected configured client. Please report this issue to the provider developers.",
-		)
+		if !dg.HasError() {
+			dg.AddError(
+				"Unconfigured Client",
+				"Expected configured client. Please report this issue to the provider developers.",
+			)
+		}
 		return nil
 	}
 
