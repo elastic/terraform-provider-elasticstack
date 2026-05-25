@@ -335,7 +335,7 @@ jobs:
 
   gate:
     name: Provider Gate
-    needs: [classify, build, lint, test]
+    needs: [classify, build, golangci-lint, lint, test]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -349,6 +349,7 @@ jobs:
           PROVIDER_GATE_CLASSIFY_RESULT: ${{ needs.classify.outputs.provider_changes }}
           PROVIDER_GATE_BUILD_RESULT: ${{ needs.build.result }}
           PROVIDER_GATE_LINT_RESULT: ${{ needs.lint.result }}
+          PROVIDER_GATE_GOLANGCI_LINT_RESULT: ${{ needs['golangci-lint'].result }}
           PROVIDER_GATE_TEST_RESULT: ${{ needs.test.result }}
         with:
           script: |
