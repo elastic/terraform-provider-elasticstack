@@ -263,14 +263,14 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, panel kbap
 	}
 
 	switch discriminator {
-	case "slo-single-overview-embeddable", "single":
+	case "slo-single-overview-embeddable", sloOverviewModeSingle:
 		single, err := panel.Config.AsKibanaHTTPAPIsSloSingleOverviewEmbeddable()
 		if err != nil {
 			diags.AddError("Failed to read SLO single overview config", err.Error())
 			return diags
 		}
 		return sloSingleFromAPI(pm, prior, single)
-	case "slo-group-overview-embeddable", "groups":
+	case "slo-group-overview-embeddable", sloOverviewModeGroups:
 		groups, err := panel.Config.AsKibanaHTTPAPIsSloGroupOverviewEmbeddable()
 		if err != nil {
 			diags.AddError("Failed to read SLO groups overview config", err.Error())

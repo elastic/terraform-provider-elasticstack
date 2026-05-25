@@ -76,13 +76,20 @@ func heatmapSchemaAttrs(includePresentation bool) map[string]schema.Attribute {
 	return attrs
 }
 
+// Terraform schema attribute keys reused across the heatmap axes/cells
+// configuration blocks.
+const (
+	attrLabels  = "labels"
+	attrVisible = "visible"
+)
+
 func heatmapAxesSchemaAttrs() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"x": schema.SingleNestedAttribute{
 			MarkdownDescription: "X-axis configuration.",
 			Optional:            true,
 			Attributes: map[string]schema.Attribute{
-				"labels": schema.SingleNestedAttribute{
+				attrLabels: schema.SingleNestedAttribute{
 					MarkdownDescription: "X-axis label configuration.",
 					Optional:            true,
 					Attributes: map[string]schema.Attribute{
@@ -93,7 +100,7 @@ func heatmapAxesSchemaAttrs() map[string]schema.Attribute {
 								stringvalidator.OneOf("horizontal", "vertical", "angled"),
 							},
 						},
-						"visible": schema.BoolAttribute{
+						attrVisible: schema.BoolAttribute{
 							MarkdownDescription: "Whether to show axis labels.",
 							Optional:            true,
 						},
@@ -106,11 +113,11 @@ func heatmapAxesSchemaAttrs() map[string]schema.Attribute {
 			MarkdownDescription: "Y-axis configuration.",
 			Optional:            true,
 			Attributes: map[string]schema.Attribute{
-				"labels": schema.SingleNestedAttribute{
+				attrLabels: schema.SingleNestedAttribute{
 					MarkdownDescription: "Y-axis label configuration.",
 					Optional:            true,
 					Attributes: map[string]schema.Attribute{
-						"visible": schema.BoolAttribute{
+						attrVisible: schema.BoolAttribute{
 							MarkdownDescription: "Whether to show axis labels.",
 							Optional:            true,
 						},
@@ -125,11 +132,11 @@ func heatmapAxesSchemaAttrs() map[string]schema.Attribute {
 // getHeatmapCellsSchema returns schema for heatmap cells configuration
 func heatmapCellsSchemaAttrs() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"labels": schema.SingleNestedAttribute{
+		attrLabels: schema.SingleNestedAttribute{
 			MarkdownDescription: "Cell label configuration.",
 			Optional:            true,
 			Attributes: map[string]schema.Attribute{
-				"visible": schema.BoolAttribute{
+				attrVisible: schema.BoolAttribute{
 					MarkdownDescription: "Whether to show cell labels.",
 					Optional:            true,
 				},

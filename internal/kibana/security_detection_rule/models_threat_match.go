@@ -47,7 +47,7 @@ func newThreatMatchRuleProcessor() ThreatMatchRuleProcessor {
 }
 
 func (t ThreatMatchRuleProcessor) HandlesRuleType(ruleType string) bool {
-	return ruleType == "threat_match"
+	return ruleType == ruleTypeThreatMatch
 }
 
 func (t ThreatMatchRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
@@ -65,7 +65,7 @@ func (d Data) toThreatMatchRuleCreateProps(ctx context.Context, client clients.M
 	threatMatchRule := kbapi.SecurityDetectionsAPIThreatMatchRuleCreateProps{
 		Name:        d.Name.ValueString(),
 		Description: d.Description.ValueString(),
-		Type:        kbapi.SecurityDetectionsAPIThreatMatchRuleCreatePropsType("threat_match"),
+		Type:        kbapi.SecurityDetectionsAPIThreatMatchRuleCreatePropsType(ruleTypeThreatMatch),
 		Query:       d.Query.ValueString(),
 		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
@@ -182,7 +182,7 @@ func (d Data) toThreatMatchRuleUpdateProps(ctx context.Context, client clients.M
 		Id:          &uid,
 		Name:        d.Name.ValueString(),
 		Description: d.Description.ValueString(),
-		Type:        kbapi.SecurityDetectionsAPIThreatMatchRuleUpdatePropsType("threat_match"),
+		Type:        kbapi.SecurityDetectionsAPIThreatMatchRuleUpdatePropsType(ruleTypeThreatMatch),
 		Query:       d.Query.ValueString(),
 		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),

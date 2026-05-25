@@ -36,6 +36,10 @@ var _ interface {
 
 var _ entitycore.WithVersionRequirements = tfModel{}
 
+// nameKey is the lifecycle "name" setting key in component template
+// index.lifecycle.name. It is shared between models.go and delete.go.
+const nameKey = "name"
+
 // tfModel represents the Terraform state model for this resource.
 type tfModel struct {
 	ID                      types.String `tfsdk:"id"`
@@ -91,7 +95,7 @@ func mergeILMSetting(existingSettings map[string]any, lifecycleName string) map[
 		lifecycle = make(map[string]any)
 		indexSettings["lifecycle"] = lifecycle
 	}
-	lifecycle["name"] = lifecycleName
+	lifecycle[nameKey] = lifecycleName
 	return existingSettings
 }
 
@@ -102,7 +106,7 @@ func removeILMSetting(settings map[string]any) map[string]any {
 	}
 	if indexSettings, ok := settings["index"].(map[string]any); ok {
 		if lifecycle, ok := indexSettings["lifecycle"].(map[string]any); ok {
-			delete(lifecycle, "name")
+			delete(lifecycle, nameKey)
 			if len(lifecycle) == 0 {
 				delete(indexSettings, "lifecycle")
 			}
@@ -130,7 +134,7 @@ func extractILMSetting(template *models.Template) string {
 	if !ok {
 		return ""
 	}
-	if v, ok := lifecycle["name"].(string); ok {
+	if v, ok := lifecycle[nameKey].(string); ok {
 		return v
 	}
 	return ""

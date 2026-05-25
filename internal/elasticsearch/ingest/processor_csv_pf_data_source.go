@@ -108,14 +108,14 @@ func (m *processorCSVModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorCSVDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource",
+			Description: descIdentifier,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
-		"field": schema.StringAttribute{
+		attrField: schema.StringAttribute{
 			Description: "The field to extract data from.",
 			Required:    true,
 		},
@@ -125,12 +125,12 @@ func NewProcessorCSVDataSource() datasource.DataSource {
 			ElementType: types.StringType,
 			Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 		},
-		"ignore_missing": schema.BoolAttribute{
-			Description: "If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.",
+		attrIgnoreMissing: schema.BoolAttribute{
+			Description: descIgnoreMissingDocStop,
 			Optional:    true,
 			Computed:    true,
 		},
-		"separator": schema.StringAttribute{
+		attrSeparator: schema.StringAttribute{
 			Description: "Separator used in CSV, has to be single character string.",
 			Optional:    true,
 			Computed:    true,

@@ -47,9 +47,9 @@ func readSecurityEnableRule(ctx context.Context, client *clients.KibanaScopedCli
 	}
 
 	tflog.Debug(ctx, "Read rules enabled status", map[string]any{
-		"space_id":          spaceID,
-		"key":               key,
-		"value":             value,
+		attrSpaceID:         spaceID,
+		attrKey:             key,
+		attrValue:           value,
 		"all_rules_enabled": allEnabled,
 	})
 

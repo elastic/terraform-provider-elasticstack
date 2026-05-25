@@ -70,7 +70,7 @@ func resourceSchema() schema.Schema {
 				Description: "The description of the integration policy.",
 				Optional:    true,
 			},
-			"enabled": schema.BoolAttribute{
+			attrEnabled: schema.BoolAttribute{
 				Description: "Enable the integration policy.",
 				Computed:    true,
 				Optional:    true,
@@ -95,7 +95,7 @@ func resourceSchema() schema.Schema {
 					setplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"preset": schema.StringAttribute{
+			attrPreset: schema.StringAttribute{
 				Description: "Elastic Defend preset configuration. Maps to `endpointConfig.preset` in the Defend API. " +
 					"Common values include `\"NGAv1\"`, `\"NGAV\"`, `\"dataCollection\"`, `\"EDRComplete\"`, `\"EDREssential\"`.",
 				Optional: true,
@@ -126,13 +126,13 @@ func popupItemSchema() schema.SingleNestedAttribute {
 		Optional: true,
 		Default:  objectdefault.StaticValue(popupItemDefaultValue()),
 		Attributes: map[string]schema.Attribute{
-			"message": schema.StringAttribute{
+			attrMessage: schema.StringAttribute{
 				Description: "The popup message text.",
 				Computed:    true,
 				Default:     stringdefault.StaticString(""),
 				Optional:    true,
 			},
-			"enabled": schema.BoolAttribute{
+			attrEnabled: schema.BoolAttribute{
 				Description: "Whether the popup notification is enabled.",
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
@@ -149,7 +149,7 @@ func protectionModeSchema(description string) schema.SingleNestedAttribute {
 		Description: description,
 		Default:     objectdefault.StaticValue(protectionModeDefaultValue()),
 		Attributes: map[string]schema.Attribute{
-			"mode": schema.StringAttribute{
+			attrMode: schema.StringAttribute{
 				Description: "Protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`.",
 				Computed:    true,
 				Default:     stringdefault.StaticString("off"),
@@ -158,7 +158,7 @@ func protectionModeSchema(description string) schema.SingleNestedAttribute {
 					stringvalidator.OneOf("off", "detect", "prevent"),
 				},
 			},
-			"supported": schema.BoolAttribute{
+			attrSupported: schema.BoolAttribute{
 				Description: "Whether this protection is supported on the platform.",
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
@@ -175,7 +175,7 @@ func behaviorProtectionSchema(description string) schema.SingleNestedAttribute {
 		Description: description,
 		Default:     objectdefault.StaticValue(behaviorProtectionDefaultValue()),
 		Attributes: map[string]schema.Attribute{
-			"mode": schema.StringAttribute{
+			attrMode: schema.StringAttribute{
 				Description: "Protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`.",
 				Computed:    true,
 				Default:     stringdefault.StaticString("off"),
@@ -184,13 +184,13 @@ func behaviorProtectionSchema(description string) schema.SingleNestedAttribute {
 					stringvalidator.OneOf("off", "detect", "prevent"),
 				},
 			},
-			"supported": schema.BoolAttribute{
+			attrSupported: schema.BoolAttribute{
 				Description: "Whether this protection is supported on the platform.",
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
 				Optional:    true,
 			},
-			"reputation_service": schema.BoolAttribute{
+			attrReputationService: schema.BoolAttribute{
 				Description: "Whether reputation service is enabled.",
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
@@ -202,51 +202,51 @@ func behaviorProtectionSchema(description string) schema.SingleNestedAttribute {
 
 func popupItemDefaultValue() types.Object {
 	return types.ObjectValueMust(popupItemAttrTypes(), map[string]attr.Value{
-		"message": types.StringValue(""),
-		"enabled": types.BoolValue(false),
+		attrMessage: types.StringValue(""),
+		attrEnabled: types.BoolValue(false),
 	})
 }
 
 func protectionModeDefaultValue() types.Object {
 	return types.ObjectValueMust(protectionModeAttrTypes(), map[string]attr.Value{
-		"mode":      types.StringValue("off"),
-		"supported": types.BoolValue(true),
+		attrMode:      types.StringValue("off"),
+		attrSupported: types.BoolValue(true),
 	})
 }
 
 func behaviorProtectionDefaultValue() types.Object {
 	return types.ObjectValueMust(behaviorProtectionAttrTypes(), map[string]attr.Value{
-		"mode":               types.StringValue("off"),
-		"supported":          types.BoolValue(true),
-		"reputation_service": types.BoolValue(false),
+		attrMode:              types.StringValue("off"),
+		attrSupported:         types.BoolValue(true),
+		attrReputationService: types.BoolValue(false),
 	})
 }
 
 func antivirusRegistrationDefaultValue() types.Object {
 	return types.ObjectValueMust(antivirusRegistrationAttrTypes(), map[string]attr.Value{
-		"mode":    types.StringValue("disabled"),
-		"enabled": types.BoolValue(false),
+		attrMode:    types.StringValue("disabled"),
+		attrEnabled: types.BoolValue(false),
 	})
 }
 
 func credentialHardeningDefaultValue() types.Object {
 	return types.ObjectValueMust(credentialHardeningAttrTypes(), map[string]attr.Value{
-		"enabled": types.BoolValue(false),
+		attrEnabled: types.BoolValue(false),
 	})
 }
 
 func attackSurfaceReductionDefaultValue() types.Object {
 	return types.ObjectValueMust(attackSurfaceReductionAttrTypes(), map[string]attr.Value{
-		"credential_hardening": credentialHardeningDefaultValue(),
+		attrCredentialHardening: credentialHardeningDefaultValue(),
 	})
 }
 
 func windowsPopupDefaultValue() types.Object {
 	return types.ObjectValueMust(windowsPopupAttrTypes(), map[string]attr.Value{
-		"malware":             popupItemDefaultValue(),
-		"ransomware":          popupItemDefaultValue(),
-		"memory_protection":   popupItemDefaultValue(),
-		"behavior_protection": popupItemDefaultValue(),
+		attrMalware:            popupItemDefaultValue(),
+		attrRansomware:         popupItemDefaultValue(),
+		attrMemoryProtection:   popupItemDefaultValue(),
+		attrBehaviorProtection: popupItemDefaultValue(),
 	})
 }
 
@@ -255,20 +255,20 @@ func windowsPolicySchema() schema.Attribute {
 		Description: "Windows-specific Elastic Defend policy settings.",
 		Optional:    true,
 		Attributes: map[string]schema.Attribute{
-			"events": schema.SingleNestedAttribute{
+			attrEvents: schema.SingleNestedAttribute{
 				Description: "Windows event collection settings.",
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
-					"process": schema.BoolAttribute{
-						Description: "Collect process events.",
+					attrProcess: schema.BoolAttribute{
+						Description: descCollectProcessEvents,
 						Optional:    true,
 					},
-					"network": schema.BoolAttribute{
-						Description: "Collect network events.",
+					attrNetwork: schema.BoolAttribute{
+						Description: descCollectNetworkEvents,
 						Optional:    true,
 					},
-					"file": schema.BoolAttribute{
-						Description: "Collect file events.",
+					attrFile: schema.BoolAttribute{
+						Description: descCollectFileEvents,
 						Optional:    true,
 					},
 					"dll_and_driver_load": schema.BoolAttribute{
@@ -293,52 +293,52 @@ func windowsPolicySchema() schema.Attribute {
 					},
 				},
 			},
-			"malware": schema.SingleNestedAttribute{
+			attrMalware: schema.SingleNestedAttribute{
 				Description: "Windows malware protection settings.",
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
-					"mode": schema.StringAttribute{
-						Description: "Malware protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`.",
+					attrMode: schema.StringAttribute{
+						Description: descMalwareMode,
 						Optional:    true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("off", "detect", "prevent"),
 						},
 					},
-					"blocklist": schema.BoolAttribute{
-						Description: "Whether blocklist is enabled.",
+					attrBlocklist: schema.BoolAttribute{
+						Description: descBlocklistEnabled,
 						Optional:    true,
 					},
-					"on_write_scan": schema.BoolAttribute{
+					attrOnWriteScan: schema.BoolAttribute{
 						Description: "Whether on-write scan is enabled.",
 						Optional:    true,
 					},
-					"notify_user": schema.BoolAttribute{
+					attrNotifyUser: schema.BoolAttribute{
 						Description: "Whether to notify the user on malware detection.",
 						Optional:    true,
 					},
 				},
 			},
-			"ransomware":          protectionModeSchema("Windows ransomware protection settings."),
-			"memory_protection":   protectionModeSchema("Windows memory protection settings."),
-			"behavior_protection": behaviorProtectionSchema("Windows behavior protection settings."),
-			"popup": schema.SingleNestedAttribute{
+			attrRansomware:         protectionModeSchema("Windows ransomware protection settings."),
+			attrMemoryProtection:   protectionModeSchema("Windows memory protection settings."),
+			attrBehaviorProtection: behaviorProtectionSchema("Windows behavior protection settings."),
+			attrPopup: schema.SingleNestedAttribute{
 				Description: "Windows popup notification settings.",
 				Computed:    true,
 				Optional:    true,
 				Default:     objectdefault.StaticValue(windowsPopupDefaultValue()),
 				Attributes: map[string]schema.Attribute{
-					"malware":             popupItemSchema(),
-					"ransomware":          popupItemSchema(),
-					"memory_protection":   popupItemSchema(),
-					"behavior_protection": popupItemSchema(),
+					attrMalware:            popupItemSchema(),
+					attrRansomware:         popupItemSchema(),
+					attrMemoryProtection:   popupItemSchema(),
+					attrBehaviorProtection: popupItemSchema(),
 				},
 			},
-			"logging": schema.SingleNestedAttribute{
+			attrLogging: schema.SingleNestedAttribute{
 				Description: "Windows logging settings.",
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
-					"file": schema.StringAttribute{
-						Description: "Log level for file logging. Valid values: `\"info\"`, `\"debug\"`, `\"warning\"`, `\"error\"`, `\"critical\"`.",
+					attrFile: schema.StringAttribute{
+						Description: descLoggingFileLevel,
 						Optional:    true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("info", "debug", "warning", "error", "critical"),
@@ -352,7 +352,7 @@ func windowsPolicySchema() schema.Attribute {
 				Optional:    true,
 				Default:     objectdefault.StaticValue(antivirusRegistrationDefaultValue()),
 				Attributes: map[string]schema.Attribute{
-					"mode": schema.StringAttribute{
+					attrMode: schema.StringAttribute{
 						Description: "Antivirus registration mode. Valid values: `\"enabled\"`, `\"disabled\"`, `\"sync_with_malware_prevent\"`.",
 						Computed:    true,
 						Default:     stringdefault.StaticString("disabled"),
@@ -361,7 +361,7 @@ func windowsPolicySchema() schema.Attribute {
 							stringvalidator.OneOf("enabled", "disabled", "sync_with_malware_prevent"),
 						},
 					},
-					"enabled": schema.BoolAttribute{
+					attrEnabled: schema.BoolAttribute{
 						Description: "Whether antivirus registration is enabled.",
 						Computed:    true,
 						Default:     booldefault.StaticBool(false),
@@ -375,13 +375,13 @@ func windowsPolicySchema() schema.Attribute {
 				Optional:    true,
 				Default:     objectdefault.StaticValue(attackSurfaceReductionDefaultValue()),
 				Attributes: map[string]schema.Attribute{
-					"credential_hardening": schema.SingleNestedAttribute{
+					attrCredentialHardening: schema.SingleNestedAttribute{
 						Description: "Credential hardening settings.",
 						Computed:    true,
 						Optional:    true,
 						Default:     objectdefault.StaticValue(credentialHardeningDefaultValue()),
 						Attributes: map[string]schema.Attribute{
-							"enabled": schema.BoolAttribute{
+							attrEnabled: schema.BoolAttribute{
 								Description: "Whether credential hardening is enabled.",
 								Computed:    true,
 								Default:     booldefault.StaticBool(false),
@@ -400,66 +400,66 @@ func macPolicySchema() schema.Attribute {
 		Description: "macOS-specific Elastic Defend policy settings.",
 		Optional:    true,
 		Attributes: map[string]schema.Attribute{
-			"events": schema.SingleNestedAttribute{
+			attrEvents: schema.SingleNestedAttribute{
 				Description: "macOS event collection settings.",
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
-					"process": schema.BoolAttribute{
-						Description: "Collect process events.",
+					attrProcess: schema.BoolAttribute{
+						Description: descCollectProcessEvents,
 						Optional:    true,
 					},
-					"network": schema.BoolAttribute{
-						Description: "Collect network events.",
+					attrNetwork: schema.BoolAttribute{
+						Description: descCollectNetworkEvents,
 						Optional:    true,
 					},
-					"file": schema.BoolAttribute{
-						Description: "Collect file events.",
+					attrFile: schema.BoolAttribute{
+						Description: descCollectFileEvents,
 						Optional:    true,
 					},
 				},
 			},
-			"malware": schema.SingleNestedAttribute{
+			attrMalware: schema.SingleNestedAttribute{
 				Description: "macOS malware protection settings.",
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
-					"mode": schema.StringAttribute{
-						Description: "Malware protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`.",
+					attrMode: schema.StringAttribute{
+						Description: descMalwareMode,
 						Optional:    true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("off", "detect", "prevent"),
 						},
 					},
-					"blocklist": schema.BoolAttribute{
-						Description: "Whether blocklist is enabled.",
+					attrBlocklist: schema.BoolAttribute{
+						Description: descBlocklistEnabled,
 						Optional:    true,
 					},
-					"on_write_scan": schema.BoolAttribute{
+					attrOnWriteScan: schema.BoolAttribute{
 						Description: "Whether on-write scan is enabled.",
 						Optional:    true,
 					},
-					"notify_user": schema.BoolAttribute{
+					attrNotifyUser: schema.BoolAttribute{
 						Description: "Whether to notify the user on malware detection.",
 						Optional:    true,
 					},
 				},
 			},
-			"memory_protection":   protectionModeSchema("macOS memory protection settings."),
-			"behavior_protection": behaviorProtectionSchema("macOS behavior protection settings."),
-			"popup": schema.SingleNestedAttribute{
+			attrMemoryProtection:   protectionModeSchema("macOS memory protection settings."),
+			attrBehaviorProtection: behaviorProtectionSchema("macOS behavior protection settings."),
+			attrPopup: schema.SingleNestedAttribute{
 				Description: "macOS popup notification settings.",
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
-					"malware":             popupItemSchema(),
-					"memory_protection":   popupItemSchema(),
-					"behavior_protection": popupItemSchema(),
+					attrMalware:            popupItemSchema(),
+					attrMemoryProtection:   popupItemSchema(),
+					attrBehaviorProtection: popupItemSchema(),
 				},
 			},
-			"logging": schema.SingleNestedAttribute{
+			attrLogging: schema.SingleNestedAttribute{
 				Description: "macOS logging settings.",
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
-					"file": schema.StringAttribute{
-						Description: "Log level for file logging. Valid values: `\"info\"`, `\"debug\"`, `\"warning\"`, `\"error\"`, `\"critical\"`.",
+					attrFile: schema.StringAttribute{
+						Description: descLoggingFileLevel,
 						Optional:    true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("info", "debug", "warning", "error", "critical"),
@@ -476,20 +476,20 @@ func linuxPolicySchema() schema.Attribute {
 		Description: "Linux-specific Elastic Defend policy settings.",
 		Optional:    true,
 		Attributes: map[string]schema.Attribute{
-			"events": schema.SingleNestedAttribute{
+			attrEvents: schema.SingleNestedAttribute{
 				Description: "Linux event collection settings.",
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
-					"process": schema.BoolAttribute{
-						Description: "Collect process events.",
+					attrProcess: schema.BoolAttribute{
+						Description: descCollectProcessEvents,
 						Optional:    true,
 					},
-					"network": schema.BoolAttribute{
-						Description: "Collect network events.",
+					attrNetwork: schema.BoolAttribute{
+						Description: descCollectNetworkEvents,
 						Optional:    true,
 					},
-					"file": schema.BoolAttribute{
-						Description: "Collect file events.",
+					attrFile: schema.BoolAttribute{
+						Description: descCollectFileEvents,
 						Optional:    true,
 					},
 					"session_data": schema.BoolAttribute{
@@ -502,40 +502,40 @@ func linuxPolicySchema() schema.Attribute {
 					},
 				},
 			},
-			"malware": schema.SingleNestedAttribute{
+			attrMalware: schema.SingleNestedAttribute{
 				Description: "Linux malware protection settings.",
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
-					"mode": schema.StringAttribute{
-						Description: "Malware protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`.",
+					attrMode: schema.StringAttribute{
+						Description: descMalwareMode,
 						Optional:    true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("off", "detect", "prevent"),
 						},
 					},
-					"blocklist": schema.BoolAttribute{
-						Description: "Whether blocklist is enabled.",
+					attrBlocklist: schema.BoolAttribute{
+						Description: descBlocklistEnabled,
 						Optional:    true,
 					},
 				},
 			},
-			"memory_protection":   protectionModeSchema("Linux memory protection settings."),
-			"behavior_protection": behaviorProtectionSchema("Linux behavior protection settings."),
-			"popup": schema.SingleNestedAttribute{
+			attrMemoryProtection:   protectionModeSchema("Linux memory protection settings."),
+			attrBehaviorProtection: behaviorProtectionSchema("Linux behavior protection settings."),
+			attrPopup: schema.SingleNestedAttribute{
 				Description: "Linux popup notification settings.",
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
-					"malware":             popupItemSchema(),
-					"memory_protection":   popupItemSchema(),
-					"behavior_protection": popupItemSchema(),
+					attrMalware:            popupItemSchema(),
+					attrMemoryProtection:   popupItemSchema(),
+					attrBehaviorProtection: popupItemSchema(),
 				},
 			},
-			"logging": schema.SingleNestedAttribute{
+			attrLogging: schema.SingleNestedAttribute{
 				Description: "Linux logging settings.",
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
-					"file": schema.StringAttribute{
-						Description: "Log level for file logging. Valid values: `\"info\"`, `\"debug\"`, `\"warning\"`, `\"error\"`, `\"critical\"`.",
+					attrFile: schema.StringAttribute{
+						Description: descLoggingFileLevel,
 						Optional:    true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("info", "debug", "warning", "error", "critical"),

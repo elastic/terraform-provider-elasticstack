@@ -294,7 +294,7 @@ func dataLayerToAPIXyLayerESQL(m *models.DataLayerModel, layerType string) (kbap
 	var zero kbapi.KibanaHTTPAPIsXyLayerESQL
 
 	layer := map[string]any{
-		"type": layerType,
+		attrType: layerType,
 	}
 	if typeutils.IsKnown(m.DataSourceJSON) {
 		var ds any

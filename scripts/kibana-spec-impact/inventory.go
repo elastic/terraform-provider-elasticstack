@@ -29,7 +29,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-const kibanaEntityPrefix = "elasticstack_kibana_"
+const (
+	kibanaEntityPrefix   = "elasticstack_kibana_"
+	entityTypeResource   = "resource"
+	entityTypeDataSource = "data source"
+)
 
 // Entity describes a Terraform Kibana entity derived from provider registrations.
 type Entity struct {
@@ -55,7 +59,7 @@ func discoverKibanaEntities() []Entity {
 			continue
 		}
 		pkg := reflect.TypeOf(r).Elem().PkgPath()
-		out = append(out, Entity{Type: "resource", Name: meta.TypeName, PkgPath: pkg})
+		out = append(out, Entity{Type: entityTypeResource, Name: meta.TypeName, PkgPath: pkg})
 		seen[meta.TypeName] = struct{}{}
 	}
 
@@ -67,7 +71,7 @@ func discoverKibanaEntities() []Entity {
 			continue
 		}
 		pkg := reflect.TypeOf(ds).Elem().PkgPath()
-		out = append(out, Entity{Type: "data source", Name: meta.TypeName, PkgPath: pkg})
+		out = append(out, Entity{Type: entityTypeDataSource, Name: meta.TypeName, PkgPath: pkg})
 		seen[meta.TypeName] = struct{}{}
 	}
 

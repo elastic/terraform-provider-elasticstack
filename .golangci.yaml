@@ -35,6 +35,10 @@ linters:
       - third_party$
       - builtin$
       - examples$
+    rules:
+      - linters:
+          - goconst
+        path: _test\.go$
   settings:
     lll:
       line-length: 200

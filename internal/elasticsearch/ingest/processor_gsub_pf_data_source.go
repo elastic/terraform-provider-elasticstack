@@ -59,14 +59,14 @@ func (m *processorGsubModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorGsubDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource.",
+			Description: descIdentifierWithPeriod,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
-		"field": schema.StringAttribute{
+		attrField: schema.StringAttribute{
 			Description: "The field to apply the replacement to.",
 			Required:    true,
 		},
@@ -78,12 +78,12 @@ func NewProcessorGsubDataSource() datasource.DataSource {
 			Description: "The string to replace the matching patterns with.",
 			Required:    true,
 		},
-		"target_field": schema.StringAttribute{
-			Description: "The field to assign the converted value to, by default `field` is updated in-place.",
+		attrTargetField: schema.StringAttribute{
+			Description: descTargetFieldInPlace,
 			Optional:    true,
 		},
-		"ignore_missing": schema.BoolAttribute{
-			Description: "If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.",
+		attrIgnoreMissing: schema.BoolAttribute{
+			Description: descIgnoreMissingDocStop,
 			Optional:    true,
 			Computed:    true,
 		},

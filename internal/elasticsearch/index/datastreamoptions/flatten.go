@@ -42,8 +42,8 @@ func FlattenLocal(dso *models.DataStreamOptions) (types.Object, diag.Diagnostics
 func flattenDataStreamOptions(enabled bool, dataRetention string, hasLifecycle bool) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	fsAttrs := map[string]attr.Value{
-		"enabled":   types.BoolValue(enabled),
-		"lifecycle": types.ObjectNull(FailureStoreLifecycleAttrTypes()),
+		attrEnabled:   types.BoolValue(enabled),
+		attrLifecycle: types.ObjectNull(FailureStoreLifecycleAttrTypes()),
 	}
 	if hasLifecycle {
 		dr := types.StringNull()
@@ -51,14 +51,14 @@ func flattenDataStreamOptions(enabled bool, dataRetention string, hasLifecycle b
 			dr = types.StringValue(dataRetention)
 		}
 		lcAttrs := map[string]attr.Value{
-			"data_retention": dr,
+			attrDataRetention: dr,
 		}
 		lcObj, d := types.ObjectValue(FailureStoreLifecycleAttrTypes(), lcAttrs)
 		diags.Append(d...)
 		if diags.HasError() {
 			return types.ObjectUnknown(AttrTypes()), diags
 		}
-		fsAttrs["lifecycle"] = lcObj
+		fsAttrs[attrLifecycle] = lcObj
 	}
 	fsObj, d := types.ObjectValue(FailureStoreAttrTypes(), fsAttrs)
 	diags.Append(d...)
@@ -66,7 +66,7 @@ func flattenDataStreamOptions(enabled bool, dataRetention string, hasLifecycle b
 		return types.ObjectUnknown(AttrTypes()), diags
 	}
 	outer := map[string]attr.Value{
-		"failure_store": fsObj,
+		attrFailureStore: fsObj,
 	}
 	obj, d := types.ObjectValue(AttrTypes(), outer)
 	diags.Append(d...)

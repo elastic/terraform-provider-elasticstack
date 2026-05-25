@@ -98,8 +98,8 @@ func reconcileIncomingFieldAttrsWithTerraformPlan(ctx context.Context, planned F
 		}
 
 		obj, d := types.ObjectValue(elemObjType.AttrTypes, map[string]attr.Value{
-			"custom_label": m.CustomLabel,
-			"count":        m.Count,
+			attrCustomLabel: m.CustomLabel,
+			attrCount:       m.Count,
 		})
 		diags.Append(d...)
 		if diags.HasError() {

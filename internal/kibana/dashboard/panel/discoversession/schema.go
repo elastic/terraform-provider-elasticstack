@@ -38,6 +38,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// Terraform schema attribute keys reused across the discoversession tab
+// schemas (saved-id, ES|QL and DSL variants share these grid-display fields).
+const (
+	attrColumnOrder     = "column_order"
+	attrColumnSettings  = "column_settings"
+	attrSort            = "sort"
+	attrDensity         = "density"
+	attrHeaderRowHeight = "header_row_height"
+	attrRowHeight       = "row_height"
+)
+
 //go:embed descriptions/discover_session_panel_drilldowns.md
 var discoverSessionPanelDrilldownsDescription string
 
@@ -214,7 +225,7 @@ func discoverSessionSortListAttribute(desc string) schema.Attribute {
 
 func discoverSessionDSLTabAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"column_order": schema.ListAttribute{
+		attrColumnOrder: schema.ListAttribute{
 			MarkdownDescription: "Ordered list of field names shown in the Discover grid.",
 			Optional:            true,
 			ElementType:         types.StringType,
@@ -222,25 +233,25 @@ func discoverSessionDSLTabAttributes() map[string]schema.Attribute {
 				listvalidator.SizeAtMost(discoverSessionColumnOrderMax),
 			},
 		},
-		"column_settings": discoverSessionColumnSettingsAttribute(),
-		"sort": discoverSessionSortListAttribute(
+		attrColumnSettings: discoverSessionColumnSettingsAttribute(),
+		attrSort: discoverSessionSortListAttribute(
 			"Sort configuration for the Discover grid.",
 		),
-		"density": schema.StringAttribute{
+		attrDensity: schema.StringAttribute{
 			MarkdownDescription: "Data grid density.",
 			Optional:            true,
 			Validators: []validator.String{
 				stringvalidator.OneOf("compact", "expanded", "normal"),
 			},
 		},
-		"header_row_height": schema.StringAttribute{
+		attrHeaderRowHeight: schema.StringAttribute{
 			MarkdownDescription: `Header row height: numbers "1"–"5" (as decimal strings) or "auto".`,
 			Optional:            true,
 			Validators: []validator.String{
 				makeDiscoverSessionRowHeightStringValidator(5),
 			},
 		},
-		"row_height": schema.StringAttribute{
+		attrRowHeight: schema.StringAttribute{
 			MarkdownDescription: `Data row height: numbers "1"–"20" (as decimal strings) or "auto".`,
 			Optional:            true,
 			Validators: []validator.String{
@@ -291,7 +302,7 @@ func discoverSessionDSLTabAttributes() map[string]schema.Attribute {
 
 func discoverSessionESQLTabAttributes() map[string]schema.Attribute {
 	attrs := map[string]schema.Attribute{
-		"column_order": schema.ListAttribute{
+		attrColumnOrder: schema.ListAttribute{
 			MarkdownDescription: "Ordered list of field names shown in the Discover grid.",
 			Optional:            true,
 			ElementType:         types.StringType,
@@ -299,25 +310,25 @@ func discoverSessionESQLTabAttributes() map[string]schema.Attribute {
 				listvalidator.SizeAtMost(discoverSessionColumnOrderMax),
 			},
 		},
-		"column_settings": discoverSessionColumnSettingsAttribute(),
-		"sort": discoverSessionSortListAttribute(
+		attrColumnSettings: discoverSessionColumnSettingsAttribute(),
+		attrSort: discoverSessionSortListAttribute(
 			"Sort configuration for the Discover grid.",
 		),
-		"density": schema.StringAttribute{
+		attrDensity: schema.StringAttribute{
 			MarkdownDescription: "Data grid density.",
 			Optional:            true,
 			Validators: []validator.String{
 				stringvalidator.OneOf("compact", "expanded", "normal"),
 			},
 		},
-		"header_row_height": schema.StringAttribute{
+		attrHeaderRowHeight: schema.StringAttribute{
 			MarkdownDescription: `Header row height: numbers "1"–"5" (as decimal strings) or "auto".`,
 			Optional:            true,
 			Validators: []validator.String{
 				makeDiscoverSessionRowHeightStringValidator(5),
 			},
 		},
-		"row_height": schema.StringAttribute{
+		attrRowHeight: schema.StringAttribute{
 			MarkdownDescription: `Data row height: numbers "1"–"20" (as decimal strings) or "auto".`,
 			Optional:            true,
 			Validators: []validator.String{
@@ -335,7 +346,7 @@ func discoverSessionESQLTabAttributes() map[string]schema.Attribute {
 
 func discoverSessionOverridesAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"column_order": schema.ListAttribute{
+		attrColumnOrder: schema.ListAttribute{
 			MarkdownDescription: "Overrides column order relative to the referenced Discover session.",
 			Optional:            true,
 			ElementType:         types.StringType,
@@ -343,25 +354,25 @@ func discoverSessionOverridesAttributes() map[string]schema.Attribute {
 				listvalidator.SizeAtMost(discoverSessionColumnOrderMax),
 			},
 		},
-		"column_settings": discoverSessionColumnSettingsAttribute(),
-		"sort": discoverSessionSortListAttribute(
+		attrColumnSettings: discoverSessionColumnSettingsAttribute(),
+		attrSort: discoverSessionSortListAttribute(
 			"Overrides sort configuration relative to the referenced Discover session.",
 		),
-		"density": schema.StringAttribute{
+		attrDensity: schema.StringAttribute{
 			MarkdownDescription: "Overrides data grid density.",
 			Optional:            true,
 			Validators: []validator.String{
 				stringvalidator.OneOf("compact", "expanded", "normal"),
 			},
 		},
-		"header_row_height": schema.StringAttribute{
+		attrHeaderRowHeight: schema.StringAttribute{
 			MarkdownDescription: `Overrides header row height: numbers "1"–"5" or "auto".`,
 			Optional:            true,
 			Validators: []validator.String{
 				makeDiscoverSessionRowHeightStringValidator(5),
 			},
 		},
-		"row_height": schema.StringAttribute{
+		attrRowHeight: schema.StringAttribute{
 			MarkdownDescription: `Overrides data row height: numbers "1"–"20" or "auto".`,
 			Optional:            true,
 			Validators: []validator.String{

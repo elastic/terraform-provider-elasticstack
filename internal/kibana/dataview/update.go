@@ -158,7 +158,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 // clearedFieldAttrMetadataPayload is sent for fields removed from the plan so Kibana resets
 // customLabel/count; an empty JSON object is rejected with HTTP 400 on some stacks.
 func clearedFieldAttrMetadataPayload() map[string]any {
-	return map[string]any{"customLabel": nil, "count": nil}
+	return map[string]any{apiKeyCustomLabel: nil, attrCount: nil}
 }
 
 // buildFieldAttrsMetadataDelta returns a JSON-shaped map for POST .../fields: keys are field names,
@@ -187,10 +187,10 @@ func buildFieldAttrsMetadataDelta(planFA, stateFA map[string]fieldAttrModel) map
 		}
 		payload := map[string]any{}
 		if !planEntry.CustomLabel.IsNull() {
-			payload["customLabel"] = planEntry.CustomLabel.ValueString()
+			payload[apiKeyCustomLabel] = planEntry.CustomLabel.ValueString()
 		}
 		if !planEntry.Count.IsNull() {
-			payload["count"] = planEntry.Count.ValueInt64()
+			payload[attrCount] = planEntry.Count.ValueInt64()
 		}
 		delta[name] = payload
 	}

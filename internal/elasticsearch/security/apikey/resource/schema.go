@@ -60,7 +60,7 @@ func getSchema(version int64) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"type": schema.StringAttribute{
+			attrType: schema.StringAttribute{
 				Description: apikey.TypeDescription,
 				Optional:    true,
 				Computed:    true,
@@ -71,7 +71,7 @@ func getSchema(version int64) schema.Schema {
 					planmodifiers.StringUseDefaultIfUnknown(apikey.DefaultAPIKeyType),
 				},
 			},
-			"role_descriptors": schema.StringAttribute{
+			attrRoleDescriptors: schema.StringAttribute{
 				Description: apikey.RoleDescriptorsDescription,
 				CustomType:  apikey.RoleDescriptorsCustomType(),
 				Optional:    true,
@@ -107,7 +107,7 @@ func getSchema(version int64) schema.Schema {
 					requiresReplaceIfUpdateNotSupported(),
 				},
 			},
-			"access": schema.SingleNestedAttribute{
+			attrAccess: schema.SingleNestedAttribute{
 				Description: apikey.AccessDescription,
 				Optional:    true,
 				Validators:  apikey.AccessValidators(),

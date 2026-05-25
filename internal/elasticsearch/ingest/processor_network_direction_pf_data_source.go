@@ -93,11 +93,11 @@ func (m *processorNetworkDirectionModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorNetworkDirectionDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource.",
+			Description: descIdentifierWithPeriod,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
 		"source_ip": schema.StringAttribute{
@@ -108,7 +108,7 @@ func NewProcessorNetworkDirectionDataSource() datasource.DataSource {
 			Description: "Field containing the destination IP address.",
 			Optional:    true,
 		},
-		"target_field": schema.StringAttribute{
+		attrTargetField: schema.StringAttribute{
 			Description: "Output field for the network direction.",
 			Optional:    true,
 		},
@@ -121,8 +121,8 @@ func NewProcessorNetworkDirectionDataSource() datasource.DataSource {
 			Description: "A field on the given document to read the internal_networks configuration from.",
 			Optional:    true,
 		},
-		"ignore_missing": schema.BoolAttribute{
-			Description: "If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.",
+		attrIgnoreMissing: schema.BoolAttribute{
+			Description: descIgnoreMissingDocStop,
 			Optional:    true,
 			Computed:    true,
 		},

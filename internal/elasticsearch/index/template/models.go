@@ -103,15 +103,15 @@ type LifecycleModel struct {
 // DataStreamAttrTypes returns attribute types for the data_stream block object.
 func DataStreamAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"hidden":               types.BoolType,
-		"allow_custom_routing": types.BoolType,
+		attrHidden:             types.BoolType,
+		attrAllowCustomRouting: types.BoolType,
 	}
 }
 
 // LifecycleAttrTypes returns attribute types for template.lifecycle.
 func LifecycleAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"data_retention": types.StringType,
+		attrDataRetention: types.StringType,
 	}
 }
 
@@ -120,10 +120,10 @@ func LifecycleAttrTypes() map[string]attr.Type {
 //nolint:revive // Name matches OpenSpec task wording (template block attribute types).
 func TemplateAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"alias":               types.SetType{ElemType: NewAliasObjectType()},
-		"mappings":            index.MappingsType{},
-		"settings":            customtypes.IndexSettingsType{},
-		"lifecycle":           types.ObjectType{AttrTypes: LifecycleAttrTypes()},
-		"data_stream_options": types.ObjectType{AttrTypes: datastreamoptions.AttrTypes()},
+		attrAlias:             types.SetType{ElemType: NewAliasObjectType()},
+		attrMappings:          index.MappingsType{},
+		attrSettings:          customtypes.IndexSettingsType{},
+		attrLifecycle:         types.ObjectType{AttrTypes: LifecycleAttrTypes()},
+		attrDataStreamOptions: types.ObjectType{AttrTypes: datastreamoptions.AttrTypes()},
 	}
 }

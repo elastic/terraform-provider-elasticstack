@@ -28,7 +28,7 @@ func NewFromEnv(version string) Client {
 	ua := buildUserAgent(version)
 	base := baseConfig{
 		UserAgent: ua,
-		Header:    http.Header{"User-Agent": []string{ua}},
+		Header:    http.Header{headerUserAgent: []string{ua}},
 	}.withEnvironmentOverrides()
 
 	client := Client{

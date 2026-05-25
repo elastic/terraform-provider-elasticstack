@@ -37,7 +37,7 @@ type processorJSONModel struct {
 	AllowDuplicateKeys        types.Bool   `tfsdk:"allow_duplicate_keys"`
 }
 
-func (m *processorJSONModel) TypeName() string { return "json" }
+func (m *processorJSONModel) TypeName() string { return attrJSON }
 
 func (m *processorJSONModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -73,18 +73,18 @@ func (m *processorJSONModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorJSONDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource.",
+			Description: descIdentifierWithPeriod,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
-		"field": schema.StringAttribute{
+		attrField: schema.StringAttribute{
 			Description: "The field to be parsed.",
 			Required:    true,
 		},
-		"target_field": schema.StringAttribute{
+		attrTargetField: schema.StringAttribute{
 			Description: "The field that the converted structured object will be written into. Any existing content in this field will be overwritten.",
 			Optional:    true,
 		},

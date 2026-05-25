@@ -233,7 +233,7 @@ golangci-lint-custom: $(GOBIN)/golangci-lint-custom
 
 .PHONY: golangci-lint
 golangci-lint: golangci-lint-custom
-	@ $(GOBIN)/golangci-lint-custom run --max-same-issues=0 $(GOLANGCIFLAGS) ./...
+	@ $(GOBIN)/golangci-lint-custom run --max-same-issues=0 --allow-parallel-runners $(GOLANGCIFLAGS) ./...
 
 LINT_PERF_DIR := $(CURDIR)/analysis/lint-perf-output/$(shell date +%Y%m%dT%H%M%S)
 

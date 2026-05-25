@@ -1935,17 +1935,6 @@ func TestToCreateProps(t *testing.T) {
 
 	require.Empty(t, diags) // Check for any setup errors
 
-	const (
-		ruleTypeQuery           = "query"
-		ruleTypeEQL             = "eql"
-		ruleTypeESQL            = "esql"
-		ruleTypeMachineLearning = "machine_learning"
-		ruleTypeNewTerms        = "new_terms"
-		ruleTypeSavedQuery      = "saved_query"
-		ruleTypeThreatMatch     = "threat_match"
-		ruleTypeThreshold       = "threshold"
-	)
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			data := tt.setupData()

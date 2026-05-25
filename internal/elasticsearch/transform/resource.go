@@ -79,5 +79,5 @@ func (r *transformResource) ImportState(ctx context.Context, req resource.Import
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), compID.ResourceID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(attrName), compID.ResourceID)...)
 }

@@ -158,13 +158,13 @@ func LensDrilldownItemToRawJSON(item models.LensDrilldownItemTFModel, index int)
 		}
 
 		obj := map[string]any{
-			"type":            "dashboard_drilldown",
-			"trigger":         LensDrilldownTriggerOnApplyFilter,
-			"dashboard_id":    dd.DashboardID.ValueString(),
-			"label":           dd.Label.ValueString(),
-			"use_filters":     optionalBoolForDrilldownJSON(dd.UseFilters, true),
-			"use_time_range":  optionalBoolForDrilldownJSON(dd.UseTimeRange, true),
-			"open_in_new_tab": optionalBoolForDrilldownJSON(dd.OpenInNewTab, false),
+			attrType:         drilldownTypeDashboard,
+			attrTrigger:      LensDrilldownTriggerOnApplyFilter,
+			"dashboard_id":   dd.DashboardID.ValueString(),
+			attrLabel:        dd.Label.ValueString(),
+			"use_filters":    optionalBoolForDrilldownJSON(dd.UseFilters, true),
+			"use_time_range": optionalBoolForDrilldownJSON(dd.UseTimeRange, true),
+			attrOpenInNewTab: optionalBoolForDrilldownJSON(dd.OpenInNewTab, false),
 		}
 		b, err := json.Marshal(obj)
 		if err != nil {
@@ -181,10 +181,10 @@ func LensDrilldownItemToRawJSON(item models.LensDrilldownItemTFModel, index int)
 		}
 
 		obj := map[string]any{
-			"type":            "discover_drilldown",
-			"trigger":         LensDrilldownTriggerOnApplyFilter,
-			"label":           dd.Label.ValueString(),
-			"open_in_new_tab": optionalBoolForDrilldownJSON(dd.OpenInNewTab, true),
+			attrType:         drilldownTypeDiscover,
+			attrTrigger:      LensDrilldownTriggerOnApplyFilter,
+			attrLabel:        dd.Label.ValueString(),
+			attrOpenInNewTab: optionalBoolForDrilldownJSON(dd.OpenInNewTab, true),
 		}
 		b, err := json.Marshal(obj)
 		if err != nil {
@@ -200,12 +200,12 @@ func LensDrilldownItemToRawJSON(item models.LensDrilldownItemTFModel, index int)
 			return nil, diags
 		}
 		obj := map[string]any{
-			"type":            "url_drilldown",
-			"url":             u.URL.ValueString(),
-			"label":           u.Label.ValueString(),
-			"trigger":         u.Trigger.ValueString(),
-			"encode_url":      optionalBoolForDrilldownJSON(u.EncodeURL, true),
-			"open_in_new_tab": optionalBoolForDrilldownJSON(u.OpenInNewTab, true),
+			attrType:         drilldownTypeURL,
+			attrURL:          u.URL.ValueString(),
+			attrLabel:        u.Label.ValueString(),
+			attrTrigger:      u.Trigger.ValueString(),
+			"encode_url":     optionalBoolForDrilldownJSON(u.EncodeURL, true),
+			attrOpenInNewTab: optionalBoolForDrilldownJSON(u.OpenInNewTab, true),
 		}
 		b, err := json.Marshal(obj)
 		if err != nil {

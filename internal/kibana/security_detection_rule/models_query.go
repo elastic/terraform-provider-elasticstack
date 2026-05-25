@@ -43,7 +43,7 @@ func newQueryRuleProcessor() QueryRuleProcessor {
 }
 
 func (q QueryRuleProcessor) HandlesRuleType(t string) bool {
-	return t == "query"
+	return t == ruleTypeQuery
 }
 
 func (q QueryRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
@@ -62,7 +62,7 @@ func toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforc
 	queryRule := kbapi.SecurityDetectionsAPIQueryRuleCreateProps{
 		Name:        d.Name.ValueString(),
 		Description: d.Description.ValueString(),
-		Type:        kbapi.SecurityDetectionsAPIQueryRuleCreatePropsType("query"),
+		Type:        kbapi.SecurityDetectionsAPIQueryRuleCreatePropsType(ruleTypeQuery),
 		Query:       &queryRuleQuery,
 		RiskScore:   int(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
@@ -140,7 +140,7 @@ func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforc
 		Id:          &uid,
 		Name:        d.Name.ValueString(),
 		Description: d.Description.ValueString(),
-		Type:        kbapi.SecurityDetectionsAPIQueryRuleUpdatePropsType("query"),
+		Type:        kbapi.SecurityDetectionsAPIQueryRuleUpdatePropsType(ruleTypeQuery),
 		Query:       &queryRuleQuery,
 		RiskScore:   int(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),

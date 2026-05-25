@@ -77,23 +77,23 @@ func (m *processorUserAgentModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorUserAgentDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource.",
+			Description: descIdentifierWithPeriod,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
-		"field": schema.StringAttribute{
+		attrField: schema.StringAttribute{
 			Description: "The field containing the user agent string.",
 			Required:    true,
 		},
-		"target_field": schema.StringAttribute{
+		attrTargetField: schema.StringAttribute{
 			Description: "The field that will be filled with the user agent details.",
 			Optional:    true,
 		},
-		"ignore_missing": schema.BoolAttribute{
-			Description: "If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.",
+		attrIgnoreMissing: schema.BoolAttribute{
+			Description: descIgnoreMissingDocStop,
 			Optional:    true,
 			Computed:    true,
 		},
@@ -101,7 +101,7 @@ func NewProcessorUserAgentDataSource() datasource.DataSource {
 			Description: "The name of the file in the `config/ingest-user-agent` directory containing the regular expressions for parsing the user agent string.",
 			Optional:    true,
 		},
-		"properties": schema.SetAttribute{
+		attrProperties: schema.SetAttribute{
 			Description: "Controls what properties are added to `target_field`.",
 			Optional:    true,
 			ElementType: types.StringType,

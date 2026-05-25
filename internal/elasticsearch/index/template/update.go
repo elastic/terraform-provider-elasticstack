@@ -47,7 +47,7 @@ func configSetsAllowCustomRoutingTrue(configDataStream types.Object) bool {
 	if configDataStream.IsNull() || configDataStream.IsUnknown() {
 		return false
 	}
-	v, ok := configDataStream.Attributes()["allow_custom_routing"]
+	v, ok := configDataStream.Attributes()[attrAllowCustomRouting]
 	if !ok || v.IsNull() || v.IsUnknown() {
 		return false
 	}

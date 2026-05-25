@@ -41,11 +41,11 @@ func getSchema(_ context.Context) schema.Schema {
 		},
 		NestedObject: schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
-				"name": schema.StringAttribute{
+				attrName: schema.StringAttribute{
 					MarkdownDescription: "The name of the setting to set and track.",
 					Required:            true,
 				},
-				"value": schema.StringAttribute{
+				attrValue: schema.StringAttribute{
 					MarkdownDescription: "The value of the setting to set and track.",
 					Optional:            true,
 					Validators: []validator.String{
@@ -53,10 +53,10 @@ func getSchema(_ context.Context) schema.Schema {
 						// Attaching the validator to value implicitly includes
 						// value in the check, so value_list is the only sibling
 						// path we need to name.
-						stringvalidator.ExactlyOneOf(path.MatchRelative().AtParent().AtName("value_list")),
+						stringvalidator.ExactlyOneOf(path.MatchRelative().AtParent().AtName(attrValueList)),
 					},
 				},
-				"value_list": schema.ListAttribute{
+				attrValueList: schema.ListAttribute{
 					MarkdownDescription: "The list of values to be set for the key, where the list is required.",
 					Optional:            true,
 					ElementType:         types.StringType,
@@ -78,16 +78,16 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 		},
 		Blocks: map[string]schema.Block{
-			"persistent": schema.SingleNestedBlock{
+			categoryPersistent: schema.SingleNestedBlock{
 				MarkdownDescription: "Persistent settings that survive a full cluster restart.",
 				Blocks: map[string]schema.Block{
-					"setting": settingBlock,
+					attrSetting: settingBlock,
 				},
 			},
-			"transient": schema.SingleNestedBlock{
+			categoryTransient: schema.SingleNestedBlock{
 				MarkdownDescription: "Transient settings that are reset on cluster restart.",
 				Blocks: map[string]schema.Block{
-					"setting": settingBlock,
+					attrSetting: settingBlock,
 				},
 			},
 		},

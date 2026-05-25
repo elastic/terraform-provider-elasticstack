@@ -53,6 +53,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
+const attrTimeout = "timeout"
+
 type tfStatusConfigV0 struct {
 	Enabled types.Bool `tfsdk:"enabled"`
 }
@@ -259,7 +261,7 @@ func monitorConfigSchema() schema.Schema {
 				Computed:            true,
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
-			"timeout": schema.Int64Attribute{
+			attrTimeout: schema.Int64Attribute{
 				Optional:            true,
 				MarkdownDescription: "The monitor timeout in seconds, monitor will fail if it doesn't complete within this time. Default: `16`",
 				Computed:            true,
@@ -588,7 +590,7 @@ func syntheticsMonitorTimeoutToInt64(v *kbapi.SyntheticsMonitor_Timeout) (int64,
 	if v == nil {
 		return 0, nil
 	}
-	return unionToInt64(v.AsSyntheticsMonitorTimeout0, v.AsSyntheticsMonitorTimeout1, "timeout")
+	return unionToInt64(v.AsSyntheticsMonitorTimeout0, v.AsSyntheticsMonitorTimeout1, attrTimeout)
 }
 
 func syntheticsMonitorWaitToInt64(v *kbapi.SyntheticsMonitor_Wait) (int64, error) {

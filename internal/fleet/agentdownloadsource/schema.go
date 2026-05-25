@@ -28,6 +28,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const attrDefault = "default"
+
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Description: "Creates a new Fleet Agent Binary Download Source.",
@@ -56,7 +58,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Description: "The base URL from which Elastic Agents will download binaries.",
 				Required:    true,
 			},
-			"default": schema.BoolAttribute{
+			attrDefault: schema.BoolAttribute{
 				Description: "Set this download source as the default for agents.",
 				Optional:    true,
 				Computed:    true,
