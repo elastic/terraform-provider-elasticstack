@@ -31,10 +31,10 @@ import (
 
 // pinnedPanelControlConfigNames lists typed control blocks allowed on a pinned panel entry (dashboard control bar).
 var pinnedPanelControlConfigNames = []string{
-	"time_slider_control_config",
-	"esql_control_config",
-	"options_list_control_config",
-	"range_slider_control_config",
+	controlBlockTimeSlider,
+	controlBlockESQL,
+	controlBlockOptionsList,
+	controlBlockRangeSlider,
 }
 
 func pinnedPlacementPreface() string {
@@ -47,7 +47,7 @@ func pinnedPlacementPreface() string {
 
 func timeSliderControlConfigInnerAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"start_percentage_of_time_range": schema.Float32Attribute{
+		attrStartPercentageOfTimeRange: schema.Float32Attribute{
 			MarkdownDescription: "Start of the visible time window as a fraction of the dashboard global range (0.0–1.0). " +
 				"Float32 in state matches the Kibana API and avoids refresh drift.",
 			Optional: true,
@@ -55,7 +55,7 @@ func timeSliderControlConfigInnerAttributes() map[string]schema.Attribute {
 				float32validator.Between(0.0, 1.0),
 			},
 		},
-		"end_percentage_of_time_range": schema.Float32Attribute{
+		attrEndPercentageOfTimeRange: schema.Float32Attribute{
 			MarkdownDescription: "End of the visible time window as a fraction of the dashboard global range (0.0–1.0). " +
 				"Float32 in state matches the Kibana API and avoids refresh drift.",
 			Optional: true,
@@ -63,7 +63,7 @@ func timeSliderControlConfigInnerAttributes() map[string]schema.Attribute {
 				float32validator.Between(0.0, 1.0),
 			},
 		},
-		"is_anchored": schema.BoolAttribute{
+		attrIsAnchored: schema.BoolAttribute{
 			MarkdownDescription: "Whether the start of the time window is anchored (fixed), so only the end slides.",
 			Optional:            true,
 		},
@@ -74,7 +74,7 @@ func pinnedTimeSliderControlConfigSchema() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: panelkit.PanelConfigDescription(
 			pinnedPlacementPreface()+"Configuration for a time slider control. Controls the visible time window within the dashboard's global time range.",
-			"time_slider_control_config",
+			controlBlockTimeSlider,
 			pinnedPanelControlConfigNames,
 		),
 		Optional:   true,
@@ -84,67 +84,67 @@ func pinnedTimeSliderControlConfigSchema() schema.SingleNestedAttribute {
 
 func esqlControlConfigInnerAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"selected_options": schema.ListAttribute{
+		attrSelectedOptions: schema.ListAttribute{
 			MarkdownDescription: "List of currently selected option values for the control.",
 			Required:            true,
 			ElementType:         types.StringType,
 		},
-		"variable_name": schema.StringAttribute{
+		attrVariableName: schema.StringAttribute{
 			MarkdownDescription: "The ES|QL variable name that this control binds to.",
 			Required:            true,
 		},
-		"variable_type": schema.StringAttribute{
+		attrVariableType: schema.StringAttribute{
 			MarkdownDescription: "The type of ES|QL variable. Allowed values: `fields`, `values`, `functions`, `time_literal`, `multi_values`.",
 			Required:            true,
 			Validators: []validator.String{
 				stringvalidator.OneOf("fields", "values", "functions", "time_literal", "multi_values"),
 			},
 		},
-		"esql_query": schema.StringAttribute{
+		attrESQLQuery: schema.StringAttribute{
 			MarkdownDescription: "The ES|QL query used to populate the control's options.",
 			Required:            true,
 		},
-		"control_type": schema.StringAttribute{
+		attrControlType: schema.StringAttribute{
 			MarkdownDescription: "The control type. Allowed values: `STATIC_VALUES`, `VALUES_FROM_QUERY`.",
 			Required:            true,
 			Validators: []validator.String{
 				stringvalidator.OneOf("STATIC_VALUES", "VALUES_FROM_QUERY"),
 			},
 		},
-		"title": schema.StringAttribute{
+		attrTitle: schema.StringAttribute{
 			MarkdownDescription: "A human-readable title displayed above the control widget.",
 			Optional:            true,
 		},
-		"single_select": schema.BoolAttribute{
+		attrSingleSelect: schema.BoolAttribute{
 			MarkdownDescription: "When true, restricts the control to single-value selection.",
 			Optional:            true,
 		},
-		"available_options": schema.ListAttribute{
+		attrAvailableOptions: schema.ListAttribute{
 			MarkdownDescription: "Pre-populated list of available options shown before the query executes.",
 			Optional:            true,
 			ElementType:         types.StringType,
 		},
-		"display_settings": schema.SingleNestedAttribute{
+		attrDisplaySettings: schema.SingleNestedAttribute{
 			MarkdownDescription: "Display configuration for the control widget.",
 			Optional:            true,
 			Attributes: map[string]schema.Attribute{
-				"placeholder": schema.StringAttribute{
+				attrPlaceholder: schema.StringAttribute{
 					MarkdownDescription: "Placeholder text shown when no option is selected.",
 					Optional:            true,
 				},
-				"hide_action_bar": schema.BoolAttribute{
+				attrHideActionBar: schema.BoolAttribute{
 					MarkdownDescription: "Whether to hide the action bar on the control.",
 					Optional:            true,
 				},
-				"hide_exclude": schema.BoolAttribute{
+				attrHideExclude: schema.BoolAttribute{
 					MarkdownDescription: "Whether to hide the exclude option.",
 					Optional:            true,
 				},
-				"hide_exists": schema.BoolAttribute{
+				attrHideExists: schema.BoolAttribute{
 					MarkdownDescription: "Whether to hide the exists filter option.",
 					Optional:            true,
 				},
-				"hide_sort": schema.BoolAttribute{
+				attrHideSort: schema.BoolAttribute{
 					MarkdownDescription: "Whether to hide the sort option.",
 					Optional:            true,
 				},
@@ -157,7 +157,7 @@ func pinnedEsqlControlConfigSchema() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: panelkit.PanelConfigDescription(
 			pinnedPlacementPreface()+"Configuration for an ES|QL control. Binds ES|QL variables for the dashboard.",
-			"esql_control_config",
+			controlBlockESQL,
 			pinnedPanelControlConfigNames,
 		),
 		Optional:   true,
@@ -167,81 +167,81 @@ func pinnedEsqlControlConfigSchema() schema.SingleNestedAttribute {
 
 func optionsListControlConfigInnerAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"data_view_id": schema.StringAttribute{
+		attrDataViewID: schema.StringAttribute{
 			MarkdownDescription: "The ID of the data view that the control is tied to.",
 			Required:            true,
 		},
-		"field_name": schema.StringAttribute{
+		attrFieldName: schema.StringAttribute{
 			MarkdownDescription: "The name of the field in the data view that the control is tied to.",
 			Required:            true,
 		},
-		"title": schema.StringAttribute{
+		attrTitle: schema.StringAttribute{
 			MarkdownDescription: "Human-readable label displayed above the control.",
 			Optional:            true,
 		},
-		"use_global_filters": schema.BoolAttribute{
+		attrUseGlobalFilters: schema.BoolAttribute{
 			MarkdownDescription: "Whether the control applies the dashboard's global filters to its own query.",
 			Optional:            true,
 		},
-		"ignore_validations": schema.BoolAttribute{
+		attrIgnoreValidations: schema.BoolAttribute{
 			MarkdownDescription: "Whether the control skips field-level validation against the data view.",
 			Optional:            true,
 		},
-		"single_select": schema.BoolAttribute{
+		attrSingleSelect: schema.BoolAttribute{
 			MarkdownDescription: "When true, only one option may be selected at a time.",
 			Optional:            true,
 		},
-		"exclude": schema.BoolAttribute{
+		attrExclude: schema.BoolAttribute{
 			MarkdownDescription: "When true, selected options are used as an exclusion filter rather than an inclusion filter.",
 			Optional:            true,
 		},
-		"exists_selected": schema.BoolAttribute{
+		attrExistsSelected: schema.BoolAttribute{
 			MarkdownDescription: "When true, the control filters for documents where the field exists.",
 			Optional:            true,
 		},
-		"run_past_timeout": schema.BoolAttribute{
+		attrRunPastTimeout: schema.BoolAttribute{
 			MarkdownDescription: "When true, the control continues to show results even when the underlying query times out.",
 			Optional:            true,
 		},
-		"search_technique": schema.StringAttribute{
+		attrSearchTechnique: schema.StringAttribute{
 			MarkdownDescription: "The technique used to match suggestions. Must be one of `prefix`, `wildcard`, or `exact` when set.",
 			Optional:            true,
 			Validators: []validator.String{
 				stringvalidator.OneOf("prefix", "wildcard", "exact"),
 			},
 		},
-		"selected_options": schema.ListAttribute{
+		attrSelectedOptions: schema.ListAttribute{
 			MarkdownDescription: "The initially or persistently selected option values. All values are represented as strings.",
 			Optional:            true,
 			ElementType:         types.StringType,
 		},
-		"display_settings": schema.SingleNestedAttribute{
+		attrDisplaySettings: schema.SingleNestedAttribute{
 			MarkdownDescription: "Display preferences for the control widget.",
 			Optional:            true,
 			Attributes: map[string]schema.Attribute{
-				"placeholder": schema.StringAttribute{
+				attrPlaceholder: schema.StringAttribute{
 					MarkdownDescription: "Placeholder text shown when no option is selected.",
 					Optional:            true,
 				},
-				"hide_action_bar": schema.BoolAttribute{
+				attrHideActionBar: schema.BoolAttribute{
 					MarkdownDescription: "When true, hides the action bar on the control.",
 					Optional:            true,
 				},
-				"hide_exclude": schema.BoolAttribute{
+				attrHideExclude: schema.BoolAttribute{
 					MarkdownDescription: "When true, hides the exclude toggle.",
 					Optional:            true,
 				},
-				"hide_exists": schema.BoolAttribute{
+				attrHideExists: schema.BoolAttribute{
 					MarkdownDescription: "When true, hides the exists filter option.",
 					Optional:            true,
 				},
-				"hide_sort": schema.BoolAttribute{
+				attrHideSort: schema.BoolAttribute{
 					MarkdownDescription: "When true, hides the sort control.",
 					Optional:            true,
 				},
 			},
 		},
-		"sort": schema.SingleNestedAttribute{
+		attrSort: schema.SingleNestedAttribute{
 			MarkdownDescription: "Default sort configuration for the suggestion list.",
 			Optional:            true,
 			Attributes: map[string]schema.Attribute{
@@ -268,7 +268,7 @@ func pinnedOptionsListControlConfigSchema() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: panelkit.PanelConfigDescription(
 			pinnedPlacementPreface()+"Configuration for an options list control. Provides a dropdown or multi-select filter based on a field in a data view.",
-			"options_list_control_config",
+			controlBlockOptionsList,
 			pinnedPanelControlConfigNames,
 		),
 		Optional:   true,
@@ -278,27 +278,27 @@ func pinnedOptionsListControlConfigSchema() schema.SingleNestedAttribute {
 
 func rangeSliderControlConfigInnerAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"title": schema.StringAttribute{
+		attrTitle: schema.StringAttribute{
 			MarkdownDescription: "A human-readable title for the control.",
 			Optional:            true,
 		},
-		"data_view_id": schema.StringAttribute{
+		attrDataViewID: schema.StringAttribute{
 			MarkdownDescription: "The ID of the data view that the control is tied to.",
 			Required:            true,
 		},
-		"field_name": schema.StringAttribute{
+		attrFieldName: schema.StringAttribute{
 			MarkdownDescription: "The name of the field in the data view that the control is tied to.",
 			Required:            true,
 		},
-		"use_global_filters": schema.BoolAttribute{
+		attrUseGlobalFilters: schema.BoolAttribute{
 			MarkdownDescription: "Whether the control respects dashboard-level filters.",
 			Optional:            true,
 		},
-		"ignore_validations": schema.BoolAttribute{
+		attrIgnoreValidations: schema.BoolAttribute{
 			MarkdownDescription: "Whether to suppress validation errors during intermediate states.",
 			Optional:            true,
 		},
-		"value": schema.ListAttribute{
+		attrValue: schema.ListAttribute{
 			MarkdownDescription: "Initial range as a list of exactly 2 strings: [min, max].",
 			ElementType:         types.StringType,
 			Optional:            true,
@@ -307,7 +307,7 @@ func rangeSliderControlConfigInnerAttributes() map[string]schema.Attribute {
 				listvalidator.SizeAtMost(2),
 			},
 		},
-		"step": schema.Float32Attribute{
+		attrStep: schema.Float32Attribute{
 			MarkdownDescription: "The step size for the range slider. Stored as float32 to match the Kibana API type and avoid refresh drift.",
 			Optional:            true,
 		},
@@ -318,7 +318,7 @@ func pinnedRangeSliderControlConfigSchema() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: panelkit.PanelConfigDescription(
 			pinnedPlacementPreface()+"Configuration for a range slider control. Provides a min/max range filter tied to a data view field.",
-			"range_slider_control_config",
+			controlBlockRangeSlider,
 			pinnedPanelControlConfigNames,
 		),
 		Optional:   true,
@@ -332,14 +332,14 @@ func pinnedPanelsNestedObject() schema.NestedAttributeObject {
 			pinnedPanelControlValidator{},
 		},
 		Attributes: map[string]schema.Attribute{
-			"type": schema.StringAttribute{
+			attrPanelType: schema.StringAttribute{
 				MarkdownDescription: strings.TrimSpace(pinnedPanelTypeDescription),
 				Required:            true,
 			},
-			"time_slider_control_config":  pinnedTimeSliderControlConfigSchema(),
-			"esql_control_config":         pinnedEsqlControlConfigSchema(),
-			"options_list_control_config": pinnedOptionsListControlConfigSchema(),
-			"range_slider_control_config": pinnedRangeSliderControlConfigSchema(),
+			controlBlockTimeSlider:  pinnedTimeSliderControlConfigSchema(),
+			controlBlockESQL:        pinnedEsqlControlConfigSchema(),
+			controlBlockOptionsList: pinnedOptionsListControlConfigSchema(),
+			controlBlockRangeSlider: pinnedRangeSliderControlConfigSchema(),
 		},
 	}
 }

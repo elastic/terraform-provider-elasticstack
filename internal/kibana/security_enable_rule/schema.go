@@ -38,7 +38,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"space_id": schema.StringAttribute{
+			attrSpaceID: schema.StringAttribute{
 				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
 				Optional:    true,
 				Computed:    true,
@@ -47,14 +47,14 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"key": schema.StringAttribute{
+			attrKey: schema.StringAttribute{
 				Description: "The tag key to filter rules by (e.g., 'OS').",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"value": schema.StringAttribute{
+			attrValue: schema.StringAttribute{
 				Description: "The tag value to filter rules by (e.g., 'Windows').",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{

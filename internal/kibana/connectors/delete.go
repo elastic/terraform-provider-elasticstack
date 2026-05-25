@@ -34,11 +34,7 @@ func deleteConnector(
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	diags.Append(kibanaoapi.DeleteConnector(ctx, oapiClient, resourceID, spaceID)...)
 	return diags

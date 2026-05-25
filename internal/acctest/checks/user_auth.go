@@ -33,10 +33,7 @@ func CheckUserCanAuthenticate(username string, password string) func(*terraform.
 			return err
 		}
 
-		esClient, diags := client.GetESClient()
-		if diags.HasError() {
-			return fmt.Errorf("failed to get elasticsearch client: %v", diags)
-		}
+		esClient := client.GetESClient()
 
 		credentials := fmt.Sprintf("%s:%s", username, password)
 		authHeader := fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(credentials)))

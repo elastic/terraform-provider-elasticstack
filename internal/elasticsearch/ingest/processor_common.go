@@ -100,7 +100,7 @@ func CommonProcessorSchemaAttributes() map[string]schema.Attribute {
 			Optional:    true,
 			Computed:    true,
 		},
-		"on_failure": schema.ListAttribute{
+		attrOnFailure: schema.ListAttribute{
 			Description: "Handle failures for the processor.",
 			Optional:    true,
 			ElementType: jsontypes.NormalizedType{},

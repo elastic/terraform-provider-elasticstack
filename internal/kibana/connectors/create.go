@@ -46,11 +46,7 @@ func createConnector(
 		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[tfModel]{}, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	connectorID, createDiags := kibanaoapi.CreateConnector(ctx, oapiClient, apiModel)
 	diags.Append(createDiags...)

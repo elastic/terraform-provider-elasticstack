@@ -42,6 +42,27 @@ const (
 	repoTypeHDFS  = "hdfs"
 )
 
+// Snapshot repository setting keys (Elasticsearch API) and the matching
+// Terraform schema attribute names. These appear in many places across the
+// data source schema and flatten helpers, so they are extracted to constants
+// to satisfy goconst.
+const (
+	settingChunkSize              = "chunk_size"
+	settingCompress               = "compress"
+	settingMaxNumberOfSnapshots   = "max_number_of_snapshots"
+	settingLocation               = "location"
+	settingBucket                 = "bucket"
+	settingClient                 = "client"
+	settingBasePath               = "base_path"
+	settingContainer              = "container"
+	settingMaxSnapshotBytesPerSec = "max_snapshot_bytes_per_sec"
+	settingMaxRestoreBytesPerSec  = "max_restore_bytes_per_sec"
+	settingReadonly               = "readonly"
+	settingURL                    = "url"
+	settingURI                    = "uri"
+	settingPath                   = "path"
+)
+
 type commonDataSourceModel struct {
 	ChunkSize              types.String `tfsdk:"chunk_size"`
 	Compress               types.Bool   `tfsdk:"compress"`
@@ -113,44 +134,44 @@ type hdfsDataSourceModel struct {
 
 func buildDataSourceSchema() schema.Schema {
 	commonSettings := map[string]schema.Attribute{
-		"chunk_size": schema.StringAttribute{
+		settingChunkSize: schema.StringAttribute{
 			MarkdownDescription: "Maximum size of files in snapshots.",
 			Computed:            true,
 		},
-		"compress": schema.BoolAttribute{
+		settingCompress: schema.BoolAttribute{
 			MarkdownDescription: "If true, metadata files, such as index mappings and settings, are compressed in snapshots.",
 			Computed:            true,
 		},
-		"max_snapshot_bytes_per_sec": schema.StringAttribute{
+		settingMaxSnapshotBytesPerSec: schema.StringAttribute{
 			MarkdownDescription: "Maximum snapshot creation rate per node.",
 			Computed:            true,
 		},
-		"max_restore_bytes_per_sec": schema.StringAttribute{
+		settingMaxRestoreBytesPerSec: schema.StringAttribute{
 			MarkdownDescription: "Maximum snapshot restore rate per node.",
 			Computed:            true,
 		},
-		"readonly": schema.BoolAttribute{
+		settingReadonly: schema.BoolAttribute{
 			MarkdownDescription: "If true, the repository is read-only.",
 			Computed:            true,
 		},
 	}
 
 	commonStdSettings := map[string]schema.Attribute{
-		"max_number_of_snapshots": schema.Int64Attribute{
+		settingMaxNumberOfSnapshots: schema.Int64Attribute{
 			MarkdownDescription: "Maximum number of snapshots the repository can contain.",
 			Computed:            true,
 		},
 	}
 
 	fsSettings := map[string]schema.Attribute{
-		"location": schema.StringAttribute{
+		settingLocation: schema.StringAttribute{
 			MarkdownDescription: "Location of the shared filesystem used to store and retrieve snapshots.",
 			Computed:            true,
 		},
 	}
 
 	urlSettings := map[string]schema.Attribute{
-		"url": schema.StringAttribute{
+		settingURL: schema.StringAttribute{
 			MarkdownDescription: "URL location of the root of the shared filesystem repository.",
 			Computed:            true,
 		},
@@ -165,30 +186,30 @@ func buildDataSourceSchema() schema.Schema {
 	}
 
 	gcsSettings := map[string]schema.Attribute{
-		"bucket": schema.StringAttribute{
+		settingBucket: schema.StringAttribute{
 			MarkdownDescription: "The name of the bucket to be used for snapshots.",
 			Computed:            true,
 		},
-		"client": schema.StringAttribute{
+		settingClient: schema.StringAttribute{
 			MarkdownDescription: "The name of the client to use to connect to Google Cloud Storage.",
 			Computed:            true,
 		},
-		"base_path": schema.StringAttribute{
+		settingBasePath: schema.StringAttribute{
 			MarkdownDescription: "Specifies the path within the bucket to the repository data. Defaults to the root of the bucket.",
 			Computed:            true,
 		},
 	}
 
 	azureSettings := map[string]schema.Attribute{
-		"container": schema.StringAttribute{
+		settingContainer: schema.StringAttribute{
 			MarkdownDescription: "Container name. You must create the Azure container before creating the repository.",
 			Computed:            true,
 		},
-		"client": schema.StringAttribute{
+		settingClient: schema.StringAttribute{
 			MarkdownDescription: "Azure named client to use.",
 			Computed:            true,
 		},
-		"base_path": schema.StringAttribute{
+		settingBasePath: schema.StringAttribute{
 			MarkdownDescription: "Specifies the path within the container to the repository data.",
 			Computed:            true,
 		},
@@ -199,15 +220,15 @@ func buildDataSourceSchema() schema.Schema {
 	}
 
 	s3Settings := map[string]schema.Attribute{
-		"bucket": schema.StringAttribute{
+		settingBucket: schema.StringAttribute{
 			MarkdownDescription: "Name of the S3 bucket to use for snapshots.",
 			Computed:            true,
 		},
-		"client": schema.StringAttribute{
+		settingClient: schema.StringAttribute{
 			MarkdownDescription: "The name of the S3 client to use to connect to S3.",
 			Computed:            true,
 		},
-		"base_path": schema.StringAttribute{
+		settingBasePath: schema.StringAttribute{
 			MarkdownDescription: "Specifies the path to the repository data within its bucket.",
 			Computed:            true,
 		},
@@ -234,11 +255,11 @@ func buildDataSourceSchema() schema.Schema {
 	}
 
 	hdfsSettings := map[string]schema.Attribute{
-		"uri": schema.StringAttribute{
+		settingURI: schema.StringAttribute{
 			MarkdownDescription: `The uri address for hdfs. ex: "hdfs://<host>:<port>/".`,
 			Computed:            true,
 		},
-		"path": schema.StringAttribute{
+		settingPath: schema.StringAttribute{
 			MarkdownDescription: "The file path within the filesystem where data is stored/loaded.",
 			Computed:            true,
 		},
@@ -270,7 +291,7 @@ func buildDataSourceSchema() schema.Schema {
 					Attributes: mergeAttrMaps(commonSettings, commonStdSettings, fsSettings),
 				},
 			},
-			"url": schema.ListNestedAttribute{
+			repoTypeURL: schema.ListNestedAttribute{
 				MarkdownDescription: "URL repository. Set only if the type of the fetched repo is `url`.",
 				Computed:            true,
 				NestedObject: schema.NestedAttributeObject{
@@ -495,14 +516,14 @@ func populateRepositoryTypeBlocks(
 func flattenCommonSettings(settings map[string]any) (commonDataSourceModel, error) {
 	var m commonDataSourceModel
 	var err error
-	m.ChunkSize = snapshot_repository.StrSettingNull(settings, "chunk_size")
-	m.Compress, err = snapshot_repository.BoolSettingNull(settings, "compress")
+	m.ChunkSize = snapshot_repository.StrSettingNull(settings, settingChunkSize)
+	m.Compress, err = snapshot_repository.BoolSettingNull(settings, settingCompress)
 	if err != nil {
 		return m, err
 	}
-	m.MaxSnapshotBytesPerSec = snapshot_repository.StrSettingNull(settings, "max_snapshot_bytes_per_sec")
-	m.MaxRestoreBytesPerSec = snapshot_repository.StrSettingNull(settings, "max_restore_bytes_per_sec")
-	m.Readonly, err = snapshot_repository.BoolSettingNull(settings, "readonly")
+	m.MaxSnapshotBytesPerSec = snapshot_repository.StrSettingNull(settings, settingMaxSnapshotBytesPerSec)
+	m.MaxRestoreBytesPerSec = snapshot_repository.StrSettingNull(settings, settingMaxRestoreBytesPerSec)
+	m.Readonly, err = snapshot_repository.BoolSettingNull(settings, settingReadonly)
 	if err != nil {
 		return m, err
 	}
@@ -516,11 +537,11 @@ func flattenFsSettings(settings map[string]any) (fsDataSourceModel, error) {
 	if err != nil {
 		return m, err
 	}
-	m.MaxNumberOfSnapshots, err = snapshot_repository.Int64SettingNull(settings, "max_number_of_snapshots")
+	m.MaxNumberOfSnapshots, err = snapshot_repository.Int64SettingNull(settings, settingMaxNumberOfSnapshots)
 	if err != nil {
 		return m, err
 	}
-	m.Location = snapshot_repository.StrSettingNull(settings, "location")
+	m.Location = snapshot_repository.StrSettingNull(settings, settingLocation)
 	return m, nil
 }
 
@@ -531,11 +552,11 @@ func flattenURLSettings(settings map[string]any) (urlDataSourceModel, error) {
 	if err != nil {
 		return m, err
 	}
-	m.MaxNumberOfSnapshots, err = snapshot_repository.Int64SettingNull(settings, "max_number_of_snapshots")
+	m.MaxNumberOfSnapshots, err = snapshot_repository.Int64SettingNull(settings, settingMaxNumberOfSnapshots)
 	if err != nil {
 		return m, err
 	}
-	m.URL = snapshot_repository.StrSettingNull(settings, "url")
+	m.URL = snapshot_repository.StrSettingNull(settings, settingURL)
 	m.HTTPMaxRetries, err = snapshot_repository.Int64SettingNull(settings, "http_max_retries")
 	if err != nil {
 		return m, err
@@ -551,9 +572,9 @@ func flattenGCSSettings(settings map[string]any) (gcsDataSourceModel, error) {
 	if err != nil {
 		return m, err
 	}
-	m.Bucket = snapshot_repository.StrSettingNull(settings, "bucket")
-	m.Client = snapshot_repository.StrSettingNull(settings, "client")
-	m.BasePath = snapshot_repository.StrSettingNull(settings, "base_path")
+	m.Bucket = snapshot_repository.StrSettingNull(settings, settingBucket)
+	m.Client = snapshot_repository.StrSettingNull(settings, settingClient)
+	m.BasePath = snapshot_repository.StrSettingNull(settings, settingBasePath)
 	return m, nil
 }
 
@@ -564,9 +585,9 @@ func flattenAzureSettings(settings map[string]any) (azureDataSourceModel, error)
 	if err != nil {
 		return m, err
 	}
-	m.Container = snapshot_repository.StrSettingNull(settings, "container")
-	m.Client = snapshot_repository.StrSettingNull(settings, "client")
-	m.BasePath = snapshot_repository.StrSettingNull(settings, "base_path")
+	m.Container = snapshot_repository.StrSettingNull(settings, settingContainer)
+	m.Client = snapshot_repository.StrSettingNull(settings, settingClient)
+	m.BasePath = snapshot_repository.StrSettingNull(settings, settingBasePath)
 	m.LocationMode = snapshot_repository.StrSettingNull(settings, "location_mode")
 	return m, nil
 }
@@ -578,9 +599,9 @@ func flattenS3Settings(settings map[string]any) (s3DataSourceModel, error) {
 	if err != nil {
 		return m, err
 	}
-	m.Bucket = snapshot_repository.StrSettingNull(settings, "bucket")
-	m.Client = snapshot_repository.StrSettingNull(settings, "client")
-	m.BasePath = snapshot_repository.StrSettingNull(settings, "base_path")
+	m.Bucket = snapshot_repository.StrSettingNull(settings, settingBucket)
+	m.Client = snapshot_repository.StrSettingNull(settings, settingClient)
+	m.BasePath = snapshot_repository.StrSettingNull(settings, settingBasePath)
 	m.ServerSideEncryption, err = snapshot_repository.BoolSettingNull(settings, "server_side_encryption")
 	if err != nil {
 		return m, err
@@ -602,8 +623,8 @@ func flattenHDFSSettings(settings map[string]any) (hdfsDataSourceModel, error) {
 	if err != nil {
 		return m, err
 	}
-	m.URI = snapshot_repository.StrSettingNull(settings, "uri")
-	m.Path = snapshot_repository.StrSettingNull(settings, "path")
+	m.URI = snapshot_repository.StrSettingNull(settings, settingURI)
+	m.Path = snapshot_repository.StrSettingNull(settings, settingPath)
 	m.LoadDefaults, err = snapshot_repository.BoolSettingNull(settings, "load_defaults")
 	if err != nil {
 		return m, err

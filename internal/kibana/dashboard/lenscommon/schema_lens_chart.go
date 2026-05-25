@@ -67,7 +67,7 @@ func (DrilldownListItemVariantsValidator) ValidateObject(_ context.Context, req 
 	}
 	attrs := req.ConfigValue.Attributes()
 	count := 0
-	for _, key := range []string{"dashboard_drilldown", "discover_drilldown", "url_drilldown"} {
+	for _, key := range []string{drilldownTypeDashboard, drilldownTypeDiscover, drilldownTypeURL} {
 		val, okAttr := attrs[key]
 		if !okAttr || val.IsNull() || val.IsUnknown() {
 			continue
@@ -94,7 +94,7 @@ func LensChartPresentationTimeRangeAttributes() map[string]schema.Attribute {
 			MarkdownDescription: "End of the chart time range.",
 			Required:            true,
 		},
-		"mode": schema.StringAttribute{
+		attrMode: schema.StringAttribute{
 			MarkdownDescription: "Optional time range mode. Valid values are `absolute` or `relative`. " +
 				"When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state " +
 				"(same pattern as REQ-009 on the dashboard `time_range`).",
@@ -109,7 +109,7 @@ func LensChartPresentationTimeRangeAttributes() map[string]schema.Attribute {
 // LensChartDrilldownListItemAttributes returns attributes for one drilldown list entry.
 func LensChartDrilldownListItemAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"dashboard_drilldown": schema.SingleNestedAttribute{
+		drilldownTypeDashboard: schema.SingleNestedAttribute{
 			MarkdownDescription: "Navigate to another dashboard using current filters/time range.",
 			Optional:            true,
 			Attributes: map[string]schema.Attribute{
@@ -117,11 +117,11 @@ func LensChartDrilldownListItemAttributes() map[string]schema.Attribute {
 					MarkdownDescription: "Target dashboard id.",
 					Required:            true,
 				},
-				"label": schema.StringAttribute{
-					MarkdownDescription: "Human-readable drilldown label.",
+				attrLabel: schema.StringAttribute{
+					MarkdownDescription: drilldownLabelDescription,
 					Required:            true,
 				},
-				"trigger": schema.StringAttribute{
+				attrTrigger: schema.StringAttribute{
 					MarkdownDescription: "**Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.",
 					Computed:            true,
 					PlanModifiers: []planmodifier.String{
@@ -140,7 +140,7 @@ func LensChartDrilldownListItemAttributes() map[string]schema.Attribute {
 					Computed:            true,
 					Default:             booldefault.StaticBool(true),
 				},
-				"open_in_new_tab": schema.BoolAttribute{
+				attrOpenInNewTab: schema.BoolAttribute{
 					MarkdownDescription: "When true, opens the target dashboard in a new browser tab.",
 					Optional:            true,
 					Computed:            true,
@@ -152,22 +152,22 @@ func LensChartDrilldownListItemAttributes() map[string]schema.Attribute {
 				validators.ForbiddenIfDrilldownVariantSiblingNestedPresent(exprDrilldownURLDrilldown),
 			},
 		},
-		"discover_drilldown": schema.SingleNestedAttribute{
+		drilldownTypeDiscover: schema.SingleNestedAttribute{
 			MarkdownDescription: "Open Discover with contextual filters.",
 			Optional:            true,
 			Attributes: map[string]schema.Attribute{
-				"label": schema.StringAttribute{
-					MarkdownDescription: "Human-readable drilldown label.",
+				attrLabel: schema.StringAttribute{
+					MarkdownDescription: drilldownLabelDescription,
 					Required:            true,
 				},
-				"trigger": schema.StringAttribute{
+				attrTrigger: schema.StringAttribute{
 					MarkdownDescription: "**Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.",
 					Computed:            true,
 					PlanModifiers: []planmodifier.String{
 						stringplanmodifier.UseStateForUnknown(),
 					},
 				},
-				"open_in_new_tab": schema.BoolAttribute{
+				attrOpenInNewTab: schema.BoolAttribute{
 					MarkdownDescription: "When true, opens Discover in a new browser tab.",
 					Optional:            true,
 					Computed:            true,
@@ -179,19 +179,19 @@ func LensChartDrilldownListItemAttributes() map[string]schema.Attribute {
 				validators.ForbiddenIfDrilldownVariantSiblingNestedPresent(exprDrilldownURLDrilldown),
 			},
 		},
-		"url_drilldown": schema.SingleNestedAttribute{
+		drilldownTypeURL: schema.SingleNestedAttribute{
 			MarkdownDescription: "Open a URL drilldown configured with explicit trigger semantics.",
 			Optional:            true,
 			Attributes: map[string]schema.Attribute{
-				"url": schema.StringAttribute{
+				attrURL: schema.StringAttribute{
 					MarkdownDescription: "Destination URL.",
 					Required:            true,
 				},
-				"label": schema.StringAttribute{
-					MarkdownDescription: "Human-readable drilldown label.",
+				attrLabel: schema.StringAttribute{
+					MarkdownDescription: drilldownLabelDescription,
 					Required:            true,
 				},
-				"trigger": schema.StringAttribute{
+				attrTrigger: schema.StringAttribute{
 					MarkdownDescription: "Trigger that fires this drilldown.",
 					Required:            true,
 					Validators: []validator.String{
@@ -209,7 +209,7 @@ func LensChartDrilldownListItemAttributes() map[string]schema.Attribute {
 					Computed:            true,
 					Default:             booldefault.StaticBool(true),
 				},
-				"open_in_new_tab": schema.BoolAttribute{
+				attrOpenInNewTab: schema.BoolAttribute{
 					MarkdownDescription: "When true, opens the URL in a new browser tab.",
 					Optional:            true,
 					Computed:            true,

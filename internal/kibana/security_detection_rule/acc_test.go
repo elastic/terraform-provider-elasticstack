@@ -1639,10 +1639,7 @@ func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
 		return err
 	}
 
-	kbClient, getDiags := client.GetKibanaOapiClient()
-	if getDiags.HasError() {
-		return fmt.Errorf("failed to get kibana client: %v", getDiags)
-	}
+	kbClient := client.GetKibanaOapiClient()
 
 	for _, rs := range s.RootModule().Resources {
 		switch rs.Type {
@@ -1681,10 +1678,7 @@ func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
 			compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
 			// Get connector client from the Kibana OAPI client
-			oapiClient, getDiags := client.GetKibanaOapiClient()
-			if getDiags.HasError() {
-				return fmt.Errorf("failed to get kibana client: %v", getDiags)
-			}
+			oapiClient := client.GetKibanaOapiClient()
 
 			connector, diags := kibanaoapi.GetConnector(context.Background(), oapiClient, compID.ResourceID, compID.ClusterID)
 			if diags.HasError() {

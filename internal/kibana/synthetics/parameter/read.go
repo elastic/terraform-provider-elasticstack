@@ -30,11 +30,7 @@ import (
 func readParameter(ctx context.Context, client *clients.KibanaScopedClient, resourceID, _ string, model Model) (Model, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	kibanaClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return model, false, diags
-	}
+	kibanaClient := client.GetKibanaOapiClient()
 
 	getResult, err := kibanaClient.API.GetParameterWithResponse(ctx, resourceID)
 	if err != nil {

@@ -99,19 +99,19 @@ func indexHintSet(hint types.Set, keyFn func(types.Object) string) map[string]ty
 }
 
 func kibanaHintKey(obj types.Object) string {
-	spaces, _ := obj.Attributes()["spaces"].(types.Set)
+	spaces, _ := obj.Attributes()[attrSpaces].(types.Set)
 	return setStringKey(spaces)
 }
 
 func indicesHintKey(obj types.Object) string {
-	names, _ := obj.Attributes()["names"].(types.Set)
+	names, _ := obj.Attributes()[attrNames].(types.Set)
 	return setStringKey(names)
 }
 
 func remoteIndicesHintKey(obj types.Object) string {
 	attrs := obj.Attributes()
-	clusters, _ := attrs["clusters"].(types.Set)
-	names, _ := attrs["names"].(types.Set)
+	clusters, _ := attrs[attrClusters].(types.Set)
+	names, _ := attrs[attrNames].(types.Set)
 	return setStringKey(clusters) + "|" + setStringKey(names)
 }
 
@@ -121,7 +121,7 @@ func fieldSecurityHint(obj types.Object) types.Object {
 	if obj.IsNull() || obj.IsUnknown() {
 		return types.ObjectNull(fieldSecurityAttrTypes())
 	}
-	fs, ok := obj.Attributes()["field_security"].(types.Object)
+	fs, ok := obj.Attributes()[attrFieldSecurity].(types.Object)
 	if !ok {
 		return types.ObjectNull(fieldSecurityAttrTypes())
 	}
@@ -146,11 +146,11 @@ func objectFromFieldSecurityResource(ctx context.Context, fs *map[string][]strin
 	excepts := []string{}
 	hasGrant := false
 	hasExcept := false
-	if g, ok := (*fs)["grant"]; ok {
+	if g, ok := (*fs)[attrGrant]; ok {
 		grants = g
 		hasGrant = true
 	}
-	if e, ok := (*fs)["except"]; ok {
+	if e, ok := (*fs)[attrExcept]; ok {
 		excepts = e
 		hasExcept = true
 	}
@@ -167,14 +167,14 @@ func objectFromFieldSecurityResource(ctx context.Context, fs *map[string][]strin
 	// Align null vs known-empty representation with the hint for keys the
 	// API omitted. Keys the API actually returned are taken at face value.
 	if !hasGrant {
-		grantSet = alignSetRepresentation(objAttrSet(hint, "grant", types.StringType), grantSet, types.StringType)
+		grantSet = alignSetRepresentation(objAttrSet(hint, attrGrant, types.StringType), grantSet, types.StringType)
 	}
 	if !hasExcept {
-		exceptSet = alignSetRepresentation(objAttrSet(hint, "except", types.StringType), exceptSet, types.StringType)
+		exceptSet = alignSetRepresentation(objAttrSet(hint, attrExcept, types.StringType), exceptSet, types.StringType)
 	}
 	obj, d := types.ObjectValue(fieldSecurityAttrTypes(), map[string]attr.Value{
-		"grant":  grantSet,
-		"except": exceptSet,
+		attrGrant:  grantSet,
+		attrExcept: exceptSet,
 	})
 	diags.Append(d...)
 	return obj, diags
@@ -211,10 +211,10 @@ func flattenIndicesResource(ctx context.Context, indices *[]kibanaoapi.SecurityR
 			return types.SetNull(objType), diags
 		}
 		obj, d := types.ObjectValue(esIndexResourceAttrTypes(), map[string]attr.Value{
-			"names":          namesSet,
-			"privileges":     privSet,
-			"query":          normalizedQueryFromAPI(index.Query),
-			"field_security": fieldObj,
+			attrNames:         namesSet,
+			attrPrivileges:    privSet,
+			attrQuery:         normalizedQueryFromAPI(index.Query),
+			attrFieldSecurity: fieldObj,
 		})
 		diags.Append(d...)
 		if diags.HasError() {
@@ -258,11 +258,11 @@ func flattenRemoteIndicesResource(ctx context.Context, indices *[]kibanaoapi.Sec
 			return types.SetNull(objType), diags
 		}
 		obj, d := types.ObjectValue(esRemoteIndexResourceAttrTypes(), map[string]attr.Value{
-			"clusters":       clustersSet,
-			"names":          namesSet,
-			"privileges":     privSet,
-			"query":          normalizedQueryFromAPI(index.Query),
-			"field_security": fieldObj,
+			attrClusters:      clustersSet,
+			attrNames:         namesSet,
+			attrPrivileges:    privSet,
+			attrQuery:         normalizedQueryFromAPI(index.Query),
+			attrFieldSecurity: fieldObj,
 		})
 		diags.Append(d...)
 		if diags.HasError() {
@@ -283,10 +283,10 @@ func flattenRemoteIndicesResource(ctx context.Context, indices *[]kibanaoapi.Sec
 func flattenElasticsearchObject(ctx context.Context, es *kibanaoapi.SecurityRoleES, hint types.Object) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	attrs := map[string]attr.Value{
-		"cluster":        types.SetNull(types.StringType),
-		"run_as":         types.SetNull(types.StringType),
-		"indices":        types.SetNull(types.ObjectType{AttrTypes: esIndexResourceAttrTypes()}),
-		"remote_indices": types.SetNull(types.ObjectType{AttrTypes: esRemoteIndexResourceAttrTypes()}),
+		attrCluster:       types.SetNull(types.StringType),
+		attrRunAs:         types.SetNull(types.StringType),
+		attrIndices:       types.SetNull(types.ObjectType{AttrTypes: esIndexResourceAttrTypes()}),
+		attrRemoteIndices: types.SetNull(types.ObjectType{AttrTypes: esRemoteIndexResourceAttrTypes()}),
 	}
 	clusterFromAPI := types.SetNull(types.StringType)
 	if es.Cluster != nil && len(*es.Cluster) > 0 {
@@ -297,7 +297,7 @@ func flattenElasticsearchObject(ctx context.Context, es *kibanaoapi.SecurityRole
 		}
 		clusterFromAPI = s
 	}
-	attrs["cluster"] = alignSetRepresentation(objAttrSet(hint, "cluster", types.StringType), clusterFromAPI, types.StringType)
+	attrs[attrCluster] = alignSetRepresentation(objAttrSet(hint, attrCluster, types.StringType), clusterFromAPI, types.StringType)
 
 	runAsFromAPI := types.SetNull(types.StringType)
 	if es.RunAs != nil && len(*es.RunAs) > 0 {
@@ -308,22 +308,22 @@ func flattenElasticsearchObject(ctx context.Context, es *kibanaoapi.SecurityRole
 		}
 		runAsFromAPI = s
 	}
-	attrs["run_as"] = alignSetRepresentation(objAttrSet(hint, "run_as", types.StringType), runAsFromAPI, types.StringType)
+	attrs[attrRunAs] = alignSetRepresentation(objAttrSet(hint, attrRunAs, types.StringType), runAsFromAPI, types.StringType)
 
-	indicesHint := objAttrSet(hint, "indices", types.ObjectType{AttrTypes: esIndexResourceAttrTypes()})
-	remoteHint := objAttrSet(hint, "remote_indices", types.ObjectType{AttrTypes: esRemoteIndexResourceAttrTypes()})
+	indicesHint := objAttrSet(hint, attrIndices, types.ObjectType{AttrTypes: esIndexResourceAttrTypes()})
+	remoteHint := objAttrSet(hint, attrRemoteIndices, types.ObjectType{AttrTypes: esRemoteIndexResourceAttrTypes()})
 	indicesSet, d := flattenIndicesResource(ctx, es.Indices, indicesHint)
 	diags.Append(d...)
 	if diags.HasError() {
 		return types.ObjectNull(elasticsearchResourceAttrTypes()), diags
 	}
-	attrs["indices"] = indicesSet
+	attrs[attrIndices] = indicesSet
 	remoteSet, d := flattenRemoteIndicesResource(ctx, es.RemoteIndices, remoteHint)
 	diags.Append(d...)
 	if diags.HasError() {
 		return types.ObjectNull(elasticsearchResourceAttrTypes()), diags
 	}
-	attrs["remote_indices"] = remoteSet
+	attrs[attrRemoteIndices] = remoteSet
 	obj, d := types.ObjectValue(elasticsearchResourceAttrTypes(), attrs)
 	diags.Append(d...)
 	return obj, diags
@@ -342,8 +342,8 @@ func flattenKibanaFeatures(ctx context.Context, features *map[string][]string) (
 			return types.SetNull(types.ObjectType{AttrTypes: kibanaFeatureAttrTypes()}), diags
 		}
 		obj, d := types.ObjectValue(kibanaFeatureAttrTypes(), map[string]attr.Value{
-			"name":       types.StringValue(k),
-			"privileges": privSet,
+			attrName:       types.StringValue(k),
+			attrPrivileges: privSet,
 		})
 		diags.Append(d...)
 		if diags.HasError() {
@@ -403,11 +403,11 @@ func flattenKibana(ctx context.Context, configs []kibanaoapi.SecurityRoleKibana,
 			spacesSet = types.SetValueMust(types.StringType, []attr.Value{})
 		}
 		entryHint := hintIdx[setStringKey(spacesSet)]
-		baseSet := alignSetRepresentation(objAttrSet(entryHint, "base", types.StringType), baseFromAPI, types.StringType)
+		baseSet := alignSetRepresentation(objAttrSet(entryHint, attrBase, types.StringType), baseFromAPI, types.StringType)
 		obj, d := types.ObjectValue(kibanaBlockAttrTypes(), map[string]attr.Value{
-			"spaces":  spacesSet,
-			"base":    baseSet,
-			"feature": featureSet,
+			attrSpaces:  spacesSet,
+			attrBase:    baseSet,
+			attrFeature: featureSet,
 		})
 		diags.Append(d...)
 		if diags.HasError() {

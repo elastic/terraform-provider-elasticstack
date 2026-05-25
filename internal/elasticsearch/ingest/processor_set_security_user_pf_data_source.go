@@ -70,18 +70,18 @@ func (m *processorSetSecurityUserModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorSetSecurityUserDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource",
+			Description: descIdentifier,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
-		"field": schema.StringAttribute{
+		attrField: schema.StringAttribute{
 			Description: "The field to store the user information into.",
 			Required:    true,
 		},
-		"properties": schema.SetAttribute{
+		attrProperties: schema.SetAttribute{
 			Description: "Controls what user related properties are added to the `field`.",
 			Optional:    true,
 			ElementType: types.StringType,

@@ -43,11 +43,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	}
 
 	// Get the Kibana client
-	kibanaClient, d := client.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	kibanaClient := client.GetKibanaOapiClient()
 
 	spaceID := planModel.SpaceID.ValueString()
 

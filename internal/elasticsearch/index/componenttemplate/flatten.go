@@ -134,10 +134,10 @@ func flattenTemplateBlock(
 	}
 
 	tplAttrs := map[string]attr.Value{
-		"alias":               aliasSet,
-		"mappings":            mappings,
-		"settings":            settings,
-		"data_stream_options": dsoObj,
+		attrAlias:             aliasSet,
+		attrMappings:          mappings,
+		attrSettings:          settings,
+		attrDataStreamOptions: dsoObj,
 	}
 
 	obj, d := types.ObjectValue(templateAttrTypes(), tplAttrs)
@@ -179,7 +179,7 @@ func flattenAliasElement(name string, a models.IndexAlias, preservedRouting map[
 	// componenttemplate preserves user-configured routing when the API omits it on round-trip.
 	if a.Routing == "" {
 		if pr, ok := preservedRouting[name]; ok {
-			attrs["routing"] = types.StringValue(pr)
+			attrs[attrRouting] = types.StringValue(pr)
 		}
 	}
 	obj, d := types.ObjectValue(aliasAttrTypes(), attrs)
@@ -278,12 +278,12 @@ func extractEmptyObjectOverridesFromData(prior Data) (esindex.MappingsValue, cus
 	tplAttrs := prior.Template.Attributes()
 
 	mappings := esindex.NewMappingsNull()
-	if mv, ok := tplAttrs["mappings"].(esindex.MappingsValue); ok {
+	if mv, ok := tplAttrs[attrMappings].(esindex.MappingsValue); ok {
 		mappings = mv
 	}
 
 	settings := customtypes.NewIndexSettingsNull()
-	if sv, ok := tplAttrs["settings"].(customtypes.IndexSettingsValue); ok {
+	if sv, ok := tplAttrs[attrSettings].(customtypes.IndexSettingsValue); ok {
 		settings = sv
 	}
 
@@ -299,7 +299,7 @@ func extractAliasRoutingFromData(prior Data) map[string]string {
 	}
 
 	tplAttrs := prior.Template.Attributes()
-	aliasVal, ok := tplAttrs["alias"]
+	aliasVal, ok := tplAttrs[attrAlias]
 	if !ok {
 		return result
 	}
@@ -314,11 +314,11 @@ func extractAliasRoutingFromData(prior Data) map[string]string {
 			continue
 		}
 		attrs := obj.Attributes()
-		nameAttr, ok := attrs["name"].(types.String)
+		nameAttr, ok := attrs[attrName].(types.String)
 		if !ok || nameAttr.IsNull() || nameAttr.IsUnknown() {
 			continue
 		}
-		routingAttr, ok := attrs["routing"].(types.String)
+		routingAttr, ok := attrs[attrRouting].(types.String)
 		if !ok || routingAttr.IsNull() || routingAttr.IsUnknown() {
 			continue
 		}

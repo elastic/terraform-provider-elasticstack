@@ -73,14 +73,14 @@ func (m *processorForeachModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorForeachDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource",
+			Description: descIdentifier,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
-		"field": schema.StringAttribute{
+		attrField: schema.StringAttribute{
 			Description: "Field containing array or object values.",
 			Required:    true,
 		},
@@ -89,7 +89,7 @@ func NewProcessorForeachDataSource() datasource.DataSource {
 			Required:    true,
 			CustomType:  jsontypes.NormalizedType{},
 		},
-		"ignore_missing": schema.BoolAttribute{
+		attrIgnoreMissing: schema.BoolAttribute{
 			Description: "If `true`, the processor silently exits without changing the document if the `field` is `null` or missing.",
 			Optional:    true,
 			Computed:    true,

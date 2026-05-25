@@ -31,6 +31,14 @@ import (
 
 const panelType = "slo_overview"
 
+// SLO overview discriminator branches. These are reused between the schema
+// validators and the API converter which maps them back to the embeddable
+// types reported by Kibana.
+const (
+	sloOverviewModeSingle = "single"
+	sloOverviewModeGroups = "groups"
+)
+
 // SchemaAttribute returns the slo_overview_config SingleNestedAttribute definition.
 func SchemaAttribute() schema.Attribute {
 	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
@@ -40,7 +48,7 @@ func SchemaAttribute() schema.Attribute {
 		Attributes:  nestedAttributes(),
 		ExtraValidators: []validator.Object{
 			panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
-				AttrNames:     []string{"single", "groups"},
+				AttrNames:     []string{sloOverviewModeSingle, sloOverviewModeGroups},
 				Summary:       "Invalid slo_overview_config",
 				MissingDetail: "Exactly one of `single` or `groups` must be configured inside `slo_overview_config`.",
 				TooManyDetail: "Exactly one of `single` or `groups` must be configured inside `slo_overview_config`, not both.",

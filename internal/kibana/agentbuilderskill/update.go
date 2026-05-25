@@ -36,11 +36,7 @@ func updateSkill(ctx context.Context, client *clients.KibanaScopedClient, req en
 		return entitycore.KibanaWriteResult[skillModel]{}, diags
 	}
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[skillModel]{}, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	_, d = kibanaoapi.UpdateSkill(ctx, oapiClient, req.SpaceID, req.WriteID, body)
 	diags.Append(d...)

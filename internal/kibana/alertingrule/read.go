@@ -33,11 +33,7 @@ func (r *Resource) readRuleFromAPI(ctx context.Context, apiClient *clients.Kiban
 
 	ruleID, spaceID := model.getRuleIDAndSpaceID()
 
-	oapiClient, d := apiClient.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return false, diags
-	}
+	oapiClient := apiClient.GetKibanaOapiClient()
 
 	rule, readDiags := kibanaoapi.GetAlertingRule(ctx, oapiClient, spaceID, ruleID)
 	diags.Append(readDiags...)

@@ -277,10 +277,7 @@ func checkResourceFleetProxyDestroy(s *terraform.State) error {
 			continue
 		}
 
-		fc, d := client.GetFleetClient()
-		if d.HasError() {
-			return diagutil.FwDiagsAsError(d)
-		}
+		fc := client.GetFleetClient()
 
 		proxyID := rs.Primary.Attributes["proxy_id"]
 		spaceID := rs.Primary.Attributes["space_id"]

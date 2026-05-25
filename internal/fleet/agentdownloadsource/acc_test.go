@@ -227,10 +227,7 @@ func checkResourceFleetAgentDownloadSourceDestroy(s *terraform.State) error {
 			continue
 		}
 
-		fleetClient, d := client.GetFleetClient()
-		if d.HasError() {
-			return diagutil.FwDiagsAsError(d)
-		}
+		fleetClient := client.GetFleetClient()
 		spaceID := getOperationalSpaceFromResourceState(rs)
 		resp, diags := fleet.GetAgentDownloadSource(context.Background(), fleetClient, rs.Primary.ID, spaceID)
 		if diags.HasError() {

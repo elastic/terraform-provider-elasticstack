@@ -31,11 +31,7 @@ func readTool(ctx context.Context, client *clients.KibanaScopedClient, resourceI
 
 	prior.SpaceID = types.StringValue(spaceID)
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	if getDiags.HasError() {
-		diags.Append(getDiags...)
-		return prior, false, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	tool, d := kibanaoapi.GetTool(ctx, oapiClient, spaceID, resourceID)
 	diags.Append(d...)

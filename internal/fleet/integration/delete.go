@@ -42,18 +42,14 @@ func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	fleetClient, d := client.GetFleetClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
 	name := stateModel.Name.ValueString()
 	version := stateModel.Version.ValueString()
 	force := stateModel.Force.ValueBool()
 	skipDestroy := stateModel.SkipDestroy.ValueBool()
 	if skipDestroy {
-		tflog.Debug(ctx, "Skipping uninstall of integration package", map[string]any{"name": name, "version": version})
+		tflog.Debug(ctx, "Skipping uninstall of integration package", map[string]any{attrName: name, attrVersion: version})
 		return
 	}
 

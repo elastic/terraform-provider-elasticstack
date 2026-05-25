@@ -30,6 +30,33 @@ import (
 type kibanaOapiConfig kibanaoapi.Config
 
 func newKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibanaOapiConfig, fwdiags.Diagnostics) {
+	config, diags := buildKibanaOapiConfigFromFramework(ctx, cfg, base)
+	if diags.HasError() {
+		return kibanaOapiConfig{}, diags
+	}
+
+	return config.withEnvironmentOverrides(), nil
+}
+
+func newProviderKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibanaOapiConfig, fwdiags.Diagnostics) {
+	config, diags := buildKibanaOapiConfigFromFramework(ctx, cfg, base)
+	if diags.HasError() {
+		return kibanaOapiConfig{}, diags
+	}
+
+	// Apply the URL env override before fleet fallback so a fleet-derived URL does
+	// not suppress KIBANA_ENDPOINT when TF_ELASTICSTACK_PREFER_CONFIGURED_KIBANA_ENDPOINT is set.
+	config = config.withURLEnvironmentOverride()
+
+	config, diags = config.withFleetBlockFallback(ctx, cfg)
+	if diags.HasError() {
+		return kibanaOapiConfig{}, diags
+	}
+
+	return config.withNonURLEnvironmentOverrides(), nil
+}
+
+func buildKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibanaOapiConfig, fwdiags.Diagnostics) {
 	config := base.toKibanaOapiConfig()
 
 	if len(cfg.Kibana) > 0 {
@@ -63,18 +90,71 @@ func newKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigura
 			config.CACerts = cas
 		}
 
-		config.Insecure = kibConfig.Insecure.ValueBool()
+		if !kibConfig.Insecure.IsNull() && !kibConfig.Insecure.IsUnknown() {
+			config.Insecure = kibConfig.Insecure.ValueBool()
+		}
 	}
 
-	return config.withEnvironmentOverrides(), nil
+	return config, nil
+}
+
+func (k kibanaOapiConfig) withFleetBlockFallback(ctx context.Context, cfg ProviderConfiguration) (kibanaOapiConfig, fwdiags.Diagnostics) {
+	if len(cfg.Fleet) == 0 {
+		return k, nil
+	}
+
+	fleetCfg := cfg.Fleet[0]
+	if k.Username == "" && fleetCfg.Username.ValueString() != "" {
+		k.Username = fleetCfg.Username.ValueString()
+	}
+	if k.Password == "" && fleetCfg.Password.ValueString() != "" {
+		k.Password = fleetCfg.Password.ValueString()
+	}
+	if k.APIKey == "" && fleetCfg.APIKey.ValueString() != "" {
+		k.APIKey = fleetCfg.APIKey.ValueString()
+	}
+	if k.BearerToken == "" && fleetCfg.BearerToken.ValueString() != "" {
+		k.BearerToken = fleetCfg.BearerToken.ValueString()
+	}
+	if k.URL == "" && fleetCfg.Endpoint.ValueString() != "" {
+		k.URL = fleetCfg.Endpoint.ValueString()
+	}
+
+	if len(k.CACerts) == 0 {
+		var caCerts []string
+		diags := fleetCfg.CACerts.ElementsAs(ctx, &caCerts, true)
+		if diags.HasError() {
+			return kibanaOapiConfig{}, diags
+		}
+		if len(caCerts) > 0 {
+			k.CACerts = caCerts
+		}
+	}
+
+	kibanaInsecureUnset := len(cfg.Kibana) == 0 || cfg.Kibana[0].Insecure.IsNull() || cfg.Kibana[0].Insecure.IsUnknown()
+	if kibanaInsecureUnset && !fleetCfg.Insecure.IsNull() && !fleetCfg.Insecure.IsUnknown() {
+		k.Insecure = fleetCfg.Insecure.ValueBool()
+	}
+
+	return k, nil
+}
+
+func (k kibanaOapiConfig) withURLEnvironmentOverride() kibanaOapiConfig {
+	k.URL = withEnvironmentOverrideUnlessConfigured(k.URL, "KIBANA_ENDPOINT", PreferConfiguredKibanaEndpointEnvVar)
+	return k
 }
 
 func (k kibanaOapiConfig) withEnvironmentOverrides() kibanaOapiConfig {
+	k = k.withNonURLEnvironmentOverrides()
+	k = k.withURLEnvironmentOverride()
+	return k
+}
+
+func (k kibanaOapiConfig) withNonURLEnvironmentOverrides() kibanaOapiConfig {
 	k.Username = withEnvironmentOverride(k.Username, "KIBANA_USERNAME")
 	k.Password = withEnvironmentOverride(k.Password, "KIBANA_PASSWORD")
 	k.APIKey = withEnvironmentOverride(k.APIKey, "KIBANA_API_KEY")
 	k.BearerToken = withEnvironmentOverride(k.BearerToken, "KIBANA_BEARER_TOKEN")
-	k.URL = withEnvironmentOverrideUnlessConfigured(k.URL, "KIBANA_ENDPOINT", PreferConfiguredKibanaEndpointEnvVar)
 	if caCerts, ok := os.LookupEnv("KIBANA_CA_CERTS"); ok {
 		k.CACerts = strings.Split(caCerts, ",")
 	}

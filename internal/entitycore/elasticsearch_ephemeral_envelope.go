@@ -89,7 +89,7 @@ func NewElasticsearchEphemeralResource[T ElasticsearchEphemeralModel, S any](
 			},
 			encodeConn:         encodeElasticsearchConnection,
 			decodeConn:         decodeElasticsearchConnection,
-			schemaBlockKey:     "elasticsearch_connection",
+			schemaBlockKey:     blockElasticsearchConnection,
 			schemaBlockFactory: providerschema.GetEsEphemeralConnectionBlock,
 			errorSummary:       "Elasticsearch ephemeral envelope internal error",
 		},

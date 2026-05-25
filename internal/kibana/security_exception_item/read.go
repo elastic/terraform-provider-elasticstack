@@ -51,11 +51,7 @@ func (r *ExceptionItemResource) Read(ctx context.Context, req resource.ReadReque
 	}
 	state.SpaceID = types.StringValue(compID.ClusterID)
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	// Read by ID
 	id := compID.ResourceID

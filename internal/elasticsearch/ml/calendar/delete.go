@@ -35,11 +35,7 @@ func deleteCalendar(ctx context.Context, client *clients.ElasticsearchScopedClie
 
 	tflog.Debug(ctx, fmt.Sprintf("Deleting ML calendar: %s", calendarID))
 
-	typedClient, clientDiags := client.GetESClient()
-	diags.Append(clientDiags...)
-	if diags.HasError() {
-		return diags
-	}
+	typedClient := client.GetESClient()
 
 	_, err := typedClient.Ml.DeleteCalendar(calendarID).Do(ctx)
 	if err != nil {

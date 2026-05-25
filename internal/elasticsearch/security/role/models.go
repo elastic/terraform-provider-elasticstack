@@ -327,9 +327,9 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 			}
 
 			appObj, d := types.ObjectValue(getApplicationAttrTypes(), map[string]attr.Value{
-				"application": types.StringValue(app.Application),
-				"privileges":  privSet,
-				"resources":   resSet,
+				attrApplication: types.StringValue(app.Application),
+				attrPrivileges:  privSet,
+				attrResources:   resSet,
 			})
 			diags.Append(d...)
 			if diags.HasError() {
@@ -432,8 +432,8 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 				}
 
 				fieldSecObj, d = types.ObjectValue(getFieldSecurityAttrTypes(), map[string]attr.Value{
-					"grant":  grantSet,
-					"except": exceptSet,
+					attrGrant:  grantSet,
+					attrExcept: exceptSet,
 				})
 				diags.Append(d...)
 				if diags.HasError() {
@@ -444,11 +444,11 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 			}
 
 			indexObj, d := types.ObjectValue(getIndexPermsAttrTypes(), map[string]attr.Value{
-				"field_security":           fieldSecObj,
-				"names":                    namesSet,
-				"privileges":               privSet,
-				"query":                    queryVal,
-				"allow_restricted_indices": allowRestrictedVal,
+				attrFieldSecurity:          fieldSecObj,
+				attrNames:                  namesSet,
+				attrPrivileges:             privSet,
+				attrQuery:                  queryVal,
+				attrAllowRestrictedIndices: allowRestrictedVal,
 			})
 			diags.Append(d...)
 			if diags.HasError() {
@@ -526,8 +526,8 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 				}
 
 				fieldSecObj, d = types.ObjectValue(getRemoteFieldSecurityAttrTypes(), map[string]attr.Value{
-					"grant":  grantSet,
-					"except": exceptSet,
+					attrGrant:  grantSet,
+					attrExcept: exceptSet,
 				})
 				diags.Append(d...)
 				if diags.HasError() {
@@ -538,11 +538,11 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 			}
 
 			remoteIndexObj, d := types.ObjectValue(getRemoteIndexPermsAttrTypes(), map[string]attr.Value{
-				"clusters":       clustersSet,
-				"field_security": fieldSecObj,
-				"query":          queryVal,
-				"names":          namesSet,
-				"privileges":     privSet,
+				attrClusters:      clustersSet,
+				attrFieldSecurity: fieldSecObj,
+				attrQuery:         queryVal,
+				attrNames:         namesSet,
+				attrPrivileges:    privSet,
 			})
 			diags.Append(d...)
 			if diags.HasError() {

@@ -26,6 +26,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const kibanaFleetClientNotConfiguredError = "kibana/fleet client is not configured: set kibana.endpoints, kibana_connection.endpoints, KIBANA_ENDPOINT, fleet.endpoint, or FLEET_ENDPOINT"
+
 // ProviderClientFactory is the provider-scoped client-resolution surface
 // injected into Plugin Framework ProviderData. Resources and data sources use
 // the factory to obtain typed clients rather than consuming a broad *apiClient
@@ -81,7 +83,7 @@ func (f *ProviderClientFactory) GetKibanaClient(ctx context.Context, kibanaConnL
 	}
 
 	if len(kibConns) == 0 {
-		return kibanaScopedClientFromAPIClient(f.defaultClient), nil
+		return validateKibanaScopedClientEndpoints(kibanaScopedClientFromAPIClient(f.defaultClient))
 	}
 
 	cfg, diags := config.NewFromFrameworkKibanaResource(ctx, kibConns, f.defaultClient.version)
@@ -89,7 +91,12 @@ func (f *ProviderClientFactory) GetKibanaClient(ctx context.Context, kibanaConnL
 		return nil, diags
 	}
 
-	return buildKibanaScopedClientFromConfig(*cfg, f.defaultClient.version)
+	scoped, diags := buildKibanaScopedClientFromConfig(*cfg, f.defaultClient.version)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return validateKibanaScopedClientEndpoints(scoped)
 }
 
 // --- Typed Elasticsearch resolution methods ---
@@ -113,7 +120,7 @@ func (f *ProviderClientFactory) GetElasticsearchClient(ctx context.Context, esCo
 	}
 
 	if len(esConns) == 0 {
-		return elasticsearchScopedClientFromAPIClient(f.defaultClient), nil
+		return validateElasticsearchScopedClientEndpoints(elasticsearchScopedClientFromAPIClient(f.defaultClient))
 	}
 
 	if len(esConns) > 1 {
@@ -149,10 +156,55 @@ func (f *ProviderClientFactory) GetElasticsearchClient(ctx context.Context, esCo
 		esEndpoints = cfg.Elasticsearch.Addresses
 	}
 
-	return &ElasticsearchScopedClient{
+	return validateElasticsearchScopedClientEndpoints(&ElasticsearchScopedClient{
 		typedClient: esClient,
 		esEndpoints: esEndpoints,
-	}, nil
+	})
+}
+
+func validateElasticsearchScopedClientEndpoints(scoped *ElasticsearchScopedClient) (*ElasticsearchScopedClient, fwdiags.Diagnostics) {
+	hasEndpoint := false
+	for _, ep := range scoped.esEndpoints {
+		if ep != "" {
+			hasEndpoint = true
+			break
+		}
+	}
+	if !hasEndpoint {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
+			"Elasticsearch client not configured",
+			elasticsearchClientNotConfiguredError,
+		)}
+	}
+	if scoped.typedClient == nil {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
+			"Elasticsearch client not found",
+			"elasticsearch client not found",
+		)}
+	}
+	return scoped, nil
+}
+
+func validateKibanaScopedClientEndpoints(scoped *KibanaScopedClient) (*KibanaScopedClient, fwdiags.Diagnostics) {
+	if scoped.kibanaEndpoint == "" && scoped.fleetEndpoint == "" {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
+			"Kibana client not configured",
+			kibanaFleetClientNotConfiguredError,
+		)}
+	}
+	if scoped.kibanaEndpoint != "" && scoped.kibanaOapi == nil {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
+			"kibanaoapi client not found",
+			"kibana OpenAPI client was not built despite a configured Kibana endpoint",
+		)}
+	}
+	if scoped.fleetEndpoint != "" && scoped.fleet == nil {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
+			"Fleet client not found",
+			"Fleet client was not built despite a configured Fleet endpoint",
+		)}
+	}
+	return scoped, nil
 }
 
 // --- Helper constructors ---
@@ -226,9 +278,9 @@ func ConvertProviderDataToFactory(providerData any) (*ProviderClientFactory, fwd
 // NewKibanaScopedClientFromFactory returns a *KibanaScopedClient built from the
 // factory's provider-level defaults. This is the typed Kibana surface
 // equivalent of calling GetKibanaClient with an empty connection list.
-func NewKibanaScopedClientFromFactory(f *ProviderClientFactory) *KibanaScopedClient {
+func NewKibanaScopedClientFromFactory(f *ProviderClientFactory) (*KibanaScopedClient, fwdiags.Diagnostics) {
 	if f == nil || f.defaultClient == nil {
-		return nil
+		return nil, nil
 	}
-	return kibanaScopedClientFromAPIClient(f.defaultClient)
+	return validateKibanaScopedClientEndpoints(kibanaScopedClientFromAPIClient(f.defaultClient))
 }

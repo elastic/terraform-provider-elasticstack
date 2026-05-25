@@ -34,7 +34,7 @@ func TestMakefileGolangCILintUsesModuleWildcard(t *testing.T) {
 		t.Fatalf("read Makefile: %v", err)
 	}
 
-	const want = "golangci-lint-custom run --max-same-issues=0 $(GOLANGCIFLAGS) ./..."
+	const want = "golangci-lint-custom run --max-same-issues=0 --allow-parallel-runners $(GOLANGCIFLAGS) ./..."
 	if !strings.Contains(string(data), want) {
 		t.Fatalf("Makefile must contain golangci-lint invocation %q", want)
 	}

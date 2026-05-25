@@ -28,6 +28,9 @@ import (
 	"github.com/google/go-github/v88/github"
 )
 
+// jsonKeyPullRequest is the JSON/log key used for pull request payload entries.
+const jsonKeyPullRequest = "pull_request"
+
 type eventPayload struct {
 	PullRequest *struct {
 		Number int `json:"number"`
@@ -124,11 +127,11 @@ func run(ctx context.Context) error {
 	}
 
 	logJSON("evaluation", map[string]any{
-		"owner":        owner,
-		"repo":         name,
-		"pull_request": prNumber,
-		"head_sha":     headSHA,
-		"result":       result,
+		"owner":            owner,
+		"repo":             name,
+		jsonKeyPullRequest: prNumber,
+		"head_sha":         headSHA,
+		"result":           result,
 	})
 
 	if !result.ShouldApprove {
@@ -149,9 +152,9 @@ func run(ctx context.Context) error {
 	}
 
 	logJSON("approved", map[string]any{
-		"owner":        owner,
-		"repo":         name,
-		"pull_request": prNumber,
+		"owner":            owner,
+		"repo":             name,
+		jsonKeyPullRequest: prNumber,
 	})
 
 	return nil

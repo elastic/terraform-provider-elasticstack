@@ -40,16 +40,16 @@ var remoteIndicesPermissionsDescription string
 
 func fieldSecurityResourceAttrs() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"grant": schema.SetAttribute{
-			Description: "List of the fields to grant the access to.",
+		attrGrant: schema.SetAttribute{
+			Description: descFieldSecurityGrant,
 			Optional:    true,
 			ElementType: types.StringType,
 			Validators: []validator.Set{
 				setvalidator.SizeAtLeast(1),
 			},
 		},
-		"except": schema.SetAttribute{
-			Description: "List of the fields to which the grants will not be applied.",
+		attrExcept: schema.SetAttribute{
+			Description: descFieldSecurityExcept,
 			Optional:    true,
 			ElementType: types.StringType,
 		},
@@ -58,31 +58,31 @@ func fieldSecurityResourceAttrs() map[string]schema.Attribute {
 
 func fieldSecurityResourceBlock() schema.Block {
 	return schema.SingleNestedBlock{
-		Description: "The document fields that the owners of the role have read access to.",
+		Description: descFieldSecurityBlock,
 		Attributes:  fieldSecurityResourceAttrs(),
 	}
 }
 
 func commonIndexBlockAttrs() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"names": schema.SetAttribute{
-			Description: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
+		attrNames: schema.SetAttribute{
+			Description: descIndexNames,
 			Required:    true,
 			ElementType: types.StringType,
 			Validators: []validator.Set{
 				setvalidator.SizeAtLeast(1),
 			},
 		},
-		"privileges": schema.SetAttribute{
-			Description: "The index level privileges that the owners of the role have on the specified indices.",
+		attrPrivileges: schema.SetAttribute{
+			Description: descIndexPrivileges,
 			Required:    true,
 			ElementType: types.StringType,
 			Validators: []validator.Set{
 				setvalidator.SizeAtLeast(1),
 			},
 		},
-		"query": schema.StringAttribute{
-			Description: "A search query that defines the documents the owners of the role have read access to.",
+		attrQuery: schema.StringAttribute{
+			Description: descIndexQuery,
 			Optional:    true,
 			CustomType:  jsontypes.NormalizedType{},
 		},
@@ -94,7 +94,7 @@ func indicesResourceBlock() schema.Block {
 		Description: "A list of indices permissions entries.",
 		NestedObject: schema.NestedBlockObject{
 			Blocks: map[string]schema.Block{
-				"field_security": fieldSecurityResourceBlock(),
+				attrFieldSecurity: fieldSecurityResourceBlock(),
 			},
 			Attributes: commonIndexBlockAttrs(),
 		},
@@ -103,7 +103,7 @@ func indicesResourceBlock() schema.Block {
 
 func remoteIndicesResourceBlock() schema.Block {
 	attrs := commonIndexBlockAttrs()
-	attrs["clusters"] = schema.SetAttribute{
+	attrs[attrClusters] = schema.SetAttribute{
 		Description: "A list of cluster aliases to which the permissions in this entry apply.",
 		Required:    true,
 		ElementType: types.StringType,
@@ -112,7 +112,7 @@ func remoteIndicesResourceBlock() schema.Block {
 		Description: remoteIndicesPermissionsDescription,
 		NestedObject: schema.NestedBlockObject{
 			Blocks: map[string]schema.Block{
-				"field_security": fieldSecurityResourceBlock(),
+				attrFieldSecurity: fieldSecurityResourceBlock(),
 			},
 			Attributes: attrs,
 		},
@@ -127,32 +127,32 @@ func getResourceSchema(_ context.Context) schema.Schema {
 			"elasticsearch": schema.SingleNestedBlock{
 				Description: "Elasticsearch cluster and index privileges.",
 				Attributes: map[string]schema.Attribute{
-					"cluster": schema.SetAttribute{
+					attrCluster: schema.SetAttribute{
 						Description: "List of the cluster privileges.",
 						Optional:    true,
 						ElementType: types.StringType,
 					},
-					"run_as": schema.SetAttribute{
+					attrRunAs: schema.SetAttribute{
 						Description: "A list of usernames the owners of this role can impersonate.",
 						Optional:    true,
 						ElementType: types.StringType,
 					},
 				},
 				Blocks: map[string]schema.Block{
-					"indices":        indicesResourceBlock(),
-					"remote_indices": remoteIndicesResourceBlock(),
+					attrIndices:       indicesResourceBlock(),
+					attrRemoteIndices: remoteIndicesResourceBlock(),
 				},
 			},
 			"kibana": schema.SetNestedBlock{
 				Description: "The list of objects that specify the Kibana privileges for the role.",
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
-						"spaces": schema.SetAttribute{
+						attrSpaces: schema.SetAttribute{
 							Description: "The spaces to apply the privileges to. To grant access to all spaces, set to [\"*\"], or omit the value.",
 							Required:    true,
 							ElementType: types.StringType,
 						},
-						"base": schema.SetAttribute{
+						attrBase: schema.SetAttribute{
 							Description: "A base privilege. When specified, the base must be [\"all\"] or [\"read\"]. When the base privileges are specified, you are unable to use the \"feature\" section.",
 							Optional:    true,
 							ElementType: types.StringType,
@@ -168,15 +168,15 @@ func getResourceSchema(_ context.Context) schema.Schema {
 						},
 					},
 					Blocks: map[string]schema.Block{
-						"feature": schema.SetNestedBlock{
+						attrFeature: schema.SetNestedBlock{
 							Description: "List of privileges for specific features. When the feature privileges are specified, you are unable to use the \"base\" section.",
 							NestedObject: schema.NestedBlockObject{
 								Attributes: map[string]schema.Attribute{
-									"name": schema.StringAttribute{
+									attrName: schema.StringAttribute{
 										Description: "Feature name.",
 										Required:    true,
 									},
-									"privileges": schema.SetAttribute{
+									attrPrivileges: schema.SetAttribute{
 										Description: "Feature privileges.",
 										Required:    true,
 										ElementType: types.StringType,
@@ -192,7 +192,7 @@ func getResourceSchema(_ context.Context) schema.Schema {
 			},
 		},
 		Attributes: map[string]schema.Attribute{
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				Description: "The name for the role.",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{

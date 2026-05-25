@@ -31,10 +31,7 @@ import (
 )
 
 func PutLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, logstashPipeline *models.LogstashPipeline) fwdiag.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	// The typed client's types.LogstashPipeline.PipelineSettings only supports
 	// a subset of the settings keys the provider uses (6 of ~17). Using the typed
@@ -60,10 +57,7 @@ func PutLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchSc
 }
 
 func GetLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, pipelineID string) (*models.LogstashPipeline, fwdiag.Diagnostics) {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
-	}
+	typedClient := apiClient.GetESClient()
 
 	// We use .Perform() instead of .Do() because types.LogstashPipeline only
 	// supports a subset of pipeline settings. Decoding into the provider's own
@@ -102,10 +96,7 @@ func GetLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchSc
 }
 
 func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, pipelineID string) fwdiag.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	// Use .Perform() for explicit 404 handling, consistent with GetLogstashPipeline.
 	// The typed client's .Do() handles 404 internally, but making the status check

@@ -30,11 +30,7 @@ func createSecurityListDataStreams(ctx context.Context, client *clients.KibanaSc
 	m := req.Plan
 	var diags diag.Diagnostics
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	_, d := kibanaoapi.CreateListIndex(ctx, oapiClient, req.SpaceID)
 	diags.Append(d...)

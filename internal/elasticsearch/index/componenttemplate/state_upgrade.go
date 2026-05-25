@@ -48,12 +48,12 @@ func migrateComponentTemplateStateV0ToV1(_ context.Context, req resource.Upgrade
 		return
 	}
 
-	resp.Diagnostics.Append(collapseListPath(stateMap, "template", "template")...)
+	resp.Diagnostics.Append(collapseListPath(stateMap, attrTemplate, attrTemplate)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if tmpl, ok := stateMap["template"].(map[string]any); ok {
+	if tmpl, ok := stateMap[attrTemplate].(map[string]any); ok {
 		ensureTemplateObjectKeysForV1(tmpl)
 		aliasutil.NormalizeTemplateAliasesInV1State(tmpl)
 	}
@@ -105,17 +105,17 @@ func collapseListPath(m map[string]any, key, pathLabel string) diag.Diagnostics 
 }
 
 func ensureTemplateObjectKeysForV1(tmpl map[string]any) {
-	if _, ok := tmpl["alias"]; !ok {
+	if _, ok := tmpl[attrAlias]; !ok {
 		// Empty nested sets are null in Terraform JSON state, not [].
-		tmpl["alias"] = nil
+		tmpl[attrAlias] = nil
 	}
-	if _, ok := tmpl["mappings"]; !ok {
-		tmpl["mappings"] = nil
+	if _, ok := tmpl[attrMappings]; !ok {
+		tmpl[attrMappings] = nil
 	}
-	if _, ok := tmpl["settings"]; !ok {
-		tmpl["settings"] = nil
+	if _, ok := tmpl[attrSettings]; !ok {
+		tmpl[attrSettings] = nil
 	}
-	if _, ok := tmpl["data_stream_options"]; !ok {
-		tmpl["data_stream_options"] = nil
+	if _, ok := tmpl[attrDataStreamOptions]; !ok {
+		tmpl[attrDataStreamOptions] = nil
 	}
 }

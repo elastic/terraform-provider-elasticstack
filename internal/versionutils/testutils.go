@@ -37,14 +37,20 @@ const (
 	FlavorServerless
 )
 
+const (
+	flavorNameAny        = "Any"
+	flavorNameStateful   = "Stateful"
+	flavorNameServerless = "Serverless"
+)
+
 func (f Flavor) String() string {
 	switch f {
 	case FlavorAny:
-		return "Any"
+		return flavorNameAny
 	case FlavorStateful:
-		return "Stateful"
+		return flavorNameStateful
 	case FlavorServerless:
-		return "Serverless"
+		return flavorNameServerless
 	default:
 		return fmt.Sprintf("Flavor(%d)", f)
 	}

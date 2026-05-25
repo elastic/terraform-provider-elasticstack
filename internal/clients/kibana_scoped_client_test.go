@@ -32,13 +32,6 @@ import (
 
 // --- Helper: minimal KibanaScopedClient constructors ---
 
-// newKibanaScopedClientNoEndpoint returns a KibanaScopedClient whose kibana and
-// fleet endpoint fields are both empty — simulating unconfigured state.
-func newKibanaScopedClientNoEndpoint(t *testing.T) *KibanaScopedClient {
-	t.Helper()
-	return &KibanaScopedClient{}
-}
-
 // newKibanaScopedClientWithEndpoint returns a KibanaScopedClient that has a
 // non-empty kibanaEndpoint and populated client objects, but empty auth fields.
 // This lets us verify that endpoint-only validation does not check auth.
@@ -122,117 +115,24 @@ func newKibanaScopedClientWithStatusHandler(t *testing.T, handler http.HandlerFu
 	return newKibanaScopedClientWithEndpointNoAuth(t, srv.URL)
 }
 
-// --- Scenario 3: Missing Kibana endpoint → GetKibanaOapiClient error ---
-
-func TestKibanaScopedClient_GetKibanaOapiClient_MissingEndpoint(t *testing.T) {
-	t.Parallel()
-	sc := newKibanaScopedClientNoEndpoint(t)
-	client, diags := sc.GetKibanaOapiClient()
-	assert.Nil(t, client, "GetKibanaOapiClient must return nil client when kibana endpoint is missing")
-	require.True(t, diags.HasError())
-	assert.Equal(t,
-		"kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT",
-		diags[0].Summary(),
-	)
-}
-
-// --- Scenario 4: Localhost fallback blocked ---
-// The accessor must fail even when the underlying kibanaOapi.Client would normally
-// fall back to localhost:5601. We prove this by constructing a KibanaScopedClient
-// whose kibanaOapi field is nil (no client initialised) but kibanaEndpoint is
-// empty — the validation check fires before any client is returned.
-
-func TestKibanaScopedClient_GetKibanaOapiClient_NilClientNoEndpoint_BlocksLocalhost(t *testing.T) {
-	t.Parallel()
-	// kibanaOapi field nil, kibanaEndpoint empty: models the case where the provider
-	// block is completely absent (no kibana config at all).
-	sc := &KibanaScopedClient{
-		kibanaOapi:     nil,
-		kibanaEndpoint: "",
-	}
-	client, diags := sc.GetKibanaOapiClient()
-	assert.Nil(t, client)
-	require.True(t, diags.HasError(),
-		"GetKibanaOapiClient must return an error (not silently fall back to localhost) when endpoint is empty")
-	assert.Equal(t,
-		"kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT",
-		diags[0].Summary(),
-	)
-}
-
-// --- Scenario 5: Missing Fleet endpoint → GetFleetClient error ---
-
-func TestKibanaScopedClient_GetFleetClient_MissingEndpoint(t *testing.T) {
-	t.Parallel()
-	sc := newKibanaScopedClientNoEndpoint(t)
-	client, diags := sc.GetFleetClient()
-	assert.Nil(t, client, "GetFleetClient must return nil client when fleet endpoint is missing")
-	require.True(t, diags.HasError())
-	assert.Equal(t, "Fleet client not configured", diags[0].Summary())
-	assert.Equal(t,
-		"fleet client is not configured: set fleet.endpoint or FLEET_ENDPOINT, "+
-			"or configure kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT "+
-			"for inherited Fleet endpoint resolution",
-		diags[0].Detail(),
-	)
-}
-
-// --- Scenario 6: Fleet endpoint inherited from Kibana → GetFleetClient succeeds ---
+// --- Fleet endpoint inherited from Kibana ---
 
 func TestKibanaScopedClient_GetFleetClient_InheritedFromKibana(t *testing.T) {
 	t.Parallel()
-	// Use a placeholder URL; we are only testing the accessor validation path,
-	// not an actual HTTP connection.
 	sc := newKibanaScopedClientFleetFromKibana(t, "http://kibana.example.com:5601")
-	client, diags := sc.GetFleetClient()
-	require.Empty(t, diags,
-		"GetFleetClient must succeed when fleet endpoint is inherited from Kibana")
-	assert.NotNil(t, client)
+	require.NotNil(t, sc.GetFleetClient())
 }
-
-// --- Scenario 7: Endpoint present, auth empty → accessor succeeds ---
 
 func TestKibanaScopedClient_GetKibanaOapiClient_EndpointPresentNoAuth(t *testing.T) {
 	t.Parallel()
 	sc := newKibanaScopedClientWithEndpointNoAuth(t, "http://kibana.example.com:5601")
-	client, diags := sc.GetKibanaOapiClient()
-	require.Empty(t, diags,
-		"GetKibanaOapiClient must not fail when endpoint is present but auth fields are empty")
-	assert.NotNil(t, client)
+	require.NotNil(t, sc.GetKibanaOapiClient())
 }
 
 func TestKibanaScopedClient_GetFleetClient_EndpointPresentNoAuth(t *testing.T) {
 	t.Parallel()
 	sc := newKibanaScopedClientWithEndpointNoAuth(t, "http://kibana.example.com:5601")
-	client, diags := sc.GetFleetClient()
-	require.Empty(t, diags,
-		"GetFleetClient must not fail when endpoint is present but auth fields are empty")
-	assert.NotNil(t, client)
-}
-
-// TestKibanaScopedClient_EnforceMinVersion_MissingEndpoint verifies that
-// EnforceMinVersion propagates the error from getServerStatusRaw when the endpoint
-// is not configured.
-func TestKibanaScopedClient_EnforceMinVersion_MissingEndpoint(t *testing.T) {
-	t.Parallel()
-	sc := newKibanaScopedClientNoEndpoint(t)
-	minVer, err := version.NewVersion("8.0.0")
-	require.NoError(t, err)
-	ok, diags := sc.EnforceMinVersion(t.Context(), minVer)
-	assert.False(t, ok)
-	require.True(t, diags.HasError())
-}
-
-// TestKibanaScopedClient_EnforceVersionCheck_MissingEndpoint verifies that
-// EnforceVersionCheck propagates the error from getServerStatusRaw when the endpoint
-// is not configured — confirming it issues only one HTTP request attempt (via the
-// shared helper) before failing.
-func TestKibanaScopedClient_EnforceVersionCheck_MissingEndpoint(t *testing.T) {
-	t.Parallel()
-	sc := newKibanaScopedClientNoEndpoint(t)
-	ok, diags := sc.EnforceVersionCheck(t.Context(), func(_ *version.Version) bool { return true })
-	assert.False(t, ok)
-	require.True(t, diags.HasError())
+	require.NotNil(t, sc.GetFleetClient())
 }
 
 // --- EnforceMinVersion: stateful version comparisons ---

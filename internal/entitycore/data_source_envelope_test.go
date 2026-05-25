@@ -342,6 +342,8 @@ func newMockKibanaStatusServer(versionStr, buildFlavor string) *httptest.Server 
 func newKibanaFactoryForURL(t *testing.T, kibanaURL string) *clients.ProviderClientFactory {
 	t.Helper()
 	t.Setenv(config.PreferConfiguredKibanaEndpointEnvVar, "true")
+	t.Setenv("KIBANA_ENDPOINT", "")
+	t.Setenv("FLEET_ENDPOINT", "")
 
 	ctx := context.Background()
 	cfg := config.ProviderConfiguration{
@@ -365,21 +367,12 @@ func newKibanaFactoryForURL(t *testing.T, kibanaURL string) *clients.ProviderCli
 	return factory
 }
 
-// newKibanaFactoryMinimal builds a *clients.ProviderClientFactory from an
-// empty ProviderConfiguration. The resulting default client is non-nil so
-// GetKibanaClient succeeds; however the scoped client has no configured
-// endpoint so any HTTP method on it will fail. This is sufficient for read
-// functions that do not make HTTP calls.
+// newKibanaFactoryMinimal builds a *clients.ProviderClientFactory with a configured
+// Kibana endpoint so GetKibanaClient succeeds. This is sufficient for read functions
+// that do not make HTTP calls.
 func newKibanaFactoryMinimal(t *testing.T) *clients.ProviderClientFactory {
 	t.Helper()
-	// Prevent environment variables from injecting unexpected endpoints.
-	t.Setenv("KIBANA_ENDPOINT", "")
-	t.Setenv("FLEET_ENDPOINT", "")
-
-	ctx := context.Background()
-	factory, diags := clients.NewProviderClientFactoryFromFramework(ctx, config.ProviderConfiguration{}, "test-version")
-	require.False(t, diags.HasError(), "minimal factory construction must not fail: %v", diags)
-	return factory
+	return newKibanaFactoryForURL(t, "http://localhost:5601")
 }
 
 // configureDataSource calls Configure on ds with the given factory and asserts
@@ -840,8 +833,6 @@ func newMockElasticsearchStatusServer(versionStr string) *httptest.Server {
 // NOTE: Uses t.Setenv; must NOT call t.Parallel in tests that use this helper.
 func newElasticsearchFactoryForURL(t *testing.T, esURL string) *clients.ProviderClientFactory {
 	t.Helper()
-	// Redirect the env var override to our mock server so that CI's
-	// ELASTICSEARCH_ENDPOINTS cannot override the configured URL.
 	t.Setenv("ELASTICSEARCH_ENDPOINTS", esURL)
 
 	ctx := context.Background()
@@ -870,21 +861,14 @@ func newElasticsearchFactoryForURL(t *testing.T, esURL string) *clients.Provider
 	return factory
 }
 
-// newElasticsearchFactoryMinimal builds a *clients.ProviderClientFactory from
-// an empty ProviderConfiguration with no Elasticsearch endpoint. GetElasticsearchClient
-// will succeed (defaultClient non-nil) but any HTTP method on the resulting
-// scoped client will fail. This is sufficient for tests that short-circuit
-// before making HTTP calls.
+// newElasticsearchFactoryMinimal builds a *clients.ProviderClientFactory with a
+// configured Elasticsearch endpoint so GetElasticsearchClient succeeds. This is
+// sufficient for tests that short-circuit before making HTTP calls.
 //
 // NOTE: Uses t.Setenv; must NOT call t.Parallel in tests that use this helper.
 func newElasticsearchFactoryMinimal(t *testing.T) *clients.ProviderClientFactory {
 	t.Helper()
-	t.Setenv("ELASTICSEARCH_ENDPOINTS", "")
-
-	ctx := context.Background()
-	factory, diags := clients.NewProviderClientFactoryFromFramework(ctx, config.ProviderConfiguration{}, "test-version")
-	require.False(t, diags.HasError(), "minimal factory construction must not fail: %v", diags)
-	return factory
+	return newElasticsearchFactoryForURL(t, "http://localhost:9200")
 }
 
 // configureElasticsearchDataSource calls Configure on ds with the given factory

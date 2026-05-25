@@ -50,10 +50,7 @@ func CreateESAccessToken(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("failed to create acceptance testing client: %v", err)
 	}
-	typedClient, diags := client.GetESClient()
-	if diags.HasError() {
-		t.Fatalf("failed to get Elasticsearch typed client: %v", diags)
-	}
+	typedClient := client.GetESClient()
 
 	username := os.Getenv("ELASTICSEARCH_USERNAME")
 	password := os.Getenv("ELASTICSEARCH_PASSWORD")

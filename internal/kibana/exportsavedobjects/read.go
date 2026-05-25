@@ -36,11 +36,7 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, c
 	var diags diag.Diagnostics
 
 	// Get Kibana client
-	oapiClient, d := kbClient.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return config, diags
-	}
+	oapiClient := kbClient.GetKibanaOapiClient()
 
 	// Set default space_id if not provided
 	spaceID := "default"

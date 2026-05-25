@@ -39,8 +39,8 @@ func newTestKibanaOapiClient(t *testing.T, server *httptest.Server) *kibanaoapi.
 	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 
-	oapiClient, diags := apiClient.GetKibanaOapiClient()
-	require.Empty(t, diags)
+	oapiClient := apiClient.GetKibanaOapiClient()
+	require.NotNil(t, oapiClient)
 	return oapiClient
 }
 

@@ -42,11 +42,7 @@ func (r *resourceAgentConfiguration) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
-	kibana, d := scoped.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	kibana := scoped.GetKibanaOapiClient()
 
 	settings := make(map[string]string)
 	resp.Diagnostics.Append(plan.Settings.ElementsAs(ctx, &settings, false)...)

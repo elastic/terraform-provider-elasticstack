@@ -105,11 +105,11 @@ func (m *processorCommunityIDModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorCommunityIDDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource",
+			Description: descIdentifier,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
 		"source_ip": schema.StringAttribute{
@@ -150,12 +150,12 @@ func NewProcessorCommunityIDDataSource() datasource.DataSource {
 			Description: "Field containing the transport protocol. Used only when the `iana_number` field is not present.",
 			Optional:    true,
 		},
-		"target_field": schema.StringAttribute{
+		attrTargetField: schema.StringAttribute{
 			Description: "Output field for the community ID.",
 			Optional:    true,
 		},
-		"ignore_missing": schema.BoolAttribute{
-			Description: "If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.",
+		attrIgnoreMissing: schema.BoolAttribute{
+			Description: descIgnoreMissingDocStop,
 			Optional:    true,
 			Computed:    true,
 		},
