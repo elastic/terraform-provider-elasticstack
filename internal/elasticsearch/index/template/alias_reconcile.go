@@ -42,8 +42,8 @@ func applyTemplateAliasReconciliationFromReference(ctx context.Context, out *Mod
 
 	outAttrs := out.Template.Attributes()
 	refAttrs := ref.Template.Attributes()
-	apiAliasVal := outAttrs["alias"]
-	refAliasVal := refAttrs["alias"]
+	apiAliasVal := outAttrs[attrAlias]
+	refAliasVal := refAttrs[attrAlias]
 	if apiAliasVal.IsNull() || apiAliasVal.IsUnknown() {
 		return diags
 	}
@@ -57,7 +57,7 @@ func applyTemplateAliasReconciliationFromReference(ctx context.Context, out *Mod
 		return diags
 	}
 
-	outAttrs["alias"] = merged
+	outAttrs[attrAlias] = merged
 	newTpl, d := types.ObjectValue(TemplateAttrTypes(), outAttrs)
 	diags.Append(d...)
 	if diags.HasError() {

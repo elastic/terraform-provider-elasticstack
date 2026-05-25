@@ -44,7 +44,7 @@ func xyAxisSchemaAttrs() map[string]schema.Attribute {
 			MarkdownDescription: "X-axis (horizontal) configuration.",
 			Optional:            true,
 			Attributes: map[string]schema.Attribute{
-				"title": lenscommon.AxisTitleAttribute(true),
+				attrTitle: lenscommon.AxisTitleAttribute(true),
 				"ticks": schema.BoolAttribute{
 					MarkdownDescription: "Whether to show tick marks on the axis.",
 					Optional:            true,
@@ -94,7 +94,7 @@ func xyAxisSchemaAttrs() map[string]schema.Attribute {
 // getYAxisAttributes returns common Y-axis attributes
 func xyYAxisAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"title": lenscommon.AxisTitleAttribute(true),
+		attrTitle: lenscommon.AxisTitleAttribute(true),
 		"ticks": schema.BoolAttribute{
 			MarkdownDescription: "Whether to show tick marks on the axis.",
 			Optional:            true,
@@ -170,7 +170,7 @@ func xyDecorationsSchemaAttrs() map[string]schema.Attribute {
 // getXYFittingSchema returns the schema for XY chart fitting configuration
 func xyFittingSchemaAttrs() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"type": schema.StringAttribute{
+		attrType: schema.StringAttribute{
 			MarkdownDescription: "Fitting function type for missing data.",
 			Required:            true,
 			Validators: []validator.String{
@@ -250,7 +250,7 @@ func xyLegendSchemaAttrs() map[string]schema.Attribute {
 // When includePresentation is true, optional chart-root presentation fields (REQ-037) are merged in for `type = vis` panels only.
 func xyChartConfigSchemaAttrs(includePresentation bool) map[string]schema.Attribute {
 	attrs := map[string]schema.Attribute{
-		"title": schema.StringAttribute{
+		attrTitle: schema.StringAttribute{
 			MarkdownDescription: "The title of the chart displayed in the panel.",
 			Optional:            true,
 		},
@@ -303,7 +303,7 @@ func xyChartConfigSchemaAttrs(includePresentation bool) map[string]schema.Attrib
 func xyLayerSchemaNestedObject() schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
-			"type": schema.StringAttribute{
+			attrType: schema.StringAttribute{
 				MarkdownDescription: xyLayerTypeDescription,
 				Required:            true,
 			},

@@ -49,6 +49,13 @@ func SchemaAttribute() schema.Attribute {
 	})
 }
 
+// Terraform schema attribute keys reused between the SLO alerts panel schema
+// and its model tests.
+const (
+	attrSloID         = "slo_id"
+	attrSloInstanceID = "slo_instance_id"
+)
+
 func nestedAttributes() map[string]schema.Attribute {
 	attrs := panelkit.PanelPresentationAttributes()
 	attrs["slos"] = schema.ListNestedAttribute{
@@ -56,14 +63,14 @@ func nestedAttributes() map[string]schema.Attribute {
 		Required:            true,
 		NestedObject: schema.NestedAttributeObject{
 			Attributes: map[string]schema.Attribute{
-				"slo_id": schema.StringAttribute{
+				attrSloID: schema.StringAttribute{
 					MarkdownDescription: "Identifier of the SLO to include.",
 					Required:            true,
 					Validators: []validator.String{
 						stringvalidator.LengthAtLeast(1),
 					},
 				},
-				"slo_instance_id": schema.StringAttribute{
+				attrSloInstanceID: schema.StringAttribute{
 					MarkdownDescription: "SLO instance ID when the SLO uses grouping. Omit for all instances (API default `\"*\"`). Unset values stay null when the API echoes that default (REQ-009).",
 					Optional:            true,
 				},

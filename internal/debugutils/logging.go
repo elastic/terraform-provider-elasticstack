@@ -24,7 +24,15 @@ import (
 
 const envLog = "TF_LOG"
 
-var validLogLevels = []string{"TRACE", "DEBUG", "INFO", "WARN", "ERROR"}
+const (
+	logLevelTrace = "TRACE"
+	logLevelDebug = "DEBUG"
+	logLevelInfo  = "INFO"
+	logLevelWarn  = "WARN"
+	logLevelError = "ERROR"
+)
+
+var validLogLevels = []string{logLevelTrace, logLevelDebug, logLevelInfo, logLevelWarn, logLevelError}
 
 func logLevel() string {
 	envLevel := os.Getenv(envLog)
@@ -39,7 +47,7 @@ func logLevel() string {
 	}
 
 	// Mirror terraform-plugin-sdk/v2/helper/logging: invalid TF_LOG defaults to TRACE.
-	return "TRACE"
+	return logLevelTrace
 }
 
 // IsDebugOrHigher reports whether TF_LOG is set to DEBUG or TRACE (case-insensitive).
@@ -47,7 +55,7 @@ func logLevel() string {
 // terraform-plugin-sdk/v2/helper/logging.IsDebugOrHigher SDK compatibility behavior.
 func IsDebugOrHigher() bool {
 	level := logLevel()
-	return level == "DEBUG" || level == "TRACE"
+	return level == logLevelDebug || level == logLevelTrace
 }
 
 // IsSensitiveInSchema reports whether integration-policy variable attributes should be

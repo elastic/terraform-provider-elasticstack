@@ -53,7 +53,7 @@ func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteReq
 	force := stateModel.Force.ValueBool()
 	skipDestroy := stateModel.SkipDestroy.ValueBool()
 	if skipDestroy {
-		tflog.Debug(ctx, "Skipping uninstall of integration package", map[string]any{"name": name, "version": version})
+		tflog.Debug(ctx, "Skipping uninstall of integration package", map[string]any{attrName: name, attrVersion: version})
 		return
 	}
 

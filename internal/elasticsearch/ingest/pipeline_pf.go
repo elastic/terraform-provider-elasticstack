@@ -65,7 +65,7 @@ func GetSchema(_ context.Context) schema.Schema {
 		MarkdownDescription: "Manages tasks and resources related to ingest pipelines and processors. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest-apis.html",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				MarkdownDescription: "Internal identifier of the resource",
+				MarkdownDescription: descIdentifier,
 				Computed:            true,
 			},
 			"name": schema.StringAttribute{
@@ -85,7 +85,7 @@ func GetSchema(_ context.Context) schema.Schema {
 				ElementType:         ProcessorJSONType{},
 				Validators:          []validator.List{listvalidator.SizeAtLeast(1)},
 			},
-			"on_failure": schema.ListAttribute{
+			attrOnFailure: schema.ListAttribute{
 				MarkdownDescription: ingestPipelineOnFailureDescription,
 				Optional:            true,
 				ElementType:         ProcessorJSONType{},
@@ -236,7 +236,7 @@ func buildPipelineBody(ctx context.Context, data Data) (map[string]any, diag.Dia
 		return nil, diags
 	}
 	if onFailure != nil {
-		body["on_failure"] = onFailure
+		body[attrOnFailure] = onFailure
 	}
 
 	if typeutils.IsKnown(data.Metadata) {

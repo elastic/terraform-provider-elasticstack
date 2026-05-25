@@ -124,14 +124,14 @@ func (m sortMigrationPlanModifier) PlanModifyList(ctx context.Context, req planm
 		attrs := elemObj.Attributes()
 
 		// Field must match.
-		field, ok := attrs["field"].(types.String)
+		field, ok := attrs[attrField].(types.String)
 		if !ok || !field.Equal(types.StringValue(ps.Fields[i])) {
 			resp.RequiresReplace = true
 			return
 		}
 
 		// Order: treat null/unknown as "asc" default.
-		order, ok := attrs["order"].(types.String)
+		order, ok := attrs[attrOrder].(types.String)
 		if !ok {
 			resp.RequiresReplace = true
 			return
@@ -141,7 +141,7 @@ func (m sortMigrationPlanModifier) PlanModifyList(ctx context.Context, req planm
 		}
 		// Guard against ps.Orders being shorter than ps.Fields (malformed private state).
 		// Treat absent order entries as the ES default "asc".
-		expectedOrderStr := "asc"
+		expectedOrderStr := sortOrderAsc
 		if i < len(ps.Orders) {
 			expectedOrderStr = ps.Orders[i]
 		}
@@ -152,7 +152,7 @@ func (m sortMigrationPlanModifier) PlanModifyList(ctx context.Context, req planm
 		}
 
 		// Missing: treat null/unknown or explicit "_last" as equivalent to absent.
-		missing, ok := attrs["missing"].(types.String)
+		missing, ok := attrs[attrMissing].(types.String)
 		if !ok {
 			resp.RequiresReplace = true
 			return
@@ -167,7 +167,7 @@ func (m sortMigrationPlanModifier) PlanModifyList(ctx context.Context, req planm
 		}
 
 		// Mode: treat null/unknown or explicit default as equivalent to absent.
-		mode, ok := attrs["mode"].(types.String)
+		mode, ok := attrs[attrMode].(types.String)
 		if !ok {
 			resp.RequiresReplace = true
 			return
@@ -194,7 +194,7 @@ func (m sortMigrationPlanModifier) PlanModifyList(ctx context.Context, req planm
 // Elasticsearch default missing is "_last" regardless of order.
 func isSemanticallyEquivalentMissing(planned types.String, existing string) bool {
 	// Determine the effective planned value, treating null/unknown as "_last".
-	plannedVal := "_last"
+	plannedVal := sortMissingLast
 	if !planned.IsNull() && !planned.IsUnknown() {
 		plannedVal = planned.ValueString()
 	}
@@ -202,7 +202,7 @@ func isSemanticallyEquivalentMissing(planned types.String, existing string) bool
 	// Determine the effective existing value, treating empty as the ES default "_last".
 	existingVal := existing
 	if existingVal == "" {
-		existingVal = "_last"
+		existingVal = sortMissingLast
 	}
 
 	return plannedVal == existingVal
@@ -218,20 +218,20 @@ func isSemanticallyEquivalentMode(planned types.String, existing string, order t
 		plannedVal = planned.ValueString()
 	} else {
 		// Default mode based on order
-		if order.ValueString() == "desc" {
-			plannedVal = "max"
+		if order.ValueString() == sortOrderDesc {
+			plannedVal = sortModeMax
 		} else {
-			plannedVal = "min"
+			plannedVal = sortModeMin
 		}
 	}
 
 	// Determine the effective existing value, treating empty as the ES default based on order.
 	existingVal := existing
 	if existingVal == "" {
-		if order.ValueString() == "desc" {
-			existingVal = "max"
+		if order.ValueString() == sortOrderDesc {
+			existingVal = sortModeMax
 		} else {
-			existingVal = "min"
+			existingVal = sortModeMin
 		}
 	}
 

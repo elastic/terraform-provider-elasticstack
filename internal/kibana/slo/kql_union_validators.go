@@ -46,8 +46,8 @@ func (kqlObjectFormMeaningful) ValidateObject(_ context.Context, req validator.O
 		return
 	}
 	attrs := o.Attributes()
-	kq, hasKq := attrs["kql_query"].(types.String)
-	filters, hasFilters := attrs["filters"].(types.List)
+	kq, hasKq := attrs[attrKqlQuery].(types.String)
+	filters, hasFilters := attrs[attrFilters].(types.List)
 	if hasKq && kq.IsUnknown() {
 		return
 	}

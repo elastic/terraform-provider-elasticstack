@@ -293,9 +293,9 @@ func drilldownModelToVisUnionItem(m models.DrilldownItemModel) (kbapi.KibanaHTTP
 		}
 	case m.URL != nil:
 		wire := map[string]any{
-			"type":  string(kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVisConfig1Drilldowns2TypeUrlDrilldown),
-			"url":   m.URL.URL.ValueString(),
-			"label": m.URL.Label.ValueString(),
+			attrType:  string(kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVisConfig1Drilldowns2TypeUrlDrilldown),
+			attrURL:   m.URL.URL.ValueString(),
+			attrLabel: m.URL.Label.ValueString(),
 		}
 		if typeutils.IsKnown(m.URL.Trigger) {
 			trigger := m.URL.Trigger.ValueString()
@@ -304,7 +304,7 @@ func drilldownModelToVisUnionItem(m models.DrilldownItemModel) (kbapi.KibanaHTTP
 					fmt.Sprintf("Unsupported URL drilldown `trigger` %#q.", trigger)))
 				return u, diags
 			}
-			wire["trigger"] = trigger
+			wire[attrTrigger] = trigger
 		}
 		if typeutils.IsKnown(m.URL.EncodeURL) {
 			v := m.URL.EncodeURL.ValueBool()
@@ -312,7 +312,7 @@ func drilldownModelToVisUnionItem(m models.DrilldownItemModel) (kbapi.KibanaHTTP
 		}
 		if typeutils.IsKnown(m.URL.OpenInNewTab) {
 			v := m.URL.OpenInNewTab.ValueBool()
-			wire["open_in_new_tab"] = v
+			wire[attrOpenInNewTab] = v
 		}
 		b, err := json.Marshal(wire)
 		if err != nil {

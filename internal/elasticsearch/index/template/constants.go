@@ -1,0 +1,44 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package template
+
+// Terraform schema attribute keys reused across the index template resource
+// schema, data source schema, models, flatten/expand helpers, and state upgrade
+// paths.
+const (
+	attrName               = "name"
+	attrFilter             = "filter"
+	attrIndexRouting       = "index_routing"
+	attrIsHidden           = "is_hidden"
+	attrIsWriteIndex       = "is_write_index"
+	attrRouting            = "routing"
+	attrSearchRouting      = "search_routing"
+	attrAlias              = "alias"
+	attrMappings           = "mappings"
+	attrSettings           = "settings"
+	attrDataStreamOptions  = "data_stream_options"
+	attrTemplate           = "template"
+	attrDataStream         = "data_stream"
+	attrIndexPatterns      = "index_patterns"
+	attrHidden             = "hidden"
+	attrAllowCustomRouting = "allow_custom_routing"
+	attrDataRetention      = "data_retention"
+	attrFailureStore       = "failure_store"
+	attrEnabled            = "enabled"
+	attrLifecycle          = "lifecycle"
+)

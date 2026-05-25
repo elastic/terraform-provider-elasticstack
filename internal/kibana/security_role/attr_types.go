@@ -25,8 +25,8 @@ import (
 
 func fieldSecurityAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"grant":  types.SetType{ElemType: types.StringType},
-		"except": types.SetType{ElemType: types.StringType},
+		attrGrant:  types.SetType{ElemType: types.StringType},
+		attrExcept: types.SetType{ElemType: types.StringType},
 	}
 }
 
@@ -36,44 +36,44 @@ func fieldSecurityObjectType() types.ObjectType {
 
 func esIndexResourceAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"names":          types.SetType{ElemType: types.StringType},
-		"privileges":     types.SetType{ElemType: types.StringType},
-		"query":          jsontypes.NormalizedType{},
-		"field_security": fieldSecurityObjectType(),
+		attrNames:         types.SetType{ElemType: types.StringType},
+		attrPrivileges:    types.SetType{ElemType: types.StringType},
+		attrQuery:         jsontypes.NormalizedType{},
+		attrFieldSecurity: fieldSecurityObjectType(),
 	}
 }
 
 func esRemoteIndexResourceAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"clusters":       types.SetType{ElemType: types.StringType},
-		"names":          types.SetType{ElemType: types.StringType},
-		"privileges":     types.SetType{ElemType: types.StringType},
-		"query":          jsontypes.NormalizedType{},
-		"field_security": fieldSecurityObjectType(),
+		attrClusters:      types.SetType{ElemType: types.StringType},
+		attrNames:         types.SetType{ElemType: types.StringType},
+		attrPrivileges:    types.SetType{ElemType: types.StringType},
+		attrQuery:         jsontypes.NormalizedType{},
+		attrFieldSecurity: fieldSecurityObjectType(),
 	}
 }
 
 func elasticsearchResourceAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"cluster":        types.SetType{ElemType: types.StringType},
-		"indices":        types.SetType{ElemType: types.ObjectType{AttrTypes: esIndexResourceAttrTypes()}},
-		"remote_indices": types.SetType{ElemType: types.ObjectType{AttrTypes: esRemoteIndexResourceAttrTypes()}},
-		"run_as":         types.SetType{ElemType: types.StringType},
+		attrCluster:       types.SetType{ElemType: types.StringType},
+		attrIndices:       types.SetType{ElemType: types.ObjectType{AttrTypes: esIndexResourceAttrTypes()}},
+		attrRemoteIndices: types.SetType{ElemType: types.ObjectType{AttrTypes: esRemoteIndexResourceAttrTypes()}},
+		attrRunAs:         types.SetType{ElemType: types.StringType},
 	}
 }
 
 func kibanaFeatureAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"name":       types.StringType,
-		"privileges": types.SetType{ElemType: types.StringType},
+		attrName:       types.StringType,
+		attrPrivileges: types.SetType{ElemType: types.StringType},
 	}
 }
 
 func kibanaBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"spaces":  types.SetType{ElemType: types.StringType},
-		"base":    types.SetType{ElemType: types.StringType},
-		"feature": types.SetType{ElemType: types.ObjectType{AttrTypes: kibanaFeatureAttrTypes()}},
+		attrSpaces:  types.SetType{ElemType: types.StringType},
+		attrBase:    types.SetType{ElemType: types.StringType},
+		attrFeature: types.SetType{ElemType: types.ObjectType{AttrTypes: kibanaFeatureAttrTypes()}},
 	}
 }
 

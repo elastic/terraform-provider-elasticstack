@@ -40,7 +40,7 @@ func getResourceSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"agent_id": schema.StringAttribute{
+			attrAgentID: schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The agent ID.",
 				PlanModifiers: []planmodifier.String{
@@ -50,7 +50,7 @@ func getResourceSchema(_ context.Context) schema.Schema {
 					stringvalidator.LengthAtLeast(1),
 				},
 			},
-			"space_id": schema.StringAttribute{
+			attrSpaceID: schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString("default"),
@@ -60,33 +60,33 @@ func getResourceSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The agent name.",
 				Validators: []validator.String{
 					stringvalidator.LengthAtLeast(1),
 				},
 			},
-			"description": schema.StringAttribute{
+			attrDescription: schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "The agent description.",
 			},
-			"avatar_color": schema.StringAttribute{
+			attrAvatarColor: schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				MarkdownDescription: "Hex color code for the agent avatar (e.g., `#BFDBFF`).",
 			},
-			"avatar_symbol": schema.StringAttribute{
+			attrAvatarSymbol: schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				MarkdownDescription: "Symbol or initials for the agent avatar (e.g., `SI`).",
 			},
-			"labels": schema.SetAttribute{
+			attrLabels: schema.SetAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
 				MarkdownDescription: "Set of labels for the agent.",
 			},
-			"tools": schema.SetAttribute{
+			attrTools: schema.SetAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
 				MarkdownDescription: "Set of tool IDs that the agent can use.",

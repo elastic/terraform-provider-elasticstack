@@ -34,6 +34,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// Terraform schema attribute keys reused across the data view schema and
+// fields metadata payload helpers.
+const (
+	attrSpaceID     = "space_id"
+	attrTitle       = "title"
+	attrCustomLabel = "custom_label"
+	attrCount       = "count"
+
+	// apiKeyCustomLabel is the camelCase field metadata key on the Kibana API payload
+	// (distinct from Terraform snake_case attrCustomLabel).
+	apiKeyCustomLabel = "customLabel"
+)
+
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages Kibana [data views](https://www.elastic.co/guide/en/kibana/current/data-views-api.html)",
@@ -45,7 +58,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"space_id": schema.StringAttribute{
+			attrSpaceID: schema.StringAttribute{
 				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
 				Optional:    true,
 				Computed:    true,
@@ -63,7 +76,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"data_view": schema.SingleNestedAttribute{
 				Required: true,
 				Attributes: map[string]schema.Attribute{
-					"title": schema.StringAttribute{
+					attrTitle: schema.StringAttribute{
 						Description: "Comma-separated list of data streams, indices, and aliases that you want to search. Supports wildcards (*).",
 						Required:    true,
 						Validators: []validator.String{
@@ -109,11 +122,11 @@ func getSchema(_ context.Context) schema.Schema {
 						CustomType:  NewFieldAttrsType(getFieldAttrElemType()),
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
-								"custom_label": schema.StringAttribute{
+								attrCustomLabel: schema.StringAttribute{
 									Description: "Custom label for the field.",
 									Optional:    true,
 								},
-								"count": schema.Int64Attribute{
+								attrCount: schema.Int64Attribute{
 									Description: "Popularity count for the field.",
 									Optional:    true,
 								},
@@ -300,7 +313,7 @@ func getFieldAttrElemType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
 			"custom_label": types.StringType,
-			"count":        types.Int64Type,
+			attrCount:      types.Int64Type,
 		},
 	}
 }

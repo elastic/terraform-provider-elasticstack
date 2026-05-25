@@ -50,17 +50,25 @@ func SchemaAttribute() schema.Attribute {
 	})
 }
 
+// Terraform schema attribute keys reused across the image panel src block and
+// its tests.
+const (
+	attrFile   = "file"
+	attrFileID = "file_id"
+	attrURL    = "url"
+)
+
 func nestedAttributes() map[string]schema.Attribute {
 	attrs := panelkit.PanelPresentationAttributes()
 	attrs["src"] = schema.SingleNestedAttribute{
 		MarkdownDescription: imagePanelSrcDescription,
 		Required:            true,
 		Attributes: map[string]schema.Attribute{
-			"file": schema.SingleNestedAttribute{
+			attrFile: schema.SingleNestedAttribute{
 				MarkdownDescription: "Use an uploaded file as the image source. Mutually exclusive with `url` inside `src`.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
-					"file_id": schema.StringAttribute{
+					attrFileID: schema.StringAttribute{
 						MarkdownDescription: "Kibana file identifier for the uploaded image.",
 						Required:            true,
 						Validators: []validator.String{
@@ -69,11 +77,11 @@ func nestedAttributes() map[string]schema.Attribute {
 					},
 				},
 			},
-			"url": schema.SingleNestedAttribute{
+			attrURL: schema.SingleNestedAttribute{
 				MarkdownDescription: "Use an external URL as the image source. Mutually exclusive with `file` inside `src`.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
-					"url": schema.StringAttribute{
+					attrURL: schema.StringAttribute{
 						MarkdownDescription: "HTTPS or HTTP URL of the image.",
 						Required:            true,
 						Validators: []validator.String{
@@ -85,7 +93,7 @@ func nestedAttributes() map[string]schema.Attribute {
 		},
 		Validators: []validator.Object{
 			panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
-				AttrNames:     []string{"file", "url"},
+				AttrNames:     []string{attrFile, attrURL},
 				Summary:       "Invalid image_config.src",
 				MissingDetail: "Exactly one of `file` or `url` must be set inside `src`.",
 				TooManyDetail: "Exactly one of `file` or `url` must be set inside `src`, not both.",

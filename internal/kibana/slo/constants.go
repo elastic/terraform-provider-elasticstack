@@ -63,15 +63,46 @@ var indicatorAddressToType = map[string]string{
 	"timeslice_metric_indicator": "sli.metric.timeslice",
 }
 
+// Terraform schema attribute keys and indicator literals reused across SLO
+// schema definitions and model mapping helpers.
+const (
+	attrSyncDelay              = "sync_delay"
+	attrFrequency              = "frequency"
+	attrSyncField              = "sync_field"
+	attrPreventInitialBackfill = "prevent_initial_backfill"
+	attrDashboards             = "dashboards"
+	attrKqlQuery               = "kql_query"
+	attrFilters                = "filters"
+	attrQuery                  = "query"
+	attrName                   = "name"
+	attrIndex                  = "index"
+	attrFilter                 = "filter"
+	attrTimestampField         = "timestamp_field"
+	attrGood                   = "good"
+	attrTotal                  = "total"
+	attrEquation               = "equation"
+	attrMetrics                = "metrics"
+	attrAggregation            = "aggregation"
+	attrField                  = "field"
+	attrDataViewID             = "data_view_id"
+
+	descDataViewIDOptional = "Optional data view id to use for this indicator."
+
+	metricAggregationSum           = "sum"
+	metricAggregationDocCount      = "doc_count"
+	histogramAggregationRange      = "range"
+	histogramAggregationValueCount = "value_count"
+)
+
 // Timeslice metric aggregation types - single source of truth (matches kbapi
 // SLOsTimesliceMetric*Metric unions: basic "with field", doc_count, and percentile
 // are distinct; there is no value_count timeslice arm).
 var (
 	timesliceMetricAggregationsBasic = []string{
-		"sum", "avg", "min", "max", "last_value", "cardinality", "std_deviation",
+		metricAggregationSum, "avg", "min", "max", "last_value", "cardinality", "std_deviation",
 	}
 	timesliceMetricAggregationPercentile = "percentile"
-	timesliceMetricAggregationDocCount   = "doc_count"
+	timesliceMetricAggregationDocCount   = metricAggregationDocCount
 )
 
 // Derived: all valid aggregations (built from Basic + Percentile + DocCount)

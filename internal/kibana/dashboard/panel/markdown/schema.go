@@ -36,7 +36,7 @@ func SchemaAttribute() schema.Attribute {
 		Attributes: nestedAttributes(),
 		ExtraValidators: []validator.Object{
 			panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
-				AttrNames:     []string{"by_value", "by_reference"},
+				AttrNames:     []string{attrByValue, attrByReference},
 				Summary:       "Invalid " + panelConfigBlock,
 				MissingDetail: "Exactly one of `by_value` or `by_reference` must be set inside `markdown_config`.",
 				TooManyDetail: "Exactly one of `by_value` or `by_reference` must be set inside `markdown_config`, not both.",
@@ -57,7 +57,7 @@ func nestedAttributes() map[string]schema.Attribute {
 			"`open_links_in_new_tab` is optional; when unset, Kibana applies its default (`true`).",
 		Required: true,
 		Attributes: map[string]schema.Attribute{
-			"open_links_in_new_tab": schema.BoolAttribute{
+			attrOpenLinksInNewTab: schema.BoolAttribute{
 				MarkdownDescription: "When true, links in the markdown open in a new tab. When omitted, Kibana defaults to true.",
 				Optional:            true,
 			},
@@ -71,13 +71,13 @@ func nestedAttributes() map[string]schema.Attribute {
 	}
 
 	return map[string]schema.Attribute{
-		"by_value": schema.SingleNestedAttribute{
+		attrByValue: schema.SingleNestedAttribute{
 			MarkdownDescription: "Inline markdown: required `content` and nested `settings` (API `settings` object). " +
 				"Optional `description`, `hide_title`, `title`, and `hide_border`.",
 			Optional:   true,
 			Attributes: byValueAttrs,
 		},
-		"by_reference": schema.SingleNestedAttribute{
+		attrByReference: schema.SingleNestedAttribute{
 			MarkdownDescription: "Reference an existing markdown library item via `ref_id`. " +
 				"Optional `description`, `hide_title`, `title`, and `hide_border`.",
 			Optional:   true,

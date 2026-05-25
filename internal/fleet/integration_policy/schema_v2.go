@@ -75,7 +75,7 @@ func getSchemaV2() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"policy_id": schema.StringAttribute{
+			attrPolicyID: schema.StringAttribute{
 				Computed: true,
 				Optional: true,
 				PlanModifiers: []planmodifier.String{
@@ -83,33 +83,33 @@ func getSchemaV2() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"name":      schema.StringAttribute{Required: true},
-			"namespace": schema.StringAttribute{Required: true},
-			"agent_policy_id": schema.StringAttribute{
+			attrName:      schema.StringAttribute{Required: true},
+			attrNamespace: schema.StringAttribute{Required: true},
+			attrAgentPolicyID: schema.StringAttribute{
 				Optional: true,
 				Validators: []validator.String{
-					stringvalidator.ConflictsWith(path.Root("agent_policy_ids").Expression()),
+					stringvalidator.ConflictsWith(path.Root(attrAgentPolicyIDs).Expression()),
 				},
 			},
-			"agent_policy_ids": schema.ListAttribute{
+			attrAgentPolicyIDs: schema.ListAttribute{
 				ElementType: types.StringType,
 				Optional:    true,
 				Validators: []validator.List{
-					listvalidator.ConflictsWith(path.Root("agent_policy_id").Expression()),
+					listvalidator.ConflictsWith(path.Root(attrAgentPolicyID).Expression()),
 					listvalidator.SizeAtLeast(1),
 				},
 			},
-			"description": schema.StringAttribute{Optional: true},
-			"enabled": schema.BoolAttribute{
+			attrDescription: schema.StringAttribute{Optional: true},
+			attrEnabled: schema.BoolAttribute{
 				Computed: true,
 				Optional: true,
 				Default:  booldefault.StaticBool(true),
 			},
-			"force":               schema.BoolAttribute{Optional: true},
-			"integration_name":    schema.StringAttribute{Required: true},
-			"integration_version": schema.StringAttribute{Required: true},
-			"output_id":           schema.StringAttribute{Optional: true},
-			"vars_json": schema.StringAttribute{
+			attrForce:              schema.BoolAttribute{Optional: true},
+			attrIntegrationName:    schema.StringAttribute{Required: true},
+			attrIntegrationVersion: schema.StringAttribute{Required: true},
+			attrOutputID:           schema.StringAttribute{Optional: true},
+			attrVarsJSON: schema.StringAttribute{
 				CustomType: VarsJSONType{
 					JSONWithContextualDefaultsType: customtypes.NewJSONWithContextualDefaultsType(populateVarsJSONDefaults),
 				},
@@ -120,7 +120,7 @@ func getSchemaV2() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"space_ids": schema.SetAttribute{
+			attrSpaceIDs: schema.SetAttribute{
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
@@ -138,29 +138,29 @@ func getSchemaV2() schema.Schema {
 				NestedObject: schema.NestedAttributeObject{
 					CustomType: NewInputType(getInputsAttributeTypes()),
 					Attributes: map[string]schema.Attribute{
-						"enabled": schema.BoolAttribute{
+						attrEnabled: schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
 							Default:  booldefault.StaticBool(true),
 						},
-						"vars": schema.StringAttribute{
+						attrVars: schema.StringAttribute{
 							CustomType: jsontypes.NormalizedType{},
 							Optional:   true,
 							Sensitive:  varsAreSensitive,
 						},
-						"defaults": schema.SingleNestedAttribute{
+						attrDefaults: schema.SingleNestedAttribute{
 							Computed: true,
 							Attributes: map[string]schema.Attribute{
-								"vars": schema.StringAttribute{
+								attrVars: schema.StringAttribute{
 									CustomType: jsontypes.NormalizedType{},
 									Computed:   true,
 								},
-								"streams": schema.MapNestedAttribute{
+								attrStreams: schema.MapNestedAttribute{
 									Computed: true,
 									NestedObject: schema.NestedAttributeObject{
 										Attributes: map[string]schema.Attribute{
-											"enabled": schema.BoolAttribute{Computed: true},
-											"vars": schema.StringAttribute{
+											attrEnabled: schema.BoolAttribute{Computed: true},
+											attrVars: schema.StringAttribute{
 												CustomType: jsontypes.NormalizedType{},
 												Computed:   true,
 											},
@@ -169,16 +169,16 @@ func getSchemaV2() schema.Schema {
 								},
 							},
 						},
-						"streams": schema.MapNestedAttribute{
+						attrStreams: schema.MapNestedAttribute{
 							Optional: true,
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
-									"enabled": schema.BoolAttribute{
+									attrEnabled: schema.BoolAttribute{
 										Computed: true,
 										Optional: true,
 										Default:  booldefault.StaticBool(true),
 									},
-									"vars": schema.StringAttribute{
+									attrVars: schema.StringAttribute{
 										CustomType: jsontypes.NormalizedType{},
 										Optional:   true,
 										Sensitive:  varsAreSensitive,

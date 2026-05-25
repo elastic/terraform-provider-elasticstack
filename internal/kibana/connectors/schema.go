@@ -61,29 +61,29 @@ func getSchema(_ context.Context) schema.Schema {
 				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
 				Optional:    true,
 				Computed:    true,
-				Default:     stringdefault.StaticString("default"),
+				Default:     stringdefault.StaticString(defaultSpaceID),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				Description: "The name of the connector. While this name does not have to be unique, a distinctive name can help you identify a connector.",
 				Required:    true,
 			},
-			"connector_type_id": schema.StringAttribute{
+			attrConnectorTypeID: schema.StringAttribute{
 				Description: "The ID of the connector type, e.g. `.index`.",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"config": schema.StringAttribute{
+			attrConfig: schema.StringAttribute{
 				CustomType:  NewConfigType(),
 				Description: customtypes.DescriptionWithContextWarning("The configuration for the connector. Configuration properties vary depending on the connector type."),
 				Optional:    true,
 				Computed:    true,
 			},
-			"secrets": schema.StringAttribute{
+			attrSecrets: schema.StringAttribute{
 				CustomType: jsontypes.NormalizedType{},
 				Description: "The secrets configuration for the connector. Secrets configuration properties vary depending on the connector type. " +
 					"Consider using `secrets_wo` when sourcing secrets from ephemeral providers so values are not persisted to state.",
@@ -112,15 +112,15 @@ func getSchema(_ context.Context) schema.Schema {
 					stringvalidator.AlsoRequires(path.MatchRoot("secrets_wo")),
 				},
 			},
-			"is_deprecated": schema.BoolAttribute{
+			attrIsDeprecated: schema.BoolAttribute{
 				Description: "Indicates whether the connector type is deprecated.",
 				Computed:    true,
 			},
-			"is_missing_secrets": schema.BoolAttribute{
+			attrIsMissingSecrets: schema.BoolAttribute{
 				Description: "Indicates whether secrets are missing for the connector.",
 				Computed:    true,
 			},
-			"is_preconfigured": schema.BoolAttribute{
+			attrIsPreconfigured: schema.BoolAttribute{
 				Description: "Indicates whether it is a preconfigured connector.",
 				Computed:    true,
 			},

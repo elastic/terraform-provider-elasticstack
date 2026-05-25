@@ -40,8 +40,8 @@ func resourceSchema(_ context.Context) schema.Schema {
 		Version:             schemaVersion,
 		MarkdownDescription: mdDescIndexTemplateResource,
 		Blocks: map[string]schema.Block{
-			"data_stream": dataStreamBlock(),
-			"template":    templateBlock(),
+			attrDataStream: dataStreamBlock(),
+			attrTemplate:   templateBlock(),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -51,7 +51,7 @@ func resourceSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				MarkdownDescription: descName,
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
@@ -76,7 +76,7 @@ func resourceSchema(_ context.Context) schema.Schema {
 					listplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"index_patterns": schema.SetAttribute{
+			attrIndexPatterns: schema.SetAttribute{
 				MarkdownDescription: descIndexPatterns,
 				Required:            true,
 				ElementType:         types.StringType,
@@ -109,13 +109,13 @@ func dataStreamBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		MarkdownDescription: descDataStreamBlock,
 		Attributes: map[string]schema.Attribute{
-			"hidden": schema.BoolAttribute{
+			attrHidden: schema.BoolAttribute{
 				MarkdownDescription: descDataStreamHidden,
 				Optional:            true,
 				Computed:            true,
 				Default:             booldefault.StaticBool(false),
 			},
-			"allow_custom_routing": schema.BoolAttribute{
+			attrAllowCustomRouting: schema.BoolAttribute{
 				MarkdownDescription: descDataStreamAllowCustomRouting,
 				Optional:            true,
 				Computed:            true,
@@ -129,7 +129,7 @@ func templateBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		MarkdownDescription: descTemplateBlock,
 		Attributes: map[string]schema.Attribute{
-			"mappings": schema.StringAttribute{
+			attrMappings: schema.StringAttribute{
 				MarkdownDescription: descTemplateMappings,
 				Optional:            true,
 				CustomType:          esindex.MappingsType{},
@@ -137,16 +137,16 @@ func templateBlock() schema.SingleNestedBlock {
 					esindex.StringIsJSONObject{},
 				},
 			},
-			"settings": schema.StringAttribute{
+			attrSettings: schema.StringAttribute{
 				MarkdownDescription: descTemplateSettings,
 				Optional:            true,
 				CustomType:          customtypes.IndexSettingsType{},
 			},
 		},
 		Blocks: map[string]schema.Block{
-			"alias":               templateAliasBlock(),
-			"lifecycle":           templateLifecycleBlock(),
-			"data_stream_options": datastreamoptions.Block(),
+			attrAlias:             templateAliasBlock(),
+			attrLifecycle:         templateLifecycleBlock(),
+			attrDataStreamOptions: datastreamoptions.Block(),
 		},
 	}
 }
@@ -157,40 +157,40 @@ func templateAliasBlock() schema.SetNestedBlock {
 		NestedObject: schema.NestedBlockObject{
 			CustomType: NewAliasObjectType(),
 			Attributes: map[string]schema.Attribute{
-				"name": schema.StringAttribute{
+				attrName: schema.StringAttribute{
 					MarkdownDescription: descAliasName,
 					Required:            true,
 				},
-				"filter": schema.StringAttribute{
+				attrFilter: schema.StringAttribute{
 					MarkdownDescription: descAliasFilter,
 					Optional:            true,
 					CustomType:          jsontypes.NormalizedType{},
 				},
-				"index_routing": schema.StringAttribute{
+				attrIndexRouting: schema.StringAttribute{
 					MarkdownDescription: descAliasIndexRouting,
 					Optional:            true,
 					Computed:            true,
 					Default:             stringdefault.StaticString(""),
 				},
-				"is_hidden": schema.BoolAttribute{
+				attrIsHidden: schema.BoolAttribute{
 					MarkdownDescription: descAliasIsHidden,
 					Optional:            true,
 					Computed:            true,
 					Default:             booldefault.StaticBool(false),
 				},
-				"is_write_index": schema.BoolAttribute{
+				attrIsWriteIndex: schema.BoolAttribute{
 					MarkdownDescription: descAliasIsWriteIndex,
 					Optional:            true,
 					Computed:            true,
 					Default:             booldefault.StaticBool(false),
 				},
-				"routing": schema.StringAttribute{
+				attrRouting: schema.StringAttribute{
 					MarkdownDescription: descAliasRouting,
 					Optional:            true,
 					Computed:            true,
 					Default:             stringdefault.StaticString(""),
 				},
-				"search_routing": schema.StringAttribute{
+				attrSearchRouting: schema.StringAttribute{
 					MarkdownDescription: descAliasSearchRouting,
 					Optional:            true,
 					Computed:            true,
@@ -205,7 +205,7 @@ func templateLifecycleBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		MarkdownDescription: descLifecycleBlock,
 		Attributes: map[string]schema.Attribute{
-			"data_retention": schema.StringAttribute{
+			attrDataRetention: schema.StringAttribute{
 				MarkdownDescription: descLifecycleDataRetention,
 				Optional:            true,
 			},

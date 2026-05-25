@@ -33,26 +33,26 @@ var ilmActionSettingOptions = map[string]struct {
 	def            any
 	minVersion     *version.Version
 }{
-	"allow_write_after_shrink": {def: false, minVersion: version.Must(version.NewVersion("8.14.0"))},
-	"number_of_replicas":       {skipEmptyCheck: true},
-	"priority":                 {skipEmptyCheck: true},
-	"max_primary_shard_docs":   {def: 0, minVersion: MaxPrimaryShardDocsMinSupportedVersion},
-	"min_age":                  {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
-	"min_docs":                 {def: 0, minVersion: RolloverMinConditionsMinSupportedVersion},
-	"min_size":                 {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
-	"min_primary_shard_docs":   {def: 0, minVersion: RolloverMinConditionsMinSupportedVersion},
-	"min_primary_shard_size":   {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
-	"total_shards_per_node":    {skipEmptyCheck: true},
+	attrAllowWriteAfterShrink: {def: false, minVersion: version.Must(version.NewVersion("8.14.0"))},
+	attrNumberOfReplicas:      {skipEmptyCheck: true},
+	attrPriority:              {skipEmptyCheck: true},
+	attrMaxPrimaryShardDocs:   {def: 0, minVersion: MaxPrimaryShardDocsMinSupportedVersion},
+	attrMinAge:                {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
+	attrMinDocs:               {def: 0, minVersion: RolloverMinConditionsMinSupportedVersion},
+	attrMinSize:               {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
+	attrMinPrimaryShardDocs:   {def: 0, minVersion: RolloverMinConditionsMinSupportedVersion},
+	attrMinPrimaryShardSize:   {def: "", minVersion: RolloverMinConditionsMinSupportedVersion},
+	attrTotalShardsPerNode:    {skipEmptyCheck: true},
 }
 
 func expandPhase(p map[string]any, serverVersion *version.Version) (*models.Phase, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var phase models.Phase
 
-	if v, ok := p["min_age"].(string); ok && v != "" {
+	if v, ok := p[attrMinAge].(string); ok && v != "" {
 		phase.MinAge = v
 	}
-	delete(p, "min_age")
+	delete(p, attrMinAge)
 
 	actions := make(map[string]models.Action)
 	for actionName, action := range p {
@@ -62,60 +62,60 @@ func expandPhase(p map[string]any, serverVersion *version.Version) (*models.Phas
 		}
 
 		switch actionName {
-		case "allocate":
-			actions[actionName], diags = expandAction(a, serverVersion, "number_of_replicas", "total_shards_per_node", "include", "exclude", "require")
+		case ilmActionAllocate:
+			actions[actionName], diags = expandAction(a, serverVersion, attrNumberOfReplicas, attrTotalShardsPerNode, attrInclude, attrExclude, attrRequire)
 		case ilmPhaseDelete:
-			actions[actionName], diags = expandAction(a, serverVersion, "delete_searchable_snapshot")
-		case "forcemerge":
+			actions[actionName], diags = expandAction(a, serverVersion, attrDeleteSearchableSnapshot)
+		case ilmActionForcemerge:
 			actions[actionName], diags = expandAction(a, serverVersion, "max_num_segments", "index_codec")
-		case "freeze":
+		case ilmActionFreeze:
 			if a[0] != nil {
 				ac := a[0].(map[string]any)
-				if ac["enabled"].(bool) {
+				if ac[attrEnabled].(bool) {
 					actions[actionName], diags = expandAction(a, serverVersion)
 				}
 			}
-		case "migrate":
-			actions[actionName], diags = expandAction(a, serverVersion, "enabled")
-		case "readonly":
+		case ilmActionMigrate:
+			actions[actionName], diags = expandAction(a, serverVersion, attrEnabled)
+		case ilmActionReadonly:
 			if a[0] != nil {
 				ac := a[0].(map[string]any)
-				if ac["enabled"].(bool) {
+				if ac[attrEnabled].(bool) {
 					actions[actionName], diags = expandAction(a, serverVersion)
 				}
 			}
-		case "rollover":
+		case ilmActionRollover:
 			actions[actionName], diags = expandAction(
 				a,
 				serverVersion,
-				"max_age",
+				attrMaxAge,
 				"max_docs",
 				"max_size",
-				"max_primary_shard_docs",
-				"max_primary_shard_size",
-				"min_age",
-				"min_docs",
-				"min_size",
-				"min_primary_shard_docs",
-				"min_primary_shard_size",
+				attrMaxPrimaryShardDocs,
+				attrMaxPrimaryShardSize,
+				attrMinAge,
+				attrMinDocs,
+				attrMinSize,
+				attrMinPrimaryShardDocs,
+				attrMinPrimaryShardSize,
 			)
-		case "searchable_snapshot":
-			actions[actionName], diags = expandAction(a, serverVersion, "snapshot_repository", "force_merge_index")
-		case "set_priority":
-			actions[actionName], diags = expandAction(a, serverVersion, "priority")
-		case "shrink":
-			actions[actionName], diags = expandAction(a, serverVersion, "number_of_shards", "max_primary_shard_size", "allow_write_after_shrink")
-		case "unfollow":
+		case ilmActionSearchableSnapshot:
+			actions[actionName], diags = expandAction(a, serverVersion, attrSnapshotRepository, attrForceMergeIndex)
+		case ilmActionSetPriority:
+			actions[actionName], diags = expandAction(a, serverVersion, attrPriority)
+		case ilmActionShrink:
+			actions[actionName], diags = expandAction(a, serverVersion, "number_of_shards", attrMaxPrimaryShardSize, attrAllowWriteAfterShrink)
+		case ilmActionUnfollow:
 			if a[0] != nil {
 				ac := a[0].(map[string]any)
-				if ac["enabled"].(bool) {
+				if ac[attrEnabled].(bool) {
 					actions[actionName], diags = expandAction(a, serverVersion)
 				}
 			}
-		case "wait_for_snapshot":
+		case ilmActionWaitForSnapshot:
 			actions[actionName], diags = expandAction(a, serverVersion, "policy")
-		case "downsample":
-			actions[actionName], diags = expandAction(a, serverVersion, "fixed_interval", "wait_timeout")
+		case ilmActionDownsample:
+			actions[actionName], diags = expandAction(a, serverVersion, attrFixedInterval, attrWaitTimeout)
 		default:
 			diags.AddError("Unknown action defined.", fmt.Sprintf(`Configured action "%s" is not supported`, actionName))
 			return nil, diags
@@ -151,7 +151,7 @@ func expandAction(a []any, serverVersion *version.Version, settings ...string) (
 				}
 
 				if options.skipEmptyCheck || !typeutils.IsEmpty(v) {
-					if setting == "include" || setting == "exclude" || setting == "require" {
+					if setting == attrInclude || setting == attrExclude || setting == attrRequire {
 						res := make(map[string]any)
 						if err := json.Unmarshal([]byte(v.(string)), &res); err != nil {
 							diags.AddError("Invalid JSON", err.Error())

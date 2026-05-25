@@ -40,6 +40,27 @@ const (
 	urlDrilldownDefaultOpenInNewTabDescription = "When true, the URL opens in a new browser tab. Omit to use the API default."
 )
 
+// Terraform schema attribute keys reused across URL and dashboard drilldown
+// blocks. Hosting these as constants avoids drift between mutually exclusive
+// sibling validators and the attribute definitions themselves.
+const (
+	attrURL                = "url"
+	attrLabel              = "label"
+	attrTrigger            = "trigger"
+	attrEncodeURL          = "encode_url"
+	attrOpenInNewTab       = "open_in_new_tab"
+	attrDashboardID        = "dashboard_id"
+	attrDashboardDrilldown = "dashboard_drilldown"
+	attrURLDrilldown       = "url_drilldown"
+)
+
+// Reused markdown descriptions for drilldown attributes shared between the
+// dashboard and URL drilldown variants on image and structured panels.
+const (
+	descDisplayLabel = "Display label."
+	descOpenInNewTab = "Open in a new browser tab when set."
+)
+
 // URLDrilldownOptions overrides MarkdownDescription on URL drilldown nested object attributes.
 // Trigger and type are not schema fields (fixed in the model layer).
 // Empty string in a field means use the default for that attribute (see Default URL drilldown constants).
@@ -70,19 +91,19 @@ func URLDrilldownSchema(opts URLDrilldownOptions) schema.NestedAttributeObject {
 	}
 	return schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
-			"url": schema.StringAttribute{
+			attrURL: schema.StringAttribute{
 				MarkdownDescription: urlDesc,
 				Required:            true,
 			},
-			"label": schema.StringAttribute{
+			attrLabel: schema.StringAttribute{
 				MarkdownDescription: labelDesc,
 				Required:            true,
 			},
-			"encode_url": schema.BoolAttribute{
+			attrEncodeURL: schema.BoolAttribute{
 				MarkdownDescription: encodeDesc,
 				Optional:            true,
 			},
-			"open_in_new_tab": schema.BoolAttribute{
+			attrOpenInNewTab: schema.BoolAttribute{
 				MarkdownDescription: openDesc,
 				Optional:            true,
 			},
@@ -148,19 +169,19 @@ func ImageDrilldownSchema(opts ImageDrilldownOptions) schema.NestedAttributeObje
 
 	return schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
-			"dashboard_drilldown": schema.SingleNestedAttribute{
+			attrDashboardDrilldown: schema.SingleNestedAttribute{
 				MarkdownDescription: "Open another dashboard when the image is clicked. Mutually exclusive with `url_drilldown` in the same entry.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
-					"dashboard_id": schema.StringAttribute{
+					attrDashboardID: schema.StringAttribute{
 						MarkdownDescription: nz(dd.DashboardID, "Target dashboard saved object id."),
 						Required:            true,
 					},
-					"label": schema.StringAttribute{
+					attrLabel: schema.StringAttribute{
 						MarkdownDescription: nz(dd.Label, "Label shown for this drilldown."),
 						Required:            true,
 					},
-					"trigger": schema.StringAttribute{
+					attrTrigger: schema.StringAttribute{
 						MarkdownDescription: dashboardTriggerDesc,
 						Required:            true,
 						Validators: []validator.String{
@@ -175,36 +196,36 @@ func ImageDrilldownSchema(opts ImageDrilldownOptions) schema.NestedAttributeObje
 						MarkdownDescription: nz(dd.UseTimeRange, "When true, passes the current time range to the opened dashboard. Omit for API default (typically `false`)."),
 						Optional:            true,
 					},
-					"open_in_new_tab": schema.BoolAttribute{
+					attrOpenInNewTab: schema.BoolAttribute{
 						MarkdownDescription: nz(dd.OpenInNewTab, "When true, opens the target dashboard in a new browser tab. Omit for API default (typically `false`)."),
 						Optional:            true,
 					},
 				},
 			},
-			"url_drilldown": schema.SingleNestedAttribute{
+			attrURLDrilldown: schema.SingleNestedAttribute{
 				MarkdownDescription: "URL drilldown entry. Mutually exclusive with `dashboard_drilldown` in the same list element.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
-					"url": schema.StringAttribute{
+					attrURL: schema.StringAttribute{
 						MarkdownDescription: urlDesc,
 						Required:            true,
 					},
-					"label": schema.StringAttribute{
+					attrLabel: schema.StringAttribute{
 						MarkdownDescription: labelDescURL,
 						Required:            true,
 					},
-					"trigger": schema.StringAttribute{
+					attrTrigger: schema.StringAttribute{
 						MarkdownDescription: triggerDesc,
 						Required:            true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("on_click_image", "on_open_panel_menu"),
 						},
 					},
-					"encode_url": schema.BoolAttribute{
+					attrEncodeURL: schema.BoolAttribute{
 						MarkdownDescription: encodeDescURL,
 						Optional:            true,
 					},
-					"open_in_new_tab": schema.BoolAttribute{
+					attrOpenInNewTab: schema.BoolAttribute{
 						MarkdownDescription: openDescURL,
 						Optional:            true,
 					},
@@ -213,7 +234,7 @@ func ImageDrilldownSchema(opts ImageDrilldownOptions) schema.NestedAttributeObje
 		},
 		Validators: []validator.Object{
 			ExactlyOneOfNestedAttrsValidator(ExactlyOneOfNestedAttrsOpts{
-				AttrNames:     []string{"dashboard_drilldown", "url_drilldown"},
+				AttrNames:     []string{attrDashboardDrilldown, attrURLDrilldown},
 				Summary:       "Invalid drilldown entry",
 				MissingDetail: "Exactly one of `dashboard_drilldown` or `url_drilldown` must be set.",
 				TooManyDetail: "Exactly one of `dashboard_drilldown` or `url_drilldown` must be set, not both.",
@@ -243,12 +264,12 @@ func StructuredDrilldownsAttribute() schema.Attribute {
 						"remaining fields mirror optional API knobs.",
 					Optional: true,
 					Attributes: map[string]schema.Attribute{
-						"dashboard_id": schema.StringAttribute{
+						attrDashboardID: schema.StringAttribute{
 							MarkdownDescription: "Target dashboard ID.",
 							Required:            true,
 						},
-						"label": schema.StringAttribute{
-							MarkdownDescription: "Display label.",
+						attrLabel: schema.StringAttribute{
+							MarkdownDescription: descDisplayLabel,
 							Required:            true,
 						},
 						"use_filters": schema.BoolAttribute{
@@ -259,8 +280,8 @@ func StructuredDrilldownsAttribute() schema.Attribute {
 							MarkdownDescription: "Pass the current time range to the target dashboard when set.",
 							Optional:            true,
 						},
-						"open_in_new_tab": schema.BoolAttribute{
-							MarkdownDescription: "Open in a new browser tab when set.",
+						attrOpenInNewTab: schema.BoolAttribute{
+							MarkdownDescription: descOpenInNewTab,
 							Optional:            true,
 						},
 					},
@@ -269,43 +290,43 @@ func StructuredDrilldownsAttribute() schema.Attribute {
 					MarkdownDescription: "Open in Discover (`discover_drilldown`). Requires `label`.",
 					Optional:            true,
 					Attributes: map[string]schema.Attribute{
-						"label": schema.StringAttribute{
-							MarkdownDescription: "Display label.",
+						attrLabel: schema.StringAttribute{
+							MarkdownDescription: descDisplayLabel,
 							Required:            true,
 						},
-						"open_in_new_tab": schema.BoolAttribute{
-							MarkdownDescription: "Open in a new browser tab when set.",
+						attrOpenInNewTab: schema.BoolAttribute{
+							MarkdownDescription: descOpenInNewTab,
 							Optional:            true,
 						},
 					},
 				},
-				"url": schema.SingleNestedAttribute{
+				attrURL: schema.SingleNestedAttribute{
 					MarkdownDescription: "Custom URL drilldown (`url_drilldown`). Requires `url`, `label`, and `trigger` " +
 						"(one of `on_click_row`, `on_click_value`, `on_open_panel_menu`, `on_select_range`). " +
 						"The Kibana dashboard API rejects URL drilldowns without `trigger`.",
 					Optional: true,
 					Attributes: map[string]schema.Attribute{
-						"url": schema.StringAttribute{
+						attrURL: schema.StringAttribute{
 							MarkdownDescription: "URL template with variables documented in Kibana URL drilldown documentation.",
 							Required:            true,
 						},
-						"label": schema.StringAttribute{
-							MarkdownDescription: "Display label.",
+						attrLabel: schema.StringAttribute{
+							MarkdownDescription: descDisplayLabel,
 							Required:            true,
 						},
-						"trigger": schema.StringAttribute{
+						attrTrigger: schema.StringAttribute{
 							MarkdownDescription: "Trigger that activates the drilldown. Required; the Kibana dashboard API rejects URL drilldowns when this field is omitted.",
 							Required:            true,
 							Validators: []validator.String{
 								stringvalidator.OneOf(StructuredDrilldownURLTriggerEnum...),
 							},
 						},
-						"encode_url": schema.BoolAttribute{
+						attrEncodeURL: schema.BoolAttribute{
 							MarkdownDescription: "Escape the URL via percent-encoding when set.",
 							Optional:            true,
 						},
-						"open_in_new_tab": schema.BoolAttribute{
-							MarkdownDescription: "Open in a new browser tab when set.",
+						attrOpenInNewTab: schema.BoolAttribute{
+							MarkdownDescription: descOpenInNewTab,
 							Optional:            true,
 						},
 					},

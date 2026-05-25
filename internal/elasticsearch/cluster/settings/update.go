@@ -49,7 +49,7 @@ func updateClusterSettings(ctx context.Context, client *clients.ElasticsearchSco
 
 	apiSettings := make(map[string]any)
 	maps.Copy(apiSettings, newSettings)
-	for _, category := range []string{"persistent", "transient"} {
+	for _, category := range []string{categoryPersistent, categoryTransient} {
 		oldCat, _ := oldSettings[category].(map[string]any)
 		newCat, _ := newSettings[category].(map[string]any)
 		if oldCat == nil {

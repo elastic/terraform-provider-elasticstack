@@ -120,13 +120,13 @@ func expandDataStreamBlock(obj types.Object) *models.DataStreamSettings {
 	}
 	attrs := obj.Attributes()
 	dSettings := &models.DataStreamSettings{}
-	if hidden, ok := attrs["hidden"]; ok && !hidden.IsNull() && !hidden.IsUnknown() {
+	if hidden, ok := attrs[attrHidden]; ok && !hidden.IsNull() && !hidden.IsUnknown() {
 		if hv, ok := hidden.(types.Bool); ok {
 			h := hv.ValueBool()
 			dSettings.Hidden = &h
 		}
 	}
-	if acr, ok := attrs["allow_custom_routing"]; ok && !acr.IsNull() && !acr.IsUnknown() {
+	if acr, ok := attrs[attrAllowCustomRouting]; ok && !acr.IsNull() && !acr.IsUnknown() {
 		if av, ok := acr.(types.Bool); ok && av.ValueBool() {
 			t := true
 			dSettings.AllowCustomRouting = &t
@@ -143,7 +143,7 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 	attrs := obj.Attributes()
 	t := &models.Template{}
 
-	if v, ok := attrs["alias"]; ok && !v.IsNull() && !v.IsUnknown() {
+	if v, ok := attrs[attrAlias]; ok && !v.IsNull() && !v.IsUnknown() {
 		setV, ok := v.(types.Set)
 		if !ok {
 			diags.AddError("Internal error", fmt.Sprintf("expected Set for template.alias, got %T", v))
@@ -171,7 +171,7 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 		}
 	}
 
-	if v, ok := attrs["mappings"]; ok && !v.IsNull() && !v.IsUnknown() {
+	if v, ok := attrs[attrMappings]; ok && !v.IsNull() && !v.IsUnknown() {
 		norm, ok := v.(esindex.MappingsValue)
 		if !ok {
 			diags.AddError("Internal error", fmt.Sprintf("expected index.MappingsValue for mappings, got %T", v))
@@ -188,7 +188,7 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 		}
 	}
 
-	if v, ok := attrs["settings"]; ok && !v.IsNull() && !v.IsUnknown() {
+	if v, ok := attrs[attrSettings]; ok && !v.IsNull() && !v.IsUnknown() {
 		is, ok := v.(customtypes.IndexSettingsValue)
 		if !ok {
 			diags.AddError("Internal error", fmt.Sprintf("expected IndexSettingsValue for settings, got %T", v))
@@ -205,7 +205,7 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 		}
 	}
 
-	if v, ok := attrs["lifecycle"]; ok && !v.IsNull() && !v.IsUnknown() {
+	if v, ok := attrs[attrLifecycle]; ok && !v.IsNull() && !v.IsUnknown() {
 		lcObj, ok := v.(types.Object)
 		if !ok {
 			diags.AddError("Internal error", fmt.Sprintf("expected Object for lifecycle, got %T", v))
@@ -214,7 +214,7 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 		t.Lifecycle = expandTemplateLifecycle(lcObj)
 	}
 
-	if v, ok := attrs["data_stream_options"]; ok && !v.IsNull() && !v.IsUnknown() {
+	if v, ok := attrs[attrDataStreamOptions]; ok && !v.IsNull() && !v.IsUnknown() {
 		dsoObj, ok := v.(types.Object)
 		if !ok {
 			diags.AddError("Internal error", fmt.Sprintf("expected Object for data_stream_options, got %T", v))
@@ -236,7 +236,7 @@ func expandTemplateLifecycle(obj types.Object) *models.LifecycleSettings {
 		return nil
 	}
 	attrs := obj.Attributes()
-	drAttr, ok := attrs["data_retention"]
+	drAttr, ok := attrs[attrDataRetention]
 	if !ok || drAttr.IsNull() || drAttr.IsUnknown() {
 		return nil
 	}

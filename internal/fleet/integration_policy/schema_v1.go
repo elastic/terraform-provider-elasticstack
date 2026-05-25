@@ -169,7 +169,7 @@ func updateStreamsV1ToV2(ctx context.Context, v1 jsontypes.Normalized, inputID s
 	for streamID, streamData := range apiStreams {
 		streamModel := integrationPolicyInputStreamModel{
 			Enabled: types.BoolPointerValue(streamData.Enabled),
-			Vars:    typeutils.MapToNormalizedType(typeutils.Deref(streamData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("streams").AtMapKey(streamID).AtName("vars"), &diags),
+			Vars:    typeutils.MapToNormalizedType(typeutils.Deref(streamData.Vars), path.Root("inputs").AtMapKey(inputID).AtName(attrStreams).AtMapKey(streamID).AtName(attrVars), &diags),
 		}
 
 		streams[streamID] = streamModel
@@ -190,7 +190,7 @@ func getSchemaV1() *schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"policy_id": schema.StringAttribute{
+			attrPolicyID: schema.StringAttribute{
 				Description: "Unique identifier of the integration policy.",
 				Computed:    true,
 				Optional:    true,
@@ -199,64 +199,64 @@ func getSchemaV1() *schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				Description: "The name of the integration policy.",
 				Required:    true,
 			},
-			"namespace": schema.StringAttribute{
+			attrNamespace: schema.StringAttribute{
 				Description: "The namespace of the integration policy.",
 				Required:    true,
 			},
-			"agent_policy_id": schema.StringAttribute{
+			attrAgentPolicyID: schema.StringAttribute{
 				Description: "ID of the agent policy.",
 				Optional:    true,
 				Validators: []validator.String{
-					stringvalidator.ConflictsWith(path.Root("agent_policy_ids").Expression()),
+					stringvalidator.ConflictsWith(path.Root(attrAgentPolicyIDs).Expression()),
 				},
 			},
-			"agent_policy_ids": schema.ListAttribute{
+			attrAgentPolicyIDs: schema.ListAttribute{
 				Description: "List of agent policy IDs.",
 				ElementType: types.StringType,
 				Optional:    true,
 				Validators: []validator.List{
-					listvalidator.ConflictsWith(path.Root("agent_policy_id").Expression()),
+					listvalidator.ConflictsWith(path.Root(attrAgentPolicyID).Expression()),
 					listvalidator.SizeAtLeast(1),
 				},
 			},
-			"description": schema.StringAttribute{
+			attrDescription: schema.StringAttribute{
 				Description: "The description of the integration policy.",
 				Optional:    true,
 			},
-			"enabled": schema.BoolAttribute{
+			attrEnabled: schema.BoolAttribute{
 				Description: "Enable the integration policy.",
 				Computed:    true,
 				Optional:    true,
 				Default:     booldefault.StaticBool(true),
 			},
-			"force": schema.BoolAttribute{
+			attrForce: schema.BoolAttribute{
 				Description: "Force operations, such as creation and deletion, to occur.",
 				Optional:    true,
 			},
-			"integration_name": schema.StringAttribute{
+			attrIntegrationName: schema.StringAttribute{
 				Description: "The name of the integration package.",
 				Required:    true,
 			},
-			"integration_version": schema.StringAttribute{
+			attrIntegrationVersion: schema.StringAttribute{
 				Description: "The version of the integration package.",
 				Required:    true,
 			},
-			"output_id": schema.StringAttribute{
+			attrOutputID: schema.StringAttribute{
 				Description: "The ID of the output to send data to. When not specified, the default output of the agent policy will be used.",
 				Optional:    true,
 			},
-			"vars_json": schema.StringAttribute{
+			attrVarsJSON: schema.StringAttribute{
 				Description: "Integration-level variables as JSON.",
 				CustomType:  jsontypes.NormalizedType{},
 				Computed:    true,
 				Optional:    true,
 				Sensitive:   true,
 			},
-			"space_ids": schema.SetAttribute{
+			attrSpaceIDs: schema.SetAttribute{
 				Description: spaceIDsDescription,
 				ElementType: types.StringType,
 				Optional:    true,
@@ -272,7 +272,7 @@ func getSchemaV1() *schema.Schema {
 							Description: "The identifier of the input.",
 							Required:    true,
 						},
-						"enabled": schema.BoolAttribute{
+						attrEnabled: schema.BoolAttribute{
 							Description: "Enable the input.",
 							Computed:    true,
 							Optional:    true,
@@ -285,7 +285,7 @@ func getSchemaV1() *schema.Schema {
 							Optional:    true,
 							Sensitive:   true,
 						},
-						"vars_json": schema.StringAttribute{
+						attrVarsJSON: schema.StringAttribute{
 							Description: "Input variables as JSON.",
 							CustomType:  jsontypes.NormalizedType{},
 							Computed:    true,
