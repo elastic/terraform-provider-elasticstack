@@ -44,10 +44,10 @@
 
 ## 8. Build, test, and acceptance verification
 
-- [ ] 8.1 Run `make build` and resolve any compile errors from missed call sites.
-- [ ] 8.2 Run the full `go test ./...` unit suite. Resolve any remaining test failures stemming from the moved validation.
-- [ ] 8.3 Run a targeted acceptance test for one Elasticsearch resource, one Kibana resource, and one Fleet resource against a local stack. Confirm Create/Read/Update/Delete still succeed end-to-end.
-- [ ] 8.4 Run `make check-openspec` to validate the change artifacts.
+- [x] 8.1 Run `make build` and resolve any compile errors from missed call sites. `make build` passes.
+- [x] 8.2 Run the full `go test ./...` unit suite. Resolve any remaining test failures stemming from the moved validation. `go test -count=1 -skip TestAcc ./...` passes (3920 tests across 161 packages).
+- [x] 8.3 Run a targeted acceptance test for one Elasticsearch resource, one Kibana resource, and one Fleet resource against a local stack. Confirm Create/Read/Update/Delete still succeed end-to-end. `TestAccResourceIndex` (ES), `TestAccResourceSpace` (Kibana), and `TestAccResourceAgentPolicySkipDestroy` (Fleet) all pass against the local stack.
+- [x] 8.4 Run `make check-openspec` to validate the change artifacts. `make check-openspec` passes.
 
 ## 9. Documentation and CHANGELOG
 
