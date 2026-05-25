@@ -43,9 +43,9 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	client, err := apiClient.GetFleetClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
+	client, d := apiClient.GetFleetClient()
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 	resp.Diagnostics.Append(entitycore.EnforceVersionRequirements(ctx, apiClient, &plan)...)

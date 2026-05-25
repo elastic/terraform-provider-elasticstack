@@ -52,9 +52,9 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		return
 	}
 
-	fleetClient, err := apiClient.GetFleetClient()
-	if err != nil {
-		respDiags.AddError(err.Error(), "")
+	fleetClient, d := apiClient.GetFleetClient()
+	respDiags.Append(d...)
+	if respDiags.HasError() {
 		return
 	}
 

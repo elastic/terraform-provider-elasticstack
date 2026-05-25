@@ -133,8 +133,8 @@ func TestGetKibanaClient_WithConnection(t *testing.T) {
 	_, diags = scoped.GetKibanaOapiClient()
 	require.Empty(t, diags)
 
-	_, err := scoped.GetFleetClient()
-	require.NoError(t, err)
+	_, diags = scoped.GetFleetClient()
+	require.Empty(t, diags)
 }
 
 // --- KibanaScopedClient version / flavor routing ---

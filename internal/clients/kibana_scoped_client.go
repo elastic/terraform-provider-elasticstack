@@ -19,7 +19,6 @@ package clients
 
 import (
 	"context"
-	"errors"
 
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
@@ -68,17 +67,20 @@ func (k *KibanaScopedClient) GetKibanaOapiClient() (*kibanaoapi.Client, fwdiag.D
 }
 
 // GetFleetClient returns the Fleet client.
-func (k *KibanaScopedClient) GetFleetClient() (*fleetclient.Client, error) {
+func (k *KibanaScopedClient) GetFleetClient() (*fleetclient.Client, fwdiag.Diagnostics) {
+	var diags fwdiag.Diagnostics
 	if k.fleetEndpoint == "" {
 		const fleetMsg = "fleet client is not configured: set fleet.endpoint or FLEET_ENDPOINT, " +
 			"or configure kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT " +
 			"for inherited Fleet endpoint resolution"
-		return nil, errors.New(fleetMsg)
+		diags.AddError("Fleet client not configured", fleetMsg)
+		return nil, diags
 	}
 	if k.fleet == nil {
-		return nil, errors.New("fleet client not found")
+		diags.AddError("Fleet client not found", "")
+		return nil, diags
 	}
-	return k.fleet, nil
+	return k.fleet, diags
 }
 
 // getServerStatusRaw fetches the Kibana server status, returning the raw version

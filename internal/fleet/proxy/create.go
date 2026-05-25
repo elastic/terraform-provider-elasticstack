@@ -30,9 +30,9 @@ func createProxy(ctx context.Context, client *clients.KibanaScopedClient, req en
 	plan := req.Plan
 	var diags diag.Diagnostics
 
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		diags.AddError(err.Error(), "")
+	fleetClient, d := client.GetFleetClient()
+	diags.Append(d...)
+	if diags.HasError() {
 		return entitycore.KibanaWriteResult[proxyModel]{}, diags
 	}
 

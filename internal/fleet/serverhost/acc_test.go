@@ -265,9 +265,9 @@ func checkResourceFleetServerHostDestroy(s *terraform.State) error {
 			continue
 		}
 
-		fleetClient, err := client.GetFleetClient()
-		if err != nil {
-			return err
+		fleetClient, d := client.GetFleetClient()
+		if d.HasError() {
+			return diagutil.FwDiagsAsError(d)
 		}
 		spaceID := rs.Primary.Attributes["space_ids.0"]
 		host, diags := fleet.GetFleetServerHost(context.Background(), fleetClient, rs.Primary.ID, spaceID)

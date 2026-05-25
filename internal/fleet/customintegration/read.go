@@ -46,9 +46,9 @@ func (r *customIntegrationResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	fleetClient, err := apiClient.GetFleetClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
+	fleetClient, d := apiClient.GetFleetClient()
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
