@@ -985,9 +985,9 @@ func checkResourceIntegrationPolicyDestroy(s *terraform.State) error {
 		return err
 	}
 
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		return err
+	fleetClient, d := client.GetFleetClient()
+	if d.HasError() {
+		return diagutil.FwDiagsAsError(d)
 	}
 
 	for _, rs := range s.RootModule().Resources {

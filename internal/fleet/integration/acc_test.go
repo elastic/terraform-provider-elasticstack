@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
@@ -524,7 +525,8 @@ func testAccFleetClient() (*fleet.Client, error) {
 		return nil, err
 	}
 
-	return client.GetFleetClient()
+	fc, d := client.GetFleetClient()
+	return fc, diagutil.FwDiagsAsError(d)
 }
 
 func preinstallTCPDefault(t *testing.T) func() {

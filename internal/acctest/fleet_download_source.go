@@ -25,6 +25,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 )
 
 // Stable ID for acceptance-test bootstrap; lives in the default Kibana space and is not managed by Terraform state.
@@ -42,9 +43,9 @@ func ensureFleetDefaultAgentDownloadSource(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fc, err := client.GetFleetClient()
-	if err != nil {
-		t.Fatal(err)
+	fc, d := client.GetFleetClient()
+	if d.HasError() {
+		t.Fatal(diagutil.FwDiagsAsError(d))
 	}
 
 	// NOTE: We intentionally do NOT version-gate this bootstrap.

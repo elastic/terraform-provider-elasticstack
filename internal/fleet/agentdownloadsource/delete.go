@@ -34,9 +34,9 @@ func deleteAgentDownloadSource(
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		diags.AddError(err.Error(), "")
+	fleetClient, d := client.GetFleetClient()
+	diags.Append(d...)
+	if diags.HasError() {
 		return diags
 	}
 

@@ -36,9 +36,9 @@ func readAgentDownloadSource(
 ) (model, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		diags.AddError(err.Error(), "")
+	fleetClient, d := client.GetFleetClient()
+	diags.Append(d...)
+	if diags.HasError() {
 		return prior, false, diags
 	}
 
