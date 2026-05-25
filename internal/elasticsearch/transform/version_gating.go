@@ -62,14 +62,9 @@ func isSettingAllowed(ctx context.Context, settingName string, client *clients.E
 		return true, nil
 	}
 
-	serverVersion, verDiags := client.ServerVersion(ctx)
-	if verDiags.HasError() {
-		return false, verDiags
-	}
-
 	tflog.Warn(ctx, fmt.Sprintf(
-		"Setting [%s] not allowed for Elasticsearch server version %v; min required is %v",
-		settingName, *serverVersion, *minVersion,
+		"Setting [%s] ignored: requires Elasticsearch %v or later",
+		settingName, minVersion,
 	))
 	return false, nil
 }
