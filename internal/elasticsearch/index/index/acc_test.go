@@ -596,10 +596,7 @@ func createElasticsearchIndexOOB(t *testing.T, name, body string) {
 	if err != nil {
 		t.Fatalf("acceptance elasticsearch client: %v", err)
 	}
-	typedClient, diags := client.GetESClient()
-	if diags.HasError() {
-		t.Fatalf("get Elasticsearch typed client: %v", diags)
-	}
+	typedClient := client.GetESClient()
 	if _, err := typedClient.Indices.Create(name).Raw(strings.NewReader(body)).Do(ctx); err != nil {
 		t.Fatalf("Indices.Create(%q): %v", name, err)
 	}
@@ -613,11 +610,7 @@ func deleteElasticsearchIndexOOB(t *testing.T, name string) {
 		t.Logf("cleanup: acceptance elasticsearch client: %v", err)
 		return
 	}
-	typedClient, diags := client.GetESClient()
-	if diags.HasError() {
-		t.Logf("cleanup: get Elasticsearch typed client: %v", diags)
-		return
-	}
+	typedClient := client.GetESClient()
 	if _, err := typedClient.Indices.Delete(name).Do(ctx); err != nil {
 		if esclient.IsNotFoundElasticsearchError(err) {
 			return
@@ -633,10 +626,7 @@ func getElasticsearchIndexState(t *testing.T, indexName string) types.IndexState
 	if err != nil {
 		t.Fatalf("acceptance elasticsearch client: %v", err)
 	}
-	typedClient, diags := client.GetESClient()
-	if diags.HasError() {
-		t.Fatalf("get Elasticsearch typed client: %v", diags)
-	}
+	typedClient := client.GetESClient()
 	resp, err := typedClient.Indices.Get(indexName).Do(ctx)
 	if err != nil {
 		if esclient.IsNotFoundElasticsearchError(err) {
@@ -1009,10 +999,7 @@ func checkResourceIndexDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		typedClient, diags := client.GetESClient()
-		if diags.HasError() {
-			return fmt.Errorf("failed to get elasticsearch client: %v", diags)
-		}
+		typedClient := client.GetESClient()
 		_, err = typedClient.Indices.Get(compID.ResourceID).Do(context.Background())
 		if err != nil {
 			if esclient.IsNotFoundElasticsearchError(err) {

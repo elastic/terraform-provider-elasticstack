@@ -52,11 +52,7 @@ func deleteAnomalyDetectionJob(ctx context.Context, client *clients.Elasticsearc
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	typedClient, clientDiags := client.GetESClient()
-	diags.Append(clientDiags...)
-	if diags.HasError() {
-		return diags
-	}
+	typedClient := client.GetESClient()
 
 	// First, close the job if it's open. Force=true and AllowNoMatch=true to be safe.
 	_, err := typedClient.Ml.CloseJob(jobID).Force(true).AllowNoMatch(true).Do(ctx)

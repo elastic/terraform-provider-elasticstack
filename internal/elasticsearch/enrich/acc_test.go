@@ -1340,10 +1340,7 @@ func checkEnrichPolicyDestroyFW(name string) func(s *terraform.State) error {
 			if compID.ResourceID != name {
 				return fmt.Errorf("Found unexpectedly enrich policy: %s", compID.ResourceID)
 			}
-			typedClient, diags := client.GetESClient()
-			if diags.HasError() {
-				return fmt.Errorf("failed to get elasticsearch client: %v", diags)
-			}
+			typedClient := client.GetESClient()
 			res, err := typedClient.Enrich.GetPolicy().Name(compID.ResourceID).Do(context.Background())
 			if err != nil {
 				if esclient.IsNotFoundElasticsearchError(err) {
@@ -1366,10 +1363,7 @@ func checkEnrichPolicyIndexDoesNotExist(name string) resource.TestCheckFunc {
 			return err
 		}
 
-		typedClient, diags := client.GetESClient()
-		if diags.HasError() {
-			return fmt.Errorf("failed to get elasticsearch client: %v", diags)
-		}
+		typedClient := client.GetESClient()
 
 		indexName := fmt.Sprintf(".enrich-%s", name)
 		exists, err := typedClient.Indices.Exists(indexName).Do(context.Background())

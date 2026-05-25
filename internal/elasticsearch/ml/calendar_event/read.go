@@ -89,11 +89,7 @@ func readCalendarEvent(ctx context.Context, client *clients.ElasticsearchScopedC
 
 	tflog.Debug(ctx, fmt.Sprintf("Reading ML calendar event %s from calendar: %s", eventID, calendarID))
 
-	typedClient, clientDiags := client.GetESClient()
-	diags.Append(clientDiags...)
-	if diags.HasError() {
-		return state, false, diags
-	}
+	typedClient := client.GetESClient()
 
 	tryWalk := func(startRFC3339, endRFC3339 string) (matched bool, walkDiags fwdiags.Diagnostics) {
 		var inner fwdiags.Diagnostics

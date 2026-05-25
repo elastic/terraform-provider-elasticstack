@@ -577,10 +577,7 @@ func checkResourceWatchDestroy(s *terraform.State) error {
 			return fmt.Errorf("failed to parse resource ID: %v", idDiags)
 		}
 
-		typedClient, diags := client.GetESClient()
-		if diags.HasError() {
-			return fmt.Errorf("failed to get elasticsearch client: %v", diags)
-		}
+		typedClient := client.GetESClient()
 
 		_, err = typedClient.Watcher.GetWatch(compID.ResourceID).Do(context.Background())
 		if err != nil {

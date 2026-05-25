@@ -44,11 +44,7 @@ func createAnomalyDetectionJob(ctx context.Context, client *clients.Elasticsearc
 
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML anomaly detection job: %s", jobID))
 
-	typedClient, clientDiags := client.GetESClient()
-	diags.Append(clientDiags...)
-	if diags.HasError() {
-		return entitycore.WriteResult[TFModel]{Model: plan}, diags
-	}
+	typedClient := client.GetESClient()
 
 	putReq := apiModel.toPutJobRequest()
 	_, err := typedClient.Ml.PutJob(jobID).Request(&putReq).Do(ctx)

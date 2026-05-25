@@ -37,11 +37,7 @@ func updateFilter(ctx context.Context, client *clients.ElasticsearchScopedClient
 
 	tflog.Debug(ctx, fmt.Sprintf("Updating ML filter: %s", filterID))
 
-	typedClient, clientDiags := client.GetESClient()
-	diags.Append(clientDiags...)
-	if diags.HasError() {
-		return entitycore.WriteResult[TFModel]{Model: plan}, diags
-	}
+	typedClient := client.GetESClient()
 
 	getRes, err := typedClient.Ml.GetFilters().FilterId(filterID).Do(ctx)
 	notFound := false

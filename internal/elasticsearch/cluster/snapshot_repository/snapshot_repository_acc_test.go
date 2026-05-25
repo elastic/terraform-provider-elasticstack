@@ -196,10 +196,7 @@ func checkRepoDestroy(name string) func(s *terraform.State) error {
 				continue
 			}
 
-			typedClient, diags := client.GetESClient()
-			if diags.HasError() {
-				return fmt.Errorf("failed to get elasticsearch client: %v", diags)
-			}
+			typedClient := client.GetESClient()
 			res, err := typedClient.Snapshot.GetRepository().Repository(compID.ResourceID).Do(context.Background())
 			if err != nil {
 				if esclient.IsNotFoundElasticsearchError(err) {
