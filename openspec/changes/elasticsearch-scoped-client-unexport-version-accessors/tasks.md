@@ -1,8 +1,8 @@
 ## 1. New public APIs on `ElasticsearchScopedClient`
 
-- [ ] 1.1 Add `IsServerless(ctx) (bool, fwdiag.Diagnostics)` to `internal/clients/elasticsearch_scoped_client.go` — reads `serverInfo().Version.BuildFlavor`, returns `flavor == ServerlessFlavor`
-- [ ] 1.2 Add `EnforceVersionCheck(ctx, check func(*version.Version) bool) (bool, fwdiag.Diagnostics)` mirroring the Kibana client signature (serverless short-circuits to `true`, otherwise calls `check(serverVersion)`)
-- [ ] 1.3 Add unit tests in `internal/clients/elasticsearch_scoped_client_test.go` for both new methods: missing endpoint, info API error, stateful below/at/above min, serverless short-circuit, predicate returning false on stateful, predicate true on stateful
+- [x] 1.1 Add `IsServerless(ctx) (bool, fwdiag.Diagnostics)` to `internal/clients/elasticsearch_scoped_client.go` — reads `serverInfo().Version.BuildFlavor`, returns `flavor == ServerlessFlavor`
+- [x] 1.2 Add `EnforceVersionCheck(ctx, check func(*version.Version) bool) (bool, fwdiag.Diagnostics)` mirroring the Kibana client signature (serverless short-circuits to `true`, otherwise calls `check(serverVersion)`)
+- [x] 1.3 Add unit tests in `internal/clients/elasticsearch_scoped_client_test.go` for both new methods: missing endpoint, info API error, stateful below/at/above min, serverless short-circuit, predicate returning false on stateful, predicate true on stateful
 
 ## 2. Pattern A — `security/role/update.go` → `WithVersionRequirements`
 
