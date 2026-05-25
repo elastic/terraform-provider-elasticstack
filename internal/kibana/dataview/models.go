@@ -237,7 +237,7 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 	}
 
 	model.ID = types.StringValue(resourceID.String())
-	model.DataView = typeutils.StructToObjectType(ctx, data.DataView, getDataViewAttrTypes(), path.Root("data_view"), &diags,
+	model.DataView = typeutils.StructToObjectType(ctx, data.DataView, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags,
 		func(item dataViewsDataViewResponseObjectInner, meta typeutils.ObjectMeta) innerModel {
 			dvInner := typeutils.ObjectTypeAs[innerModel](ctx, model.DataView, meta.Path, &diags)
 			if dvInner == nil {
@@ -268,7 +268,7 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 					}
 				}(),
 				RuntimeFieldMap: semanticEqualEmptyMap(dvInner.RuntimeFieldMap,
-					typeutils.MapToMapType(ctx, typeutils.Deref(item.RuntimeFieldMap), getRuntimeFieldMapElemType(), meta.Path.AtName("runtime_field_map"), &diags,
+					typeutils.MapToMapType(ctx, typeutils.Deref(item.RuntimeFieldMap), getRuntimeFieldMapElemType(ctx), meta.Path.AtName("runtime_field_map"), &diags,
 						func(item kbapi.DataViewsRuntimefieldmap, _ typeutils.MapMeta) runtimeFieldModel {
 							return runtimeFieldModel{
 								Type:         types.StringValue(item.Type),
@@ -276,11 +276,11 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 							}
 						})),
 				FieldFormats: semanticEqualEmptyMap(dvInner.FieldFormats,
-					typeutils.MapToMapType(ctx, typeutils.Deref(item.FieldFormats), getFieldFormatElemType(), meta.Path.AtName("field_formats"), &diags,
+					typeutils.MapToMapType(ctx, typeutils.Deref(item.FieldFormats), getFieldFormatElemType(ctx), meta.Path.AtName("field_formats"), &diags,
 						func(item kbapi.DataViewsFieldformat, meta typeutils.MapMeta) fieldFormatModel {
 							return fieldFormatModel{
 								ID: types.StringPointerValue(item.Id),
-								Params: typeutils.StructToObjectType(ctx, item.Params, getFieldFormatParamsAttrTypes(), meta.Path.AtName("params"), &diags,
+								Params: typeutils.StructToObjectType(ctx, item.Params, getFieldFormatParamsAttrTypes(ctx), meta.Path.AtName("params"), &diags,
 									func(item kbapi.DataViewsFieldformatParams, meta typeutils.ObjectMeta) fieldFormatParamsModel {
 										return fieldFormatParamsModel{
 											Pattern:                types.StringPointerValue(item.Pattern),
@@ -293,7 +293,7 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 											UseShortSuffix:         types.BoolPointerValue(item.UseShortSuffix),
 											Timezone:               types.StringPointerValue(item.Timezone),
 											FieldType:              types.StringPointerValue(item.FieldType),
-											Colors: typeutils.SliceToListType(ctx, typeutils.Deref(item.Colors), getFieldFormatParamsColorsElemType(), meta.Path.AtName("colors"), meta.Diags,
+											Colors: typeutils.SliceToListType(ctx, typeutils.Deref(item.Colors), getFieldFormatParamsColorsElemType(ctx), meta.Path.AtName("colors"), meta.Diags,
 												func(item kbapi.DataViewsFieldformatParamsColor, _ typeutils.ListMeta) colorConfigModel {
 													return colorConfigModel{
 														Range:      types.StringPointerValue(item.Range),
@@ -304,7 +304,7 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 												}),
 											FieldLength: types.Int64PointerValue(typeutils.Itol(item.FieldLength)),
 											Transform:   types.StringPointerValue(item.Transform),
-											LookupEntries: typeutils.SliceToListType(ctx, typeutils.Deref(item.LookupEntries), getFieldFormatParamsLookupEntryElemType(), meta.Path.AtName("lookup_entries"), meta.Diags,
+											LookupEntries: typeutils.SliceToListType(ctx, typeutils.Deref(item.LookupEntries), getFieldFormatParamsLookupEntryElemType(ctx), meta.Path.AtName("lookup_entries"), meta.Diags,
 												func(item kbapi.DataViewsFieldformatParamsLookup, _ typeutils.ListMeta) lookupEntryModel {
 													return lookupEntryModel{
 														Key:   types.StringPointerValue(item.Key),

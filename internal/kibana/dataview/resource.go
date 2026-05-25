@@ -43,7 +43,7 @@ func newResource() *Resource {
 			entitycore.ComponentKibana,
 			"data_view",
 			entitycore.KibanaResourceOptions[dataViewModel]{
-				Schema: getSchemaFn,
+				Schema: getSchema,
 				Read:   readDataView,
 				Delete: deleteDataView,
 				Create: createDataView,
@@ -69,7 +69,7 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 		ID:               types.StringValue(req.ID),
 		SpaceID:          types.StringValue(composite.ClusterID),
 		Override:         types.BoolValue(false),
-		DataView:         types.ObjectUnknown(getDataViewAttrTypes()),
+		DataView:         types.ObjectUnknown(getDataViewAttrTypes(ctx)),
 		KibanaConnection: providerschema.KibanaConnectionNullList(),
 	}
 

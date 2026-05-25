@@ -34,11 +34,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func getSchemaFn(_ context.Context) schema.Schema {
-	return getSchema()
-}
-
-func getSchema() schema.Schema {
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages Kibana [data views](https://www.elastic.co/guide/en/kibana/current/data-views-api.html)",
 		Attributes: map[string]schema.Attribute{
@@ -291,8 +287,8 @@ func getSchema() schema.Schema {
 	}
 }
 
-func getDataViewAttrTypes() map[string]attr.Type {
-	return getSchema().Attributes["data_view"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getDataViewAttrTypes(ctx context.Context) map[string]attr.Type {
+	return getSchema(ctx).Attributes["data_view"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 // getFieldAttrElemType is intentionally hardcoded rather than derived from the schema (as
@@ -309,26 +305,26 @@ func getFieldAttrElemType() types.ObjectType {
 	}
 }
 
-func getRuntimeFieldMapElemType() attr.Type {
-	return getDataViewAttrTypes()["runtime_field_map"].(attr.TypeWithElementType).ElementType()
+func getRuntimeFieldMapElemType(ctx context.Context) attr.Type {
+	return getDataViewAttrTypes(ctx)["runtime_field_map"].(attr.TypeWithElementType).ElementType()
 }
 
-func getFieldFormatElemType() attr.Type {
-	return getDataViewAttrTypes()["field_formats"].(attr.TypeWithElementType).ElementType()
+func getFieldFormatElemType(ctx context.Context) attr.Type {
+	return getDataViewAttrTypes(ctx)["field_formats"].(attr.TypeWithElementType).ElementType()
 }
 
-func getFieldFormatAttrTypes() map[string]attr.Type {
-	return getFieldFormatElemType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getFieldFormatAttrTypes(ctx context.Context) map[string]attr.Type {
+	return getFieldFormatElemType(ctx).(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getFieldFormatParamsAttrTypes() map[string]attr.Type {
-	return getFieldFormatAttrTypes()["params"].(attr.TypeWithAttributeTypes).AttributeTypes()
+func getFieldFormatParamsAttrTypes(ctx context.Context) map[string]attr.Type {
+	return getFieldFormatAttrTypes(ctx)["params"].(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getFieldFormatParamsColorsElemType() attr.Type {
-	return getFieldFormatParamsAttrTypes()["colors"].(attr.TypeWithElementType).ElementType()
+func getFieldFormatParamsColorsElemType(ctx context.Context) attr.Type {
+	return getFieldFormatParamsAttrTypes(ctx)["colors"].(attr.TypeWithElementType).ElementType()
 }
 
-func getFieldFormatParamsLookupEntryElemType() attr.Type {
-	return getFieldFormatParamsAttrTypes()["lookup_entries"].(attr.TypeWithElementType).ElementType()
+func getFieldFormatParamsLookupEntryElemType(ctx context.Context) attr.Type {
+	return getFieldFormatParamsAttrTypes(ctx)["lookup_entries"].(attr.TypeWithElementType).ElementType()
 }
