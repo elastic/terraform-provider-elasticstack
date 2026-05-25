@@ -18,11 +18,11 @@ The system SHALL provide a generic constructor `NewKibanaResource[T]()` that acc
 - **WHEN** an envelope is constructed via `NewKibanaResource[T](ComponentKibana, "maintenance_window", opts)`
 - **THEN** its `Metadata` SHALL set the type name to `<provider_type_name>_kibana_maintenance_window`
 
-#### Scenario: Synthetics migration uses the envelope without changing behavior
+#### Scenario: Data view migration uses the envelope without changing behavior
 
-- **WHEN** the synthetics resources are migrated to embed `*entitycore.KibanaResource[...]` returned by `NewKibanaResource`
-- **THEN** the resources SHALL continue to preserve their schema, import behavior, and Terraform state identity behavior
-- **AND** the resources SHALL remain usable as Terraform `resource.Resource` and `resource.ResourceWithConfigure` implementations
+- **WHEN** `internal/kibana/dataview` is migrated to embed `*entitycore.KibanaResource[Model]` returned by `NewKibanaResource`
+- **THEN** the resource SHALL continue to preserve its schema, read-after-write reconciliation, namespace handling, and Terraform state identity behavior
+- **AND** the resource SHALL remain usable as a Terraform `resource.Resource` and `resource.ResourceWithConfigure` implementation
 
 ### Requirement: KibanaResourceModel interface defines the model contract
 

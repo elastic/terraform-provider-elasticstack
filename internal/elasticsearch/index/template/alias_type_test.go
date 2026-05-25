@@ -265,22 +265,6 @@ func TestAliasObjectValue_ObjectSemanticEquals_asymmetricDerivedPriorVsExplicitN
 	require.False(t, eq)
 }
 
-func TestAliasObjectValue_ObjectSemanticEquals_nullAndUnknownObject(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	eq1, d1 := NewAliasObjectNull().ObjectSemanticEquals(ctx, NewAliasObjectNull())
-	require.False(t, d1.HasError())
-	require.True(t, eq1)
-
-	eq2, d2 := NewAliasObjectUnknown().ObjectSemanticEquals(ctx, NewAliasObjectUnknown())
-	require.False(t, d2.HasError())
-	require.True(t, eq2)
-
-	eq3, d3 := NewAliasObjectNull().ObjectSemanticEquals(ctx, NewAliasObjectUnknown())
-	require.False(t, d3.HasError())
-	require.False(t, eq3)
-}
-
 func TestAliasObjectValue_ObjectSemanticEquals_unknownNestedAttribute(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

@@ -34,12 +34,22 @@ var (
 )
 
 type Resource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[dataViewModel]
 }
 
 func newResource() *Resource {
 	return &Resource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "data_view"),
+		KibanaResource: entitycore.NewKibanaResource[dataViewModel](
+			entitycore.ComponentKibana,
+			"data_view",
+			entitycore.KibanaResourceOptions[dataViewModel]{
+				Schema: getSchema,
+				Read:   readDataView,
+				Delete: deleteDataView,
+				Create: createDataView,
+				Update: updateDataView,
+			},
+		),
 	}
 }
 
@@ -59,7 +69,7 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 		ID:               types.StringValue(req.ID),
 		SpaceID:          types.StringValue(composite.ClusterID),
 		Override:         types.BoolValue(false),
-		DataView:         types.ObjectUnknown(getDataViewAttrTypes()),
+		DataView:         types.ObjectUnknown(getDataViewAttrTypes(ctx)),
 		KibanaConnection: providerschema.KibanaConnectionNullList(),
 	}
 

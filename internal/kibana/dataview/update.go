@@ -21,64 +21,63 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var planModel dataViewModel
-	var stateModel dataViewModel
+func updateDataView(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[dataViewModel],
+) (entitycore.KibanaWriteResult[dataViewModel], diag.Diagnostics) {
+	planModel := req.Plan
+	var diags diag.Diagnostics
 
-	diags := req.Plan.Get(ctx, &planModel)
-	resp.Diagnostics.Append(diags...)
-	diags = req.State.Get(ctx, &stateModel) // read state
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	if req.Prior == nil {
+		diags.AddError(
+			"Internal error",
+			"Update callback received nil prior state; cannot reconcile namespaces or field_attrs.",
+		)
+		return entitycore.KibanaWriteResult[dataViewModel]{}, diags
 	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	stateModel := *req.Prior
 
 	oapiClient, getDiags := client.GetKibanaOapiClient()
-	if getDiags.HasError() {
-		resp.Diagnostics.Append(getDiags...)
-		return
+	diags.Append(getDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[dataViewModel]{}, diags
 	}
 
-	body, diags := planModel.toAPIUpdateModel(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	body, bodyDiags := planModel.toAPIUpdateModel(ctx)
+	diags.Append(bodyDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[dataViewModel]{}, diags
 	}
 
-	viewID, spaceID := planModel.getViewIDAndSpaceID()
-	dataView, diags := kibanaoapi.UpdateDataView(ctx, oapiClient, spaceID, viewID, body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	viewID := req.WriteID
+	spaceID := req.SpaceID
+	_, updateDiags := kibanaoapi.UpdateDataView(ctx, oapiClient, spaceID, viewID, body)
+	diags.Append(updateDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[dataViewModel]{}, diags
 	}
 
 	// Update namespaces via spaces API
 	var stateInner, planInner innerModel
-	diags = stateModel.DataView.As(ctx, &stateInner, basetypes.ObjectAsOptions{})
-	resp.Diagnostics.Append(diags...)
-	diags = planModel.DataView.As(ctx, &planInner, basetypes.ObjectAsOptions{})
-	resp.Diagnostics.Append(diags...)
+	diags.Append(stateModel.DataView.As(ctx, &stateInner, basetypes.ObjectAsOptions{})...)
+	diags.Append(planModel.DataView.As(ctx, &planInner, basetypes.ObjectAsOptions{})...)
 
-	if !resp.Diagnostics.HasError() {
+	if !diags.HasError() {
 		var oldNS, newNS []string
 		if !stateInner.Namespaces.IsNull() && !stateInner.Namespaces.IsUnknown() {
-			diags = stateInner.Namespaces.ElementsAs(ctx, &oldNS, false)
-			resp.Diagnostics.Append(diags...)
+			diags.Append(stateInner.Namespaces.ElementsAs(ctx, &oldNS, false)...)
 		}
 		if !planInner.Namespaces.IsNull() && !planInner.Namespaces.IsUnknown() {
-			diags = planInner.Namespaces.ElementsAs(ctx, &newNS, false)
-			resp.Diagnostics.Append(diags...)
+			diags.Append(planInner.Namespaces.ElementsAs(ctx, &newNS, false)...)
 		}
 
 		// A null namespaces list is semantically equal to "[spaceID]" (the resource's
@@ -92,15 +91,15 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 			newNS = []string{spaceID}
 		}
 
-		if !resp.Diagnostics.HasError() {
-			resp.Diagnostics.Append(
+		if !diags.HasError() {
+			diags.Append(
 				kibanaoapi.UpdateDataViewNamespaces(ctx, oapiClient, spaceID, viewID, oldNS, newNS)...,
 			)
 		}
 	}
 
-	if resp.Diagnostics.HasError() {
-		return
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[dataViewModel]{}, diags
 	}
 
 	// Apply field_attrs delta via UpdateFieldMetadata (after main update and namespace reconciliation).
@@ -108,51 +107,47 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		planFA := map[string]fieldAttrModel{}
 		stateFA := map[string]fieldAttrModel{}
 		if !planInner.FieldAttributes.IsNull() {
-			diags := planInner.FieldAttributes.ElementsAs(ctx, &planFA, false)
-			resp.Diagnostics.Append(diags...)
+			diags.Append(planInner.FieldAttributes.ElementsAs(ctx, &planFA, false)...)
 		}
 		if !stateInner.FieldAttributes.IsNull() {
-			diags := stateInner.FieldAttributes.ElementsAs(ctx, &stateFA, false)
-			resp.Diagnostics.Append(diags...)
+			diags.Append(stateInner.FieldAttributes.ElementsAs(ctx, &stateFA, false)...)
 		}
-		if !resp.Diagnostics.HasError() {
+		if !diags.HasError() {
 			delta := buildFieldAttrsMetadataDelta(planFA, stateFA)
 			if len(delta) > 0 {
-				resp.Diagnostics.Append(
+				diags.Append(
 					kibanaoapi.UpdateFieldMetadata(ctx, oapiClient, spaceID, viewID, delta)...,
 				)
-				if resp.Diagnostics.HasError() {
-					return
+				if diags.HasError() {
+					return entitycore.KibanaWriteResult[dataViewModel]{}, diags
 				}
 				refreshed, refreshDiags := kibanaoapi.GetDataView(ctx, oapiClient, spaceID, viewID)
-				resp.Diagnostics.Append(refreshDiags...)
-				if resp.Diagnostics.HasError() {
-					return
+				diags.Append(refreshDiags...)
+				if diags.HasError() {
+					return entitycore.KibanaWriteResult[dataViewModel]{}, diags
 				}
 				if refreshed == nil {
-					resp.Diagnostics.AddError(
+					diags.AddError(
 						"Data view disappeared after field_attrs update",
 						fmt.Sprintf("UpdateFieldMetadata succeeded for data view %q in space %q, but the subsequent GetDataView returned no data (likely 404). Refusing to write stale state.", viewID, spaceID),
 					)
-					return
+					return entitycore.KibanaWriteResult[dataViewModel]{}, diags
 				}
-				dataView = refreshed
 			}
 		}
 	}
 
-	if resp.Diagnostics.HasError() {
-		return
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[dataViewModel]{}, diags
 	}
 
-	diags = planModel.populateFromAPI(ctx, dataView, spaceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	compositeID := clients.CompositeID{
+		ClusterID:  spaceID,
+		ResourceID: viewID,
 	}
+	planModel.ID = types.StringValue(compositeID.String())
 
-	diags = resp.State.Set(ctx, planModel)
-	resp.Diagnostics.Append(diags...)
+	return entitycore.KibanaWriteResult[dataViewModel]{Model: planModel}, diags
 }
 
 // clearedFieldAttrMetadataPayload is sent for fields removed from the plan so Kibana resets

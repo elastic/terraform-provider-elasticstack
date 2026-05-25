@@ -468,13 +468,6 @@ func routingFieldSemanticallyEqual(priorField, newField, newRouting types.String
 	return newField.ValueString() == newR
 }
 
-// NewAliasObjectNull creates a null alias object value.
-func NewAliasObjectNull() AliasObjectValue {
-	return AliasObjectValue{
-		ObjectValue: basetypes.NewObjectNull(AliasAttributeTypes()),
-	}
-}
-
 // NewAliasObjectUnknown creates an unknown alias object value.
 func NewAliasObjectUnknown() AliasObjectValue {
 	return AliasObjectValue{

@@ -119,6 +119,7 @@ func TestAccResourceDataView(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.name", indexName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.source_filters.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_formats.event_time.id", "date_nanos"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_formats.machine.ram.%"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.runtime_field_map.runtime_shape_name.script_source", "emit(doc['shape_name'].value)"),
 					checkIDUnchanged,
 				),
