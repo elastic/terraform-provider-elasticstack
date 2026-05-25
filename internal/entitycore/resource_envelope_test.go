@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -175,7 +176,32 @@ func elasticsearchConnectionBlockType() tftypes.Type {
 
 func newTestConfiguredFactory(ctx context.Context, t *testing.T) *clients.ProviderClientFactory {
 	t.Helper()
-	factory, diags := clients.NewProviderClientFactoryFromFramework(ctx, config.ProviderConfiguration{}, "test")
+
+	cfg := config.ProviderConfiguration{
+		Elasticsearch: []config.ElasticsearchConnection{
+			{
+				Username: types.StringValue("elastic"),
+				Password: types.StringValue("changeme"),
+				Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+					types.StringValue("http://localhost:9200"),
+				}),
+				Headers:  types.MapValueMust(types.StringType, map[string]attr.Value{}),
+				Insecure: types.BoolValue(true),
+			},
+		},
+		Kibana: []config.KibanaConnection{
+			{
+				Username: types.StringValue("elastic"),
+				Password: types.StringValue("changeme"),
+				Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+					types.StringValue("http://localhost:5601"),
+				}),
+				CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+				Insecure: types.BoolValue(true),
+			},
+		},
+	}
+	factory, diags := clients.NewProviderClientFactoryFromFramework(ctx, cfg, "test")
 	require.False(t, diags.HasError(), "failed to create test factory: %v", diags)
 	require.NotNil(t, factory)
 	return factory

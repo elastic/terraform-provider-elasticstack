@@ -13,29 +13,29 @@
 
 ## 3. Scoped clients: convert accessors to single-return getters
 
-- [ ] 3.1 Change `(*ElasticsearchScopedClient).GetESClient()` to return `*elasticsearch.TypedClient` (no diagnostics). Drop the endpoint-presence and nil-client checks from the accessor body — the factory now guarantees those conditions.
-- [ ] 3.2 Update `(*ElasticsearchScopedClient).serverInfo` and any other internal callers of `GetESClient` in `elasticsearch_scoped_client.go` to use the new signature.
-- [ ] 3.3 Change `(*KibanaScopedClient).GetKibanaOapiClient()` to return `*kibanaoapi.Client` (no diagnostics). Drop the endpoint-presence and nil-client checks.
-- [ ] 3.4 Change `(*KibanaScopedClient).GetFleetClient()` to return `*fleet.Client` (no diagnostics). Drop the endpoint-presence and nil-client checks.
-- [ ] 3.5 Update `(*KibanaScopedClient).getServerStatusRaw` and any other internal callers in `kibana_scoped_client.go` to use the new `GetKibanaOapiClient` signature.
+- [x] 3.1 Change `(*ElasticsearchScopedClient).GetESClient()` to return `*elasticsearch.TypedClient` (no diagnostics). Drop the endpoint-presence and nil-client checks from the accessor body — the factory now guarantees those conditions.
+- [x] 3.2 Update `(*ElasticsearchScopedClient).serverInfo` and any other internal callers of `GetESClient` in `elasticsearch_scoped_client.go` to use the new signature.
+- [x] 3.3 Change `(*KibanaScopedClient).GetKibanaOapiClient()` to return `*kibanaoapi.Client` (no diagnostics). Drop the endpoint-presence and nil-client checks.
+- [x] 3.4 Change `(*KibanaScopedClient).GetFleetClient()` to return `*fleet.Client` (no diagnostics). Drop the endpoint-presence and nil-client checks.
+- [x] 3.5 Update `(*KibanaScopedClient).getServerStatusRaw` and any other internal callers in `kibana_scoped_client.go` to use the new `GetKibanaOapiClient` signature.
 
 ## 4. Update scoped-client and factory unit tests
 
-- [ ] 4.1 Rewrite `internal/clients/elasticsearch_scoped_client_test.go` tests that constructed an `ElasticsearchScopedClient` directly with no endpoint and expected error diagnostics from `GetESClient`. Move those expectations to factory-level tests against `ProviderClientFactory.GetElasticsearchClient`. Retain test coverage that `GetESClient` returns the typed client when the scoped client was built via the factory.
-- [ ] 4.2 Rewrite `internal/clients/kibana_scoped_client_test.go` tests that constructed a `KibanaScopedClient` directly with no endpoint and expected error diagnostics from `GetKibanaOapiClient` or `GetFleetClient`. Move those expectations to `ProviderClientFactory.GetKibanaClient`. Retain endpoint-inheritance coverage for the existing Fleet-from-Kibana path.
-- [ ] 4.3 Extend `internal/clients/provider_client_factory_test.go` with: (a) `GetElasticsearchClient` returns a missing-endpoint error when no ES endpoint is configured; (b) `GetKibanaClient` returns a missing-endpoint error when neither Kibana nor Fleet endpoint is configured; (c) `GetKibanaClient` succeeds when only the Fleet endpoint is configured at provider level and `GetKibanaOapiClient` on the resulting scoped client targets that endpoint; (d) successful factory call → accessor returns a non-nil typed client.
+- [x] 4.1 Rewrite `internal/clients/elasticsearch_scoped_client_test.go` tests that constructed an `ElasticsearchScopedClient` directly with no endpoint and expected error diagnostics from `GetESClient`. Move those expectations to factory-level tests against `ProviderClientFactory.GetElasticsearchClient`. Retain test coverage that `GetESClient` returns the typed client when the scoped client was built via the factory.
+- [x] 4.2 Rewrite `internal/clients/kibana_scoped_client_test.go` tests that constructed a `KibanaScopedClient` directly with no endpoint and expected error diagnostics from `GetKibanaOapiClient` or `GetFleetClient`. Move those expectations to `ProviderClientFactory.GetKibanaClient`. Retain endpoint-inheritance coverage for the existing Fleet-from-Kibana path.
+- [x] 4.3 Extend `internal/clients/provider_client_factory_test.go` with: (a) `GetElasticsearchClient` returns a missing-endpoint error when no ES endpoint is configured; (b) `GetKibanaClient` returns a missing-endpoint error when neither Kibana nor Fleet endpoint is configured; (c) `GetKibanaClient` succeeds when only the Fleet endpoint is configured at provider level and `GetKibanaOapiClient` on the resulting scoped client targets that endpoint; (d) successful factory call → accessor returns a non-nil typed client.
 
 ## 5. Sweep consumer call sites — Elasticsearch sinks
 
-- [ ] 5.1 Update all `(...).GetESClient()` call sites in `internal/clients/elasticsearch/**` to use the single-return signature. Delete the immediate `if diags.HasError()` block that follows the call and any local `d` / `diags` variable used only for that check. Verify each file compiles.
-- [ ] 5.2 Sweep `internal/elasticsearch/**` resources and data sources for any remaining `GetESClient()` callers and apply the same simplification.
-- [ ] 5.3 Sweep `internal/entitycore/**`, `internal/clients/**` (outside the scoped client files), and `internal/acctest/**` for `GetESClient()` callers.
+- [x] 5.1 Update all `(...).GetESClient()` call sites in `internal/clients/elasticsearch/**` to use the single-return signature. Delete the immediate `if diags.HasError()` block that follows the call and any local `d` / `diags` variable used only for that check. Verify each file compiles.
+- [x] 5.2 Sweep `internal/elasticsearch/**` resources and data sources for any remaining `GetESClient()` callers and apply the same simplification.
+- [x] 5.3 Sweep `internal/entitycore/**`, `internal/clients/**` (outside the scoped client files), and `internal/acctest/**` for `GetESClient()` callers.
 
 ## 6. Sweep consumer call sites — Kibana and Fleet
 
-- [ ] 6.1 Update all `(...).GetKibanaOapiClient()` call sites in `internal/kibana/**`, `internal/apm/**`, and `internal/entitycore/**` to use the single-return signature; drop the trailing diagnostic check.
-- [ ] 6.2 Update all `(...).GetFleetClient()` call sites in `internal/fleet/**` and `internal/acctest/**` to use the single-return signature; drop the trailing diagnostic check.
-- [ ] 6.3 Sweep `internal/clients/fleet/**`, `internal/clients/kibanaoapi/**`, and any other package that holds `KibanaScopedClient` callers for the same simplification.
+- [x] 6.1 Update all `(...).GetKibanaOapiClient()` call sites in `internal/kibana/**`, `internal/apm/**`, and `internal/entitycore/**` to use the single-return signature; drop the trailing diagnostic check.
+- [x] 6.2 Update all `(...).GetFleetClient()` call sites in `internal/fleet/**` and `internal/acctest/**` to use the single-return signature; drop the trailing diagnostic check.
+- [x] 6.3 Sweep `internal/clients/fleet/**`, `internal/clients/kibanaoapi/**`, and any other package that holds `KibanaScopedClient` callers for the same simplification.
 
 ## 7. Verify external surface
 
