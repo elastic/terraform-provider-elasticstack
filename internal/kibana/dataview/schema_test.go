@@ -18,6 +18,7 @@
 package dataview
 
 import (
+	"context"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -35,7 +36,7 @@ import (
 func TestFieldAttrElemType_matchesSchema(t *testing.T) {
 	t.Parallel()
 
-	dataViewAttr, ok := getSchema().Attributes["data_view"].(schema.SingleNestedAttribute)
+	dataViewAttr, ok := getSchema(context.Background()).Attributes["data_view"].(schema.SingleNestedAttribute)
 	require.True(t, ok, "expected data_view to be SingleNestedAttribute")
 
 	fieldAttrsAttr, ok := dataViewAttr.Attributes["field_attrs"].(schema.MapNestedAttribute)
