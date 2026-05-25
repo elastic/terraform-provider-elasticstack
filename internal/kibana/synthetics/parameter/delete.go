@@ -46,7 +46,7 @@ func deleteParameter(ctx context.Context, client *clients.KibanaScopedClient, re
 	// supported on Kibana >= 8.17.0; it returns 404 on 8.12.x–8.16.x.
 	// DELETE /api/synthetics/params with {"ids":[...]} body (DeleteSyntheticsParamsWithResponse)
 	// works on all supported versions (>= 8.12.0), so that is used for older versions.
-	supportsPerID, verDiags := apiClient.EnforceMinVersion(ctx, minKibanaPerIDDeleteVersion)
+	supportsPerID, verDiags := client.EnforceMinVersion(ctx, minKibanaPerIDDeleteVersion)
 	diags.Append(verDiags...)
 	if diags.HasError() {
 		return diags
