@@ -137,6 +137,74 @@ func TestGetKibanaClient_WithConnection(t *testing.T) {
 	require.Empty(t, diags)
 }
 
+// --- ElasticsearchScopedClient version / flavor routing ---
+
+// TestElasticsearchScopedClient_IsServerless_ViaFactory_Stateful verifies that
+// IsServerless on a scoped client obtained from the factory routes through the
+// Elasticsearch Info API and returns false for a stateful cluster.
+func TestElasticsearchScopedClient_IsServerless_ViaFactory_Stateful(t *testing.T) {
+	const serverVersion = "8.19.0"
+	srv := newMockElasticsearchServer(serverVersion)
+	defer srv.Close()
+
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+
+	isServerless, diags := scoped.IsServerless(context.Background())
+	require.False(t, diags.HasError())
+	assert.False(t, isServerless, "default build flavor must not be treated as serverless")
+}
+
+// TestElasticsearchScopedClient_IsServerless_ViaFactory_Serverless verifies that
+// IsServerless returns true for a serverless cluster obtained via the factory.
+func TestElasticsearchScopedClient_IsServerless_ViaFactory_Serverless(t *testing.T) {
+	srv := newMockElasticsearchServerWithFlavor("8.19.0", ServerlessFlavor)
+	defer srv.Close()
+
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+
+	isServerless, diags := scoped.IsServerless(context.Background())
+	require.False(t, diags.HasError())
+	assert.True(t, isServerless)
+}
+
+// TestElasticsearchScopedClient_EnforceMinVersion_ViaFactory_Stateful verifies that
+// EnforceMinVersion on a scoped client obtained from the factory routes through
+// the Elasticsearch Info API and evaluates stateful version gates.
+func TestElasticsearchScopedClient_EnforceMinVersion_ViaFactory_Stateful(t *testing.T) {
+	const serverVersion = "8.19.0"
+	srv := newMockElasticsearchServer(serverVersion)
+	defer srv.Close()
+
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+
+	minBelow, err := goversion.NewVersion("8.0.0")
+	require.NoError(t, err)
+	ok, diags := scoped.EnforceMinVersion(context.Background(), minBelow)
+	require.False(t, diags.HasError())
+	assert.True(t, ok, "8.19.0 must satisfy min 8.0.0")
+
+	minAbove, err := goversion.NewVersion("9.0.0")
+	require.NoError(t, err)
+	ok, diags = scoped.EnforceMinVersion(context.Background(), minAbove)
+	require.False(t, diags.HasError())
+	assert.False(t, ok, "8.19.0 must not satisfy min 9.0.0")
+}
+
+// TestElasticsearchScopedClient_EnforceMinVersion_ViaFactory_ServerlessShortCircuit verifies that
+// EnforceMinVersion always returns true for serverless Elasticsearch obtained via the factory.
+func TestElasticsearchScopedClient_EnforceMinVersion_ViaFactory_ServerlessShortCircuit(t *testing.T) {
+	srv := newMockElasticsearchServerWithFlavor("8.19.0", ServerlessFlavor)
+	defer srv.Close()
+
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+
+	require.NotNil(t, scoped)
+	ver, _ := goversion.NewVersion("99.0.0")
+	ok, diags := scoped.EnforceMinVersion(context.Background(), ver)
+	require.False(t, diags.HasError())
+	assert.True(t, ok, "serverless must always satisfy any version gate")
+}
+
 // --- KibanaScopedClient version / flavor routing ---
 
 // newScopedClientFromFactory creates a *KibanaScopedClient via the factory

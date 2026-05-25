@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	elasticsearch "github.com/elastic/go-elasticsearch/v8"
@@ -89,6 +90,19 @@ func elasticsearchConnectionAttrTypes() map[string]attr.Type {
 // via the factory pointing at the given endpoint.
 func newScopedElasticsearchClientFromFactory(t *testing.T, endpoint string) *ElasticsearchScopedClient {
 	t.Helper()
+
+	// Prevent ELASTICSEARCH_* env vars from overriding elasticsearch_connection endpoints.
+	for _, key := range []string{
+		"ELASTICSEARCH_ENDPOINTS",
+		"ELASTICSEARCH_INSECURE",
+		"ELASTICSEARCH_BEARER_TOKEN",
+		"ELASTICSEARCH_ES_CLIENT_AUTHENTICATION",
+	} {
+		if val, ok := os.LookupEnv(key); ok {
+			t.Setenv(key, val)
+		}
+		os.Unsetenv(key)
+	}
 
 	ctx := context.Background()
 	factory := newTestFactory(t)
@@ -255,41 +269,8 @@ func TestGetElasticsearchClient_WithConnection(t *testing.T) {
 
 // --- ElasticsearchScopedClient version / flavor routing ---
 
-func TestElasticsearchScopedClient_ServerVersion(t *testing.T) {
-	const wantVersion = "8.19.0"
-	srv := newMockElasticsearchServer(wantVersion)
-	defer srv.Close()
-
-	scoped := newMockScopedClient(t, srv)
-
-	ver, diags := scoped.ServerVersion(context.Background())
-	require.False(t, diags.HasError())
-	require.NotNil(t, ver)
-	assert.Equal(t, wantVersion, ver.Original())
-}
-
-func TestElasticsearchScopedClient_ServerFlavor(t *testing.T) {
-	const wantVersion = "8.19.0"
-	srv := newMockElasticsearchServer(wantVersion)
-	defer srv.Close()
-
-	scoped := newMockScopedClient(t, srv)
-
-	flavor, diags := scoped.ServerFlavor(context.Background())
-	require.False(t, diags.HasError())
-	assert.Equal(t, "default", flavor)
-}
-
 func TestElasticsearchScopedClient_ServerlessEnforceMinVersion(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet && r.URL.Path == "/" {
-			w.Header().Set("Content-Type", "application/json")
-			w.Header().Set("X-Elastic-Product", "Elasticsearch")
-			fmt.Fprintf(w, `{"cluster_uuid":"serverless-uuid","version":{"number":"8.19.0","build_flavor":"serverless"}}`)
-			return
-		}
-		w.WriteHeader(http.StatusNotFound)
-	}))
+	srv := newMockElasticsearchServerWithFlavor("8.19.0", ServerlessFlavor)
 	defer srv.Close()
 
 	scoped := newMockScopedClient(t, srv)
@@ -669,33 +650,13 @@ func TestElasticsearchScopedClient_ServerInfo_IsCached(t *testing.T) {
 
 	scoped := newMockScopedClient(t, srv)
 
-	_, diags := scoped.ServerVersion(context.Background())
+	_, diags := scoped.IsServerless(context.Background())
 	require.False(t, diags.HasError())
 
-	_, diags = scoped.ServerVersion(context.Background())
+	_, diags = scoped.IsServerless(context.Background())
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, 1, callCount, "serverInfo must only call the Elasticsearch Info API once (result must be cached)")
-}
-
-// --- ServerVersion error paths ---
-
-func TestElasticsearchScopedClient_ServerVersion_InvalidVersion(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet && r.URL.Path == "/" {
-			w.Header().Set("Content-Type", "application/json")
-			w.Header().Set("X-Elastic-Product", "Elasticsearch")
-			fmt.Fprintf(w, `{"cluster_uuid":"abc-123","version":{"number":"not-a-version","build_flavor":"default"}}`)
-			return
-		}
-		w.WriteHeader(http.StatusNotFound)
-	}))
-	defer srv.Close()
-
-	scoped := newMockScopedClient(t, srv)
-
-	_, diags := scoped.ServerVersion(context.Background())
-	assert.True(t, diags.HasError(), "ServerVersion must return an error for an unparseable version string")
 }
 
 // --- Nil-factory guard tests ---
