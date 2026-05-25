@@ -1,6 +1,6 @@
 ## 1. Runtime guard in `convertGlobalDataTags`
 
-- [ ] 1.1 In `internal/fleet/agentpolicy/models.go`, update the `convertGlobalDataTags`
+- [x] 1.1 In `internal/fleet/agentpolicy/models.go`, update the `convertGlobalDataTags`
   method's value-conversion callback to use explicit `IsNull()` / `IsUnknown()` guards
   instead of `ValueStringPointer() != nil`. The new logic must:
   - Check `!item.StringValue.IsNull() && !item.StringValue.IsUnknown()` first; if true,
@@ -15,19 +15,19 @@
 
 ## 2. Schema `AtLeastOneOf` validators
 
-- [ ] 2.1 In `internal/fleet/agentpolicy/schema.go`, add
+- [x] 2.1 In `internal/fleet/agentpolicy/schema.go`, add
   `stringvalidator.AtLeastOneOf(path.MatchRelative().AtParent().AtName("string_value"), path.MatchRelative().AtParent().AtName("number_value"))`
   to the `Validators` slice of the `string_value` attribute inside the `global_data_tags`
   nested object.
-- [ ] 2.2 Add the equivalent `float32validator.AtLeastOneOf(...)` to the `Validators` slice
+- [x] 2.2 Add the equivalent `float32validator.AtLeastOneOf(...)` to the `Validators` slice
   of `number_value`, referencing the same two paths.
-- [ ] 2.3 Confirm both `stringvalidator` and `float32validator` packages are already imported
+- [x] 2.3 Confirm both `stringvalidator` and `float32validator` packages are already imported
   in `schema.go` (they are — used by existing `ConflictsWith` validators); no new import
   needed.
 
 ## 3. Unit test
 
-- [ ] 3.1 In `internal/fleet/agentpolicy/models_test.go`, add a test
+- [x] 3.1 In `internal/fleet/agentpolicy/models_test.go`, add a test
   `TestConvertGlobalDataTags_NullNullEntry` that:
   - Constructs an `agentPolicyModel` with a `GlobalDataTags` map containing one entry whose
     `string_value` and `number_value` are both null (use `types.StringNull()` and
@@ -39,9 +39,9 @@
 
 ## 4. Verify
 
-- [ ] 4.1 Run `make build` to confirm the provider compiles after the changes.
-- [ ] 4.2 Run `go test ./internal/fleet/agentpolicy/... -run TestConvertGlobalDataTags` to
+- [x] 4.1 Run `make build` to confirm the provider compiles after the changes.
+- [x] 4.2 Run `go test ./internal/fleet/agentpolicy/... -run TestConvertGlobalDataTags` to
   confirm the new unit test passes.
-- [ ] 4.3 Optionally run
+- [x] 4.3 Optionally run
   `go test ./internal/fleet/agentpolicy/... -run 'TestMergeAgentFeature|TestConvertHostNameFormatToAgentFeature'`
   to confirm no existing unit tests regressed.
