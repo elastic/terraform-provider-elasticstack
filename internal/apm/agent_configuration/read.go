@@ -59,11 +59,7 @@ func (r *resourceAgentConfiguration) read(ctx context.Context, state *AgentConfi
 		return nil, diags
 	}
 
-	kibana, d := scoped.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return nil, diags
-	}
+	kibana := scoped.GetKibanaOapiClient()
 
 	apiResp, err := kibana.API.GetAgentConfigurationsWithResponse(
 		ctx,

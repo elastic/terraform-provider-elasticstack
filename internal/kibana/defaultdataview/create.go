@@ -44,11 +44,7 @@ func writeDefaultDataView(
 	plan := req.Plan
 	var diags diag.Diagnostics
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[defaultDataViewModel]{}, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	dataViewID := plan.DataViewID.ValueStringPointer()
 	force := plan.Force.ValueBool()

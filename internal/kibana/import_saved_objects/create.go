@@ -51,11 +51,7 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 		return
 	}
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	params := kbapi.PostSavedObjectsImportParams{}
 	if typeutils.IsKnown(model.Overwrite) && model.Overwrite.ValueBool() {

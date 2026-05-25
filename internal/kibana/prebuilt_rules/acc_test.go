@@ -151,8 +151,7 @@ func deleteSingleDetectionRule(t *testing.T, spaceID string) {
 	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 
-	oapiClient, diags := client.GetKibanaOapiClient()
-	require.Empty(t, diags)
+	oapiClient := client.GetKibanaOapiClient()
 
 	resp, err := oapiClient.API.FindRulesWithResponse(t.Context(), &kbapi.FindRulesParams{}, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	require.NoError(t, err)

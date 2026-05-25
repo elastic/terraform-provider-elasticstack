@@ -70,11 +70,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	rule.RuleID = ruleID
 	rule.SpaceID = spaceID
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	// Update the rule (enable/disable logic is handled inside)
 	_, updateDiags := kibanaoapi.UpdateAlertingRule(ctx, oapiClient, rule.SpaceID, rule)

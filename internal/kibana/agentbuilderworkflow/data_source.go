@@ -73,11 +73,7 @@ func readWorkflowDataSource(ctx context.Context, client *clients.KibanaScopedCli
 		return config, diags
 	}
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return config, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	spaceID := "default"
 	if typeutils.IsKnown(config.SpaceID) {

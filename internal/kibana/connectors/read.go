@@ -31,11 +31,7 @@ import (
 func (r *Resource) readConnectorFromAPI(ctx context.Context, client *clients.KibanaScopedClient, model *tfModel) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return false, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	compositeID, diagsTemp := model.GetID()
 	diags.Append(diagsTemp...)

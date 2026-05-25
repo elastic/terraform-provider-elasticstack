@@ -93,11 +93,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	oapi, d := apiClient.GetKibanaOapiClient()
-	response.Diagnostics.Append(d...)
-	if response.Diagnostics.HasError() {
-		return
-	}
+	oapi := apiClient.GetKibanaOapiClient()
 
 	indicator, convErr := kibanaoapi.ResponseIndicatorToCreateIndicator(apiModel.Indicator)
 	if convErr != nil {

@@ -43,11 +43,7 @@ func updateRole(ctx context.Context, client *clients.KibanaScopedClient, req ent
 		diags.AddError("Internal error", "resource name mismatch during update")
 		return entitycore.KibanaWriteResult[resourceModel]{Model: prior}, diags
 	}
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[resourceModel]{Model: prior}, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 	createOnly := false
 	params := kbapi.PutSecurityRoleNameParams{
 		CreateOnly: &createOnly,

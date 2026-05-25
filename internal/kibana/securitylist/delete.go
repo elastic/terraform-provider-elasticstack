@@ -29,11 +29,7 @@ import (
 func deleteSecurityList(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ Model) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	params := &kbapi.DeleteListParams{
 		Id: resourceID,

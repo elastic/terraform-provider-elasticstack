@@ -52,11 +52,7 @@ func (r *EnableRuleResource) upsert(ctx context.Context, plan tfsdk.Plan, state 
 		return diags
 	}
 
-	client, d := apiClient.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return diags
-	}
+	client := apiClient.GetKibanaOapiClient()
 
 	spaceID := model.SpaceID.ValueString()
 	key := model.Key.ValueString()

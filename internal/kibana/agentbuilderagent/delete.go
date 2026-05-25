@@ -26,9 +26,6 @@ import (
 )
 
 func deleteAgent(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, _ agentModel) diag.Diagnostics {
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	if getDiags.HasError() {
-		return getDiags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 	return kibanaoapi.DeleteAgent(ctx, oapiClient, spaceID, resourceID)
 }

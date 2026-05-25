@@ -46,11 +46,7 @@ func updateDataView(
 	}
 	stateModel := *req.Prior
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[dataViewModel]{}, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	body, bodyDiags := planModel.toAPIUpdateModel(ctx)
 	diags.Append(bodyDiags...)

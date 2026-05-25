@@ -32,11 +32,7 @@ func readWorkflow(ctx context.Context, client *clients.KibanaScopedClient, resou
 	// Restore space_id so populateFromAPI can build the composite ID correctly.
 	prior.SpaceID = types.StringValue(spaceID)
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	if getDiags.HasError() {
-		diags.Append(getDiags...)
-		return prior, false, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	workflow, d := kibanaoapi.GetWorkflow(ctx, oapiClient, spaceID, resourceID)
 	diags.Append(d...)

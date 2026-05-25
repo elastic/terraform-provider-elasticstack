@@ -841,10 +841,7 @@ func testCheckAlertingRuleAPIParams(resourceName string, check func(params map[s
 			return err
 		}
 
-		oapiClient, getDiags := client.GetKibanaOapiClient()
-		if getDiags.HasError() {
-			return fmt.Errorf("failed to get kibana client: %v", getDiags)
-		}
+		oapiClient := client.GetKibanaOapiClient()
 
 		rule, diags := kibanaoapi.GetAlertingRule(context.Background(), oapiClient, compID.ClusterID, compID.ResourceID)
 		if diags.HasError() {

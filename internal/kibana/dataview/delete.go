@@ -34,11 +34,7 @@ func deleteDataView(
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	diags.Append(kibanaoapi.DeleteDataView(ctx, oapiClient, spaceID, resourceID)...)
 	return diags

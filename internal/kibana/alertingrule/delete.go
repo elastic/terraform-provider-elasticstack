@@ -46,11 +46,7 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 
 	ruleID, spaceID := state.getRuleIDAndSpaceID()
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	deleteDiags := kibanaoapi.DeleteAlertingRule(ctx, oapiClient, spaceID, ruleID)
 	resp.Diagnostics.Append(deleteDiags...)

@@ -49,11 +49,7 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	// Build the update request body using model method
 	body, diags := plan.toUpdateRequest(ctx, compID.ResourceID, client)
