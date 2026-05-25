@@ -73,24 +73,24 @@ func PopulateLensMetricDefaults(model map[string]any) map[string]any {
 		model["fit"] = false
 	}
 	if _, exists := model["color"]; !exists {
-		model["color"] = map[string]any{"type": "auto"}
+		model["color"] = map[string]any{attrType: colorTypeAuto}
 	}
 
-	metricType, _ := model["type"].(string)
+	metricType, _ := model[attrType].(string)
 
 	if metricType == "primary" {
-		if _, exists := model["value"]; !exists {
-			model["value"] = map[string]any{"alignment": "right"}
-		} else if v, ok := model["value"].(map[string]any); ok {
-			if _, exists := v["alignment"]; !exists {
-				v["alignment"] = "right"
+		if _, exists := model[attrValue]; !exists {
+			model[attrValue] = map[string]any{attrAlignment: attrAlignRight}
+		} else if v, ok := model[attrValue].(map[string]any); ok {
+			if _, exists := v[attrAlignment]; !exists {
+				v[attrAlignment] = attrAlignRight
 			}
 		}
 		if _, exists := model["labels"]; !exists {
-			model["labels"] = map[string]any{"alignment": "left"}
+			model["labels"] = map[string]any{attrAlignment: "left"}
 		} else if l, ok := model["labels"].(map[string]any); ok {
-			if _, exists := l["alignment"]; !exists {
-				l["alignment"] = "left"
+			if _, exists := l[attrAlignment]; !exists {
+				l[attrAlignment] = "left"
 			}
 		}
 	}
@@ -99,11 +99,11 @@ func PopulateLensMetricDefaults(model map[string]any) map[string]any {
 		if _, exists := model["placement"]; !exists {
 			model["placement"] = "before"
 		}
-		if _, exists := model["value"]; !exists {
-			model["value"] = map[string]any{"alignment": "right"}
-		} else if v, ok := model["value"].(map[string]any); ok {
-			if _, exists := v["alignment"]; !exists {
-				v["alignment"] = "right"
+		if _, exists := model[attrValue]; !exists {
+			model[attrValue] = map[string]any{attrAlignment: attrAlignRight}
+		} else if v, ok := model[attrValue].(map[string]any); ok {
+			if _, exists := v[attrAlignment]; !exists {
+				v[attrAlignment] = attrAlignRight
 			}
 		}
 	}
@@ -119,8 +119,8 @@ func PopulateMetricChartMetricDefaults(model map[string]any) map[string]any {
 		return model
 	}
 
-	if metricType, _ := model["type"].(string); metricType == "secondary" && !hadColor {
-		model["color"] = map[string]any{"type": "none"}
+	if metricType, _ := model[attrType].(string); metricType == "secondary" && !hadColor {
+		model["color"] = map[string]any{attrType: "none"}
 	}
 
 	return model
@@ -137,7 +137,7 @@ func PopulatePartitionGroupByDefaults(model []map[string]any) []map[string]any {
 			continue
 		}
 		operation, _ := item["operation"].(string)
-		if operation == "value" {
+		if operation == attrValue {
 			continue
 		}
 		if operation != OperationTerms {
@@ -148,15 +148,15 @@ func PopulatePartitionGroupByDefaults(model []map[string]any) []map[string]any {
 		}
 		if _, exists := item["format"]; !exists {
 			item["format"] = map[string]any{
-				"type":     "number",
+				attrType:   "number",
 				"decimals": float64(2),
 			}
 		}
 		if _, exists := item["rank_by"]; !exists {
 			item["rank_by"] = map[string]any{
-				"type":      "column",
-				"metric":    float64(0),
-				"direction": "desc",
+				attrType:      attrColumn,
+				attrMetric:    float64(0),
+				attrDirection: sortDirectionDesc,
 			}
 		}
 		if _, exists := item["size"]; !exists {
@@ -179,7 +179,7 @@ func PopulatePartitionMetricsDefaults(model []map[string]any) []map[string]any {
 		if model[i] == nil {
 			continue
 		}
-		if operation, ok := model[i]["operation"].(string); ok && operation == "value" {
+		if operation, ok := model[i]["operation"].(string); ok && operation == attrValue {
 			if _, exists := model[i]["format"]; !exists {
 				model[i]["format"] = nil
 			}
@@ -199,13 +199,13 @@ func PopulateGaugeMetricDefaults(model map[string]any) map[string]any {
 		model["empty_as_null"] = false
 	}
 	if _, exists := model["title"]; !exists {
-		model["title"] = map[string]any{"visible": true}
+		model["title"] = map[string]any{attrVisible: true}
 	}
 	if _, exists := model["ticks"]; !exists {
-		model["ticks"] = map[string]any{"visible": true, "mode": "bands"}
+		model["ticks"] = map[string]any{attrVisible: true, attrMode: "bands"}
 	}
 	if _, exists := model["color"]; !exists {
-		model["color"] = map[string]any{"type": "auto"}
+		model["color"] = map[string]any{attrType: colorTypeAuto}
 	}
 
 	return model
@@ -232,7 +232,7 @@ func populateFieldMetricLensDefaults(model map[string]any) map[string]any {
 			model["show_metric_label"] = true
 		}
 		if _, exists := model["color"]; !exists {
-			model["color"] = map[string]any{"type": "auto"}
+			model["color"] = map[string]any{attrType: colorTypeAuto}
 		}
 	}
 	return model
@@ -248,7 +248,7 @@ func PopulatePieChartMetricDefaults(model map[string]any) map[string]any {
 		model["empty_as_null"] = false
 	}
 	if _, exists := model["color"]; !exists {
-		model["color"] = map[string]any{"type": "auto"}
+		model["color"] = map[string]any{attrType: colorTypeAuto}
 	}
 
 	if format, ok := model["format"].(map[string]any); ok {
@@ -277,9 +277,9 @@ func PopulateLensGroupByDefaults(model map[string]any) map[string]any {
 		}
 		if _, exists := model["rank_by"]; !exists {
 			model["rank_by"] = map[string]any{
-				"direction": "desc",
-				"metric":    float64(0),
-				"type":      "column",
+				attrDirection: sortDirectionDesc,
+				attrMetric:    float64(0),
+				attrType:      attrColumn,
 			}
 		}
 	}

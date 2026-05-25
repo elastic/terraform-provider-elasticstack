@@ -37,22 +37,22 @@ func deleteClusterSettings(ctx context.Context, client *clients.ElasticsearchSco
 	}
 
 	pSettings := make(map[string]any)
-	if v := configuredSettings["persistent"]; v != nil {
+	if v := configuredSettings[categoryPersistent]; v != nil {
 		for k := range v.(map[string]any) {
 			pSettings[k] = nil
 		}
 	}
 
 	tSettings := make(map[string]any)
-	if v := configuredSettings["transient"]; v != nil {
+	if v := configuredSettings[categoryTransient]; v != nil {
 		for k := range v.(map[string]any) {
 			tSettings[k] = nil
 		}
 	}
 
 	apiSettings := map[string]any{
-		"persistent": pSettings,
-		"transient":  tSettings,
+		categoryPersistent: pSettings,
+		categoryTransient:  tSettings,
 	}
 
 	diags.Append(elasticsearch.PutSettings(ctx, client, apiSettings)...)

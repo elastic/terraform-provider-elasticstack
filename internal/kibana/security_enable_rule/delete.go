@@ -42,9 +42,9 @@ func deleteSecurityEnableRule(ctx context.Context, client *clients.KibanaScopedC
 
 	if !disableOnDestroy {
 		tflog.Info(ctx, "Skipping rule disable on delete (disable_on_destroy=false)", map[string]any{
-			"space_id": spaceID,
-			"key":      key,
-			"value":    value,
+			attrSpaceID: spaceID,
+			attrKey:     key,
+			attrValue:   value,
 		})
 		return diags
 	}
@@ -56,9 +56,9 @@ func deleteSecurityEnableRule(ctx context.Context, client *clients.KibanaScopedC
 	}
 
 	tflog.Info(ctx, "Disabling rules on delete", map[string]any{
-		"space_id": spaceID,
-		"key":      key,
-		"value":    value,
+		attrSpaceID: spaceID,
+		attrKey:     key,
+		attrValue:   value,
 	})
 
 	diags.Append(kibanaoapi.DisableRulesByTag(ctx, oapiClient, spaceID, key, value)...)

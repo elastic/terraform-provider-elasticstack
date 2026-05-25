@@ -34,7 +34,7 @@ func SetUnknownIfAccessHasChanges() planmodifier.String {
 		"Sets the attribute value to unknown if the access attribute has changed for cross-cluster API keys",
 		func(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) bool {
 			var keyType types.String
-			resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("type"), &keyType)...)
+			resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root(attrType), &keyType)...)
 			if resp.Diagnostics.HasError() {
 				return false
 			}
@@ -44,8 +44,8 @@ func SetUnknownIfAccessHasChanges() planmodifier.String {
 			}
 
 			var stateAccess, configAccess types.Object
-			resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("access"), &stateAccess)...)
-			resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("access"), &configAccess)...)
+			resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root(attrAccess), &stateAccess)...)
+			resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root(attrAccess), &configAccess)...)
 			if resp.Diagnostics.HasError() {
 				return false
 			}

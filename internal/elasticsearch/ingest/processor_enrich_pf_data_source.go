@@ -73,23 +73,23 @@ func (m *processorEnrichModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorEnrichDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource",
+			Description: descIdentifier,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
-		"field": schema.StringAttribute{
+		attrField: schema.StringAttribute{
 			Description: "The field in the input document that matches the policies match_field used to retrieve the enrichment data.",
 			Required:    true,
 		},
-		"target_field": schema.StringAttribute{
+		attrTargetField: schema.StringAttribute{
 			Description: "Field added to incoming documents to contain enrich data.",
 			Required:    true,
 		},
-		"ignore_missing": schema.BoolAttribute{
-			Description: "If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.",
+		attrIgnoreMissing: schema.BoolAttribute{
+			Description: descIgnoreMissingDocStop,
 			Optional:    true,
 			Computed:    true,
 		},
@@ -97,7 +97,7 @@ func NewProcessorEnrichDataSource() datasource.DataSource {
 			Description: "The name of the enrich policy to use.",
 			Required:    true,
 		},
-		"override": schema.BoolAttribute{
+		attrOverride: schema.BoolAttribute{
 			Description: "If processor will update fields with pre-existing non-null-valued field.",
 			Optional:    true,
 			Computed:    true,

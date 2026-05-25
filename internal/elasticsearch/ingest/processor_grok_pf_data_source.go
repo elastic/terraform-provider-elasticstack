@@ -112,14 +112,14 @@ func (m *processorGrokModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorGrokDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource",
+			Description: descIdentifier,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
-		"field": schema.StringAttribute{
+		attrField: schema.StringAttribute{
 			Description: "The field to use for grok expression parsing",
 			Required:    true,
 		},
@@ -144,7 +144,7 @@ func NewProcessorGrokDataSource() datasource.DataSource {
 			Optional:    true,
 			Computed:    true,
 		},
-		"ignore_missing": schema.BoolAttribute{
+		attrIgnoreMissing: schema.BoolAttribute{
 			Description: "If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document",
 			Optional:    true,
 			Computed:    true,

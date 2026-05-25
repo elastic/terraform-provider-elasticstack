@@ -37,11 +37,11 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				Computed:            true,
 				MarkdownDescription: "The composite ID of the agent: `<space_id>/<agent_id>`.",
 			},
-			"agent_id": dsschema.StringAttribute{
+			attrAgentID: dsschema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The agent ID.",
 			},
-			"space_id": dsschema.StringAttribute{
+			attrSpaceID: dsschema.StringAttribute{
 				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
 				Optional:    true,
 			},
@@ -50,23 +50,23 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				MarkdownDescription: "If `true`, exports the agent along with its tools and workflows. If omitted, `false` is used (tool rows only list `id`, `space_id`, and `tool_id` unless this is `true`).",
 				Optional:            true,
 			},
-			"name": dsschema.StringAttribute{
+			attrName: dsschema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The agent name.",
 			},
-			"description": dsschema.StringAttribute{
+			attrDescription: dsschema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The agent description.",
 			},
-			"avatar_color": dsschema.StringAttribute{
+			attrAvatarColor: dsschema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "Hex color code for the agent avatar (e.g., `#BFDBFF`).",
 			},
-			"avatar_symbol": dsschema.StringAttribute{
+			attrAvatarSymbol: dsschema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "Symbol or initials for the agent avatar (e.g., `SI`).",
 			},
-			"labels": dsschema.SetAttribute{
+			attrLabels: dsschema.SetAttribute{
 				ElementType:         types.StringType,
 				Computed:            true,
 				MarkdownDescription: "List of labels for the agent.",
@@ -80,7 +80,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				Computed:            true,
 				MarkdownDescription: "Set of skill IDs assigned to the agent. Requires Elastic Stack 9.4.0 or later.",
 			},
-			"tools": dsschema.ListNestedAttribute{
+			attrTools: dsschema.ListNestedAttribute{
 				Description: "Tools attached to the agent. When include_dependencies is true, each entry includes full tool data and workflow YAML for workflow-type tools. " +
 					"When false, only id (composite space/tool), space_id, and tool_id are set.",
 				Computed: true,
@@ -90,7 +90,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 							Description: "The tool ID to look up.",
 							Computed:    true,
 						},
-						"space_id": dsschema.StringAttribute{
+						attrSpaceID: dsschema.StringAttribute{
 							Description: "An identifier for the space. If space_id is not provided, the default space is used.",
 							Computed:    true,
 						},
@@ -102,7 +102,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 							Description: "The type of the tool (esql, index_search, workflow, mcp).",
 							Computed:    true,
 						},
-						"description": dsschema.StringAttribute{
+						attrDescription: dsschema.StringAttribute{
 							Description: "Description of what the tool does.",
 							Computed:    true,
 						},

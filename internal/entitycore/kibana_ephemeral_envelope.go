@@ -89,7 +89,7 @@ func NewKibanaEphemeralResource[T KibanaEphemeralModel, S any](
 			},
 			encodeConn:         encodeKibanaConnection,
 			decodeConn:         decodeKibanaConnection,
-			schemaBlockKey:     "kibana_connection",
+			schemaBlockKey:     blockKibanaConnection,
 			schemaBlockFactory: providerschema.GetKbEphemeralConnectionBlock,
 			errorSummary:       "Kibana ephemeral envelope internal error",
 		},

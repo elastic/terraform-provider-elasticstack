@@ -96,11 +96,11 @@ func (m *processorInferenceModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorInferenceDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource",
+			Description: descIdentifier,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
 		"model_id": schema.StringAttribute{
@@ -113,7 +113,7 @@ func NewProcessorInferenceDataSource() datasource.DataSource {
 			Optional:    true,
 			ElementType: types.StringType,
 		},
-		"target_field": schema.StringAttribute{
+		attrTargetField: schema.StringAttribute{
 			Description: "Field added to incoming documents to contain results objects.",
 			Optional:    true,
 		},

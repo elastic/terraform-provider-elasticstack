@@ -30,6 +30,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
+// attrNames is the Terraform attribute key for the API key access `names`
+// list used by both search and replication blocks across the resource and
+// ephemeral resource schemas.
+const attrNames = "names"
+
 // Attribute descriptions shared between the resource and ephemeral resource
 // schemas. Per-flavor overrides (e.g. ephemeral's expiration that mentions
 // invalidate_on_close) live next to the schema that needs them.
@@ -103,7 +108,7 @@ func AccessAttributesResource() map[string]schema.Attribute {
 			Optional:    true,
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
-					"names": schema.ListAttribute{
+					attrNames: schema.ListAttribute{
 						Description: AccessSearchNamesDescription,
 						Required:    true,
 						ElementType: types.StringType,
@@ -130,7 +135,7 @@ func AccessAttributesResource() map[string]schema.Attribute {
 			Optional:    true,
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
-					"names": schema.ListAttribute{
+					attrNames: schema.ListAttribute{
 						Description: AccessReplicationNamesDescription,
 						Required:    true,
 						ElementType: types.StringType,
@@ -150,7 +155,7 @@ func AccessAttributesEphemeral() map[string]eschema.Attribute {
 			Optional:    true,
 			NestedObject: eschema.NestedAttributeObject{
 				Attributes: map[string]eschema.Attribute{
-					"names": eschema.ListAttribute{
+					attrNames: eschema.ListAttribute{
 						Description: AccessSearchNamesDescription,
 						Required:    true,
 						ElementType: types.StringType,
@@ -177,7 +182,7 @@ func AccessAttributesEphemeral() map[string]eschema.Attribute {
 			Optional:    true,
 			NestedObject: eschema.NestedAttributeObject{
 				Attributes: map[string]eschema.Attribute{
-					"names": eschema.ListAttribute{
+					attrNames: eschema.ListAttribute{
 						Description: AccessReplicationNamesDescription,
 						Required:    true,
 						ElementType: types.StringType,

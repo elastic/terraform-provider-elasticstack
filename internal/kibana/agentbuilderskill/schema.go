@@ -62,7 +62,7 @@ func getResourceSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "Human-readable name for the skill.",
 				Validators: []validator.String{
@@ -73,7 +73,7 @@ func getResourceSchema(_ context.Context) schema.Schema {
 				Required:            true,
 				MarkdownDescription: "Description of what the skill does.",
 			},
-			"content": schema.StringAttribute{
+			attrContent: schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "Skill instructions content as markdown.",
 			},
@@ -87,7 +87,7 @@ func getResourceSchema(_ context.Context) schema.Schema {
 				MarkdownDescription: "Ordered list of referenced-content entries. Up to 100 entries; order is preserved.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
+						attrName: schema.StringAttribute{
 							Required:            true,
 							MarkdownDescription: "Name of the referenced content.",
 						},
@@ -102,7 +102,7 @@ func getResourceSchema(_ context.Context) schema.Schema {
 								),
 							},
 						},
-						"content": schema.StringAttribute{
+						attrContent: schema.StringAttribute{
 							Required:            true,
 							MarkdownDescription: "Content of the reference.",
 						},

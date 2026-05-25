@@ -42,53 +42,53 @@ var (
 	// pre-processor in toIndexSettings() and are skipped in the reflection loop
 	// because they have no corresponding flat tfsdk struct field.
 	sortKeysExpandedFromNestedBlock = map[string]bool{
-		"sort.missing": true,
-		"sort.mode":    true,
+		settingSortMissing: true,
+		settingSortMode:    true,
 	}
 
 	staticSettingsKeys = []string{
-		"number_of_shards",
-		"number_of_routing_shards",
-		"codec",
-		"routing_partition_size",
-		"load_fixed_bitset_filters_eagerly",
-		"shard.check_on_startup",
-		"sort.field",
-		"sort.order",
-		"sort.missing",
-		"sort.mode",
-		"mapping.coerce",
+		settingNumberOfShards,
+		settingNumberOfRoutingShards,
+		settingCodec,
+		settingRoutingPartitionSize,
+		settingLoadFixedBitsetFiltersEagerly,
+		settingShardCheckOnStartup,
+		settingSortField,
+		settingSortOrder,
+		settingSortMissing,
+		settingSortMode,
+		settingMappingCoerce,
 	}
 	dynamicSettingsKeys = []string{
-		"number_of_replicas",
-		"auto_expand_replicas",
-		"refresh_interval",
-		"search.idle.after",
+		settingNumberOfReplicas,
+		settingAutoExpandReplicas,
+		settingRefreshInterval,
+		settingSearchIdleAfter,
 		"mapping.total_fields.limit",
-		"max_result_window",
-		"max_inner_result_window",
-		"max_rescore_window",
-		"max_docvalue_fields_search",
-		"max_script_fields",
-		"max_ngram_diff",
-		"max_shingle_diff",
+		settingMaxResultWindow,
+		settingMaxInnerResultWindow,
+		settingMaxRescoreWindow,
+		settingMaxDocvalueFieldsSearch,
+		settingMaxScriptFields,
+		settingMaxNgramDiff,
+		settingMaxShingleDiff,
 		"blocks.read_only",
 		"blocks.read_only_allow_delete",
 		"blocks.read",
 		"blocks.write",
 		"blocks.metadata",
-		"max_refresh_listeners",
+		settingMaxRefreshListeners,
 		"analyze.max_token_count",
 		"highlight.max_analyzed_offset",
-		"max_terms_count",
-		"max_regex_length",
-		"query.default_field",
-		"routing.allocation.enable",
-		"routing.rebalance.enable",
-		"gc_deletes",
-		"default_pipeline",
-		"final_pipeline",
-		"unassigned.node_left.delayed_timeout",
+		settingMaxTermsCount,
+		settingMaxRegexLength,
+		settingQueryDefaultField,
+		settingRoutingAllocationEnable,
+		settingRoutingRebalanceEnable,
+		settingGCDeletes,
+		settingDefaultPipeline,
+		settingFinalPipeline,
+		settingUnassignedNodeLeftDelayedTimeout,
 		"search.slowlog.threshold.query.warn",
 		"search.slowlog.threshold.query.info",
 		"search.slowlog.threshold.query.debug",
@@ -380,7 +380,7 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]any, diag.
 				sortFields[i] = entry.Field.ValueString()
 
 				if entry.Order.IsNull() || entry.Order.IsUnknown() {
-					sortOrders[i] = "asc"
+					sortOrders[i] = sortOrderAsc
 				} else {
 					sortOrders[i] = entry.Order.ValueString()
 				}
@@ -398,14 +398,14 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]any, diag.
 				// else: sortModes[i] stays "" (empty placeholder for positional alignment)
 			}
 
-			settings["sort.field"] = sortFields
-			settings["sort.order"] = sortOrders
+			settings[settingSortField] = sortFields
+			settings[settingSortOrder] = sortOrders
 
 			if !allMissingNull {
-				settings["sort.missing"] = sortMissing
+				settings[settingSortMissing] = sortMissing
 			}
 			if !allModeNull {
-				settings["sort.mode"] = sortModes
+				settings[settingSortMode] = sortModes
 			}
 		}
 	}

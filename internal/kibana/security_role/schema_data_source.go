@@ -29,7 +29,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Description: "Retrieve a specific role. See the [role management API documentation](https://www.elastic.co/guide/en/kibana/current/role-management-specific-api-get.html) for more details.",
 		Attributes: map[string]schema.Attribute{
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				Description: "The name for the role.",
 				Required:    true,
 			},
@@ -48,93 +48,93 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 				Description: "Elasticsearch cluster and index privileges.",
 				Computed:    true,
 				Attributes: map[string]schema.Attribute{
-					"cluster": schema.SetAttribute{
+					attrCluster: schema.SetAttribute{
 						Description: "List of the cluster privileges.",
 						Computed:    true,
 						ElementType: types.StringType,
 					},
-					"run_as": schema.SetAttribute{
+					attrRunAs: schema.SetAttribute{
 						Description: "A list of usernames the owners of this role can impersonate.",
 						Computed:    true,
 						ElementType: types.StringType,
 					},
-					"indices": schema.SetNestedAttribute{
+					attrIndices: schema.SetNestedAttribute{
 						Description: "A list of indices permissions entries.",
 						Computed:    true,
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
-								"field_security": schema.SingleNestedAttribute{
-									Description: "The document fields that the owners of the role have read access to.",
+								attrFieldSecurity: schema.SingleNestedAttribute{
+									Description: descFieldSecurityBlock,
 									Computed:    true,
 									Attributes: map[string]schema.Attribute{
-										"grant": schema.SetAttribute{
-											Description: "List of the fields to grant the access to.",
+										attrGrant: schema.SetAttribute{
+											Description: descFieldSecurityGrant,
 											Computed:    true,
 											ElementType: types.StringType,
 										},
-										"except": schema.SetAttribute{
-											Description: "List of the fields to which the grants will not be applied.",
+										attrExcept: schema.SetAttribute{
+											Description: descFieldSecurityExcept,
 											Computed:    true,
 											ElementType: types.StringType,
 										},
 									},
 								},
-								"query": schema.StringAttribute{
-									Description: "A search query that defines the documents the owners of the role have read access to.",
+								attrQuery: schema.StringAttribute{
+									Description: descIndexQuery,
 									Computed:    true,
 									CustomType:  jsontypes.NormalizedType{},
 								},
-								"names": schema.SetAttribute{
-									Description: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
+								attrNames: schema.SetAttribute{
+									Description: descIndexNames,
 									Computed:    true,
 									ElementType: types.StringType,
 								},
-								"privileges": schema.SetAttribute{
-									Description: "The index level privileges that the owners of the role have on the specified indices.",
+								attrPrivileges: schema.SetAttribute{
+									Description: descIndexPrivileges,
 									Computed:    true,
 									ElementType: types.StringType,
 								},
 							},
 						},
 					},
-					"remote_indices": schema.SetNestedAttribute{
+					attrRemoteIndices: schema.SetNestedAttribute{
 						Description: remoteIndicesPermissionsDescription,
 						Computed:    true,
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
-								"clusters": schema.SetAttribute{
+								attrClusters: schema.SetAttribute{
 									Description: "A list of cluster aliases to which the permissions in this entry apply.",
 									Computed:    true,
 									ElementType: types.StringType,
 								},
-								"field_security": schema.SingleNestedAttribute{
-									Description: "The document fields that the owners of the role have read access to.",
+								attrFieldSecurity: schema.SingleNestedAttribute{
+									Description: descFieldSecurityBlock,
 									Computed:    true,
 									Attributes: map[string]schema.Attribute{
-										"grant": schema.SetAttribute{
-											Description: "List of the fields to grant the access to.",
+										attrGrant: schema.SetAttribute{
+											Description: descFieldSecurityGrant,
 											Computed:    true,
 											ElementType: types.StringType,
 										},
-										"except": schema.SetAttribute{
-											Description: "List of the fields to which the grants will not be applied.",
+										attrExcept: schema.SetAttribute{
+											Description: descFieldSecurityExcept,
 											Computed:    true,
 											ElementType: types.StringType,
 										},
 									},
 								},
-								"query": schema.StringAttribute{
-									Description: "A search query that defines the documents the owners of the role have read access to.",
+								attrQuery: schema.StringAttribute{
+									Description: descIndexQuery,
 									Computed:    true,
 									CustomType:  jsontypes.NormalizedType{},
 								},
-								"names": schema.SetAttribute{
-									Description: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
+								attrNames: schema.SetAttribute{
+									Description: descIndexNames,
 									Computed:    true,
 									ElementType: types.StringType,
 								},
-								"privileges": schema.SetAttribute{
-									Description: "The index level privileges that the owners of the role have on the specified indices.",
+								attrPrivileges: schema.SetAttribute{
+									Description: descIndexPrivileges,
 									Computed:    true,
 									ElementType: types.StringType,
 								},
@@ -148,26 +148,26 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 				Computed:    true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"spaces": schema.SetAttribute{
+						attrSpaces: schema.SetAttribute{
 							Description: "The spaces to apply the privileges to. To grant access to all spaces, set to [\"*\"], or omit the value.",
 							Computed:    true,
 							ElementType: types.StringType,
 						},
-						"base": schema.SetAttribute{
+						attrBase: schema.SetAttribute{
 							Description: "A base privilege. When specified, the base must be [\"all\"] or [\"read\"].",
 							Computed:    true,
 							ElementType: types.StringType,
 						},
-						"feature": schema.SetNestedAttribute{
+						attrFeature: schema.SetNestedAttribute{
 							Description: "List of privileges for specific features.",
 							Computed:    true,
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
-									"name": schema.StringAttribute{
+									attrName: schema.StringAttribute{
 										Description: "Feature name.",
 										Computed:    true,
 									},
-									"privileges": schema.SetAttribute{
+									attrPrivileges: schema.SetAttribute{
 										Description: "Feature privileges.",
 										Computed:    true,
 										ElementType: types.StringType,

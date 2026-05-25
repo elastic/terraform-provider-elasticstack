@@ -36,7 +36,7 @@ type processorAppendModel struct {
 	MediaType       types.String `tfsdk:"media_type"`
 }
 
-func (m *processorAppendModel) TypeName() string { return "append" }
+func (m *processorAppendModel) TypeName() string { return processorTypeAppend }
 
 func (m *processorAppendModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -86,24 +86,24 @@ func (m *processorAppendModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorAppendDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource",
+			Description: descIdentifier,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
-		"field": schema.StringAttribute{
+		attrField: schema.StringAttribute{
 			Description: "The field to be appended to.",
 			Required:    true,
 		},
-		"value": schema.ListAttribute{
+		attrValue: schema.ListAttribute{
 			Description: "The value to be appended.",
 			Required:    true,
 			ElementType: types.StringType,
 			Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 		},
-		"allow_duplicates": schema.BoolAttribute{
+		attrAllowDuplicates: schema.BoolAttribute{
 			Description: "If `false`, the processor does not append values already present in the field.",
 			Optional:    true,
 			Computed:    true,

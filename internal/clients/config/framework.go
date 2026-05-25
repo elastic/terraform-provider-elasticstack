@@ -39,7 +39,7 @@ func NewFromFrameworkKibanaResource(ctx context.Context, kibanaConns []KibanaCon
 	ua := buildUserAgent(version)
 	base := baseConfig{
 		UserAgent: ua,
-		Header:    http.Header{"User-Agent": []string{ua}},
+		Header:    http.Header{headerUserAgent: []string{ua}},
 	}
 
 	client := Client{

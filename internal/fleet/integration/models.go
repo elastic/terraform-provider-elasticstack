@@ -22,6 +22,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// Terraform schema attribute keys reused across the schema definition, the
+// V0 state-upgrade schema, and debug logging.
+const (
+	attrName    = "name"
+	attrVersion = "version"
+)
+
 type integrationModel struct {
 	ID                        types.String `tfsdk:"id"`
 	KibanaConnection          types.List   `tfsdk:"kibana_connection"`

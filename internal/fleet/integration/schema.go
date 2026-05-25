@@ -40,14 +40,14 @@ set ` + "`skip_destroy` to `true`."
 			Description: "The ID of this resource.",
 			Computed:    true,
 		},
-		"name": schema.StringAttribute{
+		attrName: schema.StringAttribute{
 			Description: "The integration package name.",
 			Required:    true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
 			},
 		},
-		"version": schema.StringAttribute{
+		attrVersion: schema.StringAttribute{
 			Description: "The integration package version.",
 			Required:    true,
 		},

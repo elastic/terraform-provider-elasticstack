@@ -66,14 +66,14 @@ func (m *processorSortModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorSortDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource",
+			Description: descIdentifier,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
-		"field": schema.StringAttribute{
+		attrField: schema.StringAttribute{
 			Description: "The field to be sorted",
 			Required:    true,
 		},
@@ -83,7 +83,7 @@ func NewProcessorSortDataSource() datasource.DataSource {
 			Computed:    true,
 			Validators:  []validator.String{stringvalidator.OneOf("asc", "desc")},
 		},
-		"target_field": schema.StringAttribute{
+		attrTargetField: schema.StringAttribute{
 			Description: "The field to assign the sorted value to, by default `field` is updated in-place",
 			Optional:    true,
 		},

@@ -22,7 +22,15 @@ import (
 	"maps"
 )
 
-const chunkingStrategySentence = "sentence"
+// Chunking strategy values accepted by the Elasticsearch inference endpoint
+// chunking_settings.strategy field. Kept as constants so the chunking
+// defaults helper and its tests share the same identifiers.
+const (
+	chunkingStrategySentence  = "sentence"
+	chunkingStrategyWord      = "word"
+	chunkingStrategyNone      = "none"
+	chunkingStrategyRecursive = "recursive"
+)
 
 // populateChunkingSettingsDefaults fills documented Elasticsearch defaults for
 // chunking_settings so plan/state semantic equality matches when the API echoes
@@ -48,14 +56,14 @@ func populateChunkingSettingsDefaults(model map[string]any) map[string]any {
 		if _, ok := out["sentence_overlap"]; !ok {
 			out["sentence_overlap"] = float64(1)
 		}
-	case "word":
+	case chunkingStrategyWord:
 		if _, ok := out["max_chunk_size"]; !ok {
 			out["max_chunk_size"] = float64(250)
 		}
 		if _, ok := out["overlap"]; !ok {
 			out["overlap"] = float64(100)
 		}
-	case "none", "recursive":
+	case chunkingStrategyNone, chunkingStrategyRecursive:
 		// No single set of defaults applies; user-supplied shape is preserved.
 	}
 

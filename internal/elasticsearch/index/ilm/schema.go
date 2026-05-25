@@ -100,17 +100,17 @@ func phaseHotBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		MarkdownDescription: "The index is actively being updated and queried.",
 		Attributes: map[string]schema.Attribute{
-			"min_age": minAgeAttribute(),
+			attrMinAge: minAgeAttribute(),
 		},
 		Blocks: map[string]schema.Block{
-			"set_priority":        blockSetPriority(),
-			"unfollow":            blockUnfollow(),
-			"rollover":            blockRollover(),
-			"readonly":            blockReadonly(),
-			"shrink":              blockShrink(),
-			"forcemerge":          blockForcemerge(),
-			"searchable_snapshot": blockSearchableSnapshot(),
-			"downsample":          blockDownsample(),
+			ilmActionSetPriority:        blockSetPriority(),
+			ilmActionUnfollow:           blockUnfollow(),
+			ilmActionRollover:           blockRollover(),
+			ilmActionReadonly:           blockReadonly(),
+			ilmActionShrink:             blockShrink(),
+			ilmActionForcemerge:         blockForcemerge(),
+			ilmActionSearchableSnapshot: blockSearchableSnapshot(),
+			ilmActionDownsample:         blockDownsample(),
 		},
 	}
 }
@@ -119,17 +119,17 @@ func phaseWarmBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		MarkdownDescription: "The index is no longer being updated but is still being queried.",
 		Attributes: map[string]schema.Attribute{
-			"min_age": minAgeAttribute(),
+			attrMinAge: minAgeAttribute(),
 		},
 		Blocks: map[string]schema.Block{
-			"set_priority": blockSetPriority(),
-			"unfollow":     blockUnfollow(),
-			"readonly":     blockReadonly(),
-			"allocate":     blockAllocate(),
-			"migrate":      blockMigrate(),
-			"shrink":       blockShrink(),
-			"forcemerge":   blockForcemerge(),
-			"downsample":   blockDownsample(),
+			ilmActionSetPriority: blockSetPriority(),
+			ilmActionUnfollow:    blockUnfollow(),
+			ilmActionReadonly:    blockReadonly(),
+			ilmActionAllocate:    blockAllocate(),
+			ilmActionMigrate:     blockMigrate(),
+			ilmActionShrink:      blockShrink(),
+			ilmActionForcemerge:  blockForcemerge(),
+			ilmActionDownsample:  blockDownsample(),
 		},
 	}
 }
@@ -138,17 +138,17 @@ func phaseColdBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		MarkdownDescription: "The index is no longer being updated and is queried infrequently. The information still needs to be searchable, but it is okay if those queries are slower.",
 		Attributes: map[string]schema.Attribute{
-			"min_age": minAgeAttribute(),
+			attrMinAge: minAgeAttribute(),
 		},
 		Blocks: map[string]schema.Block{
-			"set_priority":        blockSetPriority(),
-			"unfollow":            blockUnfollow(),
-			"readonly":            blockReadonly(),
-			"searchable_snapshot": blockSearchableSnapshot(),
-			"allocate":            blockAllocate(),
-			"migrate":             blockMigrate(),
-			"freeze":              blockFreeze(),
-			"downsample":          blockDownsample(),
+			ilmActionSetPriority:        blockSetPriority(),
+			ilmActionUnfollow:           blockUnfollow(),
+			ilmActionReadonly:           blockReadonly(),
+			ilmActionSearchableSnapshot: blockSearchableSnapshot(),
+			ilmActionAllocate:           blockAllocate(),
+			ilmActionMigrate:            blockMigrate(),
+			ilmActionFreeze:             blockFreeze(),
+			ilmActionDownsample:         blockDownsample(),
 		},
 	}
 }
@@ -157,13 +157,13 @@ func phaseFrozenBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		MarkdownDescription: "The index is no longer being updated and is queried rarely. The information still needs to be searchable, but it is okay if those queries are extremely slow.",
 		Attributes: map[string]schema.Attribute{
-			"min_age": minAgeAttribute(),
+			attrMinAge: minAgeAttribute(),
 		},
 		Blocks: map[string]schema.Block{
-			"searchable_snapshot": blockSearchableSnapshotInFrozenPhase(),
+			ilmActionSearchableSnapshot: blockSearchableSnapshotInFrozenPhase(),
 		},
 		Validators: []validator.Object{
-			objectvalidator.AlsoRequires(path.MatchRelative().AtName("searchable_snapshot")),
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName(ilmActionSearchableSnapshot)),
 		},
 	}
 }
@@ -172,11 +172,11 @@ func phaseDeleteBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		MarkdownDescription: "The index is no longer needed and can safely be removed.",
 		Attributes: map[string]schema.Attribute{
-			"min_age": minAgeAttribute(),
+			attrMinAge: minAgeAttribute(),
 		},
 		Blocks: map[string]schema.Block{
-			"wait_for_snapshot": blockWaitForSnapshot(),
-			ilmPhaseDelete:      blockDeleteAction(),
+			ilmActionWaitForSnapshot: blockWaitForSnapshot(),
+			ilmPhaseDelete:           blockDeleteAction(),
 		},
 	}
 }

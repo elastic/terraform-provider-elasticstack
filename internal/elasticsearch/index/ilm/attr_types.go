@@ -26,7 +26,7 @@ import (
 func setPriorityObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"priority": types.Int64Type,
+			attrPriority: types.Int64Type,
 		},
 	}
 }
@@ -34,7 +34,7 @@ func setPriorityObjectType() types.ObjectType {
 func unfollowObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"enabled": types.BoolType,
+			attrEnabled: types.BoolType,
 		},
 	}
 }
@@ -42,16 +42,16 @@ func unfollowObjectType() types.ObjectType {
 func rolloverObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"max_age":                types.StringType,
-			"max_docs":               types.Int64Type,
-			"max_size":               types.StringType,
-			"max_primary_shard_docs": types.Int64Type,
-			"max_primary_shard_size": types.StringType,
-			"min_age":                types.StringType,
-			"min_docs":               types.Int64Type,
-			"min_size":               types.StringType,
-			"min_primary_shard_docs": types.Int64Type,
-			"min_primary_shard_size": types.StringType,
+			attrMaxAge:              types.StringType,
+			"max_docs":              types.Int64Type,
+			"max_size":              types.StringType,
+			attrMaxPrimaryShardDocs: types.Int64Type,
+			attrMaxPrimaryShardSize: types.StringType,
+			attrMinAge:              types.StringType,
+			attrMinDocs:             types.Int64Type,
+			attrMinSize:             types.StringType,
+			attrMinPrimaryShardDocs: types.Int64Type,
+			attrMinPrimaryShardSize: types.StringType,
 		},
 	}
 }
@@ -59,7 +59,7 @@ func rolloverObjectType() types.ObjectType {
 func readonlyObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"enabled": types.BoolType,
+			attrEnabled: types.BoolType,
 		},
 	}
 }
@@ -67,9 +67,9 @@ func readonlyObjectType() types.ObjectType {
 func shrinkObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"number_of_shards":         types.Int64Type,
-			"max_primary_shard_size":   types.StringType,
-			"allow_write_after_shrink": types.BoolType,
+			"number_of_shards":        types.Int64Type,
+			attrMaxPrimaryShardSize:   types.StringType,
+			attrAllowWriteAfterShrink: types.BoolType,
 		},
 	}
 }
@@ -86,8 +86,8 @@ func forcemergeObjectType() types.ObjectType {
 func searchableSnapshotObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"snapshot_repository": types.StringType,
-			"force_merge_index":   types.BoolType,
+			attrSnapshotRepository: types.StringType,
+			attrForceMergeIndex:    types.BoolType,
 		},
 	}
 }
@@ -95,8 +95,8 @@ func searchableSnapshotObjectType() types.ObjectType {
 func downsampleObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"fixed_interval": types.StringType,
-			"wait_timeout":   types.StringType,
+			attrFixedInterval: types.StringType,
+			attrWaitTimeout:   types.StringType,
 		},
 	}
 }
@@ -104,11 +104,11 @@ func downsampleObjectType() types.ObjectType {
 func allocateObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"number_of_replicas":    types.Int64Type,
-			"total_shards_per_node": types.Int64Type,
-			"include":               jsontypes.NormalizedType{},
-			"exclude":               jsontypes.NormalizedType{},
-			"require":               jsontypes.NormalizedType{},
+			attrNumberOfReplicas:   types.Int64Type,
+			attrTotalShardsPerNode: types.Int64Type,
+			attrInclude:            jsontypes.NormalizedType{},
+			attrExclude:            jsontypes.NormalizedType{},
+			attrRequire:            jsontypes.NormalizedType{},
 		},
 	}
 }
@@ -116,7 +116,7 @@ func allocateObjectType() types.ObjectType {
 func migrateObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"enabled": types.BoolType,
+			attrEnabled: types.BoolType,
 		},
 	}
 }
@@ -124,7 +124,7 @@ func migrateObjectType() types.ObjectType {
 func freezeObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"enabled": types.BoolType,
+			attrEnabled: types.BoolType,
 		},
 	}
 }
@@ -132,7 +132,7 @@ func freezeObjectType() types.ObjectType {
 func deleteActionObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"delete_searchable_snapshot": types.BoolType,
+			attrDeleteSearchableSnapshot: types.BoolType,
 		},
 	}
 }
@@ -148,15 +148,15 @@ func waitForSnapshotObjectType() types.ObjectType {
 func hotPhaseObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"min_age":             types.StringType,
-			"set_priority":        setPriorityObjectType(),
-			"unfollow":            unfollowObjectType(),
-			"rollover":            rolloverObjectType(),
-			"readonly":            readonlyObjectType(),
-			"shrink":              shrinkObjectType(),
-			"forcemerge":          forcemergeObjectType(),
-			"searchable_snapshot": searchableSnapshotObjectType(),
-			"downsample":          downsampleObjectType(),
+			attrMinAge:                  types.StringType,
+			ilmActionSetPriority:        setPriorityObjectType(),
+			ilmActionUnfollow:           unfollowObjectType(),
+			ilmActionRollover:           rolloverObjectType(),
+			ilmActionReadonly:           readonlyObjectType(),
+			ilmActionShrink:             shrinkObjectType(),
+			ilmActionForcemerge:         forcemergeObjectType(),
+			ilmActionSearchableSnapshot: searchableSnapshotObjectType(),
+			ilmActionDownsample:         downsampleObjectType(),
 		},
 	}
 }
@@ -164,15 +164,15 @@ func hotPhaseObjectType() types.ObjectType {
 func warmPhaseObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"min_age":      types.StringType,
-			"set_priority": setPriorityObjectType(),
-			"unfollow":     unfollowObjectType(),
-			"readonly":     readonlyObjectType(),
-			"allocate":     allocateObjectType(),
-			"migrate":      migrateObjectType(),
-			"shrink":       shrinkObjectType(),
-			"forcemerge":   forcemergeObjectType(),
-			"downsample":   downsampleObjectType(),
+			attrMinAge:           types.StringType,
+			ilmActionSetPriority: setPriorityObjectType(),
+			ilmActionUnfollow:    unfollowObjectType(),
+			ilmActionReadonly:    readonlyObjectType(),
+			ilmActionAllocate:    allocateObjectType(),
+			ilmActionMigrate:     migrateObjectType(),
+			ilmActionShrink:      shrinkObjectType(),
+			ilmActionForcemerge:  forcemergeObjectType(),
+			ilmActionDownsample:  downsampleObjectType(),
 		},
 	}
 }
@@ -180,15 +180,15 @@ func warmPhaseObjectType() types.ObjectType {
 func coldPhaseObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"min_age":             types.StringType,
-			"set_priority":        setPriorityObjectType(),
-			"unfollow":            unfollowObjectType(),
-			"readonly":            readonlyObjectType(),
-			"searchable_snapshot": searchableSnapshotObjectType(),
-			"allocate":            allocateObjectType(),
-			"migrate":             migrateObjectType(),
-			"freeze":              freezeObjectType(),
-			"downsample":          downsampleObjectType(),
+			attrMinAge:                  types.StringType,
+			ilmActionSetPriority:        setPriorityObjectType(),
+			ilmActionUnfollow:           unfollowObjectType(),
+			ilmActionReadonly:           readonlyObjectType(),
+			ilmActionSearchableSnapshot: searchableSnapshotObjectType(),
+			ilmActionAllocate:           allocateObjectType(),
+			ilmActionMigrate:            migrateObjectType(),
+			ilmActionFreeze:             freezeObjectType(),
+			ilmActionDownsample:         downsampleObjectType(),
 		},
 	}
 }
@@ -196,8 +196,8 @@ func coldPhaseObjectType() types.ObjectType {
 func frozenPhaseObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"min_age":             types.StringType,
-			"searchable_snapshot": searchableSnapshotObjectType(),
+			attrMinAge:                  types.StringType,
+			ilmActionSearchableSnapshot: searchableSnapshotObjectType(),
 		},
 	}
 }
@@ -205,9 +205,9 @@ func frozenPhaseObjectType() types.ObjectType {
 func deletePhaseObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"min_age":           types.StringType,
-			"wait_for_snapshot": waitForSnapshotObjectType(),
-			ilmPhaseDelete:      deleteActionObjectType(),
+			attrMinAge:               types.StringType,
+			ilmActionWaitForSnapshot: waitForSnapshotObjectType(),
+			ilmPhaseDelete:           deleteActionObjectType(),
 		},
 	}
 }

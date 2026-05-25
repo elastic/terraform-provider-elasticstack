@@ -42,7 +42,7 @@ func phaseObjectToExpandMap(ctx context.Context, phaseObj types.Object) (map[str
 
 // applyAllocateJSONDefaults mirrors SDK defaults for allocate JSON strings ({}).
 func applyAllocateJSONDefaults(phase map[string]any) {
-	allocRaw, ok := phase["allocate"]
+	allocRaw, ok := phase[ilmActionAllocate]
 	if !ok {
 		return
 	}
@@ -54,7 +54,7 @@ func applyAllocateJSONDefaults(phase map[string]any) {
 	if !ok {
 		return
 	}
-	for _, k := range []string{"include", "exclude", "require"} {
+	for _, k := range []string{attrInclude, attrExclude, attrRequire} {
 		if _, has := am[k]; !has {
 			am[k] = "{}"
 		}

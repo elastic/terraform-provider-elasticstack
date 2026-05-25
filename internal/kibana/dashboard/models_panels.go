@@ -327,12 +327,12 @@ func fallbackPanelToAPI(ctx context.Context, pm models.PanelModel, dashboard *mo
 	if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
 		configJSON := []byte(pm.ConfigJSON.ValueString())
 		fullPanel := map[string]any{
-			"type":   pm.Type.ValueString(),
-			"grid":   grid,
-			"config": json.RawMessage(configJSON),
+			attrPanelType: pm.Type.ValueString(),
+			attrPanelGrid: grid,
+			"config":      json.RawMessage(configJSON),
 		}
 		if panelID != nil {
-			fullPanel["id"] = *panelID
+			fullPanel[attrPanelID] = *panelID
 		}
 		rawBytes, mErr := json.Marshal(fullPanel)
 		if mErr != nil {

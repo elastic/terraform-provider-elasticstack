@@ -39,7 +39,7 @@ type processorSetModel struct {
 	MediaType        types.String `tfsdk:"media_type"`
 }
 
-func (m *processorSetModel) TypeName() string { return "set" }
+func (m *processorSetModel) TypeName() string { return processorTypeSet }
 
 func (m *processorSetModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -89,18 +89,18 @@ func (m *processorSetModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorSetDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource.",
+			Description: descIdentifierWithPeriod,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
-		"field": schema.StringAttribute{
+		attrField: schema.StringAttribute{
 			Description: "The field to insert, upsert, or update.",
 			Required:    true,
 		},
-		"value": schema.StringAttribute{
+		attrValue: schema.StringAttribute{
 			Description: "The value to be set for the field. Supports template snippets. May specify only one of `value` or `copy_from`.",
 			Optional:    true,
 			Validators: []validator.String{
@@ -114,11 +114,11 @@ func NewProcessorSetDataSource() datasource.DataSource {
 			Optional:    true,
 			Validators: []validator.String{
 				stringvalidator.ExactlyOneOf(
-					path.MatchRelative().AtParent().AtName("value"),
+					path.MatchRelative().AtParent().AtName(attrValue),
 				),
 			},
 		},
-		"override": schema.BoolAttribute{
+		attrOverride: schema.BoolAttribute{
 			Description: "If processor will update fields with pre-existing non-null-valued field.",
 			Optional:    true,
 			Computed:    true,

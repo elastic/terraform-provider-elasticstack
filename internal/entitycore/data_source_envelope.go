@@ -166,12 +166,12 @@ func injectConnectionBlockIntoSchema(ctx context.Context, schemaFactory func(con
 
 // Schema implements [datasource.DataSource], injecting the connection block.
 func (d *genericKibanaDataSource[T]) Schema(ctx context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = injectConnectionBlockIntoSchema(ctx, d.schemaFactory, "kibana_connection", providerschema.GetKbFWConnectionBlock())
+	resp.Schema = injectConnectionBlockIntoSchema(ctx, d.schemaFactory, blockKibanaConnection, providerschema.GetKbFWConnectionBlock())
 }
 
 // Schema implements [datasource.DataSource], injecting the connection block.
 func (d *genericElasticsearchDataSource[T]) Schema(ctx context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = injectConnectionBlockIntoSchema(ctx, d.schemaFactory, "elasticsearch_connection", providerschema.GetEsFWConnectionBlock())
+	resp.Schema = injectConnectionBlockIntoSchema(ctx, d.schemaFactory, blockElasticsearchConnection, providerschema.GetEsFWConnectionBlock())
 }
 
 // Read implements [datasource.DataSource].

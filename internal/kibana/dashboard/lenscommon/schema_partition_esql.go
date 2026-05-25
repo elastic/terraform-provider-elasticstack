@@ -28,15 +28,15 @@ import (
 func PartitionESQLMetricNestedObject() schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
-			"column": schema.StringAttribute{
+			attrColumn: schema.StringAttribute{
 				MarkdownDescription: "ES|QL column name for the metric.",
 				Required:            true,
 			},
-			"label": schema.StringAttribute{
+			attrLabel: schema.StringAttribute{
 				MarkdownDescription: "Optional label for the metric.",
 				Optional:            true,
 			},
-			"format_json": schema.StringAttribute{
+			attrFormatJSON: schema.StringAttribute{
 				MarkdownDescription: "Number or other format configuration as JSON (`formatType` union).",
 				CustomType:          jsontypes.NormalizedType{},
 				Required:            true,
@@ -45,7 +45,7 @@ func PartitionESQLMetricNestedObject() schema.NestedAttributeObject {
 				MarkdownDescription: "Static color for the metric.",
 				Required:            true,
 				Attributes: map[string]schema.Attribute{
-					"type": schema.StringAttribute{
+					attrType: schema.StringAttribute{
 						MarkdownDescription: "Color type; use `static` for partition chart ES|QL metrics.",
 						Required:            true,
 						Validators: []validator.String{
@@ -66,7 +66,7 @@ func PartitionESQLMetricNestedObject() schema.NestedAttributeObject {
 func PartitionESQLGroupByNestedObject() schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
-			"column": schema.StringAttribute{
+			attrColumn: schema.StringAttribute{
 				MarkdownDescription: "ES|QL column for the breakdown.",
 				Required:            true,
 			},

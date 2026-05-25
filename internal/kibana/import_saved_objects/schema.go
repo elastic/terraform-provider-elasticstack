@@ -32,6 +32,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const (
+	attrType  = "type"
+	attrTitle = "title"
+)
+
 func (r *Resource) ConfigValidators(context.Context) []resource.ConfigValidator {
 	return []resource.ConfigValidator{
 		// create_new_copies = true cannot be combined with overwrite = true
@@ -130,18 +135,18 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				Computed: true,
 				ElementType: types.ObjectType{
 					AttrTypes: map[string]attr.Type{
-						"id":    types.StringType,
-						"type":  types.StringType,
-						"title": types.StringType,
+						"id":      types.StringType,
+						attrType:  types.StringType,
+						attrTitle: types.StringType,
 						"error": types.ObjectType{
 							AttrTypes: map[string]attr.Type{
-								"type": types.StringType,
+								attrType: types.StringType,
 							},
 						},
 						"meta": types.ObjectType{
 							AttrTypes: map[string]attr.Type{
-								"icon":  types.StringType,
-								"title": types.StringType,
+								"icon":    types.StringType,
+								attrTitle: types.StringType,
 							},
 						},
 					},
@@ -152,12 +157,12 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				ElementType: types.ObjectType{
 					AttrTypes: map[string]attr.Type{
 						"id":             types.StringType,
-						"type":           types.StringType,
+						attrType:         types.StringType,
 						"destination_id": types.StringType,
 						"meta": types.ObjectType{
 							AttrTypes: map[string]attr.Type{
-								"icon":  types.StringType,
-								"title": types.StringType,
+								"icon":    types.StringType,
+								attrTitle: types.StringType,
 							},
 						},
 					},

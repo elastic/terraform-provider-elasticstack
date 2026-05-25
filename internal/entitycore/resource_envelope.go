@@ -223,7 +223,7 @@ func (r *ElasticsearchResource[T]) Schema(ctx context.Context, _ resource.Schema
 	schema := r.schemaFactory(ctx)
 	blocks := make(map[string]rschema.Block, len(schema.Blocks)+1)
 	maps.Copy(blocks, schema.Blocks)
-	blocks["elasticsearch_connection"] = providerschema.GetEsFWConnectionBlock()
+	blocks[blockElasticsearchConnection] = providerschema.GetEsFWConnectionBlock()
 	schema.Blocks = blocks
 	resp.Schema = schema
 }

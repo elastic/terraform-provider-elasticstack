@@ -41,11 +41,11 @@ func PartitionLegendSchemaAttributes() map[string]schema.Attribute {
 			MarkdownDescription: "Maximum lines before truncating legend items (1-10).",
 			Optional:            true,
 		},
-		"visible": schema.StringAttribute{
+		attrVisible: schema.StringAttribute{
 			MarkdownDescription: "Legend visibility: auto, visible, or hidden.",
 			Optional:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf("auto", "visible", "hidden"),
+				stringvalidator.OneOf(colorTypeAuto, attrVisible, "hidden"),
 			},
 		},
 	}
@@ -54,7 +54,7 @@ func PartitionLegendSchemaAttributes() map[string]schema.Attribute {
 // PartitionValueDisplaySchemaAttributes returns schema for treemap/mosaic slice value display styling.
 func PartitionValueDisplaySchemaAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"mode": schema.StringAttribute{
+		attrMode: schema.StringAttribute{
 			MarkdownDescription: "Value display mode: hidden, absolute, or percentage.",
 			Required:            true,
 			Validators: []validator.String{
