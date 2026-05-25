@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -41,7 +42,7 @@ func readConnector(
 	}
 
 	connector, readDiags := kibanaoapi.GetConnector(ctx, oapiClient, resourceID, spaceID)
-	if connector == nil && readDiags == nil {
+	if !connectorReadExists(connector, readDiags) {
 		return model, false, diags
 	}
 	diags.Append(readDiags...)
@@ -49,11 +50,20 @@ func readConnector(
 		return model, false, diags
 	}
 
-	compositeID := &clients.CompositeID{ClusterID: spaceID, ResourceID: resourceID}
-	diags.Append(model.populateFromAPI(connector, compositeID)...)
-	if diags.HasError() {
-		return model, false, diags
-	}
+	return finishConnectorRead(model, connector, spaceID, resourceID)
+}
 
+// connectorReadExists reports whether GetConnector found a connector. A nil
+// connector with no read diagnostics means the resource is gone.
+func connectorReadExists(connector *models.KibanaActionConnector, readDiags diag.Diagnostics) bool {
+	return !(connector == nil && !readDiags.HasError())
+}
+
+// finishConnectorRead populates model from a connector returned by the API.
+// populateFromAPI errors preserve state (found=true), matching pre-envelope read.
+func finishConnectorRead(model tfModel, connector *models.KibanaActionConnector, spaceID, resourceID string) (tfModel, bool, diag.Diagnostics) {
+	compositeID := &clients.CompositeID{ClusterID: spaceID, ResourceID: resourceID}
+	var diags diag.Diagnostics
+	diags.Append(model.populateFromAPI(connector, compositeID)...)
 	return model, true, diags
 }
