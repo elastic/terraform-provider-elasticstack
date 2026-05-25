@@ -35,7 +35,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -403,7 +402,7 @@ func (model *TfModel) populateCommonCreateFields(id, name, apiKey, encoded strin
 	}
 }
 
-func (model *TfModel) PopulateFromAPI(apiKey *estypes.ApiKey, serverVersion *version.Version) diag.Diagnostics {
+func (model *TfModel) PopulateFromAPI(apiKey *estypes.ApiKey, caps apikeyCapabilities) diag.Diagnostics {
 	model.KeyID = basetypes.NewStringValue(apiKey.Id)
 	model.Name = basetypes.NewStringValue(apiKey.Name)
 	model.ExpirationTimestamp = basetypes.NewInt64Value(0)
@@ -412,7 +411,7 @@ func (model *TfModel) PopulateFromAPI(apiKey *estypes.ApiKey, serverVersion *ver
 	}
 	model.Metadata = jsontypes.NewNormalizedNull()
 
-	if serverVersion.GreaterThanOrEqual(MinVersionReturningRoleDescriptors) {
+	if caps.SupportsRoleDescriptors {
 		model.RoleDescriptors = customtypes.NewJSONWithDefaultsNull(PopulateRoleDescriptorsDefaults)
 
 		if apiKey.RoleDescriptors != nil {

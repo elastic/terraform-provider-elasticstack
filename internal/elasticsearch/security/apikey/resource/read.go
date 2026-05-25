@@ -39,13 +39,13 @@ func readAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, 
 		return state, false, diags
 	}
 
-	ver, verDiags := client.ServerVersion(ctx)
-	diags.Append(verDiags...)
+	caps, capsDiags := apikey.ResolveAPIKeyCapabilities(ctx, client)
+	diags.Append(capsDiags...)
 	if diags.HasError() {
 		return state, false, diags
 	}
 
-	diags.Append(state.PopulateFromAPI(apiKey, ver)...)
+	diags.Append(state.PopulateFromAPI(apiKey, caps)...)
 	if diags.HasError() {
 		return state, false, diags
 	}
