@@ -219,13 +219,17 @@ install: build ## Install built provider into the local terraform cache
 	mkdir -p ~/.terraform.d/plugins/registry.terraform.io/elastic/${NAME}/${VERSION}/${MARCH}
 	mv ${BINARY} ~/.terraform.d/plugins/registry.terraform.io/elastic/${NAME}/${VERSION}/${MARCH}
 
+$(GOBIN)/golangci-lint: Makefile | $(GOBIN)
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/main/install.sh | sh -s -- -b $(GOBIN) v2.12.2
+
 .PHONY: tools
-tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
-	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/main/install.sh | sh -s -- -b $(GOBIN) v2.12.2
+tools: $(GOBIN)/golangci-lint  ## Download golangci-lint locally if necessary.
+
+$(GOBIN)/golangci-lint-custom: $(GOBIN)/golangci-lint .custom-gcl.yml
+	$(GOBIN)/golangci-lint custom
 
 .PHONY: golangci-lint-custom
-golangci-lint-custom: tools
-	@ [[ -f $(GOBIN)/golangci-lint-custom ]] || $(GOBIN)/golangci-lint custom
+golangci-lint-custom: $(GOBIN)/golangci-lint-custom
 
 .PHONY: golangci-lint
 golangci-lint: golangci-lint-custom
