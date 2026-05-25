@@ -1,5 +1,7 @@
 ## ADDED Requirements
 
+Delta spec for capability `fleet-agent-policy` (canonical spec: `openspec/specs/fleet-agent-policy/spec.md`).
+
 ### Requirement: global_data_tags entry must have exactly one value (REQ-GDT-001)
 
 Each entry in the `global_data_tags` map attribute of `elasticstack_fleet_agent_policy` MUST
