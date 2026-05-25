@@ -56,7 +56,7 @@ func readConnector(
 // connectorReadExists reports whether GetConnector found a connector. A nil
 // connector with no read diagnostics means the resource is gone.
 func connectorReadExists(connector *models.KibanaActionConnector, readDiags diag.Diagnostics) bool {
-	return !(connector == nil && !readDiags.HasError())
+	return connector != nil || readDiags.HasError()
 }
 
 // finishConnectorRead populates model from a connector returned by the API.
