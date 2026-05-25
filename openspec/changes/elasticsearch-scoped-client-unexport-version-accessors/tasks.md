@@ -49,8 +49,8 @@
 
 ## 6. `internal/clients` acceptance-test escape hatch
 
-- [ ] 6.1 Add `AcceptanceServerInfo(ctx, *ElasticsearchScopedClient) (*version.Version, bool, fwdiag.Diagnostics)` in a new file `internal/clients/acceptance_testing_version.go` — calls the package-private `serverInfo` helper and returns version + serverless boolean. Documented "test-only"
-- [ ] 6.2 Add unit test in `internal/clients/elasticsearch_scoped_client_test.go` exercising `AcceptanceServerInfo` against the existing HTTP fixture
+- [x] 6.1 Add `AcceptanceServerInfo(ctx, *ElasticsearchScopedClient) (*version.Version, bool, fwdiag.Diagnostics)` in a new file `internal/clients/acceptance_testing_version.go` — calls the package-private `serverInfo` helper and returns version + serverless boolean. Documented "test-only"
+- [x] 6.2 Add unit test in `internal/clients/elasticsearch_scoped_client_test.go` exercising `AcceptanceServerInfo` against the existing HTTP fixture
 
 ## 7. `versionutils/testutils.go` migration
 
