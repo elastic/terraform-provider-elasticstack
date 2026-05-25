@@ -25,15 +25,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-type apikeyCapabilities struct {
-	SupportsUpdate          bool
-	SupportsRoleDescriptors bool
-	SupportsRestriction     bool
+// APIKeyCapabilities records which Elasticsearch API key features the connected
+// cluster supports. Persisted in Terraform private state for plan-time gating.
+//
+//nolint:revive // Name matches persisted private-state JSON field prefix and OpenSpec design.
+type APIKeyCapabilities struct {
+	SupportsUpdate          bool `json:"SupportsUpdate"`
+	SupportsRoleDescriptors bool `json:"SupportsRoleDescriptors"`
+	SupportsRestriction     bool `json:"SupportsRestriction"`
 }
 
-func resolveAPIKeyCapabilities(ctx context.Context, client *clients.ElasticsearchScopedClient) (apikeyCapabilities, diag.Diagnostics) {
+func resolveAPIKeyCapabilities(ctx context.Context, client *clients.ElasticsearchScopedClient) (APIKeyCapabilities, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var caps apikeyCapabilities
+	var caps APIKeyCapabilities
 
 	var bitDiags diag.Diagnostics
 	caps.SupportsUpdate, bitDiags = client.EnforceMinVersion(ctx, MinVersionWithUpdate)
@@ -47,12 +51,12 @@ func resolveAPIKeyCapabilities(ctx context.Context, client *clients.Elasticsearc
 }
 
 // ResolveAPIKeyCapabilities resolves API key feature support from the live cluster.
-func ResolveAPIKeyCapabilities(ctx context.Context, client *clients.ElasticsearchScopedClient) (apikeyCapabilities, diag.Diagnostics) {
+func ResolveAPIKeyCapabilities(ctx context.Context, client *clients.ElasticsearchScopedClient) (APIKeyCapabilities, diag.Diagnostics) {
 	return resolveAPIKeyCapabilities(ctx, client)
 }
 
-func synthesizeAPIKeyCapabilitiesFromVersion(ver *version.Version) apikeyCapabilities {
-	return apikeyCapabilities{
+func synthesizeAPIKeyCapabilitiesFromVersion(ver *version.Version) APIKeyCapabilities {
+	return APIKeyCapabilities{
 		SupportsUpdate:          !ver.LessThan(MinVersionWithUpdate),
 		SupportsRoleDescriptors: !ver.LessThan(MinVersionReturningRoleDescriptors),
 		SupportsRestriction:     !ver.LessThan(MinVersionWithRestriction),
@@ -60,6 +64,6 @@ func synthesizeAPIKeyCapabilitiesFromVersion(ver *version.Version) apikeyCapabil
 }
 
 // SynthesizeAPIKeyCapabilitiesFromVersion derives capability flags from a cluster version.
-func SynthesizeAPIKeyCapabilitiesFromVersion(ver *version.Version) apikeyCapabilities {
+func SynthesizeAPIKeyCapabilitiesFromVersion(ver *version.Version) APIKeyCapabilities {
 	return synthesizeAPIKeyCapabilitiesFromVersion(ver)
 }

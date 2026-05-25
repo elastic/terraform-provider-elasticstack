@@ -402,7 +402,7 @@ func (model *TfModel) populateCommonCreateFields(id, name, apiKey, encoded strin
 	}
 }
 
-func (model *TfModel) PopulateFromAPI(apiKey *estypes.ApiKey, caps apikeyCapabilities) diag.Diagnostics {
+func (model *TfModel) PopulateFromAPI(apiKey *estypes.ApiKey, caps APIKeyCapabilities) diag.Diagnostics {
 	model.KeyID = basetypes.NewStringValue(apiKey.Id)
 	model.Name = basetypes.NewStringValue(apiKey.Name)
 	model.ExpirationTimestamp = basetypes.NewInt64Value(0)
