@@ -27,42 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSplitCalendarEventResourcePath(t *testing.T) {
-	t.Run("empty", func(t *testing.T) {
-		_, _, diags := splitCalendarEventResourcePath("")
-		require.True(t, diags.HasError())
-	})
-
-	t.Run("missing slash", func(t *testing.T) {
-		_, _, diags := splitCalendarEventResourcePath("only-calendar")
-		require.True(t, diags.HasError())
-	})
-
-	t.Run("empty calendar_id", func(t *testing.T) {
-		_, _, diags := splitCalendarEventResourcePath("/event-1")
-		require.True(t, diags.HasError())
-	})
-
-	t.Run("empty event_id", func(t *testing.T) {
-		_, _, diags := splitCalendarEventResourcePath("cal-1/")
-		require.True(t, diags.HasError())
-	})
-
-	t.Run("valid", func(t *testing.T) {
-		cal, evt, diags := splitCalendarEventResourcePath("my-cal/evt-1")
-		require.False(t, diags.HasError())
-		assert.Equal(t, "my-cal", cal)
-		assert.Equal(t, "evt-1", evt)
-	})
-
-	t.Run("event_id with slashes", func(t *testing.T) {
-		cal, evt, diags := splitCalendarEventResourcePath("my-cal/evt/with/slashes")
-		require.False(t, diags.HasError())
-		assert.Equal(t, "my-cal", cal)
-		assert.Equal(t, "evt/with/slashes", evt)
-	})
-}
-
 func TestParseCalendarEventFullCompositeID(t *testing.T) {
 	t.Run("missing outer slash", func(t *testing.T) {
 		_, _, diags := parseCalendarEventFullCompositeID("cluster-uuid-only")

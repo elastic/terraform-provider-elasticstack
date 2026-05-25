@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -30,7 +31,7 @@ import (
 func deleteCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ TFModel) fwdiags.Diagnostics {
 	var diags fwdiags.Diagnostics
 
-	calendarID, jobID, splitDiags := splitCalendarJobResourcePath(resourceID)
+	calendarID, jobID, splitDiags := ml.SplitCalendarResourcePath(resourceID, "<job_id>")
 	diags.Append(splitDiags...)
 	if diags.HasError() {
 		return diags
