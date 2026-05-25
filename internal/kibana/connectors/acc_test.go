@@ -73,6 +73,9 @@ func TestAccResourceKibanaConnectorWithSecretsWo(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_action_connector.test", "secrets_wo"),
 				),
 			},
+			// Bump secrets_wo_version to trigger a secret rotation update. We verify
+			// rotation via apply success and is_missing_secrets=false rather than
+			// executing the PagerDuty connector, which would create a real incident.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
@@ -84,7 +87,77 @@ func TestAccResourceKibanaConnectorWithSecretsWo(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testCommonAttributes(connectorName, ".pagerduty"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "secrets_wo_version", "v2"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_action_connector.test", "secrets"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_action_connector.test", "secrets_wo"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_name"),
+				ConfigVariables: config.Variables{
+					"connector_name":  config.StringVariable(fmt.Sprintf("Updated %s", connectorName)),
+					"routing_key":     config.StringVariable(routingKey2),
+					"secrets_version": config.StringVariable("v2"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".pagerduty"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "secrets_wo_version", "v2"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_action_connector.test", "secrets"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_action_connector.test", "secrets_wo"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceKibanaConnectorSecretsWoConflictsWithSecrets(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("conflicts"),
+				PlanOnly:                 true,
+				ExpectError:              regexp.MustCompile(`(?s)Invalid Attribute Combination.*secrets`),
+			},
+		},
+	})
+}
+
+func TestAccResourceKibanaConnectorSecretsWoVersionRequiresSecretsWo(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("missing_secrets_wo"),
+				PlanOnly:                 true,
+				ExpectError:              regexp.MustCompile(`(?s)Invalid Attribute Combination.*secrets_wo`),
+			},
+		},
+	})
+}
+
+func TestAccResourceKibanaConnectorSecretsWoWithoutVersion(t *testing.T) {
+	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	routingKey := sdkacctest.RandStringFromCharSet(32, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceKibanaConnectorDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"connector_name": config.StringVariable(connectorName),
+					"routing_key":    config.StringVariable(routingKey),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(connectorName, ".pagerduty"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_action_connector.test", "secrets"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_action_connector.test", "secrets_wo"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_action_connector.test", "secrets_wo_version"),
 				),
 			},
 		},
