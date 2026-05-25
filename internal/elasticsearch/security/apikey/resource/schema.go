@@ -136,9 +136,9 @@ func getSchema(version int64) schema.Schema {
 func requiresReplaceIfUpdateNotSupported() planmodifier.String {
 	return stringplanmodifier.RequiresReplaceIf(
 		func(ctx context.Context, res planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
-			ver, _ := clusterVersionOfLastRead(ctx, res.Private)
+			caps, _ := apikeyCapabilitiesOfLastRead(ctx, res.Private)
 
-			resp.RequiresReplace = ver != nil && ver.LessThan(apikey.MinVersionWithUpdate)
+			resp.RequiresReplace = caps != nil && !caps.SupportsUpdate
 		},
 		"Requires replace if the server does not support update",
 		"Requires replace if the server does not support update",
