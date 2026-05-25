@@ -25,13 +25,12 @@ import (
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func policyFromModel(ctx context.Context, m *tfModel, serverVersion *version.Version) (*models.Policy, diag.Diagnostics) {
+func policyFromModel(ctx context.Context, m *tfModel, settingsSupport map[string]bool) (*models.Policy, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	meta := ""
 	if !m.Metadata.IsNull() && !m.Metadata.IsUnknown() {
@@ -49,7 +48,7 @@ func policyFromModel(ctx context.Context, m *tfModel, serverVersion *version.Ver
 			phases[ph] = pm
 		}
 	}
-	return expandIlmPolicy(m.Name.ValueString(), meta, phases, serverVersion)
+	return expandIlmPolicy(m.Name.ValueString(), meta, phases, settingsSupport)
 }
 
 func readPolicyIntoModel(ctx context.Context, ilmDef *estypes.Lifecycle, prior *tfModel, policyName string) (*tfModel, diag.Diagnostics) {

@@ -35,13 +35,13 @@ func createILM(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 	var diags diag.Diagnostics
 	plan := req.Plan
 
-	sv, verDiags := client.ServerVersion(ctx)
-	diags.Append(verDiags...)
+	settingsSupport, supportDiags := resolveILMSettingsSupport(ctx, client)
+	diags.Append(supportDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[tfModel]{}, diags
 	}
 
-	policy, policyDiags := policyFromModel(ctx, &plan, sv)
+	policy, policyDiags := policyFromModel(ctx, &plan, settingsSupport)
 	diags.Append(policyDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[tfModel]{}, diags
