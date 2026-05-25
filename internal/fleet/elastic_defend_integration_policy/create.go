@@ -41,11 +41,7 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 		return
 	}
 
-	fleetClient, d := client.GetFleetClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
 	// Determine space context for creating the package policy
 	spaceID := getSpaceIDFromPlan(ctx, planModel, &resp.Diagnostics)

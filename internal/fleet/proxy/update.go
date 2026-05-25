@@ -30,11 +30,7 @@ func updateProxy(ctx context.Context, client *clients.KibanaScopedClient, req en
 	plan := req.Plan
 	var diags diag.Diagnostics
 
-	fleetClient, d := client.GetFleetClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[proxyModel]{}, diags
-	}
+	fleetClient := client.GetFleetClient()
 
 	body, bodyDiags := plan.toAPIUpdateModel()
 	diags.Append(bodyDiags...)
