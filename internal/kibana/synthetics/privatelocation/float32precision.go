@@ -132,9 +132,12 @@ func (v Float32PrecisionValue) Float64SemanticEquals(_ context.Context, newValua
 	a := v.ValueFloat64()
 	b := newValue.ValueFloat64()
 
-	if math.IsNaN(a) || math.IsNaN(b) {
-		return false, diags
-	}
+	return float64SemanticallyEqualUnderFloat32(a, b), diags
+}
 
-	return float32(a) == float32(b), diags
+func float64SemanticallyEqualUnderFloat32(a, b float64) bool {
+	if math.IsNaN(a) || math.IsNaN(b) {
+		return false
+	}
+	return float32(a) == float32(b)
 }
