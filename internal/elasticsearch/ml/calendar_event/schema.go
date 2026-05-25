@@ -19,8 +19,8 @@ package calendar_event
 
 import (
 	"context"
-	"regexp"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -50,14 +50,7 @@ func getSchema(_ context.Context) schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
-				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 64),
-					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-z0-9]([a-z0-9_-]*[a-z0-9])?$`),
-						"must contain lowercase alphanumeric characters, hyphens, and underscores, "+
-							"and must start and end with alphanumeric characters",
-					),
-				},
+				Validators: []validator.String{ml.IDValidator()},
 			},
 			"description": schema.StringAttribute{
 				MarkdownDescription: "A description of the scheduled event.",

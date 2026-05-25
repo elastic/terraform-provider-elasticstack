@@ -21,6 +21,7 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -62,14 +63,7 @@ func getSchema(_ context.Context) schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
-				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 64),
-					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-z0-9][a-z0-9_-]*[a-z0-9]$|^[a-z0-9]$`),
-						"must contain lowercase alphanumeric characters (a-z and 0-9), hyphens, and underscores. "+
-							"It must start and end with alphanumeric characters",
-					),
-				},
+				Validators: []validator.String{ml.IDValidator()},
 			},
 			"job_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier for the anomaly detection job. The job must exist before creating the datafeed.",

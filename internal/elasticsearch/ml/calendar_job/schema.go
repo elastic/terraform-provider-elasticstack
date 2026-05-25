@@ -19,27 +19,13 @@ package calendar_job
 
 import (
 	"context"
-	"regexp"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
-
-const (
-	calendarIDAllowedCharsMessage = "must contain lowercase alphanumeric characters, dots, hyphens, and underscores, " +
-		"and must start and end with alphanumeric characters"
-	jobIDAllowedCharsMessage = "must contain lowercase alphanumeric characters (a-z and 0-9), dots, hyphens, and underscores; " +
-		"it must start and end with alphanumeric characters (aligned with Elasticsearch ML job and calendar identifier rules)"
-)
-
-// mlCalendarOrJobPathIDRegexp matches Elasticsearch rules for ML calendar identifiers
-// and for anomaly detection job / job-group names used as path segments (lowercase
-// letters, digits, underscore, hyphen, dot; must start and end with alphanumeric).
-// Equivalent to: ^[a-z0-9](?:[a-z0-9_\-\.]*[a-z0-9])?$
-var mlCalendarOrJobPathIDRegexp = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9_.-]*[a-z0-9])?$`)
 
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
@@ -66,13 +52,7 @@ func getSchema(_ context.Context) schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
-				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 64),
-					stringvalidator.RegexMatches(
-						mlCalendarOrJobPathIDRegexp,
-						calendarIDAllowedCharsMessage,
-					),
-				},
+				Validators: []validator.String{ml.IDValidator()},
 			},
 			"job_id": schema.StringAttribute{
 				MarkdownDescription: "Anomaly detection **job identifier** or **job group name** to attach " +
@@ -82,13 +62,7 @@ func getSchema(_ context.Context) schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
-				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 64),
-					stringvalidator.RegexMatches(
-						mlCalendarOrJobPathIDRegexp,
-						jobIDAllowedCharsMessage,
-					),
-				},
+				Validators: []validator.String{ml.IDValidator()},
 			},
 		},
 	}

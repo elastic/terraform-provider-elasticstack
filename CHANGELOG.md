@@ -11,6 +11,7 @@
   - `CompositeIDFromStr` splits only on the first `/`, so the resource segment may contain further slashes (for example ML calendar event ids `<calendar_id>/<event_id>`). Legacy ids with an empty cluster segment (for example `/<resource_id>`) remain accepted.
 - Add `elasticstack_elasticsearch_ml_calendar_job` resource to assign an anomaly detection job or job group to an ML calendar (`PUT _ml/calendars/{calendar_id}/jobs/{job_id}`) ([#2933](https://github.com/elastic/terraform-provider-elasticstack/pull/2933))
   - Derive `ElasticsearchConnectionNullList` / `KibanaConnectionNullList` from Plugin Framework connection block schemas so import state matches resource types.
+  - Extract a shared `internal/elasticsearch/ml.IDValidator` helper covering the standard length and character rules for ML calendar, job, datafeed, and filter identifiers; ML calendar, calendar event, and calendar job schemas now use it instead of duplicating `LengthBetween` + `RegexMatches` pairs.
 
 ### Changes
 

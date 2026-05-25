@@ -24,10 +24,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/planmodifiers"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -180,31 +178,6 @@ func (r *KibanaResource[T]) Schema(ctx context.Context, _ resource.SchemaRequest
 	blocks["kibana_connection"] = providerschema.GetKbFWConnectionBlock()
 	schema.Blocks = blocks
 	resp.Schema = schema
-}
-
-// ModifyPlan implements [resource.ResourceWithModifyPlan], forcing replacement when
-// the per-resource kibana_connection block changes.
-func (r *KibanaResource[T]) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
-	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
-		return
-	}
-
-	var plan, state T
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	planmodifiers.ModifyPlanRequiresReplaceOnConnectionChange(
-		plan.GetKibanaConnection(),
-		state.GetKibanaConnection(),
-		path.Root("kibana_connection"),
-		resp,
-	)
 }
 
 // resolveKibanaResourceIdentity uses the composite-ID-or-fallback rule to

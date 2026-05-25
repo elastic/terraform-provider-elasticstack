@@ -15,14 +15,19 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package calendar_job
+package ml
 
 import (
+	"context"
 	"fmt"
+	"strings"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func TestMLCalendarOrJobPathIDRegexp(t *testing.T) {
+func TestPathIDRegexp(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -51,9 +56,40 @@ func TestMLCalendarOrJobPathIDRegexp(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(fmt.Sprintf("%q", tc.id), func(t *testing.T) {
 			t.Parallel()
-			got := mlCalendarOrJobPathIDRegexp.MatchString(tc.id)
+			got := pathIDRegexp.MatchString(tc.id)
 			if got != tc.ok {
 				t.Fatalf("MatchString(%q) = %v, want %v (%s)", tc.id, got, tc.ok, tc.note)
+			}
+		})
+	}
+}
+
+func TestIDValidator(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		id      string
+		wantErr bool
+	}{
+		{"job1", false},
+		{"my.job.id", false},
+		{"a", false},
+		{"", true},
+		{strings.Repeat("a", 65), true},
+		{"Abc", true},
+		{"_ab", true},
+	}
+
+	v := IDValidator()
+	for _, tc := range tests {
+		t.Run(fmt.Sprintf("%q", tc.id), func(t *testing.T) {
+			t.Parallel()
+			req := validator.StringRequest{ConfigValue: types.StringValue(tc.id)}
+			var resp validator.StringResponse
+			v.ValidateString(context.Background(), req, &resp)
+			gotErr := resp.Diagnostics.HasError()
+			if gotErr != tc.wantErr {
+				t.Fatalf("ValidateString(%q) hasError=%v, want %v (%s)", tc.id, gotErr, tc.wantErr, resp.Diagnostics)
 			}
 		})
 	}

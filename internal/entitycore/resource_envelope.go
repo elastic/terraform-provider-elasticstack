@@ -25,10 +25,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/planmodifiers"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -228,32 +226,6 @@ func (r *ElasticsearchResource[T]) Schema(ctx context.Context, _ resource.Schema
 	blocks["elasticsearch_connection"] = providerschema.GetEsFWConnectionBlock()
 	schema.Blocks = blocks
 	resp.Schema = schema
-}
-
-// ModifyPlan implements [resource.ResourceWithModifyPlan], forcing replacement when
-// the per-resource elasticsearch_connection block changes (provider-schema blocks
-// cannot host resource plan modifiers; see [planmodifiers.ModifyPlanRequiresReplaceOnConnectionChange]).
-func (r *ElasticsearchResource[T]) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
-	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
-		return
-	}
-
-	var plan, state T
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	planmodifiers.ModifyPlanRequiresReplaceOnConnectionChange(
-		plan.GetElasticsearchConnection(),
-		state.GetElasticsearchConnection(),
-		path.Root("elasticsearch_connection"),
-		resp,
-	)
 }
 
 // Create implements [resource.Resource]: decode plan, resolve client, invoke

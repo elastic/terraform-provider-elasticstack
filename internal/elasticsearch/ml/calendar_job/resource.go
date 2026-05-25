@@ -44,7 +44,7 @@ func newCalendarJobResource() *calendarJobResource {
 			Read:   readCalendarJob,
 			Delete: deleteCalendarJob,
 			Create: createCalendarJob,
-			Update: updateCalendarJobNoOp,
+			Update: entitycore.UpdateNotSupportedWriteCallback[TFModel](),
 		}),
 	}
 }
