@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -133,12 +134,24 @@ func getSchema(version int64) schema.Schema {
 	}
 }
 
+func requiresReplaceBecauseUpdateNotSupported(ctx context.Context, priv privateData) (bool, diag.Diagnostics) {
+	caps, diags := apikeyCapabilitiesOfLastRead(ctx, priv)
+	if diags.HasError() {
+		return false, diags
+	}
+	return caps != nil && !caps.SupportsUpdate, diags
+}
+
 func requiresReplaceIfUpdateNotSupported() planmodifier.String {
 	return stringplanmodifier.RequiresReplaceIf(
 		func(ctx context.Context, res planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
-			caps, _ := apikeyCapabilitiesOfLastRead(ctx, res.Private)
+			requiresReplace, readDiags := requiresReplaceBecauseUpdateNotSupported(ctx, res.Private)
+			resp.Diagnostics.Append(readDiags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 
-			resp.RequiresReplace = caps != nil && !caps.SupportsUpdate
+			resp.RequiresReplace = requiresReplace
 		},
 		"Requires replace if the server does not support update",
 		"Requires replace if the server does not support update",
