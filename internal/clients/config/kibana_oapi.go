@@ -44,12 +44,16 @@ func newProviderKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderC
 		return kibanaOapiConfig{}, diags
 	}
 
+	// Apply the URL env override before fleet fallback so a fleet-derived URL does
+	// not suppress KIBANA_ENDPOINT when TF_ELASTICSTACK_PREFER_CONFIGURED_KIBANA_ENDPOINT is set.
+	config = config.withURLEnvironmentOverride()
+
 	config, diags = config.withFleetBlockFallback(ctx, cfg)
 	if diags.HasError() {
 		return kibanaOapiConfig{}, diags
 	}
 
-	return config.withEnvironmentOverrides(), nil
+	return config.withNonURLEnvironmentOverrides(), nil
 }
 
 func buildKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibanaOapiConfig, fwdiags.Diagnostics) {
@@ -86,7 +90,9 @@ func buildKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigu
 			config.CACerts = cas
 		}
 
-		config.Insecure = kibConfig.Insecure.ValueBool()
+		if !kibConfig.Insecure.IsNull() && !kibConfig.Insecure.IsUnknown() {
+			config.Insecure = kibConfig.Insecure.ValueBool()
+		}
 	}
 
 	return config, nil
@@ -125,19 +131,30 @@ func (k kibanaOapiConfig) withFleetBlockFallback(ctx context.Context, cfg Provid
 		}
 	}
 
-	if len(cfg.Kibana) == 0 && !fleetCfg.Insecure.IsNull() && !fleetCfg.Insecure.IsUnknown() {
+	kibanaInsecureUnset := len(cfg.Kibana) == 0 || cfg.Kibana[0].Insecure.IsNull() || cfg.Kibana[0].Insecure.IsUnknown()
+	if kibanaInsecureUnset && !fleetCfg.Insecure.IsNull() && !fleetCfg.Insecure.IsUnknown() {
 		k.Insecure = fleetCfg.Insecure.ValueBool()
 	}
 
 	return k, nil
 }
 
+func (k kibanaOapiConfig) withURLEnvironmentOverride() kibanaOapiConfig {
+	k.URL = withEnvironmentOverrideUnlessConfigured(k.URL, "KIBANA_ENDPOINT", PreferConfiguredKibanaEndpointEnvVar)
+	return k
+}
+
 func (k kibanaOapiConfig) withEnvironmentOverrides() kibanaOapiConfig {
+	k = k.withNonURLEnvironmentOverrides()
+	k = k.withURLEnvironmentOverride()
+	return k
+}
+
+func (k kibanaOapiConfig) withNonURLEnvironmentOverrides() kibanaOapiConfig {
 	k.Username = withEnvironmentOverride(k.Username, "KIBANA_USERNAME")
 	k.Password = withEnvironmentOverride(k.Password, "KIBANA_PASSWORD")
 	k.APIKey = withEnvironmentOverride(k.APIKey, "KIBANA_API_KEY")
 	k.BearerToken = withEnvironmentOverride(k.BearerToken, "KIBANA_BEARER_TOKEN")
-	k.URL = withEnvironmentOverrideUnlessConfigured(k.URL, "KIBANA_ENDPOINT", PreferConfiguredKibanaEndpointEnvVar)
 	if caCerts, ok := os.LookupEnv("KIBANA_CA_CERTS"); ok {
 		k.CACerts = strings.Split(caCerts, ",")
 	}
