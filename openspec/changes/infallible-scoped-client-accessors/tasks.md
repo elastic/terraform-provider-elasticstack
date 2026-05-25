@@ -39,8 +39,8 @@
 
 ## 7. Verify external surface
 
-- [ ] 7.1 Confirm `xpprovider/xpprovider.go` and any other consumer of `ProviderClientFactory` public methods still compile — the factory method signatures are unchanged.
-- [ ] 7.2 Confirm `NewAcceptanceTestingElasticsearchScopedClient` and `NewAcceptanceTestingKibanaScopedClient` still work; if any acceptance-test helper unwraps an inner client via the changed accessors, update it.
+- [x] 7.1 Confirm `xpprovider/xpprovider.go` and any other consumer of `ProviderClientFactory` public methods still compile — the factory method signatures are unchanged. `git diff main..HEAD -- xpprovider/` is empty; `go build ./xpprovider/...` passes.
+- [x] 7.2 Confirm `NewAcceptanceTestingElasticsearchScopedClient` and `NewAcceptanceTestingKibanaScopedClient` still work; if any acceptance-test helper unwraps an inner client via the changed accessors, update it. All call sites in `internal/acctest/**` and `internal/clients/kibanaoapi/**` already use the new single-return signature.
 
 ## 8. Build, test, and acceptance verification
 
@@ -51,5 +51,5 @@
 
 ## 9. Documentation and CHANGELOG
 
-- [ ] 9.1 Add a CHANGELOG entry under `[Unreleased]` summarising the new "provider configured with only `fleet { ... }` block can now serve Kibana resources" behavior and any earlier-failure user-visible behavior for unconfigured providers.
-- [ ] 9.2 If `dev-docs/high-level/*.md` references the scoped accessor signatures, update those references.
+- [x] 9.1 Add a CHANGELOG entry under `[Unreleased]` summarising the new "provider configured with only `fleet { ... }` block can now serve Kibana resources" behavior and any earlier-failure user-visible behavior for unconfigured providers.
+- [x] 9.2 If `dev-docs/high-level/*.md` references the scoped accessor signatures, update those references. No references found (`rg 'GetESClient|GetKibanaOapiClient|GetFleetClient|ElasticsearchScopedClient|KibanaScopedClient' dev-docs/` returned nothing).
