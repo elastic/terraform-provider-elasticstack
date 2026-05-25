@@ -2,19 +2,21 @@
 
 ### Breaking changes
 
+- The `lens-dashboard-app` panel type is no longer supported in `elasticstack_kibana_dashboard`. Use `type = "vis"` instead.
+
 
 `elasticstack_kibana_security_detection_rule` `actions.alerts_filter` is now a structured nested attribute with `query` (`kql`, `filters_json`) and optional `timeframe` (`days`, `timezone`, `hours_start`, `hours_end`), replacing the broken `map(string)` shape.
 
-### Added
-
-- Add `elasticstack_elasticsearch_ml_calendar` and `elasticstack_elasticsearch_ml_calendar_event` resources for ML calendars and scheduled calendar events ([#1969](https://github.com/elastic/terraform-provider-elasticstack/pull/1969))
-  - `CompositeIDFromStr` splits only on the first `/`, so the resource segment may contain further slashes (for example ML calendar event ids `<calendar_id>/<event_id>`). Legacy ids with an empty cluster segment (for example `/<resource_id>`) remain accepted.
-- Add `elasticstack_elasticsearch_ml_calendar_job` resource to assign an anomaly detection job or job group to an ML calendar (`PUT _ml/calendars/{calendar_id}/jobs/{job_id}`) ([#2933](https://github.com/elastic/terraform-provider-elasticstack/pull/2933))
-  - Derive `ElasticsearchConnectionNullList` / `KibanaConnectionNullList` from Plugin Framework connection block schemas so import state matches resource types.
-  - Extract a shared `internal/elasticsearch/ml.IDValidator` helper covering the standard length and character rules for ML calendar, job, datafeed, and filter identifiers; ML calendar, calendar event, and calendar job schemas now use it instead of duplicating `LengthBetween` + `RegexMatches` pairs.
-
 ### Changes
 
+- Add `elasticstack_elasticsearch_ml_calendar_job` to assign one ML anomaly detection job to a calendar; entry added under Unreleased in `CHANGELOG.md`. ([#2933](https://github.com/elastic/terraform-provider-elasticstack/pull/2933))
+- guard nil package list decoding failures in Fleet package listing ([#3275](https://github.com/elastic/terraform-provider-elasticstack/pull/3275))
+- Allow `elasticstack_kibana_space.disabled_features` be set when `solution` is `classic`, unset, or unknown. ([#3217](https://github.com/elastic/terraform-provider-elasticstack/pull/3217))
+- Add ephemeral `elasticstack_elasticsearch_security_api_key` resource for in-memory API key credentials ([#3176](https://github.com/elastic/terraform-provider-elasticstack/pull/3176))
+- `exceptions_list[].type` on `elasticstack_kibana_security_detection_rule` now accepts `rule_default` and `endpoint_trusted_devices`, fixing plan-time failures for rules with user-defined rule-local exception lists. ([#3000](https://github.com/elastic/terraform-provider-elasticstack/pull/3000))
+- Remove `lens-dashboard-app` panel type from `elasticstack_kibana_dashboard`; migrate to `type = "vis"`. ([#3209](https://github.com/elastic/terraform-provider-elasticstack/pull/3209))
+- Reject empty mappings in indexmappings resource at plan time ([#3186](https://github.com/elastic/terraform-provider-elasticstack/pull/3186))
+- Add `elasticstack_elasticsearch_ml_calendar` and `elasticstack_elasticsearch_ml_calendar_event` resources for managing Elasticsearch ML calendars, scheduled events, and job associations in Terraform. ([#1969](https://github.com/elastic/terraform-provider-elasticstack/pull/1969))
 - Normalise empty-object mappings/settings on read for component templates to prevent inconsistent state after apply (issue #609). ([#3175](https://github.com/elastic/terraform-provider-elasticstack/pull/3175))
 - Omit ILM allocate `number_of_replicas` and `total_shards_per_node` from API requests when not explicitly configured, so routing-filter-only policies no longer override index template settings. ([#3174](https://github.com/elastic/terraform-provider-elasticstack/pull/3174))
 - Fix perpetual plan diff on role mapping `rules` when field values use single-element arrays (e.g. `groups = ["project1"]`). ([#3172](https://github.com/elastic/terraform-provider-elasticstack/pull/3172))
