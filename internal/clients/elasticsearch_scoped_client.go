@@ -176,6 +176,36 @@ func (e *ElasticsearchScopedClient) EnforceMinVersion(ctx context.Context, minVe
 	return serverVersion.GreaterThanOrEqual(minVersion), nil
 }
 
+// IsServerless returns true when the connected Elasticsearch cluster is running
+// in serverless mode.
+func (e *ElasticsearchScopedClient) IsServerless(ctx context.Context) (bool, fwdiag.Diagnostics) {
+	info, diags := e.serverInfo(ctx)
+	if diags.HasError() {
+		return false, diags
+	}
+	return info.Version.BuildFlavor == ServerlessFlavor, nil
+}
+
+// EnforceVersionCheck returns true when the given version check function
+// returns true, or when the server is running in serverless mode.
+func (e *ElasticsearchScopedClient) EnforceVersionCheck(ctx context.Context, check func(*version.Version) bool) (bool, fwdiag.Diagnostics) {
+	info, diags := e.serverInfo(ctx)
+	if diags.HasError() {
+		return false, diags
+	}
+
+	if info.Version.BuildFlavor == ServerlessFlavor {
+		return true, nil
+	}
+
+	serverVersion, err := version.NewVersion(info.Version.Int)
+	if err != nil {
+		return false, diagutil.FrameworkDiagFromError(err)
+	}
+
+	return check(serverVersion), nil
+}
+
 // elasticsearchScopedClientFromAPIClient constructs an ElasticsearchScopedClient
 // from the Elasticsearch-related fields of an *apiClient. This is the canonical
 // adapter used by the factory and by NewAcceptanceTestingElasticsearchScopedClient.
