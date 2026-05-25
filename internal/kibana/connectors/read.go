@@ -23,64 +23,37 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-// readConnectorFromAPI fetches a connector from the API and populates the given model
-// Returns true if the connector was found, false if it doesn't exist
-func (r *Resource) readConnectorFromAPI(ctx context.Context, client *clients.KibanaScopedClient, model *tfModel) (bool, diag.Diagnostics) {
+func readConnector(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	resourceID string,
+	spaceID string,
+	model tfModel,
+) (tfModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
+	oapiClient, getDiags := client.GetKibanaOapiClient()
+	diags.Append(getDiags...)
 	if diags.HasError() {
-		return false, diags
+		return model, false, diags
 	}
 
-	compositeID, diagsTemp := model.GetID()
-	diags.Append(diagsTemp...)
+	connector, readDiags := kibanaoapi.GetConnector(ctx, oapiClient, resourceID, spaceID)
+	if connector == nil && readDiags == nil {
+		return model, false, diags
+	}
+	diags.Append(readDiags...)
 	if diags.HasError() {
-		return false, diags
+		return model, false, diags
 	}
 
-	connector, diagsTemp := kibanaoapi.GetConnector(ctx, oapiClient, compositeID.ResourceID, compositeID.ClusterID)
-	if connector == nil && diagsTemp == nil {
-		// Resource not found
-		return false, diags
-	}
-	diags.Append(diagsTemp...)
-	if diags.HasError() {
-		return false, diags
-	}
-
+	compositeID := &clients.CompositeID{ClusterID: spaceID, ResourceID: resourceID}
 	diags.Append(model.populateFromAPI(connector, compositeID)...)
-	return true, diags
-}
-
-func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
-	var state tfModel
-
-	response.Diagnostics.Append(request.State.Get(ctx, &state)...)
-	if response.Diagnostics.HasError() {
-		return
+	if diags.HasError() {
+		return model, false, diags
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	exists, diags := r.readConnectorFromAPI(ctx, client, &state)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	if !exists {
-		response.State.RemoveResource(ctx)
-		return
-	}
-
-	response.Diagnostics.Append(response.State.Set(ctx, &state)...)
+	return model, true, diags
 }
