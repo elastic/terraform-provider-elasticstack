@@ -288,10 +288,18 @@ func (model *agentPolicyModel) convertGlobalDataTags(ctx context.Context, feat f
 		func(item globalDataTagsItemModel, meta typeutils.MapMeta) kbapi.AgentPolicyGlobalDataTagsItem {
 			var value kbapi.AgentPolicyGlobalDataTagsItem_Value
 			var err error
-			if item.StringValue.ValueStringPointer() != nil {
-				err = value.FromAgentPolicyGlobalDataTagsItemValue0(*item.StringValue.ValueStringPointer())
-			} else {
-				err = value.FromAgentPolicyGlobalDataTagsItemValue1(*item.NumberValue.ValueFloat32Pointer())
+			switch {
+			case !item.StringValue.IsNull() && !item.StringValue.IsUnknown():
+				err = value.FromAgentPolicyGlobalDataTagsItemValue0(item.StringValue.ValueString())
+			case !item.NumberValue.IsNull() && !item.NumberValue.IsUnknown():
+				err = value.FromAgentPolicyGlobalDataTagsItemValue1(item.NumberValue.ValueFloat32())
+			default:
+				diags.AddAttributeError(
+					meta.Path,
+					"Invalid global_data_tags entry",
+					"Each entry in global_data_tags must have exactly one of string_value or number_value set.",
+				)
+				return kbapi.AgentPolicyGlobalDataTagsItem{}
 			}
 			if err != nil {
 				diags.AddError("global_data_tags validation_error_converting_values", err.Error())

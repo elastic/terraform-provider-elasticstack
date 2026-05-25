@@ -166,6 +166,10 @@ func getSchema() schema.Schema {
 							Optional:    true,
 							Validators: []validator.String{
 								stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("number_value")),
+								stringvalidator.AtLeastOneOf(
+									path.MatchRelative().AtParent().AtName("string_value"),
+									path.MatchRelative().AtParent().AtName("number_value"),
+								),
 							},
 						},
 						"number_value": schema.Float32Attribute{
@@ -173,6 +177,10 @@ func getSchema() schema.Schema {
 							Optional:    true,
 							Validators: []validator.Float32{
 								float32validator.ConflictsWith(path.MatchRelative().AtParent().AtName("string_value")),
+								float32validator.AtLeastOneOf(
+									path.MatchRelative().AtParent().AtName("string_value"),
+									path.MatchRelative().AtParent().AtName("number_value"),
+								),
 							},
 						},
 					},
