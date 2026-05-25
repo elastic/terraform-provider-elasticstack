@@ -39,12 +39,22 @@ var (
 )
 
 type Resource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[tfModel]
 }
 
 func newResource() *Resource {
 	return &Resource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "action_connector"),
+		KibanaResource: entitycore.NewKibanaResource[tfModel](
+			entitycore.ComponentKibana,
+			"action_connector",
+			entitycore.KibanaResourceOptions[tfModel]{
+				Schema: getSchema,
+				Read:   readConnector,
+				Delete: deleteConnector,
+				Create: createConnector,
+				Update: updateConnector,
+			},
+		),
 	}
 }
 

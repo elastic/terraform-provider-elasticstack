@@ -232,6 +232,41 @@ func TestAccResourceKibanaConnectorIndex(t *testing.T) {
 	})
 }
 
+func TestAccResourceKibanaConnectorImport(t *testing.T) {
+	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceKibanaConnectorDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"connector_name": config.StringVariable(connectorName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(connectorName, ".index"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "space_id", "default"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"index\":\"\.kibana\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"refresh\":true`)),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"connector_name": config.StringVariable(connectorName),
+				},
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"secrets", "config"},
+				ResourceName:            "elasticstack_kibana_action_connector.test",
+			},
+		},
+	})
+}
+
 func TestAccResourceKibanaConnectorWebhookAuthTypeNull(t *testing.T) {
 
 	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)

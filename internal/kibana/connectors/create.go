@@ -23,63 +23,43 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
-	var plan tfModel
+func createConnector(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[tfModel],
+) (entitycore.KibanaWriteResult[tfModel], diag.Diagnostics) {
+	planModel := req.Plan
+	var diags diag.Diagnostics
 
-	response.Diagnostics.Append(request.Plan.Get(ctx, &plan)...)
-	if response.Diagnostics.HasError() {
-		return
+	diags.Append(enforceUserSuppliedConnectorIDVersion(ctx, client, planModel)...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
+	apiModel, apiDiags := planModel.toAPIModel()
+	diags.Append(apiDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}
 
 	oapiClient := client.GetKibanaOapiClient()
 
-	apiModel, diags := plan.toAPIModel()
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
+	connectorID, createDiags := kibanaoapi.CreateConnector(ctx, oapiClient, apiModel)
+	diags.Append(createDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}
 
-	response.Diagnostics.Append(entitycore.EnforceVersionRequirements(ctx, client, &plan)...)
-	if response.Diagnostics.HasError() {
-		return
+	compositeID := clients.CompositeID{
+		ClusterID:  req.SpaceID,
+		ResourceID: connectorID,
 	}
+	planModel.ID = types.StringValue(compositeID.String())
+	planModel.ConnectorID = types.StringValue(connectorID)
 
-	connectorID, diags := kibanaoapi.CreateConnector(ctx, oapiClient, apiModel)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	compositeID := &clients.CompositeID{ClusterID: apiModel.SpaceID, ResourceID: connectorID}
-	plan.ID = types.StringValue(compositeID.String())
-
-	// Read the connector back to populate all computed fields
-	client, diags = r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	exists, diags := r.readConnectorFromAPI(ctx, client, &plan)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	if !exists {
-		response.Diagnostics.AddError("Connector not found after creation", "The connector was created but could not be found afterward")
-		return
-	}
-
-	response.Diagnostics.Append(response.State.Set(ctx, plan)...)
+	return entitycore.KibanaWriteResult[tfModel]{Model: planModel}, diags
 }

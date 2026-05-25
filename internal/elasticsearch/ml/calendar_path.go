@@ -15,27 +15,22 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connectors
+package ml
 
 import (
-	"context"
+	"strings"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func deleteConnector(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	resourceID string,
-	spaceID string,
-	_ tfModel,
-) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	diags.Append(kibanaoapi.DeleteConnector(ctx, oapiClient, resourceID, spaceID)...)
-	return diags
+// SplitCalendarResourcePath splits a <calendar_id>/<sub_resource_id> path
+// segment and returns both parts. subResourceLabel is used only in the error
+// message (e.g. "<event_id>" or "<job_id>").
+func SplitCalendarResourcePath(resourcePath, subResourceLabel string) (calendarID, subResourceID string, diags fwdiags.Diagnostics) {
+	parts := strings.SplitN(resourcePath, "/", 2)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		diags.AddError("Invalid ID format", "Expected resource segment format: <calendar_id>/"+subResourceLabel)
+		return "", "", diags
+	}
+	return parts[0], parts[1], diags
 }

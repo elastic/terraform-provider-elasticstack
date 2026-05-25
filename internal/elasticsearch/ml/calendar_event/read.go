@@ -24,18 +24,10 @@ import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
-
-func splitCalendarEventResourcePath(resourcePath string) (calendarID, eventID string, diags fwdiags.Diagnostics) {
-	parts := strings.SplitN(resourcePath, "/", 2)
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		diags.AddError("Invalid ID format", "Expected resource segment format: <calendar_id>/<event_id>")
-		return "", "", diags
-	}
-	return parts[0], parts[1], diags
-}
 
 func parseCalendarEventFullCompositeID(id string) (calendarID, eventID string, diags fwdiags.Diagnostics) {
 	parts := strings.SplitN(id, "/", 2)
@@ -43,7 +35,7 @@ func parseCalendarEventFullCompositeID(id string) (calendarID, eventID string, d
 		diags.AddError("Invalid ID format", "Expected format: <cluster_uuid>/<calendar_id>/<event_id>")
 		return "", "", diags
 	}
-	return splitCalendarEventResourcePath(parts[1])
+	return ml.SplitCalendarResourcePath(parts[1], "<event_id>")
 }
 
 func calendarEventWireWindowRFC3339(w calendarEventWire) (start string, end string, ok bool) {
@@ -81,7 +73,7 @@ func calendarEventReadWindowRFC3339(state CalendarEventTFModel) (start string, e
 func readCalendarEvent(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state CalendarEventTFModel) (CalendarEventTFModel, bool, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
-	calendarID, eventID, splitDiags := splitCalendarEventResourcePath(resourceID)
+	calendarID, eventID, splitDiags := ml.SplitCalendarResourcePath(resourceID, "<event_id>")
 	diags.Append(splitDiags...)
 	if diags.HasError() {
 		return state, false, diags
