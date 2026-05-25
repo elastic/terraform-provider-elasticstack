@@ -30,6 +30,29 @@ import (
 type kibanaOapiConfig kibanaoapi.Config
 
 func newKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibanaOapiConfig, fwdiags.Diagnostics) {
+	config, diags := buildKibanaOapiConfigFromFramework(ctx, cfg, base)
+	if diags.HasError() {
+		return kibanaOapiConfig{}, diags
+	}
+
+	return config.withEnvironmentOverrides(), nil
+}
+
+func newProviderKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibanaOapiConfig, fwdiags.Diagnostics) {
+	config, diags := buildKibanaOapiConfigFromFramework(ctx, cfg, base)
+	if diags.HasError() {
+		return kibanaOapiConfig{}, diags
+	}
+
+	config, diags = config.withFleetBlockFallback(ctx, cfg)
+	if diags.HasError() {
+		return kibanaOapiConfig{}, diags
+	}
+
+	return config.withEnvironmentOverrides(), nil
+}
+
+func buildKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibanaOapiConfig, fwdiags.Diagnostics) {
 	config := base.toKibanaOapiConfig()
 
 	if len(cfg.Kibana) > 0 {
@@ -66,7 +89,47 @@ func newKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigura
 		config.Insecure = kibConfig.Insecure.ValueBool()
 	}
 
-	return config.withEnvironmentOverrides(), nil
+	return config, nil
+}
+
+func (k kibanaOapiConfig) withFleetBlockFallback(ctx context.Context, cfg ProviderConfiguration) (kibanaOapiConfig, fwdiags.Diagnostics) {
+	if len(cfg.Fleet) == 0 {
+		return k, nil
+	}
+
+	fleetCfg := cfg.Fleet[0]
+	if k.Username == "" && fleetCfg.Username.ValueString() != "" {
+		k.Username = fleetCfg.Username.ValueString()
+	}
+	if k.Password == "" && fleetCfg.Password.ValueString() != "" {
+		k.Password = fleetCfg.Password.ValueString()
+	}
+	if k.APIKey == "" && fleetCfg.APIKey.ValueString() != "" {
+		k.APIKey = fleetCfg.APIKey.ValueString()
+	}
+	if k.BearerToken == "" && fleetCfg.BearerToken.ValueString() != "" {
+		k.BearerToken = fleetCfg.BearerToken.ValueString()
+	}
+	if k.URL == "" && fleetCfg.Endpoint.ValueString() != "" {
+		k.URL = fleetCfg.Endpoint.ValueString()
+	}
+
+	if len(k.CACerts) == 0 {
+		var caCerts []string
+		diags := fleetCfg.CACerts.ElementsAs(ctx, &caCerts, true)
+		if diags.HasError() {
+			return kibanaOapiConfig{}, diags
+		}
+		if len(caCerts) > 0 {
+			k.CACerts = caCerts
+		}
+	}
+
+	if len(cfg.Kibana) == 0 && !fleetCfg.Insecure.IsNull() && !fleetCfg.Insecure.IsUnknown() {
+		k.Insecure = fleetCfg.Insecure.ValueBool()
+	}
+
+	return k, nil
 }
 
 func (k kibanaOapiConfig) withEnvironmentOverrides() kibanaOapiConfig {
