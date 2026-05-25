@@ -319,7 +319,7 @@ func (model tfModel) toAPIModel(ctx context.Context) (models.Index, diag.Diagnos
 	return apiModel, diags
 }
 
-func (model tfModel) toPutIndexParams(serverFlavor string) models.PutIndexParams {
+func (model tfModel) toPutIndexParams(isServerless bool) models.PutIndexParams {
 	// The string values are validated as durations as part of schema validation
 	masterTimeout, _ := model.MasterTimeout.Parse()
 	timeout, _ := model.Timeout.Parse()
@@ -328,7 +328,7 @@ func (model tfModel) toPutIndexParams(serverFlavor string) models.PutIndexParams
 		Timeout: timeout,
 	}
 
-	if serverFlavor != clients.ServerlessFlavor {
+	if !isServerless {
 		params.MasterTimeout = masterTimeout
 		params.WaitForActiveShards = model.WaitForActiveShards.ValueString()
 	}
