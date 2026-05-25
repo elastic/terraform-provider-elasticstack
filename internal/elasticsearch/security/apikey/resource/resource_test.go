@@ -27,6 +27,7 @@ import (
 
 	elasticsearch "github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -137,6 +138,63 @@ func TestApikeyCapabilitiesOfLastRead_LegacyVersionBlob(t *testing.T) {
 		require.False(t, diags.HasError())
 		require.Nil(t, caps)
 	})
+
+	t.Run("all-false new-format blob is preserved", func(t *testing.T) {
+		t.Parallel()
+		priv := testPrivateData{
+			clusterVersionPrivateDataKey: []byte(`{"SupportsUpdate":false,"SupportsRoleDescriptors":false,"SupportsRestriction":false}`),
+		}
+		caps, diags := apikeyCapabilitiesOfLastRead(ctx, priv)
+		require.False(t, diags.HasError())
+		require.NotNil(t, caps)
+		assert.False(t, caps.SupportsUpdate)
+		assert.False(t, caps.SupportsRoleDescriptors)
+		assert.False(t, caps.SupportsRestriction)
+	})
+
+	t.Run("legacy 8.4.0 enables update only", func(t *testing.T) {
+		t.Parallel()
+		priv := testPrivateData{clusterVersionPrivateDataKey: []byte(`{"Version":"8.4.0"}`)}
+		caps, diags := apikeyCapabilitiesOfLastRead(ctx, priv)
+		require.False(t, diags.HasError())
+		require.NotNil(t, caps)
+		assert.True(t, caps.SupportsUpdate)
+		assert.False(t, caps.SupportsRoleDescriptors)
+		assert.False(t, caps.SupportsRestriction)
+	})
+
+	t.Run("legacy 8.5.0 enables update and role descriptors", func(t *testing.T) {
+		t.Parallel()
+		priv := testPrivateData{clusterVersionPrivateDataKey: []byte(`{"Version":"8.5.0"}`)}
+		caps, diags := apikeyCapabilitiesOfLastRead(ctx, priv)
+		require.False(t, diags.HasError())
+		require.NotNil(t, caps)
+		assert.True(t, caps.SupportsUpdate)
+		assert.True(t, caps.SupportsRoleDescriptors)
+		assert.False(t, caps.SupportsRestriction)
+	})
+
+	t.Run("legacy 8.8.9 enables update and role descriptors but not restriction", func(t *testing.T) {
+		t.Parallel()
+		priv := testPrivateData{clusterVersionPrivateDataKey: []byte(`{"Version":"8.8.9"}`)}
+		caps, diags := apikeyCapabilitiesOfLastRead(ctx, priv)
+		require.False(t, diags.HasError())
+		require.NotNil(t, caps)
+		assert.True(t, caps.SupportsUpdate)
+		assert.True(t, caps.SupportsRoleDescriptors)
+		assert.False(t, caps.SupportsRestriction)
+	})
+
+	t.Run("legacy 8.9.0 enables all capabilities", func(t *testing.T) {
+		t.Parallel()
+		priv := testPrivateData{clusterVersionPrivateDataKey: []byte(`{"Version":"8.9.0"}`)}
+		caps, diags := apikeyCapabilitiesOfLastRead(ctx, priv)
+		require.False(t, diags.HasError())
+		require.NotNil(t, caps)
+		assert.True(t, caps.SupportsUpdate)
+		assert.True(t, caps.SupportsRoleDescriptors)
+		assert.True(t, caps.SupportsRestriction)
+	})
 }
 
 func TestSaveAPIKeyCapabilities(t *testing.T) {
@@ -151,11 +209,27 @@ func TestSaveAPIKeyCapabilities(t *testing.T) {
 		diags := saveAPIKeyCapabilities(ctx, client, priv)
 		require.False(t, diags.HasError())
 
-		var stored apikeyCapabilitiesPrivateData
+		var stored apikey.APIKeyCapabilities
 		require.NoError(t, json.Unmarshal(priv[clusterVersionPrivateDataKey], &stored))
 		assert.True(t, stored.SupportsUpdate)
 		assert.True(t, stored.SupportsRoleDescriptors)
 		assert.True(t, stored.SupportsRestriction)
+	})
+
+	t.Run("stateful 8.0.0 persists and round-trips all-false capabilities", func(t *testing.T) {
+		t.Parallel()
+		client := newMockElasticsearchClient(t, "8.0.0", "default")
+		priv := testPrivateData{}
+
+		diags := saveAPIKeyCapabilities(ctx, client, priv)
+		require.False(t, diags.HasError())
+
+		caps, readDiags := apikeyCapabilitiesOfLastRead(ctx, priv)
+		require.False(t, readDiags.HasError())
+		require.NotNil(t, caps)
+		assert.False(t, caps.SupportsUpdate)
+		assert.False(t, caps.SupportsRoleDescriptors)
+		assert.False(t, caps.SupportsRestriction)
 	})
 
 	t.Run("stateful mixed version persists expected flags", func(t *testing.T) {
@@ -166,7 +240,7 @@ func TestSaveAPIKeyCapabilities(t *testing.T) {
 		diags := saveAPIKeyCapabilities(ctx, client, priv)
 		require.False(t, diags.HasError())
 
-		var stored apikeyCapabilitiesPrivateData
+		var stored apikey.APIKeyCapabilities
 		require.NoError(t, json.Unmarshal(priv[clusterVersionPrivateDataKey], &stored))
 		assert.True(t, stored.SupportsUpdate)
 		assert.True(t, stored.SupportsRoleDescriptors)
