@@ -28,11 +28,7 @@ import (
 func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config outputModel) (outputModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	client, d := kbClient.GetFleetClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return config, diags
-	}
+	client := kbClient.GetFleetClient()
 
 	spaceID := config.SpaceID.ValueString()
 	outputs, oDiags := fleet.GetOutputs(ctx, client, spaceID)

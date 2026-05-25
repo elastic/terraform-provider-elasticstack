@@ -29,11 +29,7 @@ import (
 func readPrebuiltRules(ctx context.Context, client *clients.KibanaScopedClient, _, spaceID string, model prebuiltRuleModel) (prebuiltRuleModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return model, false, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	status, statusDiags := kibanaoapi.GetPrebuiltRulesStatus(ctx, oapiClient, spaceID)
 	diags.Append(statusDiags...)

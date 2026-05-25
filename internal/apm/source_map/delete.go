@@ -39,11 +39,7 @@ func (r *resourceSourceMap) Delete(ctx context.Context, req resource.DeleteReque
 		return
 	}
 
-	kibana, d := scoped.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	kibana := scoped.GetKibanaOapiClient()
 
 	artifactID := state.ID.ValueString()
 	spaceID := state.SpaceID.ValueString()

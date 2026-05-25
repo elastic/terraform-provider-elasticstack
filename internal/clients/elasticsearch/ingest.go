@@ -35,10 +35,7 @@ func PutIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 	_, err = typedClient.Ingest.PutPipeline(name).Raw(bytes.NewReader(pipelineBytes)).Do(ctx)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -47,10 +44,7 @@ func PutIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 }
 
 func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*models.IngestPipeline, fwdiag.Diagnostics) {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
-	}
+	typedClient := apiClient.GetESClient()
 
 	// We use .Perform() instead of .Do() because the typed client decodes the
 	// response through []ProcessorContainer, silently dropping any processor
@@ -89,10 +83,7 @@ func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 }
 
 func DeleteIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) fwdiag.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Ingest.DeletePipeline(name).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {

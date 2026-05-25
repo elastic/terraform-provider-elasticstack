@@ -30,11 +30,7 @@ func createPrivateLocation(ctx context.Context, client *clients.KibanaScopedClie
 	plan := req.Plan
 	var diags diag.Diagnostics
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	// Preserve the planned geo values before the API call. The Kibana API stores geo
 	// coordinates as float32 and returns float32-precision values on read (e.g.

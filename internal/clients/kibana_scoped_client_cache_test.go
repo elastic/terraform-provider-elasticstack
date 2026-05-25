@@ -126,26 +126,6 @@ func TestKibanaScopedClient_getServerStatusRaw_DoesNotCacheErrors(t *testing.T) 
 		"third call must be served from the cache populated by the successful second call")
 }
 
-// TestKibanaScopedClient_getServerStatusRaw_MissingEndpointNotCached verifies
-// that a missing-endpoint failure (no HTTP request issued at all) does not
-// populate the cache.
-func TestKibanaScopedClient_getServerStatusRaw_MissingEndpointNotCached(t *testing.T) {
-	t.Parallel()
-	sc := newKibanaScopedClientNoEndpoint(t)
-	minVer, err := version.NewVersion("8.0.0")
-	require.NoError(t, err)
-
-	_, diags := sc.EnforceMinVersion(t.Context(), minVer)
-	require.True(t, diags.HasError())
-
-	// statusCached must remain false so that a later call (e.g. after the
-	// endpoint has been populated by something out-of-band) still attempts the
-	// fetch instead of returning the empty cached values.
-	sc.statusMu.Lock()
-	assert.False(t, sc.statusCached, "missing-endpoint failures must not populate the cache")
-	sc.statusMu.Unlock()
-}
-
 // TestKibanaScopedClient_getServerStatusRaw_ConcurrentCallsShareOneFetch
 // verifies that N goroutines calling EnforceMinVersion concurrently still
 // share a single /api/status fetch.

@@ -31,11 +31,7 @@ func updateMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedCl
 	plan := req.Plan
 	var diags diag.Diagnostics
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	body, bodyDiags := plan.toAPIUpdateRequest(ctx)
 	diags.Append(bodyDiags...)

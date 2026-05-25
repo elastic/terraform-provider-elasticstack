@@ -28,11 +28,7 @@ import (
 func readStream(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model streamModel) (streamModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	kibanaClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return model, false, diags
-	}
+	kibanaClient := client.GetKibanaOapiClient()
 
 	apiResp, getDiags := kibanaoapi.GetStream(ctx, kibanaClient, spaceID, resourceID)
 	diags.Append(getDiags...)

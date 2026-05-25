@@ -43,11 +43,7 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	fleetClient, d := client.GetFleetClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
 	feat, diags := r.buildFeatures(ctx, client)
 	resp.Diagnostics.Append(diags...)

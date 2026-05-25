@@ -195,10 +195,7 @@ func fleetPackageVersion(packageName string, prerelease bool, spaceID string) (s
 		return "", err
 	}
 
-	fleetClient, d := client.GetFleetClient()
-	if d.HasError() {
-		return "", diagutil.FwDiagsAsError(d)
-	}
+	fleetClient := client.GetFleetClient()
 
 	packages, diags := fleet.GetPackages(context.Background(), fleetClient, prerelease, spaceID)
 	if diags.HasError() {

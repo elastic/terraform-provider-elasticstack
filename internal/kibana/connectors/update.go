@@ -35,11 +35,7 @@ func updateConnector(
 	planModel := req.Plan
 	var diags diag.Diagnostics
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[tfModel]{}, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	apiModel, apiDiags := planModel.toAPIModel()
 	diags.Append(apiDiags...)

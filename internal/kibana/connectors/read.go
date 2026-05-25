@@ -35,11 +35,7 @@ func readConnector(
 ) (tfModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return model, false, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	connector, readDiags := kibanaoapi.GetConnector(ctx, oapiClient, resourceID, spaceID)
 	if !connectorReadExists(connector, readDiags) {

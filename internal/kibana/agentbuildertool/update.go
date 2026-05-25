@@ -37,11 +37,7 @@ func updateTool(ctx context.Context, client *clients.KibanaScopedClient, req ent
 		return entitycore.KibanaWriteResult[toolModel]{}, diags
 	}
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[toolModel]{}, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	_, d = kibanaoapi.UpdateTool(ctx, oapiClient, req.SpaceID, req.WriteID, body)
 	diags.Append(d...)

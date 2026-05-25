@@ -34,13 +34,7 @@ func readAgentDownloadSource(
 	spaceID string,
 	prior model,
 ) (model, bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	fleetClient, d := client.GetFleetClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return prior, false, diags
-	}
+	fleetClient := client.GetFleetClient()
 
 	return readAndHydrateState(ctx, fleetClient, resourceID, spaceID, prior.SpaceIDs, prior.KibanaConnection)
 }

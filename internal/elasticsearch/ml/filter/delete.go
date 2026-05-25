@@ -39,11 +39,7 @@ func deleteFilter(ctx context.Context, client *clients.ElasticsearchScopedClient
 
 	tflog.Debug(ctx, fmt.Sprintf("Deleting ML filter: %s", filterID))
 
-	typedClient, clientDiags := client.GetESClient()
-	diags.Append(clientDiags...)
-	if diags.HasError() {
-		return diags
-	}
+	typedClient := client.GetESClient()
 
 	_, err := typedClient.Ml.DeleteFilter(filterID).Do(ctx)
 	if err != nil {

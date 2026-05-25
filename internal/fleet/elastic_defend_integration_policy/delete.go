@@ -40,11 +40,7 @@ func (r *elasticDefendIntegrationPolicyResource) Delete(ctx context.Context, req
 		return
 	}
 
-	fleetClient, d := client.GetFleetClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
 	policyID := stateModel.PolicyID.ValueString()
 	force := stateModel.Force.ValueBool()

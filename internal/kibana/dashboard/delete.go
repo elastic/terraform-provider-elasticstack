@@ -52,11 +52,7 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 	spaceID := composite.ClusterID
 
 	// Get the Kibana client
-	kibanaClient, d := client.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	kibanaClient := client.GetKibanaOapiClient()
 
 	// Delete the dashboard
 	diags = kibanaoapi.DeleteDashboard(ctx, kibanaClient, spaceID, dashboardID)

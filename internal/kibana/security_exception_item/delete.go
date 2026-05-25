@@ -48,11 +48,7 @@ func (r *ExceptionItemResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	// Delete by ID
 	id := compID.ResourceID

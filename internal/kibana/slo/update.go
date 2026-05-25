@@ -62,11 +62,7 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	oapi, d := apiClient.GetKibanaOapiClient()
-	response.Diagnostics.Append(d...)
-	if response.Diagnostics.HasError() {
-		return
-	}
+	oapi := apiClient.GetKibanaOapiClient()
 
 	indicator, convErr := kibanaoapi.ResponseIndicatorToUpdateIndicator(apiModel.Indicator)
 	if convErr != nil {

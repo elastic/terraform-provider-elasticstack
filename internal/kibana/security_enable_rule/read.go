@@ -30,11 +30,7 @@ import (
 func readSecurityEnableRule(ctx context.Context, client *clients.KibanaScopedClient, _, _ string, model enableRuleModel) (enableRuleModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return model, false, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	spaceID := model.SpaceID.ValueString()
 	key := model.Key.ValueString()

@@ -101,11 +101,7 @@ func readToolDataSource(ctx context.Context, client *clients.KibanaScopedClient,
 		return config, diags
 	}
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return config, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	spaceID := defaultSpaceID
 	if typeutils.IsKnown(config.SpaceID) {

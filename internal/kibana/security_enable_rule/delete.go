@@ -49,11 +49,7 @@ func deleteSecurityEnableRule(ctx context.Context, client *clients.KibanaScopedC
 		return diags
 	}
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	tflog.Info(ctx, "Disabling rules on delete", map[string]any{
 		attrSpaceID: spaceID,

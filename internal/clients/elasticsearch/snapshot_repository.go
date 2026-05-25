@@ -39,10 +39,7 @@ type SnapshotRepositoryInfo struct {
 }
 
 func PutSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, repoType string, settings map[string]any, verify bool) fwdiag.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	settingsBytes, err := json.Marshal(settings)
 	if err != nil {
@@ -127,10 +124,7 @@ func PutSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsearch
 }
 
 func GetSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*SnapshotRepositoryInfo, fwdiag.Diagnostics) {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
-	}
+	typedClient := apiClient.GetESClient()
 	res, err := typedClient.Snapshot.GetRepository().Repository(name).Perform(ctx)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -261,10 +255,7 @@ func extractSnapshotRepositoryInfo(repo types.Repository) (*SnapshotRepositoryIn
 }
 
 func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) fwdiag.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Snapshot.DeleteRepository(name).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {

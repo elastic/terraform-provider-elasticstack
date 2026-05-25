@@ -102,10 +102,7 @@ type rawDatafeedDocument struct {
 func PutDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, req DatafeedRequest) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	body, err := json.Marshal(req)
 	if err != nil {
@@ -132,10 +129,7 @@ func PutDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 func GetDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string) (*MLDatafeedResponse, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
-	}
+	typedClient := apiClient.GetESClient()
 
 	res, err := typedClient.Ml.GetDatafeeds().DatafeedId(datafeedID).AllowNoMatch(true).Perform(ctx)
 	if err != nil {
@@ -196,10 +190,7 @@ func GetDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 func UpdateDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, req DatafeedRequest) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	body, err := json.Marshal(req)
 	if err != nil {
@@ -220,10 +211,7 @@ func UpdateDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 func DeleteDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, force bool) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Ml.DeleteDatafeed(datafeedID).Force(force).Do(ctx)
 	if err != nil {
@@ -241,10 +229,7 @@ func DeleteDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 func StopDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, force bool, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	req := typedClient.Ml.StopDatafeed(datafeedID).
 		Force(force).
@@ -267,10 +252,7 @@ func StopDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 func StartDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string, start string, end string, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	req := typedClient.Ml.StartDatafeed(datafeedID)
 
@@ -299,10 +281,7 @@ func StartDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 func GetDatafeedStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, datafeedID string) (*types.DatafeedStats, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
-	}
+	typedClient := apiClient.GetESClient()
 
 	res, err := typedClient.Ml.GetDatafeedStats().DatafeedId(datafeedID).AllowNoMatch(true).Do(ctx)
 	if err != nil {

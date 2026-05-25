@@ -42,11 +42,7 @@ func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	fleetClient, d := client.GetFleetClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
 	name := stateModel.Name.ValueString()
 	version := stateModel.Version.ValueString()

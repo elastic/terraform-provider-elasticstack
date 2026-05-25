@@ -120,11 +120,7 @@ func readSkillDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 		return config, diags
 	}
 
-	oapiClient, d := kbClient.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return config, diags
-	}
+	oapiClient := kbClient.GetKibanaOapiClient()
 
 	spaceID := defaultSpaceID
 	spaceExplicit := typeutils.IsKnown(config.SpaceID) && config.SpaceID.ValueString() != ""

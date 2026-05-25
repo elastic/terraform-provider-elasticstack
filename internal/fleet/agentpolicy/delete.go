@@ -41,11 +41,7 @@ func (r *agentPolicyResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	fleetClient, d := client.GetFleetClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
 	policyID := stateModel.PolicyID.ValueString()
 	skipDestroy := stateModel.SkipDestroy.ValueBool()

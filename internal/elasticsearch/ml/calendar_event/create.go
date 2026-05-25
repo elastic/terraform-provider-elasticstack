@@ -69,11 +69,7 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML calendar event for calendar: %s", calendarID))
 
-	typedClient, clientDiags := client.GetESClient()
-	diags.Append(clientDiags...)
-	if diags.HasError() {
-		return plan, diags
-	}
+	typedClient := client.GetESClient()
 
 	var postWire []calendarEventWire
 	var postBodyBytes []byte

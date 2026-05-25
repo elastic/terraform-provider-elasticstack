@@ -41,11 +41,7 @@ func (r *resourceAgentConfiguration) Delete(ctx context.Context, req resource.De
 		return
 	}
 
-	kibana, d := scoped.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	kibana := scoped.GetKibanaOapiClient()
 
 	idParts := strings.Split(state.ID.ValueString(), ":")
 	serviceName := idParts[0]

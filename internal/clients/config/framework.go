@@ -80,7 +80,7 @@ func NewFromFramework(ctx context.Context, cfg ProviderConfiguration, version st
 		client.Elasticsearch = new(esCfg.toElasticsearchConfiguration())
 	}
 
-	kibanaOapiCfg, diags := newKibanaOapiConfigFromFramework(ctx, cfg, base)
+	kibanaOapiCfg, diags := newProviderKibanaOapiConfigFromFramework(ctx, cfg, base)
 	if diags.HasError() {
 		return Client{}, diags
 	}

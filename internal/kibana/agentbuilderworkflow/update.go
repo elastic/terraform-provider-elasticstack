@@ -33,11 +33,7 @@ func updateWorkflow(ctx context.Context, client *clients.KibanaScopedClient, req
 
 	body := plan.toAPIUpdateModel()
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[workflowModel]{}, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	updated, d := kibanaoapi.UpdateWorkflow(ctx, oapiClient, req.SpaceID, req.WriteID, body)
 	diags.Append(d...)
