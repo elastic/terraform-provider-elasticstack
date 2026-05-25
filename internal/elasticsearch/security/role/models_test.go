@@ -23,6 +23,8 @@ import (
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
@@ -30,6 +32,85 @@ import (
 func TestData_satisfiesElasticsearchResourceModelContract(t *testing.T) {
 	t.Parallel()
 	var _ entitycore.ElasticsearchResourceModel = Data{}
+	var _ entitycore.WithVersionRequirements = Data{}
+}
+
+func TestModel_GetVersionRequirements(t *testing.T) {
+	t.Parallel()
+
+	remoteIndicesSet := func(t *testing.T, count int) types.Set {
+		t.Helper()
+		attrTypes := getRemoteIndexPermsAttrTypes()
+		if count == 0 {
+			return types.SetValueMust(types.ObjectType{AttrTypes: attrTypes}, []attr.Value{})
+		}
+
+		clustersSet := types.SetValueMust(types.StringType, []attr.Value{types.StringValue("remote-cluster")})
+		namesSet := types.SetValueMust(types.StringType, []attr.Value{types.StringValue("logs-*")})
+		privilegesSet := types.SetValueMust(types.StringType, []attr.Value{types.StringValue("read")})
+		remoteIndexObj := types.ObjectValueMust(attrTypes, map[string]attr.Value{
+			"clusters":       clustersSet,
+			"field_security": types.ObjectNull(getRemoteFieldSecurityAttrTypes()),
+			"query":          jsontypes.NewNormalizedNull(),
+			"names":          namesSet,
+			"privileges":     privilegesSet,
+		})
+		elements := make([]attr.Value, count)
+		for i := range elements {
+			elements[i] = remoteIndexObj
+		}
+		return types.SetValueMust(types.ObjectType{AttrTypes: attrTypes}, elements)
+	}
+
+	t.Run("neither configured", func(t *testing.T) {
+		t.Parallel()
+		data := Data{
+			Description:   types.StringNull(),
+			RemoteIndices: types.SetNull(types.ObjectType{AttrTypes: getRemoteIndexPermsAttrTypes()}),
+		}
+		reqs, diags := data.GetVersionRequirements()
+		require.False(t, diags.HasError())
+		require.Empty(t, reqs)
+	})
+
+	t.Run("description only", func(t *testing.T) {
+		t.Parallel()
+		data := Data{
+			Description:   types.StringValue("role description"),
+			RemoteIndices: remoteIndicesSet(t, 0),
+		}
+		reqs, diags := data.GetVersionRequirements()
+		require.False(t, diags.HasError())
+		require.Len(t, reqs, 1)
+		require.True(t, reqs[0].MinVersion.Equal(MinSupportedDescriptionVersion))
+		require.Contains(t, reqs[0].ErrorMessage, "'description'")
+	})
+
+	t.Run("remote_indices only", func(t *testing.T) {
+		t.Parallel()
+		data := Data{
+			Description:   types.StringNull(),
+			RemoteIndices: remoteIndicesSet(t, 1),
+		}
+		reqs, diags := data.GetVersionRequirements()
+		require.False(t, diags.HasError())
+		require.Len(t, reqs, 1)
+		require.True(t, reqs[0].MinVersion.Equal(MinSupportedRemoteIndicesVersion))
+		require.Contains(t, reqs[0].ErrorMessage, "'remote_indices'")
+	})
+
+	t.Run("both configured", func(t *testing.T) {
+		t.Parallel()
+		data := Data{
+			Description:   types.StringValue("role description"),
+			RemoteIndices: remoteIndicesSet(t, 1),
+		}
+		reqs, diags := data.GetVersionRequirements()
+		require.False(t, diags.HasError())
+		require.Len(t, reqs, 2)
+		require.True(t, reqs[0].MinVersion.Equal(MinSupportedDescriptionVersion))
+		require.True(t, reqs[1].MinVersion.Equal(MinSupportedRemoteIndicesVersion))
+	})
 }
 
 func TestFromAPIModel_PreservesEmptyStringDescriptionWhenAPIIsNull(t *testing.T) {
