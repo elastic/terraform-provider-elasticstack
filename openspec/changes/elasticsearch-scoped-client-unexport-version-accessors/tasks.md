@@ -6,10 +6,10 @@
 
 ## 2. Pattern A — `security/role/update.go` → `WithVersionRequirements`
 
-- [ ] 2.1 Read `internal/elasticsearch/security/role/models.go`; identify the conditional gates (`description` → `MinSupportedDescriptionVersion`, `remote_indices` → `MinSupportedRemoteIndicesVersion`)
-- [ ] 2.2 Add `GetVersionRequirements()` to the role model, returning a slice of `entitycore.VersionRequirement` whose entries are only present when the relevant attribute is configured
-- [ ] 2.3 Unit test `TestModel_GetVersionRequirements` covering all four combinations of (description set/unset, remote_indices empty/non-empty)
-- [ ] 2.4 Remove inline `client.ServerVersion(ctx)` + `LessThan` blocks from `internal/elasticsearch/security/role/update.go`
+- [x] 2.1 Read `internal/elasticsearch/security/role/models.go`; identify the conditional gates (`description` → `MinSupportedDescriptionVersion`, `remote_indices` → `MinSupportedRemoteIndicesVersion`)
+- [x] 2.2 Add `GetVersionRequirements()` to the role model, returning a slice of `entitycore.VersionRequirement` whose entries are only present when the relevant attribute is configured
+- [x] 2.3 Unit test `TestModel_GetVersionRequirements` covering all four combinations of (description set/unset, remote_indices empty/non-empty)
+- [x] 2.4 Remove inline `client.ServerVersion(ctx)` + `LessThan` blocks from `internal/elasticsearch/security/role/update.go`
 
 ## 3. Pattern B — transform per-setting `EnforceMinVersion`
 
