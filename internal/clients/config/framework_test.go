@@ -27,7 +27,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewFromFrameworkKibanaResource_ignoresProviderFleetBlock(t *testing.T) {
+// TestNewFromFrameworkKibanaResource_usesKibanaConnectionOnly verifies that a
+// resource-level kibana_connection is the sole source for the scoped client.
+// Provider-level fleet blocks cannot reach this path; see also
+// Test_newKibanaOapiConfigFromFramework_doesNotApplyFleetFallback.
+func TestNewFromFrameworkKibanaResource_usesKibanaConnectionOnly(t *testing.T) {
 	os.Unsetenv("KIBANA_ENDPOINT")
 	os.Unsetenv("FLEET_ENDPOINT")
 
