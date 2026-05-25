@@ -42,8 +42,7 @@ type KibanaScopedClient struct {
 	version string
 	// kibanaEndpoint holds the resolved Kibana endpoint URL captured after
 	// provider configuration, entity-local overrides, and environment overrides
-	// have been applied. It is used by accessor validation to distinguish missing
-	// endpoint configuration from unexpected nil states.
+	// have been applied. It is used by factory endpoint validation.
 	kibanaEndpoint string
 	// fleetEndpoint holds the resolved Fleet endpoint URL captured after
 	// provider configuration, entity-local overrides, and environment overrides

@@ -157,9 +157,8 @@ func TestElasticsearchScopedClient_GetESClient_NilWhenUnconfigured(t *testing.T)
 func TestElasticsearchScopedClient_GetESClient_Present(t *testing.T) {
 	t.Parallel()
 	factory := newTestFactory(t)
-	// Build a scoped client from provider defaults (newTestAPIClient has no ES client set,
-	// but the factory wraps the APIClient fields). Here we verify the method exists and
-	// the scoped client built from a real factory does not panic.
+	// Build a scoped client from provider defaults and verify the factory path
+	// succeeds without panic.
 	ctx := context.Background()
 	emptyList, diags := types.ListValueFrom(ctx,
 		types.ObjectType{AttrTypes: elasticsearchConnectionAttrTypes()},
