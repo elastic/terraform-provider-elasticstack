@@ -40,6 +40,12 @@ import (
 // "default" build flavor. It sets the X-Elastic-Product header that the
 // go-elasticsearch client requires for product-check validation.
 func newMockElasticsearchServer(version string) *httptest.Server {
+	return newMockElasticsearchServerWithFlavor(version, "default")
+}
+
+// newMockElasticsearchServerWithFlavor returns an httptest.Server that responds to GET /
+// with a minimal Elasticsearch info payload for the given version and build flavor.
+func newMockElasticsearchServerWithFlavor(version, flavor string) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && r.URL.Path == "/" {
 			w.Header().Set("Content-Type", "application/json")
@@ -48,7 +54,7 @@ func newMockElasticsearchServer(version string) *httptest.Server {
 				"cluster_uuid": "test-cluster-uuid",
 				"version": map[string]any{
 					"number":       version,
-					"build_flavor": "default",
+					"build_flavor": flavor,
 				},
 			}
 			_ = json.NewEncoder(w).Encode(payload)
@@ -322,6 +328,164 @@ func TestElasticsearchScopedClient_EnforceMinVersion_NotSatisfied(t *testing.T) 
 	ok, diags := scoped.EnforceMinVersion(context.Background(), minVer)
 	require.False(t, diags.HasError())
 	assert.False(t, ok, "7.17.0 must not satisfy min version 8.0.0")
+}
+
+// --- IsServerless ---
+
+func TestElasticsearchScopedClient_IsServerless_MissingEndpoint(t *testing.T) {
+	t.Parallel()
+	sc := &ElasticsearchScopedClient{esEndpoints: []string{}}
+	isServerless, diags := sc.IsServerless(context.Background())
+	assert.False(t, isServerless)
+	require.True(t, diags.HasError())
+}
+
+func TestElasticsearchScopedClient_IsServerless_InfoAPIError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/" {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	scoped := newMockScopedClient(t, srv)
+
+	isServerless, diags := scoped.IsServerless(context.Background())
+	assert.False(t, isServerless)
+	require.True(t, diags.HasError())
+}
+
+func TestElasticsearchScopedClient_IsServerless_Serverless(t *testing.T) {
+	srv := newMockElasticsearchServerWithFlavor("8.19.0", ServerlessFlavor)
+	defer srv.Close()
+
+	scoped := newMockScopedClient(t, srv)
+
+	isServerless, diags := scoped.IsServerless(context.Background())
+	require.False(t, diags.HasError())
+	assert.True(t, isServerless)
+}
+
+func TestElasticsearchScopedClient_IsServerless_Stateful(t *testing.T) {
+	srv := newMockElasticsearchServer("8.19.0")
+	defer srv.Close()
+
+	scoped := newMockScopedClient(t, srv)
+
+	isServerless, diags := scoped.IsServerless(context.Background())
+	require.False(t, diags.HasError())
+	assert.False(t, isServerless)
+}
+
+// --- EnforceVersionCheck ---
+
+func TestElasticsearchScopedClient_EnforceVersionCheck_MissingEndpoint(t *testing.T) {
+	t.Parallel()
+	sc := &ElasticsearchScopedClient{esEndpoints: []string{}}
+	ok, diags := sc.EnforceVersionCheck(context.Background(), func(_ *goversion.Version) bool { return true })
+	assert.False(t, ok)
+	require.True(t, diags.HasError())
+}
+
+func TestElasticsearchScopedClient_EnforceVersionCheck_InfoAPIError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/" {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	scoped := newMockScopedClient(t, srv)
+
+	ok, diags := scoped.EnforceVersionCheck(context.Background(), func(_ *goversion.Version) bool { return true })
+	assert.False(t, ok)
+	require.True(t, diags.HasError())
+}
+
+func TestElasticsearchScopedClient_EnforceVersionCheck_StatefulBelowMin(t *testing.T) {
+	srv := newMockElasticsearchServer("8.10.0")
+	defer srv.Close()
+
+	scoped := newMockScopedClient(t, srv)
+	minVer, err := goversion.NewVersion("8.15.0")
+	require.NoError(t, err)
+
+	ok, diags := scoped.EnforceVersionCheck(context.Background(), func(v *goversion.Version) bool {
+		return v.GreaterThanOrEqual(minVer)
+	})
+	require.False(t, diags.HasError())
+	assert.False(t, ok)
+}
+
+func TestElasticsearchScopedClient_EnforceVersionCheck_StatefulAtMin(t *testing.T) {
+	srv := newMockElasticsearchServer("8.15.0")
+	defer srv.Close()
+
+	scoped := newMockScopedClient(t, srv)
+	minVer, err := goversion.NewVersion("8.15.0")
+	require.NoError(t, err)
+
+	ok, diags := scoped.EnforceVersionCheck(context.Background(), func(v *goversion.Version) bool {
+		return v.GreaterThanOrEqual(minVer)
+	})
+	require.False(t, diags.HasError())
+	assert.True(t, ok)
+}
+
+func TestElasticsearchScopedClient_EnforceVersionCheck_StatefulAboveMin(t *testing.T) {
+	srv := newMockElasticsearchServer("9.0.0")
+	defer srv.Close()
+
+	scoped := newMockScopedClient(t, srv)
+	minVer, err := goversion.NewVersion("8.15.0")
+	require.NoError(t, err)
+
+	ok, diags := scoped.EnforceVersionCheck(context.Background(), func(v *goversion.Version) bool {
+		return v.GreaterThanOrEqual(minVer)
+	})
+	require.False(t, diags.HasError())
+	assert.True(t, ok)
+}
+
+func TestElasticsearchScopedClient_EnforceVersionCheck_ServerlessShortCircuit(t *testing.T) {
+	srv := newMockElasticsearchServerWithFlavor("8.10.0", ServerlessFlavor)
+	defer srv.Close()
+
+	scoped := newMockScopedClient(t, srv)
+
+	ok, diags := scoped.EnforceVersionCheck(context.Background(), func(_ *goversion.Version) bool { return false })
+	require.False(t, diags.HasError())
+	assert.True(t, ok, "serverless must short-circuit to true even when check returns false")
+}
+
+func TestElasticsearchScopedClient_EnforceVersionCheck_PredicateFalseOnStateful(t *testing.T) {
+	srv := newMockElasticsearchServer("8.19.0")
+	defer srv.Close()
+
+	scoped := newMockScopedClient(t, srv)
+
+	ok, diags := scoped.EnforceVersionCheck(context.Background(), func(_ *goversion.Version) bool {
+		return false
+	})
+	require.False(t, diags.HasError())
+	assert.False(t, ok)
+}
+
+func TestElasticsearchScopedClient_EnforceVersionCheck_PredicateTrueOnStateful(t *testing.T) {
+	srv := newMockElasticsearchServer("8.19.0")
+	defer srv.Close()
+
+	scoped := newMockScopedClient(t, srv)
+
+	ok, diags := scoped.EnforceVersionCheck(context.Background(), func(_ *goversion.Version) bool {
+		return true
+	})
+	require.False(t, diags.HasError())
+	assert.True(t, ok)
 }
 
 // --- ClusterID ---
