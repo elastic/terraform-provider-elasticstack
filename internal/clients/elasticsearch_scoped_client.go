@@ -56,21 +56,11 @@ type ElasticsearchScopedClient struct {
 // The client is built from the provider's configured Elasticsearch transport
 // and endpoints. A product check may run on the typed client's first request,
 // adding marginal latency on first use.
-func (e *ElasticsearchScopedClient) GetESClient() (*elasticsearch.TypedClient, fwdiag.Diagnostics) {
-	hasEndpoint := false
-	for _, ep := range e.esEndpoints {
-		if ep != "" {
-			hasEndpoint = true
-			break
-		}
-	}
-	if !hasEndpoint {
-		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Elasticsearch client not configured", elasticsearchClientNotConfiguredError)}
-	}
-	if e.typedClient == nil {
-		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Elasticsearch client not found", "elasticsearch client not found")}
-	}
-	return e.typedClient, nil
+//
+// Endpoint presence is validated by ProviderClientFactory.GetElasticsearchClient
+// before a scoped client is returned.
+func (e *ElasticsearchScopedClient) GetESClient() *elasticsearch.TypedClient {
+	return e.typedClient
 }
 
 // serverInfo fetches and caches the Elasticsearch cluster info.
@@ -83,11 +73,7 @@ func (e *ElasticsearchScopedClient) serverInfo(ctx context.Context) (*info.Respo
 		return e.elasticsearchClusterInfo, nil
 	}
 
-	typedClient, diags := e.GetESClient()
-	if diags.HasError() {
-		return nil, diags
-	}
-	res, err := typedClient.Info().Do(ctx)
+	res, err := e.GetESClient().Info().Do(ctx)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
