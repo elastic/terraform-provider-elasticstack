@@ -60,8 +60,8 @@
 
 ## 8. Rewrite `internal/clients` tests
 
-- [ ] 8.1 Remove `TestElasticsearchScopedClient_ServerVersion`, `TestElasticsearchScopedClient_ServerFlavor` from `internal/clients/elasticsearch_scoped_client_test.go`. Behaviour now tested via `EnforceMinVersion`, `EnforceVersionCheck`, `IsServerless`
-- [ ] 8.2 Update `provider_client_factory_test.go` — replace any test calling raw accessors with equivalents through `EnforceMinVersion` or `IsServerless`
+- [x] 8.1 Remove `TestElasticsearchScopedClient_ServerVersion`, `TestElasticsearchScopedClient_ServerFlavor` from `internal/clients/elasticsearch_scoped_client_test.go`. Behaviour now tested via `EnforceMinVersion`, `EnforceVersionCheck`, `IsServerless`
+- [x] 8.2 Update `provider_client_factory_test.go` — replace any test calling raw accessors with equivalents through `EnforceMinVersion` or `IsServerless`
 
 ## 9. Remove the public accessors
 
