@@ -58,7 +58,7 @@ func TestTfModel_toAPIModel_Secrets(t *testing.T) {
 		}
 		apiModel, diags := model.toAPIModel()
 		require.False(t, diags.HasError())
-		require.Equal(t, `{"routingKey":"wo-key"}`, apiModel.SecretsJSON)
+		require.JSONEq(t, `{"routingKey":"wo-key"}`, apiModel.SecretsJSON)
 	})
 
 	t.Run("secrets only", func(t *testing.T) {
@@ -70,7 +70,7 @@ func TestTfModel_toAPIModel_Secrets(t *testing.T) {
 		}
 		apiModel, diags := model.toAPIModel()
 		require.False(t, diags.HasError())
-		require.Equal(t, `{"routingKey":"plain-key"}`, apiModel.SecretsJSON)
+		require.JSONEq(t, `{"routingKey":"plain-key"}`, apiModel.SecretsJSON)
 	})
 
 	t.Run("both unknown", func(t *testing.T) {
@@ -94,7 +94,7 @@ func TestTfModel_toAPIModel_Secrets(t *testing.T) {
 		}
 		apiModel, diags := model.toAPIModel()
 		require.False(t, diags.HasError())
-		require.Equal(t, `{"routingKey":"wo-key"}`, apiModel.SecretsJSON)
+		require.JSONEq(t, `{"routingKey":"wo-key"}`, apiModel.SecretsJSON)
 	})
 }
 
