@@ -10,7 +10,7 @@
 
 ## 3. Modify the existing `lint` job in `.github/workflows/provider.yml`
 
-- [x] 3.1 Replace the `Lint` step's `run: make check-lint` with a step that calls the remaining targets directly: `make check-openspec check-fmt gen check-docs`. Leave the Node, Go, and Terraform setup steps unchanged.
+- [x] 3.1 Replace the `Lint` step's `run: make check-lint` with a step that calls the remaining targets directly: `make setup-openspec check-openspec check-fmt gen check-docs`. Leave the Node, Go, and Terraform setup steps unchanged.
 
 ## 4. Wire the new job into the `gate` job in `.github/workflows/provider.yml`
 
