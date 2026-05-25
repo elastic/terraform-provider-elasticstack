@@ -47,10 +47,6 @@ const (
 	apiKeyCustomLabel = "customLabel"
 )
 
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = getSchema()
-}
-
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages Kibana [data views](https://www.elastic.co/guide/en/kibana/current/data-views-api.html)",
