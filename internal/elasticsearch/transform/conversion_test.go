@@ -226,6 +226,45 @@ func TestToAPIModel_VersionGating_Settings(t *testing.T) {
 	}
 }
 
+func TestToAPIModel_RuntimeMappings_AlwaysAllowed(t *testing.T) {
+	t.Parallel()
+
+	model := baseModel()
+	model.Source.RuntimeMappings = jsontypes.NewNormalizedValue(`{"day_of_week":{"type":"keyword"}}`)
+
+	srv := newMockElasticsearchServer("7.17.0", "default")
+	t.Cleanup(srv.Close)
+
+	client := newMockScopedClient(t, srv)
+	api, diags := toAPIModel(context.Background(), client, model)
+	require.False(t, diags.HasError(), "%s", diags)
+	require.NotNil(t, api.Source)
+	require.NotNil(t, api.Source.RuntimeMappings)
+}
+
+func TestToAPIModel_VersionGating_EnforceMinVersionError(t *testing.T) {
+	t.Parallel()
+
+	model := baseModel()
+	model.Destination.Aliases = []tfModelAlias{
+		{Alias: types.StringValue("alias-1"), MoveOnCreation: types.BoolValue(true)},
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/" {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(srv.Close)
+
+	client := newMockScopedClient(t, srv)
+	api, diags := toAPIModel(context.Background(), client, model)
+	require.True(t, diags.HasError(), "expected error when cluster info is unavailable")
+	assert.Nil(t, api)
+}
+
 func TestToAPIModel_VersionGating_UnsetFieldsNoWarning(t *testing.T) {
 	t.Parallel()
 
