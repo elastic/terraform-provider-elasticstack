@@ -8,8 +8,8 @@
 
 - [x] 2.1 In `internal/clients/provider_client_factory.go`, change `GetElasticsearchClient` to perform the endpoint-presence check currently in `(*ElasticsearchScopedClient).GetESClient`. Return error diagnostics with the existing message `elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS` when no non-empty endpoint is configured. Do not return a scoped client on this failure path.
 - [x] 2.2 In `GetKibanaClient`, perform the new "at least one of kibana or fleet endpoint" check after the scoped client is built. Return error diagnostics with a combined message naming all five user-facing configuration paths (`kibana.endpoints`, `kibana_connection.endpoints`, `KIBANA_ENDPOINT`, `fleet.endpoint`, `FLEET_ENDPOINT`) when neither endpoint is configured.
-- [x] 2.3 Verify the resource-level `kibana_connection` path in `GetKibanaClient` continues to surface its existing diagnostics from `buildKibanaScopedClientFromConfig` and `config.NewFromFrameworkKibanaResource` without regression.
-- [x] 2.4 Verify the resource-level `elasticsearch_connection` path in `GetElasticsearchClient` continues to surface its existing diagnostics (multiple blocks, build errors) and that the new factory-level endpoint check runs on the resulting scoped client.
+- [x] 2.3 Verify the resource-level `kibana_connection` path in `GetKibanaClient` continues to surface its existing diagnostics from `buildKibanaScopedClientFromConfig` and `config.NewFromFrameworkKibanaResource` without regression. Pinned by `TestGetKibanaClient_NilFactory` and `TestGetKibanaClient_ResourceLevelBuildError`.
+- [x] 2.4 Verify the resource-level `elasticsearch_connection` path in `GetElasticsearchClient` continues to surface its existing diagnostics (multiple blocks, build errors) and that the new factory-level endpoint check runs on the resulting scoped client. Pinned by `TestGetElasticsearchClient_MultipleConnectionBlocks`.
 
 ## 3. Scoped clients: convert accessors to single-return getters
 

@@ -221,17 +221,103 @@ func TestKibanaScopedClient_EnforceMinVersion_ViaFactory_ServerlessShortCircuit(
 
 func TestNewKibanaScopedClientFromFactory_NilFactory(t *testing.T) {
 	t.Parallel()
-	result := NewKibanaScopedClientFromFactory(nil)
-	assert.Nil(t, result)
+	scoped, diags := NewKibanaScopedClientFromFactory(nil)
+	assert.Nil(t, scoped)
+	assert.False(t, diags.HasError())
 }
 
 func TestNewKibanaScopedClientFromFactory_Valid(t *testing.T) {
 	t.Parallel()
 	f := newTestFactory(t)
-	result := NewKibanaScopedClientFromFactory(f)
-	require.NotNil(t, result)
-	_, diags := result.GetKibanaOapiClient()
-	require.Empty(t, diags)
+	scoped, diags := NewKibanaScopedClientFromFactory(f)
+	require.False(t, diags.HasError())
+	require.NotNil(t, scoped)
+	_, clientDiags := scoped.GetKibanaOapiClient()
+	require.Empty(t, clientDiags)
+}
+
+func TestNewKibanaScopedClientFromFactory_MissingEndpoint(t *testing.T) {
+	t.Parallel()
+	factory := NewProviderClientFactory(&apiClient{version: "unit-testing"})
+	scoped, diags := NewKibanaScopedClientFromFactory(factory)
+	require.True(t, diags.HasError(), "factory helper must fail when neither Kibana nor Fleet endpoint is configured")
+	assert.Nil(t, scoped)
+	assert.Equal(t, kibanaFleetClientNotConfiguredError, diags[0].Detail())
+}
+
+// --- Resource-level path regression tests (Tasks 2.3 / 2.4) ---
+
+func TestGetElasticsearchClient_MultipleConnectionBlocks(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestFactory(t)
+
+	conn := config.ElasticsearchConnection{
+		Username: types.StringValue("elastic"),
+		Password: types.StringValue("changeme"),
+		Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+			types.StringValue("http://elasticsearch.example.com:9200"),
+		}),
+		Headers:  types.MapValueMust(types.StringType, map[string]attr.Value{}),
+		Insecure: types.BoolValue(false),
+	}
+
+	list, diags := types.ListValueFrom(ctx,
+		types.ObjectType{AttrTypes: elasticsearchConnectionAttrTypes()},
+		[]config.ElasticsearchConnection{conn, conn},
+	)
+	require.False(t, diags.HasError())
+
+	scoped, diags := factory.GetElasticsearchClient(ctx, list)
+	require.True(t, diags.HasError(), "factory must reject multiple elasticsearch_connection blocks")
+	assert.Nil(t, scoped)
+	assert.Equal(t, "Invalid elasticsearch_connection", diags[0].Summary())
+	assert.Equal(t, "At most one elasticsearch_connection block is allowed.", diags[0].Detail())
+}
+
+func TestGetKibanaClient_NilFactory(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var f *ProviderClientFactory
+
+	emptyList, diags := types.ListValueFrom(ctx,
+		types.ObjectType{AttrTypes: kibanaConnectionAttrTypes()},
+		[]config.KibanaConnection{},
+	)
+	require.False(t, diags.HasError())
+
+	_, diags = f.GetKibanaClient(ctx, emptyList)
+	assert.True(t, diags.HasError(), "GetKibanaClient on a nil factory must return an error diagnostic")
+}
+
+func TestGetKibanaClient_ResourceLevelBuildError(t *testing.T) {
+	ctx := context.Background()
+	factory := newTestFactory(t)
+
+	conn := config.KibanaConnection{
+		Username: types.StringValue("elastic"),
+		Password: types.StringValue("changeme"),
+		APIKey:   types.StringValue(""),
+		Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+			types.StringValue("http://kibana.example.com:5601"),
+		}),
+		CACerts: types.ListValueMust(types.StringType, []attr.Value{
+			types.StringValue("/nonexistent/ca.pem"),
+		}),
+		Insecure: types.BoolValue(false),
+	}
+
+	list, diags := types.ListValueFrom(ctx,
+		types.ObjectType{AttrTypes: kibanaConnectionAttrTypes()},
+		[]config.KibanaConnection{conn},
+	)
+	require.False(t, diags.HasError())
+
+	scoped, diags := factory.GetKibanaClient(ctx, list)
+	require.True(t, diags.HasError(), "factory must surface kibana_connection build errors before endpoint validation")
+	assert.Nil(t, scoped)
+	assert.Equal(t, "Failed to build Kibana OpenAPI client", diags[0].Summary())
+	assert.NotEqual(t, kibanaFleetClientNotConfiguredError, diags[0].Detail())
 }
 
 // --- Scenario 8: Entity-local elasticsearch_connection with missing endpoint ---
