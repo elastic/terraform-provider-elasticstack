@@ -65,6 +65,7 @@
 
 ## 9. Remove the public accessors
 
+- [x] 9.0 Migrate `internal/elasticsearch/index/ilm/{create,update}.go` callers (proposal missed these)
 - [ ] 9.1 `rg "\.ServerVersion\(|\.ServerFlavor\(" internal/elasticsearch internal/clients internal/versionutils internal/acctest` — confirm no production references remain; only `internal/clients/acceptance_testing_version.go` and the package-private helpers may use them
 - [ ] 9.2 Delete `ServerVersion` and `ServerFlavor` public methods from `internal/clients/elasticsearch_scoped_client.go` (or unexport to `serverVersion` / `serverFlavor` if a private call site needs them — note that `EnforceMinVersion` already calls `e.ServerVersion(ctx)` and `e.ServerFlavor(ctx)` internally and needs corresponding rewrites to the package-private form)
 - [ ] 9.3 Rewrite `EnforceMinVersion`, `EnforceVersionCheck`, `IsServerless` to call `e.serverInfo(ctx)` directly and read `info.Version.Int` / `info.Version.BuildFlavor` once each — eliminates the redundant cached calls and removes any remaining references to the unexported helpers
