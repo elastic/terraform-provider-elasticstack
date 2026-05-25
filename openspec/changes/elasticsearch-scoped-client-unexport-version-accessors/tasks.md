@@ -73,12 +73,12 @@
 
 ## 10. Spec updates
 
-- [ ] 10.1 Apply the `provider-client-factory` delta to `openspec/specs/provider-client-factory/spec.md` (adds the "Elasticsearch scoped client serverless-safe version surface" requirement)
-- [ ] 10.2 Apply the `elasticsearch-client-pf-diagnostics` delta to `openspec/specs/elasticsearch-client-pf-diagnostics/spec.md` (replaces the existing "ElasticsearchScopedClient methods return Plugin Framework diagnostics" requirement)
+- [x] 10.1 Apply the `provider-client-factory` delta to `openspec/specs/provider-client-factory/spec.md` (adds the "Elasticsearch scoped client serverless-safe version surface" requirement)
+- [x] 10.2 Apply the `elasticsearch-client-pf-diagnostics` delta to `openspec/specs/elasticsearch-client-pf-diagnostics/spec.md` (replaces the existing "ElasticsearchScopedClient methods return Plugin Framework diagnostics" requirement)
 
 ## 11. Validation
 
-- [ ] 11.1 `make check-openspec` (or `openspec validate`) passes
-- [ ] 11.2 `make build` succeeds
-- [ ] 11.3 `go test ./internal/elasticsearch/... ./internal/clients/... ./internal/entitycore/... ./internal/versionutils/...` passes
+- [x] 11.1 `make check-openspec` (or `openspec validate`) passes
+- [x] 11.2 `make build` succeeds
+- [x] 11.3 `go test ./internal/elasticsearch/... ./internal/clients/... ./internal/entitycore/... ./internal/versionutils/...` passes
 - [ ] 11.4 If acceptance environment is available, run targeted acc tests for the affected resources: `security/role`, `security/apikey`, `index/index`, `transform`. Verify legacy private-state apikey resources still refresh successfully against both stateful and serverless clusters
