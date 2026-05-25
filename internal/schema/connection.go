@@ -18,6 +18,10 @@
 package schema
 
 import (
+	"fmt"
+	"maps"
+	"sync"
+
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -32,17 +36,30 @@ import (
 // (e.g., in ImportState or state upgraders) so the framework can match the
 // list element type against the schema instead of encountering a zero-value.
 func KibanaConnectionNullList() types.List {
-	return types.ListNull(types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"api_key":      types.StringType,
-			"bearer_token": types.StringType,
-			"ca_certs":     types.ListType{ElemType: types.StringType},
-			"endpoints":    types.ListType{ElemType: types.StringType},
-			"insecure":     types.BoolType,
-			"password":     types.StringType,
-			"username":     types.StringType,
-		},
-	})
+	return types.ListNull(KibanaConnectionObjectType())
+}
+
+// KibanaConnectionObjectType returns the object type for kibana_connection list
+// elements. Managed and ephemeral resources use the same connection block shape.
+func KibanaConnectionObjectType() types.ObjectType {
+	return types.ObjectType{
+		AttrTypes: kibanaConnectionBlockObjectAttrTypes(),
+	}
+}
+
+// ElasticsearchConnectionNullList returns a properly-typed null list value for the
+// elasticsearch_connection block. Use when building state in ImportState so the
+// framework list element type matches the resource schema.
+func ElasticsearchConnectionNullList() types.List {
+	return types.ListNull(ElasticsearchConnectionObjectType())
+}
+
+// ElasticsearchConnectionObjectType returns the object type for elasticsearch_connection
+// list elements. Managed and ephemeral resources use the same connection block shape.
+func ElasticsearchConnectionObjectType() types.ObjectType {
+	return types.ObjectType{
+		AttrTypes: elasticsearchConnectionBlockObjectAttrTypes(),
+	}
 }
 
 func GetEsFWConnectionBlock() fwschema.Block {
@@ -285,5 +302,130 @@ func GetFleetFWConnectionBlock() fwschema.Block {
 		Validators: []validator.List{
 			listvalidator.SizeAtMost(1),
 		},
+	}
+}
+
+var (
+	elasticsearchConnectionBlockObjectAttrTypesOnce sync.Once
+	elasticsearchConnectionBlockObjectAttrTypesVal  map[string]attr.Type
+
+	kibanaConnectionBlockObjectAttrTypesOnce sync.Once
+	kibanaConnectionBlockObjectAttrTypesVal  map[string]attr.Type
+)
+
+func copyAttrTypes(src map[string]attr.Type) map[string]attr.Type {
+	if src == nil {
+		return nil
+	}
+	out := make(map[string]attr.Type, len(src))
+	maps.Copy(out, src)
+	return out
+}
+
+func connectionBlockObjectAttrTypes(block fwschema.Block) (map[string]attr.Type, error) {
+	lb, ok := block.(fwschema.ListNestedBlock)
+	if !ok {
+		return nil, fmt.Errorf("connection block is %T, want ListNestedBlock", block)
+	}
+	return fwNestedBlockAttributesToAttrTypes(lb.NestedObject.Attributes)
+}
+
+func elasticsearchConnectionBlockObjectAttrTypesFallback() map[string]attr.Type {
+	return map[string]attr.Type{
+		"username":                 types.StringType,
+		"password":                 types.StringType,
+		"api_key":                  types.StringType,
+		"bearer_token":             types.StringType,
+		"es_client_authentication": types.StringType,
+		"endpoints":                types.ListType{ElemType: types.StringType},
+		"headers":                  types.MapType{ElemType: types.StringType},
+		"insecure":                 types.BoolType,
+		"ca_file":                  types.StringType,
+		"ca_data":                  types.StringType,
+		"cert_file":                types.StringType,
+		"key_file":                 types.StringType,
+		"cert_data":                types.StringType,
+		"key_data":                 types.StringType,
+	}
+}
+
+func kibanaConnectionBlockObjectAttrTypesFallback() map[string]attr.Type {
+	return map[string]attr.Type{
+		"api_key":      types.StringType,
+		"bearer_token": types.StringType,
+		"username":     types.StringType,
+		"password":     types.StringType,
+		"endpoints":    types.ListType{ElemType: types.StringType},
+		"ca_certs":     types.ListType{ElemType: types.StringType},
+		"insecure":     types.BoolType,
+	}
+}
+
+func elasticsearchConnectionBlockObjectAttrTypes() map[string]attr.Type {
+	elasticsearchConnectionBlockObjectAttrTypesOnce.Do(func() {
+		m, err := connectionBlockObjectAttrTypes(GetEsFWConnectionBlock())
+		if err != nil {
+			elasticsearchConnectionBlockObjectAttrTypesVal = elasticsearchConnectionBlockObjectAttrTypesFallback()
+			return
+		}
+		elasticsearchConnectionBlockObjectAttrTypesVal = m
+	})
+	return copyAttrTypes(elasticsearchConnectionBlockObjectAttrTypesVal)
+}
+
+func kibanaConnectionBlockObjectAttrTypes() map[string]attr.Type {
+	kibanaConnectionBlockObjectAttrTypesOnce.Do(func() {
+		m, err := connectionBlockObjectAttrTypes(GetKbFWConnectionBlock())
+		if err != nil {
+			kibanaConnectionBlockObjectAttrTypesVal = kibanaConnectionBlockObjectAttrTypesFallback()
+			return
+		}
+		kibanaConnectionBlockObjectAttrTypesVal = m
+	})
+	return copyAttrTypes(kibanaConnectionBlockObjectAttrTypesVal)
+}
+
+func fwNestedBlockAttributesToAttrTypes(attrs map[string]fwschema.Attribute) (map[string]attr.Type, error) {
+	out := make(map[string]attr.Type, len(attrs))
+	for name, a := range attrs {
+		t, err := fwAttributeToAttrType(name, a)
+		if err != nil {
+			return nil, err
+		}
+		out[name] = t
+	}
+	return out, nil
+}
+
+func fwAttributeToAttrType(name string, a fwschema.Attribute) (attr.Type, error) {
+	switch a := a.(type) {
+	case fwschema.StringAttribute:
+		if a.CustomType != nil {
+			return a.CustomType, nil
+		}
+		return types.StringType, nil
+	case fwschema.BoolAttribute:
+		if a.CustomType != nil {
+			return a.CustomType, nil
+		}
+		return types.BoolType, nil
+	case fwschema.ListAttribute:
+		if a.CustomType != nil {
+			return a.CustomType, nil
+		}
+		if a.ElementType == nil {
+			return nil, fmt.Errorf("attribute %q: ListAttribute missing ElementType", name)
+		}
+		return types.ListType{ElemType: a.ElementType}, nil
+	case fwschema.MapAttribute:
+		if a.CustomType != nil {
+			return a.CustomType, nil
+		}
+		if a.ElementType == nil {
+			return nil, fmt.Errorf("attribute %q: MapAttribute missing ElementType", name)
+		}
+		return types.MapType{ElemType: a.ElementType}, nil
+	default:
+		return nil, fmt.Errorf("attribute %q: unsupported framework attribute type %T (extend fwAttributeToAttrType)", name, a)
 	}
 }

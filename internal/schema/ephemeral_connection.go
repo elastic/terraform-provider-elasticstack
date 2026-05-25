@@ -20,7 +20,6 @@ package schema
 import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/ephemeral/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -153,34 +152,6 @@ func GetEsEphemeralConnectionBlock() schema.Block {
 	}
 }
 
-// ElasticsearchConnectionNullList returns a properly-typed null list value for the
-// elasticsearch_connection block on ephemeral resources.
-func ElasticsearchConnectionNullList() types.List {
-	return types.ListNull(ElasticsearchConnectionObjectType())
-}
-
-// ElasticsearchConnectionObjectType returns the object type for elasticsearch_connection entries.
-func ElasticsearchConnectionObjectType() types.ObjectType {
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"api_key":                  types.StringType,
-			"bearer_token":             types.StringType,
-			"ca_data":                  types.StringType,
-			"ca_file":                  types.StringType,
-			"cert_data":                types.StringType,
-			"cert_file":                types.StringType,
-			"endpoints":                types.ListType{ElemType: types.StringType},
-			"es_client_authentication": types.StringType,
-			"headers":                  types.MapType{ElemType: types.StringType},
-			"insecure":                 types.BoolType,
-			"key_data":                 types.StringType,
-			"key_file":                 types.StringType,
-			"password":                 types.StringType,
-			"username":                 types.StringType,
-		},
-	}
-}
-
 // GetKbEphemeralConnectionBlock returns the kibana_connection block for
 // ephemeral resources, mirroring GetKbFWConnectionBlock for managed resources.
 func GetKbEphemeralConnectionBlock() schema.Block {
@@ -239,22 +210,6 @@ func GetKbEphemeralConnectionBlock() schema.Block {
 		},
 		Validators: []validator.List{
 			listvalidator.SizeAtMost(1),
-		},
-	}
-}
-
-// KibanaConnectionObjectType returns the object type for kibana_connection entries
-// on ephemeral resources.
-func KibanaConnectionObjectType() types.ObjectType {
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"api_key":      types.StringType,
-			"bearer_token": types.StringType,
-			"ca_certs":     types.ListType{ElemType: types.StringType},
-			"endpoints":    types.ListType{ElemType: types.StringType},
-			"insecure":     types.BoolType,
-			"password":     types.StringType,
-			"username":     types.StringType,
 		},
 	}
 }

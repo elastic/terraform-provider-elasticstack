@@ -20,8 +20,8 @@ package jobstate
 import (
 	"context"
 	_ "embed"
-	"regexp"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -53,10 +53,7 @@ func GetSchema(ctx context.Context) schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
-				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 64),
-					stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9_-]+$`), "must contain only alphanumeric characters, hyphens, and underscores"),
-				},
+				Validators: []validator.String{ml.IDValidator()},
 			},
 			"state": schema.StringAttribute{
 				MarkdownDescription: "The desired state for the ML job. Valid values are `opened` and `closed`.",

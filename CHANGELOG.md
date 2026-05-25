@@ -5,6 +5,14 @@
 
 `elasticstack_kibana_security_detection_rule` `actions.alerts_filter` is now a structured nested attribute with `query` (`kql`, `filters_json`) and optional `timeframe` (`days`, `timezone`, `hours_start`, `hours_end`), replacing the broken `map(string)` shape.
 
+### Added
+
+- Add `elasticstack_elasticsearch_ml_calendar` and `elasticstack_elasticsearch_ml_calendar_event` resources for ML calendars and scheduled calendar events ([#1969](https://github.com/elastic/terraform-provider-elasticstack/pull/1969))
+  - `CompositeIDFromStr` splits only on the first `/`, so the resource segment may contain further slashes (for example ML calendar event ids `<calendar_id>/<event_id>`). Legacy ids with an empty cluster segment (for example `/<resource_id>`) remain accepted.
+- Add `elasticstack_elasticsearch_ml_calendar_job` resource to assign an anomaly detection job or job group to an ML calendar (`PUT _ml/calendars/{calendar_id}/jobs/{job_id}`) ([#2933](https://github.com/elastic/terraform-provider-elasticstack/pull/2933))
+  - Derive `ElasticsearchConnectionNullList` / `KibanaConnectionNullList` from Plugin Framework connection block schemas so import state matches resource types.
+  - Extract a shared `internal/elasticsearch/ml.IDValidator` helper covering the standard length and character rules for ML calendar, job, datafeed, and filter identifiers; ML calendar, calendar event, and calendar job schemas now use it instead of duplicating `LengthBetween` + `RegexMatches` pairs.
+
 ### Changes
 
 - Normalise empty-object mappings/settings on read for component templates to prevent inconsistent state after apply (issue #609). ([#3175](https://github.com/elastic/terraform-provider-elasticstack/pull/3175))

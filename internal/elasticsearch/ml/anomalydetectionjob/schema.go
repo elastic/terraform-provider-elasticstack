@@ -21,6 +21,7 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	timeouts "github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -40,9 +41,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-const jobIDAllowedCharsMessage = "must contain lowercase alphanumeric characters (a-z and 0-9), hyphens, and underscores. " +
-	"It must start and end with alphanumeric characters"
 
 // getSchema returns the resource schema without the elasticsearch_connection
 // block, which is injected by the entitycore envelope.
@@ -68,13 +66,7 @@ func getSchema(ctx context.Context) schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
-				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 64),
-					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-z0-9][a-z0-9_-]*[a-z0-9]$|^[a-z0-9]$`),
-						jobIDAllowedCharsMessage,
-					),
-				},
+				Validators: []validator.String{ml.IDValidator()},
 			},
 			"description": schema.StringAttribute{
 				MarkdownDescription: "A description of the job.",

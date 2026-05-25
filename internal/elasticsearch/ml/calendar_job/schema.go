@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package calendar
+package calendar_job
 
 import (
 	"context"
@@ -23,44 +23,46 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Manages Machine Learning calendars (the calendar definition only). " +
-			"To attach anomaly detection jobs to a calendar, use `elasticstack_elasticsearch_ml_calendar_job`. " +
-			"See the [ML put calendar API](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-calendar.html) for more details. " +
-			"**Import** id format: `<cluster_uuid>/<calendar_id>` (the same value as the computed `id` attribute).",
+		MarkdownDescription: "Assigns a single anomaly detection job or job group to an ML calendar using " +
+			"`PUT _ml/calendars/{calendar_id}/jobs/{job_id}` and removes that assignment on destroy. " +
+			"The `job_id` attribute is the same path parameter Elasticsearch accepts: a job identifier or a job group name (Elasticsearch operation `ml.put_calendar_job`). " +
+			"This resource models one identifier per instance (comma-separated lists in the API are not valid for the Terraform `job_id` attribute). " +
+			"The computed `id` is `<cluster_uuid>/<calendar_id>/<job_id>`. " +
+			"Import writes `calendar_id`, `job_id`, and `id` from the import ID only and does not call Elasticsearch to verify the assignment; " +
+			"the next refresh or apply may fail if the ID is wrong or the assignment does not exist. " +
+			"API reference: https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-put-calendar-job",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				MarkdownDescription: "Internal identifier of the resource.",
+				MarkdownDescription: "Internal composite identifier of the resource.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"calendar_id": schema.StringAttribute{
-				MarkdownDescription: "A string that uniquely identifies a calendar. Must contain lowercase alphanumeric characters " +
-					"(a-z and 0-9), hyphens, or underscores. Must start and end with an alphanumeric character.",
+				MarkdownDescription: "Identifier of the ML calendar. Must contain lowercase alphanumeric characters " +
+					"(a-z and 0-9), dots, hyphens, or underscores. Must start and end with an alphanumeric character.",
 				Required: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 				Validators: []validator.String{ml.IDValidator()},
 			},
-			"description": schema.StringAttribute{
-				MarkdownDescription: "A description of the calendar.",
-				Optional:            true,
-				Computed:            true,
-				Default:             stringdefault.StaticString(""),
+			"job_id": schema.StringAttribute{
+				MarkdownDescription: "Anomaly detection **job identifier** or **job group name** to attach " +
+					"to the calendar, matching Elasticsearch `PUT .../jobs/{job_id}` (one value per resource; " +
+					"not a comma-separated list).",
+				Required: true,
 				PlanModifiers: []planmodifier.String{
-					// ML put calendar is create-only on older Elasticsearch versions; changing
-					// description is applied by replacing the resource (delete + create).
 					stringplanmodifier.RequiresReplace(),
 				},
+				Validators: []validator.String{ml.IDValidator()},
 			},
 		},
 	}
