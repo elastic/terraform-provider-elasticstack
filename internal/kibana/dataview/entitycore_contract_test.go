@@ -42,6 +42,7 @@ func TestResource_embedsEntityCoreKibanaResource(t *testing.T) {
 
 func TestNewResource_satisfiesFrameworkInterfaces(t *testing.T) {
 	t.Parallel()
+	var _ resource.Resource = newResource()
 	var _ resource.ResourceWithConfigure = newResource()
 	var _ resource.ResourceWithImportState = newResource()
 }
