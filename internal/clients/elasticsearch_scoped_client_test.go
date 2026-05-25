@@ -379,6 +379,17 @@ func TestElasticsearchScopedClient_IsServerless_Stateful(t *testing.T) {
 	assert.False(t, isServerless)
 }
 
+func TestElasticsearchScopedClient_IsServerless_EmptyFlavor(t *testing.T) {
+	srv := newMockElasticsearchServerWithFlavor("8.19.0", "")
+	defer srv.Close()
+
+	scoped := newMockScopedClient(t, srv)
+
+	isServerless, diags := scoped.IsServerless(context.Background())
+	require.False(t, diags.HasError())
+	assert.False(t, isServerless, "empty build_flavor must not be treated as serverless")
+}
+
 // --- EnforceVersionCheck ---
 
 func TestElasticsearchScopedClient_EnforceVersionCheck_MissingEndpoint(t *testing.T) {
@@ -397,6 +408,17 @@ func TestElasticsearchScopedClient_EnforceVersionCheck_InfoAPIError(t *testing.T
 		}
 		w.WriteHeader(http.StatusNotFound)
 	}))
+	defer srv.Close()
+
+	scoped := newMockScopedClient(t, srv)
+
+	ok, diags := scoped.EnforceVersionCheck(context.Background(), func(_ *goversion.Version) bool { return true })
+	assert.False(t, ok)
+	require.True(t, diags.HasError())
+}
+
+func TestElasticsearchScopedClient_EnforceVersionCheck_MalformedVersionResponse(t *testing.T) {
+	srv := newMockElasticsearchServerWithFlavor("not-a-version", "default")
 	defer srv.Close()
 
 	scoped := newMockScopedClient(t, srv)
