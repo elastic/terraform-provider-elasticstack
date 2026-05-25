@@ -47,7 +47,7 @@ func (m model) GetKibanaConnection() types.List { return m.KibanaConnection }
 
 func (m model) GetSpaceID() types.String {
 	if m.SpaceIDs.IsNull() || m.SpaceIDs.IsUnknown() {
-		return types.StringValue(attrDefault)
+		return types.StringValue(defaultSpaceID)
 	}
 	for _, elem := range m.SpaceIDs.Elements() {
 		s, ok := elem.(types.String)
@@ -58,7 +58,7 @@ func (m model) GetSpaceID() types.String {
 			return s
 		}
 	}
-	return types.StringValue(attrDefault)
+	return types.StringValue(defaultSpaceID)
 }
 
 func (m model) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
