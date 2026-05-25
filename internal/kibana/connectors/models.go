@@ -41,24 +41,22 @@ type tfModel struct {
 	IsPreconfigured  types.Bool           `tfsdk:"is_preconfigured"`
 }
 
-var _ entitycore.WithVersionRequirements = tfModel{}
+var _ entitycore.KibanaResourceModel = tfModel{}
 
-// GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
-func (model tfModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (model tfModel) GetID() types.String             { return model.ID }
+func (model tfModel) GetSpaceID() types.String        { return model.SpaceID }
+func (model tfModel) GetKibanaConnection() types.List { return model.KibanaConnection }
+
+// GetResourceID returns the plan-safe connector identity: the user-supplied
+// connector_id when known and non-empty, otherwise empty.
+func (model tfModel) GetResourceID() types.String {
 	if typeutils.IsKnown(model.ConnectorID) && model.ConnectorID.ValueString() != "" {
-		return []entitycore.VersionRequirement{
-			{
-				MinVersion: *MinVersionSupportingPreconfiguredIDs,
-				ErrorMessage: "Preconfigured connector IDs are only supported for Elastic Stack v" +
-					MinVersionSupportingPreconfiguredIDs.String() +
-					" and above. Either remove the `connector_id` attribute or upgrade your target cluster to supported version",
-			},
-		}, nil
+		return model.ConnectorID
 	}
-	return nil, nil
+	return types.StringValue("")
 }
 
-func (model tfModel) GetID() (*clients.CompositeID, diag.Diagnostics) {
+func (model tfModel) GetCompositeID() (*clients.CompositeID, diag.Diagnostics) {
 	compID, compIDDiags := clients.CompositeIDFromStr(model.ID.ValueString())
 	if compIDDiags.HasError() {
 		return nil, compIDDiags

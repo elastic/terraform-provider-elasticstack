@@ -21,25 +21,20 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 )
 
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+func getSchema(_ context.Context) schema.Schema {
+	return schema.Schema{
 		Version:     1,
 		Description: "Creates a Kibana action connector. See https://www.elastic.co/guide/en/kibana/current/action-types.html",
-		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
-		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Internal identifier of the resource.",
