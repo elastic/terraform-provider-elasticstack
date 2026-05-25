@@ -49,6 +49,48 @@ var sdkConnectorDataSourceFromSDKIndexCreateConfig string
 //go:embed testdata/TestAccConnectorsDataSourceFromSDK/empty_config/create_empty_config/main.tf
 var sdkConnectorDataSourceFromSDKEmptyConfigCreateConfig string
 
+func TestAccResourceKibanaConnectorWithSecretsWo(t *testing.T) {
+	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	routingKey1 := sdkacctest.RandStringFromCharSet(32, sdkacctest.CharSetAlphaNum)
+	routingKey2 := sdkacctest.RandStringFromCharSet(32, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceKibanaConnectorDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"connector_name":  config.StringVariable(connectorName),
+					"routing_key":     config.StringVariable(routingKey1),
+					"secrets_version": config.StringVariable("v1"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(connectorName, ".pagerduty"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "secrets_wo_version", "v1"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_action_connector.test", "secrets"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_action_connector.test", "secrets_wo"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"connector_name":  config.StringVariable(connectorName),
+					"routing_key":     config.StringVariable(routingKey2),
+					"secrets_version": config.StringVariable("v2"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(connectorName, ".pagerduty"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "secrets_wo_version", "v2"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_action_connector.test", "secrets_wo"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceKibanaConnectorCasesWebhook(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("8.4.0"))
 
