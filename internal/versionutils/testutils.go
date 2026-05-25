@@ -155,13 +155,9 @@ func SkipIfUnsupportedConstraints(t *testing.T, constraints version.Constraints,
 
 func CheckIfVersionIsUnsupported(minSupportedVersion *version.Version) func() (bool, error) {
 	return func() (b bool, err error) {
-		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		serverVersion, _, err := fetchAcceptanceServerInfo(context.Background())
 		if err != nil {
 			return false, err
-		}
-		serverVersion, diags := client.ServerVersion(context.Background())
-		if diags.HasError() {
-			return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
 		}
 
 		return serverVersion.LessThan(minSupportedVersion), nil
@@ -170,13 +166,9 @@ func CheckIfVersionIsUnsupported(minSupportedVersion *version.Version) func() (b
 
 func CheckIfVersionMeetsConstraints(constraints version.Constraints) func() (bool, error) {
 	return func() (b bool, err error) {
-		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		serverVersion, _, err := fetchAcceptanceServerInfo(context.Background())
 		if err != nil {
 			return false, err
-		}
-		serverVersion, diags := client.ServerVersion(context.Background())
-		if diags.HasError() {
-			return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
 		}
 
 		return !constraints.Check(serverVersion), nil
