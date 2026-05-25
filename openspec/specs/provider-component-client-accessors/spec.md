@@ -3,45 +3,51 @@
 ## Purpose
 TBD - created by archiving change validate-component-client-endpoints. Update Purpose after archive.
 ## Requirements
-### Requirement: Elasticsearch scoped accessor requires an effective endpoint
-`(*clients.ElasticsearchScopedClient).GetESClient()` SHALL validate that an effective Elasticsearch endpoint is configured before returning a client. If provider configuration, `elasticsearch_connection`, and environment overrides together produce no non-empty Elasticsearch endpoint values for the scoped client instance, the accessor SHALL return an error instead of returning a usable client.
+### Requirement: Elasticsearch scoped accessor returns a usable client
+`(*clients.ElasticsearchScopedClient).GetESClient()` SHALL return a usable `*elasticsearch.TypedClient` without diagnostics. Endpoint-presence validation SHALL be performed by `ProviderClientFactory.GetElasticsearchClient` before the scoped client is returned, so the accessor's contract is to return a non-nil, ready-to-use typed client whenever it is invoked on a scoped client produced by a successful factory call.
 
-#### Scenario: Missing Elasticsearch endpoint returns actionable error
-- **GIVEN** an Elasticsearch-scoped client whose effective Elasticsearch endpoint configuration contains no non-empty endpoint values
+#### Scenario: Accessor returns the typed client without diagnostics
+- **GIVEN** an `*ElasticsearchScopedClient` produced by a successful `ProviderClientFactory.GetElasticsearchClient` call
 - **WHEN** `GetESClient()` is called
-- **THEN** the accessor SHALL return no client
-- **AND** it SHALL return the error `elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS`
+- **THEN** the accessor SHALL return the `*elasticsearch.TypedClient` directly with no error diagnostics return value
 
-### Requirement: Kibana scoped accessors require an effective Kibana endpoint
-`(*clients.KibanaScopedClient).GetKibanaOapiClient()` SHALL validate that an effective Kibana endpoint is configured before returning a client. If provider configuration, `kibana_connection`, and environment overrides together produce no non-empty Kibana endpoint values for the scoped client instance, the accessor SHALL return an error instead of returning a usable client.
+#### Scenario: Missing Elasticsearch endpoint surfaces at factory resolution
+- **GIVEN** provider configuration, `elasticsearch_connection`, and environment overrides that together produce no non-empty Elasticsearch endpoint value
+- **WHEN** `ProviderClientFactory.GetElasticsearchClient` is called
+- **THEN** the factory SHALL return error diagnostics with the message `elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS`
+- **AND** no scoped client SHALL be returned
 
-#### Scenario: Missing Kibana endpoint returns actionable error for the Kibana OpenAPI client
-- **GIVEN** a Kibana-scoped client whose effective Kibana endpoint configuration contains no non-empty endpoint values
+### Requirement: Kibana scoped accessors return usable clients
+`(*clients.KibanaScopedClient).GetKibanaOapiClient()` and `(*clients.KibanaScopedClient).GetFleetClient()` SHALL return usable typed clients without diagnostics. Endpoint-presence validation SHALL be performed by `ProviderClientFactory.GetKibanaClient` before the scoped client is returned, so both accessors' contract is to return a non-nil, ready-to-use client whenever invoked on a scoped client produced by a successful factory call.
+
+#### Scenario: Kibana OpenAPI accessor returns the client without diagnostics
+- **GIVEN** a `*KibanaScopedClient` produced by a successful `ProviderClientFactory.GetKibanaClient` call
 - **WHEN** `GetKibanaOapiClient()` is called
-- **THEN** the accessor SHALL return no client
-- **AND** it SHALL return the error `kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT`
+- **THEN** the accessor SHALL return the `*kibanaoapi.Client` directly with no error diagnostics return value
 
-### Requirement: Fleet scoped accessor requires an effective Fleet endpoint
-`(*clients.KibanaScopedClient).GetFleetClient()` SHALL validate that an effective Fleet endpoint is configured before returning a client. The effective Fleet endpoint MAY come from explicit provider-level Fleet configuration, from the existing Fleet-from-Kibana provider resolution path, or from the `kibana_connection`-derived Fleet config used for scoped Kibana clients. If none of those resolution paths produces any non-empty Fleet endpoint value, the accessor SHALL return an error instead of returning a usable client.
-
-#### Scenario: Fleet accessor accepts Kibana-derived endpoint resolution
-- **GIVEN** a Kibana-scoped client whose explicit Fleet endpoint is empty
-- **AND** whose effective Kibana endpoint configuration contains at least one non-empty endpoint value and is the source of the Fleet endpoint
+#### Scenario: Fleet accessor returns the client without diagnostics
+- **GIVEN** a `*KibanaScopedClient` produced by a successful `ProviderClientFactory.GetKibanaClient` call
 - **WHEN** `GetFleetClient()` is called
-- **THEN** the accessor SHALL return the Fleet client without a missing-endpoint error
+- **THEN** the accessor SHALL return the `*fleet.Client` directly with no error diagnostics return value
 
-#### Scenario: Missing Fleet endpoint returns actionable error
-- **GIVEN** a Kibana-scoped client whose effective Fleet endpoint configuration contains no non-empty endpoint values after explicit Fleet and Kibana-derived resolution are evaluated
-- **WHEN** `GetFleetClient()` is called
-- **THEN** the accessor SHALL return no client
-- **AND** it SHALL return the error `fleet client is not configured: set fleet.endpoint or FLEET_ENDPOINT, or configure kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT for inherited Fleet endpoint resolution`
+#### Scenario: Missing Kibana and Fleet endpoint surfaces at factory resolution
+- **GIVEN** provider configuration, `kibana_connection`, and environment overrides that together produce no non-empty Kibana endpoint value **and** no non-empty Fleet endpoint value
+- **WHEN** `ProviderClientFactory.GetKibanaClient` is called
+- **THEN** the factory SHALL return error diagnostics identifying the missing endpoint and naming the configuration paths the user can set (`kibana.endpoints`, `kibana_connection.endpoints`, `KIBANA_ENDPOINT`, `fleet.endpoint`, or `FLEET_ENDPOINT`)
+- **AND** no scoped client SHALL be returned
+
+#### Scenario: Single configured endpoint side is sufficient
+- **GIVEN** provider configuration where exactly one of the Kibana or Fleet endpoint values is non-empty after all overlays
+- **WHEN** `ProviderClientFactory.GetKibanaClient` is called
+- **THEN** the factory SHALL return a `*KibanaScopedClient` whose `GetKibanaOapiClient()` and `GetFleetClient()` both return usable clients
 
 ### Requirement: Endpoint validation is limited to endpoint presence
-Component accessor validation introduced by this capability SHALL enforce endpoint presence only. Accessors SHALL NOT reject a client solely because username/password, API key, or bearer token values are absent.
+Component client validation SHALL enforce endpoint presence only. The factory SHALL NOT reject a configuration solely because username/password, API key, or bearer token values are absent.
 
 #### Scenario: Endpoint-only validation does not add authentication gating
-- **GIVEN** a typed scoped client whose effective component endpoint is present
+- **GIVEN** a provider configuration whose effective component endpoint is present
 - **AND** whose authentication fields are empty
-- **WHEN** the corresponding component accessor is called
-- **THEN** the accessor SHALL NOT fail solely because authentication fields are empty
+- **WHEN** the corresponding factory method is called
+- **THEN** the factory SHALL NOT fail solely because authentication fields are empty
+- **AND** the returned scoped client's accessors SHALL return usable clients
 
