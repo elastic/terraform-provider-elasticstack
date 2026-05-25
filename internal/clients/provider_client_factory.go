@@ -26,6 +26,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const kibanaFleetClientNotConfiguredError = "kibana/fleet client is not configured: set kibana.endpoints, kibana_connection.endpoints, KIBANA_ENDPOINT, fleet.endpoint, or FLEET_ENDPOINT"
+
 // ProviderClientFactory is the provider-scoped client-resolution surface
 // injected into Plugin Framework ProviderData. Resources and data sources use
 // the factory to obtain typed clients rather than consuming a broad *apiClient
@@ -81,7 +83,7 @@ func (f *ProviderClientFactory) GetKibanaClient(ctx context.Context, kibanaConnL
 	}
 
 	if len(kibConns) == 0 {
-		return kibanaScopedClientFromAPIClient(f.defaultClient), nil
+		return validateKibanaScopedClientEndpoints(kibanaScopedClientFromAPIClient(f.defaultClient))
 	}
 
 	cfg, diags := config.NewFromFrameworkKibanaResource(ctx, kibConns, f.defaultClient.version)
@@ -89,7 +91,12 @@ func (f *ProviderClientFactory) GetKibanaClient(ctx context.Context, kibanaConnL
 		return nil, diags
 	}
 
-	return buildKibanaScopedClientFromConfig(*cfg, f.defaultClient.version)
+	scoped, diags := buildKibanaScopedClientFromConfig(*cfg, f.defaultClient.version)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return validateKibanaScopedClientEndpoints(scoped)
 }
 
 // --- Typed Elasticsearch resolution methods ---
@@ -167,6 +174,16 @@ func validateElasticsearchScopedClientEndpoints(scoped *ElasticsearchScopedClien
 		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
 			"Elasticsearch client not configured",
 			elasticsearchClientNotConfiguredError,
+		)}
+	}
+	return scoped, nil
+}
+
+func validateKibanaScopedClientEndpoints(scoped *KibanaScopedClient) (*KibanaScopedClient, fwdiags.Diagnostics) {
+	if scoped.kibanaEndpoint == "" && scoped.fleetEndpoint == "" {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
+			"Kibana client not configured",
+			kibanaFleetClientNotConfiguredError,
 		)}
 	}
 	return scoped, nil

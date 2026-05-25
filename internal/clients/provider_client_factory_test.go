@@ -306,16 +306,7 @@ func TestGetKibanaClient_EntityLocalMissingEndpoint(t *testing.T) {
 	require.False(t, diags.HasError())
 
 	scoped, diags := factory.GetKibanaClient(ctx, list)
-	require.False(t, diags.HasError(), "factory must not fail for empty-endpoint Kibana connection block")
-	require.NotNil(t, scoped)
-
-	// Calling GetKibanaOapiClient on the scoped client must produce the actionable
-	// endpoint-missing error.
-	client, diags := scoped.GetKibanaOapiClient()
-	assert.Nil(t, client)
-	require.True(t, diags.HasError())
-	assert.Equal(t,
-		"kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT",
-		diags[0].Summary(),
-	)
+	require.True(t, diags.HasError(), "factory must fail when kibana_connection has no endpoints")
+	assert.Nil(t, scoped)
+	assert.Equal(t, kibanaFleetClientNotConfiguredError, diags[0].Detail())
 }
