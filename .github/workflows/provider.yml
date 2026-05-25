@@ -77,7 +77,27 @@ jobs:
           terraform_wrapper: false
 
       - name: Lint
-        run: make check-lint
+        run: make check-openspec check-fmt gen check-docs
+
+  golangci-lint:
+    name: Go Lint (golangci-lint)
+    needs: classify
+    if: needs.classify.outputs.provider_changes == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - uses: golangci/golangci-lint-action@82606bf257cbaff209d206a39f5134f0cfbfd2ee # v9.2.1
+        with:
+          version: v2.12.2
 
   test:
     name: Matrix Acceptance Test

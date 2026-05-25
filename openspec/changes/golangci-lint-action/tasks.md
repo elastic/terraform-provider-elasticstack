@@ -4,13 +4,13 @@
 
 ## 2. Add the dedicated `golangci-lint` job to `.github/workflows/provider.yml`
 
-- [ ] 2.1 Add a new job `golangci-lint` with `name: Go Lint (golangci-lint)`, `needs: classify`, `if: needs.classify.outputs.provider_changes == 'true'`, `runs-on: ubuntu-latest`, and `permissions: contents: read` plus `pull-requests: read`.
-- [ ] 2.2 Add a pinned `actions/checkout` step (with `persist-credentials: false`) and a pinned `actions/setup-go` step using `go-version-file: 'go.mod'` and `cache: true`.
-- [ ] 2.3 Add a pinned `golangci/golangci-lint-action` v9 step with `version: v2.12.2` so the action auto-detects `.custom-gcl.yml` and builds/runs the custom binary.
+- [x] 2.1 Add a new job `golangci-lint` with `name: Go Lint (golangci-lint)`, `needs: classify`, `if: needs.classify.outputs.provider_changes == 'true'`, `runs-on: ubuntu-latest`, and `permissions: contents: read` plus `pull-requests: read`.
+- [x] 2.2 Add a pinned `actions/checkout` step (with `persist-credentials: false`) and a pinned `actions/setup-go` step using `go-version-file: 'go.mod'` and `cache: true`.
+- [x] 2.3 Add a pinned `golangci/golangci-lint-action` v9 step with `version: v2.12.2` so the action auto-detects `.custom-gcl.yml` and builds/runs the custom binary.
 
 ## 3. Modify the existing `lint` job in `.github/workflows/provider.yml`
 
-- [ ] 3.1 Replace the `Lint` step's `run: make check-lint` with a step that calls the remaining targets directly: `make check-openspec check-fmt gen check-docs`. Leave the Node, Go, and Terraform setup steps unchanged.
+- [x] 3.1 Replace the `Lint` step's `run: make check-lint` with a step that calls the remaining targets directly: `make check-openspec check-fmt gen check-docs`. Leave the Node, Go, and Terraform setup steps unchanged.
 
 ## 4. Wire the new job into the `gate` job in `.github/workflows/provider.yml`
 
