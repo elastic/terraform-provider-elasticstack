@@ -7,7 +7,8 @@
     call `value.FromAgentPolicyGlobalDataTagsItemValue0(item.StringValue.ValueString())`.
   - Else check `!item.NumberValue.IsNull() && !item.NumberValue.IsUnknown()`; if true,
     call `value.FromAgentPolicyGlobalDataTagsItemValue1(item.NumberValue.ValueFloat32())`.
-  - Else (both null/unknown): call `diags.AddAttributeError` with summary
+  - Else (both null/unknown): call `diags.AddAttributeError` using the current map entry
+    attribute path (`meta.Path`, i.e. `global_data_tags[<key>]`) with summary
     `"Invalid global_data_tags entry"` and detail
     `"Each entry in global_data_tags must have exactly one of string_value or number_value set."`,
     then return `kbapi.AgentPolicyGlobalDataTagsItem{}`.
@@ -41,5 +42,6 @@
 - [ ] 4.1 Run `make build` to confirm the provider compiles after the changes.
 - [ ] 4.2 Run `go test ./internal/fleet/agentpolicy/... -run TestConvertGlobalDataTags` to
   confirm the new unit test passes.
-- [ ] 4.3 Optionally run `go test ./internal/fleet/agentpolicy/... -run TestMerge` and
-  `TestConvertHostName` to confirm no existing unit tests regressed.
+- [ ] 4.3 Optionally run
+  `go test ./internal/fleet/agentpolicy/... -run 'TestMergeAgentFeature|TestConvertHostNameFormatToAgentFeature'`
+  to confirm no existing unit tests regressed.

@@ -1,6 +1,6 @@
 ## ADDED Requirements
 
-### Requirement: global_data_tags entry must have at least one value (REQ-GDT-001)
+### Requirement: global_data_tags entry must have exactly one value (REQ-GDT-001)
 
 Each entry in the `global_data_tags` map attribute of `elasticstack_fleet_agent_policy` MUST
 have exactly one of `string_value` or `number_value` set to a non-null value. An entry with

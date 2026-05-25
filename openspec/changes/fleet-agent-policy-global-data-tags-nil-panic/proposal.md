@@ -1,6 +1,6 @@
 ## Why
 
-The `elasticstack_fleet_agent_policy` resource panics (SIGSEGV) during `Update` when a
+The `elasticstack_fleet_agent_policy` resource panics (SIGSEGV) during `Create`/`Update` when a
 `global_data_tags` map entry has **neither** `string_value` nor `number_value` set. The
 crash occurs in `internal/fleet/agentpolicy/models.go` inside `convertGlobalDataTags`
 because `item.StringValue.ValueStringPointer()` returns `nil` when `StringValue` is null,
