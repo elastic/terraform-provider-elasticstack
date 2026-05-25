@@ -130,6 +130,28 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index.settingElementType",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index",
+      "attemptedAt": "2026-05-25T04:39:05.056489249Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index.settingsElementType",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index",
+      "attemptedAt": "2026-05-25T04:39:05.056489409Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/template.NewAliasObjectNull",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/template",
+      "attemptedAt": "2026-05-25T04:40:52.206882801Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
