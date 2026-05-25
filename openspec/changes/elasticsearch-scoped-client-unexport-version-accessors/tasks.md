@@ -26,26 +26,26 @@
 
 ## 5. Pattern C — apikey capability struct + private-state migration
 
-- [ ] 5.1 Define `type apikeyCapabilities struct { SupportsUpdate, SupportsRoleDescriptors, SupportsRestriction bool }` in a new file `internal/elasticsearch/security/apikey/capabilities.go`
-- [ ] 5.2 Implement `resolveAPIKeyCapabilities(ctx, *clients.ElasticsearchScopedClient) (apikeyCapabilities, diag.Diagnostics)` calling `client.EnforceMinVersion` once per bit against the three existing constants (`MinVersionWithUpdate`, `MinVersionReturningRoleDescriptors`, `MinVersionWithRestriction`)
-- [ ] 5.3 Replace `runtime_validation.go`'s direct `ServerVersion` + `LessThan(MinVersionWithRestriction)` with `resolveAPIKeyCapabilities(ctx, client)` then a check on `caps.SupportsRestriction`
-- [ ] 5.4 Replace `models.go` line 415's `serverVersion.GreaterThanOrEqual(MinVersionReturningRoleDescriptors)` with a `caps.SupportsRoleDescriptors` parameter — change the function signature to accept `apikeyCapabilities` rather than `*version.Version`
-- [ ] 5.5 Rename `clusterVersionPrivateData` → keep the JSON struct shape compatible at the byte level. Add a new `apikeyCapabilitiesPrivateData` JSON struct
-- [ ] 5.6 Rename `saveClusterVersion` → `saveAPIKeyCapabilities`. It calls `resolveAPIKeyCapabilities` then marshals the capabilities struct into the existing `cluster-version` private-state slot (slot key unchanged for state-compat)
-- [ ] 5.7 Rename `postReadPersistClusterVersion` → `postReadPersistAPIKeyCapabilities`
-- [ ] 5.8 Rename `clusterVersionOfLastRead` → `apikeyCapabilitiesOfLastRead`. Logic:
+- [x] 5.1 Define `type apikeyCapabilities struct { SupportsUpdate, SupportsRoleDescriptors, SupportsRestriction bool }` in a new file `internal/elasticsearch/security/apikey/capabilities.go`
+- [x] 5.2 Implement `resolveAPIKeyCapabilities(ctx, *clients.ElasticsearchScopedClient) (apikeyCapabilities, diag.Diagnostics)` calling `client.EnforceMinVersion` once per bit against the three existing constants (`MinVersionWithUpdate`, `MinVersionReturningRoleDescriptors`, `MinVersionWithRestriction`)
+- [x] 5.3 Replace `runtime_validation.go`'s direct `ServerVersion` + `LessThan(MinVersionWithRestriction)` with `resolveAPIKeyCapabilities(ctx, client)` then a check on `caps.SupportsRestriction`
+- [x] 5.4 Replace `models.go` line 415's `serverVersion.GreaterThanOrEqual(MinVersionReturningRoleDescriptors)` with a `caps.SupportsRoleDescriptors` parameter — change the function signature to accept `apikeyCapabilities` rather than `*version.Version`
+- [x] 5.5 Rename `clusterVersionPrivateData` → keep the JSON struct shape compatible at the byte level. Add a new `apikeyCapabilitiesPrivateData` JSON struct
+- [x] 5.6 Rename `saveClusterVersion` → `saveAPIKeyCapabilities`. It calls `resolveAPIKeyCapabilities` then marshals the capabilities struct into the existing `cluster-version` private-state slot (slot key unchanged for state-compat)
+- [x] 5.7 Rename `postReadPersistClusterVersion` → `postReadPersistAPIKeyCapabilities`
+- [x] 5.8 Rename `clusterVersionOfLastRead` → `apikeyCapabilitiesOfLastRead`. Logic:
   - Read raw bytes from the `cluster-version` private-state slot
   - Try `json.Unmarshal` into `apikeyCapabilitiesPrivateData`; if any boolean field is true, return it
   - On failure or all-false (ambiguous with legacy `{"Version":""}`), fall back to the legacy `{Version string}` shape; if `Version` is non-empty, parse with `version.NewVersion`, synthesize capabilities by comparing against the three constants, return them
   - Return `nil, nil` only when both shapes fail to yield useful data
-- [ ] 5.9 Update `schema.go::requiresReplaceIfUpdateNotSupported` to read `caps.SupportsUpdate` rather than `ver.LessThan(MinVersionWithUpdate)`
-- [ ] 5.10 New unit test `TestApikeyCapabilitiesOfLastRead_LegacyVersionBlob` covering:
+- [x] 5.9 Update `schema.go::requiresReplaceIfUpdateNotSupported` to read `caps.SupportsUpdate` rather than `ver.LessThan(MinVersionWithUpdate)`
+- [x] 5.10 New unit test `TestApikeyCapabilitiesOfLastRead_LegacyVersionBlob` covering:
   - empty private state → returns zero value, no error
   - legacy `{"Version":"7.0.0"}` blob → capabilities with all `false`
   - legacy `{"Version":"8.20.0"}` blob → all `true`
   - new `{"SupportsUpdate":true,...}` blob → returned as-is
-- [ ] 5.11 New unit test `TestSaveAPIKeyCapabilities` covering serverless (all true) and a known-stateful version (mixed)
-- [ ] 5.12 Migrate `internal/elasticsearch/security/apikey/resource/acc_test.go::350` predicate (`LessThan || GreaterThanOrEqual`) to `client.EnforceVersionCheck(ctx, func(v) { ... })`
+- [x] 5.11 New unit test `TestSaveAPIKeyCapabilities` covering serverless (all true) and a known-stateful version (mixed)
+- [x] 5.12 Migrate `internal/elasticsearch/security/apikey/resource/acc_test.go::350` predicate (`LessThan || GreaterThanOrEqual`) to `client.EnforceVersionCheck(ctx, func(v) { ... })`
 
 ## 6. `internal/clients` acceptance-test escape hatch
 
