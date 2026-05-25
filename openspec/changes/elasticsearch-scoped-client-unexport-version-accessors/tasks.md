@@ -13,10 +13,10 @@
 
 ## 3. Pattern B — transform per-setting `EnforceMinVersion`
 
-- [ ] 3.1 Change `internal/elasticsearch/transform/version_gating.go::isSettingAllowed` signature from `(ctx, settingName, *version.Version) bool` to `(ctx, settingName, *clients.ElasticsearchScopedClient) (bool, diag.Diagnostics)` (or equivalent — call `client.EnforceMinVersion` against `settingsRequiredVersions[settingName]`)
-- [ ] 3.2 Update all `isSettingAllowed` call sites in `internal/elasticsearch/transform/write.go`
-- [ ] 3.3 Delete the `serverVersion` fetch in `transform/write.go`
-- [ ] 3.4 Update existing transform unit tests that exercise `isSettingAllowed` with explicit versions to stub a client or test via the public path
+- [x] 3.1 Change `internal/elasticsearch/transform/version_gating.go::isSettingAllowed` signature from `(ctx, settingName, *version.Version) bool` to `(ctx, settingName, *clients.ElasticsearchScopedClient) (bool, diag.Diagnostics)` (or equivalent — call `client.EnforceMinVersion` against `settingsRequiredVersions[settingName]`)
+- [x] 3.2 Update all `isSettingAllowed` call sites in `internal/elasticsearch/transform/write.go`
+- [x] 3.3 Delete the `serverVersion` fetch in `transform/write.go`
+- [x] 3.4 Update existing transform unit tests that exercise `isSettingAllowed` with explicit versions to stub a client or test via the public path
 
 ## 4. Pattern B — `index/index` flavor → `IsServerless`
 
