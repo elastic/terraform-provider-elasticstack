@@ -27,10 +27,11 @@ import (
 
 func Test_roundtrip(t *testing.T) {
 	tests := []struct {
-		name       string
-		id         string
-		namespaces []string
-		request    kboapi.SyntheticsParameterRequest
+		name           string
+		id             string
+		namespaces     []string
+		omitNamespaces bool
+		request        kboapi.SyntheticsParameterRequest
 	}{
 		{
 			name:       "only required fields",
@@ -83,16 +84,29 @@ func Test_roundtrip(t *testing.T) {
 				Description: new("description-5"),
 			},
 		},
+		{
+			// Kibana omits `namespaces` for callers without read-only permissions.
+			// modelFromOAPI must not dereference a nil pointer in that case.
+			name:           "namespaces omitted",
+			id:             "id-6",
+			omitNamespaces: true,
+			request: kboapi.SyntheticsParameterRequest{
+				Key:   "key-6",
+				Value: "value-6",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			response := kboapi.SyntheticsGetParameterResponse{
 				Id:          &tt.id,
-				Namespaces:  &tt.namespaces,
 				Key:         &tt.request.Key,
 				Value:       &tt.request.Value,
 				Description: tt.request.Description,
 				Tags:        tt.request.Tags,
+			}
+			if !tt.omitNamespaces {
+				response.Namespaces = &tt.namespaces
 			}
 			m := modelFromOAPI(response)
 
