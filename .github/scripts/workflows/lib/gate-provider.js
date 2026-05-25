@@ -1,10 +1,10 @@
 /**
  * Evaluate whether the provider workflow gate passed or failed.
  *
- * @param {{ classifyResult: string, buildResult: string, lintResult: string, testResult: string }} params
+ * @param {{ classifyResult: string, buildResult: string, lintResult: string, golangciLintResult: string, testResult: string }} params
  * @returns {{ passed: boolean, reason: string }}
  */
-function gateProvider({ classifyResult, buildResult, lintResult, testResult }) {
+function gateProvider({ classifyResult, buildResult, lintResult, golangciLintResult, testResult }) {
   if (classifyResult !== 'true' && classifyResult !== 'false') {
     return {
       passed: false,
@@ -12,7 +12,7 @@ function gateProvider({ classifyResult, buildResult, lintResult, testResult }) {
     };
   }
 
-  const jobResults = [buildResult, lintResult, testResult];
+  const jobResults = [buildResult, lintResult, golangciLintResult, testResult];
   const validResults = ['success', 'skipped', 'failure', 'cancelled'];
 
   for (const result of jobResults) {
@@ -45,7 +45,7 @@ function gateProvider({ classifyResult, buildResult, lintResult, testResult }) {
   if (anyFailureOrCancelled) {
     return {
       passed: false,
-      reason: `One or more jobs failed or were cancelled (build=${buildResult}, lint=${lintResult}, test=${testResult}). Gate failed.`,
+      reason: `One or more jobs failed or were cancelled (build=${buildResult}, lint=${lintResult}, golangci-lint=${golangciLintResult}, test=${testResult}). Gate failed.`,
     };
   }
 
@@ -53,14 +53,14 @@ function gateProvider({ classifyResult, buildResult, lintResult, testResult }) {
   if (classifyResult === 'true' && anySkipped) {
     return {
       passed: false,
-      reason: `Unexpected skip: provider changes detected but one or more jobs were skipped (build=${buildResult}, lint=${lintResult}, test=${testResult}). Gate failed.`,
+      reason: `Unexpected skip: provider changes detected but one or more jobs were skipped (build=${buildResult}, lint=${lintResult}, golangci-lint=${golangciLintResult}, test=${testResult}). Gate failed.`,
     };
   }
 
   // Fallback for any other unexpected combination
   return {
     passed: false,
-    reason: `Unexpected job result combination (build=${buildResult}, lint=${lintResult}, test=${testResult}). Gate failed.`,
+    reason: `Unexpected job result combination (build=${buildResult}, lint=${lintResult}, golangci-lint=${golangciLintResult}, test=${testResult}). Gate failed.`,
   };
 }
 
