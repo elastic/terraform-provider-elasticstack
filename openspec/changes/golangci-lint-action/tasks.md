@@ -48,7 +48,7 @@ No other steps in the `lint` job change (Node, Go, Terraform setup remain).
 **File:** `.github/workflows/provider.yml`
 
 1. Add `golangci-lint` to the `needs` list of the `gate` job (alongside `classify`, `build`, `lint`, `test`).
-2. Add `PROVIDER_GATE_GOLANGCI_LINT_RESULT: ${{ needs.golangci-lint.result }}` to the `env` block of the `gate` step.
+2. Add `PROVIDER_GATE_GOLANGCI_LINT_RESULT: ${{ needs['golangci-lint'].result }}` to the `env` block of the `gate` step.
 
 ---
 
@@ -59,6 +59,7 @@ No other steps in the `lint` job change (Node, Go, Terraform setup remain).
 1. Add `golangciLintResult` to the function parameter destructuring.
 2. Include `golangciLintResult` in the `jobResults` array alongside `buildResult`, `lintResult`, and `testResult`.
 3. Update the failure message string to include `golangciLintResult` where other results are reported.
+4. Update `.github/scripts/workflows/lib/gate-provider.test.mjs` so existing test cases pass `golangciLintResult`, and add coverage for `golangciLintResult` success, failure, and skipped scenarios.
 
 ---
 
