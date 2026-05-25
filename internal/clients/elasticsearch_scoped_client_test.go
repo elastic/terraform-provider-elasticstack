@@ -390,6 +390,64 @@ func TestElasticsearchScopedClient_IsServerless_EmptyFlavor(t *testing.T) {
 	assert.False(t, isServerless, "empty build_flavor must not be treated as serverless")
 }
 
+// --- AcceptanceServerInfo ---
+
+func TestAcceptanceServerInfo_Stateful(t *testing.T) {
+	const wantVersion = "8.19.0"
+	srv := newMockElasticsearchServer(wantVersion)
+	defer srv.Close()
+
+	scoped := newMockScopedClient(t, srv)
+
+	ver, isServerless, diags := AcceptanceServerInfo(context.Background(), scoped)
+	require.False(t, diags.HasError())
+	require.NotNil(t, ver)
+	assert.Equal(t, wantVersion, ver.Original())
+	assert.False(t, isServerless)
+}
+
+func TestAcceptanceServerInfo_Serverless(t *testing.T) {
+	const wantVersion = "8.19.0"
+	srv := newMockElasticsearchServerWithFlavor(wantVersion, ServerlessFlavor)
+	defer srv.Close()
+
+	scoped := newMockScopedClient(t, srv)
+
+	ver, isServerless, diags := AcceptanceServerInfo(context.Background(), scoped)
+	require.False(t, diags.HasError())
+	require.NotNil(t, ver)
+	assert.Equal(t, wantVersion, ver.Original())
+	assert.True(t, isServerless)
+}
+
+func TestAcceptanceServerInfo_MissingEndpoint(t *testing.T) {
+	t.Parallel()
+	sc := &ElasticsearchScopedClient{esEndpoints: []string{}}
+
+	ver, isServerless, diags := AcceptanceServerInfo(context.Background(), sc)
+	assert.Nil(t, ver)
+	assert.False(t, isServerless)
+	require.True(t, diags.HasError())
+}
+
+func TestAcceptanceServerInfo_InfoAPIError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/" {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	scoped := newMockScopedClient(t, srv)
+
+	ver, isServerless, diags := AcceptanceServerInfo(context.Background(), scoped)
+	assert.Nil(t, ver)
+	assert.False(t, isServerless)
+	require.True(t, diags.HasError())
+}
+
 // --- EnforceVersionCheck ---
 
 func TestElasticsearchScopedClient_EnforceVersionCheck_MissingEndpoint(t *testing.T) {
