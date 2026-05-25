@@ -96,12 +96,12 @@ func PreCheckWithWorkflowsEnabled(t *testing.T, minVersion *version.Version) {
 		t.Fatalf("Failed to create API client: %v", err)
 	}
 
-	serverVersion, diags := client.ServerVersion(context.Background())
+	supported, diags := client.EnforceMinVersion(context.Background(), minVersion)
 	if diags.HasError() {
 		t.Fatalf("Failed to get server version: %v", diags)
 	}
-	if serverVersion.LessThan(minVersion) {
-		t.Skipf("Skipping test: server version %s is below minimum %s", serverVersion, minVersion)
+	if !supported {
+		t.Skipf("Skipping test: server version is below minimum %s", minVersion)
 	}
 
 	kibanaClient, getDiags := client.GetKibanaOapiClient()

@@ -52,15 +52,14 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	// Get server version to validate version-specific features
-	serverVersion, versionDiags := client.ServerVersion(ctx)
-	if versionDiags.HasError() {
-		resp.Diagnostics.Append(versionDiags...)
+	features, featureDiags := resolveAlertingRuleFeatures(ctx, client)
+	if featureDiags.HasError() {
+		resp.Diagnostics.Append(featureDiags...)
 		return
 	}
 
 	// Convert to API model (includes version-specific validation)
-	rule, d := plan.toAPIModel(ctx, serverVersion)
+	rule, d := plan.toAPIModel(ctx, features)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return
