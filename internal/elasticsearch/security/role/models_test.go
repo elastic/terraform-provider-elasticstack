@@ -73,6 +73,19 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 		require.Empty(t, reqs)
 	})
 
+	t.Run("description empty string", func(t *testing.T) {
+		t.Parallel()
+		data := Data{
+			Description: types.StringValue(""),
+		}
+		reqs, diags := data.GetVersionRequirements()
+		require.False(t, diags.HasError())
+		require.Len(t, reqs, 1)
+		require.True(t, reqs[0].MinVersion.Equal(MinSupportedDescriptionVersion))
+		require.Contains(t, reqs[0].ErrorMessage, "'description'")
+		require.Contains(t, reqs[0].ErrorMessage, MinSupportedDescriptionVersion.String())
+	})
+
 	t.Run("description only", func(t *testing.T) {
 		t.Parallel()
 		data := Data{
@@ -84,6 +97,17 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 		require.Len(t, reqs, 1)
 		require.True(t, reqs[0].MinVersion.Equal(MinSupportedDescriptionVersion))
 		require.Contains(t, reqs[0].ErrorMessage, "'description'")
+	})
+
+	t.Run("remote_indices empty set, no description", func(t *testing.T) {
+		t.Parallel()
+		data := Data{
+			Description:   types.StringNull(),
+			RemoteIndices: remoteIndicesSet(t, 0),
+		}
+		reqs, diags := data.GetVersionRequirements()
+		require.False(t, diags.HasError())
+		require.Empty(t, reqs)
 	})
 
 	t.Run("remote_indices only", func(t *testing.T) {
@@ -109,7 +133,11 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 		require.False(t, diags.HasError())
 		require.Len(t, reqs, 2)
 		require.True(t, reqs[0].MinVersion.Equal(MinSupportedDescriptionVersion))
+		require.Contains(t, reqs[0].ErrorMessage, "'description'")
+		require.Contains(t, reqs[0].ErrorMessage, MinSupportedDescriptionVersion.String())
 		require.True(t, reqs[1].MinVersion.Equal(MinSupportedRemoteIndicesVersion))
+		require.Contains(t, reqs[1].ErrorMessage, "'remote_indices'")
+		require.Contains(t, reqs[1].ErrorMessage, MinSupportedRemoteIndicesVersion.String())
 	})
 }
 
