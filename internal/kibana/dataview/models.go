@@ -25,6 +25,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -523,6 +524,16 @@ type dataViewModel struct {
 	Override         types.Bool   `tfsdk:"override"`
 	DataView         types.Object `tfsdk:"data_view"` // > innerModel
 }
+
+func (model dataViewModel) GetID() types.String { return model.ID }
+func (model dataViewModel) GetResourceID() types.String {
+	viewID, _ := model.getViewIDAndSpaceID()
+	return types.StringValue(viewID)
+}
+func (model dataViewModel) GetSpaceID() types.String        { return model.SpaceID }
+func (model dataViewModel) GetKibanaConnection() types.List { return model.KibanaConnection }
+
+var _ entitycore.KibanaResourceModel = dataViewModel{}
 
 type innerModel struct {
 	Title           types.String    `tfsdk:"title"`

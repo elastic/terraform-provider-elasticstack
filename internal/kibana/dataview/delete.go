@@ -20,32 +20,26 @@ package dataview
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var stateModel dataViewModel
-
-	diags := req.State.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func deleteDataView(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	resourceID string,
+	spaceID string,
+	_ dataViewModel,
+) diag.Diagnostics {
+	var diags diag.Diagnostics
 
 	oapiClient, getDiags := client.GetKibanaOapiClient()
-	if getDiags.HasError() {
-		resp.Diagnostics.Append(getDiags...)
-		return
+	diags.Append(getDiags...)
+	if diags.HasError() {
+		return diags
 	}
 
-	viewID, spaceID := stateModel.getViewIDAndSpaceID()
-	diags = kibanaoapi.DeleteDataView(ctx, oapiClient, spaceID, viewID)
-	resp.Diagnostics.Append(diags...)
+	diags.Append(kibanaoapi.DeleteDataView(ctx, oapiClient, spaceID, resourceID)...)
+	return diags
 }
