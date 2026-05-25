@@ -17,7 +17,7 @@ The `elasticstack_kibana_action_connector` resource SHALL expose an optional `se
 - GIVEN a `secrets_wo` attribute set to a JSON string sourced from an ephemeral resource
 - WHEN Terraform applies the configuration
 - THEN the provider SHALL send the JSON value as the connector secrets to the Kibana API
-- AND the Terraform state after apply SHALL NOT contain the `secrets_wo` value (it SHALL be null/unknown in state)
+- AND the Terraform state after apply SHALL NOT contain the `secrets_wo` value (it SHALL be null or absent in state)
 
 #### Scenario: `secrets_wo` and `secrets` cannot both be set
 
