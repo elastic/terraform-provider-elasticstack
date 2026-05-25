@@ -1,6 +1,6 @@
 ## 1. Bump `.custom-gcl.yml` version to align with the new pinned golangci-lint
 
-- [ ] 1.1 Change the `version` field in `.custom-gcl.yml` from `v2.11.4` to `v2.12.2`.
+- [x] 1.1 Change the `version` field in `.custom-gcl.yml` from `v2.11.4` to `v2.12.2`.
 
 ## 2. Add the dedicated `golangci-lint` job to `.github/workflows/provider.yml`
 
