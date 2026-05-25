@@ -23,6 +23,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -40,6 +42,10 @@ func TestAccResourceImportSavedObjects(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_count", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_results.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "errors.#", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "overwrite", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "file_contents"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.type"),
 				),
 			},
 			{
@@ -50,6 +56,10 @@ func TestAccResourceImportSavedObjects(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_count", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_results.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "errors.#", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "overwrite", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "file_contents"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.type"),
 				),
 			},
 			{
@@ -61,6 +71,12 @@ func TestAccResourceImportSavedObjects(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_count", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_results.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "errors.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "overwrite", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "errors.0.id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "errors.0.type"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "errors.0.error.type"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.type"),
 				),
 			},
 			{
@@ -72,6 +88,88 @@ func TestAccResourceImportSavedObjects(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_count", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "errors.#", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "compatibility_mode", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "overwrite", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_results.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.type"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceImportSavedObjects_CreateNewCopies(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "create_new_copies", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_count", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_results.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "errors.#", "0"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.type"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceImportSavedObjects_IgnoreImportErrors(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Establish the object so the next step triggers a conflict
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("setup"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success", "true"),
+				),
+			},
+			{
+				// Re-import without overwrite: Kibana returns a conflict error.
+				// With ignore_import_errors=true the provider must not return a TF error.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("conflict"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "ignore_import_errors", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "errors.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "errors.0.id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "errors.0.type"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "errors.0.error.type"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceImportSavedObjects_SpaceID(t *testing.T) {
+	spaceID := "tf-iso-" + sdkacctest.RandStringFromCharSet(4, "abcdefghijklmnopqrstuvwxyz0123456789")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import_in_space"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "space_id", spaceID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_count", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_results.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "errors.#", "0"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.type"),
 				),
 			},
 		},

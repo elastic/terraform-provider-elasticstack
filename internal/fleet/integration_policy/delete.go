@@ -40,9 +40,9 @@ func (r *integrationPolicyResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
+	fleetClient, d := client.GetFleetClient()
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

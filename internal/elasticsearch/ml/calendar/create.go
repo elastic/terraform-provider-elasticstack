@@ -35,13 +35,13 @@ func createCalendar(ctx context.Context, client *clients.ElasticsearchScopedClie
 
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML calendar: %s", calendarID))
 
-	typedClient, err := client.GetESClient()
-	if err != nil {
-		diags.AddError("Failed to get Elasticsearch client", err.Error())
+	typedClient, clientDiags := client.GetESClient()
+	diags.Append(clientDiags...)
+	if diags.HasError() {
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
-	_, err = typedClient.Ml.PutCalendar(calendarID).Request(newPutCalendarRequestFromTFModel(plan)).Do(ctx)
+	_, err := typedClient.Ml.PutCalendar(calendarID).Request(newPutCalendarRequestFromTFModel(plan)).Do(ctx)
 	if err != nil {
 		diags.AddError("Failed to create ML calendar", fmt.Sprintf("Unable to create ML calendar: %s — %s", calendarID, err.Error()))
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags

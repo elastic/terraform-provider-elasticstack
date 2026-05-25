@@ -243,6 +243,179 @@ func TestMappingsSemanticallyEqual_scalarLeafInFieldDef(t *testing.T) {
 	}
 }
 
+func TestMappingsSemanticallyEqual_coverageForMappingSupersetAndDrift(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		user map[string]any
+		api  map[string]any
+		want bool
+	}{
+		{
+			name: "template-injected properties are allowed",
+			user: map[string]any{
+				"properties": map[string]any{
+					"user_field": map[string]any{"type": "keyword"},
+				},
+			},
+			api: map[string]any{
+				"properties": map[string]any{
+					"user_field":     map[string]any{"type": "keyword"},
+					"template_field": map[string]any{"type": "text"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "template-injected dynamic_templates are allowed",
+			user: map[string]any{
+				"properties": map[string]any{
+					"user_field": map[string]any{"type": "keyword"},
+				},
+			},
+			api: map[string]any{
+				"dynamic_templates": []any{
+					map[string]any{
+						"strings_as_ip": map[string]any{
+							"match":   "ip*",
+							"runtime": map[string]any{"type": "ip"},
+						},
+					},
+				},
+				"properties": map[string]any{
+					"user_field": map[string]any{"type": "keyword"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "retained API-only properties are allowed",
+			user: map[string]any{
+				"properties": map[string]any{
+					"user_field": map[string]any{"type": "keyword"},
+				},
+			},
+			api: map[string]any{
+				"properties": map[string]any{
+					"user_field":     map[string]any{"type": "keyword"},
+					"retained_field": map[string]any{"type": "text"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "semantic_text API model_settings auto-population is allowed",
+			user: map[string]any{
+				"properties": map[string]any{
+					"semantic_field": map[string]any{
+						"type": "semantic_text",
+					},
+				},
+			},
+			api: map[string]any{
+				"properties": map[string]any{
+					"semantic_field": map[string]any{
+						"type": "semantic_text",
+						"model_settings": map[string]any{
+							"task_type": "sparse_embedding",
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "semantic_text explicit model_settings drift is detected",
+			user: map[string]any{
+				"properties": map[string]any{
+					"semantic_field": map[string]any{
+						"type": "semantic_text",
+						"model_settings": map[string]any{
+							"task_type": "sparse_embedding",
+						},
+					},
+				},
+			},
+			api: map[string]any{
+				"properties": map[string]any{
+					"semantic_field": map[string]any{
+						"type": "semantic_text",
+						"model_settings": map[string]any{
+							"task_type": "dense_embedding",
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "missing API fields are detected",
+			user: map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{"type": "keyword"},
+				},
+			},
+			api: map[string]any{
+				"properties": map[string]any{},
+			},
+			want: false,
+		},
+		{
+			name: "nested property API superset is allowed",
+			user: map[string]any{
+				"properties": map[string]any{
+					"parent": map[string]any{
+						"properties": map[string]any{
+							"child": map[string]any{"type": "keyword"},
+						},
+					},
+				},
+			},
+			api: map[string]any{
+				"properties": map[string]any{
+					"parent": map[string]any{
+						"properties": map[string]any{
+							"child":  map[string]any{"type": "keyword"},
+							"child2": map[string]any{"type": "text"},
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "nested type change is detected",
+			user: map[string]any{
+				"properties": map[string]any{
+					"parent": map[string]any{
+						"properties": map[string]any{
+							"child": map[string]any{"type": "keyword"},
+						},
+					},
+				},
+			},
+			api: map[string]any{
+				"properties": map[string]any{
+					"parent": map[string]any{
+						"properties": map[string]any{
+							"child": map[string]any{"type": "text"},
+						},
+					},
+				},
+			},
+			want: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tc.want, index.MappingsSemanticallyEqual(tc.user, tc.api))
+		})
+	}
+}
+
 // TestIndexMappingsValue_SemanticEquals verifies that the typed-client-injected
 // "type":"object" entries don't cause spurious drift between a config-derived
 // plan value (no "type":"object") and the API-read state value (with "type":"object").

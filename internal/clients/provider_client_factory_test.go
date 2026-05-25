@@ -133,8 +133,8 @@ func TestGetKibanaClient_WithConnection(t *testing.T) {
 	_, diags = scoped.GetKibanaOapiClient()
 	require.Empty(t, diags)
 
-	_, err := scoped.GetFleetClient()
-	require.NoError(t, err)
+	_, diags = scoped.GetFleetClient()
+	require.Empty(t, diags)
 }
 
 // --- KibanaScopedClient version / flavor routing ---
@@ -276,10 +276,10 @@ func TestGetElasticsearchClient_EntityLocalMissingEndpoint(t *testing.T) {
 
 	// Calling GetESClient on the scoped client must produce the same error as
 	// the provider-default path when no endpoint is configured.
-	client, err := scoped.GetESClient()
+	client, diags := scoped.GetESClient()
 	assert.Nil(t, client)
-	require.Error(t, err)
-	assert.Equal(t, elasticsearchClientNotConfiguredError, err.Error())
+	require.NotEmpty(t, diags)
+	assert.Equal(t, elasticsearchClientNotConfiguredError, diags[0].Detail())
 }
 
 // --- Scenario 9: Entity-local kibana_connection with missing endpoint ---

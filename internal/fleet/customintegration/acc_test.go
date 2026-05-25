@@ -149,9 +149,9 @@ func fleetPackageInstalled(ctx context.Context, pkgName, pkgVersion, spaceID str
 	if err != nil {
 		return false, err
 	}
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		return false, err
+	fleetClient, d := client.GetFleetClient()
+	if d.HasError() {
+		return false, diagutil.FwDiagsAsError(d)
 	}
 	pkg, diags := fleet.GetPackage(ctx, fleetClient, pkgName, pkgVersion, spaceID)
 	if diags.HasError() {
@@ -520,9 +520,9 @@ func cleanupPackageInFleet(t *testing.T, pkgName, pkgVersion, spaceID string) {
 		t.Logf("skipping cleanup for %s/%s: %v", pkgName, pkgVersion, err)
 		return
 	}
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		t.Logf("skipping cleanup for %s/%s: %v", pkgName, pkgVersion, err)
+	fleetClient, d := client.GetFleetClient()
+	if d.HasError() {
+		t.Logf("skipping cleanup for %s/%s: %v", pkgName, pkgVersion, diagutil.FwDiagsAsError(d))
 		return
 	}
 	diags := fleet.Uninstall(context.Background(), fleetClient, pkgName, pkgVersion, spaceID, false)

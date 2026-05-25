@@ -18,13 +18,9 @@
 package parameter
 
 import (
+	"context"
 	_ "embed"
-	"slices"
 
-	kboapi "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -40,17 +36,7 @@ import (
 //go:embed resource-description.md
 var syntheticsParameterDescription string
 
-type tfModelV0 struct {
-	ID                types.String   `tfsdk:"id"`
-	KibanaConnection  types.List     `tfsdk:"kibana_connection"`
-	Key               types.String   `tfsdk:"key"`
-	Value             types.String   `tfsdk:"value"`
-	Description       types.String   `tfsdk:"description"`
-	Tags              []types.String `tfsdk:"tags"` // > string
-	ShareAcrossSpaces types.Bool     `tfsdk:"share_across_spaces"`
-}
-
-func parameterSchema() schema.Schema {
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: syntheticsParameterDescription,
 		Attributes: map[string]schema.Attribute{
@@ -109,41 +95,5 @@ func parameterSchema() schema.Schema {
 				},
 			},
 		},
-
-		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
-		}}
-}
-
-func (m *tfModelV0) toParameterRequest(forUpdate bool) kboapi.SyntheticsParameterRequest {
-	// share_across_spaces is not allowed to be set when updating an existing
-	// global parameter.
-	var shareAcrossSpaces *bool
-	if !forUpdate {
-		shareAcrossSpaces = m.ShareAcrossSpaces.ValueBoolPointer()
-	}
-
-	return kboapi.SyntheticsParameterRequest{
-		Key:         m.Key.ValueString(),
-		Value:       m.Value.ValueString(),
-		Description: new(m.Description.ValueString()),
-		// We need this to marshal as an empty JSON array, not null.
-		Tags:              new(typeutils.NonNilSlice(synthetics.ValueStringSlice(m.Tags))),
-		ShareAcrossSpaces: shareAcrossSpaces,
-	}
-}
-
-func modelV0FromOAPI(param kboapi.SyntheticsGetParameterResponse) tfModelV0 {
-	allSpaces := slices.Equal(*param.Namespaces, []string{"*"})
-
-	return tfModelV0{
-		ID:          types.StringPointerValue(param.Id),
-		Key:         types.StringPointerValue(param.Key),
-		Value:       types.StringPointerValue(param.Value),
-		Description: types.StringPointerValue(param.Description),
-		// Terraform, like json.Marshal, treats empty slices as null. We need an
-		// actual backing array of size 0.
-		Tags:              typeutils.NonNilSlice(synthetics.StringSliceValue(typeutils.DefaultIfNil(param.Tags))),
-		ShareAcrossSpaces: types.BoolValue(allSpaces),
 	}
 }

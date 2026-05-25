@@ -54,9 +54,9 @@ func (r *customIntegrationResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	fleetClient, err := apiClient.GetFleetClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
+	fleetClient, d := apiClient.GetFleetClient()
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

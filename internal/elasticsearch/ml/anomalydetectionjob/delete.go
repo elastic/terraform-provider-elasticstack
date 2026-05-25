@@ -52,14 +52,14 @@ func deleteAnomalyDetectionJob(ctx context.Context, client *clients.Elasticsearc
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	typedClient, err := client.GetESClient()
-	if err != nil {
-		diags.AddError("Failed to get Elasticsearch client", err.Error())
+	typedClient, clientDiags := client.GetESClient()
+	diags.Append(clientDiags...)
+	if diags.HasError() {
 		return diags
 	}
 
 	// First, close the job if it's open. Force=true and AllowNoMatch=true to be safe.
-	_, err = typedClient.Ml.CloseJob(jobID).Force(true).AllowNoMatch(true).Do(ctx)
+	_, err := typedClient.Ml.CloseJob(jobID).Force(true).AllowNoMatch(true).Do(ctx)
 	if err != nil {
 		tflog.Warn(ctx, fmt.Sprintf("Failed to close ML job %s before deletion: %s", jobID, err.Error()))
 		// Continue with deletion even if close fails, as the job might already be closed

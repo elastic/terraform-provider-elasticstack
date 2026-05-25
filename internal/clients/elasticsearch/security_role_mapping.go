@@ -31,10 +31,9 @@ import (
 func PutRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, roleMapping *types.SecurityRoleMapping) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return diags
+	typedClient, d := apiClient.GetESClient()
+	if d.HasError() {
+		return d
 	}
 
 	req := typedClient.Security.PutRoleMapping(name).
@@ -87,7 +86,7 @@ func PutRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 		req.Raw(bytes.NewReader(data))
 	}
 
-	_, err = req.Do(ctx)
+	_, err := req.Do(ctx)
 	if err != nil {
 		diags.AddError("Unable to create or update a role mapping", err.Error())
 		return diags
@@ -99,10 +98,9 @@ func PutRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 func GetRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, roleMappingName string) (*types.SecurityRoleMapping, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return nil, diags
+	typedClient, d := apiClient.GetESClient()
+	if d.HasError() {
+		return nil, d
 	}
 
 	res, err := typedClient.Security.GetRoleMapping().Name(roleMappingName).Do(ctx)
@@ -125,13 +123,12 @@ func GetRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 func DeleteRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, roleMappingName string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return diags
+	typedClient, d := apiClient.GetESClient()
+	if d.HasError() {
+		return d
 	}
 
-	_, err = typedClient.Security.DeleteRoleMapping(roleMappingName).Do(ctx)
+	_, err := typedClient.Security.DeleteRoleMapping(roleMappingName).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
 			return diags

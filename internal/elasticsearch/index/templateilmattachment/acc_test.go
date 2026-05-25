@@ -29,6 +29,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateilmattachment"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
@@ -55,9 +56,9 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 			if err != nil {
 				t.Fatalf("acceptance test client: %v", err)
 			}
-			fleetClient, err := client.GetFleetClient()
-			if err != nil {
-				t.Fatalf("Fleet client: %v", err)
+			fleetClient, d := client.GetFleetClient()
+			if d.HasError() {
+				t.Fatalf("Fleet client: %v", diagutil.FwDiagsAsError(d))
 			}
 			diags := fleet.InstallPackage(context.Background(), fleetClient, "system", fleetSystemVersion, fleet.InstallPackageOptions{Force: true})
 			if diags.HasError() {

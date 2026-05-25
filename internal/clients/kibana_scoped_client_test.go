@@ -165,14 +165,15 @@ func TestKibanaScopedClient_GetKibanaOapiClient_NilClientNoEndpoint_BlocksLocalh
 func TestKibanaScopedClient_GetFleetClient_MissingEndpoint(t *testing.T) {
 	t.Parallel()
 	sc := newKibanaScopedClientNoEndpoint(t)
-	client, err := sc.GetFleetClient()
+	client, diags := sc.GetFleetClient()
 	assert.Nil(t, client, "GetFleetClient must return nil client when fleet endpoint is missing")
-	require.Error(t, err)
+	require.True(t, diags.HasError())
+	assert.Equal(t, "Fleet client not configured", diags[0].Summary())
 	assert.Equal(t,
 		"fleet client is not configured: set fleet.endpoint or FLEET_ENDPOINT, "+
 			"or configure kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT "+
 			"for inherited Fleet endpoint resolution",
-		err.Error(),
+		diags[0].Detail(),
 	)
 }
 
@@ -183,8 +184,8 @@ func TestKibanaScopedClient_GetFleetClient_InheritedFromKibana(t *testing.T) {
 	// Use a placeholder URL; we are only testing the accessor validation path,
 	// not an actual HTTP connection.
 	sc := newKibanaScopedClientFleetFromKibana(t, "http://kibana.example.com:5601")
-	client, err := sc.GetFleetClient()
-	require.NoError(t, err,
+	client, diags := sc.GetFleetClient()
+	require.Empty(t, diags,
 		"GetFleetClient must succeed when fleet endpoint is inherited from Kibana")
 	assert.NotNil(t, client)
 }
@@ -203,8 +204,8 @@ func TestKibanaScopedClient_GetKibanaOapiClient_EndpointPresentNoAuth(t *testing
 func TestKibanaScopedClient_GetFleetClient_EndpointPresentNoAuth(t *testing.T) {
 	t.Parallel()
 	sc := newKibanaScopedClientWithEndpointNoAuth(t, "http://kibana.example.com:5601")
-	client, err := sc.GetFleetClient()
-	require.NoError(t, err,
+	client, diags := sc.GetFleetClient()
+	require.Empty(t, diags,
 		"GetFleetClient must not fail when endpoint is present but auth fields are empty")
 	assert.NotNil(t, client)
 }

@@ -20,7 +20,6 @@ package privatelocation
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -30,42 +29,34 @@ import (
 
 const resourceName = synthetics.MetadataPrefix + "private_location"
 
-type Resource struct {
-	*entitycore.ResourceBase
-}
-
-func newResource() *Resource {
-	return &Resource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "synthetics_private_location"),
-	}
-}
-
-// Ensure provider defined types fully satisfy framework interfaces
 var (
 	_ resource.Resource                = newResource()
 	_ resource.ResourceWithConfigure   = newResource()
 	_ resource.ResourceWithImportState = newResource()
-	_ synthetics.ESAPIClient           = newResource()
 )
 
-func (r *Resource) GetClient() *clients.KibanaScopedClient {
-	if r.Client() == nil {
-		return nil
-	}
-	return clients.NewKibanaScopedClientFromFactory(r.Client())
+type Resource struct {
+	*entitycore.KibanaResource[Model]
 }
 
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = privateLocationSchema()
+func newResource() *Resource {
+	return &Resource{
+		KibanaResource: entitycore.NewKibanaResource[Model](
+			entitycore.ComponentKibana,
+			"synthetics_private_location",
+			entitycore.KibanaResourceOptions[Model]{
+				Schema: getSchema,
+				Read:   readPrivateLocation,
+				Delete: deletePrivateLocation,
+				Create: createPrivateLocation,
+				Update: entitycore.PlaceholderKibanaWriteCallback[Model](),
+			},
+		),
+	}
 }
 
 func (r *Resource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), request, response)
-}
-
-// NewResource returns a synthetics private location resource with shared bootstrap wiring.
-func NewResource() resource.Resource {
-	return newResource()
 }
 
 func (r *Resource) Update(ctx context.Context, _ resource.UpdateRequest, response *resource.UpdateResponse) {
@@ -74,4 +65,9 @@ func (r *Resource) Update(ctx context.Context, _ resource.UpdateRequest, respons
 		"synthetics private location update not supported",
 		"Synthetics private location could only be replaced. Please, note, that only unused locations could be deleted.",
 	)
+}
+
+// NewResource returns a synthetics private location resource with shared bootstrap wiring.
+func NewResource() resource.Resource {
+	return newResource()
 }

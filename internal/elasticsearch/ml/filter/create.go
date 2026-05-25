@@ -41,9 +41,9 @@ func createFilter(ctx context.Context, client *clients.ElasticsearchScopedClient
 
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML filter: %s", filterID))
 
-	typedClient, err := client.GetESClient()
-	if err != nil {
-		diags.AddError("Failed to get Elasticsearch client", err.Error())
+	typedClient, clientDiags := client.GetESClient()
+	diags.Append(clientDiags...)
+	if diags.HasError() {
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
@@ -62,7 +62,7 @@ func createFilter(ctx context.Context, client *clients.ElasticsearchScopedClient
 		put = put.Items(items...)
 	}
 
-	_, err = put.Do(ctx)
+	_, err := put.Do(ctx)
 	if err != nil {
 		diags.AddError("Failed to create ML filter", fmt.Sprintf("Unable to create ML filter: %s — %s", filterID, err.Error()))
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags

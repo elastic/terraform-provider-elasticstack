@@ -19,80 +19,50 @@ package privatelocation
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
+func readPrivateLocation(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model Model) (Model, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	var state tfModelV0
-	diags := request.State.Get(ctx, &state)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
+	oapiClient, d := client.GetKibanaOapiClient()
+	diags.Append(d...)
+	if diags.HasError() {
+		return model, false, diags
 	}
 
-	apiClient, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	kibanaClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, &response.Diagnostics)
-	if kibanaClient == nil {
-		return
-	}
-
-	resourceID := state.ID.ValueString()
-
-	compositeID, dg := synthetics.TryReadCompositeID(resourceID)
-	response.Diagnostics.Append(dg...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	if compositeID != nil {
-		resourceID = compositeID.ResourceID
-	}
-
-	spaceID := effectiveSpaceID(state.SpaceID, compositeID)
-
-	if requiresSpaceIDMinVersion(spaceID) {
-		supported, verDiags := apiClient.EnforceMinVersion(ctx, MinVersionSpaceID)
-		response.Diagnostics.Append(verDiags...)
-		if response.Diagnostics.HasError() {
-			return
-		}
-		if !supported {
-			response.Diagnostics.AddError(
-				"Unsupported server version",
-				fmt.Sprintf("Synthetics private locations in a non-default Kibana space require Elastic Stack %s or later.", MinVersionSpaceID),
-			)
-			return
-		}
-	}
-
-	result, dg := kibanaoapi.GetPrivateLocation(ctx, kibanaClient, spaceID, resourceID)
-	response.Diagnostics.Append(dg...)
-	if response.Diagnostics.HasError() {
-		return
+	result, dg := kibanaoapi.GetPrivateLocation(ctx, oapiClient, spaceID, resourceID)
+	diags.Append(dg...)
+	if diags.HasError() {
+		return model, false, diags
 	}
 
 	// nil result means HTTP 404 — resource no longer exists.
 	if result == nil {
-		response.State.RemoveResource(ctx)
-		return
+		return model, false, diags
 	}
 
-	state = privateLocationFromAPI(*result, spaceID, state.KibanaConnection)
+	readModel := modelFromAPI(*result, spaceID)
+	readModel.KibanaConnection = model.KibanaConnection
+	readModel.Geo = preserveGeoFromInput(ctx, model.Geo, readModel.Geo)
 
-	// Set refreshed state
-	diags = response.State.Set(ctx, &state)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
+	return readModel, true, diags
+}
+
+// preserveGeoFromInput keeps the input geo when it is semantically equal to the
+// API value under float32 precision; otherwise the API value is used.
+func preserveGeoFromInput(ctx context.Context, input, api *tfGeoConfigV0) *tfGeoConfigV0 {
+	if input == nil || api == nil {
+		return api
 	}
+
+	latEqual, _ := input.Lat.Float64SemanticEquals(ctx, api.Lat)
+	lonEqual, _ := input.Lon.Float64SemanticEquals(ctx, api.Lon)
+	if latEqual && lonEqual {
+		return input
+	}
+	return api
 }
