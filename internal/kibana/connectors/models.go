@@ -36,6 +36,8 @@ type tfModel struct {
 	ConnectorTypeID  types.String         `tfsdk:"connector_type_id"`
 	Config           ConfigValue          `tfsdk:"config"`
 	Secrets          jsontypes.Normalized `tfsdk:"secrets"`
+	SecretsWo        jsontypes.Normalized `tfsdk:"secrets_wo"`
+	SecretsWoVersion types.String         `tfsdk:"secrets_wo_version"`
 	IsDeprecated     types.Bool           `tfsdk:"is_deprecated"`
 	IsMissingSecrets types.Bool           `tfsdk:"is_missing_secrets"`
 	IsPreconfigured  types.Bool           `tfsdk:"is_preconfigured"`
@@ -81,7 +83,9 @@ func (model tfModel) toAPIModel() (models.KibanaActionConnector, diag.Diagnostic
 		apiModel.ConfigJSON = sanitizedConfig
 	}
 
-	if typeutils.IsKnown(model.Secrets) {
+	if typeutils.IsKnown(model.SecretsWo) {
+		apiModel.SecretsJSON = model.SecretsWo.ValueString()
+	} else if typeutils.IsKnown(model.Secrets) {
 		apiModel.SecretsJSON = model.Secrets.ValueString()
 	}
 
