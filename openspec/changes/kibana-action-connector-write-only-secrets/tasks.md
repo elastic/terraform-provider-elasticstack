@@ -7,7 +7,7 @@
 
 ## 2. Model changes
 
-- [x] 2.1 Add `SecretsWo types.String` and `SecretsWoVersion types.String` fields to `tfModel` in `internal/kibana/connectors/models.go`
+- [x] 2.1 Add `SecretsWo jsontypes.Normalized` (mirroring `Secrets`) and `SecretsWoVersion types.String` fields to `tfModel` in `internal/kibana/connectors/models.go`
 - [x] 2.2 Update `toAPIModel()` to prefer `SecretsWo` over `Secrets` when `SecretsWo` is known
 
 ## 3. CRUD handler changes
