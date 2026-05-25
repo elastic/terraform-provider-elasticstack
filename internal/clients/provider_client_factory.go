@@ -113,7 +113,7 @@ func (f *ProviderClientFactory) GetElasticsearchClient(ctx context.Context, esCo
 	}
 
 	if len(esConns) == 0 {
-		return elasticsearchScopedClientFromAPIClient(f.defaultClient), nil
+		return validateElasticsearchScopedClientEndpoints(elasticsearchScopedClientFromAPIClient(f.defaultClient))
 	}
 
 	if len(esConns) > 1 {
@@ -149,10 +149,27 @@ func (f *ProviderClientFactory) GetElasticsearchClient(ctx context.Context, esCo
 		esEndpoints = cfg.Elasticsearch.Addresses
 	}
 
-	return &ElasticsearchScopedClient{
+	return validateElasticsearchScopedClientEndpoints(&ElasticsearchScopedClient{
 		typedClient: esClient,
 		esEndpoints: esEndpoints,
-	}, nil
+	})
+}
+
+func validateElasticsearchScopedClientEndpoints(scoped *ElasticsearchScopedClient) (*ElasticsearchScopedClient, fwdiags.Diagnostics) {
+	hasEndpoint := false
+	for _, ep := range scoped.esEndpoints {
+		if ep != "" {
+			hasEndpoint = true
+			break
+		}
+	}
+	if !hasEndpoint {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
+			"Elasticsearch client not configured",
+			elasticsearchClientNotConfiguredError,
+		)}
+	}
+	return scoped, nil
 }
 
 // --- Helper constructors ---

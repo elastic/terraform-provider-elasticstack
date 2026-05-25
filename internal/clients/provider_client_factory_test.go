@@ -271,14 +271,8 @@ func TestGetElasticsearchClient_EntityLocalMissingEndpoint(t *testing.T) {
 	require.False(t, diags.HasError())
 
 	scoped, diags := factory.GetElasticsearchClient(ctx, list)
-	require.False(t, diags.HasError(), "factory must not fail for empty-endpoint ES connection block")
-	require.NotNil(t, scoped)
-
-	// Calling GetESClient on the scoped client must produce the same error as
-	// the provider-default path when no endpoint is configured.
-	client, diags := scoped.GetESClient()
-	assert.Nil(t, client)
-	require.NotEmpty(t, diags)
+	require.True(t, diags.HasError(), "factory must fail when elasticsearch_connection has no endpoints")
+	assert.Nil(t, scoped)
 	assert.Equal(t, elasticsearchClientNotConfiguredError, diags[0].Detail())
 }
 

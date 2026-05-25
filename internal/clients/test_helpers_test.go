@@ -49,6 +49,7 @@ func newTestAPIClient(t *testing.T) *apiClient {
 		version:        "unit-testing",
 		kibanaEndpoint: "http://localhost:5601",
 		fleetEndpoint:  "", // fleet client is nil; empty endpoint represents unconfigured Fleet
+		esEndpoints:    []string{"http://localhost:9200"},
 	}
 }
 
