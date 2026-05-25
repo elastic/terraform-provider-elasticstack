@@ -41,10 +41,7 @@ type tfModel struct {
 	IsPreconfigured  types.Bool           `tfsdk:"is_preconfigured"`
 }
 
-var (
-	_ entitycore.KibanaResourceModel     = tfModel{}
-	_ entitycore.WithVersionRequirements = tfModel{}
-)
+var _ entitycore.KibanaResourceModel = tfModel{}
 
 func (model tfModel) GetID() types.String             { return model.ID }
 func (model tfModel) GetSpaceID() types.String        { return model.SpaceID }
@@ -57,23 +54,6 @@ func (model tfModel) GetResourceID() types.String {
 		return model.ConnectorID
 	}
 	return types.StringValue("")
-}
-
-// GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
-// The Kibana envelope calls [entitycore.EnforceVersionRequirements] before write
-// and read, so preconfigured connector ID validation stays on the model.
-func (model tfModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	if typeutils.IsKnown(model.ConnectorID) && model.ConnectorID.ValueString() != "" {
-		return []entitycore.VersionRequirement{
-			{
-				MinVersion: *MinVersionSupportingPreconfiguredIDs,
-				ErrorMessage: "Preconfigured connector IDs are only supported for Elastic Stack v" +
-					MinVersionSupportingPreconfiguredIDs.String() +
-					" and above. Either remove the `connector_id` attribute or upgrade your target cluster to supported version",
-			},
-		}, nil
-	}
-	return nil, nil
 }
 
 func (model tfModel) GetCompositeID() (*clients.CompositeID, diag.Diagnostics) {

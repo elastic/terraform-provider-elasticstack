@@ -12,7 +12,7 @@
   - Composite ID: state `id` is `<spaceID>/<connectorID>`; envelope resolves identity via composite parse.
   - Read-after-write: envelope refreshes via `readConnector` after create/update.
   - State upgrade: wrapper-level `UpgradeState` v0→v1 unchanged.
-- **1.3 Version gating**: keep `tfModel.GetVersionRequirements()` on the model implementing `entitycore.WithVersionRequirements`. The envelope already calls `EnforceVersionRequirements` before write and read, so no callback-local duplicate check is needed.
+- **1.3 Version gating**: removed `WithVersionRequirements` from `tfModel` (envelope would enforce on every Read/Update once state carries API-assigned `connector_id`). The 8.8.0 gate now runs only in `createConnector` via `enforceUserSuppliedConnectorIDVersion` when the create plan includes a user-supplied `connector_id`.
 
 ## 2. Envelope migration
 

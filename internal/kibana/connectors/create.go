@@ -35,6 +35,11 @@ func createConnector(
 	planModel := req.Plan
 	var diags diag.Diagnostics
 
+	diags.Append(enforceUserSuppliedConnectorIDVersion(ctx, client, planModel)...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[tfModel]{}, diags
+	}
+
 	apiModel, apiDiags := planModel.toAPIModel()
 	diags.Append(apiDiags...)
 	if diags.HasError() {
