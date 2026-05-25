@@ -260,9 +260,9 @@ func ConvertProviderDataToFactory(providerData any) (*ProviderClientFactory, fwd
 // NewKibanaScopedClientFromFactory returns a *KibanaScopedClient built from the
 // factory's provider-level defaults. This is the typed Kibana surface
 // equivalent of calling GetKibanaClient with an empty connection list.
-func NewKibanaScopedClientFromFactory(f *ProviderClientFactory) *KibanaScopedClient {
+func NewKibanaScopedClientFromFactory(f *ProviderClientFactory) (*KibanaScopedClient, fwdiags.Diagnostics) {
 	if f == nil || f.defaultClient == nil {
-		return nil
+		return nil, nil
 	}
-	return kibanaScopedClientFromAPIClient(f.defaultClient)
+	return validateKibanaScopedClientEndpoints(kibanaScopedClientFromAPIClient(f.defaultClient))
 }

@@ -25,14 +25,14 @@ import (
 
 // ESAPIClient interface provides access to the underlying API client
 type ESAPIClient interface {
-	GetClient() *clients.KibanaScopedClient
+	GetClient(dg *diag.Diagnostics) *clients.KibanaScopedClient
 }
 
 // GetKibanaOAPIClient returns a configured Kibana OpenAPI client for the given ESAPIClient.
 // Any diagnostics produced while resolving the client are appended to dg so callers can
 // surface them via response.Diagnostics.
 func GetKibanaOAPIClient(c ESAPIClient, dg *diag.Diagnostics) *kibanaoapi.Client {
-	return GetKibanaOAPIClientFromScopedClient(c.GetClient(), dg)
+	return GetKibanaOAPIClientFromScopedClient(c.GetClient(dg), dg)
 }
 
 // GetKibanaOAPIClientFromScopedClient returns a configured Kibana OpenAPI client for the given
