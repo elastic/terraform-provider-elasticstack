@@ -25,6 +25,7 @@ import (
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func createDataView(
@@ -54,10 +55,11 @@ func createDataView(
 		return entitycore.KibanaWriteResult[dataViewModel]{}, diags
 	}
 
-	diags.Append(planModel.populateFromAPI(ctx, dataView, spaceID)...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[dataViewModel]{}, diags
+	compositeID := clients.CompositeID{
+		ClusterID:  spaceID,
+		ResourceID: *dataView.DataView.Id,
 	}
+	planModel.ID = types.StringValue(compositeID.String())
 
 	return entitycore.KibanaWriteResult[dataViewModel]{Model: planModel}, diags
 }

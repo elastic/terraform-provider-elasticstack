@@ -25,6 +25,7 @@ import (
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
@@ -59,7 +60,7 @@ func updateDataView(
 
 	viewID := req.WriteID
 	spaceID := req.SpaceID
-	dataView, updateDiags := kibanaoapi.UpdateDataView(ctx, oapiClient, spaceID, viewID, body)
+	_, updateDiags := kibanaoapi.UpdateDataView(ctx, oapiClient, spaceID, viewID, body)
 	diags.Append(updateDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[dataViewModel]{}, diags
@@ -132,7 +133,6 @@ func updateDataView(
 					)
 					return entitycore.KibanaWriteResult[dataViewModel]{}, diags
 				}
-				dataView = refreshed
 			}
 		}
 	}
@@ -141,10 +141,11 @@ func updateDataView(
 		return entitycore.KibanaWriteResult[dataViewModel]{}, diags
 	}
 
-	diags.Append(planModel.populateFromAPI(ctx, dataView, spaceID)...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[dataViewModel]{}, diags
+	compositeID := clients.CompositeID{
+		ClusterID:  spaceID,
+		ResourceID: viewID,
 	}
+	planModel.ID = types.StringValue(compositeID.String())
 
 	return entitycore.KibanaWriteResult[dataViewModel]{Model: planModel}, diags
 }
