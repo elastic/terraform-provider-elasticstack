@@ -176,6 +176,12 @@ func validateElasticsearchScopedClientEndpoints(scoped *ElasticsearchScopedClien
 			elasticsearchClientNotConfiguredError,
 		)}
 	}
+	if scoped.typedClient == nil {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
+			"Elasticsearch client not found",
+			"elasticsearch client not found",
+		)}
+	}
 	return scoped, nil
 }
 
@@ -184,6 +190,18 @@ func validateKibanaScopedClientEndpoints(scoped *KibanaScopedClient) (*KibanaSco
 		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
 			"Kibana client not configured",
 			kibanaFleetClientNotConfiguredError,
+		)}
+	}
+	if scoped.kibanaEndpoint != "" && scoped.kibanaOapi == nil {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
+			"kibanaoapi client not found",
+			"kibana OpenAPI client was not built despite a configured Kibana endpoint",
+		)}
+	}
+	if scoped.fleetEndpoint != "" && scoped.fleet == nil {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
+			"Fleet client not found",
+			"Fleet client was not built despite a configured Fleet endpoint",
 		)}
 	}
 	return scoped, nil

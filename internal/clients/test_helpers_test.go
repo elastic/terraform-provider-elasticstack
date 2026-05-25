@@ -23,33 +23,65 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
+	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
 
-const kibanaStatusPath = "/api/status"
+const (
+	testElasticsearchURL = "http://localhost:9200"
+	testKibanaURL        = "http://localhost:5601"
+	kibanaStatusPath     = "/api/status"
+)
 
 // newTestAPIClient returns a minimal *apiClient suitable for unit tests.
-// It sets up Kibana clients with a fake endpoint so that actual network
-// calls are never made.
+// Inner typed clients are built with the same helpers as production wiring so
+// factory resolution returns usable accessors.
 func newTestAPIClient(t *testing.T) *apiClient {
 	t.Helper()
 
-	kibOapi, err := kibanaoapi.NewClient(kibanaoapi.Config{
-		URL:      "http://localhost:5601",
-		Username: "elastic",
-		Password: "changeme",
-	})
+	cfg := config.Client{
+		Elasticsearch: &elasticsearch.Config{
+			Addresses: []string{testElasticsearchURL},
+			Username:  "elastic",
+			Password:  "changeme",
+		},
+		KibanaOapi: &kibanaoapi.Config{
+			URL:      testKibanaURL,
+			Username: "elastic",
+			Password: "changeme",
+		},
+		Fleet: &fleetclient.Config{
+			URL:      testKibanaURL,
+			Username: "elastic",
+			Password: "changeme",
+		},
+	}
+
+	esClient, err := buildEsClient(cfg)
 	require.NoError(t, err)
+	require.NotNil(t, esClient)
+
+	kibOapi, err := buildKibanaOapiClient(cfg)
+	require.NoError(t, err)
+	require.NotNil(t, kibOapi)
+
+	fleet, err := buildFleetClient(cfg)
+	require.NoError(t, err)
+	require.NotNil(t, fleet)
 
 	return &apiClient{
+		elasticsearch:  esClient,
 		kibanaOapi:     kibOapi,
+		fleet:          fleet,
 		version:        "unit-testing",
-		kibanaEndpoint: "http://localhost:5601",
-		fleetEndpoint:  "", // fleet client is nil; empty endpoint represents unconfigured Fleet
-		esEndpoints:    []string{"http://localhost:9200"},
+		kibanaEndpoint: testKibanaURL,
+		fleetEndpoint:  testKibanaURL,
+		esEndpoints:    []string{testElasticsearchURL},
 	}
 }
 
