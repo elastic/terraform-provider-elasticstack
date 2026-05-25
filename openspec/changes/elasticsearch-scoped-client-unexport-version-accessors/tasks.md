@@ -54,9 +54,9 @@
 
 ## 7. `versionutils/testutils.go` migration
 
-- [ ] 7.1 Replace `fetchAcceptanceServerInfo` body — call `clients.AcceptanceServerInfo(ctx, client)` instead of `client.ServerVersion` + `client.ServerFlavor`
-- [ ] 7.2 Update `CheckIfNotServerless` to call `client.IsServerless(ctx)` and invert the boolean
-- [ ] 7.3 Run `go test ./internal/versionutils/... ./internal/acctest/...`
+- [x] 7.1 Replace `fetchAcceptanceServerInfo` body — call `clients.AcceptanceServerInfo(ctx, client)` instead of `client.ServerVersion` + `client.ServerFlavor`
+- [x] 7.2 Update `CheckIfNotServerless` to call `client.IsServerless(ctx)` and invert the boolean
+- [x] 7.3 Run `go test ./internal/versionutils/... ./internal/acctest/...`
 
 ## 8. Rewrite `internal/clients` tests
 
