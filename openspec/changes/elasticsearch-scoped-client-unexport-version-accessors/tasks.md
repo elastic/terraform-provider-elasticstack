@@ -20,9 +20,9 @@
 
 ## 4. Pattern B — `index/index` flavor → `IsServerless`
 
-- [ ] 4.1 Change `internal/elasticsearch/index/index/models.go::toPutIndexParams` signature from `(serverFlavor string)` to `(isServerless bool)`; flip the inner check to `if !isServerless { ... }`
-- [ ] 4.2 Update `internal/elasticsearch/index/index/create.go` to call `client.IsServerless(ctx)` and pass the boolean
-- [ ] 4.3 Update `Test_tfModel_toPutIndexParams` in `models_test.go` — already iterates `isServerless := []bool{true, false}` so just remove the flavor-string conversion
+- [x] 4.1 Change `internal/elasticsearch/index/index/models.go::toPutIndexParams` signature from `(serverFlavor string)` to `(isServerless bool)`; flip the inner check to `if !isServerless { ... }`
+- [x] 4.2 Update `internal/elasticsearch/index/index/create.go` to call `client.IsServerless(ctx)` and pass the boolean
+- [x] 4.3 Update `Test_tfModel_toPutIndexParams` in `models_test.go` — already iterates `isServerless := []bool{true, false}` so just remove the flavor-string conversion
 
 ## 5. Pattern C — apikey capability struct + private-state migration
 
