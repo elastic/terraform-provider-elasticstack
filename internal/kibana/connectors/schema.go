@@ -64,7 +64,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
 				Optional:    true,
 				Computed:    true,
-				Default:     stringdefault.StaticString("default"),
+				Default:     stringdefault.StaticString(defaultSpaceID),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},

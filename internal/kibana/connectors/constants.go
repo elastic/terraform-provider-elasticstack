@@ -17,6 +17,8 @@
 
 package connectors
 
+const defaultSpaceID = "default"
+
 // Terraform schema attribute keys shared by the action connector resource and
 // data source.
 const (
