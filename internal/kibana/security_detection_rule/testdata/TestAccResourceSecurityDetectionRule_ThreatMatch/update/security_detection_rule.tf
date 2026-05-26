@@ -28,6 +28,10 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   tags    = ["test", "threat-match", "automation"]
   license = "Elastic License v2"
 
+  threat_indicator_path = "threat.indicator"
+  concurrent_searches   = 2
+  items_per_search      = 25
+
   rule_name_override                   = "Updated Custom Threat Match Rule Name"
   timestamp_override                   = "threat.indicator.last_seen"
   timestamp_override_fallback_disabled = false
