@@ -36,7 +36,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
 
 const (
@@ -883,6 +885,34 @@ func TestAccResourceAlertingRuleThrottle(t *testing.T) {
 					// removed from config; it cannot be cleared via the API.
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "throttle", "5m"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "notify_when", "onActiveAlert"),
+				),
+			},
+			{
+				// Adding actions[*].frequency to a rule that previously had a
+				// Kibana-preserved rule-level throttle must not surface a provider
+				// inconsistency error or trip REQ-042's exclusivity validator on the
+				// stale state value. SetUnknownIfActionsFrequencyConfigured resets
+				// the planned throttle back to unknown so it is not sent alongside
+				// per-action frequency, and state resolves to whatever Kibana
+				// returns.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("throttle_then_action_frequency"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectUnknownValue(
+							"elasticstack_kibana_alerting_rule.test_rule",
+							tfjsonpath.New("throttle"),
+						),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.frequency.notify_when", "onActionGroupChange"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.frequency.throttle", "10m"),
 				),
 			},
 		},

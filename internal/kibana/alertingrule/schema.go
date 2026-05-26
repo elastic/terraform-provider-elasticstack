@@ -144,8 +144,14 @@ func getSchema() schema.Schema {
 				Description: throttleRuleDescription,
 				Optional:    true,
 				Computed:    true,
+				// USFU preserves Kibana's deprecated rule-level throttle when the
+				// practitioner removes it from config (the API cannot clear it on
+				// PUT). The trailing modifier then resets the plan to unknown when
+				// actions[*].frequency is configured, so the preserved value is
+				// not sent alongside per-action frequency.
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
+					SetUnknownIfActionsFrequencyConfigured(),
 				},
 				Validators: []validator.String{
 					validators.StringIsAlertingDuration,
