@@ -35,9 +35,9 @@
 
 ## 6. Create Curated Features JSON
 
-- [ ] 6.1 Create `scripts/security-role-docs/` directory
-- [ ] 6.2 Create `scripts/security-role-docs/kibana-features.json` with `documented` array containing all features from the guide table and `skip` array populated by reviewing the full `GET /api/features` response at the current STACK_VERSION and excluding internal/plugin-specific features
-- [ ] 6.3 Verify the `documented` array matches exactly the feature names in the guide table (no entries in the table absent from the array, and vice versa)
+- [x] 6.1 Create `scripts/security-role-docs/` directory
+- [x] 6.2 Create `scripts/security-role-docs/kibana-features.json` with `documented` array containing all features from the guide table and `skip` array populated by reviewing the full `GET /api/features` response at the current STACK_VERSION and excluding internal/plugin-specific features
+- [x] 6.3 Verify the `documented` array matches exactly the feature names in the guide table (no entries in the table absent from the array, and vice versa)
 
 ## 7. Go Pre-Activation Script
 

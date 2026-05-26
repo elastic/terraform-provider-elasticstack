@@ -89,20 +89,20 @@ The following table covers commonly used Kibana features and example privilege s
 
 | Feature name | Available privileges |
 | --- | --- |
-| `discover` | `all`, `read`, `minimal_all`, `minimal_read`, `url_create`, `store_search_session` |
-| `dashboard` | `all`, `read`, `minimal_all`, `minimal_read`, `url_create`, `createNew` |
-| `visualize` | `all`, `read`, `minimal_all`, `minimal_read`, `url_create`, `saveQuery` |
+| `discover_v2` | `all`, `read`, `minimal_all`, `minimal_read`, `url_create`, `store_search_session` |
+| `dashboard_v2` | `all`, `read`, `minimal_all`, `minimal_read`, `url_create`, `store_search_session`, `generate_report`, `download_csv_report` |
+| `visualize_v2` | `all`, `read`, `minimal_all`, `minimal_read`, `url_create`, `generate_report` |
 | `ml` | `all`, `read` |
-| `apm` | `all`, `read` |
-| `fleet` | `all`, `read` |
-| `siem` | `all`, `read`, `minimal_all`, `minimal_read`, `cases_all`, `cases_read`, `cases_delete` |
-| `securitySolutionCases` | `all`, `read`, `minimal_all`, `minimal_read`, `cases_all`, `cases_read`, `cases_delete` |
-| `observabilityCases` | `all`, `read`, `minimal_all`, `minimal_read`, `cases_all`, `cases_read`, `cases_delete` |
-| `osquery` | `all`, `read`, `minimal_all`, `minimal_read`, `live_queries_all`, `live_queries_read`, `run_saved_queries`, `saved_queries_all`, `saved_queries_read`, `packs_all`, `packs_read` |
-| `rulesSettings` | `all`, `read`, `minimal_all`, `minimal_read`, `readFlappingSettings` |
-| `actions` | `all`, `read` |
+| `apm` | `all`, `read`, `settings_save` |
+| `fleetv2` | `all`, `read`, `agents_all`, `agents_read`, `agent_policies_all`, `agent_policies_read`, `settings_all`, `settings_read`, `epm_all`, `epm_read`, `integrations_all`, `integrations_read`, `agent_policies_read_integrations`, `fleet_proxies_read`, `fleet_proxies_all`, `remote_synced_integrations_read`, `remote_synced_integrations_all`, `remote_elasticsearch_output_read`, `remote_elasticsearch_output_all`, `secret_fleet_read`, `secret_fleet_all`, `package_settings_read`, `package_settings_all` |
+| `siemV5` | `all`, `read` |
+| `securitySolutionCasesV3` | `all`, `read`, `cases_delete`, `cases_settings`, `create_comment`, `case_reopen`, `cases_assign`, `cases_manage_templates` |
+| `observabilityCasesV3` | `all`, `read`, `cases_delete`, `cases_settings`, `create_comment`, `case_reopen`, `cases_assign`, `cases_manage_templates` |
+| `osquery` | `all`, `read`, `live_queries_read`, `live_queries_all`, `saved_queries_read`, `saved_queries_all`, `packs_read`, `packs_all`, `runs_saved_queries` |
+| `securitySolutionRulesV4` | `all`, `read`, `security_solution_exceptions_all`, `security_solution_investigation_guide_edit`, `security_solution_custom_highlighted_fields_edit`, `security_solution_enable_disable_rules`, `security_solution_manual_run_rules`, `security_solution_rules_management_settings` |
+| `actions` | `all`, `read`, `endpoint_security_execute` |
 | `alerting` | `all`, `read` |
-| `canvas` | `all`, `read` |
-| `maps` | `all`, `read` |
+| `canvas` | `all`, `read`, `generate_report` |
+| `maps` | `all`, `read`, `url_create`, `store_in_session`, `create_alert`, `save_query`, `generate_report` |
 | `infrastructure` | `all`, `read` |
 | `logs` | `all`, `read` |
