@@ -41,7 +41,7 @@ type synonymSetResource struct {
 
 func newSynonymSetResource() *synonymSetResource {
 	return &synonymSetResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[SynonymSetData]("synonym_set", entitycore.ElasticsearchResourceOptions[SynonymSetData]{
+		ElasticsearchResource: entitycore.NewElasticsearchResource("synonym_set", entitycore.ElasticsearchResourceOptions[SynonymSetData]{
 			Schema: schemaFactory,
 			Create: upsertSynonymSet,
 			Read:   readSynonymSet,
@@ -62,7 +62,7 @@ func (r *synonymSetResource) ImportState(ctx context.Context, req resource.Impor
 // elasticsearch_connection block is injected automatically by the envelope.
 func schemaFactory(_ context.Context) schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Manages an Elasticsearch synonym set. See the [synonym set API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/synonyms-apis.html) for more details.",
+		MarkdownDescription: synonymSetResourceMarkdownDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Internal identifier of the resource.",
@@ -93,7 +93,6 @@ func schemaFactory(_ context.Context) schema.Schema {
 				},
 			},
 		},
-		Blocks: map[string]schema.Block{},
 	}
 }
 

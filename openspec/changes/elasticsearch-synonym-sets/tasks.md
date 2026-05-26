@@ -52,8 +52,8 @@
 
 ## 8. Documentation and validation
 
-- [ ] 8.1 Run `make build` and fix any compilation errors
-- [ ] 8.2 Run `go vet ./internal/elasticsearch/synonyms/...`
-- [ ] 8.3 Run `go test ./internal/elasticsearch/synonyms/...` (unit tests only; TF_ACC=1 for acceptance)
-- [ ] 8.4 Run `make generate-docs` and verify docs render correctly
-- [ ] 8.5 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate elasticsearch-synonym-sets --type change`
+- [x] 8.1 Run `make build` and fix any compilation errors
+- [x] 8.2 Run `go vet ./internal/elasticsearch/synonyms/...`
+- [x] 8.3 Run `go test ./internal/elasticsearch/synonyms/...` (unit tests only; TF_ACC=1 for acceptance)
+- [x] 8.4 Run `make generate-docs` and verify docs render correctly
+- [x] 8.5 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate elasticsearch-synonym-sets --type change`
