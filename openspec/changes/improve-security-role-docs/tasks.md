@@ -49,13 +49,13 @@
 
 ## 8. gh-aw Drift Detection Workflow
 
-- [ ] 8.1 Create `.github/workflows/security-role-docs-drift.md` using gh-aw markdown format
-- [ ] 8.2 Configure triggers: `workflow_dispatch`, `schedule: weekly`, `push to main paths: generated/kbapi/**`
-- [ ] 8.3 Add `imports: [shared/setup-dev.md]` and the shared live-stack setup import used by workflows that require a running Kibana
-- [ ] 8.4 Wire up pre-activation job: checkout, setup Go, run `go run ./scripts/security-role-docs pre-activation --features-path scripts/security-role-docs/kibana-features.json --report-path /tmp/gh-aw/agent/drift-report.json`; upload report as artifact; output `run_agent`
-- [ ] 8.5 Configure agent section: `if: needs.pre_activation.outputs.run_agent == 'true'`; download artifact; write agent instructions (update JSON + guide template + run `make docs-generate`; open PR)
-- [ ] 8.6 Configure `safe-outputs` with `create-pr` (or equivalent); no `create-issue` output
-- [ ] 8.7 Compile workflow: `make workflow-generate`; verify `.github/workflows/security-role-docs-drift.lock.yml` is produced without errors
+- [x] 8.1 Create `.github/workflows/security-role-docs-drift.md` using gh-aw markdown format
+- [x] 8.2 Configure triggers: `workflow_dispatch`, `schedule: weekly`, `push to main paths: generated/kbapi/**`
+- [x] 8.3 Add `imports: [shared/setup-dev.md]` and the shared live-stack setup import used by workflows that require a running Kibana
+- [x] 8.4 Wire up pre-activation job: checkout, setup Go, run `go run ./scripts/security-role-docs pre-activation --features-path scripts/security-role-docs/kibana-features.json --report-path /tmp/gh-aw/agent/drift-report.json`; upload report as artifact; output `run_agent`
+- [x] 8.5 Configure agent section: `if: needs.pre_activation.outputs.run_agent == 'true'`; download artifact; write agent instructions (update JSON + guide template + run `make docs-generate`; open PR)
+- [x] 8.6 Configure `safe-outputs` with `create-pr` (or equivalent); no `create-issue` output
+- [x] 8.7 Compile workflow: `make workflow-generate`; verify `.github/workflows/security-role-docs-drift.lock.yml` is produced without errors
 
 ## 9. OpenSpec Spec Files
 
