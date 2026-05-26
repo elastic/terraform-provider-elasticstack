@@ -809,6 +809,7 @@ func TestAccResourceAnomalyDetectionJobFrom0_12_2(t *testing.T) {
 // is deleted after the test (Destroy runs before registered Cleanups).
 func setupAccMLFilterOutOfBand(t *testing.T, filterID string) {
 	t.Helper()
+	acctest.SkipIfNotAcceptanceTest(t)
 	ctx := context.Background()
 	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
