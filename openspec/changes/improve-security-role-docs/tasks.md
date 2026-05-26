@@ -65,7 +65,7 @@
 
 ## 10. Docs Regeneration and Verification
 
-- [ ] 10.1 Run `make docs-generate` and confirm `docs/guides/security-roles.md` is created
+- [x] 10.1 Run `make docs-generate` and confirm `docs/guides/security-roles.md` is created
 - [ ] 10.2 Run `make check-docs` and confirm it passes with zero uncommitted changes
 - [ ] 10.3 Run `make build` to confirm the provider builds cleanly
-- [ ] 10.4 Manually review `docs/guides/security-roles.md` in a markdown renderer to confirm formatting, table rendering, and embedded code blocks look correct
+- [x] 10.4 Manually review `docs/guides/security-roles.md` in a markdown renderer to confirm formatting, table rendering, and embedded code blocks look correct
