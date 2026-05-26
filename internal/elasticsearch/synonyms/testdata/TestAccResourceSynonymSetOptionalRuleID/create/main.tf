@@ -9,12 +9,13 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_synonym_set" "test" {
   synonym_set_id = var.synonym_set_id
 
-  synonyms_set {
-    synonyms = "quick, fast, speedy"
-  }
-
-  synonyms_set {
-    id       = "explicit-rule"
-    synonyms = "slow, sluggish"
-  }
+  synonyms_set = [
+    {
+      synonyms = "quick, fast, speedy"
+    },
+    {
+      id       = "explicit-rule"
+      synonyms = "slow, sluggish"
+    },
+  ]
 }
