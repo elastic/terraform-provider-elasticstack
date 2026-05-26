@@ -83,12 +83,10 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	var diags diag.Diagnostics
 	roleMappingName := config.Name.ValueString()
 
-	id, idDiags := esClient.ID(ctx, roleMappingName)
-	diags.Append(idDiags...)
+	diags.Append(entitycore.ResolveDataSourceID(ctx, esClient, roleMappingName, &config.ID)...)
 	if diags.HasError() {
 		return config, diags
 	}
-	config.ID = types.StringValue(id.String())
 
 	readData, readDiags := readRoleMapping(ctx, config, roleMappingName, esClient)
 	diags.Append(readDiags...)

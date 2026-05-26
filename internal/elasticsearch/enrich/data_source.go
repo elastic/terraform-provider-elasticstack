@@ -83,12 +83,10 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	var diags diag.Diagnostics
 	policyName := config.Name.ValueString()
 
-	id, idDiags := esClient.ID(ctx, policyName)
-	diags.Append(idDiags...)
+	diags.Append(entitycore.ResolveDataSourceID(ctx, esClient, policyName, &config.ID)...)
 	if diags.HasError() {
 		return config, diags
 	}
-	config.ID = types.StringValue(id.String())
 
 	policy, policyDiags := elasticsearch.GetEnrichPolicy(ctx, esClient, policyName)
 	diags.Append(policyDiags...)

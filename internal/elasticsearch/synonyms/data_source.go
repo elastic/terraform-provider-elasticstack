@@ -27,7 +27,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // NewSynonymSetDataSource returns a new synonym set data source for registration with the provider.
@@ -79,12 +78,10 @@ func readSynonymSetDataSource(ctx context.Context, client *clients.Elasticsearch
 
 	synonymSetID := data.SynonymSetID.ValueString()
 
-	id, idDiags := client.ID(ctx, synonymSetID)
-	diags.Append(idDiags...)
+	diags.Append(entitycore.ResolveDataSourceID(ctx, client, synonymSetID, &data.ID)...)
 	if diags.HasError() {
 		return data, diags
 	}
-	data.ID = types.StringValue(id.String())
 
 	rules, getDiags := elasticsearch.GetSynonymSet(ctx, client, synonymSetID)
 	diags.Append(getDiags...)
