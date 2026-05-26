@@ -33,11 +33,7 @@ func deletePrivateLocation(ctx context.Context, client *clients.KibanaScopedClie
 		return vDiags
 	}
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	diags.Append(kibanaoapi.DeletePrivateLocation(ctx, oapiClient, spaceID, resourceID)...)
 	return diags

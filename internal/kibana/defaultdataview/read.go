@@ -29,11 +29,7 @@ import (
 func readDefaultDataView(ctx context.Context, client *clients.KibanaScopedClient, _, spaceID string, model defaultDataViewModel) (defaultDataViewModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return model, false, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	defaultDataViewID, readDiags := kibanaoapi.GetDefaultDataView(ctx, oapiClient, spaceID)
 	diags.Append(readDiags...)

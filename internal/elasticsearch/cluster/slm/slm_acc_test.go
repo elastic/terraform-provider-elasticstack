@@ -218,10 +218,7 @@ func checkSlmDestroy(name string) func(s *terraform.State) error {
 			if compID.ResourceID != name {
 				continue
 			}
-			typedClient, diags := client.GetESClient()
-			if diags.HasError() {
-				return fmt.Errorf("failed to get elasticsearch client: %v", diags)
-			}
+			typedClient := client.GetESClient()
 			res, err := typedClient.Slm.GetLifecycle().PolicyId(compID.ResourceID).Do(context.Background())
 			if err != nil {
 				if esclient.IsNotFoundElasticsearchError(err) {

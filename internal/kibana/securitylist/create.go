@@ -32,11 +32,7 @@ func createSecurityList(ctx context.Context, client *clients.KibanaScopedClient,
 	m := req.Plan
 	var diags diag.Diagnostics
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	createReq, d := m.toCreateRequest()
 	diags.Append(d...)

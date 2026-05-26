@@ -48,7 +48,7 @@ func migrateClusterSettingsStateV0ToV1(_ context.Context, req resource.UpgradeSt
 		return
 	}
 
-	for _, category := range []string{"persistent", "transient"} {
+	for _, category := range []string{categoryPersistent, categoryTransient} {
 		if err := unwrapAndNormaliseCategoryBlock(stateMap, category); err != nil {
 			resp.Diagnostics.AddError("State upgrade error", err.Error())
 			return
@@ -88,7 +88,7 @@ func unwrapAndNormaliseCategoryBlock(stateMap map[string]any, category string) e
 		delete(stateMap, category)
 		return nil
 	}
-	if settings, ok := blockObj["setting"].([]any); ok {
+	if settings, ok := blockObj[attrSetting].([]any); ok {
 		for _, s := range settings {
 			settingObj, ok := s.(map[string]any)
 			if !ok {
@@ -105,18 +105,18 @@ func unwrapAndNormaliseCategoryBlock(stateMap map[string]any, category string) e
 // JSON-encoded null is represented as the absence of the key, so deleting the
 // key produces the desired null value when the framework decodes the state.
 func normaliseSettingValues(setting map[string]any) {
-	if v, ok := setting["value"]; ok {
+	if v, ok := setting[attrValue]; ok {
 		if s, isStr := v.(string); isStr && s == "" {
-			delete(setting, "value")
+			delete(setting, attrValue)
 		}
 	}
-	if v, ok := setting["value_list"]; ok {
+	if v, ok := setting[attrValueList]; ok {
 		switch t := v.(type) {
 		case nil:
-			delete(setting, "value_list")
+			delete(setting, attrValueList)
 		case []any:
 			if len(t) == 0 {
-				delete(setting, "value_list")
+				delete(setting, attrValueList)
 			}
 		}
 	}

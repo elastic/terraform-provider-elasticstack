@@ -132,7 +132,7 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 					if valMap, ok := icEntry.Value.(map[string]any); ok {
 						if ec, ok := valMap["endpointConfig"]; ok {
 							if ecMap, ok := ec.(map[string]any); ok {
-								if p, ok := ecMap["preset"]; ok {
+								if p, ok := ecMap[attrPreset]; ok {
 									if pStr, ok := p.(string); ok {
 										preset = pStr
 									}
@@ -263,7 +263,7 @@ func mapWindowsPolicyFromAPI(ctx context.Context, data map[string]any) (types.Ob
 	if eventsData != nil {
 		var d diag.Diagnostics
 		eventsObj, d = types.ObjectValueFrom(ctx, windowsEventsAttrTypes(), windowsEventsModel{
-			Process:          getBool(eventsData, "process"),
+			Process:          getBool(eventsData, attrProcess),
 			Network:          getBool(eventsData, "network"),
 			File:             getBool(eventsData, "file"),
 			DllAndDriverLoad: getBool(eventsData, "dll_and_driver_load"),
@@ -284,21 +284,21 @@ func mapWindowsPolicyFromAPI(ctx context.Context, data map[string]any) (types.Ob
 		malwareObj, d = types.ObjectValueFrom(ctx, malwareFullAttrTypes(), malwareFullModel{
 			Mode:        getString(malwareData, "mode"),
 			Blocklist:   getBool(malwareData, "blocklist"),
-			OnWriteScan: getBool(malwareData, "on_write_scan"),
-			NotifyUser:  getBool(malwareData, "notify_user"),
+			OnWriteScan: getBool(malwareData, attrOnWriteScan),
+			NotifyUser:  getBool(malwareData, attrNotifyUser),
 		})
 		diags.Append(d...)
 	} else {
 		malwareObj = types.ObjectNull(malwareFullAttrTypes())
 	}
 
-	ransomwareData := getMap(data, "ransomware")
+	ransomwareData := getMap(data, attrRansomware)
 	var ransomwareObj types.Object
 	if ransomwareData != nil {
 		var d diag.Diagnostics
 		ransomwareObj, d = types.ObjectValueFrom(ctx, protectionModeAttrTypes(), protectionModeModel{
 			Mode:      getString(ransomwareData, "mode"),
-			Supported: getBool(ransomwareData, "supported"),
+			Supported: getBool(ransomwareData, attrSupported),
 		})
 		diags.Append(d...)
 	} else {
@@ -311,7 +311,7 @@ func mapWindowsPolicyFromAPI(ctx context.Context, data map[string]any) (types.Ob
 		var d diag.Diagnostics
 		memProtObj, d = types.ObjectValueFrom(ctx, protectionModeAttrTypes(), protectionModeModel{
 			Mode:      getString(memProtData, "mode"),
-			Supported: getBool(memProtData, "supported"),
+			Supported: getBool(memProtData, attrSupported),
 		})
 		diags.Append(d...)
 	} else {
@@ -324,15 +324,15 @@ func mapWindowsPolicyFromAPI(ctx context.Context, data map[string]any) (types.Ob
 		var d diag.Diagnostics
 		behProtObj, d = types.ObjectValueFrom(ctx, behaviorProtectionAttrTypes(), behaviorProtectionModel{
 			Mode:              getString(behProtData, "mode"),
-			Supported:         getBool(behProtData, "supported"),
-			ReputationService: getBool(behProtData, "reputation_service"),
+			Supported:         getBool(behProtData, attrSupported),
+			ReputationService: getBool(behProtData, attrReputationService),
 		})
 		diags.Append(d...)
 	} else {
 		behProtObj = types.ObjectNull(behaviorProtectionAttrTypes())
 	}
 
-	popupData := getMap(data, "popup")
+	popupData := getMap(data, attrPopup)
 	popupObj, d := mapWindowsPopupFromAPI(ctx, popupData)
 	diags.Append(d...)
 
@@ -405,7 +405,7 @@ func mapWindowsPopupFromAPI(ctx context.Context, data map[string]any) (types.Obj
 		return types.ObjectNull(windowsPopupAttrTypes()), diags
 	}
 	malwareData := getMap(data, "malware")
-	ransomwareData := getMap(data, "ransomware")
+	ransomwareData := getMap(data, attrRansomware)
 	memProtData := getMap(data, "memory_protection")
 	behProtData := getMap(data, "behavior_protection")
 
@@ -454,7 +454,7 @@ func mapMacPolicyFromAPI(ctx context.Context, data map[string]any) (types.Object
 	if eventsData != nil {
 		var d diag.Diagnostics
 		eventsObj, d = types.ObjectValueFrom(ctx, macEventsAttrTypes(), macEventsModel{
-			Process: getBool(eventsData, "process"),
+			Process: getBool(eventsData, attrProcess),
 			Network: getBool(eventsData, "network"),
 			File:    getBool(eventsData, "file"),
 		})
@@ -470,8 +470,8 @@ func mapMacPolicyFromAPI(ctx context.Context, data map[string]any) (types.Object
 		malwareObj, d = types.ObjectValueFrom(ctx, malwareFullAttrTypes(), malwareFullModel{
 			Mode:        getString(malwareData, "mode"),
 			Blocklist:   getBool(malwareData, "blocklist"),
-			OnWriteScan: getBool(malwareData, "on_write_scan"),
-			NotifyUser:  getBool(malwareData, "notify_user"),
+			OnWriteScan: getBool(malwareData, attrOnWriteScan),
+			NotifyUser:  getBool(malwareData, attrNotifyUser),
 		})
 		diags.Append(d...)
 	} else {
@@ -484,7 +484,7 @@ func mapMacPolicyFromAPI(ctx context.Context, data map[string]any) (types.Object
 		var d diag.Diagnostics
 		memProtObj, d = types.ObjectValueFrom(ctx, protectionModeAttrTypes(), protectionModeModel{
 			Mode:      getString(memProtData, "mode"),
-			Supported: getBool(memProtData, "supported"),
+			Supported: getBool(memProtData, attrSupported),
 		})
 		diags.Append(d...)
 	} else {
@@ -497,15 +497,15 @@ func mapMacPolicyFromAPI(ctx context.Context, data map[string]any) (types.Object
 		var d diag.Diagnostics
 		behProtObj, d = types.ObjectValueFrom(ctx, behaviorProtectionAttrTypes(), behaviorProtectionModel{
 			Mode:              getString(behProtData, "mode"),
-			Supported:         getBool(behProtData, "supported"),
-			ReputationService: getBool(behProtData, "reputation_service"),
+			Supported:         getBool(behProtData, attrSupported),
+			ReputationService: getBool(behProtData, attrReputationService),
 		})
 		diags.Append(d...)
 	} else {
 		behProtObj = types.ObjectNull(behaviorProtectionAttrTypes())
 	}
 
-	popupData := getMap(data, "popup")
+	popupData := getMap(data, attrPopup)
 	popupObj, d := mapMacLinuxPopupFromAPI(ctx, popupData)
 	diags.Append(d...)
 
@@ -544,7 +544,7 @@ func mapLinuxPolicyFromAPI(ctx context.Context, data map[string]any) (types.Obje
 	if eventsData != nil {
 		var d diag.Diagnostics
 		eventsObj, d = types.ObjectValueFrom(ctx, linuxEventsAttrTypes(), linuxEventsModel{
-			Process:     getBool(eventsData, "process"),
+			Process:     getBool(eventsData, attrProcess),
 			Network:     getBool(eventsData, "network"),
 			File:        getBool(eventsData, "file"),
 			SessionData: getBool(eventsData, "session_data"),
@@ -574,7 +574,7 @@ func mapLinuxPolicyFromAPI(ctx context.Context, data map[string]any) (types.Obje
 		var d diag.Diagnostics
 		memProtObj, d = types.ObjectValueFrom(ctx, protectionModeAttrTypes(), protectionModeModel{
 			Mode:      getString(memProtData, "mode"),
-			Supported: getBool(memProtData, "supported"),
+			Supported: getBool(memProtData, attrSupported),
 		})
 		diags.Append(d...)
 	} else {
@@ -587,15 +587,15 @@ func mapLinuxPolicyFromAPI(ctx context.Context, data map[string]any) (types.Obje
 		var d diag.Diagnostics
 		behProtObj, d = types.ObjectValueFrom(ctx, behaviorProtectionAttrTypes(), behaviorProtectionModel{
 			Mode:              getString(behProtData, "mode"),
-			Supported:         getBool(behProtData, "supported"),
-			ReputationService: getBool(behProtData, "reputation_service"),
+			Supported:         getBool(behProtData, attrSupported),
+			ReputationService: getBool(behProtData, attrReputationService),
 		})
 		diags.Append(d...)
 	} else {
 		behProtObj = types.ObjectNull(behaviorProtectionAttrTypes())
 	}
 
-	popupData := getMap(data, "popup")
+	popupData := getMap(data, attrPopup)
 	popupObj, d := mapMacLinuxPopupFromAPI(ctx, popupData)
 	diags.Append(d...)
 
@@ -663,16 +663,16 @@ func mapMacLinuxPopupFromAPI(ctx context.Context, data map[string]any) (types.Ob
 
 func popupItemAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"message": types.StringType,
-		"enabled": types.BoolType,
+		attrMessage: types.StringType,
+		attrEnabled: types.BoolType,
 	}
 }
 
 func windowsEventsAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"process":             types.BoolType,
-		"network":             types.BoolType,
-		"file":                types.BoolType,
+		attrProcess:           types.BoolType,
+		attrNetwork:           types.BoolType,
+		attrFile:              types.BoolType,
 		"dll_and_driver_load": types.BoolType,
 		"dns":                 types.BoolType,
 		"registry":            types.BoolType,
@@ -683,17 +683,17 @@ func windowsEventsAttrTypes() map[string]attr.Type {
 
 func macEventsAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"process": types.BoolType,
-		"network": types.BoolType,
-		"file":    types.BoolType,
+		attrProcess: types.BoolType,
+		attrNetwork: types.BoolType,
+		attrFile:    types.BoolType,
 	}
 }
 
 func linuxEventsAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"process":      types.BoolType,
-		"network":      types.BoolType,
-		"file":         types.BoolType,
+		attrProcess:    types.BoolType,
+		attrNetwork:    types.BoolType,
+		attrFile:       types.BoolType,
 		"session_data": types.BoolType,
 		"tty_io":       types.BoolType,
 	}
@@ -701,86 +701,86 @@ func linuxEventsAttrTypes() map[string]attr.Type {
 
 func malwareFullAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"mode":          types.StringType,
-		"blocklist":     types.BoolType,
-		"on_write_scan": types.BoolType,
-		"notify_user":   types.BoolType,
+		attrMode:        types.StringType,
+		attrBlocklist:   types.BoolType,
+		attrOnWriteScan: types.BoolType,
+		attrNotifyUser:  types.BoolType,
 	}
 }
 
 func malwareLinuxAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"mode":      types.StringType,
-		"blocklist": types.BoolType,
+		attrMode:      types.StringType,
+		attrBlocklist: types.BoolType,
 	}
 }
 
 func protectionModeAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"mode":      types.StringType,
-		"supported": types.BoolType,
+		attrMode:      types.StringType,
+		attrSupported: types.BoolType,
 	}
 }
 
 func behaviorProtectionAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"mode":               types.StringType,
-		"supported":          types.BoolType,
-		"reputation_service": types.BoolType,
+		attrMode:              types.StringType,
+		attrSupported:         types.BoolType,
+		attrReputationService: types.BoolType,
 	}
 }
 
 func loggingAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"file": types.StringType,
+		attrFile: types.StringType,
 	}
 }
 
 func antivirusRegistrationAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"mode":    types.StringType,
-		"enabled": types.BoolType,
+		attrMode:    types.StringType,
+		attrEnabled: types.BoolType,
 	}
 }
 
 func credentialHardeningAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"enabled": types.BoolType,
+		attrEnabled: types.BoolType,
 	}
 }
 
 func attackSurfaceReductionAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"credential_hardening": types.ObjectType{AttrTypes: credentialHardeningAttrTypes()},
+		attrCredentialHardening: types.ObjectType{AttrTypes: credentialHardeningAttrTypes()},
 	}
 }
 
 func windowsPopupAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"malware":             types.ObjectType{AttrTypes: popupItemAttrTypes()},
-		"ransomware":          types.ObjectType{AttrTypes: popupItemAttrTypes()},
-		"memory_protection":   types.ObjectType{AttrTypes: popupItemAttrTypes()},
-		"behavior_protection": types.ObjectType{AttrTypes: popupItemAttrTypes()},
+		attrMalware:            types.ObjectType{AttrTypes: popupItemAttrTypes()},
+		attrRansomware:         types.ObjectType{AttrTypes: popupItemAttrTypes()},
+		attrMemoryProtection:   types.ObjectType{AttrTypes: popupItemAttrTypes()},
+		attrBehaviorProtection: types.ObjectType{AttrTypes: popupItemAttrTypes()},
 	}
 }
 
 func macLinuxPopupAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"malware":             types.ObjectType{AttrTypes: popupItemAttrTypes()},
-		"memory_protection":   types.ObjectType{AttrTypes: popupItemAttrTypes()},
-		"behavior_protection": types.ObjectType{AttrTypes: popupItemAttrTypes()},
+		attrMalware:            types.ObjectType{AttrTypes: popupItemAttrTypes()},
+		attrMemoryProtection:   types.ObjectType{AttrTypes: popupItemAttrTypes()},
+		attrBehaviorProtection: types.ObjectType{AttrTypes: popupItemAttrTypes()},
 	}
 }
 
 func windowsAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"events":                   types.ObjectType{AttrTypes: windowsEventsAttrTypes()},
-		"malware":                  types.ObjectType{AttrTypes: malwareFullAttrTypes()},
-		"ransomware":               types.ObjectType{AttrTypes: protectionModeAttrTypes()},
-		"memory_protection":        types.ObjectType{AttrTypes: protectionModeAttrTypes()},
-		"behavior_protection":      types.ObjectType{AttrTypes: behaviorProtectionAttrTypes()},
-		"popup":                    types.ObjectType{AttrTypes: windowsPopupAttrTypes()},
-		"logging":                  types.ObjectType{AttrTypes: loggingAttrTypes()},
+		attrEvents:                 types.ObjectType{AttrTypes: windowsEventsAttrTypes()},
+		attrMalware:                types.ObjectType{AttrTypes: malwareFullAttrTypes()},
+		attrRansomware:             types.ObjectType{AttrTypes: protectionModeAttrTypes()},
+		attrMemoryProtection:       types.ObjectType{AttrTypes: protectionModeAttrTypes()},
+		attrBehaviorProtection:     types.ObjectType{AttrTypes: behaviorProtectionAttrTypes()},
+		attrPopup:                  types.ObjectType{AttrTypes: windowsPopupAttrTypes()},
+		attrLogging:                types.ObjectType{AttrTypes: loggingAttrTypes()},
 		"antivirus_registration":   types.ObjectType{AttrTypes: antivirusRegistrationAttrTypes()},
 		"attack_surface_reduction": types.ObjectType{AttrTypes: attackSurfaceReductionAttrTypes()},
 	}
@@ -788,12 +788,12 @@ func windowsAttrTypes() map[string]attr.Type {
 
 func macAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"events":              types.ObjectType{AttrTypes: macEventsAttrTypes()},
-		"malware":             types.ObjectType{AttrTypes: malwareFullAttrTypes()},
-		"memory_protection":   types.ObjectType{AttrTypes: protectionModeAttrTypes()},
-		"behavior_protection": types.ObjectType{AttrTypes: behaviorProtectionAttrTypes()},
-		"popup":               types.ObjectType{AttrTypes: macLinuxPopupAttrTypes()},
-		"logging":             types.ObjectType{AttrTypes: loggingAttrTypes()},
+		attrEvents:             types.ObjectType{AttrTypes: macEventsAttrTypes()},
+		attrMalware:            types.ObjectType{AttrTypes: malwareFullAttrTypes()},
+		attrMemoryProtection:   types.ObjectType{AttrTypes: protectionModeAttrTypes()},
+		attrBehaviorProtection: types.ObjectType{AttrTypes: behaviorProtectionAttrTypes()},
+		attrPopup:              types.ObjectType{AttrTypes: macLinuxPopupAttrTypes()},
+		attrLogging:            types.ObjectType{AttrTypes: loggingAttrTypes()},
 	}
 }
 
@@ -803,7 +803,7 @@ func linuxAttrTypes() map[string]attr.Type {
 		"malware":             types.ObjectType{AttrTypes: malwareLinuxAttrTypes()},
 		"memory_protection":   types.ObjectType{AttrTypes: protectionModeAttrTypes()},
 		"behavior_protection": types.ObjectType{AttrTypes: behaviorProtectionAttrTypes()},
-		"popup":               types.ObjectType{AttrTypes: macLinuxPopupAttrTypes()},
+		attrPopup:             types.ObjectType{AttrTypes: macLinuxPopupAttrTypes()},
 		"logging":             types.ObjectType{AttrTypes: loggingAttrTypes()},
 	}
 }

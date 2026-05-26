@@ -42,8 +42,7 @@ type KibanaScopedClient struct {
 	version string
 	// kibanaEndpoint holds the resolved Kibana endpoint URL captured after
 	// provider configuration, entity-local overrides, and environment overrides
-	// have been applied. It is used by accessor validation to distinguish missing
-	// endpoint configuration from unexpected nil states.
+	// have been applied. It is used by factory endpoint validation.
 	kibanaEndpoint string
 	// fleetEndpoint holds the resolved Fleet endpoint URL captured after
 	// provider configuration, entity-local overrides, and environment overrides
@@ -66,34 +65,19 @@ type KibanaScopedClient struct {
 }
 
 // GetKibanaOapiClient returns the Kibana OpenAPI client.
-func (k *KibanaScopedClient) GetKibanaOapiClient() (*kibanaoapi.Client, fwdiag.Diagnostics) {
-	var diags fwdiag.Diagnostics
-	if k.kibanaEndpoint == "" {
-		diags.AddError("kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT", "")
-		return nil, diags
-	}
-	if k.kibanaOapi == nil {
-		diags.AddError("kibanaoapi client not found", "")
-		return nil, diags
-	}
-	return k.kibanaOapi, diags
+//
+// Endpoint presence is validated by ProviderClientFactory.GetKibanaClient before
+// a scoped client is returned.
+func (k *KibanaScopedClient) GetKibanaOapiClient() *kibanaoapi.Client {
+	return k.kibanaOapi
 }
 
 // GetFleetClient returns the Fleet client.
-func (k *KibanaScopedClient) GetFleetClient() (*fleetclient.Client, fwdiag.Diagnostics) {
-	var diags fwdiag.Diagnostics
-	if k.fleetEndpoint == "" {
-		const fleetMsg = "fleet client is not configured: set fleet.endpoint or FLEET_ENDPOINT, " +
-			"or configure kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT " +
-			"for inherited Fleet endpoint resolution"
-		diags.AddError("Fleet client not configured", fleetMsg)
-		return nil, diags
-	}
-	if k.fleet == nil {
-		diags.AddError("Fleet client not found", "")
-		return nil, diags
-	}
-	return k.fleet, diags
+//
+// Endpoint presence is validated by ProviderClientFactory.GetKibanaClient before
+// a scoped client is returned.
+func (k *KibanaScopedClient) GetFleetClient() *fleetclient.Client {
+	return k.fleet
 }
 
 // getServerStatusRaw fetches the Kibana server status, returning the raw version
@@ -114,13 +98,14 @@ func (k *KibanaScopedClient) getServerStatusRaw(ctx context.Context) (rawVersion
 		return k.statusVer, k.statusFlavor, nil
 	}
 
-	oapiClient, d := k.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return "", "", diags
+	if k.GetKibanaOapiClient() == nil {
+		return "", "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic(
+			"Kibana OpenAPI client not configured",
+			"the scoped client was not produced by ProviderClientFactory.GetKibanaClient; this is a provider bug — please report it",
+		)}
 	}
 
-	rawVersion, flavor, diags = kibanaoapi.GetKibanaStatus(ctx, oapiClient.API)
+	rawVersion, flavor, diags = kibanaoapi.GetKibanaStatus(ctx, k.GetKibanaOapiClient().API)
 	if diags.HasError() {
 		return "", "", diags
 	}

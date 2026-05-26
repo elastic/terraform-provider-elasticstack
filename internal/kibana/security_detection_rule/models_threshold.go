@@ -45,7 +45,7 @@ func newThresholdRuleProcessor() ThresholdRuleProcessor {
 }
 
 func (th ThresholdRuleProcessor) HandlesRuleType(t string) bool {
-	return t == "threshold"
+	return t == ruleTypeThreshold
 }
 
 func (th ThresholdRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
@@ -63,7 +63,7 @@ func (d Data) toThresholdRuleCreateProps(ctx context.Context, client clients.Min
 	thresholdRule := kbapi.SecurityDetectionsAPIThresholdRuleCreateProps{
 		Name:        d.Name.ValueString(),
 		Description: d.Description.ValueString(),
-		Type:        kbapi.SecurityDetectionsAPIThresholdRuleCreatePropsType("threshold"),
+		Type:        kbapi.SecurityDetectionsAPIThresholdRuleCreatePropsType(ruleTypeThreshold),
 		Query:       d.Query.ValueString(),
 		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
@@ -152,7 +152,7 @@ func (d Data) toThresholdRuleUpdateProps(ctx context.Context, client clients.Min
 		Id:          &uid,
 		Name:        d.Name.ValueString(),
 		Description: d.Description.ValueString(),
-		Type:        kbapi.SecurityDetectionsAPIThresholdRuleUpdatePropsType("threshold"),
+		Type:        kbapi.SecurityDetectionsAPIThresholdRuleUpdatePropsType(ruleTypeThreshold),
 		Query:       d.Query.ValueString(),
 		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),

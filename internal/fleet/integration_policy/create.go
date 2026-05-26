@@ -42,11 +42,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	fleetClient, d := client.GetFleetClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
 	feat, diags := r.buildFeatures(ctx, client)
 	resp.Diagnostics.Append(diags...)

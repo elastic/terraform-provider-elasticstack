@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -61,23 +62,11 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 func readWorkflowDataSource(ctx context.Context, client *clients.KibanaScopedClient, config workflowDataSourceModel) (workflowDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	supported, verDiags := client.EnforceMinVersion(ctx, minKibanaAgentBuilderAPIVersion)
-	diags.Append(verDiags...)
-	if diags.HasError() {
+	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderAPIVersion, "workflows", &diags) {
 		return config, diags
 	}
 
-	if !supported {
-		diags.AddError("Unsupported server version",
-			fmt.Sprintf("Agent Builder workflows require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion))
-		return config, diags
-	}
-
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return config, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	spaceID := "default"
 	if typeutils.IsKnown(config.SpaceID) {

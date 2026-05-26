@@ -100,8 +100,8 @@ func upgradeV0(_ context.Context, req resource.UpgradeStateRequest, resp *resour
 		return
 	}
 
-	state = removeEmptyString(state, "config")
-	state = removeEmptyString(state, "secrets")
+	state = removeEmptyString(state, attrConfig)
+	state = removeEmptyString(state, attrSecrets)
 
 	stateBytes, err := json.Marshal(state)
 	if err != nil {

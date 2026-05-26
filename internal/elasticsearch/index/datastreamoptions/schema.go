@@ -30,10 +30,10 @@ func Block() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		MarkdownDescription: BlockDescription,
 		Blocks: map[string]schema.Block{
-			"failure_store": failureStoreBlock(),
+			attrFailureStore: failureStoreBlock(),
 		},
 		Validators: []validator.Object{
-			objectvalidator.AlsoRequires(path.MatchRelative().AtName("failure_store")),
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName(attrFailureStore)),
 		},
 	}
 }
@@ -42,13 +42,13 @@ func failureStoreBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		MarkdownDescription: FailureStoreBlockDescription,
 		Attributes: map[string]schema.Attribute{
-			"enabled": schema.BoolAttribute{
+			attrEnabled: schema.BoolAttribute{
 				MarkdownDescription: FailureStoreEnabledDescription,
 				Optional:            true,
 			},
 		},
 		Blocks: map[string]schema.Block{
-			"lifecycle": failureStoreLifecycleBlock(),
+			attrLifecycle: failureStoreLifecycleBlock(),
 		},
 	}
 }
@@ -57,7 +57,7 @@ func failureStoreLifecycleBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		MarkdownDescription: FailureStoreLifecycleBlockDescription,
 		Attributes: map[string]schema.Attribute{
-			"data_retention": schema.StringAttribute{
+			attrDataRetention: schema.StringAttribute{
 				MarkdownDescription: FailureStoreDataRetentionDescription,
 				Optional:            true,
 			},

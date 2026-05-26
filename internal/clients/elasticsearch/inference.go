@@ -30,10 +30,7 @@ import (
 func PutInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, inferenceID, taskType string, endpoint *types.InferenceEndpoint) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	req := typedClient.Inference.Put(inferenceID).Request(endpoint)
 	if taskType != "" {
@@ -52,10 +49,7 @@ func PutInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchS
 func GetInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, inferenceID string) (*types.InferenceEndpointInfo, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
-	}
+	typedClient := apiClient.GetESClient()
 
 	res, err := typedClient.Inference.Get().InferenceId(inferenceID).Do(ctx)
 	if err != nil {
@@ -76,10 +70,7 @@ func GetInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchS
 func UpdateInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, inferenceID, taskType string, update *types.InferenceEndpoint) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	// Build the update body manually, omitting Service which the API rejects as
 	// an immutable field. The typed client's InferenceEndpoint always serializes
@@ -138,10 +129,7 @@ func UpdateInferenceEndpoint(ctx context.Context, apiClient *clients.Elasticsear
 func DeleteInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, inferenceID string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Inference.Delete(inferenceID).Do(ctx)
 	if err != nil {

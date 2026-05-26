@@ -33,11 +33,11 @@ import (
 // (kql_query + list of filter rows with JSON query). Using types.Object holds unknown/null safely.
 var (
 	tfKqlFilterRowObjectType = types.ObjectType{AttrTypes: map[string]attr.Type{
-		"query": jsontypes.NormalizedType{},
+		attrQuery: jsontypes.NormalizedType{},
 	}}
 	tfKqlKqlObjectAttrTypes = map[string]attr.Type{
-		"kql_query": types.StringType,
-		"filters":   types.ListType{ElemType: tfKqlFilterRowObjectType},
+		attrKqlQuery: types.StringType,
+		attrFilters:  types.ListType{ElemType: tfKqlFilterRowObjectType},
 	}
 )
 
@@ -231,13 +231,13 @@ func kqlTFFormToAPI1(obj types.Object, errPrefix string) (kbapi.SLOsKqlWithFilte
 	var diags diag.Diagnostics
 	attrs := obj.Attributes()
 	var kq *string
-	if k, ok := attrs["kql_query"].(types.String); ok && typeutils.IsKnown(k) {
+	if k, ok := attrs[attrKqlQuery].(types.String); ok && typeutils.IsKnown(k) {
 		if s := k.ValueString(); s != "" {
 			kq = &s
 		}
 	}
 	var filters *[]kbapi.SLOsFilter
-	fl, ok := attrs["filters"].(types.List)
+	fl, ok := attrs[attrFilters].(types.List)
 	if ok && typeutils.IsKnown(fl) && !fl.IsNull() {
 		elems := fl.Elements()
 		if len(elems) > 0 {
@@ -248,7 +248,7 @@ func kqlTFFormToAPI1(obj types.Object, errPrefix string) (kbapi.SLOsKqlWithFilte
 					diags.AddError("Invalid configuration", errPrefix+fmt.Sprintf(".filters[%d]", i)+": expected object row")
 					continue
 				}
-				qv, has := rowObj.Attributes()["query"]
+				qv, has := rowObj.Attributes()[attrQuery]
 				if !has {
 					diags.AddError("Invalid configuration", errPrefix+fmt.Sprintf(".filters[%d]", i)+": missing query")
 					continue
@@ -290,7 +290,7 @@ func kqlAPIFilterRowToTF(f kbapi.SLOsFilter) (types.Object, diag.Diagnostics) {
 	if f.Query == nil {
 		qn := jsontypes.NewNormalizedNull()
 		row, oDiags := types.ObjectValue(tfKqlFilterRowObjectType.AttrTypes, map[string]attr.Value{
-			"query": qn,
+			attrQuery: qn,
 		})
 		diags.Append(oDiags...)
 		return row, diags
@@ -302,7 +302,7 @@ func kqlAPIFilterRowToTF(f kbapi.SLOsFilter) (types.Object, diag.Diagnostics) {
 	}
 	qn := jsontypes.NewNormalizedValue(string(b))
 	row, oDiags := types.ObjectValue(tfKqlFilterRowObjectType.AttrTypes, map[string]attr.Value{
-		"query": qn,
+		attrQuery: qn,
 	})
 	diags.Append(oDiags...)
 	return row, diags
@@ -336,8 +336,8 @@ func kqlObjectShapeAPIToTF(kq *string, filters *[]kbapi.SLOsFilter) (types.Objec
 		listVal = lv
 	}
 	obj, oDiags := types.ObjectValue(tfKqlKqlObjectAttrTypes, map[string]attr.Value{
-		"kql_query": kqlStr,
-		"filters":   listVal,
+		attrKqlQuery: kqlStr,
+		attrFilters:  listVal,
 	})
 	diags.Append(oDiags...)
 	return obj, diags

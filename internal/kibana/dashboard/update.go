@@ -52,11 +52,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	spaceID := composite.ClusterID
 
 	// Get the Kibana client
-	kibanaClient, d := client.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	kibanaClient := client.GetKibanaOapiClient()
 
 	// Convert the plan to an API request
 	apiReq := dashboardToAPIUpdateRequest(ctx, &planModel, &resp.Diagnostics)

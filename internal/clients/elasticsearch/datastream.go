@@ -32,10 +32,7 @@ import (
 )
 
 func PutDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) fwdiags.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Indices.CreateDataStream(dataStreamName).Do(ctx)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -44,10 +41,7 @@ func PutDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 }
 
 func GetDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) (*types.DataStream, fwdiags.Diagnostics) {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
-	}
+	typedClient := apiClient.GetESClient()
 	res, err := typedClient.Indices.GetDataStream().Name(dataStreamName).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
@@ -63,10 +57,7 @@ func GetDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 }
 
 func DeleteDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) fwdiags.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Indices.DeleteDataStream(dataStreamName).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
@@ -78,10 +69,7 @@ func DeleteDataStream(ctx context.Context, apiClient *clients.ElasticsearchScope
 }
 
 func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string, lifecycle models.LifecycleSettings) fwdiags.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	reqBody := map[string]any{}
 	if lifecycle.DataRetention != "" {
@@ -121,10 +109,7 @@ func GetDataStreamLifecycle(
 	dataStreamName string,
 	expandWildcards string,
 ) (*models.DataStreamLifecycleResponse, fwdiags.Diagnostics) {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
-	}
+	typedClient := apiClient.GetESClient()
 
 	call := typedClient.Indices.GetDataLifecycle(dataStreamName)
 	if expandWildcards != "" {
@@ -152,10 +137,7 @@ func GetDataStreamLifecycle(
 }
 
 func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string) fwdiags.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 	builder := typedClient.Indices.DeleteDataLifecycle(dataStreamName)
 	if expandWildcards != "" {
 		builder = builder.ExpandWildcards(expandwildcard.ExpandWildcard{Name: expandWildcards})

@@ -100,14 +100,14 @@ func getSchema() schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"dashboard_id": schema.StringAttribute{
+			attrDashboardID: schema.StringAttribute{
 				MarkdownDescription: "The Kibana-assigned identifier for the dashboard.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"title": schema.StringAttribute{
+			attrTitle: schema.StringAttribute{
 				MarkdownDescription: "A human-readable title for the dashboard.",
 				Required:            true,
 			},
@@ -127,7 +127,7 @@ func getSchema() schema.Schema {
 						MarkdownDescription: "When true, auto-refresh is paused.",
 						Required:            true,
 					},
-					"value": schema.Int64Attribute{
+					attrValue: schema.Int64Attribute{
 						MarkdownDescription: "Refresh interval in milliseconds when not paused.",
 						Required:            true,
 					},
@@ -220,7 +220,7 @@ func getSchema() schema.Schema {
 				Optional:            true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"title": schema.StringAttribute{
+						attrTitle: schema.StringAttribute{
 							MarkdownDescription: "The title of the section.",
 							Required:            true,
 						},
@@ -236,7 +236,7 @@ func getSchema() schema.Schema {
 							MarkdownDescription: "The collapsed state of the section.",
 							Optional:            true,
 						},
-						"grid": schema.SingleNestedAttribute{
+						attrPanelGrid: schema.SingleNestedAttribute{
 							MarkdownDescription: "The grid coordinates of the section.",
 							Required:            true,
 							Attributes: map[string]schema.Attribute{
@@ -280,11 +280,11 @@ func getSchema() schema.Schema {
 func getPanelSchema() schema.NestedAttributeObject {
 	names := panelConfigNames()
 	attrs := map[string]schema.Attribute{
-		"type": schema.StringAttribute{
+		attrPanelType: schema.StringAttribute{
 			MarkdownDescription: "The type of the panel (e.g. 'markdown', 'vis').",
 			Required:            true,
 		},
-		"grid": schema.SingleNestedAttribute{
+		attrPanelGrid: schema.SingleNestedAttribute{
 			MarkdownDescription: "The grid coordinates and dimensions of the panel.",
 			Required:            true,
 			Attributes: map[string]schema.Attribute{
@@ -334,7 +334,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			stringvalidator.ConflictsWith(
 				panelkit.SiblingTypedPanelConfigConflictPathsExcept("config_json", names)...,
 			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis, panelTypeMarkdown}, validators.AllowedIfOptions{}),
+			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName(attrPanelType), []string{panelTypeVis, panelTypeMarkdown}, validators.AllowedIfOptions{}),
 		},
 	}
 	return schema.NestedAttributeObject{

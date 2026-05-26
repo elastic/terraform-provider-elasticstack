@@ -39,13 +39,13 @@ var (
 // AliasAttributeTypes returns attribute types for a single template alias block element.
 func AliasAttributeTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"name":           types.StringType,
-		"index_routing":  types.StringType,
-		"routing":        types.StringType,
-		"search_routing": types.StringType,
-		"filter":         jsontypes.NormalizedType{},
-		"is_hidden":      types.BoolType,
-		"is_write_index": types.BoolType,
+		attrName:          types.StringType,
+		attrIndexRouting:  types.StringType,
+		attrRouting:       types.StringType,
+		attrSearchRouting: types.StringType,
+		attrFilter:        jsontypes.NormalizedType{},
+		attrIsHidden:      types.BoolType,
+		attrIsWriteIndex:  types.BoolType,
 	}
 }
 

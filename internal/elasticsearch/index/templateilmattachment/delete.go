@@ -41,7 +41,7 @@ func deleteILMAttachment(ctx context.Context, client *clients.ElasticsearchScope
 
 	if existing == nil {
 		tflog.Debug(ctx, "Component template already deleted", map[string]any{
-			"name": resourceID,
+			nameKey: resourceID,
 		})
 		return nil
 	}

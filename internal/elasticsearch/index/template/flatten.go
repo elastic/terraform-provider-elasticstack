@@ -139,14 +139,14 @@ func flattenDataStream(ds *models.DataStreamSettings) (types.Object, diag.Diagno
 	// echo them back (e.g. older versions or omitted fields), state must mirror
 	// the planned default rather than null to satisfy the Computed contract.
 	attrs := map[string]attr.Value{
-		"hidden":               types.BoolValue(false),
-		"allow_custom_routing": types.BoolValue(false),
+		attrHidden:             types.BoolValue(false),
+		attrAllowCustomRouting: types.BoolValue(false),
 	}
 	if ds.Hidden != nil {
-		attrs["hidden"] = types.BoolValue(*ds.Hidden)
+		attrs[attrHidden] = types.BoolValue(*ds.Hidden)
 	}
 	if ds.AllowCustomRouting != nil {
-		attrs["allow_custom_routing"] = types.BoolValue(*ds.AllowCustomRouting)
+		attrs[attrAllowCustomRouting] = types.BoolValue(*ds.AllowCustomRouting)
 	}
 	obj, d := types.ObjectValue(DataStreamAttrTypes(), attrs)
 	diags.Append(d...)
@@ -217,7 +217,7 @@ func flattenTemplateBody(ctx context.Context, t *models.Template) (types.Object,
 			dataRetention = types.StringValue(t.Lifecycle.DataRetention)
 		}
 		lcAttrs := map[string]attr.Value{
-			"data_retention": dataRetention,
+			attrDataRetention: dataRetention,
 		}
 		var d diag.Diagnostics
 		lcObj, d = types.ObjectValue(LifecycleAttrTypes(), lcAttrs)
@@ -242,11 +242,11 @@ func flattenTemplateBody(ctx context.Context, t *models.Template) (types.Object,
 	}
 
 	tplAttrs := map[string]attr.Value{
-		"alias":               aliasSet,
-		"mappings":            mappings,
-		"settings":            settings,
-		"lifecycle":           lcObj,
-		"data_stream_options": dsoObj,
+		attrAlias:             aliasSet,
+		attrMappings:          mappings,
+		attrSettings:          settings,
+		attrLifecycle:         lcObj,
+		attrDataStreamOptions: dsoObj,
 	}
 	obj, d := types.ObjectValue(TemplateAttrTypes(), tplAttrs)
 	diags.Append(d...)

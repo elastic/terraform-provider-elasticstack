@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -40,17 +41,18 @@ func createConnector(
 		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}
 
-	apiModel, apiDiags := planModel.toAPIModel()
+	modelForAPI := planModel
+	if typeutils.IsKnown(req.Config.SecretsWo) {
+		modelForAPI.SecretsWo = req.Config.SecretsWo
+	}
+
+	apiModel, apiDiags := modelForAPI.toAPIModel()
 	diags.Append(apiDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[tfModel]{}, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	connectorID, createDiags := kibanaoapi.CreateConnector(ctx, oapiClient, apiModel)
 	diags.Append(createDiags...)

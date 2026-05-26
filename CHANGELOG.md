@@ -1,3 +1,10 @@
+## [Unreleased]
+
+### Changes
+
+- Provider configured with only a `fleet { ... }` block can now serve Kibana resources: provider-level `kibana_oapi` config inherits `URL`, `Username`, `Password`, `APIKey`, `BearerToken`, `CACerts`, and `Insecure` field-by-field from the `fleet { ... }` block when the corresponding kibana-derived field is still unset, mirroring the existing Fleet → Kibana credential inheritance.
+- `ProviderClientFactory.GetElasticsearchClient` and `ProviderClientFactory.GetKibanaClient` now validate endpoint presence as a precondition of returning a scoped client. A provider with no Elasticsearch endpoint will fail at factory resolution with `elasticsearch client is not configured: ...`; a provider with neither a Kibana nor a Fleet endpoint will fail at factory resolution with `kibana/fleet client is not configured: ...`. This surfaces missing-endpoint errors earlier (at the `terraform plan` boundary) instead of mid-operation.
+
 ## [0.16.0] - 2026-05-25
 
 ### Breaking changes

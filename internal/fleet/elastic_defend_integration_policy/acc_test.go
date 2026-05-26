@@ -25,7 +25,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -419,10 +418,7 @@ func deleteDefendPolicyOutOfBand(resourceName string) resource.TestCheckFunc {
 			return err
 		}
 
-		fleetClient, d := apiClient.GetFleetClient()
-		if d.HasError() {
-			return diagutil.FwDiagsAsError(d)
-		}
+		fleetClient := apiClient.GetFleetClient()
 
 		spaceID := rs.Primary.Attributes["space_ids.0"]
 		diags := fleetclient.DeletePackagePolicy(context.Background(), fleetClient, policyID, spaceID, false)
@@ -456,10 +452,7 @@ func checkResourceElasticDefendPolicyDestroy(s *terraform.State) error {
 		return err
 	}
 
-	fleetClient, d := apiClient.GetFleetClient()
-	if d.HasError() {
-		return diagutil.FwDiagsAsError(d)
-	}
+	fleetClient := apiClient.GetFleetClient()
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_fleet_elastic_defend_integration_policy" {

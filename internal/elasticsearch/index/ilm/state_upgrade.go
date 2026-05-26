@@ -82,7 +82,7 @@ func unwrapSingletonListToMap(v any) any {
 
 func unwrapPhaseActionLists(m map[string]any) {
 	for k, v := range m {
-		if k == "min_age" {
+		if k == attrMinAge {
 			continue
 		}
 		list, ok := v.([]any)

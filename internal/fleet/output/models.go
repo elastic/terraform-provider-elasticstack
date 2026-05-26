@@ -87,17 +87,17 @@ func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.K
 	}
 
 	switch outputType {
-	case "elasticsearch":
+	case outputTypeElasticsearch:
 		return model.toAPICreateElasticsearchModel(ctx)
-	case "logstash":
+	case outputTypeLogstash:
 		return model.toAPICreateLogstashModel(ctx)
-	case "kafka":
+	case outputTypeKafka:
 		if diags := assertKafkaSupport(ctx, client); diags.HasError() {
 			return kbapi.NewOutputUnion{}, diags
 		}
 
 		return model.toAPICreateKafkaModel(ctx)
-	case "remote_elasticsearch":
+	case outputTypeRemoteElasticsearch:
 		return model.toAPICreateRemoteElasticsearchModel(ctx)
 	default:
 		return kbapi.NewOutputUnion{}, diag.Diagnostics{
@@ -115,17 +115,17 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.K
 	}
 
 	switch outputType {
-	case "elasticsearch":
+	case outputTypeElasticsearch:
 		return model.toAPIUpdateElasticsearchModel(ctx)
-	case "logstash":
+	case outputTypeLogstash:
 		return model.toAPIUpdateLogstashModel(ctx)
-	case "kafka":
+	case outputTypeKafka:
 		if diags := assertKafkaSupport(ctx, client); diags.HasError() {
 			return kbapi.UpdateOutputUnion{}, diags
 		}
 
 		return model.toAPIUpdateKafkaModel(ctx)
-	case "remote_elasticsearch":
+	case outputTypeRemoteElasticsearch:
 		return model.toAPIUpdateRemoteElasticsearchModel(ctx)
 	default:
 		diags.AddError(fmt.Sprintf("unhandled output type: %s", outputType), "")

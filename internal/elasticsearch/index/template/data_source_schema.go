@@ -31,15 +31,15 @@ func getDataSourceSchema(_ context.Context) dschema.Schema {
 	return dschema.Schema{
 		MarkdownDescription: mdDescIndexTemplateDataSource,
 		Blocks: map[string]dschema.Block{
-			"data_stream": dataSourceDataStreamBlock(),
-			"template":    dataSourceTemplateBlock(),
+			attrDataStream: dataSourceDataStreamBlock(),
+			attrTemplate:   dataSourceTemplateBlock(),
 		},
 		Attributes: map[string]dschema.Attribute{
 			"id": dschema.StringAttribute{
 				MarkdownDescription: descID,
 				Computed:            true,
 			},
-			"name": dschema.StringAttribute{
+			attrName: dschema.StringAttribute{
 				MarkdownDescription: descNameDataSrc,
 				Required:            true,
 			},
@@ -53,7 +53,7 @@ func getDataSourceSchema(_ context.Context) dschema.Schema {
 				Computed:            true,
 				ElementType:         types.StringType,
 			},
-			"index_patterns": dschema.SetAttribute{
+			attrIndexPatterns: dschema.SetAttribute{
 				MarkdownDescription: descIndexPatterns,
 				Computed:            true,
 				ElementType:         types.StringType,
@@ -83,11 +83,11 @@ func dataSourceDataStreamBlock() dschema.SingleNestedBlock {
 	return dschema.SingleNestedBlock{
 		MarkdownDescription: descDataStreamBlock,
 		Attributes: map[string]dschema.Attribute{
-			"hidden": dschema.BoolAttribute{
+			attrHidden: dschema.BoolAttribute{
 				MarkdownDescription: descDataStreamHidden,
 				Computed:            true,
 			},
-			"allow_custom_routing": dschema.BoolAttribute{
+			attrAllowCustomRouting: dschema.BoolAttribute{
 				MarkdownDescription: descDataStreamAllowCustomRouting,
 				Computed:            true,
 			},
@@ -99,21 +99,21 @@ func dataSourceTemplateBlock() dschema.SingleNestedBlock {
 	return dschema.SingleNestedBlock{
 		MarkdownDescription: descTemplateBlock,
 		Attributes: map[string]dschema.Attribute{
-			"mappings": dschema.StringAttribute{
+			attrMappings: dschema.StringAttribute{
 				MarkdownDescription: descTemplateMappings,
 				Computed:            true,
 				CustomType:          esindex.MappingsType{},
 			},
-			"settings": dschema.StringAttribute{
+			attrSettings: dschema.StringAttribute{
 				MarkdownDescription: descTemplateSettings,
 				Computed:            true,
 				CustomType:          customtypes.IndexSettingsType{},
 			},
 		},
 		Blocks: map[string]dschema.Block{
-			"alias":               dataSourceTemplateAliasBlock(),
-			"lifecycle":           dataSourceTemplateLifecycleBlock(),
-			"data_stream_options": dataSourceTemplateDataStreamOptionsBlock(),
+			attrAlias:             dataSourceTemplateAliasBlock(),
+			attrLifecycle:         dataSourceTemplateLifecycleBlock(),
+			attrDataStreamOptions: dataSourceTemplateDataStreamOptionsBlock(),
 		},
 	}
 }
@@ -124,32 +124,32 @@ func dataSourceTemplateAliasBlock() dschema.SetNestedBlock {
 		NestedObject: dschema.NestedBlockObject{
 			CustomType: NewAliasObjectType(),
 			Attributes: map[string]dschema.Attribute{
-				"name": dschema.StringAttribute{
+				attrName: dschema.StringAttribute{
 					MarkdownDescription: descAliasName,
 					Computed:            true,
 				},
-				"filter": dschema.StringAttribute{
+				attrFilter: dschema.StringAttribute{
 					MarkdownDescription: descAliasFilter,
 					Computed:            true,
 					CustomType:          jsontypes.NormalizedType{},
 				},
-				"index_routing": dschema.StringAttribute{
+				attrIndexRouting: dschema.StringAttribute{
 					MarkdownDescription: descAliasIndexRouting,
 					Computed:            true,
 				},
-				"is_hidden": dschema.BoolAttribute{
+				attrIsHidden: dschema.BoolAttribute{
 					MarkdownDescription: descAliasIsHidden,
 					Computed:            true,
 				},
-				"is_write_index": dschema.BoolAttribute{
+				attrIsWriteIndex: dschema.BoolAttribute{
 					MarkdownDescription: descAliasIsWriteIndex,
 					Computed:            true,
 				},
-				"routing": dschema.StringAttribute{
+				attrRouting: dschema.StringAttribute{
 					MarkdownDescription: descAliasRouting,
 					Computed:            true,
 				},
-				"search_routing": dschema.StringAttribute{
+				attrSearchRouting: dschema.StringAttribute{
 					MarkdownDescription: descAliasSearchRouting,
 					Computed:            true,
 				},
@@ -162,7 +162,7 @@ func dataSourceTemplateLifecycleBlock() dschema.SingleNestedBlock {
 	return dschema.SingleNestedBlock{
 		MarkdownDescription: descLifecycleBlock,
 		Attributes: map[string]dschema.Attribute{
-			"data_retention": dschema.StringAttribute{
+			attrDataRetention: dschema.StringAttribute{
 				MarkdownDescription: descLifecycleDataRetention,
 				Computed:            true,
 			},
@@ -174,7 +174,7 @@ func dataSourceTemplateDataStreamOptionsBlock() dschema.SingleNestedBlock {
 	return dschema.SingleNestedBlock{
 		MarkdownDescription: datastreamoptions.BlockDescriptionDataSource,
 		Blocks: map[string]dschema.Block{
-			"failure_store": dataSourceTemplateFailureStoreBlock(),
+			attrFailureStore: dataSourceTemplateFailureStoreBlock(),
 		},
 	}
 }
@@ -183,13 +183,13 @@ func dataSourceTemplateFailureStoreBlock() dschema.SingleNestedBlock {
 	return dschema.SingleNestedBlock{
 		MarkdownDescription: datastreamoptions.FailureStoreBlockDescription,
 		Attributes: map[string]dschema.Attribute{
-			"enabled": dschema.BoolAttribute{
+			attrEnabled: dschema.BoolAttribute{
 				MarkdownDescription: datastreamoptions.FailureStoreEnabledDescription,
 				Computed:            true,
 			},
 		},
 		Blocks: map[string]dschema.Block{
-			"lifecycle": dataSourceTemplateFailureStoreLifecycleBlock(),
+			attrLifecycle: dataSourceTemplateFailureStoreLifecycleBlock(),
 		},
 	}
 }
@@ -198,7 +198,7 @@ func dataSourceTemplateFailureStoreLifecycleBlock() dschema.SingleNestedBlock {
 	return dschema.SingleNestedBlock{
 		MarkdownDescription: datastreamoptions.FailureStoreLifecycleBlockDescription,
 		Attributes: map[string]dschema.Attribute{
-			"data_retention": dschema.StringAttribute{
+			attrDataRetention: dschema.StringAttribute{
 				MarkdownDescription: datastreamoptions.FailureStoreDataRetentionDescription,
 				Computed:            true,
 			},

@@ -79,18 +79,18 @@ func GetSchema() schema.Schema {
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
 			},
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				MarkdownDescription: "A human-readable name for the rule.",
 				Required:            true,
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 255),
 				},
 			},
-			"type": schema.StringAttribute{
+			attrType: schema.StringAttribute{
 				MarkdownDescription: "Rule type. Supported types: query, eql, esql, machine_learning, new_terms, saved_query, threat_match, threshold.",
 				Required:            true,
 				Validators: []validator.String{
-					stringvalidator.OneOf("query", "eql", "esql", "machine_learning", "new_terms", "saved_query", "threat_match", "threshold"),
+					stringvalidator.OneOf(ruleTypeQuery, ruleTypeEQL, ruleTypeESQL, ruleTypeMachineLearning, ruleTypeNewTerms, ruleTypeSavedQuery, ruleTypeThreatMatch, ruleTypeThreshold),
 				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -102,8 +102,8 @@ func GetSchema() schema.Schema {
 				Validators: []validator.String{
 					// Enforce that data_view_id is not set if the rule type is ml or esql
 					validators.ForbiddenIfDependentPathOneOf(
-						path.Root("type"),
-						[]string{"machine_learning", "esql"},
+						path.Root(attrType),
+						[]string{ruleTypeMachineLearning, ruleTypeESQL},
 					),
 				},
 			},
@@ -123,7 +123,7 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "Disables timestamp override fallback. Available for all rule types.",
 				Optional:            true,
 			},
-			"query": schema.StringAttribute{
+			attrQuery: schema.StringAttribute{
 				MarkdownDescription: "The query language definition.",
 				Optional:            true,
 				Computed:            true,
@@ -133,7 +133,7 @@ func GetSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Validators: []validator.String{
-					stringvalidator.OneOf("kuery", "lucene", "eql", "esql"),
+					stringvalidator.OneOf("kuery", "lucene", ruleTypeEQL, ruleTypeESQL),
 				},
 			},
 			"index": schema.ListAttribute{
@@ -144,8 +144,8 @@ func GetSchema() schema.Schema {
 				Validators: []validator.List{
 					// Enforce that index is not set if the rule type is ml or esql
 					validators.ForbiddenIfDependentPathOneOf(
-						path.Root("type"),
-						[]string{"machine_learning", "esql"},
+						path.Root(attrType),
+						[]string{ruleTypeMachineLearning, ruleTypeESQL},
 					),
 				},
 			},
@@ -197,7 +197,7 @@ func GetSchema() schema.Schema {
 				Optional:            true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"field": schema.StringAttribute{
+						attrField: schema.StringAttribute{
 							MarkdownDescription: "Source event field used to override the default risk_score.",
 							Required:            true,
 						},
@@ -208,7 +208,7 @@ func GetSchema() schema.Schema {
 								stringvalidator.OneOf("equals"),
 							},
 						},
-						"value": schema.StringAttribute{
+						attrValue: schema.StringAttribute{
 							MarkdownDescription: "Value to match against the field.",
 							Required:            true,
 						},
@@ -236,7 +236,7 @@ func GetSchema() schema.Schema {
 				Optional:            true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"field": schema.StringAttribute{
+						attrField: schema.StringAttribute{
 							MarkdownDescription: "Source event field used to override the default severity.",
 							Required:            true,
 						},
@@ -247,7 +247,7 @@ func GetSchema() schema.Schema {
 								stringvalidator.OneOf("equals"),
 							},
 						},
-						"value": schema.StringAttribute{
+						attrValue: schema.StringAttribute{
 							MarkdownDescription: "Value to match against the field.",
 							Required:            true,
 						},
@@ -288,7 +288,7 @@ func GetSchema() schema.Schema {
 							MarkdownDescription: "Name of the integration package.",
 							Required:            true,
 						},
-						"version": schema.StringAttribute{
+						attrVersion: schema.StringAttribute{
 							MarkdownDescription: "Version of the integration package.",
 							Required:            true,
 						},
@@ -304,11 +304,11 @@ func GetSchema() schema.Schema {
 				Optional:            true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
+						attrName: schema.StringAttribute{
 							MarkdownDescription: "Name of the Elasticsearch field.",
 							Required:            true,
 						},
-						"type": schema.StringAttribute{
+						attrType: schema.StringAttribute{
 							MarkdownDescription: "Type of the Elasticsearch field.",
 							Required:            true,
 						},
@@ -344,8 +344,8 @@ func GetSchema() schema.Schema {
 				CustomType:          jsontypes.NormalizedType{},
 				Validators: []validator.String{
 					validators.ForbiddenIfDependentPathOneOf(
-						path.Root("type"),
-						[]string{"machine_learning", "esql"},
+						path.Root(attrType),
+						[]string{ruleTypeMachineLearning, ruleTypeESQL},
 					),
 				},
 			},
@@ -366,7 +366,7 @@ func GetSchema() schema.Schema {
 					int64validator.AtLeast(1),
 				},
 			},
-			"version": schema.Int64Attribute{
+			attrVersion: schema.Int64Attribute{
 				MarkdownDescription: "The rule's version number.",
 				Optional:            true,
 				Computed:            true,
@@ -377,12 +377,12 @@ func GetSchema() schema.Schema {
 			},
 
 			// Actions field (common across all rule types)
-			"actions": schema.ListNestedAttribute{
+			attrActions: schema.ListNestedAttribute{
 				MarkdownDescription: "Array of automated actions taken when alerts are generated by the rule.",
 				Optional:            true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"action_type_id": schema.StringAttribute{
+						attrActionTypeID: schema.StringAttribute{
 							MarkdownDescription: "The action type used for sending notifications (e.g., .slack, .email, .webhook, .pagerduty, etc.).",
 							Required:            true,
 						},
@@ -390,7 +390,7 @@ func GetSchema() schema.Schema {
 							MarkdownDescription: "The connector ID.",
 							Required:            true,
 						},
-						"params": schema.StringAttribute{
+						attrParams: schema.StringAttribute{
 							CustomType:          jsontypes.NormalizedType{},
 							MarkdownDescription: "JSON-encoded object containing the allowed connector fields, which varies according to the connector type. Use `jsonencode({...})` to set this value.",
 							Required:            true,
@@ -408,11 +408,11 @@ func GetSchema() schema.Schema {
 							MarkdownDescription: alertsFilterMarkdownDescription,
 							Optional:            true,
 							Attributes: map[string]schema.Attribute{
-								"query": schema.SingleNestedAttribute{
+								attrQuery: schema.SingleNestedAttribute{
 									MarkdownDescription: "KQL query and Kibana filter DSL conditions that determine whether the action runs.",
 									Optional:            true,
 									Attributes: map[string]schema.Attribute{
-										"kql": schema.StringAttribute{
+										attrKQL: schema.StringAttribute{
 											MarkdownDescription: "Defines a KQL query filter that determines whether the action runs. Written in Kibana Query Language (KQL).",
 											Optional:            true,
 										},
@@ -496,19 +496,19 @@ func GetSchema() schema.Schema {
 				Optional:            true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"action_type_id": schema.StringAttribute{
+						attrActionTypeID: schema.StringAttribute{
 							MarkdownDescription: "The action type used for response actions (.osquery, .endpoint).",
 							Required:            true,
 							Validators: []validator.String{
 								stringvalidator.OneOf(".osquery", ".endpoint"),
 							},
 						},
-						"params": schema.SingleNestedAttribute{
+						attrParams: schema.SingleNestedAttribute{
 							MarkdownDescription: "Parameters for the response action. Structure varies based on action_type_id.",
 							Required:            true,
 							Attributes: map[string]schema.Attribute{
 								// Osquery params
-								"query": schema.StringAttribute{
+								attrQuery: schema.StringAttribute{
 									MarkdownDescription: "SQL query to run (osquery only). Example: 'SELECT * FROM processes;'",
 									Optional:            true,
 								},
@@ -541,7 +541,7 @@ func GetSchema() schema.Schema {
 												MarkdownDescription: "Query ID.",
 												Required:            true,
 											},
-											"query": schema.StringAttribute{
+											attrQuery: schema.StringAttribute{
 												MarkdownDescription: "Query to run.",
 												Required:            true,
 											},
@@ -549,7 +549,7 @@ func GetSchema() schema.Schema {
 												MarkdownDescription: "Platform to run the query on.",
 												Optional:            true,
 											},
-											"version": schema.StringAttribute{
+											attrVersion: schema.StringAttribute{
 												MarkdownDescription: "Query version.",
 												Optional:            true,
 											},
@@ -586,7 +586,7 @@ func GetSchema() schema.Schema {
 									MarkdownDescription: "Configuration for process commands (endpoint only).",
 									Optional:            true,
 									Attributes: map[string]schema.Attribute{
-										"field": schema.StringAttribute{
+										attrField: schema.StringAttribute{
 											MarkdownDescription: "Field to use instead of process.pid.",
 											Required:            true,
 										},
@@ -625,7 +625,7 @@ func GetSchema() schema.Schema {
 								stringvalidator.OneOf("single", "agnostic"),
 							},
 						},
-						"type": schema.StringAttribute{
+						attrType: schema.StringAttribute{
 							MarkdownDescription: "The type of exception container. Valid values are `detection`, `endpoint`, " +
 								"`endpoint_events`, `endpoint_host_isolation_exceptions`, `endpoint_blocklists`, " +
 								"`endpoint_trusted_apps`, `endpoint_trusted_devices`, and `rule_default`.",
@@ -715,8 +715,8 @@ func GetSchema() schema.Schema {
 				Optional:            true,
 				Validators: []validator.Int64{
 					validators.RequiredIfDependentPathEquals(
-						path.Root("type"),
-						"machine_learning",
+						path.Root(attrType),
+						ruleTypeMachineLearning,
 					),
 					int64validator.Between(0, 100),
 				},
@@ -765,18 +765,18 @@ func GetSchema() schema.Schema {
 							Required:            true,
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
-									"field": schema.StringAttribute{
+									attrField: schema.StringAttribute{
 										MarkdownDescription: "Event field to match.",
 										Required:            true,
 									},
-									"type": schema.StringAttribute{
+									attrType: schema.StringAttribute{
 										MarkdownDescription: "Type of match (mapping).",
 										Required:            true,
 										Validators: []validator.String{
 											stringvalidator.OneOf("mapping"),
 										},
 									},
-									"value": schema.StringAttribute{
+									attrValue: schema.StringAttribute{
 										MarkdownDescription: "Threat intelligence field to match against.",
 										Required:            true,
 									},
@@ -812,16 +812,16 @@ func GetSchema() schema.Schema {
 			},
 
 			// Threshold-specific fields
-			"threshold": schema.SingleNestedAttribute{
+			ruleTypeThreshold: schema.SingleNestedAttribute{
 				MarkdownDescription: "Threshold settings for the rule. Required for threshold rules.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
-					"field": schema.ListAttribute{
+					attrField: schema.ListAttribute{
 						ElementType:         types.StringType,
 						MarkdownDescription: "Field(s) to use for threshold aggregation.",
 						Optional:            true,
 					},
-					"value": schema.Int64Attribute{
+					attrValue: schema.Int64Attribute{
 						MarkdownDescription: "The threshold value from which an alert is generated.",
 						Required:            true,
 						Validators: []validator.Int64{
@@ -833,11 +833,11 @@ func GetSchema() schema.Schema {
 						Optional:            true,
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
-								"field": schema.StringAttribute{
+								attrField: schema.StringAttribute{
 									MarkdownDescription: "The field on which to calculate and compare the cardinality.",
 									Required:            true,
 								},
-								"value": schema.Int64Attribute{
+								attrValue: schema.Int64Attribute{
 									MarkdownDescription: "The threshold cardinality value.",
 									Required:            true,
 									Validators: []validator.Int64{
@@ -878,11 +878,11 @@ func GetSchema() schema.Schema {
 									MarkdownDescription: "MITRE ATT&CK tactic ID.",
 									Required:            true,
 								},
-								"name": schema.StringAttribute{
+								attrName: schema.StringAttribute{
 									MarkdownDescription: "MITRE ATT&CK tactic name.",
 									Required:            true,
 								},
-								"reference": schema.StringAttribute{
+								attrReference: schema.StringAttribute{
 									MarkdownDescription: "MITRE ATT&CK tactic reference URL.",
 									Required:            true,
 								},
@@ -897,11 +897,11 @@ func GetSchema() schema.Schema {
 										MarkdownDescription: "MITRE ATT&CK technique ID.",
 										Required:            true,
 									},
-									"name": schema.StringAttribute{
+									attrName: schema.StringAttribute{
 										MarkdownDescription: "MITRE ATT&CK technique name.",
 										Required:            true,
 									},
-									"reference": schema.StringAttribute{
+									attrReference: schema.StringAttribute{
 										MarkdownDescription: "MITRE ATT&CK technique reference URL.",
 										Required:            true,
 									},
@@ -914,11 +914,11 @@ func GetSchema() schema.Schema {
 													MarkdownDescription: "MITRE ATT&CK sub-technique ID.",
 													Required:            true,
 												},
-												"name": schema.StringAttribute{
+												attrName: schema.StringAttribute{
 													MarkdownDescription: "MITRE ATT&CK sub-technique name.",
 													Required:            true,
 												},
-												"reference": schema.StringAttribute{
+												attrReference: schema.StringAttribute{
 													MarkdownDescription: "MITRE ATT&CK sub-technique reference URL.",
 													Required:            true,
 												},
@@ -949,7 +949,7 @@ var (
 func initActionAttrTypes() {
 	s := GetSchema()
 
-	actionsAttr := s.Attributes["actions"].(schema.ListNestedAttribute)
+	actionsAttr := s.Attributes[attrActions].(schema.ListNestedAttribute)
 	actionAttrs := actionsAttr.NestedObject.Attributes
 
 	freqAttr := actionAttrs["frequency"].(schema.SingleNestedAttribute)
@@ -958,7 +958,7 @@ func initActionAttrTypes() {
 	filterAttr := actionAttrs["alerts_filter"].(schema.SingleNestedAttribute)
 	cachedAlertsFilterTypes = filterAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 
-	queryAttr := filterAttr.Attributes["query"].(schema.SingleNestedAttribute)
+	queryAttr := filterAttr.Attributes[attrQuery].(schema.SingleNestedAttribute)
 	cachedAlertsFilterQueryTypes = queryAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 
 	tfAttr := filterAttr.Attributes["timeframe"].(schema.SingleNestedAttribute)
@@ -982,12 +982,12 @@ func getAlertsFilterTimeframeAttrTypes() map[string]attr.Type {
 
 // func getCardinalityType() map[string]attr.Type {
 func getCardinalityType() attr.Type {
-	return GetSchema().Attributes["threshold"].(schema.SingleNestedAttribute).Attributes["cardinality"].GetType().(attr.TypeWithElementType).ElementType()
+	return GetSchema().Attributes[ruleTypeThreshold].(schema.SingleNestedAttribute).Attributes["cardinality"].GetType().(attr.TypeWithElementType).ElementType()
 }
 
 // getThresholdType returns the attribute types for threshold objects
 func getThresholdType() map[string]attr.Type {
-	return GetSchema().Attributes["threshold"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	return GetSchema().Attributes[ruleTypeThreshold].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 // getAlertSuppressionType returns the attribute types for alert suppression objects
@@ -1015,23 +1015,23 @@ func getResponseActionElementType() attr.Type {
 
 func getResponseActionParamsType() map[string]attr.Type {
 	responseActionType := GetSchema().Attributes["response_actions"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
-	return responseActionType.AttributeTypes()["params"].(attr.TypeWithAttributeTypes).AttributeTypes()
+	return responseActionType.AttributeTypes()[attrParams].(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 func getOsqueryQueryElementType() attr.Type {
 	responseActionType := GetSchema().Attributes["response_actions"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
-	paramsType := responseActionType.AttributeTypes()["params"].(attr.TypeWithAttributeTypes)
+	paramsType := responseActionType.AttributeTypes()[attrParams].(attr.TypeWithAttributeTypes)
 	return paramsType.AttributeTypes()["queries"].(attr.TypeWithElementType).ElementType()
 }
 
 func getEndpointProcessConfigType() map[string]attr.Type {
 	responseActionType := GetSchema().Attributes["response_actions"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
-	paramsType := responseActionType.AttributeTypes()["params"].(attr.TypeWithAttributeTypes)
+	paramsType := responseActionType.AttributeTypes()[attrParams].(attr.TypeWithAttributeTypes)
 	return paramsType.AttributeTypes()["config"].(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 func getActionElementType() attr.Type {
-	return GetSchema().Attributes["actions"].GetType().(attr.TypeWithElementType).ElementType()
+	return GetSchema().Attributes[attrActions].GetType().(attr.TypeWithElementType).ElementType()
 }
 
 func getActionFrequencyType() map[string]attr.Type {
@@ -1092,10 +1092,6 @@ func (r securityDetectionRuleResource) ValidateConfig(ctx context.Context, req r
 		return
 	}
 
-	const (
-		ruleTypeESQL            = "esql"
-		ruleTypeMachineLearning = "machine_learning"
-	)
 	if data.Type.ValueString() == ruleTypeESQL || data.Type.ValueString() == ruleTypeMachineLearning {
 		return
 	}

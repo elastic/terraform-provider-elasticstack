@@ -166,47 +166,6 @@ func dashboardMapPanelFromAPI(ctx context.Context, _ *models.DashboardModel, tfP
 	return pm, diags
 }
 
-func timeRangeModelToAPI(tr *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	if tr == nil {
-		return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}
-	}
-	out := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
-		From: tr.From.ValueString(),
-		To:   tr.To.ValueString(),
-	}
-	if typeutils.IsKnown(tr.Mode) {
-		mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode(tr.Mode.ValueString())
-		out.Mode = &mode
-	}
-	return out
-}
-
-// resolveChartTimeRange returns the API time_range for a typed Lens chart root: chart-level when set,
-// otherwise copied from the dashboard-level time_range (both are required API inputs).
-//
-// Production dashboard writes (`dashboardPanelsToAPI` / `panelToAPI`) always pass the enclosing
-// `models.DashboardModel`, so null chart-level `time_range` inherits dashboard-level values (REQ-013).
-//
-// The `now-15m` / `now` fallback below applies when there is no chart-level override and either
-// no parent `models.DashboardModel` is in scope (e.g. isolated unit tests call `buildAttributes(..., nil)`),
-// or `dashboard != nil` but `dashboard.TimeRange == nil` (unusual in production: the dashboard
-// schema requires `time_range`). Optional tooling may also construct chart payloads without a parent
-// dashboard. Typed `vis` by-value charts thread the parent dashboard through the vis handler
-// ToAPI implementation so they inherit like other typed charts; they do not rely on this
-// fallback during normal resource updates.
-func resolveChartTimeRange(dashboard *models.DashboardModel, chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	if chartLevel != nil {
-		return timeRangeModelToAPI(chartLevel)
-	}
-	if dashboard != nil && dashboard.TimeRange != nil {
-		return timeRangeModelToAPI(dashboard.TimeRange)
-	}
-	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
-		From: "now-15m",
-		To:   "now",
-	}
-}
-
 func dashboardPanelsToAPI(ctx context.Context, m *models.DashboardModel) (*kbapi.DashboardPanels, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if m.Panels == nil && m.Sections == nil {
@@ -327,12 +286,12 @@ func fallbackPanelToAPI(ctx context.Context, pm models.PanelModel, dashboard *mo
 	if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
 		configJSON := []byte(pm.ConfigJSON.ValueString())
 		fullPanel := map[string]any{
-			"type":   pm.Type.ValueString(),
-			"grid":   grid,
-			"config": json.RawMessage(configJSON),
+			attrPanelType: pm.Type.ValueString(),
+			attrPanelGrid: grid,
+			"config":      json.RawMessage(configJSON),
 		}
 		if panelID != nil {
-			fullPanel["id"] = *panelID
+			fullPanel[attrPanelID] = *panelID
 		}
 		rawBytes, mErr := json.Marshal(fullPanel)
 		if mErr != nil {

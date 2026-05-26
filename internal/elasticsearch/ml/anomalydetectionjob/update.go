@@ -54,11 +54,7 @@ Please report this warning to the provider developers.`,
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
-	typedClient, clientDiags := client.GetESClient()
-	diags.Append(clientDiags...)
-	if diags.HasError() {
-		return entitycore.WriteResult[TFModel]{Model: plan}, diags
-	}
+	typedClient := client.GetESClient()
 
 	// Send the update as raw JSON so that all fields including
 	// categorization_examples_limit are included. The typed updatejob.Request

@@ -1121,10 +1121,7 @@ func checkResourceExceptionItemDestroy(s *terraform.State) error {
 		return err
 	}
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	if getDiags.HasError() {
-		return fmt.Errorf("failed to get kibana client: %v", getDiags)
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_kibana_security_exception_item" {

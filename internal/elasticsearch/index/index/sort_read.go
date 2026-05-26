@@ -44,10 +44,10 @@ func saveSortConfig(ctx context.Context, model tfModel, priv privateData) diag.D
 		return diags
 	}
 
-	fields := extractSortSetting(settings, "sort.field")
-	orders := extractSortSetting(settings, "sort.order")
-	missing := extractSortSetting(settings, "sort.missing")
-	mode := extractSortSetting(settings, "sort.mode")
+	fields := extractSortSetting(settings, settingSortField)
+	orders := extractSortSetting(settings, settingSortOrder)
+	missing := extractSortSetting(settings, settingSortMissing)
+	mode := extractSortSetting(settings, settingSortMode)
 
 	// Only save to private state if there are sort fields configured.
 	if len(fields) == 0 {
@@ -117,10 +117,10 @@ func populateSortFromSettings(ctx context.Context, model *tfModel) diag.Diagnost
 		return diags
 	}
 
-	fields := extractSortSetting(settings, "sort.field")
-	orders := extractSortSetting(settings, "sort.order")
-	missing := extractSortSetting(settings, "sort.missing")
-	mode := extractSortSetting(settings, "sort.mode")
+	fields := extractSortSetting(settings, settingSortField)
+	orders := extractSortSetting(settings, settingSortOrder)
+	missing := extractSortSetting(settings, settingSortMissing)
+	mode := extractSortSetting(settings, settingSortMode)
 
 	if len(fields) == 0 {
 		return nil
@@ -174,8 +174,8 @@ func populateLegacySortFromSettings(ctx context.Context, model *tfModel) diag.Di
 		return diags
 	}
 
-	fields := extractSortSetting(settings, "sort.field")
-	orders := extractSortSetting(settings, "sort.order")
+	fields := extractSortSetting(settings, settingSortField)
+	orders := extractSortSetting(settings, settingSortOrder)
 
 	var diags diag.Diagnostics
 
@@ -204,10 +204,10 @@ func populateLegacySortFromSettings(ctx context.Context, model *tfModel) diag.Di
 func sortElementType(_ context.Context) attr.Type {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"field":   types.StringType,
-			"order":   types.StringType,
-			"missing": types.StringType,
-			"mode":    types.StringType,
+			attrField:   types.StringType,
+			attrOrder:   types.StringType,
+			attrMissing: types.StringType,
+			attrMode:    types.StringType,
 		},
 	}
 }

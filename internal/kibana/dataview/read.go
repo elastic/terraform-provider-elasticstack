@@ -34,11 +34,7 @@ func readDataView(
 ) (dataViewModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return model, false, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	dataView, readDiags := kibanaoapi.GetDataView(ctx, oapiClient, spaceID, viewID)
 	diags.Append(readDiags...)

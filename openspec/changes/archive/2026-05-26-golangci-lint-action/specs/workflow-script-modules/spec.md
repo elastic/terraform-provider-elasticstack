@@ -1,7 +1,5 @@
 ## MODIFIED Requirements
 
-This delta is proposal-only. The current implementations of `lib/gate-provider.js`, `lib/runners/gate.js`, and `.github/workflows/provider.yml` remain unchanged in this PR; the behavior below defines the required follow-up implementation.
-
 ### Requirement: Provider gate evaluates golangci-lint as a distinct job result
 
 The `gateProvider` function in `lib/gate-provider.js` SHALL accept a `golangciLintResult` parameter alongside the existing `lintResult` parameter. Both results SHALL be included in the set of job results that the gate validates and evaluates. The gate SHALL fail if either `lintResult` or `golangciLintResult` is `failure` or `cancelled`. The gate SHALL pass when both are `success`. The gate SHALL treat both as legitimately skipped (returning `passed: true`) when `classifyResult` is `false` and all job results — including both lint results — are `skipped`.

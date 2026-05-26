@@ -35,11 +35,7 @@ var minKibanaPerIDDeleteVersion = version.Must(version.NewVersion("8.17.0"))
 func deleteParameter(ctx context.Context, client *clients.KibanaScopedClient, resourceID, _ string, _ Model) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	kibanaClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return diags
-	}
+	kibanaClient := client.GetKibanaOapiClient()
 
 	// Choose delete endpoint based on Kibana version.
 	// DELETE /api/synthetics/params/{id} (DeleteParameterWithResponse) is only

@@ -167,11 +167,11 @@ func toAPIModel(ctx context.Context, model tfModel, serverVersion *version.Versi
 	}{
 		{name: "align_checkpoints", set: isConfigured(model.AlignCheckpoints), write: func() { v := model.AlignCheckpoints.ValueBool(); settings.AlignCheckpoints = &v }},
 		{name: "dates_as_epoch_millis", set: isConfigured(model.DatesAsEpochMillis), write: func() { v := model.DatesAsEpochMillis.ValueBool(); settings.DatesAsEpochMillis = &v }},
-		{name: "deduce_mappings", set: isConfigured(model.DeduceMappings), write: func() { v := model.DeduceMappings.ValueBool(); settings.DeduceMappings = &v }},
+		{name: settingDeduceMappings, set: isConfigured(model.DeduceMappings), write: func() { v := model.DeduceMappings.ValueBool(); settings.DeduceMappings = &v }},
 		{name: "docs_per_second", set: isConfigured(model.DocsPerSecond), write: func() { v := model.DocsPerSecond.ValueFloat64(); settings.DocsPerSecond = &v }},
 		{name: "max_page_search_size", set: isConfigured(model.MaxPageSearchSize), write: func() { v := int(model.MaxPageSearchSize.ValueInt64()); settings.MaxPageSearchSize = &v }},
-		{name: "num_failure_retries", set: isConfigured(model.NumFailureRetries), write: func() { v := int(model.NumFailureRetries.ValueInt64()); settings.NumFailureRetries = &v }},
-		{name: "unattended", set: isConfigured(model.Unattended), write: func() { v := model.Unattended.ValueBool(); settings.Unattended = &v }},
+		{name: settingNumFailureRetries, set: isConfigured(model.NumFailureRetries), write: func() { v := int(model.NumFailureRetries.ValueInt64()); settings.NumFailureRetries = &v }},
+		{name: settingUnattended, set: isConfigured(model.Unattended), write: func() { v := model.Unattended.ValueBool(); settings.Unattended = &v }},
 	}
 
 	for _, s := range applies {

@@ -39,7 +39,7 @@ func NewFromFrameworkKibanaResource(ctx context.Context, kibanaConns []KibanaCon
 	ua := buildUserAgent(version)
 	base := baseConfig{
 		UserAgent: ua,
-		Header:    http.Header{"User-Agent": []string{ua}},
+		Header:    http.Header{headerUserAgent: []string{ua}},
 	}
 
 	client := Client{
@@ -80,7 +80,7 @@ func NewFromFramework(ctx context.Context, cfg ProviderConfiguration, version st
 		client.Elasticsearch = new(esCfg.toElasticsearchConfiguration())
 	}
 
-	kibanaOapiCfg, diags := newKibanaOapiConfigFromFramework(ctx, cfg, base)
+	kibanaOapiCfg, diags := newProviderKibanaOapiConfigFromFramework(ctx, cfg, base)
 	if diags.HasError() {
 		return Client{}, diags
 	}

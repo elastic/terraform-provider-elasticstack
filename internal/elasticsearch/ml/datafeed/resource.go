@@ -64,5 +64,5 @@ func (r *datafeedResource) ImportState(ctx context.Context, req resource.ImportS
 	datafeedID := compID.ResourceID
 
 	// Set the datafeed_id attribute
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("datafeed_id"), datafeedID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(attrDatafeedID), datafeedID)...)
 }

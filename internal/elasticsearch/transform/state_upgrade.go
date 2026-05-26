@@ -44,15 +44,15 @@ func migrateStateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, res
 		return
 	}
 
-	for _, key := range [...]string{"source", "destination", "retention_policy", "sync"} {
+	for _, key := range [...]string{attrSource, attrDestination, attrRetentionPolicy, attrSync} {
 		resp.Diagnostics.Append(collapseSingletonList(stateMap, key, key)...)
 	}
-	for _, parent := range [...]string{"retention_policy", "sync"} {
+	for _, parent := range [...]string{attrRetentionPolicy, attrSync} {
 		parentObj, ok := stateMap[parent].(map[string]any)
 		if !ok {
 			continue
 		}
-		resp.Diagnostics.Append(collapseSingletonList(parentObj, "time", parent+".time")...)
+		resp.Diagnostics.Append(collapseSingletonList(parentObj, attrTime, parent+"."+attrTime)...)
 	}
 	if resp.Diagnostics.HasError() {
 		return
@@ -81,15 +81,15 @@ func normaliseEmptyJSONStrings(state map[string]any) {
 		}
 	}
 
-	if src, ok := state["source"].(map[string]any); ok {
-		for _, key := range []string{"query", "runtime_mappings"} {
+	if src, ok := state[attrSource].(map[string]any); ok {
+		for _, key := range []string{attrQuery, "runtime_mappings"} {
 			if v, ok := src[key].(string); ok && v == "" {
 				src[key] = nil
 			}
 		}
 	}
 
-	if dst, ok := state["destination"].(map[string]any); ok {
+	if dst, ok := state[attrDestination].(map[string]any); ok {
 		if v, ok := dst["pipeline"].(string); ok && v == "" {
 			dst["pipeline"] = nil
 		}

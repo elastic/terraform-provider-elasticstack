@@ -37,11 +37,11 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 				Optional:    true,
 				Computed:    true,
 			},
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				Description: "The name of the connector. While this name does not have to be unique, a distinctive name can help you identify a connector.",
 				Required:    true,
 			},
-			"connector_type_id": schema.StringAttribute{
+			attrConnectorTypeID: schema.StringAttribute{
 				Description: "The ID of the connector type, e.g. `.index`.",
 				Optional:    true,
 				Computed:    true,
@@ -50,20 +50,20 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 				Description: "A UUID v1 or v4 randomly generated ID.",
 				Computed:    true,
 			},
-			"config": schema.StringAttribute{
+			attrConfig: schema.StringAttribute{
 				Description: "The configuration for the connector. Configuration properties vary depending on the connector type.",
 				CustomType:  jsontypes.NormalizedType{},
 				Computed:    true,
 			},
-			"is_deprecated": schema.BoolAttribute{
+			attrIsDeprecated: schema.BoolAttribute{
 				Description: "Indicates whether the connector type is deprecated.",
 				Computed:    true,
 			},
-			"is_missing_secrets": schema.BoolAttribute{
+			attrIsMissingSecrets: schema.BoolAttribute{
 				Description: "Indicates whether secrets are missing for the connector.",
 				Computed:    true,
 			},
-			"is_preconfigured": schema.BoolAttribute{
+			attrIsPreconfigured: schema.BoolAttribute{
 				Description: "Indicates whether it is a preconfigured connector.",
 				Computed:    true,
 			},

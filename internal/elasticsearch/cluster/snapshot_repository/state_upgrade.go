@@ -26,7 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
-var typeBlockKeys = [...]string{"fs", "url", "gcs", "azure", "s3", "hdfs"}
+var typeBlockKeys = [...]string{repoTypeFS, repoTypeURL, repoTypeGCS, repoTypeAzure, repoTypeS3, repoTypeHDFS}
 
 // migrateSnapshotRepositoryStateV0ToV1 unwraps list-wrapped nested blocks from
 // schema version 0 (SDK) into single objects for Plugin Framework SingleNestedBlock.

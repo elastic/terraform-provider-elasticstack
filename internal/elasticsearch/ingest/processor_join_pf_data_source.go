@@ -61,23 +61,23 @@ func (m *processorJoinModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorJoinDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource",
+			Description: descIdentifier,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
-		"field": schema.StringAttribute{
+		attrField: schema.StringAttribute{
 			Description: "Field containing array values to join.",
 			Required:    true,
 		},
-		"separator": schema.StringAttribute{
+		attrSeparator: schema.StringAttribute{
 			Description: "The separator character.",
 			Required:    true,
 		},
-		"target_field": schema.StringAttribute{
-			Description: "The field to assign the converted value to, by default `field` is updated in-place.",
+		attrTargetField: schema.StringAttribute{
+			Description: descTargetFieldInPlace,
 			Optional:    true,
 		},
 	}

@@ -27,6 +27,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
 
+// attrName is the Terraform schema key for the alias / index name attribute,
+// reused across the alias, write_index and read_indices blocks.
+const attrName = "name"
+
 // getSchemaFactory returns the schema for the alias resource without the
 // elasticsearch_connection block; the envelope injects that block automatically.
 func getSchemaFactory(_ context.Context) schema.Schema {
@@ -42,7 +46,7 @@ func getSchemaFactory(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				Description: "The alias name.",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
@@ -53,7 +57,7 @@ func getSchemaFactory(_ context.Context) schema.Schema {
 				Description: "The write index for the alias. Only one write index is allowed per alias.",
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
-					"name": schema.StringAttribute{
+					attrName: schema.StringAttribute{
 						Description: "Name of the write index.",
 						Required:    true,
 					},
@@ -87,7 +91,7 @@ func getSchemaFactory(_ context.Context) schema.Schema {
 				Optional:    true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
+						attrName: schema.StringAttribute{
 							Description: "Name of the read index.",
 							Required:    true,
 						},

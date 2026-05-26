@@ -28,11 +28,7 @@ import (
 func deleteProxy(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ proxyModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	fleetClient, d := client.GetFleetClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return diags
-	}
+	fleetClient := client.GetFleetClient()
 
 	diags.Append(fleetclient.DeleteProxy(ctx, fleetClient, spaceID, resourceID)...)
 	return diags

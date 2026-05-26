@@ -45,7 +45,7 @@ func newEsqlRuleProcessor() EsqlRuleProcessor {
 }
 
 func (e EsqlRuleProcessor) HandlesRuleType(t string) bool {
-	return t == "esql"
+	return t == ruleTypeESQL
 }
 
 func (e EsqlRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
@@ -63,9 +63,9 @@ func (d Data) toEsqlRuleCreateProps(ctx context.Context, client clients.MinVersi
 	esqlRule := kbapi.SecurityDetectionsAPIEsqlRuleCreateProps{
 		Name:        d.Name.ValueString(),
 		Description: d.Description.ValueString(),
-		Type:        kbapi.SecurityDetectionsAPIEsqlRuleCreatePropsType("esql"),
+		Type:        kbapi.SecurityDetectionsAPIEsqlRuleCreatePropsType(ruleTypeESQL),
 		Query:       d.Query.ValueString(),
-		Language:    kbapi.SecurityDetectionsAPIEsqlQueryLanguage("esql"),
+		Language:    kbapi.SecurityDetectionsAPIEsqlQueryLanguage(ruleTypeESQL),
 		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
 	}
@@ -134,9 +134,9 @@ func (d Data) toEsqlRuleUpdateProps(ctx context.Context, client clients.MinVersi
 		Id:          &uid,
 		Name:        d.Name.ValueString(),
 		Description: d.Description.ValueString(),
-		Type:        kbapi.SecurityDetectionsAPIEsqlRuleUpdatePropsType("esql"),
+		Type:        kbapi.SecurityDetectionsAPIEsqlRuleUpdatePropsType(ruleTypeESQL),
 		Query:       d.Query.ValueString(),
-		Language:    kbapi.SecurityDetectionsAPIEsqlQueryLanguage("esql"),
+		Language:    kbapi.SecurityDetectionsAPIEsqlQueryLanguage(ruleTypeESQL),
 		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
 	}

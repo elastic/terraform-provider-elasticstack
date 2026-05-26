@@ -39,11 +39,7 @@ func readCalendar(ctx context.Context, client *clients.ElasticsearchScopedClient
 
 	tflog.Debug(ctx, fmt.Sprintf("Reading ML calendar: %s", calendarID))
 
-	typedClient, clientDiags := client.GetESClient()
-	diags.Append(clientDiags...)
-	if diags.HasError() {
-		return state, false, diags
-	}
+	typedClient := client.GetESClient()
 
 	res, err := typedClient.Ml.GetCalendars().CalendarId(calendarID).Do(ctx)
 	if err != nil {

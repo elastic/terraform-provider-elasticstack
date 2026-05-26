@@ -35,11 +35,7 @@ func createCalendar(ctx context.Context, client *clients.ElasticsearchScopedClie
 
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML calendar: %s", calendarID))
 
-	typedClient, clientDiags := client.GetESClient()
-	diags.Append(clientDiags...)
-	if diags.HasError() {
-		return entitycore.WriteResult[TFModel]{Model: plan}, diags
-	}
+	typedClient := client.GetESClient()
 
 	_, err := typedClient.Ml.PutCalendar(calendarID).Request(newPutCalendarRequestFromTFModel(plan)).Do(ctx)
 	if err != nil {

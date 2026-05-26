@@ -33,11 +33,7 @@ func updateParameter(ctx context.Context, client *clients.KibanaScopedClient, re
 	plan := req.Plan
 	var diags diag.Diagnostics
 
-	kibanaClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
+	kibanaClient := client.GetKibanaOapiClient()
 
 	input := plan.toParameterRequest(true)
 

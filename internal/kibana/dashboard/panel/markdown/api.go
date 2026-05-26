@@ -62,8 +62,8 @@ func (Handler) PopulateJSONDefaults(config map[string]any) map[string]any {
 			if settings == nil {
 				settings = map[string]any{}
 			}
-			if _, exists := settings["open_links_in_new_tab"]; !exists {
-				settings["open_links_in_new_tab"] = true
+			if _, exists := settings[attrOpenLinksInNewTab]; !exists {
+				settings[attrOpenLinksInNewTab] = true
 			}
 			config["settings"] = settings
 		}

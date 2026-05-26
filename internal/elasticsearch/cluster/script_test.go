@@ -68,8 +68,7 @@ func TestAccResourceScript(t *testing.T) {
 					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 					require.NoError(t, err)
 
-					typedClient, diags := client.GetESClient()
-					require.Empty(t, diags)
+					typedClient := client.GetESClient()
 
 					_, err = typedClient.Core.DeleteScript(scriptID).Do(context.Background())
 					require.NoError(t, err)
@@ -121,10 +120,7 @@ func checkScriptDestroy(s *terraform.State) error {
 		}
 
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
-		typedClient, diags := client.GetESClient()
-		if diags.HasError() {
-			return fmt.Errorf("failed to get elasticsearch client: %v", diags)
-		}
+		typedClient := client.GetESClient()
 		_, err = typedClient.Core.GetScript(compID.ResourceID).Do(context.Background())
 		if err != nil {
 			if esclient.IsNotFoundElasticsearchError(err) {

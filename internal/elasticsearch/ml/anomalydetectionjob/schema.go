@@ -218,21 +218,21 @@ func getSchema(ctx context.Context) schema.Schema {
 												Optional: true,
 												NestedObject: schema.NestedAttributeObject{
 													Attributes: map[string]schema.Attribute{
-														"applies_to": schema.StringAttribute{
+														attrAppliesTo: schema.StringAttribute{
 															MarkdownDescription: "Specifies the result property to which the condition applies.",
 															Required:            true,
 															Validators: []validator.String{
 																stringvalidator.OneOf("actual", "typical", "diff_from_typical", "time"),
 															},
 														},
-														"operator": schema.StringAttribute{
+														attrOperator: schema.StringAttribute{
 															MarkdownDescription: "Specifies the condition operator.",
 															Required:            true,
 															Validators: []validator.String{
 																stringvalidator.OneOf("gt", "gte", "lt", "lte"),
 															},
 														},
-														"value": schema.Float64Attribute{
+														attrValue: schema.Float64Attribute{
 															MarkdownDescription: "The value that is compared against the applies_to field using the operator.",
 															Required:            true,
 														},
@@ -253,14 +253,14 @@ func getSchema(ctx context.Context) schema.Schema {
 												},
 												NestedObject: schema.NestedAttributeObject{
 													Attributes: map[string]schema.Attribute{
-														"filter_id": schema.StringAttribute{
+														attrFilterID: schema.StringAttribute{
 															MarkdownDescription: "The ML filter identifier (`filter_id`) to apply.",
 															Required:            true,
 															Validators: []validator.String{
 																stringvalidator.LengthAtLeast(1),
 															},
 														},
-														"filter_type": schema.StringAttribute{
+														attrFilterType: schema.StringAttribute{
 															MarkdownDescription: "`include` applies the rule to values in the filter; `exclude` applies it to values not in the filter.",
 															Optional:            true,
 															Validators: []validator.String{
@@ -301,7 +301,7 @@ func getSchema(ctx context.Context) schema.Schema {
 						MarkdownDescription: "Settings related to how categorization interacts with partition fields.",
 						Optional:            true,
 						Attributes: map[string]schema.Attribute{
-							"enabled": schema.BoolAttribute{
+							attrEnabled: schema.BoolAttribute{
 								MarkdownDescription: perPartitionCategorizationEnabledDescription,
 								Optional:            true,
 								Computed:            true,
@@ -368,7 +368,7 @@ func getSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "This advanced configuration option stores model information along with the results. It provides a more detailed view into anomaly detection.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
-					"enabled": schema.BoolAttribute{
+					attrEnabled: schema.BoolAttribute{
 						MarkdownDescription: "If true, enables calculation and storage of the model bounds for each entity that is being analyzed.",
 						Optional:            true,
 						Computed:            true,

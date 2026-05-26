@@ -47,7 +47,7 @@ func newNewTermsRuleProcessor() NewTermsRuleProcessor {
 }
 
 func (n NewTermsRuleProcessor) HandlesRuleType(t string) bool {
-	return t == "new_terms"
+	return t == ruleTypeNewTerms
 }
 
 func (n NewTermsRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
@@ -65,7 +65,7 @@ func (d Data) toNewTermsRuleCreateProps(ctx context.Context, client clients.MinV
 	newTermsRule := kbapi.SecurityDetectionsAPINewTermsRuleCreateProps{
 		Name:               d.Name.ValueString(),
 		Description:        d.Description.ValueString(),
-		Type:               kbapi.SecurityDetectionsAPINewTermsRuleCreatePropsType("new_terms"),
+		Type:               kbapi.SecurityDetectionsAPINewTermsRuleCreatePropsType(ruleTypeNewTerms),
 		Query:              d.Query.ValueString(),
 		HistoryWindowStart: d.HistoryWindowStart.ValueString(),
 		RiskScore:          kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
@@ -144,7 +144,7 @@ func (d Data) toNewTermsRuleUpdateProps(ctx context.Context, client clients.MinV
 		Id:                 &uid,
 		Name:               d.Name.ValueString(),
 		Description:        d.Description.ValueString(),
-		Type:               kbapi.SecurityDetectionsAPINewTermsRuleUpdatePropsType("new_terms"),
+		Type:               kbapi.SecurityDetectionsAPINewTermsRuleUpdatePropsType(ruleTypeNewTerms),
 		Query:              d.Query.ValueString(),
 		HistoryWindowStart: d.HistoryWindowStart.ValueString(),
 		RiskScore:          kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),

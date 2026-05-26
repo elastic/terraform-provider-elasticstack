@@ -29,10 +29,7 @@ import (
 )
 
 func PutRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, role *types.Role) fwdiag.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	req := typedClient.Security.PutRole(name)
 
@@ -66,10 +63,7 @@ func PutRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 }
 
 func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, rolename string) (*types.Role, fwdiag.Diagnostics) {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
-	}
+	typedClient := apiClient.GetESClient()
 
 	res, err := typedClient.Security.GetRole().Name(rolename).Do(ctx)
 	if err != nil {
@@ -91,10 +85,7 @@ func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 }
 
 func DeleteRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, rolename string) fwdiag.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Security.DeleteRole(rolename).Do(ctx)
 	if err != nil {

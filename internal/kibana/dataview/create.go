@@ -42,11 +42,7 @@ func createDataView(
 		return entitycore.KibanaWriteResult[dataViewModel]{}, diags
 	}
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[dataViewModel]{}, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	spaceID := req.SpaceID
 	dataView, createDiags := createOrReconcileManagedDataView(ctx, oapiClient, spaceID, body)

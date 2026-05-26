@@ -41,11 +41,11 @@ const schemaVersion int64 = 1
 // objectvalidator.ExactlyOneOf implicitly includes the attribute it is attached
 // to, so this is added to the fs block and lists the remaining sibling blocks.
 var exactlyOneTypeBlock = objectvalidator.ExactlyOneOf(
-	path.MatchRoot("url"),
-	path.MatchRoot("gcs"),
-	path.MatchRoot("azure"),
-	path.MatchRoot("s3"),
-	path.MatchRoot("hdfs"),
+	path.MatchRoot(repoTypeURL),
+	path.MatchRoot(repoTypeGCS),
+	path.MatchRoot(repoTypeAzure),
+	path.MatchRoot(repoTypeS3),
+	path.MatchRoot(repoTypeHDFS),
 )
 
 func GetSchema(_ context.Context) schema.Schema {
@@ -72,12 +72,12 @@ func GetSchema(_ context.Context) schema.Schema {
 			},
 		},
 		Blocks: map[string]schema.Block{
-			"fs":    fsBlock(),
-			"url":   urlBlock(),
-			"gcs":   gcsBlock(),
-			"azure": azureBlock(),
-			"s3":    s3Block(),
-			"hdfs":  hdfsBlock(),
+			repoTypeFS:    fsBlock(),
+			repoTypeURL:   urlBlock(),
+			repoTypeGCS:   gcsBlock(),
+			repoTypeAzure: azureBlock(),
+			repoTypeS3:    s3Block(),
+			repoTypeHDFS:  hdfsBlock(),
 		},
 	}
 }
@@ -85,29 +85,29 @@ func GetSchema(_ context.Context) schema.Schema {
 // commonBlockAttributes returns the common settings shared across most repository types.
 func commonBlockAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"chunk_size": schema.StringAttribute{
+		settingChunkSize: schema.StringAttribute{
 			MarkdownDescription: "Maximum size of files in snapshots.",
 			Optional:            true,
 			Computed:            true,
 		},
-		"compress": schema.BoolAttribute{
+		settingCompress: schema.BoolAttribute{
 			MarkdownDescription: "If true, metadata files, such as index mappings and settings, are compressed in snapshots.",
 			Optional:            true,
 			Computed:            true,
 			Default:             booldefault.StaticBool(true),
 		},
-		"max_snapshot_bytes_per_sec": schema.StringAttribute{
+		settingMaxSnapshotBytesPerSec: schema.StringAttribute{
 			MarkdownDescription: "Maximum snapshot creation rate per node.",
 			Optional:            true,
 			Computed:            true,
 			Default:             stringdefault.StaticString("40mb"),
 		},
-		"max_restore_bytes_per_sec": schema.StringAttribute{
+		settingMaxRestoreBytesPerSec: schema.StringAttribute{
 			MarkdownDescription: "Maximum snapshot restore rate per node.",
 			Optional:            true,
 			Computed:            true,
 		},
-		"readonly": schema.BoolAttribute{
+		settingReadonly: schema.BoolAttribute{
 			MarkdownDescription: "If true, the repository is read-only.",
 			Optional:            true,
 			Computed:            true,
@@ -119,7 +119,7 @@ func commonBlockAttributes() map[string]schema.Attribute {
 // commonStdBlockAttributes returns attributes for standard (non-URL) repositories.
 func commonStdBlockAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"max_number_of_snapshots": schema.Int64Attribute{
+		settingMaxNumberOfSnapshots: schema.Int64Attribute{
 			MarkdownDescription: "Maximum number of snapshots the repository can contain.",
 			Optional:            true,
 			Computed:            true,
@@ -133,7 +133,7 @@ func commonStdBlockAttributes() map[string]schema.Attribute {
 
 func fsBlock() schema.Block {
 	attrs := mergeAttributes(commonBlockAttributes(), commonStdBlockAttributes(), map[string]schema.Attribute{
-		"location": schema.StringAttribute{
+		settingLocation: schema.StringAttribute{
 			MarkdownDescription: "Location of the shared filesystem used to store and retrieve snapshots.",
 			Optional:            true,
 			Computed:            true,
@@ -148,14 +148,14 @@ func fsBlock() schema.Block {
 		Attributes: attrs,
 		Validators: []validator.Object{
 			exactlyOneTypeBlock,
-			objectvalidator.AlsoRequires(path.MatchRelative().AtName("location")),
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName(settingLocation)),
 		},
 	}
 }
 
 func urlBlock() schema.Block {
 	attrs := mergeAttributes(commonBlockAttributes(), commonStdBlockAttributes(), map[string]schema.Attribute{
-		"url": schema.StringAttribute{
+		settingURL: schema.StringAttribute{
 			MarkdownDescription: "URL location of the root of the shared filesystem repository.",
 			Optional:            true,
 			Computed:            true,
@@ -166,7 +166,7 @@ func urlBlock() schema.Block {
 				validators.IsURI("file", "ftp", "http", "https", "jar"),
 			},
 		},
-		"http_max_retries": schema.Int64Attribute{
+		settingHTTPMaxRetries: schema.Int64Attribute{
 			MarkdownDescription: "Maximum number of retries for http and https URLs.",
 			Optional:            true,
 			Computed:            true,
@@ -175,7 +175,7 @@ func urlBlock() schema.Block {
 				int64validator.AtLeast(0),
 			},
 		},
-		"http_socket_timeout": schema.StringAttribute{
+		settingHTTPSocketTimeout: schema.StringAttribute{
 			MarkdownDescription: "Maximum wait time for data transfers over a connection.",
 			Optional:            true,
 			Computed:            true,
@@ -186,14 +186,14 @@ func urlBlock() schema.Block {
 		MarkdownDescription: "URL repository. Provides read-only access to a shared filesystem repository.",
 		Attributes:          attrs,
 		Validators: []validator.Object{
-			objectvalidator.AlsoRequires(path.MatchRelative().AtName("url")),
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName(settingURL)),
 		},
 	}
 }
 
 func gcsBlock() schema.Block {
 	attrs := mergeAttributes(commonBlockAttributes(), map[string]schema.Attribute{
-		"bucket": schema.StringAttribute{
+		settingBucket: schema.StringAttribute{
 			MarkdownDescription: "The name of the bucket to be used for snapshots.",
 			Optional:            true,
 			Computed:            true,
@@ -201,13 +201,13 @@ func gcsBlock() schema.Block {
 				stringplanmodifier.RequiresReplace(),
 			},
 		},
-		"client": schema.StringAttribute{
+		settingClient: schema.StringAttribute{
 			MarkdownDescription: "The name of the client to use to connect to Google Cloud Storage.",
 			Optional:            true,
 			Computed:            true,
 			Default:             stringdefault.StaticString("default"),
 		},
-		"base_path": schema.StringAttribute{
+		settingBasePath: schema.StringAttribute{
 			MarkdownDescription: "Specifies the path within the bucket to the repository data. Defaults to the root of the bucket.",
 			Optional:            true,
 			Computed:            true,
@@ -217,14 +217,14 @@ func gcsBlock() schema.Block {
 		MarkdownDescription: "Google Cloud Storage repository. Stores snapshots in a Google Cloud Storage bucket.",
 		Attributes:          attrs,
 		Validators: []validator.Object{
-			objectvalidator.AlsoRequires(path.MatchRelative().AtName("bucket")),
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName(settingBucket)),
 		},
 	}
 }
 
 func azureBlock() schema.Block {
 	attrs := mergeAttributes(commonBlockAttributes(), map[string]schema.Attribute{
-		"container": schema.StringAttribute{
+		settingContainer: schema.StringAttribute{
 			MarkdownDescription: "Container name. You must create the Azure container before creating the repository.",
 			Optional:            true,
 			Computed:            true,
@@ -232,18 +232,18 @@ func azureBlock() schema.Block {
 				stringplanmodifier.RequiresReplace(),
 			},
 		},
-		"client": schema.StringAttribute{
+		settingClient: schema.StringAttribute{
 			MarkdownDescription: "Azure named client to use.",
 			Optional:            true,
 			Computed:            true,
 			Default:             stringdefault.StaticString("default"),
 		},
-		"base_path": schema.StringAttribute{
+		settingBasePath: schema.StringAttribute{
 			MarkdownDescription: "Specifies the path within the container to the repository data.",
 			Optional:            true,
 			Computed:            true,
 		},
-		"location_mode": schema.StringAttribute{
+		settingLocationMode: schema.StringAttribute{
 			MarkdownDescription: "Location mode for the Azure repository. `primary_only` or `secondary_only`. " +
 				"See the [Azure storage redundancy documentation](https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy) for more details.",
 			Optional: true,
@@ -258,14 +258,14 @@ func azureBlock() schema.Block {
 		MarkdownDescription: "Azure repository. Stores snapshots in Microsoft Azure Blob Storage.",
 		Attributes:          attrs,
 		Validators: []validator.Object{
-			objectvalidator.AlsoRequires(path.MatchRelative().AtName("container")),
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName(settingContainer)),
 		},
 	}
 }
 
 func s3Block() schema.Block {
 	attrs := mergeAttributes(commonBlockAttributes(), map[string]schema.Attribute{
-		"bucket": schema.StringAttribute{
+		settingBucket: schema.StringAttribute{
 			MarkdownDescription: "Name of the S3 bucket to use for snapshots.",
 			Optional:            true,
 			Computed:            true,
@@ -273,7 +273,7 @@ func s3Block() schema.Block {
 				stringplanmodifier.RequiresReplace(),
 			},
 		},
-		"endpoint": schema.StringAttribute{
+		settingEndpoint: schema.StringAttribute{
 			MarkdownDescription: "Custom S3 service endpoint, useful when using VPC endpoints or non-default S3 URLs.",
 			Optional:            true,
 			Computed:            true,
@@ -281,29 +281,29 @@ func s3Block() schema.Block {
 				validators.IsURL("http", "https"),
 			},
 		},
-		"client": schema.StringAttribute{
+		settingClient: schema.StringAttribute{
 			MarkdownDescription: "The name of the S3 client to use to connect to S3.",
 			Optional:            true,
 			Computed:            true,
 			Default:             stringdefault.StaticString("default"),
 		},
-		"base_path": schema.StringAttribute{
+		settingBasePath: schema.StringAttribute{
 			MarkdownDescription: "Specifies the path to the repository data within its bucket.",
 			Optional:            true,
 			Computed:            true,
 		},
-		"server_side_encryption": schema.BoolAttribute{
+		settingServerSideEncryption: schema.BoolAttribute{
 			MarkdownDescription: "When true, files are encrypted server-side using AES-256 algorithm.",
 			Optional:            true,
 			Computed:            true,
 			Default:             booldefault.StaticBool(false),
 		},
-		"buffer_size": schema.StringAttribute{
+		settingBufferSize: schema.StringAttribute{
 			MarkdownDescription: "Minimum threshold below which the chunk is uploaded using a single request.",
 			Optional:            true,
 			Computed:            true,
 		},
-		"canned_acl": schema.StringAttribute{
+		settingCannedACL: schema.StringAttribute{
 			MarkdownDescription: "The S3 repository supports all S3 canned ACLs.",
 			Optional:            true,
 			Computed:            true,
@@ -312,7 +312,7 @@ func s3Block() schema.Block {
 				stringvalidator.OneOf("private", "public-read", "public-read-write", "authenticated-read", "log-delivery-write", "bucket-owner-read", "bucket-owner-full-control"),
 			},
 		},
-		"storage_class": schema.StringAttribute{
+		settingStorageClass: schema.StringAttribute{
 			MarkdownDescription: "Sets the S3 storage class for objects stored in the snapshot repository.",
 			Optional:            true,
 			Computed:            true,
@@ -321,7 +321,7 @@ func s3Block() schema.Block {
 				stringvalidator.OneOf("standard", "reduced_redundancy", "standard_ia", "onezone_ia", "intelligent_tiering"),
 			},
 		},
-		"path_style_access": schema.BoolAttribute{
+		settingPathStyleAccess: schema.BoolAttribute{
 			MarkdownDescription: "If true, path style access pattern will be used.",
 			Optional:            true,
 			Computed:            true,
@@ -332,14 +332,14 @@ func s3Block() schema.Block {
 		MarkdownDescription: "S3 repository. Stores snapshots in an Amazon S3 bucket.",
 		Attributes:          attrs,
 		Validators: []validator.Object{
-			objectvalidator.AlsoRequires(path.MatchRelative().AtName("bucket")),
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName(settingBucket)),
 		},
 	}
 }
 
 func hdfsBlock() schema.Block {
 	attrs := mergeAttributes(commonBlockAttributes(), map[string]schema.Attribute{
-		"uri": schema.StringAttribute{
+		settingURI: schema.StringAttribute{
 			MarkdownDescription: `The uri address for hdfs. ex: "hdfs://<host>:<port>/".`,
 			Optional:            true,
 			Computed:            true,
@@ -347,7 +347,7 @@ func hdfsBlock() schema.Block {
 				stringplanmodifier.RequiresReplace(),
 			},
 		},
-		"path": schema.StringAttribute{
+		settingPath: schema.StringAttribute{
 			MarkdownDescription: "The file path within the filesystem where data is stored/loaded.",
 			Optional:            true,
 			Computed:            true,
@@ -355,7 +355,7 @@ func hdfsBlock() schema.Block {
 				stringplanmodifier.RequiresReplace(),
 			},
 		},
-		"load_defaults": schema.BoolAttribute{
+		settingLoadDefaults: schema.BoolAttribute{
 			MarkdownDescription: "Whether to load the default Hadoop configuration or not.",
 			Optional:            true,
 			Computed:            true,
@@ -367,8 +367,8 @@ func hdfsBlock() schema.Block {
 		Attributes:          attrs,
 		Validators: []validator.Object{
 			objectvalidator.AlsoRequires(
-				path.MatchRelative().AtName("uri"),
-				path.MatchRelative().AtName("path"),
+				path.MatchRelative().AtName(settingURI),
+				path.MatchRelative().AtName(settingPath),
 			),
 		},
 	}
