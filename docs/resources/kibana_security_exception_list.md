@@ -35,7 +35,7 @@ resource "elasticstack_kibana_security_exception_list" "endpoint" {
 
 - `description` (String) Describes the exception list.
 - `name` (String) The name of the exception list.
-- `type` (String) The type of exception list. Can be one of: `detection`, `endpoint`, `endpoint_trusted_apps`, `endpoint_events`, `endpoint_host_isolation_exceptions`, `endpoint_blocklists`.
+- `type` (String) The type of exception list. Can be one of: `detection`, `endpoint`, `endpoint_trusted_apps`, `endpoint_events`, `endpoint_host_isolation_exceptions`, `endpoint_blocklists`, `rule_default`.
 
 ### Optional
 
