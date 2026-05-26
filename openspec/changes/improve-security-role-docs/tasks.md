@@ -29,9 +29,9 @@
 
 ## 5. Update Resource Doc Templates
 
-- [ ] 5.1 Add "See also: [Security Roles Guide](../guides/security-roles)" link to `templates/resources/kibana_security_role.md.tmpl` immediately after the resource description
-- [ ] 5.2 Add the same "See also" link to `templates/resources/elasticsearch_security_role.md.tmpl`
-- [ ] 5.3 Update template `{{ .ExampleFile }}` or equivalent directives to reference the new scenario files (verify tfplugindocs picks them up correctly)
+- [x] 5.1 Add "See also: [Security Roles Guide](../guides/security-roles)" link to `templates/resources/kibana_security_role.md.tmpl` immediately after the resource description
+- [x] 5.2 Add the same "See also" link to `templates/resources/elasticsearch_security_role.md.tmpl`
+- [x] 5.3 Update template `{{ .ExampleFile }}` or equivalent directives to reference the new scenario files (verify tfplugindocs picks them up correctly)
 
 ## 6. Create Curated Features JSON
 
