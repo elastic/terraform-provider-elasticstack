@@ -18,7 +18,6 @@ The `start` and `end` attributes are user inputs: values you set in configuratio
 See [issue #2353](https://github.com/elastic/terraform-provider-elasticstack/issues/2353) for background on preserving explicit `start` / `end` values.
 
 Note: Starting a non-realtime datafeed (i.e with an absolute end time) will result in the datafeed automatically stopping once all available data has been processed. By default, Terraform will restart the datafeed from the configured start time and reprocess all data again. It's recommended to ignore changes to the `state` attribute via the [resource lifecycle](https://developer.hashicorp.com/terraform/tutorials/state/resource-lifecycle#ignore-changes) for non-realtime datafeeds.
-
 ## Example Usage
 
 ```terraform

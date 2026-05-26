@@ -9,7 +9,6 @@ description: |-
 # elasticstack_fleet_agent_download_source (Resource)
 
 Creates a new Fleet Agent Binary Download Source.
-
 ## Example Usage
 
 ```terraform

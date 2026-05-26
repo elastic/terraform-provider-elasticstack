@@ -9,7 +9,6 @@ description: |-
 # elasticstack_fleet_proxy (Resource)
 
 Manages Fleet proxies. See the [Fleet Proxies API documentation](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-fleet-proxies) for more information.
-
 ## Example Usage
 
 ```terraform

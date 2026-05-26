@@ -29,7 +29,6 @@ This resource uses the following Elasticsearch APIs:
 - Opening a job allows it to receive and process data.
 - Closing a job stops data processing and frees up resources.
 - Jobs can be opened and closed multiple times throughout their lifecycle.
-
 ## Example Usage
 
 ```terraform
