@@ -1,8 +1,8 @@
 ## 1. Remove Generic Examples
 
-- [ ] 1.1 Delete `examples/resources/elasticstack_kibana_security_role/resource-with-base.tf`
-- [ ] 1.2 Delete `examples/resources/elasticstack_kibana_security_role/resource-with-feature.tf`
-- [ ] 1.3 Delete `examples/resources/elasticstack_elasticsearch_security_role/resource.tf`
+- [x] 1.1 Delete `examples/resources/elasticstack_kibana_security_role/resource-with-base.tf`
+- [x] 1.2 Delete `examples/resources/elasticstack_kibana_security_role/resource-with-feature.tf`
+- [x] 1.3 Delete `examples/resources/elasticstack_elasticsearch_security_role/resource.tf`
 
 ## 2. Add Scenario Example Files — Kibana Security Role
 
