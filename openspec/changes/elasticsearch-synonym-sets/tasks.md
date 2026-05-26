@@ -25,19 +25,19 @@
 
 ## 4. Data source
 
-- [ ] 4.1 Create `internal/elasticsearch/synonyms/data_source.go`:
+- [x] 4.1 Create `internal/elasticsearch/synonyms/data_source.go`:
   - `NewSynonymSetDataSource() datasource.DataSource` — wire `entitycore.NewElasticsearchDataSource[SynonymSetData]`
   - Schema: `synonym_set_id` required; all other fields computed
   - Read handler calling `GetSynonymSet`, erroring when not found
 
 ## 5. Descriptions
 
-- [ ] 5.1 Create `internal/elasticsearch/synonyms/descriptions/` directory with markdown description files for the resource and data source
+- [x] 5.1 Create `internal/elasticsearch/synonyms/descriptions/` directory with markdown description files for the resource and data source
 
 ## 6. Provider registration
 
-- [ ] 6.1 Register `synonyms.NewSynonymSetResource` in `provider/plugin_framework.go` resources list
-- [ ] 6.2 Register `synonyms.NewSynonymSetDataSource` in `provider/plugin_framework.go` data sources list
+- [x] 6.1 Register `synonyms.NewSynonymSetResource` in `provider/plugin_framework.go` resources list
+- [x] 6.2 Register `synonyms.NewSynonymSetDataSource` in `provider/plugin_framework.go` data sources list
 
 ## 7. Tests
 
