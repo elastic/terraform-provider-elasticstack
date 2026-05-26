@@ -25,10 +25,17 @@ import (
 )
 
 // PartitionLegendFromPieLegend maps API pie legend into Terraform partition legend model.
-func PartitionLegendFromPieLegend(m *models.PartitionLegendModel, api kbapi.KibanaHTTPAPIsPieLegend) {
+func PartitionLegendFromPieLegend(m *models.PartitionLegendModel, api *kbapi.KibanaHTTPAPIsPieLegend) {
+	if api == nil {
+		m.Nested = types.BoolNull()
+		m.Size = types.StringValue(string(kbapi.KibanaHTTPAPIsLegendSizeAuto))
+		m.TruncateAfterLine = types.Int64Null()
+		m.Visible = types.StringValue(string(kbapi.KibanaHTTPAPIsPieLegendVisibilityAuto))
+		return
+	}
 	m.Nested = types.BoolPointerValue(api.Nested)
-	if api.Size != "" {
-		m.Size = types.StringValue(string(api.Size))
+	if api.Size != nil && *api.Size != "" {
+		m.Size = types.StringValue(string(*api.Size))
 	} else {
 		m.Size = types.StringValue(string(kbapi.KibanaHTTPAPIsLegendSizeAuto))
 	}
@@ -46,8 +53,9 @@ func PartitionLegendFromPieLegend(m *models.PartitionLegendModel, api kbapi.Kiba
 }
 
 // PartitionLegendToPieLegend maps Terraform partition legend model to API pie legend.
-func PartitionLegendToPieLegend(m *models.PartitionLegendModel) kbapi.KibanaHTTPAPIsPieLegend {
-	legend := kbapi.KibanaHTTPAPIsPieLegend{Size: kbapi.KibanaHTTPAPIsLegendSize(m.Size.ValueString())}
+func PartitionLegendToPieLegend(m *models.PartitionLegendModel) *kbapi.KibanaHTTPAPIsPieLegend {
+	size := kbapi.KibanaHTTPAPIsLegendSize(m.Size.ValueString())
+	legend := &kbapi.KibanaHTTPAPIsPieLegend{Size: &size}
 	if typeutils.IsKnown(m.Nested) {
 		legend.Nested = new(m.Nested.ValueBool())
 	}
@@ -62,9 +70,20 @@ func PartitionLegendToPieLegend(m *models.PartitionLegendModel) kbapi.KibanaHTTP
 }
 
 // PartitionLegendFromTreemapLegend maps API treemap legend into Terraform partition legend model.
-func PartitionLegendFromTreemapLegend(m *models.PartitionLegendModel, api kbapi.KibanaHTTPAPIsTreemapLegend) {
+func PartitionLegendFromTreemapLegend(m *models.PartitionLegendModel, api *kbapi.KibanaHTTPAPIsTreemapLegend) {
+	if api == nil {
+		m.Nested = types.BoolNull()
+		m.Size = types.StringNull()
+		m.TruncateAfterLine = types.Int64Null()
+		m.Visible = types.StringNull()
+		return
+	}
 	m.Nested = types.BoolPointerValue(api.Nested)
-	m.Size = types.StringValue(string(api.Size))
+	if api.Size != nil {
+		m.Size = types.StringValue(string(*api.Size))
+	} else {
+		m.Size = types.StringNull()
+	}
 	if api.TruncateAfterLines != nil {
 		m.TruncateAfterLine = types.Int64Value(int64(*api.TruncateAfterLines))
 	} else {
@@ -78,9 +97,20 @@ func PartitionLegendFromTreemapLegend(m *models.PartitionLegendModel, api kbapi.
 }
 
 // PartitionLegendFromMosaicLegend maps API mosaic legend into Terraform partition legend model.
-func PartitionLegendFromMosaicLegend(m *models.PartitionLegendModel, api kbapi.KibanaHTTPAPIsMosaicLegend) {
+func PartitionLegendFromMosaicLegend(m *models.PartitionLegendModel, api *kbapi.KibanaHTTPAPIsMosaicLegend) {
+	if api == nil {
+		m.Nested = types.BoolNull()
+		m.Size = types.StringNull()
+		m.TruncateAfterLine = types.Int64Null()
+		m.Visible = types.StringNull()
+		return
+	}
 	m.Nested = types.BoolPointerValue(api.Nested)
-	m.Size = types.StringValue(string(api.Size))
+	if api.Size != nil {
+		m.Size = types.StringValue(string(*api.Size))
+	} else {
+		m.Size = types.StringNull()
+	}
 	if api.TruncateAfterLines != nil {
 		m.TruncateAfterLine = types.Int64Value(int64(*api.TruncateAfterLines))
 	} else {
@@ -94,8 +124,9 @@ func PartitionLegendFromMosaicLegend(m *models.PartitionLegendModel, api kbapi.K
 }
 
 // PartitionLegendToTreemapLegend maps Terraform partition legend model to API treemap legend.
-func PartitionLegendToTreemapLegend(m *models.PartitionLegendModel) kbapi.KibanaHTTPAPIsTreemapLegend {
-	legend := kbapi.KibanaHTTPAPIsTreemapLegend{Size: kbapi.KibanaHTTPAPIsLegendSize(m.Size.ValueString())}
+func PartitionLegendToTreemapLegend(m *models.PartitionLegendModel) *kbapi.KibanaHTTPAPIsTreemapLegend {
+	size := kbapi.KibanaHTTPAPIsLegendSize(m.Size.ValueString())
+	legend := &kbapi.KibanaHTTPAPIsTreemapLegend{Size: &size}
 	if typeutils.IsKnown(m.Nested) {
 		legend.Nested = new(m.Nested.ValueBool())
 	}
@@ -110,8 +141,9 @@ func PartitionLegendToTreemapLegend(m *models.PartitionLegendModel) kbapi.Kibana
 }
 
 // PartitionLegendToMosaicLegend maps Terraform partition legend model to API mosaic legend.
-func PartitionLegendToMosaicLegend(m *models.PartitionLegendModel) kbapi.KibanaHTTPAPIsMosaicLegend {
-	legend := kbapi.KibanaHTTPAPIsMosaicLegend{Size: kbapi.KibanaHTTPAPIsLegendSize(m.Size.ValueString())}
+func PartitionLegendToMosaicLegend(m *models.PartitionLegendModel) *kbapi.KibanaHTTPAPIsMosaicLegend {
+	size := kbapi.KibanaHTTPAPIsLegendSize(m.Size.ValueString())
+	legend := &kbapi.KibanaHTTPAPIsMosaicLegend{Size: &size}
 	if typeutils.IsKnown(m.Nested) {
 		legend.Nested = new(m.Nested.ValueBool())
 	}
@@ -126,7 +158,12 @@ func PartitionLegendToMosaicLegend(m *models.PartitionLegendModel) kbapi.KibanaH
 }
 
 // PartitionValueDisplayFromAPI maps API value display styling into Terraform model.
-func PartitionValueDisplayFromAPI(m *models.PartitionValueDisplay, api kbapi.KibanaHTTPAPIsValueDisplay) {
+func PartitionValueDisplayFromAPI(m *models.PartitionValueDisplay, api *kbapi.KibanaHTTPAPIsValueDisplay) {
+	if api == nil {
+		m.Mode = types.StringNull()
+		m.PercentDecimals = types.Float64Null()
+		return
+	}
 	m.Mode = typeutils.StringishPointerValue(api.Mode)
 	if api.PercentDecimals != nil {
 		m.PercentDecimals = types.Float64Value(float64(*api.PercentDecimals))
@@ -136,8 +173,8 @@ func PartitionValueDisplayFromAPI(m *models.PartitionValueDisplay, api kbapi.Kib
 }
 
 // PartitionValueDisplayToAPI maps Terraform partition value display model to API.
-func PartitionValueDisplayToAPI(m *models.PartitionValueDisplay) kbapi.KibanaHTTPAPIsValueDisplay {
-	vd := kbapi.KibanaHTTPAPIsValueDisplay{}
+func PartitionValueDisplayToAPI(m *models.PartitionValueDisplay) *kbapi.KibanaHTTPAPIsValueDisplay {
+	vd := &kbapi.KibanaHTTPAPIsValueDisplay{}
 	if typeutils.IsKnown(m.Mode) {
 		mode := kbapi.KibanaHTTPAPIsValueDisplayMode(m.Mode.ValueString())
 		vd.Mode = &mode

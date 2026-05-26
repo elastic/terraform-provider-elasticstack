@@ -25,8 +25,8 @@ import (
 )
 
 // toCreateAPI converts the Terraform model to the POST API model
-func accessControlValueToCreateAPI(m *models.AccessControlValue) kbapi.KibanaHTTPAPIsKbnDashboardAccessControl {
-	result := kbapi.KibanaHTTPAPIsKbnDashboardAccessControl{}
+func accessControlValueToCreateAPI(m *models.AccessControlValue) *kbapi.KibanaHTTPAPIsKbnDashboardAccessControl {
+	result := &kbapi.KibanaHTTPAPIsKbnDashboardAccessControl{}
 	if m == nil {
 		return result
 	}

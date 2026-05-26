@@ -59,62 +59,68 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	var c converter
 	resolver := stubResolver{}
 
+	query := kbapi.KibanaHTTPAPIsFilterSimple{
+		Expression: "status:200",
+		Language: func() *kbapi.KibanaHTTPAPIsFilterSimpleLanguage {
+			lang := kbapi.KibanaHTTPAPIsFilterSimpleLanguage("kql")
+			return &lang
+		}(),
+	}
+	xOrientation := kbapi.KibanaHTTPAPIsVisApiOrientation("horizontal")
+	xAxis := kbapi.KibanaHTTPAPIsHeatmapXAxis{
+		Labels: &struct {
+			Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
+			Visible     *bool                                  `json:"visible,omitempty"`
+		}{
+			Orientation: &xOrientation,
+			Visible:     new(true),
+		},
+		Title: &struct {
+			Text    *string `json:"text,omitempty"`
+			Visible *bool   `json:"visible,omitempty"`
+		}{
+			Text:    new("X Axis"),
+			Visible: new(true),
+		},
+	}
+	yAxisConfig := kbapi.KibanaHTTPAPIsHeatmapYAxis{
+		Labels: &struct {
+			Visible *bool `json:"visible,omitempty"`
+		}{
+			Visible: new(false),
+		},
+		Title: &struct {
+			Text    *string `json:"text,omitempty"`
+			Visible *bool   `json:"visible,omitempty"`
+		}{
+			Text:    new("Y Axis"),
+			Visible: new(true),
+		},
+	}
+	cells := kbapi.KibanaHTTPAPIsHeatmapCells{
+		Labels: &struct {
+			Visible *bool `json:"visible,omitempty"`
+		}{
+			Visible: new(true),
+		},
+	}
+	legendSize := kbapi.KibanaHTTPAPIsLegendSizeM
 	heatmap := kbapi.KibanaHTTPAPIsHeatmapNoESQL{
 		Type:                kbapi.KibanaHTTPAPIsHeatmapNoESQLTypeHeatmap,
 		Title:               new("Test Heatmap"),
 		Description:         new("Heatmap description"),
 		IgnoreGlobalFilters: new(true),
 		Sampling:            new(float32(0.5)),
-		Query: kbapi.KibanaHTTPAPIsFilterSimple{
-			Expression: "status:200",
-			Language: func() *kbapi.KibanaHTTPAPIsFilterSimpleLanguage {
-				lang := kbapi.KibanaHTTPAPIsFilterSimpleLanguage("kql")
-				return &lang
-			}(),
+		Query:               &query,
+		Axis: &kbapi.KibanaHTTPAPIsHeatmapAxes{
+			X: &xAxis,
+			Y: &yAxisConfig,
 		},
-		Axis: kbapi.KibanaHTTPAPIsHeatmapAxes{
-			X: kbapi.KibanaHTTPAPIsHeatmapXAxis{
-				Labels: &struct {
-					Orientation kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation"`
-					Visible     *bool                                 `json:"visible,omitempty"`
-				}{
-					Orientation: kbapi.KibanaHTTPAPIsVisApiOrientation("horizontal"),
-					Visible:     new(true),
-				},
-				Title: &struct {
-					Text    *string `json:"text,omitempty"`
-					Visible *bool   `json:"visible,omitempty"`
-				}{
-					Text:    new("X Axis"),
-					Visible: new(true),
-				},
-			},
-			Y: kbapi.KibanaHTTPAPIsHeatmapYAxis{
-				Labels: &struct {
-					Visible *bool `json:"visible,omitempty"`
-				}{
-					Visible: new(false),
-				},
-				Title: &struct {
-					Text    *string `json:"text,omitempty"`
-					Visible *bool   `json:"visible,omitempty"`
-				}{
-					Text:    new("Y Axis"),
-					Visible: new(true),
-				},
-			},
+		Styling: &kbapi.KibanaHTTPAPIsHeatmapStyling{
+			Cells: &cells,
 		},
-		Styling: kbapi.KibanaHTTPAPIsHeatmapStyling{
-			Cells: kbapi.KibanaHTTPAPIsHeatmapCells{
-				Labels: &struct {
-					Visible *bool `json:"visible,omitempty"`
-				}{
-					Visible: new(true),
-				},
-			},
-		},
-		Legend: kbapi.KibanaHTTPAPIsHeatmapLegend{
-			Size: kbapi.KibanaHTTPAPIsLegendSizeM,
+		Legend: &kbapi.KibanaHTTPAPIsHeatmapLegend{
+			Size: &legendSize,
 			Visibility: func() *kbapi.KibanaHTTPAPIsHeatmapLegendVisibility {
 				visibility := kbapi.KibanaHTTPAPIsHeatmapLegendVisibilityVisible
 				return &visibility
@@ -132,7 +138,8 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 
 	var fItem kbapi.KibanaHTTPAPIsLensPanelFilters_Item
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"condition","condition":{"field":"status","operator":"is","value":"200"}}`), &fItem))
-	heatmap.Filters = []kbapi.KibanaHTTPAPIsLensPanelFilters_Item{fItem}
+	filters := kbapi.KibanaHTTPAPIsLensPanelFilters{fItem}
+	heatmap.Filters = &filters
 
 	var attrs lenscommon.VisByValueConfig0
 	require.NoError(t, attrs.FromKibanaHTTPAPIsHeatmapNoESQL(heatmap))
@@ -149,6 +156,7 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	assert.Equal(t, kbapi.KibanaHTTPAPIsHeatmapNoESQLTypeHeatmap, heatmapRoundTrip.Type)
 	require.NotNil(t, heatmapRoundTrip.Title)
 	assert.Equal(t, "Test Heatmap", *heatmapRoundTrip.Title)
+	require.NotNil(t, heatmapRoundTrip.Query)
 	assert.Equal(t, "status:200", heatmapRoundTrip.Query.Expression)
 }
 

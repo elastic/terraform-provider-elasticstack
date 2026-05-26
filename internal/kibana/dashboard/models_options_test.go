@@ -285,7 +285,7 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 			if tt.options != nil {
 				apiOpts = *tt.options
 			}
-			got := dashboardMapOptionsFromAPI(m, apiOpts)
+			got := dashboardMapOptionsFromAPI(m, &apiOpts)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -483,7 +483,7 @@ func Test_optionsModel_roundTrip(t *testing.T) {
 
 			// Convert back to Terraform model
 			dm := &models.DashboardModel{}
-			roundTripModel := dashboardMapOptionsFromAPI(dm, *apiModel)
+			roundTripModel := dashboardMapOptionsFromAPI(dm, apiModel)
 			require.NotNil(t, roundTripModel)
 
 			// Compare the original and round-trip models

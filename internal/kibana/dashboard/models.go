@@ -59,38 +59,50 @@ func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, res
 	if m.TimeRange != nil {
 		preservedMode = m.TimeRange.Mode
 	}
-	m.TimeRange = &models.TimeRangeModel{
-		From: types.StringValue(data.Data.TimeRange.From),
-		To:   types.StringValue(data.Data.TimeRange.To),
-		Mode: preservedMode,
+	if data.Data.TimeRange != nil {
+		m.TimeRange = &models.TimeRangeModel{
+			From: types.StringValue(data.Data.TimeRange.From),
+			To:   types.StringValue(data.Data.TimeRange.To),
+			Mode: preservedMode,
+		}
+	} else {
+		m.TimeRange = nil
 	}
 
 	// Map refresh interval
-	m.RefreshInterval = &models.RefreshIntervalModel{
-		Pause: types.BoolValue(data.Data.RefreshInterval.Pause),
-		Value: types.Int64Value(int64(data.Data.RefreshInterval.Value)),
+	if data.Data.RefreshInterval != nil {
+		m.RefreshInterval = &models.RefreshIntervalModel{
+			Pause: types.BoolValue(data.Data.RefreshInterval.Pause),
+			Value: types.Int64Value(int64(data.Data.RefreshInterval.Value)),
+		}
+	} else {
+		m.RefreshInterval = nil
 	}
 
 	// Map query (KbnAsCodeQuery: language + expression string)
-	q := &models.DashboardQueryModel{
-		Language: types.StringValue(string(data.Data.Query.Language)),
-	}
-	expr := data.Data.Query.Expression
-	trimmed := bytes.TrimSpace([]byte(expr))
-	if len(trimmed) > 0 && trimmed[0] == '{' {
-		var obj map[string]any
-		if err := json.Unmarshal(trimmed, &obj); err == nil {
-			q.Text = types.StringNull()
-			q.JSON = jsontypes.NewNormalizedValue(string(trimmed))
+	if data.Data.Query != nil {
+		q := &models.DashboardQueryModel{
+			Language: types.StringValue(string(data.Data.Query.Language)),
+		}
+		expr := data.Data.Query.Expression
+		trimmed := bytes.TrimSpace([]byte(expr))
+		if len(trimmed) > 0 && trimmed[0] == '{' {
+			var obj map[string]any
+			if err := json.Unmarshal(trimmed, &obj); err == nil {
+				q.Text = types.StringNull()
+				q.JSON = jsontypes.NewNormalizedValue(string(trimmed))
+			} else {
+				q.Text = types.StringValue(expr)
+				q.JSON = jsontypes.NewNormalizedNull()
+			}
 		} else {
 			q.Text = types.StringValue(expr)
 			q.JSON = jsontypes.NewNormalizedNull()
 		}
+		m.Query = q
 	} else {
-		q.Text = types.StringValue(expr)
-		q.JSON = jsontypes.NewNormalizedNull()
+		m.Query = nil
 	}
-	m.Query = q
 	dashboardMapDashboardFiltersFromAPI(ctx, m, &data.Data, &diags)
 
 	// Map tags
@@ -105,7 +117,7 @@ func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, res
 
 	// Map access control
 	var accessMode *string
-	if data.Data.AccessControl.AccessMode != nil {
+	if data.Data.AccessControl != nil && data.Data.AccessControl.AccessMode != nil {
 		s := string(*data.Data.AccessControl.AccessMode)
 		accessMode = &s
 	}
@@ -211,7 +223,9 @@ func dashboardToAPIUpdateRequest(ctx context.Context, m *models.DashboardModel, 
 	// Set query text - Query is a union type with json.RawMessage
 	queryModel, queryDiags := dashboardQueryToAPI(m)
 	diags.Append(queryDiags...)
-	req.Query = queryModel
+	if queryModel != nil {
+		req.Query = *queryModel
+	}
 
 	// Set tags
 	if typeutils.IsKnown(m.Tags) {
@@ -224,7 +238,9 @@ func dashboardToAPIUpdateRequest(ctx context.Context, m *models.DashboardModel, 
 	// Set options
 	options, optionsDiags := dashboardOptionsToAPI(m)
 	diags.Append(optionsDiags...)
-	req.Options = options
+	if options != nil {
+		req.Options = *options
+	}
 
 	// Set panels.
 	panels, panelsDiags := dashboardPanelsToAPI(ctx, m)
@@ -243,11 +259,11 @@ func dashboardToAPIUpdateRequest(ctx context.Context, m *models.DashboardModel, 
 	return req
 }
 
-func dashboardQueryToAPI(m *models.DashboardModel) (kbapi.KibanaHTTPAPIsKbnAsCodeQuery, diag.Diagnostics) {
-	query := kbapi.KibanaHTTPAPIsKbnAsCodeQuery{}
+func dashboardQueryToAPI(m *models.DashboardModel) (*kbapi.KibanaHTTPAPIsKbnAsCodeQuery, diag.Diagnostics) {
 	if m.Query == nil {
-		return query, nil
+		return nil, nil
 	}
+	query := &kbapi.KibanaHTTPAPIsKbnAsCodeQuery{}
 	query.Language = kbapi.KibanaHTTPAPIsKbnAsCodeQueryLanguage(m.Query.Language.ValueString())
 	textKnown := typeutils.IsKnown(m.Query.Text)
 	jsonKnown := typeutils.IsKnown(m.Query.JSON)
