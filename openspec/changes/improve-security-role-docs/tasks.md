@@ -41,11 +41,11 @@
 
 ## 7. Go Pre-Activation Script
 
-- [ ] 7.1 Create `scripts/security-role-docs/main.go` with `pre-activation` subcommand
-- [ ] 7.2 Implement `GET /api/features` call using Kibana client (standard env vars: `KIBANA_ENDPOINT`, `KIBANA_USERNAME`, `KIBANA_PASSWORD`)
-- [ ] 7.3 Implement diff logic: load `kibana-features.json`, compute `unknown_features` (in API but not in `documented` or `skip`) and `removed_features` (in `documented` but absent from API)
-- [ ] 7.4 Write drift report JSON to `--report-path`; set `run_agent` GitHub Actions output to `true`/`false`
-- [ ] 7.5 Write unit tests for the diff logic in `scripts/security-role-docs/main_test.go`
+- [x] 7.1 Create `scripts/security-role-docs/main.go` with `pre-activation` subcommand
+- [x] 7.2 Implement `GET /api/features` call using Kibana client (standard env vars: `KIBANA_ENDPOINT`, `KIBANA_USERNAME`, `KIBANA_PASSWORD`)
+- [x] 7.3 Implement diff logic: load `kibana-features.json`, compute `unknown_features` (in API but not in `documented` or `skip`) and `removed_features` (in `documented` but absent from API)
+- [x] 7.4 Write drift report JSON to `--report-path`; set `run_agent` GitHub Actions output to `true`/`false`
+- [x] 7.5 Write unit tests for the diff logic in `scripts/security-role-docs/main_test.go`
 
 ## 8. gh-aw Drift Detection Workflow
 
