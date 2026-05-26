@@ -124,7 +124,7 @@ func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel,
 	m.Legend = &models.WaffleLegendModel{}
 	waffleLegendFromAPI(ctx, m.Legend, api.Legend)
 
-	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
+	if api.Styling != nil && api.Styling.Values != nil && (api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil) {
 		m.ValueDisplay = &models.WaffleValueDisplay{
 			Mode: typeutils.StringishPointerValue(api.Styling.Values.Mode),
 		}
@@ -226,7 +226,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, r
 	m.Legend = &models.WaffleLegendModel{}
 	waffleLegendFromAPI(ctx, m.Legend, api.Legend)
 
-	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
+	if api.Styling != nil && api.Styling.Values != nil && (api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil) {
 		m.ValueDisplay = &models.WaffleValueDisplay{
 			Mode: typeutils.StringishPointerValue(api.Styling.Values.Mode),
 		}

@@ -102,14 +102,16 @@ func pieChartConfigFromAPINoESQL(
 	var diags diag.Diagnostics
 
 	var donutHole *string
-	if apiChart.Styling.DonutHole != nil {
-		s := string(*apiChart.Styling.DonutHole)
-		donutHole = &s
-	}
 	var labelPosition *string
-	if apiChart.Styling.Labels != nil && apiChart.Styling.Labels.Position != nil {
-		s := string(*apiChart.Styling.Labels.Position)
-		labelPosition = &s
+	if apiChart.Styling != nil {
+		if apiChart.Styling.DonutHole != nil {
+			s := string(*apiChart.Styling.DonutHole)
+			donutHole = &s
+		}
+		if apiChart.Styling.Labels != nil && apiChart.Styling.Labels.Position != nil {
+			s := string(*apiChart.Styling.Labels.Position)
+			labelPosition = &s
+		}
 	}
 	datasetBytes, datasetErr := json.Marshal(apiChart.DataSource)
 
@@ -185,14 +187,16 @@ func pieChartConfigFromAPIESQL(
 	var diags diag.Diagnostics
 
 	var donutHole *string
-	if apiChart.Styling.DonutHole != nil {
-		s := string(*apiChart.Styling.DonutHole)
-		donutHole = &s
-	}
 	var labelPosition *string
-	if apiChart.Styling.Labels != nil && apiChart.Styling.Labels.Position != nil {
-		s := string(*apiChart.Styling.Labels.Position)
-		labelPosition = &s
+	if apiChart.Styling != nil {
+		if apiChart.Styling.DonutHole != nil {
+			s := string(*apiChart.Styling.DonutHole)
+			donutHole = &s
+		}
+		if apiChart.Styling.Labels != nil && apiChart.Styling.Labels.Position != nil {
+			s := string(*apiChart.Styling.Labels.Position)
+			labelPosition = &s
+		}
 	}
 	datasetBytes, datasetErr := json.Marshal(apiChart.DataSource)
 

@@ -127,9 +127,9 @@ func Test_dashboardModel_optionsToAPI(t *testing.T) {
 			}
 
 			if tt.want == nil {
-				assert.Equal(t, kbapi.KibanaHTTPAPIsKbnDashboardOptions{}, got)
+				assert.Nil(t, got)
 			} else {
-				assert.Equal(t, *tt.want, got)
+				assert.Equal(t, tt.want, got)
 			}
 		})
 	}

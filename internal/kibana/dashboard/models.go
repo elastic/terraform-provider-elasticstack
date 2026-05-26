@@ -141,12 +141,16 @@ func dashboardToAPICreateRequest(ctx context.Context, m *models.DashboardModel, 
 	req := kbapi.PostDashboardsJSONRequestBody{}
 	req.Title = m.Title.ValueString()
 	if m.RefreshInterval != nil {
-		req.RefreshInterval.Pause = m.RefreshInterval.Pause.ValueBool()
-		req.RefreshInterval.Value = float32(m.RefreshInterval.Value.ValueInt64())
+		req.RefreshInterval = &kbapi.KibanaHTTPAPIsKbnDataServiceServerRefreshIntervalSchema{
+			Pause: m.RefreshInterval.Pause.ValueBool(),
+			Value: float32(m.RefreshInterval.Value.ValueInt64()),
+		}
 	}
 	if m.TimeRange != nil {
-		req.TimeRange.From = m.TimeRange.From.ValueString()
-		req.TimeRange.To = m.TimeRange.To.ValueString()
+		req.TimeRange = &kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
+			From: m.TimeRange.From.ValueString(),
+			To:   m.TimeRange.To.ValueString(),
+		}
 	}
 
 	// Set description
@@ -156,7 +160,7 @@ func dashboardToAPICreateRequest(ctx context.Context, m *models.DashboardModel, 
 	}
 
 	// Set time range mode
-	if m.TimeRange != nil && typeutils.IsKnown(m.TimeRange.Mode) {
+	if req.TimeRange != nil && typeutils.IsKnown(m.TimeRange.Mode) {
 		mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode(m.TimeRange.Mode.ValueString())
 		req.TimeRange.Mode = &mode
 	}
