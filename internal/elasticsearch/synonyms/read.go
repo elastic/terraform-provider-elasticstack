@@ -54,6 +54,7 @@ func readSynonymSet(ctx context.Context, client *clients.ElasticsearchScopedClie
 	}
 
 	data.ID = types.StringValue(id.String())
+	data.SynonymSetID = types.StringValue(resourceID)
 
 	return data, true, diags
 }

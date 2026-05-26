@@ -84,6 +84,9 @@ func schemaFactory(_ context.Context) schema.Schema {
 							MarkdownDescription: "The identifier for this synonym rule. When omitted, the provider generates a UUID.",
 							Optional:            true,
 							Computed:            true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseStateForUnknown(),
+							},
 						},
 						"synonyms": schema.StringAttribute{
 							MarkdownDescription: "The synonym rule in Solr format (e.g. `\"i-pod, i pod => ipod\"` or `\"universe, cosmos\"`).",

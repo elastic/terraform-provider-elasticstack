@@ -36,7 +36,7 @@ const synonymPageSize = 500
 func GetSynonymSet(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, synonymSetID string) ([]types.SynonymRuleRead, fwdiag.Diagnostics) {
 	typedClient := apiClient.GetESClient()
 
-	var allRules []types.SynonymRuleRead
+	allRules := make([]types.SynonymRuleRead, 0)
 	from := 0
 
 	for {
@@ -50,7 +50,7 @@ func GetSynonymSet(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 
 		allRules = append(allRules, res.SynonymsSet...)
 
-		if from+len(res.SynonymsSet) >= int(res.Count) {
+		if len(res.SynonymsSet) == 0 || from+len(res.SynonymsSet) >= int(res.Count) {
 			break
 		}
 
