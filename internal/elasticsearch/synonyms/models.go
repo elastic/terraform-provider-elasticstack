@@ -53,9 +53,11 @@ type SynonymSetData struct {
 	SynonymsSet  fwtypes.List   `tfsdk:"synonyms_set"`
 }
 
-func (data SynonymSetData) GetID() fwtypes.String                    { return data.ID }
-func (data SynonymSetData) GetResourceID() fwtypes.String            { return data.SynonymSetID }
-func (data SynonymSetData) GetElasticsearchConnection() fwtypes.List { return data.ElasticsearchConnection }
+func (data SynonymSetData) GetID() fwtypes.String         { return data.ID }
+func (data SynonymSetData) GetResourceID() fwtypes.String { return data.SynonymSetID }
+func (data SynonymSetData) GetElasticsearchConnection() fwtypes.List {
+	return data.ElasticsearchConnection
+}
 
 // populateFromAPI maps []types.SynonymRuleRead (from the Elasticsearch API) into
 // data.SynonymsSet as a types.List of SynonymRuleModel elements. Ordering is
