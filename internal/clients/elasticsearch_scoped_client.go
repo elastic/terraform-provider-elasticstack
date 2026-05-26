@@ -117,32 +117,6 @@ func (e *ElasticsearchScopedClient) ID(ctx context.Context, resourceID string) (
 	return &CompositeID{*clusterID, resourceID}, diags
 }
 
-// ServerVersion returns the version of the Elasticsearch server, derived from
-// the cluster Info API.
-func (e *ElasticsearchScopedClient) ServerVersion(ctx context.Context) (*version.Version, fwdiag.Diagnostics) {
-	info, diags := e.serverInfo(ctx)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	rawVersion := info.Version.Int
-	serverVersion, err := version.NewVersion(rawVersion)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	return serverVersion, nil
-}
-
-// ServerFlavor returns the build flavor (e.g. "serverless", "default") of the
-// Elasticsearch server, derived from the cluster Info API.
-func (e *ElasticsearchScopedClient) ServerFlavor(ctx context.Context) (string, fwdiag.Diagnostics) {
-	info, diags := e.serverInfo(ctx)
-	if diags.HasError() {
-		return "", diags
-	}
-	return info.Version.BuildFlavor, nil
-}
-
 // EnforceMinVersion returns true when the server version is greater than or
 // equal to minVersion, or when the server is running in serverless mode.
 // If minVersion is nil, no minimum is enforced and the method returns true.
@@ -151,21 +125,51 @@ func (e *ElasticsearchScopedClient) EnforceMinVersion(ctx context.Context, minVe
 		return true, nil
 	}
 
-	flavor, diags := e.ServerFlavor(ctx)
+	info, diags := e.serverInfo(ctx)
 	if diags.HasError() {
 		return false, diags
 	}
 
-	if flavor == ServerlessFlavor {
+	if info.Version.BuildFlavor == ServerlessFlavor {
 		return true, nil
 	}
 
-	serverVersion, diags := e.ServerVersion(ctx)
+	serverVersion, err := version.NewVersion(info.Version.Int)
+	if err != nil {
+		return false, diagutil.FrameworkDiagFromError(err)
+	}
+
+	return serverVersion.GreaterThanOrEqual(minVersion), nil
+}
+
+// IsServerless returns true when the connected Elasticsearch cluster is running
+// in serverless mode.
+func (e *ElasticsearchScopedClient) IsServerless(ctx context.Context) (bool, fwdiag.Diagnostics) {
+	info, diags := e.serverInfo(ctx)
+	if diags.HasError() {
+		return false, diags
+	}
+	return info.Version.BuildFlavor == ServerlessFlavor, nil
+}
+
+// EnforceVersionCheck returns true when the given version check function
+// returns true, or when the server is running in serverless mode.
+func (e *ElasticsearchScopedClient) EnforceVersionCheck(ctx context.Context, check func(*version.Version) bool) (bool, fwdiag.Diagnostics) {
+	info, diags := e.serverInfo(ctx)
 	if diags.HasError() {
 		return false, diags
 	}
 
-	return serverVersion.GreaterThanOrEqual(minVersion), nil
+	if info.Version.BuildFlavor == ServerlessFlavor {
+		return true, nil
+	}
+
+	serverVersion, err := version.NewVersion(info.Version.Int)
+	if err != nil {
+		return false, diagutil.FrameworkDiagFromError(err)
+	}
+
+	return check(serverVersion), nil
 }
 
 // elasticsearchScopedClientFromAPIClient constructs an ElasticsearchScopedClient

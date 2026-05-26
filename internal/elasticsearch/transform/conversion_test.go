@@ -20,10 +20,13 @@ package transform
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
+	elasticsearch8 "github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -43,6 +46,36 @@ func baseModel() tfModel {
 		},
 		Pivot: jsontypes.NewNormalizedValue(`{"group_by":{"customer_id":{"terms":{"field":"customer_id"}}}}`),
 	}
+}
+
+func newMockElasticsearchServer(version, flavor string) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/" {
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("X-Elastic-Product", "Elasticsearch")
+			payload := map[string]any{
+				"cluster_uuid": "test-cluster-uuid",
+				"version": map[string]any{
+					"number":       version,
+					"build_flavor": flavor,
+				},
+			}
+			_ = json.NewEncoder(w).Encode(payload)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+}
+
+func newMockScopedClient(t *testing.T, srv *httptest.Server) *clients.ElasticsearchScopedClient {
+	t.Helper()
+	esClient, err := elasticsearch8.NewTypedClient(elasticsearch8.Config{
+		Addresses: []string{srv.URL},
+		Username:  "elastic",
+		Password:  "changeme",
+	})
+	require.NoError(t, err)
+	return clients.NewElasticsearchScopedClientForTest(esClient, []string{srv.URL})
 }
 
 func TestToAPIModel_VersionGating_DestinationAliases(t *testing.T) {
@@ -65,8 +98,11 @@ func TestToAPIModel_VersionGating_DestinationAliases(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			v := version.Must(version.NewVersion(tc.version))
-			api, diags := toAPIModel(context.Background(), model, v)
+			srv := newMockElasticsearchServer(tc.version, "default")
+			t.Cleanup(srv.Close)
+
+			client := newMockScopedClient(t, srv)
+			api, diags := toAPIModel(context.Background(), client, model)
 			require.False(t, diags.HasError(), "%s", diags)
 			require.NotNil(t, api.Destination)
 			if tc.wantAlias {
@@ -172,8 +208,11 @@ func TestToAPIModel_VersionGating_Settings(t *testing.T) {
 			model := baseModel()
 			tc.setupModel(&model)
 
-			v := version.Must(version.NewVersion(tc.version))
-			api, diags := toAPIModel(context.Background(), model, v)
+			srv := newMockElasticsearchServer(tc.version, "default")
+			t.Cleanup(srv.Close)
+
+			client := newMockScopedClient(t, srv)
+			api, diags := toAPIModel(context.Background(), client, model)
 			require.False(t, diags.HasError(), "%s", diags)
 
 			if tc.wantPresent {
@@ -187,6 +226,45 @@ func TestToAPIModel_VersionGating_Settings(t *testing.T) {
 	}
 }
 
+func TestToAPIModel_RuntimeMappings_AlwaysAllowed(t *testing.T) {
+	t.Parallel()
+
+	model := baseModel()
+	model.Source.RuntimeMappings = jsontypes.NewNormalizedValue(`{"day_of_week":{"type":"keyword"}}`)
+
+	srv := newMockElasticsearchServer("7.17.0", "default")
+	t.Cleanup(srv.Close)
+
+	client := newMockScopedClient(t, srv)
+	api, diags := toAPIModel(context.Background(), client, model)
+	require.False(t, diags.HasError(), "%s", diags)
+	require.NotNil(t, api.Source)
+	require.NotNil(t, api.Source.RuntimeMappings)
+}
+
+func TestToAPIModel_VersionGating_EnforceMinVersionError(t *testing.T) {
+	t.Parallel()
+
+	model := baseModel()
+	model.Destination.Aliases = []tfModelAlias{
+		{Alias: types.StringValue("alias-1"), MoveOnCreation: types.BoolValue(true)},
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/" {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(srv.Close)
+
+	client := newMockScopedClient(t, srv)
+	api, diags := toAPIModel(context.Background(), client, model)
+	require.True(t, diags.HasError(), "expected error when cluster info is unavailable")
+	assert.Nil(t, api)
+}
+
 func TestToAPIModel_VersionGating_UnsetFieldsNoWarning(t *testing.T) {
 	t.Parallel()
 
@@ -195,11 +273,39 @@ func TestToAPIModel_VersionGating_UnsetFieldsNoWarning(t *testing.T) {
 	model := baseModel()
 	// None of the gated settings are configured.
 
-	v := version.Must(version.NewVersion("7.17.0"))
-	api, diags := toAPIModel(context.Background(), model, v)
+	srv := newMockElasticsearchServer("7.17.0", "default")
+	t.Cleanup(srv.Close)
+
+	client := newMockScopedClient(t, srv)
+	api, diags := toAPIModel(context.Background(), client, model)
 	require.False(t, diags.HasError(), "%s", diags)
 	assert.Nil(t, api.Settings)
 	assert.Empty(t, api.Destination.Aliases)
+}
+
+func TestToAPIModel_VersionGating_ServerlessAllowsAllSettings(t *testing.T) {
+	t.Parallel()
+
+	model := baseModel()
+	model.Destination.Aliases = []tfModelAlias{
+		{Alias: types.StringValue("alias-1"), MoveOnCreation: types.BoolValue(true)},
+	}
+	model.DeduceMappings = types.BoolValue(true)
+	model.NumFailureRetries = types.Int64Value(5)
+	model.Unattended = types.BoolValue(true)
+
+	srv := newMockElasticsearchServer("7.17.0", clients.ServerlessFlavor)
+	t.Cleanup(srv.Close)
+
+	client := newMockScopedClient(t, srv)
+	api, diags := toAPIModel(context.Background(), client, model)
+	require.False(t, diags.HasError(), "%s", diags)
+	require.NotNil(t, api.Settings)
+	require.NotNil(t, api.Destination)
+	assert.Len(t, api.Destination.Aliases, 1)
+	assert.True(t, *api.Settings.DeduceMappings)
+	assert.Equal(t, 5, *api.Settings.NumFailureRetries)
+	assert.True(t, *api.Settings.Unattended)
 }
 
 func TestToAPIModel_JSONFields(t *testing.T) {
@@ -209,8 +315,11 @@ func TestToAPIModel_JSONFields(t *testing.T) {
 	model.Pivot = jsontypes.NewNormalizedValue(`{"group_by":{"customer_id":{"terms":{"field":"customer_id"}}}}`)
 	model.Latest = jsontypes.NewNormalizedNull()
 
-	v := version.Must(version.NewVersion("8.9.0"))
-	api, diags := toAPIModel(context.Background(), model, v)
+	srv := newMockElasticsearchServer("8.9.0", "default")
+	t.Cleanup(srv.Close)
+
+	client := newMockScopedClient(t, srv)
+	api, diags := toAPIModel(context.Background(), client, model)
 	require.False(t, diags.HasError(), "%s", diags)
 
 	pivotBytes, err := json.Marshal(api.Pivot)

@@ -21,7 +21,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -46,15 +48,23 @@ func init() {
 // isSettingAllowed returns true when the given setting is supported by the
 // connected Elasticsearch server version. When the setting is not supported,
 // it logs a warning and returns false.
-func isSettingAllowed(ctx context.Context, settingName string, serverVersion *version.Version) bool {
-	if minVersion, ok := settingsRequiredVersions[settingName]; ok {
-		if serverVersion.LessThan(minVersion) {
-			tflog.Warn(ctx, fmt.Sprintf(
-				"Setting [%s] not allowed for Elasticsearch server version %v; min required is %v",
-				settingName, *serverVersion, *minVersion,
-			))
-			return false
-		}
+func isSettingAllowed(ctx context.Context, settingName string, client *clients.ElasticsearchScopedClient) (bool, diag.Diagnostics) {
+	minVersion, ok := settingsRequiredVersions[settingName]
+	if !ok {
+		return true, nil
 	}
-	return true
+
+	allowed, gateDiags := client.EnforceMinVersion(ctx, minVersion)
+	if gateDiags.HasError() {
+		return false, gateDiags
+	}
+	if allowed {
+		return true, nil
+	}
+
+	tflog.Warn(ctx, fmt.Sprintf(
+		"Setting [%s] ignored: requires Elasticsearch %v or later",
+		settingName, minVersion,
+	))
+	return false, nil
 }

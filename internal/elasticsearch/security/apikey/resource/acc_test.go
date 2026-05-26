@@ -342,12 +342,14 @@ func SkipWhenAPIKeysAreNotSupportedOrRestrictionsAreSupported(minAPIKeySupported
 		if err != nil {
 			return false, err
 		}
-		serverVersion, diags := client.ServerVersion(context.Background())
+		skip, diags := client.EnforceVersionCheck(context.Background(), func(v *version.Version) bool {
+			return v.LessThan(minAPIKeySupportedVersion) || v.GreaterThanOrEqual(minRestrictionSupportedVersion)
+		})
 		if diags.HasError() {
 			return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
 		}
 
-		return serverVersion.LessThan(minAPIKeySupportedVersion) || serverVersion.GreaterThanOrEqual(minRestrictionSupportedVersion), nil
+		return skip, nil
 	}
 }
 

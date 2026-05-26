@@ -39,7 +39,7 @@ var (
 
 // Resource embeds ElasticsearchResource[apikey.TfModel] to inherit Configure,
 // Metadata, Schema, Read, Update (via writeAPIKey), Delete, and PostRead
-// cluster-version caching. Create is defined on the concrete type to bypass
+// capability caching. Create is defined on the concrete type to bypass
 // the envelope write path.
 type Resource struct {
 	*entitycore.ElasticsearchResource[apikey.TfModel]
@@ -58,7 +58,7 @@ func newResource() *Resource {
 			Delete:   deleteAPIKey,
 			Create:   placeholder,
 			Update:   writeAPIKey,
-			PostRead: postReadPersistClusterVersion,
+			PostRead: postReadPersistAPIKeyCapabilities,
 		}),
 	}
 }
@@ -81,20 +81,20 @@ type clusterVersionPrivateData struct {
 	Version string
 }
 
-// saveClusterVersion persists the current Elasticsearch cluster version in
-// private state so it can be retrieved on subsequent plan computations.
-func saveClusterVersion(ctx context.Context, client *clients.ElasticsearchScopedClient, priv privateData) diag.Diagnostics {
+// saveAPIKeyCapabilities persists resolved API key capabilities in private state
+// so they can be retrieved on subsequent plan computations.
+func saveAPIKeyCapabilities(ctx context.Context, client *clients.ElasticsearchScopedClient, priv privateData) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	ver, verDiags := client.ServerVersion(ctx)
-	diags.Append(verDiags...)
+	caps, capsDiags := apikey.ResolveAPIKeyCapabilities(ctx, client)
+	diags.Append(capsDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	data, err := json.Marshal(clusterVersionPrivateData{Version: ver.String()})
+	data, err := json.Marshal(caps)
 	if err != nil {
-		diags.AddError("failed to marshal cluster version data", err.Error())
+		diags.AddError("failed to marshal API key capabilities data", err.Error())
 		return diags
 	}
 
@@ -102,7 +102,7 @@ func saveClusterVersion(ctx context.Context, client *clients.ElasticsearchScoped
 	return diags
 }
 
-func postReadPersistClusterVersion(
+func postReadPersistAPIKeyCapabilities(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	_ apikey.TfModel,
@@ -117,32 +117,74 @@ func postReadPersistClusterVersion(
 		)
 		return diags
 	}
-	return saveClusterVersion(ctx, client, priv)
+	return saveAPIKeyCapabilities(ctx, client, priv)
 }
 
-// clusterVersionOfLastRead retrieves the cached Elasticsearch cluster version.
-func clusterVersionOfLastRead(ctx context.Context, priv privateData) (*version.Version, diag.Diagnostics) {
-	versionBytes, diags := priv.GetKey(ctx, clusterVersionPrivateDataKey)
+func privateDataHasCapabilityKeys(keys map[string]json.RawMessage) bool {
+	if _, ok := keys["SupportsUpdate"]; ok {
+		return true
+	}
+	if _, ok := keys["SupportsRoleDescriptors"]; ok {
+		return true
+	}
+	_, ok := keys["SupportsRestriction"]
+	return ok
+}
+
+// apikeyCapabilitiesOfLastRead retrieves cached API key capabilities from private
+// state. The cluster-version slot may contain either the new capability-blob
+// shape or a legacy {"Version":"x.y.z"} blob from prior provider releases.
+//
+// Discriminator: presence of any capability JSON key ("SupportsUpdate",
+// "SupportsRoleDescriptors", or "SupportsRestriction"), not the boolean values.
+// Legitimate new-format blobs for Elasticsearch 8.0–8.3.x have all three flags
+// false; value-based detection would misclassify them as legacy after post-read
+// overwrites a synthesized legacy blob.
+func apikeyCapabilitiesOfLastRead(ctx context.Context, priv privateData) (*apikey.APIKeyCapabilities, diag.Diagnostics) {
+	capsBytes, diags := priv.GetKey(ctx, clusterVersionPrivateDataKey)
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	if versionBytes == nil {
+	if capsBytes == nil {
 		return nil, nil
 	}
 
-	var data clusterVersionPrivateData
-	err := json.Unmarshal(versionBytes, &data)
-	if err != nil {
+	var keys map[string]json.RawMessage
+	if err := json.Unmarshal(capsBytes, &keys); err != nil {
 		diags.AddError("failed to parse private data json", err.Error())
 		return nil, diags
 	}
 
-	v, err := version.NewVersion(data.Version)
-	if err != nil {
-		diags.AddError("failed to parse stored cluster version", err.Error())
-		return nil, diags
+	if privateDataHasCapabilityKeys(keys) {
+		var capsData apikey.APIKeyCapabilities
+		if err := json.Unmarshal(capsBytes, &capsData); err != nil {
+			diags.AddError("failed to parse capabilities private data json", err.Error())
+			return nil, diags
+		}
+		return &capsData, diags
 	}
 
-	return v, diags
+	if _, hasLegacy := keys["Version"]; hasLegacy {
+		var legacy clusterVersionPrivateData
+		if err := json.Unmarshal(capsBytes, &legacy); err != nil {
+			diags.AddError("failed to parse legacy cluster version private data json", err.Error())
+			return nil, diags
+		}
+
+		if legacy.Version == "" {
+			return nil, nil
+		}
+
+		ver, err := version.NewVersion(legacy.Version)
+		if err != nil {
+			diags.AddError("failed to parse stored cluster version", err.Error())
+			return nil, diags
+		}
+
+		synthesized := apikey.SynthesizeAPIKeyCapabilitiesFromVersion(ver)
+		return &synthesized, diags
+	}
+
+	return nil, nil
 }

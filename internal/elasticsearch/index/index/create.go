@@ -78,13 +78,13 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	serverFlavor, flavorDiags := client.ServerFlavor(ctx)
-	if flavorDiags.HasError() {
-		resp.Diagnostics.Append(flavorDiags...)
+	isServerless, isDiags := client.IsServerless(ctx)
+	if isDiags.HasError() {
+		resp.Diagnostics.Append(isDiags...)
 		return
 	}
 
-	params := planModel.toPutIndexParams(serverFlavor)
+	params := planModel.toPutIndexParams(isServerless)
 
 	concreteName, diags := elasticsearch.PutIndex(ctx, client, &apiModel, &params)
 	resp.Diagnostics.Append(diags...)

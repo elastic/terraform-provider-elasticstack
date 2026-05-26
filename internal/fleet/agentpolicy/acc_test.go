@@ -869,7 +869,7 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 					if err != nil {
 						return false, err
 					}
-					serverVersion, diags := client.ServerVersion(context.Background())
+					serverVersion, _, diags := clients.AcceptanceServerInfo(context.Background(), client)
 					if diags.HasError() {
 						return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
 					}
@@ -896,7 +896,7 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 					if err != nil {
 						return false, err
 					}
-					serverVersion, diags := client.ServerVersion(context.Background())
+					serverVersion, _, diags := clients.AcceptanceServerInfo(context.Background(), client)
 					if diags.HasError() {
 						return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
 					}
