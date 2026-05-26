@@ -174,8 +174,16 @@ func (d *genericElasticsearchDataSource[T]) Schema(ctx context.Context, _ dataso
 	resp.Schema = injectConnectionBlockIntoSchema(ctx, d.schemaFactory, blockElasticsearchConnection, providerschema.GetEsFWConnectionBlock())
 }
 
-// Read implements [datasource.DataSource].
-func (d *genericKibanaDataSource[T]) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+// doDataSourceRead is the shared Read orchestration for genericKibanaDataSource
+// and genericElasticsearchDataSource. getClient encapsulates the only
+// caller-supplied variation: which backend client to resolve.
+func doDataSourceRead[C MinVersionClient, T any](
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+	getClient func(context.Context, T) (C, diag.Diagnostics),
+	readFunc func(context.Context, C, T) (T, diag.Diagnostics),
+) {
 	var model T
 	diags := req.Config.Get(ctx, &model)
 	resp.Diagnostics.Append(diags...)
@@ -183,7 +191,7 @@ func (d *genericKibanaDataSource[T]) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	client, diags := d.Client().GetKibanaClient(ctx, model.GetKibanaConnection())
+	client, diags := getClient(ctx, model)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -194,7 +202,7 @@ func (d *genericKibanaDataSource[T]) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	result, diags := d.readFunc(ctx, client, model)
+	result, diags := readFunc(ctx, client, model)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -205,31 +213,21 @@ func (d *genericKibanaDataSource[T]) Read(ctx context.Context, req datasource.Re
 }
 
 // Read implements [datasource.DataSource].
+func (d *genericKibanaDataSource[T]) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	doDataSourceRead(ctx, req, resp,
+		func(ctx context.Context, model T) (*clients.KibanaScopedClient, diag.Diagnostics) {
+			return d.Client().GetKibanaClient(ctx, model.GetKibanaConnection())
+		},
+		d.readFunc,
+	)
+}
+
+// Read implements [datasource.DataSource].
 func (d *genericElasticsearchDataSource[T]) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var model T
-	diags := req.Config.Get(ctx, &model)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := d.Client().GetElasticsearchClient(ctx, model.GetElasticsearchConnection())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(EnforceVersionRequirements(ctx, client, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	result, diags := d.readFunc(ctx, client, model)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = resp.State.Set(ctx, &result)
-	resp.Diagnostics.Append(diags...)
+	doDataSourceRead(ctx, req, resp,
+		func(ctx context.Context, model T) (*clients.ElasticsearchScopedClient, diag.Diagnostics) {
+			return d.Client().GetElasticsearchClient(ctx, model.GetElasticsearchConnection())
+		},
+		d.readFunc,
+	)
 }
