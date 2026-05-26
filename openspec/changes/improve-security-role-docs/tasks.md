@@ -14,9 +14,9 @@
 
 ## 3. Add Scenario Example Files — Elasticsearch Security Role
 
-- [ ] 3.1 Create `examples/resources/elasticstack_elasticsearch_security_role/resource-data-analyst.tf` — `cluster = ["monitor"]`, indices with `["read", "view_index_metadata"]` on `logs-*`
-- [ ] 3.2 Create `examples/resources/elasticstack_elasticsearch_security_role/resource-monitoring-agent.tf` — `cluster = ["monitor", "manage_index_templates"]`, indices with `["write", "create_index"]` on `.monitoring-*`/`metricbeat-*`; demonstrates `allow_restricted_indices = false` with a warning comment
-- [ ] 3.3 Create `examples/resources/elasticstack_elasticsearch_security_role/resource-field-and-doc-security.tf` — demonstrates `field_security` (grant/except for PII redaction) and `query` (jsonencode for tenant isolation) on the same indices block
+- [x] 3.1 Create `examples/resources/elasticstack_elasticsearch_security_role/resource-data-analyst.tf` — `cluster = ["monitor"]`, indices with `["read", "view_index_metadata"]` on `logs-*`
+- [x] 3.2 Create `examples/resources/elasticstack_elasticsearch_security_role/resource-monitoring-agent.tf` — `cluster = ["monitor", "manage_index_templates"]`, indices with `["write", "create_index"]` on `.monitoring-*`/`metricbeat-*`; demonstrates `allow_restricted_indices = false` with a warning comment
+- [x] 3.3 Create `examples/resources/elasticstack_elasticsearch_security_role/resource-field-and-doc-security.tf` — demonstrates `field_security` (grant/except for PII redaction) and `query` (jsonencode for tenant isolation) on the same indices block
 
 ## 4. Create Security Roles Guide
 
