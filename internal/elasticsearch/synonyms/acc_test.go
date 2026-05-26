@@ -25,11 +25,16 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+// minSupportedVersion is the minimum Elasticsearch version that supports the Synonyms API.
+var minSupportedVersion = version.Must(version.NewVersion("8.10.0"))
 
 // TestAccResourceSynonymSet covers basic CRUD and rule ordering:
 //   - Step 1 (create): verify state reflects the two initial rules with explicit IDs and
@@ -45,6 +50,7 @@ func TestAccResourceSynonymSet(t *testing.T) {
 			// Step 1: Create with two explicit-ID rules.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          config.Variables{"synonym_set_id": config.StringVariable(synonymSetID)},
 				Check: resource.ComposeTestCheckFunc(
@@ -60,6 +66,7 @@ func TestAccResourceSynonymSet(t *testing.T) {
 			// Step 2: Update — modify rule-2's synonyms and add a new rule-3.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables:          config.Variables{"synonym_set_id": config.StringVariable(synonymSetID)},
 				Check: resource.ComposeTestCheckFunc(
@@ -91,6 +98,7 @@ func TestAccResourceSynonymSetOptionalRuleID(t *testing.T) {
 			// Step 1: Create — first rule has no explicit id (provider must generate one).
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          config.Variables{"synonym_set_id": config.StringVariable(synonymSetID)},
 				Check: resource.ComposeTestCheckFunc(
@@ -108,6 +116,7 @@ func TestAccResourceSynonymSetOptionalRuleID(t *testing.T) {
 			// provider must not regenerate the UUID on every plan.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          config.Variables{"synonym_set_id": config.StringVariable(synonymSetID)},
 				PlanOnly:                 true,
@@ -129,6 +138,7 @@ func TestAccResourceSynonymSetImport(t *testing.T) {
 			// Step 1: Create the resource.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          config.Variables{"synonym_set_id": config.StringVariable(synonymSetID)},
 				Check: resource.ComposeTestCheckFunc(
@@ -144,6 +154,7 @@ func TestAccResourceSynonymSetImport(t *testing.T) {
 			// Step 2: Import by composite ID retrieved from state and verify state matches.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          config.Variables{"synonym_set_id": config.StringVariable(synonymSetID)},
 				ResourceName:             "elasticstack_elasticsearch_synonym_set.test",
@@ -164,6 +175,7 @@ func TestAccDataSourceSynonymSet(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables:          config.Variables{"synonym_set_id": config.StringVariable(synonymSetID)},
 				Check: resource.ComposeTestCheckFunc(
