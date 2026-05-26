@@ -43,6 +43,7 @@ var validExceptionListTypes = []string{
 	"endpoint_events",
 	"endpoint_host_isolation_exceptions",
 	"endpoint_blocklists",
+	"rule_default",
 }
 
 func getSchema(_ context.Context) schema.Schema {
