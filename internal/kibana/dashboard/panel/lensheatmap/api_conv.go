@@ -483,7 +483,16 @@ func heatmapConfigToAPIESQL(m *models.HeatmapConfigModel, resolver lenscommon.Re
 
 func heatmapAxesFromAPI(m *models.HeatmapAxesModel, api *kbapi.KibanaHTTPAPIsHeatmapAxes, prior *models.HeatmapAxesModel) diag.Diagnostics {
 	diags := diag.Diagnostics{}
+	// Kibana may omit `axis`, `axis.x`, or `axis.y` from a GET response when the
+	// chart has no corresponding dimension. The kbapi spec types each as a
+	// pointer with `omitempty`, so a nil here is "field absent" rather than
+	// "field empty". Preserve the prior model in that case to avoid drift like
+	// "axis.y was {...} but now null" after a write/read round trip.
 	if api == nil {
+		if prior != nil {
+			m.X = prior.X
+			m.Y = prior.Y
+		}
 		return diags
 	}
 
@@ -494,6 +503,8 @@ func heatmapAxesFromAPI(m *models.HeatmapAxesModel, api *kbapi.KibanaHTTPAPIsHea
 			priorX = prior.X
 		}
 		heatmapXAxisFromAPI(m.X, api.X, priorX)
+	} else if prior != nil && prior.X != nil {
+		m.X = prior.X
 	}
 
 	if api.Y != nil {
@@ -503,6 +514,8 @@ func heatmapAxesFromAPI(m *models.HeatmapAxesModel, api *kbapi.KibanaHTTPAPIsHea
 			priorY = prior.Y
 		}
 		heatmapYAxisFromAPI(m.Y, api.Y, priorY)
+	} else if prior != nil && prior.Y != nil {
+		m.Y = prior.Y
 	}
 
 	return diags

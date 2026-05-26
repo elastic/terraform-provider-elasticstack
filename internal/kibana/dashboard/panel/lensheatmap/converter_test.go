@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -209,4 +210,56 @@ func TestConverter_roundTrip_ESQL_heatmap(t *testing.T) {
 	dsBytes, err := json.Marshal(out.DataSource)
 	require.NoError(t, err)
 	assert.Contains(t, string(dsBytes), "FROM logs-*")
+}
+
+// Test_heatmapAxesFromAPI_preservesPriorWhenAPIDropsAxis covers a regression where
+// Kibana may omit axis.x or axis.y entirely from a GET response (the kbapi spec
+// types both as pointers with omitempty). Previously these were value-typed and
+// always present, so the prior-preserve logic inside the per-axis converters was
+// sufficient. Now that they are pointers, axis-level preservation must happen
+// in heatmapAxesFromAPI itself, otherwise round-tripping a config that set
+// axis.y produces an "inconsistent result after apply" because the read-back
+// state drops axis.y to null.
+func Test_heatmapAxesFromAPI_preservesPriorWhenAPIDropsAxis(t *testing.T) {
+	prior := &models.HeatmapAxesModel{
+		Y: &models.HeatmapYAxisModel{
+			Labels: &models.HeatmapYAxisLabelsModel{Visible: types.BoolValue(true)},
+			Title: &models.AxisTitleModel{
+				Value:   types.StringValue("Y Axis"),
+				Visible: types.BoolValue(true),
+			},
+		},
+		X: &models.HeatmapXAxisModel{
+			Labels: &models.HeatmapXAxisLabelsModel{
+				Orientation: types.StringValue("horizontal"),
+				Visible:     types.BoolValue(true),
+			},
+			Title: &models.AxisTitleModel{
+				Value:   types.StringValue("X Axis"),
+				Visible: types.BoolValue(true),
+			},
+		},
+	}
+
+	t.Run("api.Y nil preserves prior.Y", func(t *testing.T) {
+		api := &kbapi.KibanaHTTPAPIsHeatmapAxes{
+			X: &kbapi.KibanaHTTPAPIsHeatmapXAxis{},
+		}
+		got := &models.HeatmapAxesModel{}
+		diags := heatmapAxesFromAPI(got, api, prior)
+		require.False(t, diags.HasError(), "%v", diags)
+		require.NotNil(t, got.Y, "axis.y was lost when API omitted it")
+		assert.Equal(t, prior.Y, got.Y)
+	})
+
+	t.Run("api.X nil preserves prior.X", func(t *testing.T) {
+		api := &kbapi.KibanaHTTPAPIsHeatmapAxes{
+			Y: &kbapi.KibanaHTTPAPIsHeatmapYAxis{},
+		}
+		got := &models.HeatmapAxesModel{}
+		diags := heatmapAxesFromAPI(got, api, prior)
+		require.False(t, diags.HasError(), "%v", diags)
+		require.NotNil(t, got.X, "axis.x was lost when API omitted it")
+		assert.Equal(t, prior.X, got.X)
+	})
 }
