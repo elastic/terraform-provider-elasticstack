@@ -593,7 +593,6 @@ func TestGetKibanaClient_ProviderFleetEndpointOnly(t *testing.T) {
 }
 
 func TestGetElasticsearchClient_SuccessfulFactoryReturnsNonNilAccessor(t *testing.T) {
-	t.Parallel()
 	srv := newMockElasticsearchServer("8.19.0")
 	defer srv.Close()
 
