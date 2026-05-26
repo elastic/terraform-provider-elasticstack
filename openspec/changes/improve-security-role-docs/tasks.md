@@ -59,9 +59,9 @@
 
 ## 9. OpenSpec Spec Files
 
-- [ ] 9.1 Create `openspec/specs/security-role-guide/spec.md` from the delta spec in this change
-- [ ] 9.2 Create `openspec/specs/security-role-docs-drift-detection/spec.md` from the delta spec in this change
-- [ ] 9.3 Run `make check-openspec` and resolve any validation errors
+- [x] 9.1 Create `openspec/specs/security-role-guide/spec.md` from the delta spec in this change
+- [x] 9.2 Create `openspec/specs/security-role-docs-drift-detection/spec.md` from the delta spec in this change
+- [x] 9.3 Run `make check-openspec` and resolve any validation errors
 
 ## 10. Docs Regeneration and Verification
 
