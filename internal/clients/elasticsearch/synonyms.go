@@ -89,8 +89,8 @@ func DeleteSynonymSet(ctx context.Context, apiClient *clients.ElasticsearchScope
 		if errors.As(err, &esErr) && esErr != nil && esErr.Status == 400 {
 			return fwdiag.Diagnostics{
 				fwdiag.NewErrorDiagnostic(
-					fmt.Sprintf("Synonym set '%s' cannot be deleted because it is referenced by one or more index analyzers. Remove the synonym set from all analyzer configurations first.", synonymSetID),
-					"",
+					fmt.Sprintf("Cannot delete synonym set '%s'", synonymSetID),
+					"The synonym set is referenced by one or more index analyzers. Remove the synonym set from all analyzer configurations before deleting it.",
 				),
 			}
 		}
