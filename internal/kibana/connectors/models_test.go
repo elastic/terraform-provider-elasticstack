@@ -20,6 +20,7 @@ package connectors
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
@@ -42,6 +43,58 @@ func TestTfModel_GetResourceID(t *testing.T) {
 		t.Parallel()
 		m := tfModel{ConnectorID: types.StringValue("abc-123")}
 		require.Equal(t, "abc-123", m.GetResourceID().ValueString())
+	})
+}
+
+func TestTfModel_toAPIModel_Secrets(t *testing.T) {
+	t.Parallel()
+
+	t.Run("secrets_wo only", func(t *testing.T) {
+		t.Parallel()
+		model := tfModel{
+			Name:            types.StringValue("test"),
+			ConnectorTypeID: types.StringValue(".pagerduty"),
+			SecretsWo:       jsontypes.NewNormalizedValue(`{"routingKey":"wo-key"}`),
+		}
+		apiModel, diags := model.toAPIModel()
+		require.False(t, diags.HasError())
+		require.JSONEq(t, `{"routingKey":"wo-key"}`, apiModel.SecretsJSON)
+	})
+
+	t.Run("secrets only", func(t *testing.T) {
+		t.Parallel()
+		model := tfModel{
+			Name:            types.StringValue("test"),
+			ConnectorTypeID: types.StringValue(".pagerduty"),
+			Secrets:         jsontypes.NewNormalizedValue(`{"routingKey":"plain-key"}`),
+		}
+		apiModel, diags := model.toAPIModel()
+		require.False(t, diags.HasError())
+		require.JSONEq(t, `{"routingKey":"plain-key"}`, apiModel.SecretsJSON)
+	})
+
+	t.Run("both unknown", func(t *testing.T) {
+		t.Parallel()
+		model := tfModel{
+			Name:            types.StringValue("test"),
+			ConnectorTypeID: types.StringValue(".pagerduty"),
+		}
+		apiModel, diags := model.toAPIModel()
+		require.False(t, diags.HasError())
+		require.Empty(t, apiModel.SecretsJSON)
+	})
+
+	t.Run("both set prefers secrets_wo", func(t *testing.T) {
+		t.Parallel()
+		model := tfModel{
+			Name:            types.StringValue("test"),
+			ConnectorTypeID: types.StringValue(".pagerduty"),
+			Secrets:         jsontypes.NewNormalizedValue(`{"routingKey":"plain-key"}`),
+			SecretsWo:       jsontypes.NewNormalizedValue(`{"routingKey":"wo-key"}`),
+		}
+		apiModel, diags := model.toAPIModel()
+		require.False(t, diags.HasError())
+		require.JSONEq(t, `{"routingKey":"wo-key"}`, apiModel.SecretsJSON)
 	})
 }
 
