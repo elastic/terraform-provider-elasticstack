@@ -511,6 +511,9 @@ func checkPackageNotInstalledInFleet(pkgName, pkgVersion, spaceID string) error 
 
 func cleanupPackageInFleet(t *testing.T, pkgName, pkgVersion, spaceID string) {
 	t.Helper()
+	if os.Getenv("TF_ACC") == "" {
+		return
+	}
 
 	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {

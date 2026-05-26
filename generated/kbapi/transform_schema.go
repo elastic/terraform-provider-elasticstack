@@ -604,7 +604,6 @@ var transformers = []TransformFunc{
 	removeDuplicateOneOfRefs,
 	transformRemoveAnyOfWhenOneOfPresent,
 	fixDashboardPanelItemRefs,
-	fixAlertingRuleParams,
 	fixSyntheticsMonitorModels,
 	fixSyntheticsMonitorParams,
 	fixAlertingRuleBody,
@@ -1550,11 +1549,6 @@ func fixSloResponseArtifacts(schema *Schema) {
 		"schemas.SLOs_slo_with_summary_response.properties.artifacts",
 		Map{"$ref": "#/components/schemas/SLOs_artifacts"},
 	)
-}
-
-func fixAlertingRuleParams(schema *Schema) {
-	postEndpoint := schema.MustGetPath("/api/alerting/rule/{id}").MustGetEndpoint("post")
-	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Params", "requestBody.content.application/json.schema.anyOf.1.properties.params")
 }
 
 func fixSyntheticsMonitorModels(schema *Schema) {

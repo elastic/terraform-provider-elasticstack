@@ -204,7 +204,7 @@ func buildCreateRequestBody(rule models.AlertingRule) (kbapi.AlertingRuleAPIBody
 	}
 
 	if rule.Params != nil {
-		params := kbapi.AlertingRuleAPIParams(typeutils.PointerInterfaceMapFromAnyMap(rule.Params))
+		params := typeutils.PointerInterfaceMapFromAnyMap(rule.Params)
 		body.Params = &params
 	}
 

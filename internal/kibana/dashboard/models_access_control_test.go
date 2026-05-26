@@ -82,12 +82,12 @@ func TestDashboardModel_populateFromAPI_clearsAccessControlWhenAccessModeMissing
 		}{
 			Data: kbapi.KibanaHTTPAPIsKbnDashboardData{
 				Title: "test dashboard",
-				Query: kbapi.KibanaHTTPAPIsKbnAsCodeQuery{},
-				TimeRange: kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
+				Query: &kbapi.KibanaHTTPAPIsKbnAsCodeQuery{},
+				TimeRange: &kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
 					From: "now-15m",
 					To:   "now",
 				},
-				RefreshInterval: kbapi.KibanaHTTPAPIsKbnDataServiceServerRefreshIntervalSchema{
+				RefreshInterval: &kbapi.KibanaHTTPAPIsKbnDataServiceServerRefreshIntervalSchema{
 					Pause: true,
 					Value: 0,
 				},

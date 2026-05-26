@@ -42,7 +42,7 @@ func legacyMetricConfigPopulateCommonFields(
 	sampling *float32,
 	datasetBytes []byte,
 	datasetErr error,
-	filters []kbapi.KibanaHTTPAPIsLensPanelFilters_Item,
+	filters *kbapi.KibanaHTTPAPIsLensPanelFilters,
 	diags *diag.Diagnostics,
 ) bool {
 	m.Title = types.StringPointerValue(title)

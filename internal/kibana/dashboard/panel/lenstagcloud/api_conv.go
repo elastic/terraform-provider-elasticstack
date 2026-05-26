@@ -39,9 +39,14 @@ func isTagcloudNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsTagcloudNoESQ
 // applyStylingFromAPI populates the typed `orientation` and `font_size`
 // attributes from a TagcloudStyling payload. Used by both NoESQL and ES|QL
 // reads so the two paths stay in lockstep.
-func tagcloudConfigApplyStylingFromAPI(m *models.TagcloudConfigModel, s kbapi.KibanaHTTPAPIsTagcloudStyling) {
-	if s.Orientation != "" {
-		m.Orientation = types.StringValue(string(s.Orientation))
+func tagcloudConfigApplyStylingFromAPI(m *models.TagcloudConfigModel, s *kbapi.KibanaHTTPAPIsTagcloudStyling) {
+	if s == nil {
+		m.Orientation = types.StringNull()
+		m.FontSize = nil
+		return
+	}
+	if s.Orientation != nil && *s.Orientation != "" {
+		m.Orientation = types.StringValue(string(*s.Orientation))
 	} else {
 		m.Orientation = types.StringNull()
 	}
@@ -300,7 +305,8 @@ func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel, resolver lenscommo
 	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
 	if !m.Orientation.IsNull() {
-		api.Styling.Orientation = kbapi.KibanaHTTPAPIsVisApiOrientation(m.Orientation.ValueString())
+		orientation := kbapi.KibanaHTTPAPIsVisApiOrientation(m.Orientation.ValueString())
+		api.Styling = &kbapi.KibanaHTTPAPIsTagcloudStyling{Orientation: &orientation}
 	}
 
 	if m.FontSize != nil {
@@ -315,6 +321,9 @@ func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel, resolver lenscommo
 		if !m.FontSize.Max.IsNull() {
 			maxValue := float32(m.FontSize.Max.ValueFloat64())
 			fontSize.Max = &maxValue
+		}
+		if api.Styling == nil {
+			api.Styling = &kbapi.KibanaHTTPAPIsTagcloudStyling{}
 		}
 		api.Styling.FontSize = &fontSize
 	}
@@ -395,7 +404,8 @@ func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel, resolver lenscommon.
 	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
 	if !m.Orientation.IsNull() {
-		api.Styling.Orientation = kbapi.KibanaHTTPAPIsVisApiOrientation(m.Orientation.ValueString())
+		orientation := kbapi.KibanaHTTPAPIsVisApiOrientation(m.Orientation.ValueString())
+		api.Styling = &kbapi.KibanaHTTPAPIsTagcloudStyling{Orientation: &orientation}
 	}
 	if m.FontSize != nil {
 		fontSize := struct {
@@ -409,6 +419,9 @@ func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel, resolver lenscommon.
 		if !m.FontSize.Max.IsNull() {
 			maxValue := float32(m.FontSize.Max.ValueFloat64())
 			fontSize.Max = &maxValue
+		}
+		if api.Styling == nil {
+			api.Styling = &kbapi.KibanaHTTPAPIsTagcloudStyling{}
 		}
 		api.Styling.FontSize = &fontSize
 	}

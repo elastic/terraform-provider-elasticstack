@@ -197,3 +197,50 @@ func TestConfigActionsIncludeKnownFrequencyBlock(t *testing.T) {
 	diags = nil
 	assert.False(t, configActionsIncludeKnownFrequencyBlock(ctx, types.ListUnknown(types.ObjectType{AttrTypes: getActionsAttrTypes()}), &diags))
 }
+
+func TestActionFrequencyNewlyIntroduced_configHasFrequencyStateDoesNot(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	stateActions := testActionsList(ctx, t, false)
+	configActions := testActionsList(ctx, t, true)
+	assert.True(t, actionFrequencyNewlyIntroduced(ctx, stateActions, configActions, &diags))
+	assert.False(t, diags.HasError())
+}
+
+func TestActionFrequencyNewlyIntroduced_stateAlreadyHasFrequency(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	stateActions := testActionsList(ctx, t, true)
+	configActions := testActionsList(ctx, t, true)
+	assert.False(t, actionFrequencyNewlyIntroduced(ctx, stateActions, configActions, &diags), "must be idempotent once already in frequency mode")
+	assert.False(t, diags.HasError())
+}
+
+func TestActionFrequencyNewlyIntroduced_configWithoutFrequency(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	stateActions := testActionsList(ctx, t, false)
+	configActions := testActionsList(ctx, t, false)
+	assert.False(t, actionFrequencyNewlyIntroduced(ctx, stateActions, configActions, &diags))
+	assert.False(t, diags.HasError())
+}
+
+func TestActionFrequencyNewlyIntroduced_nullActions(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	nullActions := types.ListNull(types.ObjectType{AttrTypes: getActionsAttrTypes()})
+	assert.False(t, actionFrequencyNewlyIntroduced(ctx, nullActions, nullActions, &diags))
+	assert.False(t, diags.HasError())
+}
+
+func TestThrottleSetUnknownIfActionsFrequencyConfigured_descriptions(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	m := throttleSetUnknownIfActionsFrequencyConfigured()
+	assert.NotEmpty(t, m.Description(ctx))
+	assert.NotEmpty(t, m.MarkdownDescription(ctx))
+}

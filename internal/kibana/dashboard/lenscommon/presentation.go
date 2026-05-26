@@ -33,7 +33,7 @@ import (
 
 // LensChartPresentationWrites holds normalized API write material for typed Lens chart roots.
 type LensChartPresentationWrites struct {
-	TimeRange     kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema
+	TimeRange     *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema
 	HideTitle     *bool
 	HideBorder    *bool
 	References    *[]CMReferenceSchema
@@ -45,7 +45,8 @@ func LensChartPresentationWritesFor(resolver Resolver, in models.LensChartPresen
 	var writes LensChartPresentationWrites
 	var diags diag.Diagnostics
 
-	writes.TimeRange = resolver.ResolveChartTimeRange(in.TimeRange)
+	tr := resolver.ResolveChartTimeRange(in.TimeRange)
+	writes.TimeRange = &tr
 	if typeutils.IsKnown(in.HideTitle) {
 		v := in.HideTitle.ValueBool()
 		writes.HideTitle = &v
@@ -239,7 +240,10 @@ func LensTimeRangesAPILiteralEqual(a, b kbapi.KibanaHTTPAPIsKbnEsQueryServerTime
 }
 
 // chartTimeRangeFromAPI maps a chart-root API time range into Terraform state with REQ-038/REQ-009 null-preservation semantics.
-func chartTimeRangeFromAPI(resolver Resolver, apiTimeRange kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, priorState *models.TimeRangeModel) *models.TimeRangeModel {
+func chartTimeRangeFromAPI(resolver Resolver, apiTimeRange *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, priorState *models.TimeRangeModel) *models.TimeRangeModel {
+	if apiTimeRange == nil {
+		return nil
+	}
 	if apiTimeRange.From == "" && apiTimeRange.To == "" && (apiTimeRange.Mode == nil || lensTimeRangeModeString(apiTimeRange.Mode) == "") {
 		return nil
 	}
@@ -247,11 +251,11 @@ func chartTimeRangeFromAPI(resolver Resolver, apiTimeRange kbapi.KibanaHTTPAPIsK
 	priorWasNil := priorState == nil
 
 	dashTR, dashOK := resolver.DashboardLensComparableTimeRange()
-	if priorWasNil && dashOK && LensTimeRangesAPILiteralEqual(apiTimeRange, dashTR) {
+	if priorWasNil && dashOK && LensTimeRangesAPILiteralEqual(*apiTimeRange, dashTR) {
 		return nil
 	}
 
-	return timeRangeModelFromAPIWithModePreservation(apiTimeRange, priorState)
+	return timeRangeModelFromAPIWithModePreservation(*apiTimeRange, priorState)
 }
 
 func timeRangeModelFromAPIWithModePreservation(api kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, prior *models.TimeRangeModel) *models.TimeRangeModel {
@@ -457,7 +461,7 @@ func LensChartPresentationReadsFor(
 	ctx context.Context,
 	resolver Resolver,
 	prior *models.LensChartPresentationTFModel,
-	apiTimeRange kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema,
+	apiTimeRange *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema,
 	hideTitle *bool,
 	hideBorder *bool,
 	refs *[]CMReferenceSchema,

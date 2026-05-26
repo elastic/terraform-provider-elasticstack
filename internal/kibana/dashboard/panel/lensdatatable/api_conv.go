@@ -384,10 +384,10 @@ func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel, resolver lensc
 			Alignment    *kbapi.KibanaHTTPAPIsDatatableESQLRowsAlignment    `json:"alignment,omitempty"`
 			ApplyColorTo *kbapi.KibanaHTTPAPIsDatatableESQLRowsApplyColorTo `json:"apply_color_to,omitempty"`
 			ClickFilter  *bool                                              `json:"click_filter,omitempty"`
-			CollapseBy   kbapi.KibanaHTTPAPIsCollapseBy                     `json:"collapse_by"`
+			CollapseBy   *kbapi.KibanaHTTPAPIsCollapseBy                    `json:"collapse_by,omitempty"`
 			Color        *kbapi.KibanaHTTPAPIsDatatableESQL_Rows_Color      `json:"color,omitempty"`
 			Column       string                                             `json:"column"`
-			Format       kbapi.KibanaHTTPAPIsFormatType                     `json:"format"`
+			Format       *kbapi.KibanaHTTPAPIsFormatType                    `json:"format,omitempty"`
 			Label        *string                                            `json:"label,omitempty"`
 			Visible      *bool                                              `json:"visible,omitempty"`
 			Width        *float32                                           `json:"width,omitempty"`
@@ -405,9 +405,9 @@ func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel, resolver lensc
 
 	if len(m.SplitMetricsBy) > 0 {
 		splits := make([]struct {
-			Column string                         `json:"column"`
-			Format kbapi.KibanaHTTPAPIsFormatType `json:"format"`
-			Label  *string                        `json:"label,omitempty"`
+			Column string                          `json:"column"`
+			Format *kbapi.KibanaHTTPAPIsFormatType `json:"format,omitempty"`
+			Label  *string                         `json:"label,omitempty"`
 		}, len(m.SplitMetricsBy))
 		for i, splitModel := range m.SplitMetricsBy {
 			if typeutils.IsKnown(splitModel.ConfigJSON) {
@@ -447,8 +447,11 @@ func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel, resolver lensc
 	return api, diags
 }
 
-func datatableStylingFromAPI(m *models.DatatableStylingModel, api kbapi.KibanaHTTPAPIsDatatableStyling) diag.Diagnostics {
+func datatableStylingFromAPI(m *models.DatatableStylingModel, api *kbapi.KibanaHTTPAPIsDatatableStyling) diag.Diagnostics {
 	var diags diag.Diagnostics
+	if api == nil {
+		return diags
+	}
 
 	m.Density = &models.DatatableDensityModel{}
 	if densityDiags := datatableDensityFromAPI(m.Density, api.Density); densityDiags.HasError() {
@@ -475,13 +478,13 @@ func datatableStylingFromAPI(m *models.DatatableStylingModel, api kbapi.KibanaHT
 	return diags
 }
 
-func datatableStylingToAPI(m *models.DatatableStylingModel) (kbapi.KibanaHTTPAPIsDatatableStyling, diag.Diagnostics) {
+func datatableStylingToAPI(m *models.DatatableStylingModel) (*kbapi.KibanaHTTPAPIsDatatableStyling, diag.Diagnostics) {
 	if m == nil {
-		return kbapi.KibanaHTTPAPIsDatatableStyling{}, nil
+		return nil, nil
 	}
 
 	var diags diag.Diagnostics
-	var styling kbapi.KibanaHTTPAPIsDatatableStyling
+	styling := &kbapi.KibanaHTTPAPIsDatatableStyling{}
 
 	if m.Density != nil {
 		density, densityDiags := datatableDensityToAPI(m.Density)
@@ -509,8 +512,11 @@ func datatableStylingToAPI(m *models.DatatableStylingModel) (kbapi.KibanaHTTPAPI
 	return styling, diags
 }
 
-func datatableDensityFromAPI(m *models.DatatableDensityModel, api kbapi.KibanaHTTPAPIsDatatableDensity) diag.Diagnostics {
+func datatableDensityFromAPI(m *models.DatatableDensityModel, api *kbapi.KibanaHTTPAPIsDatatableDensity) diag.Diagnostics {
 	var diags diag.Diagnostics
+	if api == nil {
+		return diags
+	}
 
 	m.Mode = typeutils.StringishPointerValue(api.Mode)
 
@@ -523,13 +529,13 @@ func datatableDensityFromAPI(m *models.DatatableDensityModel, api kbapi.KibanaHT
 	return diags
 }
 
-func datatableDensityToAPI(m *models.DatatableDensityModel) (kbapi.KibanaHTTPAPIsDatatableDensity, diag.Diagnostics) {
+func datatableDensityToAPI(m *models.DatatableDensityModel) (*kbapi.KibanaHTTPAPIsDatatableDensity, diag.Diagnostics) {
 	if m == nil {
-		return kbapi.KibanaHTTPAPIsDatatableDensity{}, nil
+		return nil, nil
 	}
 
 	var diags diag.Diagnostics
-	var density kbapi.KibanaHTTPAPIsDatatableDensity
+	density := &kbapi.KibanaHTTPAPIsDatatableDensity{}
 
 	if typeutils.IsKnown(m.Mode) {
 		mode := kbapi.KibanaHTTPAPIsDatatableDensityMode(m.Mode.ValueString())

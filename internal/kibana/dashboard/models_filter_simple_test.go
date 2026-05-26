@@ -63,7 +63,7 @@ func Test_filterSimpleModel_fromAPI_toAPI(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test fromAPI
 			model := &models.FilterSimpleModel{}
-			filterSimpleFromAPI(model, tt.apiQuery)
+			filterSimpleFromAPI(model, &tt.apiQuery)
 
 			assert.Equal(t, tt.expected.Expression, model.Expression)
 			assert.Equal(t, tt.expected.Language, model.Language)

@@ -107,13 +107,17 @@ func TestConverter_roundTrip_ESQL_datatable(t *testing.T) {
 	desc := "Converter test"
 	igf := false
 	samp := float32(1)
+	densityMode := kbapi.KibanaHTTPAPIsDatatableDensityModeExpanded
+	styling := kbapi.KibanaHTTPAPIsDatatableStyling{
+		Density: &kbapi.KibanaHTTPAPIsDatatableDensity{Mode: &densityMode},
+	}
 	api := kbapi.KibanaHTTPAPIsDatatableESQL{
 		Type:                kbapi.KibanaHTTPAPIsDatatableESQLTypeDataTable,
 		Title:               &title,
 		Description:         &desc,
 		IgnoreGlobalFilters: &igf,
 		Sampling:            &samp,
-		Styling:             kbapi.KibanaHTTPAPIsDatatableStyling{Density: kbapi.KibanaHTTPAPIsDatatableDensity{Mode: new(kbapi.KibanaHTTPAPIsDatatableDensityModeExpanded)}},
+		Styling:             &styling,
 		Metrics:             &[]kbapi.KibanaHTTPAPIsDatatableESQLMetric{metric},
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.DataSource))
