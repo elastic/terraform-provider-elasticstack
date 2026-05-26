@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -41,18 +40,17 @@ func readILMAttachment(ctx context.Context, client *clients.ElasticsearchScopedC
 		state.IndexTemplate = types.StringValue(strings.TrimSuffix(resourceID, customSuffix))
 	}
 
-	tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, resourceID)
-	if sdkDiags.HasError() {
-		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	tpl, getTplDiags := elasticsearch.GetComponentTemplate(ctx, client, resourceID)
+	if getTplDiags.HasError() {
+		diags.Append(getTplDiags...)
 		return state, false, diags
 	}
 
-	modelTpl := toModelComponentTemplateResponse(tpl)
-	if modelTpl == nil {
+	if tpl == nil {
 		return state, false, nil
 	}
 
-	lifecycleName := extractILMSetting(modelTpl.ComponentTemplate.Template)
+	lifecycleName := extractILMSetting(tpl.ComponentTemplate.Template)
 	if lifecycleName == "" {
 		return state, false, nil
 	}

@@ -42,11 +42,13 @@ func newResource() *Resource {
 		KibanaResource: entitycore.NewKibanaResource[streamModel](
 			entitycore.ComponentKibana,
 			"stream",
-			getSchema,
-			readStream,
-			deleteStream,
-			createStream,
-			updateStream,
+			entitycore.KibanaResourceOptions[streamModel]{
+				Schema: getSchema,
+				Read:   readStream,
+				Delete: deleteStream,
+				Create: createStream,
+				Update: updateStream,
+			},
 		),
 	}
 }

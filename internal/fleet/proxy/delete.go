@@ -19,48 +19,17 @@ package proxy
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var stateModel proxyModel
+func deleteProxy(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ proxyModel) diag.Diagnostics {
+	var diags diag.Diagnostics
 
-	diags := req.State.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	supported, sdkDiags := client.EnforceMinVersion(ctx, minVersion)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !supported {
-		resp.Diagnostics.AddError("Unsupported server version",
-			fmt.Sprintf("Fleet proxies require Elastic Stack v%s or later.", minVersion))
-		return
-	}
-
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
-
-	spaceID := stateModel.SpaceID.ValueString()
-	proxyID := stateModel.ProxyID.ValueString()
-
-	diags = fleetclient.DeleteProxy(ctx, fleetClient, spaceID, proxyID)
-	resp.Diagnostics.Append(diags...)
+	diags.Append(fleetclient.DeleteProxy(ctx, fleetClient, spaceID, resourceID)...)
+	return diags
 }

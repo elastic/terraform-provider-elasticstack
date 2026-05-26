@@ -21,7 +21,6 @@ import (
 	"context"
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -53,15 +52,14 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	// Get server version to validate version-specific features
-	serverVersion, versionDiags := client.ServerVersion(ctx)
-	if versionDiags.HasError() {
-		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+	features, featureDiags := resolveAlertingRuleFeatures(ctx, client)
+	if featureDiags.HasError() {
+		resp.Diagnostics.Append(featureDiags...)
 		return
 	}
 
 	// Convert to API model (includes version-specific validation)
-	rule, d := plan.toAPIModel(ctx, serverVersion)
+	rule, d := plan.toAPIModel(ctx, features)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -72,11 +70,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	rule.RuleID = ruleID
 	rule.SpaceID = spaceID
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
-		return
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	// Update the rule (enable/disable logic is handled inside)
 	_, updateDiags := kibanaoapi.UpdateAlertingRule(ctx, oapiClient, rule.SpaceID, rule)

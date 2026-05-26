@@ -27,21 +27,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// GetDataViews reads all data views from the API.
-func GetDataViews(ctx context.Context, client *Client, spaceID string) ([]kbapi.GetDataViewsResponseItem, diag.Diagnostics) {
-	resp, err := client.API.GetAllDataViewsDefaultWithResponse(ctx, spaceID)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return *resp.JSON200.DataView, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
-}
-
 // GetDataView reads a specific data view from the API.
 func GetDataView(ctx context.Context, client *Client, spaceID string, viewID string) (*kbapi.DataViewsDataViewResponseObject, diag.Diagnostics) {
 	resp, err := client.API.GetDataViewDefaultWithResponse(ctx, spaceID, viewID)
@@ -49,7 +34,7 @@ func GetDataView(ctx context.Context, client *Client, spaceID string, viewID str
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.DataViewsDataViewResponseObject { return resp.JSON200 })
 }
 
@@ -60,7 +45,7 @@ func CreateDataView(ctx context.Context, client *Client, spaceID string, req kba
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.DataViewsDataViewResponseObject { return resp.JSON200 })
 }
 
@@ -71,7 +56,7 @@ func UpdateDataView(ctx context.Context, client *Client, spaceID string, viewID 
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.DataViewsDataViewResponseObject { return resp.JSON200 })
 }
 

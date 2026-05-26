@@ -67,8 +67,7 @@ func TestReadAndHydrateStateUsesReadPayload(t *testing.T) {
 		}
 	}))
 
-	resource := &Resource{}
-	state, found, diags := resource.readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection)
+	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection)
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.True(t, found)
@@ -122,6 +121,10 @@ func assertMethodUsesReadHydration(t *testing.T, filename string, methodName str
 
 		selector, ok := call.Fun.(*ast.SelectorExpr)
 		if ok && selector.Sel != nil && selector.Sel.Name == "readAndHydrateState" {
+			hasReadAndHydrateCall = true
+		}
+
+		if ident, ok := call.Fun.(*ast.Ident); ok && ident.Name == "readAndHydrateState" {
 			hasReadAndHydrateCall = true
 		}
 

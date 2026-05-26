@@ -102,14 +102,14 @@ func (m *processorKVModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorKVDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource",
+			Description: descIdentifier,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
-		"field": schema.StringAttribute{
+		attrField: schema.StringAttribute{
 			Description: "The field to be parsed. Supports template snippets.",
 			Required:    true,
 		},
@@ -121,7 +121,7 @@ func NewProcessorKVDataSource() datasource.DataSource {
 			Description: "Regex pattern to use for splitting the key from the value within a key-value pair.",
 			Required:    true,
 		},
-		"target_field": schema.StringAttribute{
+		attrTargetField: schema.StringAttribute{
 			Description: "The field to insert the extracted keys into. Defaults to the root of the document.",
 			Optional:    true,
 		},
@@ -135,8 +135,8 @@ func NewProcessorKVDataSource() datasource.DataSource {
 			Optional:    true,
 			ElementType: types.StringType,
 		},
-		"ignore_missing": schema.BoolAttribute{
-			Description: "If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.",
+		attrIgnoreMissing: schema.BoolAttribute{
+			Description: descIgnoreMissingDocStop,
 			Optional:    true,
 			Computed:    true,
 		},

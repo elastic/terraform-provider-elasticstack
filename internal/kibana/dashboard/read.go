@@ -67,7 +67,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 
 func (r *Resource) read(ctx context.Context, apiClient *clients.KibanaScopedClient, stateModel models.DashboardModel) (*models.DashboardModel, diag.Diagnostics) {
 	// Parse composite ID
-	composite, diags := clients.CompositeIDFromStrFw(stateModel.ID.ValueString())
+	composite, diags := clients.CompositeIDFromStr(stateModel.ID.ValueString())
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -76,11 +76,7 @@ func (r *Resource) read(ctx context.Context, apiClient *clients.KibanaScopedClie
 	spaceID := composite.ClusterID
 
 	// Get the Kibana client
-	kibanaClient, err := apiClient.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Unable to get Kibana client", err.Error())
-		return nil, diags
-	}
+	kibanaClient := apiClient.GetKibanaOapiClient()
 
 	// Get the dashboard
 	getResp, getDiags := kibanaoapi.GetDashboard(ctx, kibanaClient, spaceID, dashboardID)

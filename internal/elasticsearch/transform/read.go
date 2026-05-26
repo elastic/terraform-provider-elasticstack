@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -33,8 +32,8 @@ import (
 func readTransform(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state tfModel) (tfModel, bool, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 
-	transform, sdkDiags := elasticsearch.GetTransform(ctx, client, &resourceID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	transform, getTransformDiags := elasticsearch.GetTransform(ctx, client, &resourceID)
+	diags.Append(getTransformDiags...)
 	if diags.HasError() {
 		return state, false, diags
 	}
@@ -44,8 +43,8 @@ func readTransform(ctx context.Context, client *clients.ElasticsearchScopedClien
 		return state, false, diags
 	}
 
-	stats, sdkDiags := elasticsearch.GetTransformStats(ctx, client, &resourceID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	stats, statsDiags := elasticsearch.GetTransformStats(ctx, client, &resourceID)
+	diags.Append(statsDiags...)
 	if diags.HasError() {
 		return state, false, diags
 	}

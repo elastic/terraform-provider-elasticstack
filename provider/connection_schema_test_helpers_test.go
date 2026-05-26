@@ -24,7 +24,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
-	sdkschema "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type frameworkResourceEntity struct {
@@ -77,13 +76,4 @@ func collectFrameworkDataSourceEntities(ctx context.Context, p fwprovider.Provid
 	}
 	sort.Slice(entities, func(i, j int) bool { return entities[i].name < entities[j].name })
 	return entities
-}
-
-func sortedSDKEntityNames(entities map[string]*sdkschema.Resource) []string {
-	keys := make([]string, 0, len(entities))
-	for k := range entities {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
 }

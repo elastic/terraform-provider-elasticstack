@@ -944,10 +944,7 @@ func testCheckAlertingRuleAPIParams(resourceName string, check func(params map[s
 			return err
 		}
 
-		oapiClient, err := client.GetKibanaOapiClient()
-		if err != nil {
-			return err
-		}
+		oapiClient := client.GetKibanaOapiClient()
 
 		rule, diags := kibanaoapi.GetAlertingRule(context.Background(), oapiClient, compID.ClusterID, compID.ResourceID)
 		if diags.HasError() {

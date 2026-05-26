@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -59,7 +58,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 			"rules": schema.StringAttribute{
 				MarkdownDescription: "The rules that determine which users should be matched by the mapping. A rule is a logical condition that is expressed by using a JSON DSL.",
 				Computed:            true,
-				CustomType:          jsontypes.NormalizedType{},
+				CustomType:          NormalizedRulesType{},
 			},
 			"roles": schema.SetAttribute{
 				MarkdownDescription: "A list of role names that are granted to the users that match the role mapping rules.",
@@ -84,8 +83,8 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	var diags diag.Diagnostics
 	roleMappingName := config.Name.ValueString()
 
-	id, sdkDiags := esClient.ID(ctx, roleMappingName)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := esClient.ID(ctx, roleMappingName)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return config, diags
 	}

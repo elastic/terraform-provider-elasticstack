@@ -21,6 +21,7 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -56,20 +57,13 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"datafeed_id": schema.StringAttribute{
+			attrDatafeedID: schema.StringAttribute{
 				MarkdownDescription: datafeedIDMarkdownDescription,
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
-				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 64),
-					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-z0-9][a-z0-9_-]*[a-z0-9]$|^[a-z0-9]$`),
-						"must contain lowercase alphanumeric characters (a-z and 0-9), hyphens, and underscores. "+
-							"It must start and end with alphanumeric characters",
-					),
-				},
+				Validators: []validator.String{ml.IDValidator()},
 			},
 			"job_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier for the anomaly detection job. The job must exist before creating the datafeed.",
@@ -164,14 +158,14 @@ func getSchema(_ context.Context) schema.Schema {
 					objectplanmodifier.UseStateForUnknown(),
 				},
 				Attributes: map[string]schema.Attribute{
-					"mode": schema.StringAttribute{
+					attrMode: schema.StringAttribute{
 						MarkdownDescription: chunkingModeMarkdownDescription,
 						Required:            true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("auto", "manual", "off"),
 						},
 					},
-					"time_span": schema.StringAttribute{
+					attrTimeSpan: schema.StringAttribute{
 						MarkdownDescription: "The time span for each chunk. Only applicable and required when mode is `manual`. Must be a valid duration.",
 						Optional:            true,
 						Computed:            true,
@@ -180,7 +174,7 @@ func getSchema(_ context.Context) schema.Schema {
 						},
 						Validators: []validator.String{
 							stringvalidator.RegexMatches(regexp.MustCompile(`^\d+[nsumdh]$`), "must be a valid duration (e.g., 1h, 1d)"),
-							validators.AllowedIfDependentPathEquals(path.Root("chunking_config").AtName("mode"), "manual"),
+							validators.AllowedIfDependentPathEquals(path.Root("chunking_config").AtName(attrMode), "manual", validators.AllowedIfOptions{}),
 						},
 					},
 				},
@@ -218,7 +212,7 @@ func getSchema(_ context.Context) schema.Schema {
 					objectplanmodifier.UseStateForUnknown(),
 				},
 				Attributes: map[string]schema.Attribute{
-					"expand_wildcards": schema.SetAttribute{
+					attrExpandWildcards: schema.SetAttribute{
 						MarkdownDescription: expandWildcardsMarkdownDescription,
 						Optional:            true,
 						Computed:            true,
@@ -232,7 +226,7 @@ func getSchema(_ context.Context) schema.Schema {
 							),
 						},
 					},
-					"ignore_unavailable": schema.BoolAttribute{
+					attrIgnoreUnavailable: schema.BoolAttribute{
 						MarkdownDescription: "If true, unavailable indices (missing or closed) are ignored.",
 						Optional:            true,
 						Computed:            true,
@@ -240,7 +234,7 @@ func getSchema(_ context.Context) schema.Schema {
 							boolplanmodifier.UseStateForUnknown(),
 						},
 					},
-					"allow_no_indices": schema.BoolAttribute{
+					attrAllowNoIndices: schema.BoolAttribute{
 						MarkdownDescription: "If true, wildcard indices expressions that resolve into no concrete indices are ignored. This includes the `_all` string or when no indices are specified.",
 						Optional:            true,
 						Computed:            true,
@@ -248,7 +242,7 @@ func getSchema(_ context.Context) schema.Schema {
 							boolplanmodifier.UseStateForUnknown(),
 						},
 					},
-					"ignore_throttled": schema.BoolAttribute{
+					attrIgnoreThrottled: schema.BoolAttribute{
 						MarkdownDescription: "If true, concrete, expanded, or aliased indices are ignored when frozen. This setting is deprecated.",
 						Optional:            true,
 						Computed:            true,

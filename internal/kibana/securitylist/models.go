@@ -24,11 +24,19 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+func (m Model) GetID() types.String             { return m.ID }
+func (m Model) GetResourceID() types.String     { return m.ListID }
+func (m Model) GetSpaceID() types.String        { return m.SpaceID }
+func (m Model) GetKibanaConnection() types.List { return m.KibanaConnection }
+
+var _ entitycore.KibanaResourceModel = Model{}
 
 type Model struct {
 	ID               types.String         `tfsdk:"id"`

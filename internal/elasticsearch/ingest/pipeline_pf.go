@@ -24,7 +24,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -66,7 +65,7 @@ func GetSchema(_ context.Context) schema.Schema {
 		MarkdownDescription: "Manages tasks and resources related to ingest pipelines and processors. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest-apis.html",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				MarkdownDescription: "Internal identifier of the resource",
+				MarkdownDescription: descIdentifier,
 				Computed:            true,
 			},
 			"name": schema.StringAttribute{
@@ -86,7 +85,7 @@ func GetSchema(_ context.Context) schema.Schema {
 				ElementType:         ProcessorJSONType{},
 				Validators:          []validator.List{listvalidator.SizeAtLeast(1)},
 			},
-			"on_failure": schema.ListAttribute{
+			attrOnFailure: schema.ListAttribute{
 				MarkdownDescription: ingestPipelineOnFailureDescription,
 				Optional:            true,
 				ElementType:         ProcessorJSONType{},
@@ -107,15 +106,13 @@ type pipelineResource struct {
 
 func newPipelineResource() *pipelineResource {
 	return &pipelineResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"ingest_pipeline",
-			GetSchema,
-			readIngestPipeline,
-			deleteIngestPipeline,
-			writeIngestPipeline,
-			writeIngestPipeline,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("ingest_pipeline", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: GetSchema,
+			Read:   readIngestPipeline,
+			Delete: deleteIngestPipeline,
+			Create: writeIngestPipeline,
+			Update: writeIngestPipeline,
+		}),
 	}
 }
 
@@ -130,8 +127,8 @@ func (r *pipelineResource) ImportState(ctx context.Context, req resource.ImportS
 func readIngestPipeline(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state Data) (Data, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	pipeline, apiDiags := elasticsearch.GetIngestPipeline(ctx, client, resourceID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(apiDiags)...)
+	pipeline, getPipelineDiags := elasticsearch.GetIngestPipeline(ctx, client, resourceID)
+	diags.Append(getPipelineDiags...)
 	if diags.HasError() {
 		return state, false, diags
 	}
@@ -141,7 +138,7 @@ func readIngestPipeline(ctx context.Context, client *clients.ElasticsearchScoped
 	}
 
 	compID, compDiags := client.ID(ctx, resourceID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(compDiags)...)
+	diags.Append(compDiags...)
 	if diags.HasError() {
 		return state, false, diags
 	}
@@ -167,8 +164,8 @@ func readIngestPipeline(ctx context.Context, client *clients.ElasticsearchScoped
 	}
 	data.OnFailure = onFailureList
 
-	if pipeline.Meta_ != nil {
-		b, err := json.Marshal(pipeline.Meta_)
+	if pipeline.Metadata != nil {
+		b, err := json.Marshal(pipeline.Metadata)
 		if err != nil {
 			diags.AddError("Failed to serialize metadata", err.Error())
 			return state, false, diags
@@ -182,32 +179,35 @@ func readIngestPipeline(ctx context.Context, client *clients.ElasticsearchScoped
 }
 
 func deleteIngestPipeline(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ Data) diag.Diagnostics {
-	return diagutil.FrameworkDiagsFromSDK(elasticsearch.DeleteIngestPipeline(ctx, client, resourceID))
+	return elasticsearch.DeleteIngestPipeline(ctx, client, resourceID)
 }
 
-func writeIngestPipeline(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
+// writeIngestPipeline handles both Create and Update; the ingest pipeline PUT
+// API is idempotent so the same callback serves both lifecycle methods.
+func writeIngestPipeline(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Data]) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	var diags diag.Diagnostics
+	data := req.Plan
+	resourceID := req.WriteID
 
 	body, buildDiags := buildPipelineBody(ctx, data)
 	diags.Append(buildDiags...)
 	if diags.HasError() {
-		return data, diags
+		return entitycore.WriteResult[Data]{Model: data}, diags
 	}
 
-	apiDiags := elasticsearch.PutIngestPipeline(ctx, client, resourceID, body)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(apiDiags)...)
+	diags.Append(elasticsearch.PutIngestPipeline(ctx, client, resourceID, body)...)
 	if diags.HasError() {
-		return data, diags
+		return entitycore.WriteResult[Data]{Model: data}, diags
 	}
 
 	compID, compDiags := client.ID(ctx, resourceID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(compDiags)...)
+	diags.Append(compDiags...)
 	if diags.HasError() {
-		return data, diags
+		return entitycore.WriteResult[Data]{Model: data}, diags
 	}
 	data.ID = types.StringValue(compID.String())
 
-	return data, diags
+	return entitycore.WriteResult[Data]{Model: data}, diags
 }
 
 func buildPipelineBody(ctx context.Context, data Data) (map[string]any, diag.Diagnostics) {
@@ -236,7 +236,7 @@ func buildPipelineBody(ctx context.Context, data Data) (map[string]any, diag.Dia
 		return nil, diags
 	}
 	if onFailure != nil {
-		body["on_failure"] = onFailure
+		body[attrOnFailure] = onFailure
 	}
 
 	if typeutils.IsKnown(data.Metadata) {

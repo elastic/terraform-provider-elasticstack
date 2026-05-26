@@ -21,6 +21,7 @@ import (
 	"context"
 
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -36,22 +37,23 @@ import (
 // aliasAttrTypes returns the attribute types for a single alias nested block element.
 func aliasAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"name":           types.StringType,
-		"filter":         jsontypes.NormalizedType{},
-		"index_routing":  types.StringType,
-		"is_hidden":      types.BoolType,
-		"is_write_index": types.BoolType,
-		"routing":        types.StringType,
-		"search_routing": types.StringType,
+		attrName:          types.StringType,
+		attrFilter:        jsontypes.NormalizedType{},
+		attrIndexRouting:  types.StringType,
+		attrIsHidden:      types.BoolType,
+		attrIsWriteIndex:  types.BoolType,
+		attrRouting:       types.StringType,
+		attrSearchRouting: types.StringType,
 	}
 }
 
 // templateAttrTypes returns the attribute types for the template block object.
 func templateAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"alias":    types.SetType{ElemType: types.ObjectType{AttrTypes: aliasAttrTypes()}},
-		"mappings": esindex.MappingsType{},
-		"settings": customtypes.IndexSettingsType{},
+		attrAlias:             types.SetType{ElemType: types.ObjectType{AttrTypes: aliasAttrTypes()}},
+		attrMappings:          esindex.MappingsType{},
+		attrSettings:          customtypes.IndexSettingsType{},
+		attrDataStreamOptions: types.ObjectType{AttrTypes: datastreamoptions.AttrTypes()},
 	}
 }
 
@@ -74,7 +76,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				MarkdownDescription: "Name of the component template to create.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
@@ -92,10 +94,10 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 		},
 		Blocks: map[string]schema.Block{
-			"template": schema.SingleNestedBlock{
+			attrTemplate: schema.SingleNestedBlock{
 				MarkdownDescription: "Template to be applied. It may optionally include an aliases, mappings, or settings configuration.",
 				Attributes: map[string]schema.Attribute{
-					"mappings": schema.StringAttribute{
+					attrMappings: schema.StringAttribute{
 						MarkdownDescription: "Mapping for fields in the index. Should be specified as a JSON object of field mappings. " +
 							"See the [explicit mapping documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-mapping.html) " +
 							"for more details.",
@@ -105,7 +107,7 @@ func getSchema(_ context.Context) schema.Schema {
 							esindex.StringIsJSONObject{},
 						},
 					},
-					"settings": schema.StringAttribute{
+					attrSettings: schema.StringAttribute{
 						MarkdownDescription: "Configuration options for the index. See the " +
 							"[index modules settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings) " +
 							"for more details.",
@@ -114,17 +116,17 @@ func getSchema(_ context.Context) schema.Schema {
 					},
 				},
 				Blocks: map[string]schema.Block{
-					"alias": schema.SetNestedBlock{
+					attrAlias: schema.SetNestedBlock{
 						MarkdownDescription: "Alias to add.",
 						NestedObject: schema.NestedBlockObject{
 							Attributes: map[string]schema.Attribute{
-								"name": schema.StringAttribute{
+								attrName: schema.StringAttribute{
 									MarkdownDescription: "The alias name. Index alias names support date math. See the " +
 										"[date math index names documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html) " +
 										"for more details.",
 									Required: true,
 								},
-								"filter": schema.StringAttribute{
+								attrFilter: schema.StringAttribute{
 									MarkdownDescription: "Query used to limit documents the alias can access.",
 									Optional:            true,
 									CustomType:          jsontypes.NormalizedType{},
@@ -132,31 +134,31 @@ func getSchema(_ context.Context) schema.Schema {
 										esindex.StringIsJSONObject{},
 									},
 								},
-								"index_routing": schema.StringAttribute{
+								attrIndexRouting: schema.StringAttribute{
 									MarkdownDescription: "Value used to route indexing operations to a specific shard. If specified, this overwrites the routing value for indexing operations.",
 									Optional:            true,
 									Computed:            true,
 									Default:             stringdefault.StaticString(""),
 								},
-								"is_hidden": schema.BoolAttribute{
+								attrIsHidden: schema.BoolAttribute{
 									MarkdownDescription: "If true, the alias is hidden.",
 									Optional:            true,
 									Computed:            true,
 									Default:             booldefault.StaticBool(false),
 								},
-								"is_write_index": schema.BoolAttribute{
+								attrIsWriteIndex: schema.BoolAttribute{
 									MarkdownDescription: "If true, the index is the write index for the alias.",
 									Optional:            true,
 									Computed:            true,
 									Default:             booldefault.StaticBool(false),
 								},
-								"routing": schema.StringAttribute{
+								attrRouting: schema.StringAttribute{
 									MarkdownDescription: "Value used to route indexing and search operations to a specific shard.",
 									Optional:            true,
 									Computed:            true,
 									Default:             stringdefault.StaticString(""),
 								},
-								"search_routing": schema.StringAttribute{
+								attrSearchRouting: schema.StringAttribute{
 									MarkdownDescription: "Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.",
 									Optional:            true,
 									Computed:            true,
@@ -165,6 +167,7 @@ func getSchema(_ context.Context) schema.Schema {
 							},
 						},
 					},
+					attrDataStreamOptions: datastreamoptions.Block(),
 				},
 			},
 		},

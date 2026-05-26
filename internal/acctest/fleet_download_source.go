@@ -42,10 +42,7 @@ func ensureFleetDefaultAgentDownloadSource(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fc, err := client.GetFleetClient()
-	if err != nil {
-		t.Fatal(err)
-	}
+	fc := client.GetFleetClient()
 
 	// NOTE: We intentionally do NOT version-gate this bootstrap.
 	// Some stacks require a default download source for agent policy operations even when our

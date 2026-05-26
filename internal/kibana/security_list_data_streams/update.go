@@ -20,25 +20,11 @@ package securitylistdatastreams
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// Update is a no-op for this resource because the only configurable attribute (space_id)
-// has RequiresReplace plan modifier. This method exists to satisfy the resource.Resource interface.
-// If this method is called, it means the framework has determined no replacement is needed,
-// so we simply pass the plan through to state.
-func (r *securityListDataStreamsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan Model
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	_, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+func updateSecurityListDataStreams(_ context.Context, _ *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
+	return entitycore.KibanaWriteResult[Model]{Model: req.Plan}, nil
 }

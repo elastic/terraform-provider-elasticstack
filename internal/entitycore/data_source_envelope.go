@@ -19,7 +19,6 @@ package entitycore
 
 import (
 	"context"
-	"fmt"
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -70,11 +69,10 @@ type ElasticsearchDataSourceModel interface {
 	GetElasticsearchConnection() types.List
 }
 
-// DataSourceVersionRequirement describes a minimum server version that a
-// Kibana data source model requires before the entity read function is
-// invoked.
-type DataSourceVersionRequirement struct {
-	// MinVersion is the minimum Kibana server version required.
+// VersionRequirement describes a minimum server version that an entity model
+// requires before the envelope invokes the concrete lifecycle callback.
+type VersionRequirement struct {
+	// MinVersion is the minimum server version required.
 	MinVersion version.Version
 	// ErrorMessage is the human-readable detail added to the
 	// "Unsupported server version" diagnostic when the server does not
@@ -87,21 +85,17 @@ type DataSourceVersionRequirement struct {
 // owns config decode, scoped client resolution, and state persistence; entity
 // logic is delegated to the readFunc callback.
 type genericKibanaDataSource[T KibanaDataSourceModel] struct {
-	component      Component
-	dataSourceName string
-	client         *clients.ProviderClientFactory
-	schemaFactory  func(context.Context) dsschema.Schema
-	readFunc       func(context.Context, *clients.KibanaScopedClient, T) (T, diag.Diagnostics)
+	*DataSourceBase
+	schemaFactory func(context.Context) dsschema.Schema
+	readFunc      func(context.Context, *clients.KibanaScopedClient, T) (T, diag.Diagnostics)
 }
 
 // genericElasticsearchDataSource implements [datasource.DataSource] and
 // [datasource.DataSourceWithConfigure] for Elasticsearch-backed data sources.
 type genericElasticsearchDataSource[T ElasticsearchDataSourceModel] struct {
-	component      Component
-	dataSourceName string
-	client         *clients.ProviderClientFactory
-	schemaFactory  func(context.Context) dsschema.Schema
-	readFunc       func(context.Context, *clients.ElasticsearchScopedClient, T) (T, diag.Diagnostics)
+	*DataSourceBase
+	schemaFactory func(context.Context) dsschema.Schema
+	readFunc      func(context.Context, *clients.ElasticsearchScopedClient, T) (T, diag.Diagnostics)
 }
 
 // NewKibanaDataSource returns a [datasource.DataSource] that wraps the
@@ -133,8 +127,7 @@ func NewKibanaDataSource[T KibanaDataSourceModel](
 	readFunc func(context.Context, *clients.KibanaScopedClient, T) (T, diag.Diagnostics),
 ) datasource.DataSource {
 	return &genericKibanaDataSource[T]{
-		component:      component,
-		dataSourceName: name,
+		DataSourceBase: NewDataSourceBase(component, name),
 		schemaFactory:  schemaFactory,
 		readFunc:       readFunc,
 	}
@@ -153,61 +146,32 @@ func NewElasticsearchDataSource[T ElasticsearchDataSourceModel](
 	readFunc func(context.Context, *clients.ElasticsearchScopedClient, T) (T, diag.Diagnostics),
 ) datasource.DataSource {
 	return &genericElasticsearchDataSource[T]{
-		component:      component,
-		dataSourceName: name,
+		DataSourceBase: NewDataSourceBase(component, name),
 		schemaFactory:  schemaFactory,
 		readFunc:       readFunc,
 	}
 }
 
-// Configure implements [datasource.DataSourceWithConfigure].
-func (d *genericKibanaDataSource[T]) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	d.client = factory
-}
-
-// Configure implements [datasource.DataSourceWithConfigure].
-func (d *genericElasticsearchDataSource[T]) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	d.client = factory
-}
-
-// Metadata implements [datasource.DataSource].
-func (d *genericKibanaDataSource[T]) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = fmt.Sprintf("%s_%s_%s", req.ProviderTypeName, d.component, d.dataSourceName)
-}
-
-// Metadata implements [datasource.DataSource].
-func (d *genericElasticsearchDataSource[T]) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = fmt.Sprintf("%s_%s_%s", req.ProviderTypeName, d.component, d.dataSourceName)
+// injectConnectionBlockIntoSchema returns a copy of the schema produced by
+// schemaFactory with blockKey injected as an extra block. It allocates a new
+// Blocks map so each call is independent and safe to reuse the same factory.
+func injectConnectionBlockIntoSchema(ctx context.Context, schemaFactory func(context.Context) dsschema.Schema, blockKey string, block dsschema.Block) dsschema.Schema {
+	schema := schemaFactory(ctx)
+	blocks := make(map[string]dsschema.Block, len(schema.Blocks)+1)
+	maps.Copy(blocks, schema.Blocks)
+	blocks[blockKey] = block
+	schema.Blocks = blocks
+	return schema
 }
 
 // Schema implements [datasource.DataSource], injecting the connection block.
 func (d *genericKibanaDataSource[T]) Schema(ctx context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	schema := d.schemaFactory(ctx)
-	blocks := make(map[string]dsschema.Block, len(schema.Blocks)+1)
-	maps.Copy(blocks, schema.Blocks)
-	blocks["kibana_connection"] = providerschema.GetKbFWConnectionBlock()
-	schema.Blocks = blocks
-	resp.Schema = schema
+	resp.Schema = injectConnectionBlockIntoSchema(ctx, d.schemaFactory, blockKibanaConnection, providerschema.GetKbFWConnectionBlock())
 }
 
 // Schema implements [datasource.DataSource], injecting the connection block.
 func (d *genericElasticsearchDataSource[T]) Schema(ctx context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	schema := d.schemaFactory(ctx)
-	blocks := make(map[string]dsschema.Block, len(schema.Blocks)+1)
-	maps.Copy(blocks, schema.Blocks)
-	blocks["elasticsearch_connection"] = providerschema.GetEsFWConnectionBlock()
-	schema.Blocks = blocks
-	resp.Schema = schema
+	resp.Schema = injectConnectionBlockIntoSchema(ctx, d.schemaFactory, blockElasticsearchConnection, providerschema.GetEsFWConnectionBlock())
 }
 
 // Read implements [datasource.DataSource].
@@ -219,13 +183,13 @@ func (d *genericKibanaDataSource[T]) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	client, diags := d.client.GetKibanaClient(ctx, model.GetKibanaConnection())
+	client, diags := d.Client().GetKibanaClient(ctx, model.GetKibanaConnection())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(enforceVersionRequirements(ctx, client, &model)...)
+	resp.Diagnostics.Append(EnforceVersionRequirements(ctx, client, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -249,8 +213,13 @@ func (d *genericElasticsearchDataSource[T]) Read(ctx context.Context, req dataso
 		return
 	}
 
-	client, diags := d.client.GetElasticsearchClient(ctx, model.GetElasticsearchConnection())
+	client, diags := d.Client().GetElasticsearchClient(ctx, model.GetElasticsearchConnection())
 	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(EnforceVersionRequirements(ctx, client, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

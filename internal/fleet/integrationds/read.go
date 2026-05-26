@@ -30,11 +30,7 @@ import (
 func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config integrationDataSourceModel) (integrationDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	client, err := kbClient.GetFleetClient()
-	if err != nil {
-		diags.AddError(err.Error(), "")
-		return config, diags
-	}
+	client := kbClient.GetFleetClient()
 
 	name := config.Name.ValueString()
 	prerelease := config.Prerelease.ValueBool()

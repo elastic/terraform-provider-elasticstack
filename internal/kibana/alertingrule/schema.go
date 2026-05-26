@@ -21,6 +21,7 @@ import (
 	"context"
 	"sync"
 
+	kibanacustomtypes "github.com/elastic/terraform-provider-elasticstack/internal/kibana/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/validators"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -80,7 +81,7 @@ func getSchema() schema.Schema {
 				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
 				Optional:    true,
 				Computed:    true,
-				Default:     stringdefault.StaticString("default"),
+				Default:     stringdefault.StaticString(defaultSpaceID),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -125,9 +126,7 @@ func getSchema() schema.Schema {
 			"interval": schema.StringAttribute{
 				Description: "The check interval, which specifies how frequently the rule conditions are checked. The interval must be specified in seconds, minutes, hours or days.",
 				Required:    true,
-				Validators: []validator.String{
-					validators.StringIsAlertingDuration,
-				},
+				CustomType:  kibanacustomtypes.AlertingDurationType{Units: kibanacustomtypes.AlertingDurationUnitsSubDay},
 			},
 			"enabled": schema.BoolAttribute{
 				Description: "Indicates if you want to run the rule on an interval basis.",
@@ -135,7 +134,7 @@ func getSchema() schema.Schema {
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
 			},
-			"tags": schema.SetAttribute{
+			attrTags: schema.SetAttribute{
 				Description: "A list of tag names that are applied to the rule.",
 				Optional:    true,
 				ElementType: types.StringType,
@@ -144,17 +143,15 @@ func getSchema() schema.Schema {
 				Description: throttleRuleDescription,
 				Optional:    true,
 				Computed:    true,
+				CustomType:  kibanacustomtypes.AlertingDurationType{Units: kibanacustomtypes.AlertingDurationUnitsSubDay},
 				// USFU preserves Kibana's deprecated rule-level throttle when the
 				// practitioner removes it from config (the API cannot clear it on
 				// PUT). The trailing modifier then resets the plan to unknown when
-				// actions[*].frequency is configured, so the preserved value is
-				// not sent alongside per-action frequency.
+				// actions[*].frequency is newly introduced, so the preserved value
+				// is not sent alongside per-action frequency.
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					SetUnknownIfActionsFrequencyConfigured(),
-				},
-				Validators: []validator.String{
-					validators.StringIsAlertingDuration,
 				},
 			},
 			"scheduled_task_id": schema.StringAttribute{
@@ -225,7 +222,7 @@ func getSchema() schema.Schema {
 							Description: actionsGroupDescription,
 							Optional:    true,
 							Computed:    true,
-							Default:     stringdefault.StaticString("default"),
+							Default:     stringdefault.StaticString(defaultSpaceID),
 						},
 						"id": schema.StringAttribute{
 							Description: "The identifier for the connector saved object.",
@@ -261,9 +258,7 @@ func getSchema() schema.Schema {
 								"throttle": schema.StringAttribute{
 									Description: actionsFrequencyThrottleDescription,
 									Optional:    true,
-									Validators: []validator.String{
-										validators.StringIsAlertingDuration,
-									},
+									CustomType:  kibanacustomtypes.AlertingDurationType{Units: kibanacustomtypes.AlertingDurationUnitsSubDay},
 								},
 							},
 						},

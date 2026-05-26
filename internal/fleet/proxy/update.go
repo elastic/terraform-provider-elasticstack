@@ -19,66 +19,35 @@ package proxy
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var planModel proxyModel
+func updateProxy(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[proxyModel]) (entitycore.KibanaWriteResult[proxyModel], diag.Diagnostics) {
+	plan := req.Plan
+	var diags diag.Diagnostics
 
-	diags := req.Plan.Get(ctx, &planModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	fleetClient := client.GetFleetClient()
+
+	body, bodyDiags := plan.toAPIUpdateModel()
+	diags.Append(bodyDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[proxyModel]{}, diags
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	updated, updateDiags := fleetclient.UpdateProxy(ctx, fleetClient, req.SpaceID, req.WriteID, body)
+	diags.Append(updateDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[proxyModel]{}, diags
 	}
 
-	supported, sdkDiags := client.EnforceMinVersion(ctx, minVersion)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !supported {
-		resp.Diagnostics.AddError("Unsupported server version",
-			fmt.Sprintf("Fleet proxies require Elastic Stack v%s or later.", minVersion))
-		return
+	diags.Append(plan.populateFromAPI(req.SpaceID, *updated)...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[proxyModel]{}, diags
 	}
 
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
-
-	spaceID := planModel.SpaceID.ValueString()
-	proxyID := planModel.ProxyID.ValueString()
-
-	body, diags := planModel.toAPIUpdateModel()
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	updated, diags := fleetclient.UpdateProxy(ctx, fleetClient, spaceID, proxyID, body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = planModel.populateFromAPI(spaceID, *updated)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = resp.State.Set(ctx, planModel)
-	resp.Diagnostics.Append(diags...)
+	return entitycore.KibanaWriteResult[proxyModel]{Model: plan}, diags
 }

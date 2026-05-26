@@ -20,45 +20,22 @@ package agentdownloadsource
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state model
+func deleteAgentDownloadSource(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	resourceID string,
+	spaceID string,
+	_ model,
+) diag.Diagnostics {
+	var diags diag.Diagnostics
 
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
-	apiClient, apiClientDiags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	resp.Diagnostics.Append(apiClientDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, err := apiClient.GetFleetClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
-	resp.Diagnostics.Append(r.assertVersionSupported(ctx, apiClient)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	sourceID := state.SourceID.ValueString()
-
-	// Read the existing spaces from state to determine where to delete.
-	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = fleet.DeleteAgentDownloadSource(ctx, client, sourceID, spaceID)
-	resp.Diagnostics.Append(diags...)
+	diags.Append(fleet.DeleteAgentDownloadSource(ctx, fleetClient, resourceID, spaceID)...)
+	return diags
 }

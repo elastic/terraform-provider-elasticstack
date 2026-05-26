@@ -59,24 +59,15 @@
 //     significantly from a uniform shape.
 //
 //  2. **Elasticsearch resource envelope** — use [NewElasticsearchResource] for
-//     Elasticsearch-backed resources whose Create and Update flows match a common
-//     shape: decode plan, resolve the scoped client from the connection block,
-//     run a mutating API call using the plan-safe write identity from
-//     [ElasticsearchResourceModel.GetResourceID], and persist the callback's
-//     returned model. The model must satisfy [ElasticsearchResourceModel]
-//     (value-receiver GetID for composite state ID, GetResourceID for the write
-//     key such as name or username, and GetElasticsearchConnection). Supply a
-//     schema factory (without elasticsearch_connection block), read and delete
-//     callbacks, and required create and update callbacks
-//     ([ElasticsearchCreateFunc], [ElasticsearchUpdateFunc]); pass the same
-//     function for both when behavior matches. The envelope injects the
-//     connection block, parses composite IDs for Read and Delete only, resolves
-//     the client, and owns state persistence. It does not implement ImportState;
-//     concrete resources add that when needed. Resources that still override
-//     Create or Update (for example when the update path needs Config or prior
-//     state in addition to Plan) may pass [PlaceholderElasticsearchWriteCallbacks]
-//     until their logic is migrated into envelope callbacks. Constructor shape and
-//     callback types are defined on [NewElasticsearchResource] in resource_envelope.go.
+//     Elasticsearch-backed CRUD resources whose lifecycle matches the envelope's
+//     shape (decode → client → version checks → callback → read-after-write →
+//     optional post-read). The model must satisfy [ElasticsearchResourceModel];
+//     callbacks and options live on [ElasticsearchResourceOptions]. Resources that
+//     still override Create or Update may pass
+//     [PlaceholderElasticsearchWriteCallback] until their logic is migrated into
+//     envelope callbacks. The envelope does not implement ImportState; concrete
+//     resources add that when needed. See type docs in resource_envelope.go for
+//     the full contract.
 //
 //  3. **Kibana resource envelope** — use [NewKibanaResource] for Kibana-backed
 //     resources whose Create, Read, Update, and Delete flows match a common shape.
@@ -84,17 +75,63 @@
 //     composite or plain state ID, GetResourceID for the write key such as name
 //     or API-assigned UUID, GetSpaceID for the Kibana space, and
 //     GetKibanaConnection). Supply a schema factory (without kibana_connection
-//     block), read and delete callbacks, and required create and update callbacks
-//     ([KibanaCreateFunc], [KibanaUpdateFunc]). The envelope injects the
-//     kibana_connection block, resolves resource identity via composite-ID-or-fallback
-//     for Read, Update, and Delete, validates spaceID for Create, resolves the
-//     scoped Kibana client, and owns state persistence. Create callbacks receive
-//     the plan model (and can call plan.GetResourceID() for user-ID resources);
-//     Update callbacks receive both plan and prior state. It does not implement
+//     block), and callbacks via [KibanaResourceOptions] (read, delete, create, update,
+//     optional post-read). The envelope injects the kibana_connection block, resolves
+//     resource identity via composite-ID-or-fallback for Read, Update, and Delete,
+//     validates spaceID for Create and Update, resolves the scoped Kibana client,
+//     enforces read-after-write on Create and Update, and owns state persistence.
+//     Write callbacks receive [KibanaWriteRequest] (plan, prior, config, write ID,
+//     space ID); inspect Prior == nil to detect Create. It does not implement
 //     ImportState; concrete resources add that when needed. Resources that override
-//     Create or Update may pass [PlaceholderKibanaWriteCallbacks] until their logic
+//     Create or Update may pass [PlaceholderKibanaWriteCallback] until their logic
 //     is migrated into envelope callbacks. Constructor shape and callback types are
 //     defined on [NewKibanaResource] in kibana_resource_envelope.go.
+//
+// # Ephemeral resource patterns
+//
+// Ephemeral resources use **envelope generics** — [NewElasticsearchEphemeralResource]
+// or [NewKibanaEphemeralResource] — which eliminate Open/Close orchestration
+// boilerplate. The constructor owns config decode, scoped client resolution,
+// version-requirement enforcement, connection-block injection, and private-state
+// round-tripping between Open and Close. Concrete packages supply a schema factory
+// (without connection blocks), a model embedding [ElasticsearchConnectionField] or
+// [KibanaConnectionField], a plain-Go close-state type S, and Open/Close callbacks.
+//
+// The close-state type parameter S must contain only plain Go types (string, int,
+// bool, slices, maps, embedded structs). It must not use terraform-plugin-framework
+// types such as types.String; the constructor enforces this at construction time
+// via reflection and panics with a precise field path if violated.
+//
+// Open() is invoked by Terraform during terraform plan as well as terraform apply.
+// Resource authors should document this in generated resource documentation when
+// Open performs side effects (for example creating an API key).
+//
+// Close() is not guaranteed to run if Terraform is interrupted between Open and
+// Close. Design close-time behavior accordingly (for example optional invalidation).
+//
+// Example ephemeral resource (see internal/elasticsearch/security/apikey/ephemeral):
+//
+//	type tfModel struct {
+//	    entitycore.ElasticsearchConnectionField
+//	    Name types.String `tfsdk:"name"`
+//	    // … computed result attributes …
+//	}
+//
+//	type closeState struct {
+//	    KeyID             string
+//	    InvalidateOnClose bool
+//	}
+//
+//	func NewResource() ephemeral.EphemeralResource {
+//	    return entitycore.NewElasticsearchEphemeralResource[tfModel, closeState](
+//	        "security_api_key",
+//	        entitycore.ElasticsearchEphemeralOptions[tfModel, closeState]{
+//	            Schema: getSchema,
+//	            Open:   openAPIKey,
+//	            Close:  closeAPIKey,
+//	        },
+//	    )
+//	}
 //
 // Component is a typed Terraform resource type-name namespace segment (for example
 // "elasticsearch", "kibana"). It is not a client-resolution kind: the same API family

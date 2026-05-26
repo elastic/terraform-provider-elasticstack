@@ -30,13 +30,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestResource_embedsEntityCoreResourceBase(t *testing.T) {
+func TestResource_embedsKibanaResource(t *testing.T) {
 	t.Parallel()
 	rt := reflect.TypeFor[Resource]()
-	field, ok := rt.FieldByName("ResourceBase")
+	field, ok := rt.FieldByName("KibanaResource")
 	require.True(t, ok)
 	require.True(t, field.Anonymous)
-	require.Equal(t, reflect.TypeFor[*entitycore.ResourceBase](), field.Type)
+	require.Equal(t, reflect.TypeFor[*entitycore.KibanaResource[model]](), field.Type)
 }
 
 // Import splits "<space>/<source_id>" into structured attributes instead of
@@ -57,6 +57,11 @@ func TestResource_importState_customCompositeID(t *testing.T) {
 	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("source_id"), &sourceID)...)
 	require.False(t, resp.Diagnostics.HasError())
 	require.Equal(t, "the-src-id", sourceID.ValueString())
+
+	var id types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("id"), &id)...)
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, "the-src-id", id.ValueString())
 
 	var spaceIDs types.Set
 	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("space_ids"), &spaceIDs)...)

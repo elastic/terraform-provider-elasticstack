@@ -524,7 +524,8 @@ func testAccFleetClient() (*fleet.Client, error) {
 		return nil, err
 	}
 
-	return client.GetFleetClient()
+	fc := client.GetFleetClient()
+	return fc, nil
 }
 
 func preinstallTCPDefault(t *testing.T) func() {

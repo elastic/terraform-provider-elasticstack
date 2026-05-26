@@ -20,74 +20,42 @@ package securitylist
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *securityListResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan Model
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
+func createSecurityList(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
+	m := req.Plan
+	var diags diag.Diagnostics
+
+	oapiClient := client.GetKibanaOapiClient()
+
+	createReq, d := m.toCreateRequest()
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Get Kibana client
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
-		return
-	}
-
-	// Convert plan to API request
-	createReq, diags := plan.toCreateRequest()
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Create the list
-	spaceID := plan.SpaceID.ValueString()
-	createdList, diags := kibanaoapi.CreateList(ctx, oapiClient, spaceID, *createReq)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	createdList, d := kibanaoapi.CreateList(ctx, oapiClient, req.SpaceID, *createReq)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
 	if createdList == nil {
-		resp.Diagnostics.AddError("Failed to create security list", "API returned empty response")
-		return
+		diags.AddError("Failed to create security list", "API returned empty response")
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	// Read the created list to populate state
-	readParams := &kbapi.ReadListParams{
-		Id: createdList.Id,
-	}
+	m.ListID = typeutils.StringishValue(createdList.Id)
+	m.ID = types.StringValue((&clients.CompositeID{
+		ClusterID:  req.SpaceID,
+		ResourceID: createdList.Id,
+	}).String())
 
-	list, diags := kibanaoapi.GetList(ctx, oapiClient, spaceID, readParams)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if list == nil {
-		resp.State.RemoveResource(ctx)
-		resp.Diagnostics.AddError("Failed to fetch security list", "API returned empty response")
-		return
-	}
-
-	// Update state with read response
-	diags = plan.fromAPI(ctx, list)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	return entitycore.KibanaWriteResult[Model]{Model: m}, diags
 }

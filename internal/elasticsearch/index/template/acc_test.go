@@ -272,10 +272,7 @@ func checkResourceIndexTemplateDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		typedClient, err := client.GetESClient()
-		if err != nil {
-			return err
-		}
+		typedClient := client.GetESClient()
 		_, err = typedClient.Indices.GetIndexTemplate().Name(compID.ResourceID).Do(context.Background())
 		if err != nil {
 			if esclient.IsNotFoundElasticsearchError(err) {
@@ -706,6 +703,63 @@ func TestAccResourceIndexTemplateDataStreamCustomRouting(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "data_stream.allow_custom_routing", "false"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexTemplateAllowAutoCreate(t *testing.T) {
+	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexTemplateDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"template_name":     config.StringVariable(templateName),
+					"allow_auto_create": config.BoolVariable(true),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "allow_auto_create", "true"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"template_name":     config.StringVariable(templateName),
+					"allow_auto_create": config.BoolVariable(false),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "allow_auto_create", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"template_name":     config.StringVariable(templateName),
+					"allow_auto_create": config.BoolVariable(false),
+				},
+				ResourceName:      "elasticstack_elasticsearch_index_template.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("unset"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_template.test", "allow_auto_create"),
 				),
 			},
 		},

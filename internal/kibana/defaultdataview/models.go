@@ -18,6 +18,7 @@
 package defaultdataview
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -29,3 +30,10 @@ type defaultDataViewModel struct {
 	SkipDelete       types.Bool   `tfsdk:"skip_delete"`
 	SpaceID          types.String `tfsdk:"space_id"`
 }
+
+func (m defaultDataViewModel) GetID() types.String             { return m.ID }
+func (m defaultDataViewModel) GetResourceID() types.String     { return m.SpaceID }
+func (m defaultDataViewModel) GetSpaceID() types.String        { return m.SpaceID }
+func (m defaultDataViewModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+
+var _ entitycore.KibanaResourceModel = defaultDataViewModel{}

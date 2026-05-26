@@ -18,6 +18,7 @@
 package aliasutil
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 
@@ -78,4 +79,41 @@ func ExpandAliasFields(f AliasFields) (models.IndexAlias, diag.Diagnostics) {
 	}
 
 	return ia, diags
+}
+
+// ExpandAliasElement converts an AliasModel to a models.IndexAlias.
+func ExpandAliasElement(am AliasModel) (models.IndexAlias, diag.Diagnostics) {
+	return ExpandAliasFields(AliasFields{
+		Name:          am.Name,
+		Filter:        am.Filter,
+		IndexRouting:  am.IndexRouting,
+		SearchRouting: am.SearchRouting,
+		Routing:       am.Routing,
+		IsHidden:      am.IsHidden,
+		IsWriteIndex:  am.IsWriteIndex,
+	})
+}
+
+// ExpandAliasSet expands a set of AliasModel elements to map[string]models.IndexAlias.
+func ExpandAliasSet(ctx context.Context, set types.Set) (map[string]models.IndexAlias, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if set.IsNull() || set.IsUnknown() {
+		return nil, diags
+	}
+
+	var elems []AliasModel
+	diags.Append(set.ElementsAs(ctx, &elems, false)...)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	aliases := make(map[string]models.IndexAlias, len(elems))
+	for _, am := range elems {
+		ia, d := ExpandAliasElement(am)
+		if d.HasError() {
+			return nil, d
+		}
+		aliases[am.Name.ValueString()] = ia
+	}
+	return aliases, diags
 }

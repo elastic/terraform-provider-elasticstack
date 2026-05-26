@@ -95,7 +95,7 @@ By default, the resource SHALL use the provider-level Elasticsearch client for a
 
 ### Requirement: Create and update (REQ-009–REQ-011)
 
-On create and update, the resource SHALL expand the configured `persistent` and `transient` blocks into a flat settings map and submit it to the Cluster Update Settings API. When the configuration is updated and a setting present in the previous state is absent from the new state, the resource SHALL include that setting name with a `null` value in the API request to explicitly remove it from the cluster. After a successful put, the resource SHALL set `id` and perform a read to refresh state.
+On create and update, the envelope SHALL invoke `WriteFunc[tfModel]` callbacks wired into the `Create` and `Update` slots of `ElasticsearchResourceOptions[tfModel]`. Each callback SHALL receive `WriteRequest[tfModel]` (`Plan`, `Prior`, `Config`, `WriteID`); on create `req.Prior` is `nil`, and on update `req.Prior` is a non-nil pointer to the prior-state model. Each callback SHALL expand the configured `persistent` and `transient` blocks into a flat settings map and submit them to the Cluster Update Settings API. When the configuration is updated and a setting present in the previous state is absent from the new plan, the update callback SHALL include that setting name with a `null` value in the API request to explicitly remove it from the cluster. After a successful put, the envelope SHALL perform read-after-write via the shared read callback to refresh state (including composite `id`).
 
 #### Scenario: Setting removed on update
 
@@ -200,7 +200,7 @@ The cluster-settings model SHALL implement `GetID() types.String`, `GetResourceI
 
 #### Scenario: Model type assertion
 
-- **WHEN** `entitycore.NewElasticsearchResource[Data]` is called with the cluster-settings model
+- **WHEN** `entitycore.NewElasticsearchResource[tfModel]("cluster_settings", opts)` is constructed with the cluster-settings schema and lifecycle callbacks
 - **THEN** compilation SHALL succeed
 
 ### Requirement: Schema factory returns blocks without connection injection
@@ -230,20 +230,20 @@ The read callback SHALL call Elasticsearch Cluster Get Settings API with `flat_s
 - **WHEN** read runs for a resource tracking that key
 - **THEN** the state SHALL contain `value_list = ["true", "false"]` for that setting
 
-### Requirement: Create override builds flat settings map and PUTs
+### Requirement: Envelope create callback builds flat settings map and PUTs
 
-The concrete `Create` method SHALL decode the plan model, expand `persistent` and `transient` blocks into flat settings maps, and call the Cluster Update Settings API. After a successful PUT, it SHALL derive the composite ID and persist state via the read callback. Validation (duplicate names, value/value_list exclusivity, and non-empty category block) is enforced at plan time by schema validators and `ValidateConfig`.
+The envelope create callback SHALL expand `persistent` and `transient` from `WriteRequest[tfModel].Plan` (with `req.Prior == nil`) into flat settings maps and call the Cluster Update Settings API. It SHALL derive the composite ID on the returned model before returning `WriteResult[tfModel]`. Validation (duplicate names, value/value_list exclusivity, and non-empty category block) is enforced at plan time by schema validators and `ValidateConfig`.
 
 #### Scenario: Create with persistent and transient settings
 
 - **GIVEN** a plan with both `persistent` and `transient` settings
 - **WHEN** create runs
 - **THEN** the Cluster Update Settings API SHALL receive both categories
-- **AND** the resource id SHALL be set to `<cluster_uuid>/cluster-settings`
+- **AND** the envelope read-after-write SHALL persist `id` as `<cluster_uuid>/cluster-settings`
 
-### Requirement: Update override nulls out removed settings
+### Requirement: Envelope update callback nulls out removed settings
 
-The concrete `Update` method SHALL decode both plan and state. For each of `persistent` and `transient`, it SHALL compare the old setting names with the new setting names. Any setting name present in the old state but absent from the new plan SHALL be included in the PUT request with a `null` value so Elasticsearch removes it.
+The envelope update callback SHALL decode prior settings from `*WriteRequest[tfModel].Prior` (which is non-nil on update) and compare setting names against `Plan`. For each of `persistent` and `transient`, any setting name present in the prior model but absent from the new plan SHALL be included in the PUT request with a `null` value so Elasticsearch removes it.
 
 #### Scenario: Setting removed from configuration
 
@@ -252,9 +252,9 @@ The concrete `Update` method SHALL decode both plan and state. For each of `pers
 - **WHEN** update runs
 - **THEN** the PUT request SHALL include `"cluster.max_shards_per_node": null`
 
-### Requirement: Delete override removes all tracked settings
+### Requirement: Envelope delete callback removes all tracked settings
 
-The concrete `Delete` method SHALL derive all tracked setting names from the current state for both `persistent` and `transient`. It SHALL call the Cluster Update Settings API with each tracked name set to `null`.
+The envelope delete callback SHALL derive all tracked setting names from the current state for both `persistent` and `transient`. It SHALL call the Cluster Update Settings API with each tracked name set to `null`.
 
 #### Scenario: Delete clears tracked settings
 

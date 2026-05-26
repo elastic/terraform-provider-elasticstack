@@ -19,76 +19,31 @@ package proxy
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var stateModel proxyModel
+func readProxy(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model proxyModel) (proxyModel, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	diags := req.State.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
-	// On import, only `id` is set; parse it to get space_id and proxy_id.
-	spaceID := stateModel.SpaceID.ValueString()
-	proxyID := stateModel.ProxyID.ValueString()
-	if proxyID == "" {
-		compositeID, diags := clients.CompositeIDFromStrFw(stateModel.ID.ValueString())
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		spaceID = compositeID.ClusterID
-		proxyID = compositeID.ResourceID
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	supported, sdkDiags := client.EnforceMinVersion(ctx, minVersion)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !supported {
-		resp.Diagnostics.AddError("Unsupported server version",
-			fmt.Sprintf("Fleet proxies require Elastic Stack v%s or later.", minVersion))
-		return
-	}
-
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
-
-	apiResp, diags := fleetclient.GetProxy(ctx, fleetClient, spaceID, proxyID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	apiResp, getDiags := fleetclient.GetProxy(ctx, fleetClient, spaceID, resourceID)
+	diags.Append(getDiags...)
+	if diags.HasError() {
+		return model, false, diags
 	}
 
 	if apiResp == nil {
-		resp.State.RemoveResource(ctx)
-		return
+		return model, false, diags
 	}
 
-	diags = stateModel.populateFromAPI(spaceID, *apiResp)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(model.populateFromAPI(spaceID, *apiResp)...)
+	if diags.HasError() {
+		return model, false, diags
 	}
 
-	diags = resp.State.Set(ctx, stateModel)
-	resp.Diagnostics.Append(diags...)
+	return model, true, diags
 }

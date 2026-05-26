@@ -66,7 +66,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				MarkdownDescription: "Name of the transform you wish to create.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
@@ -138,7 +138,7 @@ func getSchema(_ context.Context) schema.Schema {
 				MarkdownDescription: "Defines if dates in the output should be written as ISO formatted string (default) or as millis since epoch.",
 				Optional:            true,
 			},
-			"deduce_mappings": schema.BoolAttribute{
+			settingDeduceMappings: schema.BoolAttribute{
 				MarkdownDescription: "Specifies whether the transform should deduce the destination index mappings from the transform config.",
 				Optional:            true,
 			},
@@ -156,7 +156,7 @@ func getSchema(_ context.Context) schema.Schema {
 					int64validator.Between(10, 65536),
 				},
 			},
-			"num_failure_retries": schema.Int64Attribute{
+			settingNumFailureRetries: schema.Int64Attribute{
 				MarkdownDescription: "Defines the number of retries on a recoverable failure before the transform task is marked as failed. " +
 					"The default value is the cluster-level setting num_transform_failure_retries.",
 				Optional: true,
@@ -164,7 +164,7 @@ func getSchema(_ context.Context) schema.Schema {
 					int64validator.Between(-1, 100),
 				},
 			},
-			"unattended": schema.BoolAttribute{
+			settingUnattended: schema.BoolAttribute{
 				MarkdownDescription: "In unattended mode, the transform retries indefinitely in case of an error which means the transform never fails.",
 				Optional:            true,
 			},
@@ -189,18 +189,18 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 		},
 		Blocks: map[string]schema.Block{
-			"source": schema.SingleNestedBlock{
+			attrSource: schema.SingleNestedBlock{
 				MarkdownDescription: "The source of the data for the transform.",
 				Validators: []validator.Object{
 					objectvalidator.IsRequired(),
 				},
 				Attributes: map[string]schema.Attribute{
-					"indices": schema.ListAttribute{
+					attrIndices: schema.ListAttribute{
 						MarkdownDescription: "The source indices for the transform.",
 						Required:            true,
 						ElementType:         stringAttributeType,
 					},
-					"query": schema.StringAttribute{
+					attrQuery: schema.StringAttribute{
 						MarkdownDescription: "A query clause that retrieves a subset of data from the source index.",
 						Optional:            true,
 						Computed:            true,
@@ -214,13 +214,13 @@ func getSchema(_ context.Context) schema.Schema {
 					},
 				},
 			},
-			"destination": schema.SingleNestedBlock{
+			attrDestination: schema.SingleNestedBlock{
 				MarkdownDescription: "The destination for the transform.",
 				Validators: []validator.Object{
 					objectvalidator.IsRequired(),
 				},
 				Attributes: map[string]schema.Attribute{
-					"index": schema.StringAttribute{
+					attrIndex: schema.StringAttribute{
 						MarkdownDescription: "The destination index for the transform.",
 						Required:            true,
 						Validators: []validator.String{
@@ -246,11 +246,11 @@ func getSchema(_ context.Context) schema.Schema {
 						MarkdownDescription: "The aliases that the destination index for the transform should have.",
 						NestedObject: schema.NestedBlockObject{
 							Attributes: map[string]schema.Attribute{
-								"alias": schema.StringAttribute{
+								attrAlias: schema.StringAttribute{
 									MarkdownDescription: "The name of the alias.",
 									Required:            true,
 								},
-								"move_on_creation": schema.BoolAttribute{
+								attrMoveOnCreation: schema.BoolAttribute{
 									MarkdownDescription: "Whether the destination index should be the only index in this alias. Defaults to false.",
 									Optional:            true,
 									Computed:            true,
@@ -261,22 +261,22 @@ func getSchema(_ context.Context) schema.Schema {
 					},
 				},
 			},
-			"retention_policy": schema.SingleNestedBlock{
+			attrRetentionPolicy: schema.SingleNestedBlock{
 				MarkdownDescription: "Defines a retention policy for the transform.",
 				Validators: []validator.Object{
-					objectvalidator.AlsoRequires(path.MatchRelative().AtName("time")),
+					objectvalidator.AlsoRequires(path.MatchRelative().AtName(attrTime)),
 				},
 				Blocks: map[string]schema.Block{
-					"time": schema.SingleNestedBlock{
+					attrTime: schema.SingleNestedBlock{
 						MarkdownDescription: "Specifies that the transform uses a time field to set the retention policy.",
 						Validators: []validator.Object{
 							objectvalidator.AlsoRequires(
-								path.MatchRelative().AtName("field"),
+								path.MatchRelative().AtName(attrField),
 								path.MatchRelative().AtName("max_age"),
 							),
 						},
 						Attributes: map[string]schema.Attribute{
-							"field": schema.StringAttribute{
+							attrField: schema.StringAttribute{
 								MarkdownDescription: "The date field that is used to calculate the age of the document.",
 								Optional:            true,
 								Validators: []validator.String{
@@ -294,21 +294,21 @@ func getSchema(_ context.Context) schema.Schema {
 					},
 				},
 			},
-			"sync": schema.SingleNestedBlock{
+			attrSync: schema.SingleNestedBlock{
 				MarkdownDescription: "Defines the properties transforms require to run continuously.",
 				Validators: []validator.Object{
-					objectvalidator.AlsoRequires(path.MatchRelative().AtName("time")),
+					objectvalidator.AlsoRequires(path.MatchRelative().AtName(attrTime)),
 				},
 				Blocks: map[string]schema.Block{
-					"time": schema.SingleNestedBlock{
+					attrTime: schema.SingleNestedBlock{
 						MarkdownDescription: "Specifies that the transform uses a time field to synchronize the source and destination indices.",
 						Validators: []validator.Object{
 							objectvalidator.AlsoRequires(
-								path.MatchRelative().AtName("field"),
+								path.MatchRelative().AtName(attrField),
 							),
 						},
 						Attributes: map[string]schema.Attribute{
-							"field": schema.StringAttribute{
+							attrField: schema.StringAttribute{
 								MarkdownDescription: "The date field that is used to identify new documents in the source.",
 								Optional:            true,
 								Validators: []validator.String{

@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	kibanacustomtypes "github.com/elastic/terraform-provider-elasticstack/internal/kibana/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -49,19 +50,19 @@ type AlertingScope struct {
 }
 
 type Schedule struct {
-	Start     types.String       `tfsdk:"start"`
-	Duration  types.String       `tfsdk:"duration"`
-	Timezone  types.String       `tfsdk:"timezone"`
-	Recurring *ScheduleRecurring `tfsdk:"recurring"`
+	Start     types.String                       `tfsdk:"start"`
+	Duration  kibanacustomtypes.AlertingDuration `tfsdk:"duration"`
+	Timezone  types.String                       `tfsdk:"timezone"`
+	Recurring *ScheduleRecurring                 `tfsdk:"recurring"`
 }
 
 type ScheduleRecurring struct {
-	End         types.String `tfsdk:"end"`
-	Every       types.String `tfsdk:"every"`
-	Occurrences types.Int32  `tfsdk:"occurrences"`
-	OnWeekDay   types.List   `tfsdk:"on_week_day"`
-	OnMonthDay  types.List   `tfsdk:"on_month_day"`
-	OnMonth     types.List   `tfsdk:"on_month"`
+	End         types.String                       `tfsdk:"end"`
+	Every       kibanacustomtypes.AlertingDuration `tfsdk:"every"`
+	Occurrences types.Int32                        `tfsdk:"occurrences"`
+	OnWeekDay   types.List                         `tfsdk:"on_week_day"`
+	OnMonthDay  types.List                         `tfsdk:"on_month_day"`
+	OnMonth     types.List                         `tfsdk:"on_month"`
 }
 
 /* INTERFACE METHODS */
@@ -77,8 +78,8 @@ var maintenanceWindowMinVersion = version.Must(version.NewVersion("9.1.0"))
 // entitycore.WithVersionRequirements interface, allowing the
 // generic Kibana resource envelope to enforce the requirement before invoking
 // lifecycle callbacks.
-func (m Model) GetVersionRequirements() ([]entitycore.DataSourceVersionRequirement, diag.Diagnostics) {
-	return []entitycore.DataSourceVersionRequirement{
+func (m Model) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *maintenanceWindowMinVersion,
 			ErrorMessage: fmt.Sprintf("Maintenance windows require Elastic Stack v%s or later.", maintenanceWindowMinVersion),
@@ -188,11 +189,11 @@ func (m *Model) _fromAPIResponse(ctx context.Context, response ResponseJSON) dia
 
 	m.CustomSchedule = Schedule{
 		Start:    types.StringValue(response.Schedule.Custom.Start),
-		Duration: types.StringValue(response.Schedule.Custom.Duration),
+		Duration: kibanacustomtypes.NewAlertingDurationValue(response.Schedule.Custom.Duration),
 		Timezone: types.StringPointerValue(response.Schedule.Custom.Timezone),
 		Recurring: &ScheduleRecurring{
 			End:        types.StringNull(),
-			Every:      types.StringNull(),
+			Every:      kibanacustomtypes.NewAlertingDurationNull(),
 			OnWeekDay:  types.ListNull(types.StringType),
 			OnMonth:    types.ListNull(types.Int32Type),
 			OnMonthDay: types.ListNull(types.Int32Type),
@@ -201,7 +202,7 @@ func (m *Model) _fromAPIResponse(ctx context.Context, response ResponseJSON) dia
 
 	if response.Schedule.Custom.Recurring != nil {
 		m.CustomSchedule.Recurring.End = types.StringPointerValue(response.Schedule.Custom.Recurring.End)
-		m.CustomSchedule.Recurring.Every = types.StringPointerValue(response.Schedule.Custom.Recurring.Every)
+		m.CustomSchedule.Recurring.Every = kibanacustomtypes.NewAlertingDurationPointerValue(response.Schedule.Custom.Recurring.Every)
 
 		if response.Schedule.Custom.Recurring.Occurrences != nil {
 			occurrences := int32(*response.Schedule.Custom.Recurring.Occurrences)

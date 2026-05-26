@@ -303,10 +303,7 @@ func checkResourceClusterSettingsDestroy(s *terraform.State) error {
 			continue
 		}
 
-		typedClient, err := client.GetESClient()
-		if err != nil {
-			return err
-		}
+		typedClient := client.GetESClient()
 		res, err := typedClient.Cluster.GetSettings().FlatSettings(true).Do(context.Background())
 		if err != nil {
 			return err
@@ -334,10 +331,7 @@ func checkRemoteSettingAbsent(category, setting string) resource.TestCheckFunc {
 		if err != nil {
 			return err
 		}
-		typedClient, err := client.GetESClient()
-		if err != nil {
-			return err
-		}
+		typedClient := client.GetESClient()
 		res, err := typedClient.Cluster.GetSettings().FlatSettings(true).Do(context.Background())
 		if err != nil {
 			return err

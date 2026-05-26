@@ -41,11 +41,7 @@ func (r *ExceptionItemResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
-		return
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	// Build the request body using model method
 	body, diags := plan.toCreateRequest(ctx, client)

@@ -110,45 +110,22 @@ type LensByValueChartBlocks struct {
 	LegacyMetricConfig *LegacyMetricConfigModel `tfsdk:"legacy_metric_config"`
 }
 
-type LensDashboardAppConfigModel struct {
-	ByValue     *LensDashboardAppByValueModel     `tfsdk:"by_value"`
-	ByReference *LensDashboardAppByReferenceModel `tfsdk:"by_reference"`
+type VisByReferenceModel struct {
+	RefID          types.String                 `tfsdk:"ref_id"`
+	ReferencesJSON jsontypes.Normalized         `tfsdk:"references_json"`
+	Title          types.String                 `tfsdk:"title"`
+	Description    types.String                 `tfsdk:"description"`
+	HideTitle      types.Bool                   `tfsdk:"hide_title"`
+	HideBorder     types.Bool                   `tfsdk:"hide_border"`
+	Drilldowns     DrilldownsModel              `tfsdk:"drilldowns"`
+	TimeRange      VisByReferenceTimeRangeModel `tfsdk:"time_range"`
 }
 
-type LensDashboardAppByValueModel struct {
-	ConfigJSON         jsontypes.Normalized           `tfsdk:"config_json"`
-	XYChartConfig      *XYChartConfigModel            `tfsdk:"xy_chart_config"`
-	TreemapConfig      *TreemapConfigModel            `tfsdk:"treemap_config"`
-	MosaicConfig       *MosaicConfigModel             `tfsdk:"mosaic_config"`
-	DatatableConfig    *DatatableConfigModel          `tfsdk:"datatable_config"`
-	TagcloudConfig     *TagcloudConfigModel           `tfsdk:"tagcloud_config"`
-	HeatmapConfig      *HeatmapConfigModel            `tfsdk:"heatmap_config"`
-	WaffleConfig       *WaffleConfigModel             `tfsdk:"waffle_config"`
-	RegionMapConfig    *RegionMapConfigModel          `tfsdk:"region_map_config"`
-	GaugeConfig        *GaugeConfigModel              `tfsdk:"gauge_config"`
-	MetricChartConfig  *MetricChartLensByValueTFModel `tfsdk:"metric_chart_config"`
-	PieChartConfig     *PieChartConfigModel           `tfsdk:"pie_chart_config"`
-	LegacyMetricConfig *LegacyMetricConfigModel       `tfsdk:"legacy_metric_config"`
-}
-
-type LensDashboardAppByReferenceModel struct {
-	RefID          types.String                   `tfsdk:"ref_id"`
-	ReferencesJSON jsontypes.Normalized           `tfsdk:"references_json"`
-	Title          types.String                   `tfsdk:"title"`
-	Description    types.String                   `tfsdk:"description"`
-	HideTitle      types.Bool                     `tfsdk:"hide_title"`
-	HideBorder     types.Bool                     `tfsdk:"hide_border"`
-	Drilldowns     DrilldownsModel                `tfsdk:"drilldowns"`
-	TimeRange      LensDashboardAppTimeRangeModel `tfsdk:"time_range"`
-}
-
-type LensDashboardAppTimeRangeModel struct {
+type VisByReferenceTimeRangeModel struct {
 	From types.String `tfsdk:"from"`
 	To   types.String `tfsdk:"to"`
 	Mode types.String `tfsdk:"mode"`
 }
-
-type VisByReferenceModel = LensDashboardAppByReferenceModel
 
 type VisConfigModel struct {
 	ByValue     *VisByValueModel     `tfsdk:"by_value"`

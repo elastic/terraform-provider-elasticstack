@@ -30,13 +30,26 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestResource_embedsEntityCoreResourceBase(t *testing.T) {
+func TestTfModel_satisfiesKibanaResourceModel(t *testing.T) {
+	t.Parallel()
+	var _ entitycore.KibanaResourceModel = tfModel{}
+}
+
+func TestResource_embedsEntityCoreKibanaResource(t *testing.T) {
 	t.Parallel()
 	rt := reflect.TypeFor[Resource]()
-	field, ok := rt.FieldByName("ResourceBase")
-	require.True(t, ok, "Resource should embed *entitycore.ResourceBase as field ResourceBase")
+	field, ok := rt.FieldByName("KibanaResource")
+	require.True(t, ok, "Resource should embed *entitycore.KibanaResource[tfModel] as field KibanaResource")
 	require.True(t, field.Anonymous)
-	require.Equal(t, reflect.TypeFor[*entitycore.ResourceBase](), field.Type)
+	require.Equal(t, reflect.TypeFor[*entitycore.KibanaResource[tfModel]](), field.Type)
+}
+
+func TestNewResource_satisfiesFrameworkInterfaces(t *testing.T) {
+	t.Parallel()
+	var _ resource.Resource = newResource()
+	var _ resource.ResourceWithConfigure = newResource()
+	var _ resource.ResourceWithImportState = newResource()
+	var _ resource.ResourceWithUpgradeState = newResource()
 }
 
 // Custom ImportState copies the import identifier onto id without parsing;

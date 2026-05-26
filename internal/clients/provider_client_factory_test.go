@@ -25,11 +25,9 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	goversion "github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -83,9 +81,9 @@ func TestGetKibanaClient_EmptyList(t *testing.T) {
 	require.False(t, diags.HasError())
 	require.NotNil(t, scoped)
 
-	// The scoped client must expose a Kibana OpenAPI client.
-	_, err := scoped.GetKibanaOapiClient()
-	require.NoError(t, err, "Kibana OpenAPI client must be present on provider-default scoped client")
+	// The scoped client must expose both Kibana OpenAPI and Fleet clients.
+	require.NotNil(t, scoped.GetKibanaOapiClient())
+	require.NotNil(t, scoped.GetFleetClient())
 }
 
 // TestGetKibanaClient_NullList verifies that a null kibana_connection is treated
@@ -132,65 +130,76 @@ func TestGetKibanaClient_WithConnection(t *testing.T) {
 	require.NotNil(t, scoped)
 
 	// The scoped client must expose Kibana-derived surfaces.
-	_, err := scoped.GetKibanaOapiClient()
-	require.NoError(t, err)
-
-	_, err = scoped.GetFleetClient()
-	require.NoError(t, err)
+	require.NotNil(t, scoped.GetKibanaOapiClient())
+	require.NotNil(t, scoped.GetFleetClient())
 }
 
-// --- ProviderClientFactory.GetKibanaClientFromSDK ---
+// --- ElasticsearchScopedClient version / flavor routing ---
 
-// TestGetKibanaClientFromSDK_AbsentBlock verifies that the factory returns a
-// provider-default scoped client when kibana_connection is absent.
-func TestGetKibanaClientFromSDK_AbsentBlock(t *testing.T) {
-	t.Parallel()
-	factory := newTestFactory(t)
+// TestElasticsearchScopedClient_IsServerless_ViaFactory_Stateful verifies that
+// IsServerless on a scoped client obtained from the factory routes through the
+// Elasticsearch Info API and returns false for a stateful cluster.
+func TestElasticsearchScopedClient_IsServerless_ViaFactory_Stateful(t *testing.T) {
+	const serverVersion = "8.19.0"
+	srv := newMockElasticsearchServer(serverVersion)
+	defer srv.Close()
 
-	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-		"kibana_connection": providerschema.GetKibanaEntityConnectionSchema(),
-	}, map[string]any{})
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
 
-	scoped, diags := factory.GetKibanaClientFromSDK(rd)
+	isServerless, diags := scoped.IsServerless(context.Background())
 	require.False(t, diags.HasError())
-	require.NotNil(t, scoped)
-
-	// Must expose a Kibana OpenAPI client.
-	_, err := scoped.GetKibanaOapiClient()
-	require.NoError(t, err)
+	assert.False(t, isServerless, "default build flavor must not be treated as serverless")
 }
 
-// TestGetKibanaClientFromSDK_WithBlock verifies that when kibana_connection is
-// set the factory returns a new scoped client with rebuilt clients.
-func TestGetKibanaClientFromSDK_WithBlock(t *testing.T) {
-	t.Parallel()
-	factory := newTestFactory(t)
+// TestElasticsearchScopedClient_IsServerless_ViaFactory_Serverless verifies that
+// IsServerless returns true for a serverless cluster obtained via the factory.
+func TestElasticsearchScopedClient_IsServerless_ViaFactory_Serverless(t *testing.T) {
+	srv := newMockElasticsearchServerWithFlavor("8.19.0", ServerlessFlavor)
+	defer srv.Close()
 
-	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-		"kibana_connection": providerschema.GetKibanaEntityConnectionSchema(),
-	}, map[string]any{
-		"kibana_connection": []any{
-			map[string]any{
-				"username":     "kibana-user",
-				"password":     "kibana-pass",
-				"endpoints":    []any{"http://kibana.example.com:5601"},
-				"ca_certs":     []any{},
-				"insecure":     false,
-				"api_key":      "",
-				"bearer_token": "",
-			},
-		},
-	})
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
 
-	scoped, diags := factory.GetKibanaClientFromSDK(rd)
+	isServerless, diags := scoped.IsServerless(context.Background())
 	require.False(t, diags.HasError())
+	assert.True(t, isServerless)
+}
+
+// TestElasticsearchScopedClient_EnforceMinVersion_ViaFactory_Stateful verifies that
+// EnforceMinVersion on a scoped client obtained from the factory routes through
+// the Elasticsearch Info API and evaluates stateful version gates.
+func TestElasticsearchScopedClient_EnforceMinVersion_ViaFactory_Stateful(t *testing.T) {
+	const serverVersion = "8.19.0"
+	srv := newMockElasticsearchServer(serverVersion)
+	defer srv.Close()
+
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+
+	minBelow, err := goversion.NewVersion("8.0.0")
+	require.NoError(t, err)
+	ok, diags := scoped.EnforceMinVersion(context.Background(), minBelow)
+	require.False(t, diags.HasError())
+	assert.True(t, ok, "8.19.0 must satisfy min 8.0.0")
+
+	minAbove, err := goversion.NewVersion("9.0.0")
+	require.NoError(t, err)
+	ok, diags = scoped.EnforceMinVersion(context.Background(), minAbove)
+	require.False(t, diags.HasError())
+	assert.False(t, ok, "8.19.0 must not satisfy min 9.0.0")
+}
+
+// TestElasticsearchScopedClient_EnforceMinVersion_ViaFactory_ServerlessShortCircuit verifies that
+// EnforceMinVersion always returns true for serverless Elasticsearch obtained via the factory.
+func TestElasticsearchScopedClient_EnforceMinVersion_ViaFactory_ServerlessShortCircuit(t *testing.T) {
+	srv := newMockElasticsearchServerWithFlavor("8.19.0", ServerlessFlavor)
+	defer srv.Close()
+
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+
 	require.NotNil(t, scoped)
-
-	_, err := scoped.GetKibanaOapiClient()
-	require.NoError(t, err)
-
-	_, err = scoped.GetFleetClient()
-	require.NoError(t, err)
+	ver, _ := goversion.NewVersion("99.0.0")
+	ok, diags := scoped.EnforceMinVersion(context.Background(), ver)
+	require.False(t, diags.HasError())
+	assert.True(t, ok, "serverless must always satisfy any version gate")
 }
 
 // --- KibanaScopedClient version / flavor routing ---
@@ -226,41 +235,34 @@ func newScopedClientFromFactory(t *testing.T, endpoint string) *KibanaScopedClie
 	return scoped
 }
 
-// TestKibanaScopedClient_ServerVersion_ViaFactory verifies that
-// ServerVersion on a scoped client obtained from the factory routes through
-// the Kibana status API and not Elasticsearch.
-func TestKibanaScopedClient_ServerVersion_ViaFactory(t *testing.T) {
-	const wantVersion = "8.19.0"
-	srv := newMockKibanaServer(wantVersion)
+// TestKibanaScopedClient_EnforceMinVersion_ViaFactory_Stateful verifies that
+// EnforceMinVersion on a scoped client obtained from the factory routes through
+// the Kibana status API (not Elasticsearch) and evaluates stateful version gates.
+func TestKibanaScopedClient_EnforceMinVersion_ViaFactory_Stateful(t *testing.T) {
+	const serverVersion = "8.19.0"
+	srv := newMockKibanaServer(serverVersion)
 	defer srv.Close()
 
 	scoped := newScopedClientFromFactory(t, srv.URL)
 
-	ver, diags := scoped.ServerVersion(context.Background())
+	minBelow, err := goversion.NewVersion("8.0.0")
+	require.NoError(t, err)
+	ok, diags := scoped.EnforceMinVersion(context.Background(), minBelow)
 	require.False(t, diags.HasError())
-	require.NotNil(t, ver)
-	assert.Equal(t, wantVersion, ver.Original())
+	assert.True(t, ok, "8.19.0 must satisfy min 8.0.0")
+
+	minAbove, err := goversion.NewVersion("9.0.0")
+	require.NoError(t, err)
+	ok, diags = scoped.EnforceMinVersion(context.Background(), minAbove)
+	require.False(t, diags.HasError())
+	assert.False(t, ok, "8.19.0 must not satisfy min 9.0.0")
 }
 
-// TestKibanaScopedClient_ServerFlavor_ViaFactory verifies that
-// ServerFlavor on a factory-obtained scoped client routes through Kibana.
-func TestKibanaScopedClient_ServerFlavor_ViaFactory(t *testing.T) {
-	const wantVersion = "8.19.0"
-	srv := newMockKibanaServer(wantVersion)
-	defer srv.Close()
-
-	scoped := newScopedClientFromFactory(t, srv.URL)
-
-	flavor, diags := scoped.ServerFlavor(context.Background())
-	require.False(t, diags.HasError())
-	assert.Equal(t, "default", flavor)
-}
-
-// TestKibanaScopedClient_ServerlessEnforceMinVersion verifies that
-// EnforceMinVersion always returns true for serverless Kibana.
-func TestKibanaScopedClient_ServerlessEnforceMinVersion(t *testing.T) {
+// TestKibanaScopedClient_EnforceMinVersion_ViaFactory_ServerlessShortCircuit verifies that
+// EnforceMinVersion always returns true for serverless Kibana obtained via the factory.
+func TestKibanaScopedClient_EnforceMinVersion_ViaFactory_ServerlessShortCircuit(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet && r.URL.Path == "/api/status" {
+		if r.Method == http.MethodGet && r.URL.Path == kibanaStatusPath {
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprintf(w, `{"version":{"number":"8.19.0","build_flavor":"serverless"}}`)
 			return
@@ -280,50 +282,169 @@ func TestKibanaScopedClient_ServerlessEnforceMinVersion(t *testing.T) {
 	assert.True(t, ok, "serverless must always satisfy any version gate")
 }
 
-// --- ConvertMetaToFactory ---
-
-func TestConvertMetaToFactory_NilMeta(t *testing.T) {
-	t.Parallel()
-	factory, diags := ConvertMetaToFactory(nil)
-	assert.True(t, diags.HasError(), "nil meta must return an error diagnostic")
-	assert.Nil(t, factory)
-}
-
-func TestConvertMetaToFactory_WrongType(t *testing.T) {
-	t.Parallel()
-	_, diags := ConvertMetaToFactory("unexpected-string")
-	assert.True(t, diags.HasError())
-}
-
-func TestConvertMetaToFactory_Valid(t *testing.T) {
-	t.Parallel()
-	f := newTestFactory(t)
-	result, diags := ConvertMetaToFactory(f)
-	require.False(t, diags.HasError())
-	assert.Same(t, f, result)
-}
-
 // --- NewKibanaScopedClientFromFactory ---
 
 func TestNewKibanaScopedClientFromFactory_NilFactory(t *testing.T) {
 	t.Parallel()
-	result := NewKibanaScopedClientFromFactory(nil)
-	assert.Nil(t, result)
+	scoped, diags := NewKibanaScopedClientFromFactory(nil)
+	assert.Nil(t, scoped)
+	assert.False(t, diags.HasError())
 }
 
 func TestNewKibanaScopedClientFromFactory_Valid(t *testing.T) {
 	t.Parallel()
 	f := newTestFactory(t)
-	result := NewKibanaScopedClientFromFactory(f)
-	require.NotNil(t, result)
-	_, err := result.GetKibanaOapiClient()
-	require.NoError(t, err)
+	scoped, diags := NewKibanaScopedClientFromFactory(f)
+	require.False(t, diags.HasError())
+	require.NotNil(t, scoped)
+	require.NotNil(t, scoped.GetKibanaOapiClient())
+	require.NotNil(t, scoped.GetFleetClient())
 }
 
-// --- Scenario 8: Entity-local elasticsearch_connection with missing endpoint ---
-// GetESClient on a scoped client built via the factory from a connection block
-// that has no endpoints must return the same actionable error as the
-// provider-default path.
+func TestGetElasticsearchClient_ProviderDefaultEndpointsWithoutTypedClient(t *testing.T) {
+	ctx := context.Background()
+	factory := NewProviderClientFactory(&apiClient{
+		version:     "unit-testing",
+		esEndpoints: []string{"http://localhost:9200"},
+	})
+
+	emptyList, diags := types.ListValueFrom(ctx,
+		types.ObjectType{AttrTypes: elasticsearchConnectionAttrTypes()},
+		[]config.ElasticsearchConnection{},
+	)
+	require.False(t, diags.HasError())
+
+	scoped, diags := factory.GetElasticsearchClient(ctx, emptyList)
+	require.True(t, diags.HasError(), "factory must fail when ES endpoint is set but typed client is nil")
+	assert.Nil(t, scoped)
+	assert.Equal(t, "Elasticsearch client not found", diags[0].Summary())
+}
+
+func TestGetKibanaClient_ProviderDefaultKibanaEndpointWithoutInnerClient(t *testing.T) {
+	ctx := context.Background()
+	factory := NewProviderClientFactory(&apiClient{
+		version:        "unit-testing",
+		kibanaEndpoint: "http://localhost:5601",
+	})
+
+	emptyList, diags := types.ListValueFrom(ctx,
+		types.ObjectType{AttrTypes: kibanaConnectionAttrTypes()},
+		[]config.KibanaConnection{},
+	)
+	require.False(t, diags.HasError())
+
+	scoped, diags := factory.GetKibanaClient(ctx, emptyList)
+	require.True(t, diags.HasError(), "factory must fail when Kibana endpoint is set but OpenAPI client is nil")
+	assert.Nil(t, scoped)
+	assert.Equal(t, "kibanaoapi client not found", diags[0].Summary())
+}
+
+func TestGetKibanaClient_ProviderDefaultFleetEndpointWithoutInnerClient(t *testing.T) {
+	ctx := context.Background()
+	factory := NewProviderClientFactory(&apiClient{
+		version:       "unit-testing",
+		fleetEndpoint: "http://localhost:5601",
+	})
+
+	emptyList, diags := types.ListValueFrom(ctx,
+		types.ObjectType{AttrTypes: kibanaConnectionAttrTypes()},
+		[]config.KibanaConnection{},
+	)
+	require.False(t, diags.HasError())
+
+	scoped, diags := factory.GetKibanaClient(ctx, emptyList)
+	require.True(t, diags.HasError(), "factory must fail when Fleet endpoint is set but Fleet client is nil")
+	assert.Nil(t, scoped)
+	assert.Equal(t, "Fleet client not found", diags[0].Summary())
+}
+
+func TestNewKibanaScopedClientFromFactory_MissingEndpoint(t *testing.T) {
+	t.Parallel()
+	factory := NewProviderClientFactory(&apiClient{version: "unit-testing"})
+	scoped, diags := NewKibanaScopedClientFromFactory(factory)
+	require.True(t, diags.HasError(), "factory helper must fail when neither Kibana nor Fleet endpoint is configured")
+	assert.Nil(t, scoped)
+	assert.Equal(t, kibanaFleetClientNotConfiguredError, diags[0].Detail())
+}
+
+// --- Resource-level path regression tests (Tasks 2.3 / 2.4) ---
+
+func TestGetElasticsearchClient_MultipleConnectionBlocks(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestFactory(t)
+
+	conn := config.ElasticsearchConnection{
+		Username: types.StringValue("elastic"),
+		Password: types.StringValue("changeme"),
+		Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+			types.StringValue("http://elasticsearch.example.com:9200"),
+		}),
+		Headers:  types.MapValueMust(types.StringType, map[string]attr.Value{}),
+		Insecure: types.BoolValue(false),
+	}
+
+	list, diags := types.ListValueFrom(ctx,
+		types.ObjectType{AttrTypes: elasticsearchConnectionAttrTypes()},
+		[]config.ElasticsearchConnection{conn, conn},
+	)
+	require.False(t, diags.HasError())
+
+	scoped, diags := factory.GetElasticsearchClient(ctx, list)
+	require.True(t, diags.HasError(), "factory must reject multiple elasticsearch_connection blocks")
+	assert.Nil(t, scoped)
+	assert.Equal(t, "Invalid elasticsearch_connection", diags[0].Summary())
+	assert.Equal(t, "At most one elasticsearch_connection block is allowed.", diags[0].Detail())
+}
+
+func TestGetKibanaClient_NilFactory(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var f *ProviderClientFactory
+
+	emptyList, diags := types.ListValueFrom(ctx,
+		types.ObjectType{AttrTypes: kibanaConnectionAttrTypes()},
+		[]config.KibanaConnection{},
+	)
+	require.False(t, diags.HasError())
+
+	_, diags = f.GetKibanaClient(ctx, emptyList)
+	assert.True(t, diags.HasError(), "GetKibanaClient on a nil factory must return an error diagnostic")
+}
+
+func TestGetKibanaClient_ResourceLevelBuildError(t *testing.T) {
+	ctx := context.Background()
+	factory := newTestFactory(t)
+
+	conn := config.KibanaConnection{
+		Username: types.StringValue("elastic"),
+		Password: types.StringValue("changeme"),
+		APIKey:   types.StringValue(""),
+		Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+			types.StringValue("http://kibana.example.com:5601"),
+		}),
+		CACerts: types.ListValueMust(types.StringType, []attr.Value{
+			types.StringValue("/nonexistent/ca.pem"),
+		}),
+		Insecure: types.BoolValue(false),
+	}
+
+	list, diags := types.ListValueFrom(ctx,
+		types.ObjectType{AttrTypes: kibanaConnectionAttrTypes()},
+		[]config.KibanaConnection{conn},
+	)
+	require.False(t, diags.HasError())
+
+	scoped, diags := factory.GetKibanaClient(ctx, list)
+	require.True(t, diags.HasError(), "factory must surface kibana_connection build errors before endpoint validation")
+	assert.Nil(t, scoped)
+	assert.Equal(t, "Failed to build Kibana OpenAPI client", diags[0].Summary())
+	assert.NotEqual(t, kibanaFleetClientNotConfiguredError, diags[0].Detail())
+}
+
+// --- Entity-local elasticsearch_connection with missing endpoint ---
+// GetElasticsearchClient must fail at factory resolution when the connection
+// block has no endpoints, matching the provider-default missing-endpoint path.
 
 func TestGetElasticsearchClient_EntityLocalMissingEndpoint(t *testing.T) {
 	// Prevent ELASTICSEARCH_ENDPOINTS env var from supplying a fallback endpoint.
@@ -357,21 +478,14 @@ func TestGetElasticsearchClient_EntityLocalMissingEndpoint(t *testing.T) {
 	require.False(t, diags.HasError())
 
 	scoped, diags := factory.GetElasticsearchClient(ctx, list)
-	require.False(t, diags.HasError(), "factory must not fail for empty-endpoint ES connection block")
-	require.NotNil(t, scoped)
-
-	// Calling GetESClient on the scoped client must produce the same error as
-	// the provider-default path when no endpoint is configured.
-	client, err := scoped.GetESClient()
-	assert.Nil(t, client)
-	require.Error(t, err)
-	assert.Equal(t, elasticsearchClientNotConfiguredError, err.Error())
+	require.True(t, diags.HasError(), "factory must fail when elasticsearch_connection has no endpoints")
+	assert.Nil(t, scoped)
+	assert.Equal(t, elasticsearchClientNotConfiguredError, diags[0].Detail())
 }
 
-// --- Scenario 9: Entity-local kibana_connection with missing endpoint ---
-// GetKibanaOapiClient on a scoped client built via the factory from a
-// kibana_connection block that has no endpoints must return the same actionable
-// error as the provider-default path.
+// --- Entity-local kibana_connection with missing endpoint ---
+// GetKibanaClient must fail at factory resolution when the connection block
+// has no endpoints, matching the provider-default missing-endpoint path.
 
 func TestGetKibanaClient_EntityLocalMissingEndpoint(t *testing.T) {
 	// Prevent KIBANA_ENDPOINT env var from supplying a fallback endpoint.
@@ -398,16 +512,108 @@ func TestGetKibanaClient_EntityLocalMissingEndpoint(t *testing.T) {
 	require.False(t, diags.HasError())
 
 	scoped, diags := factory.GetKibanaClient(ctx, list)
-	require.False(t, diags.HasError(), "factory must not fail for empty-endpoint Kibana connection block")
+	require.True(t, diags.HasError(), "factory must fail when kibana_connection has no endpoints")
+	assert.Nil(t, scoped)
+	assert.Equal(t, kibanaFleetClientNotConfiguredError, diags[0].Detail())
+}
+
+// --- Task 4.3: factory-level endpoint validation and accessor smoke tests ---
+
+func TestGetElasticsearchClient_ProviderDefaultMissingEndpoint(t *testing.T) {
+	t.Setenv("ELASTICSEARCH_ENDPOINTS", "")
+
+	ctx := context.Background()
+	factory := NewProviderClientFactory(&apiClient{
+		version:     "unit-testing",
+		esEndpoints: []string{},
+	})
+
+	emptyList, diags := types.ListValueFrom(ctx,
+		types.ObjectType{AttrTypes: elasticsearchConnectionAttrTypes()},
+		[]config.ElasticsearchConnection{},
+	)
+	require.False(t, diags.HasError())
+
+	scoped, diags := factory.GetElasticsearchClient(ctx, emptyList)
+	require.True(t, diags.HasError(), "factory must fail when no ES endpoint is configured")
+	assert.Nil(t, scoped)
+	assert.Equal(t, elasticsearchClientNotConfiguredError, diags[0].Detail())
+}
+
+func TestGetKibanaClient_ProviderDefaultMissingEndpoint(t *testing.T) {
+	t.Setenv("KIBANA_ENDPOINT", "")
+	t.Setenv("FLEET_ENDPOINT", "")
+
+	ctx := context.Background()
+	factory := NewProviderClientFactory(&apiClient{version: "unit-testing"})
+
+	emptyList, diags := types.ListValueFrom(ctx,
+		types.ObjectType{AttrTypes: kibanaConnectionAttrTypes()},
+		[]config.KibanaConnection{},
+	)
+	require.False(t, diags.HasError())
+
+	scoped, diags := factory.GetKibanaClient(ctx, emptyList)
+	require.True(t, diags.HasError(), "factory must fail when neither Kibana nor Fleet endpoint is configured")
+	assert.Nil(t, scoped)
+	assert.Equal(t, kibanaFleetClientNotConfiguredError, diags[0].Detail())
+}
+
+func TestGetKibanaClient_ProviderFleetEndpointOnly(t *testing.T) {
+	t.Setenv("KIBANA_ENDPOINT", "")
+	t.Setenv("FLEET_ENDPOINT", "")
+
+	const fleetURL = "https://fleet-only.example.com"
+	ctx := context.Background()
+	factory, diags := NewProviderClientFactoryFromFramework(ctx, config.ProviderConfiguration{
+		Fleet: []config.FleetConnection{
+			{
+				Endpoint: types.StringValue(fleetURL),
+				CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+				Insecure: types.BoolValue(false),
+			},
+		},
+	}, "test-version")
+	require.False(t, diags.HasError(), "factory construction must succeed with fleet-only config: %v", diags)
+
+	emptyList, diags := types.ListValueFrom(ctx,
+		types.ObjectType{AttrTypes: kibanaConnectionAttrTypes()},
+		[]config.KibanaConnection{},
+	)
+	require.False(t, diags.HasError())
+
+	scoped, diags := factory.GetKibanaClient(ctx, emptyList)
+	require.False(t, diags.HasError(), "GetKibanaClient must succeed with fleet-only provider config: %v", diags)
 	require.NotNil(t, scoped)
 
-	// Calling GetKibanaOapiClient on the scoped client must produce the actionable
-	// endpoint-missing error.
-	client, err := scoped.GetKibanaOapiClient()
-	assert.Nil(t, client)
-	require.Error(t, err)
-	assert.Equal(t,
-		"kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT",
-		err.Error(),
+	oapi := scoped.GetKibanaOapiClient()
+	require.NotNil(t, oapi)
+	require.NotNil(t, scoped.GetFleetClient())
+	assert.Equal(t, fleetURL, scoped.kibanaEndpoint)
+}
+
+func TestGetElasticsearchClient_SuccessfulFactoryReturnsNonNilAccessor(t *testing.T) {
+	srv := newMockElasticsearchServer("8.19.0")
+	defer srv.Close()
+
+	scoped := newScopedElasticsearchClientFromFactory(t, srv.URL)
+	require.NotNil(t, scoped.GetESClient())
+}
+
+func TestGetKibanaClient_SuccessfulFactoryReturnsNonNilAccessors(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestFactory(t)
+
+	emptyList, diags := types.ListValueFrom(ctx,
+		types.ObjectType{AttrTypes: kibanaConnectionAttrTypes()},
+		[]config.KibanaConnection{},
 	)
+	require.False(t, diags.HasError())
+
+	scoped, diags := factory.GetKibanaClient(ctx, emptyList)
+	require.False(t, diags.HasError())
+	require.NotNil(t, scoped)
+	require.NotNil(t, scoped.GetKibanaOapiClient())
+	require.NotNil(t, scoped.GetFleetClient())
 }

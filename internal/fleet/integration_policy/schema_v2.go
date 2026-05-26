@@ -19,8 +19,8 @@ package integrationpolicy
 
 import (
 	"context"
-	"os"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -36,7 +36,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 )
 
 // integrationPolicyModelV2 is a snapshot of the V2 model. It is retained so the
@@ -66,7 +65,7 @@ type integrationPolicyModelV2 struct {
 // `Version: 2` marker. This schema is used as `PriorSchema` for the V2→V3 state
 // upgrader; it is NOT returned by the resource's live `Schema` method.
 func getSchemaV2() schema.Schema {
-	varsAreSensitive := !logging.IsDebugOrHigher() && os.Getenv("TF_ACC") != "1"
+	varsAreSensitive := debugutils.IsSensitiveInSchema()
 	return schema.Schema{
 		Version: 2,
 		Attributes: map[string]schema.Attribute{
@@ -76,7 +75,7 @@ func getSchemaV2() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"policy_id": schema.StringAttribute{
+			attrPolicyID: schema.StringAttribute{
 				Computed: true,
 				Optional: true,
 				PlanModifiers: []planmodifier.String{
@@ -84,33 +83,33 @@ func getSchemaV2() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"name":      schema.StringAttribute{Required: true},
-			"namespace": schema.StringAttribute{Required: true},
-			"agent_policy_id": schema.StringAttribute{
+			attrName:      schema.StringAttribute{Required: true},
+			attrNamespace: schema.StringAttribute{Required: true},
+			attrAgentPolicyID: schema.StringAttribute{
 				Optional: true,
 				Validators: []validator.String{
-					stringvalidator.ConflictsWith(path.Root("agent_policy_ids").Expression()),
+					stringvalidator.ConflictsWith(path.Root(attrAgentPolicyIDs).Expression()),
 				},
 			},
-			"agent_policy_ids": schema.ListAttribute{
+			attrAgentPolicyIDs: schema.ListAttribute{
 				ElementType: types.StringType,
 				Optional:    true,
 				Validators: []validator.List{
-					listvalidator.ConflictsWith(path.Root("agent_policy_id").Expression()),
+					listvalidator.ConflictsWith(path.Root(attrAgentPolicyID).Expression()),
 					listvalidator.SizeAtLeast(1),
 				},
 			},
-			"description": schema.StringAttribute{Optional: true},
-			"enabled": schema.BoolAttribute{
+			attrDescription: schema.StringAttribute{Optional: true},
+			attrEnabled: schema.BoolAttribute{
 				Computed: true,
 				Optional: true,
 				Default:  booldefault.StaticBool(true),
 			},
-			"force":               schema.BoolAttribute{Optional: true},
-			"integration_name":    schema.StringAttribute{Required: true},
-			"integration_version": schema.StringAttribute{Required: true},
-			"output_id":           schema.StringAttribute{Optional: true},
-			"vars_json": schema.StringAttribute{
+			attrForce:              schema.BoolAttribute{Optional: true},
+			attrIntegrationName:    schema.StringAttribute{Required: true},
+			attrIntegrationVersion: schema.StringAttribute{Required: true},
+			attrOutputID:           schema.StringAttribute{Optional: true},
+			attrVarsJSON: schema.StringAttribute{
 				CustomType: VarsJSONType{
 					JSONWithContextualDefaultsType: customtypes.NewJSONWithContextualDefaultsType(populateVarsJSONDefaults),
 				},
@@ -121,7 +120,7 @@ func getSchemaV2() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"space_ids": schema.SetAttribute{
+			attrSpaceIDs: schema.SetAttribute{
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
@@ -139,29 +138,29 @@ func getSchemaV2() schema.Schema {
 				NestedObject: schema.NestedAttributeObject{
 					CustomType: NewInputType(getInputsAttributeTypes()),
 					Attributes: map[string]schema.Attribute{
-						"enabled": schema.BoolAttribute{
+						attrEnabled: schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
 							Default:  booldefault.StaticBool(true),
 						},
-						"vars": schema.StringAttribute{
+						attrVars: schema.StringAttribute{
 							CustomType: jsontypes.NormalizedType{},
 							Optional:   true,
 							Sensitive:  varsAreSensitive,
 						},
-						"defaults": schema.SingleNestedAttribute{
+						attrDefaults: schema.SingleNestedAttribute{
 							Computed: true,
 							Attributes: map[string]schema.Attribute{
-								"vars": schema.StringAttribute{
+								attrVars: schema.StringAttribute{
 									CustomType: jsontypes.NormalizedType{},
 									Computed:   true,
 								},
-								"streams": schema.MapNestedAttribute{
+								attrStreams: schema.MapNestedAttribute{
 									Computed: true,
 									NestedObject: schema.NestedAttributeObject{
 										Attributes: map[string]schema.Attribute{
-											"enabled": schema.BoolAttribute{Computed: true},
-											"vars": schema.StringAttribute{
+											attrEnabled: schema.BoolAttribute{Computed: true},
+											attrVars: schema.StringAttribute{
 												CustomType: jsontypes.NormalizedType{},
 												Computed:   true,
 											},
@@ -170,16 +169,16 @@ func getSchemaV2() schema.Schema {
 								},
 							},
 						},
-						"streams": schema.MapNestedAttribute{
+						attrStreams: schema.MapNestedAttribute{
 							Optional: true,
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
-									"enabled": schema.BoolAttribute{
+									attrEnabled: schema.BoolAttribute{
 										Computed: true,
 										Optional: true,
 										Default:  booldefault.StaticBool(true),
 									},
-									"vars": schema.StringAttribute{
+									attrVars: schema.StringAttribute{
 										CustomType: jsontypes.NormalizedType{},
 										Optional:   true,
 										Sensitive:  varsAreSensitive,

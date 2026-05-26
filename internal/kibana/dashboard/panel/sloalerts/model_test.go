@@ -33,9 +33,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func sloAlertsEmbeddableFromJSON(t *testing.T, raw string) kbapi.SloAlertsEmbeddable {
+func sloAlertsEmbeddableFromJSON(t *testing.T, raw string) kbapi.KibanaHTTPAPIsSloAlertsEmbeddable {
 	t.Helper()
-	var emb kbapi.SloAlertsEmbeddable
+	var emb kbapi.KibanaHTTPAPIsSloAlertsEmbeddable
 	require.NoError(t, json.Unmarshal([]byte(raw), &emb))
 	return emb
 }
@@ -57,7 +57,7 @@ func Test_sloAlertsPanelToAPI_minimal(t *testing.T) {
 	item, diags := Handler{}.ToAPI(pm, nil)
 	require.False(t, diags.HasError())
 
-	sa, err := item.AsKbnDashboardPanelTypeSloAlerts()
+	sa, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts()
 	require.NoError(t, err)
 	require.NotNil(t, sa.Config.Slos)
 	require.Len(t, *sa.Config.Slos, 1)
@@ -73,7 +73,7 @@ func Test_sloAlertsPanel_roundTrip_minimal(t *testing.T) {
 	}, 0, 0)
 	item, diags := Handler{}.ToAPI(pm, nil)
 	require.False(t, diags.HasError())
-	apiPanel, err := item.AsKbnDashboardPanelTypeSloAlerts()
+	apiPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts()
 	require.NoError(t, err)
 
 	apiPanel.Config = sloAlertsEmbeddableFromJSON(t, `{"slos":[{"slo_id":"slo-1","slo_instance_id":"*"}]}`)
@@ -95,7 +95,7 @@ func Test_sloAlertsPanel_roundTrip_multipleSlos(t *testing.T) {
 	}, 1, 2)
 	item, diags := Handler{}.ToAPI(pm, nil)
 	require.False(t, diags.HasError())
-	apiPanel, err := item.AsKbnDashboardPanelTypeSloAlerts()
+	apiPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts()
 	require.NoError(t, err)
 
 	next := pm
@@ -106,7 +106,7 @@ func Test_sloAlertsPanel_roundTrip_multipleSlos(t *testing.T) {
 }
 
 func Test_populateSloAlertsPanelFromAPI_sloInstanceID_nullPreserved_refreshAndImport(t *testing.T) {
-	apiPanel := kbapi.KbnDashboardPanelTypeSloAlerts{
+	apiPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts{
 		Config: sloAlertsEmbeddableFromJSON(t, `{"slos":[{"slo_id":"slo-1","slo_instance_id":"*" }]}`),
 	}
 
@@ -145,7 +145,7 @@ func Test_sloAlerts_drilldown_roundTrip_defaultsNull_refreshAndImport(t *testing
 	}, 0, 0)
 	item, diags := Handler{}.ToAPI(pm, nil)
 	require.False(t, diags.HasError())
-	apiPanel, err := item.AsKbnDashboardPanelTypeSloAlerts()
+	apiPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts()
 	require.NoError(t, err)
 
 	apiPanel.Config = sloAlertsEmbeddableFromJSON(t,
@@ -180,12 +180,12 @@ func Test_sloAlertsPanelToAPI_drilldownWritesTrigger(t *testing.T) {
 	}, 0, 0)
 	item, diags := Handler{}.ToAPI(pm, nil)
 	require.False(t, diags.HasError())
-	sa, err := item.AsKbnDashboardPanelTypeSloAlerts()
+	sa, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts()
 	require.NoError(t, err)
 	require.NotNil(t, sa.Config.Drilldowns)
 	d := (*sa.Config.Drilldowns)[0]
-	assert.Equal(t, kbapi.SloAlertsEmbeddableDrilldownsTriggerOnOpenPanelMenu, d.Trigger)
-	assert.Equal(t, kbapi.SloAlertsEmbeddableDrilldownsTypeUrlDrilldown, d.Type)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsTriggerOnOpenPanelMenu, d.Trigger)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsTypeUrlDrilldown, d.Type)
 }
 
 func Test_sloAlerts_slos_emptyList_rejected(t *testing.T) {
@@ -234,7 +234,7 @@ func Test_populateSloAlertsPanelFromAPI_import_preservesDrilldownDefaults(t *tes
 	raw := `{"slos":[{"slo_id":"slo-1"}],"drilldowns":[{"url":"https://example.com","label":"open","trigger":"on_open_panel_menu","type":"url_drilldown","encode_url":true,"open_in_new_tab":false}]}`
 
 	pm := models.PanelModel{}
-	PopulateFromAPI(&pm, nil, kbapi.KbnDashboardPanelTypeSloAlerts{
+	PopulateFromAPI(&pm, nil, kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts{
 		Config: sloAlertsEmbeddableFromJSON(t, raw),
 	})
 	require.NotNil(t, pm.SloAlertsConfig)

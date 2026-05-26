@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -88,17 +87,17 @@ func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.K
 	}
 
 	switch outputType {
-	case "elasticsearch":
+	case outputTypeElasticsearch:
 		return model.toAPICreateElasticsearchModel(ctx)
-	case "logstash":
+	case outputTypeLogstash:
 		return model.toAPICreateLogstashModel(ctx)
-	case "kafka":
+	case outputTypeKafka:
 		if diags := assertKafkaSupport(ctx, client); diags.HasError() {
 			return kbapi.NewOutputUnion{}, diags
 		}
 
 		return model.toAPICreateKafkaModel(ctx)
-	case "remote_elasticsearch":
+	case outputTypeRemoteElasticsearch:
 		return model.toAPICreateRemoteElasticsearchModel(ctx)
 	default:
 		return kbapi.NewOutputUnion{}, diag.Diagnostics{
@@ -116,17 +115,17 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.K
 	}
 
 	switch outputType {
-	case "elasticsearch":
+	case outputTypeElasticsearch:
 		return model.toAPIUpdateElasticsearchModel(ctx)
-	case "logstash":
+	case outputTypeLogstash:
 		return model.toAPIUpdateLogstashModel(ctx)
-	case "kafka":
+	case outputTypeKafka:
 		if diags := assertKafkaSupport(ctx, client); diags.HasError() {
 			return kbapi.UpdateOutputUnion{}, diags
 		}
 
 		return model.toAPIUpdateKafkaModel(ctx)
-	case "remote_elasticsearch":
+	case outputTypeRemoteElasticsearch:
 		return model.toAPIUpdateRemoteElasticsearchModel(ctx)
 	default:
 		diags.AddError(fmt.Sprintf("unhandled output type: %s", outputType), "")
@@ -248,7 +247,7 @@ func assertSSLVerificationModeSupport(ctx context.Context, client *clients.Kiban
 	}
 
 	if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionOutputSSLVerificationMode); versionDiags.HasError() {
-		diags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+		diags.Append(versionDiags...)
 		return diags
 	} else if !supported {
 		diags.AddAttributeError(path.Root("ssl").AtName("verification_mode"),
@@ -265,7 +264,7 @@ func assertKafkaSupport(ctx context.Context, client *clients.KibanaScopedClient)
 
 	// Check minimum version requirement for Kafka output type
 	if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionOutputKafka); versionDiags.HasError() {
-		diags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+		diags.Append(versionDiags...)
 		return diags
 	} else if !supported {
 		diags.AddError("Unsupported version for Kafka output",

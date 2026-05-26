@@ -51,11 +51,7 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 		return
 	}
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("unable to get Kibana OpenAPI client", err.Error())
-		return
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	params := kbapi.PostSavedObjectsImportParams{}
 	if typeutils.IsKnown(model.Overwrite) && model.Overwrite.ValueBool() {

@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -45,7 +46,7 @@ func (Handler) AlignStateFromPlan(ctx context.Context, plan, state *models.Panel
 }
 
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	apiPanel, err := item.AsKbnDashboardPanelTypeSloAlerts()
+	apiPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts()
 	if err != nil {
 		var d diag.Diagnostics
 		d.AddError("Dashboard panel decode", err.Error())
@@ -61,6 +62,15 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 }
 
 func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+	if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Unsupported panel type for config_json",
+			"Panel-level `config_json` is not supported for `slo_alerts` panels. Use `slo_alerts_config` instead.",
+		)
+		return kbapi.DashboardPanelItem{}, diags
+	}
+
 	var diags diag.Diagnostics
 	cfg := pm.SloAlertsConfig
 	if cfg == nil {
@@ -70,7 +80,7 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 
 	grid := panelkit.GridToAPI(pm.Grid)
 	id := panelkit.IDToAPI(pm.ID)
-	panel := kbapi.KbnDashboardPanelTypeSloAlerts{
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts{
 		Grid: grid,
 		Id:   id,
 		Type: kbapi.SloAlerts,
@@ -78,7 +88,7 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 	BuildConfig(&pm, &panel)
 
 	var panelItem kbapi.DashboardPanelItem
-	if err := panelItem.FromKbnDashboardPanelTypeSloAlerts(panel); err != nil {
+	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts(panel); err != nil {
 		diags.AddError("Failed to create SLO alerts panel", err.Error())
 	}
 	return panelItem, diags

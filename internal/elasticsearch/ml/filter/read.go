@@ -39,11 +39,7 @@ func readFilter(ctx context.Context, client *clients.ElasticsearchScopedClient, 
 
 	tflog.Debug(ctx, fmt.Sprintf("Reading ML filter: %s", filterID))
 
-	typedClient, err := client.GetESClient()
-	if err != nil {
-		diags.AddError("Failed to get Elasticsearch client", err.Error())
-		return state, false, diags
-	}
+	typedClient := client.GetESClient()
 
 	res, err := typedClient.Ml.GetFilters().FilterId(filterID).Do(ctx)
 	if err != nil {

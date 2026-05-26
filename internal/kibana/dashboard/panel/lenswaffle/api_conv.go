@@ -49,7 +49,7 @@ func waffleChartJSONUsesESQLDataset(waffleChartJSON []byte) (bool, error) {
 		return false, err
 	}
 	switch ds.Type {
-	case string(kbapi.EsqlDataSourceTypeEsql), "table":
+	case string(kbapi.KibanaHTTPAPIsEsqlDataSourceTypeEsql), "table":
 		return true, nil
 	default:
 		return false, nil
@@ -95,7 +95,7 @@ func waffleConfigUsesESQL(m *models.WaffleConfigModel) bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel, resolver lenscommon.Resolver, prior *models.WaffleConfigModel, api kbapi.WaffleNoESQL) diag.Diagnostics {
+func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel, resolver lenscommon.Resolver, prior *models.WaffleConfigModel, api kbapi.KibanaHTTPAPIsWaffleNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -198,7 +198,7 @@ func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel,
 	return diags
 }
 
-func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, resolver lenscommon.Resolver, prior *models.WaffleConfigModel, api kbapi.WaffleESQL) diag.Diagnostics {
+func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, resolver lenscommon.Resolver, prior *models.WaffleConfigModel, api kbapi.KibanaHTTPAPIsWaffleESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -243,7 +243,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, r
 			colorType := types.StringNull()
 			colorValue := types.StringNull()
 			if met.Color != nil {
-				if staticColor, colorErr := met.Color.AsStaticColor(); colorErr == nil {
+				if staticColor, colorErr := met.Color.AsKibanaHTTPAPIsStaticColor(); colorErr == nil {
 					colorType = types.StringValue(string(staticColor.Type))
 					colorValue = types.StringValue(staticColor.Color)
 				}
@@ -329,7 +329,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, r
 	return diags
 }
 
-func waffleLegendFromAPI(ctx context.Context, m *models.WaffleLegendModel, api kbapi.WaffleLegend) {
+func waffleLegendFromAPI(ctx context.Context, m *models.WaffleLegendModel, api kbapi.KibanaHTTPAPIsWaffleLegend) {
 	_ = ctx
 	m.Size = types.StringValue(string(api.Size))
 	if api.TruncateAfterLines != nil {
@@ -358,15 +358,15 @@ func waffleLegendFromAPI(ctx context.Context, m *models.WaffleLegendModel, api k
 	}
 }
 
-func waffleLegendToAPI(m *models.WaffleLegendModel) (kbapi.WaffleLegend, diag.Diagnostics) {
+func waffleLegendToAPI(m *models.WaffleLegendModel) (kbapi.KibanaHTTPAPIsWaffleLegend, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var leg kbapi.WaffleLegend
+	var leg kbapi.KibanaHTTPAPIsWaffleLegend
 	if m == nil {
 		diags.AddError("Missing legend", "waffle_config.legend must be provided")
 		return leg, diags
 	}
 	if typeutils.IsKnown(m.Size) {
-		leg.Size = kbapi.LegendSize(m.Size.ValueString())
+		leg.Size = kbapi.KibanaHTTPAPIsLegendSize(m.Size.ValueString())
 	} else {
 		diags.AddError("Missing legend size", "waffle_config.legend.size must be provided")
 	}
@@ -375,16 +375,16 @@ func waffleLegendToAPI(m *models.WaffleLegendModel) (kbapi.WaffleLegend, diag.Di
 		leg.TruncateAfterLines = &v
 	}
 	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.WaffleLegendVisibility(m.Visible.ValueString())
+		v := kbapi.KibanaHTTPAPIsWaffleLegendVisibility(m.Visible.ValueString())
 		leg.Visibility = &v
 	}
 	if !m.Values.IsNull() && !m.Values.IsUnknown() {
 		elems := m.Values.Elements()
-		vals := make([]kbapi.WaffleLegendValues, 0, len(elems))
+		vals := make([]kbapi.KibanaHTTPAPIsWaffleLegendValues, 0, len(elems))
 		for _, e := range elems {
 			sv, ok := e.(types.String)
 			if ok && typeutils.IsKnown(sv) {
-				vals = append(vals, kbapi.WaffleLegendValues(sv.ValueString()))
+				vals = append(vals, kbapi.KibanaHTTPAPIsWaffleLegendValues(sv.ValueString()))
 			}
 		}
 		if len(vals) > 0 {
@@ -394,8 +394,8 @@ func waffleLegendToAPI(m *models.WaffleLegendModel) (kbapi.WaffleLegend, diag.Di
 	return leg, diags
 }
 
-func waffleConfigToAPI(m *models.WaffleConfigModel, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+func waffleConfigToAPI(m *models.WaffleConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 
 	if m == nil {
@@ -406,7 +406,6 @@ func waffleConfigToAPI(m *models.WaffleConfigModel, resolver lenscommon.Resolver
 		waffleModeListStateFromSlice(len(m.GroupBy)),
 		waffleModeListStateFromSlice(len(m.EsqlMetrics)),
 		waffleModeListStateFromSlice(len(m.EsqlGroupBy)),
-		nil,
 	)...)
 	if diags.HasError() {
 		return attrs, diags
@@ -418,7 +417,7 @@ func waffleConfigToAPI(m *models.WaffleConfigModel, resolver lenscommon.Resolver
 		if diags.HasError() {
 			return attrs, diags
 		}
-		if err := attrs.FromWaffleESQL(esql); err != nil {
+		if err := attrs.FromKibanaHTTPAPIsWaffleESQL(esql); err != nil {
 			diags.AddError("Failed to build waffle ES|QL chart", err.Error())
 		}
 		return attrs, diags
@@ -429,16 +428,16 @@ func waffleConfigToAPI(m *models.WaffleConfigModel, resolver lenscommon.Resolver
 	if diags.HasError() {
 		return attrs, diags
 	}
-	if err := attrs.FromWaffleNoESQL(noESQL); err != nil {
+	if err := attrs.FromKibanaHTTPAPIsWaffleNoESQL(noESQL); err != nil {
 		diags.AddError("Failed to build waffle chart", err.Error())
 	}
 	return attrs, diags
 }
 
-func waffleConfigToAPINoESQL(m *models.WaffleConfigModel, resolver lenscommon.Resolver) (kbapi.WaffleNoESQL, diag.Diagnostics) {
+func waffleConfigToAPINoESQL(m *models.WaffleConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsWaffleNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.WaffleNoESQL{
-		Type: kbapi.WaffleNoESQLTypeWaffle,
+	api := kbapi.KibanaHTTPAPIsWaffleNoESQL{
+		Type: kbapi.KibanaHTTPAPIsWaffleNoESQLTypeWaffle,
 	}
 
 	if typeutils.IsKnown(m.Title) {
@@ -480,8 +479,8 @@ func waffleConfigToAPINoESQL(m *models.WaffleConfigModel, resolver lenscommon.Re
 	api.Legend = leg
 
 	if m.ValueDisplay != nil && typeutils.IsKnown(m.ValueDisplay.Mode) {
-		mode := kbapi.ValueDisplayMode(m.ValueDisplay.Mode.ValueString())
-		vd := kbapi.ValueDisplay{
+		mode := kbapi.KibanaHTTPAPIsValueDisplayMode(m.ValueDisplay.Mode.ValueString())
+		vd := kbapi.KibanaHTTPAPIsValueDisplay{
 			Mode: &mode,
 		}
 		if typeutils.IsKnown(m.ValueDisplay.PercentDecimals) {
@@ -491,13 +490,13 @@ func waffleConfigToAPINoESQL(m *models.WaffleConfigModel, resolver lenscommon.Re
 		api.Styling.Values = vd
 	} else {
 		// Required by the Dashboard API; omitting mode yields HTTP 400.
-		mode := kbapi.ValueDisplayModePercentage
-		api.Styling.Values = kbapi.ValueDisplay{
+		mode := kbapi.KibanaHTTPAPIsValueDisplayModePercentage
+		api.Styling.Values = kbapi.KibanaHTTPAPIsValueDisplay{
 			Mode: &mode,
 		}
 	}
 
-	metrics := make([]kbapi.WaffleNoESQL_Metrics_Item, len(m.Metrics))
+	metrics := make([]kbapi.KibanaHTTPAPIsWaffleNoESQL_Metrics_Item, len(m.Metrics))
 	for i, met := range m.Metrics {
 		if err := json.Unmarshal([]byte(met.Config.ValueString()), &metrics[i]); err != nil {
 			diags.AddError("Failed to unmarshal metric config", err.Error())
@@ -506,7 +505,7 @@ func waffleConfigToAPINoESQL(m *models.WaffleConfigModel, resolver lenscommon.Re
 	api.Metrics = metrics
 
 	if len(m.GroupBy) > 0 {
-		gb := make([]kbapi.WaffleNoESQL_GroupBy_Item, len(m.GroupBy))
+		gb := make([]kbapi.KibanaHTTPAPIsWaffleNoESQL_GroupBy_Item, len(m.GroupBy))
 		for i, g := range m.GroupBy {
 			if err := json.Unmarshal([]byte(g.Config.ValueString()), &gb[i]); err != nil {
 				diags.AddError("Failed to unmarshal group_by config", err.Error())
@@ -532,7 +531,7 @@ func waffleConfigToAPINoESQL(m *models.WaffleConfigModel, resolver lenscommon.Re
 		api.References = writes.References
 	}
 	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.WaffleNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsWaffleNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
 		diags.Append(ddDiags...)
 		if !ddDiags.HasError() {
 			api.Drilldowns = &items
@@ -542,10 +541,10 @@ func waffleConfigToAPINoESQL(m *models.WaffleConfigModel, resolver lenscommon.Re
 	return api, diags
 }
 
-func waffleConfigToAPIESQL(m *models.WaffleConfigModel, resolver lenscommon.Resolver) (kbapi.WaffleESQL, diag.Diagnostics) {
+func waffleConfigToAPIESQL(m *models.WaffleConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsWaffleESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.WaffleESQL{
-		Type: kbapi.WaffleESQLTypeWaffle,
+	api := kbapi.KibanaHTTPAPIsWaffleESQL{
+		Type: kbapi.KibanaHTTPAPIsWaffleESQLTypeWaffle,
 	}
 
 	if typeutils.IsKnown(m.Title) {
@@ -581,8 +580,8 @@ func waffleConfigToAPIESQL(m *models.WaffleConfigModel, resolver lenscommon.Reso
 	api.Legend = leg
 
 	if m.ValueDisplay != nil && typeutils.IsKnown(m.ValueDisplay.Mode) {
-		mode := kbapi.ValueDisplayMode(m.ValueDisplay.Mode.ValueString())
-		vd := kbapi.ValueDisplay{
+		mode := kbapi.KibanaHTTPAPIsValueDisplayMode(m.ValueDisplay.Mode.ValueString())
+		vd := kbapi.KibanaHTTPAPIsValueDisplay{
 			Mode: &mode,
 		}
 		if typeutils.IsKnown(m.ValueDisplay.PercentDecimals) {
@@ -591,17 +590,17 @@ func waffleConfigToAPIESQL(m *models.WaffleConfigModel, resolver lenscommon.Reso
 		}
 		api.Styling.Values = vd
 	} else {
-		mode := kbapi.ValueDisplayModePercentage
-		api.Styling.Values = kbapi.ValueDisplay{
+		mode := kbapi.KibanaHTTPAPIsValueDisplayModePercentage
+		api.Styling.Values = kbapi.KibanaHTTPAPIsValueDisplay{
 			Mode: &mode,
 		}
 	}
 
 	metrics := make([]struct {
-		Color  *kbapi.WaffleESQL_Metrics_Color `json:"color,omitempty"`
-		Column string                          `json:"column"`
-		Format kbapi.FormatType                `json:"format"`
-		Label  *string                         `json:"label,omitempty"`
+		Color  *kbapi.KibanaHTTPAPIsWaffleESQL_Metrics_Color `json:"color,omitempty"`
+		Column string                                        `json:"column"`
+		Format kbapi.KibanaHTTPAPIsFormatType                `json:"format"`
+		Label  *string                                       `json:"label,omitempty"`
 	}, len(m.EsqlMetrics))
 	for i, em := range m.EsqlMetrics {
 		if err := json.Unmarshal([]byte(em.FormatJSON.ValueString()), &metrics[i].Format); err != nil {
@@ -612,12 +611,12 @@ func waffleConfigToAPIESQL(m *models.WaffleConfigModel, resolver lenscommon.Reso
 			diags.AddError("Missing color", "waffle_config.esql_metrics color is required")
 			continue
 		}
-		staticColor := kbapi.StaticColor{
-			Type:  kbapi.StaticColorType(em.Color.Type.ValueString()),
+		staticColor := kbapi.KibanaHTTPAPIsStaticColor{
+			Type:  kbapi.KibanaHTTPAPIsStaticColorType(em.Color.Type.ValueString()),
 			Color: em.Color.Color.ValueString(),
 		}
-		var color kbapi.WaffleESQL_Metrics_Color
-		if err := color.FromStaticColor(staticColor); err != nil {
+		var color kbapi.KibanaHTTPAPIsWaffleESQL_Metrics_Color
+		if err := color.FromKibanaHTTPAPIsStaticColor(staticColor); err != nil {
 			diags.AddError("Failed to marshal metric color", err.Error())
 			continue
 		}
@@ -631,18 +630,18 @@ func waffleConfigToAPIESQL(m *models.WaffleConfigModel, resolver lenscommon.Reso
 
 	if len(m.EsqlGroupBy) > 0 {
 		gb := make([]struct {
-			CollapseBy kbapi.CollapseBy   `json:"collapse_by"`
-			Color      kbapi.ColorMapping `json:"color"`
-			Column     string             `json:"column"`
-			Format     kbapi.FormatType   `json:"format"`
-			Label      *string            `json:"label,omitempty"`
+			CollapseBy kbapi.KibanaHTTPAPIsCollapseBy   `json:"collapse_by"`
+			Color      kbapi.KibanaHTTPAPIsColorMapping `json:"color"`
+			Column     string                           `json:"column"`
+			Format     kbapi.KibanaHTTPAPIsFormatType   `json:"format"`
+			Label      *string                          `json:"label,omitempty"`
 		}, len(m.EsqlGroupBy))
 		for i, eg := range m.EsqlGroupBy {
 			if err := json.Unmarshal([]byte(eg.ColorJSON.ValueString()), &gb[i].Color); err != nil {
 				diags.AddError("Failed to unmarshal color_json", err.Error())
 			}
 			gb[i].Column = eg.Column.ValueString()
-			gb[i].CollapseBy = kbapi.CollapseBy(eg.CollapseBy.ValueString())
+			gb[i].CollapseBy = kbapi.KibanaHTTPAPIsCollapseBy(eg.CollapseBy.ValueString())
 			formatSrc := lenscommon.DefaultLensNumberFormatJSON
 			if typeutils.IsKnown(eg.FormatJSON) {
 				formatSrc = eg.FormatJSON.ValueString()
@@ -675,7 +674,7 @@ func waffleConfigToAPIESQL(m *models.WaffleConfigModel, resolver lenscommon.Reso
 		api.References = writes.References
 	}
 	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.WaffleESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsWaffleESQL_Drilldowns_Item](writes.DrilldownsRaw)
 		diags.Append(ddDiags...)
 		if !ddDiags.HasError() {
 			api.Drilldowns = &items

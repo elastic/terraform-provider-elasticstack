@@ -347,10 +347,7 @@ func checkInferenceEndpointDestroy(s *terraform.State) error {
 
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		typedClient, err := client.GetESClient()
-		if err != nil {
-			return err
-		}
+		typedClient := client.GetESClient()
 
 		res, err := typedClient.Inference.Get().InferenceId(compID.ResourceID).Do(context.Background())
 		if err != nil {

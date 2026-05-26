@@ -29,7 +29,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-const kibanaEntityPrefix = "elasticstack_kibana_"
+const (
+	kibanaEntityPrefix   = "elasticstack_kibana_"
+	entityTypeResource   = "resource"
+	entityTypeDataSource = "data source"
+)
 
 // Entity describes a Terraform Kibana entity derived from provider registrations.
 type Entity struct {
@@ -39,10 +43,9 @@ type Entity struct {
 }
 
 // discoverKibanaEntities lists resources and data sources registered on the provider whose
-// Terraform type name uses the elasticstack_kibana_ prefix (Plugin Framework + Plugin SDK).
+// Terraform type name uses the elasticstack_kibana_ prefix (Plugin Framework).
 func discoverKibanaEntities() []Entity {
 	fwProv := provider.NewFrameworkProvider("kibana-spec-impact")
-	sdkProv := provider.New("kibana-spec-impact")
 	ctx := context.Background()
 
 	var out []Entity
@@ -56,7 +59,7 @@ func discoverKibanaEntities() []Entity {
 			continue
 		}
 		pkg := reflect.TypeOf(r).Elem().PkgPath()
-		out = append(out, Entity{Type: "resource", Name: meta.TypeName, PkgPath: pkg})
+		out = append(out, Entity{Type: entityTypeResource, Name: meta.TypeName, PkgPath: pkg})
 		seen[meta.TypeName] = struct{}{}
 	}
 
@@ -68,32 +71,8 @@ func discoverKibanaEntities() []Entity {
 			continue
 		}
 		pkg := reflect.TypeOf(ds).Elem().PkgPath()
-		out = append(out, Entity{Type: "data source", Name: meta.TypeName, PkgPath: pkg})
+		out = append(out, Entity{Type: entityTypeDataSource, Name: meta.TypeName, PkgPath: pkg})
 		seen[meta.TypeName] = struct{}{}
-	}
-
-	for name := range sdkProv.ResourcesMap {
-		if !strings.HasPrefix(name, kibanaEntityPrefix) {
-			continue
-		}
-		if _, ok := seen[name]; ok {
-			continue
-		}
-		pkg := sdkKibanaPkgPath(name)
-		out = append(out, Entity{Type: "resource", Name: name, PkgPath: pkg})
-		seen[name] = struct{}{}
-	}
-
-	for name := range sdkProv.DataSourcesMap {
-		if !strings.HasPrefix(name, kibanaEntityPrefix) {
-			continue
-		}
-		if _, ok := seen[name]; ok {
-			continue
-		}
-		pkg := sdkKibanaPkgPath(name)
-		out = append(out, Entity{Type: "data source", Name: name, PkgPath: pkg})
-		seen[name] = struct{}{}
 	}
 
 	sort.Slice(out, func(i, j int) bool {
@@ -103,12 +82,6 @@ func discoverKibanaEntities() []Entity {
 		return out[i].Name < out[j].Name
 	})
 	return out
-}
-
-// sdkKibanaPkgPath returns the Go import path for SDK-only Kibana entities in the root
-// internal/kibana package. New SDK Kibana entities use the same default without failing inventory.
-func sdkKibanaPkgPath(_ string) string {
-	return "github.com/elastic/terraform-provider-elasticstack/internal/kibana"
 }
 
 // entityScanPaths returns Go files or directories (under repoRoot) to scan for kbapi/kibanaoapi usage.

@@ -43,15 +43,13 @@ type Resource struct {
 
 func newResource() *Resource {
 	return &Resource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel](
-			entitycore.ComponentElasticsearch,
-			"index_lifecycle",
-			ilmSchema,
-			readILM,
-			deleteILM,
-			createILM,
-			updateILM,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("index_lifecycle", entitycore.ElasticsearchResourceOptions[tfModel]{
+			Schema: ilmSchema,
+			Read:   readILM,
+			Delete: deleteILM,
+			Create: createILM,
+			Update: updateILM,
+		}),
 	}
 }
 

@@ -19,12 +19,13 @@ package clients
 
 import (
 	"context"
-	"errors"
+	"sync"
 
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // KibanaScopedClient is a typed client surface for Kibana and Fleet operations.
@@ -41,8 +42,7 @@ type KibanaScopedClient struct {
 	version string
 	// kibanaEndpoint holds the resolved Kibana endpoint URL captured after
 	// provider configuration, entity-local overrides, and environment overrides
-	// have been applied. It is used by accessor validation to distinguish missing
-	// endpoint configuration from unexpected nil states.
+	// have been applied. It is used by factory endpoint validation.
 	kibanaEndpoint string
 	// fleetEndpoint holds the resolved Fleet endpoint URL captured after
 	// provider configuration, entity-local overrides, and environment overrides
@@ -50,83 +50,76 @@ type KibanaScopedClient struct {
 	// cfg.Fleet endpoint which may have been inherited from the Kibana-derived
 	// config path.
 	fleetEndpoint string
+
+	// statusMu guards the cached server status fields. The cache is bounded to
+	// the lifetime of a single KibanaScopedClient instance (the factory builds
+	// one per Create/Read/Update), which is the natural scope for "the server
+	// version cannot change underneath us".
+	statusMu sync.Mutex
+	// statusCached is true once getServerStatusRaw has produced a successful
+	// (rawVersion, flavor) pair for this client instance. Errors are never
+	// cached so transient failures recover on the next call.
+	statusCached bool
+	statusVer    string
+	statusFlavor string
 }
 
 // GetKibanaOapiClient returns the Kibana OpenAPI client.
-func (k *KibanaScopedClient) GetKibanaOapiClient() (*kibanaoapi.Client, error) {
-	if k.kibanaEndpoint == "" {
-		return nil, errors.New("kibana OpenAPI client is not configured: set kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT")
-	}
-	if k.kibanaOapi == nil {
-		return nil, errors.New("kibanaoapi client not found")
-	}
-	return k.kibanaOapi, nil
+//
+// Endpoint presence is validated by ProviderClientFactory.GetKibanaClient before
+// a scoped client is returned.
+func (k *KibanaScopedClient) GetKibanaOapiClient() *kibanaoapi.Client {
+	return k.kibanaOapi
 }
 
 // GetFleetClient returns the Fleet client.
-func (k *KibanaScopedClient) GetFleetClient() (*fleetclient.Client, error) {
-	if k.fleetEndpoint == "" {
-		const fleetMsg = "fleet client is not configured: set fleet.endpoint or FLEET_ENDPOINT, " +
-			"or configure kibana.endpoints, kibana_connection.endpoints, or KIBANA_ENDPOINT " +
-			"for inherited Fleet endpoint resolution"
-		return nil, errors.New(fleetMsg)
-	}
-	if k.fleet == nil {
-		return nil, errors.New("fleet client not found")
-	}
-	return k.fleet, nil
+//
+// Endpoint presence is validated by ProviderClientFactory.GetKibanaClient before
+// a scoped client is returned.
+func (k *KibanaScopedClient) GetFleetClient() *fleetclient.Client {
+	return k.fleet
 }
 
-// ServerVersion returns the version of the Kibana server. Version is always
-// derived from the Kibana status API; there is no Elasticsearch fallback.
-func (k *KibanaScopedClient) ServerVersion(ctx context.Context) (*version.Version, diag.Diagnostics) {
-	oapiClient, err := k.GetKibanaOapiClient()
-	if err != nil {
-		return nil, diag.Errorf("failed to get version from Kibana API: %s, "+
-			"please ensure a working 'kibana' endpoint is configured", err.Error())
+// getServerStatusRaw fetches the Kibana server status, returning the raw version
+// string and build flavor. The successful result is cached for the lifetime of
+// this client instance so that callers performing multiple version-gated
+// decisions during one resource operation share a single `/api/status` round
+// trip. Errors are not cached; a subsequent call will re-attempt the fetch so
+// transient failures recover naturally.
+//
+// The mutex is held for the duration of the fetch so concurrent callers wait
+// for the in-flight request and then observe the cached result instead of
+// issuing parallel requests.
+func (k *KibanaScopedClient) getServerStatusRaw(ctx context.Context) (rawVersion string, flavor string, diags fwdiag.Diagnostics) {
+	k.statusMu.Lock()
+	defer k.statusMu.Unlock()
+
+	if k.statusCached {
+		return k.statusVer, k.statusFlavor, nil
 	}
 
-	rawVersion, _, diags := kibanaoapi.GetKibanaStatus(ctx, oapiClient.API)
+	if k.GetKibanaOapiClient() == nil {
+		return "", "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic(
+			"Kibana OpenAPI client not configured",
+			"the scoped client was not produced by ProviderClientFactory.GetKibanaClient; this is a provider bug — please report it",
+		)}
+	}
+
+	rawVersion, flavor, diags = kibanaoapi.GetKibanaStatus(ctx, k.GetKibanaOapiClient().API)
 	if diags.HasError() {
-		return nil, diags
+		return "", "", diags
 	}
 
-	serverVersion, err := version.NewVersion(rawVersion)
-	if err != nil {
-		return nil, diag.FromErr(err)
-	}
-
-	return serverVersion, nil
-}
-
-// ServerFlavor returns the flavor (e.g. "serverless", "default") of the Kibana
-// server. Flavor is always derived from the Kibana status API.
-// Returns an empty string when build_flavor is absent (older stateful deployments).
-func (k *KibanaScopedClient) ServerFlavor(ctx context.Context) (string, diag.Diagnostics) {
-	oapiClient, err := k.GetKibanaOapiClient()
-	if err != nil {
-		return "", diag.Errorf("failed to get flavor from Kibana API: %s, "+
-			"please ensure a working 'kibana' endpoint is configured", err.Error())
-	}
-
-	_, flavor, diags := kibanaoapi.GetKibanaStatus(ctx, oapiClient.API)
-	if diags.HasError() {
-		return "", diags
-	}
-
-	return flavor, nil
+	k.statusCached = true
+	k.statusVer = rawVersion
+	k.statusFlavor = flavor
+	return rawVersion, flavor, nil
 }
 
 // EnforceMinVersion returns true when the Kibana server version is greater than
 // or equal to minVersion, or when the server is running in serverless mode.
-func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics) {
-	oapiClient, err := k.GetKibanaOapiClient()
-	if err != nil {
-		return false, diag.Errorf("failed to get version from Kibana API: %s, "+
-			"please ensure a working 'kibana' endpoint is configured", err.Error())
-	}
-
-	rawVersion, flavor, diags := kibanaoapi.GetKibanaStatus(ctx, oapiClient.API)
+func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, fwdiag.Diagnostics) {
+	rawVersion, flavor, diags := k.getServerStatusRaw(ctx)
 	if diags.HasError() {
 		return false, diags
 	}
@@ -137,7 +130,7 @@ func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *
 
 	serverVersion, err := version.NewVersion(rawVersion)
 	if err != nil {
-		return false, diag.FromErr(err)
+		return false, diagutil.FrameworkDiagFromError(err)
 	}
 
 	return serverVersion.GreaterThanOrEqual(minVersion), nil
@@ -145,18 +138,19 @@ func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *
 
 // EnforceVersionCheck returns true when the given version check function
 // returns true, or when the server is running in serverless mode.
-func (k *KibanaScopedClient) EnforceVersionCheck(ctx context.Context, check func(*version.Version) bool) (bool, diag.Diagnostics) {
-	flavor, diags := k.ServerFlavor(ctx)
+func (k *KibanaScopedClient) EnforceVersionCheck(ctx context.Context, check func(*version.Version) bool) (bool, fwdiag.Diagnostics) {
+	rawVersion, flavor, diags := k.getServerStatusRaw(ctx)
 	if diags.HasError() {
 		return false, diags
 	}
+
 	if flavor == ServerlessFlavor {
 		return true, nil
 	}
 
-	sv, diags := k.ServerVersion(ctx)
-	if diags.HasError() {
-		return false, diags
+	sv, err := version.NewVersion(rawVersion)
+	if err != nil {
+		return false, diagutil.FrameworkDiagFromError(err)
 	}
 
 	return check(sv), nil

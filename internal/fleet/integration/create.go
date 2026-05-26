@@ -26,7 +26,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -53,11 +52,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		return
 	}
 
-	fleetClient, err := apiClient.GetFleetClient()
-	if err != nil {
-		respDiags.AddError(err.Error(), "")
-		return
-	}
+	fleetClient := apiClient.GetFleetClient()
 
 	name := planModel.Name.ValueString()
 	version := planModel.Version.ValueString()
@@ -67,40 +62,39 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		IgnoreConstraints: planModel.IgnoreConstraints.ValueBool(),
 	}
 
-	// Check if version-dependent parameters are set and validate version support
-	needsVersionCheck := typeutils.IsKnown(planModel.IgnoreMappingUpdateErrors) || typeutils.IsKnown(planModel.SkipDataStreamRollover)
-	if needsVersionCheck {
-		serverVersion, versionDiags := apiClient.ServerVersion(ctx)
-		respDiags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+	// Validate version-dependent parameters when set.
+	if typeutils.IsKnown(planModel.IgnoreMappingUpdateErrors) {
+		supported, versionDiags := apiClient.EnforceMinVersion(ctx, MinVersionIgnoreMappingUpdateErrors)
+		respDiags.Append(versionDiags...)
 		if respDiags.HasError() {
 			return
 		}
-
-		// Validate ignore_mapping_update_errors
-		if typeutils.IsKnown(planModel.IgnoreMappingUpdateErrors) {
-			if serverVersion.LessThan(MinVersionIgnoreMappingUpdateErrors) {
-				respDiags.AddError(
-					"Unsupported parameter for server version",
-					fmt.Sprintf("The 'ignore_mapping_update_errors' parameter requires server version %s or higher. Current version: %s",
-						MinVersionIgnoreMappingUpdateErrors.String(), serverVersion.String()),
-				)
-				return
-			}
-			installOptions.IgnoreMappingUpdateErrors = planModel.IgnoreMappingUpdateErrors.ValueBoolPointer()
+		if !supported {
+			respDiags.AddError(
+				"Unsupported parameter for server version",
+				fmt.Sprintf("The 'ignore_mapping_update_errors' parameter requires server version %s or higher.",
+					MinVersionIgnoreMappingUpdateErrors.String()),
+			)
+			return
 		}
+		installOptions.IgnoreMappingUpdateErrors = planModel.IgnoreMappingUpdateErrors.ValueBoolPointer()
+	}
 
-		// Validate skip_data_stream_rollover
-		if typeutils.IsKnown(planModel.SkipDataStreamRollover) {
-			if serverVersion.LessThan(MinVersionSkipDataStreamRollover) {
-				respDiags.AddError(
-					"Unsupported parameter for server version",
-					fmt.Sprintf("The 'skip_data_stream_rollover' parameter requires server version %s or higher. Current version: %s",
-						MinVersionSkipDataStreamRollover.String(), serverVersion.String()),
-				)
-				return
-			}
-			installOptions.SkipDataStreamRollover = planModel.SkipDataStreamRollover.ValueBoolPointer()
+	if typeutils.IsKnown(planModel.SkipDataStreamRollover) {
+		supported, versionDiags := apiClient.EnforceMinVersion(ctx, MinVersionSkipDataStreamRollover)
+		respDiags.Append(versionDiags...)
+		if respDiags.HasError() {
+			return
 		}
+		if !supported {
+			respDiags.AddError(
+				"Unsupported parameter for server version",
+				fmt.Sprintf("The 'skip_data_stream_rollover' parameter requires server version %s or higher.",
+					MinVersionSkipDataStreamRollover.String()),
+			)
+			return
+		}
+		installOptions.SkipDataStreamRollover = planModel.SkipDataStreamRollover.ValueBoolPointer()
 	}
 
 	// Pass the requested space through to the Fleet install API.
@@ -199,7 +193,7 @@ func waitForFleetIntegrationInstalled(ctx context.Context, fleetClient *fleet.Cl
 	return asyncutils.WaitForStateTransition(ctx, "fleet integration", getPackageID(name, version), func(ctx context.Context) (bool, error) {
 		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)
 		if getDiags.HasError() {
-			return false, fmt.Errorf("failed to read package installation status: %s", getDiags[0].Summary())
+			return false, fmt.Errorf("failed to read package installation status: %v", getDiags)
 		}
 		if pkg == nil {
 			return false, nil

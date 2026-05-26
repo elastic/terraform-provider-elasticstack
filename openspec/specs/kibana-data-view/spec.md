@@ -20,19 +20,19 @@ resource "elasticstack_kibana_data_view" "example" {
     id              = <optional, computed, string> # saved object id; RequiresReplace; UseStateForUnknown
     time_field_name = <optional, computed, string> # UseStateForUnknown
 
-    source_filters = <optional, list(string)>
+    source_filters = <optional, computed, list(string)>
 
     field_attrs = <optional, map(object({
       custom_label = <optional, string>
       count        = <optional, int64>
     }))> # custom MapTypable with MapSemanticEquals (REQ-015); applied via UpdateFieldMetadata (REQ-016)
 
-    runtime_field_map = <optional, map(object({
+    runtime_field_map = <optional, computed, map(object({
       type          = <required, string>
       script_source = <required, string>
     }))>
 
-    field_formats = <optional, map(object({
+    field_formats = <optional, computed, map(object({
       id     = <required, string>
       params = <optional, computed, object({
         pattern                    = <optional, string>
@@ -74,9 +74,7 @@ Notes:
 
 - The resource uses provider-level Kibana OpenAPI client configuration only; there is no resource-level Kibana connection override block.
 - This resource does not declare a schema version, custom state upgrader, custom config validator, or custom plan modifier beyond the schema-level defaults and plan modifiers listed above.
-
 ## Requirements
-
 ### Requirement: Kibana Data Views and Spaces APIs (REQ-001)
 
 The resource SHALL manage data views through Kibana's Data Views HTTP APIs for create, get, update, and delete, and SHALL use Kibana's Spaces object-sharing API when reconciling `data_view.namespaces`.
@@ -97,6 +95,8 @@ The resource SHALL manage data views through Kibana's Data Views HTTP APIs for c
 
 For create, read, update, and delete, when the provider cannot obtain the Kibana OpenAPI client, the operation SHALL return an error diagnostic. For read and update, transport errors and unexpected HTTP statuses SHALL be surfaced as error diagnostics. For create, transport errors and unexpected HTTP statuses SHALL be surfaced as error diagnostics unless the provider can deterministically reconcile a managed data view create under REQ-014. Delete SHALL also surface transport errors and unexpected HTTP statuses, except that delete not-found SHALL be treated as success.
 
+When the Spaces object-sharing API (`_update_objects_spaces`) returns HTTP 200, the provider SHALL additionally parse the response body and inspect per-object results. Any entry in the response where the object-level `error` field is non-nil SHALL be surfaced as an error diagnostic that includes the object id, object type, and the error details. The provider SHALL NOT record a successful update in Terraform state if any per-object error is present.
+
 #### Scenario: Missing Kibana OpenAPI client
 
 - GIVEN the resource cannot obtain a Kibana OpenAPI client from provider configuration
@@ -114,6 +114,14 @@ For create, read, update, and delete, when the provider cannot obtain the Kibana
 - GIVEN a create request that does not meet the managed reconciliation conditions in REQ-014
 - WHEN Kibana returns a transport error or unexpected HTTP status for create
 - THEN the provider SHALL surface an error diagnostic and SHALL NOT record Terraform state for the resource
+
+#### Scenario: Namespace update per-object error surfaced
+
+- GIVEN a namespace reconciliation call where `_update_objects_spaces` returns HTTP 200
+- AND the response body contains a per-object error for the managed data view (e.g. `{"statusCode":404,"error":"Not Found","message":"Saved object [index-pattern/my-view] not found"}`)
+- WHEN the provider handles the response
+- THEN the provider SHALL surface an error diagnostic that includes the object id, object type, and the error details
+- AND SHALL NOT record a successful update in Terraform state
 
 ### Requirement: Identity and canonical `id` (REQ-003)
 
@@ -194,13 +202,28 @@ On create, the resource SHALL build a create request from Terraform state and se
 
 ### Requirement: Update request mapping and namespace reconciliation (REQ-009)
 
-On update, the resource SHALL build a Data Views update request from Terraform state using `title`, `name`, `time_field_name`, `source_filters`, `runtime_field_map`, `field_formats`, and `allow_no_index` when those values are set. The Data Views update request SHALL NOT send `override`, `data_view.id`, `data_view.field_attrs`, or `data_view.namespaces`. The Data Views update request SHALL always send `source_filters`, `field_formats`, and `runtime_field_map` — defaulting null planned values to an empty collection — so Kibana clears any previously-stored values when the user removes them from configuration. After a successful Data Views update, the provider SHALL compare prior and planned `data_view.namespaces`; when membership changed, it SHALL call Kibana's Spaces object-sharing API with the computed `spaces_to_add` and `spaces_to_remove` sets for the managed data view id before writing final state. When either prior or planned `data_view.namespaces` is null or empty, the provider SHALL substitute the resource's own `space_id` for that side of the diff so removing an explicit namespaces list keeps the data view in its own space rather than detaching it from every space. After the namespace reconciliation step, the provider SHALL apply any `field_attrs` delta via a separate `UpdateFieldMetadata` call (see REQ-016).
+On update, the resource SHALL build a Data Views update request from Terraform state using `title`, `name`, `time_field_name`, `source_filters`, `runtime_field_map`, `field_formats`, and `allow_no_index` when those values are set. The Data Views update request SHALL NOT send `override`, `data_view.id`, `data_view.field_attrs`, or `data_view.namespaces`. The Data Views update request SHALL always send `source_filters`, `field_formats`, and `runtime_field_map` — defaulting null planned values to an empty collection — so Kibana clears any previously-stored values when the user removes them from configuration. After a successful Data Views update, the provider SHALL compare prior and planned `data_view.namespaces`; when membership changed, it SHALL call Kibana's Spaces object-sharing API with the computed `spaces_to_add` and `spaces_to_remove` sets for the managed data view id before writing final state. The Spaces API call SHALL use space-aware URL construction by passing the resource's `space_id` to `SpaceAwarePathRequestEditor`, which inserts `/s/{spaceID}` before the `/api/` segment when `spaceID` is neither empty nor `"default"`. When either prior or planned `data_view.namespaces` is null or empty, the provider SHALL substitute the resource's own `space_id` for that side of the diff so removing an explicit namespaces list keeps the data view in its own space rather than detaching it from every space. After the namespace reconciliation step, the provider SHALL apply any `field_attrs` delta via a separate `UpdateFieldMetadata` call (see REQ-016).
 
 #### Scenario: Override is create-only
 
 - GIVEN a managed data view whose configuration changes only `override`
 - WHEN update runs
 - THEN the update request SHALL NOT include `override`
+
+#### Scenario: Namespace update uses space-aware URL for non-default space
+
+- GIVEN an existing managed data view in space `test-space`
+- AND a plan that adds `target-space` to `data_view.namespaces`
+- WHEN update runs and calls the Spaces object-sharing API
+- THEN the HTTP request path SHALL be `/s/test-space/api/spaces/_update_objects_spaces`
+- AND the data view SHALL be accessible in `target-space` after the update completes
+
+#### Scenario: Namespace update uses default path for default space
+
+- GIVEN an existing managed data view in the `default` space
+- AND a plan that changes `data_view.namespaces`
+- WHEN update runs and calls the Spaces object-sharing API
+- THEN the HTTP request path SHALL be `/api/spaces/_update_objects_spaces` (no `/s/default/` prefix)
 
 #### Scenario: Namespace update happens in place
 
@@ -243,13 +266,18 @@ When refreshing state, the resource SHALL determine the target data view id and 
 
 ### Requirement: State mapping for empty collections (REQ-011)
 
-When mapping API responses back to Terraform state, empty `source_filters`, `field_attrs`, `runtime_field_map`, and `field_formats` returned by Kibana SHALL preserve a prior null value instead of forcing an empty list or map into state. If a field format entry has no `params`, the resource SHALL store `params` as a null object in state.
+When mapping API responses back to Terraform state, empty `source_filters`, `field_attrs`, `runtime_field_map`, and `field_formats` returned by Kibana SHALL preserve a prior null value instead of forcing an empty list or map into state. If a field format entry has no `params`, the resource SHALL store `params` as a null object in state. `runtime_field_map` SHALL be marked `Optional` and `Computed` so that it remains user-settable while Terraform also accepts a persisted non-empty value when the attribute is omitted from configuration.
 
 #### Scenario: Empty API collection preserves null
-
 - GIVEN prior state where `data_view.source_filters` is null
 - WHEN Kibana returns an empty `source_filters` collection
 - THEN the provider SHALL keep `data_view.source_filters` null in state
+
+#### Scenario: Omitted runtime_field_map with persisted API value
+- GIVEN prior state where `data_view.runtime_field_map` contains entries
+- WHEN the configuration removes `data_view.runtime_field_map` and update runs
+- AND Kibana preserves the existing runtime fields in its response
+- THEN the provider SHALL accept the persisted `runtime_field_map` into state without raising a consistency error
 
 ### Requirement: Namespace state normalization (REQ-012)
 

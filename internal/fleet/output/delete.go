@@ -40,11 +40,7 @@ func (r *outputResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
 	outputID := stateModel.OutputID.ValueString()
 

@@ -20,6 +20,7 @@ package template
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -73,7 +74,7 @@ func canonicalizeTemplateAliasSetInModel(ctx context.Context, m *Model) diag.Dia
 		return diags
 	}
 	attrs := m.Template.Attributes()
-	aliasVal, ok := attrs["alias"]
+	aliasVal, ok := attrs[attrAlias]
 	if !ok || aliasVal.IsNull() || aliasVal.IsUnknown() {
 		return diags
 	}
@@ -105,7 +106,7 @@ func canonicalizeTemplateAliasSetInModel(ctx context.Context, m *Model) diag.Dia
 	if diags.HasError() {
 		return diags
 	}
-	attrs["alias"] = newSet
+	attrs[attrAlias] = newSet
 	newTpl, d := types.ObjectValue(TemplateAttrTypes(), attrs)
 	diags.Append(d...)
 	if diags.HasError() {
@@ -117,7 +118,7 @@ func canonicalizeTemplateAliasSetInModel(ctx context.Context, m *Model) diag.Dia
 
 func canonicalizeAliasObjectForState(ctx context.Context, v AliasObjectValue) (AliasObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var m AliasElementModel
+	var m aliasutil.AliasModel
 	diags.Append(v.As(ctx, &m, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 	if diags.HasError() {
 		return v, diags
@@ -138,13 +139,13 @@ func canonicalizeAliasObjectForState(ctx context.Context, v AliasObjectValue) (A
 		m.IsWriteIndex = types.BoolValue(false)
 	}
 	attrs := map[string]attr.Value{
-		"name":           m.Name,
-		"index_routing":  m.IndexRouting,
-		"routing":        m.Routing,
-		"search_routing": m.SearchRouting,
-		"filter":         m.Filter,
-		"is_hidden":      m.IsHidden,
-		"is_write_index": m.IsWriteIndex,
+		attrName:          m.Name,
+		attrIndexRouting:  m.IndexRouting,
+		attrRouting:       m.Routing,
+		attrSearchRouting: m.SearchRouting,
+		attrFilter:        m.Filter,
+		attrIsHidden:      m.IsHidden,
+		attrIsWriteIndex:  m.IsWriteIndex,
 	}
 	out, d := NewAliasObjectValue(attrs)
 	diags.Append(d...)

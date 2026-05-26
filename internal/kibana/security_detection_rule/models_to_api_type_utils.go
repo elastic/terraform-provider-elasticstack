@@ -26,7 +26,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -475,7 +474,7 @@ func (d Data) responseActionsToAPI(ctx context.Context, client clients.MinVersio
 
 	// Check version support for response actions
 	if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionResponseActions); versionDiags.HasError() {
-		diags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+		diags.Append(versionDiags...)
 		return nil, diags
 	} else if !supported {
 		// Version is not supported, return nil without error
@@ -522,11 +521,41 @@ func (d Data) responseActionsToAPI(ctx context.Context, client clients.MinVersio
 }
 
 // Helper function to process actions configuration for all rule types
-func (d Data) actionsToAPI(ctx context.Context) ([]kbapi.SecurityDetectionsAPIRuleAction, diag.Diagnostics) {
+func (d Data) actionsToAPI(ctx context.Context, client clients.MinVersionEnforceable) ([]kbapi.SecurityDetectionsAPIRuleAction, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if !typeutils.IsKnown(d.Actions) || len(d.Actions.Elements()) == 0 {
 		return nil, diags
+	}
+
+	if client != nil {
+		var actions []ActionModel
+		diags.Append(d.Actions.ElementsAs(ctx, &actions, false)...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		firstFilterIdx := -1
+		for i, action := range actions {
+			if typeutils.IsKnown(action.AlertsFilter) {
+				firstFilterIdx = i
+				break
+			}
+		}
+		if firstFilterIdx >= 0 {
+			supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionAlertsFilter)
+			diags.Append(versionDiags...)
+			if diags.HasError() {
+				return nil, diags
+			}
+			if !supported {
+				diags.AddAttributeError(
+					path.Root("actions").AtListIndex(firstFilterIdx).AtName("alerts_filter"),
+					"actions.alerts_filter is only supported for Kibana v8.9 or higher",
+					"actions.alerts_filter is only supported for Kibana v8.9 or higher",
+				)
+				return nil, diags
+			}
+		}
 	}
 
 	apiActions := typeutils.ListTypeToSlice(ctx, d.Actions, path.Root("actions"), &diags,
@@ -557,19 +586,7 @@ func (d Data) actionsToAPI(ctx context.Context) ([]kbapi.SecurityDetectionsAPIRu
 				apiAction.Uuid = &uuidStr
 			}
 
-			if typeutils.IsKnown(action.AlertsFilter) {
-				alertsFilterStringMap := make(map[string]string)
-				alertsFilterDiags := action.AlertsFilter.ElementsAs(ctx, &alertsFilterStringMap, false)
-				if !alertsFilterDiags.HasError() {
-					alertsFilterMap := make(map[string]any)
-					for k, v := range alertsFilterStringMap {
-						alertsFilterMap[k] = v
-					}
-					apiAlertsFilter := kbapi.SecurityDetectionsAPIRuleActionAlertsFilter(alertsFilterMap)
-					apiAction.AlertsFilter = &apiAlertsFilter
-				}
-				meta.Diags.Append(alertsFilterDiags...)
-			}
+			apiAction.AlertsFilter = expandActionAlertsFilter(ctx, action.AlertsFilter, meta.Diags)
 
 			// Handle frequency using ObjectTypeToStruct
 			if typeutils.IsKnown(action.Frequency) {
@@ -916,15 +933,15 @@ func parseDurationToAPI(duration customtypes.Duration) (kbapi.SecurityDetections
 	var unit kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnit
 	switch matches[2] {
 	case "s":
-		unit = kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitS
+		unit = kbapi.S
 	case "m":
-		unit = kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitM
+		unit = kbapi.M
 	case "h":
-		unit = kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitH
+		unit = kbapi.H
 	case "d":
 		// Convert days to hours since API doesn't support days unit
 		value *= 24
-		unit = kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitH
+		unit = kbapi.H
 	default:
 		diags.AddError(
 			"Unsupported duration unit",

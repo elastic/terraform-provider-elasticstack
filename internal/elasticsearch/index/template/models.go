@@ -18,11 +18,15 @@
 package template
 
 import (
+	"fmt"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -37,6 +41,7 @@ type Model struct {
 	Metadata                        jsontypes.Normalized `tfsdk:"metadata"`
 	Priority                        types.Int64          `tfsdk:"priority"`
 	Version                         types.Int64          `tfsdk:"version"`
+	AllowAutoCreate                 types.Bool           `tfsdk:"allow_auto_create"`
 	DataStream                      types.Object         `tfsdk:"data_stream"`
 	Template                        types.Object         `tfsdk:"template"`
 }
@@ -47,6 +52,31 @@ func (m Model) GetID() types.String { return m.ID }
 // GetResourceID satisfies [entitycore.ElasticsearchResourceModel].
 // For index templates the write identity is the template name.
 func (m Model) GetResourceID() types.String { return m.Name }
+
+var _ entitycore.WithVersionRequirements = Model{}
+
+// GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
+func (m Model) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	var reqs []entitycore.VersionRequirement
+	var diags diag.Diagnostics
+
+	dsoReqs, dsoDiags := datastreamoptions.GetVersionRequirements(m.Template)
+	diags.Append(dsoDiags...)
+	if diags.HasError() {
+		return nil, diags
+	}
+	reqs = append(reqs, dsoReqs...)
+
+	if !m.IgnoreMissingComponentTemplates.IsNull() && !m.IgnoreMissingComponentTemplates.IsUnknown() &&
+		len(m.IgnoreMissingComponentTemplates.Elements()) > 0 {
+		reqs = append(reqs, entitycore.VersionRequirement{
+			MinVersion:   *index.MinSupportedIgnoreMissingComponentTemplateVersion,
+			ErrorMessage: fmt.Sprintf("'ignore_missing_component_templates' is supported only for Elasticsearch v%s and above", index.MinSupportedIgnoreMissingComponentTemplateVersion.String()),
+		})
+	}
+
+	return reqs, diags
+}
 
 // DataStreamModel is the inner shape of the data_stream block (for Object.As).
 type DataStreamModel struct {
@@ -70,56 +100,18 @@ type LifecycleModel struct {
 	DataRetention types.String `tfsdk:"data_retention"`
 }
 
-// DataStreamOptionsModel is the inner shape of template.data_stream_options.
-type DataStreamOptionsModel struct {
-	FailureStore types.Object `tfsdk:"failure_store"`
-}
-
-// FailureStoreModel is the inner shape of template.data_stream_options.failure_store.
-type FailureStoreModel struct {
-	Enabled   types.Bool   `tfsdk:"enabled"`
-	Lifecycle types.Object `tfsdk:"lifecycle"`
-}
-
-// FailureStoreLifecycleModel is the inner shape of failure_store.lifecycle.
-type FailureStoreLifecycleModel struct {
-	DataRetention types.String `tfsdk:"data_retention"`
-}
-
 // DataStreamAttrTypes returns attribute types for the data_stream block object.
 func DataStreamAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"hidden":               types.BoolType,
-		"allow_custom_routing": types.BoolType,
+		attrHidden:             types.BoolType,
+		attrAllowCustomRouting: types.BoolType,
 	}
 }
 
 // LifecycleAttrTypes returns attribute types for template.lifecycle.
 func LifecycleAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"data_retention": types.StringType,
-	}
-}
-
-// FailureStoreLifecycleAttrTypes returns attribute types for failure_store.lifecycle.
-func FailureStoreLifecycleAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"data_retention": types.StringType,
-	}
-}
-
-// FailureStoreAttrTypes returns attribute types for failure_store.
-func FailureStoreAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"enabled":   types.BoolType,
-		"lifecycle": types.ObjectType{AttrTypes: FailureStoreLifecycleAttrTypes()},
-	}
-}
-
-// DataStreamOptionsAttrTypes returns attribute types for template.data_stream_options.
-func DataStreamOptionsAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"failure_store": types.ObjectType{AttrTypes: FailureStoreAttrTypes()},
+		attrDataRetention: types.StringType,
 	}
 }
 
@@ -128,10 +120,10 @@ func DataStreamOptionsAttrTypes() map[string]attr.Type {
 //nolint:revive // Name matches OpenSpec task wording (template block attribute types).
 func TemplateAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"alias":               types.SetType{ElemType: NewAliasObjectType()},
-		"mappings":            index.MappingsType{},
-		"settings":            customtypes.IndexSettingsType{},
-		"lifecycle":           types.ObjectType{AttrTypes: LifecycleAttrTypes()},
-		"data_stream_options": types.ObjectType{AttrTypes: DataStreamOptionsAttrTypes()},
+		attrAlias:             types.SetType{ElemType: NewAliasObjectType()},
+		attrMappings:          index.MappingsType{},
+		attrSettings:          customtypes.IndexSettingsType{},
+		attrLifecycle:         types.ObjectType{AttrTypes: LifecycleAttrTypes()},
+		attrDataStreamOptions: types.ObjectType{AttrTypes: datastreamoptions.AttrTypes()},
 	}
 }

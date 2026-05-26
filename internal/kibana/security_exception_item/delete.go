@@ -42,17 +42,13 @@ func (r *ExceptionItemResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 
 	// Parse composite ID to get space_id and resource_id
-	compID, compIDDiags := clients.CompositeIDFromStrFw(state.ID.ValueString())
+	compID, compIDDiags := clients.CompositeIDFromStr(state.ID.ValueString())
 	resp.Diagnostics.Append(compIDDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
-		return
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	// Delete by ID
 	id := compID.ResourceID

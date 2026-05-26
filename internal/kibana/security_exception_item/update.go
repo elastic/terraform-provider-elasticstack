@@ -43,17 +43,13 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Parse composite ID to get space_id and resource_id
-	compID, compIDDiags := clients.CompositeIDFromStrFw(plan.ID.ValueString())
+	compID, compIDDiags := clients.CompositeIDFromStr(plan.ID.ValueString())
 	resp.Diagnostics.Append(compIDDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
-		return
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	// Build the update request body using model method
 	body, diags := plan.toUpdateRequest(ctx, compID.ResourceID, client)

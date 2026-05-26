@@ -31,9 +31,9 @@ import (
 // constructing types.Set or types.Object from settingModel values.
 func settingModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"name":       types.StringType,
-		"value":      types.StringType,
-		"value_list": types.ListType{ElemType: types.StringType},
+		attrName:      types.StringType,
+		attrValue:     types.StringType,
+		attrValueList: types.ListType{ElemType: types.StringType},
 	}
 }
 
@@ -41,7 +41,7 @@ func settingModelAttrTypes() map[string]attr.Type {
 // transient single nested block.
 func settingsBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"setting": types.SetType{ElemType: types.ObjectType{AttrTypes: settingModelAttrTypes()}},
+		attrSetting: types.SetType{ElemType: types.ObjectType{AttrTypes: settingModelAttrTypes()}},
 	}
 }
 
@@ -57,7 +57,7 @@ func emptySettingsBlock() (types.Object, diag.Diagnostics) {
 	}
 
 	obj, ds := types.ObjectValue(settingsBlockAttrTypes(), map[string]attr.Value{
-		"setting": emptySet,
+		attrSetting: emptySet,
 	})
 	diags.Append(ds...)
 	if diags.HasError() {
@@ -135,14 +135,14 @@ func getConfiguredSettings(ctx context.Context, state tfModel) (map[string]any, 
 	if persistentMap, ds := expandSettings(ctx, state.Persistent); ds.HasError() {
 		diags.Append(ds...)
 	} else if persistentMap != nil {
-		settings["persistent"] = persistentMap
+		settings[categoryPersistent] = persistentMap
 	}
 
 	if !diags.HasError() {
 		if transientMap, ds := expandSettings(ctx, state.Transient); ds.HasError() {
 			diags.Append(ds...)
 		} else if transientMap != nil {
-			settings["transient"] = transientMap
+			settings[categoryTransient] = transientMap
 		}
 	}
 

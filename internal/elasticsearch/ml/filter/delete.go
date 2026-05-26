@@ -39,13 +39,9 @@ func deleteFilter(ctx context.Context, client *clients.ElasticsearchScopedClient
 
 	tflog.Debug(ctx, fmt.Sprintf("Deleting ML filter: %s", filterID))
 
-	typedClient, err := client.GetESClient()
-	if err != nil {
-		diags.AddError("Failed to get Elasticsearch client", err.Error())
-		return diags
-	}
+	typedClient := client.GetESClient()
 
-	_, err = typedClient.Ml.DeleteFilter(filterID).Do(ctx)
+	_, err := typedClient.Ml.DeleteFilter(filterID).Do(ctx)
 	if err != nil {
 		var esErr *types.ElasticsearchError
 		if errors.As(err, &esErr) && esErr.Status == 404 {

@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
@@ -63,6 +64,58 @@ func TestModelToAPICreateModelWithoutSourceID(t *testing.T) {
 	require.False(t, *body.IsDefault)
 	require.Nil(t, body.ProxyId)
 	require.Nil(t, body.Id)
+}
+
+func TestModelGetSpaceID(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		spaceIDs types.Set
+		want     string
+	}{
+		{
+			name:     "null defaults to default",
+			spaceIDs: types.SetNull(types.StringType),
+			want:     "default",
+		},
+		{
+			name:     "unknown defaults to default",
+			spaceIDs: types.SetUnknown(types.StringType),
+			want:     "default",
+		},
+		{
+			name: "first non-empty space id",
+			spaceIDs: types.SetValueMust(types.StringType, []attr.Value{
+				types.StringValue("my-space"),
+			}),
+			want: "my-space",
+		},
+		{
+			name: "skips empty and unknown elements",
+			spaceIDs: types.SetValueMust(types.StringType, []attr.Value{
+				types.StringValue(""),
+				types.StringUnknown(),
+				types.StringValue("my-space"),
+			}),
+			want: "my-space",
+		},
+		{
+			name: "all empty defaults to default",
+			spaceIDs: types.SetValueMust(types.StringType, []attr.Value{
+				types.StringValue(""),
+			}),
+			want: "default",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			m := model{SpaceIDs: tt.spaceIDs}
+			require.Equal(t, tt.want, m.GetSpaceID().ValueString())
+		})
+	}
 }
 
 func TestModelToAPIUpdateModel(t *testing.T) {

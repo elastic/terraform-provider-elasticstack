@@ -40,11 +40,7 @@ func (r *agentPolicyResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
 	policyID := stateModel.PolicyID.ValueString()
 

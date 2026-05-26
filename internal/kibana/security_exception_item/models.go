@@ -133,7 +133,7 @@ func convertMatchEntryToAPI(
 	}
 
 	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryMatch{
-		Type:     "match",
+		Type:     entryTypeMatch,
 		Field:    field,
 		Operator: operator,
 		Value:    entry.Value.ValueString(),
@@ -174,7 +174,7 @@ func convertMatchAnyEntryToAPI(
 	apiValues := make([]kbapi.SecurityExceptionsAPINonEmptyString, len(values))
 	copy(apiValues, values)
 	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryMatchAny{
-		Type:     "match_any",
+		Type:     entryTypeMatchAny,
 		Field:    field,
 		Operator: operator,
 		Value:    apiValues,
@@ -208,7 +208,7 @@ func convertListEntryToAPI(
 		return result, diags
 	}
 	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryList{
-		Type:     "list",
+		Type:     entryTypeList,
 		Field:    field,
 		Operator: operator,
 	}
@@ -356,7 +356,7 @@ func convertNestedMatchEntryToAPI(
 	}
 
 	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryMatch{
-		Type:     "match",
+		Type:     entryTypeMatch,
 		Field:    field,
 		Operator: operator,
 		Value:    entry.Value.ValueString(),
@@ -397,7 +397,7 @@ func convertNestedMatchAnyEntryToAPI(
 	apiValues := make([]kbapi.SecurityExceptionsAPINonEmptyString, len(values))
 	copy(apiValues, values)
 	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryMatchAny{
-		Type:     "match_any",
+		Type:     entryTypeMatchAny,
 		Field:    field,
 		Operator: operator,
 		Value:    apiValues,
@@ -692,32 +692,32 @@ func convertNestedEntryFromMap(ctx context.Context, entryMap map[string]any) (Ne
 // getEntryAttrTypes returns the attribute types for entry objects
 func getEntryAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"type":     types.StringType,
-		"field":    types.StringType,
-		"operator": types.StringType,
-		"value":    types.StringType,
-		"values":   types.ListType{ElemType: types.StringType},
-		"list":     types.ObjectType{AttrTypes: getListAttrTypes()},
-		"entries":  types.ListType{ElemType: types.ObjectType{AttrTypes: getNestedEntryAttrTypes()}},
+		attrType:      types.StringType,
+		attrField:     types.StringType,
+		attrOperator:  types.StringType,
+		attrValue:     types.StringType,
+		attrValues:    types.ListType{ElemType: types.StringType},
+		entryTypeList: types.ObjectType{AttrTypes: getListAttrTypes()},
+		attrEntries:   types.ListType{ElemType: types.ObjectType{AttrTypes: getNestedEntryAttrTypes()}},
 	}
 }
 
 // getListAttrTypes returns the attribute types for list objects
 func getListAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"id":   types.StringType,
-		"type": types.StringType,
+		"id":     types.StringType,
+		attrType: types.StringType,
 	}
 }
 
 // getNestedEntryAttrTypes returns the attribute types for nested entry objects
 func getNestedEntryAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"type":     types.StringType,
-		"field":    types.StringType,
-		"operator": types.StringType,
-		"value":    types.StringType,
-		"values":   types.ListType{ElemType: types.StringType},
+		attrType:     types.StringType,
+		attrField:    types.StringType,
+		attrOperator: types.StringType,
+		attrValue:    types.StringType,
+		attrValues:   types.ListType{ElemType: types.StringType},
 	}
 }
 
@@ -795,7 +795,7 @@ func (m *ExceptionItemModel) setCommonProps(
 	if typeutils.IsKnown(m.ExpireTime) {
 		// Check version support for expire_time
 		if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionExpireTime); versionDiags.HasError() {
-			diags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+			diags.Append(versionDiags...)
 			return
 		} else if !supported {
 			diags.AddError("expire_time is unsupported",

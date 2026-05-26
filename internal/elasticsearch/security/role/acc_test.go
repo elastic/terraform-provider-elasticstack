@@ -370,10 +370,7 @@ func mutateRoleOutOfBand(t *testing.T, roleName, body string) {
 	if err != nil {
 		t.Fatalf("failed to create acceptance testing client: %v", err)
 	}
-	typedClient, err := client.GetESClient()
-	if err != nil {
-		t.Fatalf("failed to get Elasticsearch typed client: %v", err)
-	}
+	typedClient := client.GetESClient()
 	_, err = typedClient.Security.PutRole(roleName).Raw(strings.NewReader(body)).Do(t.Context())
 	if err != nil {
 		t.Fatalf("out-of-band PutRole failed: %v", err)
@@ -392,10 +389,7 @@ func checkResourceSecurityRoleDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		typedClient, err := client.GetESClient()
-		if err != nil {
-			return err
-		}
+		typedClient := client.GetESClient()
 		_, err = typedClient.Security.GetRole().Name(compID.ResourceID).Do(context.Background())
 		if err != nil {
 			if esclient.IsNotFoundElasticsearchError(err) {

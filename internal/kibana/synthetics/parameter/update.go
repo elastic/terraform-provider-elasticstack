@@ -23,60 +23,36 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) {
-	var state tfModelV0
-	diags := request.Plan.Get(ctx, &state)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
+func updateParameter(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
+	plan := req.Plan
+	var diags diag.Diagnostics
 
-	apiClient, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
+	kibanaClient := client.GetKibanaOapiClient()
 
-	kibanaClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, response.Diagnostics)
-	if kibanaClient == nil {
-		return
-	}
-
-	resourceID := state.ID.ValueString()
-
-	compositeID, dg := synthetics.TryReadCompositeID(resourceID)
-	response.Diagnostics.Append(dg...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	if compositeID != nil {
-		resourceID = compositeID.ResourceID
-	}
-
-	input := state.toParameterRequest(true)
+	input := plan.toParameterRequest(true)
 
 	// We shouldn't have to do this json marshalling ourselves,
 	// https://github.com/oapi-codegen/oapi-codegen/issues/1620 means the generated code doesn't handle the oneOf
 	// request body properly.
 	inputJSON, err := json.Marshal(input)
 	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to marshal JSON for parameter `%s`", input.Key), err.Error())
-		return
+		diags.AddError(fmt.Sprintf("Failed to marshal JSON for parameter `%s`", input.Key), err.Error())
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	_, err = kibanaClient.API.PutParameterWithBodyWithResponse(ctx, resourceID, "application/json", bytes.NewReader(inputJSON))
+	_, err = kibanaClient.API.PutParameterWithBodyWithResponse(ctx, req.WriteID, "application/json", bytes.NewReader(inputJSON))
 	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to update parameter `%s`", resourceID), err.Error())
-		return
+		diags.AddError(fmt.Sprintf("Failed to update parameter `%s`", req.WriteID), err.Error())
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	// We can't trust the response from the PUT request, so read the parameter
-	// again. At least with Kibana 9.0.0, the PUT request responds with the new
-	// values for every field, except `value`, which contains the old value.
-	r.readState(ctx, kibanaClient, resourceID, state.KibanaConnection, &response.State, &response.Diagnostics)
+	plan.ID = types.StringValue(req.WriteID)
+
+	return entitycore.KibanaWriteResult[Model]{Model: plan}, diags
 }

@@ -1121,17 +1121,14 @@ func checkResourceExceptionItemDestroy(s *terraform.State) error {
 		return err
 	}
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		return err
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_kibana_security_exception_item" {
 			continue
 		}
 
-		compID, compDiags := clients.CompositeIDFromStrFw(rs.Primary.ID)
+		compID, compDiags := clients.CompositeIDFromStr(rs.Primary.ID)
 		if compDiags.HasError() {
 			return diagutil.FwDiagsAsError(compDiags)
 		}

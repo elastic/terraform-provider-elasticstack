@@ -42,7 +42,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	// Parse composite ID
-	composite, diags := clients.CompositeIDFromStrFw(planModel.ID.ValueString())
+	composite, diags := clients.CompositeIDFromStr(planModel.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -52,11 +52,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	spaceID := composite.ClusterID
 
 	// Get the Kibana client
-	kibanaClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError("Unable to get Kibana client", err.Error())
-		return
-	}
+	kibanaClient := client.GetKibanaOapiClient()
 
 	// Convert the plan to an API request
 	apiReq := dashboardToAPIUpdateRequest(ctx, &planModel, &resp.Diagnostics)

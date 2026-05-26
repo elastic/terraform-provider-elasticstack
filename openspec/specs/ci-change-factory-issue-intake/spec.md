@@ -127,6 +127,11 @@ When the deterministic gate passes, the workflow agent SHALL treat the triggerin
 - **THEN** the pull request body SHALL contain the literal phrase `Related to #<issue-number>` so later workflow runs can identify it as the canonical PR for the issue
 - **AND** the pull request body SHALL NOT include any GitHub closing keyword for that issue (such as `Closes #<issue-number>` or `Fixes #<issue-number>`) so that merging the proposal does not auto-close the source issue
 
+#### Scenario: Safe-output configuration prevents automatic closing references
+- **WHEN** maintainers inspect the authored `change-factory` workflow safe-output configuration
+- **THEN** `safe-outputs.create-pull-request.auto-close-issue` SHALL be set to `false`
+- **AND** generated workflow artifacts derived from that source SHALL preserve the same non-closing PR policy
+
 #### Scenario: Proposal artifacts are implementation-ready
 - **WHEN** the agent completes a proposal pull request
 - **THEN** the pull request SHALL include all OpenSpec artifacts required before implementation can begin according to the repository's active OpenSpec schema
@@ -237,4 +242,18 @@ The authored `change-factory` issue-intake workflow SHALL configure `safe-output
 #### Scenario: Generated workflow preserves authored patch transport
 - **WHEN** maintainers regenerate and inspect the compiled `change-factory` workflow artifacts
 - **THEN** the generated workflow outputs SHALL preserve the `am` PR patch transport configured by the authored workflow source
+
+### Requirement: Proposal pull requests are created as non-draft
+
+The `change-factory` workflow SHALL configure `safe-outputs.create-pull-request.draft: false` so that every proposal pull request is created in ready-for-review state. Draft pull requests cannot receive review until manually converted, which prevents the proposal from being immediately actionable.
+
+#### Scenario: Proposal PR is immediately reviewable
+- **WHEN** the `change-factory` agent creates the linked proposal pull request
+- **THEN** the pull request SHALL be created as non-draft (ready for review)
+- **AND** reviewers SHALL be able to start reviewing the proposal without the maintainer first converting it from draft state
+
+#### Scenario: Maintainer inspects authored workflow safe-output configuration for draft policy
+- **WHEN** maintainers inspect the authored `change-factory` issue-intake workflow `safe-outputs` block
+- **THEN** `safe-outputs.create-pull-request.draft` SHALL be set to `false`
+- **AND** generated workflow artifacts derived from that source SHALL preserve the non-draft policy
 

@@ -66,18 +66,18 @@ func getSchema() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				Description: "The name of the output.",
 				Required:    true,
 			},
-			"type": schema.StringAttribute{
+			attrType: schema.StringAttribute{
 				Description: "The output type.",
 				Required:    true,
 				Validators: []validator.String{
-					stringvalidator.OneOf("elasticsearch", "logstash", "kafka", "remote_elasticsearch"),
+					stringvalidator.OneOf(outputTypeElasticsearch, outputTypeLogstash, outputTypeKafka, outputTypeRemoteElasticsearch),
 				},
 			},
-			"hosts": schema.ListAttribute{
+			attrHosts: schema.ListAttribute{
 				Description: "A list of hosts.",
 				Required:    true,
 				Validators: []validator.List{
@@ -91,28 +91,28 @@ func getSchema() schema.Schema {
 				Sensitive:   true,
 				Validators: []validator.String{
 					validators.RequiredIfDependentPathEquals(path.Root("type"), "remote_elasticsearch"),
-					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch"),
+					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch", validators.AllowedIfOptions{}),
 				},
 			},
 			"sync_integrations": schema.BoolAttribute{
 				Description: "When type is remote_elasticsearch, whether Fleet synchronizes integration assets to the remote cluster. Subscription and version requirements apply per Elastic documentation.",
 				Optional:    true,
 				Validators: []validator.Bool{
-					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch"),
+					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch", validators.AllowedIfOptions{}),
 				},
 			},
 			"sync_uninstalled_integrations": schema.BoolAttribute{
 				Description: "When type is remote_elasticsearch, whether to sync uninstalled integrations. Only meaningful when sync_integrations is enabled.",
 				Optional:    true,
 				Validators: []validator.Bool{
-					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch"),
+					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch", validators.AllowedIfOptions{}),
 				},
 			},
 			"write_to_logs_streams": schema.BoolAttribute{
 				Description: "When type is remote_elasticsearch, whether agents using this output send data to wired logs streams (preview in newer stacks).",
 				Optional:    true,
 				Validators: []validator.Bool{
-					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch"),
+					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch", validators.AllowedIfOptions{}),
 				},
 			},
 			"ca_sha256": schema.StringAttribute{
@@ -149,11 +149,11 @@ func getSchema() schema.Schema {
 					setplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"ssl": schema.SingleNestedAttribute{
+			attrSSL: schema.SingleNestedAttribute{
 				Description: "SSL configuration.",
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
-					"certificate_authorities": schema.ListAttribute{
+					attrCertificateAuthorities: schema.ListAttribute{
 						Description: "Server SSL certificate authorities.",
 						Optional:    true,
 						ElementType: types.StringType,
@@ -161,14 +161,14 @@ func getSchema() schema.Schema {
 							listvalidator.SizeAtLeast(1),
 						},
 					},
-					"certificate": schema.StringAttribute{
+					attrCertificate: schema.StringAttribute{
 						Description: "Client SSL certificate.",
 						Optional:    true,
 						Validators: []validator.String{
 							stringvalidator.LengthAtLeast(1),
 						},
 					},
-					"key": schema.StringAttribute{
+					attrKey: schema.StringAttribute{
 						Description: "Client SSL certificate key.",
 						Optional:    true,
 						Sensitive:   true,
@@ -176,7 +176,7 @@ func getSchema() schema.Schema {
 							stringvalidator.LengthAtLeast(1),
 						},
 					},
-					"verification_mode": schema.StringAttribute{
+					attrVerificationMode: schema.StringAttribute{
 						Description: "The SSL verification mode. One of `certificate`, `full`, `none`, `strict`.",
 						Optional:    true,
 						Validators: []validator.String{
@@ -185,7 +185,7 @@ func getSchema() schema.Schema {
 					},
 				},
 			},
-			"kafka": schema.SingleNestedAttribute{
+			attrKafka: schema.SingleNestedAttribute{
 				Description: "Kafka-specific configuration.",
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
@@ -231,7 +231,7 @@ func getSchema() schema.Schema {
 							int64planmodifier.UseStateForUnknown(),
 						},
 						Validators: []validator.Int64{
-							validators.AllowedIfDependentPathEquals(path.Root("kafka").AtName("compression"), "gzip"),
+							validators.AllowedIfDependentPathEquals(path.Root("kafka").AtName("compression"), "gzip", validators.AllowedIfOptions{}),
 						},
 					},
 					"connection_type": schema.StringAttribute{
@@ -242,6 +242,7 @@ func getSchema() schema.Schema {
 							validators.AllowedIfDependentPathEquals(
 								path.Root("kafka").AtName("auth_type"),
 								"none",
+								validators.AllowedIfOptions{},
 							),
 						},
 					},
@@ -296,7 +297,7 @@ func getSchema() schema.Schema {
 						Optional:    true,
 						Sensitive:   true,
 					},
-					"key": schema.StringAttribute{
+					attrKey: schema.StringAttribute{
 						Description: "Key field for Kafka messages.",
 						Optional:    true,
 					},
@@ -309,18 +310,18 @@ func getSchema() schema.Schema {
 						},
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
-								"key": schema.StringAttribute{
+								attrKey: schema.StringAttribute{
 									Description: "Header key.",
 									Required:    true,
 								},
-								"value": schema.StringAttribute{
+								attrValue: schema.StringAttribute{
 									Description: "Header value.",
 									Required:    true,
 								},
 							},
 						},
 					},
-					"hash": schema.SingleNestedAttribute{
+					attrHash: schema.SingleNestedAttribute{
 						Description: "Hash configuration for Kafka partition.",
 						Optional:    true,
 						Computed:    true,
@@ -328,17 +329,17 @@ func getSchema() schema.Schema {
 							objectplanmodifier.UseStateForUnknown(),
 						},
 						Attributes: map[string]schema.Attribute{
-							"hash": schema.StringAttribute{
+							attrHash: schema.StringAttribute{
 								Description: "Hash field.",
 								Optional:    true,
 							},
-							"random": schema.BoolAttribute{
+							attrRandom: schema.BoolAttribute{
 								Description: "Use random hash.",
 								Optional:    true,
 							},
 						},
 					},
-					"random": schema.SingleNestedAttribute{
+					attrRandom: schema.SingleNestedAttribute{
 						Description: "Random configuration for Kafka partition.",
 						Optional:    true,
 						Computed:    true,
@@ -346,7 +347,7 @@ func getSchema() schema.Schema {
 							objectplanmodifier.UseStateForUnknown(),
 						},
 						Attributes: map[string]schema.Attribute{
-							"group_events": schema.Float64Attribute{
+							attrGroupEvents: schema.Float64Attribute{
 								Description: "Number of events to group.",
 								Optional:    true,
 							},
@@ -360,7 +361,7 @@ func getSchema() schema.Schema {
 							objectplanmodifier.UseStateForUnknown(),
 						},
 						Attributes: map[string]schema.Attribute{
-							"group_events": schema.Float64Attribute{
+							attrGroupEvents: schema.Float64Attribute{
 								Description: "Number of events to group.",
 								Optional:    true,
 							},
@@ -370,7 +371,7 @@ func getSchema() schema.Schema {
 						Description: "SASL configuration for Kafka authentication.",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
-							"mechanism": schema.StringAttribute{
+							attrMechanism: schema.StringAttribute{
 								Description: "SASL mechanism.",
 								Optional:    true,
 								Validators: []validator.String{

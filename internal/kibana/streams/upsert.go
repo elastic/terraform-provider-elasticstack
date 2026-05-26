@@ -25,39 +25,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// upsertStream sends a PUT /api/streams/{name} request and reads the result back
-// into a new model. It is shared by Create and Update.
-func upsertStream(ctx context.Context, apiClient *clients.KibanaScopedClient, planModel streamModel) (*streamModel, diag.Diagnostics) {
+// writeStream issues a PUT /api/streams/{name} request. It is shared by Create
+// and Update; the envelope performs the read-after-write that refreshes state.
+func writeStream(ctx context.Context, apiClient *clients.KibanaScopedClient, planModel streamModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	kibanaClient, err := apiClient.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Unable to get Kibana client", err.Error())
-		return nil, diags
-	}
+	kibanaClient := apiClient.GetKibanaOapiClient()
 
 	spaceID := planModel.GetSpaceID().ValueString()
 	name := planModel.GetResourceID().ValueString()
 
 	apiReq := planModel.toAPIUpsertRequest(ctx, &diags)
 	if diags.HasError() {
-		return nil, diags
+		return diags
 	}
 
 	_, upsertDiags := kibanaoapi.UpsertStream(ctx, kibanaClient, spaceID, name, apiReq)
 	diags.Append(upsertDiags...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	readModel, found, readDiags := readStream(ctx, apiClient, name, spaceID, planModel)
-	diags.Append(readDiags...)
-	if diags.HasError() {
-		return nil, diags
-	}
-	if !found {
-		return nil, diags
-	}
-
-	return &readModel, diags
+	return diags
 }

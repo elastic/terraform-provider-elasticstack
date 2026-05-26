@@ -71,18 +71,18 @@ func (m *processorURIPartsModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorURIPartsDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource.",
+			Description: descIdentifierWithPeriod,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
-		"field": schema.StringAttribute{
+		attrField: schema.StringAttribute{
 			Description: "Field containing the URI string.",
 			Required:    true,
 		},
-		"target_field": schema.StringAttribute{
+		attrTargetField: schema.StringAttribute{
 			Description: "Output field for the URI object.",
 			Optional:    true,
 		},

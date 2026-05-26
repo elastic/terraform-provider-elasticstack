@@ -30,18 +30,14 @@ import (
 func PutInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, inferenceID, taskType string, endpoint *types.InferenceEndpoint) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return diags
-	}
+	typedClient := apiClient.GetESClient()
 
 	req := typedClient.Inference.Put(inferenceID).Request(endpoint)
 	if taskType != "" {
 		req.TaskType(taskType)
 	}
 
-	_, err = req.Do(ctx)
+	_, err := req.Do(ctx)
 	if err != nil {
 		diags.AddError("Unable to create or update inference endpoint", err.Error())
 		return diags
@@ -53,11 +49,7 @@ func PutInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchS
 func GetInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, inferenceID string) (*types.InferenceEndpointInfo, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return nil, diags
-	}
+	typedClient := apiClient.GetESClient()
 
 	res, err := typedClient.Inference.Get().InferenceId(inferenceID).Do(ctx)
 	if err != nil {
@@ -78,11 +70,7 @@ func GetInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchS
 func UpdateInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, inferenceID, taskType string, update *types.InferenceEndpoint) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return diags
-	}
+	typedClient := apiClient.GetESClient()
 
 	// Build the update body manually, omitting Service which the API rejects as
 	// an immutable field. The typed client's InferenceEndpoint always serializes
@@ -141,13 +129,9 @@ func UpdateInferenceEndpoint(ctx context.Context, apiClient *clients.Elasticsear
 func DeleteInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, inferenceID string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return diags
-	}
+	typedClient := apiClient.GetESClient()
 
-	_, err = typedClient.Inference.Delete(inferenceID).Do(ctx)
+	_, err := typedClient.Inference.Delete(inferenceID).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
 			return diags

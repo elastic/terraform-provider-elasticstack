@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -29,10 +30,10 @@ import (
 )
 
 var tfSettingsAttrTypes = map[string]attr.Type{
-	"sync_delay":               types.StringType,
-	"frequency":                types.StringType,
-	"sync_field":               types.StringType,
-	"prevent_initial_backfill": types.BoolType,
+	attrSyncDelay:              types.StringType,
+	attrFrequency:              types.StringType,
+	attrSyncField:              types.StringType,
+	attrPreventInitialBackfill: types.BoolType,
 }
 
 // tfSloArtifactDashboardObjectType and tfArtifactsAttrTypes match the `artifacts` SingleNestedAttribute schema.
@@ -41,7 +42,7 @@ var (
 		"id": types.StringType,
 	}}
 	tfArtifactsAttrTypes = map[string]attr.Type{
-		"dashboards": types.ListType{ElemType: tfSloArtifactDashboardObjectType},
+		attrDashboards: types.ListType{ElemType: tfSloArtifactDashboardObjectType},
 	}
 )
 
@@ -71,6 +72,38 @@ type tfModel struct {
 	ApmAvailabilityIndicator []tfApmAvailabilityIndicator `tfsdk:"apm_availability_indicator"`
 	KqlCustomIndicator       []tfKqlCustomIndicator       `tfsdk:"kql_custom_indicator"`
 	TimesliceMetricIndicator []tfTimesliceMetricIndicator `tfsdk:"timeslice_metric_indicator"`
+}
+
+var _ entitycore.WithVersionRequirements = tfModel{}
+
+// GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
+func (m tfModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var reqs []entitycore.VersionRequirement
+
+	if typeutils.IsKnown(m.Settings) && !m.Settings.IsNull() {
+		settingsModel, settingsDiags := tfSettingsFromObject(m.Settings)
+		diags.Append(settingsDiags...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		if typeutils.IsKnown(settingsModel.PreventInitialBackfill) {
+			reqs = append(reqs, entitycore.VersionRequirement{
+				MinVersion: *SLOSupportsPreventInitialBackfillMinVersion,
+				ErrorMessage: "The 'prevent_initial_backfill' setting requires Elastic Stack version " +
+					SLOSupportsPreventInitialBackfillMinVersion.String() + " or higher.",
+			})
+		}
+	}
+
+	if m.hasDataViewID() {
+		reqs = append(reqs, entitycore.VersionRequirement{
+			MinVersion:   *SLOSupportsDataViewIDMinVersion,
+			ErrorMessage: "data_view_id is not supported on Elastic Stack versions < " + SLOSupportsDataViewIDMinVersion.String(),
+		})
+	}
+
+	return reqs, diags
 }
 
 type tfTimeWindow struct {
@@ -267,10 +300,10 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 
 	if typeutils.IsKnown(m.Settings) && apiModel.Settings != nil {
 		attrValues := map[string]attr.Value{
-			"sync_delay":               types.StringPointerValue(apiModel.Settings.SyncDelay),
-			"frequency":                types.StringPointerValue(apiModel.Settings.Frequency),
-			"sync_field":               types.StringPointerValue(apiModel.Settings.SyncField),
-			"prevent_initial_backfill": types.BoolPointerValue(apiModel.Settings.PreventInitialBackfill),
+			attrSyncDelay:              types.StringPointerValue(apiModel.Settings.SyncDelay),
+			attrFrequency:              types.StringPointerValue(apiModel.Settings.Frequency),
+			attrSyncField:              types.StringPointerValue(apiModel.Settings.SyncField),
+			attrPreventInitialBackfill: types.BoolPointerValue(apiModel.Settings.PreventInitialBackfill),
 		}
 		settingsObj, objDiags := types.ObjectValue(tfSettingsAttrTypes, attrValues)
 		diags.Append(objDiags...)
@@ -306,7 +339,7 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 		listVal, listDiags := types.ListValue(tfSloArtifactDashboardObjectType, rows)
 		diags.Append(listDiags...)
 		artObj, artDiags := types.ObjectValue(tfArtifactsAttrTypes, map[string]attr.Value{
-			"dashboards": listVal,
+			attrDashboards: listVal,
 		})
 		diags.Append(artDiags...)
 		m.Artifacts = artObj
@@ -314,7 +347,7 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 		emptyBoards, listDiags := types.ListValue(tfSloArtifactDashboardObjectType, []attr.Value{})
 		diags.Append(listDiags...)
 		artObj, artDiags := types.ObjectValue(tfArtifactsAttrTypes, map[string]attr.Value{
-			"dashboards": emptyBoards,
+			attrDashboards: emptyBoards,
 		})
 		diags.Append(artDiags...)
 		m.Artifacts = artObj
@@ -377,25 +410,25 @@ func tfSettingsFromObject(obj types.Object) (tfSettings, diag.Diagnostics) {
 
 	attrs := obj.Attributes()
 
-	syncDelayVal, ok := attrs["sync_delay"].(types.String)
+	syncDelayVal, ok := attrs[attrSyncDelay].(types.String)
 	if !ok {
 		diags.AddError("Invalid configuration", "settings.sync_delay is not a string")
 		return tfSettings{}, diags
 	}
 
-	frequencyVal, ok := attrs["frequency"].(types.String)
+	frequencyVal, ok := attrs[attrFrequency].(types.String)
 	if !ok {
 		diags.AddError("Invalid configuration", "settings.frequency is not a string")
 		return tfSettings{}, diags
 	}
 
-	syncFieldVal, ok := attrs["sync_field"].(types.String)
+	syncFieldVal, ok := attrs[attrSyncField].(types.String)
 	if !ok {
 		diags.AddError("Invalid configuration", "settings.sync_field is not a string")
 		return tfSettings{}, diags
 	}
 
-	preventInitialBackfillVal, ok := attrs["prevent_initial_backfill"].(types.Bool)
+	preventInitialBackfillVal, ok := attrs[attrPreventInitialBackfill].(types.Bool)
 	if !ok {
 		diags.AddError("Invalid configuration", "settings.prevent_initial_backfill is not a bool")
 		return tfSettings{}, diags
@@ -420,7 +453,7 @@ type sloArtifactDashboardRef struct {
 func tfArtifactsToAPIModel(obj types.Object) (*kbapi.SLOsArtifacts, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	attrs := obj.Attributes()
-	dl, ok := attrs["dashboards"].(types.List)
+	dl, ok := attrs[attrDashboards].(types.List)
 	if !ok {
 		diags.AddError("Invalid configuration", "artifacts: dashboards is not a list")
 		return nil, diags

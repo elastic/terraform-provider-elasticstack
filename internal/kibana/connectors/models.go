@@ -19,7 +19,7 @@ package connectors
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -36,15 +36,32 @@ type tfModel struct {
 	ConnectorTypeID  types.String         `tfsdk:"connector_type_id"`
 	Config           ConfigValue          `tfsdk:"config"`
 	Secrets          jsontypes.Normalized `tfsdk:"secrets"`
+	SecretsWo        jsontypes.Normalized `tfsdk:"secrets_wo"`
+	SecretsWoVersion types.String         `tfsdk:"secrets_wo_version"`
 	IsDeprecated     types.Bool           `tfsdk:"is_deprecated"`
 	IsMissingSecrets types.Bool           `tfsdk:"is_missing_secrets"`
 	IsPreconfigured  types.Bool           `tfsdk:"is_preconfigured"`
 }
 
-func (model tfModel) GetID() (*clients.CompositeID, diag.Diagnostics) {
-	compID, sdkDiags := clients.CompositeIDFromStr(model.ID.ValueString())
-	if sdkDiags.HasError() {
-		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
+var _ entitycore.KibanaResourceModel = tfModel{}
+
+func (model tfModel) GetID() types.String             { return model.ID }
+func (model tfModel) GetSpaceID() types.String        { return model.SpaceID }
+func (model tfModel) GetKibanaConnection() types.List { return model.KibanaConnection }
+
+// GetResourceID returns the plan-safe connector identity: the user-supplied
+// connector_id when known and non-empty, otherwise empty.
+func (model tfModel) GetResourceID() types.String {
+	if typeutils.IsKnown(model.ConnectorID) && model.ConnectorID.ValueString() != "" {
+		return model.ConnectorID
+	}
+	return types.StringValue("")
+}
+
+func (model tfModel) GetCompositeID() (*clients.CompositeID, diag.Diagnostics) {
+	compID, compIDDiags := clients.CompositeIDFromStr(model.ID.ValueString())
+	if compIDDiags.HasError() {
+		return nil, compIDDiags
 	}
 
 	return compID, nil
@@ -66,7 +83,9 @@ func (model tfModel) toAPIModel() (models.KibanaActionConnector, diag.Diagnostic
 		apiModel.ConfigJSON = sanitizedConfig
 	}
 
-	if typeutils.IsKnown(model.Secrets) {
+	if typeutils.IsKnown(model.SecretsWo) {
+		apiModel.SecretsJSON = model.SecretsWo.ValueString()
+	} else if typeutils.IsKnown(model.Secrets) {
 		apiModel.SecretsJSON = model.Secrets.ValueString()
 	}
 

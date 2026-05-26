@@ -43,11 +43,7 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
 	feat, diags := r.buildFeatures(ctx, client)
 	resp.Diagnostics.Append(diags...)
@@ -106,7 +102,7 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 		waitErr := asyncutils.WaitForStateTransition(waitCtx, "fleet agent policy", policyID, func(waitCtx context.Context) (bool, error) {
 			reloaded, getDiags := fleet.GetAgentPolicy(waitCtx, fleetClient, policyID, spaceID)
 			if getDiags.HasError() {
-				return false, fmt.Errorf("failed to reload agent policy: %s", getDiags[0].Summary())
+				return false, fmt.Errorf("failed to reload agent policy: %v", getDiags)
 			}
 			if reloaded == nil {
 				return false, nil

@@ -20,63 +20,26 @@ package agentdownloadsource
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state model
+func readAgentDownloadSource(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	resourceID string,
+	spaceID string,
+	prior model,
+) (model, bool, diag.Diagnostics) {
+	fleetClient := client.GetFleetClient()
 
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	apiClient, apiClientDiags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	resp.Diagnostics.Append(apiClientDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, err := apiClient.GetFleetClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
-	resp.Diagnostics.Append(r.assertVersionSupported(ctx, apiClient)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	sourceID := state.SourceID.ValueString()
-
-	// Read the existing spaces from state to determine where to query.
-	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	readState, found, diags := r.readAndHydrateState(ctx, client, sourceID, spaceID, state.SpaceIDs, state.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !found {
-		// Resource no longer exists.
-		resp.State.RemoveResource(ctx)
-		return
-	}
-	diags = resp.State.Set(ctx, readState)
-	resp.Diagnostics.Append(diags...)
+	return readAndHydrateState(ctx, fleetClient, resourceID, spaceID, prior.SpaceIDs, prior.KibanaConnection)
 }
 
-func (r *Resource) readAndHydrateState(
+func readAndHydrateState(
 	ctx context.Context,
 	client *fleet.Client,
 	sourceID string,

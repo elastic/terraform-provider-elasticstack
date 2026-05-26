@@ -47,11 +47,7 @@ func (r *outputResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
 	body, diags := planModel.toAPIUpdateModel(ctx, client)
 	resp.Diagnostics.Append(diags...)

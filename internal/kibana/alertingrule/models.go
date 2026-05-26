@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	kibanacustomtypes "github.com/elastic/terraform-provider-elasticstack/internal/kibana/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
@@ -34,25 +35,25 @@ import (
 
 // alertingRuleModel is the Terraform model for an alerting rule.
 type alertingRuleModel struct {
-	ID                  types.String         `tfsdk:"id"`
-	KibanaConnection    types.List           `tfsdk:"kibana_connection"`
-	RuleID              types.String         `tfsdk:"rule_id"`
-	SpaceID             types.String         `tfsdk:"space_id"`
-	Name                types.String         `tfsdk:"name"`
-	Consumer            types.String         `tfsdk:"consumer"`
-	NotifyWhen          types.String         `tfsdk:"notify_when"`
-	Params              jsontypes.Normalized `tfsdk:"params"`
-	RuleTypeID          types.String         `tfsdk:"rule_type_id"`
-	Interval            types.String         `tfsdk:"interval"`
-	Enabled             types.Bool           `tfsdk:"enabled"`
-	Tags                types.Set            `tfsdk:"tags"`
-	Throttle            types.String         `tfsdk:"throttle"`
-	ScheduledTaskID     types.String         `tfsdk:"scheduled_task_id"`
-	LastExecutionStatus types.String         `tfsdk:"last_execution_status"`
-	LastExecutionDate   types.String         `tfsdk:"last_execution_date"`
-	AlertDelay          types.Int64          `tfsdk:"alert_delay"`
-	Flapping            types.Object         `tfsdk:"flapping"`
-	Actions             types.List           `tfsdk:"actions"`
+	ID                  types.String                       `tfsdk:"id"`
+	KibanaConnection    types.List                         `tfsdk:"kibana_connection"`
+	RuleID              types.String                       `tfsdk:"rule_id"`
+	SpaceID             types.String                       `tfsdk:"space_id"`
+	Name                types.String                       `tfsdk:"name"`
+	Consumer            types.String                       `tfsdk:"consumer"`
+	NotifyWhen          types.String                       `tfsdk:"notify_when"`
+	Params              jsontypes.Normalized               `tfsdk:"params"`
+	RuleTypeID          types.String                       `tfsdk:"rule_type_id"`
+	Interval            kibanacustomtypes.AlertingDuration `tfsdk:"interval"`
+	Enabled             types.Bool                         `tfsdk:"enabled"`
+	Tags                types.Set                          `tfsdk:"tags"`
+	Throttle            kibanacustomtypes.AlertingDuration `tfsdk:"throttle"`
+	ScheduledTaskID     types.String                       `tfsdk:"scheduled_task_id"`
+	LastExecutionStatus types.String                       `tfsdk:"last_execution_status"`
+	LastExecutionDate   types.String                       `tfsdk:"last_execution_date"`
+	AlertDelay          types.Int64                        `tfsdk:"alert_delay"`
+	Flapping            types.Object                       `tfsdk:"flapping"`
+	Actions             types.List                         `tfsdk:"actions"`
 }
 
 // actionModel is the Terraform model for a rule action.
@@ -66,9 +67,9 @@ type actionModel struct {
 
 // frequencyModel is the Terraform model for action frequency.
 type frequencyModel struct {
-	Summary    types.Bool   `tfsdk:"summary"`
-	NotifyWhen types.String `tfsdk:"notify_when"`
-	Throttle   types.String `tfsdk:"throttle"`
+	Summary    types.Bool                         `tfsdk:"summary"`
+	NotifyWhen types.String                       `tfsdk:"notify_when"`
+	Throttle   kibanacustomtypes.AlertingDuration `tfsdk:"throttle"`
 }
 
 // alertsFilterModel is the Terraform model for action alerts filter.
@@ -112,7 +113,7 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 	m.Name = types.StringValue(rule.Name)
 	m.Consumer = types.StringValue(rule.Consumer)
 	m.RuleTypeID = types.StringValue(rule.RuleTypeID)
-	m.Interval = types.StringValue(rule.Schedule.Interval)
+	m.Interval = kibanacustomtypes.NewAlertingDurationValue(rule.Schedule.Interval)
 
 	if rule.NotifyWhen != nil && *rule.NotifyWhen != "" {
 		m.NotifyWhen = types.StringValue(*rule.NotifyWhen)
@@ -150,9 +151,9 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 
 	// Throttle
 	if rule.Throttle != nil {
-		m.Throttle = types.StringValue(*rule.Throttle)
+		m.Throttle = kibanacustomtypes.NewAlertingDurationValue(*rule.Throttle)
 	} else {
-		m.Throttle = types.StringNull()
+		m.Throttle = kibanacustomtypes.NewAlertingDurationNull()
 	}
 
 	// Scheduled task ID - update if API returns a value, or resolve unknown to null
@@ -330,90 +331,88 @@ var (
 )
 
 // toAPIModel converts the Terraform model to the API model.
-// It also validates version-specific requirements based on the provided server version.
-func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *version.Version) (models.AlertingRule, diag.Diagnostics) {
+// It also validates version-specific requirements based on the resolved feature flags.
+func (m alertingRuleModel) toAPIModel(ctx context.Context, features alertingRuleFeatures) (models.AlertingRule, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Validate version-specific requirements
-	if serverVersion != nil {
-		// notify_when is required until v8.6
-		if !typeutils.IsKnown(m.NotifyWhen) || m.NotifyWhen.ValueString() == "" {
-			if serverVersion.LessThan(frequencyMinSupportedVersion) {
+	// notify_when is required until v8.6
+	if !typeutils.IsKnown(m.NotifyWhen) || m.NotifyWhen.ValueString() == "" {
+		if !features.SupportsFrequency {
+			diags.AddError(
+				"notify_when is required until v8.6",
+				"notify_when is required until v8.6",
+			)
+			return models.AlertingRule{}, diags
+		}
+	}
+
+	// alert_delay is only supported from v8.13+
+	if typeutils.IsKnown(m.AlertDelay) && !m.AlertDelay.IsNull() {
+		if !features.SupportsAlertDelay {
+			diags.AddError(
+				"alert_delay is only supported for Kibana v8.13 or higher",
+				"alert_delay is only supported for Kibana v8.13 or higher",
+			)
+			return models.AlertingRule{}, diags
+		}
+	}
+
+	// flapping is only supported from Kibana v8.16+
+	if typeutils.IsKnown(m.Flapping) && !m.Flapping.IsNull() {
+		if !features.SupportsFlapping {
+			diags.AddError(
+				"flapping is only supported for Kibana v8.16 or higher",
+				"flapping is only supported for Kibana v8.16 or higher",
+			)
+			return models.AlertingRule{}, diags
+		}
+
+		var fm flappingModel
+		diags.Append(m.Flapping.As(ctx, &fm, basetypes.ObjectAsOptions{})...)
+		if diags.HasError() {
+			return models.AlertingRule{}, diags
+		}
+		// flapping.enabled is only supported from Elastic Stack 9.3+
+		if typeutils.IsKnown(fm.Enabled) && !fm.Enabled.IsNull() {
+			if !features.SupportsFlappingEnabled {
 				diags.AddError(
-					"notify_when is required until v8.6",
-					"notify_when is required until v8.6",
+					"flapping.enabled is only supported for Elastic Stack 9.3 or higher",
+					"flapping.enabled is only supported for Elastic Stack 9.3 or higher",
 				)
 				return models.AlertingRule{}, diags
 			}
 		}
+	}
 
-		// alert_delay is only supported from v8.13+
-		if typeutils.IsKnown(m.AlertDelay) && !m.AlertDelay.IsNull() {
-			if serverVersion.LessThan(alertDelayMinSupportedVersion) {
-				diags.AddError(
-					"alert_delay is only supported for Elasticsearch v8.13 or higher",
-					"alert_delay is only supported for Elasticsearch v8.13 or higher",
-				)
-				return models.AlertingRule{}, diags
-			}
+	// Validate version-specific requirements for actions
+	if typeutils.IsKnown(m.Actions) && !m.Actions.IsNull() {
+		var actions []actionModel
+		diags.Append(m.Actions.ElementsAs(ctx, &actions, false)...)
+		if diags.HasError() {
+			return models.AlertingRule{}, diags
 		}
 
-		// flapping is only supported from Kibana v8.16+
-		if typeutils.IsKnown(m.Flapping) && !m.Flapping.IsNull() {
-			if serverVersion.LessThan(flappingMinSupportedVersion) {
-				diags.AddError(
-					"flapping is only supported for Kibana v8.16 or higher",
-					"flapping is only supported for Kibana v8.16 or higher",
-				)
-				return models.AlertingRule{}, diags
-			}
-
-			var fm flappingModel
-			diags.Append(m.Flapping.As(ctx, &fm, basetypes.ObjectAsOptions{})...)
-			if diags.HasError() {
-				return models.AlertingRule{}, diags
-			}
-			// flapping.enabled is only supported from Elastic Stack 9.3+
-			if typeutils.IsKnown(fm.Enabled) && !fm.Enabled.IsNull() {
-				if serverVersion.LessThan(flappingEnabledMinSupportedVersion) {
+		for _, action := range actions {
+			// Check frequency version requirement
+			if typeutils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
+				if !features.SupportsFrequency {
 					diags.AddError(
-						"flapping.enabled is only supported for Elastic Stack 9.3 or higher",
-						"flapping.enabled is only supported for Elastic Stack 9.3 or higher",
+						"actions.frequency is only supported for Kibana v8.6 or higher",
+						"actions.frequency is only supported for Kibana v8.6 or higher",
 					)
 					return models.AlertingRule{}, diags
 				}
 			}
-		}
 
-		// Validate version-specific requirements for actions
-		if typeutils.IsKnown(m.Actions) && !m.Actions.IsNull() {
-			var actions []actionModel
-			diags.Append(m.Actions.ElementsAs(ctx, &actions, false)...)
-			if diags.HasError() {
-				return models.AlertingRule{}, diags
-			}
-
-			for _, action := range actions {
-				// Check frequency version requirement
-				if typeutils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
-					if serverVersion.LessThan(frequencyMinSupportedVersion) {
-						diags.AddError(
-							"actions.frequency is only supported for Kibana v8.6 or higher",
-							"actions.frequency is only supported for Kibana v8.6 or higher",
-						)
-						return models.AlertingRule{}, diags
-					}
-				}
-
-				// Check alerts_filter version requirement
-				if typeutils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
-					if serverVersion.LessThan(alertsFilterMinSupportedVersion) {
-						diags.AddError(
-							"actions.alerts_filter is only supported for Kibana v8.9 or higher",
-							"actions.alerts_filter is only supported for Kibana v8.9 or higher",
-						)
-						return models.AlertingRule{}, diags
-					}
+			// Check alerts_filter version requirement
+			if typeutils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
+				if !features.SupportsAlertsFilter {
+					diags.AddError(
+						"actions.alerts_filter is only supported for Kibana v8.9 or higher",
+						"actions.alerts_filter is only supported for Kibana v8.9 or higher",
+					)
+					return models.AlertingRule{}, diags
 				}
 			}
 		}
@@ -444,16 +443,16 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 		// Compatibility: older Kibana versions reject `.index-threshold` rule params
 		// when `groupBy` is omitted (server-side expects a string, but sees undefined).
 		// Defaulting to "all" preserves Kibana's effective behavior while avoiding 400s.
-		if rule.RuleTypeID == ".index-threshold" {
-			if v, ok := params["groupBy"]; !ok || v == nil {
-				params["groupBy"] = "all"
+		if rule.RuleTypeID == ruleTypeIndexThreshold {
+			if v, ok := params[paramsKeyGroupBy]; !ok || v == nil {
+				params[paramsKeyGroupBy] = paramsGroupByAll
 			}
 
 			// Compatibility: some Kibana versions reject `.index-threshold` params
 			// when `aggType` is omitted (server-side expects a string, but sees undefined).
 			// Defaulting to `count` preserves Kibana behavior while avoiding 400s.
-			if v, ok := params["aggType"]; !ok || v == nil {
-				params["aggType"] = "count"
+			if v, ok := params[paramsKeyAggType]; !ok || v == nil {
+				params[paramsKeyAggType] = paramsAggTypeCount
 				// aggField is only valid for non-count aggregations.
 				delete(params, "aggField")
 			}
@@ -547,7 +546,7 @@ func convertActionsFromAPI(ctx context.Context, apiActions []models.AlertingRule
 			freq := frequencyModel{
 				Summary:    types.BoolValue(apiAction.Frequency.Summary),
 				NotifyWhen: types.StringValue(apiAction.Frequency.NotifyWhen),
-				Throttle:   types.StringPointerValue(apiAction.Frequency.Throttle),
+				Throttle:   kibanacustomtypes.NewAlertingDurationPointerValue(apiAction.Frequency.Throttle),
 			}
 			freqObj, d := types.ObjectValueFrom(ctx, getFrequencyAttrTypes(), freq)
 			diags.Append(d...)

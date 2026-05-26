@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
@@ -46,35 +47,35 @@ func migrateIndexTemplateStateV0ToV1(_ context.Context, req resource.UpgradeStat
 		return
 	}
 
-	resp.Diagnostics.Append(collapseListPath(stateMap, "data_stream", "data_stream")...)
+	resp.Diagnostics.Append(collapseListPath(stateMap, attrDataStream, attrDataStream)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	resp.Diagnostics.Append(collapseListPath(stateMap, "template", "template")...)
+	resp.Diagnostics.Append(collapseListPath(stateMap, attrTemplate, attrTemplate)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	tmpl, ok := stateMap["template"].(map[string]any)
+	tmpl, ok := stateMap[attrTemplate].(map[string]any)
 	if ok {
-		resp.Diagnostics.Append(collapseListPath(tmpl, "lifecycle", "template.lifecycle")...)
+		resp.Diagnostics.Append(collapseListPath(tmpl, attrLifecycle, "template.lifecycle")...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		resp.Diagnostics.Append(collapseListPath(tmpl, "data_stream_options", "template.data_stream_options")...)
+		resp.Diagnostics.Append(collapseListPath(tmpl, attrDataStreamOptions, "template.data_stream_options")...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 
-		dso, ok := tmpl["data_stream_options"].(map[string]any)
+		dso, ok := tmpl[attrDataStreamOptions].(map[string]any)
 		if ok {
-			resp.Diagnostics.Append(collapseListPath(dso, "failure_store", "template.data_stream_options.failure_store")...)
+			resp.Diagnostics.Append(collapseListPath(dso, attrFailureStore, "template.data_stream_options.failure_store")...)
 			if resp.Diagnostics.HasError() {
 				return
 			}
-			fs, ok := dso["failure_store"].(map[string]any)
+			fs, ok := dso[attrFailureStore].(map[string]any)
 			if ok {
-				resp.Diagnostics.Append(collapseListPath(fs, "lifecycle", "template.data_stream_options.failure_store.lifecycle")...)
+				resp.Diagnostics.Append(collapseListPath(fs, attrLifecycle, "template.data_stream_options.failure_store.lifecycle")...)
 				if resp.Diagnostics.HasError() {
 					return
 				}
@@ -82,14 +83,14 @@ func migrateIndexTemplateStateV0ToV1(_ context.Context, req resource.UpgradeStat
 		}
 	}
 
-	if tmpl, ok := stateMap["template"].(map[string]any); ok {
+	if tmpl, ok := stateMap[attrTemplate].(map[string]any); ok {
 		ensureTemplateObjectKeysForV1(tmpl)
-		normalizeTemplateAliasesInV1State(tmpl)
+		aliasutil.NormalizeTemplateAliasesInV1State(tmpl)
 	}
 
 	// SDKv2 may persist version = 0 when the field is omitted in HCL; Elasticsearch readback and
 	// the Plugin Framework schema treat that as unset (null). Drop the key so migrated state matches.
-	if v, ok := stateMap["version"]; ok && jsonNumberish(v) == 0 {
+	if v, ok := stateMap["version"]; ok && aliasutil.JSONNumberish(v) == 0 {
 		delete(stateMap, "version")
 	}
 
@@ -135,84 +136,21 @@ func collapseListPath(m map[string]any, key, pathLabel string) diag.Diagnostics 
 
 // ensureTemplateObjectKeysForV1 fills keys the Plugin Framework v1 schema expects on the template
 // object so RawState JSON decodes after upgrade. Plugin SDK state may omit optional empty blocks.
-// normalizeTemplateAliasesInV1State collapses SDK-style echoed index_routing/search_routing (same
-// non-empty value, routing empty or equal) into the Plugin Framework routing-only shape so migrated
-// state matches configuration and avoids spurious refresh plans after upgrade.
-func normalizeTemplateAliasesInV1State(tmpl map[string]any) {
-	av, ok := tmpl["alias"]
-	if !ok || av == nil {
-		return
-	}
-	list, ok := av.([]any)
-	if !ok {
-		return
-	}
-	for i, el := range list {
-		am, ok := el.(map[string]any)
-		if !ok {
-			continue
-		}
-		// Plugin Framework jsontypes.Normalized rejects ""; SDK state may store the literal empty string.
-		if fv, ok := am["filter"]; ok {
-			if s, ok := fv.(string); ok && s == "" {
-				am["filter"] = nil
-			}
-		}
-		ir := stringishJSONState(am["index_routing"])
-		sr := stringishJSONState(am["search_routing"])
-		rt := stringishJSONState(am["routing"])
-		if ir != "" && ir == sr && (rt == "" || rt == ir) {
-			am["routing"] = ir
-			am["index_routing"] = ""
-			am["search_routing"] = ""
-			list[i] = am
-		}
-	}
-	tmpl["alias"] = list
-}
-
-func stringishJSONState(v any) string {
-	if v == nil {
-		return ""
-	}
-	if s, ok := v.(string); ok {
-		return s
-	}
-	return fmt.Sprint(v)
-}
-
-// jsonNumberish returns v as float64 when JSON-decoded state stores numbers (typically float64).
-func jsonNumberish(v any) float64 {
-	switch x := v.(type) {
-	case float64:
-		return x
-	case int:
-		return float64(x)
-	case int64:
-		return float64(x)
-	case json.Number:
-		f, _ := x.Float64()
-		return f
-	default:
-		return 0
-	}
-}
-
 func ensureTemplateObjectKeysForV1(tmpl map[string]any) {
-	if _, ok := tmpl["alias"]; !ok {
+	if _, ok := tmpl[attrAlias]; !ok {
 		// Empty nested sets are null in Terraform JSON state, not [].
-		tmpl["alias"] = nil
+		tmpl[attrAlias] = nil
 	}
-	if _, ok := tmpl["mappings"]; !ok {
-		tmpl["mappings"] = nil
+	if _, ok := tmpl[attrMappings]; !ok {
+		tmpl[attrMappings] = nil
 	}
-	if _, ok := tmpl["settings"]; !ok {
-		tmpl["settings"] = nil
+	if _, ok := tmpl[attrSettings]; !ok {
+		tmpl[attrSettings] = nil
 	}
-	if _, ok := tmpl["lifecycle"]; !ok {
-		tmpl["lifecycle"] = nil
+	if _, ok := tmpl[attrLifecycle]; !ok {
+		tmpl[attrLifecycle] = nil
 	}
-	if _, ok := tmpl["data_stream_options"]; !ok {
-		tmpl["data_stream_options"] = nil
+	if _, ok := tmpl[attrDataStreamOptions]; !ok {
+		tmpl[attrDataStreamOptions] = nil
 	}
 }

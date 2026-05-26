@@ -33,7 +33,7 @@ import (
 
 func Test_buildSyntheticsStatsOverviewConfig_nilConfig(t *testing.T) {
 	pm := models.PanelModel{}
-	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
+	var panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview
 	bdc := BuildConfig(pm, &panel)
 	require.False(t, bdc.HasError(), "%v", bdc)
 	// Zero config — no panic, nothing set.
@@ -56,7 +56,7 @@ func Test_buildSyntheticsStatsOverviewConfig_emptyConfig(t *testing.T) {
 			Filters:     nil,
 		},
 	}
-	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
+	var panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview
 	bdc := BuildConfig(pm, &panel)
 	require.False(t, bdc.HasError(), "%v", bdc)
 
@@ -77,7 +77,7 @@ func Test_buildSyntheticsStatsOverviewConfig_displaySettings(t *testing.T) {
 			HideBorder:  types.BoolValue(false),
 		},
 	}
-	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
+	var panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview
 	bdc := BuildConfig(pm, &panel)
 	require.False(t, bdc.HasError(), "%v", bdc)
 
@@ -105,7 +105,7 @@ func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns(t *testing.T) {
 			},
 		},
 	}
-	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
+	var panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview
 	bdc := BuildConfig(pm, &panel)
 	require.False(t, bdc.HasError(), "%v", bdc)
 
@@ -115,8 +115,8 @@ func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns(t *testing.T) {
 	assert.Equal(t, "https://example.com/{{context.panel.title}}", ddr.Url)
 	assert.Equal(t, "View details", ddr.Label)
 	// trigger and type are always hardcoded constants.
-	assert.Equal(t, kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu, ddr.Trigger)
-	assert.Equal(t, kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown, ddr.Type)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu, ddr.Trigger)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown, ddr.Type)
 	assert.Nil(t, ddr.EncodeUrl)
 	assert.Nil(t, ddr.OpenInNewTab)
 }
@@ -134,7 +134,7 @@ func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns_optionalBoolsSet(t *
 			},
 		},
 	}
-	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
+	var panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview
 	bdc := BuildConfig(pm, &panel)
 	require.False(t, bdc.HasError(), "%v", bdc)
 
@@ -162,7 +162,7 @@ func Test_buildSyntheticsStatsOverviewConfig_withFilters(t *testing.T) {
 			},
 		},
 	}
-	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
+	var panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview
 	bdc := BuildConfig(pm, &panel)
 	require.False(t, bdc.HasError(), "%v", bdc)
 
@@ -189,7 +189,7 @@ func Test_buildSyntheticsStatsOverviewConfig_emptyFilters_notSent(t *testing.T) 
 			},
 		},
 	}
-	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
+	var panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview
 	bdc := BuildConfig(pm, &panel)
 	require.False(t, bdc.HasError(), "%v", bdc)
 	assert.Nil(t, panel.Config.Filters)
@@ -200,8 +200,8 @@ func Test_buildSyntheticsStatsOverviewConfig_emptyFilters_notSent(t *testing.T) 
 // ─────────────────────────────────────────────────────────────────────────────
 
 // makeSyntheticsAPIConfig builds a minimal API config for test use.
-func makeSyntheticsAPIConfig() kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview {
-	return kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview{}
+func makeSyntheticsAPIConfig() kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview {
+	return kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview{}
 }
 
 // Test: on import (tfPanel == nil) with empty config — block stays null.
@@ -328,18 +328,18 @@ func Test_populateSyntheticsStatsOverviewFromAPI_drilldowns_nullPreservation(t *
 	encodeURL := true
 	openInNewTab := true
 	panel.Config.Drilldowns = &[]struct {
-		EncodeUrl    *bool                                                                     `json:"encode_url,omitempty"` //nolint:revive
-		Label        string                                                                    `json:"label"`
-		OpenInNewTab *bool                                                                     `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
-		Type         kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
-		Url          string                                                                    `json:"url"` //nolint:revive
+		EncodeUrl    *bool                                                                                   `json:"encode_url,omitempty"` //nolint:revive
+		Label        string                                                                                  `json:"label"`
+		OpenInNewTab *bool                                                                                   `json:"open_in_new_tab,omitempty"`
+		Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
+		Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
+		Url          string                                                                                  `json:"url"` //nolint:revive
 	}{
 		{
 			Url:          "https://example.com",
 			Label:        "View",
-			Trigger:      kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu,
-			Type:         kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown,
+			Trigger:      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu,
+			Type:         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown,
 			EncodeUrl:    &encodeURL,
 			OpenInNewTab: &openInNewTab,
 		},

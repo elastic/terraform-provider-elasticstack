@@ -20,9 +20,38 @@ package prebuiltrules
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *PrebuiltRuleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	resp.Diagnostics.Append(r.upsert(ctx, req.Plan, &resp.State)...)
+func createPrebuiltRules(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[prebuiltRuleModel],
+) (entitycore.KibanaWriteResult[prebuiltRuleModel], diag.Diagnostics) {
+	return writePrebuiltRules(ctx, client, req)
+}
+
+func writePrebuiltRules(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[prebuiltRuleModel],
+) (entitycore.KibanaWriteResult[prebuiltRuleModel], diag.Diagnostics) {
+	model := req.Plan
+	var diags diag.Diagnostics
+
+	oapiClient := client.GetKibanaOapiClient()
+
+	model.ID = types.StringValue(req.SpaceID)
+	model.SpaceID = types.StringValue(req.SpaceID)
+
+	diags.Append(kibanaoapi.InstallPrebuiltRules(ctx, oapiClient, req.SpaceID)...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[prebuiltRuleModel]{}, diags
+	}
+
+	return entitycore.KibanaWriteResult[prebuiltRuleModel]{Model: model}, diags
 }

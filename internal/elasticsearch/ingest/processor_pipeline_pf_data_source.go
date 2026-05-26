@@ -53,11 +53,11 @@ func (m *processorPipelineModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorPipelineDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource",
+			Description: descIdentifier,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
 		"name": schema.StringAttribute{

@@ -82,7 +82,7 @@ func TestAccResourceEnrichPolicyFW(t *testing.T) {
 					}
 					clusterID, diag := client.ClusterID(context.Background())
 					if diag.HasError() {
-						return "", fmt.Errorf("failed to get cluster uuid: %s", diag[0].Summary)
+						return "", fmt.Errorf("failed to get cluster uuid: %s", diag[0].Summary())
 					}
 
 					return fmt.Sprintf("%s/%s", *clusterID, name), nil
@@ -1340,10 +1340,7 @@ func checkEnrichPolicyDestroyFW(name string) func(s *terraform.State) error {
 			if compID.ResourceID != name {
 				return fmt.Errorf("Found unexpectedly enrich policy: %s", compID.ResourceID)
 			}
-			typedClient, err := client.GetESClient()
-			if err != nil {
-				return err
-			}
+			typedClient := client.GetESClient()
 			res, err := typedClient.Enrich.GetPolicy().Name(compID.ResourceID).Do(context.Background())
 			if err != nil {
 				if esclient.IsNotFoundElasticsearchError(err) {
@@ -1366,10 +1363,7 @@ func checkEnrichPolicyIndexDoesNotExist(name string) resource.TestCheckFunc {
 			return err
 		}
 
-		typedClient, err := client.GetESClient()
-		if err != nil {
-			return err
-		}
+		typedClient := client.GetESClient()
 
 		indexName := fmt.Sprintf(".enrich-%s", name)
 		exists, err := typedClient.Indices.Exists(indexName).Do(context.Background())

@@ -124,8 +124,7 @@ func createAccMarkdownLibrarySavedObject(t *testing.T) string {
 
 	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
-	oapi, err := client.GetKibanaOapiClient()
-	require.NoError(t, err)
+	oapi := client.GetKibanaOapiClient()
 
 	body := kbapi.PostSavedObjectsTypeJSONRequestBody{
 		Attributes: map[string]*any{
@@ -164,11 +163,7 @@ func deleteAccMarkdownLibrarySavedObject(t *testing.T, id string) {
 		t.Logf("markdown library cleanup: no client: %v", err)
 		return
 	}
-	oapi, err := client.GetKibanaOapiClient()
-	if err != nil {
-		t.Logf("markdown library cleanup: no oapi client: %v", err)
-		return
-	}
+	oapi := client.GetKibanaOapiClient()
 	resp, err := oapi.API.DeleteSavedObjectsTypeIdWithResponse(
 		context.Background(),
 		"markdown",

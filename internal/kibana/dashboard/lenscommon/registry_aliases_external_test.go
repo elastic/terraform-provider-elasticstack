@@ -41,14 +41,14 @@ import (
 func TestForType_opaqueAliasesResolveToCanonicalRegistryKey(t *testing.T) {
 	tc := lenscommon.ForType("tagcloud")
 	require.NotNil(t, tc)
-	require.Equal(t, string(kbapi.TagcloudNoESQLTypeTagCloud), tc.VizType())
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsTagcloudNoESQLTypeTagCloud), tc.VizType())
 
 	dc := lenscommon.ForType("datatable")
 	require.NotNil(t, dc)
-	require.Equal(t, string(kbapi.DatatableNoESQLTypeDataTable), dc.VizType())
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsDatatableNoESQLTypeDataTable), dc.VizType())
 
-	require.NotNil(t, lenscommon.ForType(string(kbapi.TagcloudNoESQLTypeTagCloud)))
-	require.NotNil(t, lenscommon.ForType(string(kbapi.DatatableNoESQLTypeDataTable)))
+	require.NotNil(t, lenscommon.ForType(string(kbapi.KibanaHTTPAPIsTagcloudNoESQLTypeTagCloud)))
+	require.NotNil(t, lenscommon.ForType(string(kbapi.KibanaHTTPAPIsDatatableNoESQLTypeDataTable)))
 
 	require.Nil(t, lenscommon.ForType("not_a_registered_lens_chart_type_xyz"))
 }

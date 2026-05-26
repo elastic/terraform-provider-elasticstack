@@ -19,7 +19,6 @@ package clients
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 
@@ -27,8 +26,8 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/info"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
 const elasticsearchClientNotConfiguredError = "elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS"
@@ -46,8 +45,7 @@ type ElasticsearchScopedClient struct {
 	mu                       sync.Mutex
 	// esEndpoints holds the resolved Elasticsearch endpoint addresses captured
 	// after provider configuration, entity-local overrides, and environment
-	// overrides have been applied. It is used by accessor validation to
-	// distinguish missing endpoint configuration from unexpected nil states.
+	// overrides have been applied. It is used by factory endpoint validation.
 	esEndpoints []string
 	typedClient *elasticsearch.TypedClient
 }
@@ -57,40 +55,33 @@ type ElasticsearchScopedClient struct {
 // The client is built from the provider's configured Elasticsearch transport
 // and endpoints. A product check may run on the typed client's first request,
 // adding marginal latency on first use.
-func (e *ElasticsearchScopedClient) GetESClient() (*elasticsearch.TypedClient, error) {
-	hasEndpoint := false
-	for _, ep := range e.esEndpoints {
-		if ep != "" {
-			hasEndpoint = true
-			break
-		}
-	}
-	if !hasEndpoint {
-		return nil, errors.New(elasticsearchClientNotConfiguredError)
-	}
-	if e.typedClient == nil {
-		return nil, errors.New("elasticsearch client not found")
-	}
-	return e.typedClient, nil
+//
+// Endpoint presence is validated by ProviderClientFactory.GetElasticsearchClient
+// before a scoped client is returned.
+func (e *ElasticsearchScopedClient) GetESClient() *elasticsearch.TypedClient {
+	return e.typedClient
 }
 
 // serverInfo fetches and caches the Elasticsearch cluster info.
 // It is safe for concurrent use: the mutex ensures only one goroutine fetches
 // the info from the server, and subsequent callers use the cached result.
-func (e *ElasticsearchScopedClient) serverInfo(ctx context.Context) (*info.Response, diag.Diagnostics) {
+func (e *ElasticsearchScopedClient) serverInfo(ctx context.Context) (*info.Response, fwdiag.Diagnostics) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	if e.elasticsearchClusterInfo != nil {
 		return e.elasticsearchClusterInfo, nil
 	}
 
-	typedClient, err := e.GetESClient()
-	if err != nil {
-		return nil, diag.FromErr(err)
+	if e.GetESClient() == nil {
+		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic(
+			"Elasticsearch client not configured",
+			"the scoped client was not produced by ProviderClientFactory.GetElasticsearchClient; this is a provider bug — please report it",
+		)}
 	}
-	res, err := typedClient.Info().Do(ctx)
+
+	res, err := e.GetESClient().Info().Do(ctx)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	e.elasticsearchClusterInfo = res
@@ -100,7 +91,7 @@ func (e *ElasticsearchScopedClient) serverInfo(ctx context.Context) (*info.Respo
 
 // ClusterID returns the UUID of the connected Elasticsearch cluster. It is
 // cached after the first call.
-func (e *ElasticsearchScopedClient) ClusterID(ctx context.Context) (*string, diag.Diagnostics) {
+func (e *ElasticsearchScopedClient) ClusterID(ctx context.Context) (*string, fwdiag.Diagnostics) {
 	info, diags := e.serverInfo(ctx)
 	if diags.HasError() {
 		return nil, diags
@@ -111,14 +102,14 @@ func (e *ElasticsearchScopedClient) ClusterID(ctx context.Context) (*string, dia
 		return &uuid, diags
 	}
 
-	return nil, append(diags, diagutil.SDKErrorDiag(
+	return nil, append(diags, fwdiag.NewErrorDiagnostic(
 		"Unable to get cluster UUID",
 		"Unable to get cluster UUID.\n\tThere might be a problem with permissions or cluster is still starting up and UUID has not been populated yet.",
-	)...)
+	))
 }
 
 // ID returns a CompositeID combining the cluster UUID and the given resourceID.
-func (e *ElasticsearchScopedClient) ID(ctx context.Context, resourceID string) (*CompositeID, diag.Diagnostics) {
+func (e *ElasticsearchScopedClient) ID(ctx context.Context, resourceID string) (*CompositeID, fwdiag.Diagnostics) {
 	clusterID, diags := e.ClusterID(ctx)
 	if diags.HasError() {
 		return nil, diags
@@ -126,55 +117,59 @@ func (e *ElasticsearchScopedClient) ID(ctx context.Context, resourceID string) (
 	return &CompositeID{*clusterID, resourceID}, diags
 }
 
-// ServerVersion returns the version of the Elasticsearch server, derived from
-// the cluster Info API.
-func (e *ElasticsearchScopedClient) ServerVersion(ctx context.Context) (*version.Version, diag.Diagnostics) {
-	info, diags := e.serverInfo(ctx)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	rawVersion := info.Version.Int
-	serverVersion, err := version.NewVersion(rawVersion)
-	if err != nil {
-		return nil, diag.FromErr(err)
-	}
-	return serverVersion, nil
-}
-
-// ServerFlavor returns the build flavor (e.g. "serverless", "default") of the
-// Elasticsearch server, derived from the cluster Info API.
-func (e *ElasticsearchScopedClient) ServerFlavor(ctx context.Context) (string, diag.Diagnostics) {
-	info, diags := e.serverInfo(ctx)
-	if diags.HasError() {
-		return "", diags
-	}
-	return info.Version.BuildFlavor, nil
-}
-
 // EnforceMinVersion returns true when the server version is greater than or
 // equal to minVersion, or when the server is running in serverless mode.
 // If minVersion is nil, no minimum is enforced and the method returns true.
-func (e *ElasticsearchScopedClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics) {
+func (e *ElasticsearchScopedClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, fwdiag.Diagnostics) {
 	if minVersion == nil {
 		return true, nil
 	}
 
-	flavor, diags := e.ServerFlavor(ctx)
+	info, diags := e.serverInfo(ctx)
 	if diags.HasError() {
 		return false, diags
 	}
 
-	if flavor == ServerlessFlavor {
+	if info.Version.BuildFlavor == ServerlessFlavor {
 		return true, nil
 	}
 
-	serverVersion, diags := e.ServerVersion(ctx)
+	serverVersion, err := version.NewVersion(info.Version.Int)
+	if err != nil {
+		return false, diagutil.FrameworkDiagFromError(err)
+	}
+
+	return serverVersion.GreaterThanOrEqual(minVersion), nil
+}
+
+// IsServerless returns true when the connected Elasticsearch cluster is running
+// in serverless mode.
+func (e *ElasticsearchScopedClient) IsServerless(ctx context.Context) (bool, fwdiag.Diagnostics) {
+	info, diags := e.serverInfo(ctx)
+	if diags.HasError() {
+		return false, diags
+	}
+	return info.Version.BuildFlavor == ServerlessFlavor, nil
+}
+
+// EnforceVersionCheck returns true when the given version check function
+// returns true, or when the server is running in serverless mode.
+func (e *ElasticsearchScopedClient) EnforceVersionCheck(ctx context.Context, check func(*version.Version) bool) (bool, fwdiag.Diagnostics) {
+	info, diags := e.serverInfo(ctx)
 	if diags.HasError() {
 		return false, diags
 	}
 
-	return serverVersion.GreaterThanOrEqual(minVersion), nil
+	if info.Version.BuildFlavor == ServerlessFlavor {
+		return true, nil
+	}
+
+	serverVersion, err := version.NewVersion(info.Version.Int)
+	if err != nil {
+		return false, diagutil.FrameworkDiagFromError(err)
+	}
+
+	return check(serverVersion), nil
 }
 
 // elasticsearchScopedClientFromAPIClient constructs an ElasticsearchScopedClient

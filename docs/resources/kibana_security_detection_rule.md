@@ -147,21 +147,19 @@ resource "elasticstack_kibana_security_detection_rule" "with_connector_action" {
 
   index = ["logs-*"]
 
-  actions = [
-    {
-      action_type_id = ".cases-webhook"
-      id             = elasticstack_kibana_action_connector.case_webhook.connector_id
-      group          = "default"
-      params = jsonencode({
-        message = "Alert: {{rule.name}}"
-      })
-      frequency = {
-        notify_when = "onActiveAlert"
-        summary     = false
-        throttle    = "no_actions"
-      }
+  actions = [{
+    action_type_id = ".cases-webhook"
+    id             = elasticstack_kibana_action_connector.case_webhook.connector_id
+    group          = "default"
+    params = jsonencode({
+      message = "Alert: {{rule.name}}"
+    })
+    frequency = {
+      notify_when = "onActiveAlert"
+      summary     = false
+      throttle    = "no_actions"
     }
-  ]
+  }]
 }
 ```
 
@@ -251,10 +249,41 @@ Required:
 
 Optional:
 
-- `alerts_filter` (Map of String) Object containing an action's conditional filters.
+- `alerts_filter` (Attributes) Conditions that affect whether the action runs. If you specify multiple conditions, all conditions must be met for the action to run.
+
+The `query` attribute accepts a KQL string and a JSON array of Kibana filter objects. Use `filters_json = jsonencode([])` when no filters are required. Example: `alerts_filter = { query = { kql = "event.action : \"test\"" filters_json = jsonencode([]) } }`. (see [below for nested schema](#nestedatt--actions--alerts_filter))
 - `frequency` (Attributes) The action frequency defines when the action runs. (see [below for nested schema](#nestedatt--actions--frequency))
 - `group` (String) Optionally groups actions by use cases. Use 'default' for alert notifications.
 - `uuid` (String) A unique identifier for the action.
+
+<a id="nestedatt--actions--alerts_filter"></a>
+### Nested Schema for `actions.alerts_filter`
+
+Optional:
+
+- `query` (Attributes) KQL query and Kibana filter DSL conditions that determine whether the action runs. (see [below for nested schema](#nestedatt--actions--alerts_filter--query))
+- `timeframe` (Attributes) Defines a period that limits whether the action runs. (see [below for nested schema](#nestedatt--actions--alerts_filter--timeframe))
+
+<a id="nestedatt--actions--alerts_filter--query"></a>
+### Nested Schema for `actions.alerts_filter.query`
+
+Optional:
+
+- `filters_json` (String) JSON-encoded array of Kibana filter DSL objects. Use `jsonencode([])` for an empty filter list.
+- `kql` (String) Defines a KQL query filter that determines whether the action runs. Written in Kibana Query Language (KQL).
+
+
+<a id="nestedatt--actions--alerts_filter--timeframe"></a>
+### Nested Schema for `actions.alerts_filter.timeframe`
+
+Optional:
+
+- `days` (List of Number) Defines the days of the week that the action can run, represented as an array of numbers. For example, 1 represents Monday. An empty array is equivalent to specifying all the days of the week.
+- `hours_end` (String) The end of the time frame in 24-hour notation (hh:mm).
+- `hours_start` (String) The start of the time frame in 24-hour notation (hh:mm).
+- `timezone` (String) The ISO time zone for the hours values. Values such as UTC and UTC+1 also work but lack built-in daylight savings time support and are not recommended.
+
+
 
 <a id="nestedatt--actions--frequency"></a>
 ### Nested Schema for `actions.frequency`
@@ -285,7 +314,7 @@ Required:
 - `id` (String) The exception container ID.
 - `list_id` (String) The exception container's list ID.
 - `namespace_type` (String) The namespace type for the exception container.
-- `type` (String) The type of exception container.
+- `type` (String) The type of exception container. Valid values are `detection`, `endpoint`, `endpoint_events`, `endpoint_host_isolation_exceptions`, `endpoint_blocklists`, `endpoint_trusted_apps`, `endpoint_trusted_devices`, and `rule_default`.
 
 
 <a id="nestedblock--kibana_connection"></a>

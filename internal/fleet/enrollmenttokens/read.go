@@ -31,11 +31,7 @@ import (
 func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config enrollmentTokensModel) (enrollmentTokensModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	fleetClient, err := kbClient.GetFleetClient()
-	if err != nil {
-		diags.AddError(err.Error(), "")
-		return config, diags
-	}
+	fleetClient := kbClient.GetFleetClient()
 
 	var tokens []kbapi.EnrollmentApiKey
 	policyID := config.PolicyID.ValueString()

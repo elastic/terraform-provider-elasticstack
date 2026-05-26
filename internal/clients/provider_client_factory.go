@@ -22,17 +22,16 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
+const kibanaFleetClientNotConfiguredError = "kibana/fleet client is not configured: set kibana.endpoints, kibana_connection.endpoints, KIBANA_ENDPOINT, fleet.endpoint, or FLEET_ENDPOINT"
+
 // ProviderClientFactory is the provider-scoped client-resolution surface
-// injected into Plugin Framework ProviderData and SDK meta. Resources and data
-// sources use the factory to obtain typed clients rather than consuming a broad
-// *apiClient directly.
+// injected into Plugin Framework ProviderData. Resources and data sources use
+// the factory to obtain typed clients rather than consuming a broad *apiClient
+// directly.
 //
 // The factory exposes typed resolution methods for all supported connection types:
 //   - Typed Kibana/Fleet resolution methods returning *KibanaScopedClient
@@ -84,7 +83,7 @@ func (f *ProviderClientFactory) GetKibanaClient(ctx context.Context, kibanaConnL
 	}
 
 	if len(kibConns) == 0 {
-		return kibanaScopedClientFromAPIClient(f.defaultClient), nil
+		return validateKibanaScopedClientEndpoints(kibanaScopedClientFromAPIClient(f.defaultClient))
 	}
 
 	cfg, diags := config.NewFromFrameworkKibanaResource(ctx, kibConns, f.defaultClient.version)
@@ -92,48 +91,12 @@ func (f *ProviderClientFactory) GetKibanaClient(ctx context.Context, kibanaConnL
 		return nil, diags
 	}
 
-	return buildKibanaScopedClientFromConfig(*cfg, f.defaultClient.version)
-}
-
-// GetKibanaClientFromSDK resolves the effective *KibanaScopedClient for an SDK
-// Kibana or Fleet entity. When the kibana_connection block is absent from d the
-// factory returns a typed client built from provider-level defaults. When the
-// block is configured a new typed scoped client is returned with all
-// Kibana-derived clients rebuilt from the scoped connection.
-func (f *ProviderClientFactory) GetKibanaClientFromSDK(d *schema.ResourceData) (*KibanaScopedClient, diag.Diagnostics) {
-	if f == nil || f.defaultClient == nil {
-		return nil, diagutil.SDKErrorDiag(
-			"Provider not configured",
-			"Expected configured provider client factory. Please report this issue to the provider developers.",
-		)
-	}
-
-	resourceConfig, diags := config.NewFromSDKKibanaResource(d, f.defaultClient.version)
+	scoped, diags := buildKibanaScopedClientFromConfig(*cfg, f.defaultClient.version)
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	if resourceConfig == nil {
-		return kibanaScopedClientFromAPIClient(f.defaultClient), nil
-	}
-
-	scoped, fwDiags := buildKibanaScopedClientFromConfig(*resourceConfig, f.defaultClient.version)
-	if fwDiags.HasError() {
-		var sdkDiags diag.Diagnostics
-		for _, d := range fwDiags {
-			severity := diag.Error
-			if d.Severity() == fwdiags.SeverityWarning {
-				severity = diag.Warning
-			}
-			sdkDiags = append(sdkDiags, diag.Diagnostic{
-				Severity: severity,
-				Summary:  d.Summary(),
-				Detail:   d.Detail(),
-			})
-		}
-		return nil, sdkDiags
-	}
-	return scoped, nil
+	return validateKibanaScopedClientEndpoints(scoped)
 }
 
 // --- Typed Elasticsearch resolution methods ---
@@ -157,7 +120,7 @@ func (f *ProviderClientFactory) GetElasticsearchClient(ctx context.Context, esCo
 	}
 
 	if len(esConns) == 0 {
-		return elasticsearchScopedClientFromAPIClient(f.defaultClient), nil
+		return validateElasticsearchScopedClientEndpoints(elasticsearchScopedClientFromAPIClient(f.defaultClient))
 	}
 
 	if len(esConns) > 1 {
@@ -193,55 +156,55 @@ func (f *ProviderClientFactory) GetElasticsearchClient(ctx context.Context, esCo
 		esEndpoints = cfg.Elasticsearch.Addresses
 	}
 
-	return &ElasticsearchScopedClient{
+	return validateElasticsearchScopedClientEndpoints(&ElasticsearchScopedClient{
 		typedClient: esClient,
 		esEndpoints: esEndpoints,
-	}, nil
+	})
 }
 
-// GetElasticsearchClientFromSDK resolves the effective *ElasticsearchScopedClient
-// for an SDK Elasticsearch entity. When the elasticsearch_connection block is
-// absent from d the factory returns a typed client built from provider-level
-// defaults. When the block is configured a new typed scoped client is returned
-// with the Elasticsearch client rebuilt from the scoped connection.
-func (f *ProviderClientFactory) GetElasticsearchClientFromSDK(d *schema.ResourceData) (*ElasticsearchScopedClient, diag.Diagnostics) {
-	if f == nil || f.defaultClient == nil {
-		return nil, diagutil.SDKErrorDiag(
-			"Provider not configured",
-			"Expected configured provider client factory. Please report this issue to the provider developers.",
-		)
+func validateElasticsearchScopedClientEndpoints(scoped *ElasticsearchScopedClient) (*ElasticsearchScopedClient, fwdiags.Diagnostics) {
+	hasEndpoint := false
+	for _, ep := range scoped.esEndpoints {
+		if ep != "" {
+			hasEndpoint = true
+			break
+		}
 	}
-
-	resourceConfig, diags := config.NewFromSDKResource(d, f.defaultClient.version)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	if resourceConfig == nil {
-		return elasticsearchScopedClientFromAPIClient(f.defaultClient), nil
-	}
-
-	esClient, err := buildEsClient(*resourceConfig)
-	if err != nil {
-		return nil, diag.FromErr(err)
-	}
-	if esClient == nil {
-		return nil, diagutil.SDKErrorDiag(
+	if !hasEndpoint {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
 			"Elasticsearch client not configured",
-			"The elasticsearch_connection block did not produce a valid Elasticsearch client. "+
-				"Ensure the connection block includes Elasticsearch endpoint configuration.",
-		)
+			elasticsearchClientNotConfiguredError,
+		)}
 	}
-
-	var esEndpoints []string
-	if resourceConfig.Elasticsearch != nil {
-		esEndpoints = resourceConfig.Elasticsearch.Addresses
+	if scoped.typedClient == nil {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
+			"Elasticsearch client not found",
+			"elasticsearch client not found",
+		)}
 	}
+	return scoped, nil
+}
 
-	return &ElasticsearchScopedClient{
-		typedClient: esClient,
-		esEndpoints: esEndpoints,
-	}, nil
+func validateKibanaScopedClientEndpoints(scoped *KibanaScopedClient) (*KibanaScopedClient, fwdiags.Diagnostics) {
+	if scoped.kibanaEndpoint == "" && scoped.fleetEndpoint == "" {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
+			"Kibana client not configured",
+			kibanaFleetClientNotConfiguredError,
+		)}
+	}
+	if scoped.kibanaEndpoint != "" && scoped.kibanaOapi == nil {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
+			"kibanaoapi client not found",
+			"kibana OpenAPI client was not built despite a configured Kibana endpoint",
+		)}
+	}
+	if scoped.fleetEndpoint != "" && scoped.fleet == nil {
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
+			"Fleet client not found",
+			"Fleet client was not built despite a configured Fleet endpoint",
+		)}
+	}
+	return scoped, nil
 }
 
 // --- Helper constructors ---
@@ -315,27 +278,9 @@ func ConvertProviderDataToFactory(providerData any) (*ProviderClientFactory, fwd
 // NewKibanaScopedClientFromFactory returns a *KibanaScopedClient built from the
 // factory's provider-level defaults. This is the typed Kibana surface
 // equivalent of calling GetKibanaClient with an empty connection list.
-func NewKibanaScopedClientFromFactory(f *ProviderClientFactory) *KibanaScopedClient {
+func NewKibanaScopedClientFromFactory(f *ProviderClientFactory) (*KibanaScopedClient, fwdiags.Diagnostics) {
 	if f == nil || f.defaultClient == nil {
-		return nil
+		return nil, nil
 	}
-	return kibanaScopedClientFromAPIClient(f.defaultClient)
-}
-
-// ConvertMetaToFactory converts the SDK meta value into a *ProviderClientFactory.
-func ConvertMetaToFactory(meta any) (*ProviderClientFactory, diag.Diagnostics) {
-	factory, ok := meta.(*ProviderClientFactory)
-	if meta != nil && !ok {
-		return nil, diagutil.SDKErrorDiag(
-			"Unexpected meta type",
-			fmt.Sprintf("Expected *ProviderClientFactory, got: %T. Please report this issue to the provider developers.", meta),
-		)
-	}
-	if factory == nil {
-		return nil, diagutil.SDKErrorDiag(
-			"Unconfigured Client Factory",
-			"Expected configured provider client factory, got nil. Report this issue to the provider developers.",
-		)
-	}
-	return factory, nil
+	return validateKibanaScopedClientEndpoints(kibanaScopedClientFromAPIClient(f.defaultClient))
 }

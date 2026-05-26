@@ -34,7 +34,7 @@ import (
 // empty/absent config, we leave OptionsListControlConfig as nil.
 //
 // tfPanel is the prior TF state/plan panel, or nil on import.
-func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, ol *kbapi.KbnDashboardPanelTypeOptionsListControl) {
+func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, ol *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl) {
 	if ol == nil {
 		return
 	}
@@ -137,7 +137,7 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, ol *kbap
 }
 
 // BuildConfig writes TF model fields into the API panel payload.
-func BuildConfig(pm models.PanelModel, olPanel *kbapi.KbnDashboardPanelTypeOptionsListControl) {
+func BuildConfig(pm models.PanelModel, olPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl) {
 	cfg := pm.OptionsListControlConfig
 	if cfg == nil {
 		return
@@ -168,16 +168,16 @@ func BuildConfig(pm models.PanelModel, olPanel *kbapi.KbnDashboardPanelTypeOptio
 		olPanel.Config.RunPastTimeout = cfg.RunPastTimeout.ValueBoolPointer()
 	}
 	if typeutils.IsKnown(cfg.SearchTechnique) {
-		st := kbapi.KbnDashboardPanelTypeOptionsListControlConfigSearchTechnique(cfg.SearchTechnique.ValueString())
+		st := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControlConfigSearchTechnique(cfg.SearchTechnique.ValueString())
 		olPanel.Config.SearchTechnique = &st
 	}
 	if !cfg.SelectedOptions.IsNull() && !cfg.SelectedOptions.IsUnknown() {
 		elems := cfg.SelectedOptions.Elements()
-		items := make([]kbapi.KbnDashboardPanelTypeOptionsListControl_Config_SelectedOptions_Item, 0, len(elems))
+		items := make([]kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config_SelectedOptions_Item, 0, len(elems))
 		for _, e := range elems {
 			s := e.(types.String).ValueString()
-			var item kbapi.KbnDashboardPanelTypeOptionsListControl_Config_SelectedOptions_Item
-			if err := item.FromKbnDashboardPanelTypeOptionsListControlConfigSelectedOptions0(s); err == nil {
+			var item kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config_SelectedOptions_Item
+			if err := item.FromKibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControlConfigSelectedOptions0(s); err == nil {
 				items = append(items, item)
 			}
 		}
@@ -211,23 +211,23 @@ func BuildConfig(pm models.PanelModel, olPanel *kbapi.KbnDashboardPanelTypeOptio
 	}
 	if cfg.Sort != nil {
 		olPanel.Config.Sort = &struct {
-			By        kbapi.KbnDashboardPanelTypeOptionsListControlConfigSortBy        `json:"by"`
-			Direction kbapi.KbnDashboardPanelTypeOptionsListControlConfigSortDirection `json:"direction"`
+			By        kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControlConfigSortBy        `json:"by"`
+			Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControlConfigSortDirection `json:"direction"`
 		}{
-			By:        kbapi.KbnDashboardPanelTypeOptionsListControlConfigSortBy(cfg.Sort.By.ValueString()),
-			Direction: kbapi.KbnDashboardPanelTypeOptionsListControlConfigSortDirection(cfg.Sort.Direction.ValueString()),
+			By:        kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControlConfigSortBy(cfg.Sort.By.ValueString()),
+			Direction: kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControlConfigSortDirection(cfg.Sort.Direction.ValueString()),
 		}
 	}
 }
 
-func selectedOptionsToList(items []kbapi.KbnDashboardPanelTypeOptionsListControl_Config_SelectedOptions_Item) types.List {
+func selectedOptionsToList(items []kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config_SelectedOptions_Item) types.List {
 	values := make([]attr.Value, 0, len(items))
 	for _, item := range items {
-		if s, err := item.AsKbnDashboardPanelTypeOptionsListControlConfigSelectedOptions0(); err == nil {
+		if s, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControlConfigSelectedOptions0(); err == nil {
 			values = append(values, types.StringValue(s))
 			continue
 		}
-		if n, err := item.AsKbnDashboardPanelTypeOptionsListControlConfigSelectedOptions1(); err == nil {
+		if n, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControlConfigSelectedOptions1(); err == nil {
 			values = append(values, types.StringValue(strconv.FormatFloat(float64(n), 'f', -1, 32)))
 		}
 	}

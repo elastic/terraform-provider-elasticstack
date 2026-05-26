@@ -18,11 +18,12 @@
 package templateilmattachment
 
 import (
-	"encoding/json"
+	"fmt"
 
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -32,6 +33,12 @@ var _ interface {
 	GetResourceID() types.String
 	GetElasticsearchConnection() types.List
 } = tfModel{}
+
+var _ entitycore.WithVersionRequirements = tfModel{}
+
+// nameKey is the lifecycle "name" setting key in component template
+// index.lifecycle.name. It is shared between models.go and delete.go.
+const nameKey = "name"
 
 // tfModel represents the Terraform state model for this resource.
 type tfModel struct {
@@ -60,6 +67,19 @@ func (m tfModel) GetResourceID() types.String {
 // GetElasticsearchConnection returns the Elasticsearch connection configuration.
 func (m tfModel) GetElasticsearchConnection() types.List { return m.ElasticsearchConnection }
 
+// GetVersionRequirements satisfies [entitycore.WithVersionRequirements] and enforces
+// the ES >= 8.2.0 minimum required by the Put Component Template API used by this resource.
+func (m tfModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{{
+		MinVersion: *MinVersion,
+		ErrorMessage: fmt.Sprintf(
+			"This resource requires Elasticsearch %s or later. "+
+				"This resource is not supported on this Elasticsearch version.",
+			MinVersion,
+		),
+	}}, nil
+}
+
 // mergeILMSetting adds the ILM lifecycle.name setting to existing settings.
 func mergeILMSetting(existingSettings map[string]any, lifecycleName string) map[string]any {
 	if existingSettings == nil {
@@ -75,7 +95,7 @@ func mergeILMSetting(existingSettings map[string]any, lifecycleName string) map[
 		lifecycle = make(map[string]any)
 		indexSettings["lifecycle"] = lifecycle
 	}
-	lifecycle["name"] = lifecycleName
+	lifecycle[nameKey] = lifecycleName
 	return existingSettings
 }
 
@@ -86,7 +106,7 @@ func removeILMSetting(settings map[string]any) map[string]any {
 	}
 	if indexSettings, ok := settings["index"].(map[string]any); ok {
 		if lifecycle, ok := indexSettings["lifecycle"].(map[string]any); ok {
-			delete(lifecycle, "name")
+			delete(lifecycle, nameKey)
 			if len(lifecycle) == 0 {
 				delete(indexSettings, "lifecycle")
 			}
@@ -114,82 +134,8 @@ func extractILMSetting(template *models.Template) string {
 	if !ok {
 		return ""
 	}
-	if v, ok := lifecycle["name"].(string); ok {
+	if v, ok := lifecycle[nameKey].(string); ok {
 		return v
 	}
 	return ""
-}
-
-func toModelComponentTemplateResponse(tpl *estypes.ClusterComponentTemplate) *models.ComponentTemplateResponse {
-	if tpl == nil {
-		return nil
-	}
-
-	resp := &models.ComponentTemplateResponse{
-		Name: tpl.Name,
-		ComponentTemplate: models.ComponentTemplate{
-			Name: tpl.Name,
-		},
-	}
-
-	if tpl.ComponentTemplate.Version != nil {
-		version := *tpl.ComponentTemplate.Version
-		resp.ComponentTemplate.Version = &version
-	}
-
-	if tpl.ComponentTemplate.Meta_ != nil {
-		metaBytes, _ := json.Marshal(tpl.ComponentTemplate.Meta_)
-		var metaMap map[string]any
-		_ = json.Unmarshal(metaBytes, &metaMap)
-		resp.ComponentTemplate.Meta = metaMap
-	}
-
-	t := &models.Template{}
-
-	if tpl.ComponentTemplate.Template.Settings != nil {
-		settingsBytes, _ := json.Marshal(tpl.ComponentTemplate.Template.Settings)
-		var settingsMap map[string]any
-		_ = json.Unmarshal(settingsBytes, &settingsMap)
-		t.Settings = settingsMap
-	}
-
-	if tpl.ComponentTemplate.Template.Mappings != nil {
-		mappingsBytes, _ := json.Marshal(tpl.ComponentTemplate.Template.Mappings)
-		var mappingsMap map[string]any
-		_ = json.Unmarshal(mappingsBytes, &mappingsMap)
-		t.Mappings = mappingsMap
-	}
-
-	if len(tpl.ComponentTemplate.Template.Aliases) > 0 {
-		t.Aliases = make(map[string]models.IndexAlias, len(tpl.ComponentTemplate.Template.Aliases))
-		for name, alias := range tpl.ComponentTemplate.Template.Aliases {
-			ia := models.IndexAlias{Name: name}
-			if alias.Filter != nil {
-				filterBytes, _ := json.Marshal(alias.Filter)
-				var filterMap map[string]any
-				_ = json.Unmarshal(filterBytes, &filterMap)
-				ia.Filter = filterMap
-			}
-			if alias.IndexRouting != nil {
-				ia.IndexRouting = *alias.IndexRouting
-			}
-			if alias.IsHidden != nil {
-				ia.IsHidden = *alias.IsHidden
-			}
-			if alias.IsWriteIndex != nil {
-				ia.IsWriteIndex = *alias.IsWriteIndex
-			}
-			if alias.Routing != nil {
-				ia.Routing = *alias.Routing
-			}
-			if alias.SearchRouting != nil {
-				ia.SearchRouting = *alias.SearchRouting
-			}
-			t.Aliases[name] = ia
-		}
-	}
-
-	resp.ComponentTemplate.Template = t
-
-	return resp
 }

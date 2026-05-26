@@ -367,8 +367,7 @@ func TestAccResourceOutputRemoteElasticsearch(t *testing.T) {
 
 	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
-	kibanaOapiClient, err := client.GetKibanaOapiClient()
-	require.NoError(t, err)
+	kibanaOapiClient := client.GetKibanaOapiClient()
 	remote := true
 	resp, err := kibanaOapiClient.API.PostFleetServiceTokensWithResponse(t.Context(), kbapi.PostFleetServiceTokensJSONRequestBody{
 		Remote: &remote,
@@ -662,8 +661,7 @@ func promoteFleetDefaultOutput(t *testing.T) func() {
 		t.Helper()
 		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 		require.NoError(t, err)
-		kbClient, err := client.GetKibanaOapiClient()
-		require.NoError(t, err)
+		kbClient := client.GetKibanaOapiClient()
 
 		body := strings.NewReader(`{
 			"name": "default",
@@ -757,10 +755,7 @@ func checkResourceOutputDestroy(s *terraform.State) error {
 			continue
 		}
 
-		fleetClient, err := client.GetFleetClient()
-		if err != nil {
-			return err
-		}
+		fleetClient := client.GetFleetClient()
 		spaceID := rs.Primary.Attributes["space_ids.0"]
 		output, diags := fleet.GetOutput(context.Background(), fleetClient, rs.Primary.ID, spaceID)
 		if diags.HasError() {

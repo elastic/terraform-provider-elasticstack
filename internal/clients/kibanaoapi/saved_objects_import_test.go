@@ -64,8 +64,8 @@ func TestImportSavedObjects_MultipartFormat(t *testing.T) {
 	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 
-	oapiClient, err := apiClient.GetKibanaOapiClient()
-	require.NoError(t, err)
+	oapiClient := apiClient.GetKibanaOapiClient()
+	require.NotNil(t, oapiClient)
 
 	params := kbapi.PostSavedObjectsImportParams{}
 	result, diags := kibanaoapi.ImportSavedObjects(t.Context(), oapiClient, "", []byte(ndjsonContent), params)
@@ -119,8 +119,8 @@ func TestImportSavedObjects_SpaceAwarePath(t *testing.T) {
 	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 
-	oapiClient, err := apiClient.GetKibanaOapiClient()
-	require.NoError(t, err)
+	oapiClient := apiClient.GetKibanaOapiClient()
+	require.NotNil(t, oapiClient)
 
 	params := kbapi.PostSavedObjectsImportParams{}
 	_, diags := kibanaoapi.ImportSavedObjects(t.Context(), oapiClient, "my-space", []byte("{}"), params)
@@ -146,8 +146,8 @@ func TestImportSavedObjects_400Response(t *testing.T) {
 	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 
-	oapiClient, err := apiClient.GetKibanaOapiClient()
-	require.NoError(t, err)
+	oapiClient := apiClient.GetKibanaOapiClient()
+	require.NotNil(t, oapiClient)
 
 	params := kbapi.PostSavedObjectsImportParams{}
 	result, diags := kibanaoapi.ImportSavedObjects(t.Context(), oapiClient, "", []byte("bad data"), params)
@@ -169,8 +169,8 @@ func TestImportSavedObjects_UnexpectedStatusCode(t *testing.T) {
 	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 
-	oapiClient, err := apiClient.GetKibanaOapiClient()
-	require.NoError(t, err)
+	oapiClient := apiClient.GetKibanaOapiClient()
+	require.NotNil(t, oapiClient)
 
 	params := kbapi.PostSavedObjectsImportParams{}
 	result, diags := kibanaoapi.ImportSavedObjects(t.Context(), oapiClient, "", []byte("{}"), params)
@@ -198,8 +198,8 @@ func TestImportSavedObjects_SuccessCountConvertedToInt64(t *testing.T) {
 	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 
-	oapiClient, err := apiClient.GetKibanaOapiClient()
-	require.NoError(t, err)
+	oapiClient := apiClient.GetKibanaOapiClient()
+	require.NotNil(t, oapiClient)
 
 	params := kbapi.PostSavedObjectsImportParams{}
 	result, diags := kibanaoapi.ImportSavedObjects(t.Context(), oapiClient, "", []byte("{}"), params)
@@ -230,8 +230,8 @@ func TestImportSavedObjects_QueryParamWiring(t *testing.T) {
 	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 
-	oapiClient, err := apiClient.GetKibanaOapiClient()
-	require.NoError(t, err)
+	oapiClient := apiClient.GetKibanaOapiClient()
+	require.NotNil(t, oapiClient)
 
 	trueVal := true
 	params := kbapi.PostSavedObjectsImportParams{

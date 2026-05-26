@@ -62,11 +62,7 @@ func prepareStreamsEnvironment(t *testing.T) {
 		t.Logf("prepareStreamsEnvironment: could not create Kibana client: %v", err)
 		return
 	}
-	kibanaClient, err := kibanaAPIClient.GetKibanaOapiClient()
-	if err != nil {
-		t.Logf("prepareStreamsEnvironment: could not get Kibana client: %v", err)
-		return
-	}
+	kibanaClient := kibanaAPIClient.GetKibanaOapiClient()
 
 	esAPIClient, esAPIErr := clients.NewAcceptanceTestingElasticsearchScopedClient()
 
@@ -161,9 +157,8 @@ func prepareStreamsEnvironment(t *testing.T) {
 	// go-elasticsearch typed client; raw HTTP via GetESClient() is required here.
 	if esAPIErr != nil {
 		t.Logf("prepareStreamsEnvironment: could not create ES client: %v", esAPIErr)
-	} else if esClient, esErr := esAPIClient.GetESClient(); esErr != nil {
-		t.Logf("prepareStreamsEnvironment: could not get ES client: %v", esErr)
 	} else {
+		esClient := esAPIClient.GetESClient()
 		viewBody, _ := json.Marshal(map[string]string{"query": "FROM " + logsRoot})
 		viewReq := &http.Request{
 			Method: http.MethodPut,
@@ -302,10 +297,7 @@ func checkQueryStreamsEnabled() func() (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		kibanaClient, err := apiClient.GetKibanaOapiClient()
-		if err != nil {
-			return false, err
-		}
+		kibanaClient := apiClient.GetKibanaOapiClient()
 		// Use logs.otel as parent (it is always present on 9.4+ SNAPSHOT installs).
 		// The view must be "$.{stream_name}" — the API enforces this convention.
 		const probeName = "logs.otel.__tfacc_query_probe__"

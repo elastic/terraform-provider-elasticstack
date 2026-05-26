@@ -20,8 +20,6 @@ package securityenablerule
 import (
 	"context"
 
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -29,8 +27,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
 
-func (r *EnableRuleResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+func getSchema(_ context.Context) schema.Schema {
+	return schema.Schema{
 		MarkdownDescription: enableRuleResourceDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -40,7 +38,7 @@ func (r *EnableRuleResource) Schema(_ context.Context, _ resource.SchemaRequest,
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"space_id": schema.StringAttribute{
+			attrSpaceID: schema.StringAttribute{
 				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
 				Optional:    true,
 				Computed:    true,
@@ -49,14 +47,14 @@ func (r *EnableRuleResource) Schema(_ context.Context, _ resource.SchemaRequest,
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"key": schema.StringAttribute{
+			attrKey: schema.StringAttribute{
 				Description: "The tag key to filter rules by (e.g., 'OS').",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"value": schema.StringAttribute{
+			attrValue: schema.StringAttribute{
 				Description: "The tag value to filter rules by (e.g., 'Windows').",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
@@ -75,8 +73,5 @@ func (r *EnableRuleResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Default:     booldefault.StaticBool(true),
 			},
 		},
-
-		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
-		}}
+	}
 }

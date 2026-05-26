@@ -27,13 +27,18 @@ import (
 )
 
 // BuildConfig writes Terraform state from pm into panel's typed API config.
-func BuildConfig(pm models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSloBurnRate) diag.Diagnostics {
+func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate) diag.Diagnostics {
 	cfg := pm.SloBurnRateConfig
 	if cfg == nil {
-		return nil
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Missing SLO burn rate panel configuration",
+			"SLO burn rate panels require `slo_burn_rate_config`.",
+		)
+		return diags
 	}
 
-	embeddable := kbapi.SloBurnRateEmbeddable{
+	embeddable := kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable{
 		SloId:    cfg.SloID.ValueString(),
 		Duration: cfg.Duration.ValueString(),
 	}
@@ -56,19 +61,19 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSloBurn
 
 	if len(cfg.Drilldowns) > 0 {
 		drilldowns := make([]struct {
-			EncodeUrl    *bool                                        `json:"encode_url,omitempty"` //nolint:revive
-			Label        string                                       `json:"label"`
-			OpenInNewTab *bool                                        `json:"open_in_new_tab,omitempty"`
-			Trigger      kbapi.SloBurnRateEmbeddableDrilldownsTrigger `json:"trigger"`
-			Type         kbapi.SloBurnRateEmbeddableDrilldownsType    `json:"type"`
-			Url          string                                       `json:"url"` //nolint:revive
+			EncodeUrl    *bool                                                      `json:"encode_url,omitempty"` //nolint:revive
+			Label        string                                                     `json:"label"`
+			OpenInNewTab *bool                                                      `json:"open_in_new_tab,omitempty"`
+			Trigger      kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTrigger `json:"trigger"`
+			Type         kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsType    `json:"type"`
+			Url          string                                                     `json:"url"` //nolint:revive
 		}, len(cfg.Drilldowns))
 
 		for i, d := range cfg.Drilldowns {
 			drilldowns[i].Url = d.URL.ValueString()
 			drilldowns[i].Label = d.Label.ValueString()
-			drilldowns[i].Trigger = kbapi.SloBurnRateEmbeddableDrilldownsTriggerOnOpenPanelMenu
-			drilldowns[i].Type = kbapi.SloBurnRateEmbeddableDrilldownsTypeUrlDrilldown
+			drilldowns[i].Trigger = kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTriggerOnOpenPanelMenu
+			drilldowns[i].Type = kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTypeUrlDrilldown
 			if typeutils.IsKnown(d.EncodeURL) {
 				drilldowns[i].EncodeUrl = d.EncodeURL.ValueBoolPointer()
 			}
@@ -84,7 +89,7 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSloBurn
 }
 
 // PopulateFromAPI maps Kibana SLO burn rate embeddable config into Terraform panel state while preserving prior null intent.
-func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig kbapi.SloBurnRateEmbeddable) diag.Diagnostics {
+func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable) diag.Diagnostics {
 	// On import (prior == nil) populate from API unconditionally.
 	if prior == nil {
 		cfg := &models.SloBurnRateConfigModel{
@@ -135,12 +140,12 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 
 func readSloBurnRateDrilldownsFromAPI(
 	apiDrilldowns *[]struct {
-		EncodeUrl    *bool                                        `json:"encode_url,omitempty"` //nolint:revive
-		Label        string                                       `json:"label"`
-		OpenInNewTab *bool                                        `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.SloBurnRateEmbeddableDrilldownsTrigger `json:"trigger"`
-		Type         kbapi.SloBurnRateEmbeddableDrilldownsType    `json:"type"`
-		Url          string                                       `json:"url"` //nolint:revive
+		EncodeUrl    *bool                                                      `json:"encode_url,omitempty"` //nolint:revive
+		Label        string                                                     `json:"label"`
+		OpenInNewTab *bool                                                      `json:"open_in_new_tab,omitempty"`
+		Trigger      kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTrigger `json:"trigger"`
+		Type         kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsType    `json:"type"`
+		Url          string                                                     `json:"url"` //nolint:revive
 	},
 	priorDrilldowns []models.URLDrilldownModel,
 ) []models.URLDrilldownModel {

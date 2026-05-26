@@ -163,10 +163,7 @@ func checkResourceAgentPolicyDestroy(s *terraform.State) error {
 			continue
 		}
 
-		fleetClient, err := client.GetFleetClient()
-		if err != nil {
-			return err
-		}
+		fleetClient := client.GetFleetClient()
 		policy, diags := fleet.GetAgentPolicy(context.Background(), fleetClient, rs.Primary.ID, "")
 		if diags.HasError() {
 			return diagutil.FwDiagsAsError(diags)

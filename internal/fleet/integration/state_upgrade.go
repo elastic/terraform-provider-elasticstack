@@ -50,13 +50,13 @@ func getSchemaV0() *schema.Schema {
 			"id": schema.StringAttribute{
 				Computed: true,
 			},
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				Required: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"version": schema.StringAttribute{
+			attrVersion: schema.StringAttribute{
 				Required: true,
 			},
 			"force": schema.BoolAttribute{

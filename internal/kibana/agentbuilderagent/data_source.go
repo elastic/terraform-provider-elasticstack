@@ -24,7 +24,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -61,12 +60,11 @@ func NewDataSource() datasource.DataSource {
 func readAgentDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config agentDataSourceModel) (agentDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	serverVersion, sdkDiags := kbClient.ServerVersion(ctx)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	supportsAdvancedConfig, verDiags := kbClient.EnforceMinVersion(ctx, minVersionAdvancedAgentConfig)
+	diags.Append(verDiags...)
 	if diags.HasError() {
 		return config, diags
 	}
-	supportsAdvancedConfig := !serverVersion.LessThan(minVersionAdvancedAgentConfig)
 
 	if !typeutils.IsKnown(config.AgentID) || config.AgentID.ValueString() == "" {
 		diags.AddError("Invalid configuration", "agent_id must be set.")
@@ -79,11 +77,7 @@ func readAgentDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 		includeDeps = config.IncludeDependencies.ValueBool()
 	}
 
-	client, err := kbClient.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("unable to get Kibana client", err.Error())
-		return config, diags
-	}
+	client := kbClient.GetKibanaOapiClient()
 
 	spaceID := "default"
 	if typeutils.IsKnown(config.SpaceID) && config.SpaceID.ValueString() != "" {
@@ -91,7 +85,7 @@ func readAgentDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 	}
 
 	agentID := config.AgentID.ValueString()
-	if compID, idDiags := clients.CompositeIDFromStrFw(agentID); !idDiags.HasError() {
+	if compID, idDiags := clients.CompositeIDFromStr(agentID); !idDiags.HasError() {
 		agentID = compID.ResourceID
 		if !typeutils.IsKnown(config.SpaceID) || config.SpaceID.ValueString() == "" {
 			spaceID = compID.ClusterID

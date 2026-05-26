@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -105,7 +106,7 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 	}
 
 	if !tm.Alias.IsNull() && !tm.Alias.IsUnknown() {
-		aliases, d2 := expandAliasSet(ctx, tm.Alias)
+		aliases, d2 := aliasutil.ExpandAliasSet(ctx, tm.Alias)
 		diags.Append(d2...)
 		if diags.HasError() {
 			return nil, diags
@@ -113,42 +114,14 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 		t.Aliases = aliases
 	}
 
-	return t, diags
-}
-
-// expandAliasSet expands a set of alias objects to map[string]models.IndexAlias.
-func expandAliasSet(ctx context.Context, set types.Set) (map[string]models.IndexAlias, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if set.IsNull() || set.IsUnknown() {
-		return nil, diags
-	}
-
-	var elems []AliasModel
-	diags.Append(set.ElementsAs(ctx, &elems, false)...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	aliases := make(map[string]models.IndexAlias, len(elems))
-	for _, am := range elems {
-		ia, d := expandAliasElement(am)
-		if d.HasError() {
-			return nil, d
+	if !tm.DataStreamOptions.IsNull() && !tm.DataStreamOptions.IsUnknown() {
+		dso, d2 := datastreamoptions.Expand(tm.DataStreamOptions)
+		diags.Append(d2...)
+		if diags.HasError() {
+			return nil, diags
 		}
-		aliases[am.Name.ValueString()] = ia
+		t.DataStreamOptions = dso
 	}
-	return aliases, diags
-}
 
-// expandAliasElement converts a single AliasModel to a models.IndexAlias.
-func expandAliasElement(am AliasModel) (models.IndexAlias, diag.Diagnostics) {
-	return aliasutil.ExpandAliasFields(aliasutil.AliasFields{
-		Name:          am.Name,
-		Filter:        am.Filter,
-		IndexRouting:  am.IndexRouting,
-		SearchRouting: am.SearchRouting,
-		Routing:       am.Routing,
-		IsHidden:      am.IsHidden,
-		IsWriteIndex:  am.IsWriteIndex,
-	})
+	return t, diags
 }

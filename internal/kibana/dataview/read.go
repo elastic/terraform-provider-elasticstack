@@ -20,49 +20,36 @@ package dataview
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var stateModel dataViewModel
+func readDataView(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	viewID string,
+	spaceID string,
+	model dataViewModel,
+) (dataViewModel, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	diags := req.State.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
-
-	viewID, spaceID := stateModel.getViewIDAndSpaceID()
-	dataView, diags := kibanaoapi.GetDataView(ctx, oapiClient, spaceID, viewID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	dataView, readDiags := kibanaoapi.GetDataView(ctx, oapiClient, spaceID, viewID)
+	diags.Append(readDiags...)
+	if diags.HasError() {
+		return model, false, diags
 	}
 
 	if dataView == nil {
-		resp.State.RemoveResource(ctx)
-		return
+		return model, false, diags
 	}
 
-	diags = stateModel.populateFromAPI(ctx, dataView, spaceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(model.populateFromAPI(ctx, dataView, spaceID)...)
+	if diags.HasError() {
+		return model, false, diags
 	}
 
-	diags = resp.State.Set(ctx, stateModel)
-	resp.Diagnostics.Append(diags...)
+	return model, true, diags
 }

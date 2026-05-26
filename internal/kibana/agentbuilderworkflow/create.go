@@ -20,58 +20,37 @@ package agentbuilderworkflow
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *WorkflowResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var planModel workflowModel
+func createWorkflow(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[workflowModel]) (entitycore.KibanaWriteResult[workflowModel], diag.Diagnostics) {
+	plan := req.Plan
+	var diags diag.Diagnostics
 
-	diags := req.Plan.Get(ctx, &planModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	body := plan.toAPICreateModel()
+
+	oapiClient := client.GetKibanaOapiClient()
+
+	created, d := kibanaoapi.CreateWorkflow(ctx, oapiClient, req.SpaceID, body)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[workflowModel]{}, diags
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	plan.SpaceID = types.StringValue(req.SpaceID)
+	// workflow_id is Computed+Optional: when the caller omits it, the API
+	// generates one and returns it on the POST response. Capture it on the
+	// plan so the envelope's read-after-write step can resolve the identity.
+	if created != nil {
+		plan.WorkflowID = types.StringValue(created.ID)
+		if !created.Valid {
+			diags.AddError("Invalid workflow", "The workflow was created but its configuration is invalid. Please check the YAML definition.")
+		}
 	}
 
-	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderAPIVersion, "workflows", &resp.Diagnostics) {
-		return
-	}
-
-	body := planModel.toAPICreateModel()
-
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
-
-	spaceID := planModel.SpaceID.ValueString()
-
-	created, diags := kibanaoapi.CreateWorkflow(ctx, oapiClient, spaceID, body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	workflow, diags := kibanaoapi.GetWorkflow(ctx, oapiClient, spaceID, created.ID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	planModel.populateFromAPI(workflow)
-
-	diags = resp.State.Set(ctx, planModel)
-	resp.Diagnostics.Append(diags...)
-
-	if !workflow.Valid {
-		resp.Diagnostics.AddError("Invalid workflow", "The workflow was created but its configuration is invalid. Please check the YAML definition.")
-	}
+	return entitycore.KibanaWriteResult[workflowModel]{Model: plan}, diags
 }

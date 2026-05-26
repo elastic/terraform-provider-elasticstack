@@ -27,138 +27,15 @@ import (
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	sdkdiags "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type elasticsearchConfig struct {
 	config                 elasticsearch.Config
 	bearerToken            string
 	esClientAuthentication string
-}
-
-func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key string, useEnvAsDefault bool) (*elasticsearchConfig, sdkdiags.Diagnostics) {
-	esConn, ok := d.GetOk(key)
-	if !ok {
-		if !useEnvAsDefault {
-			return nil, nil
-		}
-
-		cfg := base.toElasticsearchConfig().withEnvironmentOverrides()
-		if len(cfg.config.Addresses) == 0 {
-			return nil, nil
-		}
-
-		return &cfg, nil
-	}
-
-	var diags sdkdiags.Diagnostics
-	config := base.toElasticsearchConfig()
-
-	// if defined, then we only have a single entry
-	if es := esConn.([]any)[0]; es != nil {
-		esConfig := es.(map[string]any)
-
-		if endpoints, ok := esConfig["endpoints"]; ok && len(endpoints.([]any)) > 0 {
-			var addrs []string
-			for _, e := range endpoints.([]any) {
-				addrs = append(addrs, e.(string))
-			}
-			config.config.Addresses = addrs
-		}
-
-		if headers, ok := esConfig["headers"]; ok && len(headers.(map[string]any)) > 0 {
-			headersMap := headers.(map[string]any)
-			for header, value := range headersMap {
-				config.config.Header.Add(strings.TrimSpace(header), strings.TrimSpace(value.(string)))
-			}
-		}
-
-		if bearerToken, ok := esConfig["bearer_token"].(string); ok && bearerToken != "" {
-			config.bearerToken = bearerToken
-		}
-
-		if esClientAuthentication, ok := esConfig["es_client_authentication"].(string); ok && esClientAuthentication != "" {
-			config.esClientAuthentication = esClientAuthentication
-		}
-
-		if insecure, ok := esConfig["insecure"]; ok && insecure.(bool) {
-			tlsClientConfig := config.ensureTLSClientConfig()
-			tlsClientConfig.InsecureSkipVerify = true
-		}
-
-		if caFile, ok := esConfig["ca_file"]; ok && caFile.(string) != "" {
-			caCert, err := os.ReadFile(caFile.(string))
-			if err != nil {
-				diags = append(diags, sdkdiags.Diagnostic{
-					Severity: sdkdiags.Error,
-					Summary:  "Unable to read CA File",
-					Detail:   err.Error(),
-				})
-				return nil, diags
-			}
-			config.config.CACert = caCert
-		}
-		if caData, ok := esConfig["ca_data"]; ok && caData.(string) != "" {
-			config.config.CACert = []byte(caData.(string))
-		}
-
-		if certFile, ok := esConfig["cert_file"]; ok && certFile.(string) != "" {
-			if keyFile, ok := esConfig["key_file"]; ok && keyFile.(string) != "" {
-				cert, err := tls.LoadX509KeyPair(certFile.(string), keyFile.(string))
-				if err != nil {
-					diags = append(diags, sdkdiags.Diagnostic{
-						Severity: sdkdiags.Error,
-						Summary:  "Unable to read certificate or key file",
-						Detail:   err.Error(),
-					})
-					return nil, diags
-				}
-				tlsClientConfig := config.ensureTLSClientConfig()
-				tlsClientConfig.Certificates = []tls.Certificate{cert}
-			} else {
-				diags = append(diags, sdkdiags.Diagnostic{
-					Severity: sdkdiags.Error,
-					Summary:  "Unable to read key file",
-					Detail:   "Path to key file has not been configured or is empty",
-				})
-				return nil, diags
-			}
-		}
-		if certData, ok := esConfig["cert_data"]; ok && certData.(string) != "" {
-			if keyData, ok := esConfig["key_data"]; ok && keyData.(string) != "" {
-				cert, err := tls.X509KeyPair([]byte(certData.(string)), []byte(keyData.(string)))
-				if err != nil {
-					diags = append(diags, sdkdiags.Diagnostic{
-						Severity: sdkdiags.Error,
-						Summary:  "Unable to parse certificate or key",
-						Detail:   err.Error(),
-					})
-					return nil, diags
-				}
-				tlsClientConfig := config.ensureTLSClientConfig()
-				tlsClientConfig.Certificates = []tls.Certificate{cert}
-			} else {
-				diags = append(diags, sdkdiags.Diagnostic{
-					Severity: sdkdiags.Error,
-					Summary:  "Unable to parse key",
-					Detail:   "Key data has not been configured or is empty",
-				})
-				return nil, diags
-			}
-		}
-	}
-
-	if logging.IsDebugOrHigher() {
-		config.config.EnableDebugLogger = true
-		config.config.Logger = &debugLogger{Name: "elasticsearch"}
-	}
-
-	config = config.withEnvironmentOverrides()
-	return &config, nil
 }
 
 func newElasticsearchConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (*elasticsearchConfig, fwdiags.Diagnostics) {
@@ -238,7 +115,7 @@ func newElasticsearchConfigFromFramework(ctx context.Context, cfg ProviderConfig
 		}
 	}
 
-	if logging.IsDebugOrHigher() {
+	if debugutils.IsDebugOrHigher() {
 		config.config.EnableDebugLogger = true
 		config.config.Logger = &debugLogger{Name: "elasticsearch"}
 	}

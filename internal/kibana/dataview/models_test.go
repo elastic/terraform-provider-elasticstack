@@ -48,13 +48,13 @@ func TestPopulateFromAPI(t *testing.T) {
 				DataView: typeutils.ObjectValueFrom(ctx, &innerModel{
 					SourceFilters:   types.ListNull(types.StringType),
 					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
-					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
-					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType(ctx)),
+					FieldFormats:    types.MapNull(getFieldFormatElemType(ctx)),
 					Namespaces:      typeutils.ListValueFrom(ctx, []string{"existing-namespace"}, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
-				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+				}, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags),
 			},
 			response: kbapi.DataViewsDataViewResponseObject{
-				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+				DataView: &dataViewsDataViewResponseObjectInner{
 					Title:         new("title"),
 					Name:          new("name"),
 					Id:            new("id"),
@@ -79,7 +79,7 @@ func TestPopulateFromAPI(t *testing.T) {
 					RuntimeFieldMap: &map[string]kbapi.DataViewsRuntimefieldmap{
 						"runtime_field": {
 							Type: "keyword",
-							Script: kbapi.DataViewsRuntimefieldmapScript{
+							Script: dataViewsRuntimefieldmapScript{
 								Source: new("emit('hello')"),
 							},
 						},
@@ -108,16 +108,16 @@ func TestPopulateFromAPI(t *testing.T) {
 							Type:         types.StringValue("keyword"),
 							ScriptSource: types.StringValue("emit('hello')"),
 						},
-					}, getRuntimeFieldMapElemType(), path.Root("data_view").AtName("runtime_field_map"), &diags),
+					}, getRuntimeFieldMapElemType(ctx), path.Root("data_view").AtName("runtime_field_map"), &diags),
 					FieldFormats: typeutils.MapValueFrom(ctx, map[string]fieldFormatModel{
 						"field1": {
 							ID:     types.StringValue("field1"),
-							Params: types.ObjectNull(getFieldFormatParamsAttrTypes()),
+							Params: types.ObjectNull(getFieldFormatParamsAttrTypes(ctx)),
 						},
-					}, getFieldFormatElemType(), path.Root("data_view").AtName("field_formats"), &diags),
+					}, getFieldFormatElemType(ctx), path.Root("data_view").AtName("field_formats"), &diags),
 					AllowNoIndex: types.BoolValue(true),
 					Namespaces:   typeutils.ListValueFrom(ctx, []string{"existing-namespace"}, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
-				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+				}, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags),
 			},
 		},
 		{
@@ -131,12 +131,12 @@ func TestPopulateFromAPI(t *testing.T) {
 					Namespaces:      typeutils.ListValueFrom[string](ctx, nil, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
 					SourceFilters:   types.ListNull(types.StringType),
 					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
-					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
-					FieldFormats:    types.MapNull(getFieldFormatElemType()),
-				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType(ctx)),
+					FieldFormats:    types.MapNull(getFieldFormatElemType(ctx)),
+				}, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags),
 			},
 			response: kbapi.DataViewsDataViewResponseObject{
-				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+				DataView: &dataViewsDataViewResponseObjectInner{
 					Id:         new("id"),
 					Namespaces: &[]string{"default"},
 				},
@@ -149,9 +149,9 @@ func TestPopulateFromAPI(t *testing.T) {
 					Namespaces:      typeutils.ListValueFrom[string](ctx, nil, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
 					SourceFilters:   types.ListNull(types.StringType),
 					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
-					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
-					FieldFormats:    types.MapNull(getFieldFormatElemType()),
-				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType(ctx)),
+					FieldFormats:    types.MapNull(getFieldFormatElemType(ctx)),
+				}, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags),
 			},
 		},
 		{
@@ -165,12 +165,12 @@ func TestPopulateFromAPI(t *testing.T) {
 					Namespaces:      typeutils.ListValueFrom(ctx, []string{"space_id"}, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
 					SourceFilters:   types.ListNull(types.StringType),
 					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
-					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
-					FieldFormats:    types.MapNull(getFieldFormatElemType()),
-				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType(ctx)),
+					FieldFormats:    types.MapNull(getFieldFormatElemType(ctx)),
+				}, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags),
 			},
 			response: kbapi.DataViewsDataViewResponseObject{
-				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+				DataView: &dataViewsDataViewResponseObjectInner{
 					Id:         new("dataview_id"),
 					Namespaces: &[]string{"space_id"},
 				},
@@ -183,9 +183,9 @@ func TestPopulateFromAPI(t *testing.T) {
 					Namespaces:      typeutils.ListValueFrom(ctx, []string{"space_id"}, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
 					SourceFilters:   types.ListNull(types.StringType),
 					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
-					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
-					FieldFormats:    types.MapNull(getFieldFormatElemType()),
-				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType(ctx)),
+					FieldFormats:    types.MapNull(getFieldFormatElemType(ctx)),
+				}, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags),
 			},
 		},
 		{
@@ -199,12 +199,12 @@ func TestPopulateFromAPI(t *testing.T) {
 					Namespaces:      typeutils.ListValueFrom(ctx, []string{"ns1", "ns2"}, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
 					SourceFilters:   types.ListNull(types.StringType),
 					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
-					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
-					FieldFormats:    types.MapNull(getFieldFormatElemType()),
-				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType(ctx)),
+					FieldFormats:    types.MapNull(getFieldFormatElemType(ctx)),
+				}, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags),
 			},
 			response: kbapi.DataViewsDataViewResponseObject{
-				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+				DataView: &dataViewsDataViewResponseObjectInner{
 					Id:         new("placeholder"),
 					Namespaces: &[]string{"test", "ns1", "ns2"},
 				},
@@ -217,9 +217,9 @@ func TestPopulateFromAPI(t *testing.T) {
 					Namespaces:      typeutils.ListValueFrom(ctx, []string{"ns1", "ns2"}, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
 					SourceFilters:   types.ListNull(types.StringType),
 					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
-					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
-					FieldFormats:    types.MapNull(getFieldFormatElemType()),
-				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType(ctx)),
+					FieldFormats:    types.MapNull(getFieldFormatElemType(ctx)),
+				}, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags),
 			},
 		},
 		{
@@ -231,13 +231,13 @@ func TestPopulateFromAPI(t *testing.T) {
 					ID:              types.StringValue("view-id"),
 					SourceFilters:   types.ListNull(types.StringType),
 					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
-					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
-					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType(ctx)),
+					FieldFormats:    types.MapNull(getFieldFormatElemType(ctx)),
 					Namespaces:      types.ListNull(types.StringType),
-				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+				}, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags),
 			},
 			response: kbapi.DataViewsDataViewResponseObject{
-				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+				DataView: &dataViewsDataViewResponseObjectInner{
 					Id: new("view-id"),
 					FieldAttrs: &map[string]kbapi.DataViewsFieldattrs{
 						"host.hostname": {
@@ -253,10 +253,10 @@ func TestPopulateFromAPI(t *testing.T) {
 					ID:              types.StringValue("view-id"),
 					SourceFilters:   types.ListNull(types.StringType),
 					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
-					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
-					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType(ctx)),
+					FieldFormats:    types.MapNull(getFieldFormatElemType(ctx)),
 					Namespaces:      types.ListNull(types.StringType),
-				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+				}, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags),
 			},
 		},
 		{
@@ -268,13 +268,13 @@ func TestPopulateFromAPI(t *testing.T) {
 					ID:              types.StringValue("view-id"),
 					SourceFilters:   types.ListNull(types.StringType),
 					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
-					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
-					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType(ctx)),
+					FieldFormats:    types.MapNull(getFieldFormatElemType(ctx)),
 					Namespaces:      types.ListNull(types.StringType),
-				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+				}, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags),
 			},
 			response: kbapi.DataViewsDataViewResponseObject{
-				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+				DataView: &dataViewsDataViewResponseObjectInner{
 					Id: new("view-id"),
 					FieldAttrs: &map[string]kbapi.DataViewsFieldattrs{
 						// Kibana echoes cleared field metadata using explicit JSON null keys.
@@ -289,10 +289,10 @@ func TestPopulateFromAPI(t *testing.T) {
 					ID:              types.StringValue("view-id"),
 					SourceFilters:   types.ListNull(types.StringType),
 					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
-					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
-					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType(ctx)),
+					FieldFormats:    types.MapNull(getFieldFormatElemType(ctx)),
 					Namespaces:      types.ListNull(types.StringType),
-				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+				}, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags),
 			},
 		},
 		{
@@ -311,13 +311,13 @@ func TestPopulateFromAPI(t *testing.T) {
 							},
 						}, getFieldAttrElemType(), path.Root("data_view").AtName("field_attrs"), &diags),
 					},
-					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
-					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType(ctx)),
+					FieldFormats:    types.MapNull(getFieldFormatElemType(ctx)),
 					Namespaces:      types.ListNull(types.StringType),
-				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+				}, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags),
 			},
 			response: kbapi.DataViewsDataViewResponseObject{
-				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+				DataView: &dataViewsDataViewResponseObjectInner{
 					Id: new("view-id"),
 					FieldAttrs: &map[string]kbapi.DataViewsFieldattrs{
 						"host.hostname": {
@@ -341,10 +341,10 @@ func TestPopulateFromAPI(t *testing.T) {
 							},
 						}, getFieldAttrElemType(), path.Root("data_view").AtName("field_attrs"), &diags),
 					},
-					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
-					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType(ctx)),
+					FieldFormats:    types.MapNull(getFieldFormatElemType(ctx)),
 					Namespaces:      types.ListNull(types.StringType),
-				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+				}, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags),
 			},
 		},
 	}
@@ -392,7 +392,7 @@ func TestToAPICreateModel(t *testing.T) {
 							Type:         types.StringValue("keyword"),
 							ScriptSource: types.StringValue("emit(\"hello\")"),
 						},
-					}, getRuntimeFieldMapElemType(), path.Root("data_view").AtName("runtime_field_map"), &diags),
+					}, getRuntimeFieldMapElemType(ctx), path.Root("data_view").AtName("runtime_field_map"), &diags),
 					FieldFormats: typeutils.MapValueFrom(ctx, map[string]fieldFormatModel{
 						"field1": {
 							ID: types.StringValue("field1"),
@@ -400,9 +400,9 @@ func TestToAPICreateModel(t *testing.T) {
 								Pattern:       types.StringValue("0.00"),
 								URLTemplate:   types.StringValue("https://test.com/{{value}}"),
 								LabelTemplate: types.StringValue("{{value}}"),
-								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
-								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("field1").AtName("params"), &diags),
+								Colors:        types.ListNull(getFieldFormatParamsColorsElemType(ctx)),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType(ctx)),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("field1").AtName("params"), &diags),
 						},
 						"host.uptime": {
 							ID: types.StringValue("duration"),
@@ -412,26 +412,26 @@ func TestToAPICreateModel(t *testing.T) {
 								OutputPrecision:        types.Int64Value(2),
 								IncludeSpaceWithSuffix: types.BoolValue(true),
 								UseShortSuffix:         types.BoolValue(true),
-								Colors:                 types.ListNull(getFieldFormatParamsColorsElemType()),
-								LookupEntries:          types.ListNull(getFieldFormatParamsLookupEntryElemType()),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("host.uptime").AtName("params"), &diags),
+								Colors:                 types.ListNull(getFieldFormatParamsColorsElemType(ctx)),
+								LookupEntries:          types.ListNull(getFieldFormatParamsLookupEntryElemType(ctx)),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("host.uptime").AtName("params"), &diags),
 						},
 						"user.last_password_change": {
 							ID:     types.StringValue("relative_date"),
-							Params: types.ObjectNull(getFieldFormatParamsAttrTypes()),
+							Params: types.ObjectNull(getFieldFormatParamsAttrTypes(ctx)),
 						},
 						"user.last_login": {
 							ID: types.StringValue("date"),
 							Params: typeutils.ObjectValueFrom(ctx, &fieldFormatParamsModel{
 								Pattern:       types.StringValue("MMM D, YYYY @ HH:mm:ss.SSS"),
 								Timezone:      types.StringValue("America/New_York"),
-								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
-								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("user.last_login").AtName("params"), &diags),
+								Colors:        types.ListNull(getFieldFormatParamsColorsElemType(ctx)),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType(ctx)),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("user.last_login").AtName("params"), &diags),
 						},
 						"user.is_active": {
 							ID:     types.StringValue("boolean"),
-							Params: types.ObjectNull(getFieldFormatParamsAttrTypes()),
+							Params: types.ObjectNull(getFieldFormatParamsAttrTypes(ctx)),
 						},
 						"user.status": {
 							ID: types.StringValue("color"),
@@ -444,30 +444,30 @@ func TestToAPICreateModel(t *testing.T) {
 										Text:       types.StringValue("#000000"),
 										Background: types.StringValue("#ffffff"),
 									},
-								}, getFieldFormatParamsColorsElemType(), path.Root("data_view").AtName("field_formats").AtMapKey("user.status").AtName("params").AtName("colors"), &diags),
-								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("user.status").AtName("params"), &diags),
+								}, getFieldFormatParamsColorsElemType(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("user.status").AtName("params").AtName("colors"), &diags),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType(ctx)),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("user.status").AtName("params"), &diags),
 						},
 						"user.message": {
 							ID: types.StringValue("truncate"),
 							Params: typeutils.ObjectValueFrom(ctx, &fieldFormatParamsModel{
 								FieldLength:   types.Int64Value(10),
-								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
-								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("user.message").AtName("params"), &diags),
+								Colors:        types.ListNull(getFieldFormatParamsColorsElemType(ctx)),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType(ctx)),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("user.message").AtName("params"), &diags),
 						},
 						"host.name": {
 							ID: types.StringValue("string"),
 							Params: typeutils.ObjectValueFrom(ctx, &fieldFormatParamsModel{
 								Transform:     types.StringValue("upper"),
-								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
-								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("host.name").AtName("params"), &diags),
+								Colors:        types.ListNull(getFieldFormatParamsColorsElemType(ctx)),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType(ctx)),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("host.name").AtName("params"), &diags),
 						},
 						"response.code": {
 							ID: types.StringValue("static_lookup"),
 							Params: typeutils.ObjectValueFrom(ctx, &fieldFormatParamsModel{
-								Colors: types.ListNull(getFieldFormatParamsColorsElemType()),
+								Colors: types.ListNull(getFieldFormatParamsColorsElemType(ctx)),
 								LookupEntries: typeutils.ListValueFrom(ctx, []lookupEntryModel{
 									{
 										Key:   types.StringValue("200"),
@@ -477,9 +477,9 @@ func TestToAPICreateModel(t *testing.T) {
 										Key:   types.StringValue("404"),
 										Value: types.StringValue("Not Found"),
 									},
-								}, getFieldFormatParamsLookupEntryElemType(), path.Root("data_view").AtName("field_formats").AtMapKey("response.code").AtName("params").AtName("lookup_entries"), &diags),
+								}, getFieldFormatParamsLookupEntryElemType(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("response.code").AtName("params").AtName("lookup_entries"), &diags),
 								UnknownKeyValue: types.StringValue("Unknown"),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("response.code").AtName("params"), &diags),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("response.code").AtName("params"), &diags),
 						},
 						"url.original": {
 							ID: types.StringValue("url"),
@@ -487,9 +487,9 @@ func TestToAPICreateModel(t *testing.T) {
 								Type:          types.StringValue("a"),
 								URLTemplate:   types.StringValue("URL TEMPLATE"),
 								LabelTemplate: types.StringValue("LABEL TEMPLATE"),
-								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
-								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("url.original").AtName("params"), &diags),
+								Colors:        types.ListNull(getFieldFormatParamsColorsElemType(ctx)),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType(ctx)),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("url.original").AtName("params"), &diags),
 						},
 						"user.profile_picture": {
 							ID: types.StringValue("url"),
@@ -499,9 +499,9 @@ func TestToAPICreateModel(t *testing.T) {
 								LabelTemplate: types.StringValue("LABEL TEMPLATE"),
 								Width:         types.Int64Value(6),
 								Height:        types.Int64Value(4),
-								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
-								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("user.profile_picture").AtName("params"), &diags),
+								Colors:        types.ListNull(getFieldFormatParamsColorsElemType(ctx)),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType(ctx)),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("user.profile_picture").AtName("params"), &diags),
 						},
 						"user.answering_message": {
 							ID: types.StringValue("url"),
@@ -509,14 +509,14 @@ func TestToAPICreateModel(t *testing.T) {
 								Type:          types.StringValue("audio"),
 								URLTemplate:   types.StringValue("URL TEMPLATE"),
 								LabelTemplate: types.StringValue("LABEL TEMPLATE"),
-								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
-								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("user.answering_message").AtName("params"), &diags),
+								Colors:        types.ListNull(getFieldFormatParamsColorsElemType(ctx)),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType(ctx)),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("user.answering_message").AtName("params"), &diags),
 						},
-					}, getFieldFormatElemType(), path.Root("data_view").AtName("field_formats"), &diags),
+					}, getFieldFormatElemType(ctx), path.Root("data_view").AtName("field_formats"), &diags),
 					AllowNoIndex: types.BoolValue(true),
 					Namespaces:   typeutils.ListValueFrom(ctx, []string{"backend", "o11y"}, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
-				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+				}, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags),
 				Override: types.BoolValue(true),
 			},
 			expectedRequest: kbapi.DataViewsCreateDataViewRequestObject{
@@ -635,12 +635,12 @@ func TestToAPICreateModel(t *testing.T) {
 					RuntimeFieldMap: &map[string]kbapi.DataViewsRuntimefieldmap{
 						"runtime_field": {
 							Type: "keyword",
-							Script: kbapi.DataViewsRuntimefieldmapScript{
+							Script: dataViewsRuntimefieldmapScript{
 								Source: new("emit(\"hello\")"),
 							},
 						},
 					},
-					SourceFilters: &[]kbapi.DataViewsSourcefilterItem{
+					SourceFilters: &[]dataViewsSourcefilterItem{
 						{Value: "field1"},
 						{Value: "field2"},
 					},
@@ -661,11 +661,11 @@ func TestToAPICreateModel(t *testing.T) {
 					TimeFieldName:   types.StringValue("time_field_name"),
 					SourceFilters:   types.ListNull(types.StringType),
 					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
-					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
-					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType(ctx)),
+					FieldFormats:    types.MapNull(getFieldFormatElemType(ctx)),
 					AllowNoIndex:    types.BoolValue(true),
 					Namespaces:      types.ListNull(types.StringType),
-				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+				}, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags),
 			},
 			expectedRequest: kbapi.DataViewsCreateDataViewRequestObject{
 				Override: nil,
@@ -722,7 +722,7 @@ func TestToAPIUpdateModel(t *testing.T) {
 							Type:         types.StringValue("keyword"),
 							ScriptSource: types.StringValue("emit(\"hello\")"),
 						},
-					}, getRuntimeFieldMapElemType(), path.Root("data_view").AtName("runtime_field_map"), &diags),
+					}, getRuntimeFieldMapElemType(ctx), path.Root("data_view").AtName("runtime_field_map"), &diags),
 					FieldFormats: typeutils.MapValueFrom(ctx, map[string]fieldFormatModel{
 						"field1": {
 							ID: types.StringValue("field1"),
@@ -730,9 +730,9 @@ func TestToAPIUpdateModel(t *testing.T) {
 								Pattern:       types.StringValue("0.00"),
 								URLTemplate:   types.StringValue("https://test.com/{{value}}"),
 								LabelTemplate: types.StringValue("{{value}}"),
-								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
-								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("field1").AtName("params"), &diags),
+								Colors:        types.ListNull(getFieldFormatParamsColorsElemType(ctx)),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType(ctx)),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("field1").AtName("params"), &diags),
 						},
 						"host.uptime": {
 							ID: types.StringValue("duration"),
@@ -742,26 +742,26 @@ func TestToAPIUpdateModel(t *testing.T) {
 								OutputPrecision:        types.Int64Value(2),
 								IncludeSpaceWithSuffix: types.BoolValue(true),
 								UseShortSuffix:         types.BoolValue(true),
-								Colors:                 types.ListNull(getFieldFormatParamsColorsElemType()),
-								LookupEntries:          types.ListNull(getFieldFormatParamsLookupEntryElemType()),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("host.uptime").AtName("params"), &diags),
+								Colors:                 types.ListNull(getFieldFormatParamsColorsElemType(ctx)),
+								LookupEntries:          types.ListNull(getFieldFormatParamsLookupEntryElemType(ctx)),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("host.uptime").AtName("params"), &diags),
 						},
 						"user.last_password_change": {
 							ID:     types.StringValue("relative_date"),
-							Params: types.ObjectNull(getFieldFormatParamsAttrTypes()),
+							Params: types.ObjectNull(getFieldFormatParamsAttrTypes(ctx)),
 						},
 						"user.last_login": {
 							ID: types.StringValue("date"),
 							Params: typeutils.ObjectValueFrom(ctx, &fieldFormatParamsModel{
 								Pattern:       types.StringValue("MMM D, YYYY @ HH:mm:ss.SSS"),
 								Timezone:      types.StringValue("America/New_York"),
-								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
-								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("user.last_login").AtName("params"), &diags),
+								Colors:        types.ListNull(getFieldFormatParamsColorsElemType(ctx)),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType(ctx)),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("user.last_login").AtName("params"), &diags),
 						},
 						"user.is_active": {
 							ID:     types.StringValue("boolean"),
-							Params: types.ObjectNull(getFieldFormatParamsAttrTypes()),
+							Params: types.ObjectNull(getFieldFormatParamsAttrTypes(ctx)),
 						},
 						"user.status": {
 							ID: types.StringValue("color"),
@@ -774,25 +774,25 @@ func TestToAPIUpdateModel(t *testing.T) {
 										Text:       types.StringValue("#000000"),
 										Background: types.StringValue("#ffffff"),
 									},
-								}, getFieldFormatParamsColorsElemType(), path.Root("data_view").AtName("field_formats").AtMapKey("user.status").AtName("params").AtName("colors"), &diags),
-								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("user.status").AtName("params"), &diags),
+								}, getFieldFormatParamsColorsElemType(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("user.status").AtName("params").AtName("colors"), &diags),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType(ctx)),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("user.status").AtName("params"), &diags),
 						},
 						"user.message": {
 							ID: types.StringValue("truncate"),
 							Params: typeutils.ObjectValueFrom(ctx, &fieldFormatParamsModel{
 								FieldLength:   types.Int64Value(10),
-								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
-								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("user.message").AtName("params"), &diags),
+								Colors:        types.ListNull(getFieldFormatParamsColorsElemType(ctx)),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType(ctx)),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("user.message").AtName("params"), &diags),
 						},
 						"host.name": {
 							ID: types.StringValue("string"),
 							Params: typeutils.ObjectValueFrom(ctx, &fieldFormatParamsModel{
 								Transform:     types.StringValue("upper"),
-								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
-								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("host.name").AtName("params"), &diags),
+								Colors:        types.ListNull(getFieldFormatParamsColorsElemType(ctx)),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType(ctx)),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("host.name").AtName("params"), &diags),
 						},
 						"response.code": {
 							ID: types.StringValue("static_lookup"),
@@ -806,10 +806,10 @@ func TestToAPIUpdateModel(t *testing.T) {
 										Key:   types.StringValue("404"),
 										Value: types.StringValue("Not Found"),
 									},
-								}, getFieldFormatParamsLookupEntryElemType(), path.Root("data_view").AtName("field_formats").AtMapKey("response.code").AtName("params").AtName("lookup_entries"), &diags),
+								}, getFieldFormatParamsLookupEntryElemType(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("response.code").AtName("params").AtName("lookup_entries"), &diags),
 								UnknownKeyValue: types.StringValue("Unknown"),
-								Colors:          types.ListNull(getFieldFormatParamsColorsElemType()),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("response.code").AtName("params"), &diags),
+								Colors:          types.ListNull(getFieldFormatParamsColorsElemType(ctx)),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("response.code").AtName("params"), &diags),
 						},
 						"url.original": {
 							ID: types.StringValue("url"),
@@ -817,9 +817,9 @@ func TestToAPIUpdateModel(t *testing.T) {
 								Type:          types.StringValue("a"),
 								URLTemplate:   types.StringValue("URL TEMPLATE"),
 								LabelTemplate: types.StringValue("LABEL TEMPLATE"),
-								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
-								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("url.original").AtName("params"), &diags),
+								Colors:        types.ListNull(getFieldFormatParamsColorsElemType(ctx)),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType(ctx)),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("url.original").AtName("params"), &diags),
 						},
 						"user.profile_picture": {
 							ID: types.StringValue("url"),
@@ -829,9 +829,9 @@ func TestToAPIUpdateModel(t *testing.T) {
 								LabelTemplate: types.StringValue("LABEL TEMPLATE"),
 								Width:         types.Int64Value(6),
 								Height:        types.Int64Value(4),
-								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
-								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("user.profile_picture").AtName("params"), &diags),
+								Colors:        types.ListNull(getFieldFormatParamsColorsElemType(ctx)),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType(ctx)),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("user.profile_picture").AtName("params"), &diags),
 						},
 						"user.answering_message": {
 							ID: types.StringValue("url"),
@@ -839,14 +839,14 @@ func TestToAPIUpdateModel(t *testing.T) {
 								Type:          types.StringValue("audio"),
 								URLTemplate:   types.StringValue("URL TEMPLATE"),
 								LabelTemplate: types.StringValue("LABEL TEMPLATE"),
-								Colors:        types.ListNull(getFieldFormatParamsColorsElemType()),
-								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType()),
-							}, getFieldFormatParamsAttrTypes(), path.Root("data_view").AtName("field_formats").AtMapKey("user.answering_message").AtName("params"), &diags),
+								Colors:        types.ListNull(getFieldFormatParamsColorsElemType(ctx)),
+								LookupEntries: types.ListNull(getFieldFormatParamsLookupEntryElemType(ctx)),
+							}, getFieldFormatParamsAttrTypes(ctx), path.Root("data_view").AtName("field_formats").AtMapKey("user.answering_message").AtName("params"), &diags),
 						},
-					}, getFieldFormatElemType(), path.Root("data_view").AtName("field_formats"), &diags),
+					}, getFieldFormatElemType(ctx), path.Root("data_view").AtName("field_formats"), &diags),
 					AllowNoIndex: types.BoolValue(true),
 					Namespaces:   typeutils.ListValueFrom(ctx, []string{"default", "o11y"}, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
-				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+				}, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags),
 			},
 			expectedRequest: kbapi.DataViewsUpdateDataViewRequestObject{
 				DataView: kbapi.DataViewsUpdateDataViewRequestObjectInner{
@@ -956,12 +956,12 @@ func TestToAPIUpdateModel(t *testing.T) {
 					RuntimeFieldMap: &map[string]kbapi.DataViewsRuntimefieldmap{
 						"runtime_field": {
 							Type: "keyword",
-							Script: kbapi.DataViewsRuntimefieldmapScript{
+							Script: dataViewsRuntimefieldmapScript{
 								Source: new("emit(\"hello\")"),
 							},
 						},
 					},
-					SourceFilters: &[]kbapi.DataViewsSourcefilterItem{
+					SourceFilters: &[]dataViewsSourcefilterItem{
 						{Value: "field1"},
 						{Value: "field2"},
 					},
@@ -981,10 +981,10 @@ func TestToAPIUpdateModel(t *testing.T) {
 					AllowNoIndex:    types.BoolValue(true),
 					SourceFilters:   types.ListNull(types.StringType),
 					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
-					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
-					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType(ctx)),
+					FieldFormats:    types.MapNull(getFieldFormatElemType(ctx)),
 					Namespaces:      types.ListNull(types.StringType),
-				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+				}, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags),
 			},
 			expectedRequest: kbapi.DataViewsUpdateDataViewRequestObject{
 				DataView: kbapi.DataViewsUpdateDataViewRequestObjectInner{
@@ -993,7 +993,7 @@ func TestToAPIUpdateModel(t *testing.T) {
 					FieldFormats:    &kbapi.DataViewsFieldformats{},
 					Name:            new("name"),
 					RuntimeFieldMap: &map[string]kbapi.DataViewsRuntimefieldmap{},
-					SourceFilters:   &[]kbapi.DataViewsSourcefilterItem{},
+					SourceFilters:   &[]dataViewsSourcefilterItem{},
 					TimeFieldName:   new("time_field_name"),
 					Title:           new("title"),
 				},

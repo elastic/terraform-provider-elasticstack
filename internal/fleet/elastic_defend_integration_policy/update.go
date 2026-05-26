@@ -47,11 +47,7 @@ func (r *elasticDefendIntegrationPolicyResource) Update(ctx context.Context, req
 		return
 	}
 
-	fleetClient, err := client.GetFleetClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
 	policyID := stateModel.PolicyID.ValueString()
 

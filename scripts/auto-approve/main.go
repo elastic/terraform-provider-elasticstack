@@ -25,9 +25,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/go-github/v86/github"
-	"golang.org/x/oauth2"
+	"github.com/google/go-github/v88/github"
 )
+
+// jsonKeyPullRequest is the JSON/log key used for pull request payload entries.
+const jsonKeyPullRequest = "pull_request"
 
 type eventPayload struct {
 	PullRequest *struct {
@@ -72,7 +74,10 @@ func run(ctx context.Context) error {
 		return nil
 	}
 
-	client := newGitHubClient(ctx, token)
+	client, err := newGitHubClient(ctx, token)
+	if err != nil {
+		return fmt.Errorf("create github client: %w", err)
+	}
 
 	pr, _, err := client.PullRequests.Get(ctx, owner, name, prNumber)
 	if err != nil {
@@ -122,11 +127,11 @@ func run(ctx context.Context) error {
 	}
 
 	logJSON("evaluation", map[string]any{
-		"owner":        owner,
-		"repo":         name,
-		"pull_request": prNumber,
-		"head_sha":     headSHA,
-		"result":       result,
+		"owner":            owner,
+		"repo":             name,
+		jsonKeyPullRequest: prNumber,
+		"head_sha":         headSHA,
+		"result":           result,
 	})
 
 	if !result.ShouldApprove {
@@ -147,18 +152,16 @@ func run(ctx context.Context) error {
 	}
 
 	logJSON("approved", map[string]any{
-		"owner":        owner,
-		"repo":         name,
-		"pull_request": prNumber,
+		"owner":            owner,
+		"repo":             name,
+		jsonKeyPullRequest: prNumber,
 	})
 
 	return nil
 }
 
-func githubClient(ctx context.Context, token string) *github.Client {
-	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	httpClient := oauth2.NewClient(ctx, tokenSource)
-	return github.NewClient(httpClient)
+func githubClient(_ context.Context, token string) (*github.Client, error) {
+	return github.NewClient(github.WithAuthToken(token))
 }
 
 func parseRepository(repo string) (string, string, error) {

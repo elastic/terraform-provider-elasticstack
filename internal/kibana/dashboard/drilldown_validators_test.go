@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -147,7 +148,7 @@ func Test_drilldownItemModeValidator(t *testing.T) {
 func Test_structuredDrilldown_urlTriggerStringValidator(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	listAttr := getStructuredDrilldownsAttribute().(schema.ListNestedAttribute)
+	listAttr := panelkit.StructuredDrilldownsAttribute().(schema.ListNestedAttribute)
 	urlAttr, ok := listAttr.NestedObject.Attributes["url"].(schema.SingleNestedAttribute)
 	require.True(t, ok)
 	triggerAttr, ok := urlAttr.Attributes["trigger"].(schema.StringAttribute)

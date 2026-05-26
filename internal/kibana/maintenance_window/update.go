@@ -22,47 +22,30 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func updateMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, plan, _ Model) (Model, diag.Diagnostics) {
+func updateMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
+	plan := req.Plan
 	var diags diag.Diagnostics
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Unable to get Kibana client", err.Error())
-		return Model{}, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	body, bodyDiags := plan.toAPIUpdateRequest(ctx)
 	diags.Append(bodyDiags...)
 	if diags.HasError() {
-		return Model{}, diags
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	diags.Append(kibanaoapi.UpdateMaintenanceWindow(ctx, oapiClient, spaceID, resourceID, body)...)
+	diags.Append(kibanaoapi.UpdateMaintenanceWindow(ctx, oapiClient, req.SpaceID, req.WriteID, body)...)
 	if diags.HasError() {
-		return Model{}, diags
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	/*
-	* In create/update paths we typically follow the write operation with a read, and then set the state from the read.
-	* We want to avoid a dirty plan immediately after an apply.
-	 */
-	readMaintenanceWindowResponse, readDiags := kibanaoapi.GetMaintenanceWindow(ctx, oapiClient, spaceID, resourceID)
-	diags.Append(readDiags...)
-	if diags.HasError() {
-		return Model{}, diags
-	}
+	plan.ID = types.StringValue(req.WriteID)
+	plan.SpaceID = types.StringValue(req.SpaceID)
 
-	diags.Append(plan.fromAPIReadResponse(ctx, readMaintenanceWindowResponse)...)
-	if diags.HasError() {
-		return Model{}, diags
-	}
-
-	plan.ID = types.StringValue(resourceID)
-	plan.SpaceID = types.StringValue(spaceID)
-
-	return plan, diags
+	return entitycore.KibanaWriteResult[Model]{Model: plan}, diags
 }

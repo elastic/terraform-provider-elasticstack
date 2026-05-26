@@ -107,6 +107,315 @@ func TestNewIndexMappingsValue_collapsesMatchArrays(t *testing.T) {
 	assert.Equal(t, "string", rule["match_mapping_type"], "single-element array should be collapsed to plain string")
 }
 
+// TestNewIndexMappingsValue_normalizesStringifiedScalars verifies that
+// string-encoded booleans ("true", "false") and null ("null") echoed by
+// Elasticsearch are converted back to their native JSON types during
+// construction. This ensures ImportStateVerify sees the same stored value
+// as the initial apply (e.g. dynamic: false vs dynamic: "false").
+func TestNewIndexMappingsValue_normalizesStringifiedScalars(t *testing.T) {
+	t.Parallel()
+
+	// Elasticsearch echoes dynamic: false as the JSON string "false" because
+	// DynamicMapping implements encoding.TextMarshaler.
+	input := `{"date_detection":true,"dynamic":"false","numeric_detection":true}`
+	v := index.NewMappingsValue(input)
+
+	var got map[string]any
+	require.NoError(t, json.Unmarshal([]byte(v.ValueString()), &got))
+
+	assert.Equal(t, false, got["dynamic"], `"false" string should be normalized to boolean false`)
+	assert.Equal(t, true, got["date_detection"], `true boolean should be preserved`)
+	assert.Equal(t, true, got["numeric_detection"], `true boolean should be preserved`)
+}
+
+// TestMappingsSemanticallyEqual_scalarVsStringifiedScalar verifies that scalar
+// leaf values (bool, number) compare semantically equal to their stringified
+// equivalents that Elasticsearch may echo back.
+func TestMappingsSemanticallyEqual_scalarVsStringifiedScalar(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		userJSON string
+		apiJSON  string
+		want     bool
+	}{
+		{
+			name:     "bool true vs string true",
+			userJSON: `{"index":true}`,
+			apiJSON:  `{"index":"true"}`,
+			want:     true,
+		},
+		{
+			name:     "bool false vs string false",
+			userJSON: `{"index":false}`,
+			apiJSON:  `{"index":"false"}`,
+			want:     true,
+		},
+		{
+			name:     "number vs string number",
+			userJSON: `{"boost":42}`,
+			apiJSON:  `{"boost":"42"}`,
+			want:     true,
+		},
+		{
+			name:     "bool true vs string false - not equal",
+			userJSON: `{"index":true}`,
+			apiJSON:  `{"index":"false"}`,
+			want:     false,
+		},
+		{
+			name:     "number 1 vs string 2 - not equal",
+			userJSON: `{"boost":1}`,
+			apiJSON:  `{"boost":"2"}`,
+			want:     false,
+		},
+		{
+			name:     "two distinct strings - not equal",
+			userJSON: `{"format":"strict_date"}`,
+			apiJSON:  `{"format":"epoch_millis"}`,
+			want:     false,
+		},
+		{
+			name:     "large number vs string - no scientific notation mismatch",
+			userJSON: `{"ignore_above":7000000}`,
+			apiJSON:  `{"ignore_above":"7000000"}`,
+			want:     true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			var userMap, apiMap map[string]any
+			require.NoError(t, json.Unmarshal([]byte(tc.userJSON), &userMap))
+			require.NoError(t, json.Unmarshal([]byte(tc.apiJSON), &apiMap))
+
+			got := index.MappingsSemanticallyEqual(userMap, apiMap)
+			assert.Equal(t, tc.want, got, "MappingsSemanticallyEqual(%s, %s)", tc.userJSON, tc.apiJSON)
+		})
+	}
+}
+
+// TestMappingsSemanticallyEqual_scalarLeafInFieldDef verifies that scalar drift
+// inside nested field definitions (e.g. inside "properties") is also handled.
+func TestMappingsSemanticallyEqual_scalarLeafInFieldDef(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		userJSON string
+		apiJSON  string
+		want     bool
+	}{
+		{
+			name:     "bool leaf in field def - equal",
+			userJSON: `{"properties":{"myfield":{"type":"keyword","index":true}}}`,
+			apiJSON:  `{"properties":{"myfield":{"type":"keyword","index":"true"}}}`,
+			want:     true,
+		},
+		{
+			name:     "numeric leaf in field def - equal",
+			userJSON: `{"properties":{"myfield":{"type":"float","boost":1.5}}}`,
+			apiJSON:  `{"properties":{"myfield":{"type":"float","boost":"1.5"}}}`,
+			want:     true,
+		},
+		{
+			name:     "bool leaf in field def - not equal",
+			userJSON: `{"properties":{"myfield":{"type":"keyword","index":true}}}`,
+			apiJSON:  `{"properties":{"myfield":{"type":"keyword","index":"false"}}}`,
+			want:     false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			var userMap, apiMap map[string]any
+			require.NoError(t, json.Unmarshal([]byte(tc.userJSON), &userMap))
+			require.NoError(t, json.Unmarshal([]byte(tc.apiJSON), &apiMap))
+
+			got := index.MappingsSemanticallyEqual(userMap, apiMap)
+			assert.Equal(t, tc.want, got, "MappingsSemanticallyEqual(%s, %s)", tc.userJSON, tc.apiJSON)
+		})
+	}
+}
+
+func TestMappingsSemanticallyEqual_coverageForMappingSupersetAndDrift(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		user map[string]any
+		api  map[string]any
+		want bool
+	}{
+		{
+			name: "template-injected properties are allowed",
+			user: map[string]any{
+				"properties": map[string]any{
+					"user_field": map[string]any{"type": "keyword"},
+				},
+			},
+			api: map[string]any{
+				"properties": map[string]any{
+					"user_field":     map[string]any{"type": "keyword"},
+					"template_field": map[string]any{"type": "text"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "template-injected dynamic_templates are allowed",
+			user: map[string]any{
+				"properties": map[string]any{
+					"user_field": map[string]any{"type": "keyword"},
+				},
+			},
+			api: map[string]any{
+				"dynamic_templates": []any{
+					map[string]any{
+						"strings_as_ip": map[string]any{
+							"match":   "ip*",
+							"runtime": map[string]any{"type": "ip"},
+						},
+					},
+				},
+				"properties": map[string]any{
+					"user_field": map[string]any{"type": "keyword"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "retained API-only properties are allowed",
+			user: map[string]any{
+				"properties": map[string]any{
+					"user_field": map[string]any{"type": "keyword"},
+				},
+			},
+			api: map[string]any{
+				"properties": map[string]any{
+					"user_field":     map[string]any{"type": "keyword"},
+					"retained_field": map[string]any{"type": "text"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "semantic_text API model_settings auto-population is allowed",
+			user: map[string]any{
+				"properties": map[string]any{
+					"semantic_field": map[string]any{
+						"type": "semantic_text",
+					},
+				},
+			},
+			api: map[string]any{
+				"properties": map[string]any{
+					"semantic_field": map[string]any{
+						"type": "semantic_text",
+						"model_settings": map[string]any{
+							"task_type": "sparse_embedding",
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "semantic_text explicit model_settings drift is detected",
+			user: map[string]any{
+				"properties": map[string]any{
+					"semantic_field": map[string]any{
+						"type": "semantic_text",
+						"model_settings": map[string]any{
+							"task_type": "sparse_embedding",
+						},
+					},
+				},
+			},
+			api: map[string]any{
+				"properties": map[string]any{
+					"semantic_field": map[string]any{
+						"type": "semantic_text",
+						"model_settings": map[string]any{
+							"task_type": "dense_embedding",
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "missing API fields are detected",
+			user: map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{"type": "keyword"},
+				},
+			},
+			api: map[string]any{
+				"properties": map[string]any{},
+			},
+			want: false,
+		},
+		{
+			name: "nested property API superset is allowed",
+			user: map[string]any{
+				"properties": map[string]any{
+					"parent": map[string]any{
+						"properties": map[string]any{
+							"child": map[string]any{"type": "keyword"},
+						},
+					},
+				},
+			},
+			api: map[string]any{
+				"properties": map[string]any{
+					"parent": map[string]any{
+						"properties": map[string]any{
+							"child":  map[string]any{"type": "keyword"},
+							"child2": map[string]any{"type": "text"},
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "nested type change is detected",
+			user: map[string]any{
+				"properties": map[string]any{
+					"parent": map[string]any{
+						"properties": map[string]any{
+							"child": map[string]any{"type": "keyword"},
+						},
+					},
+				},
+			},
+			api: map[string]any{
+				"properties": map[string]any{
+					"parent": map[string]any{
+						"properties": map[string]any{
+							"child": map[string]any{"type": "text"},
+						},
+					},
+				},
+			},
+			want: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tc.want, index.MappingsSemanticallyEqual(tc.user, tc.api))
+		})
+	}
+}
+
 // TestIndexMappingsValue_SemanticEquals verifies that the typed-client-injected
 // "type":"object" entries don't cause spurious drift between a config-derived
 // plan value (no "type":"object") and the API-read state value (with "type":"object").
@@ -128,4 +437,97 @@ func TestIndexMappingsValue_SemanticEquals(t *testing.T) {
 	eq, diags := plan.StringSemanticEquals(context.Background(), api)
 	require.False(t, diags.HasError())
 	assert.True(t, eq)
+}
+
+// TestFieldSemanticallyEqual_scriptObjectToObject verifies script object comparison
+// by meaningful keys (source, lang, params, options) while allowing extra API keys.
+func TestFieldSemanticallyEqual_scriptObjectToObject(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		userField map[string]any
+		apiField  map[string]any
+		want      bool
+	}{
+		{
+			name: "identical source and matching lang",
+			userField: map[string]any{
+				"type": "keyword",
+				"script": map[string]any{
+					"source": "emit(1)",
+					"lang":   "painless",
+				},
+			},
+			apiField: map[string]any{
+				"type": "keyword",
+				"script": map[string]any{
+					"source": "emit(1)",
+					"lang":   "painless",
+				},
+			},
+			want: true,
+		},
+		{
+			name: "API side has extra keys",
+			userField: map[string]any{
+				"type": "keyword",
+				"script": map[string]any{
+					"source": "emit(1)",
+					"lang":   "painless",
+				},
+			},
+			apiField: map[string]any{
+				"type": "keyword",
+				"script": map[string]any{
+					"source": "emit(1)",
+					"lang":   "painless",
+					"id":     "stored-script-id",
+				},
+			},
+			want: true,
+		},
+		{
+			name: "source differs",
+			userField: map[string]any{
+				"type": "keyword",
+				"script": map[string]any{
+					"source": "emit(1)",
+				},
+			},
+			apiField: map[string]any{
+				"type": "keyword",
+				"script": map[string]any{
+					"source": "emit(2)",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "lang differs when both present",
+			userField: map[string]any{
+				"type": "keyword",
+				"script": map[string]any{
+					"source": "emit(1)",
+					"lang":   "painless",
+				},
+			},
+			apiField: map[string]any{
+				"type": "keyword",
+				"script": map[string]any{
+					"source": "emit(1)",
+					"lang":   "expression",
+				},
+			},
+			want: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got := index.FieldSemanticallyEqual(tc.userField, tc.apiField)
+			assert.Equal(t, tc.want, got)
+		})
+	}
 }

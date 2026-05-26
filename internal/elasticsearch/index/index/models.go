@@ -26,9 +26,8 @@ import (
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -36,7 +35,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 var (
@@ -44,53 +42,53 @@ var (
 	// pre-processor in toIndexSettings() and are skipped in the reflection loop
 	// because they have no corresponding flat tfsdk struct field.
 	sortKeysExpandedFromNestedBlock = map[string]bool{
-		"sort.missing": true,
-		"sort.mode":    true,
+		settingSortMissing: true,
+		settingSortMode:    true,
 	}
 
 	staticSettingsKeys = []string{
-		"number_of_shards",
-		"number_of_routing_shards",
-		"codec",
-		"routing_partition_size",
-		"load_fixed_bitset_filters_eagerly",
-		"shard.check_on_startup",
-		"sort.field",
-		"sort.order",
-		"sort.missing",
-		"sort.mode",
-		"mapping.coerce",
+		settingNumberOfShards,
+		settingNumberOfRoutingShards,
+		settingCodec,
+		settingRoutingPartitionSize,
+		settingLoadFixedBitsetFiltersEagerly,
+		settingShardCheckOnStartup,
+		settingSortField,
+		settingSortOrder,
+		settingSortMissing,
+		settingSortMode,
+		settingMappingCoerce,
 	}
 	dynamicSettingsKeys = []string{
-		"number_of_replicas",
-		"auto_expand_replicas",
-		"refresh_interval",
-		"search.idle.after",
+		settingNumberOfReplicas,
+		settingAutoExpandReplicas,
+		settingRefreshInterval,
+		settingSearchIdleAfter,
 		"mapping.total_fields.limit",
-		"max_result_window",
-		"max_inner_result_window",
-		"max_rescore_window",
-		"max_docvalue_fields_search",
-		"max_script_fields",
-		"max_ngram_diff",
-		"max_shingle_diff",
+		settingMaxResultWindow,
+		settingMaxInnerResultWindow,
+		settingMaxRescoreWindow,
+		settingMaxDocvalueFieldsSearch,
+		settingMaxScriptFields,
+		settingMaxNgramDiff,
+		settingMaxShingleDiff,
 		"blocks.read_only",
 		"blocks.read_only_allow_delete",
 		"blocks.read",
 		"blocks.write",
 		"blocks.metadata",
-		"max_refresh_listeners",
+		settingMaxRefreshListeners,
 		"analyze.max_token_count",
 		"highlight.max_analyzed_offset",
-		"max_terms_count",
-		"max_regex_length",
-		"query.default_field",
-		"routing.allocation.enable",
-		"routing.rebalance.enable",
-		"gc_deletes",
-		"default_pipeline",
-		"final_pipeline",
-		"unassigned.node_left.delayed_timeout",
+		settingMaxTermsCount,
+		settingMaxRegexLength,
+		settingQueryDefaultField,
+		settingRoutingAllocationEnable,
+		settingRoutingRebalanceEnable,
+		settingGCDeletes,
+		settingDefaultPipeline,
+		settingFinalPipeline,
+		settingUnassignedNodeLeftDelayedTimeout,
 		"search.slowlog.threshold.query.warn",
 		"search.slowlog.threshold.query.info",
 		"search.slowlog.threshold.query.debug",
@@ -190,16 +188,6 @@ type tfModel struct {
 	Settings                           types.List           `tfsdk:"settings"`
 }
 
-type aliasTfModel struct {
-	Name          types.String         `tfsdk:"name"`
-	Filter        jsontypes.Normalized `tfsdk:"filter"`
-	IndexRouting  types.String         `tfsdk:"index_routing"`
-	IsHidden      types.Bool           `tfsdk:"is_hidden"`
-	IsWriteIndex  types.Bool           `tfsdk:"is_write_index"`
-	Routing       types.String         `tfsdk:"routing"`
-	SearchRouting types.String         `tfsdk:"search_routing"`
-}
-
 type settingsTfSet struct {
 	Setting types.Set `tfsdk:"setting"`
 }
@@ -227,7 +215,7 @@ func (model *tfModel) populateFromAPI(ctx context.Context, indexName string, api
 		model.Name = types.StringValue(indexName)
 	}
 
-	modelAliases, diags := aliasesFromAPI(ctx, apiModel)
+	modelAliases, diags := aliasutil.AliasesFromAPI(ctx, apiModel.Aliases, aliasElementType(ctx))
 	if diags.HasError() {
 		return diags
 	}
@@ -271,25 +259,6 @@ func (model *tfModel) populateFromAPI(ctx context.Context, indexName string, api
 	return nil
 }
 
-func aliasesFromAPI(ctx context.Context, apiModel estypes.IndexState) (basetypes.SetValue, diag.Diagnostics) {
-	aliases := []aliasTfModel{}
-	for name, alias := range apiModel.Aliases {
-		tfAlias, diags := newAliasModelFromAPI(name, alias)
-		if diags.HasError() {
-			return basetypes.SetValue{}, diags
-		}
-
-		aliases = append(aliases, tfAlias)
-	}
-
-	modelAliases, diags := types.SetValueFrom(ctx, aliasElementType(ctx), aliases)
-	if diags.HasError() {
-		return basetypes.SetValue{}, diags
-	}
-
-	return modelAliases, nil
-}
-
 func setSettingsFromAPI(model *tfModel, apiModel estypes.IndexState) diag.Diagnostics {
 	settingsBytes, err := json.Marshal(apiModel.Settings)
 	if err != nil {
@@ -317,14 +286,14 @@ func (model tfModel) toAPIModel(ctx context.Context) (models.Index, diag.Diagnos
 	if typeutils.IsKnown(model.Alias) {
 		apiModel.Aliases = map[string]models.IndexAlias{}
 
-		var planAliases []aliasTfModel
+		var planAliases []aliasutil.AliasModel
 		diags.Append(model.Alias.ElementsAs(ctx, &planAliases, true)...)
 		if diags.HasError() {
 			return models.Index{}, diags
 		}
 
 		for _, planAlias := range planAliases {
-			apiAlias, diags := planAlias.toAPIModel()
+			apiAlias, diags := aliasToAPIModel(planAlias)
 			if diags.HasError() {
 				return models.Index{}, diags
 			}
@@ -350,7 +319,7 @@ func (model tfModel) toAPIModel(ctx context.Context) (models.Index, diag.Diagnos
 	return apiModel, diags
 }
 
-func (model tfModel) toPutIndexParams(serverFlavor string) models.PutIndexParams {
+func (model tfModel) toPutIndexParams(isServerless bool) models.PutIndexParams {
 	// The string values are validated as durations as part of schema validation
 	masterTimeout, _ := model.MasterTimeout.Parse()
 	timeout, _ := model.Timeout.Parse()
@@ -359,7 +328,7 @@ func (model tfModel) toPutIndexParams(serverFlavor string) models.PutIndexParams
 		Timeout: timeout,
 	}
 
-	if serverFlavor != clients.ServerlessFlavor {
+	if !isServerless {
 		params.MasterTimeout = masterTimeout
 		params.WaitForActiveShards = model.WaitForActiveShards.ValueString()
 	}
@@ -379,9 +348,9 @@ func (model tfModel) GetResourceID() types.String { return model.Name }
 func (model tfModel) GetElasticsearchConnection() types.List { return model.ElasticsearchConnection }
 
 func (model tfModel) getCompositeID() (*clients.CompositeID, diag.Diagnostics) {
-	compID, sdkDiags := clients.CompositeIDFromStr(model.ID.ValueString())
-	if sdkDiags.HasError() {
-		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
+	compID, compIDDiags := clients.CompositeIDFromStr(model.ID.ValueString())
+	if compIDDiags.HasError() {
+		return nil, compIDDiags
 	}
 
 	return compID, nil
@@ -411,7 +380,7 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]any, diag.
 				sortFields[i] = entry.Field.ValueString()
 
 				if entry.Order.IsNull() || entry.Order.IsUnknown() {
-					sortOrders[i] = "asc"
+					sortOrders[i] = sortOrderAsc
 				} else {
 					sortOrders[i] = entry.Order.ValueString()
 				}
@@ -429,14 +398,14 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]any, diag.
 				// else: sortModes[i] stays "" (empty placeholder for positional alignment)
 			}
 
-			settings["sort.field"] = sortFields
-			settings["sort.order"] = sortOrders
+			settings[settingSortField] = sortFields
+			settings[settingSortOrder] = sortOrders
 
 			if !allMissingNull {
-				settings["sort.missing"] = sortMissing
+				settings[settingSortMissing] = sortMissing
 			}
 			if !allModeNull {
-				settings["sort.mode"] = sortModes
+				settings[settingSortMode] = sortModes
 			}
 		}
 	}
@@ -586,7 +555,7 @@ func convertSettingsKeyToTFFieldKey(settingKey string) string {
 	return strings.ReplaceAll(settingKey, ".", "_")
 }
 
-func (model aliasTfModel) toAPIModel() (models.IndexAlias, diag.Diagnostics) {
+func aliasToAPIModel(model aliasutil.AliasModel) (models.IndexAlias, diag.Diagnostics) {
 	apiModel := models.IndexAlias{
 		Name:          model.Name.ValueString(),
 		IndexRouting:  model.IndexRouting.ValueString(),
@@ -605,40 +574,6 @@ func (model aliasTfModel) toAPIModel() (models.IndexAlias, diag.Diagnostics) {
 	return apiModel, nil
 }
 
-func newAliasModelFromAPI(name string, apiModel estypes.Alias) (aliasTfModel, diag.Diagnostics) {
-	tfAlias := aliasTfModel{
-		Name:          types.StringValue(name),
-		IndexRouting:  types.StringValue(typeutils.Deref(apiModel.IndexRouting)),
-		IsHidden:      types.BoolValue(typeutils.Deref(apiModel.IsHidden)),
-		IsWriteIndex:  types.BoolValue(typeutils.Deref(apiModel.IsWriteIndex)),
-		Routing:       types.StringValue(typeutils.Deref(apiModel.Routing)),
-		SearchRouting: types.StringValue(typeutils.Deref(apiModel.SearchRouting)),
-	}
-
-	if apiModel.Filter != nil {
-		filterBytes, err := json.Marshal(apiModel.Filter)
-		if err != nil {
-			return aliasTfModel{}, diag.Diagnostics{
-				diag.NewErrorDiagnostic("failed to marshal alias filter", err.Error()),
-			}
-		}
-		var filterMap map[string]any
-		if err := json.Unmarshal(filterBytes, &filterMap); err != nil {
-			return aliasTfModel{}, diag.Diagnostics{
-				diag.NewErrorDiagnostic("failed to unmarshal alias filter", err.Error()),
-			}
-		}
-		normalized := elasticsearch.NormalizeQueryFilter(filterMap)
-		if nm, ok := normalized.(map[string]any); ok {
-			filterMap = nm
-		}
-		normalizedBytes, _ := json.Marshal(filterMap)
-		tfAlias.Filter = jsontypes.NewNormalizedValue(string(normalizedBytes))
-	}
-
-	return tfAlias, nil
-}
-
 func indexStateToModel(state estypes.IndexState) (models.Index, diag.Diagnostics) {
 	var model models.Index
 
@@ -654,19 +589,11 @@ func indexStateToModel(state estypes.IndexState) (models.Index, diag.Diagnostics
 				SearchRouting: typeutils.Deref(alias.SearchRouting),
 			}
 			if alias.Filter != nil {
-				filterBytes, err := json.Marshal(alias.Filter)
-				if err != nil {
-					return models.Index{}, diag.Diagnostics{
-						diag.NewErrorDiagnostic("failed to marshal alias filter", err.Error()),
-					}
+				filterMap, diags := aliasutil.NormalizeAliasFilterAnyToMap(alias.Filter)
+				if diags.HasError() {
+					return models.Index{}, diags
 				}
-				var filterMap map[string]any
-				if err := json.Unmarshal(filterBytes, &filterMap); err != nil {
-					return models.Index{}, diag.Diagnostics{
-						diag.NewErrorDiagnostic("failed to unmarshal alias filter", err.Error()),
-					}
-				}
-				indexAlias.Filter = elasticsearch.NormalizeQueryFilter(filterMap).(map[string]any)
+				indexAlias.Filter = filterMap
 			}
 			model.Aliases[name] = indexAlias
 		}

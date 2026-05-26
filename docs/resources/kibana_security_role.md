@@ -121,19 +121,19 @@ resource "elasticstack_kibana_security_role" "example" {
 
 ### Required
 
-- `elasticsearch` (Block Set, Min: 1, Max: 1) Elasticsearch cluster and index privileges. (see [below for nested schema](#nestedblock--elasticsearch))
 - `name` (String) The name for the role.
 
 ### Optional
 
 - `description` (String) Optional description for the role
+- `elasticsearch` (Block, Optional) Elasticsearch cluster and index privileges. (see [below for nested schema](#nestedblock--elasticsearch))
 - `kibana` (Block Set) The list of objects that specify the Kibana privileges for the role. (see [below for nested schema](#nestedblock--kibana))
-- `kibana_connection` (Block List, Max: 1) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
+- `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `metadata` (String) Optional meta-data.
 
 ### Read-Only
 
-- `id` (String) The ID of this resource.
+- `id` (String) Internal identifier (same as name).
 
 <a id="nestedblock--elasticsearch"></a>
 ### Nested Schema for `elasticsearch`
@@ -155,7 +155,7 @@ Required:
 
 Optional:
 
-- `field_security` (Block List, Max: 1) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedblock--elasticsearch--indices--field_security))
+- `field_security` (Block, Optional) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedblock--elasticsearch--indices--field_security))
 - `query` (String) A search query that defines the documents the owners of the role have read access to.
 
 <a id="nestedblock--elasticsearch--indices--field_security"></a>
@@ -179,7 +179,7 @@ Required:
 
 Optional:
 
-- `field_security` (Block List, Max: 1) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedblock--elasticsearch--remote_indices--field_security))
+- `field_security` (Block, Optional) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedblock--elasticsearch--remote_indices--field_security))
 - `query` (String) A search query that defines the documents the owners of the role have read access to.
 
 <a id="nestedblock--elasticsearch--remote_indices--field_security"></a>

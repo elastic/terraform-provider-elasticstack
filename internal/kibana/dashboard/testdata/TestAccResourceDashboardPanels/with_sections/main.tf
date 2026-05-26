@@ -18,7 +18,8 @@ resource "elasticstack_kibana_dashboard" "test" {
     text     = ""
   }
   sections = [{
-    title = "My Section"
+    title     = "My Section"
+    collapsed = true
     grid = {
       y = 0
     }

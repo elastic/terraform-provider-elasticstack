@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -53,11 +54,21 @@ func NewResource() resource.Resource {
 	return newResource()
 }
 
-func (r *Resource) GetClient() *clients.KibanaScopedClient {
+func (r *Resource) GetClient(dg *diag.Diagnostics) *clients.KibanaScopedClient {
 	if r.Client() == nil {
+		dg.AddError(
+			"Unconfigured Client",
+			"Expected configured client. Please report this issue to the provider developers.",
+		)
 		return nil
 	}
-	return clients.NewKibanaScopedClientFromFactory(r.Client())
+
+	scoped, diags := clients.NewKibanaScopedClientFromFactory(r.Client())
+	dg.Append(diags...)
+	if dg.HasError() {
+		return nil
+	}
+	return scoped
 }
 
 func (r *Resource) ConfigValidators(_ context.Context) []resource.ConfigValidator {

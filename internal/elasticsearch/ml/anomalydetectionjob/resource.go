@@ -38,17 +38,14 @@ type anomalyDetectionJobResource struct {
 }
 
 func newAnomalyDetectionJobResource() *anomalyDetectionJobResource {
-	_, updateFn := entitycore.PlaceholderElasticsearchWriteCallbacks[TFModel]()
 	return &anomalyDetectionJobResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource(
-			entitycore.ComponentElasticsearch,
-			"ml_anomaly_detection_job",
-			getSchema,
-			readAnomalyDetectionJob,
-			deleteAnomalyDetectionJob,
-			createAnomalyDetectionJob,
-			updateFn,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[TFModel]("ml_anomaly_detection_job", entitycore.ElasticsearchResourceOptions[TFModel]{
+			Schema: getSchema,
+			Read:   readAnomalyDetectionJob,
+			Delete: deleteAnomalyDetectionJob,
+			Create: createAnomalyDetectionJob,
+			Update: updateAnomalyDetectionJob,
+		}),
 	}
 }
 
@@ -68,7 +65,7 @@ func (r *anomalyDetectionJobResource) ValidateConfig(ctx context.Context, req re
 
 func (r *anomalyDetectionJobResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Import is intentionally sparse: only IDs are set. Everything else is populated by Read().
-	compID, diags := clients.CompositeIDFromStrFw(req.ID)
+	compID, diags := clients.CompositeIDFromStr(req.ID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

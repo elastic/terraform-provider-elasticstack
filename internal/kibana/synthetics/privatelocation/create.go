@@ -19,50 +19,18 @@ package privatelocation
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
+func createPrivateLocation(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
+	plan := req.Plan
+	var diags diag.Diagnostics
 
-	var plan tfModelV0
-	diags := request.Plan.Get(ctx, &plan)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	apiClient, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	kibanaClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, response.Diagnostics)
-	if kibanaClient == nil {
-		return
-	}
-
-	spaceID := plan.SpaceID.ValueString()
-
-	if requiresSpaceIDMinVersion(spaceID) {
-		supported, sdkDiags := apiClient.EnforceMinVersion(ctx, MinVersionSpaceID)
-		response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-		if response.Diagnostics.HasError() {
-			return
-		}
-		if !supported {
-			response.Diagnostics.AddError(
-				"Unsupported server version",
-				fmt.Sprintf("Synthetics private locations in a non-default Kibana space require Elastic Stack %s or later.", MinVersionSpaceID),
-			)
-			return
-		}
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	// Preserve the planned geo values before the API call. The Kibana API stores geo
 	// coordinates as float32 and returns float32-precision values on read (e.g.
@@ -73,20 +41,16 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	// equality checks so that subsequent plans detect no diff.
 	plannedGeo := plan.Geo
 
-	body := privateLocationToCreateBody(plan)
-	result, dg := kibanaoapi.CreatePrivateLocation(ctx, kibanaClient, spaceID, body)
-	response.Diagnostics.Append(dg...)
-	if response.Diagnostics.HasError() {
-		return
+	body := plan.toCreateBody()
+	result, dg := kibanaoapi.CreatePrivateLocation(ctx, oapiClient, req.SpaceID, body)
+	diags.Append(dg...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	plan = privateLocationFromAPI(*result, spaceID, plan.KibanaConnection)
-	// Restore geo from plan to keep state consistent with what was planned.
-	plan.Geo = plannedGeo
+	model := modelFromAPI(*result, req.SpaceID)
+	model.KibanaConnection = plan.KibanaConnection
+	model.Geo = plannedGeo
 
-	diags = response.State.Set(ctx, plan)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
+	return entitycore.KibanaWriteResult[Model]{Model: model}, diags
 }

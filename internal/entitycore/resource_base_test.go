@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/stretchr/testify/require"
@@ -145,6 +146,84 @@ func (r *embedResourceBaseWithImport) Delete(context.Context, resource.DeleteReq
 }
 
 func (r *embedResourceBaseWithImport) ImportState(context.Context, resource.ImportStateRequest, *resource.ImportStateResponse) {
+}
+
+func TestDataSourceBase_Metadata_typeNamesPerComponent(t *testing.T) {
+	cases := []struct {
+		name           string
+		component      Component
+		dataSourceName string
+		want           string
+	}{
+		{
+			name:           "elasticsearch",
+			component:      ComponentElasticsearch,
+			dataSourceName: "template",
+			want:           "elasticstack_elasticsearch_template",
+		},
+		{
+			name:           "kibana",
+			component:      ComponentKibana,
+			dataSourceName: "space",
+			want:           "elasticstack_kibana_space",
+		},
+		{
+			name:           "fleet",
+			component:      ComponentFleet,
+			dataSourceName: "agent_policy",
+			want:           "elasticstack_fleet_agent_policy",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			d := NewDataSourceBase(tc.component, tc.dataSourceName)
+			var resp datasource.MetadataResponse
+			d.Metadata(context.Background(), datasource.MetadataRequest{ProviderTypeName: testProviderTypeName}, &resp)
+			require.Equal(t, tc.want, resp.TypeName)
+		})
+	}
+}
+
+func TestDataSourceBase_Client_nilSafe(t *testing.T) {
+	t.Run("nil_receiver", func(t *testing.T) {
+		t.Parallel()
+		var d *DataSourceBase
+		require.Nil(t, d.Client())
+	})
+
+	t.Run("non_nil_before_configure", func(t *testing.T) {
+		t.Parallel()
+		d := NewDataSourceBase(ComponentElasticsearch, "template")
+		require.Nil(t, d.Client())
+	})
+}
+
+// embedDataSourceBaseTestDS is a minimal [datasource.DataSource] that embeds
+// [DataSourceBase]. The [datasource.DataSourceWithConfigure] assignment is a
+// compile-time interface check.
+type embedDataSourceBaseTestDS struct {
+	*DataSourceBase
+}
+
+var (
+	_ datasource.DataSource              = (*embedDataSourceBaseTestDS)(nil)
+	_ datasource.DataSourceWithConfigure = (*embedDataSourceBaseTestDS)(nil)
+)
+
+func (d *embedDataSourceBaseTestDS) Schema(_ context.Context, _ datasource.SchemaRequest, _ *datasource.SchemaResponse) {
+}
+
+func (d *embedDataSourceBaseTestDS) Read(_ context.Context, _ datasource.ReadRequest, _ *datasource.ReadResponse) {
+}
+
+func TestEmbedDataSourceBase_configure(t *testing.T) {
+	t.Parallel()
+	d := &embedDataSourceBaseTestDS{DataSourceBase: NewDataSourceBase(ComponentKibana, "space")}
+	anyD := any(d)
+
+	_, okCfg := anyD.(datasource.DataSourceWithConfigure)
+	require.True(t, okCfg, "embedded DataSourceBase should allow DataSourceWithConfigure via promoted Configure")
 }
 
 func TestEmbedResourceBase_importStateAndConfigure(t *testing.T) {

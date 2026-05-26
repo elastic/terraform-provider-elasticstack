@@ -20,8 +20,6 @@ package agentdownloadsource
 import (
 	"context"
 
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -30,8 +28,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+const (
+	attrDefault = "default"
+
+	// defaultSpaceID is the Kibana default space identifier used when the
+	// resource does not target a specific space. It happens to share the
+	// "default" literal with attrDefault but is semantically unrelated to
+	// the boolean schema attribute key.
+	defaultSpaceID = "default"
+)
+
+func getSchema(_ context.Context) schema.Schema {
+	return schema.Schema{
 		Description: "Creates a new Fleet Agent Binary Download Source.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -58,7 +66,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				Description: "The base URL from which Elastic Agents will download binaries.",
 				Required:    true,
 			},
-			"default": schema.BoolAttribute{
+			attrDefault: schema.BoolAttribute{
 				Description: "Set this download source as the default for agents.",
 				Optional:    true,
 				Computed:    true,
@@ -78,9 +86,6 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 					setplanmodifier.UseStateForUnknown(),
 				},
 			},
-		},
-		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 		},
 	}
 }

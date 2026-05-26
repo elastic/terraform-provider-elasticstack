@@ -294,10 +294,7 @@ func checkResourceIngestPipelineDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		typedClient, err := client.GetESClient()
-		if err != nil {
-			return err
-		}
+		typedClient := client.GetESClient()
 		_, err = typedClient.Ingest.GetPipeline().Id(compID.ResourceID).Do(context.Background())
 		if err != nil {
 			if esclient.IsNotFoundElasticsearchError(err) {

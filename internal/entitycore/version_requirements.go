@@ -20,24 +20,31 @@ package entitycore
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// WithVersionRequirements is an optional interface that Kibana entity models
-// may implement to declare server version requirements. When a decoded model
-// satisfies this interface, the generic Kibana envelopes evaluate the
+// WithVersionRequirements is an optional interface that entity models may
+// implement to declare server version requirements. When a decoded model
+// satisfies this interface, Kibana and Elasticsearch envelopes evaluate the
 // requirements after scoped client resolution and before invoking the concrete
 // lifecycle callback.
 type WithVersionRequirements interface {
-	GetVersionRequirements() ([]DataSourceVersionRequirement, diag.Diagnostics)
+	GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics)
 }
 
-// enforceVersionRequirements checks whether model implements
-// WithVersionRequirements and, if so, evaluates each requirement against the
-// scoped client. It returns any diagnostics produced.
-func enforceVersionRequirements(ctx context.Context, client *clients.KibanaScopedClient, model any) diag.Diagnostics {
+// MinVersionClient is implemented by scoped API clients used by entity envelopes
+// for minimum server version checks.
+type MinVersionClient interface {
+	EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics)
+}
+
+// EnforceVersionRequirements checks whether model implements
+// [WithVersionRequirements] and, if so, evaluates each requirement against the
+// scoped client. It returns any diagnostics produced. Entity envelopes call
+// this automatically; concrete resources whose Create/Update bypass the
+// envelope can invoke it directly to honor the model's declared requirements.
+func EnforceVersionRequirements(ctx context.Context, client MinVersionClient, model any) diag.Diagnostics {
 	var diags diag.Diagnostics
 	versionModel, ok := model.(WithVersionRequirements)
 	if !ok {
@@ -51,8 +58,8 @@ func enforceVersionRequirements(ctx context.Context, client *clients.KibanaScope
 	}
 
 	for _, vReq := range reqs {
-		supported, sdkDiags := client.EnforceMinVersion(ctx, &vReq.MinVersion)
-		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		supported, vDiags := client.EnforceMinVersion(ctx, &vReq.MinVersion)
+		diags.Append(vDiags...)
 		if diags.HasError() {
 			return diags
 		}

@@ -418,10 +418,7 @@ func deleteDefendPolicyOutOfBand(resourceName string) resource.TestCheckFunc {
 			return err
 		}
 
-		fleetClient, err := apiClient.GetFleetClient()
-		if err != nil {
-			return err
-		}
+		fleetClient := apiClient.GetFleetClient()
 
 		spaceID := rs.Primary.Attributes["space_ids.0"]
 		diags := fleetclient.DeletePackagePolicy(context.Background(), fleetClient, policyID, spaceID, false)
@@ -455,10 +452,7 @@ func checkResourceElasticDefendPolicyDestroy(s *terraform.State) error {
 		return err
 	}
 
-	fleetClient, err := apiClient.GetFleetClient()
-	if err != nil {
-		return err
-	}
+	fleetClient := apiClient.GetFleetClient()
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_fleet_elastic_defend_integration_policy" {

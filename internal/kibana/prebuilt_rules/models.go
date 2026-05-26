@@ -19,6 +19,9 @@ package prebuiltrules
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -34,11 +37,29 @@ type prebuiltRuleModel struct {
 	TimelinesNotUpdated   types.Int64  `tfsdk:"timelines_not_updated"`
 }
 
-func (model *prebuiltRuleModel) populateFromStatus(status *kbapi.ReadPrebuiltRulesAndTimelinesStatusResponse) {
-	model.RulesInstalled = types.Int64Value(int64(status.JSON200.RulesInstalled))
-	model.RulesNotInstalled = types.Int64Value(int64(status.JSON200.RulesNotInstalled))
-	model.RulesNotUpdated = types.Int64Value(int64(status.JSON200.RulesNotUpdated))
-	model.TimelinesInstalled = types.Int64Value(int64(status.JSON200.TimelinesInstalled))
-	model.TimelinesNotInstalled = types.Int64Value(int64(status.JSON200.TimelinesNotInstalled))
-	model.TimelinesNotUpdated = types.Int64Value(int64(status.JSON200.TimelinesNotUpdated))
+func (m prebuiltRuleModel) GetID() types.String             { return m.ID }
+func (m prebuiltRuleModel) GetResourceID() types.String     { return m.SpaceID }
+func (m prebuiltRuleModel) GetSpaceID() types.String        { return m.SpaceID }
+func (m prebuiltRuleModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+
+var _ entitycore.KibanaResourceModel = prebuiltRuleModel{}
+
+var minSupportedVersion = version.Must(version.NewVersion("8.0.0"))
+
+func (m prebuiltRuleModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{
+		{
+			MinVersion:   *minSupportedVersion,
+			ErrorMessage: "Prebuilt rules are not supported until Elastic Stack v8.0.0. Upgrade the target server to use this resource",
+		},
+	}, nil
+}
+
+func (m *prebuiltRuleModel) populateFromStatus(status *kbapi.ReadPrebuiltRulesAndTimelinesStatusResponse) {
+	m.RulesInstalled = types.Int64Value(int64(status.JSON200.RulesInstalled))
+	m.RulesNotInstalled = types.Int64Value(int64(status.JSON200.RulesNotInstalled))
+	m.RulesNotUpdated = types.Int64Value(int64(status.JSON200.RulesNotUpdated))
+	m.TimelinesInstalled = types.Int64Value(int64(status.JSON200.TimelinesInstalled))
+	m.TimelinesNotInstalled = types.Int64Value(int64(status.JSON200.TimelinesNotInstalled))
+	m.TimelinesNotUpdated = types.Int64Value(int64(status.JSON200.TimelinesNotUpdated))
 }

@@ -23,28 +23,17 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
-	var plan tfModelV0
-	diags := request.Plan.Get(ctx, &plan)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
+func createParameter(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
+	plan := req.Plan
+	var diags diag.Diagnostics
 
-	apiClient, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	kibanaClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, response.Diagnostics)
-	if kibanaClient == nil {
-		return
-	}
+	kibanaClient := client.GetKibanaOapiClient()
 
 	input := plan.toParameterRequest(false)
 
@@ -53,29 +42,28 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	// request body properly.
 	inputJSON, err := json.Marshal(input)
 	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to marshal JSON for parameter `%s`", input.Key), err.Error())
-		return
+		diags.AddError(fmt.Sprintf("Failed to marshal JSON for parameter `%s`", input.Key), err.Error())
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
 	createResult, err := kibanaClient.API.PostParametersWithBodyWithResponse(ctx, "application/json", bytes.NewReader(inputJSON))
 	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to create parameter `%s`", input.Key), err.Error())
-		return
+		diags.AddError(fmt.Sprintf("Failed to create parameter `%s`", input.Key), err.Error())
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
 	createResponse, err := createResult.JSON200.AsSyntheticsPostParameterResponse()
 	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to parse parameter response `%s`", input.Key), err.Error())
-		return
+		diags.AddError(fmt.Sprintf("Failed to parse parameter response `%s`", input.Key), err.Error())
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
 	if createResponse.Id == nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Unexpected nil id in create parameter response `%s`", input.Key), "")
-		return
+		diags.AddError(fmt.Sprintf("Unexpected nil id in create parameter response `%s`", input.Key), "")
+		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	// We can't trust the response from the POST request, so read the parameter
-	// again. At least with Kibana 9.0.0, the POST request responds without the
-	// `value` field set.
-	r.readState(ctx, kibanaClient, *createResponse.Id, plan.KibanaConnection, &response.State, &response.Diagnostics)
+	plan.ID = types.StringValue(*createResponse.Id)
+
+	return entitycore.KibanaWriteResult[Model]{Model: plan}, diags
 }

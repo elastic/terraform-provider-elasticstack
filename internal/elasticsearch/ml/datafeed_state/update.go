@@ -102,8 +102,8 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 		return diags
 	}
 
-	compID, sdkDiags := client.ID(ctx, datafeedID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	compID, idDiags := client.ID(ctx, datafeedID)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return diags
 	}
@@ -177,9 +177,8 @@ func (r *mlDatafeedStateResource) updateAfterMissedTransition(
 		return nil, diags
 	}
 
-	if data.Start.IsUnknown() {
-		data.Start = timetypes.NewRFC3339Null()
-	}
+	data.EffectiveSearchStart = timetypes.NewRFC3339Null()
+	data.EffectiveSearchEnd = timetypes.NewRFC3339Null()
 
 	return &data, diags
 }

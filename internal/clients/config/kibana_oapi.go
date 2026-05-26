@@ -25,129 +25,38 @@ import (
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
-	sdkdiags "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type kibanaOapiConfig kibanaoapi.Config
 
-func newKibanaOapiConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibanaOapiConfig, sdkdiags.Diagnostics) {
-	// Use ES details by default
-	config := base.toKibanaOapiConfig()
-	kibConn, ok := d.GetOk("kibana")
-	if !ok {
-		return config.withEnvironmentOverrides(), nil
-	}
-
-	kibConnList, ok := kibConn.([]any)
-	if !ok || len(kibConnList) == 0 {
-		return config, sdkdiags.Errorf("invalid provider configuration: kibana must be a non-empty list")
-	}
-
-	// if defined, then we only have a single entry
-	if kib := kibConnList[0]; kib != nil {
-		kibConfig, ok := kib.(map[string]any)
-		if !ok {
-			return config, sdkdiags.Errorf("invalid provider configuration: kibana[0] must be an object")
-		}
-
-		if usernameRaw, usernameOk := kibConfig["username"]; usernameOk {
-			switch v := usernameRaw.(type) {
-			case string:
-				if v != "" {
-					config.Username = v
-				}
-			case nil:
-			default:
-				return config, sdkdiags.Errorf("invalid provider configuration: kibana.username must be a string")
-			}
-		}
-
-		if passwordRaw, passwordOk := kibConfig["password"]; passwordOk {
-			switch v := passwordRaw.(type) {
-			case string:
-				if v != "" {
-					config.Password = v
-				}
-			case nil:
-			default:
-				return config, sdkdiags.Errorf("invalid provider configuration: kibana.password must be a string")
-			}
-		}
-
-		if apiKeyRaw, apiKeyOk := kibConfig["api_key"]; apiKeyOk {
-			switch v := apiKeyRaw.(type) {
-			case string:
-				if v != "" {
-					config.APIKey = v
-				}
-			case nil:
-			default:
-				return config, sdkdiags.Errorf("invalid provider configuration: kibana.api_key must be a string")
-			}
-		}
-
-		if bearerTokenRaw, bearerTokenOk := kibConfig["bearer_token"]; bearerTokenOk {
-			switch v := bearerTokenRaw.(type) {
-			case string:
-				if v != "" {
-					config.BearerToken = v
-				}
-			case nil:
-			default:
-				return config, sdkdiags.Errorf("invalid provider configuration: kibana.bearer_token must be a string")
-			}
-		}
-
-		if endpointsRaw, endpointsOk := kibConfig["endpoints"]; endpointsOk {
-			endpointsList, ok := endpointsRaw.([]any)
-			if !ok {
-				return config, sdkdiags.Errorf("invalid provider configuration: kibana.endpoints must be a list")
-			}
-			if len(endpointsList) > 0 {
-				// We're curently limited by the API to a single endpoint
-				if endpoint := endpointsList[0]; endpoint != nil {
-					endpointStr, ok := endpoint.(string)
-					if !ok {
-						return config, sdkdiags.Errorf("invalid provider configuration: kibana.endpoints must be a list of strings")
-					}
-					config.URL = endpointStr
-				}
-			}
-		}
-
-		if caCertsRaw, caCertsOk := kibConfig["ca_certs"]; caCertsOk {
-			caCerts, ok := caCertsRaw.([]any)
-			if !ok {
-				return config, sdkdiags.Errorf("invalid provider configuration: kibana.ca_certs must be a list")
-			}
-			for _, elem := range caCerts {
-				if elem == nil {
-					continue
-				}
-				vStr, ok := elem.(string)
-				if !ok {
-					return config, sdkdiags.Errorf("invalid provider configuration: kibana.ca_certs must be a list of strings")
-				}
-				config.CACerts = append(config.CACerts, vStr)
-			}
-		}
-
-		if insecureRaw, insecureOk := kibConfig["insecure"]; insecureOk {
-			insecure, ok := insecureRaw.(bool)
-			if !ok {
-				return config, sdkdiags.Errorf("invalid provider configuration: kibana.insecure must be a bool")
-			}
-			if insecure {
-				config.Insecure = true
-			}
-		}
+func newKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibanaOapiConfig, fwdiags.Diagnostics) {
+	config, diags := buildKibanaOapiConfigFromFramework(ctx, cfg, base)
+	if diags.HasError() {
+		return kibanaOapiConfig{}, diags
 	}
 
 	return config.withEnvironmentOverrides(), nil
 }
 
-func newKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibanaOapiConfig, fwdiags.Diagnostics) {
+func newProviderKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibanaOapiConfig, fwdiags.Diagnostics) {
+	config, diags := buildKibanaOapiConfigFromFramework(ctx, cfg, base)
+	if diags.HasError() {
+		return kibanaOapiConfig{}, diags
+	}
+
+	// Apply the URL env override before fleet fallback so a fleet-derived URL does
+	// not suppress KIBANA_ENDPOINT when TF_ELASTICSTACK_PREFER_CONFIGURED_KIBANA_ENDPOINT is set.
+	config = config.withURLEnvironmentOverride()
+
+	config, diags = config.withFleetBlockFallback(ctx, cfg)
+	if diags.HasError() {
+		return kibanaOapiConfig{}, diags
+	}
+
+	return config.withNonURLEnvironmentOverrides(), nil
+}
+
+func buildKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibanaOapiConfig, fwdiags.Diagnostics) {
 	config := base.toKibanaOapiConfig()
 
 	if len(cfg.Kibana) > 0 {
@@ -181,133 +90,71 @@ func newKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigura
 			config.CACerts = cas
 		}
 
-		config.Insecure = kibConfig.Insecure.ValueBool()
+		if !kibConfig.Insecure.IsNull() && !kibConfig.Insecure.IsUnknown() {
+			config.Insecure = kibConfig.Insecure.ValueBool()
+		}
 	}
 
-	return config.withEnvironmentOverrides(), nil
+	return config, nil
 }
 
-// newKibanaOapiConfigFromSDKResource reads kibana connection settings from a
-// resource-level kibana_connection block for the OpenAPI client.
-func newKibanaOapiConfigFromSDKResource(d *schema.ResourceData, base baseConfig) (kibanaOapiConfig, sdkdiags.Diagnostics) {
-	config := base.toKibanaOapiConfig()
-	kibConn, ok := d.GetOk(kibanaConnectionKey)
-	if !ok {
-		return config, nil
+func (k kibanaOapiConfig) withFleetBlockFallback(ctx context.Context, cfg ProviderConfiguration) (kibanaOapiConfig, fwdiags.Diagnostics) {
+	if len(cfg.Fleet) == 0 {
+		return k, nil
 	}
 
-	kibConnList, ok := kibConn.([]any)
-	if !ok || len(kibConnList) == 0 {
-		return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection must be a non-empty list")
+	fleetCfg := cfg.Fleet[0]
+	if k.Username == "" && fleetCfg.Username.ValueString() != "" {
+		k.Username = fleetCfg.Username.ValueString()
+	}
+	if k.Password == "" && fleetCfg.Password.ValueString() != "" {
+		k.Password = fleetCfg.Password.ValueString()
+	}
+	if k.APIKey == "" && fleetCfg.APIKey.ValueString() != "" {
+		k.APIKey = fleetCfg.APIKey.ValueString()
+	}
+	if k.BearerToken == "" && fleetCfg.BearerToken.ValueString() != "" {
+		k.BearerToken = fleetCfg.BearerToken.ValueString()
+	}
+	if k.URL == "" && fleetCfg.Endpoint.ValueString() != "" {
+		k.URL = fleetCfg.Endpoint.ValueString()
 	}
 
-	if kib := kibConnList[0]; kib != nil {
-		kibConfig, ok := kib.(map[string]any)
-		if !ok {
-			return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection[0] must be an object")
+	if len(k.CACerts) == 0 {
+		var caCerts []string
+		diags := fleetCfg.CACerts.ElementsAs(ctx, &caCerts, true)
+		if diags.HasError() {
+			return kibanaOapiConfig{}, diags
 		}
-
-		if usernameRaw, usernameOk := kibConfig["username"]; usernameOk {
-			switch v := usernameRaw.(type) {
-			case string:
-				if v != "" {
-					config.Username = v
-				}
-			case nil:
-			default:
-				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.username must be a string")
-			}
-		}
-
-		if passwordRaw, passwordOk := kibConfig["password"]; passwordOk {
-			switch v := passwordRaw.(type) {
-			case string:
-				if v != "" {
-					config.Password = v
-				}
-			case nil:
-			default:
-				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.password must be a string")
-			}
-		}
-
-		if apiKeyRaw, apiKeyOk := kibConfig["api_key"]; apiKeyOk {
-			switch v := apiKeyRaw.(type) {
-			case string:
-				if v != "" {
-					config.APIKey = v
-				}
-			case nil:
-			default:
-				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.api_key must be a string")
-			}
-		}
-
-		if bearerTokenRaw, bearerTokenOk := kibConfig["bearer_token"]; bearerTokenOk {
-			switch v := bearerTokenRaw.(type) {
-			case string:
-				if v != "" {
-					config.BearerToken = v
-				}
-			case nil:
-			default:
-				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.bearer_token must be a string")
-			}
-		}
-
-		if endpointsRaw, endpointsOk := kibConfig["endpoints"]; endpointsOk {
-			endpointsList, ok := endpointsRaw.([]any)
-			if !ok {
-				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.endpoints must be a list")
-			}
-			if len(endpointsList) > 0 {
-				if endpoint := endpointsList[0]; endpoint != nil {
-					endpointStr, ok := endpoint.(string)
-					if !ok {
-						return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.endpoints must be a list of strings")
-					}
-					config.URL = endpointStr
-				}
-			}
-		}
-
-		if caCertsRaw, caCertsOk := kibConfig["ca_certs"]; caCertsOk {
-			caCerts, ok := caCertsRaw.([]any)
-			if !ok {
-				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.ca_certs must be a list")
-			}
-			for _, elem := range caCerts {
-				if elem == nil {
-					continue
-				}
-				vStr, ok := elem.(string)
-				if !ok {
-					return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.ca_certs must be a list of strings")
-				}
-				config.CACerts = append(config.CACerts, vStr)
-			}
-		}
-
-		if insecureRaw, insecureOk := kibConfig["insecure"]; insecureOk {
-			insecure, ok := insecureRaw.(bool)
-			if !ok {
-				return config, sdkdiags.Errorf("invalid resource configuration: kibana_connection.insecure must be a bool")
-			}
-			if insecure {
-				config.Insecure = true
-			}
+		if len(caCerts) > 0 {
+			k.CACerts = caCerts
 		}
 	}
 
-	return config.withEnvironmentOverrides(), nil
+	kibanaInsecureUnset := len(cfg.Kibana) == 0 || cfg.Kibana[0].Insecure.IsNull() || cfg.Kibana[0].Insecure.IsUnknown()
+	if kibanaInsecureUnset && !fleetCfg.Insecure.IsNull() && !fleetCfg.Insecure.IsUnknown() {
+		k.Insecure = fleetCfg.Insecure.ValueBool()
+	}
+
+	return k, nil
+}
+
+func (k kibanaOapiConfig) withURLEnvironmentOverride() kibanaOapiConfig {
+	k.URL = withEnvironmentOverrideUnlessConfigured(k.URL, "KIBANA_ENDPOINT", PreferConfiguredKibanaEndpointEnvVar)
+	return k
 }
 
 func (k kibanaOapiConfig) withEnvironmentOverrides() kibanaOapiConfig {
+	k = k.withNonURLEnvironmentOverrides()
+	k = k.withURLEnvironmentOverride()
+	return k
+}
+
+func (k kibanaOapiConfig) withNonURLEnvironmentOverrides() kibanaOapiConfig {
 	k.Username = withEnvironmentOverride(k.Username, "KIBANA_USERNAME")
 	k.Password = withEnvironmentOverride(k.Password, "KIBANA_PASSWORD")
 	k.APIKey = withEnvironmentOverride(k.APIKey, "KIBANA_API_KEY")
 	k.BearerToken = withEnvironmentOverride(k.BearerToken, "KIBANA_BEARER_TOKEN")
-	k.URL = withEnvironmentOverrideUnlessConfigured(k.URL, "KIBANA_ENDPOINT", PreferConfiguredKibanaEndpointEnvVar)
 	if caCerts, ok := os.LookupEnv("KIBANA_CA_CERTS"); ok {
 		k.CACerts = strings.Split(caCerts, ",")
 	}

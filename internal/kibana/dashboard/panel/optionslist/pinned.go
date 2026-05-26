@@ -30,12 +30,12 @@ type pinnedHandler struct{}
 
 func (pinnedHandler) FromAPI(ctx context.Context, prior *models.PinnedPanelModel, raw kbapi.DashboardPinnedPanels_Item) (models.PinnedPanelModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	group, err := raw.AsKbnControlsSchemasControlsGroupSchemaOptionsListControl()
+	group, err := raw.AsKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControl()
 	if err != nil {
 		diags.AddError("Failed to parse pinned options list control", err.Error())
 		return models.PinnedPanelModel{}, diags
 	}
-	var olPanel kbapi.KbnDashboardPanelTypeOptionsListControl
+	var olPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl
 	if err := panelkit.RemapViaJSON(group, &olPanel); err != nil {
 		diags.AddError("Failed to remap pinned options list control from API", err.Error())
 		return models.PinnedPanelModel{}, diags
@@ -52,17 +52,17 @@ func (pinnedHandler) FromAPI(ctx context.Context, prior *models.PinnedPanelModel
 func (pinnedHandler) ToAPI(ppm models.PinnedPanelModel) (kbapi.DashboardPinnedPanels_Item, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	pm := ppm.SyntheticPanel()
-	olPanel := kbapi.KbnDashboardPanelTypeOptionsListControl{
-		Grid: kbapi.KbnDashboardPanelGrid{X: 0, Y: 0},
+	olPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{
+		Grid: kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
 	}
 	BuildConfig(pm, &olPanel)
-	var group kbapi.KbnControlsSchemasControlsGroupSchemaOptionsListControl
+	var group kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControl
 	if err := panelkit.RemapViaJSON(olPanel, &group); err != nil {
 		diags.AddError("Failed to remap pinned options list control", err.Error())
 		return kbapi.DashboardPinnedPanels_Item{}, diags
 	}
 	var item kbapi.DashboardPinnedPanels_Item
-	if err := item.FromKbnControlsSchemasControlsGroupSchemaOptionsListControl(group); err != nil {
+	if err := item.FromKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControl(group); err != nil {
 		diags.AddError("Failed to build pinned options list control payload", err.Error())
 		return kbapi.DashboardPinnedPanels_Item{}, diags
 	}

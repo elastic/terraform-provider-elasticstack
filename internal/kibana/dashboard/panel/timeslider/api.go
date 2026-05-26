@@ -49,7 +49,7 @@ func (Handler) AlignStateFromPlan(ctx context.Context, plan, state *models.Panel
 
 // FromAPI maps a dashboard time_slider_control panel union item onto pm (null-preserving).
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	tsPanel, err := item.AsKbnDashboardPanelTypeTimeSliderControl()
+	tsPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeTimeSliderControl()
 	if err != nil {
 		var d diag.Diagnostics
 		d.AddError("Dashboard panel decode", err.Error())
@@ -71,7 +71,7 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	_ = dashboard
 	grid := panelkit.GridToAPI(pm.Grid)
 	id := panelkit.IDToAPI(pm.ID)
-	panel := kbapi.KbnDashboardPanelTypeTimeSliderControl{
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeTimeSliderControl{
 		Grid: grid,
 		Id:   id,
 		Config: struct {
@@ -82,7 +82,7 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	}
 	BuildConfig(pm, &panel)
 	var panelItem kbapi.DashboardPanelItem
-	if err := panelItem.FromKbnDashboardPanelTypeTimeSliderControl(panel); err != nil {
+	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeTimeSliderControl(panel); err != nil {
 		var diags diag.Diagnostics
 		diags.AddError("Failed to create time slider control panel", err.Error())
 		return panelItem, diags

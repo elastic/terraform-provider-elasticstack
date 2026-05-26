@@ -36,12 +36,8 @@ func CreatePrivateLocation(ctx context.Context, client *Client, spaceID string, 
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("HTTP request failed creating private location", err.Error())}
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return diagutil.UnwrapJSON200(resp.JSON200, "synthetics private location")
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.SyntheticsGetPrivateLocation { return resp.JSON200 })
 }
 
 // GetPrivateLocation reads a Synthetics private location by id.
@@ -56,15 +52,8 @@ func GetPrivateLocation(ctx context.Context, client *Client, spaceID string, loc
 		)}
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return diagutil.UnwrapJSON200(resp.JSON200, "synthetics private location")
-	case http.StatusNotFound:
-		// Sentinel: caller should remove from state.
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.SyntheticsGetPrivateLocation { return resp.JSON200 })
 }
 
 // DeletePrivateLocation deletes a Synthetics private location by id.

@@ -20,9 +20,15 @@ package defaultdataview
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.Append(r.setDefaultDataView(ctx, req.Plan, &resp.State)...)
+func updateDefaultDataView(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[defaultDataViewModel],
+) (entitycore.KibanaWriteResult[defaultDataViewModel], diag.Diagnostics) {
+	return writeDefaultDataView(ctx, client, req)
 }

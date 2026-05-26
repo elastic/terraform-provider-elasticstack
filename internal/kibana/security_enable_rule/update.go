@@ -22,7 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -47,22 +47,12 @@ func (r *EnableRuleResource) upsert(ctx context.Context, plan tfsdk.Plan, state 
 		return diags
 	}
 
-	serverVersion, sdkDiags := apiClient.ServerVersion(ctx)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	diags.Append(entitycore.EnforceVersionRequirements(ctx, apiClient, &model)...)
 	if diags.HasError() {
 		return diags
 	}
 
-	if serverVersion.LessThan(minSupportedVersion) {
-		diags.AddError("Unsupported server version", "Security detection rules bulk actions are not supported until Elastic Stack v8.11.0. Upgrade the target server to use this resource")
-		return diags
-	}
-
-	client, err := apiClient.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError(err.Error(), "Failed to get Kibana client")
-		return diags
-	}
+	client := apiClient.GetKibanaOapiClient()
 
 	spaceID := model.SpaceID.ValueString()
 	key := model.Key.ValueString()

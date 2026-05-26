@@ -162,10 +162,7 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					if err != nil {
 						return false, err
 					}
-					typedClient, err := client.GetESClient()
-					if err != nil {
-						return false, err
-					}
+					typedClient := client.GetESClient()
 					_, err = typedClient.Security.PutUser(username).
 						Roles("kibana_admin").
 						Password(initialPassword).
@@ -183,7 +180,7 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					}
 					clusterID, diag := client.ClusterID(context.Background())
 					if diag.HasError() {
-						return "", fmt.Errorf("failed to get cluster uuid: %s", diag[0].Summary)
+						return "", fmt.Errorf("failed to get cluster uuid: %s", diag[0].Summary())
 					}
 
 					return fmt.Sprintf("%s/%s", *clusterID, username), nil
@@ -236,16 +233,13 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					if err != nil {
 						return false, err
 					}
-					typedClient, err := client.GetESClient()
-					if err != nil {
-						return false, err
-					}
+					typedClient := client.GetESClient()
 					_, err = typedClient.Security.ChangePassword().
 						Username(username).
 						Password(userUpdatedPassword).
 						Do(context.Background())
 					if err != nil {
-						return false, nil
+						return false, fmt.Errorf("failed to change password for user [%s]: %w", username, err)
 					}
 					return false, nil
 				},
@@ -362,10 +356,7 @@ func checkResourceSecurityUserDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		typedClient, err := client.GetESClient()
-		if err != nil {
-			return err
-		}
+		typedClient := client.GetESClient()
 		_, err = typedClient.Security.GetUser().Username(compID.ResourceID).Do(context.Background())
 		if err != nil {
 			if esclient.IsNotFoundElasticsearchError(err) {

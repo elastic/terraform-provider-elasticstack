@@ -1,0 +1,22 @@
+<!-- pr-changelog-check -->
+:x: **PR Changelog Check failed**
+
+The following issues were found with the `## Changelog` section:
+
+
+
+<details>
+<summary>Expected format</summary>
+
+```
+## Changelog
+Customer impact: <none|fix|enhancement|breaking>
+Summary: <one-line description>  (required when Customer impact is not "none")
+
+### Breaking changes
+<free-form markdown>  (required when Customer impact is "breaking")
+<!-- /breaking-changes -->  (optional — ends the block early)
+```
+
+Or add the `no-changelog` label to bypass this check.
+</details>

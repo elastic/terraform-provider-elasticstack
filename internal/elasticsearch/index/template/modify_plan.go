@@ -69,8 +69,8 @@ func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, stat
 	stateAttrs := state.Template.Attributes()
 	changed := false
 
-	if ps, ok := planAttrs["settings"]; ok && !ps.IsNull() && !ps.IsUnknown() {
-		if ss, ok := stateAttrs["settings"]; ok && !ss.IsNull() && !ss.IsUnknown() {
+	if ps, ok := planAttrs[attrSettings]; ok && !ps.IsNull() && !ps.IsUnknown() {
+		if ss, ok := stateAttrs[attrSettings]; ok && !ss.IsNull() && !ss.IsUnknown() {
 			if !ps.Equal(ss) {
 				pSet, okP := ps.(customtypes.IndexSettingsValue)
 				sSet, okS := ss.(customtypes.IndexSettingsValue)
@@ -81,7 +81,7 @@ func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, stat
 						return nil, diags
 					}
 					if eq {
-						planAttrs["settings"] = ss
+						planAttrs[attrSettings] = ss
 						changed = true
 					}
 				}
@@ -89,8 +89,8 @@ func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, stat
 		}
 	}
 
-	if pa, ok := planAttrs["alias"]; ok && !pa.IsNull() && !pa.IsUnknown() {
-		if sa, ok := stateAttrs["alias"]; ok && !sa.IsNull() && !sa.IsUnknown() {
+	if pa, ok := planAttrs[attrAlias]; ok && !pa.IsNull() && !pa.IsUnknown() {
+		if sa, ok := stateAttrs[attrAlias]; ok && !sa.IsNull() && !sa.IsUnknown() {
 			newAlias, aliasChanged, d := mergePlanAliasSetWithPriorState(ctx, pa, sa)
 			diags.Append(d...)
 			if diags.HasError() {
@@ -98,7 +98,7 @@ func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, stat
 			}
 			if !aliasChanged && !config.Template.IsNull() && !config.Template.IsUnknown() {
 				cfgAttrs := config.Template.Attributes()
-				if ca, ok := cfgAttrs["alias"]; ok && !ca.IsNull() && !ca.IsUnknown() {
+				if ca, ok := cfgAttrs[attrAlias]; ok && !ca.IsNull() && !ca.IsUnknown() {
 					// Use config encodings to match state (handles plan unknowns), but project
 					// the result back onto the plan's element set so plan-only aliases are
 					// preserved. mergePlanAliasSetWithPriorState alone would build the result
@@ -116,7 +116,7 @@ func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, stat
 				if diags.HasError() {
 					return nil, diags
 				}
-				planAttrs["alias"] = canonAlias
+				planAttrs[attrAlias] = canonAlias
 				changed = true
 			}
 		}

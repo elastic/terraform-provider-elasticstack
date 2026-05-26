@@ -23,11 +23,19 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+func (m Model) GetID() types.String             { return m.ID }
+func (m Model) GetResourceID() types.String     { return m.ListItemID }
+func (m Model) GetSpaceID() types.String        { return m.SpaceID }
+func (m Model) GetKibanaConnection() types.List { return m.KibanaConnection }
+
+var _ entitycore.KibanaResourceModel = Model{}
 
 type Model struct {
 	ID               types.String         `tfsdk:"id"`
@@ -74,19 +82,12 @@ func (m *Model) toAPICreateModel(ctx context.Context) (*kbapi.CreateListItemJSON
 }
 
 // toAPIUpdateModel converts the Terraform model to the API update request body
-func (m *Model) toAPIUpdateModel(ctx context.Context) (*kbapi.UpdateListItemJSONRequestBody, diag.Diagnostics) {
+func (m *Model) toAPIUpdateModel(ctx context.Context, resourceID string) (*kbapi.UpdateListItemJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	_ = ctx
 
-	// Parse composite ID to get resource_id
-	compID, compIDDiags := clients.CompositeIDFromStrFw(m.ID.ValueString())
-	diags.Append(compIDDiags...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
 	body := &kbapi.UpdateListItemJSONRequestBody{
-		Id:    compID.ResourceID,
+		Id:    resourceID,
 		Value: m.Value.ValueString(),
 	}
 

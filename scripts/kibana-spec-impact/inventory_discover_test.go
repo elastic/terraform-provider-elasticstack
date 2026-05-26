@@ -22,24 +22,6 @@ import (
 	"testing"
 )
 
-const expectedSDKKibanaPkg = "github.com/elastic/terraform-provider-elasticstack/internal/kibana"
-
-func TestSdkKibanaPkgPath(t *testing.T) {
-	// Table: known SDK entities and a synthetic name must all map to root internal/kibana.
-	for _, name := range []string{
-		"elasticstack_kibana_space",
-		"elasticstack_kibana_security_role",
-		"elasticstack_kibana_action_connector",
-		"elasticstack_kibana_hypothetical_sdk_only",
-	} {
-		t.Run(name, func(t *testing.T) {
-			if got := sdkKibanaPkgPath(name); got != expectedSDKKibanaPkg {
-				t.Fatalf("got %q want %q", got, expectedSDKKibanaPkg)
-			}
-		})
-	}
-}
-
 func TestDiscoverKibanaEntitiesSmoke(t *testing.T) {
 	entities := discoverKibanaEntities()
 	if len(entities) < 5 {

@@ -33,7 +33,10 @@ import (
 )
 
 // MinVersionResponseActions defines the minimum server version required for response actions
-var MinVersionResponseActions = version.Must(version.NewVersion("8.16.0"))
+var (
+	MinVersionResponseActions = version.Must(version.NewVersion("8.16.0"))
+	MinVersionAlertsFilter    = version.Must(version.NewVersion("8.9.0"))
+)
 
 type Data struct {
 	ID               types.String `tfsdk:"id"`
@@ -181,8 +184,25 @@ type ActionModel struct {
 	Params       jsontypes.Normalized `tfsdk:"params"`
 	Group        types.String         `tfsdk:"group"`
 	UUID         types.String         `tfsdk:"uuid"`
-	AlertsFilter types.Map            `tfsdk:"alerts_filter"`
+	AlertsFilter types.Object         `tfsdk:"alerts_filter"`
 	Frequency    types.Object         `tfsdk:"frequency"`
+}
+
+type ActionAlertsFilterModel struct {
+	Query     types.Object `tfsdk:"query"`
+	Timeframe types.Object `tfsdk:"timeframe"`
+}
+
+type ActionAlertsFilterQueryModel struct {
+	Kql         types.String         `tfsdk:"kql"`
+	FiltersJSON jsontypes.Normalized `tfsdk:"filters_json"`
+}
+
+type ActionAlertsFilterTimeframeModel struct {
+	Days       types.List   `tfsdk:"days"`
+	Timezone   types.String `tfsdk:"timezone"`
+	HoursStart types.String `tfsdk:"hours_start"`
+	HoursEnd   types.String `tfsdk:"hours_end"`
 }
 
 type ActionFrequencyModel struct {
@@ -425,7 +445,7 @@ func (d Data) applyCommonRuleProps(
 	}
 
 	if props.Actions != nil && typeutils.IsKnown(d.Actions) {
-		actions, actionDiags := d.actionsToAPI(ctx)
+		actions, actionDiags := d.actionsToAPI(ctx, client)
 		diags.Append(actionDiags...)
 		if !actionDiags.HasError() && len(actions) > 0 {
 			*props.Actions = &actions
@@ -620,7 +640,7 @@ func (d *Data) initializeAllFieldsToDefaults() {
 // parseResourceUUID extracts the UUID from the composite resource ID stored in d.ID.
 // Returns the parsed UUID and true on success, or the zero UUID and false on failure (with diags populated).
 func (d Data) parseResourceUUID(diags *diag.Diagnostics) (uuid.UUID, bool) {
-	compID, idDiags := clients.CompositeIDFromStrFw(d.ID.ValueString())
+	compID, idDiags := clients.CompositeIDFromStr(d.ID.ValueString())
 	diags.Append(idDiags...)
 	if diags.HasError() {
 		return uuid.UUID{}, false
@@ -631,6 +651,105 @@ func (d Data) parseResourceUUID(diags *diag.Diagnostics) (uuid.UUID, bool) {
 		return uuid.UUID{}, false
 	}
 	return uid, true
+}
+
+// reconcileEmptyListsFromPlan copies explicit empty lists from reference (plan or
+// prior state) into target (post-read data) so that Optional-only list attributes
+// set to [] do not produce "Provider produced inconsistent result after apply".
+func reconcileEmptyListsFromPlan(ctx context.Context, reference, target *Data) {
+	// Top-level attributes
+	if isKnownEmptyList(reference.Actions) && target.Actions.IsNull() {
+		target.Actions = reference.Actions
+	}
+	if isKnownEmptyList(reference.ExceptionsList) && target.ExceptionsList.IsNull() {
+		target.ExceptionsList = reference.ExceptionsList
+	}
+	if isKnownEmptyList(reference.SeverityMapping) && target.SeverityMapping.IsNull() {
+		target.SeverityMapping = reference.SeverityMapping
+	}
+	if isKnownEmptyList(reference.RiskScoreMapping) && target.RiskScoreMapping.IsNull() {
+		target.RiskScoreMapping = reference.RiskScoreMapping
+	}
+	if isKnownEmptyList(reference.RelatedIntegrations) && target.RelatedIntegrations.IsNull() {
+		target.RelatedIntegrations = reference.RelatedIntegrations
+	}
+	if isKnownEmptyList(reference.Threat) && target.Threat.IsNull() {
+		target.Threat = reference.Threat
+	}
+	if isKnownEmptyList(reference.ThreatMapping) && target.ThreatMapping.IsNull() {
+		target.ThreatMapping = reference.ThreatMapping
+	}
+
+	// Nested threat technique / subtechnique reconciliation
+	reconcileNestedThreatLists(ctx, reference, target)
+}
+
+// isKnownEmptyList reports whether v is a known, non-null list with zero elements.
+func isKnownEmptyList(v types.List) bool {
+	return typeutils.IsKnown(v) && len(v.Elements()) == 0
+}
+
+// reconcileNestedThreatLists copies empty technique/subtechnique lists from
+// reference threat entries into target threat entries when the target value is
+// null, preserving null when the practitioner omitted the nested attribute.
+func reconcileNestedThreatLists(ctx context.Context, reference, target *Data) {
+	if !typeutils.IsKnown(reference.Threat) || !typeutils.IsKnown(target.Threat) {
+		return
+	}
+
+	var refThreats, targetThreats []ThreatModel
+	if diag := reference.Threat.ElementsAs(ctx, &refThreats, false); diag.HasError() {
+		return
+	}
+	if diag := target.Threat.ElementsAs(ctx, &targetThreats, false); diag.HasError() {
+		return
+	}
+	if len(refThreats) != len(targetThreats) {
+		return
+	}
+
+	updated := false
+	for i := range refThreats {
+		// Reconcile technique list
+		if isKnownEmptyList(refThreats[i].Technique) && targetThreats[i].Technique.IsNull() {
+			targetThreats[i].Technique = refThreats[i].Technique
+			updated = true
+		}
+
+		// Reconcile subtechnique lists inside each technique entry
+		if typeutils.IsKnown(refThreats[i].Technique) && typeutils.IsKnown(targetThreats[i].Technique) {
+			var refTechs, targetTechs []ThreatTechniqueModel
+			if diag := refThreats[i].Technique.ElementsAs(ctx, &refTechs, false); diag.HasError() {
+				continue
+			}
+			if diag := targetThreats[i].Technique.ElementsAs(ctx, &targetTechs, false); diag.HasError() {
+				continue
+			}
+			if len(refTechs) == len(targetTechs) {
+				for j := range refTechs {
+					if isKnownEmptyList(refTechs[j].Subtechnique) && targetTechs[j].Subtechnique.IsNull() {
+						targetTechs[j].Subtechnique = refTechs[j].Subtechnique
+						updated = true
+					}
+				}
+				// Rebuild technique list with updated subtechniques
+				rebuiltTechs, techDiags := types.ListValueFrom(ctx, getThreatTechniqueElementType(), targetTechs)
+				if techDiags.HasError() {
+					continue
+				}
+				targetThreats[i].Technique = rebuiltTechs
+			}
+		}
+	}
+
+	// Rebuild the target threat list with updated elements
+	if updated && len(targetThreats) > 0 {
+		rebuilt, rebuildDiags := types.ListValueFrom(ctx, getThreatElementType(), targetThreats)
+		if rebuildDiags.HasError() {
+			return
+		}
+		target.Threat = rebuilt
+	}
 }
 
 // Helper function to initialize type-specific fields to default/null values

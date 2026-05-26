@@ -20,6 +20,7 @@ package versionutils
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -36,14 +37,20 @@ const (
 	FlavorServerless
 )
 
+const (
+	flavorNameAny        = "Any"
+	flavorNameStateful   = "Stateful"
+	flavorNameServerless = "Serverless"
+)
+
 func (f Flavor) String() string {
 	switch f {
 	case FlavorAny:
-		return "Any"
+		return flavorNameAny
 	case FlavorStateful:
-		return "Stateful"
+		return flavorNameStateful
 	case FlavorServerless:
-		return "Serverless"
+		return flavorNameServerless
 	default:
 		return fmt.Sprintf("Flavor(%d)", f)
 	}
@@ -56,13 +63,13 @@ func fetchAcceptanceServerInfo(ctx context.Context) (*version.Version, string, e
 	if err != nil {
 		return nil, "", err
 	}
-	serverVersion, diags := client.ServerVersion(ctx)
+	serverVersion, isServerless, diags := clients.AcceptanceServerInfo(ctx, client)
 	if diags.HasError() {
-		return nil, "", fmt.Errorf("failed to parse elasticsearch server version: %v", diags)
+		return nil, "", fmt.Errorf("failed to get elasticsearch server info: %v", diags)
 	}
-	buildFlavor, diags := client.ServerFlavor(ctx)
-	if diags.HasError() {
-		return nil, "", fmt.Errorf("failed to get elasticsearch server flavor: %v", diags)
+	buildFlavor := "default"
+	if isServerless {
+		buildFlavor = clients.ServerlessFlavor
 	}
 	return serverVersion, buildFlavor, nil
 }
@@ -123,6 +130,9 @@ func skipContext(t *testing.T) context.Context {
 // Serverless clusters bypass minimum-version checks. Infrastructure failures call t.Fatal.
 func SkipIfUnsupported(t *testing.T, minVersion *version.Version, flavor Flavor) {
 	t.Helper()
+	if os.Getenv("TF_ACC") == "" {
+		return
+	}
 	skip, reason, err := checkSkip(skipContext(t), minVersion, nil, flavor, fetchAcceptanceServerInfo)
 	if err != nil {
 		t.Fatal(err)
@@ -137,6 +147,9 @@ func SkipIfUnsupported(t *testing.T, minVersion *version.Version, flavor Flavor)
 // constraint checks. Infrastructure failures call t.Fatal.
 func SkipIfUnsupportedConstraints(t *testing.T, constraints version.Constraints, flavor Flavor) {
 	t.Helper()
+	if os.Getenv("TF_ACC") == "" {
+		return
+	}
 	skip, reason, err := checkSkip(skipContext(t), nil, constraints, flavor, fetchAcceptanceServerInfo)
 	if err != nil {
 		t.Fatal(err)
@@ -148,13 +161,9 @@ func SkipIfUnsupportedConstraints(t *testing.T, constraints version.Constraints,
 
 func CheckIfVersionIsUnsupported(minSupportedVersion *version.Version) func() (bool, error) {
 	return func() (b bool, err error) {
-		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		serverVersion, _, err := fetchAcceptanceServerInfo(context.Background())
 		if err != nil {
 			return false, err
-		}
-		serverVersion, diags := client.ServerVersion(context.Background())
-		if diags.HasError() {
-			return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
 		}
 
 		return serverVersion.LessThan(minSupportedVersion), nil
@@ -163,13 +172,9 @@ func CheckIfVersionIsUnsupported(minSupportedVersion *version.Version) func() (b
 
 func CheckIfVersionMeetsConstraints(constraints version.Constraints) func() (bool, error) {
 	return func() (b bool, err error) {
-		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		serverVersion, _, err := fetchAcceptanceServerInfo(context.Background())
 		if err != nil {
 			return false, err
-		}
-		serverVersion, diags := client.ServerVersion(context.Background())
-		if diags.HasError() {
-			return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
 		}
 
 		return !constraints.Check(serverVersion), nil
@@ -182,11 +187,11 @@ func CheckIfNotServerless() func() (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		serverFlavor, diags := client.ServerFlavor(context.Background())
+		isServerless, diags := client.IsServerless(context.Background())
 		if diags.HasError() {
 			return false, fmt.Errorf("failed to get the elasticsearch flavor %v", diags)
 		}
 
-		return serverFlavor != clients.ServerlessFlavor, nil
+		return !isServerless, nil
 	}
 }

@@ -23,7 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -54,58 +54,17 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	serverVersion, sdkDiags := apiClient.ServerVersion(ctx)
-	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	response.Diagnostics.Append(entitycore.EnforceVersionRequirements(ctx, apiClient, &plan)...)
 	if response.Diagnostics.HasError() {
 		return
 	}
 
-	if apiModel.Settings != nil && apiModel.Settings.PreventInitialBackfill != nil {
-		if serverVersion.LessThan(SLOSupportsPreventInitialBackfillMinVersion) {
-			response.Diagnostics.AddError(
-				"Unsupported Elastic Stack version",
-				"The 'prevent_initial_backfill' setting requires Elastic Stack version "+SLOSupportsPreventInitialBackfillMinVersion.String()+" or higher.",
-			)
-			return
-		}
-	}
-
-	if plan.hasDataViewID() && serverVersion.LessThan(SLOSupportsDataViewIDMinVersion) {
-		response.Diagnostics.AddError(
-			"Unsupported Elastic Stack version",
-			"data_view_id is not supported on Elastic Stack versions < "+SLOSupportsDataViewIDMinVersion.String(),
-		)
+	supportsMultipleGroupBy := resolveGroupBySupport(ctx, apiClient, &apiModel, &response.Diagnostics)
+	if response.Diagnostics.HasError() {
 		return
 	}
 
-	supportsGroupBy := serverVersion.GreaterThanOrEqual(SLOSupportsGroupByMinVersion)
-	if !supportsGroupBy {
-		if len(apiModel.GroupBy) > 0 {
-			response.Diagnostics.AddError(
-				"Unsupported Elastic Stack version",
-				"group_by is not supported in this version of the Elastic Stack. group_by requires "+SLOSupportsGroupByMinVersion.String()+" or higher.",
-			)
-			return
-		}
-
-		// Do not send group_by at all for stacks that don't support it.
-		apiModel.GroupBy = nil
-	}
-
-	supportsMultipleGroupBy := supportsGroupBy && serverVersion.GreaterThanOrEqual(SLOSupportsMultipleGroupByMinVersion)
-	if len(apiModel.GroupBy) > 1 && !supportsMultipleGroupBy {
-		response.Diagnostics.AddError(
-			"Unsupported Elastic Stack version",
-			"multiple group_by fields are not supported in this version of the Elastic Stack. Multiple group_by fields requires "+SLOSupportsMultipleGroupByMinVersion.String(),
-		)
-		return
-	}
-
-	oapi, err := apiClient.GetKibanaOapiClient()
-	if err != nil {
-		response.Diagnostics.AddError("Failed to get Kibana API client", err.Error())
-		return
-	}
+	oapi := apiClient.GetKibanaOapiClient()
 
 	indicator, convErr := kibanaoapi.ResponseIndicatorToCreateIndicator(apiModel.Indicator)
 	if convErr != nil {

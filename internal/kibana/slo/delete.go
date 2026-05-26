@@ -44,17 +44,13 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
-	compID, diags := clients.CompositeIDFromStrFw(state.ID.ValueString())
+	compID, diags := clients.CompositeIDFromStr(state.ID.ValueString())
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return
 	}
 
-	oapi, err := apiClient.GetKibanaOapiClient()
-	if err != nil {
-		response.Diagnostics.AddError("Failed to get Kibana API client", err.Error())
-		return
-	}
+	oapi := apiClient.GetKibanaOapiClient()
 
 	// CompositeID stores spaceID as ClusterID and sloID as ResourceID (see create.go).
 	// DeleteSlo signature: (ctx, client, spaceID, sloID).

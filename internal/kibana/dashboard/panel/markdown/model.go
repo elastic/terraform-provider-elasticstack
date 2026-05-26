@@ -60,7 +60,7 @@ func classifyConfigFromRoot(configBytes []byte) (configBranch, error) {
 	}
 }
 
-func marshalAndClassifyMarkdownConfig(config kbapi.KbnDashboardPanelTypeMarkdown_Config, enforceClassifier bool, expectedBranch configBranch) ([]byte, bool) {
+func marshalAndClassifyMarkdownConfig(config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdown_Config, enforceClassifier bool, expectedBranch configBranch) ([]byte, bool) {
 	raw, mErr := config.MarshalJSON()
 	if mErr != nil {
 		return nil, false
@@ -74,14 +74,14 @@ func marshalAndClassifyMarkdownConfig(config kbapi.KbnDashboardPanelTypeMarkdown
 	return raw, true
 }
 
-func populateFromAPIAttemptByValue(pm *models.PanelModel, tfPanel *models.PanelModel, config kbapi.KbnDashboardPanelTypeMarkdown_Config, enforceClassifier bool) bool {
+func populateFromAPIAttemptByValue(pm *models.PanelModel, tfPanel *models.PanelModel, config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdown_Config, enforceClassifier bool) bool {
 	raw, ok := marshalAndClassifyMarkdownConfig(config, enforceClassifier, configBranchByValue)
 	if !ok {
 		return false
 	}
-	config0, err := config.AsKbnDashboardPanelTypeMarkdownConfig0()
+	config0, err := config.AsKibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0()
 	if err != nil {
-		var inline kbapi.KbnDashboardPanelTypeMarkdownConfig0
+		var inline kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0
 		if json.Unmarshal(raw, &inline) != nil {
 			return false
 		}
@@ -91,11 +91,11 @@ func populateFromAPIAttemptByValue(pm *models.PanelModel, tfPanel *models.PanelM
 	return true
 }
 
-func populateFromAPIAttemptByReference(pm *models.PanelModel, tfPanel *models.PanelModel, config kbapi.KbnDashboardPanelTypeMarkdown_Config, enforceClassifier bool) bool {
+func populateFromAPIAttemptByReference(pm *models.PanelModel, tfPanel *models.PanelModel, config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdown_Config, enforceClassifier bool) bool {
 	if _, ok := marshalAndClassifyMarkdownConfig(config, enforceClassifier, configBranchByReference); !ok {
 		return false
 	}
-	cfg1, err := config.AsKbnDashboardPanelTypeMarkdownConfig1()
+	cfg1, err := config.AsKibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig1()
 	if err != nil {
 		return false
 	}
@@ -110,7 +110,7 @@ func populateFromAPIAttemptByReference(pm *models.PanelModel, tfPanel *models.Pa
 //
 // Mirrors legacy `dashboardMapPanelFromAPI` markdown branch sequencing (ported from models_markdown_panel.go /
 // models_panels.go).
-func PopulateTypedConfigFromAPI(pm *models.PanelModel, prior *models.PanelModel, markdownPanel kbapi.KbnDashboardPanelTypeMarkdown, diags *diag.Diagnostics) {
+func PopulateTypedConfigFromAPI(pm *models.PanelModel, prior *models.PanelModel, markdownPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdown, diags *diag.Diagnostics) {
 	if panelUsesConfigJSONOnly(prior) {
 		return
 	}
@@ -172,7 +172,8 @@ func PopulateTypedConfigFromAPI(pm *models.PanelModel, prior *models.PanelModel,
 	}
 }
 
-// panelUsesConfigJSONOnly must stay aligned with dashboard.panelUsesConfigJSONOnly (models_panels.go).
+// panelUsesConfigJSONOnly reports whether the practitioner omitted typed blocks and authored panel-level config_json only.
+// Must stay aligned with dashboard helpers used when merging markdown panels from API responses.
 func panelUsesConfigJSONOnly(pm *models.PanelModel) bool {
 	if pm == nil || !typeutils.IsKnown(pm.ConfigJSON) {
 		return false
@@ -191,14 +192,13 @@ func panelHasTypedConfig(pm *models.PanelModel) bool {
 		pm.RangeSliderControlConfig != nil ||
 		pm.SyntheticsStatsOverviewConfig != nil ||
 		pm.SyntheticsMonitorsConfig != nil ||
-		pm.LensDashboardAppConfig != nil ||
 		pm.VisConfig != nil ||
 		pm.ImageConfig != nil ||
 		pm.SloAlertsConfig != nil ||
 		pm.DiscoverSessionConfig != nil
 }
 
-func populateFromAPIByValue(pm *models.PanelModel, tfPanel *models.PanelModel, config kbapi.KbnDashboardPanelTypeMarkdownConfig0) {
+func populateFromAPIByValue(pm *models.PanelModel, tfPanel *models.PanelModel, config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0) {
 	byValue := func(m *models.MarkdownConfigModel) *models.MarkdownConfigByValueModel { return m.ByValue }
 	settings := &models.MarkdownConfigSettingsModel{
 		OpenLinksInNewTab: byValueOpenLinksFromAPI(config.Settings.OpenLinksInNewTab, tfPanel),
@@ -215,7 +215,7 @@ func populateFromAPIByValue(pm *models.PanelModel, tfPanel *models.PanelModel, c
 	}
 }
 
-func populateFromAPIByReference(pm *models.PanelModel, tfPanel *models.PanelModel, config kbapi.KbnDashboardPanelTypeMarkdownConfig1) {
+func populateFromAPIByReference(pm *models.PanelModel, tfPanel *models.PanelModel, config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig1) {
 	byReference := func(m *models.MarkdownConfigModel) *models.MarkdownConfigByReferenceModel { return m.ByReference }
 	pm.MarkdownConfig = &models.MarkdownConfigModel{
 		ByReference: &models.MarkdownConfigByReferenceModel{
@@ -307,32 +307,18 @@ func byValueOpenLinksFromAPI(api *bool, tfPanel *models.PanelModel) types.Bool {
 	return types.BoolNull()
 }
 
-func optStringPtr(v types.String) *string {
-	if typeutils.IsKnown(v) {
-		return v.ValueStringPointer()
-	}
-	return nil
-}
-
-func optBoolPtr(v types.Bool) *bool {
-	if typeutils.IsKnown(v) {
-		return v.ValueBoolPointer()
-	}
-	return nil
-}
-
 // BuildConfigByValue builds the API by-value markdown payload from Terraform state.
-func BuildConfigByValue(pm models.PanelModel) kbapi.KbnDashboardPanelTypeMarkdownConfig0 {
+func BuildConfigByValue(pm models.PanelModel) kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0 {
 	if pm.MarkdownConfig == nil || pm.MarkdownConfig.ByValue == nil {
-		return kbapi.KbnDashboardPanelTypeMarkdownConfig0{}
+		return kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0{}
 	}
 	bv := pm.MarkdownConfig.ByValue
-	config := kbapi.KbnDashboardPanelTypeMarkdownConfig0{
+	config := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0{
 		Content:     bv.Content.ValueString(),
-		Description: optStringPtr(bv.Description),
-		HideTitle:   optBoolPtr(bv.HideTitle),
-		HideBorder:  optBoolPtr(bv.HideBorder),
-		Title:       optStringPtr(bv.Title),
+		Description: typeutils.OptStringPtr(bv.Description),
+		HideTitle:   typeutils.OptBoolPtr(bv.HideTitle),
+		HideBorder:  typeutils.OptBoolPtr(bv.HideBorder),
+		Title:       typeutils.OptStringPtr(bv.Title),
 	}
 	if bv.Settings != nil && typeutils.IsKnown(bv.Settings.OpenLinksInNewTab) {
 		config.Settings.OpenLinksInNewTab = bv.Settings.OpenLinksInNewTab.ValueBoolPointer()
@@ -341,16 +327,16 @@ func BuildConfigByValue(pm models.PanelModel) kbapi.KbnDashboardPanelTypeMarkdow
 }
 
 // BuildConfigByReference builds the API by-reference markdown payload from Terraform state.
-func BuildConfigByReference(pm models.PanelModel) kbapi.KbnDashboardPanelTypeMarkdownConfig1 {
+func BuildConfigByReference(pm models.PanelModel) kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig1 {
 	if pm.MarkdownConfig == nil || pm.MarkdownConfig.ByReference == nil {
-		return kbapi.KbnDashboardPanelTypeMarkdownConfig1{}
+		return kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig1{}
 	}
 	br := pm.MarkdownConfig.ByReference
-	return kbapi.KbnDashboardPanelTypeMarkdownConfig1{
+	return kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig1{
 		RefId:       br.RefID.ValueString(),
-		Description: optStringPtr(br.Description),
-		HideTitle:   optBoolPtr(br.HideTitle),
-		HideBorder:  optBoolPtr(br.HideBorder),
-		Title:       optStringPtr(br.Title),
+		Description: typeutils.OptStringPtr(br.Description),
+		HideTitle:   typeutils.OptBoolPtr(br.HideTitle),
+		HideBorder:  typeutils.OptBoolPtr(br.HideBorder),
+		Title:       typeutils.OptStringPtr(br.Title),
 	}
 }

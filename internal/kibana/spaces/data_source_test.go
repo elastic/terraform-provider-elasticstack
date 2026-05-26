@@ -38,6 +38,25 @@ const testImageURL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYA
 // spaces data source acceptance tests.
 const testSpacesResourceName = "data.elasticstack_kibana_spaces.all_spaces"
 
+// testCheckDataSourceAttrEmptyOrAbsent passes when the flat state attribute is missing
+// or equals "". Optional nested attributes mapped as null are often omitted from state.
+func testCheckDataSourceAttrEmptyOrAbsent(resourceName, attr string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+		v, ok := rs.Primary.Attributes[attr]
+		if !ok {
+			return nil
+		}
+		if v != "" {
+			return fmt.Errorf("%q: expected attribute %q absent or empty, got %q", resourceName, attr, v)
+		}
+		return nil
+	}
+}
+
 // testCheckSpaceAttrByID returns a TestCheckFunc that scans the "spaces" list
 // in state to find the element whose id equals spaceID, then asserts that attr
 // equals value. This avoids hard-coding list indices, which can shift when the
@@ -86,8 +105,8 @@ func TestAccSpacesDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.description", "This is your default space!"),
 					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.disabled_features.#", "0"),
 					resource.TestCheckResourceAttrSet(testSpacesResourceName, "spaces.0.color"),
-					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.image_url", ""),
-					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.solution", ""),
+					testCheckDataSourceAttrEmptyOrAbsent(testSpacesResourceName, "spaces.0.image_url"),
+					testCheckDataSourceAttrEmptyOrAbsent(testSpacesResourceName, "spaces.0.solution"),
 				),
 			},
 		},

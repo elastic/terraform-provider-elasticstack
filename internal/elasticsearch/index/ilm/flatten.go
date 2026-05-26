@@ -46,30 +46,28 @@ func flattenPhase(ctx context.Context, phaseName string, minAge string, actions 
 	var diags diag.Diagnostics
 	phase := make(map[string]any)
 
-	for _, aCase := range []string{"readonly", "freeze", "unfollow"} {
+	for _, aCase := range []string{ilmActionReadonly, ilmActionFreeze, ilmActionUnfollow} {
 		if priorHasDeclaredToggle(ctx, prior, aCase) {
-			phase[aCase] = []any{map[string]any{"enabled": false}}
+			phase[aCase] = []any{map[string]any{attrEnabled: false}}
 		}
 	}
 
 	if minAge != "" {
-		phase["min_age"] = minAge
+		phase[attrMinAge] = minAge
 	}
 	for actionName, action := range actions {
 		switch actionName {
-		case "readonly", "freeze", "unfollow":
-			phase[actionName] = []any{map[string]any{"enabled": true}}
-		case "allocate":
+		case ilmActionReadonly, ilmActionFreeze, ilmActionUnfollow:
+			phase[actionName] = []any{map[string]any{attrEnabled: true}}
+		case ilmActionAllocate:
 			allocateAction := make(map[string]any)
-			if v, ok := action["number_of_replicas"]; ok {
-				allocateAction["number_of_replicas"] = v
+			if v, ok := action[attrNumberOfReplicas]; ok {
+				allocateAction[attrNumberOfReplicas] = v
 			}
-			if v, ok := action["total_shards_per_node"]; ok {
-				allocateAction["total_shards_per_node"] = v
-			} else {
-				allocateAction["total_shards_per_node"] = int64(-1)
+			if v, ok := action[attrTotalShardsPerNode]; ok {
+				allocateAction[attrTotalShardsPerNode] = v
 			}
-			for _, f := range []string{"include", "require", "exclude"} {
+			for _, f := range []string{attrInclude, attrRequire, attrExclude} {
 				if v, ok := action[f]; ok {
 					res, err := json.Marshal(v)
 					if err != nil {
@@ -84,11 +82,11 @@ func flattenPhase(ctx context.Context, phaseName string, minAge string, actions 
 				}
 			}
 			phase[actionName] = []any{allocateAction}
-		case "shrink":
+		case ilmActionShrink:
 			shrinkAction := make(map[string]any, len(action))
 			maps.Copy(shrinkAction, action)
-			if _, ok := shrinkAction["allow_write_after_shrink"]; !ok {
-				shrinkAction["allow_write_after_shrink"] = false
+			if _, ok := shrinkAction[attrAllowWriteAfterShrink]; !ok {
+				shrinkAction[attrAllowWriteAfterShrink] = false
 			}
 			phase[actionName] = []any{shrinkAction}
 		default:

@@ -591,10 +591,7 @@ func checkResourceAgentPolicyDestroy(s *terraform.State) error {
 			continue
 		}
 
-		fleetClient, err := client.GetFleetClient()
-		if err != nil {
-			return err
-		}
+		fleetClient := client.GetFleetClient()
 		policy, diags := fleet.GetAgentPolicy(context.Background(), fleetClient, rs.Primary.ID, "")
 		if diags.HasError() {
 			return diagutil.FwDiagsAsError(diags)
@@ -617,10 +614,7 @@ func checkResourceAgentPolicySkipDestroy(s *terraform.State) error {
 			continue
 		}
 
-		fleetClient, err := client.GetFleetClient()
-		if err != nil {
-			return err
-		}
+		fleetClient := client.GetFleetClient()
 		policy, diags := fleet.GetAgentPolicy(context.Background(), fleetClient, rs.Primary.ID, "")
 		if diags.HasError() {
 			return diagutil.FwDiagsAsError(diags)
@@ -875,7 +869,7 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 					if err != nil {
 						return false, err
 					}
-					serverVersion, diags := client.ServerVersion(context.Background())
+					serverVersion, _, diags := clients.AcceptanceServerInfo(context.Background(), client)
 					if diags.HasError() {
 						return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
 					}
@@ -902,7 +896,7 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 					if err != nil {
 						return false, err
 					}
-					serverVersion, diags := client.ServerVersion(context.Background())
+					serverVersion, _, diags := clients.AcceptanceServerInfo(context.Background(), client)
 					if diags.HasError() {
 						return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
 					}

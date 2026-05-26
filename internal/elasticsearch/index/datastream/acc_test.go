@@ -233,10 +233,7 @@ func checkResourceDataStreamDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		typedClient, err := client.GetESClient()
-		if err != nil {
-			return err
-		}
+		typedClient := client.GetESClient()
 		_, err = typedClient.Indices.GetDataStream().Name(compID.ResourceID).Do(context.Background())
 		if err != nil {
 			if esclient.IsNotFoundElasticsearchError(err) {

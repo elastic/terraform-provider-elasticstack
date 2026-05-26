@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -40,10 +39,7 @@ import (
 var Providers map[string]func() (tfprotov6.ProviderServer, error)
 
 func init() {
-	providerServerFactory, err := provider.ProtoV6ProviderServerFactory(context.Background(), provider.AccTestVersion)
-	if err != nil {
-		log.Fatal(err)
-	}
+	providerServerFactory := provider.ProtoV6ProviderServerFactory(provider.AccTestVersion)
 	Providers = map[string]func() (tfprotov6.ProviderServer, error){
 		"elasticstack": func() (tfprotov6.ProviderServer, error) {
 			server := providerServerFactory()
@@ -100,18 +96,15 @@ func PreCheckWithWorkflowsEnabled(t *testing.T, minVersion *version.Version) {
 		t.Fatalf("Failed to create API client: %v", err)
 	}
 
-	serverVersion, diags := client.ServerVersion(context.Background())
+	supported, diags := client.EnforceMinVersion(context.Background(), minVersion)
 	if diags.HasError() {
 		t.Fatalf("Failed to get server version: %v", diags)
 	}
-	if serverVersion.LessThan(minVersion) {
-		t.Skipf("Skipping test: server version %s is below minimum %s", serverVersion, minVersion)
+	if !supported {
+		t.Skipf("Skipping test: server version is below minimum %s", minVersion)
 	}
 
-	kibanaClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		t.Fatalf("Failed to get Kibana client: %v", err)
-	}
+	kibanaClient := client.GetKibanaOapiClient()
 
 	// Try the internal settings API endpoint
 	settingsURL := fmt.Sprintf("%s/internal/kibana/settings/workflows:ui:enabled", kibanaClient.URL)

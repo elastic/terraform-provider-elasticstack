@@ -117,8 +117,8 @@ func TestDrilldowns_roundTrip_viaHandler(t *testing.T) {
 	require.Len(t, ddB, len(ddA))
 	require.Equal(t, ddA[0]["url"], ddB[0]["url"])
 	require.Equal(t, ddA[0]["label"], ddB[0]["label"])
-	require.Equal(t, string(kbapi.SloBurnRateEmbeddableDrilldownsTriggerOnOpenPanelMenu), ddB[0]["trigger"])
-	require.Equal(t, string(kbapi.SloBurnRateEmbeddableDrilldownsTypeUrlDrilldown), ddB[0]["type"])
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTriggerOnOpenPanelMenu), ddB[0]["trigger"])
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTypeUrlDrilldown), ddB[0]["type"])
 
 	require.Equal(t, true, drillsFromConfig(cfg1)[1]["encode_url"])
 	require.Equal(t, false, drillsFromConfig(cfg1)[1]["open_in_new_tab"])

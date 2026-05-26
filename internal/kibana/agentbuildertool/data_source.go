@@ -23,8 +23,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -90,23 +90,11 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 func readToolDataSource(ctx context.Context, client *clients.KibanaScopedClient, config toolDataSourceModel) (toolDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	supported, sdkDiags := client.EnforceMinVersion(ctx, minKibanaAgentBuilderAPIVersion)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if diags.HasError() {
+	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderAPIVersion, "tools", &diags) {
 		return config, diags
 	}
 
-	if !supported {
-		diags.AddError("Unsupported server version",
-			fmt.Sprintf("Agent Builder tools require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion))
-		return config, diags
-	}
-
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("unable to get Kibana client", err.Error())
-		return config, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	spaceID := defaultSpaceID
 	if typeutils.IsKnown(config.SpaceID) {
@@ -114,7 +102,7 @@ func readToolDataSource(ctx context.Context, client *clients.KibanaScopedClient,
 	}
 
 	toolID := config.ID.ValueString()
-	if compID, compDiags := clients.CompositeIDFromStrFw(toolID); !compDiags.HasError() {
+	if compID, compDiags := clients.CompositeIDFromStr(toolID); !compDiags.HasError() {
 		toolID = compID.ResourceID
 		if !typeutils.IsKnown(config.SpaceID) {
 			spaceID = compID.ClusterID
@@ -139,8 +127,8 @@ func readToolDataSource(ctx context.Context, client *clients.KibanaScopedClient,
 	}
 
 	if config.IncludeWorkflow.ValueBool() {
-		supported, sdkDiags := client.EnforceMinVersion(ctx, minKibanaAgentBuilderWorkflowAPIVersion)
-		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		supported, verDiags := client.EnforceMinVersion(ctx, minKibanaAgentBuilderWorkflowAPIVersion)
+		diags.Append(verDiags...)
 		if diags.HasError() {
 			return config, diags
 		}

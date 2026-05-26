@@ -218,10 +218,7 @@ func checkSlmDestroy(name string) func(s *terraform.State) error {
 			if compID.ResourceID != name {
 				continue
 			}
-			typedClient, err := client.GetESClient()
-			if err != nil {
-				return err
-			}
+			typedClient := client.GetESClient()
 			res, err := typedClient.Slm.GetLifecycle().PolicyId(compID.ResourceID).Do(context.Background())
 			if err != nil {
 				if esclient.IsNotFoundElasticsearchError(err) {

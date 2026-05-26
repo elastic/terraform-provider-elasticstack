@@ -105,16 +105,35 @@ func testAccResourcePrebuiltRules(t *testing.T, spaceID string) {
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectNonEmptyPlan(),
 						plancheck.ExpectKnownValue("elasticstack_kibana_install_prebuilt_rules.test", tfjsonpath.New("rules_not_installed"), knownvalue.Int64Exact(0)),
+						plancheck.ExpectKnownValue("elasticstack_kibana_install_prebuilt_rules.test", tfjsonpath.New("rules_not_updated"), knownvalue.Int64Exact(0)),
 					},
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_install_prebuilt_rules.test", "space_id", spaceID),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "rules_installed"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "rules_not_installed"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_install_prebuilt_rules.test", "rules_not_installed", "0"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "rules_not_updated"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "timelines_installed"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "timelines_not_installed"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_install_prebuilt_rules.test", "timelines_not_installed", "0"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "timelines_not_updated"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourcePrebuiltRulesDefaultSpaceID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionPrebuiltRules, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_install_prebuilt_rules.test", "space_id", "default"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "rules_installed"),
 				),
 			},
 		},
@@ -132,8 +151,7 @@ func deleteSingleDetectionRule(t *testing.T, spaceID string) {
 	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	require.NoError(t, err)
+	oapiClient := client.GetKibanaOapiClient()
 
 	resp, err := oapiClient.API.FindRulesWithResponse(t.Context(), &kbapi.FindRulesParams{}, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	require.NoError(t, err)

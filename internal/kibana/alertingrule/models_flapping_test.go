@@ -21,7 +21,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hashicorp/go-version"
+	kibanacustomtypes "github.com/elastic/terraform-provider-elasticstack/internal/kibana/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
@@ -44,7 +44,7 @@ func Test_alertingRuleModel_toAPIModel_flappingVersionGate(t *testing.T) {
 		Name:       types.StringValue("n"),
 		Consumer:   types.StringValue("alerts"),
 		RuleTypeID: types.StringValue(".index-threshold"),
-		Interval:   types.StringValue("1m"),
+		Interval:   kibanacustomtypes.NewAlertingDurationValue("1m"),
 		Params: jsontypes.NewNormalizedValue(
 			`{"index":["i"],"threshold":[1],"thresholdComparator":">","timeField":"@timestamp","timeWindowSize":1,"timeWindowUnit":"m"}`,
 		),
@@ -52,7 +52,14 @@ func Test_alertingRuleModel_toAPIModel_flappingVersionGate(t *testing.T) {
 		Flapping:   flObj,
 	}
 
-	_, convDiags := m.toAPIModel(ctx, version.Must(version.NewVersion("8.15.0")))
+	features := alertingRuleFeatures{
+		SupportsFrequency:       true,
+		SupportsAlertsFilter:    true,
+		SupportsAlertDelay:      true,
+		SupportsFlapping:        false,
+		SupportsFlappingEnabled: false,
+	}
+	_, convDiags := m.toAPIModel(ctx, features)
 	require.True(t, convDiags.HasError())
 }
 
@@ -73,7 +80,7 @@ func Test_alertingRuleModel_toAPIModel_flappingIntegersOnlyAllowedAt816(t *testi
 		Name:       types.StringValue("n"),
 		Consumer:   types.StringValue("alerts"),
 		RuleTypeID: types.StringValue(".index-threshold"),
-		Interval:   types.StringValue("1m"),
+		Interval:   kibanacustomtypes.NewAlertingDurationValue("1m"),
 		Params: jsontypes.NewNormalizedValue(
 			`{"index":["i"],"threshold":[1],"thresholdComparator":">","timeField":"@timestamp","timeWindowSize":1,"timeWindowUnit":"m"}`,
 		),
@@ -81,7 +88,14 @@ func Test_alertingRuleModel_toAPIModel_flappingIntegersOnlyAllowedAt816(t *testi
 		Flapping:   flObj,
 	}
 
-	rule, convDiags := m.toAPIModel(ctx, version.Must(version.NewVersion("8.16.0")))
+	features := alertingRuleFeatures{
+		SupportsFrequency:       true,
+		SupportsAlertsFilter:    true,
+		SupportsAlertDelay:      true,
+		SupportsFlapping:        true,
+		SupportsFlappingEnabled: false,
+	}
+	rule, convDiags := m.toAPIModel(ctx, features)
 	require.False(t, convDiags.HasError())
 	require.NotNil(t, rule.Flapping)
 	require.Equal(t, int64(5), rule.Flapping.LookBackWindow)
@@ -106,7 +120,7 @@ func Test_alertingRuleModel_toAPIModel_flappingEnabledRejectedBelow93(t *testing
 		Name:       types.StringValue("n"),
 		Consumer:   types.StringValue("alerts"),
 		RuleTypeID: types.StringValue(".index-threshold"),
-		Interval:   types.StringValue("1m"),
+		Interval:   kibanacustomtypes.NewAlertingDurationValue("1m"),
 		Params: jsontypes.NewNormalizedValue(
 			`{"index":["i"],"threshold":[1],"thresholdComparator":">","timeField":"@timestamp","timeWindowSize":1,"timeWindowUnit":"m"}`,
 		),
@@ -114,7 +128,14 @@ func Test_alertingRuleModel_toAPIModel_flappingEnabledRejectedBelow93(t *testing
 		Flapping:   flObj,
 	}
 
-	_, convDiags := m.toAPIModel(ctx, version.Must(version.NewVersion("8.16.0")))
+	features := alertingRuleFeatures{
+		SupportsFrequency:       true,
+		SupportsAlertsFilter:    true,
+		SupportsAlertDelay:      true,
+		SupportsFlapping:        true,
+		SupportsFlappingEnabled: false,
+	}
+	_, convDiags := m.toAPIModel(ctx, features)
 	require.True(t, convDiags.HasError())
 }
 
@@ -135,7 +156,7 @@ func Test_alertingRuleModel_toAPIModel_flappingEnabledAllowedAt93(t *testing.T) 
 		Name:       types.StringValue("n"),
 		Consumer:   types.StringValue("alerts"),
 		RuleTypeID: types.StringValue(".index-threshold"),
-		Interval:   types.StringValue("1m"),
+		Interval:   kibanacustomtypes.NewAlertingDurationValue("1m"),
 		Params: jsontypes.NewNormalizedValue(
 			`{"index":["i"],"threshold":[1],"thresholdComparator":">","timeField":"@timestamp","timeWindowSize":1,"timeWindowUnit":"m"}`,
 		),
@@ -143,7 +164,14 @@ func Test_alertingRuleModel_toAPIModel_flappingEnabledAllowedAt93(t *testing.T) 
 		Flapping:   flObj,
 	}
 
-	rule, convDiags := m.toAPIModel(ctx, version.Must(version.NewVersion("9.3.0")))
+	features := alertingRuleFeatures{
+		SupportsFrequency:       true,
+		SupportsAlertsFilter:    true,
+		SupportsAlertDelay:      true,
+		SupportsFlapping:        true,
+		SupportsFlappingEnabled: true,
+	}
+	rule, convDiags := m.toAPIModel(ctx, features)
 	require.False(t, convDiags.HasError())
 	require.NotNil(t, rule.Flapping)
 	require.NotNil(t, rule.Flapping.Enabled)

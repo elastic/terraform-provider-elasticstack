@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -111,6 +112,103 @@ func TestAccResourceMLDatafeedState_import(t *testing.T) {
 					"index_name":  config.StringVariable(indexName),
 				},
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+					"index_name":  config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "state", "started"),
+					resource.TestCheckNoResourceAttr(mlDatafeedStateResourceName, "start"),
+					// effective_search_start population depends on the ES
+					// version (8.0.x leaves it null for an empty index; 8.1+
+					// populates it). Assertions on the populated path live in
+					// the dedicated TestAccResourceMLDatafeedState_explicitStartPreserved
+					// test, which indexes a document. effective_search_end is
+					// always null for a real-time started datafeed
+					// (real_time_configured = true).
+					resource.TestCheckNoResourceAttr(mlDatafeedStateResourceName, "effective_search_end"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLDatafeedState_explicitStartRoundTrip(t *testing.T) {
+	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	indexName := fmt.Sprintf("test-datafeed-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	configVars := config.Variables{
+		"job_id":      config.StringVariable(jobID),
+		"datafeed_id": config.StringVariable(datafeedID),
+		"index_name":  config.StringVariable(indexName),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("explicit_start"),
+				ConfigVariables:          configVars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "start", "2024-01-01T00:00:00Z"),
+					// Without indexed data ES does not populate running_state.search_interval,
+					// so computed effective_search_* remain null.
+					resource.TestCheckNoResourceAttr(mlDatafeedStateResourceName, "effective_search_start"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("explicit_start"),
+				ConfigVariables:          configVars,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+		},
+	})
+}
+
+func TestAccResourceMLDatafeedState_explicitEndRoundTrip(t *testing.T) {
+	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	indexName := fmt.Sprintf("test-datafeed-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	configVars := config.Variables{
+		"job_id":      config.StringVariable(jobID),
+		"datafeed_id": config.StringVariable(datafeedID),
+		"index_name":  config.StringVariable(indexName),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_times"),
+				ConfigVariables:          configVars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "end", "2024-01-02T00:00:00Z"),
+					// Without indexed data ES does not populate running_state.search_interval,
+					// so computed effective_search_* remain null.
+					resource.TestCheckNoResourceAttr(mlDatafeedStateResourceName, "effective_search_end"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_times"),
+				ConfigVariables:          configVars,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
 		},
 	})
 }
@@ -139,6 +237,10 @@ func TestAccResourceMLDatafeedState_withTimes(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "end", "2024-01-02T00:00:00Z"),
 					resource.TestCheckResourceAttr(resourceName, "datafeed_timeout", "60s"),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					// Without indexed data ES does not populate running_state.search_interval,
+					// so computed effective_search_* remain null.
+					resource.TestCheckNoResourceAttr(resourceName, "effective_search_start"),
+					resource.TestCheckNoResourceAttr(resourceName, "effective_search_end"),
 				),
 			},
 			{
@@ -153,6 +255,8 @@ func TestAccResourceMLDatafeedState_withTimes(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "state", "stopped"),
 					resource.TestCheckResourceAttr(resourceName, "datafeed_timeout", "90s"),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckNoResourceAttr(resourceName, "effective_search_start"),
+					resource.TestCheckNoResourceAttr(resourceName, "effective_search_end"),
 				),
 			},
 		},

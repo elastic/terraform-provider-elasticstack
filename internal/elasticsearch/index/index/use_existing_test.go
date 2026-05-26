@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -570,7 +571,7 @@ func Test_populateFromAPI_syntheticAdoptPriorState(t *testing.T) {
 	require.Contains(t, m.Mappings.ValueString(), "foo")
 	require.Contains(t, m.Mappings.ValueString(), "keyword")
 
-	var aliases []aliasTfModel
+	var aliases []aliasutil.AliasModel
 	diags = m.Alias.ElementsAs(ctx, &aliases, true)
 	require.False(t, diags.HasError())
 	require.Len(t, aliases, 1)

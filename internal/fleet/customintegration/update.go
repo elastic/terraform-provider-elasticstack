@@ -25,7 +25,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -61,14 +60,10 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	fleetClient, err := apiClient.GetFleetClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
+	fleetClient := apiClient.GetFleetClient()
 
 	meetsMinVersion, verDiags := apiClient.EnforceMinVersion(ctx, minVersionCustomPackageGet)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(verDiags)...)
+	resp.Diagnostics.Append(verDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

@@ -40,3 +40,14 @@ func BenchmarkAnalyzer_Violations(b *testing.B) {
 		analysistest.Run(b, testdata, NewAnalyzer(), "github.com/elastic/terraform-provider-elasticstack/internal/acctestcases/violations")
 	}
 }
+
+// BenchmarkAnalyzer_LargePackage runs the analyzer over both compliant and violations
+// testdata packages in one iteration to stress per-pass index and cache work.
+func BenchmarkAnalyzer_LargePackage(b *testing.B) {
+	testdata := analysistest.TestData()
+	for b.Loop() {
+		analysistest.Run(b, testdata, NewAnalyzer(),
+			"github.com/elastic/terraform-provider-elasticstack/internal/acctestcases/compliant",
+			"github.com/elastic/terraform-provider-elasticstack/internal/acctestcases/violations")
+	}
+}

@@ -153,10 +153,10 @@ var ruleTypeParamsSpecs = map[string][]paramsSchemaSpec{
 	"apm.transaction_duration": {
 		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsApmTransactionDurationCreateRuleBodyAlerting{} }),
 	},
-	"apm.transaction_error_rate": {
+	ruleTypeApmTransactionErrorRate: {
 		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsApmTransactionErrorRateCreateRuleBodyAlerting{} }),
 	},
-	".index-threshold": {
+	ruleTypeIndexThreshold: {
 		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsIndexThresholdCreateRuleBodyAlerting{} }),
 	},
 	"metrics.alert.inventory.threshold": {
@@ -171,11 +171,11 @@ var ruleTypeParamsSpecs = map[string][]paramsSchemaSpec{
 	"xpack.uptime.alerts.tls": {
 		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsXpackSyntheticsAlertsTlsCreateRuleBodyAlerting{} }),
 	},
-	"xpack.uptime.alerts.monitorStatus": {
+	ruleTypeUptimeMonitorStatus: {
 		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsXpackUptimeAlertsMonitorstatusCreateRuleBodyAlerting{} }),
 		mustNewParamsSchemaSpec(func() any { return &legacyMonitorStatusParams{} }),
 	},
-	".es-query": {
+	ruleTypeESQuery: {
 		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsEsQueryCreateRuleBodyAlerting{} }),
 	},
 	"logs.alert.document.count": {
@@ -189,7 +189,7 @@ var ruleTypeAdditionalAllowedParamsKeys = map[string][]string{}
 var ruleTypeAdditionalRequiredParamsKeys = map[string][]string{
 	// Kibana rejects `.es-query` params without `size` even when the generated
 	// DSL variant currently models it as optional.
-	".es-query": {"size"},
+	ruleTypeESQuery: {paramsKeySize},
 }
 
 func validateRuleParams(ruleTypeID string, params map[string]any) []string {
@@ -247,7 +247,7 @@ func validateRuleParams(ruleTypeID string, params map[string]any) []string {
 }
 
 func validateRuleParamsPostDecode(ruleTypeID string, params map[string]any) []string {
-	if ruleTypeID == ".index-threshold" {
+	if ruleTypeID == ruleTypeIndexThreshold {
 		if index, ok := params["index"]; ok && !isJSONArrayLike(index) {
 			return []string{fmt.Sprintf("invalid params for rule type %q: index must be an array of strings", ruleTypeID)}
 		}

@@ -33,12 +33,22 @@ var (
 )
 
 type PrebuiltRuleResource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[prebuiltRuleModel]
 }
 
 func newPrebuiltRuleResource() *PrebuiltRuleResource {
 	return &PrebuiltRuleResource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "install_prebuilt_rules"),
+		KibanaResource: entitycore.NewKibanaResource[prebuiltRuleModel](
+			entitycore.ComponentKibana,
+			"install_prebuilt_rules",
+			entitycore.KibanaResourceOptions[prebuiltRuleModel]{
+				Schema: getSchema,
+				Read:   readPrebuiltRules,
+				Delete: deletePrebuiltRules,
+				Create: createPrebuiltRules,
+				Update: updatePrebuiltRules,
+			},
+		),
 	}
 }
 
@@ -59,7 +69,6 @@ func (r *PrebuiltRuleResource) ModifyPlan(ctx context.Context, req resource.Modi
 	}
 
 	if !typeutils.IsKnown(model.ID) {
-		// Resource is being created, nothing to modify
 		return
 	}
 

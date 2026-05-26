@@ -27,7 +27,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
@@ -49,31 +50,35 @@ func singleNestedBlock(desc string, nested schema.NestedBlockObject, validators 
 func blockAllocate() schema.SingleNestedBlock {
 	return singleNestedBlock("Updates the index settings to change which nodes are allowed to host the index shards and change the number of replicas.", schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
-			"number_of_replicas": schema.Int64Attribute{
-				Description: "Number of replicas to assign to the index. Default: `0`",
+			attrNumberOfReplicas: schema.Int64Attribute{
+				Description: "Number of replicas to assign to the index.",
 				Optional:    true,
 				Computed:    true,
-				Default:     int64default.StaticInt64(0),
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
-			"total_shards_per_node": schema.Int64Attribute{
-				Description: "The maximum number of shards for the index on a single Elasticsearch node. Defaults to `-1` (unlimited).",
+			attrTotalShardsPerNode: schema.Int64Attribute{
+				Description: "The maximum number of shards for the index on a single Elasticsearch node. When omitted, the existing index setting is left unchanged.",
 				Optional:    true,
 				Computed:    true,
-				Default:     int64default.StaticInt64(-1),
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
-			"include": schema.StringAttribute{
+			attrInclude: schema.StringAttribute{
 				Description: "Assigns an index to nodes that have at least one of the specified custom attributes. Must be valid JSON document.",
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
 				Validators:  []validator.String{esindex.StringIsJSONObject{}},
 			},
-			"exclude": schema.StringAttribute{
+			attrExclude: schema.StringAttribute{
 				Description: "Assigns an index to nodes that have none of the specified custom attributes. Must be valid JSON document.",
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
 				Validators:  []validator.String{esindex.StringIsJSONObject{}},
 			},
-			"require": schema.StringAttribute{
+			attrRequire: schema.StringAttribute{
 				Description: "Assigns an index to nodes that have all of the specified custom attributes. Must be valid JSON document.",
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
@@ -86,7 +91,7 @@ func blockAllocate() schema.SingleNestedBlock {
 func blockDeleteAction() schema.SingleNestedBlock {
 	return singleNestedBlock("Permanently removes the index.", schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
-			"delete_searchable_snapshot": schema.BoolAttribute{
+			attrDeleteSearchableSnapshot: schema.BoolAttribute{
 				Description: "Deletes the searchable snapshot created in a previous phase.",
 				Optional:    true,
 				Computed:    true,
@@ -115,7 +120,7 @@ func blockForcemerge() schema.SingleNestedBlock {
 func blockFreeze() schema.SingleNestedBlock {
 	return singleNestedBlock("Freeze the index to minimize its memory footprint.", schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
-			"enabled": schema.BoolAttribute{
+			attrEnabled: schema.BoolAttribute{
 				Description: "Controls whether ILM freezes the index.",
 				Optional:    true,
 				Computed:    true,
@@ -131,7 +136,7 @@ func blockMigrate() schema.SingleNestedBlock {
 			`the "index.routing.allocation.include._tier_preference" index setting.`,
 		schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
-				"enabled": schema.BoolAttribute{
+				attrEnabled: schema.BoolAttribute{
 					Description: "Controls whether ILM automatically migrates the index during this phase.",
 					Optional:    true,
 					Computed:    true,
@@ -145,7 +150,7 @@ func blockMigrate() schema.SingleNestedBlock {
 func blockReadonly() schema.SingleNestedBlock {
 	return singleNestedBlock("Makes the index read-only.", schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
-			"enabled": schema.BoolAttribute{
+			attrEnabled: schema.BoolAttribute{
 				Description: "Controls whether ILM makes the index read-only.",
 				Optional:    true,
 				Computed:    true,
@@ -158,7 +163,7 @@ func blockReadonly() schema.SingleNestedBlock {
 func blockRollover() schema.SingleNestedBlock {
 	return singleNestedBlock("Rolls over a target to a new index when the existing index meets one or more of the rollover conditions.", schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
-			"max_age": schema.StringAttribute{
+			attrMaxAge: schema.StringAttribute{
 				Description: "Triggers rollover after the maximum elapsed time from index creation is reached.",
 				Optional:    true,
 			},
@@ -170,31 +175,31 @@ func blockRollover() schema.SingleNestedBlock {
 				Description: "Triggers rollover when the index reaches a certain size.",
 				Optional:    true,
 			},
-			"max_primary_shard_docs": schema.Int64Attribute{
+			attrMaxPrimaryShardDocs: schema.Int64Attribute{
 				Description: "Triggers rollover when the largest primary shard in the index reaches a certain number of documents. Supported from Elasticsearch version **8.2**",
 				Optional:    true,
 			},
-			"max_primary_shard_size": schema.StringAttribute{
+			attrMaxPrimaryShardSize: schema.StringAttribute{
 				Description: "Triggers rollover when the largest primary shard in the index reaches a certain size.",
 				Optional:    true,
 			},
-			"min_age": schema.StringAttribute{
+			attrMinAge: schema.StringAttribute{
 				Description: "Prevents rollover until after the minimum elapsed time from index creation is reached. Supported from Elasticsearch version **8.4**",
 				Optional:    true,
 			},
-			"min_docs": schema.Int64Attribute{
+			attrMinDocs: schema.Int64Attribute{
 				Description: "Prevents rollover until after the specified minimum number of documents is reached. Supported from Elasticsearch version **8.4**",
 				Optional:    true,
 			},
-			"min_size": schema.StringAttribute{
+			attrMinSize: schema.StringAttribute{
 				Description: "Prevents rollover until the index reaches a certain size.",
 				Optional:    true,
 			},
-			"min_primary_shard_docs": schema.Int64Attribute{
+			attrMinPrimaryShardDocs: schema.Int64Attribute{
 				Description: "Prevents rollover until the largest primary shard in the index reaches a certain number of documents. Supported from Elasticsearch version **8.4**",
 				Optional:    true,
 			},
-			"min_primary_shard_size": schema.StringAttribute{
+			attrMinPrimaryShardSize: schema.StringAttribute{
 				Description: "Prevents rollover until the largest primary shard in the index reaches a certain size. Supported from Elasticsearch version **8.4**",
 				Optional:    true,
 			},
@@ -205,18 +210,18 @@ func blockRollover() schema.SingleNestedBlock {
 func blockSearchableSnapshot() schema.SingleNestedBlock {
 	return singleNestedBlock("Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot.", schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
-			"snapshot_repository": schema.StringAttribute{
+			attrSnapshotRepository: schema.StringAttribute{
 				Description: "Repository used to store the snapshot. Required when the `searchable_snapshot` action is configured.",
 				Optional:    true,
 			},
-			"force_merge_index": schema.BoolAttribute{
+			attrForceMergeIndex: schema.BoolAttribute{
 				Description: "Force merges the managed index to one segment.",
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
 			},
 		},
-	}, objectvalidator.AlsoRequires(path.MatchRelative().AtName("snapshot_repository")))
+	}, objectvalidator.AlsoRequires(path.MatchRelative().AtName(attrSnapshotRepository)))
 }
 
 // blockSearchableSnapshotInFrozenPhase is the frozen-phase-only action; Elasticsearch requires this action for the frozen phase.
@@ -225,11 +230,11 @@ func blockSearchableSnapshotInFrozenPhase() schema.SingleNestedBlock {
 		"Required in the `frozen` phase. Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot.",
 		schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
-				"snapshot_repository": schema.StringAttribute{
+				attrSnapshotRepository: schema.StringAttribute{
 					Description: "Repository used to store the snapshot. Required when the `searchable_snapshot` action is configured.",
 					Optional:    true,
 				},
-				"force_merge_index": schema.BoolAttribute{
+				attrForceMergeIndex: schema.BoolAttribute{
 					Description: "Force merges the managed index to one segment.",
 					Optional:    true,
 					Computed:    true,
@@ -237,20 +242,20 @@ func blockSearchableSnapshotInFrozenPhase() schema.SingleNestedBlock {
 				},
 			},
 		},
-		objectvalidator.AlsoRequires(path.MatchRelative().AtName("snapshot_repository")),
+		objectvalidator.AlsoRequires(path.MatchRelative().AtName(attrSnapshotRepository)),
 	)
 }
 
 func blockSetPriority() schema.SingleNestedBlock {
 	return singleNestedBlock(setPriorityActionDescription, schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
-			"priority": schema.Int64Attribute{
+			attrPriority: schema.Int64Attribute{
 				Description: "The priority for the index. Must be 0 or greater. Required when the `set_priority` action is configured.",
 				Optional:    true,
 				Validators:  []validator.Int64{int64validator.AtLeast(0)},
 			},
 		},
-	}, objectvalidator.AlsoRequires(path.MatchRelative().AtName("priority")))
+	}, objectvalidator.AlsoRequires(path.MatchRelative().AtName(attrPriority)))
 }
 
 func blockShrink() schema.SingleNestedBlock {
@@ -260,11 +265,11 @@ func blockShrink() schema.SingleNestedBlock {
 				Description: "Number of shards to shrink to.",
 				Optional:    true,
 			},
-			"max_primary_shard_size": schema.StringAttribute{
+			attrMaxPrimaryShardSize: schema.StringAttribute{
 				Description: "The max primary shard size for the target index.",
 				Optional:    true,
 			},
-			"allow_write_after_shrink": schema.BoolAttribute{
+			attrAllowWriteAfterShrink: schema.BoolAttribute{
 				Description: "If true, the shrunken index is made writable by removing the write block.",
 				Optional:    true,
 				Computed:    true,
@@ -277,7 +282,7 @@ func blockShrink() schema.SingleNestedBlock {
 func blockUnfollow() schema.SingleNestedBlock {
 	return singleNestedBlock("Convert a follower index to a regular index. Performed automatically before a rollover, shrink, or searchable snapshot action.", schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
-			"enabled": schema.BoolAttribute{
+			attrEnabled: schema.BoolAttribute{
 				Description: "Controls whether ILM makes the follower index a regular one.",
 				Optional:    true,
 				Computed:    true,
@@ -304,17 +309,17 @@ func blockDownsample() schema.SingleNestedBlock {
 			"Reduces the index footprint by storing time series data at reduced granularity.",
 		schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
-				"fixed_interval": schema.StringAttribute{
+				attrFixedInterval: schema.StringAttribute{
 					Description: "Downsampling interval. Required when the `downsample` action is configured.",
 					Optional:    true,
 				},
-				"wait_timeout": schema.StringAttribute{
+				attrWaitTimeout: schema.StringAttribute{
 					Description: "Maximum time to wait for the downsample operation to complete before timing out.",
 					Optional:    true,
 					Computed:    true,
 				},
 			},
 		},
-		objectvalidator.AlsoRequires(path.MatchRelative().AtName("fixed_interval")),
+		objectvalidator.AlsoRequires(path.MatchRelative().AtName(attrFixedInterval)),
 	)
 }

@@ -20,41 +20,19 @@ package securityenablerule
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *EnableRuleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var model enableRuleModel
+func deleteSecurityEnableRule(ctx context.Context, client *clients.KibanaScopedClient, _, _ string, model enableRuleModel) diag.Diagnostics {
+	var diags diag.Diagnostics
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, model.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	serverVersion, sdkDiags := client.ServerVersion(ctx)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if serverVersion.LessThan(minSupportedVersion) {
-		resp.Diagnostics.AddError("Unsupported server version", "Security detection rules bulk actions are not supported until Elastic Stack v8.11.0. Upgrade the target server to use this resource")
-		return
-	}
-
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "Failed to get Kibana client")
-		return
+	diags.Append(entitycore.EnforceVersionRequirements(ctx, client, &model)...)
+	if diags.HasError() {
+		return diags
 	}
 
 	spaceID := model.SpaceID.ValueString()
@@ -64,18 +42,21 @@ func (r *EnableRuleResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 	if !disableOnDestroy {
 		tflog.Info(ctx, "Skipping rule disable on delete (disable_on_destroy=false)", map[string]any{
-			"space_id": spaceID,
-			"key":      key,
-			"value":    value,
+			attrSpaceID: spaceID,
+			attrKey:     key,
+			attrValue:   value,
 		})
-		return
+		return diags
 	}
 
+	oapiClient := client.GetKibanaOapiClient()
+
 	tflog.Info(ctx, "Disabling rules on delete", map[string]any{
-		"space_id": spaceID,
-		"key":      key,
-		"value":    value,
+		attrSpaceID: spaceID,
+		attrKey:     key,
+		attrValue:   value,
 	})
 
-	resp.Diagnostics.Append(kibanaoapi.DisableRulesByTag(ctx, oapiClient, spaceID, key, value)...)
+	diags.Append(kibanaoapi.DisableRulesByTag(ctx, oapiClient, spaceID, key, value)...)
+	return diags
 }

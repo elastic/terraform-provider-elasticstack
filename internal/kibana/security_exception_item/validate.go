@@ -36,6 +36,18 @@ const (
 	entryTypeNested   = "nested"
 )
 
+// Terraform schema attribute keys that appear in multiple nested blocks of the
+// security exception item schema. They are extracted as constants to satisfy
+// goconst and provide a single point of truth for shared attribute names.
+const (
+	attrType     = "type"
+	attrField    = "field"
+	attrOperator = "operator"
+	attrValue    = "value"
+	attrValues   = "values"
+	attrEntries  = "entries"
+)
+
 // ValidateConfig validates the configuration for an exception item resource.
 // It ensures that entries are properly configured based on their type:
 //

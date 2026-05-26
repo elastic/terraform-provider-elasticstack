@@ -46,8 +46,8 @@ func alignPanelStateFromPlan(ctx context.Context, plan, state *models.PanelModel
 	}
 
 	lenscommon.PreservePlanJSONIfStateOmitsOptionalKeys(plan.ConfigJSON.Normalized, &state.ConfigJSON.Normalized, "filters", "query", "settings")
-	planBlocks := LensByValueChartBlocksFromPanel(plan)
-	stateBlocks := LensByValueChartBlocksFromPanel(state)
+	planBlocks := visByValueChartBlocksFromPanel(plan)
+	stateBlocks := visByValueChartBlocksFromPanel(state)
 	if planBlocks != nil && stateBlocks != nil {
 		for _, c := range lenscommon.All() {
 			c.AlignStateFromPlan(ctx, planBlocks, stateBlocks)
@@ -56,4 +56,11 @@ func alignPanelStateFromPlan(ctx context.Context, plan, state *models.PanelModel
 	if h := LookupHandler(state.Type.ValueString()); h != nil {
 		h.AlignStateFromPlan(ctx, plan, state)
 	}
+}
+
+func visByValueChartBlocksFromPanel(pm *models.PanelModel) *models.LensByValueChartBlocks {
+	if pm == nil || pm.VisConfig == nil || pm.VisConfig.ByValue == nil {
+		return nil
+	}
+	return &pm.VisConfig.ByValue.LensByValueChartBlocks
 }

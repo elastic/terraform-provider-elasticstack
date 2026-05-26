@@ -56,7 +56,7 @@ func PanelConfigBlock(opts PanelConfigBlockOpts) schema.Attribute {
 
 	vs := []validator.Object{
 		objectvalidator.ConflictsWith(SiblingTypedPanelConfigConflictPathsExcept(opts.BlockName, siblings)...),
-		validators.AllowedIfDependentPathExpressionOneOf(typePath, panelTypes),
+		validators.AllowedIfDependentPathExpressionOneOf(typePath, panelTypes, validators.AllowedIfOptions{}),
 	}
 	if opts.Required {
 		vs = append(vs, validators.RequiredIfDependentPathExpressionOneOf(typePath, panelTypes))

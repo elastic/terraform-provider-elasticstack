@@ -25,29 +25,25 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/enrichpolicyphase"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) (*models.EnrichPolicy, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return nil, diag.FromErr(err)
-	}
+func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) (*models.EnrichPolicy, fwdiag.Diagnostics) {
+	typedClient := apiClient.GetESClient()
 
 	res, err := typedClient.Enrich.GetPolicy().Name(policyName).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
-		return nil, diag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	if len(res.Policies) == 0 {
-		return nil, diags
+		return nil, nil
 	}
 
 	if len(res.Policies) > 1 {
@@ -64,7 +60,12 @@ func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 		break
 	}
 	if policyType == "" {
-		return nil, diag.Errorf("enrich policy %s has no recognized policy type", policyName)
+		return nil, fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic(
+				fmt.Sprintf("enrich policy %s has no recognized policy type", policyName),
+				"",
+			),
+		}
 	}
 
 	name := policyName
@@ -76,7 +77,7 @@ func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 	if policy.Query != nil {
 		queryBytes, err := json.Marshal(policy.Query)
 		if err != nil {
-			return nil, diag.FromErr(err)
+			return nil, diagutil.FrameworkDiagFromError(err)
 		}
 		// The typed client can return a non-nil *types.Query that still marshals to JSON null.
 		// Avoid storing the literal string "null" in state, which would trigger replacement.
@@ -92,16 +93,11 @@ func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 		MatchField:   policy.MatchField,
 		EnrichFields: policy.EnrichFields,
 		Query:        queryStr,
-	}, diags
+	}, nil
 }
 
-func PutEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policy *models.EnrichPolicy) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diag.FromErr(err)
-	}
+func PutEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policy *models.EnrichPolicy) fwdiag.Diagnostics {
+	typedClient := apiClient.GetESClient()
 
 	enrichPolicy := &types.EnrichPolicy{
 		Indices:      policy.Indices,
@@ -112,7 +108,7 @@ func PutEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 	if policy.Query != "" {
 		var query types.Query
 		if err := json.Unmarshal([]byte(policy.Query), &query); err != nil {
-			return diag.FromErr(err)
+			return diagutil.FrameworkDiagFromError(err)
 		}
 		enrichPolicy.Query = &query
 	}
@@ -126,56 +122,55 @@ func PutEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 	case "range":
 		req.Range(enrichPolicy)
 	default:
-		return diag.Errorf("unsupported enrich policy type: %s", policy.Type)
+		return fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic(fmt.Sprintf("unsupported enrich policy type: %s", policy.Type), ""),
+		}
 	}
 
-	_, err = req.Do(ctx)
+	_, err := req.Do(ctx)
 	if err != nil {
-		return diag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	return diags
+	return nil
 }
 
-func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) diag.Diagnostics {
-	var diags diag.Diagnostics
+func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) fwdiag.Diagnostics {
+	typedClient := apiClient.GetESClient()
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	_, err = typedClient.Enrich.DeletePolicy(policyName).Do(ctx)
+	_, err := typedClient.Enrich.DeletePolicy(policyName).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
-			return diags
+			return nil
 		}
-		return diag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	return diags
+	return nil
 }
 
-func ExecuteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diag.FromErr(err)
-	}
+func ExecuteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) fwdiag.Diagnostics {
+	typedClient := apiClient.GetESClient()
 
 	res, err := typedClient.Enrich.ExecutePolicy(policyName).WaitForCompletion(true).Do(ctx)
 	if err != nil {
-		return diag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	if res.Status == nil {
-		return diag.Errorf(`Unexpected response to executing enrich policy: no status`)
+		return fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic("Unexpected response to executing enrich policy: no status", ""),
+		}
 	}
 
 	if res.Status.Phase != enrichpolicyphase.COMPLETE {
-		return diag.Errorf(`Unexpected response to executing enrich policy: %s`, res.Status.Phase.String())
+		return fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic(
+				fmt.Sprintf("Unexpected response to executing enrich policy: %s", res.Status.Phase.String()),
+				"",
+			),
+		}
 	}
 
-	return diags
+	return nil
 }

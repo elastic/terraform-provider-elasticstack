@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -47,7 +48,7 @@ func (Handler) AlignStateFromPlan(ctx context.Context, plan, state *models.Panel
 }
 
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	imgPanel, err := item.AsKbnDashboardPanelTypeImage()
+	imgPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeImage()
 	if err != nil {
 		var d diag.Diagnostics
 		d.AddError("Dashboard panel decode", err.Error())
@@ -63,13 +64,22 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 }
 
 func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+	if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Unsupported panel type for config_json",
+			"Panel-level `config_json` is not supported for `image` panels. Use `image_config` instead.",
+		)
+		return kbapi.DashboardPanelItem{}, diags
+	}
+
 	var (
 		diags     diag.Diagnostics
 		panelItem kbapi.DashboardPanelItem
 	)
 	grid := panelkit.GridToAPI(pm.Grid)
 	id := panelkit.IDToAPI(pm.ID)
-	panel := kbapi.KbnDashboardPanelTypeImage{
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage{
 		Grid: grid,
 		Id:   id,
 		Type: kbapi.Image,
@@ -78,7 +88,7 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 	if diags.HasError() {
 		return kbapi.DashboardPanelItem{}, diags
 	}
-	if err := panelItem.FromKbnDashboardPanelTypeImage(panel); err != nil {
+	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeImage(panel); err != nil {
 		diags.AddError("Failed to create image panel", err.Error())
 	}
 	return panelItem, diags

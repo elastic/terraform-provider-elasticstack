@@ -27,7 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
-	apikey "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -364,6 +364,29 @@ func TestAccIndexTemplateDataSourceDataStream(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "data_stream.hidden", "false"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "data_stream.allow_custom_routing", "true"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccIndexTemplateDataSourceAllowAutoCreate covers the allow_auto_create attribute on the data source.
+func TestAccIndexTemplateDataSourceAllowAutoCreate(t *testing.T) {
+	templateName := "test-ds-aac-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"template_name":     config.StringVariable(templateName),
+					"allow_auto_create": config.BoolVariable(true),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "allow_auto_create", "true"),
 				),
 			},
 		},

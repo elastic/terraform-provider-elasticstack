@@ -30,7 +30,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func isRegionMapNoESQLCandidateActuallyESQL(api kbapi.RegionMapNoESQL) bool {
+func isRegionMapNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsRegionMapNoESQL) bool {
 	body, err := api.DataSource.MarshalJSON()
 	if err != nil {
 		return false
@@ -50,7 +50,7 @@ func regionMapConfigPopulateCommonFields(m *models.RegionMapConfigModel,
 	sampling *float32,
 	datasetBytes []byte,
 	datasetErr error,
-	filters []kbapi.LensPanelFilters_Item,
+	filters []kbapi.KibanaHTTPAPIsLensPanelFilters_Item,
 	diags *diag.Diagnostics,
 ) bool {
 	m.Title = types.StringPointerValue(title)
@@ -75,7 +75,7 @@ func regionMapConfigFromAPINoESQL(
 	m *models.RegionMapConfigModel,
 	resolver lenscommon.Resolver,
 	prior *models.RegionMapConfigModel,
-	api kbapi.RegionMapNoESQL,
+	api kbapi.KibanaHTTPAPIsRegionMapNoESQL,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -121,7 +121,13 @@ func regionMapConfigFromAPINoESQL(
 	return diags
 }
 
-func regionMapConfigFromAPIESQL(ctx context.Context, m *models.RegionMapConfigModel, resolver lenscommon.Resolver, prior *models.RegionMapConfigModel, api kbapi.RegionMapESQL) diag.Diagnostics {
+func regionMapConfigFromAPIESQL(
+	ctx context.Context,
+	m *models.RegionMapConfigModel,
+	resolver lenscommon.Resolver,
+	prior *models.RegionMapConfigModel,
+	api kbapi.KibanaHTTPAPIsRegionMapESQL,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	datasetBytes, datasetErr := json.Marshal(api.DataSource)
@@ -165,8 +171,8 @@ func regionMapConfigFromAPIESQL(ctx context.Context, m *models.RegionMapConfigMo
 	return diags
 }
 
-func regionMapConfigToAPI(m *models.RegionMapConfigModel, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+func regionMapConfigToAPI(m *models.RegionMapConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 
 	if m == nil {
@@ -174,8 +180,8 @@ func regionMapConfigToAPI(m *models.RegionMapConfigModel, resolver lenscommon.Re
 	}
 
 	if m.Query != nil && typeutils.IsKnown(m.Query.Expression) {
-		api := kbapi.RegionMapNoESQL{
-			Type: kbapi.RegionMapNoESQLTypeRegionMap,
+		api := kbapi.KibanaHTTPAPIsRegionMapNoESQL{
+			Type: kbapi.KibanaHTTPAPIsRegionMapNoESQLTypeRegionMap,
 		}
 
 		if typeutils.IsKnown(m.Title) {
@@ -231,21 +237,21 @@ func regionMapConfigToAPI(m *models.RegionMapConfigModel, resolver lenscommon.Re
 			api.References = writes.References
 		}
 		if len(writes.DrilldownsRaw) > 0 {
-			items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.RegionMapNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+			items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsRegionMapNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
 			diags.Append(ddDiags...)
 			if !ddDiags.HasError() {
 				api.Drilldowns = &items
 			}
 		}
 
-		if err := attrs.FromRegionMapNoESQL(api); err != nil {
+		if err := attrs.FromKibanaHTTPAPIsRegionMapNoESQL(api); err != nil {
 			diags.AddError("Failed to create region map schema", err.Error())
 		}
 		return attrs, diags
 	}
 
-	api := kbapi.RegionMapESQL{
-		Type: kbapi.RegionMapESQLTypeRegionMap,
+	api := kbapi.KibanaHTTPAPIsRegionMapESQL{
+		Type: kbapi.KibanaHTTPAPIsRegionMapESQLTypeRegionMap,
 	}
 
 	if typeutils.IsKnown(m.Title) {
@@ -300,14 +306,14 @@ func regionMapConfigToAPI(m *models.RegionMapConfigModel, resolver lenscommon.Re
 		api.References = writes.References
 	}
 	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.RegionMapESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsRegionMapESQL_Drilldowns_Item](writes.DrilldownsRaw)
 		diags.Append(ddDiags...)
 		if !ddDiags.HasError() {
 			api.Drilldowns = &items
 		}
 	}
 
-	if err := attrs.FromRegionMapESQL(api); err != nil {
+	if err := attrs.FromKibanaHTTPAPIsRegionMapESQL(api); err != nil {
 		diags.AddError("Failed to create region map schema", err.Error())
 	}
 	return attrs, diags

@@ -68,8 +68,7 @@ func TestAccResourceScript(t *testing.T) {
 					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 					require.NoError(t, err)
 
-					typedClient, err := client.GetESClient()
-					require.NoError(t, err)
+					typedClient := client.GetESClient()
 
 					_, err = typedClient.Core.DeleteScript(scriptID).Do(context.Background())
 					require.NoError(t, err)
@@ -121,10 +120,7 @@ func checkScriptDestroy(s *terraform.State) error {
 		}
 
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
-		typedClient, err := client.GetESClient()
-		if err != nil {
-			return err
-		}
+		typedClient := client.GetESClient()
 		_, err = typedClient.Core.GetScript(compID.ResourceID).Do(context.Background())
 		if err != nil {
 			if esclient.IsNotFoundElasticsearchError(err) {

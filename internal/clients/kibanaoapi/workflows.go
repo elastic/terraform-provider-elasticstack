@@ -28,6 +28,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
+// PartialWorkflow captures the subset of fields the workflow PUT endpoint
+// returns (id, valid, enabled). Callers use it to validate the update result
+// without issuing an extra GET; full state is refreshed by the resource
+// envelope's read-after-write step.
+type PartialWorkflow struct {
+	ID      string `json:"id"`
+	Valid   bool   `json:"valid"`
+	Enabled bool   `json:"enabled"`
+}
+
 // GetWorkflow reads a specific workflow from the API.
 func GetWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string) (*models.Workflow, diag.Diagnostics) {
 	resp, err := client.API.GetWorkflowsWorkflowIdWithResponse(ctx, workflowID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
@@ -46,14 +56,15 @@ func CreateWorkflow(ctx context.Context, client *Client, spaceID string, req kba
 	return handleMutateResponse[models.Workflow](resp.StatusCode(), resp.Body)
 }
 
-// UpdateWorkflow updates an existing workflow.
-// The PUT response is partial (id, valid, enabled only); callers must GET afterwards for full state.
-func UpdateWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string, req kbapi.PutWorkflowsWorkflowIdJSONRequestBody) diag.Diagnostics {
+// UpdateWorkflow updates an existing workflow. The returned PartialWorkflow
+// reflects the PUT response (id, valid, enabled only); callers needing full
+// state should rely on the resource envelope's read-after-write refresh.
+func UpdateWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string, req kbapi.PutWorkflowsWorkflowIdJSONRequestBody) (*PartialWorkflow, diag.Diagnostics) {
 	resp, err := client.API.PutWorkflowsWorkflowIdWithResponse(ctx, workflowID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
+	return handleMutateResponse[PartialWorkflow](resp.StatusCode(), resp.Body)
 }
 
 // DeleteWorkflow deletes an existing workflow.

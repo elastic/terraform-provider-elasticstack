@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -65,16 +64,12 @@ func (r *resourceSourceMap) read(ctx context.Context, state *SourceMap) (*Source
 		return nil, diags
 	}
 
-	kibana, err := scoped.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Unable to get Kibana client", err.Error())
-		return nil, diags
-	}
+	kibana := scoped.GetKibanaOapiClient()
 
 	supportsPagination, vDiags := scoped.EnforceVersionCheck(ctx, func(v *version.Version) bool {
 		return v.GreaterThanOrEqual(minSourceMapPaginationVersion)
 	})
-	diags.Append(diagutil.FrameworkDiagsFromSDK(vDiags)...)
+	diags.Append(vDiags...)
 	if diags.HasError() {
 		return nil, diags
 	}

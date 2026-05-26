@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -38,24 +37,24 @@ func deleteClusterSettings(ctx context.Context, client *clients.ElasticsearchSco
 	}
 
 	pSettings := make(map[string]any)
-	if v := configuredSettings["persistent"]; v != nil {
+	if v := configuredSettings[categoryPersistent]; v != nil {
 		for k := range v.(map[string]any) {
 			pSettings[k] = nil
 		}
 	}
 
 	tSettings := make(map[string]any)
-	if v := configuredSettings["transient"]; v != nil {
+	if v := configuredSettings[categoryTransient]; v != nil {
 		for k := range v.(map[string]any) {
 			tSettings[k] = nil
 		}
 	}
 
 	apiSettings := map[string]any{
-		"persistent": pSettings,
-		"transient":  tSettings,
+		categoryPersistent: pSettings,
+		categoryTransient:  tSettings,
 	}
 
-	diags.Append(diagutil.FrameworkDiagsFromSDK(elasticsearch.PutSettings(ctx, client, apiSettings))...)
+	diags.Append(elasticsearch.PutSettings(ctx, client, apiSettings)...)
 	return diags
 }

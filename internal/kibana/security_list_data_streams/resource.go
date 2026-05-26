@@ -33,12 +33,22 @@ var (
 )
 
 type securityListDataStreamsResource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[Model]
 }
 
 func newSecurityListDataStreamsResource() *securityListDataStreamsResource {
 	return &securityListDataStreamsResource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "security_list_data_streams"),
+		KibanaResource: entitycore.NewKibanaResource[Model](
+			entitycore.ComponentKibana,
+			"security_list_data_streams",
+			entitycore.KibanaResourceOptions[Model]{
+				Schema: getSchema,
+				Read:   readSecurityListDataStreams,
+				Delete: deleteSecurityListDataStreams,
+				Create: createSecurityListDataStreams,
+				Update: updateSecurityListDataStreams,
+			},
+		),
 	}
 }
 

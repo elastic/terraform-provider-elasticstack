@@ -19,6 +19,8 @@ package schema
 
 import (
 	"fmt"
+	"maps"
+	"sync"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -27,7 +29,6 @@ import (
 	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 // KibanaConnectionNullList returns a properly-typed null list value for the
@@ -35,48 +36,61 @@ import (
 // (e.g., in ImportState or state upgraders) so the framework can match the
 // list element type against the schema instead of encountering a zero-value.
 func KibanaConnectionNullList() types.List {
-	return types.ListNull(types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"api_key":      types.StringType,
-			"bearer_token": types.StringType,
-			"ca_certs":     types.ListType{ElemType: types.StringType},
-			"endpoints":    types.ListType{ElemType: types.StringType},
-			"insecure":     types.BoolType,
-			"password":     types.StringType,
-			"username":     types.StringType,
-		},
-	})
+	return types.ListNull(KibanaConnectionObjectType())
+}
+
+// KibanaConnectionObjectType returns the object type for kibana_connection list
+// elements. Managed and ephemeral resources use the same connection block shape.
+func KibanaConnectionObjectType() types.ObjectType {
+	return types.ObjectType{
+		AttrTypes: kibanaConnectionBlockObjectAttrTypes(),
+	}
+}
+
+// ElasticsearchConnectionNullList returns a properly-typed null list value for the
+// elasticsearch_connection block. Use when building state in ImportState so the
+// framework list element type matches the resource schema.
+func ElasticsearchConnectionNullList() types.List {
+	return types.ListNull(ElasticsearchConnectionObjectType())
+}
+
+// ElasticsearchConnectionObjectType returns the object type for elasticsearch_connection
+// list elements. Managed and ephemeral resources use the same connection block shape.
+func ElasticsearchConnectionObjectType() types.ObjectType {
+	return types.ObjectType{
+		AttrTypes: elasticsearchConnectionBlockObjectAttrTypes(),
+	}
 }
 
 func GetEsFWConnectionBlock() fwschema.Block {
-	usernamePath := path.MatchRelative().AtParent().AtName("username")
-	passwordPath := path.MatchRelative().AtParent().AtName("password")
-	apiKeyPath := path.MatchRelative().AtParent().AtName("api_key")
-	bearerTokenPath := path.MatchRelative().AtParent().AtName("bearer_token")
-	caFilePath := path.MatchRelative().AtParent().AtName("ca_file")
-	caDataPath := path.MatchRelative().AtParent().AtName("ca_data")
-	certFilePath := path.MatchRelative().AtParent().AtName("cert_file")
-	certDataPath := path.MatchRelative().AtParent().AtName("cert_data")
-	keyFilePath := path.MatchRelative().AtParent().AtName("key_file")
-	keyDataPath := path.MatchRelative().AtParent().AtName("key_data")
+	usernamePath := path.MatchRelative().AtParent().AtName(attrUsername)
+	passwordPath := path.MatchRelative().AtParent().AtName(attrPassword)
+	apiKeyPath := path.MatchRelative().AtParent().AtName(attrAPIKey)
+	bearerTokenPath := path.MatchRelative().AtParent().AtName(attrBearerToken)
+	caFilePath := path.MatchRelative().AtParent().AtName(attrCAFile)
+	caDataPath := path.MatchRelative().AtParent().AtName(attrCAData)
+	certFilePath := path.MatchRelative().AtParent().AtName(attrCertFile)
+	certDataPath := path.MatchRelative().AtParent().AtName(attrCertData)
+	keyFilePath := path.MatchRelative().AtParent().AtName(attrKeyFile)
+	keyDataPath := path.MatchRelative().AtParent().AtName(attrKeyData)
 
 	return fwschema.ListNestedBlock{
-		MarkdownDescription: "Elasticsearch connection configuration block.",
-		Description:         "Elasticsearch connection configuration block.",
+		MarkdownDescription: descESConnectionBlock,
+		Description:         descESConnectionBlock,
 		NestedObject: fwschema.NestedBlockObject{
 			Attributes: map[string]fwschema.Attribute{
-				"username": fwschema.StringAttribute{
+				attrUsername: fwschema.StringAttribute{
 					MarkdownDescription: "Username to use for API authentication to Elasticsearch.",
 					Optional:            true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(passwordPath)},
 				},
-				"password": fwschema.StringAttribute{
+				attrPassword: fwschema.StringAttribute{
 					MarkdownDescription: "Password to use for API authentication to Elasticsearch.",
 					Optional:            true,
 					Sensitive:           true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
 				},
-				"api_key": fwschema.StringAttribute{
+				attrAPIKey: fwschema.StringAttribute{
 					MarkdownDescription: "API Key to use for authentication to Elasticsearch",
 					Optional:            true,
 					Sensitive:           true,
@@ -84,7 +98,7 @@ func GetEsFWConnectionBlock() fwschema.Block {
 						stringvalidator.ConflictsWith(usernamePath, passwordPath, bearerTokenPath),
 					},
 				},
-				"bearer_token": fwschema.StringAttribute{
+				attrBearerToken: fwschema.StringAttribute{
 					MarkdownDescription: "Bearer Token to use for authentication to Elasticsearch",
 					Optional:            true,
 					Sensitive:           true,
@@ -92,7 +106,7 @@ func GetEsFWConnectionBlock() fwschema.Block {
 						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
 					},
 				},
-				"es_client_authentication": fwschema.StringAttribute{
+				attrESClientAuthentication: fwschema.StringAttribute{
 					MarkdownDescription: "ES Client Authentication field to be used with the JWT token",
 					Optional:            true,
 					Sensitive:           true,
@@ -101,37 +115,37 @@ func GetEsFWConnectionBlock() fwschema.Block {
 						stringvalidator.AlsoRequires(bearerTokenPath),
 					},
 				},
-				"endpoints": fwschema.ListAttribute{
+				attrEndpoints: fwschema.ListAttribute{
 					MarkdownDescription: "A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
 					Optional:            true,
 					Sensitive:           true,
 					ElementType:         types.StringType,
 				},
-				"headers": fwschema.MapAttribute{
+				attrHeaders: fwschema.MapAttribute{
 					MarkdownDescription: "A list of headers to be sent with each request to Elasticsearch.",
 					Optional:            true,
 					Sensitive:           true,
 					ElementType:         types.StringType,
 				},
-				"insecure": fwschema.BoolAttribute{
-					MarkdownDescription: "Disable TLS certificate validation",
+				attrInsecure: fwschema.BoolAttribute{
+					MarkdownDescription: descInsecureTLS,
 					Optional:            true,
 				},
-				"ca_file": fwschema.StringAttribute{
+				attrCAFile: fwschema.StringAttribute{
 					MarkdownDescription: "Path to a custom Certificate Authority certificate",
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(caDataPath),
 					},
 				},
-				"ca_data": fwschema.StringAttribute{
+				attrCAData: fwschema.StringAttribute{
 					MarkdownDescription: "PEM-encoded custom Certificate Authority certificate",
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(caFilePath),
 					},
 				},
-				"cert_file": fwschema.StringAttribute{
+				attrCertFile: fwschema.StringAttribute{
 					MarkdownDescription: "Path to a file containing the PEM encoded certificate for client auth",
 					Optional:            true,
 					Validators: []validator.String{
@@ -139,7 +153,7 @@ func GetEsFWConnectionBlock() fwschema.Block {
 						stringvalidator.ConflictsWith(caDataPath, keyDataPath),
 					},
 				},
-				"key_file": fwschema.StringAttribute{
+				attrKeyFile: fwschema.StringAttribute{
 					MarkdownDescription: "Path to a file containing the PEM encoded private key for client auth",
 					Optional:            true,
 					Validators: []validator.String{
@@ -147,7 +161,7 @@ func GetEsFWConnectionBlock() fwschema.Block {
 						stringvalidator.ConflictsWith(certDataPath, keyDataPath),
 					},
 				},
-				"cert_data": fwschema.StringAttribute{
+				attrCertData: fwschema.StringAttribute{
 					MarkdownDescription: "PEM encoded certificate for client auth",
 					Optional:            true,
 					Validators: []validator.String{
@@ -155,7 +169,7 @@ func GetEsFWConnectionBlock() fwschema.Block {
 						stringvalidator.ConflictsWith(certFilePath, keyFilePath),
 					},
 				},
-				"key_data": fwschema.StringAttribute{
+				attrKeyData: fwschema.StringAttribute{
 					MarkdownDescription: "PEM encoded private key for client auth",
 					Optional:            true,
 					Sensitive:           true,
@@ -173,16 +187,16 @@ func GetEsFWConnectionBlock() fwschema.Block {
 }
 
 func GetKbFWConnectionBlock() fwschema.Block {
-	usernamePath := path.MatchRelative().AtParent().AtName("username")
-	passwordPath := path.MatchRelative().AtParent().AtName("password")
-	apiKeyPath := path.MatchRelative().AtParent().AtName("api_key")
-	bearerTokenPath := path.MatchRelative().AtParent().AtName("bearer_token")
+	usernamePath := path.MatchRelative().AtParent().AtName(attrUsername)
+	passwordPath := path.MatchRelative().AtParent().AtName(attrPassword)
+	apiKeyPath := path.MatchRelative().AtParent().AtName(attrAPIKey)
+	bearerTokenPath := path.MatchRelative().AtParent().AtName(attrBearerToken)
 
 	return fwschema.ListNestedBlock{
 		MarkdownDescription: "Kibana connection configuration block.",
 		NestedObject: fwschema.NestedBlockObject{
 			Attributes: map[string]fwschema.Attribute{
-				"api_key": fwschema.StringAttribute{
+				attrAPIKey: fwschema.StringAttribute{
 					MarkdownDescription: "API Key to use for authentication to Kibana",
 					Optional:            true,
 					Sensitive:           true,
@@ -190,7 +204,7 @@ func GetKbFWConnectionBlock() fwschema.Block {
 						stringvalidator.ConflictsWith(usernamePath, passwordPath, bearerTokenPath),
 					},
 				},
-				"bearer_token": fwschema.StringAttribute{
+				attrBearerToken: fwschema.StringAttribute{
 					MarkdownDescription: "Bearer Token to use for authentication to Kibana",
 					Optional:            true,
 					Sensitive:           true,
@@ -198,30 +212,30 @@ func GetKbFWConnectionBlock() fwschema.Block {
 						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
 					},
 				},
-				"username": fwschema.StringAttribute{
+				attrUsername: fwschema.StringAttribute{
 					MarkdownDescription: "Username to use for API authentication to Kibana.",
 					Optional:            true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(passwordPath)},
 				},
-				"password": fwschema.StringAttribute{
+				attrPassword: fwschema.StringAttribute{
 					MarkdownDescription: "Password to use for API authentication to Kibana.",
 					Optional:            true,
 					Sensitive:           true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
 				},
-				"endpoints": fwschema.ListAttribute{
+				attrEndpoints: fwschema.ListAttribute{
 					MarkdownDescription: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
 					Optional:            true,
 					Sensitive:           true,
 					ElementType:         types.StringType,
 				},
-				"ca_certs": fwschema.ListAttribute{
+				attrCACerts: fwschema.ListAttribute{
 					MarkdownDescription: "A list of paths to CA certificates to validate the certificate presented by the Kibana server.",
 					Optional:            true,
 					ElementType:         types.StringType,
 				},
-				"insecure": fwschema.BoolAttribute{
-					MarkdownDescription: "Disable TLS certificate validation",
+				attrInsecure: fwschema.BoolAttribute{
+					MarkdownDescription: descInsecureTLS,
 					Optional:            true,
 				},
 			},
@@ -233,27 +247,27 @@ func GetKbFWConnectionBlock() fwschema.Block {
 }
 
 func GetFleetFWConnectionBlock() fwschema.Block {
-	usernamePath := path.MatchRelative().AtParent().AtName("username")
-	passwordPath := path.MatchRelative().AtParent().AtName("password")
-	apiKeyPath := path.MatchRelative().AtParent().AtName("api_key")
-	bearerTokenPath := path.MatchRelative().AtParent().AtName("bearer_token")
+	usernamePath := path.MatchRelative().AtParent().AtName(attrUsername)
+	passwordPath := path.MatchRelative().AtParent().AtName(attrPassword)
+	apiKeyPath := path.MatchRelative().AtParent().AtName(attrAPIKey)
+	bearerTokenPath := path.MatchRelative().AtParent().AtName(attrBearerToken)
 
 	return fwschema.ListNestedBlock{
 		MarkdownDescription: "Fleet connection configuration block.",
 		NestedObject: fwschema.NestedBlockObject{
 			Attributes: map[string]fwschema.Attribute{
-				"username": fwschema.StringAttribute{
+				attrUsername: fwschema.StringAttribute{
 					MarkdownDescription: "Username to use for API authentication to Fleet.",
 					Optional:            true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(passwordPath)},
 				},
-				"password": fwschema.StringAttribute{
+				attrPassword: fwschema.StringAttribute{
 					MarkdownDescription: "Password to use for API authentication to Fleet.",
 					Optional:            true,
 					Sensitive:           true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
 				},
-				"api_key": fwschema.StringAttribute{
+				attrAPIKey: fwschema.StringAttribute{
 					MarkdownDescription: "API Key to use for authentication to Fleet.",
 					Optional:            true,
 					Sensitive:           true,
@@ -261,7 +275,7 @@ func GetFleetFWConnectionBlock() fwschema.Block {
 						stringvalidator.ConflictsWith(usernamePath, passwordPath, bearerTokenPath),
 					},
 				},
-				"bearer_token": fwschema.StringAttribute{
+				attrBearerToken: fwschema.StringAttribute{
 					MarkdownDescription: "Bearer Token to use for authentication to Fleet.",
 					Optional:            true,
 					Sensitive:           true,
@@ -274,13 +288,13 @@ func GetFleetFWConnectionBlock() fwschema.Block {
 					Optional:            true,
 					Sensitive:           true,
 				},
-				"ca_certs": fwschema.ListAttribute{
+				attrCACerts: fwschema.ListAttribute{
 					MarkdownDescription: "A list of paths to CA certificates to validate the certificate presented by the Fleet server.",
 					Optional:            true,
 					ElementType:         types.StringType,
 				},
-				"insecure": fwschema.BoolAttribute{
-					MarkdownDescription: "Disable TLS certificate validation",
+				attrInsecure: fwschema.BoolAttribute{
+					MarkdownDescription: descInsecureTLS,
 					Optional:            true,
 				},
 			},
@@ -291,290 +305,127 @@ func GetFleetFWConnectionBlock() fwschema.Block {
 	}
 }
 
-func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema.Schema {
-	usernamePath := makePathRef(keyName, "username")
-	passwordPath := makePathRef(keyName, "password")
-	apiKeyPath := makePathRef(keyName, "api_key")
-	bearerTokenPath := makePathRef(keyName, "bearer_token")
-	caFilePath := makePathRef(keyName, "ca_file")
-	caDataPath := makePathRef(keyName, "ca_data")
-	certFilePath := makePathRef(keyName, "cert_file")
-	certDataPath := makePathRef(keyName, "cert_data")
-	keyFilePath := makePathRef(keyName, "key_file")
-	keyDataPath := makePathRef(keyName, "key_data")
+var (
+	elasticsearchConnectionBlockObjectAttrTypesOnce sync.Once
+	elasticsearchConnectionBlockObjectAttrTypesVal  map[string]attr.Type
 
-	usernameRequiredWithValidation := []string{passwordPath}
-	passwordRequiredWithValidation := []string{usernamePath}
+	kibanaConnectionBlockObjectAttrTypesOnce sync.Once
+	kibanaConnectionBlockObjectAttrTypesVal  map[string]attr.Type
+)
 
-	withEnvDefault := func(_ string, _ any) schema.SchemaDefaultFunc { return nil }
-
-	if isProviderConfiguration {
-		withEnvDefault = schema.EnvDefaultFunc
-
-		// RequireWith validation isn't compatible when used in conjunction with DefaultFunc
-		usernameRequiredWithValidation = nil
-		passwordRequiredWithValidation = nil
+func copyAttrTypes(src map[string]attr.Type) map[string]attr.Type {
+	if src == nil {
+		return nil
 	}
+	out := make(map[string]attr.Type, len(src))
+	maps.Copy(out, src)
+	return out
+}
 
-	return &schema.Schema{
-		Description: "Elasticsearch connection configuration block.",
-		Type:        schema.TypeList,
-		MaxItems:    1,
-		Optional:    true,
-		Elem: &schema.Resource{
-			Schema: map[string]*schema.Schema{
-				"username": {
-					Description:  "Username to use for API authentication to Elasticsearch.",
-					Type:         schema.TypeString,
-					Optional:     true,
-					DefaultFunc:  withEnvDefault("ELASTICSEARCH_USERNAME", nil),
-					RequiredWith: usernameRequiredWithValidation,
-				},
-				"password": {
-					Description:  "Password to use for API authentication to Elasticsearch.",
-					Type:         schema.TypeString,
-					Optional:     true,
-					Sensitive:    true,
-					DefaultFunc:  withEnvDefault("ELASTICSEARCH_PASSWORD", nil),
-					RequiredWith: passwordRequiredWithValidation,
-				},
-				"api_key": {
-					Description:   "API Key to use for authentication to Elasticsearch",
-					Type:          schema.TypeString,
-					Optional:      true,
-					Sensitive:     true,
-					DefaultFunc:   withEnvDefault("ELASTICSEARCH_API_KEY", nil),
-					ConflictsWith: []string{usernamePath, passwordPath, bearerTokenPath},
-				},
-				"bearer_token": {
-					Description:   "Bearer Token to use for authentication to Elasticsearch",
-					Type:          schema.TypeString,
-					Optional:      true,
-					Sensitive:     true,
-					DefaultFunc:   withEnvDefault("ELASTICSEARCH_BEARER_TOKEN", nil),
-					ConflictsWith: []string{usernamePath, passwordPath, apiKeyPath},
-				},
-				"es_client_authentication": {
-					Description: "ES Client Authentication field to be used with the JWT token",
-					Type:        schema.TypeString,
-					Optional:    true,
-					Sensitive:   true,
-					DefaultFunc: withEnvDefault("ELASTICSEARCH_ES_CLIENT_AUTHENTICATION", nil),
-				},
-				"endpoints": {
-					Description: "A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
-					Type:        schema.TypeList,
-					Optional:    true,
-					Sensitive:   true,
-					Elem: &schema.Schema{
-						Type: schema.TypeString,
-					},
-				},
-				"headers": {
-					Description: "A list of headers to be sent with each request to Elasticsearch.",
-					Type:        schema.TypeMap,
-					Optional:    true,
-					Sensitive:   true,
-					Elem: &schema.Schema{
-						Type: schema.TypeString,
-					},
-				},
-				"insecure": {
-					Description: "Disable TLS certificate validation",
-					Type:        schema.TypeBool,
-					Optional:    true,
-					DefaultFunc: withEnvDefault("ELASTICSEARCH_INSECURE", false),
-				},
-				"ca_file": {
-					Description:   "Path to a custom Certificate Authority certificate",
-					Type:          schema.TypeString,
-					Optional:      true,
-					ConflictsWith: []string{caDataPath},
-				},
-				"ca_data": {
-					Description:   "PEM-encoded custom Certificate Authority certificate",
-					Type:          schema.TypeString,
-					Optional:      true,
-					ConflictsWith: []string{caFilePath},
-				},
-				"cert_file": {
-					Description:   "Path to a file containing the PEM encoded certificate for client auth",
-					Type:          schema.TypeString,
-					Optional:      true,
-					RequiredWith:  []string{keyFilePath},
-					ConflictsWith: []string{certDataPath, keyDataPath},
-				},
-				"key_file": {
-					Description:   "Path to a file containing the PEM encoded private key for client auth",
-					Type:          schema.TypeString,
-					Optional:      true,
-					RequiredWith:  []string{certFilePath},
-					ConflictsWith: []string{certDataPath, keyDataPath},
-				},
-				"cert_data": {
-					Description:   "PEM encoded certificate for client auth",
-					Type:          schema.TypeString,
-					Optional:      true,
-					RequiredWith:  []string{keyDataPath},
-					ConflictsWith: []string{certFilePath, keyFilePath},
-				},
-				"key_data": {
-					Description:   "PEM encoded private key for client auth",
-					Type:          schema.TypeString,
-					Optional:      true,
-					Sensitive:     true,
-					RequiredWith:  []string{certDataPath},
-					ConflictsWith: []string{certFilePath, keyFilePath},
-				},
-			},
-		},
+func connectionBlockObjectAttrTypes(block fwschema.Block) (map[string]attr.Type, error) {
+	lb, ok := block.(fwschema.ListNestedBlock)
+	if !ok {
+		return nil, fmt.Errorf("connection block is %T, want ListNestedBlock", block)
+	}
+	return fwNestedBlockAttributesToAttrTypes(lb.NestedObject.Attributes)
+}
+
+func elasticsearchConnectionBlockObjectAttrTypesFallback() map[string]attr.Type {
+	return map[string]attr.Type{
+		attrUsername:               types.StringType,
+		attrPassword:               types.StringType,
+		attrAPIKey:                 types.StringType,
+		attrBearerToken:            types.StringType,
+		attrESClientAuthentication: types.StringType,
+		attrEndpoints:              types.ListType{ElemType: types.StringType},
+		attrHeaders:                types.MapType{ElemType: types.StringType},
+		attrInsecure:               types.BoolType,
+		attrCAFile:                 types.StringType,
+		attrCAData:                 types.StringType,
+		attrCertFile:               types.StringType,
+		attrKeyFile:                types.StringType,
+		attrCertData:               types.StringType,
+		attrKeyData:                types.StringType,
 	}
 }
 
-func GetKibanaConnectionSchema() *schema.Schema {
-	return getKibanaConnectionSchema("kibana")
-}
-
-// GetKibanaEntityConnectionSchema returns the schema for a resource-level
-// kibana_connection block. It uses path references scoped to kibana_connection
-// rather than the provider-level kibana block.
-func GetKibanaEntityConnectionSchema() *schema.Schema {
-	return getKibanaConnectionSchema("kibana_connection")
-}
-
-// getKibanaConnectionSchema is the shared implementation for both the
-// provider-level kibana block and the entity-local kibana_connection block.
-// keyName controls the path prefix used in ConflictsWith / RequiredWith
-// validation metadata.
-func getKibanaConnectionSchema(keyName string) *schema.Schema {
-	usernamePath := makePathRef(keyName, "username")
-	passwordPath := makePathRef(keyName, "password")
-	apiKeyPath := makePathRef(keyName, "api_key")
-	bearerTokenPath := makePathRef(keyName, "bearer_token")
-
-	return &schema.Schema{
-		Description: "Kibana connection configuration block.",
-		Type:        schema.TypeList,
-		MaxItems:    1,
-		Optional:    true,
-		Elem: &schema.Resource{
-			Schema: map[string]*schema.Schema{
-				"api_key": {
-					Description:   "API Key to use for authentication to Kibana",
-					Type:          schema.TypeString,
-					Optional:      true,
-					Sensitive:     true,
-					ConflictsWith: []string{passwordPath, usernamePath, bearerTokenPath},
-				},
-				"bearer_token": {
-					Description:   "Bearer Token to use for authentication to Kibana",
-					Type:          schema.TypeString,
-					Optional:      true,
-					Sensitive:     true,
-					ConflictsWith: []string{passwordPath, usernamePath, apiKeyPath},
-				},
-				"username": {
-					Description:  "Username to use for API authentication to Kibana.",
-					Type:         schema.TypeString,
-					Optional:     true,
-					RequiredWith: []string{passwordPath},
-				},
-				"password": {
-					Description:  "Password to use for API authentication to Kibana.",
-					Type:         schema.TypeString,
-					Optional:     true,
-					Sensitive:    true,
-					RequiredWith: []string{usernamePath},
-				},
-				"endpoints": {
-					Description: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
-					Type:        schema.TypeList,
-					Optional:    true,
-					Sensitive:   true,
-					MaxItems:    1, // Current API restriction
-					Elem: &schema.Schema{
-						Type: schema.TypeString,
-					},
-				},
-				"ca_certs": {
-					Description: "A list of paths to CA certificates to validate the certificate presented by the Kibana server.",
-					Type:        schema.TypeList,
-					Optional:    true,
-					Elem: &schema.Schema{
-						Type: schema.TypeString,
-					},
-				},
-				"insecure": {
-					Description: "Disable TLS certificate validation",
-					Type:        schema.TypeBool,
-					Optional:    true,
-					Default:     false,
-				},
-			},
-		},
+func kibanaConnectionBlockObjectAttrTypesFallback() map[string]attr.Type {
+	return map[string]attr.Type{
+		attrAPIKey:      types.StringType,
+		attrBearerToken: types.StringType,
+		attrUsername:    types.StringType,
+		attrPassword:    types.StringType,
+		attrEndpoints:   types.ListType{ElemType: types.StringType},
+		attrCACerts:     types.ListType{ElemType: types.StringType},
+		attrInsecure:    types.BoolType,
 	}
 }
 
-func GetFleetConnectionSchema() *schema.Schema {
-	return &schema.Schema{
-		Description: "Fleet connection configuration block.",
-		Type:        schema.TypeList,
-		MaxItems:    1,
-		Optional:    true,
-		Elem: &schema.Resource{
-			Schema: map[string]*schema.Schema{
-				"username": {
-					Description:  "Username to use for API authentication to Fleet.",
-					Type:         schema.TypeString,
-					Optional:     true,
-					RequiredWith: []string{"fleet.0.password"},
-				},
-				"password": {
-					Description:  "Password to use for API authentication to Fleet.",
-					Type:         schema.TypeString,
-					Optional:     true,
-					Sensitive:    true,
-					RequiredWith: []string{"fleet.0.username"},
-				},
-				"api_key": {
-					Description:   "API Key to use for authentication to Fleet.",
-					Type:          schema.TypeString,
-					Optional:      true,
-					Sensitive:     true,
-					ConflictsWith: []string{"fleet.0.username", "fleet.0.password", "fleet.0.bearer_token"},
-				},
-				"bearer_token": {
-					Description:   "Bearer Token to use for authentication to Fleet.",
-					Type:          schema.TypeString,
-					Optional:      true,
-					Sensitive:     true,
-					ConflictsWith: []string{"fleet.0.username", "fleet.0.password", "fleet.0.api_key"},
-				},
-				"endpoint": {
-					Description: "The Fleet server where the terraform provider will point to, this must include the http(s) schema and port number.",
-					Type:        schema.TypeString,
-					Optional:    true,
-					Sensitive:   true,
-				},
-				"ca_certs": {
-					Description: "A list of paths to CA certificates to validate the certificate presented by the Fleet server.",
-					Type:        schema.TypeList,
-					Optional:    true,
-					Elem: &schema.Schema{
-						Type: schema.TypeString,
-					},
-				},
-				"insecure": {
-					Description: "Disable TLS certificate validation",
-					Type:        schema.TypeBool,
-					Optional:    true,
-					Default:     false,
-				},
-			},
-		},
-	}
+func elasticsearchConnectionBlockObjectAttrTypes() map[string]attr.Type {
+	elasticsearchConnectionBlockObjectAttrTypesOnce.Do(func() {
+		m, err := connectionBlockObjectAttrTypes(GetEsFWConnectionBlock())
+		if err != nil {
+			elasticsearchConnectionBlockObjectAttrTypesVal = elasticsearchConnectionBlockObjectAttrTypesFallback()
+			return
+		}
+		elasticsearchConnectionBlockObjectAttrTypesVal = m
+	})
+	return copyAttrTypes(elasticsearchConnectionBlockObjectAttrTypesVal)
 }
 
-func makePathRef(keyName string, keyValue string) string {
-	return fmt.Sprintf("%s.0.%s", keyName, keyValue)
+func kibanaConnectionBlockObjectAttrTypes() map[string]attr.Type {
+	kibanaConnectionBlockObjectAttrTypesOnce.Do(func() {
+		m, err := connectionBlockObjectAttrTypes(GetKbFWConnectionBlock())
+		if err != nil {
+			kibanaConnectionBlockObjectAttrTypesVal = kibanaConnectionBlockObjectAttrTypesFallback()
+			return
+		}
+		kibanaConnectionBlockObjectAttrTypesVal = m
+	})
+	return copyAttrTypes(kibanaConnectionBlockObjectAttrTypesVal)
+}
+
+func fwNestedBlockAttributesToAttrTypes(attrs map[string]fwschema.Attribute) (map[string]attr.Type, error) {
+	out := make(map[string]attr.Type, len(attrs))
+	for name, a := range attrs {
+		t, err := fwAttributeToAttrType(name, a)
+		if err != nil {
+			return nil, err
+		}
+		out[name] = t
+	}
+	return out, nil
+}
+
+func fwAttributeToAttrType(name string, a fwschema.Attribute) (attr.Type, error) {
+	switch a := a.(type) {
+	case fwschema.StringAttribute:
+		if a.CustomType != nil {
+			return a.CustomType, nil
+		}
+		return types.StringType, nil
+	case fwschema.BoolAttribute:
+		if a.CustomType != nil {
+			return a.CustomType, nil
+		}
+		return types.BoolType, nil
+	case fwschema.ListAttribute:
+		if a.CustomType != nil {
+			return a.CustomType, nil
+		}
+		if a.ElementType == nil {
+			return nil, fmt.Errorf("attribute %q: ListAttribute missing ElementType", name)
+		}
+		return types.ListType{ElemType: a.ElementType}, nil
+	case fwschema.MapAttribute:
+		if a.CustomType != nil {
+			return a.CustomType, nil
+		}
+		if a.ElementType == nil {
+			return nil, fmt.Errorf("attribute %q: MapAttribute missing ElementType", name)
+		}
+		return types.MapType{ElemType: a.ElementType}, nil
+	default:
+		return nil, fmt.Errorf("attribute %q: unsupported framework attribute type %T (extend fwAttributeToAttrType)", name, a)
+	}
 }

@@ -23,41 +23,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
-
-// formatDuration converts duration to a string in the format accepted by
-// Elasticsearch, matching the legacy esapi behavior (milliseconds).
-func formatDuration(d time.Duration) string {
-	if d < time.Millisecond {
-		return strconv.FormatInt(int64(d), 10) + "nanos"
-	}
-	return strconv.FormatInt(int64(d)/int64(time.Millisecond), 10) + "ms"
-}
 
 // PutTransform creates or updates a transform.
 //
 // We use .Raw() because the typed types.TransformDestination does not yet
 // model the destination.aliases field. Passing the raw JSON preserves it.
-func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transform *models.Transform, deferValidation bool, timeout time.Duration, enabled bool) diag.Diagnostics {
-
-	var diags diag.Diagnostics
+func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transform *models.Transform, deferValidation bool, timeout time.Duration, enabled bool) fwdiag.Diagnostics {
 	transformBytes, err := json.Marshal(transform)
 	if err != nil {
-		return diag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diag.FromErr(err)
-	}
+	typedClient := apiClient.GetESClient()
 
 	_, err = typedClient.Transform.PutTransform(transform.Name).
 		Raw(bytes.NewReader(transformBytes)).
@@ -65,16 +50,18 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 		DeferValidation(deferValidation).
 		Do(ctx)
 	if err != nil {
-		return diagutil.SDKErrorDiag(fmt.Sprintf("Unable to create transform: %s", transform.Name), err.Error())
-	}
-
-	if enabled {
-		if diags := startTransform(ctx, apiClient, transform.Name, timeout); diags.HasError() {
-			return diags
+		return fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic(fmt.Sprintf("Unable to create transform: %s", transform.Name), err.Error()),
 		}
 	}
 
-	return diags
+	if enabled {
+		if d := startTransform(ctx, apiClient, transform.Name, timeout); d.HasError() {
+			return d
+		}
+	}
+
+	return nil
 }
 
 // GetTransform retrieves a transform by name.
@@ -82,30 +69,25 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 // We use .Perform() (raw *http.Response) instead of .Do() because the typed
 // types.ReindexDestination does not yet model the destination.aliases field.
 // We decode directly from the raw response body to preserve it.
-func GetTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) (*models.Transform, diag.Diagnostics) {
-
-	var diags diag.Diagnostics
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return nil, diag.FromErr(err)
-	}
+func GetTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) (*models.Transform, fwdiag.Diagnostics) {
+	typedClient := apiClient.GetESClient()
 
 	res, err := typedClient.Transform.GetTransform().TransformId(*name).Perform(ctx)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if d := diagutil.SDKDiagsFromFramework(diagutil.CheckHTTPErrorFromFW(res, fmt.Sprintf("Unable to get requested transform: %s", *name))); d.HasError() {
+	if d := diagutil.CheckHTTPErrorFromFW(res, fmt.Sprintf("Unable to get requested transform: %s", *name)); d.HasError() {
 		return nil, d
 	}
 
 	var transformsResponse models.GetTransformResponse
 	if err := json.NewDecoder(res.Body).Decode(&transformsResponse); err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	var foundTransform *models.Transform
@@ -117,26 +99,26 @@ func GetTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 	}
 
 	if foundTransform == nil {
-		return nil, diagutil.SDKErrorDiag(
-			"Unable to find the transform in the cluster",
-			fmt.Sprintf(`Unable to find "%s" transform in the cluster`, *name),
-		)
+		return nil, fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic(
+				"Unable to find the transform in the cluster",
+				fmt.Sprintf(`Unable to find "%s" transform in the cluster`, *name),
+			),
+		}
 	}
 
 	foundTransform.Name = *name
-	return foundTransform, diags
+	return foundTransform, nil
 }
 
-func GetTransformStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) (*types.TransformStats, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return nil, diag.FromErr(err)
-	}
+func GetTransformStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) (*types.TransformStats, fwdiag.Diagnostics) {
+	typedClient := apiClient.GetESClient()
 
 	statsRes, err := typedClient.Transform.GetTransformStats(*name).Do(ctx)
 	if err != nil {
-		return nil, diagutil.SDKErrorDiag(fmt.Sprintf("Unable to get transform stats: %s", *name), err.Error())
+		return nil, fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic(fmt.Sprintf("Unable to get transform stats: %s", *name), err.Error()),
+		}
 	}
 
 	var foundTransformStats *types.TransformStats
@@ -148,13 +130,15 @@ func GetTransformStats(ctx context.Context, apiClient *clients.ElasticsearchScop
 	}
 
 	if foundTransformStats == nil {
-		return nil, diagutil.SDKErrorDiag(
-			"Unable to find the transform stats in the cluster",
-			fmt.Sprintf(`Unable to find "%s" transform stats in the cluster`, *name),
-		)
+		return nil, fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic(
+				"Unable to find the transform stats in the cluster",
+				fmt.Sprintf(`Unable to find "%s" transform stats in the cluster`, *name),
+			),
+		}
 	}
 
-	return foundTransformStats, diags
+	return foundTransformStats, nil
 }
 
 // UpdateTransform updates an existing transform.
@@ -169,18 +153,13 @@ func UpdateTransform(
 	timeout time.Duration,
 	enabled bool,
 	applyEnabled bool,
-) diag.Diagnostics {
-
-	var diags diag.Diagnostics
+) fwdiag.Diagnostics {
 	transformBytes, err := json.Marshal(transform)
 	if err != nil {
-		return diag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diag.FromErr(err)
-	}
+	typedClient := apiClient.GetESClient()
 
 	_, err = typedClient.Transform.UpdateTransform(transform.Name).
 		Raw(bytes.NewReader(transformBytes)).
@@ -188,71 +167,64 @@ func UpdateTransform(
 		DeferValidation(deferValidation).
 		Do(ctx)
 	if err != nil {
-		return diagutil.SDKErrorDiag(fmt.Sprintf("Unable to update transform: %s", transform.Name), err.Error())
+		return fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic(fmt.Sprintf("Unable to update transform: %s", transform.Name), err.Error()),
+		}
 	}
 
 	if applyEnabled {
 		if enabled {
-			if diags := startTransform(ctx, apiClient, transform.Name, timeout); diags.HasError() {
-				return diags
+			if d := startTransform(ctx, apiClient, transform.Name, timeout); d.HasError() {
+				return d
 			}
 		} else {
-			if diags := stopTransform(ctx, apiClient, transform.Name, timeout); diags.HasError() {
-				return diags
+			if d := stopTransform(ctx, apiClient, transform.Name, timeout); d.HasError() {
+				return d
 			}
 		}
 	}
 
-	return diags
+	return nil
 }
 
-func DeleteTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) diag.Diagnostics {
+func DeleteTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name *string) fwdiag.Diagnostics {
+	typedClient := apiClient.GetESClient()
 
-	var diags diag.Diagnostics
-	typedClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	_, err = typedClient.Transform.DeleteTransform(*name).Force(true).Do(ctx)
+	_, err := typedClient.Transform.DeleteTransform(*name).Force(true).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
-			return diags
+			return nil
 		}
-		return diagutil.SDKErrorDiag(fmt.Sprintf("Unable to delete transform: %s", *name), err.Error())
+		return fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic(fmt.Sprintf("Unable to delete transform: %s", *name), err.Error()),
+		}
 	}
 
-	return diags
+	return nil
 }
 
-func startTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transformName string, timeout time.Duration) diag.Diagnostics {
-	var diags diag.Diagnostics
+func startTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transformName string, timeout time.Duration) fwdiag.Diagnostics {
+	typedClient := apiClient.GetESClient()
 
-	typedClient, err := apiClient.GetESClient()
+	_, err := typedClient.Transform.StartTransform(transformName).Timeout(formatDuration(timeout)).Do(ctx)
 	if err != nil {
-		return diag.FromErr(err)
+		return fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic(fmt.Sprintf("Unable to start transform: %s", transformName), err.Error()),
+		}
 	}
 
-	_, err = typedClient.Transform.StartTransform(transformName).Timeout(formatDuration(timeout)).Do(ctx)
-	if err != nil {
-		return diagutil.SDKErrorDiag(fmt.Sprintf("Unable to start transform: %s", transformName), err.Error())
-	}
-
-	return diags
+	return nil
 }
 
-func stopTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transformName string, timeout time.Duration) diag.Diagnostics {
-	var diags diag.Diagnostics
+func stopTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transformName string, timeout time.Duration) fwdiag.Diagnostics {
+	typedClient := apiClient.GetESClient()
 
-	typedClient, err := apiClient.GetESClient()
+	_, err := typedClient.Transform.StopTransform(transformName).Timeout(formatDuration(timeout)).Do(ctx)
 	if err != nil {
-		return diag.FromErr(err)
+		return fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic(fmt.Sprintf("Unable to stop transform: %s", transformName), err.Error()),
+		}
 	}
 
-	_, err = typedClient.Transform.StopTransform(transformName).Timeout(formatDuration(timeout)).Do(ctx)
-	if err != nil {
-		return diagutil.SDKErrorDiag(fmt.Sprintf("Unable to stop transform: %s", transformName), err.Error())
-	}
-
-	return diags
+	return nil
 }

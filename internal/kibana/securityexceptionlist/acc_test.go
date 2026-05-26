@@ -289,10 +289,7 @@ func checkResourceExceptionListDestroy(s *terraform.State) error {
 		return err
 	}
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		return err
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_kibana_security_exception_list" {

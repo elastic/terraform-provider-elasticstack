@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -79,13 +78,13 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	serverFlavor, sdkDiags := client.ServerFlavor(ctx)
-	if sdkDiags.HasError() {
-		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	isServerless, isDiags := client.IsServerless(ctx)
+	if isDiags.HasError() {
+		resp.Diagnostics.Append(isDiags...)
 		return
 	}
 
-	params := planModel.toPutIndexParams(serverFlavor)
+	params := planModel.toPutIndexParams(isServerless)
 
 	concreteName, diags := elasticsearch.PutIndex(ctx, client, &apiModel, &params)
 	resp.Diagnostics.Append(diags...)
@@ -96,9 +95,9 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	// Compute id from the cluster UUID and the concrete index name returned by
 	// Elasticsearch.  For static names concreteName equals the configured name.
 	// For date math names concreteName is the resolved index (e.g. logs-2024.01.15).
-	id, sdkDiags := client.ID(ctx, concreteName)
-	if sdkDiags.HasError() {
-		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := client.ID(ctx, concreteName)
+	if idDiags.HasError() {
+		resp.Diagnostics.Append(idDiags...)
 		return
 	}
 
@@ -187,9 +186,9 @@ func (r *Resource) adoptExistingIndexOnCreate(
 		}
 	}
 
-	id, sdkDiags := client.ID(ctx, concreteName)
-	if sdkDiags.HasError() {
-		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := client.ID(ctx, concreteName)
+	if idDiags.HasError() {
+		resp.Diagnostics.Append(idDiags...)
 		return
 	}
 

@@ -46,7 +46,7 @@ func populateScriptFieldsDefaults(model map[string]any) map[string]any {
 
 				// Set lang default to "painless" if not specified
 				if _, langExists := newScriptMap["lang"]; !langExists {
-					newScriptMap["lang"] = "painless"
+					newScriptMap["lang"] = scriptLangPainless
 				}
 
 				resultField["script"] = newScriptMap

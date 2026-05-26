@@ -31,12 +31,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func xyReferenceLineLayerTypeFromTF(tfType string) kbapi.XyReferenceLineLayerNoESQLType {
-	return kbapi.XyReferenceLineLayerNoESQLType(tfType)
+func xyReferenceLineLayerTypeFromTF(tfType string) kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQLType {
+	return kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQLType(tfType)
 }
 
 // fromAPILayersNoESQL populates the layer model from a DSL (non-ES|QL) XY layer union value.
-func xyLayerFromAPILayersNoESQL(ctx context.Context, m *models.XYLayerModel, apiLayer kbapi.XyLayersNoESQL) diag.Diagnostics {
+func xyLayerFromAPILayersNoESQL(ctx context.Context, m *models.XYLayerModel, apiLayer kbapi.KibanaHTTPAPIsXyLayersNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	layerJSON, err := apiLayer.MarshalJSON()
@@ -56,7 +56,7 @@ func xyLayerFromAPILayersNoESQL(ctx context.Context, m *models.XYLayerModel, api
 
 	isReferenceLine := layerType.Type == "referenceLines" || layerType.Type == string(kbapi.ReferenceLines)
 	if isReferenceLine {
-		refLine, err := apiLayer.AsXyReferenceLineLayerNoESQL()
+		refLine, err := apiLayer.AsKibanaHTTPAPIsXyReferenceLineLayerNoESQL()
 		if err != nil {
 			diags.AddError("Failed to parse reference line layer", err.Error())
 			return diags
@@ -70,7 +70,7 @@ func xyLayerFromAPILayersNoESQL(ctx context.Context, m *models.XYLayerModel, api
 		return diags
 	}
 
-	dl, err := apiLayer.AsXyLayerNoESQL()
+	dl, err := apiLayer.AsKibanaHTTPAPIsXyLayerNoESQL()
 	if err != nil {
 		diags.AddError("Failed to parse data layer", err.Error())
 		return diags
@@ -80,16 +80,16 @@ func xyLayerFromAPILayersNoESQL(ctx context.Context, m *models.XYLayerModel, api
 }
 
 // fromAPILayerESQL populates the layer model from an ES|QL XY data layer.
-func xyLayerFromAPILayerESQL(ctx context.Context, m *models.XYLayerModel, apiLayer kbapi.XyLayerESQL) diag.Diagnostics {
+func xyLayerFromAPILayerESQL(ctx context.Context, m *models.XYLayerModel, apiLayer kbapi.KibanaHTTPAPIsXyLayerESQL) diag.Diagnostics {
 	m.Type = types.StringValue(string(apiLayer.Type))
 	m.DataLayer = &models.DataLayerModel{}
 	return dataLayerFromAPIESql(ctx, m.DataLayer, apiLayer)
 }
 
 // toAPILayersNoESQL converts the layer model to the DSL layer union type.
-func xyLayerToAPILayersNoESQL(m *models.XYLayerModel) (kbapi.XyLayersNoESQL, diag.Diagnostics) {
+func xyLayerToAPILayersNoESQL(m *models.XYLayerModel) (kbapi.KibanaHTTPAPIsXyLayersNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var out kbapi.XyLayersNoESQL
+	var out kbapi.KibanaHTTPAPIsXyLayersNoESQL
 
 	if m.ReferenceLineLayer != nil {
 		ref, refDiags := referenceLineLayerToAPIXyReferenceLineLayerNoESQL(m.ReferenceLineLayer, m.Type.ValueString())
@@ -97,7 +97,7 @@ func xyLayerToAPILayersNoESQL(m *models.XYLayerModel) (kbapi.XyLayersNoESQL, dia
 		if diags.HasError() {
 			return out, diags
 		}
-		if err := out.FromXyReferenceLineLayerNoESQL(ref); err != nil {
+		if err := out.FromKibanaHTTPAPIsXyReferenceLineLayerNoESQL(ref); err != nil {
 			diags.AddError("Failed to build reference line layer", err.Error())
 		}
 		return out, diags
@@ -109,7 +109,7 @@ func xyLayerToAPILayersNoESQL(m *models.XYLayerModel) (kbapi.XyLayersNoESQL, dia
 		if diags.HasError() {
 			return out, diags
 		}
-		if err := out.FromXyLayerNoESQL(dl); err != nil {
+		if err := out.FromKibanaHTTPAPIsXyLayerNoESQL(dl); err != nil {
 			diags.AddError("Failed to build data layer", err.Error())
 		}
 		return out, diags
@@ -120,9 +120,9 @@ func xyLayerToAPILayersNoESQL(m *models.XYLayerModel) (kbapi.XyLayersNoESQL, dia
 }
 
 // toAPILayerESQL converts a configured data layer to the ES|QL API layer type.
-func xyLayerToAPILayerESQL(m *models.XYLayerModel) (kbapi.XyLayerESQL, diag.Diagnostics) {
+func xyLayerToAPILayerESQL(m *models.XYLayerModel) (kbapi.KibanaHTTPAPIsXyLayerESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var zero kbapi.XyLayerESQL
+	var zero kbapi.KibanaHTTPAPIsXyLayerESQL
 	if m.DataLayer == nil {
 		diags.AddError("Invalid layer", "ES|QL XY charts require a data_layer")
 		return zero, diags
@@ -131,7 +131,7 @@ func xyLayerToAPILayerESQL(m *models.XYLayerModel) (kbapi.XyLayerESQL, diag.Diag
 }
 
 // fromAPINoESQL populates data layer from NoESQL API response
-func dataLayerFromAPINoESQL(ctx context.Context, m *models.DataLayerModel, apiLayer kbapi.XyLayerNoESQL) diag.Diagnostics {
+func dataLayerFromAPINoESQL(ctx context.Context, m *models.DataLayerModel, apiLayer kbapi.KibanaHTTPAPIsXyLayerNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Marshal to JSON to preserve the exact structure
@@ -186,7 +186,7 @@ func dataLayerFromAPINoESQL(ctx context.Context, m *models.DataLayerModel, apiLa
 }
 
 // fromAPIESql populates data layer from ESQL API response
-func dataLayerFromAPIESql(ctx context.Context, m *models.DataLayerModel, apiLayer kbapi.XyLayerESQL) diag.Diagnostics {
+func dataLayerFromAPIESql(ctx context.Context, m *models.DataLayerModel, apiLayer kbapi.KibanaHTTPAPIsXyLayerESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Marshal to JSON to preserve the exact structure
@@ -241,9 +241,9 @@ func dataLayerFromAPIESql(ctx context.Context, m *models.DataLayerModel, apiLaye
 }
 
 // toAPIXyLayerNoESQL converts a data layer model to the typed non-ES|QL API layer.
-func dataLayerToAPIXyLayerNoESQL(m *models.DataLayerModel, layerType string) (kbapi.XyLayerNoESQL, diag.Diagnostics) {
+func dataLayerToAPIXyLayerNoESQL(m *models.DataLayerModel, layerType string) (kbapi.KibanaHTTPAPIsXyLayerNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	layer := kbapi.XyLayerNoESQL{Type: kbapi.XyLayerNoESQLType(layerType)}
+	layer := kbapi.KibanaHTTPAPIsXyLayerNoESQL{Type: kbapi.KibanaHTTPAPIsXyLayerNoESQLType(layerType)}
 
 	if typeutils.IsKnown(m.DataSourceJSON) {
 		diags.Append(m.DataSourceJSON.Unmarshal(&layer.DataSource)...)
@@ -258,7 +258,7 @@ func dataLayerToAPIXyLayerNoESQL(m *models.DataLayerModel, layerType string) (kb
 	}
 
 	if typeutils.IsKnown(m.XJSON) {
-		var x kbapi.XyLayerNoESQL_X
+		var x kbapi.KibanaHTTPAPIsXyLayerNoESQL_X
 		diags.Append(m.XJSON.Unmarshal(&x)...)
 		if !diags.HasError() {
 			layer.X = &x
@@ -266,7 +266,7 @@ func dataLayerToAPIXyLayerNoESQL(m *models.DataLayerModel, layerType string) (kb
 	}
 
 	if typeutils.IsKnown(m.BreakdownByJSON) {
-		var bb kbapi.XyLayerNoESQL_BreakdownBy
+		var bb kbapi.KibanaHTTPAPIsXyLayerNoESQL_BreakdownBy
 		diags.Append(m.BreakdownByJSON.Unmarshal(&bb)...)
 		if !diags.HasError() {
 			layer.BreakdownBy = &bb
@@ -274,12 +274,12 @@ func dataLayerToAPIXyLayerNoESQL(m *models.DataLayerModel, layerType string) (kb
 	}
 
 	if len(m.Y) > 0 {
-		layer.Y = make([]kbapi.XyLayerNoESQL_Y_Item, 0, len(m.Y))
+		layer.Y = make([]kbapi.KibanaHTTPAPIsXyLayerNoESQL_Y_Item, 0, len(m.Y))
 		for _, y := range m.Y {
 			if !typeutils.IsKnown(y.ConfigJSON) {
 				continue
 			}
-			var item kbapi.XyLayerNoESQL_Y_Item
+			var item kbapi.KibanaHTTPAPIsXyLayerNoESQL_Y_Item
 			diags.Append(y.ConfigJSON.Unmarshal(&item)...)
 			layer.Y = append(layer.Y, item)
 		}
@@ -289,12 +289,12 @@ func dataLayerToAPIXyLayerNoESQL(m *models.DataLayerModel, layerType string) (kb
 }
 
 // toAPIXyLayerESQL converts a data layer model to the typed ES|QL API layer.
-func dataLayerToAPIXyLayerESQL(m *models.DataLayerModel, layerType string) (kbapi.XyLayerESQL, diag.Diagnostics) {
+func dataLayerToAPIXyLayerESQL(m *models.DataLayerModel, layerType string) (kbapi.KibanaHTTPAPIsXyLayerESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var zero kbapi.XyLayerESQL
+	var zero kbapi.KibanaHTTPAPIsXyLayerESQL
 
 	layer := map[string]any{
-		"type": layerType,
+		attrType: layerType,
 	}
 	if typeutils.IsKnown(m.DataSourceJSON) {
 		var ds any
@@ -340,7 +340,7 @@ func dataLayerToAPIXyLayerESQL(m *models.DataLayerModel, layerType string) (kbap
 		return zero, diags
 	}
 
-	var out kbapi.XyLayerESQL
+	var out kbapi.KibanaHTTPAPIsXyLayerESQL
 	if err := json.Unmarshal(layerJSON, &out); err != nil {
 		diags.AddError("Failed to decode ES|QL data layer", err.Error())
 		return zero, diags
@@ -349,7 +349,7 @@ func dataLayerToAPIXyLayerESQL(m *models.DataLayerModel, layerType string) (kbap
 }
 
 // fromAPINoESQL populates reference line layer from NoESQL API response
-func referenceLineLayerFromAPINoESQL(m *models.ReferenceLineLayerModel, apiLayer kbapi.XyReferenceLineLayerNoESQL) diag.Diagnostics {
+func referenceLineLayerFromAPINoESQL(m *models.ReferenceLineLayerModel, apiLayer kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Marshal to JSON to preserve the exact structure
@@ -409,9 +409,9 @@ func referenceLineLayerFromAPINoESQL(m *models.ReferenceLineLayerModel, apiLayer
 }
 
 // toAPIXyReferenceLineLayerNoESQL converts a reference line layer model to the typed API layer.
-func referenceLineLayerToAPIXyReferenceLineLayerNoESQL(m *models.ReferenceLineLayerModel, layerType string) (kbapi.XyReferenceLineLayerNoESQL, diag.Diagnostics) {
+func referenceLineLayerToAPIXyReferenceLineLayerNoESQL(m *models.ReferenceLineLayerModel, layerType string) (kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	layer := kbapi.XyReferenceLineLayerNoESQL{
+	layer := kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQL{
 		Type: xyReferenceLineLayerTypeFromTF(layerType),
 	}
 
@@ -427,7 +427,7 @@ func referenceLineLayerToAPIXyReferenceLineLayerNoESQL(m *models.ReferenceLineLa
 	}
 
 	if len(m.Thresholds) > 0 {
-		items := make([]kbapi.XyReferenceLineLayerNoESQL_Thresholds_Item, 0, len(m.Thresholds))
+		items := make([]kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQL_Thresholds_Item, 0, len(m.Thresholds))
 		for _, t := range m.Thresholds {
 			if typeutils.IsKnown(t.ValueJSON) {
 				var op any
@@ -441,7 +441,7 @@ func referenceLineLayerToAPIXyReferenceLineLayerNoESQL(m *models.ReferenceLineLa
 					diags.AddError("Failed to marshal reference line threshold", err.Error())
 					continue
 				}
-				var item kbapi.XyReferenceLineLayerNoESQL_Thresholds_Item
+				var item kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQL_Thresholds_Item
 				if err := item.UnmarshalJSON(opBytes); err != nil {
 					diags.AddError("Failed to decode reference line threshold", err.Error())
 					continue
@@ -460,7 +460,7 @@ func referenceLineLayerToAPIXyReferenceLineLayerNoESQL(m *models.ReferenceLineLa
 				diags.AddError("Failed to marshal reference line threshold", err.Error())
 				continue
 			}
-			var item kbapi.XyReferenceLineLayerNoESQL_Thresholds_Item
+			var item kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQL_Thresholds_Item
 			if err := item.UnmarshalJSON(thBytes); err != nil {
 				diags.AddError("Failed to decode reference line threshold", err.Error())
 				continue
@@ -601,22 +601,22 @@ func thresholdToAPI(m *models.ThresholdModel) (map[string]any, diag.Diagnostics)
 }
 
 // LayerFromAPILayersNoESQL populates the layer model from a DSL (non-ES|QL) XY layer union value.
-func LayerFromAPILayersNoESQL(ctx context.Context, m *models.XYLayerModel, apiLayer kbapi.XyLayersNoESQL) diag.Diagnostics {
+func LayerFromAPILayersNoESQL(ctx context.Context, m *models.XYLayerModel, apiLayer kbapi.KibanaHTTPAPIsXyLayersNoESQL) diag.Diagnostics {
 	return xyLayerFromAPILayersNoESQL(ctx, m, apiLayer)
 }
 
 // LayerToAPILayersNoESQL converts the layer model to the DSL layer union type.
-func LayerToAPILayersNoESQL(m *models.XYLayerModel) (kbapi.XyLayersNoESQL, diag.Diagnostics) {
+func LayerToAPILayersNoESQL(m *models.XYLayerModel) (kbapi.KibanaHTTPAPIsXyLayersNoESQL, diag.Diagnostics) {
 	return xyLayerToAPILayersNoESQL(m)
 }
 
 // LayerFromAPILayerESQL populates the layer model from an ES|QL XY data layer.
-func LayerFromAPILayerESQL(ctx context.Context, m *models.XYLayerModel, apiLayer kbapi.XyLayerESQL) diag.Diagnostics {
+func LayerFromAPILayerESQL(ctx context.Context, m *models.XYLayerModel, apiLayer kbapi.KibanaHTTPAPIsXyLayerESQL) diag.Diagnostics {
 	return xyLayerFromAPILayerESQL(ctx, m, apiLayer)
 }
 
 // LayerToAPILayerESQL converts a configured data layer to the ES|QL API layer type.
-func LayerToAPILayerESQL(m *models.XYLayerModel) (kbapi.XyLayerESQL, diag.Diagnostics) {
+func LayerToAPILayerESQL(m *models.XYLayerModel) (kbapi.KibanaHTTPAPIsXyLayerESQL, diag.Diagnostics) {
 	return xyLayerToAPILayerESQL(m)
 }
 
@@ -630,26 +630,26 @@ func ThresholdToAPI(m *models.ThresholdModel) (map[string]any, diag.Diagnostics)
 	return thresholdToAPI(m)
 }
 
-func DataLayerFromAPINoESQL(ctx context.Context, m *models.DataLayerModel, apiLayer kbapi.XyLayerNoESQL) diag.Diagnostics {
+func DataLayerFromAPINoESQL(ctx context.Context, m *models.DataLayerModel, apiLayer kbapi.KibanaHTTPAPIsXyLayerNoESQL) diag.Diagnostics {
 	return dataLayerFromAPINoESQL(ctx, m, apiLayer)
 }
 
-func DataLayerToAPIXyLayerNoESQL(m *models.DataLayerModel, layerType string) (kbapi.XyLayerNoESQL, diag.Diagnostics) {
+func DataLayerToAPIXyLayerNoESQL(m *models.DataLayerModel, layerType string) (kbapi.KibanaHTTPAPIsXyLayerNoESQL, diag.Diagnostics) {
 	return dataLayerToAPIXyLayerNoESQL(m, layerType)
 }
 
-func DataLayerFromAPIESql(ctx context.Context, m *models.DataLayerModel, apiLayer kbapi.XyLayerESQL) diag.Diagnostics {
+func DataLayerFromAPIESql(ctx context.Context, m *models.DataLayerModel, apiLayer kbapi.KibanaHTTPAPIsXyLayerESQL) diag.Diagnostics {
 	return dataLayerFromAPIESql(ctx, m, apiLayer)
 }
 
-func DataLayerToAPIXyLayerESQL(m *models.DataLayerModel, layerType string) (kbapi.XyLayerESQL, diag.Diagnostics) {
+func DataLayerToAPIXyLayerESQL(m *models.DataLayerModel, layerType string) (kbapi.KibanaHTTPAPIsXyLayerESQL, diag.Diagnostics) {
 	return dataLayerToAPIXyLayerESQL(m, layerType)
 }
 
-func ReferenceLineLayerFromAPINoESQL(m *models.ReferenceLineLayerModel, apiLayer kbapi.XyReferenceLineLayerNoESQL) diag.Diagnostics {
+func ReferenceLineLayerFromAPINoESQL(m *models.ReferenceLineLayerModel, apiLayer kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQL) diag.Diagnostics {
 	return referenceLineLayerFromAPINoESQL(m, apiLayer)
 }
 
-func ReferenceLineLayerToAPIXyReferenceLineLayerNoESQL(m *models.ReferenceLineLayerModel, layerType string) (kbapi.XyReferenceLineLayerNoESQL, diag.Diagnostics) {
+func ReferenceLineLayerToAPIXyReferenceLineLayerNoESQL(m *models.ReferenceLineLayerModel, layerType string) (kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQL, diag.Diagnostics) {
 	return referenceLineLayerToAPIXyReferenceLineLayerNoESQL(m, layerType)
 }

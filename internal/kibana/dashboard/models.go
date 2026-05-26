@@ -33,9 +33,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// jsonNullString is the JSON encoding of null; json.Marshal uses it for unset union/API fields.
-const jsonNullString = "null"
-
 // populateFromAPI populates the Terraform model from the API response
 func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, resp *kbapi.GetDashboardsIdResponse, dashboardID string, spaceID string) diag.Diagnostics {
 	var diags diag.Diagnostics
@@ -148,7 +145,7 @@ func dashboardToAPICreateRequest(ctx context.Context, m *models.DashboardModel, 
 
 	// Set time range mode
 	if m.TimeRange != nil && typeutils.IsKnown(m.TimeRange.Mode) {
-		mode := kbapi.KbnEsQueryServerTimeRangeSchemaMode(m.TimeRange.Mode.ValueString())
+		mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode(m.TimeRange.Mode.ValueString())
 		req.TimeRange.Mode = &mode
 	}
 
@@ -207,7 +204,7 @@ func dashboardToAPIUpdateRequest(ctx context.Context, m *models.DashboardModel, 
 
 	// Set time range mode
 	if m.TimeRange != nil && typeutils.IsKnown(m.TimeRange.Mode) {
-		mode := kbapi.KbnEsQueryServerTimeRangeSchemaMode(m.TimeRange.Mode.ValueString())
+		mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode(m.TimeRange.Mode.ValueString())
 		req.TimeRange.Mode = &mode
 	}
 
@@ -246,12 +243,12 @@ func dashboardToAPIUpdateRequest(ctx context.Context, m *models.DashboardModel, 
 	return req
 }
 
-func dashboardQueryToAPI(m *models.DashboardModel) (kbapi.KbnAsCodeQuery, diag.Diagnostics) {
-	query := kbapi.KbnAsCodeQuery{}
+func dashboardQueryToAPI(m *models.DashboardModel) (kbapi.KibanaHTTPAPIsKbnAsCodeQuery, diag.Diagnostics) {
+	query := kbapi.KibanaHTTPAPIsKbnAsCodeQuery{}
 	if m.Query == nil {
 		return query, nil
 	}
-	query.Language = kbapi.KbnAsCodeQueryLanguage(m.Query.Language.ValueString())
+	query.Language = kbapi.KibanaHTTPAPIsKbnAsCodeQueryLanguage(m.Query.Language.ValueString())
 	textKnown := typeutils.IsKnown(m.Query.Text)
 	jsonKnown := typeutils.IsKnown(m.Query.JSON)
 
@@ -285,7 +282,7 @@ func dashboardRootSavedFiltersElementType() types.ObjectType {
 // mapDashboardFiltersFromAPI sets m.Filters from the API in response order.
 // REQ-037 / REQ-009: when filters were unset in state and the API returns no filters (nil or empty),
 // the attribute stays null rather than becoming an empty list.
-func dashboardMapDashboardFiltersFromAPI(ctx context.Context, m *models.DashboardModel, api *kbapi.KbnDashboardData, diags *diag.Diagnostics) {
+func dashboardMapDashboardFiltersFromAPI(ctx context.Context, m *models.DashboardModel, api *kbapi.KibanaHTTPAPIsKbnDashboardData, diags *diag.Diagnostics) {
 	priorUnset := m.Filters.IsNull()
 	apiFilters := api.Filters
 	hasItems := apiFilters != nil && len(*apiFilters) > 0

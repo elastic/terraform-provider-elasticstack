@@ -45,7 +45,7 @@ func newSavedQueryRuleProcessor() SavedQueryRuleProcessor {
 }
 
 func (s SavedQueryRuleProcessor) HandlesRuleType(t string) bool {
-	return t == "saved_query"
+	return t == ruleTypeSavedQuery
 }
 
 func (s SavedQueryRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
@@ -63,7 +63,7 @@ func (d Data) toSavedQueryRuleCreateProps(ctx context.Context, client clients.Mi
 	savedQueryRule := kbapi.SecurityDetectionsAPISavedQueryRuleCreateProps{
 		Name:        d.Name.ValueString(),
 		Description: d.Description.ValueString(),
-		Type:        kbapi.SecurityDetectionsAPISavedQueryRuleCreatePropsType("saved_query"),
+		Type:        kbapi.SecurityDetectionsAPISavedQueryRuleCreatePropsType(ruleTypeSavedQuery),
 		SavedId:     d.SavedID.ValueString(),
 		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
@@ -139,7 +139,7 @@ func (d Data) toSavedQueryRuleUpdateProps(ctx context.Context, client clients.Mi
 		Id:          &uid,
 		Name:        d.Name.ValueString(),
 		Description: d.Description.ValueString(),
-		Type:        kbapi.SecurityDetectionsAPISavedQueryRuleUpdatePropsType("saved_query"),
+		Type:        kbapi.SecurityDetectionsAPISavedQueryRuleUpdatePropsType(ruleTypeSavedQuery),
 		SavedId:     d.SavedID.ValueString(),
 		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),

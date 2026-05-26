@@ -43,6 +43,9 @@ const testAccAgentBuilderEsqlResourceName = "elasticstack_kibana_agentbuilder_to
 // testAccAgentBuilderWorkflowResourceName is the address of the workflow tool used in acc configs.
 const testAccAgentBuilderWorkflowResourceName = "elasticstack_kibana_agentbuilder_tool.test_workflow"
 
+// testAccAgentBuilderIndexSearchResourceName is the address of the index_search tool used in acc configs.
+const testAccAgentBuilderIndexSearchResourceName = "elasticstack_kibana_agentbuilder_tool.test_index_search"
+
 // testAccAgentBuilderToolDataSourceName is the address of the data source used in acc configs.
 const testAccAgentBuilderToolDataSourceName = "data.elasticstack_kibana_agentbuilder_tool.test"
 
@@ -70,10 +73,12 @@ func TestAccResourceAgentBuilderToolEsql(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr(resourceID, "tags.*", "test"),
 					resource.TestCheckTypeSetElemAttr(resourceID, "tags.*", "esql"),
 					resource.TestCheckResourceAttrSet(resourceID, "configuration"),
+					resource.TestMatchResourceAttr(resourceID, "configuration",
+						regexp.MustCompile(`FROM logs-\*`)),
 				),
 			},
 			{
-				// Import by composite id: <tool_id>/<space_id>
+				// Import by composite id: <space_id>/<tool_id>
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -96,6 +101,8 @@ func TestAccResourceAgentBuilderToolEsql(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceID, "tool_id", toolID),
 					resource.TestCheckResourceAttr(resourceID, "description", "Updated ES|QL tool"),
 					resource.TestCheckResourceAttr(resourceID, "tags.#", "3"),
+					resource.TestMatchResourceAttr(resourceID, "configuration",
+						regexp.MustCompile(`FROM logs-\*`)),
 				),
 			},
 			{
@@ -143,6 +150,7 @@ func TestAccResourceAgentBuilderToolEsqlKibanaConnection(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceID, "kibana_connection.#", "1"),
 					resource.TestCheckResourceAttrSet(resourceID, "kibana_connection.0.endpoints.0"),
 					resource.TestCheckResourceAttrSet(resourceID, "configuration"),
+					resource.TestCheckNoResourceAttr(resourceID, "kibana_connection.0.insecure"),
 				),
 			},
 			{
@@ -214,15 +222,59 @@ func TestAccResourceAgentBuilderToolEsqlSpace(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceID, "tool_id", toolID),
 					resource.TestCheckResourceAttr(resourceID, "space_id", spaceID),
 					resource.TestCheckResourceAttr(resourceID, "type", "esql"),
+					resource.TestCheckNoResourceAttr(resourceID, "description"),
+					resource.TestCheckNoResourceAttr(resourceID, "tags"),
 				),
 			},
 			{
-				// Import by composite id: <tool_id>/<space_id>
+				// Import by composite id: <space_id>/<tool_id>
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"tool_id":  config.StringVariable(toolID),
 					"space_id": config.StringVariable(spaceID),
+				},
+				ResourceName: resourceID,
+				ImportState:  true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					return s.RootModule().Resources[resourceID].Primary.ID, nil
+				},
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccResourceAgentBuilderToolIndexSearch(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
+	toolID := "test-index-search-" + uuid.New().String()[:8]
+	resourceID := testAccAgentBuilderIndexSearchResourceName
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"tool_id": config.StringVariable(toolID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "tool_id", toolID),
+					resource.TestCheckResourceAttr(resourceID, "space_id", "default"),
+					resource.TestCheckResourceAttr(resourceID, "type", "index_search"),
+					resource.TestCheckResourceAttrSet(resourceID, "configuration"),
+					resource.TestMatchResourceAttr(resourceID, "configuration",
+						regexp.MustCompile(`agentbuilder-test`)),
+				),
+			},
+			{
+				// Import by composite id: <space_id>/<tool_id>
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"tool_id": config.StringVariable(toolID),
 				},
 				ResourceName: resourceID,
 				ImportState:  true,
@@ -259,7 +311,7 @@ func TestAccResourceAgentBuilderToolWorkflow(t *testing.T) {
 				),
 			},
 			{
-				// Import by composite id: <tool_id>/<space_id>
+				// Import by composite id: <space_id>/<tool_id>
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{

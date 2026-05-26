@@ -63,17 +63,13 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 func (r *Resource) readSloFromAPI(ctx context.Context, apiClient *clients.KibanaScopedClient, state *tfModel) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	compID, idDiags := clients.CompositeIDFromStrFw(state.ID.ValueString())
+	compID, idDiags := clients.CompositeIDFromStr(state.ID.ValueString())
 	diags.Append(idDiags...)
 	if diags.HasError() {
 		return false, diags
 	}
 
-	oapi, err := apiClient.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Failed to get Kibana API client", err.Error())
-		return false, diags
-	}
+	oapi := apiClient.GetKibanaOapiClient()
 
 	// CompositeID stores spaceID as ClusterID and sloID as ResourceID (see create.go).
 	res, fwDiags := kibanaoapi.GetSlo(ctx, oapi, compID.ClusterID, compID.ResourceID)

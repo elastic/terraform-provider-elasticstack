@@ -23,8 +23,8 @@ import (
 	"fmt"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -33,7 +33,7 @@ import (
 
 // toAPIModel converts the PF model to the API request struct.
 // It applies version gating via isSettingAllowed checks.
-func toAPIModel(ctx context.Context, model tfModel, serverVersion *version.Version) (*models.Transform, fwdiag.Diagnostics) {
+func toAPIModel(ctx context.Context, client *clients.ElasticsearchScopedClient, model tfModel) (*models.Transform, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 	var transform models.Transform
 
@@ -64,7 +64,12 @@ func toAPIModel(ctx context.Context, model tfModel, serverVersion *version.Versi
 		}
 
 		if !src.RuntimeMappings.IsNull() && !src.RuntimeMappings.IsUnknown() && src.RuntimeMappings.ValueString() != "" {
-			if isSettingAllowed(ctx, "source.runtime_mappings", serverVersion) {
+			allowed, allowDiags := isSettingAllowed(ctx, "source.runtime_mappings", client)
+			diags.Append(allowDiags...)
+			if allowDiags.HasError() {
+				return nil, diags
+			}
+			if allowed {
 				var rm any
 				if err := json.Unmarshal([]byte(src.RuntimeMappings.ValueString()), &rm); err != nil {
 					diags.AddError("Error parsing source.runtime_mappings", err.Error())
@@ -82,12 +87,19 @@ func toAPIModel(ctx context.Context, model tfModel, serverVersion *version.Versi
 			Index: dst.Index.ValueString(),
 		}
 
-		if len(dst.Aliases) > 0 && isSettingAllowed(ctx, "destination.aliases", serverVersion) {
-			transform.Destination.Aliases = make([]models.TransformAlias, len(dst.Aliases))
-			for i, a := range dst.Aliases {
-				transform.Destination.Aliases[i] = models.TransformAlias{
-					Alias:          a.Alias.ValueString(),
-					MoveOnCreation: a.MoveOnCreation.ValueBool(),
+		if len(dst.Aliases) > 0 {
+			allowed, allowDiags := isSettingAllowed(ctx, "destination.aliases", client)
+			diags.Append(allowDiags...)
+			if allowDiags.HasError() {
+				return nil, diags
+			}
+			if allowed {
+				transform.Destination.Aliases = make([]models.TransformAlias, len(dst.Aliases))
+				for i, a := range dst.Aliases {
+					transform.Destination.Aliases[i] = models.TransformAlias{
+						Alias:          a.Alias.ValueString(),
+						MoveOnCreation: a.MoveOnCreation.ValueBool(),
+					}
 				}
 			}
 		}
@@ -167,15 +179,23 @@ func toAPIModel(ctx context.Context, model tfModel, serverVersion *version.Versi
 	}{
 		{name: "align_checkpoints", set: isConfigured(model.AlignCheckpoints), write: func() { v := model.AlignCheckpoints.ValueBool(); settings.AlignCheckpoints = &v }},
 		{name: "dates_as_epoch_millis", set: isConfigured(model.DatesAsEpochMillis), write: func() { v := model.DatesAsEpochMillis.ValueBool(); settings.DatesAsEpochMillis = &v }},
-		{name: "deduce_mappings", set: isConfigured(model.DeduceMappings), write: func() { v := model.DeduceMappings.ValueBool(); settings.DeduceMappings = &v }},
+		{name: settingDeduceMappings, set: isConfigured(model.DeduceMappings), write: func() { v := model.DeduceMappings.ValueBool(); settings.DeduceMappings = &v }},
 		{name: "docs_per_second", set: isConfigured(model.DocsPerSecond), write: func() { v := model.DocsPerSecond.ValueFloat64(); settings.DocsPerSecond = &v }},
 		{name: "max_page_search_size", set: isConfigured(model.MaxPageSearchSize), write: func() { v := int(model.MaxPageSearchSize.ValueInt64()); settings.MaxPageSearchSize = &v }},
-		{name: "num_failure_retries", set: isConfigured(model.NumFailureRetries), write: func() { v := int(model.NumFailureRetries.ValueInt64()); settings.NumFailureRetries = &v }},
-		{name: "unattended", set: isConfigured(model.Unattended), write: func() { v := model.Unattended.ValueBool(); settings.Unattended = &v }},
+		{name: settingNumFailureRetries, set: isConfigured(model.NumFailureRetries), write: func() { v := int(model.NumFailureRetries.ValueInt64()); settings.NumFailureRetries = &v }},
+		{name: settingUnattended, set: isConfigured(model.Unattended), write: func() { v := model.Unattended.ValueBool(); settings.Unattended = &v }},
 	}
 
 	for _, s := range applies {
-		if !s.set || !isSettingAllowed(ctx, s.name, serverVersion) {
+		if !s.set {
+			continue
+		}
+		allowed, allowDiags := isSettingAllowed(ctx, s.name, client)
+		diags.Append(allowDiags...)
+		if allowDiags.HasError() {
+			return nil, diags
+		}
+		if !allowed {
 			continue
 		}
 		s.write()

@@ -22,6 +22,39 @@ import (
 	"reflect"
 )
 
+// NormalizeJSONScalar recursively walks a decoded JSON value and converts
+// string-encoded JSON booleans and null back to their native Go types.
+// "true" → bool(true), "false" → bool(false), "null" → nil.
+// All other values are returned unchanged.
+func NormalizeJSONScalar(v any) any {
+	switch val := v.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(val))
+		for k, vv := range val {
+			out[k] = NormalizeJSONScalar(vv)
+		}
+		return out
+	case []any:
+		out := make([]any, len(val))
+		for i, vv := range val {
+			out[i] = NormalizeJSONScalar(vv)
+		}
+		return out
+	case string:
+		switch val {
+		case "true":
+			return true
+		case "false":
+			return false
+		case "null":
+			return nil
+		}
+		return val
+	default:
+		return v
+	}
+}
+
 // JSONBytesEqual reports whether the JSON in two byte slices is semantically equivalent.
 func JSONBytesEqual(a, b []byte) (bool, error) {
 	var j, j2 any

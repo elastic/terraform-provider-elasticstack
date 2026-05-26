@@ -177,6 +177,7 @@ resource "elasticstack_kibana_agentbuilder_agent" "agent" {
 - `instructions` (String) Optional system instructions that define the agent behavior.
 - `labels` (Set of String) List of labels for the agent.
 - `name` (String) The agent name.
+- `skill_ids` (Set of String) Set of skill IDs assigned to the agent. Requires Elastic Stack 9.4.0 or later.
 - `tools` (Attributes List) Tools attached to the agent. When include_dependencies is true, each entry includes full tool data and workflow YAML for workflow-type tools. When false, only id (composite space/tool), space_id, and tool_id are set. (see [below for nested schema](#nestedatt--tools))
 
 <a id="nestedblock--kibana_connection"></a>

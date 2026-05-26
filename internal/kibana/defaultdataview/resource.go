@@ -28,12 +28,22 @@ var (
 )
 
 type Resource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[defaultDataViewModel]
 }
 
 func newResource() *Resource {
 	return &Resource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "default_data_view"),
+		KibanaResource: entitycore.NewKibanaResource[defaultDataViewModel](
+			entitycore.ComponentKibana,
+			"default_data_view",
+			entitycore.KibanaResourceOptions[defaultDataViewModel]{
+				Schema: getSchema,
+				Read:   readDefaultDataView,
+				Delete: deleteDefaultDataView,
+				Create: createDefaultDataView,
+				Update: updateDefaultDataView,
+			},
+		),
 	}
 }
 

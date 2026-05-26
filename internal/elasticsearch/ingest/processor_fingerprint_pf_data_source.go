@@ -98,11 +98,11 @@ func (m *processorFingerprintModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorFingerprintDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource",
+			Description: descIdentifier,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
 		"fields": schema.ListAttribute{
@@ -111,12 +111,12 @@ func NewProcessorFingerprintDataSource() datasource.DataSource {
 			ElementType: types.StringType,
 			Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
 		},
-		"target_field": schema.StringAttribute{
+		attrTargetField: schema.StringAttribute{
 			Description: "Output field for the fingerprint.",
 			Optional:    true,
 			Computed:    true,
 		},
-		"ignore_missing": schema.BoolAttribute{
+		attrIgnoreMissing: schema.BoolAttribute{
 			Description: "If `true`, the processor ignores any missing `fields`. If all fields are missing, the processor silently exits without modifying the document.",
 			Optional:    true,
 			Computed:    true,

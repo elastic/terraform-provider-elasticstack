@@ -47,7 +47,7 @@ func newMachineLearningRuleProcessor() MachineLearningRuleProcessor {
 }
 
 func (m MachineLearningRuleProcessor) HandlesRuleType(t string) bool {
-	return t == "machine_learning"
+	return t == ruleTypeMachineLearning
 }
 
 func (m MachineLearningRuleProcessor) ToCreateProps(
@@ -73,7 +73,7 @@ func (d Data) toMachineLearningRuleCreateProps(ctx context.Context, client clien
 	mlRule := kbapi.SecurityDetectionsAPIMachineLearningRuleCreateProps{
 		Name:             d.Name.ValueString(),
 		Description:      d.Description.ValueString(),
-		Type:             kbapi.SecurityDetectionsAPIMachineLearningRuleCreatePropsType("machine_learning"),
+		Type:             kbapi.SecurityDetectionsAPIMachineLearningRuleCreatePropsType(ruleTypeMachineLearning),
 		AnomalyThreshold: kbapi.SecurityDetectionsAPIAnomalyThreshold(d.AnomalyThreshold.ValueInt64()),
 		RiskScore:        kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:         kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
@@ -156,7 +156,7 @@ func (d Data) toMachineLearningRuleUpdateProps(ctx context.Context, client clien
 		Id:               &uid,
 		Name:             d.Name.ValueString(),
 		Description:      d.Description.ValueString(),
-		Type:             kbapi.SecurityDetectionsAPIMachineLearningRuleUpdatePropsType("machine_learning"),
+		Type:             kbapi.SecurityDetectionsAPIMachineLearningRuleUpdatePropsType(ruleTypeMachineLearning),
 		AnomalyThreshold: kbapi.SecurityDetectionsAPIAnomalyThreshold(d.AnomalyThreshold.ValueInt64()),
 		RiskScore:        kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:         kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),

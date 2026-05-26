@@ -40,11 +40,13 @@ func newResource() *Resource {
 		KibanaResource: entitycore.NewKibanaResource[Model](
 			entitycore.ComponentKibana,
 			"maintenance_window",
-			getSchema,
-			readMaintenanceWindow,
-			deleteMaintenanceWindow,
-			createMaintenanceWindow,
-			updateMaintenanceWindow,
+			entitycore.KibanaResourceOptions[Model]{
+				Schema: getSchema,
+				Read:   readMaintenanceWindow,
+				Delete: deleteMaintenanceWindow,
+				Create: createMaintenanceWindow,
+				Update: updateMaintenanceWindow,
+			},
 		),
 	}
 }

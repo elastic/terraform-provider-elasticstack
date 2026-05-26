@@ -48,11 +48,7 @@ func (r *customIntegrationResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
-	fleetClient, err := apiClient.GetFleetClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
+	fleetClient := apiClient.GetFleetClient()
 
 	if state.PackageName.IsNull() || state.PackageName.IsUnknown() || state.PackageName.ValueString() == "" {
 		resp.Diagnostics.AddError(

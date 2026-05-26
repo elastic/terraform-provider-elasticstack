@@ -85,23 +85,23 @@ func (m *processorGeoIPModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorGeoIPDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource",
+			Description: descIdentifier,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
-		"field": schema.StringAttribute{
+		attrField: schema.StringAttribute{
 			Description: "The field to get the ip address from for the geographical lookup.",
 			Required:    true,
 		},
-		"target_field": schema.StringAttribute{
+		attrTargetField: schema.StringAttribute{
 			Description: "The field that will hold the geographical information looked up from the MaxMind database.",
 			Optional:    true,
 			Computed:    true,
 		},
-		"ignore_missing": schema.BoolAttribute{
+		attrIgnoreMissing: schema.BoolAttribute{
 			Description: "If `true` and `field` does not exist, the processor quietly exits without modifying the document.",
 			Optional:    true,
 			Computed:    true,
@@ -110,7 +110,7 @@ func NewProcessorGeoIPDataSource() datasource.DataSource {
 			Description: processorGeoIPDatabaseFileDescription,
 			Optional:    true,
 		},
-		"properties": schema.SetAttribute{
+		attrProperties: schema.SetAttribute{
 			Description: "Controls what properties are added to the `target_field` based on the geoip lookup.",
 			Optional:    true,
 			ElementType: types.StringType,

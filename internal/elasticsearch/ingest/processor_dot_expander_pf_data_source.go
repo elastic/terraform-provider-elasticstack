@@ -64,14 +64,14 @@ func (m *processorDotExpanderModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorDotExpanderDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Internal identifier of the resource",
+			Description: descIdentifier,
 			Computed:    true,
 		},
-		"json": schema.StringAttribute{
-			Description: "JSON representation of this data source.",
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
 			Computed:    true,
 		},
-		"field": schema.StringAttribute{
+		attrField: schema.StringAttribute{
 			Description: "The field to expand into an object field. If set to *, all top-level fields will be expanded.",
 			Required:    true,
 		},
@@ -79,7 +79,7 @@ func NewProcessorDotExpanderDataSource() datasource.DataSource {
 			Description: "The field that contains the field to expand.",
 			Optional:    true,
 		},
-		"override": schema.BoolAttribute{
+		attrOverride: schema.BoolAttribute{
 			Description: "Controls the behavior when there is already an existing nested object that conflicts with the expanded field.",
 			Optional:    true,
 			Computed:    true,

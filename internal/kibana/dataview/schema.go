@@ -20,13 +20,13 @@ package dataview
 import (
 	"context"
 
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -34,11 +34,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = getSchema()
-}
+// Terraform schema attribute keys reused across the data view schema and
+// fields metadata payload helpers.
+const (
+	attrSpaceID     = "space_id"
+	attrTitle       = "title"
+	attrCustomLabel = "custom_label"
+	attrCount       = "count"
 
-func getSchema() schema.Schema {
+	// apiKeyCustomLabel is the camelCase field metadata key on the Kibana API payload
+	// (distinct from Terraform snake_case attrCustomLabel).
+	apiKeyCustomLabel = "customLabel"
+)
+
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages Kibana [data views](https://www.elastic.co/guide/en/kibana/current/data-views-api.html)",
 		Attributes: map[string]schema.Attribute{
@@ -49,7 +58,7 @@ func getSchema() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"space_id": schema.StringAttribute{
+			attrSpaceID: schema.StringAttribute{
 				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
 				Optional:    true,
 				Computed:    true,
@@ -67,7 +76,7 @@ func getSchema() schema.Schema {
 			"data_view": schema.SingleNestedAttribute{
 				Required: true,
 				Attributes: map[string]schema.Attribute{
-					"title": schema.StringAttribute{
+					attrTitle: schema.StringAttribute{
 						Description: "Comma-separated list of data streams, indices, and aliases that you want to search. Supports wildcards (*).",
 						Required:    true,
 						Validators: []validator.String{
@@ -103,17 +112,21 @@ func getSchema() schema.Schema {
 						Description: "List of field names you want to filter out in Discover.",
 						ElementType: types.StringType,
 						Optional:    true,
+						Computed:    true,
+						PlanModifiers: []planmodifier.List{
+							listplanmodifier.UseStateForUnknown(),
+						},
 					},
 					"field_attrs": schema.MapNestedAttribute{
 						Description: "Map of field attributes by field name.",
 						CustomType:  NewFieldAttrsType(getFieldAttrElemType()),
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
-								"custom_label": schema.StringAttribute{
+								attrCustomLabel: schema.StringAttribute{
 									Description: "Custom label for the field.",
 									Optional:    true,
 								},
-								"count": schema.Int64Attribute{
+								attrCount: schema.Int64Attribute{
 									Description: "Popularity count for the field.",
 									Optional:    true,
 								},
@@ -124,6 +137,10 @@ func getSchema() schema.Schema {
 					"runtime_field_map": schema.MapNestedAttribute{
 						Description: "Map of runtime field definitions by field name.",
 						Optional:    true,
+						Computed:    true,
+						PlanModifiers: []planmodifier.Map{
+							mapplanmodifier.UseStateForUnknown(),
+						},
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
 								"type": schema.StringAttribute{
@@ -140,6 +157,10 @@ func getSchema() schema.Schema {
 					"field_formats": schema.MapNestedAttribute{
 						Description: "Map of field formats by field name.",
 						Optional:    true,
+						Computed:    true,
+						PlanModifiers: []planmodifier.Map{
+							mapplanmodifier.UseStateForUnknown(),
+						},
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
 								"id": schema.StringAttribute{
@@ -276,14 +297,11 @@ func getSchema() schema.Schema {
 				},
 			},
 		},
-
-		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
-		}}
+	}
 }
 
-func getDataViewAttrTypes() map[string]attr.Type {
-	return getSchema().Attributes["data_view"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getDataViewAttrTypes(ctx context.Context) map[string]attr.Type {
+	return getSchema(ctx).Attributes["data_view"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 // getFieldAttrElemType is intentionally hardcoded rather than derived from the schema (as
@@ -295,31 +313,31 @@ func getFieldAttrElemType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
 			"custom_label": types.StringType,
-			"count":        types.Int64Type,
+			attrCount:      types.Int64Type,
 		},
 	}
 }
 
-func getRuntimeFieldMapElemType() attr.Type {
-	return getDataViewAttrTypes()["runtime_field_map"].(attr.TypeWithElementType).ElementType()
+func getRuntimeFieldMapElemType(ctx context.Context) attr.Type {
+	return getDataViewAttrTypes(ctx)["runtime_field_map"].(attr.TypeWithElementType).ElementType()
 }
 
-func getFieldFormatElemType() attr.Type {
-	return getDataViewAttrTypes()["field_formats"].(attr.TypeWithElementType).ElementType()
+func getFieldFormatElemType(ctx context.Context) attr.Type {
+	return getDataViewAttrTypes(ctx)["field_formats"].(attr.TypeWithElementType).ElementType()
 }
 
-func getFieldFormatAttrTypes() map[string]attr.Type {
-	return getFieldFormatElemType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getFieldFormatAttrTypes(ctx context.Context) map[string]attr.Type {
+	return getFieldFormatElemType(ctx).(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getFieldFormatParamsAttrTypes() map[string]attr.Type {
-	return getFieldFormatAttrTypes()["params"].(attr.TypeWithAttributeTypes).AttributeTypes()
+func getFieldFormatParamsAttrTypes(ctx context.Context) map[string]attr.Type {
+	return getFieldFormatAttrTypes(ctx)["params"].(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getFieldFormatParamsColorsElemType() attr.Type {
-	return getFieldFormatParamsAttrTypes()["colors"].(attr.TypeWithElementType).ElementType()
+func getFieldFormatParamsColorsElemType(ctx context.Context) attr.Type {
+	return getFieldFormatParamsAttrTypes(ctx)["colors"].(attr.TypeWithElementType).ElementType()
 }
 
-func getFieldFormatParamsLookupEntryElemType() attr.Type {
-	return getFieldFormatParamsAttrTypes()["lookup_entries"].(attr.TypeWithElementType).ElementType()
+func getFieldFormatParamsLookupEntryElemType(ctx context.Context) attr.Type {
+	return getFieldFormatParamsAttrTypes(ctx)["lookup_entries"].(attr.TypeWithElementType).ElementType()
 }

@@ -38,6 +38,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/ilm"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indexmappings"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/template"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateilmattachment"
@@ -45,12 +46,16 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ingest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/logstash"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/anomalydetectionjob"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar_event"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar_job"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	datafeedstate "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed_state"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/filter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/jobstate"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
-	apikey "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
+	apikeyephemeral "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey/ephemeral"
+	apikeyresource "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey/resource"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/rolemapping"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/systemuser"
@@ -70,6 +75,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/proxy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/serverhost"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderagent"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderskill"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuildertool"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderworkflow"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingrule"
@@ -85,6 +91,7 @@ import (
 	securityenablerule "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_enable_rule"
 	securityexceptionitem "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_exception_item"
 	securitylistdatastreams "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list_data_streams"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_role"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/securityexceptionlist"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/securitylist"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/securitylistitem"
@@ -96,12 +103,17 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/privatelocation"
 	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
 	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 const (
+	esKeyName    = "elasticsearch"
+	kbKeyName    = "kibana"
+	fleetKeyName = "fleet"
+
 	IncludeExperimentalEnvVar = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
 	AccTestVersion            = "acctest"
 	envVarEnabled             = "true"
@@ -109,7 +121,8 @@ const (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ fwprovider.Provider = &Provider{}
+	_ fwprovider.Provider                       = &Provider{}
+	_ fwprovider.ProviderWithEphemeralResources = &Provider{}
 )
 
 type Provider struct {
@@ -154,6 +167,7 @@ func (p *Provider) Configure(ctx context.Context, req fwprovider.ConfigureReques
 
 	res.DataSourceData = factory
 	res.ResourceData = factory
+	res.EphemeralResourceData = factory
 }
 
 func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSource {
@@ -176,6 +190,12 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 	return resources
 }
 
+func (p *Provider) EphemeralResources(_ context.Context) []func() ephemeral.EphemeralResource {
+	return []func() ephemeral.EphemeralResource{
+		apikeyephemeral.NewResource,
+	}
+}
+
 func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		agentconfiguration.NewAgentConfigurationResource,
@@ -190,7 +210,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		index.NewResource,
 		componenttemplate.NewResource,
 		monitor.NewResource,
-		apikey.NewResource,
+		apikeyresource.NewResource,
 		datastream.NewDataStreamResource,
 		datastreamlifecycle.NewResource,
 		ilm.NewResource,
@@ -198,6 +218,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		connectors.NewResource,
 		agentpolicy.NewResource,
 		agentbuilderagent.NewResource,
+		agentbuilderskill.NewResource,
 		agentbuildertool.NewResource,
 		agentbuilderworkflow.NewResource,
 		integration.NewResource,
@@ -221,9 +242,13 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		ingest.NewIngestPipelineResource,
 		rolemapping.NewRoleMappingResource,
 		alias.NewAliasResource,
+		indexmappings.NewIndexMappingsResource,
 		templateilmattachment.NewResource,
 		datafeed.NewDatafeedResource,
 		anomalydetectionjob.NewAnomalyDetectionJobResource,
+		calendar.NewCalendarResource,
+		calendar_event.NewCalendarEventResource,
+		calendar_job.NewCalendarJobResource,
 		filter.NewFilterResource,
 		security_detection_rule.NewSecurityDetectionRuleResource,
 		jobstate.NewMLJobStateResource,
@@ -236,6 +261,8 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		securitylistdatastreams.NewResource,
 		securityexceptionlist.NewResource,
 		securityexceptionitem.NewResource,
+		security_role.NewResource,
+		spaces.NewResource,
 		slm.NewSlmResource,
 		snapshot_repository.NewSnapshotRepositoryResource,
 		transform.NewTransformResource,
@@ -255,7 +282,10 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		indices.NewDataSource,
 		template.NewDataSource,
 		spaces.NewDataSource,
+		security_role.NewDataSource,
+		connectors.NewDataSource,
 		agentbuilderagent.NewDataSource,
+		agentbuilderskill.NewDataSource,
 		agentbuildertool.NewDataSource,
 		agentbuilderworkflow.NewDataSource,
 		exportsavedobjects.NewDataSource,

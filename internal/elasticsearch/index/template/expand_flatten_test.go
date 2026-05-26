@@ -22,10 +22,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -68,16 +69,13 @@ func TestExpandTemplate_minimal(t *testing.T) {
 func TestFlattenIndexTemplate_minimalRoundTrip(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	pr := 42
-	ver := 7
-	pr64 := int64(pr)
-	ver64 := int64(ver)
-	metaVal, _ := json.Marshal("v")
-	tpl := &estypes.IndexTemplate{
+	pr64 := int64(42)
+	ver64 := int64(7)
+	tpl := &models.IndexTemplate{
 		ComposedOf:                      []string{"a"},
 		IgnoreMissingComponentTemplates: []string{"missing"},
 		IndexPatterns:                   []string{"ix-*"},
-		Meta_:                           estypes.Metadata{"k": metaVal},
+		Meta:                            map[string]any{"k": "v"},
 		Priority:                        &pr64,
 		Version:                         &ver64,
 	}
@@ -113,6 +111,71 @@ func TestFlattenIndexTemplate_minimalRoundTrip(t *testing.T) {
 	}
 	if api.Version == nil || *api.Version != 7 {
 		t.Fatalf("version %#v", api.Version)
+	}
+}
+
+// TestFlattenIndexTemplate_preservesUnmodeledSettings is a regression test for
+// https://github.com/elastic/terraform-provider-elasticstack/issues/3124. The
+// raw decoder must preserve every settings sub-key the API returns, even when
+// the typed go-elasticsearch SlowlogSettings struct lacks the corresponding
+// field (e.g. include.user).
+func TestFlattenIndexTemplate_preservesUnmodeledSettings(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	tpl := &models.IndexTemplate{
+		IndexPatterns: []string{"ix-*"},
+		Template: &models.Template{
+			Settings: map[string]any{
+				"index": map[string]any{
+					"number_of_shards":   "1",
+					"number_of_replicas": "0",
+					"search": map[string]any{
+						"slowlog": map[string]any{
+							"include": map[string]any{
+								"user": "true",
+							},
+						},
+					},
+					"lifecycle": map[string]any{
+						"parse_origination_date": "true",
+					},
+				},
+			},
+		},
+	}
+	var m Model
+	diags := m.fromAPIModel(ctx, "tname", tpl)
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	if m.Template.IsNull() || m.Template.IsUnknown() {
+		t.Fatalf("expected template object, got %#v", m.Template)
+	}
+	settingsAttr := m.Template.Attributes()["settings"]
+	settings, ok := settingsAttr.(customtypes.IndexSettingsValue)
+	if !ok {
+		t.Fatalf("expected IndexSettingsValue, got %T", settingsAttr)
+	}
+	got := settings.ValueString()
+
+	// Round-trip the JSON to a generic map so key order does not matter.
+	var gotMap map[string]any
+	if err := json.Unmarshal([]byte(got), &gotMap); err != nil {
+		t.Fatalf("settings is not valid JSON: %v (raw=%q)", err, got)
+	}
+	idx, _ := gotMap["index"].(map[string]any)
+	search, _ := idx["search"].(map[string]any)
+	slowlog, _ := search["slowlog"].(map[string]any)
+	include, ok := slowlog["include"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected index.search.slowlog.include to survive flatten, got settings=%q", got)
+	}
+	if include["user"] != "true" {
+		t.Fatalf("expected include.user to survive flatten as string \"true\", got %#v in settings=%q", include["user"], got)
+	}
+	lc, _ := idx["lifecycle"].(map[string]any)
+	if lc == nil || lc["parse_origination_date"] != "true" {
+		t.Fatalf("expected lifecycle.parse_origination_date to survive flatten, got %#v in settings=%q", lc, got)
 	}
 }
 
@@ -155,42 +218,41 @@ func TestExpandTemplate_dataStreamAllowCustomRoutingOnlyWhenTrue(t *testing.T) {
 	}
 }
 
-func TestValidateIgnoreMissingComponentTemplatesVersion(t *testing.T) {
+func TestModel_GetVersionRequirements_ignoreMissing(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	old := version.Must(version.NewVersion("8.0.0"))
-	okVer := version.Must(version.NewVersion("8.8.0"))
-
 	ignoreList, diags := types.ListValueFrom(ctx, types.StringType, []attr.Value{types.StringValue("ct1")})
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
 	plan := Model{IgnoreMissingComponentTemplates: ignoreList}
-	if diags := validateIgnoreMissingComponentTemplatesVersion(plan, old); !diags.HasError() {
-		t.Fatal("expected error on old cluster")
-	}
-	if diags := validateIgnoreMissingComponentTemplatesVersion(plan, okVer); diags.HasError() {
+	reqs, diags := plan.GetVersionRequirements()
+	if diags.HasError() {
 		t.Fatal(diags)
+	}
+	if len(reqs) != 1 {
+		t.Fatalf("expected 1 requirement, got %d", len(reqs))
 	}
 	emptyPlan := Model{IgnoreMissingComponentTemplates: types.ListNull(types.StringType)}
-	if diags := validateIgnoreMissingComponentTemplatesVersion(emptyPlan, old); diags.HasError() {
+	reqs, diags = emptyPlan.GetVersionRequirements()
+	if diags.HasError() {
 		t.Fatal(diags)
+	}
+	if len(reqs) != 0 {
+		t.Fatalf("expected 0 requirements, got %d", len(reqs))
 	}
 }
 
-func TestValidateDataStreamOptionsVersion(t *testing.T) {
+func TestModel_GetVersionRequirements_dataStreamOptions(t *testing.T) {
 	t.Parallel()
-	old := version.Must(version.NewVersion("8.17.0"))
-	okVer := version.Must(version.NewVersion("9.2.0"))
-
-	fsObj, diags := types.ObjectValue(FailureStoreAttrTypes(), map[string]attr.Value{
+	fsObj, diags := types.ObjectValue(datastreamoptions.FailureStoreAttrTypes(), map[string]attr.Value{
 		"enabled":   types.BoolValue(true),
-		"lifecycle": types.ObjectNull(FailureStoreLifecycleAttrTypes()),
+		"lifecycle": types.ObjectNull(datastreamoptions.FailureStoreLifecycleAttrTypes()),
 	})
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
-	dsoObj, diags := types.ObjectValue(DataStreamOptionsAttrTypes(), map[string]attr.Value{
+	dsoObj, diags := types.ObjectValue(datastreamoptions.AttrTypes(), map[string]attr.Value{
 		"failure_store": fsObj,
 	})
 	if diags.HasError() {
@@ -206,40 +268,42 @@ func TestValidateDataStreamOptionsVersion(t *testing.T) {
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
-	plan := Model{Template: tplObj}
-	if diags := validateDataStreamOptionsVersion(plan, old); !diags.HasError() {
-		t.Fatal("expected error on old cluster")
-	}
-	if diags := validateDataStreamOptionsVersion(plan, okVer); diags.HasError() {
+	model := Model{Template: tplObj}
+	reqs, diags := model.GetVersionRequirements()
+	if diags.HasError() {
 		t.Fatal(diags)
+	}
+	if len(reqs) != 1 {
+		t.Fatalf("expected 1 requirement, got %d", len(reqs))
 	}
 	noDsoTpl, diags := types.ObjectValue(TemplateAttrTypes(), map[string]attr.Value{
 		"alias":               types.SetNull(NewAliasObjectType()),
 		"mappings":            esindex.NewMappingsNull(),
 		"settings":            customtypes.NewIndexSettingsNull(),
 		"lifecycle":           types.ObjectNull(LifecycleAttrTypes()),
-		"data_stream_options": types.ObjectNull(DataStreamOptionsAttrTypes()),
+		"data_stream_options": types.ObjectNull(datastreamoptions.AttrTypes()),
 	})
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
-	planNo := Model{Template: noDsoTpl}
-	if diags := validateDataStreamOptionsVersion(planNo, old); diags.HasError() {
+	modelNoDso := Model{Template: noDsoTpl}
+	reqs, diags = modelNoDso.GetVersionRequirements()
+	if diags.HasError() {
 		t.Fatal(diags)
+	}
+	if len(reqs) != 0 {
+		t.Fatalf("expected 0 requirements, got %d", len(reqs))
 	}
 }
 
 func TestFlattenAliasElement_emptyFilterMapIsNull(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	ir := "ir"
-	r := "r"
-	sr := "sr"
-	av, diags := flattenAliasElement("a", estypes.Alias{
-		Filter:        nil,
-		IndexRouting:  &ir,
-		Routing:       &r,
-		SearchRouting: &sr,
+	av, diags := flattenAliasElement("a", models.IndexAlias{
+		Filter:        map[string]any{},
+		IndexRouting:  "ir",
+		Routing:       "r",
+		SearchRouting: "sr",
 	})
 	if diags.HasError() {
 		t.Fatal(diags)
@@ -248,7 +312,7 @@ func TestFlattenAliasElement_emptyFilterMapIsNull(t *testing.T) {
 	if !ok {
 		t.Fatalf("got %T", av)
 	}
-	var am AliasElementModel
+	var am aliasutil.AliasModel
 	diags = alias.As(ctx, &am, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		t.Fatal(diags)

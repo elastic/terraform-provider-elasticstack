@@ -65,7 +65,7 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 		// Check if ID is already in composite format
 		if !strings.Contains(id, "/") {
 			// Not composite - construct from space_id and rule_id
-			spaceID := "default"
+			spaceID := defaultSpaceID
 			if sid, ok := stateMap["space_id"].(string); ok && sid != "" {
 				spaceID = sid
 			}

@@ -23,65 +23,32 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *securityListItemResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state Model
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func readSecurityListItem(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, prior Model) (Model, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	client, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
-	// Get Kibana client
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
-		return
-	}
+	prior.SpaceID = types.StringValue(spaceID)
 
-	// Parse composite ID to get space_id and resource id
-	compID, compIDDiags := clients.CompositeIDFromStrFw(state.ID.ValueString())
-
-	if !compIDDiags.HasError() {
-		state.SpaceID = types.StringValue(compID.ClusterID)
-	}
-
-	resp.Diagnostics.Append(compIDDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Read by resource ID from composite ID
-	id := compID.ResourceID
+	id := resourceID
 	params := &kbapi.ReadListItemParams{
 		Id: &id,
 	}
 
-	listItem, diags := kibanaoapi.GetListItem(ctx, oapiClient, compID.ClusterID, params)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	listItem, d := kibanaoapi.GetListItem(ctx, oapiClient, spaceID, params)
+	diags.Append(d...)
+	if diags.HasError() {
+		return prior, false, diags
 	}
 
 	if listItem == nil {
-		resp.State.RemoveResource(ctx)
-		return
+		return prior, false, diags
 	}
 
-	// Update state with response
-	diags = state.fromAPIModel(ctx, listItem)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	diags.Append(prior.fromAPIModel(ctx, listItem)...)
+	return prior, true, diags
 }

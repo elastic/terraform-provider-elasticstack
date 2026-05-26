@@ -84,7 +84,7 @@ func (r *ExceptionItemResource) Schema(_ context.Context, _ resource.SchemaReque
 				MarkdownDescription: "Describes the exception item.",
 				Required:            true,
 			},
-			"type": schema.StringAttribute{
+			attrType: schema.StringAttribute{
 				MarkdownDescription: "The type of exception item. Must be `simple`.",
 				Required:            true,
 				Validators: []validator.String{
@@ -121,7 +121,7 @@ func (r *ExceptionItemResource) Schema(_ context.Context, _ resource.SchemaReque
 				Optional:            true,
 				CustomType:          jsontypes.NormalizedType{},
 			},
-			"entries": schema.ListNestedAttribute{
+			attrEntries: schema.ListNestedAttribute{
 				MarkdownDescription: "The exception item entries. This defines the conditions under which the exception applies.",
 				Required:            true,
 				Validators: []validator.List{
@@ -129,40 +129,40 @@ func (r *ExceptionItemResource) Schema(_ context.Context, _ resource.SchemaReque
 				},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"type": schema.StringAttribute{
+						attrType: schema.StringAttribute{
 							MarkdownDescription: "The type of entry. Valid values: `match`, `match_any`, `list`, `exists`, `nested`, `wildcard`.",
 							Required:            true,
 							Validators: []validator.String{
-								stringvalidator.OneOf("match", "match_any", "list", "exists", "nested", "wildcard"),
+								stringvalidator.OneOf(entryTypeMatch, entryTypeMatchAny, entryTypeList, entryTypeExists, entryTypeNested, entryTypeWildcard),
 							},
 						},
-						"field": schema.StringAttribute{
+						attrField: schema.StringAttribute{
 							MarkdownDescription: "The field name. Required for all entry types.",
 							Required:            true,
 						},
-						"operator": schema.StringAttribute{
+						attrOperator: schema.StringAttribute{
 							MarkdownDescription: "The operator to use. Valid values: `included`, `excluded`. Note: The operator field is not supported for nested entry types and will be ignored if specified.",
 							Optional:            true,
 							Validators: []validator.String{
 								stringvalidator.OneOf("included", "excluded"),
 							},
 						},
-						"value": schema.StringAttribute{
+						attrValue: schema.StringAttribute{
 							MarkdownDescription: "The value to match (for `match` and `wildcard` types).",
 							Optional:            true,
 							Validators: []validator.String{
 								validators.RequiredIfDependentPathOneOf(
-									path.Root("type"),
-									[]string{"match", "wildcard"},
+									path.Root(attrType),
+									[]string{entryTypeMatch, entryTypeWildcard},
 								),
 							},
 						},
-						"values": schema.ListAttribute{
+						attrValues: schema.ListAttribute{
 							ElementType:         types.StringType,
 							MarkdownDescription: "Array of values to match (for `match_any` type).",
 							Optional:            true,
 						},
-						"list": schema.SingleNestedAttribute{
+						entryTypeList: schema.SingleNestedAttribute{
 							MarkdownDescription: "Value list reference (for `list` type).",
 							Optional:            true,
 							Attributes: map[string]schema.Attribute{
@@ -170,7 +170,7 @@ func (r *ExceptionItemResource) Schema(_ context.Context, _ resource.SchemaReque
 									MarkdownDescription: "The value list ID.",
 									Required:            true,
 								},
-								"type": schema.StringAttribute{
+								attrType: schema.StringAttribute{
 									MarkdownDescription: "The value list type (e.g., `keyword`, `ip`, `ip_range`).",
 									Required:            true,
 									Validators: []validator.String{
@@ -179,47 +179,47 @@ func (r *ExceptionItemResource) Schema(_ context.Context, _ resource.SchemaReque
 								},
 							},
 						},
-						"entries": schema.ListNestedAttribute{
+						attrEntries: schema.ListNestedAttribute{
 							MarkdownDescription: "Nested entries (for `nested` type). Only `match`, `match_any`, and `exists` entry types are allowed as nested entries.",
 							Optional:            true,
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
-									"type": schema.StringAttribute{
+									attrType: schema.StringAttribute{
 										MarkdownDescription: "The type of nested entry. Valid values: `match`, `match_any`, `exists`.",
 										Required:            true,
 										Validators: []validator.String{
-											stringvalidator.OneOf("match", "match_any", "exists"),
+											stringvalidator.OneOf(entryTypeMatch, entryTypeMatchAny, entryTypeExists),
 										},
 									},
-									"field": schema.StringAttribute{
+									attrField: schema.StringAttribute{
 										MarkdownDescription: "The field name.",
 										Required:            true,
 									},
-									"operator": schema.StringAttribute{
+									attrOperator: schema.StringAttribute{
 										MarkdownDescription: "The operator to use. Valid values: `included`, `excluded`.",
 										Required:            true,
 										Validators: []validator.String{
 											stringvalidator.OneOf("included", "excluded"),
 										},
 									},
-									"value": schema.StringAttribute{
+									attrValue: schema.StringAttribute{
 										MarkdownDescription: "The value to match (for `match` type).",
 										Optional:            true,
 										Validators: []validator.String{
 											validators.RequiredIfDependentPathOneOf(
-												path.Root("type"),
-												[]string{"match"},
+												path.Root(attrType),
+												[]string{entryTypeMatch},
 											),
 										},
 									},
-									"values": schema.ListAttribute{
+									attrValues: schema.ListAttribute{
 										ElementType:         types.StringType,
 										MarkdownDescription: "Array of values to match (for `match_any` type).",
 										Optional:            true,
 										Validators: []validator.List{
 											validators.RequiredIfDependentPathOneOf(
-												path.Root("type"),
-												[]string{"match_any"},
+												path.Root(attrType),
+												[]string{entryTypeMatchAny},
 											),
 										},
 									},

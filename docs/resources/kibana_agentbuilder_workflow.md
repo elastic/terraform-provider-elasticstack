@@ -54,7 +54,7 @@ EOT
 
 - `description` (String) The workflow description (extracted from YAML configuration).
 - `enabled` (Boolean) Whether the workflow is enabled (extracted from YAML configuration).
-- `id` (String) The composite ID of the workflow: `<workflow_id>/<space_id>`.
+- `id` (String) The composite ID of the workflow: `<space_id>/<workflow_id>`.
 - `name` (String) The workflow name (extracted from YAML configuration).
 - `valid` (Boolean) Whether the workflow configuration is valid.
 

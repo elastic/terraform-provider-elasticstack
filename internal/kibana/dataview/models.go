@@ -25,6 +25,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -98,8 +99,8 @@ func reconcileIncomingFieldAttrsWithTerraformPlan(ctx context.Context, planned F
 		}
 
 		obj, d := types.ObjectValue(elemObjType.AttrTypes, map[string]attr.Value{
-			"custom_label": m.CustomLabel,
-			"count":        m.Count,
+			attrCustomLabel: m.CustomLabel,
+			attrCount:       m.Count,
 		})
 		diags.Append(d...)
 		if diags.HasError() {
@@ -236,8 +237,8 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 	}
 
 	model.ID = types.StringValue(resourceID.String())
-	model.DataView = typeutils.StructToObjectType(ctx, data.DataView, getDataViewAttrTypes(), path.Root("data_view"), &diags,
-		func(item kbapi.DataViewsDataViewResponseObjectInner, meta typeutils.ObjectMeta) innerModel {
+	model.DataView = typeutils.StructToObjectType(ctx, data.DataView, getDataViewAttrTypes(ctx), path.Root("data_view"), &diags,
+		func(item dataViewsDataViewResponseObjectInner, meta typeutils.ObjectMeta) innerModel {
 			dvInner := typeutils.ObjectTypeAs[innerModel](ctx, model.DataView, meta.Path, &diags)
 			if dvInner == nil {
 				dvInner = &innerModel{}
@@ -250,7 +251,7 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 				TimeFieldName: types.StringPointerValue(item.TimeFieldName),
 				SourceFilters: semanticEqualEmptySlice(dvInner.SourceFilters,
 					typeutils.SliceToListType(ctx, typeutils.Deref(item.SourceFilters), types.StringType, meta.Path.AtName("source_filters"), &diags,
-						func(item kbapi.DataViewsSourcefilterItem, _ typeutils.ListMeta) string {
+						func(item dataViewsSourcefilterItem, _ typeutils.ListMeta) string {
 							return item.Value
 						})),
 				FieldAttributes: func() FieldAttrsValue {
@@ -267,7 +268,7 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 					}
 				}(),
 				RuntimeFieldMap: semanticEqualEmptyMap(dvInner.RuntimeFieldMap,
-					typeutils.MapToMapType(ctx, typeutils.Deref(item.RuntimeFieldMap), getRuntimeFieldMapElemType(), meta.Path.AtName("runtime_field_map"), &diags,
+					typeutils.MapToMapType(ctx, typeutils.Deref(item.RuntimeFieldMap), getRuntimeFieldMapElemType(ctx), meta.Path.AtName("runtime_field_map"), &diags,
 						func(item kbapi.DataViewsRuntimefieldmap, _ typeutils.MapMeta) runtimeFieldModel {
 							return runtimeFieldModel{
 								Type:         types.StringValue(item.Type),
@@ -275,11 +276,11 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 							}
 						})),
 				FieldFormats: semanticEqualEmptyMap(dvInner.FieldFormats,
-					typeutils.MapToMapType(ctx, typeutils.Deref(item.FieldFormats), getFieldFormatElemType(), meta.Path.AtName("field_formats"), &diags,
+					typeutils.MapToMapType(ctx, typeutils.Deref(item.FieldFormats), getFieldFormatElemType(ctx), meta.Path.AtName("field_formats"), &diags,
 						func(item kbapi.DataViewsFieldformat, meta typeutils.MapMeta) fieldFormatModel {
 							return fieldFormatModel{
 								ID: types.StringPointerValue(item.Id),
-								Params: typeutils.StructToObjectType(ctx, item.Params, getFieldFormatParamsAttrTypes(), meta.Path.AtName("params"), &diags,
+								Params: typeutils.StructToObjectType(ctx, item.Params, getFieldFormatParamsAttrTypes(ctx), meta.Path.AtName("params"), &diags,
 									func(item kbapi.DataViewsFieldformatParams, meta typeutils.ObjectMeta) fieldFormatParamsModel {
 										return fieldFormatParamsModel{
 											Pattern:                types.StringPointerValue(item.Pattern),
@@ -292,7 +293,7 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 											UseShortSuffix:         types.BoolPointerValue(item.UseShortSuffix),
 											Timezone:               types.StringPointerValue(item.Timezone),
 											FieldType:              types.StringPointerValue(item.FieldType),
-											Colors: typeutils.SliceToListType(ctx, typeutils.Deref(item.Colors), getFieldFormatParamsColorsElemType(), meta.Path.AtName("colors"), meta.Diags,
+											Colors: typeutils.SliceToListType(ctx, typeutils.Deref(item.Colors), getFieldFormatParamsColorsElemType(ctx), meta.Path.AtName("colors"), meta.Diags,
 												func(item kbapi.DataViewsFieldformatParamsColor, _ typeutils.ListMeta) colorConfigModel {
 													return colorConfigModel{
 														Range:      types.StringPointerValue(item.Range),
@@ -303,7 +304,7 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 												}),
 											FieldLength: types.Int64PointerValue(typeutils.Itol(item.FieldLength)),
 											Transform:   types.StringPointerValue(item.Transform),
-											LookupEntries: typeutils.SliceToListType(ctx, typeutils.Deref(item.LookupEntries), getFieldFormatParamsLookupEntryElemType(), meta.Path.AtName("lookup_entries"), meta.Diags,
+											LookupEntries: typeutils.SliceToListType(ctx, typeutils.Deref(item.LookupEntries), getFieldFormatParamsLookupEntryElemType(ctx), meta.Path.AtName("lookup_entries"), meta.Diags,
 												func(item kbapi.DataViewsFieldformatParamsLookup, _ typeutils.ListMeta) lookupEntryModel {
 													return lookupEntryModel{
 														Key:   types.StringPointerValue(item.Key),
@@ -392,7 +393,7 @@ func (model dataViewModel) toAPIUpdateModel(ctx context.Context) (kbapi.DataView
 				}
 				sourceFilters := typeutils.ListTypeToSlice(ctx, item.SourceFilters, meta.Path.AtName("source_filters"), &diags, convertSourceFilter)
 				if sourceFilters == nil {
-					sourceFilters = []kbapi.DataViewsSourcefilterItem{}
+					sourceFilters = []dataViewsSourcefilterItem{}
 				}
 				return kbapi.DataViewsUpdateDataViewRequestObjectInner{
 					AllowNoIndex:    item.AllowNoIndex.ValueBoolPointer(),
@@ -465,14 +466,14 @@ func convertFieldFormat(ctx context.Context, item fieldFormatModel, meta typeuti
 func convertRuntimeFieldMap(item runtimeFieldModel, _ typeutils.MapMeta) kbapi.DataViewsRuntimefieldmap {
 	return kbapi.DataViewsRuntimefieldmap{
 		Type: item.Type.ValueString(),
-		Script: kbapi.DataViewsRuntimefieldmapScript{
+		Script: dataViewsRuntimefieldmapScript{
 			Source: item.ScriptSource.ValueStringPointer(),
 		},
 	}
 }
 
-func convertSourceFilter(item string, _ typeutils.ListMeta) kbapi.DataViewsSourcefilterItem {
-	return kbapi.DataViewsSourcefilterItem{Value: item}
+func convertSourceFilter(item string, _ typeutils.ListMeta) dataViewsSourcefilterItem {
+	return dataViewsSourcefilterItem{Value: item}
 }
 
 func (model dataViewModel) getViewIDAndSpaceID() (viewID string, spaceID string) {
@@ -489,6 +490,33 @@ func (model dataViewModel) getViewIDAndSpaceID() (viewID string, spaceID string)
 	return
 }
 
+// Type aliases for formerly-named structs that were inlined in the generated Kibana client.
+//
+//nolint:revive // field names must match generated client exactly
+type dataViewsDataViewResponseObjectInner = struct {
+	AllowNoIndex    *kbapi.DataViewsAllownoindex               `json:"allowNoIndex,omitempty"`
+	FieldAttrs      *map[string]kbapi.DataViewsFieldattrs      `json:"fieldAttrs,omitempty"`
+	FieldFormats    *kbapi.DataViewsFieldformats               `json:"fieldFormats,omitempty"`
+	Fields          *map[string]any                            `json:"fields,omitempty"`
+	Id              *string                                    `json:"id,omitempty"`
+	Name            *string                                    `json:"name,omitempty"`
+	Namespaces      *kbapi.DataViewsNamespaces                 `json:"namespaces,omitempty"`
+	RuntimeFieldMap *map[string]kbapi.DataViewsRuntimefieldmap `json:"runtimeFieldMap,omitempty"`
+	SourceFilters   *kbapi.DataViewsSourcefilters              `json:"sourceFilters,omitempty"`
+	TimeFieldName   *kbapi.DataViewsTimefieldname              `json:"timeFieldName,omitempty"`
+	Title           *kbapi.DataViewsTitle                      `json:"title,omitempty"`
+	TypeMeta        *kbapi.DataViewsTypemetaResponse           `json:"typeMeta,omitempty"`
+	Version         *string                                    `json:"version,omitempty"`
+}
+
+type dataViewsSourcefilterItem = struct {
+	Value string `json:"value"`
+}
+
+type dataViewsRuntimefieldmapScript = struct {
+	Source *string `json:"source,omitempty"`
+}
+
 type dataViewModel struct {
 	ID               types.String `tfsdk:"id"`
 	KibanaConnection types.List   `tfsdk:"kibana_connection"`
@@ -496,6 +524,16 @@ type dataViewModel struct {
 	Override         types.Bool   `tfsdk:"override"`
 	DataView         types.Object `tfsdk:"data_view"` // > innerModel
 }
+
+func (model dataViewModel) GetID() types.String { return model.ID }
+func (model dataViewModel) GetResourceID() types.String {
+	viewID, _ := model.getViewIDAndSpaceID()
+	return types.StringValue(viewID)
+}
+func (model dataViewModel) GetSpaceID() types.String        { return model.SpaceID }
+func (model dataViewModel) GetKibanaConnection() types.List { return model.KibanaConnection }
+
+var _ entitycore.KibanaResourceModel = dataViewModel{}
 
 type innerModel struct {
 	Title           types.String    `tfsdk:"title"`

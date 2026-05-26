@@ -252,10 +252,7 @@ func checkResourceILMDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		typedClient, err := client.GetESClient()
-		if err != nil {
-			return err
-		}
+		typedClient := client.GetESClient()
 		_, err = typedClient.Ilm.GetLifecycle().Policy(compID.ResourceID).Do(context.Background())
 		if err != nil {
 			if esclient.IsNotFoundElasticsearchError(err) {
@@ -616,7 +613,7 @@ func TestAccResourceILMWarmDownsampleAndShrink(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "name", policyName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "warm.allocate.number_of_replicas", "1"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "warm.allocate.total_shards_per_node", "-1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "warm.allocate.total_shards_per_node", "5"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "warm.allocate.exclude", `{"box_type":"hot"}`),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "warm.allocate.include"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "warm.allocate.require"),
@@ -667,12 +664,39 @@ func TestAccResourceILMColdAllocateAndDownsample(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "name", policyName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "cold.allocate.number_of_replicas", "0"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "cold.allocate.total_shards_per_node", "-1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "cold.allocate.total_shards_per_node", "4"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "cold.allocate.include"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "cold.allocate.exclude"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "cold.allocate.require"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "cold.downsample.fixed_interval", "2d"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "modified_date"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceILMAllocateRoutingFilterOnly(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceILMDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_allocate_filter_only", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_allocate_filter_only", "warm.allocate.require", `{"zone":"zone-1"}`),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_allocate_filter_only", "warm.allocate.number_of_replicas"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_allocate_filter_only", "warm.allocate.total_shards_per_node"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_allocate_filter_only", "warm.allocate.include"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_allocate_filter_only", "warm.allocate.exclude"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_allocate_filter_only", "modified_date"),
 				),
 			},
 		},

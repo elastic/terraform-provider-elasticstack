@@ -23,23 +23,23 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 var _ validator.Object = panelConfigValidator{}
 
-// panelConfigValidator enforces panel-type-specific config requirements.
+// removedPanelTypes lists panel type strings removed from the provider with a migration path.
+var removedPanelTypes = map[string]string{
+	"lens-dashboard-app": "The `lens-dashboard-app` panel type was removed; migrate to `type = \"vis\"` with `vis_config` " +
+		"(or panel-level `config_json` for opaque by-value charts). See the upgrade guide: " +
+		"https://registry.terraform.io/providers/elastic/elasticstack/latest/docs/guides/elasticstack-kibana-dashboard-remove-lens-dashboard-app",
+}
+
+// panelConfigValidator delegates panel-type validation to iface.Handler.ValidatePanelConfig implementations.
 type panelConfigValidator struct{}
 
 func (panelConfigValidator) Description(_ context.Context) string {
-	return "Delegates panel-type validation to registered iface.Handler implementations and retains legacy checks " +
-		"for unmigrated dashboard panel kinds: `discover_session` (`discover_session_config`) " +
-		"and `vis` (exactly one of `vis_config` or panel `config_json`; typed Lens charts belong under `vis_config.by_value`). " +
-		"`lens-dashboard-app` relies on validators on `lens_dashboard_app_config`. " +
-		"Optional control panels omit typed config blocks; practitioner-authored panel `config_json` on unsupported types " +
-		"is enforced by the allowlist validator on `config_json` alone."
+	return "Delegates panel-type validation to registered iface.Handler implementations."
 }
 
 func (v panelConfigValidator) MarkdownDescription(ctx context.Context) string {
@@ -64,63 +64,6 @@ func panelConfigValueStateFromValue(value attr.Value) panelConfigValueState {
 	return panelConfigValueState{Set: true}
 }
 
-func panelConfigSelectionList() string {
-	options := []string{"`vis_config`", "`config_json`"}
-	return strings.Join(options, ", ")
-}
-
-func panelConfigValidateDiags(
-	panelType string,
-	configJSON, visConfig panelConfigValueState,
-	discoverSessionConfig panelConfigValueState,
-	attrPath *path.Path,
-) diag.Diagnostics {
-	var diags diag.Diagnostics
-	add := func(summary, detail string) {
-		if attrPath != nil {
-			diags.AddAttributeError(*attrPath, summary, detail)
-			return
-		}
-		diags.AddError(summary, detail)
-	}
-
-	switch panelType {
-	case panelTypeDiscoverSession:
-		if discoverSessionConfig.Set {
-			return diags
-		}
-		if discoverSessionConfig.Unknown {
-			return diags
-		}
-		add("Missing discover_session panel configuration", "Discover session panels require `discover_session_config`.")
-	case panelTypeVis:
-		setCount := 0
-		hasUnknown := configJSON.Unknown || visConfig.Unknown
-		if configJSON.Set {
-			setCount++
-		}
-		if visConfig.Set {
-			setCount++
-		}
-
-		if setCount == 1 {
-			return diags
-		}
-		if setCount == 0 && hasUnknown {
-			return diags
-		}
-
-		detail := fmt.Sprintf("Panels with `type = \"vis\"` require exactly one of %s.", panelConfigSelectionList())
-		if setCount == 0 {
-			add("Missing vis panel configuration", detail)
-			return diags
-		}
-		add("Invalid vis panel configuration", detail)
-	}
-
-	return diags
-}
-
 func (v panelConfigValidator) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
@@ -139,19 +82,17 @@ func (v panelConfigValidator) ValidateObject(ctx context.Context, req validator.
 	}
 
 	panel := typeValue.ValueString()
-	if h := LookupHandler(panel); h != nil {
-		if diags := h.ValidatePanelConfig(ctx, attrs, req.Path); len(diags) > 0 {
-			resp.Diagnostics.Append(diags...)
-		}
+	if msg, removed := removedPanelTypes[panel]; removed {
+		resp.Diagnostics.AddAttributeError(
+			req.Path.AtName("type"),
+			"Removed panel type",
+			msg,
+		)
+		return
 	}
-
-	resp.Diagnostics.Append(panelConfigValidateDiags(
-		panel,
-		panelConfigValueStateFromValue(attrs["config_json"]),
-		panelConfigValueStateFromValue(attrs["vis_config"]),
-		panelConfigValueStateFromValue(attrs["discover_session_config"]),
-		&req.Path,
-	)...)
+	if h := LookupHandler(panel); h != nil {
+		resp.Diagnostics.Append(h.ValidatePanelConfig(ctx, attrs, req.Path)...)
+	}
 }
 
 var _ validator.Object = pinnedPanelControlValidator{}

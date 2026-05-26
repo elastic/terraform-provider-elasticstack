@@ -19,6 +19,8 @@ package maintenancewindow
 
 import (
 	"context"
+
+	kibanacustomtypes "github.com/elastic/terraform-provider-elasticstack/internal/kibana/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -31,6 +33,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+const descCustomSchedule = "A set schedule over which the maintenance window applies."
 
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
@@ -66,7 +70,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Default:     booldefault.StaticBool(false),
 			},
 			"custom_schedule": schema.SingleNestedAttribute{
-				Description: "A set schedule over which the maintenance window applies.",
+				Description: descCustomSchedule,
 				Required:    true,
 				Attributes: map[string]schema.Attribute{
 					"start": schema.StringAttribute{
@@ -79,9 +83,7 @@ func getSchema(_ context.Context) schema.Schema {
 					"duration": schema.StringAttribute{
 						Description: durationDescription,
 						Required:    true,
-						Validators: []validator.String{
-							validators.StringIsAlertingDuration,
-						},
+						CustomType:  kibanacustomtypes.AlertingDurationType{Units: kibanacustomtypes.AlertingDurationUnitsSubDay},
 					},
 					"timezone": schema.StringAttribute{
 						Description: "The timezone of the schedule. The default timezone is UTC.",
@@ -89,7 +91,7 @@ func getSchema(_ context.Context) schema.Schema {
 						Computed:    true,
 					},
 					"recurring": schema.SingleNestedAttribute{
-						Description: "A set schedule over which the maintenance window applies.",
+						Description: descCustomSchedule,
 						Required:    true,
 						Attributes: map[string]schema.Attribute{
 							"end": schema.StringAttribute{
@@ -102,9 +104,7 @@ func getSchema(_ context.Context) schema.Schema {
 							"every": schema.StringAttribute{
 								Description: durationDescription,
 								Optional:    true,
-								Validators: []validator.String{
-									validators.StringIsMaintenanceWindowIntervalFrequency,
-								},
+								CustomType:  kibanacustomtypes.AlertingDurationType{Units: kibanacustomtypes.IntervalFrequencyUnits},
 							},
 							"occurrences": schema.Int32Attribute{
 								Description: "The total number of recurrences of the schedule.",
@@ -152,7 +152,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
 					"alerting": schema.SingleNestedAttribute{
-						Description: "A set schedule over which the maintenance window applies.",
+						Description: descCustomSchedule,
 						Required:    true,
 						Attributes: map[string]schema.Attribute{
 							"kql": schema.StringAttribute{

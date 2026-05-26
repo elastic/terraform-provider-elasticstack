@@ -21,53 +21,43 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var planModel dataViewModel
+func createDataView(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[dataViewModel],
+) (entitycore.KibanaWriteResult[dataViewModel], diag.Diagnostics) {
+	planModel := req.Plan
+	var diags diag.Diagnostics
 
-	diags := req.Plan.Get(ctx, &planModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	body, bodyDiags := planModel.toAPICreateModel(ctx)
+	diags.Append(bodyDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[dataViewModel]{}, diags
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	oapiClient := client.GetKibanaOapiClient()
+
+	spaceID := req.SpaceID
+	dataView, createDiags := createOrReconcileManagedDataView(ctx, oapiClient, spaceID, body)
+	diags.Append(createDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[dataViewModel]{}, diags
 	}
 
-	body, diags := planModel.toAPICreateModel(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	compositeID := clients.CompositeID{
+		ClusterID:  spaceID,
+		ResourceID: *dataView.DataView.Id,
 	}
+	planModel.ID = types.StringValue(compositeID.String())
 
-	oapiClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
-
-	spaceID := planModel.SpaceID.ValueString()
-	dataView, diags := createOrReconcileManagedDataView(ctx, oapiClient, spaceID, body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = planModel.populateFromAPI(ctx, dataView, spaceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = resp.State.Set(ctx, planModel)
-	resp.Diagnostics.Append(diags...)
+	return entitycore.KibanaWriteResult[dataViewModel]{Model: planModel}, diags
 }
 
 func createOrReconcileManagedDataView(

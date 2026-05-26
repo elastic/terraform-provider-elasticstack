@@ -25,28 +25,30 @@ import (
 
 // ESAPIClient interface provides access to the underlying API client
 type ESAPIClient interface {
-	GetClient() *clients.KibanaScopedClient
+	GetClient(dg *diag.Diagnostics) *clients.KibanaScopedClient
 }
 
-// GetKibanaOAPIClient returns a configured Kibana OpenAPI client for the given ESAPIClient
-func GetKibanaOAPIClient(c ESAPIClient, dg diag.Diagnostics) *kibanaoapi.Client {
-	return GetKibanaOAPIClientFromScopedClient(c.GetClient(), dg)
+// GetKibanaOAPIClient returns a configured Kibana OpenAPI client for the given ESAPIClient.
+// Any diagnostics produced while resolving the client are appended to dg so callers can
+// surface them via response.Diagnostics.
+func GetKibanaOAPIClient(c ESAPIClient, dg *diag.Diagnostics) *kibanaoapi.Client {
+	return GetKibanaOAPIClientFromScopedClient(c.GetClient(dg), dg)
 }
 
-// GetKibanaOAPIClientFromScopedClient returns a configured Kibana OpenAPI client for the given *clients.KibanaScopedClient
-func GetKibanaOAPIClientFromScopedClient(client *clients.KibanaScopedClient, dg diag.Diagnostics) *kibanaoapi.Client {
+// GetKibanaOAPIClientFromScopedClient returns a configured Kibana OpenAPI client for the given
+// *clients.KibanaScopedClient. Any diagnostics produced while resolving the client are appended
+// to dg so callers can surface them via response.Diagnostics.
+func GetKibanaOAPIClientFromScopedClient(client *clients.KibanaScopedClient, dg *diag.Diagnostics) *kibanaoapi.Client {
 	if client == nil {
-		dg.AddError(
-			"Unconfigured Client",
-			"Expected configured client. Please report this issue to the provider developers.",
-		)
+		if !dg.HasError() {
+			dg.AddError(
+				"Unconfigured Client",
+				"Expected configured client. Please report this issue to the provider developers.",
+			)
+		}
 		return nil
 	}
 
-	kibanaClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		dg.AddError("unable to get kibana oapi client", err.Error())
-		return nil
-	}
+	kibanaClient := client.GetKibanaOapiClient()
 	return kibanaClient
 }

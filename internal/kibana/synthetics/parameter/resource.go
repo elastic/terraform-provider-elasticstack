@@ -20,40 +20,35 @@ package parameter
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-type Resource struct {
-	*entitycore.ResourceBase
-}
-
-func newResource() *Resource {
-	return &Resource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "synthetics_parameter"),
-	}
-}
-
-// Ensure provider defined types fully satisfy framework interfaces
 var (
 	_ resource.Resource                = newResource()
 	_ resource.ResourceWithConfigure   = newResource()
 	_ resource.ResourceWithImportState = newResource()
-	_ synthetics.ESAPIClient           = newResource()
 )
 
-func (r *Resource) GetClient() *clients.KibanaScopedClient {
-	if r.Client() == nil {
-		return nil
-	}
-	return clients.NewKibanaScopedClientFromFactory(r.Client())
+type Resource struct {
+	*entitycore.KibanaResource[Model]
 }
 
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = parameterSchema()
+func newResource() *Resource {
+	return &Resource{
+		KibanaResource: entitycore.NewKibanaResource[Model](
+			entitycore.ComponentKibana,
+			"synthetics_parameter",
+			entitycore.KibanaResourceOptions[Model]{
+				Schema: getSchema,
+				Read:   readParameter,
+				Delete: deleteParameter,
+				Create: createParameter,
+				Update: updateParameter,
+			},
+		),
+	}
 }
 
 func (r *Resource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {

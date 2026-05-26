@@ -33,11 +33,7 @@ func deleteStream(ctx context.Context, client *clients.KibanaScopedClient, resou
 		return diags
 	}
 
-	kibanaClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		diags.AddError("Unable to get Kibana client", err.Error())
-		return diags
-	}
+	kibanaClient := client.GetKibanaOapiClient()
 
 	diags.Append(
 		kibanaoapi.DeleteStream(ctx, kibanaClient, spaceID, resourceID)...,

@@ -24,7 +24,7 @@ $(foreach v,$(_ENV_GUARD_VARS),$(eval $(call _env_guard_restore,$v)))
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.15.1
+VERSION ?= 0.16.0
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -198,18 +198,13 @@ docs-generate: tools ## Generate documentation for the provider
 
 .PHONY: workflow-generate
 workflow-generate: ## Generate workflow markdown sources
-	@ go run ./scripts/compile-workflow-sources --manifest .github/workflows-src/manifest.json
 	@ gh aw compile
 
 .PHONY: workflow-test
-workflow-test: ## Run unit tests for workflow source generation
-	@ go test ./scripts/compile-workflow-sources -run 'TestCompileWorkflow'
+workflow-test: ## Run unit tests for workflow helpers (Go changelog + kibana-spec-impact, node workflow lib)
 	@ go test ./scripts/kibana-spec-impact/... -count=1
-	@ node --test .github/workflows-src/lib/*.test.mjs
-
-.PHONY: check-workflows
-check-workflows: ## Check generated workflow markdown sources
-	@ go run ./scripts/compile-workflow-sources --manifest .github/workflows-src/manifest.json --check --verbose
+	@ go test ./scripts/changelog/... -count=1
+	@ node --test .github/scripts/workflows/lib/*.test.mjs
 
 .PHONY: gen
 gen: docs-generate ## Generate the code and documentation
@@ -224,17 +219,21 @@ install: build ## Install built provider into the local terraform cache
 	mkdir -p ~/.terraform.d/plugins/registry.terraform.io/elastic/${NAME}/${VERSION}/${MARCH}
 	mv ${BINARY} ~/.terraform.d/plugins/registry.terraform.io/elastic/${NAME}/${VERSION}/${MARCH}
 
+$(GOBIN)/golangci-lint: Makefile | $(GOBIN)
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/main/install.sh | sh -s -- -b $(GOBIN) v2.12.2
+
 .PHONY: tools
-tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
-	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/main/install.sh | sh -s -- -b $(GOBIN) v2.12.2
+tools: $(GOBIN)/golangci-lint  ## Download golangci-lint locally if necessary.
+
+$(GOBIN)/golangci-lint-custom: $(GOBIN)/golangci-lint .custom-gcl.yml
+	$(GOBIN)/golangci-lint custom
 
 .PHONY: golangci-lint-custom
-golangci-lint-custom: tools
-	@ [[ -f $(GOBIN)/golangci-lint-custom ]] || $(GOBIN)/golangci-lint custom
+golangci-lint-custom: $(GOBIN)/golangci-lint-custom
 
 .PHONY: golangci-lint
 golangci-lint: golangci-lint-custom
-	@ $(GOBIN)/golangci-lint-custom run --max-same-issues=0 $(GOLANGCIFLAGS) ./...
+	@ $(GOBIN)/golangci-lint-custom run --max-same-issues=0 --allow-parallel-runners $(GOLANGCIFLAGS) ./...
 
 LINT_PERF_DIR := $(CURDIR)/analysis/lint-perf-output/$(shell date +%Y%m%dT%H%M%S)
 
@@ -261,7 +260,7 @@ lint: GOLANGCIFLAGS += --fix
 lint: setup golangci-lint fmt docs-generate ## Run lints to check the spelling and common go patterns
 
 .PHONY: check-lint
-check-lint: setup check-openspec golangci-lint check-workflows check-fmt gen check-docs
+check-lint: setup check-openspec golangci-lint check-fmt gen check-docs
 
 .PHONY: setup-openspec
 setup-openspec: node_modules/.openspec-stamp ## Install Node dependencies (OpenSpec CLI via npm ci)
