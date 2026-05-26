@@ -152,6 +152,18 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.AcceptanceServerInfo",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-05-26T04:29:58.857970601Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/template.NewAliasObjectUnknown",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/template",
+      "attemptedAt": "2026-05-26T04:41:49.395389888Z",
+      "reason": "pr_created"
     }
   ]
 }
