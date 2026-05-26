@@ -26,6 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 const frequencyExclusivityDetail = "Rule-level notify_when and throttle cannot be combined with actions[*].frequency " +
@@ -37,7 +38,7 @@ func validateNotifyWhenThrottleFrequencyExclusivity(ctx context.Context, data *a
 		return
 	}
 	ruleNotify := ruleLevelNotifyWhenExclusive(data.NotifyWhen)
-	ruleThrottle := ruleLevelThrottleExclusive(data.Throttle)
+	ruleThrottle := ruleLevelThrottleExclusive(data.Throttle.StringValue)
 	if !ruleNotify && !ruleThrottle {
 		return
 	}
@@ -52,7 +53,7 @@ func ruleLevelNotifyWhenExclusive(v types.String) bool {
 	return typeutils.IsKnown(v) && !v.IsNull() && strings.TrimSpace(v.ValueString()) != ""
 }
 
-func ruleLevelThrottleExclusive(v types.String) bool {
+func ruleLevelThrottleExclusive(v basetypes.StringValue) bool {
 	return typeutils.IsKnown(v) && !v.IsNull() && strings.TrimSpace(v.ValueString()) != ""
 }
 

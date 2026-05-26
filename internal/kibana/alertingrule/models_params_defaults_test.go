@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	kibanacustomtypes "github.com/elastic/terraform-provider-elasticstack/internal/kibana/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -32,7 +33,7 @@ func TestToAPIModel_IndexThresholdBackfillsGroupByAllWhenOmitted(t *testing.T) {
 		Name:       types.StringValue("name"),
 		Consumer:   types.StringValue("alerts"),
 		RuleTypeID: types.StringValue(".index-threshold"),
-		Interval:   types.StringValue("1m"),
+		Interval:   kibanacustomtypes.NewAlertingDurationValue("1m"),
 		NotifyWhen: types.StringValue("onActiveAlert"),
 		Params: jsontypes.NewNormalizedValue(`{
 			"aggType":"avg",
@@ -65,7 +66,7 @@ func TestToAPIModel_IndexThresholdDoesNotOverrideExplicitGroupBy(t *testing.T) {
 		Name:       types.StringValue("name"),
 		Consumer:   types.StringValue("alerts"),
 		RuleTypeID: types.StringValue(".index-threshold"),
-		Interval:   types.StringValue("1m"),
+		Interval:   kibanacustomtypes.NewAlertingDurationValue("1m"),
 		NotifyWhen: types.StringValue("onActiveAlert"),
 		Params: jsontypes.NewNormalizedValue(
 			`{"groupBy":"top","termField":["host.name"],"termSize":10,"index":["test-index"],"timeField":"@timestamp","timeWindowSize":10,"timeWindowUnit":"s","threshold":[10],"thresholdComparator":">"}`,
@@ -88,7 +89,7 @@ func TestToAPIModel_NonIndexThresholdDoesNotBackfillGroupBy(t *testing.T) {
 		Name:       types.StringValue("name"),
 		Consumer:   types.StringValue("alerts"),
 		RuleTypeID: types.StringValue(".es-query"),
-		Interval:   types.StringValue("1m"),
+		Interval:   kibanacustomtypes.NewAlertingDurationValue("1m"),
 		NotifyWhen: types.StringValue("onActiveAlert"),
 		Params:     jsontypes.NewNormalizedValue(`{"searchType":"esQuery","size":10,"esQuery":"{}"}`),
 	}
@@ -109,7 +110,7 @@ func TestToAPIModel_IndexThresholdBackfillsAggTypeCountWhenOmitted(t *testing.T)
 		Name:       types.StringValue("name"),
 		Consumer:   types.StringValue("alerts"),
 		RuleTypeID: types.StringValue(".index-threshold"),
-		Interval:   types.StringValue("1m"),
+		Interval:   kibanacustomtypes.NewAlertingDurationValue("1m"),
 		NotifyWhen: types.StringValue("onActiveAlert"),
 		Params: jsontypes.NewNormalizedValue(`{
 			"aggField":"version",
@@ -144,7 +145,7 @@ func TestToAPIModel_IndexThresholdDoesNotOverrideExplicitAggType(t *testing.T) {
 		Name:       types.StringValue("name"),
 		Consumer:   types.StringValue("alerts"),
 		RuleTypeID: types.StringValue(".index-threshold"),
-		Interval:   types.StringValue("1m"),
+		Interval:   kibanacustomtypes.NewAlertingDurationValue("1m"),
 		NotifyWhen: types.StringValue("onActiveAlert"),
 		Params: jsontypes.NewNormalizedValue(`{
 			"aggType":"avg",

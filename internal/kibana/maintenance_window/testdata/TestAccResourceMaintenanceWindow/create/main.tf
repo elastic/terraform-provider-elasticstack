@@ -4,8 +4,9 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_maintenance_window" "test_maintenance_window" {
-  title   = "Terraform Maintenance Window"
-  enabled = true
+  title    = "Terraform Maintenance Window"
+  enabled  = true
+  space_id = "default"
 
   custom_schedule = {
     start    = "1992-01-01T05:00:00.200Z"

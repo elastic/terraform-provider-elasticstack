@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	kibanacustomtypes "github.com/elastic/terraform-provider-elasticstack/internal/kibana/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
@@ -34,25 +35,25 @@ import (
 
 // alertingRuleModel is the Terraform model for an alerting rule.
 type alertingRuleModel struct {
-	ID                  types.String         `tfsdk:"id"`
-	KibanaConnection    types.List           `tfsdk:"kibana_connection"`
-	RuleID              types.String         `tfsdk:"rule_id"`
-	SpaceID             types.String         `tfsdk:"space_id"`
-	Name                types.String         `tfsdk:"name"`
-	Consumer            types.String         `tfsdk:"consumer"`
-	NotifyWhen          types.String         `tfsdk:"notify_when"`
-	Params              jsontypes.Normalized `tfsdk:"params"`
-	RuleTypeID          types.String         `tfsdk:"rule_type_id"`
-	Interval            types.String         `tfsdk:"interval"`
-	Enabled             types.Bool           `tfsdk:"enabled"`
-	Tags                types.Set            `tfsdk:"tags"`
-	Throttle            types.String         `tfsdk:"throttle"`
-	ScheduledTaskID     types.String         `tfsdk:"scheduled_task_id"`
-	LastExecutionStatus types.String         `tfsdk:"last_execution_status"`
-	LastExecutionDate   types.String         `tfsdk:"last_execution_date"`
-	AlertDelay          types.Int64          `tfsdk:"alert_delay"`
-	Flapping            types.Object         `tfsdk:"flapping"`
-	Actions             types.List           `tfsdk:"actions"`
+	ID                  types.String                       `tfsdk:"id"`
+	KibanaConnection    types.List                         `tfsdk:"kibana_connection"`
+	RuleID              types.String                       `tfsdk:"rule_id"`
+	SpaceID             types.String                       `tfsdk:"space_id"`
+	Name                types.String                       `tfsdk:"name"`
+	Consumer            types.String                       `tfsdk:"consumer"`
+	NotifyWhen          types.String                       `tfsdk:"notify_when"`
+	Params              jsontypes.Normalized               `tfsdk:"params"`
+	RuleTypeID          types.String                       `tfsdk:"rule_type_id"`
+	Interval            kibanacustomtypes.AlertingDuration `tfsdk:"interval"`
+	Enabled             types.Bool                         `tfsdk:"enabled"`
+	Tags                types.Set                          `tfsdk:"tags"`
+	Throttle            kibanacustomtypes.AlertingDuration `tfsdk:"throttle"`
+	ScheduledTaskID     types.String                       `tfsdk:"scheduled_task_id"`
+	LastExecutionStatus types.String                       `tfsdk:"last_execution_status"`
+	LastExecutionDate   types.String                       `tfsdk:"last_execution_date"`
+	AlertDelay          types.Int64                        `tfsdk:"alert_delay"`
+	Flapping            types.Object                       `tfsdk:"flapping"`
+	Actions             types.List                         `tfsdk:"actions"`
 }
 
 // actionModel is the Terraform model for a rule action.
@@ -66,9 +67,9 @@ type actionModel struct {
 
 // frequencyModel is the Terraform model for action frequency.
 type frequencyModel struct {
-	Summary    types.Bool   `tfsdk:"summary"`
-	NotifyWhen types.String `tfsdk:"notify_when"`
-	Throttle   types.String `tfsdk:"throttle"`
+	Summary    types.Bool                         `tfsdk:"summary"`
+	NotifyWhen types.String                       `tfsdk:"notify_when"`
+	Throttle   kibanacustomtypes.AlertingDuration `tfsdk:"throttle"`
 }
 
 // alertsFilterModel is the Terraform model for action alerts filter.
@@ -112,7 +113,7 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 	m.Name = types.StringValue(rule.Name)
 	m.Consumer = types.StringValue(rule.Consumer)
 	m.RuleTypeID = types.StringValue(rule.RuleTypeID)
-	m.Interval = types.StringValue(rule.Schedule.Interval)
+	m.Interval = kibanacustomtypes.NewAlertingDurationValue(rule.Schedule.Interval)
 
 	if rule.NotifyWhen != nil && *rule.NotifyWhen != "" {
 		m.NotifyWhen = types.StringValue(*rule.NotifyWhen)
@@ -150,9 +151,9 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 
 	// Throttle
 	if rule.Throttle != nil {
-		m.Throttle = types.StringValue(*rule.Throttle)
+		m.Throttle = kibanacustomtypes.NewAlertingDurationValue(*rule.Throttle)
 	} else {
-		m.Throttle = types.StringNull()
+		m.Throttle = kibanacustomtypes.NewAlertingDurationNull()
 	}
 
 	// Scheduled task ID - update if API returns a value, or resolve unknown to null
@@ -545,7 +546,7 @@ func convertActionsFromAPI(ctx context.Context, apiActions []models.AlertingRule
 			freq := frequencyModel{
 				Summary:    types.BoolValue(apiAction.Frequency.Summary),
 				NotifyWhen: types.StringValue(apiAction.Frequency.NotifyWhen),
-				Throttle:   types.StringPointerValue(apiAction.Frequency.Throttle),
+				Throttle:   kibanacustomtypes.NewAlertingDurationPointerValue(apiAction.Frequency.Throttle),
 			}
 			freqObj, d := types.ObjectValueFrom(ctx, getFrequencyAttrTypes(), freq)
 			diags.Append(d...)
