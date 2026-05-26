@@ -6,11 +6,11 @@
 
 ## 2. Add Scenario Example Files — Kibana Security Role
 
-- [ ] 2.1 Create `examples/resources/elasticstack_kibana_security_role/resource-data-analyst.tf` — read-only Discover + Dashboard access in a named space; `cluster = ["monitor"]`, index privileges `["read", "view_index_metadata"]` on `logs-*`/`metrics-*`
-- [ ] 2.2 Create `examples/resources/elasticstack_kibana_security_role/resource-data-ingest.tf` — write to data streams; `cluster = ["manage_ingest_pipelines", "manage_index_templates", "auto_configure"]`, index privileges `["write", "create_index", "auto_configure"]` on `logs-myapp-*`; no Kibana block
-- [ ] 2.3 Create `examples/resources/elasticstack_kibana_security_role/resource-security-analyst.tf` — full access to `siem`, `securitySolutionCases`, `alerting`, `actions`, `rulesSettings`, `osquery` features in a `security` space
-- [ ] 2.4 Create `examples/resources/elasticstack_kibana_security_role/resource-devops-readonly.tf` — read access to `fleet`, `apm`, `infrastructure`, `logs` features; `cluster = ["monitor"]`
-- [ ] 2.5 Create `examples/resources/elasticstack_kibana_security_role/resource-multi-space.tf` — two `kibana {}` blocks: `base = ["all"]` for `["dev", "staging"]` and feature-level read-only (`dashboard`, `discover`) for `["prod"]`
+- [x] 2.1 Create `examples/resources/elasticstack_kibana_security_role/resource-data-analyst.tf` — read-only Discover + Dashboard access in a named space; `cluster = ["monitor"]`, index privileges `["read", "view_index_metadata"]` on `logs-*`/`metrics-*`
+- [x] 2.2 Create `examples/resources/elasticstack_kibana_security_role/resource-data-ingest.tf` — write to data streams; `cluster = ["manage_ingest_pipelines", "manage_index_templates", "auto_configure"]`, index privileges `["write", "create_index", "auto_configure"]` on `logs-myapp-*`; no Kibana block
+- [x] 2.3 Create `examples/resources/elasticstack_kibana_security_role/resource-security-analyst.tf` — full access to `siem`, `securitySolutionCases`, `alerting`, `actions`, `rulesSettings`, `osquery` features in a `security` space
+- [x] 2.4 Create `examples/resources/elasticstack_kibana_security_role/resource-devops-readonly.tf` — read access to `fleet`, `apm`, `infrastructure`, `logs` features; `cluster = ["monitor"]`
+- [x] 2.5 Create `examples/resources/elasticstack_kibana_security_role/resource-multi-space.tf` — two `kibana {}` blocks: `base = ["all"]` for `["dev", "staging"]` and feature-level read-only (`dashboard`, `discover`) for `["prod"]`
 
 ## 3. Add Scenario Example Files — Elasticsearch Security Role
 
