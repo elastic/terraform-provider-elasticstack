@@ -67,6 +67,7 @@ func TestAccResourceExceptionItem(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "item_id", "test-exception-item"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "list_id", "test-exception-list-for-item"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "name", "Test Exception Item"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "description", "Test exception item for acceptance tests"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "type", "simple"),
@@ -76,6 +77,7 @@ func TestAccResourceExceptionItem(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "entries.#"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "created_at"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "created_by"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "tie_breaker_id"),
 				),
 			},
 			{
@@ -95,6 +97,9 @@ func TestAccResourceExceptionItem(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "description", "Updated description"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "tags.0", "test"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "tags.1", "updated"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "updated_at"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "updated_by"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "tie_breaker_id"),
 				),
 			},
 			{ // Import
@@ -997,6 +1002,7 @@ func TestAccResourceExceptionItem_Complex(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "tags.#", "2"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "test"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "complex"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_exception_item.test", "expire_time"),
 				),
 			},
 			{
@@ -1110,6 +1116,45 @@ func TestAccResourceExceptionItem_Complex(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "updated"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "expire_time", expireTime),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceExceptionItem_Comments(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
+	listID := fmt.Sprintf("test-exception-list-comments-%s", uuid.New().String()[:8])
+	itemID := fmt.Sprintf("test-exception-item-comments-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("comments_create"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "comments.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "comments.0.comment", "Initial test comment"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "comments.0.id"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_exception_item.test", "meta"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("comments_create"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ResourceName:      "elasticstack_kibana_security_exception_item.test",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
