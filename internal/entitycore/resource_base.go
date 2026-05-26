@@ -85,6 +85,16 @@ func (c *ResourceBase) Client() *clients.ProviderClientFactory {
 	return c.client
 }
 
+// requireReadFuncDiagWhen returns an error diagnostic when isNil is true, signalling
+// that the read callback was not provided. Envelope types call this with
+// (r.readFunc == nil) to centralise the nil-check logic in one place.
+func (c *ResourceBase) requireReadFuncDiagWhen(isNil bool) diag.Diagnostics {
+	if isNil {
+		return requireReadFuncDiag(c.component)
+	}
+	return nil
+}
+
 // DataSourceBase holds shared Plugin Framework data source wiring: typed naming
 // parts and the provider client factory from Configure. Embed *DataSourceBase in
 // concrete data sources to reuse Configure, Metadata, and Client.

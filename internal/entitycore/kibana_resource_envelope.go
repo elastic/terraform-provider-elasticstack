@@ -301,10 +301,7 @@ func (r *KibanaResource[T]) Update(ctx context.Context, req resource.UpdateReque
 }
 
 func (r *KibanaResource[T]) requireReadFunc() diag.Diagnostics {
-	if r.readFunc == nil {
-		return requireReadFuncDiag(r.component)
-	}
-	return nil
+	return r.requireReadFuncDiagWhen(r.readFunc == nil)
 }
 
 func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWriteInvocation) diag.Diagnostics {
