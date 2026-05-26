@@ -854,6 +854,17 @@ func TestAccResourceAlertingRuleAutoRuleID(t *testing.T) {
 }
 
 func TestAccResourceAlertingRuleThrottle(t *testing.T) {
+	// Step 3 introduces actions[*].frequency; per-action frequency is unsupported
+	// below Kibana 8.6 (the provider rejects it with "notify_when is required
+	// until v8.6"), and Kibana 8.6.x additionally enforces "rule-level notifyWhen
+	// and throttle must both be defined or both be undefined" on PUT, which is
+	// incompatible with the deprecated rule-level throttle that Kibana preserves
+	// from the prior steps. The repo's other actions.frequency tests therefore
+	// gate on 8.7+ (TestAccResourceAlertingRule frequency_* steps and
+	// TestAccResourceAlertingRuleFrequencyExclusivity); apply the same floor to
+	// step 3 here.
+	minSupportedFrequencyVersion := version.Must(version.NewSemver("8.7.0"))
+
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	ruleID := uuid.New().String()
 
@@ -891,11 +902,14 @@ func TestAccResourceAlertingRuleThrottle(t *testing.T) {
 				// Adding actions[*].frequency to a rule that previously had a
 				// Kibana-preserved rule-level throttle must not surface a provider
 				// inconsistency error or trip REQ-042's exclusivity validator on the
-				// stale state value. SetUnknownIfActionsFrequencyConfigured resets
-				// the planned throttle back to unknown so it is not sent alongside
+				// stale state value. The shared planmodifiers.StringSetUnknownIf
+				// (driven by throttleShouldResetForActionFrequency) resets the
+				// planned throttle back to unknown so it is not sent alongside
 				// per-action frequency, and state resolves to whatever Kibana
-				// returns.
+				// returns. Gated on 8.7+ for the reasons documented above the
+				// minSupportedFrequencyVersion declaration.
 				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedFrequencyVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("throttle_then_action_frequency"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(ruleName),
