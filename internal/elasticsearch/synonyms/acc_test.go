@@ -18,8 +18,10 @@
 package synonyms_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -190,6 +192,99 @@ func TestAccDataSourceSynonymSet(t *testing.T) {
 			},
 		},
 	})
+}
+
+// TestAccResourceSynonymSetDeleteWhileInUse verifies that attempting to delete a
+// synonym set referenced by an index analyzer returns a clear error diagnostic
+// (REQ-008) rather than silently failing or panicking.
+func TestAccResourceSynonymSetDeleteWhileInUse(t *testing.T) {
+	synonymSetID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	indexName := "test-synonym-in-use-" + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
+
+	createConfig := fmt.Sprintf(`
+provider "elasticstack" { elasticsearch {} }
+resource "elasticstack_elasticsearch_synonym_set" "test" {
+  synonym_set_id = %q
+  synonyms_set   = [{ id = "rule-1", synonyms = "foo, bar" }]
+}`, synonymSetID)
+
+	emptyConfig := `provider "elasticstack" { elasticsearch {} }`
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkSynonymSetDestroy(synonymSetID),
+		Steps: []resource.TestStep{
+			// Step 1: Create the synonym set.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:                   createConfig,
+			},
+			// Step 2: Create an ES index outside Terraform with a synonym token filter
+			// referencing the set, then try to destroy it — must fail with a clear error.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				PreConfig: func() {
+					if err := createIndexWithSynonymFilter(indexName, synonymSetID); err != nil {
+						t.Fatalf("failed to create index %s: %s", indexName, err)
+					}
+				},
+				Config:      emptyConfig,
+				ExpectError: regexp.MustCompile(`Cannot delete synonym set`),
+			},
+			// Step 3: Remove the blocking index so Terraform can successfully destroy the synonym set.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				PreConfig: func() {
+					if err := deleteIndexForTest(indexName); err != nil {
+						t.Fatalf("failed to delete index %s: %s", indexName, err)
+					}
+				},
+				Config: emptyConfig,
+			},
+		},
+	})
+}
+
+func createIndexWithSynonymFilter(indexName, synonymSetID string) error {
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		return err
+	}
+	body := fmt.Sprintf(`{
+		"settings": {
+			"index": {
+				"analysis": {
+					"filter": {
+						"synonym_filter": {
+							"type": "synonym",
+							"synonyms_set": %q,
+							"updateable": true
+						}
+					},
+					"analyzer": {
+						"synonym_analyzer": {
+							"tokenizer": "standard",
+							"filter": ["lowercase", "synonym_filter"]
+						}
+					}
+				}
+			}
+		}
+	}`, synonymSetID)
+	_, err = client.GetESClient().Indices.Create(indexName).Raw(bytes.NewReader([]byte(body))).Do(context.Background())
+	return err
+}
+
+func deleteIndexForTest(indexName string) error {
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		return err
+	}
+	_, err = client.GetESClient().Indices.Delete(indexName).Do(context.Background())
+	return err
 }
 
 // synonymSetImportID returns an ImportStateIdFunc that retrieves the composite
