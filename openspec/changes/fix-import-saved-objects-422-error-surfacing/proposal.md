@@ -28,7 +28,7 @@ absent, it falls back to the existing `ReportUnknownHTTPError` behavior.
 - Unit tests covering the success path and the fallback path in `internal/diagutil/http_test.go`
 - Updated `default:` branch in `internal/clients/kibanaoapi/saved_objects_import.go`
 - New `TestImportSavedObjects_422Response` test in `internal/clients/kibanaoapi/saved_objects_import_test.go`
-- Delta spec update to REQ-002 in `openspec/specs/kibana-import-saved-objects/spec.md`
+- Delta spec update to REQ-002 in `openspec/changes/fix-import-saved-objects-422-error-surfacing/specs/kibana-import-saved-objects/spec.md`
 
 **Out of scope:**
 - Updating other `kibanaoapi` callers (`source_map.go`, `responses.go`, `synthetics_monitor.go`) — recommended as follow-up

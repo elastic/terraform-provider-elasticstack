@@ -80,7 +80,7 @@ the Boom envelope is well-formed.
 
 `TestImportSavedObjects_422Response`: mock server returns HTTP 422 with a Boom body. Assert that:
 - `diags.HasError()` is true
-- the diagnostic detail contains the `message` field value (not raw JSON)
+- one diagnostic detail exactly equals the expected Boom `message` value
 
 ## Open questions
 

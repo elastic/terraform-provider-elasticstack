@@ -69,8 +69,8 @@ Add a new test function `TestImportSavedObjects_422Response` following the patte
 3. Call `kibanaoapi.ImportSavedObjects` with empty params and assert:
    - `diags.HasError()` is true
    - `result` is nil
-   - At least one diagnostic detail contains `"belongs to a more recent version"` (to confirm the
-     parsed message is surfaced, not raw JSON)
+   - At least one diagnostic detail exactly equals the expected Boom `message` string (not the raw
+     JSON body)
 
 ## TASK-005: Update delta spec — REQ-002 scenario for 422 responses
 
