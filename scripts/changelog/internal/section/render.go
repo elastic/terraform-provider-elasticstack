@@ -24,7 +24,10 @@ import (
 	"strings"
 )
 
-const noChangelogLabel = "no-changelog"
+const (
+	noChangelogLabel       = "no-changelog"
+	noChangelogLabelReason = "no-changelog label"
+)
 
 const rendererExcludedImpactNoneReason = "Customer impact: none"
 
@@ -148,7 +151,7 @@ func RenderChangelogSection(merged []MergedPR) RenderResult {
 		}
 
 		if containsExactLabel(labelNames, noChangelogLabel) {
-			excluded = append(excluded, ExcludedPR{PRNumber: prNumber, PRURL: prURL, Reason: "no-changelog label"})
+			excluded = append(excluded, ExcludedPR{PRNumber: prNumber, PRURL: prURL, Reason: noChangelogLabelReason})
 			continue
 		}
 
@@ -158,7 +161,7 @@ func RenderChangelogSection(merged []MergedPR) RenderResult {
 				PRNumber: prNumber,
 				PRURL:    prURL,
 				Reason: fmt.Sprintf(
-					`PR #%d (%s) has no parseable ## Changelog section and is not labeled 'no-changelog'. Add a ## Changelog section to the PR body or apply the no-changelog label.`,
+					`PR #%d (%s) has no parseable ## Changelog section and is not labeled 'no-changelog'. Add a ## Changelog section to the PR body or apply the `+noChangelogLabelReason+`.`,
 					prNumber,
 					prURL,
 				),

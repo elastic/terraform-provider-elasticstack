@@ -591,10 +591,7 @@ func checkResourceAgentPolicyDestroy(s *terraform.State) error {
 			continue
 		}
 
-		fleetClient, d := client.GetFleetClient()
-		if d.HasError() {
-			return diagutil.FwDiagsAsError(d)
-		}
+		fleetClient := client.GetFleetClient()
 		policy, diags := fleet.GetAgentPolicy(context.Background(), fleetClient, rs.Primary.ID, "")
 		if diags.HasError() {
 			return diagutil.FwDiagsAsError(diags)
@@ -617,10 +614,7 @@ func checkResourceAgentPolicySkipDestroy(s *terraform.State) error {
 			continue
 		}
 
-		fleetClient, d := client.GetFleetClient()
-		if d.HasError() {
-			return diagutil.FwDiagsAsError(d)
-		}
+		fleetClient := client.GetFleetClient()
 		policy, diags := fleet.GetAgentPolicy(context.Background(), fleetClient, rs.Primary.ID, "")
 		if diags.HasError() {
 			return diagutil.FwDiagsAsError(diags)

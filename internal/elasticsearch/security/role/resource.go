@@ -75,22 +75,22 @@ func v0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.
 		return
 	}
 
-	if global := priorState["global"]; global == nil || global == "" {
-		delete(priorState, "global")
+	if global := priorState[attrGlobal]; global == nil || global == "" {
+		delete(priorState, attrGlobal)
 	}
 
-	if metadata := priorState["metadata"]; metadata == nil || metadata == "" {
-		delete(priorState, "metadata")
+	if metadata := priorState[attrMetadata]; metadata == nil || metadata == "" {
+		delete(priorState, attrMetadata)
 	}
 
-	indices, ok := priorState["indices"]
+	indices, ok := priorState[blockIndices]
 	if ok {
-		priorState["indices"] = convertV0Indices(indices)
+		priorState[blockIndices] = convertV0Indices(indices)
 	}
 
-	remoteIndices, ok := priorState["remote_indices"]
+	remoteIndices, ok := priorState[blockRemoteIndices]
 	if ok {
-		priorState["remote_indices"] = convertV0Indices(remoteIndices)
+		priorState[blockRemoteIndices] = convertV0Indices(remoteIndices)
 	}
 
 	stateJSON, err := json.Marshal(priorState)
@@ -109,16 +109,16 @@ func convertV0Indices(indices any) any {
 		for i, index := range indicesSlice {
 			indexMap, ok := index.(map[string]any)
 			if ok {
-				if indexMap["query"] == "" {
-					delete(indexMap, "query")
+				if indexMap[attrQuery] == "" {
+					delete(indexMap, attrQuery)
 				}
 				// Convert field_security from a list to an object
-				if fs, ok := indexMap["field_security"]; ok {
+				if fs, ok := indexMap[attrFieldSecurity]; ok {
 					fsList, ok := fs.([]any)
 					if ok && len(fsList) > 0 {
-						indexMap["field_security"] = fsList[0]
+						indexMap[attrFieldSecurity] = fsList[0]
 					} else {
-						delete(indexMap, "field_security")
+						delete(indexMap, attrFieldSecurity)
 					}
 				}
 				indicesSlice[i] = indexMap

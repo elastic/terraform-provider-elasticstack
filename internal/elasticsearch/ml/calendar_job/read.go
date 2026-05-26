@@ -21,28 +21,19 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func splitCalendarJobResourcePath(resourcePath string) (calendarID, jobID string, diags fwdiags.Diagnostics) {
-	parts := strings.SplitN(resourcePath, "/", 2)
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		diags.AddError("Invalid ID format", "Expected resource segment format: <calendar_id>/<job_id>")
-		return "", "", diags
-	}
-	return parts[0], parts[1], diags
-}
-
 func readCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state TFModel) (TFModel, bool, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
-	calendarID, jobID, splitDiags := splitCalendarJobResourcePath(resourceID)
+	calendarID, jobID, splitDiags := ml.SplitCalendarResourcePath(resourceID, "<job_id>")
 	diags.Append(splitDiags...)
 	if diags.HasError() {
 		return state, false, diags
@@ -50,11 +41,7 @@ func readCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedCli
 
 	tflog.Debug(ctx, fmt.Sprintf("Reading ML calendar job assignment: calendar=%s job=%s", calendarID, jobID))
 
-	typedClient, clientDiags := client.GetESClient()
-	diags.Append(clientDiags...)
-	if diags.HasError() {
-		return state, false, diags
-	}
+	typedClient := client.GetESClient()
 
 	res, err := typedClient.Ml.GetCalendars().CalendarId(calendarID).Do(ctx)
 	if err != nil {

@@ -28,11 +28,7 @@ import (
 func deleteSecurityListDataStreams(ctx context.Context, client *clients.KibanaScopedClient, _, spaceID string, _ Model) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	oapiClient, getDiags := client.GetKibanaOapiClient()
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	diags.Append(kibanaoapi.DeleteListIndex(ctx, oapiClient, spaceID)...)
 	return diags

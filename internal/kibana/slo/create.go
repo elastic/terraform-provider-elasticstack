@@ -59,45 +59,12 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	supportsGroupBy, groupByDiags := apiClient.EnforceMinVersion(ctx, SLOSupportsGroupByMinVersion)
-	response.Diagnostics.Append(groupByDiags...)
+	supportsMultipleGroupBy := resolveGroupBySupport(ctx, apiClient, &apiModel, &response.Diagnostics)
 	if response.Diagnostics.HasError() {
 		return
 	}
-	if !supportsGroupBy {
-		if len(apiModel.GroupBy) > 0 {
-			response.Diagnostics.AddError(
-				"Unsupported Elastic Stack version",
-				"group_by is not supported in this version of the Elastic Stack. group_by requires "+SLOSupportsGroupByMinVersion.String()+" or higher.",
-			)
-			return
-		}
 
-		// Do not send group_by at all for stacks that don't support it.
-		apiModel.GroupBy = nil
-	}
-
-	supportsMultipleGroupBy := false
-	if supportsGroupBy {
-		supportsMultipleGroupBy, groupByDiags = apiClient.EnforceMinVersion(ctx, SLOSupportsMultipleGroupByMinVersion)
-		response.Diagnostics.Append(groupByDiags...)
-		if response.Diagnostics.HasError() {
-			return
-		}
-	}
-	if len(apiModel.GroupBy) > 1 && !supportsMultipleGroupBy {
-		response.Diagnostics.AddError(
-			"Unsupported Elastic Stack version",
-			"multiple group_by fields are not supported in this version of the Elastic Stack. Multiple group_by fields requires "+SLOSupportsMultipleGroupByMinVersion.String(),
-		)
-		return
-	}
-
-	oapi, d := apiClient.GetKibanaOapiClient()
-	response.Diagnostics.Append(d...)
-	if response.Diagnostics.HasError() {
-		return
-	}
+	oapi := apiClient.GetKibanaOapiClient()
 
 	indicator, convErr := kibanaoapi.ResponseIndicatorToCreateIndicator(apiModel.Indicator)
 	if convErr != nil {

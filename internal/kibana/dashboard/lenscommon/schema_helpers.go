@@ -78,11 +78,11 @@ func AxisTitleAttribute(computedVisible bool) schema.Attribute {
 		MarkdownDescription: "Axis title configuration.",
 		Optional:            true,
 		Attributes: map[string]schema.Attribute{
-			"value": schema.StringAttribute{
+			attrValue: schema.StringAttribute{
 				MarkdownDescription: "Axis title text.",
 				Optional:            true,
 			},
-			"visible": visible,
+			attrVisible: visible,
 		},
 	}
 }

@@ -40,11 +40,7 @@ func (r *serverHostResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	fleetClient, d := client.GetFleetClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
 	body, diags := planModel.toAPICreateModel(ctx)
 	resp.Diagnostics.Append(diags...)

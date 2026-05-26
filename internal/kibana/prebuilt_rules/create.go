@@ -43,11 +43,7 @@ func writePrebuiltRules(
 	model := req.Plan
 	var diags diag.Diagnostics
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[prebuiltRuleModel]{}, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	model.ID = types.StringValue(req.SpaceID)
 	model.SpaceID = types.StringValue(req.SpaceID)

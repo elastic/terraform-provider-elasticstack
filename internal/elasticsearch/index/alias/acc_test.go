@@ -363,10 +363,7 @@ func checkResourceAliasDestroy(s *terraform.State) error {
 			aliasName = compID.ResourceID
 		}
 
-		typedClient, diags := client.GetESClient()
-		if diags.HasError() {
-			return fmt.Errorf("failed to get elasticsearch client: %v", diags)
-		}
+		typedClient := client.GetESClient()
 
 		_, err = typedClient.Indices.GetAlias().Name(aliasName).Do(context.Background())
 		if err != nil {

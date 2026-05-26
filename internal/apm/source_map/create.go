@@ -45,11 +45,7 @@ func (r *resourceSourceMap) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	kibana, d := scoped.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	kibana := scoped.GetKibanaOapiClient()
 
 	sm := plan.Sourcemap
 	if sm == nil {

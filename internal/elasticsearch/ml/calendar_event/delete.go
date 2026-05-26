@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -31,7 +32,7 @@ import (
 func deleteCalendarEvent(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ CalendarEventTFModel) fwdiags.Diagnostics {
 	var diags fwdiags.Diagnostics
 
-	calendarID, eventID, splitDiags := splitCalendarEventResourcePath(resourceID)
+	calendarID, eventID, splitDiags := ml.SplitCalendarResourcePath(resourceID, "<event_id>")
 	diags.Append(splitDiags...)
 	if diags.HasError() {
 		return diags
@@ -39,11 +40,7 @@ func deleteCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 
 	tflog.Debug(ctx, fmt.Sprintf("Deleting ML calendar event %s from calendar: %s", eventID, calendarID))
 
-	typedClient, clientDiags := client.GetESClient()
-	diags.Append(clientDiags...)
-	if diags.HasError() {
-		return diags
-	}
+	typedClient := client.GetESClient()
 
 	_, err := typedClient.Ml.DeleteCalendarEvent(calendarID, eventID).Do(ctx)
 	if err != nil {

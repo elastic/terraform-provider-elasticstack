@@ -70,10 +70,7 @@ func testAccCheckOpenMLJobFailsWithUnknownFilter(t *testing.T, jobID string) res
 		if err != nil {
 			return err
 		}
-		es, diags := client.GetESClient()
-		if diags.HasError() {
-			return fmt.Errorf("failed to get elasticsearch client: %v", diags)
-		}
+		es := client.GetESClient()
 		const maxAttempts = 15
 		const betweenAttempts = 4 * time.Second
 		var openErr error
@@ -817,10 +814,7 @@ func setupAccMLFilterOutOfBand(t *testing.T, filterID string) {
 	if err != nil {
 		t.Fatalf("Elasticsearch client: %v", err)
 	}
-	es, diags := client.GetESClient()
-	if diags.HasError() {
-		t.Fatalf("GetESClient: %v", diags)
-	}
+	es := client.GetESClient()
 	desc := "Terraform acc test ML filter (created out-of-band via Elasticsearch Put Filter API)"
 	_, err = es.Ml.PutFilter(filterID).Request(&putfilter.Request{
 		Description: &desc,
@@ -836,11 +830,7 @@ func setupAccMLFilterOutOfBand(t *testing.T, filterID string) {
 			t.Logf("cleanup: Elasticsearch client: %v", err)
 			return
 		}
-		es, diags := client.GetESClient()
-		if diags.HasError() {
-			t.Logf("cleanup: GetESClient: %v", diags)
-			return
-		}
+		es := client.GetESClient()
 		_, err = es.Ml.DeleteFilter(filterID).Do(ctx)
 		if err != nil {
 			t.Logf("cleanup: delete ML filter %q: %v", filterID, err)

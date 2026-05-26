@@ -400,10 +400,7 @@ func checkResourceTransformDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, diags := client.GetESClient()
-		if diags.HasError() {
-			return fmt.Errorf("failed to get elasticsearch client: %v", diags)
-		}
+		esClient := client.GetESClient()
 		res, err := esClient.Transform.GetTransform().TransformId(compID.ResourceID).Do(context.Background())
 		if err != nil {
 			var esErr *types.ElasticsearchError

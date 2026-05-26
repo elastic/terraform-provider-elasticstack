@@ -443,16 +443,16 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, features alertingRule
 		// Compatibility: older Kibana versions reject `.index-threshold` rule params
 		// when `groupBy` is omitted (server-side expects a string, but sees undefined).
 		// Defaulting to "all" preserves Kibana's effective behavior while avoiding 400s.
-		if rule.RuleTypeID == ".index-threshold" {
-			if v, ok := params["groupBy"]; !ok || v == nil {
-				params["groupBy"] = "all"
+		if rule.RuleTypeID == ruleTypeIndexThreshold {
+			if v, ok := params[paramsKeyGroupBy]; !ok || v == nil {
+				params[paramsKeyGroupBy] = paramsGroupByAll
 			}
 
 			// Compatibility: some Kibana versions reject `.index-threshold` params
 			// when `aggType` is omitted (server-side expects a string, but sees undefined).
 			// Defaulting to `count` preserves Kibana behavior while avoiding 400s.
-			if v, ok := params["aggType"]; !ok || v == nil {
-				params["aggType"] = "count"
+			if v, ok := params[paramsKeyAggType]; !ok || v == nil {
+				params[paramsKeyAggType] = paramsAggTypeCount
 				// aggField is only valid for non-count aggregations.
 				delete(params, "aggField")
 			}

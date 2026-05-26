@@ -34,6 +34,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const descCustomSchedule = "A set schedule over which the maintenance window applies."
+
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Creates and manages Kibana [maintenance windows](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-maintenance-window)",
@@ -68,7 +70,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Default:     booldefault.StaticBool(false),
 			},
 			"custom_schedule": schema.SingleNestedAttribute{
-				Description: "A set schedule over which the maintenance window applies.",
+				Description: descCustomSchedule,
 				Required:    true,
 				Attributes: map[string]schema.Attribute{
 					"start": schema.StringAttribute{
@@ -89,7 +91,7 @@ func getSchema(_ context.Context) schema.Schema {
 						Computed:    true,
 					},
 					"recurring": schema.SingleNestedAttribute{
-						Description: "A set schedule over which the maintenance window applies.",
+						Description: descCustomSchedule,
 						Required:    true,
 						Attributes: map[string]schema.Attribute{
 							"end": schema.StringAttribute{
@@ -150,7 +152,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
 					"alerting": schema.SingleNestedAttribute{
-						Description: "A set schedule over which the maintenance window applies.",
+						Description: descCustomSchedule,
 						Required:    true,
 						Attributes: map[string]schema.Attribute{
 							"kql": schema.StringAttribute{

@@ -41,11 +41,7 @@ func createFilter(ctx context.Context, client *clients.ElasticsearchScopedClient
 
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML filter: %s", filterID))
 
-	typedClient, clientDiags := client.GetESClient()
-	diags.Append(clientDiags...)
-	if diags.HasError() {
-		return entitycore.WriteResult[TFModel]{Model: plan}, diags
-	}
+	typedClient := client.GetESClient()
 
 	put := typedClient.Ml.PutFilter(filterID)
 	if typeutils.IsKnown(plan.Description) && plan.Description.ValueString() != "" {

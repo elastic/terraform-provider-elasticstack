@@ -64,7 +64,7 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 		Title:               new("Test Heatmap"),
 		Description:         new("Heatmap description"),
 		IgnoreGlobalFilters: new(true),
-		Sampling:            newFloat32(0.5),
+		Sampling:            new(float32(0.5)),
 		Query: kbapi.KibanaHTTPAPIsFilterSimple{
 			Expression: "status:200",
 			Language: func() *kbapi.KibanaHTTPAPIsFilterSimpleLanguage {
@@ -119,7 +119,7 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 				visibility := kbapi.KibanaHTTPAPIsHeatmapLegendVisibilityVisible
 				return &visibility
 			}(),
-			TruncateAfterLines: newFloat32(4),
+			TruncateAfterLines: new(float32(4)),
 		},
 	}
 
@@ -202,6 +202,3 @@ func TestConverter_roundTrip_ESQL_heatmap(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(dsBytes), "FROM logs-*")
 }
-
-//go:fix inline
-func newFloat32(f float32) *float32 { return new(f) }

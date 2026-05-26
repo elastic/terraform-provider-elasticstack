@@ -30,10 +30,7 @@ import (
 func PutUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, user *types.User, password, passwordHash *string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	req := typedClient.Security.PutUser(user.Username).
 		Enabled(user.Enabled).
@@ -66,10 +63,7 @@ func PutUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 }
 
 func GetUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) (*types.User, fwdiag.Diagnostics) {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
-	}
+	typedClient := apiClient.GetESClient()
 
 	res, err := typedClient.Security.GetUser().Username(username).Do(ctx)
 	if err != nil {
@@ -94,10 +88,7 @@ func GetUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 func DeleteUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Security.DeleteUser(username).Do(ctx)
 	if err != nil {
@@ -114,10 +105,7 @@ func DeleteUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 func EnableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Security.EnableUser(username).Do(ctx)
 	if err != nil {
@@ -134,10 +122,7 @@ func EnableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 func DisableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Security.DisableUser(username).Do(ctx)
 	if err != nil {
@@ -154,10 +139,7 @@ func DisableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 func ChangeUserPassword(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string, password, passwordHash *string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	req := typedClient.Security.ChangePassword().Username(username)
 	if password != nil {

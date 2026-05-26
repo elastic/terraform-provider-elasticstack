@@ -64,11 +64,7 @@ func (r *resourceSourceMap) read(ctx context.Context, state *SourceMap) (*Source
 		return nil, diags
 	}
 
-	kibana, d := scoped.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return nil, diags
-	}
+	kibana := scoped.GetKibanaOapiClient()
 
 	supportsPagination, vDiags := scoped.EnforceVersionCheck(ctx, func(v *version.Version) bool {
 		return v.GreaterThanOrEqual(minSourceMapPaginationVersion)

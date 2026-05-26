@@ -28,11 +28,7 @@ import (
 func readProxy(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model proxyModel) (proxyModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	fleetClient, d := client.GetFleetClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return model, false, diags
-	}
+	fleetClient := client.GetFleetClient()
 
 	apiResp, getDiags := fleetclient.GetProxy(ctx, fleetClient, spaceID, resourceID)
 	diags.Append(getDiags...)

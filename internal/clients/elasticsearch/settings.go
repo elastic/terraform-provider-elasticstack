@@ -28,10 +28,7 @@ import (
 )
 
 func PutSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, settings map[string]any) fwdiag.Diagnostics {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return d
-	}
+	typedClient := apiClient.GetESClient()
 
 	req := typedClient.Cluster.PutSettings()
 
@@ -70,10 +67,7 @@ func toRawMessageMap(m map[string]any) (map[string]json.RawMessage, error) {
 }
 
 func GetSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient) (map[string]any, fwdiag.Diagnostics) {
-	typedClient, d := apiClient.GetESClient()
-	if d.HasError() {
-		return nil, d
-	}
+	typedClient := apiClient.GetESClient()
 	resp, err := typedClient.Cluster.GetSettings().FlatSettings(true).Do(ctx)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)

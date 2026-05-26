@@ -77,11 +77,7 @@ func readAgentDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 		includeDeps = config.IncludeDependencies.ValueBool()
 	}
 
-	client, d := kbClient.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return config, diags
-	}
+	client := kbClient.GetKibanaOapiClient()
 
 	spaceID := "default"
 	if typeutils.IsKnown(config.SpaceID) && config.SpaceID.ValueString() != "" {

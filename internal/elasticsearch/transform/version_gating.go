@@ -34,13 +34,13 @@ func init() {
 	settingsRequiredVersions["destination.aliases"] = version.Must(version.NewVersion("8.8.0"))
 
 	// settings requiring >= 8.1
-	settingsRequiredVersions["deduce_mappings"] = version.Must(version.NewVersion("8.1.0"))
+	settingsRequiredVersions[settingDeduceMappings] = version.Must(version.NewVersion("8.1.0"))
 
 	// settings requiring >= 8.4
-	settingsRequiredVersions["num_failure_retries"] = version.Must(version.NewVersion("8.4.0"))
+	settingsRequiredVersions[settingNumFailureRetries] = version.Must(version.NewVersion("8.4.0"))
 
 	// settings requiring >= 8.5
-	settingsRequiredVersions["unattended"] = version.Must(version.NewVersion("8.5.0"))
+	settingsRequiredVersions[settingUnattended] = version.Must(version.NewVersion("8.5.0"))
 }
 
 // isSettingAllowed returns true when the given setting is supported by the

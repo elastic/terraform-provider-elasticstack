@@ -153,16 +153,16 @@ func Test_resolveChartTimeRange_defaultWhenNoDashboard(t *testing.T) {
 		To:   types.StringValue("now-1d"),
 	}
 
-	got := resolveChartTimeRange(dash, chartTR)
+	got := lenscommon.ResolveChartTimeRange(dash, chartTR)
 	assert.Equal(t, "now-30d", got.From)
 	assert.Equal(t, "now-1d", got.To)
 
-	gotInherit := resolveChartTimeRange(dash, nil)
+	gotInherit := lenscommon.ResolveChartTimeRange(dash, nil)
 	assert.Equal(t, "now-7d", gotInherit.From)
 	assert.Equal(t, "now", gotInherit.To)
 
 	// Scratch paths (no dashboard model) fall back to the legacy window when chart time is unset.
-	gotScratch := resolveChartTimeRange(nil, nil)
+	gotScratch := lenscommon.ResolveChartTimeRange(nil, nil)
 	assert.Equal(t, "now-15m", gotScratch.From)
 	assert.Equal(t, "now", gotScratch.To)
 }

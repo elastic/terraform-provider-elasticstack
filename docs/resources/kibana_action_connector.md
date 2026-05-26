@@ -118,12 +118,16 @@ resource "elasticstack_kibana_action_connector" "webhook" {
 
 ### Optional
 
+> **NOTE**: [Write-only arguments](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments) are supported in Terraform 1.11 and later.
+
 - `config` (String) The configuration for the connector. Configuration properties vary depending on the connector type.
 
 The provider injects the '__tf_provider_context' property into this JSON object. In most cases this field will be ignored when computing the difference between the current and desired state. In some cases however, this property may be shown in the Terraform plan. Any changes to the '__tf_provider_context' property can be safely ignored. This property is used internally by the provider, and you should not set this property within your Terraform configuration.
 - `connector_id` (String) A UUID v1 or v4 to use instead of a randomly generated ID.
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
-- `secrets` (String, Sensitive) The secrets configuration for the connector. Secrets configuration properties vary depending on the connector type.
+- `secrets` (String, Sensitive) The secrets configuration for the connector. Secrets configuration properties vary depending on the connector type. Consider using `secrets_wo` when sourcing secrets from ephemeral providers so values are not persisted to state.
+- `secrets_wo` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only secrets configuration for the connector. Accepts the same JSON content as `secrets` but is never persisted to state; use with ephemeral secret sources (for example Vault).
+- `secrets_wo_version` (String) Optional version string for `secrets_wo`. Bump this value when the secret rotates to trigger a re-send on the next apply.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 
 ### Read-Only

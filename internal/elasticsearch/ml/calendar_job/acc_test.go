@@ -51,10 +51,7 @@ func setupAccMLCalendar(t *testing.T, calendarID string) {
 	if err != nil {
 		t.Fatalf("acceptance elasticsearch client: %v", err)
 	}
-	es, clientDiags := client.GetESClient()
-	if clientDiags.HasError() {
-		t.Fatalf("get elasticsearch client: %v", clientDiags)
-	}
+	es := client.GetESClient()
 	desc := fmt.Sprintf("terraform acc calendar %s", calendarID)
 	if _, err := es.Ml.PutCalendar(calendarID).Description(desc).Do(ctx); err != nil {
 		t.Fatalf("put ML calendar %q: %v", calendarID, err)
@@ -115,11 +112,7 @@ func accCleanupMLAnomalyJobAfterTest(t *testing.T, jobID string) {
 			t.Logf("cleanup ML job %q: acceptance client: %v", jobID, err)
 			return
 		}
-		es, clientDiags := client.GetESClient()
-		if clientDiags.HasError() {
-			t.Logf("cleanup ML job %q: typed client: %v", jobID, clientDiags)
-			return
-		}
+		es := client.GetESClient()
 		if _, err := es.Ml.CloseJob(jobID).Force(true).AllowNoMatch(true).Do(ctx); err != nil {
 			t.Logf("cleanup ML job %q: CloseJob: %v", jobID, err)
 		}
@@ -491,10 +484,7 @@ func TestAccMLCalendarJob_getCalendarsMissingRepresentedAsNotFound(t *testing.T)
 	if err != nil {
 		t.Fatalf("acceptance elasticsearch client: %v", err)
 	}
-	es, clientDiags := client.GetESClient()
-	if clientDiags.HasError() {
-		t.Fatalf("get elasticsearch client: %v", clientDiags)
-	}
+	es := client.GetESClient()
 	calendarID := fmt.Sprintf("test-cal-job-nocal-%s", sdkacctest.RandStringFromCharSet(24, sdkacctest.CharSetAlphaNum))
 
 	res, err := es.Ml.GetCalendars().CalendarId(calendarID).Do(ctx)
@@ -541,10 +531,7 @@ func TestAccResourceMLCalendarJob_refreshRemovesAssignmentWhenCalendarDeleted(t 
 					if err != nil {
 						t.Fatalf("acceptance elasticsearch client: %v", err)
 					}
-					es, clientDiags := c.GetESClient()
-					if clientDiags.HasError() {
-						t.Fatalf("typed elasticsearch client: %v", clientDiags)
-					}
+					es := c.GetESClient()
 					if _, err := es.Ml.DeleteCalendar(calendarID).Do(ctx); err != nil && !esclient.IsNotFoundElasticsearchError(err) {
 						t.Fatalf("delete ML calendar %q before refresh: %v", calendarID, err)
 					}

@@ -56,11 +56,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	createdRule, createDiags := kibanaoapi.CreateAlertingRule(ctx, oapiClient, rule.SpaceID, rule)
 	resp.Diagnostics.Append(createDiags...)

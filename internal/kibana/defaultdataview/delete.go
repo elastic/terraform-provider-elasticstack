@@ -33,11 +33,7 @@ func deleteDefaultDataView(ctx context.Context, client *clients.KibanaScopedClie
 		return diags
 	}
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	setReq := kbapi.SetDefaultDatailViewDefaultJSONRequestBody{
 		Force: new(true),

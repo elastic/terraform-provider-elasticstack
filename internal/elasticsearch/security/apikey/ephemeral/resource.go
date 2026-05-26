@@ -35,6 +35,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
+// Terraform schema attribute keys for the ephemeral API key resource. They are
+// shared between the schema definition here and the table-driven validation
+// tests so the linter sees a single source of truth.
+const (
+	attrName            = "name"
+	attrType            = "type"
+	attrRoleDescriptors = "role_descriptors"
+	attrAccess          = "access"
+)
+
 type tfModel struct {
 	entitycore.ElasticsearchConnectionField
 	KeyID               types.String                                                              `tfsdk:"key_id"`
@@ -78,17 +88,17 @@ func getSchema(_ context.Context) eschema.Schema {
 		Description:         resourceDescription,
 		MarkdownDescription: resourceDescription,
 		Attributes: map[string]eschema.Attribute{
-			"name": eschema.StringAttribute{
+			attrName: eschema.StringAttribute{
 				Description: apikey.NameDescription,
 				Required:    true,
 				Validators:  apikey.NameValidators(),
 			},
-			"type": eschema.StringAttribute{
+			attrType: eschema.StringAttribute{
 				Description: apikey.TypeDescription,
 				Optional:    true,
 				Validators:  apikey.TypeValidators(),
 			},
-			"role_descriptors": eschema.StringAttribute{
+			attrRoleDescriptors: eschema.StringAttribute{
 				Description: apikey.RoleDescriptorsDescription,
 				CustomType:  apikey.RoleDescriptorsCustomType(),
 				Optional:    true,
@@ -103,7 +113,7 @@ func getSchema(_ context.Context) eschema.Schema {
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
 			},
-			"access": eschema.SingleNestedAttribute{
+			attrAccess: eschema.SingleNestedAttribute{
 				Description: apikey.AccessDescription,
 				Optional:    true,
 				Validators:  apikey.AccessValidators(),

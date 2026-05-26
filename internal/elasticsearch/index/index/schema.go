@@ -59,14 +59,14 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 				NestedObject: schema.NestedBlockObject{
 					Blocks: map[string]schema.Block{
-						"setting": schema.SetNestedBlock{
+						attrSetting: schema.SetNestedBlock{
 							Description: "Defines the setting for the index.",
 							Validators: []validator.Set{
 								setvalidator.SizeAtLeast(1),
 							},
 							NestedObject: schema.NestedBlockObject{
 								Attributes: map[string]schema.Attribute{
-									"name": schema.StringAttribute{
+									attrName: schema.StringAttribute{
 										Description: "The name of the setting to set and track.",
 										Required:    true,
 									},
@@ -189,21 +189,21 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			// Static settings that can only be set on creation
-			"number_of_shards": schema.Int64Attribute{
+			settingNumberOfShards: schema.Int64Attribute{
 				Description: "Number of shards for the index. This can be set only on creation.",
 				Optional:    true,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
 				},
 			},
-			"number_of_routing_shards": schema.Int64Attribute{
+			settingNumberOfRoutingShards: schema.Int64Attribute{
 				Description: "Value used with number_of_shards to route documents to a primary shard. This can be set only on creation.",
 				Optional:    true,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
 				},
 			},
-			"codec": schema.StringAttribute{
+			settingCodec: schema.StringAttribute{
 				Description: codecDescription,
 				Optional:    true,
 				PlanModifiers: []planmodifier.String{
@@ -213,14 +213,14 @@ func getSchema(_ context.Context) schema.Schema {
 					stringvalidator.OneOf("best_compression"),
 				},
 			},
-			"routing_partition_size": schema.Int64Attribute{
+			settingRoutingPartitionSize: schema.Int64Attribute{
 				Description: "The number of shards a custom routing value can go to. This can be set only on creation.",
 				Optional:    true,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
 				},
 			},
-			"load_fixed_bitset_filters_eagerly": schema.BoolAttribute{
+			settingLoadFixedBitsetFiltersEagerly: schema.BoolAttribute{
 				Description: "Indicates whether cached filters are pre-loaded for nested queries. This can be set only on creation.",
 				Optional:    true,
 				PlanModifiers: []planmodifier.Bool{
@@ -248,29 +248,29 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"field": schema.StringAttribute{
+						attrField: schema.StringAttribute{
 							Description: "The index field to sort by.",
 							Required:    true,
 						},
-						"order": schema.StringAttribute{
+						attrOrder: schema.StringAttribute{
 							Description: "The sort direction. Valid values: asc, desc.",
 							Optional:    true,
 							Validators: []validator.String{
-								stringvalidator.OneOf("asc", "desc"),
+								stringvalidator.OneOf(sortOrderAsc, sortOrderDesc),
 							},
 						},
-						"missing": schema.StringAttribute{
+						attrMissing: schema.StringAttribute{
 							Description: "How to treat documents missing the sort field. Valid values: _last, _first.",
 							Optional:    true,
 							Validators: []validator.String{
-								stringvalidator.OneOf("_last", "_first"),
+								stringvalidator.OneOf(sortMissingLast, "_first"),
 							},
 						},
-						"mode": schema.StringAttribute{
+						attrMode: schema.StringAttribute{
 							Description: "Which value to use when the sort field has multiple values. Valid values: min, max.",
 							Optional:    true,
 							Validators: []validator.String{
-								stringvalidator.OneOf("min", "max"),
+								stringvalidator.OneOf(sortModeMin, sortModeMax),
 							},
 						},
 					},
@@ -313,11 +313,11 @@ func getSchema(_ context.Context) schema.Schema {
 				Description: "The maximum number of fields in an index. Field type parameters count towards this limit. The default value is 1000.",
 				Optional:    true,
 			},
-			"number_of_replicas": schema.Int64Attribute{
+			settingNumberOfReplicas: schema.Int64Attribute{
 				Description: "Number of shard replicas.",
 				Optional:    true,
 			},
-			"auto_expand_replicas": schema.StringAttribute{
+			settingAutoExpandReplicas: schema.StringAttribute{
 				Description: "Set the number of replicas to the node count in the cluster. Set to a dash delimited lower and upper bound (e.g. 0-5) or use all for the upper bound (e.g. 0-all)",
 				Optional:    true,
 			},
@@ -325,39 +325,39 @@ func getSchema(_ context.Context) schema.Schema {
 				Description: "How long a shard can not receive a search or get request until it’s considered search idle.",
 				Optional:    true,
 			},
-			"refresh_interval": schema.StringAttribute{
+			settingRefreshInterval: schema.StringAttribute{
 				Description: "How often to perform a refresh operation, which makes recent changes to the index visible to search. Can be set to `-1` to disable refresh.",
 				Optional:    true,
 			},
-			"max_result_window": schema.Int64Attribute{
+			settingMaxResultWindow: schema.Int64Attribute{
 				Description: "The maximum value of `from + size` for searches to this index.",
 				Optional:    true,
 			},
-			"max_inner_result_window": schema.Int64Attribute{
+			settingMaxInnerResultWindow: schema.Int64Attribute{
 				Description: "The maximum value of `from + size` for inner hits definition and top hits aggregations to this index.",
 				Optional:    true,
 			},
-			"max_rescore_window": schema.Int64Attribute{
+			settingMaxRescoreWindow: schema.Int64Attribute{
 				Description: "The maximum value of `window_size` for `rescore` requests in searches of this index.",
 				Optional:    true,
 			},
-			"max_docvalue_fields_search": schema.Int64Attribute{
+			settingMaxDocvalueFieldsSearch: schema.Int64Attribute{
 				Description: "The maximum number of `docvalue_fields` that are allowed in a query.",
 				Optional:    true,
 			},
-			"max_script_fields": schema.Int64Attribute{
+			settingMaxScriptFields: schema.Int64Attribute{
 				Description: "The maximum number of `script_fields` that are allowed in a query.",
 				Optional:    true,
 			},
-			"max_ngram_diff": schema.Int64Attribute{
+			settingMaxNgramDiff: schema.Int64Attribute{
 				Description: "The maximum allowed difference between min_gram and max_gram for NGramTokenizer and NGramTokenFilter.",
 				Optional:    true,
 			},
-			"max_shingle_diff": schema.Int64Attribute{
+			settingMaxShingleDiff: schema.Int64Attribute{
 				Description: "The maximum allowed difference between max_shingle_size and min_shingle_size for ShingleTokenFilter.",
 				Optional:    true,
 			},
-			"max_refresh_listeners": schema.Int64Attribute{
+			settingMaxRefreshListeners: schema.Int64Attribute{
 				Description: "Maximum number of refresh listeners available on each shard of the index.",
 				Optional:    true,
 			},
@@ -369,11 +369,11 @@ func getSchema(_ context.Context) schema.Schema {
 				Description: "The maximum number of characters that will be analyzed for a highlight request.",
 				Optional:    true,
 			},
-			"max_terms_count": schema.Int64Attribute{
+			settingMaxTermsCount: schema.Int64Attribute{
 				Description: "The maximum number of terms that can be used in Terms Query.",
 				Optional:    true,
 			},
-			"max_regex_length": schema.Int64Attribute{
+			settingMaxRegexLength: schema.Int64Attribute{
 				Description: "The maximum length of regex that can be used in Regexp Query.",
 				Optional:    true,
 			},
@@ -396,7 +396,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringvalidator.OneOf("all", "primaries", "replicas", "none"),
 				},
 			},
-			"gc_deletes": schema.StringAttribute{
+			settingGCDeletes: schema.StringAttribute{
 				Description: "The length of time that a deleted document's version number remains available for further versioned operations.",
 				Optional:    true,
 			},
@@ -420,11 +420,11 @@ func getSchema(_ context.Context) schema.Schema {
 				Description: "Set to `true` to disable index metadata reads and writes.",
 				Optional:    true,
 			},
-			"default_pipeline": schema.StringAttribute{
+			settingDefaultPipeline: schema.StringAttribute{
 				Description: "The default ingest node pipeline for this index. Index requests will fail if the default pipeline is set and the pipeline does not exist.",
 				Optional:    true,
 			},
-			"final_pipeline": schema.StringAttribute{
+			settingFinalPipeline: schema.StringAttribute{
 				Description: finalPipelineDescription,
 				Optional:    true,
 			},
@@ -612,5 +612,5 @@ func settingsElementType(ctx context.Context) attr.Type {
 }
 
 func settingElementType(ctx context.Context) attr.Type {
-	return getSchema(ctx).Blocks["settings"].GetNestedObject().GetBlocks()["setting"].Type().(attr.TypeWithElementType).ElementType()
+	return getSchema(ctx).Blocks["settings"].GetNestedObject().GetBlocks()[attrSetting].Type().(attr.TypeWithElementType).ElementType()
 }

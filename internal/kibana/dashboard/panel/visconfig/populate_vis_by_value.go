@@ -24,7 +24,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -37,46 +36,11 @@ func lensChartResolver(dashboard *models.DashboardModel) lenscommon.Resolver {
 }
 
 func (r *chartPresentationResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	return resolveChartTimeRange(r.dashboard, chartLevel)
+	return lenscommon.ResolveChartTimeRange(r.dashboard, chartLevel)
 }
 
 func (r *chartPresentationResolver) DashboardLensComparableTimeRange() (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, bool) {
-	return dashboardLensComparableTimeRange(r.dashboard)
-}
-
-func timeRangeModelToAPI(tr *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	if tr == nil {
-		return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}
-	}
-	out := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
-		From: tr.From.ValueString(),
-		To:   tr.To.ValueString(),
-	}
-	if typeutils.IsKnown(tr.Mode) {
-		mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode(tr.Mode.ValueString())
-		out.Mode = &mode
-	}
-	return out
-}
-
-func resolveChartTimeRange(dashboard *models.DashboardModel, chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	if chartLevel != nil {
-		return timeRangeModelToAPI(chartLevel)
-	}
-	if dashboard != nil && dashboard.TimeRange != nil {
-		return timeRangeModelToAPI(dashboard.TimeRange)
-	}
-	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
-		From: "now-15m",
-		To:   "now",
-	}
-}
-
-func dashboardLensComparableTimeRange(dashboard *models.DashboardModel) (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, bool) {
-	if dashboard == nil || dashboard.TimeRange == nil {
-		return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}, false
-	}
-	return timeRangeModelToAPI(dashboard.TimeRange), true
+	return lenscommon.DashboardLensComparableTimeRange(r.dashboard)
 }
 
 // lensByValueChartBlocksFromPanel returns vis_config.by_value chart blocks when populated.

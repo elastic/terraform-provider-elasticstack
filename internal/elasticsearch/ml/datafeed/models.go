@@ -337,15 +337,15 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 		}
 
 		chunkingConfigObj, diag := types.ObjectValueFrom(ctx, map[string]attr.Type{
-			"mode":      types.StringType,
-			"time_span": types.StringType,
+			attrMode:     types.StringType,
+			attrTimeSpan: types.StringType,
 		}, chunkingConfigTF)
 		diags.Append(diag...)
 		m.ChunkingConfig = chunkingConfigObj
 	} else {
 		m.ChunkingConfig = types.ObjectNull(map[string]attr.Type{
-			"mode":      types.StringType,
-			"time_span": types.StringType,
+			attrMode:     types.StringType,
+			attrTimeSpan: types.StringType,
 		})
 	}
 
@@ -406,19 +406,19 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 		}
 
 		indicesOptionsObj, diag := types.ObjectValueFrom(ctx, map[string]attr.Type{
-			"expand_wildcards":   ExpandWildcardsType{SetType: basetypes.SetType{ElemType: types.StringType}},
-			"ignore_unavailable": types.BoolType,
-			"allow_no_indices":   types.BoolType,
-			"ignore_throttled":   types.BoolType,
+			attrExpandWildcards:   ExpandWildcardsType{SetType: basetypes.SetType{ElemType: types.StringType}},
+			attrIgnoreUnavailable: types.BoolType,
+			attrAllowNoIndices:    types.BoolType,
+			attrIgnoreThrottled:   types.BoolType,
 		}, indicesOptionsTF)
 		diags.Append(diag...)
 		m.IndicesOptions = indicesOptionsObj
 	} else {
 		m.IndicesOptions = types.ObjectNull(map[string]attr.Type{
-			"expand_wildcards":   ExpandWildcardsType{SetType: basetypes.SetType{ElemType: types.StringType}},
-			"ignore_unavailable": types.BoolType,
-			"allow_no_indices":   types.BoolType,
-			"ignore_throttled":   types.BoolType,
+			attrExpandWildcards:   ExpandWildcardsType{SetType: basetypes.SetType{ElemType: types.StringType}},
+			attrIgnoreUnavailable: types.BoolType,
+			attrAllowNoIndices:    types.BoolType,
+			attrIgnoreThrottled:   types.BoolType,
 		})
 	}
 

@@ -22,6 +22,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// Terraform schema attribute keys shared across the schema, model types,
+// and flatten/expand helpers for the data_stream_options block.
+const (
+	attrFailureStore  = "failure_store"
+	attrEnabled       = "enabled"
+	attrLifecycle     = "lifecycle"
+	attrDataRetention = "data_retention"
+)
+
 // Model is the inner shape of template.data_stream_options.
 type Model struct {
 	FailureStore types.Object `tfsdk:"failure_store"`
@@ -41,21 +50,21 @@ type FailureStoreLifecycleModel struct {
 // AttrTypes returns attribute types for template.data_stream_options.
 func AttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"failure_store": types.ObjectType{AttrTypes: FailureStoreAttrTypes()},
+		attrFailureStore: types.ObjectType{AttrTypes: FailureStoreAttrTypes()},
 	}
 }
 
 // FailureStoreAttrTypes returns attribute types for failure_store.
 func FailureStoreAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"enabled":   types.BoolType,
-		"lifecycle": types.ObjectType{AttrTypes: FailureStoreLifecycleAttrTypes()},
+		attrEnabled:   types.BoolType,
+		attrLifecycle: types.ObjectType{AttrTypes: FailureStoreLifecycleAttrTypes()},
 	}
 }
 
 // FailureStoreLifecycleAttrTypes returns attribute types for failure_store.lifecycle.
 func FailureStoreLifecycleAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"data_retention": types.StringType,
+		attrDataRetention: types.StringType,
 	}
 }

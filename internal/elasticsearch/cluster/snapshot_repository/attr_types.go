@@ -25,17 +25,17 @@ import (
 
 func commonAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"chunk_size":                 types.StringType,
-		"compress":                   types.BoolType,
-		"max_snapshot_bytes_per_sec": types.StringType,
-		"max_restore_bytes_per_sec":  types.StringType,
-		"readonly":                   types.BoolType,
+		settingChunkSize:              types.StringType,
+		settingCompress:               types.BoolType,
+		settingMaxSnapshotBytesPerSec: types.StringType,
+		settingMaxRestoreBytesPerSec:  types.StringType,
+		settingReadonly:               types.BoolType,
 	}
 }
 
 func commonStdAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"max_number_of_snapshots": types.Int64Type,
+		settingMaxNumberOfSnapshots: types.Int64Type,
 	}
 }
 
@@ -49,53 +49,53 @@ func mergeAttrTypes(mps ...map[string]attr.Type) map[string]attr.Type {
 
 func fsAttrTypes() map[string]attr.Type {
 	return mergeAttrTypes(commonAttrTypes(), commonStdAttrTypes(), map[string]attr.Type{
-		"location": types.StringType,
+		settingLocation: types.StringType,
 	})
 }
 
 func urlAttrTypes() map[string]attr.Type {
 	return mergeAttrTypes(commonAttrTypes(), commonStdAttrTypes(), map[string]attr.Type{
-		"url":                 types.StringType,
-		"http_max_retries":    types.Int64Type,
-		"http_socket_timeout": types.StringType,
+		settingURL:               types.StringType,
+		settingHTTPMaxRetries:    types.Int64Type,
+		settingHTTPSocketTimeout: types.StringType,
 	})
 }
 
 func gcsAttrTypes() map[string]attr.Type {
 	return mergeAttrTypes(commonAttrTypes(), map[string]attr.Type{
-		"bucket":    types.StringType,
-		"client":    types.StringType,
-		"base_path": types.StringType,
+		settingBucket:   types.StringType,
+		settingClient:   types.StringType,
+		settingBasePath: types.StringType,
 	})
 }
 
 func azureAttrTypes() map[string]attr.Type {
 	return mergeAttrTypes(commonAttrTypes(), map[string]attr.Type{
-		"container":     types.StringType,
-		"client":        types.StringType,
-		"base_path":     types.StringType,
-		"location_mode": types.StringType,
+		settingContainer:    types.StringType,
+		settingClient:       types.StringType,
+		settingBasePath:     types.StringType,
+		settingLocationMode: types.StringType,
 	})
 }
 
 func s3AttrTypes() map[string]attr.Type {
 	return mergeAttrTypes(commonAttrTypes(), map[string]attr.Type{
-		"bucket":                 types.StringType,
-		"endpoint":               types.StringType,
-		"client":                 types.StringType,
-		"base_path":              types.StringType,
-		"server_side_encryption": types.BoolType,
-		"buffer_size":            types.StringType,
-		"canned_acl":             types.StringType,
-		"storage_class":          types.StringType,
-		"path_style_access":      types.BoolType,
+		settingBucket:               types.StringType,
+		settingEndpoint:             types.StringType,
+		settingClient:               types.StringType,
+		settingBasePath:             types.StringType,
+		settingServerSideEncryption: types.BoolType,
+		settingBufferSize:           types.StringType,
+		settingCannedACL:            types.StringType,
+		settingStorageClass:         types.StringType,
+		settingPathStyleAccess:      types.BoolType,
 	})
 }
 
 func hdfsAttrTypes() map[string]attr.Type {
 	return mergeAttrTypes(commonAttrTypes(), map[string]attr.Type{
-		"uri":           types.StringType,
-		"path":          types.StringType,
-		"load_defaults": types.BoolType,
+		settingURI:          types.StringType,
+		settingPath:         types.StringType,
+		settingLoadDefaults: types.BoolType,
 	})
 }

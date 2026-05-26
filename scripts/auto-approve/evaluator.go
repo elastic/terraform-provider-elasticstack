@@ -27,6 +27,10 @@ import (
 
 const (
 	maxEditedLines = 1000
+
+	// reasonAllGatesPassed is the human-readable reason recorded on a successful
+	// auto-approve evaluation.
+	reasonAllGatesPassed = "all gates passed"
 )
 
 var allowedCopilotAuthorLogins = map[string]struct{}{
@@ -93,7 +97,7 @@ func Evaluate(input EvaluationInput) EvaluationResult {
 	return EvaluationResult{
 		CategoryMatched: category,
 		ShouldApprove:   true,
-		Reasons:         []string{"all gates passed"},
+		Reasons:         []string{reasonAllGatesPassed},
 	}
 }
 

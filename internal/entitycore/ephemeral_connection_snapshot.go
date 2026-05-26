@@ -109,19 +109,19 @@ func decodeEphemeralConnection[Snap any](
 }
 
 func encodeElasticsearchConnection(ctx context.Context, connection types.List) ([]byte, diag.Diagnostics) {
-	return encodeEphemeralConnection(ctx, connection, esConnectionSnapshotFromList, "elasticsearch_connection")
+	return encodeEphemeralConnection(ctx, connection, esConnectionSnapshotFromList, blockElasticsearchConnection)
 }
 
 func decodeElasticsearchConnection(ctx context.Context, data []byte) (types.List, diag.Diagnostics) {
-	return decodeEphemeralConnection(ctx, data, providerschema.ElasticsearchConnectionNullList, "elasticsearch_connection", esConnectionListFromSnapshot)
+	return decodeEphemeralConnection(ctx, data, providerschema.ElasticsearchConnectionNullList, blockElasticsearchConnection, esConnectionListFromSnapshot)
 }
 
 func encodeKibanaConnection(ctx context.Context, connection types.List) ([]byte, diag.Diagnostics) {
-	return encodeEphemeralConnection(ctx, connection, kibanaConnectionSnapshotFromList, "kibana_connection")
+	return encodeEphemeralConnection(ctx, connection, kibanaConnectionSnapshotFromList, blockKibanaConnection)
 }
 
 func decodeKibanaConnection(ctx context.Context, data []byte) (types.List, diag.Diagnostics) {
-	return decodeEphemeralConnection(ctx, data, providerschema.KibanaConnectionNullList, "kibana_connection", kibanaConnectionListFromSnapshot)
+	return decodeEphemeralConnection(ctx, data, providerschema.KibanaConnectionNullList, blockKibanaConnection, kibanaConnectionListFromSnapshot)
 }
 
 func esConnectionSnapshotFromList(ctx context.Context, connection types.List) (*ephemeralESConnectionSnapshot, diag.Diagnostics) {

@@ -81,7 +81,7 @@ func getSchema() schema.Schema {
 				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
 				Optional:    true,
 				Computed:    true,
-				Default:     stringdefault.StaticString("default"),
+				Default:     stringdefault.StaticString(defaultSpaceID),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -134,7 +134,7 @@ func getSchema() schema.Schema {
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
 			},
-			"tags": schema.SetAttribute{
+			attrTags: schema.SetAttribute{
 				Description: "A list of tag names that are applied to the rule.",
 				Optional:    true,
 				ElementType: types.StringType,
@@ -212,7 +212,7 @@ func getSchema() schema.Schema {
 							Description: actionsGroupDescription,
 							Optional:    true,
 							Computed:    true,
-							Default:     stringdefault.StaticString("default"),
+							Default:     stringdefault.StaticString(defaultSpaceID),
 						},
 						"id": schema.StringAttribute{
 							Description: "The identifier for the connector saved object.",

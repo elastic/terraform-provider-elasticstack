@@ -42,11 +42,7 @@ func updateAgent(ctx context.Context, client *clients.KibanaScopedClient, req en
 		return entitycore.KibanaWriteResult[agentModel]{}, diags
 	}
 
-	oapiClient, d := client.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[agentModel]{}, diags
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
 	_, d = kibanaoapi.UpdateAgent(ctx, oapiClient, req.SpaceID, req.WriteID, body)
 	diags.Append(d...)

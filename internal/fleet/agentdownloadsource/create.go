@@ -43,11 +43,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	client, d := apiClient.GetFleetClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	client := apiClient.GetFleetClient()
 	resp.Diagnostics.Append(entitycore.EnforceVersionRequirements(ctx, apiClient, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return

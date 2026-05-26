@@ -203,6 +203,7 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 			os.Unsetenv("KIBANA_USERNAME")
 			os.Unsetenv("KIBANA_PASSWORD")
 			os.Unsetenv("KIBANA_API_KEY")
+			os.Unsetenv("KIBANA_BEARER_TOKEN")
 			os.Unsetenv("KIBANA_ENDPOINT")
 			os.Unsetenv("KIBANA_CA_CERTS")
 			os.Unsetenv("KIBANA_INSECURE")
@@ -218,6 +219,355 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 
 			require.Equal(t, args.expectedConfig, kibanaCfg)
 			require.Equal(t, args.expectedDiags, diags)
+		})
+	}
+}
+
+func Test_newKibanaOapiConfigFromFramework_doesNotApplyFleetFallback(t *testing.T) {
+	os.Unsetenv("KIBANA_ENDPOINT")
+
+	cfg := ProviderConfiguration{
+		Fleet: []FleetConnection{
+			{
+				Endpoint: types.StringValue("https://fleet.example.com"),
+				APIKey:   types.StringValue("F-KEY"),
+				CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+			},
+		},
+	}
+
+	kibanaCfg, diags := newKibanaOapiConfigFromFramework(context.Background(), cfg, baseConfig{})
+
+	require.False(t, diags.HasError())
+	require.Empty(t, kibanaCfg.URL)
+	require.Empty(t, kibanaCfg.APIKey)
+}
+
+func Test_newProviderKibanaOapiConfigFromFramework_fleetBlockFallback(t *testing.T) {
+	type args struct {
+		baseCfg        baseConfig
+		providerConfig ProviderConfiguration
+		expectedConfig kibanaOapiConfig
+		env            map[string]string
+	}
+
+	tests := []struct {
+		name string
+		args func() args
+	}{
+		{
+			name: "fleet endpoint only inherits into kibana_oapi URL",
+			args: func() args {
+				return args{
+					providerConfig: ProviderConfiguration{
+						Fleet: []FleetConnection{
+							{
+								Endpoint: types.StringValue("https://fleet.example.com"),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					expectedConfig: kibanaOapiConfig{
+						URL: "https://fleet.example.com",
+					},
+				}
+			},
+		},
+		{
+			name: "kibana endpoints with fleet api_key uses both blocks field-by-field",
+			args: func() args {
+				return args{
+					providerConfig: ProviderConfiguration{
+						Kibana: []KibanaConnection{
+							{
+								Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+									types.StringValue("https://kibana.example.com"),
+								}),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+								Insecure: types.BoolValue(false),
+							},
+						},
+						Fleet: []FleetConnection{
+							{
+								APIKey:  types.StringValue("F-KEY"),
+								CACerts: types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					expectedConfig: kibanaOapiConfig{
+						URL:      "https://kibana.example.com",
+						APIKey:   "F-KEY",
+						Insecure: false,
+					},
+				}
+			},
+		},
+		{
+			name: "KIBANA_ENDPOINT env override wins over fleet-block URL fallback",
+			args: func() args {
+				return args{
+					providerConfig: ProviderConfiguration{
+						Fleet: []FleetConnection{
+							{
+								Endpoint: types.StringValue("https://fleet.example.com"),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					env: map[string]string{
+						"KIBANA_ENDPOINT": "https://env.example.com",
+					},
+					expectedConfig: kibanaOapiConfig{
+						URL: "https://env.example.com",
+					},
+				}
+			},
+		},
+		{
+			name: "prefer configured kibana endpoint keeps kibana URL over env when both kibana and fleet blocks set URL sources",
+			args: func() args {
+				return args{
+					providerConfig: ProviderConfiguration{
+						Kibana: []KibanaConnection{
+							{
+								Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+									types.StringValue("https://kibana.example.com"),
+								}),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+								Insecure: types.BoolValue(false),
+							},
+						},
+						Fleet: []FleetConnection{
+							{
+								Endpoint: types.StringValue("https://fleet.example.com"),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					env: map[string]string{
+						"KIBANA_ENDPOINT":                    "https://env.example.com",
+						PreferConfiguredKibanaEndpointEnvVar: "true",
+					},
+					expectedConfig: kibanaOapiConfig{
+						URL: "https://kibana.example.com",
+					},
+				}
+			},
+		},
+		{
+			name: "fleet-only URL with prefer configured and KIBANA_ENDPOINT env uses env URL",
+			args: func() args {
+				return args{
+					providerConfig: ProviderConfiguration{
+						Fleet: []FleetConnection{
+							{
+								Endpoint: types.StringValue("https://fleet.example.com"),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					env: map[string]string{
+						"KIBANA_ENDPOINT":                    "https://env.example.com",
+						PreferConfiguredKibanaEndpointEnvVar: "true",
+					},
+					expectedConfig: kibanaOapiConfig{
+						URL: "https://env.example.com",
+					},
+				}
+			},
+		},
+		{
+			name: "kibana insecure unset inherits fleet insecure true",
+			args: func() args {
+				return args{
+					providerConfig: ProviderConfiguration{
+						Kibana: []KibanaConnection{
+							{
+								Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+									types.StringValue("https://kibana.example.com"),
+								}),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+								Insecure: types.BoolNull(),
+							},
+						},
+						Fleet: []FleetConnection{
+							{
+								Insecure: types.BoolValue(true),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					expectedConfig: kibanaOapiConfig{
+						URL:      "https://kibana.example.com",
+						Insecure: true,
+					},
+				}
+			},
+		},
+		{
+			name: "kibana insecure false is not overridden by fleet insecure true",
+			args: func() args {
+				return args{
+					providerConfig: ProviderConfiguration{
+						Kibana: []KibanaConnection{
+							{
+								Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+									types.StringValue("https://kibana.example.com"),
+								}),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+								Insecure: types.BoolValue(false),
+							},
+						},
+						Fleet: []FleetConnection{
+							{
+								Insecure: types.BoolValue(true),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					expectedConfig: kibanaOapiConfig{
+						URL:      "https://kibana.example.com",
+						Insecure: false,
+					},
+				}
+			},
+		},
+		{
+			name: "fleet-only insecure true inherits into kibana_oapi",
+			args: func() args {
+				return args{
+					providerConfig: ProviderConfiguration{
+						Fleet: []FleetConnection{
+							{
+								Endpoint: types.StringValue("https://fleet.example.com"),
+								Insecure: types.BoolValue(true),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					expectedConfig: kibanaOapiConfig{
+						URL:      "https://fleet.example.com",
+						Insecure: true,
+					},
+				}
+			},
+		},
+		{
+			name: "fleet-only username and password inherit into kibana_oapi",
+			args: func() args {
+				return args{
+					providerConfig: ProviderConfiguration{
+						Fleet: []FleetConnection{
+							{
+								Username: types.StringValue("fleet-user"),
+								Password: types.StringValue("fleet-pass"),
+								Endpoint: types.StringValue("https://fleet.example.com"),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					expectedConfig: kibanaOapiConfig{
+						URL:      "https://fleet.example.com",
+						Username: "fleet-user",
+						Password: "fleet-pass",
+					},
+				}
+			},
+		},
+		{
+			name: "fleet-only bearer token inherits into kibana_oapi",
+			args: func() args {
+				return args{
+					providerConfig: ProviderConfiguration{
+						Fleet: []FleetConnection{
+							{
+								BearerToken: types.StringValue("fleet-jwt"),
+								Endpoint:    types.StringValue("https://fleet.example.com"),
+								CACerts:     types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					expectedConfig: kibanaOapiConfig{
+						URL:         "https://fleet.example.com",
+						BearerToken: "fleet-jwt",
+					},
+				}
+			},
+		},
+		{
+			name: "fleet-only ca_certs inherit into kibana_oapi",
+			args: func() args {
+				return args{
+					providerConfig: ProviderConfiguration{
+						Fleet: []FleetConnection{
+							{
+								Endpoint: types.StringValue("https://fleet.example.com"),
+								CACerts: types.ListValueMust(types.StringType, []attr.Value{
+									types.StringValue("fleet-ca-1"),
+									types.StringValue("fleet-ca-2"),
+								}),
+							},
+						},
+					},
+					expectedConfig: kibanaOapiConfig{
+						URL:     "https://fleet.example.com",
+						CACerts: []string{"fleet-ca-1", "fleet-ca-2"},
+					},
+				}
+			},
+		},
+		{
+			name: "kibana username with fleet password uses both blocks field-by-field",
+			args: func() args {
+				return args{
+					providerConfig: ProviderConfiguration{
+						Kibana: []KibanaConnection{
+							{
+								Username: types.StringValue("kibana-user"),
+								Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+									types.StringValue("https://kibana.example.com"),
+								}),
+								CACerts: types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+						Fleet: []FleetConnection{
+							{
+								Password: types.StringValue("fleet-pass"),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					expectedConfig: kibanaOapiConfig{
+						URL:      "https://kibana.example.com",
+						Username: "kibana-user",
+						Password: "fleet-pass",
+					},
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			os.Unsetenv("KIBANA_USERNAME")
+			os.Unsetenv("KIBANA_PASSWORD")
+			os.Unsetenv("KIBANA_API_KEY")
+			os.Unsetenv("KIBANA_BEARER_TOKEN")
+			os.Unsetenv("KIBANA_ENDPOINT")
+			os.Unsetenv("KIBANA_CA_CERTS")
+			os.Unsetenv("KIBANA_INSECURE")
+			os.Unsetenv(PreferConfiguredKibanaEndpointEnvVar)
+
+			args := tt.args()
+
+			for key, val := range args.env {
+				t.Setenv(key, val)
+			}
+
+			kibanaCfg, diags := newProviderKibanaOapiConfigFromFramework(context.Background(), args.providerConfig, args.baseCfg)
+
+			require.False(t, diags.HasError())
+			require.Equal(t, args.expectedConfig, kibanaCfg)
 		})
 	}
 }

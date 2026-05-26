@@ -60,11 +60,7 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	fleetClient, d := apiClient.GetFleetClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	fleetClient := apiClient.GetFleetClient()
 
 	meetsMinVersion, verDiags := apiClient.EnforceMinVersion(ctx, minVersionCustomPackageGet)
 	resp.Diagnostics.Append(verDiags...)

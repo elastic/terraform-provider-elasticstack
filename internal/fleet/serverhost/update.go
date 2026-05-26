@@ -40,11 +40,7 @@ func (r *serverHostResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	fleetClient, d := client.GetFleetClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
 	hostID := planModel.HostID.ValueString()
 	body, diags := planModel.toAPIUpdateModel(ctx)

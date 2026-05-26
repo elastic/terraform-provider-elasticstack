@@ -224,10 +224,7 @@ func checkResourceSpaceAPIDescription(spaceID, expected string) resource.TestChe
 		if err != nil {
 			return err
 		}
-		oapiClient, getDiags := scopedClient.GetKibanaOapiClient()
-		if getDiags.HasError() {
-			return fmt.Errorf("failed to get kibana client: %v", getDiags)
-		}
+		oapiClient := scopedClient.GetKibanaOapiClient()
 		space, diags := kibanaoapi.GetSpace(context.Background(), oapiClient, spaceID)
 		if diags.HasError() {
 			return fmt.Errorf("error fetching space %q: %s", spaceID, diags[0].Detail())

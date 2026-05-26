@@ -63,7 +63,7 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 		Title:               new("Metric Round-Trip"),
 		Description:         new("Converter test"),
 		IgnoreGlobalFilters: new(false),
-		Sampling:            newFloat32(1.0),
+		Sampling:            new(float32(1.0)),
 		Query: kbapi.KibanaHTTPAPIsFilterSimple{
 			Language:   new(kbapi.KibanaHTTPAPIsFilterSimpleLanguage("kql")),
 			Expression: "*",
@@ -136,9 +136,4 @@ func TestConverter_roundTrip_ESQL_metric(t *testing.T) {
 	dsBytes, err := json.Marshal(out.DataSource)
 	require.NoError(t, err)
 	assert.Contains(t, string(dsBytes), "FROM logs-*")
-}
-
-//go:fix inline
-func newFloat32(f float32) *float32 {
-	return new(f)
 }

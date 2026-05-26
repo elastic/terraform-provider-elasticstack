@@ -41,11 +41,7 @@ func (r *serverHostResource) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	fleetClient, d := client.GetFleetClient()
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
 	hostID := stateModel.HostID.ValueString()
 

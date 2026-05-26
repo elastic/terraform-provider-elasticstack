@@ -175,7 +175,7 @@ func (r *KibanaResource[T]) Schema(ctx context.Context, _ resource.SchemaRequest
 	schema := r.schemaFactory(ctx)
 	blocks := make(map[string]rschema.Block, len(schema.Blocks)+1)
 	maps.Copy(blocks, schema.Blocks)
-	blocks["kibana_connection"] = providerschema.GetKbFWConnectionBlock()
+	blocks[blockKibanaConnection] = providerschema.GetKbFWConnectionBlock()
 	schema.Blocks = blocks
 	resp.Schema = schema
 }

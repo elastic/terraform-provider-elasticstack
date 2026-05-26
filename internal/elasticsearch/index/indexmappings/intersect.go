@@ -27,6 +27,11 @@ import (
 // only field names from the state's properties tree are kept at every nesting level.
 //
 // For other top-level keys, when the API value is semantically equal to the
+// propertiesKey is the Elasticsearch mapping key whose value is a nested
+// field/property map. Centralised so the intersect logic and recursion stay
+// in sync.
+const propertiesKey = "properties"
+
 // declared state (FieldSemanticallyEqual), the declared value is kept so
 // read-after-write matches the configuration shape. Otherwise the API value is
 // stored. Plan-time drift is still handled by index.MappingsType semantic equality.
@@ -39,7 +44,7 @@ func intersectMappings(apiMappings, stateMappings map[string]any) map[string]any
 			result[key] = stateVal
 			continue
 		}
-		if key == "properties" {
+		if key == propertiesKey {
 			apiProps, apiOK := apiVal.(map[string]any)
 			stateProps, stateOK := stateVal.(map[string]any)
 			if apiOK && stateOK {
@@ -77,8 +82,8 @@ func intersectProperties(apiProps, stateProps map[string]any) map[string]any {
 			continue
 		}
 
-		apiNested, apiHasProps := apiMap["properties"]
-		stateNested, stateHasProps := stateMap["properties"]
+		apiNested, apiHasProps := apiMap[propertiesKey]
+		stateNested, stateHasProps := stateMap[propertiesKey]
 		if apiHasProps && stateHasProps {
 			apiNestedMap, apiNestedOK := apiNested.(map[string]any)
 			stateNestedMap, stateNestedOK := stateNested.(map[string]any)
@@ -86,9 +91,9 @@ func intersectProperties(apiProps, stateProps map[string]any) map[string]any {
 				out := make(map[string]any, len(apiMap))
 				maps.Copy(out, apiMap)
 				if intersected := intersectProperties(apiNestedMap, stateNestedMap); len(intersected) > 0 {
-					out["properties"] = intersected
+					out[propertiesKey] = intersected
 				} else {
-					delete(out, "properties")
+					delete(out, propertiesKey)
 				}
 				result[fieldName] = out
 				continue

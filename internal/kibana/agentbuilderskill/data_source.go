@@ -67,7 +67,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				Optional:            true,
 				Computed:            true,
 			},
-			"name": dsschema.StringAttribute{
+			attrName: dsschema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "Human-readable name for the skill.",
 			},
@@ -75,7 +75,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				Computed:            true,
 				MarkdownDescription: "Description of what the skill does.",
 			},
-			"content": dsschema.StringAttribute{
+			attrContent: dsschema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "Skill instructions content as markdown.",
 			},
@@ -89,7 +89,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				MarkdownDescription: "Ordered list of referenced-content entries. Order is preserved as returned by the API.",
 				NestedObject: dsschema.NestedAttributeObject{
 					Attributes: map[string]dsschema.Attribute{
-						"name": dsschema.StringAttribute{
+						attrName: dsschema.StringAttribute{
 							Computed:            true,
 							MarkdownDescription: "Name of the referenced content.",
 						},
@@ -97,7 +97,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 							Computed:            true,
 							MarkdownDescription: "Relative path of the referenced content.",
 						},
-						"content": dsschema.StringAttribute{
+						attrContent: dsschema.StringAttribute{
 							Computed:            true,
 							MarkdownDescription: "Content of the reference.",
 						},
@@ -120,11 +120,7 @@ func readSkillDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 		return config, diags
 	}
 
-	oapiClient, d := kbClient.GetKibanaOapiClient()
-	diags.Append(d...)
-	if diags.HasError() {
-		return config, diags
-	}
+	oapiClient := kbClient.GetKibanaOapiClient()
 
 	spaceID := defaultSpaceID
 	spaceExplicit := typeutils.IsKnown(config.SpaceID) && config.SpaceID.ValueString() != ""

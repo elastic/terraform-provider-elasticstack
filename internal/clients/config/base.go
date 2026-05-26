@@ -35,13 +35,16 @@ type baseConfig struct {
 	Header      http.Header
 }
 
-const PreferConfiguredKibanaEndpointEnvVar = "TF_ELASTICSTACK_PREFER_CONFIGURED_KIBANA_ENDPOINT"
+const (
+	PreferConfiguredKibanaEndpointEnvVar = "TF_ELASTICSTACK_PREFER_CONFIGURED_KIBANA_ENDPOINT"
+	headerUserAgent                      = "User-Agent"
+)
 
 func newBaseConfigFromFramework(config ProviderConfiguration, version string) baseConfig {
 	userAgent := buildUserAgent(version)
 	baseConfig := baseConfig{
 		UserAgent: userAgent,
-		Header:    http.Header{"User-Agent": []string{userAgent}},
+		Header:    http.Header{headerUserAgent: []string{userAgent}},
 	}
 
 	if len(config.Elasticsearch) > 0 {
