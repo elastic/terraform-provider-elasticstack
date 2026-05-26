@@ -198,6 +198,18 @@ func TestAccDataSourceSynonymSet(t *testing.T) {
 // synonym set referenced by an index analyzer returns a clear error diagnostic
 // (REQ-008) rather than silently failing or panicking.
 func TestAccResourceSynonymSetDeleteWhileInUse(t *testing.T) {
+	// Guard the whole test here so PreConfig never runs on unsupported versions.
+	// Step-level SkipFunc alone is not sufficient because PreConfig executes
+	// regardless of SkipFunc, and createIndexWithSynonymFilter would fail on
+	// ES < 8.10.0 where the synonyms_set filter option does not exist.
+	notSupported, err := versionutils.CheckIfVersionIsUnsupported(minSupportedVersion)()
+	if err != nil {
+		t.Fatalf("could not determine server version: %v", err)
+	}
+	if notSupported {
+		t.Skipf("skipping: requires Elasticsearch >= %s (Synonyms API)", minSupportedVersion)
+	}
+
 	synonymSetID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	indexName := "test-synonym-in-use-" + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 
