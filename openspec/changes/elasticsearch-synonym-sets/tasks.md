@@ -41,14 +41,14 @@
 
 ## 7. Tests
 
-- [ ] 7.1 Create `internal/elasticsearch/synonyms/acc_test.go` with acceptance tests:
+- [x] 7.1 Create `internal/elasticsearch/synonyms/acc_test.go` with acceptance tests:
   - Basic CRUD: create a synonym set, verify state, update rules, verify state, destroy
   - Rule ordering: verify round-trip preserves rule order
   - Optional rule ID: create with no `id` on a rule, verify provider generates one, re-apply, verify no diff
   - Delete with in-use set: verify clear error diagnostic when set is referenced by an analyzer
   - Import: create resource, import by ID, verify state matches, verify subsequent plan shows no diff
   - Data source: create resource, read via data source, verify all attributes match
-- [ ] 7.2 Create `internal/elasticsearch/synonyms/acc_test.go` testdata directories under `testdata/` per test (following enrich pattern)
+- [x] 7.2 Create `internal/elasticsearch/synonyms/acc_test.go` testdata directories under `testdata/` per test (following enrich pattern)
 
 ## 8. Documentation and validation
 
