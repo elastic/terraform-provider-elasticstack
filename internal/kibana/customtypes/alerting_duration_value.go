@@ -20,6 +20,7 @@ package customtypes
 import (
 	"context"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -202,6 +203,14 @@ func parseAlertingDuration(s string) (time.Duration, error) {
 		unitDuration = 365 * 24 * time.Hour
 	default:
 		return 0, fmt.Errorf("invalid duration %q: unrecognised unit %q (expected one of s, m, h, d, w, M, y)", s, string(unit))
+	}
+
+	if n > uint64(math.MaxInt64) {
+		return 0, fmt.Errorf("invalid duration %q: value is too large", s)
+	}
+	maxNForUnit := uint64(math.MaxInt64 / int64(unitDuration))
+	if n > maxNForUnit {
+		return 0, fmt.Errorf("invalid duration %q: value is too large for unit %q", s, string(unit))
 	}
 
 	return time.Duration(n) * unitDuration, nil
