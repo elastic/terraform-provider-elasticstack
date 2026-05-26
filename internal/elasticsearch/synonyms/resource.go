@@ -88,7 +88,7 @@ func schemaFactory(_ context.Context) schema.Schema {
 								stringplanmodifier.UseStateForUnknown(),
 							},
 						},
-						"synonyms": schema.StringAttribute{
+						synonymsAttrName: schema.StringAttribute{
 							MarkdownDescription: "The synonym rule in Solr format (e.g. `\"i-pod, i pod => ipod\"` or `\"universe, cosmos\"`).",
 							Required:            true,
 						},

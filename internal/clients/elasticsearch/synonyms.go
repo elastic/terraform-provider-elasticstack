@@ -50,7 +50,7 @@ func GetSynonymSet(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 
 		allRules = append(allRules, res.SynonymsSet...)
 
-		if len(res.SynonymsSet) == 0 || from+len(res.SynonymsSet) >= int(res.Count) {
+		if len(res.SynonymsSet) == 0 || from+len(res.SynonymsSet) >= res.Count {
 			break
 		}
 

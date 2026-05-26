@@ -63,7 +63,7 @@ func dataSourceSchemaFactory(_ context.Context) schema.Schema {
 							MarkdownDescription: "The identifier for this synonym rule.",
 							Computed:            true,
 						},
-						"synonyms": schema.StringAttribute{
+						synonymsAttrName: schema.StringAttribute{
 							MarkdownDescription: "The synonym rule in Solr format (e.g. `\"i-pod, i pod => ipod\"` or `\"universe, cosmos\"`).",
 							Computed:            true,
 						},

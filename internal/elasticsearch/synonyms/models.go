@@ -28,6 +28,10 @@ import (
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// synonymsAttrName is the tfsdk attribute name for synonym rule strings. Used as
+// a constant to satisfy the goconst linter across schema and model definitions.
+const synonymsAttrName = "synonyms"
+
 // SynonymRuleModel represents a single synonym rule nested block.
 type SynonymRuleModel struct {
 	// ID is optional and computed: when omitted, the provider generates a UUID.
@@ -39,8 +43,8 @@ type SynonymRuleModel struct {
 // element, matching the tfsdk tags in SynonymRuleModel.
 func synonymRuleModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"id":       fwtypes.StringType,
-		"synonyms": fwtypes.StringType,
+		"id":             fwtypes.StringType,
+		synonymsAttrName: fwtypes.StringType,
 	}
 }
 
