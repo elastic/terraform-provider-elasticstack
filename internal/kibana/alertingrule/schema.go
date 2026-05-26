@@ -146,12 +146,13 @@ func getSchema() schema.Schema {
 				CustomType:  kibanacustomtypes.AlertingDurationType{Units: kibanacustomtypes.AlertingDurationUnitsSubDay},
 				// USFU preserves Kibana's deprecated rule-level throttle when the
 				// practitioner removes it from config (the API cannot clear it on
-				// PUT). The trailing modifier then resets the plan to unknown when
-				// actions[*].frequency is newly introduced, so the preserved value
-				// is not sent alongside per-action frequency.
+				// PUT). The trailing StringSetUnknownIf modifier then resets the
+				// plan to unknown when actions[*].frequency is newly introduced,
+				// so the preserved value is not sent alongside per-action
+				// frequency.
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
-					SetUnknownIfActionsFrequencyConfigured(),
+					throttleSetUnknownIfActionsFrequencyConfigured(),
 				},
 			},
 			"scheduled_task_id": schema.StringAttribute{

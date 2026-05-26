@@ -22,9 +22,10 @@ resource "elasticstack_kibana_action_connector" "index_example" {
 
 # After previously setting throttle = "5m" + notify_when = "onThrottleInterval",
 # then removing them, this step adds per-action frequency. The trailing
-# SetUnknownIfActionsFrequencyConfigured plan modifier resets the throttle plan
-# value (otherwise restored from prior state by UseStateForUnknown) back to
-# unknown so the stale value is not sent alongside actions.frequency.
+# planmodifiers.StringSetUnknownIf modifier (driven by
+# throttleShouldResetForActionFrequency) resets the throttle plan value
+# (otherwise restored from prior state by UseStateForUnknown) back to unknown so
+# the stale value is not sent alongside actions.frequency.
 resource "elasticstack_kibana_alerting_rule" "test_rule" {
   name     = var.name
   rule_id  = var.rule_id

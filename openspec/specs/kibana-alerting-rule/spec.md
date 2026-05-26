@@ -25,7 +25,7 @@ resource "elasticstack_kibana_alerting_rule" "example" {
   notify_when = <optional, computed, string> # one of: onActionGroupChange | onActiveAlert | onThrottleInterval; REQ-041 plan modifier before UseStateForUnknown when action frequency is used
   enabled     = <optional, computed, bool>   # default true
   tags        = <optional, set(string)>
-  throttle    = <optional, computed, string>   # alerting duration validator when set; UseStateForUnknown + SetUnknownIfActionsFrequencyConfigured; Kibana preserves deprecated rule-level throttle once set (it cannot be cleared via the API), and the trailing modifier resets the plan to unknown when actions[*].frequency is configured
+  throttle    = <optional, computed, string>   # alerting duration validator when set; UseStateForUnknown + planmodifiers.StringSetUnknownIf(throttleShouldResetForActionFrequency); Kibana preserves deprecated rule-level throttle once set (it cannot be cleared via the API), and the trailing modifier resets the plan to unknown when actions[*].frequency is newly introduced
 
   # Version-gated / API-populated
   alert_delay = <optional, computed, int64> # UseStateForUnknown; server support validated vs stack version
@@ -319,10 +319,10 @@ When writing `params` to state after a read, the provider SHALL avoid **spurious
 
 From API to state: non-empty `tags` SHALL become a non-null set; an empty tag list SHALL become a null set. If the API returns a throttle value, state SHALL hold that string; otherwise `throttle` SHALL be null. An empty or absent `notify_when` from the API SHALL become null in state. If the response does not convey `enabled`, state SHALL treat the rule as enabled (`true`).
 
-Because Kibana preserves deprecated rule-level `throttle` on PUT even when it is omitted or sent as `null`, `throttle` is marked **computed** with `UseStateForUnknown()` in schema, followed by a `SetUnknownIfActionsFrequencyConfigured()` plan modifier. The two modifiers compose as follows:
+Because Kibana preserves deprecated rule-level `throttle` on PUT even when it is omitted or sent as `null`, `throttle` is marked **computed** with `UseStateForUnknown()` in schema, followed by the shared `planmodifiers.StringSetUnknownIf` helper driven by the `throttleShouldResetForActionFrequency` predicate. The two modifiers compose as follows:
 
 1. When the practitioner removes `throttle` from configuration after previously setting it, `UseStateForUnknown` restores the planned value from the prior state (the persisted API value), avoiding a provider inconsistency error. The deprecated rule-level value is retained in state until the rule is recreated.
-2. When the practitioner switches to per-action notification by adding an `actions[*].frequency` block to a rule whose prior state did NOT already include one, the trailing `SetUnknownIfActionsFrequencyConfigured` modifier resets the planned `throttle` back to **unknown**. The provider therefore omits the stale rule-level value from the API request (which Kibana documents as an invalid combination with per-action `frequency`), and state resolves to whatever Kibana returns without a provider inconsistency error. On subsequent plans where the rule is already in frequency mode (state also has an `actions[*].frequency` block), the modifier leaves the `UseStateForUnknown`-restored value alone, so it does not produce a perpetual "value → (known after apply)" diff against the Kibana-preserved throttle. The config-time exclusivity check defined in REQ-042 continues to operate on configuration values, so a configuration that simultaneously sets rule-level `throttle` and any `actions[*].frequency` is still rejected at plan time.
+2. When the practitioner switches to per-action notification by adding an `actions[*].frequency` block to a rule whose prior state did NOT already include one, the trailing `StringSetUnknownIf` modifier resets the planned `throttle` back to **unknown**. The provider therefore omits the stale rule-level value from the API request (which Kibana documents as an invalid combination with per-action `frequency`), and state resolves to whatever Kibana returns without a provider inconsistency error. On subsequent plans where the rule is already in frequency mode (state also has an `actions[*].frequency` block), the predicate returns false and the modifier leaves the `UseStateForUnknown`-restored value alone, so it does not produce a perpetual "value → (known after apply)" diff against the Kibana-preserved throttle. The config-time exclusivity check defined in REQ-042 continues to operate on configuration values, so a configuration that simultaneously sets rule-level `throttle` and any `actions[*].frequency` is still rejected at plan time.
 
 #### Scenario: Empty tags from API
 
@@ -340,7 +340,7 @@ Because Kibana preserves deprecated rule-level `throttle` on PUT even when it is
 
 - GIVEN a rule whose prior state has a known non-empty `throttle` (preserved by Kibana from an earlier configuration), prior state actions that do NOT include an `actions[*].frequency` block, and a new configuration that omits rule-level `throttle` and `notify_when` while adding at least one `actions[*].frequency` block
 - WHEN Terraform plans the update
-- THEN the planned `throttle` SHALL be **unknown** (the `UseStateForUnknown`-restored value is overridden by `SetUnknownIfActionsFrequencyConfigured`), AND
+- THEN the planned `throttle` SHALL be **unknown** (the `UseStateForUnknown`-restored value is overridden by the `StringSetUnknownIf` modifier driven by `throttleShouldResetForActionFrequency`), AND
 - WHEN the update is applied
 - THEN the provider SHALL omit rule-level `throttle` from the API request, AND state SHALL accept whatever value the API returns without a provider inconsistency error
 
@@ -348,7 +348,7 @@ Because Kibana preserves deprecated rule-level `throttle` on PUT even when it is
 
 - GIVEN a rule whose prior state has both a known non-empty `throttle` (preserved by Kibana) and at least one `actions[*].frequency` block, and a new configuration that is unchanged from the prior plan (still no rule-level `throttle`/`notify_when`, still has `actions[*].frequency`)
 - WHEN Terraform re-plans the resource
-- THEN `SetUnknownIfActionsFrequencyConfigured` SHALL leave the `UseStateForUnknown`-restored `throttle` value in the plan unchanged, producing an empty plan diff for `throttle`
+- THEN the `StringSetUnknownIf` modifier driven by `throttleShouldResetForActionFrequency` SHALL leave the `UseStateForUnknown`-restored `throttle` value in the plan unchanged, producing an empty plan diff for `throttle`
 
 ### Requirement: State mapping — execution metadata (REQ-025)
 
