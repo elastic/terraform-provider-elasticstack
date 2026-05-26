@@ -201,15 +201,6 @@ func TestAccResourceSynonymSetDeleteWhileInUse(t *testing.T) {
 	synonymSetID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	indexName := "test-synonym-in-use-" + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 
-	createConfig := fmt.Sprintf(`
-provider "elasticstack" { elasticsearch {} }
-resource "elasticstack_elasticsearch_synonym_set" "test" {
-  synonym_set_id = %q
-  synonyms_set   = [{ id = "rule-1", synonyms = "foo, bar" }]
-}`, synonymSetID)
-
-	emptyConfig := `provider "elasticstack" { elasticsearch {} }`
-
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkSynonymSetDestroy(synonymSetID),
@@ -218,7 +209,8 @@ resource "elasticstack_elasticsearch_synonym_set" "test" {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:                   createConfig,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"synonym_set_id": config.StringVariable(synonymSetID)},
 			},
 			// Step 2: Create an ES index outside Terraform with a synonym token filter
 			// referencing the set, then try to destroy it — must fail with a clear error.
@@ -230,8 +222,8 @@ resource "elasticstack_elasticsearch_synonym_set" "test" {
 						t.Fatalf("failed to create index %s: %s", indexName, err)
 					}
 				},
-				Config:      emptyConfig,
-				ExpectError: regexp.MustCompile(`Cannot delete synonym set`),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("destroy"),
+				ExpectError:     regexp.MustCompile(`Cannot delete synonym set`),
 			},
 			// Step 3: Remove the blocking index so Terraform can successfully destroy the synonym set.
 			{
@@ -242,7 +234,7 @@ resource "elasticstack_elasticsearch_synonym_set" "test" {
 						t.Fatalf("failed to delete index %s: %s", indexName, err)
 					}
 				},
-				Config: emptyConfig,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("destroy"),
 			},
 		},
 	})
