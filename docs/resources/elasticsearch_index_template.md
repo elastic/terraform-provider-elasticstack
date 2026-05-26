@@ -8,8 +8,7 @@ description: |-
 
 # elasticstack_elasticsearch_index_template (Resource)
 
-Creates or updates an index template. Index templates define settings, mappings, and aliases that can be applied automatically to new indices. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-template.html
-## Example Usage
+Creates or updates an index template. Index templates define settings, mappings, and aliases that can be applied automatically to new indices. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-template.html## Example Usage
 
 ```terraform
 provider "elasticstack" {

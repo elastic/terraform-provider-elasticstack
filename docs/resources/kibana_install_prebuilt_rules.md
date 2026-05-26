@@ -8,8 +8,7 @@ description: |-
 
 # elasticstack_kibana_install_prebuilt_rules (Resource)
 
-Manages Elastic prebuilt detection rules. This resource installs and updates Elastic prebuilt rules and timelines. See https://www.elastic.co/guide/en/security/current/prebuilt-rules.html
-## Example Usage
+Manages Elastic prebuilt detection rules. This resource installs and updates Elastic prebuilt rules and timelines. See https://www.elastic.co/guide/en/security/current/prebuilt-rules.html## Example Usage
 
 ```terraform
 provider "elasticstack" {

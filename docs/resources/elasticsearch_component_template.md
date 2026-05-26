@@ -8,8 +8,7 @@ description: |-
 
 # elasticstack_elasticsearch_component_template (Resource)
 
-Creates or updates a component template. Component templates are building blocks for constructing index templates that specify index mappings, settings, and aliases. See the [component template documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template.html) for more details.
-## Example Usage
+Creates or updates a component template. Component templates are building blocks for constructing index templates that specify index mappings, settings, and aliases. See the [component template documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template.html) for more details.## Example Usage
 
 ```terraform
 provider "elasticstack" {

@@ -1,5 +1,8 @@
 # Security Role Docs Drift Detection
 
+Script implementation: `scripts/security-role-docs/main.go`
+Workflow implementation: `.github/workflows/security-role-docs-drift.md`
+
 ## Purpose
 
 Define the canonical requirements for detecting and remediating drift between the provider's documented Kibana feature privilege reference and the live Kibana features API, including the curated features manifest, pre-activation diff script, and self-healing workflow behavior.
@@ -23,6 +26,7 @@ The JSON schema SHALL be:
 - **WHEN** `scripts/security-role-docs/kibana-features.json` is read
 - **THEN** it is valid JSON containing a `documented` array and a `skip` array of strings
 - **THEN** the `documented` array contains at minimum: `discover`, `dashboard`, `siem`, `fleet`, `apm`, `osquery`
+- **THEN** if a given stack version exposes versioned or alias IDs for these features, those IDs MAY appear in `skip` while the canonical/common names remain in `documented`
 
 #### Scenario: File reflects guide content at time of authoring
 

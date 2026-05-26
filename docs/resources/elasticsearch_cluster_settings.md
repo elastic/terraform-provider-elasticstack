@@ -8,8 +8,7 @@ description: |-
 
 # elasticstack_elasticsearch_cluster_settings (Resource)
 
-Updates cluster-wide settings. If the Elasticsearch security features are enabled, you must have the manage cluster privilege to use this API. See the [cluster settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-update-settings.html) for more details.
-## Example Usage
+Updates cluster-wide settings. If the Elasticsearch security features are enabled, you must have the manage cluster privilege to use this API. See the [cluster settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-update-settings.html) for more details.## Example Usage
 
 ```terraform
 provider "elasticstack" {

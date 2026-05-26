@@ -1,5 +1,8 @@
 # Security Roles Guide
 
+Guide implementation: `templates/guides/security-roles.md.tmpl`
+Resource documentation implementation: `templates/resources/kibana_security_role.md.tmpl`, `templates/resources.md.tmpl`
+
 ## Purpose
 
 Define the canonical requirements for the provider security roles guide, including guide generation, resource-doc linking, scenario-based examples, privilege-model explanations, embedded Terraform examples, Kibana feature reference coverage, API key composition guidance, and field/document security examples.
@@ -10,7 +13,7 @@ Define the canonical requirements for the provider security roles guide, includi
 
 A standalone provider guide SHALL exist at `templates/guides/security-roles.md.tmpl` and be rendered to `docs/guides/security-roles.md` by `make docs-generate`.
 
-Both `templates/resources/kibana_security_role.md.tmpl` and `templates/resources/elasticsearch_security_role.md.tmpl` SHALL include a "See also" link to the guide immediately after the resource description and before the Example Usage section.
+Both the Kibana security role resource template (`templates/resources/kibana_security_role.md.tmpl`) and the Elasticsearch security role resource documentation source (`templates/resources.md.tmpl` for the generic fallback template path used by this resource) SHALL include a "See also" link to the guide immediately after the resource description and before the Example Usage section.
 
 #### Scenario: Guide renders without error
 
@@ -80,7 +83,7 @@ The guide SHALL include a section explaining the conceptual distinction between 
 
 ### Requirement: Guide embeds scenario examples via tffile directives
 
-The guide SHALL embed each scenario example using `{{ tffile "examples/resources/..." }}` directives rather than duplicating the Terraform code inline. This ensures the guide always reflects the committed example files.
+The guide SHALL embed each scenario example using `{{ tffile "examples/resources/..." }}` directives rather than duplicating the Terraform code inline. This ensures the guide always reflects the committed example files. Small inline explanatory snippets are acceptable only when no provider example file is appropriate; complete reusable Terraform examples SHALL live under `examples/resources/...` and be embedded with `tffile`.
 
 #### Scenario: Guide embeds example files
 
@@ -92,7 +95,7 @@ The guide SHALL embed each scenario example using `{{ tffile "examples/resources
 
 ### Requirement: Guide includes a Kibana feature privilege reference table
 
-The guide SHALL include a reference table of commonly-used Kibana feature names and their available privilege strings. The table SHALL cover at minimum: `discover`, `dashboard`, `visualize`, `ml`, `apm`, `fleet`, `siem`, `securitySolutionCases`, `observabilityCases`, `osquery`, `rulesSettings`, `actions`, `alerting`, `canvas`, `maps`, `infrastructure`.
+The guide SHALL include a reference table of commonly-used Kibana feature names and their available privilege strings. The table SHALL cover at minimum: `discover`, `dashboard`, `visualize`, `ml`, `apm`, `fleet`, `siem`, `securitySolutionCases`, `observabilityCases`, `osquery`, `rulesSettings`, `actions`, `alerting`, `canvas`, `maps`, `infrastructure`. Where Kibana exposes versioned or alias feature IDs in some stack versions, the guide MAY document the canonical/common feature names and SHALL note that deployments can return versioned or alias IDs from `GET /api/features`.
 
 The table SHALL include a note that it covers commonly-used features, is not exhaustive, and that `GET /api/features` returns the full list for a given deployment.
 
@@ -100,7 +103,6 @@ The table SHALL include a note that it covers commonly-used features, is not exh
 
 - **WHEN** the guide is read
 - **THEN** it contains a markdown table with columns for feature name and available privileges
-- **THEN** the `siem` feature row lists sub-privileges including `cases_all`, `cases_read`, `cases_delete`
 - **THEN** the `discover` feature row lists sub-privileges including `minimal_read`, `url_create`, `store_search_session`
 
 #### Scenario: Table includes exhaustiveness caveat

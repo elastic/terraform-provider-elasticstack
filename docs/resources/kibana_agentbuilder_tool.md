@@ -8,8 +8,7 @@ description: |-
 
 # elasticstack_kibana_agentbuilder_tool (Resource)
 
-Manages Kibana Agent Builder tools. Tools can be of type `esql`, `index_search`, or `workflow`. See the [Agent Builder API documentation](https://www.elastic.co/guide/en/kibana/current/agent-builder-api.html).
-## Example Usage
+Manages Kibana Agent Builder tools. Tools can be of type `esql`, `index_search`, or `workflow`. See the [Agent Builder API documentation](https://www.elastic.co/guide/en/kibana/current/agent-builder-api.html).## Example Usage
 
 ```terraform
 provider "elasticstack" {

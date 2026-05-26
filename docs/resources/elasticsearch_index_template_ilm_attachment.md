@@ -72,8 +72,7 @@ You can achieve similar results using `elasticstack_elasticsearch_component_temp
 | `elasticstack_elasticsearch_component_template` | Entire `@custom` template | Overwrites any external changes to the template |
 | `elasticstack_elasticsearch_index_template_ilm_attachment` | Only the ILM setting | Preserves other settings in the template |
 
-Use `elasticstack_elasticsearch_component_template` if you want full control over the `@custom` template. Use this resource if you only want to manage the ILM setting and preserve any other customizations.
-## Example Usage
+Use `elasticstack_elasticsearch_component_template` if you want full control over the `@custom` template. Use this resource if you only want to manage the ILM setting and preserve any other customizations.## Example Usage
 
 ```terraform
 # Create an ILM policy

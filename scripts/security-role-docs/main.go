@@ -223,7 +223,7 @@ func writeJSON(path string, value any) error {
 	return os.WriteFile(path, content, 0o644)
 }
 
-func writeGithubOutput(name, value string) error {
+func writeGithubOutput(name, value string) (err error) {
 	githubOutput := strings.TrimSpace(os.Getenv("GITHUB_OUTPUT"))
 	if githubOutput == "" {
 		return nil
@@ -233,7 +233,11 @@ func writeGithubOutput(name, value string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil {
+			err = errors.Join(err, closeErr)
+		}
+	}()
 
 	_, err = fmt.Fprintf(f, "%s=%s\n", name, value)
 	return err

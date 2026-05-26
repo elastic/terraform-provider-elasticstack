@@ -32,7 +32,11 @@ description: |-
 See also: [Security Roles Guide](../guides/security-roles)
 
 {{- end }}
-{{ if .HasExample -}}
+{{- if eq .Name "elasticstack_elasticsearch_security_role" }}
+## Example Usage
+
+{{ tffile "examples/resources/elasticstack_elasticsearch_security_role/resource.tf" }}
+{{- else if .HasExample -}}
 ## Example Usage
 
 {{tffile .ExampleFile }}

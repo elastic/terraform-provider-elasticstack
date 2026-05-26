@@ -303,6 +303,10 @@ resource "elasticstack_kibana_security_role" "data_analyst" {
 ```
 
 ```terraform
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_security_api_key" "data_analyst_logs_only" {
   name = "data-analyst-logs-only"
 
@@ -322,21 +326,21 @@ resource "elasticstack_elasticsearch_security_api_key" "data_analyst_logs_only" 
 
 ## Kibana feature privilege reference
 
-The following table covers commonly used Kibana features and example privilege strings that the Kibana features API exposes. It is not exhaustive because available features vary by deployment and installed plugins. For the complete list for your environment, query [`GET /api/features`](https://www.elastic.co/guide/en/kibana/current/features-api-get.html).
+The following table covers commonly used Kibana features and example privilege strings that the Kibana features API exposes. Some deployments and Kibana versions expose versioned or alias IDs for these features; use the feature IDs shown in your deployment's `GET /api/features` response when configuring a role. For the complete list for your environment, query [`GET /api/features`](https://www.elastic.co/guide/en/kibana/current/features-api-get.html).
 
 | Feature name | Available privileges |
 | --- | --- |
-| `discover_v2` | `all`, `read`, `minimal_all`, `minimal_read`, `url_create`, `store_search_session` |
-| `dashboard_v2` | `all`, `read`, `minimal_all`, `minimal_read`, `url_create`, `store_search_session`, `generate_report`, `download_csv_report` |
-| `visualize_v2` | `all`, `read`, `minimal_all`, `minimal_read`, `url_create`, `generate_report` |
+| `discover` | `all`, `read`, `minimal_all`, `minimal_read`, `url_create`, `store_search_session` |
+| `dashboard` | `all`, `read`, `minimal_all`, `minimal_read`, `url_create`, `store_search_session`, `generate_report`, `download_csv_report` |
+| `visualize` | `all`, `read`, `minimal_all`, `minimal_read`, `url_create`, `generate_report` |
 | `ml` | `all`, `read` |
 | `apm` | `all`, `read`, `settings_save` |
-| `fleetv2` | `all`, `read`, `agents_all`, `agents_read`, `agent_policies_all`, `agent_policies_read`, `settings_all`, `settings_read`, `epm_all`, `epm_read`, `integrations_all`, `integrations_read`, `agent_policies_read_integrations`, `fleet_proxies_read`, `fleet_proxies_all`, `remote_synced_integrations_read`, `remote_synced_integrations_all`, `remote_elasticsearch_output_read`, `remote_elasticsearch_output_all`, `secret_fleet_read`, `secret_fleet_all`, `package_settings_read`, `package_settings_all` |
-| `siemV5` | `all`, `read` |
-| `securitySolutionCasesV3` | `all`, `read`, `cases_delete`, `cases_settings`, `create_comment`, `case_reopen`, `cases_assign`, `cases_manage_templates` |
-| `observabilityCasesV3` | `all`, `read`, `cases_delete`, `cases_settings`, `create_comment`, `case_reopen`, `cases_assign`, `cases_manage_templates` |
+| `fleet` | `all`, `read`, `agents_all`, `agents_read`, `agent_policies_all`, `agent_policies_read`, `settings_all`, `settings_read`, `epm_all`, `epm_read`, `integrations_all`, `integrations_read`, `agent_policies_read_integrations`, `fleet_proxies_read`, `fleet_proxies_all`, `remote_synced_integrations_read`, `remote_synced_integrations_all`, `remote_elasticsearch_output_read`, `remote_elasticsearch_output_all`, `secret_fleet_read`, `secret_fleet_all`, `package_settings_read`, `package_settings_all` |
+| `siem` | `all`, `read` |
+| `securitySolutionCases` | `all`, `read`, `cases_delete`, `cases_settings`, `create_comment`, `case_reopen`, `cases_assign`, `cases_manage_templates` |
+| `observabilityCases` | `all`, `read`, `cases_delete`, `cases_settings`, `create_comment`, `case_reopen`, `cases_assign`, `cases_manage_templates` |
 | `osquery` | `all`, `read`, `live_queries_read`, `live_queries_all`, `saved_queries_read`, `saved_queries_all`, `packs_read`, `packs_all`, `runs_saved_queries` |
-| `securitySolutionRulesV4` | `all`, `read`, `security_solution_exceptions_all`, `security_solution_investigation_guide_edit`, `security_solution_custom_highlighted_fields_edit`, `security_solution_enable_disable_rules`, `security_solution_manual_run_rules`, `security_solution_rules_management_settings` |
+| `rulesSettings` | `all`, `read`, `security_solution_exceptions_all`, `security_solution_investigation_guide_edit`, `security_solution_custom_highlighted_fields_edit`, `security_solution_enable_disable_rules`, `security_solution_manual_run_rules`, `security_solution_rules_management_settings` |
 | `actions` | `all`, `read`, `endpoint_security_execute` |
 | `alerting` | `all`, `read` |
 | `canvas` | `all`, `read`, `generate_report` |

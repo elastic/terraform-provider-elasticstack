@@ -8,8 +8,7 @@ description: |-
 
 # elasticstack_elasticsearch_inference_endpoint (Resource)
 
-Creates or updates an inference endpoint.See the [inference endpoint API documentation](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-inference-put-1) for more details.
-## Example Usage
+Creates or updates an inference endpoint.See the [inference endpoint API documentation](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-inference-put-1) for more details.## Example Usage
 
 ```terraform
 provider "elasticstack" {

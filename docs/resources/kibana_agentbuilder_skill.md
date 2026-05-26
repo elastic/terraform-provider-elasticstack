@@ -8,8 +8,7 @@ description: |-
 
 # elasticstack_kibana_agentbuilder_skill (Resource)
 
-Manages Kibana Agent Builder skills. Skills are reusable markdown instructions that agents can reference. See the [Agent Builder Skills API documentation](https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-agent-builder-skills) for more information.
-## Example Usage
+Manages Kibana Agent Builder skills. Skills are reusable markdown instructions that agents can reference. See the [Agent Builder Skills API documentation](https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-agent-builder-skills) for more information.## Example Usage
 
 ```terraform
 provider "elasticstack" {

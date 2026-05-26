@@ -8,8 +8,7 @@ description: |-
 
 # elasticstack_kibana_agentbuilder_workflow (Resource)
 
-Manages Kibana Agent Builder workflows. See the [Workflows documentation](https://www.elastic.co/docs/explore-analyze/workflows) for more information.
-## Example Usage
+Manages Kibana Agent Builder workflows. See the [Workflows documentation](https://www.elastic.co/docs/explore-analyze/workflows) for more information.## Example Usage
 
 ```terraform
 provider "elasticstack" {
