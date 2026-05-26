@@ -20,12 +20,12 @@
 
 ## 4. Create Security Roles Guide
 
-- [ ] 4.1 Create `templates/guides/security-roles.md.tmpl` with page title, description frontmatter, and section skeleton
-- [ ] 4.2 Add "When to use each resource" section explaining ES roles vs Kibana roles vs API key `role_descriptors`
-- [ ] 4.3 Add "Scenario examples" section embedding all kibana scenario files via `{{ tffile "examples/resources/elasticstack_kibana_security_role/resource-*.tf" }}` directives (one subsection per scenario)
-- [ ] 4.4 Add "Field security and document-level security" section embedding `resource-field-and-doc-security.tf` from ES examples
-- [ ] 4.5 Add "Composing with API keys" section: embed the data-analyst Kibana role alongside an `elasticstack_elasticsearch_security_api_key` example with narrower `role_descriptors`
-- [ ] 4.6 Add "Kibana feature privilege reference" section with the markdown table (columns: feature name, available privileges) covering the 16+ features from the spec; include exhaustiveness caveat with `GET /api/features` link
+- [x] 4.1 Create `templates/guides/security-roles.md.tmpl` with page title, description frontmatter, and section skeleton
+- [x] 4.2 Add "When to use each resource" section explaining ES roles vs Kibana roles vs API key `role_descriptors`
+- [x] 4.3 Add "Scenario examples" section embedding all kibana scenario files via `{{ tffile "examples/resources/elasticstack_kibana_security_role/resource-*.tf" }}` directives (one subsection per scenario)
+- [x] 4.4 Add "Field security and document-level security" section embedding `resource-field-and-doc-security.tf` from ES examples
+- [x] 4.5 Add "Composing with API keys" section: embed the data-analyst Kibana role alongside an `elasticstack_elasticsearch_security_api_key` example with narrower `role_descriptors`
+- [x] 4.6 Add "Kibana feature privilege reference" section with the markdown table (columns: feature name, available privileges) covering the 16+ features from the spec; include exhaustiveness caveat with `GET /api/features` link
 
 ## 5. Update Resource Doc Templates
 
