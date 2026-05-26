@@ -142,7 +142,18 @@ func getSchema() schema.Schema {
 			"throttle": schema.StringAttribute{
 				Description: throttleRuleDescription,
 				Optional:    true,
+				Computed:    true,
 				CustomType:  kibanacustomtypes.AlertingDurationType{Units: kibanacustomtypes.AlertingDurationUnitsSubDay},
+				// USFU preserves Kibana's deprecated rule-level throttle when the
+				// practitioner removes it from config (the API cannot clear it on
+				// PUT). The trailing StringSetUnknownIf modifier then resets the
+				// plan to unknown when actions[*].frequency is newly introduced,
+				// so the preserved value is not sent alongside per-action
+				// frequency.
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+					throttleSetUnknownIfActionsFrequencyConfigured(),
+				},
 			},
 			"scheduled_task_id": schema.StringAttribute{
 				Description: "ID of the scheduled task that will execute the alert.",
