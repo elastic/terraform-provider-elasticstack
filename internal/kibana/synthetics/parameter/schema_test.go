@@ -114,9 +114,9 @@ func Test_roundtrip(t *testing.T) {
 
 			assert.Equal(t, tt.request.Key, actual.Key)
 			assert.Equal(t, tt.request.Value, actual.Value)
-			assert.Equal(t, typeutils.DefaultIfNil(tt.request.Description), typeutils.DefaultIfNil(actual.Description))
-			assert.Equal(t, typeutils.NonNilSlice(typeutils.DefaultIfNil(tt.request.Tags)), typeutils.NonNilSlice(typeutils.DefaultIfNil(actual.Tags)))
-			assert.Equal(t, typeutils.DefaultIfNil(tt.request.ShareAcrossSpaces), typeutils.DefaultIfNil(actual.ShareAcrossSpaces))
+			assert.Equal(t, typeutils.Deref(tt.request.Description), typeutils.Deref(actual.Description))
+			assert.Equal(t, typeutils.NonNilSlice(typeutils.Deref(tt.request.Tags)), typeutils.NonNilSlice(typeutils.Deref(actual.Tags)))
+			assert.Equal(t, typeutils.Deref(tt.request.ShareAcrossSpaces), typeutils.Deref(actual.ShareAcrossSpaces))
 		})
 	}
 }
