@@ -20,6 +20,7 @@ package customtypes
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -88,13 +89,10 @@ const allParserUnits = "smhdwMy"
 // String/Equal are stable regardless of caller input order.
 func newAlertingDurationUnits(units ...byte) AlertingDurationUnits {
 	var b strings.Builder
-	for i := 0; i < len(allParserUnits); i++ {
+	for i := range len(allParserUnits) {
 		c := allParserUnits[i]
-		for _, u := range units {
-			if u == c {
-				b.WriteByte(c)
-				break
-			}
+		if slices.Contains(units, c) {
+			b.WriteByte(c)
 		}
 	}
 	return AlertingDurationUnits{units: b.String()}
@@ -111,7 +109,7 @@ func renderUnitList(units string) string {
 		return fmt.Sprintf("`%c` or `%c`", units[0], units[1])
 	}
 	var b strings.Builder
-	for i := 0; i < len(units)-1; i++ {
+	for i := range len(units) - 1 {
 		if i > 0 {
 			b.WriteString(", ")
 		}
