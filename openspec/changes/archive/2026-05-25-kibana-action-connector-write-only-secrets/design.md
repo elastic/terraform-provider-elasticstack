@@ -14,7 +14,7 @@ The `terraform-plugin-framework` version in `go.mod` is v1.19.0, which includes 
 | Validators on `secrets_wo` | `stringvalidator.ConflictsWith(path.MatchRoot("secrets"))` |
 | Validators on `secrets_wo_version` | `stringvalidator.AlsoRequires(path.MatchRoot("secrets_wo"))` |
 | Validators on `secrets` | Add `stringvalidator.PreferWriteOnlyAttribute(path.MatchRoot("secrets_wo"))` and `stringvalidator.ConflictsWith(path.MatchRoot("secrets_wo"))` |
-| Model fields | Add `SecretsWo types.String` and `SecretsWoVersion types.String` to `tfModel` |
+| Model fields | Add `SecretsWo jsontypes.Normalized` (mirror `Secrets`) and `SecretsWoVersion types.String` to `tfModel` |
 | `toAPIModel()` | If `SecretsWo` is known, use it as `SecretsJSON`; otherwise fall back to `Secrets` (unchanged logic) |
 | Create handler | Read `request.Config` (not just `request.Plan`) to retrieve `secrets_wo` — write-only values are available in config but not plan |
 | Update handler | Always re-send `secrets_wo` from `request.Config` if set, regardless of version change. This is necessary because the Kibana API behavior when `secrets` is omitted is unknown (see Open questions). Version comparison can be used as an optimization once the omission behavior is confirmed. |
