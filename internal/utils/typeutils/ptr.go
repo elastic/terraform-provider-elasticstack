@@ -60,12 +60,6 @@ func Deref[T any](value *T) T {
 	return *value
 }
 
-// DefaultIfNil returns the dereferenced value of the pointer, or the zero value of T if the
-// pointer is nil. Deprecated: use Deref instead.
-func DefaultIfNil[T any](value *T) T {
-	return Deref(value)
-}
-
 // NonNilSlice returns an empty slice if s is nil. Guarantees that json.Marshal and terraform
 // parameters will not treat the empty slice as null.
 func NonNilSlice[T any](s []T) []T {

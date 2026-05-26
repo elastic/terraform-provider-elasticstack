@@ -76,7 +76,7 @@ func modelFromOAPI(param kboapi.SyntheticsGetParameterResponse) Model {
 		Description: types.StringPointerValue(param.Description),
 		// Terraform, like json.Marshal, treats empty slices as null. We need an
 		// actual backing array of size 0.
-		Tags:              typeutils.NonNilSlice(synthetics.StringSliceValue(typeutils.DefaultIfNil(param.Tags))),
+		Tags:              typeutils.NonNilSlice(synthetics.StringSliceValue(typeutils.Deref(param.Tags))),
 		ShareAcrossSpaces: types.BoolValue(allSpaces),
 	}
 }
