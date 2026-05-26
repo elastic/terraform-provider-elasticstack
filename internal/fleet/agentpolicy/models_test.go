@@ -22,6 +22,9 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -159,6 +162,83 @@ func TestConvertHostNameFormatToAgentFeature(t *testing.T) {
 			assert.NotNil(t, got)
 			assert.Equal(t, tt.want.Name, got.Name)
 			assert.Equal(t, tt.want.Enabled, got.Enabled)
+		})
+	}
+}
+
+// TestConvertGlobalDataTags_MissingValueEntry asserts that convertGlobalDataTags
+// returns an error diagnostic (and does not panic) when a global_data_tags
+// map entry has neither string_value nor number_value set. Regression test for
+// the SIGSEGV reported when a user writes `global_data_tags = { "x" = {} }`.
+// Covers REQ-GDT-002: both null and unknown variants must be guarded.
+func TestConvertGlobalDataTags_MissingValueEntry(t *testing.T) {
+	ctx := context.Background()
+
+	elemType := getGlobalDataTagsAttrTypes().(attr.TypeWithElementType).ElementType().(types.ObjectType)
+
+	tests := []struct {
+		name        string
+		stringValue types.String
+		numberValue types.Float32
+	}{
+		{
+			name:        "both null",
+			stringValue: types.StringNull(),
+			numberValue: types.Float32Null(),
+		},
+		{
+			name:        "both unknown",
+			stringValue: types.StringUnknown(),
+			numberValue: types.Float32Unknown(),
+		},
+		{
+			name:        "string null and number unknown",
+			stringValue: types.StringNull(),
+			numberValue: types.Float32Unknown(),
+		},
+		{
+			name:        "string unknown and number null",
+			stringValue: types.StringUnknown(),
+			numberValue: types.Float32Null(),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			entry, objDiags := types.ObjectValue(elemType.AttrTypes, map[string]attr.Value{
+				"string_value": tc.stringValue,
+				"number_value": tc.numberValue,
+			})
+			assert.False(t, objDiags.HasError(), "failed to build object: %v", objDiags)
+
+			tagsMap, mapDiags := types.MapValue(elemType, map[string]attr.Value{
+				"my_tag": entry,
+			})
+			assert.False(t, mapDiags.HasError(), "failed to build global_data_tags map: %v", mapDiags)
+
+			model := &agentPolicyModel{
+				GlobalDataTags: tagsMap,
+			}
+
+			result, diags := model.convertGlobalDataTags(ctx, features{SupportsGlobalDataTags: true})
+
+			assert.True(t, diags.HasError(), "expected error diagnostics, got none")
+			assert.Nil(t, result, "expected nil result on error, got %v", result)
+
+			var found bool
+			for _, d := range diags.Errors() {
+				if d.Summary() != "Invalid global_data_tags entry" {
+					continue
+				}
+				found = true
+				dwp, ok := d.(diag.DiagnosticWithPath)
+				if assert.True(t, ok, "expected attribute diagnostic with Path()") {
+					assert.Equal(t, path.Root("global_data_tags").AtMapKey("my_tag"), dwp.Path(),
+						"diagnostic should be anchored at global_data_tags[\"my_tag\"]")
+				}
+				break
+			}
+			assert.True(t, found, "expected diagnostic with summary 'Invalid global_data_tags entry', got %v", diags)
 		})
 	}
 }

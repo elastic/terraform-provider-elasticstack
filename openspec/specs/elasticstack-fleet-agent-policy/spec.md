@@ -1,5 +1,8 @@
-## ADDED Requirements
+# elasticstack-fleet-agent-policy Specification
 
+## Purpose
+TBD - created by archiving change fleet-agent-policy-global-data-tags-nil-panic. Update Purpose after archive.
+## Requirements
 ### Requirement: global_data_tags entry must have exactly one value (REQ-GDT-001)
 
 Each entry in the `global_data_tags` map attribute of `elasticstack_fleet_agent_policy` MUST
@@ -68,3 +71,4 @@ The conversion logic MUST use explicit `IsNull()` / `IsUnknown()` checks on both
 - THEN the function MUST return a `diag.Diagnostics` with at least one error
 - AND the function MUST NOT panic
 - AND the returned diagnostics MUST include a summary of `"Invalid global_data_tags entry"`
+
