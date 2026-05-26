@@ -267,7 +267,7 @@ resource "elasticstack_fleet_output" "logstash" {
 
 - `ca_sha256` (String) Fingerprint of the Elasticsearch CA certificate.
 - `ca_trusted_fingerprint` (String) Fingerprint of trusted CA.
-- `config_yaml` (String, Sensitive) Advanced YAML configuration. YAML settings here will be added to the output section of each agent policy.
+- `config_yaml` (String, Sensitive) Advanced YAML configuration. YAML settings here will be added to the output section of each agent policy. Note: the Fleet API treats an omitted `config_yaml` in an update request as "no change" and does not clear the stored value. To clear a previously stored value, delete and re-create the output.
 - `default_integrations` (Boolean) Make this output the default for agent integrations.
 - `default_monitoring` (Boolean) Make this output the default for agent monitoring.
 - `kafka` (Attributes) Kafka-specific configuration. (see [below for nested schema](#nestedatt--kafka))

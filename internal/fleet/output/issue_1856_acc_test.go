@@ -17,31 +17,32 @@
 
 package output_test
 
-// TestAccReproduceIssue1856 reproduces the bug reported in
+// TestAccReproduceIssue1856 guards the fix for
 // https://github.com/elastic/terraform-provider-elasticstack/issues/1856:
 // "Provider produced inconsistent result after apply in elasticstack_fleet_output"
 //
-// Root cause: when the Fleet API returns a previously stored config_yaml value
-// in the update response (even though the update request omitted config_yaml),
-// the provider's Update handler overwrites the plan's null ConfigYaml with the
-// API-returned non-null value before writing state.  Because config_yaml is
-// marked Sensitive, Terraform detects the null-vs-value discrepancy and emits:
-//   ".config_yaml: inconsistent values for sensitive attribute"
+// Background: Fleet treats an omitted `config_yaml` in an update request as
+// "no change" and echoes the previously stored value (or an empty string for
+// outputs that never had one) back in the response. Before the fix the
+// provider wrote that API-echoed value into state, while the plan held null
+// for the sensitive attribute, tripping Terraform's post-apply consistency
+// check with `.config_yaml: inconsistent values for sensitive attribute`.
 //
-// Reproduction steps:
-//  1. Create a Kafka output with config_yaml set.
-//  2. Remove config_yaml from the config and apply (in-place update).
-//     The API preserves the stored value and echoes it back; the provider
-//     writes it into state while the plan expected null → inconsistency error.
+// The fix has two parts:
+//  1. The shared reader normalizes nil/empty config_yaml from the API to null
+//     state, so outputs that never had a config_yaml don't flip null↔"".
+//  2. The Update handler captures the planned config_yaml and restores a
+//     plan-null over any API echo, so removing config_yaml from configuration
+//     applies cleanly even when Fleet keeps the previously stored value.
 
 import (
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/output"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -50,60 +51,9 @@ func TestAccReproduceIssue1856(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, output.MinVersionOutputKafka, versionutils.FlavorAny)
 
 	outputID := fmt.Sprintf("issue-1856-%s", sdkacctest.RandString(8))
-
-	// Step 1: create a Kafka output with config_yaml set.
-	configWithYaml := fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_output" "repro_1856" {
-  output_id            = %q
-  name                 = "Issue 1856 Repro"
-  type                 = "kafka"
-  default_integrations = false
-  default_monitoring   = false
-  hosts                = ["kafka:9092"]
-  config_yaml          = "bulk_max_size: 100\n"
-
-  kafka = {
-    auth_type       = "none"
-    connection_type = "plaintext"
-    topic           = "test-topic"
-    partition       = "round_robin"
-  }
-}
-`, outputID)
-
-	// Step 2: update the Kafka output without config_yaml.
-	// The Fleet API will echo back the previously stored config_yaml value
-	// in its response, causing the provider to write a non-null value into
-	// state while the plan expected null.  This triggers:
-	//   "Provider produced inconsistent result after apply:
-	//    .config_yaml: inconsistent values for sensitive attribute"
-	configWithoutYaml := fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_output" "repro_1856" {
-  output_id            = %q
-  name                 = "Issue 1856 Repro (updated)"
-  type                 = "kafka"
-  default_integrations = false
-  default_monitoring   = false
-  hosts                = ["kafka:9092"]
-
-  kafka = {
-    auth_type       = "none"
-    connection_type = "plaintext"
-    topic           = "test-topic-updated"
-    partition       = "round_robin"
-  }
-}
-`, outputID)
+	vars := config.Variables{
+		"output_id": config.StringVariable(outputID),
+	}
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -111,21 +61,26 @@ resource "elasticstack_fleet_output" "repro_1856" {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   configWithYaml,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.repro_1856", "type", "kafka"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.repro_1856", "output_id", outputID),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.repro_1856", "config_yaml", "bulk_max_size: 100\n"),
 				),
 			},
 			{
+				// With the fix in place this apply must complete cleanly and
+				// drop config_yaml from state, mirroring the user's intent —
+				// even though Fleet preserves the previously stored value
+				// server-side and echoes it back in the update response.
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   configWithoutYaml,
-				// Bug: the provider writes the API-echoed config_yaml back into
-				// state after the update, producing a mismatch with the plan's
-				// null value for the sensitive config_yaml attribute.
-				// The Terraform CLI word-wraps at ~80 chars so we match a shorter
-				// substring that is unambiguous and fits on a single line.
-				ExpectError: regexp.MustCompile(`inconsistent values for sensitive`),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.repro_1856", "kafka.topic", "test-topic-updated"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_output.repro_1856", "config_yaml"),
+				),
 			},
 		},
 	})
