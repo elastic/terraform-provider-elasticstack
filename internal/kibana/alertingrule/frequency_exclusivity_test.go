@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	kibanacustomtypes "github.com/elastic/terraform-provider-elasticstack/internal/kibana/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -37,7 +38,7 @@ func testActionsList(ctx context.Context, t *testing.T, withFrequency bool) type
 		fm := frequencyModel{
 			Summary:    types.BoolValue(true),
 			NotifyWhen: types.StringValue("onActionGroupChange"),
-			Throttle:   types.StringValue("10m"),
+			Throttle:   kibanacustomtypes.NewAlertingDurationValue("10m"),
 		}
 		o, d := types.ObjectValueFrom(ctx, getFrequencyAttrTypes(), fm)
 		require.Empty(t, d)
@@ -78,7 +79,7 @@ func TestValidateNotifyWhenThrottleFrequencyExclusivity_throttleAndFrequency(t *
 	ctx := context.Background()
 	var diags diag.Diagnostics
 	data := alertingRuleModel{
-		Throttle: types.StringValue("5m"),
+		Throttle: kibanacustomtypes.NewAlertingDurationValue("5m"),
 		Actions:  testActionsList(ctx, t, true),
 	}
 	validateNotifyWhenThrottleFrequencyExclusivity(ctx, &data, &diags)
@@ -91,7 +92,7 @@ func TestValidateNotifyWhenThrottleFrequencyExclusivity_frequencyOnly(t *testing
 	var diags diag.Diagnostics
 	data := alertingRuleModel{
 		NotifyWhen: types.StringNull(),
-		Throttle:   types.StringNull(),
+		Throttle:   kibanacustomtypes.NewAlertingDurationNull(),
 		Actions:    testActionsList(ctx, t, true),
 	}
 	validateNotifyWhenThrottleFrequencyExclusivity(ctx, &data, &diags)
@@ -116,7 +117,7 @@ func TestValidateNotifyWhenThrottleFrequencyExclusivity_noFalsePositiveWhenFrequ
 	var diags diag.Diagnostics
 	data := alertingRuleModel{
 		NotifyWhen: types.StringValue("onActiveAlert"),
-		Throttle:   types.StringValue("5m"),
+		Throttle:   kibanacustomtypes.NewAlertingDurationValue("5m"),
 		Actions:    testActionsList(ctx, t, false),
 	}
 	validateNotifyWhenThrottleFrequencyExclusivity(ctx, &data, &diags)
@@ -129,7 +130,7 @@ func TestValidateNotifyWhenThrottleFrequencyExclusivity_prefersNotifyWhenDiagnos
 	var diags diag.Diagnostics
 	data := alertingRuleModel{
 		NotifyWhen: types.StringValue("onActiveAlert"),
-		Throttle:   types.StringValue("5m"),
+		Throttle:   kibanacustomtypes.NewAlertingDurationValue("5m"),
 		Actions:    testActionsList(ctx, t, true),
 	}
 	validateNotifyWhenThrottleFrequencyExclusivity(ctx, &data, &diags)
@@ -145,7 +146,7 @@ func TestValidateNotifyWhenThrottleFrequencyExclusivity_emptyRuleNotifyWhenIgnor
 	var diags diag.Diagnostics
 	data := alertingRuleModel{
 		NotifyWhen: types.StringValue("   "),
-		Throttle:   types.StringNull(),
+		Throttle:   kibanacustomtypes.NewAlertingDurationNull(),
 		Actions:    testActionsList(ctx, t, true),
 	}
 	validateNotifyWhenThrottleFrequencyExclusivity(ctx, &data, &diags)

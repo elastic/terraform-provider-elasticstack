@@ -21,6 +21,7 @@ import (
 	"context"
 	"sync"
 
+	kibanacustomtypes "github.com/elastic/terraform-provider-elasticstack/internal/kibana/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/validators"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -125,9 +126,7 @@ func getSchema() schema.Schema {
 			"interval": schema.StringAttribute{
 				Description: "The check interval, which specifies how frequently the rule conditions are checked. The interval must be specified in seconds, minutes, hours or days.",
 				Required:    true,
-				Validators: []validator.String{
-					validators.StringIsAlertingDuration,
-				},
+				CustomType:  kibanacustomtypes.AlertingDurationType{Units: kibanacustomtypes.AlertingDurationUnitsSubDay},
 			},
 			"enabled": schema.BoolAttribute{
 				Description: "Indicates if you want to run the rule on an interval basis.",
@@ -143,9 +142,7 @@ func getSchema() schema.Schema {
 			"throttle": schema.StringAttribute{
 				Description: throttleRuleDescription,
 				Optional:    true,
-				Validators: []validator.String{
-					validators.StringIsAlertingDuration,
-				},
+				CustomType:  kibanacustomtypes.AlertingDurationType{Units: kibanacustomtypes.AlertingDurationUnitsSubDay},
 			},
 			"scheduled_task_id": schema.StringAttribute{
 				Description: "ID of the scheduled task that will execute the alert.",
@@ -251,9 +248,7 @@ func getSchema() schema.Schema {
 								"throttle": schema.StringAttribute{
 									Description: actionsFrequencyThrottleDescription,
 									Optional:    true,
-									Validators: []validator.String{
-										validators.StringIsAlertingDuration,
-									},
+									CustomType:  kibanacustomtypes.AlertingDurationType{Units: kibanacustomtypes.AlertingDurationUnitsSubDay},
 								},
 							},
 						},

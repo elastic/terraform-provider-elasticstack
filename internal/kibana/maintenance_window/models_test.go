@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	kibanacustomtypes "github.com/elastic/terraform-provider-elasticstack/internal/kibana/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,11 +35,11 @@ var modelWithAllFields = Model{
 
 	CustomSchedule: Schedule{
 		Start:    types.StringValue("1993-01-01T05:00:00.200Z"),
-		Duration: types.StringValue("13d"),
+		Duration: kibanacustomtypes.NewAlertingDurationValue("13d"),
 		Timezone: types.StringValue("America/Martinique"),
 
 		Recurring: &ScheduleRecurring{
-			Every:       types.StringValue("21d"),
+			Every:       kibanacustomtypes.NewAlertingDurationValue("21d"),
 			End:         types.StringValue("2029-05-17T05:05:00.000Z"),
 			Occurrences: types.Int32Null(),
 			OnWeekDay:   types.ListValueMust(types.StringType, []attr.Value{types.StringValue("MO"), types.StringValue("-2FR"), types.StringValue("+4SA")}),
@@ -60,11 +61,11 @@ var modelOccurrencesNoScope = Model{
 
 	CustomSchedule: Schedule{
 		Start:    types.StringValue("1993-01-01T05:00:00.200Z"),
-		Duration: types.StringValue("13d"),
+		Duration: kibanacustomtypes.NewAlertingDurationValue("13d"),
 		Timezone: types.StringNull(),
 
 		Recurring: &ScheduleRecurring{
-			Every:       types.StringValue("21d"),
+			Every:       kibanacustomtypes.NewAlertingDurationValue("21d"),
 			End:         types.StringNull(),
 			Occurrences: types.Int32Value(42),
 			OnWeekDay:   types.ListNull(types.StringType),
@@ -395,7 +396,7 @@ func TestMaintenanceWindowToAPIUpdateRequest(t *testing.T) {
 				Enabled: types.BoolValue(true),
 				CustomSchedule: Schedule{
 					Start:    types.StringValue("1993-01-01T05:00:00.200Z"),
-					Duration: types.StringValue("13d"),
+					Duration: kibanacustomtypes.NewAlertingDurationValue("13d"),
 				},
 			},
 			expectedRequest: kbapi.PatchMaintenanceWindowIdJSONRequestBody{
@@ -442,7 +443,7 @@ func TestMaintenanceWindowToAPIUpdateRequest(t *testing.T) {
 
 				CustomSchedule: Schedule{
 					Start:    types.StringValue("1993-01-01T05:00:00.200Z"),
-					Duration: types.StringValue("13d"),
+					Duration: kibanacustomtypes.NewAlertingDurationValue("13d"),
 				},
 
 				Scope: &Scope{
