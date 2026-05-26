@@ -45,6 +45,7 @@ type TLSMaterial struct {
 
 func CreateESAccessToken(t *testing.T) string {
 	t.Helper()
+	SkipIfNotAcceptanceTest(t)
 
 	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {

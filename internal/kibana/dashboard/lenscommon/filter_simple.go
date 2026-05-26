@@ -25,7 +25,12 @@ import (
 )
 
 // FilterSimpleFromAPI maps kbapi.KibanaHTTPAPIsFilterSimple into FilterSimpleModel.
-func FilterSimpleFromAPI(m *models.FilterSimpleModel, apiQuery kbapi.KibanaHTTPAPIsFilterSimple) {
+func FilterSimpleFromAPI(m *models.FilterSimpleModel, apiQuery *kbapi.KibanaHTTPAPIsFilterSimple) {
+	if apiQuery == nil {
+		m.Expression = types.StringValue("")
+		m.Language = types.StringValue(string(kbapi.KibanaHTTPAPIsFilterSimpleLanguageKql))
+		return
+	}
 	m.Expression = types.StringValue(apiQuery.Expression)
 	if apiQuery.Language == nil {
 		m.Language = types.StringValue(string(kbapi.KibanaHTTPAPIsFilterSimpleLanguageKql))
@@ -35,12 +40,12 @@ func FilterSimpleFromAPI(m *models.FilterSimpleModel, apiQuery kbapi.KibanaHTTPA
 }
 
 // FilterSimpleToAPI maps FilterSimpleModel into kbapi.KibanaHTTPAPIsFilterSimple.
-func FilterSimpleToAPI(m *models.FilterSimpleModel) kbapi.KibanaHTTPAPIsFilterSimple {
+func FilterSimpleToAPI(m *models.FilterSimpleModel) *kbapi.KibanaHTTPAPIsFilterSimple {
 	if m == nil {
-		return kbapi.KibanaHTTPAPIsFilterSimple{}
+		return nil
 	}
 
-	query := kbapi.KibanaHTTPAPIsFilterSimple{
+	query := &kbapi.KibanaHTTPAPIsFilterSimple{
 		Expression: m.Expression.ValueString(),
 	}
 	if typeutils.IsKnown(m.Language) {

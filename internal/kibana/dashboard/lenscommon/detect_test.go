@@ -34,13 +34,13 @@ func TestDetectVizType_chartKindsPerArm(t *testing.T) {
 	require.NoError(t, noESQLValue.FromKibanaHTTPAPIsDatatableDensityHeightValue0(kbapi.KibanaHTTPAPIsDatatableDensityHeightValue0{Type: kbapi.KibanaHTTPAPIsDatatableDensityHeightValue0TypeAuto}))
 	minDatatableNoESQL := kbapi.KibanaHTTPAPIsDatatableNoESQL{
 		Type:    kbapi.KibanaHTTPAPIsDatatableNoESQLTypeDataTable,
-		Query:   kbapi.KibanaHTTPAPIsFilterSimple{},
-		Styling: kbapi.KibanaHTTPAPIsDatatableStyling{Density: kbapi.KibanaHTTPAPIsDatatableDensity{Mode: new(kbapi.KibanaHTTPAPIsDatatableDensityModeDefault)}},
+		Query:   &kbapi.KibanaHTTPAPIsFilterSimple{},
+		Styling: &kbapi.KibanaHTTPAPIsDatatableStyling{Density: &kbapi.KibanaHTTPAPIsDatatableDensity{Mode: new(kbapi.KibanaHTTPAPIsDatatableDensityModeDefault)}},
 		Metrics: []kbapi.KibanaHTTPAPIsDatatableNoESQL_Metrics_Item{},
-		TimeRange: func() kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
+		TimeRange: func() *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
 			var tr kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema
 			require.NoError(t, json.Unmarshal([]byte(`{"from":"now-7d","to":"now"}`), &tr))
-			return tr
+			return &tr
 		}(),
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"i"}`), &minDatatableNoESQL.DataSource))
@@ -213,7 +213,7 @@ func TestDetectVizType_chartKindsPerArm(t *testing.T) {
 				require.NoError(t, json.Unmarshal([]byte(`[]`), &api.Filters))
 				var tr kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema
 				require.NoError(t, json.Unmarshal([]byte(`{"from":"now-7d","to":"now"}`), &tr))
-				api.TimeRange = tr
+				api.TimeRange = &tr
 				var v VisByValueConfig0
 				require.NoError(t, v.FromKibanaHTTPAPIsTagcloudNoESQL(api))
 				return v
@@ -242,13 +242,13 @@ func TestDetectVizType_chartKindsPerArm(t *testing.T) {
 				t.Helper()
 				heatmap := kbapi.KibanaHTTPAPIsHeatmapNoESQL{
 					Type: kbapi.KibanaHTTPAPIsHeatmapNoESQLTypeHeatmap,
-					Query: kbapi.KibanaHTTPAPIsFilterSimple{
+					Query: &kbapi.KibanaHTTPAPIsFilterSimple{
 						Expression: "*",
 						Language:   new(kbapi.KibanaHTTPAPIsFilterSimpleLanguage("kql")),
 					},
-					Axis:    kbapi.KibanaHTTPAPIsHeatmapAxes{X: kbapi.KibanaHTTPAPIsHeatmapXAxis{}, Y: kbapi.KibanaHTTPAPIsHeatmapYAxis{}},
-					Styling: kbapi.KibanaHTTPAPIsHeatmapStyling{Cells: kbapi.KibanaHTTPAPIsHeatmapCells{}},
-					Legend:  kbapi.KibanaHTTPAPIsHeatmapLegend{Size: kbapi.KibanaHTTPAPIsLegendSizeM},
+					Axis:    &kbapi.KibanaHTTPAPIsHeatmapAxes{X: &kbapi.KibanaHTTPAPIsHeatmapXAxis{}, Y: &kbapi.KibanaHTTPAPIsHeatmapYAxis{}},
+					Styling: &kbapi.KibanaHTTPAPIsHeatmapStyling{Cells: &kbapi.KibanaHTTPAPIsHeatmapCells{}},
+					Legend:  &kbapi.KibanaHTTPAPIsHeatmapLegend{Size: new(kbapi.KibanaHTTPAPIsLegendSizeM)},
 				}
 				require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"m"}`), &heatmap.DataSource))
 				require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &heatmap.Metric))
@@ -283,7 +283,7 @@ func TestDetectVizType_chartKindsPerArm(t *testing.T) {
 				lang := kbapi.KibanaHTTPAPIsFilterSimpleLanguage("kql")
 				api := kbapi.KibanaHTTPAPIsRegionMapNoESQL{
 					Type: kbapi.KibanaHTTPAPIsRegionMapNoESQLTypeRegionMap,
-					Query: kbapi.KibanaHTTPAPIsFilterSimple{
+					Query: &kbapi.KibanaHTTPAPIsFilterSimple{
 						Language:   &lang,
 						Expression: "*",
 					},
@@ -332,7 +332,7 @@ func TestDetectVizType_chartKindsPerArm(t *testing.T) {
 				t.Helper()
 				api := kbapi.KibanaHTTPAPIsMetricNoESQL{
 					Type: kbapi.KibanaHTTPAPIsMetricNoESQLTypeMetric,
-					Query: kbapi.KibanaHTTPAPIsFilterSimple{
+					Query: &kbapi.KibanaHTTPAPIsFilterSimple{
 						Language:   new(kbapi.KibanaHTTPAPIsFilterSimpleLanguage("kql")),
 						Expression: "",
 					},
@@ -368,7 +368,8 @@ func TestDetectVizType_chartKindsPerArm(t *testing.T) {
 				t.Helper()
 				api := kbapi.KibanaHTTPAPIsPieNoESQL{
 					Type:    kbapi.KibanaHTTPAPIsPieNoESQLTypePie,
-					Query:   kbapi.KibanaHTTPAPIsFilterSimple{Expression: "*", Language: new(kbapi.KibanaHTTPAPIsFilterSimpleLanguageKql)},
+					Query:   &kbapi.KibanaHTTPAPIsFilterSimple{Expression: "*", Language: new(kbapi.KibanaHTTPAPIsFilterSimpleLanguageKql)},
+					Styling: &kbapi.KibanaHTTPAPIsPieStyling{},
 					Metrics: []kbapi.KibanaHTTPAPIsPieNoESQL_Metrics_Item{},
 					GroupBy: new([]kbapi.KibanaHTTPAPIsPieNoESQL_GroupBy_Item{}),
 				}
@@ -427,7 +428,10 @@ func TestDetectVizType_chartKindsPerArm(t *testing.T) {
 			name: "waffle/no_esql",
 			build: func(t *testing.T) VisByValueConfig0 {
 				t.Helper()
-				raw := `{"type":"waffle","data_source":{"type":"dataView","id":"m"},"query":{"language":"kql","query":""},"legend":{"size":"medium","visible":"auto"},"metrics":[{"operation":"count"}]}`
+				raw := `{"type":"waffle","data_source":{"type":"dataView","id":"m"},` +
+					`"query":{"language":"kql","query":""},` +
+					`"legend":{"size":"medium","visible":"auto"},"styling":{"values":{}},` +
+					`"metrics":[{"operation":"count"}]}`
 				var api kbapi.KibanaHTTPAPIsWaffleNoESQL
 				require.NoError(t, json.Unmarshal([]byte(raw), &api))
 				var v VisByValueConfig0

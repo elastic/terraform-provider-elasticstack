@@ -58,17 +58,18 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	var c converter
 	resolver := stubResolver{}
 
+	query := kbapi.KibanaHTTPAPIsFilterSimple{
+		Language:   new(kbapi.KibanaHTTPAPIsFilterSimpleLanguage("kql")),
+		Expression: "*",
+	}
 	apiChart := kbapi.KibanaHTTPAPIsMetricNoESQL{
 		Type:                kbapi.KibanaHTTPAPIsMetricNoESQLTypeMetric,
 		Title:               new("Metric Round-Trip"),
 		Description:         new("Converter test"),
 		IgnoreGlobalFilters: new(false),
 		Sampling:            new(float32(1.0)),
-		Query: kbapi.KibanaHTTPAPIsFilterSimple{
-			Language:   new(kbapi.KibanaHTTPAPIsFilterSimpleLanguage("kql")),
-			Expression: "*",
-		},
-		Metrics: []kbapi.KibanaHTTPAPIsMetricNoESQL_Metrics_Item{},
+		Query:               &query,
+		Metrics:             []kbapi.KibanaHTTPAPIsMetricNoESQL_Metrics_Item{},
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &apiChart.DataSource))
 	metric := kbapi.KibanaHTTPAPIsMetricNoESQL_Metrics_Item{}

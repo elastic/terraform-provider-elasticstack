@@ -51,7 +51,21 @@ func init() {
 	}
 }
 
+// SkipIfNotAcceptanceTest skips the calling test when TF_ACC is not set,
+// matching the framework's resource.Test() behavior. Call this as the first
+// statement of any test that performs live-stack setup (CreateESAccessToken,
+// out-of-band API calls, version probes, etc.) before reaching resource.Test,
+// so the test skips cleanly without a running stack.
+func SkipIfNotAcceptanceTest(t *testing.T) {
+	t.Helper()
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("Acceptance tests skipped unless env 'TF_ACC' set")
+	}
+}
+
 func PreCheck(t *testing.T) {
+	SkipIfNotAcceptanceTest(t)
+
 	_, elasticsearchEndpointsOk := os.LookupEnv("ELASTICSEARCH_ENDPOINTS")
 	_, kibanaEndpointOk := os.LookupEnv("KIBANA_ENDPOINT")
 	_, userOk := os.LookupEnv("ELASTICSEARCH_USERNAME")

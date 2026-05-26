@@ -190,7 +190,10 @@ func discoverSessionConfig1FromAPIImport(ctx context.Context, cfg1 kbapi.KibanaH
 	return cfg, diags
 }
 
-func discoverSessionTimeRangePtrFromAPI(api kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema) *models.TimeRangeModel {
+func discoverSessionTimeRangePtrFromAPI(api *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema) *models.TimeRangeModel {
+	if api == nil {
+		return nil
+	}
 	tr := &models.TimeRangeModel{
 		From: types.StringValue(api.From),
 		To:   types.StringValue(api.To),
@@ -311,7 +314,10 @@ func discoverSessionESQLTabFromAPI(ctx context.Context, api kbapi.KibanaHTTPAPIs
 	return m, diags
 }
 
-func discoverSessionQueryFromKbnAsCode(q kbapi.KibanaHTTPAPIsKbnAsCodeQuery) models.FilterSimpleModel {
+func discoverSessionQueryFromKbnAsCode(q *kbapi.KibanaHTTPAPIsKbnAsCodeQuery) models.FilterSimpleModel {
+	if q == nil {
+		return models.FilterSimpleModel{}
+	}
 	return models.FilterSimpleModel{
 		Expression: types.StringValue(q.Expression),
 		Language:   types.StringValue(string(q.Language)),
@@ -681,7 +687,10 @@ func discoverSessionMergeConfig1FromAPI(
 	return diags
 }
 
-func discoverSessionMergeTimeRangeModel(prior *models.TimeRangeModel, api kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema) *models.TimeRangeModel {
+func discoverSessionMergeTimeRangeModel(prior *models.TimeRangeModel, api *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema) *models.TimeRangeModel {
+	if api == nil {
+		return nil
+	}
 	tr := &models.TimeRangeModel{
 		From: types.StringValue(api.From),
 		To:   types.StringValue(api.To),

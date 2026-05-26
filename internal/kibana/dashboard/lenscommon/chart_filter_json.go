@@ -95,12 +95,12 @@ func PopulateFilterJSONFromMarshaled(item any, out *jsontypes.Normalized) diag.D
 }
 
 // PopulateFiltersFromAPI converts kbapi lens panel filters into Terraform models, appending errors to diags.
-func PopulateFiltersFromAPI(filters []kbapi.KibanaHTTPAPIsLensPanelFilters_Item, diags *diag.Diagnostics) []models.ChartFilterJSONModel {
-	if len(filters) == 0 {
+func PopulateFiltersFromAPI(filters *kbapi.KibanaHTTPAPIsLensPanelFilters, diags *diag.Diagnostics) []models.ChartFilterJSONModel {
+	if filters == nil || len(*filters) == 0 {
 		return nil
 	}
-	result := make([]models.ChartFilterJSONModel, 0, len(filters))
-	for _, f := range filters {
+	result := make([]models.ChartFilterJSONModel, 0, len(*filters))
+	for _, f := range *filters {
 		fm := models.ChartFilterJSONModel{}
 		fd := ChartFilterJSONPopulateFromAPIItem(&fm, f)
 		diags.Append(fd...)
@@ -111,13 +111,14 @@ func PopulateFiltersFromAPI(filters []kbapi.KibanaHTTPAPIsLensPanelFilters_Item,
 	return result
 }
 
-// BuildFiltersForAPI converts model filters into the kbapi slice; the returned slice is never nil.
-func BuildFiltersForAPI(filters []models.ChartFilterJSONModel, diags *diag.Diagnostics) []kbapi.KibanaHTTPAPIsLensPanelFilters_Item {
+// BuildFiltersForAPI converts model filters into the kbapi pointer-to-slice; returns a non-nil empty slice when filters is empty.
+func BuildFiltersForAPI(filters []models.ChartFilterJSONModel, diags *diag.Diagnostics) *kbapi.KibanaHTTPAPIsLensPanelFilters {
 	if len(filters) == 0 {
-		return []kbapi.KibanaHTTPAPIsLensPanelFilters_Item{}
+		empty := kbapi.KibanaHTTPAPIsLensPanelFilters{}
+		return &empty
 	}
 
-	items := make([]kbapi.KibanaHTTPAPIsLensPanelFilters_Item, 0, len(filters))
+	items := make(kbapi.KibanaHTTPAPIsLensPanelFilters, 0, len(filters))
 	for _, f := range filters {
 		var item kbapi.KibanaHTTPAPIsLensPanelFilters_Item
 		fd := DecodeChartFilterJSON(f.FilterJSON, &item)
@@ -126,5 +127,5 @@ func BuildFiltersForAPI(filters []models.ChartFilterJSONModel, diags *diag.Diagn
 			items = append(items, item)
 		}
 	}
-	return items
+	return &items
 }

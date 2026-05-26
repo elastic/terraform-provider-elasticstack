@@ -608,7 +608,6 @@ func Test_panelsToAPI(t *testing.T) {
 						"legend": {"size":"small"},
 						"metrics": [{"operation":"count"}],
 						"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}],
-						"styling": {"values": {}},
 						"time_range": {"from": "now-15m", "to": "now"}
 					}
 				}
@@ -644,7 +643,6 @@ func Test_panelsToAPI(t *testing.T) {
 						"group_breakdown_by": [{"operation":"terms","collapse_by":"avg","fields":["service.name"],
 							"color":{"mode":"categorical","palette":"default","mapping":[],
 							"unassigned":{"type":"color_code","value":"#D3DAE6"}}}],
-						"styling": {"values": {}},
 						"time_range": {"from": "now-15m", "to": "now"}
 					}
 				}
