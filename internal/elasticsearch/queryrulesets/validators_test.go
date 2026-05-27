@@ -19,9 +19,12 @@ package queryrulesets
 
 import (
 	"context"
+	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -45,7 +48,6 @@ func TestCriteriaValuesJSONValidator_rejectsInvalidJSON(t *testing.T) {
 	t.Parallel()
 
 	for _, input := range []string{"null", "42", "{}", `"hello"`, "[]", "not-json"} {
-		input := input
 		t.Run(input, func(t *testing.T) {
 			t.Parallel()
 
@@ -227,4 +229,149 @@ func TestQueryRuleActionsValidator_rejectsBothIDsAndDocs(t *testing.T) {
 	if !resp.Diagnostics.HasError() {
 		t.Fatal("expected validation error when both ids and docs are set")
 	}
+}
+
+func criteriaObject(t *testing.T, attrs map[string]attr.Value) types.Object {
+	t.Helper()
+
+	obj, diags := types.ObjectValue(queryRuleCriteriaModelAttrTypes(), attrs)
+	if diags.HasError() {
+		t.Fatalf("building criteria object: %v", diags)
+	}
+	return obj
+}
+
+func criteriaValuesNull() attr.Value {
+	return jsontypes.Normalized{StringValue: types.StringNull()}
+}
+
+func criteriaValuesUnknown() attr.Value {
+	return jsontypes.Normalized{StringValue: types.StringUnknown()}
+}
+
+func criteriaValuesString(value string) attr.Value {
+	return jsontypes.Normalized{StringValue: types.StringValue(value)}
+}
+
+func TestQueryRuleCriteriaValidator_acceptsAlwaysWithoutValues(t *testing.T) {
+	t.Parallel()
+
+	var resp validator.ObjectResponse
+	queryRuleCriteriaValidator{}.ValidateObject(context.Background(), validator.ObjectRequest{
+		Path: path.Root("criteria"),
+		ConfigValue: criteriaObject(t, map[string]attr.Value{
+			"type":     types.StringValue("always"),
+			"metadata": types.StringNull(),
+			"values":   criteriaValuesNull(),
+		}),
+	}, &resp)
+
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("expected no error, got %v", resp.Diagnostics)
+	}
+}
+
+func TestQueryRuleCriteriaValidator_rejectsAlwaysWithValues(t *testing.T) {
+	t.Parallel()
+
+	var resp validator.ObjectResponse
+	queryRuleCriteriaValidator{}.ValidateObject(context.Background(), validator.ObjectRequest{
+		Path: path.Root("criteria"),
+		ConfigValue: criteriaObject(t, map[string]attr.Value{
+			"type":     types.StringValue("always"),
+			"metadata": types.StringNull(),
+			"values":   criteriaValuesString(`["x"]`),
+		}),
+	}, &resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected validation error when always has values")
+	}
+	if !containsDiagnosticSummary(resp.Diagnostics, "always") {
+		t.Fatalf("expected diagnostic mentioning always, got %v", resp.Diagnostics)
+	}
+}
+
+func TestQueryRuleCriteriaValidator_requiresValuesForNonAlways(t *testing.T) {
+	t.Parallel()
+
+	var resp validator.ObjectResponse
+	queryRuleCriteriaValidator{}.ValidateObject(context.Background(), validator.ObjectRequest{
+		Path: path.Root("criteria"),
+		ConfigValue: criteriaObject(t, map[string]attr.Value{
+			"type":     types.StringValue("exact"),
+			"metadata": types.StringValue("query"),
+			"values":   criteriaValuesNull(),
+		}),
+	}, &resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected validation error when values is missing")
+	}
+	if !containsDiagnosticSummary(resp.Diagnostics, "values") {
+		t.Fatalf("expected diagnostic mentioning values, got %v", resp.Diagnostics)
+	}
+}
+
+func TestQueryRuleCriteriaValidator_acceptsNonAlwaysWithValues(t *testing.T) {
+	t.Parallel()
+
+	var resp validator.ObjectResponse
+	queryRuleCriteriaValidator{}.ValidateObject(context.Background(), validator.ObjectRequest{
+		Path: path.Root("criteria"),
+		ConfigValue: criteriaObject(t, map[string]attr.Value{
+			"type":     types.StringValue("exact"),
+			"metadata": types.StringValue("query"),
+			"values":   criteriaValuesString(`["x"]`),
+		}),
+	}, &resp)
+
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("expected no error, got %v", resp.Diagnostics)
+	}
+}
+
+func TestQueryRuleCriteriaValidator_skipsWhenTypeUnknown(t *testing.T) {
+	t.Parallel()
+
+	var resp validator.ObjectResponse
+	queryRuleCriteriaValidator{}.ValidateObject(context.Background(), validator.ObjectRequest{
+		Path: path.Root("criteria"),
+		ConfigValue: criteriaObject(t, map[string]attr.Value{
+			"type":     types.StringUnknown(),
+			"metadata": types.StringValue("query"),
+			"values":   criteriaValuesNull(),
+		}),
+	}, &resp)
+
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("expected no error when type is unknown, got %v", resp.Diagnostics)
+	}
+}
+
+func TestQueryRuleCriteriaValidator_skipsWhenValuesUnknown(t *testing.T) {
+	t.Parallel()
+
+	var resp validator.ObjectResponse
+	queryRuleCriteriaValidator{}.ValidateObject(context.Background(), validator.ObjectRequest{
+		Path: path.Root("criteria"),
+		ConfigValue: criteriaObject(t, map[string]attr.Value{
+			"type":     types.StringValue("exact"),
+			"metadata": types.StringValue("query"),
+			"values":   criteriaValuesUnknown(),
+		}),
+	}, &resp)
+
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("expected no error when values is unknown, got %v", resp.Diagnostics)
+	}
+}
+
+func containsDiagnosticSummary(diags diag.Diagnostics, substr string) bool {
+	for _, d := range diags {
+		if strings.Contains(d.Summary(), substr) || strings.Contains(d.Detail(), substr) {
+			return true
+		}
+	}
+	return false
 }

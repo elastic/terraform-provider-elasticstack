@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -84,9 +85,19 @@ func (v queryRuleCriteriaValidator) ValidateObject(_ context.Context, req valida
 	}
 
 	attrs := req.ConfigValue.Attributes()
+	if attrs["type"].IsUnknown() {
+		return
+	}
+	if attrs["values"].IsUnknown() {
+		return
+	}
+
 	criteriaType := stringAttributeValue(attrs["type"])
 	valuesAttr := attrs["values"]
-	valuesSet := !valuesAttr.IsNull() && !valuesAttr.IsUnknown()
+	if normalized, ok := valuesAttr.(jsontypes.Normalized); ok && normalized.StringValue.IsUnknown() {
+		return
+	}
+	valuesSet := valuesAttributeIsSet(valuesAttr)
 
 	switch {
 	case criteriaType == "always" && valuesSet:
@@ -178,6 +189,19 @@ func stringAttributeValue(val attr.Value) string {
 	}
 
 	return str.ValueString()
+}
+
+func valuesAttributeIsSet(val attr.Value) bool {
+	if val == nil || val.IsNull() || val.IsUnknown() {
+		return false
+	}
+
+	normalized, ok := val.(jsontypes.Normalized)
+	if !ok {
+		return true
+	}
+
+	return !normalized.StringValue.IsNull() && !normalized.StringValue.IsUnknown()
 }
 
 // Ensure validators satisfy interfaces at compile time.
