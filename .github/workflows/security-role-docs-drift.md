@@ -13,30 +13,6 @@ on:
       - main
     paths:
       - 'generated/kbapi/**'
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - name: Setup Go
-      uses: actions/setup-go@v6
-      with:
-        go-version-file: go.mod
-        cache: false
-    - name: Run security role docs pre-activation
-      id: pre_activation
-      run: |
-        mkdir -p /tmp/gh-aw/agent
-        go run ./scripts/security-role-docs pre-activation \
-          --features-path scripts/security-role-docs/kibana-features.json \
-          --report-path /tmp/gh-aw/agent/drift-report.json
-    - name: Upload drift report
-      if: success()
-      uses: actions/upload-artifact@v4
-      with:
-        name: security-role-docs-drift-report
-        path: /tmp/gh-aw/agent/drift-report.json
-        if-no-files-found: error
 engine:
   id: claude
   model: "llm-gateway/gpt-5.5"
@@ -67,29 +43,32 @@ network:
   allowed: [defaults, node, go, terraform, elastic.litellm-prod.ai]
 checkout:
   fetch-depth: 0
-if: >-
-  needs.pre_activation.outputs.run_agent == 'true'
 steps:
-  - name: Download drift report
-    uses: actions/download-artifact@v4
+  - name: Checkout repository
+    uses: actions/checkout@v4
     with:
-      name: security-role-docs-drift-report
-      path: /tmp/gh-aw/agent
-  - name: Verify report artifact path
-    run: test -f /tmp/gh-aw/agent/drift-report.json
-jobs:
-  pre_activation:
-    outputs:
-      run_agent: ${{ steps.pre_activation.outputs.run_agent }}
+      fetch-depth: 0
+      persist-credentials: false
+  - name: Setup Go
+    uses: actions/setup-go@v6
+    with:
+      go-version-file: go.mod
+      cache: false
+  - name: Run security role docs pre-activation
+    id: pre_activation
+    run: |
+      mkdir -p /tmp/gh-aw/agent
+      go run ./scripts/security-role-docs pre-activation \
+        --features-path scripts/security-role-docs/kibana-features.json \
+        --report-path /tmp/gh-aw/agent/drift-report.json
 ---
 
 # Security role docs drift worker
 
-The repository already computed drift in pre-activation. Use the downloaded report as the source of truth and open exactly one pull request when drift exists.
+Pre-activation has computed drift against the live Kibana features API. Read the drift report at `/tmp/gh-aw/agent/drift-report.json` and open exactly one pull request when drift exists.
 
 ## Pre-activation context
 
-- **Run agent**: `${{ needs.pre_activation.outputs.run_agent }}`
 - **Report path**: `/tmp/gh-aw/agent/drift-report.json`
 
 ## Task
