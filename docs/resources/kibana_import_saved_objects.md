@@ -8,9 +8,7 @@ description: |-
 
 # elasticstack_kibana_import_saved_objects (Resource)
 
-Create sets of Kibana saved objects from a file created by the export API. See https://www.elastic.co/guide/en/kibana/current/saved-objects-api-import.html
-
-## Example Usage
+Create sets of Kibana saved objects from a file created by the export API. See https://www.elastic.co/guide/en/kibana/current/saved-objects-api-import.html## Example Usage
 
 ```terraform
 provider "elasticstack" {

@@ -8,9 +8,7 @@ description: |-
 
 # elasticstack_elasticsearch_data_stream (Resource)
 
-Managing Elasticsearch data streams, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/data-stream-apis.html
-
-## Example Usage
+Managing Elasticsearch data streams, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/data-stream-apis.html## Example Usage
 
 ```terraform
 provider "elasticstack" {

@@ -17,9 +17,7 @@ Creates a Kibana rule. See the [create rule API documentation](https://www.elast
 
 ```
 Could not create API key - Unsupported scheme "ApiKey" for granting API Key
-```
-
-## Example Usage
+```## Example Usage
 
 ```terraform
 provider "elasticstack" {

@@ -8,9 +8,7 @@ description: |-
 
 # elasticstack_kibana_space (Resource)
 
-Creates a Kibana space. See the [spaces API documentation](https://www.elastic.co/guide/en/kibana/master/spaces-api-post.html) for more details.
-
-## Example Usage
+Creates a Kibana space. See the [spaces API documentation](https://www.elastic.co/guide/en/kibana/master/spaces-api-post.html) for more details.## Example Usage
 
 ```terraform
 provider "elasticstack" {

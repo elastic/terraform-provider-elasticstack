@@ -9,7 +9,7 @@ description: |-
 # elasticstack_elasticsearch_security_role (Resource)
 
 Adds and updates roles in the native realm. See the [role API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role.html) for more details.
-
+See also: [Security Roles Guide](../guides/security-roles)
 ## Example Usage
 
 ```terraform
@@ -17,31 +17,15 @@ provider "elasticstack" {
   elasticsearch {}
 }
 
-resource "elasticstack_elasticsearch_security_role" "role" {
-  name        = "testrole"
-  description = "Role for testing"
-  cluster     = ["all"]
+resource "elasticstack_elasticsearch_security_role" "data_analyst" {
+  name = "data_analyst"
+
+  cluster = ["monitor"]
 
   indices {
-    names      = ["index1", "index2"]
-    privileges = ["all"]
+    names      = ["logs-*"]
+    privileges = ["read", "view_index_metadata"]
   }
-
-  applications {
-    application = "myapp"
-    privileges  = ["admin", "read"]
-    resources   = ["*"]
-  }
-
-  run_as = ["other_user"]
-
-  metadata = jsonencode({
-    version = 1
-  })
-}
-
-output "role" {
-  value = elasticstack_elasticsearch_security_role.role
 }
 ```
 

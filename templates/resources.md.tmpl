@@ -28,7 +28,15 @@ description: |-
 
 {{ .Description | trimspace }}
 
-{{ if .HasExample -}}
+{{- if or (eq .Name "elasticstack_elasticsearch_security_role") (eq .Name "elasticstack_kibana_security_role") }}
+See also: [Security Roles Guide](../guides/security-roles)
+
+{{- end }}
+{{- if eq .Name "elasticstack_elasticsearch_security_role" }}
+## Example Usage
+
+{{ tffile "examples/resources/elasticstack_elasticsearch_security_role/resource.tf" }}
+{{- else if .HasExample -}}
 ## Example Usage
 
 {{tffile .ExampleFile }}
