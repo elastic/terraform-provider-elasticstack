@@ -144,3 +144,63 @@ func GetEsActionConnectionBlock() schema.Block {
 		},
 	}
 }
+
+// GetKbActionConnectionBlock returns the kibana_connection block for
+// provider-defined actions, mirroring GetKbEphemeralConnectionBlock for
+// ephemeral resources.
+func GetKbActionConnectionBlock() schema.Block {
+	usernamePath := path.MatchRelative().AtParent().AtName(attrUsername)
+	passwordPath := path.MatchRelative().AtParent().AtName(attrPassword)
+	apiKeyPath := path.MatchRelative().AtParent().AtName(attrAPIKey)
+	bearerTokenPath := path.MatchRelative().AtParent().AtName(attrBearerToken)
+
+	return schema.ListNestedBlock{
+		MarkdownDescription: descKbConnectionBlock,
+		Description:         descKbConnectionBlock,
+		NestedObject: schema.NestedBlockObject{
+			Attributes: map[string]schema.Attribute{
+				attrAPIKey: schema.StringAttribute{
+					MarkdownDescription: descKbAPIKey,
+					Optional:            true,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(usernamePath, passwordPath, bearerTokenPath),
+					},
+				},
+				attrBearerToken: schema.StringAttribute{
+					MarkdownDescription: descKbBearerToken,
+					Optional:            true,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
+					},
+				},
+				attrUsername: schema.StringAttribute{
+					MarkdownDescription: descKbUsername,
+					Optional:            true,
+					Validators:          []validator.String{stringvalidator.AlsoRequires(passwordPath)},
+				},
+				attrPassword: schema.StringAttribute{
+					MarkdownDescription: descKbPassword,
+					Optional:            true,
+					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
+				},
+				attrEndpoints: schema.ListAttribute{
+					MarkdownDescription: descKbEndpoints,
+					Optional:            true,
+					ElementType:         types.StringType,
+				},
+				attrCACerts: schema.ListAttribute{
+					MarkdownDescription: descKbCACerts,
+					Optional:            true,
+					ElementType:         types.StringType,
+				},
+				attrInsecure: schema.BoolAttribute{
+					MarkdownDescription: descInsecureTLS,
+					Optional:            true,
+				},
+			},
+		},
+		Validators: []validator.List{
+			listvalidator.SizeAtMost(1),
+		},
+	}
+}

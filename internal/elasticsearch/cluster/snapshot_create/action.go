@@ -24,74 +24,32 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/action"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-var (
-	_ action.Action              = (*snapshotCreateAction)(nil)
-	_ action.ActionWithConfigure = (*snapshotCreateAction)(nil)
-)
-
 const defaultInvokeTimeout = 20 * time.Minute
 
-type snapshotCreateAction struct {
-	factory *clients.ProviderClientFactory
-}
-
-// NewCreateAction returns a constructor for the snapshot create action.
+// NewCreateAction returns a constructor for the snapshot create action. The
+// Configure, Metadata, Schema, and Invoke prelude are owned by the
+// [entitycore] action envelope; this package supplies only the schema body
+// and the invoke callback.
 func NewCreateAction() action.Action {
-	return &snapshotCreateAction{}
+	return entitycore.NewElasticsearchAction[Model]("snapshot_create", entitycore.ElasticsearchActionOptions[Model]{
+		Schema:               GetSchema,
+		Invoke:               invokeCreate,
+		DefaultInvokeTimeout: defaultInvokeTimeout,
+	})
 }
 
-func (a *snapshotCreateAction) Metadata(_ context.Context, _ action.MetadataRequest, resp *action.MetadataResponse) {
-	resp.TypeName = "elasticstack_elasticsearch_snapshot_create"
-}
-
-func (a *snapshotCreateAction) Schema(ctx context.Context, _ action.SchemaRequest, resp *action.SchemaResponse) {
-	resp.Schema = GetSchema(ctx)
-}
-
-func (a *snapshotCreateAction) Configure(_ context.Context, req action.ConfigureRequest, resp *action.ConfigureResponse) {
-	if req.ProviderData == nil {
-		return
-	}
-
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	a.factory = factory
-}
-
-func (a *snapshotCreateAction) Invoke(ctx context.Context, req action.InvokeRequest, resp *action.InvokeResponse) {
-	var model Model
-	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if a.factory == nil {
-		resp.Diagnostics.AddError("Provider not configured", "Expected configured provider client factory")
-		return
-	}
-
-	client, diags := a.factory.GetElasticsearchClient(ctx, model.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	invokeTimeout, timeoutDiags := model.Timeouts.Invoke(ctx, defaultInvokeTimeout)
-	resp.Diagnostics.Append(timeoutDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, invokeTimeout)
-	defer cancel()
+// invokeCreate is the entity-specific work for elasticstack_elasticsearch_snapshot_create.
+// The envelope has already decoded req.Config, resolved client, and applied
+// the invoke timeout to ctx.
+func invokeCreate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ActionRequest[Model]) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
+	model := req.Config
 
 	waitForCompletion := true
 	if !model.WaitForCompletion.IsNull() && !model.WaitForCompletion.IsUnknown() {
@@ -99,12 +57,12 @@ func (a *snapshotCreateAction) Invoke(ctx context.Context, req action.InvokeRequ
 	}
 
 	body, bodyDiags := createRequestFromModel(ctx, model)
-	resp.Diagnostics.Append(bodyDiags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(bodyDiags...)
+	if diags.HasError() {
+		return diags
 	}
 
-	resp.Diagnostics.Append(esclient.CreateSnapshot(
+	diags.Append(esclient.CreateSnapshot(
 		ctx,
 		client,
 		model.Repository.ValueString(),
@@ -112,6 +70,7 @@ func (a *snapshotCreateAction) Invoke(ctx context.Context, req action.InvokeRequ
 		body,
 		waitForCompletion,
 	)...)
+	return diags
 }
 
 func createRequestFromModel(ctx context.Context, model Model) (*esclient.CreateSnapshotRequest, fwdiag.Diagnostics) {

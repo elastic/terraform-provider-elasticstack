@@ -21,9 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster"
-	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	actiontimeouts "github.com/hashicorp/terraform-plugin-framework-timeouts/action/timeouts"
 	actionschema "github.com/hashicorp/terraform-plugin-framework/action/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -33,8 +31,10 @@ const schemaMarkdownDescription = `Creates an Elasticsearch snapshot on demand. 
 
 Invokes ` + "`POST /_snapshot/{repository}/{snapshot}`" + `. See the [create snapshot API documentation](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-snapshot-create).`
 
-// GetSchema returns the action schema for snapshot create.
-func GetSchema(ctx context.Context) actionschema.Schema {
+// GetSchema returns the action schema for snapshot create. The
+// elasticsearch_connection and timeouts blocks are added by
+// [entitycore.NewElasticsearchAction] and MUST NOT be declared here.
+func GetSchema(_ context.Context) actionschema.Schema {
 	return actionschema.Schema{
 		MarkdownDescription: schemaMarkdownDescription,
 		Attributes: map[string]actionschema.Attribute{
@@ -84,10 +84,6 @@ func GetSchema(ctx context.Context) actionschema.Schema {
 				MarkdownDescription: "When `true`, waits until snapshot creation completes. Defaults to `true` when omitted.",
 				Optional:            true,
 			},
-		},
-		Blocks: map[string]actionschema.Block{
-			"timeouts":                 actiontimeouts.Block(ctx),
-			"elasticsearch_connection": schema.GetEsActionConnectionBlock(),
 		},
 	}
 }

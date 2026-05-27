@@ -20,9 +20,7 @@ package snapshot_restore
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	actiontimeouts "github.com/hashicorp/terraform-plugin-framework-timeouts/action/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	actionschema "github.com/hashicorp/terraform-plugin-framework/action/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -34,8 +32,10 @@ const schemaMarkdownDescription = `Restores an Elasticsearch snapshot. **Require
 	"\n\nInvokes `POST /_snapshot/{repository}/{snapshot}/_restore`. See the " +
 	"[restore snapshot API documentation](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-snapshot-restore)."
 
-// GetSchema returns the action schema for snapshot restore.
-func GetSchema(ctx context.Context) actionschema.Schema {
+// GetSchema returns the action schema for snapshot restore. The
+// elasticsearch_connection and timeouts blocks are added by
+// [entitycore.NewElasticsearchAction] and MUST NOT be declared here.
+func GetSchema(_ context.Context) actionschema.Schema {
 	renamePatternPath := path.MatchRoot("rename_pattern")
 	renameReplacementPath := path.MatchRoot("rename_replacement")
 
@@ -104,10 +104,6 @@ func GetSchema(ctx context.Context) actionschema.Schema {
 				MarkdownDescription: "When `true`, waits until the restore completes. Defaults to `true` when omitted.",
 				Optional:            true,
 			},
-		},
-		Blocks: map[string]actionschema.Block{
-			"timeouts":                 actiontimeouts.Block(ctx),
-			"elasticsearch_connection": schema.GetEsActionConnectionBlock(),
 		},
 	}
 }

@@ -18,23 +18,26 @@
 package snapshot_create
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	actiontimeouts "github.com/hashicorp/terraform-plugin-framework-timeouts/action/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Model holds the Terraform configuration for the snapshot create action.
+// Model holds the Terraform configuration for the snapshot create action. The
+// elasticsearch_connection and timeouts blocks are provided by the embedded
+// envelope fields and injected into the schema by [entitycore.NewElasticsearchAction].
 type Model struct {
-	Repository              types.String         `tfsdk:"repository"`
-	Snapshot                types.String         `tfsdk:"snapshot"`
-	Indices                 types.List           `tfsdk:"indices"`
-	IncludeGlobalState      types.Bool           `tfsdk:"include_global_state"`
-	IgnoreUnavailable       types.Bool           `tfsdk:"ignore_unavailable"`
-	Partial                 types.Bool           `tfsdk:"partial"`
-	FeatureStates           types.List           `tfsdk:"feature_states"`
-	ExpandWildcards         types.String         `tfsdk:"expand_wildcards"`
-	Metadata                jsontypes.Normalized `tfsdk:"metadata"`
-	WaitForCompletion       types.Bool           `tfsdk:"wait_for_completion"`
-	Timeouts                actiontimeouts.Value `tfsdk:"timeouts"`
-	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
+	entitycore.ElasticsearchConnectionField
+	entitycore.ActionTimeoutsField
+
+	Repository         types.String         `tfsdk:"repository"`
+	Snapshot           types.String         `tfsdk:"snapshot"`
+	Indices            types.List           `tfsdk:"indices"`
+	IncludeGlobalState types.Bool           `tfsdk:"include_global_state"`
+	IgnoreUnavailable  types.Bool           `tfsdk:"ignore_unavailable"`
+	Partial            types.Bool           `tfsdk:"partial"`
+	FeatureStates      types.List           `tfsdk:"feature_states"`
+	ExpandWildcards    types.String         `tfsdk:"expand_wildcards"`
+	Metadata           jsontypes.Normalized `tfsdk:"metadata"`
+	WaitForCompletion  types.Bool           `tfsdk:"wait_for_completion"`
 }

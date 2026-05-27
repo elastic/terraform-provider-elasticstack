@@ -24,74 +24,32 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/action"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-var (
-	_ action.Action              = (*snapshotRestoreAction)(nil)
-	_ action.ActionWithConfigure = (*snapshotRestoreAction)(nil)
-)
-
 const defaultInvokeTimeout = 20 * time.Minute
 
-type snapshotRestoreAction struct {
-	factory *clients.ProviderClientFactory
-}
-
 // NewRestoreAction returns a constructor for the snapshot restore action.
+// The Configure, Metadata, Schema, and Invoke prelude are owned by the
+// [entitycore] action envelope; this package supplies only the schema body
+// and the invoke callback.
 func NewRestoreAction() action.Action {
-	return &snapshotRestoreAction{}
+	return entitycore.NewElasticsearchAction[Model]("snapshot_restore", entitycore.ElasticsearchActionOptions[Model]{
+		Schema:               GetSchema,
+		Invoke:               invokeRestore,
+		DefaultInvokeTimeout: defaultInvokeTimeout,
+	})
 }
 
-func (a *snapshotRestoreAction) Metadata(_ context.Context, _ action.MetadataRequest, resp *action.MetadataResponse) {
-	resp.TypeName = "elasticstack_elasticsearch_snapshot_restore"
-}
-
-func (a *snapshotRestoreAction) Schema(ctx context.Context, _ action.SchemaRequest, resp *action.SchemaResponse) {
-	resp.Schema = GetSchema(ctx)
-}
-
-func (a *snapshotRestoreAction) Configure(_ context.Context, req action.ConfigureRequest, resp *action.ConfigureResponse) {
-	if req.ProviderData == nil {
-		return
-	}
-
-	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	a.factory = factory
-}
-
-func (a *snapshotRestoreAction) Invoke(ctx context.Context, req action.InvokeRequest, resp *action.InvokeResponse) {
-	var model Model
-	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if a.factory == nil {
-		resp.Diagnostics.AddError("Provider not configured", "Expected configured provider client factory")
-		return
-	}
-
-	client, diags := a.factory.GetElasticsearchClient(ctx, model.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	invokeTimeout, timeoutDiags := model.Timeouts.Invoke(ctx, defaultInvokeTimeout)
-	resp.Diagnostics.Append(timeoutDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, invokeTimeout)
-	defer cancel()
+// invokeRestore is the entity-specific work for elasticstack_elasticsearch_snapshot_restore.
+// The envelope has already decoded req.Config, resolved the client, and
+// applied the invoke timeout to ctx.
+func invokeRestore(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ActionRequest[Model]) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
+	model := req.Config
 
 	waitForCompletion := true
 	if !model.WaitForCompletion.IsNull() && !model.WaitForCompletion.IsUnknown() {
@@ -99,12 +57,12 @@ func (a *snapshotRestoreAction) Invoke(ctx context.Context, req action.InvokeReq
 	}
 
 	body, bodyDiags := restoreRequestFromModel(ctx, model)
-	resp.Diagnostics.Append(bodyDiags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(bodyDiags...)
+	if diags.HasError() {
+		return diags
 	}
 
-	resp.Diagnostics.Append(esclient.RestoreSnapshot(
+	diags.Append(esclient.RestoreSnapshot(
 		ctx,
 		client,
 		model.Repository.ValueString(),
@@ -112,6 +70,7 @@ func (a *snapshotRestoreAction) Invoke(ctx context.Context, req action.InvokeReq
 		body,
 		waitForCompletion,
 	)...)
+	return diags
 }
 
 func restoreRequestFromModel(ctx context.Context, model Model) (*esclient.RestoreSnapshotRequest, fwdiag.Diagnostics) {
