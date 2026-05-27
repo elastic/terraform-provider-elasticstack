@@ -1,0 +1,1 @@
+Reads an Elasticsearch query ruleset via the [Query Rules API](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-rules-apis.html). Requires the `manage_search_query_rules` cluster privilege and Elasticsearch **8.12.0** or later.
