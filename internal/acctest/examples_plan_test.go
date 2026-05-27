@@ -27,6 +27,9 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/examples"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/queryrulesets"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -56,8 +59,23 @@ var planOnlySkippedEmbedPaths = []string{
 	"data-sources/elasticstack_fleet_enrollment_tokens/data-source.tf",
 }
 
+// planOnlyMinElasticsearchVersion lists example embed paths whose data sources read during
+// PlanOnly and therefore require a minimum Elasticsearch version on the acceptance cluster.
+var planOnlyMinElasticsearchVersion = map[string]*version.Version{
+	"data-sources/elasticstack_elasticsearch_query_ruleset/data-source.tf": queryrulesets.MinSupportedVersion,
+}
+
 func shouldSkipPlanOnlyExample(pathUnderExamples string) bool {
 	return slices.Contains(planOnlySkippedEmbedPaths, pathUnderExamples)
+}
+
+func skipPlanOnlyExampleIfUnsupportedVersion(t *testing.T, pathUnderExamples string) {
+	t.Helper()
+	minVersion, ok := planOnlyMinElasticsearchVersion[pathUnderExamples]
+	if !ok {
+		return
+	}
+	versionutils.SkipIfUnsupported(t, minVersion, versionutils.FlavorAny)
 }
 
 func shouldSkipExamplePath(repoRelative string) bool {
@@ -186,6 +204,8 @@ func TestAccExamples_planOnly(t *testing.T) {
 			t.Parallel()
 			examplesPlanHarnessSem <- struct{}{}
 			t.Cleanup(func() { <-examplesPlanHarnessSem })
+
+			skipPlanOnlyExampleIfUnsupportedVersion(t, c.pathUnderExamples)
 
 			body, err := fs.ReadFile(c.fsys, c.embedRelativePath)
 			if err != nil {
