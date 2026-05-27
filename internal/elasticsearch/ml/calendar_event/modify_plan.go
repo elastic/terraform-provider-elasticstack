@@ -20,30 +20,10 @@ package calendar_event
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 func (r *calendarEventResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
-	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
-		return
-	}
-
-	var plan, state CalendarEventTFModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if plan.ElasticsearchConnection.IsUnknown() || state.ElasticsearchConnection.IsUnknown() {
-		return
-	}
-
-	if !plan.ElasticsearchConnection.Equal(state.ElasticsearchConnection) {
-		resp.RequiresReplace = append(resp.RequiresReplace, path.Root("elasticsearch_connection"))
-	}
+	ml.ModifyPlanReplaceIfConnectionChanges[CalendarEventTFModel](ctx, req, resp)
 }
