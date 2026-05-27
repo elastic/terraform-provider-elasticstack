@@ -32,8 +32,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
-// MinSupportedVersion is the minimum Elasticsearch version for the Query Rules API (GA in 8.12).
-var MinSupportedVersion = version.Must(version.NewVersion("8.12.0"))
+// MinSupportedVersion is the minimum Elasticsearch version supported by this resource.
+// The Query Rules API is GA in 8.12, but support for the schema this provider exposes
+// (the `priority` field and the `exclude` rule type) only stabilized in 8.16.0.
+var MinSupportedVersion = version.Must(version.NewVersion("8.16.0"))
 
 var (
 	ruleTypeValidator     = stringvalidator.OneOf("pinned", "exclude")

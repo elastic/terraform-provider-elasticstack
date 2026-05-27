@@ -3,14 +3,14 @@
 page_title: "elasticstack_elasticsearch_query_ruleset Resource - terraform-provider-elasticstack"
 subcategory: "Query rules"
 description: |-
-  Manages an Elasticsearch query ruleset via the Query Rules API https://www.elastic.co/guide/en/elasticsearch/reference/current/query-rules-apis.html. Requires the manage_search_query_rules cluster privilege and Elasticsearch 8.12.0 or later.
+  Manages an Elasticsearch query ruleset via the Query Rules API https://www.elastic.co/guide/en/elasticsearch/reference/current/query-rules-apis.html. Requires the manage_search_query_rules cluster privilege and Elasticsearch 8.16.0 or later (the Query Rules API is GA in 8.12, but the priority field and the exclude rule type exposed by this resource only stabilized in 8.16).
 ---
 
 # elasticstack_elasticsearch_query_ruleset (Resource)
 
 Manages Elasticsearch query rulesets for pinning or excluding search result documents based on contextual criteria. See the [Query Rules API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-rules-apis.html) for more details.
 
-**NOTE:** Minimum Elasticsearch version: 8.12.0 (Query Rules API GA).
+**NOTE:** Minimum Elasticsearch version: 8.16.0. The Query Rules API is GA in 8.12, but the `priority` field and the `exclude` rule type exposed by this resource only stabilized in 8.16.
 
 **NOTE:** Required cluster privilege: `manage_search_query_rules`.
 

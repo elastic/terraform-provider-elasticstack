@@ -231,7 +231,7 @@ The resource SHALL implement `resource.ResourceWithImportState`. The import ID S
 
 ### Requirement: Minimum ES version (REQ-012)
 
-The resource and data source SHALL enforce a minimum Elasticsearch version guard of **8.12.0** (Query Rules API GA). If the cluster reports a version below **8.12.0**, the provider SHALL return a clear diagnostic explaining the minimum version requirement rather than a raw API error.
+The resource and data source SHALL enforce a minimum Elasticsearch version guard of **8.16.0**. The Query Rules API reached GA in 8.12, but the schema this resource exposes (the `priority` field and the `exclude` rule type) only stabilized in 8.16.0. If the cluster reports a version below **8.16.0**, the provider SHALL return a clear diagnostic explaining the minimum version requirement rather than a raw API error.
 
 #### Scenario: Unsupported cluster version
 
