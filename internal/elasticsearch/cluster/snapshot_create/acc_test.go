@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"testing"
 	"time"
 
@@ -46,13 +47,13 @@ func TestAccActionSnapshotCreate(t *testing.T) {
 	snapshotName := fmt.Sprintf("%s-snap", name)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		TerraformVersionChecks:   actionTerraformVersionChecks(),
-		ProtoV6ProviderFactories: acctest.Providers,
-		CheckDestroy:             checkSnapshotCreateDestroy(name, snapshotName),
+		PreCheck:               func() { acctest.PreCheck(t) },
+		TerraformVersionChecks: actionTerraformVersionChecks(),
+		CheckDestroy:           checkSnapshotCreateDestroy(name, snapshotName),
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("sync"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("sync"),
 				ConfigVariables: config.Variables{
 					"name":          config.StringVariable(name),
 					"snapshot_name": config.StringVariable(snapshotName),
@@ -70,13 +71,13 @@ func TestAccActionSnapshotCreateWithMetadata(t *testing.T) {
 	snapshotName := fmt.Sprintf("%s-snap-meta", name)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		TerraformVersionChecks:   actionTerraformVersionChecks(),
-		ProtoV6ProviderFactories: acctest.Providers,
-		CheckDestroy:             checkSnapshotCreateDestroy(name, snapshotName),
+		PreCheck:               func() { acctest.PreCheck(t) },
+		TerraformVersionChecks: actionTerraformVersionChecks(),
+		CheckDestroy:           checkSnapshotCreateDestroy(name, snapshotName),
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("sync"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("sync"),
 				ConfigVariables: config.Variables{
 					"name":          config.StringVariable(name),
 					"snapshot_name": config.StringVariable(snapshotName),
@@ -94,13 +95,13 @@ func TestAccActionSnapshotCreateAsync(t *testing.T) {
 	snapshotName := fmt.Sprintf("%s-snap-async", name)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		TerraformVersionChecks:   actionTerraformVersionChecks(),
-		ProtoV6ProviderFactories: acctest.Providers,
-		CheckDestroy:             checkSnapshotCreateDestroy(name, snapshotName),
+		PreCheck:               func() { acctest.PreCheck(t) },
+		TerraformVersionChecks: actionTerraformVersionChecks(),
+		CheckDestroy:           checkSnapshotCreateDestroy(name, snapshotName),
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("async"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("async"),
 				ConfigVariables: config.Variables{
 					"name":          config.StringVariable(name),
 					"snapshot_name": config.StringVariable(snapshotName),
@@ -108,6 +109,39 @@ func TestAccActionSnapshotCreateAsync(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					waitForSnapshotSuccess(name, snapshotName),
 				),
+			},
+		},
+	})
+}
+
+func TestAccActionSnapshotCreate_DuplicateName(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	snapshotName := fmt.Sprintf("%s-snap-dup", name)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:               func() { acctest.PreCheck(t) },
+		TerraformVersionChecks: actionTerraformVersionChecks(),
+		CheckDestroy:           checkSnapshotCreateDestroy(name, snapshotName),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("bootstrap"),
+				ConfigVariables: config.Variables{
+					"name":          config.StringVariable(name),
+					"snapshot_name": config.StringVariable(snapshotName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					checkSnapshotExists(name, snapshotName, false),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("duplicate"),
+				ConfigVariables: config.Variables{
+					"name":          config.StringVariable(name),
+					"snapshot_name": config.StringVariable(snapshotName),
+				},
+				ExpectError: regexp.MustCompile(`(?i)(snapshot.*already exists|already exists)`),
 			},
 		},
 	})

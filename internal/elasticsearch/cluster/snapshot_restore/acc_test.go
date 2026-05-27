@@ -20,6 +20,7 @@ package snapshot_restore_test
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 	"time"
 
@@ -45,13 +46,21 @@ func TestAccActionSnapshotRestore(t *testing.T) {
 	restoredIndex := fmt.Sprintf("restored-%s-idx", name)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		TerraformVersionChecks:   actionTerraformVersionChecks(),
-		ProtoV6ProviderFactories: acctest.Providers,
-		CheckDestroy:             checkSnapshotRestoreDestroy(name, snapshotName, restoredIndex),
+		PreCheck:               func() { acctest.PreCheck(t) },
+		TerraformVersionChecks: actionTerraformVersionChecks(),
+		CheckDestroy:           checkSnapshotRestoreDestroy(name, snapshotName, restoredIndex),
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("sync"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("sync/bootstrap"),
+				ConfigVariables: config.Variables{
+					"name":          config.StringVariable(name),
+					"snapshot_name": config.StringVariable(snapshotName),
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("sync/restore"),
 				ConfigVariables: config.Variables{
 					"name":          config.StringVariable(name),
 					"snapshot_name": config.StringVariable(snapshotName),
@@ -70,13 +79,21 @@ func TestAccActionSnapshotRestoreAsync(t *testing.T) {
 	restoredIndex := fmt.Sprintf("restored-%s-idx", name)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		TerraformVersionChecks:   actionTerraformVersionChecks(),
-		ProtoV6ProviderFactories: acctest.Providers,
-		CheckDestroy:             checkSnapshotRestoreDestroy(name, snapshotName, restoredIndex),
+		PreCheck:               func() { acctest.PreCheck(t) },
+		TerraformVersionChecks: actionTerraformVersionChecks(),
+		CheckDestroy:           checkSnapshotRestoreDestroy(name, snapshotName, restoredIndex),
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("async"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("async/bootstrap"),
+				ConfigVariables: config.Variables{
+					"name":          config.StringVariable(name),
+					"snapshot_name": config.StringVariable(snapshotName),
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("async/restore"),
 				ConfigVariables: config.Variables{
 					"name":          config.StringVariable(name),
 					"snapshot_name": config.StringVariable(snapshotName),
@@ -84,6 +101,36 @@ func TestAccActionSnapshotRestoreAsync(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					waitForRestoredIndex(restoredIndex),
 				),
+			},
+		},
+	})
+}
+
+func TestAccActionSnapshotRestore_ConflictWithoutRename(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	snapshotName := fmt.Sprintf("%s-snap-conflict", name)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:               func() { acctest.PreCheck(t) },
+		TerraformVersionChecks: actionTerraformVersionChecks(),
+		CheckDestroy:           checkSnapshotRestoreDestroy(name, snapshotName, ""),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("bootstrap"),
+				ConfigVariables: config.Variables{
+					"name":          config.StringVariable(name),
+					"snapshot_name": config.StringVariable(snapshotName),
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("conflict"),
+				ConfigVariables: config.Variables{
+					"name":          config.StringVariable(name),
+					"snapshot_name": config.StringVariable(snapshotName),
+				},
+				ExpectError: regexp.MustCompile(`(?i)(index.*already exists|resource_already_exists|cannot restore|snapshot_restore_exception)`),
 			},
 		},
 	})
@@ -154,7 +201,11 @@ func checkSnapshotRestoreDestroy(name, snapshotName, restoredIndex string) func(
 			}
 		}
 
-		for _, index := range []string{indexName, restoredIndex} {
+		indices := []string{indexName}
+		if restoredIndex != "" {
+			indices = append(indices, restoredIndex)
+		}
+		for _, index := range indices {
 			exists, err := typedClient.Indices.Exists(index).Do(ctx)
 			if err != nil {
 				return err
@@ -167,9 +218,11 @@ func checkSnapshotRestoreDestroy(name, snapshotName, restoredIndex string) func(
 			}
 		}
 
-		_, err = typedClient.Snapshot.Delete(repoName, snapshotName).Do(ctx)
-		if err != nil && !esclient.IsNotFoundElasticsearchError(err) {
-			return err
+		if snapshotName != "" {
+			_, err = typedClient.Snapshot.Delete(repoName, snapshotName).Do(ctx)
+			if err != nil && !esclient.IsNotFoundElasticsearchError(err) {
+				return err
+			}
 		}
 
 		return nil
