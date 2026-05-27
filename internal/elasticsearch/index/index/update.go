@@ -92,7 +92,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	finalModel, found, diags := readIndex(ctx, client, concreteName, planModel)
+	finalModel, found, diags := readIndex(ctx, client, concreteName, planModel, false)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
