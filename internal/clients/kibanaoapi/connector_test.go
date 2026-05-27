@@ -425,6 +425,28 @@ func TestConnectorConfigWithDefaults(t *testing.T) {
 			errorContains:   "unknown connector type ID",
 		},
 		{
+			name:            "webhook connector without method gets post default",
+			connectorTypeID: ".webhook",
+			planConfig:      `{"hasAuth":false,"url":"https://example.com/webhook"}`,
+			expectedError:   false,
+			validateResult: func(t *testing.T, result string) {
+				var m map[string]any
+				require.NoError(t, json.Unmarshal([]byte(result), &m))
+				require.Equal(t, "post", m["method"])
+			},
+		},
+		{
+			name:            "webhook connector with explicit method keeps its value",
+			connectorTypeID: ".webhook",
+			planConfig:      `{"hasAuth":false,"url":"https://example.com/webhook","method":"put"}`,
+			expectedError:   false,
+			validateResult: func(t *testing.T, result string) {
+				var m map[string]any
+				require.NoError(t, json.Unmarshal([]byte(result), &m))
+				require.Equal(t, "put", m["method"])
+			},
+		},
+		{
 			name:            "cases-webhook without authType gets webhook-authentication-basic (Stack 9.4+ default)",
 			connectorTypeID: ".cases-webhook",
 			planConfig: `{"createIncidentJson":"{}","createIncidentResponseKey":"k",` +

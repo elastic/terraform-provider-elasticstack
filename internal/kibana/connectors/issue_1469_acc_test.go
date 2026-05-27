@@ -19,7 +19,6 @@ package connectors_test
 
 import (
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -76,13 +75,19 @@ resource "elasticstack_kibana_action_connector" "test" {
 		Steps: []resource.TestStep{
 			{
 				// Kibana adds method="post" as a default when method is omitted.
-				// The sensitive config value referencing var.auth_token causes
-				// Terraform to report "inconsistent values for sensitive attribute"
-				// when the post-apply state (which includes method="post") is
-				// compared to the planned config (which does not include method).
+				// The provider now includes this default in ConnectorConfigWithDefaults
+				// for .webhook, so the post-apply read matches the plan and no
+				// inconsistency error is produced.
 				ProtoV6ProviderFactories: acctest.Providers,
 				Config:                   makeConfig(connectorName),
-				ExpectError:              regexp.MustCompile(`inconsistent`),
+				Check:                    testCommonAttributes(connectorName, ".webhook"),
+			},
+			{
+				// A subsequent plan must produce no diff, confirming there is no
+				// persistent drift from the Kibana-added method="post" default.
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   makeConfig(connectorName),
+				PlanOnly:                 true,
 			},
 		},
 	})
