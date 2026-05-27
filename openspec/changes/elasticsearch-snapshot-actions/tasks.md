@@ -1,7 +1,7 @@
 ## 1. Provider registration
 
 - [ ] 1.1 In `provider/plugin_framework.go`, add `res.ActionData = factory` in `Configure()` alongside the existing `res.ResourceData`, `res.DataSourceData`, and `res.EphemeralResourceData` assignments.
-- [ ] 1.2 Add `_ provider.ProviderWithActions = &Provider{}` to the `var` block of interface assertions.
+- [ ] 1.2 Add `_ fwprovider.ProviderWithActions = &Provider{}` to the `var` block of interface assertions.
 - [ ] 1.3 Add `Actions(ctx context.Context) []func() action.Action` method on `*Provider` that returns both action constructors (to be added in later tasks).
 - [ ] 1.4 Add the required import `"github.com/hashicorp/terraform-plugin-framework/action"` and `fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"` (provider import alias already present).
 
