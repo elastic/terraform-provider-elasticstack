@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	dschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -126,8 +127,9 @@ func queryRuleCriteriaNestedObjectResource() schema.NestedAttributeObject {
 				Optional:            true,
 			},
 			"values": schema.StringAttribute{
-				MarkdownDescription: "JSON-encoded array of string or numeric values; required unless `type` is `always`.",
+				MarkdownDescription: "JSON-encoded array of string or numeric values; required unless `type` is `always`. Empty arrays are not allowed.",
 				Optional:            true,
+				CustomType:          jsontypes.NormalizedType{},
 				Validators: []validator.String{
 					criteriaValuesJSONValidator{},
 				},
@@ -239,6 +241,7 @@ func queryRuleCriteriaNestedObjectDataSource() dschema.NestedAttributeObject {
 			"values": dschema.StringAttribute{
 				MarkdownDescription: "JSON-encoded array of string or numeric values.",
 				Computed:            true,
+				CustomType:          jsontypes.NormalizedType{},
 			},
 		},
 	}

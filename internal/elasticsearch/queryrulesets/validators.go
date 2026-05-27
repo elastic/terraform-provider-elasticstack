@@ -20,9 +20,11 @@ package queryrulesets
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -43,6 +45,10 @@ func (v queryRuleActionsValidator) ValidateObject(_ context.Context, req validat
 	}
 
 	attrs := req.ConfigValue.Attributes()
+	if attrs["ids"].IsUnknown() || attrs["docs"].IsUnknown() {
+		return
+	}
+
 	idsSet := listAttributeIsSet(attrs["ids"])
 	docsSet := listAttributeIsSet(attrs["docs"])
 
@@ -101,7 +107,7 @@ func (v queryRuleCriteriaValidator) ValidateObject(_ context.Context, req valida
 type criteriaValuesJSONValidator struct{}
 
 func (criteriaValuesJSONValidator) Description(_ context.Context) string {
-	return "Must be a valid JSON array string"
+	return "Must be a valid non-empty JSON array string"
 }
 
 func (v criteriaValuesJSONValidator) MarkdownDescription(ctx context.Context) string {
@@ -113,14 +119,39 @@ func (v criteriaValuesJSONValidator) ValidateString(_ context.Context, req valid
 		return
 	}
 
+	rawInput := strings.TrimSpace(req.ConfigValue.ValueString())
+	var raw json.RawMessage
+	if err := json.Unmarshal([]byte(rawInput), &raw); err != nil {
+		resp.Diagnostics.Append(criteriaValuesJSONDiagnostic(req.Path))
+		return
+	}
+
+	if len(raw) == 0 || raw[0] != '[' {
+		resp.Diagnostics.Append(criteriaValuesJSONDiagnostic(req.Path))
+		return
+	}
+
 	var values []json.RawMessage
-	if err := json.Unmarshal([]byte(req.ConfigValue.ValueString()), &values); err != nil {
+	if err := json.Unmarshal(raw, &values); err != nil {
+		resp.Diagnostics.Append(criteriaValuesJSONDiagnostic(req.Path))
+		return
+	}
+
+	if len(values) == 0 {
 		resp.Diagnostics.Append(diag.NewAttributeErrorDiagnostic(
 			req.Path,
 			"Invalid criteria values",
-			"`values` must be a valid JSON array string.",
+			"`values` must be a non-empty JSON array string; empty arrays are not allowed.",
 		))
 	}
+}
+
+func criteriaValuesJSONDiagnostic(p path.Path) diag.Diagnostic {
+	return diag.NewAttributeErrorDiagnostic(
+		p,
+		"Invalid criteria values",
+		"`values` must be a valid JSON array string.",
+	)
 }
 
 func listAttributeIsSet(val attr.Value) bool {
