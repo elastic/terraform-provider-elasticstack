@@ -46,6 +46,15 @@ var (
 		settingSortMode:    true,
 	}
 
+	// sortKeysSkippedOnImportHydration are not written into legacy flat attrs during
+	// import hydration; nested sort is handled by populateSortFromSettings instead.
+	sortKeysSkippedOnImportHydration = map[string]bool{
+		settingSortField:   true,
+		settingSortOrder:   true,
+		settingSortMissing: true,
+		settingSortMode:    true,
+	}
+
 	staticSettingsKeys = []string{
 		settingNumberOfShards,
 		settingNumberOfRoutingShards,

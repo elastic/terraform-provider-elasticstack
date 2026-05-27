@@ -127,7 +127,13 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 	if len(hydrateAllBytes) == 0 {
 		return
 	}
+
+	clearImportHydrationFlag := func() {
+		resp.Diagnostics.Append(resp.Private.SetKey(ctx, importHydrationPrivateStateKey, nil)...)
+	}
+
 	if req.Plan.Raw.IsNull() {
+		clearImportHydrationFlag()
 		return
 	}
 
@@ -147,5 +153,5 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	resp.Diagnostics.Append(resp.Private.SetKey(ctx, importHydrationPrivateStateKey, nil)...)
+	clearImportHydrationFlag()
 }

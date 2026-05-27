@@ -68,9 +68,7 @@ func hydrateAllSettingsFromRaw(ctx context.Context, model *tfModel) diag.Diagnos
 		}
 	}
 
-	if raw, ok := flat["index.analysis"]; ok {
-		hydrateAnalysisFromRaw(model, raw)
-	}
+	hydrateAnalysisFromFlatSettings(model, flat)
 
 	if raw, ok := flat["index."+settingQueryDefaultField]; ok {
 		hydrateQueryDefaultFieldFromRaw(ctx, model, raw)
@@ -78,7 +76,7 @@ func hydrateAllSettingsFromRaw(ctx context.Context, model *tfModel) diag.Diagnos
 
 	modelType := reflect.TypeFor[tfModel]()
 	for _, key := range allSettingsKeys {
-		if sortKeysExpandedFromNestedBlock[key] {
+		if sortKeysSkippedOnImportHydration[key] {
 			continue
 		}
 		if key == settingQueryDefaultField {
@@ -97,7 +95,57 @@ func hydrateAllSettingsFromRaw(ctx context.Context, model *tfModel) diag.Diagnos
 	return nil
 }
 
-func hydrateAnalysisFromRaw(model *tfModel, raw json.RawMessage) {
+const indexAnalysisFlatPrefix = "index.analysis."
+
+// hydrateAnalysisFromFlatSettings rebuilds analysis_* model fields from flat
+// settings_raw keys (index.analysis.<category>.<name>.<property>) returned by
+// FlatSettings(true). A nested index.analysis object is also accepted when present.
+func hydrateAnalysisFromFlatSettings(model *tfModel, flat map[string]json.RawMessage) {
+	if raw, ok := flat["index.analysis"]; ok {
+		hydrateAnalysisFromNestedObject(model, raw)
+		return
+	}
+
+	byCategory := make(map[string]map[string]map[string]any)
+	for key, raw := range flat {
+		if !strings.HasPrefix(key, indexAnalysisFlatPrefix) {
+			continue
+		}
+		suffix := strings.TrimPrefix(key, indexAnalysisFlatPrefix)
+		parts := strings.Split(suffix, ".")
+		if len(parts) < 3 {
+			continue
+		}
+		category, name := parts[0], parts[1]
+		propParts := parts[2:]
+
+		value := parseFlatSettingJSONValue(raw)
+		if value == nil {
+			continue
+		}
+		if byCategory[category] == nil {
+			byCategory[category] = make(map[string]map[string]any)
+		}
+		if byCategory[category][name] == nil {
+			byCategory[category][name] = make(map[string]any)
+		}
+		setNestedMapValue(byCategory[category][name], propParts, value)
+	}
+
+	for category, target := range analysisNormalizedFieldTargets(model) {
+		names, ok := byCategory[category]
+		if !ok || len(names) == 0 {
+			continue
+		}
+		bytes, err := json.Marshal(names)
+		if err != nil {
+			continue
+		}
+		*target = jsontypes.NewNormalizedValue(string(bytes))
+	}
+}
+
+func hydrateAnalysisFromNestedObject(model *tfModel, raw json.RawMessage) {
 	var analysis map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &analysis); err != nil {
 		return
@@ -112,6 +160,38 @@ func hydrateAnalysisFromRaw(model *tfModel, raw json.RawMessage) {
 			*target = normalized
 		}
 	}
+}
+
+func parseFlatSettingJSONValue(raw json.RawMessage) any {
+	var value any
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return nil
+	}
+	return value
+}
+
+func setNestedMapValue(obj map[string]any, path []string, value any) {
+	if len(path) == 0 {
+		return
+	}
+	cur := obj
+	for i := range len(path) - 1 {
+		seg := path[i]
+		next, ok := cur[seg]
+		if !ok {
+			child := make(map[string]any)
+			cur[seg] = child
+			cur = child
+			continue
+		}
+		child, ok := next.(map[string]any)
+		if !ok {
+			child = make(map[string]any)
+			cur[seg] = child
+		}
+		cur = child
+	}
+	cur[path[len(path)-1]] = value
 }
 
 func jsonRawToNormalized(raw json.RawMessage) (jsontypes.Normalized, bool) {
@@ -266,7 +346,7 @@ func pruneImportHydratedPlanFields(ctx context.Context, plan, config *tfModel) {
 
 	for _, fieldKey := range importHydrationPrunableFieldKeys {
 		configField, ok := config.getFieldValueByTagValue(fieldKey, modelType)
-		if !ok || !configField.IsNull() {
+		if !ok || (!configField.IsNull() && !configField.IsUnknown()) {
 			continue
 		}
 
@@ -276,7 +356,11 @@ func pruneImportHydratedPlanFields(ctx context.Context, plan, config *tfModel) {
 				continue
 			}
 			planField := planVal.Field(i)
-			nullVal := nullAttrValueForField(ctx, planField.Interface().(attr.Value))
+			planAttr, ok := planField.Interface().(attr.Value)
+			if !ok {
+				break
+			}
+			nullVal := nullAttrValueForField(ctx, planAttr)
 			if nullVal != nil {
 				planField.Set(reflect.ValueOf(nullVal))
 			}
