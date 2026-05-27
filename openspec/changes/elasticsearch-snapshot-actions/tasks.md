@@ -8,14 +8,16 @@
 ## 2. Snapshot restore — client helper
 
 - [ ] 2.1 Create `internal/clients/elasticsearch/snapshot_restore.go` with a `RestoreSnapshot` function. Signature: `func RestoreSnapshot(ctx context.Context, client *clients.ElasticsearchScopedClient, repo, snapshot string, body *RestoreSnapshotRequest, waitForCompletion bool) fwdiag.Diagnostics`.
-- [ ] 2.2 Define `RestoreSnapshotRequest` struct with fields matching `POST /_snapshot/{repo}/{snapshot}/_restore` body: `Indices []string`, `IgnoreUnavailable *bool`, `IncludeGlobalState *bool`, `IncludeAliases *bool`, `FeatureStates []string`, `RenamePattern *string`, `RenameReplacement *string`, `Partial *bool`, `IndexSettings *string` (raw JSON), `IgnoreIndexSettings []string`.
-- [ ] 2.3 Implement `RestoreSnapshot` using the typed ES client's `typedapi/snapshot/restore` package. Pass `wait_for_completion` as the query parameter. Propagate ES errors as framework diagnostics.
+- [ ] 2.2 Define `RestoreSnapshotRequest` struct with fields matching `POST /_snapshot/{repo}/{snapshot}/_restore` body: `Indices []string`, `IgnoreUnavailable *bool`, `IncludeGlobalState *bool`, `IncludeAliases *bool`, `FeatureStates []string`, `RenamePattern *string`, `RenameReplacement *string`, `Partial *bool`, `IndexSettings json.RawMessage` (JSON object), `IgnoreIndexSettings []string`.
+- [ ] 2.3 Decode `IndexSettings` from `jsontypes.Normalized` into `json.RawMessage`/`map[string]any` (or equivalent typed API object) before building the request body so ES receives an object, not an escaped string.
+- [ ] 2.4 Implement `RestoreSnapshot` using the typed ES client's `typedapi/snapshot/restore` package. Pass `wait_for_completion` as the query parameter. Propagate ES errors as framework diagnostics.
 
 ## 3. Snapshot create — client helper
 
 - [ ] 3.1 Create `internal/clients/elasticsearch/snapshot_create.go` with a `CreateSnapshot` function. Signature: `func CreateSnapshot(ctx context.Context, client *clients.ElasticsearchScopedClient, repo, snapshot string, body *CreateSnapshotRequest, waitForCompletion bool) fwdiag.Diagnostics`.
-- [ ] 3.2 Define `CreateSnapshotRequest` struct with fields: `Indices []string`, `IgnoreUnavailable *bool`, `IncludeGlobalState *bool`, `FeatureStates []string`, `ExpandWildcards *string`, `Metadata *string` (raw JSON), `Partial *bool`.
-- [ ] 3.3 Implement `CreateSnapshot` using `typedapi/snapshot/create`. Pass `wait_for_completion` as the query parameter. Propagate ES errors as framework diagnostics.
+- [ ] 3.2 Define `CreateSnapshotRequest` struct with fields: `Indices []string`, `IgnoreUnavailable *bool`, `IncludeGlobalState *bool`, `FeatureStates []string`, `ExpandWildcards *string`, `Metadata json.RawMessage` (JSON object), `Partial *bool`.
+- [ ] 3.3 Decode `Metadata` from `jsontypes.Normalized` into `json.RawMessage`/`map[string]any` (matching the SLM metadata mapping approach) before building the request body so ES receives an object, not an escaped string.
+- [ ] 3.4 Implement `CreateSnapshot` using `typedapi/snapshot/create`. Pass `wait_for_completion` as the query parameter. Propagate ES errors as framework diagnostics.
 
 ## 4. Snapshot restore — action package
 
@@ -52,14 +54,14 @@
 
 - [ ] 8.1 Create `internal/elasticsearch/cluster/snapshot_restore/acc_test.go` with `TestAccActionSnapshotRestore`.
 - [ ] 8.2 Test config (in `testdata/TestAccActionSnapshotRestore/`): create a filesystem snapshot repository, create an index with test data, create a snapshot via `elasticstack_elasticsearch_snapshot_create` action, then invoke the restore action with `rename_pattern`/`rename_replacement` to avoid conflicts.
-- [ ] 8.3 Assert the restore completes without errors (action has no output attributes; check that diagnostics are clean).
+- [ ] 8.3 Assert the restore completes without errors (action has no output attributes; check that diagnostics are clean) and verify via Elasticsearch that the renamed restored index exists.
 - [ ] 8.4 Test `wait_for_completion = false` path to confirm action proceeds without waiting.
 
 ## 9. Acceptance tests — snapshot create
 
 - [ ] 9.1 Create `internal/elasticsearch/cluster/snapshot_create/acc_test.go` with `TestAccActionSnapshotCreate`.
 - [ ] 9.2 Test config: create a filesystem snapshot repository, then invoke the create action for a set of indices.
-- [ ] 9.3 Assert creation completes without errors.
+- [ ] 9.3 Assert creation completes without errors and verify via the snapshot API that the snapshot exists; include a metadata case and assert metadata is attached.
 - [ ] 9.4 Test `wait_for_completion = false` path.
 
 ## 10. Documentation
