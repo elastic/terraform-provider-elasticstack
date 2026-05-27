@@ -121,4 +121,48 @@ func TestReportKibanaBoomHTTPError(t *testing.T) {
 		assert.Equal(t, "Unexpected status code from server: got HTTP 422", diags[0].Summary())
 		assert.JSONEq(t, `{"statusCode":422,"error":"Unprocessable Entity"}`, diags[0].Detail())
 	})
+
+	t.Run("falls back when error field is absent", func(t *testing.T) {
+		body := []byte(`{"statusCode":422,"message":"some message"}`)
+
+		diags := ReportKibanaBoomHTTPError(http.StatusUnprocessableEntity, summary, body)
+
+		require.True(t, diags.HasError())
+		require.Len(t, diags, 1)
+		assert.Equal(t, "Unexpected status code from server: got HTTP 422", diags[0].Summary())
+		assert.JSONEq(t, `{"statusCode":422,"message":"some message"}`, diags[0].Detail())
+	})
+
+	t.Run("falls back when statusCode does not match HTTP status", func(t *testing.T) {
+		body := []byte(`{"statusCode":500,"error":"Internal Server Error","message":"boom"}`)
+
+		diags := ReportKibanaBoomHTTPError(http.StatusUnprocessableEntity, summary, body)
+
+		require.True(t, diags.HasError())
+		require.Len(t, diags, 1)
+		assert.Equal(t, "Unexpected status code from server: got HTTP 422", diags[0].Summary())
+		assert.JSONEq(t, `{"statusCode":500,"error":"Internal Server Error","message":"boom"}`, diags[0].Detail())
+	})
+
+	t.Run("falls back for non-Boom JSON that includes a message field", func(t *testing.T) {
+		body := []byte(`{"message":"not a boom envelope"}`)
+
+		diags := ReportKibanaBoomHTTPError(http.StatusUnprocessableEntity, summary, body)
+
+		require.True(t, diags.HasError())
+		require.Len(t, diags, 1)
+		assert.Equal(t, "Unexpected status code from server: got HTTP 422", diags[0].Summary())
+		assert.JSONEq(t, `{"message":"not a boom envelope"}`, diags[0].Detail())
+	})
+
+	t.Run("trims whitespace from Boom message", func(t *testing.T) {
+		body := []byte(`{"statusCode":422,"error":"Unprocessable Entity","message":"  Doc belongs to newer Kibana [10.3.0]  "}`)
+
+		diags := ReportKibanaBoomHTTPError(http.StatusUnprocessableEntity, summary, body)
+
+		require.True(t, diags.HasError())
+		require.Len(t, diags, 1)
+		assert.Equal(t, summary, diags[0].Summary())
+		assert.Equal(t, "Doc belongs to newer Kibana [10.3.0]", diags[0].Detail())
+	})
 }

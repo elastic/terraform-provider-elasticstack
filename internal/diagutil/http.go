@@ -23,13 +23,15 @@ import (
 	"io"
 	"net/http"
 	"slices"
+	"strings"
 
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 type kibanaBoomError struct {
-	Error   string `json:"error"`
-	Message string `json:"message"`
+	StatusCode int    `json:"statusCode"`
+	Error      string `json:"error"`
+	Message    string `json:"message"`
 }
 
 func CheckHTTPErrorFromFW(res *http.Response, errMsg string) fwdiag.Diagnostics {
@@ -56,18 +58,21 @@ func ReportUnknownHTTPError(statusCode int, body []byte) fwdiag.Diagnostics {
 }
 
 // ReportKibanaBoomHTTPError attempts to parse body as a Kibana Boom error
-// envelope (`{"statusCode": N, "error": "...", "message": "..."}`) by
-// unmarshalling it as JSON and reading the `message` field. When unmarshal
-// succeeds and `message` is a non-empty string, it returns a single error
-// diagnostic using the caller-supplied summary and the extracted message as
-// the detail. Otherwise (invalid JSON, missing or empty `message`, or any
-// other shape) it falls back to ReportUnknownHTTPError so callers still
-// receive the raw response body.
+// envelope (`{"statusCode": N, "error": "...", "message": "..."}`). When
+// unmarshal succeeds, statusCode matches the HTTP status, error is non-empty,
+// and message is a non-empty string, it returns a single error diagnostic
+// using the caller-supplied summary and the extracted message as the detail.
+// Otherwise (invalid JSON, missing fields, mismatched statusCode, or any other
+// shape) it falls back to ReportUnknownHTTPError so callers still receive the
+// raw response body.
 func ReportKibanaBoomHTTPError(statusCode int, summary string, body []byte) fwdiag.Diagnostics {
 	var boom kibanaBoomError
-	if err := json.Unmarshal(body, &boom); err == nil && boom.Message != "" {
+	if err := json.Unmarshal(body, &boom); err == nil &&
+		boom.StatusCode == statusCode &&
+		boom.Error != "" &&
+		strings.TrimSpace(boom.Message) != "" {
 		return fwdiag.Diagnostics{
-			fwdiag.NewErrorDiagnostic(summary, boom.Message),
+			fwdiag.NewErrorDiagnostic(summary, strings.TrimSpace(boom.Message)),
 		}
 	}
 	return ReportUnknownHTTPError(statusCode, body)
