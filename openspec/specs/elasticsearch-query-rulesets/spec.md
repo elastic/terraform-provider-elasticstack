@@ -1,91 +1,8 @@
 # elasticsearch-query-rulesets Specification
 
-Resource implementation: `internal/elasticsearch/query/ruleset`
-Data source implementation: `internal/elasticsearch/query/ruleset_data_source.go`
-
 ## Purpose
-
-Manage Elasticsearch [Query Rulesets](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-rules-apis.html) via Terraform. Query rulesets allow teams to declaratively pin or exclude search result documents based on contextual criteria, enabling consistent search-ranking behaviour as code.
-
-## Schema
-
-### Resource schema
-
-```hcl
-resource "elasticstack_elasticsearch_query_ruleset" "example" {
-  ruleset_id = <required, string, PlanModifier: RequiresReplace>
-  id         = <computed, string>  # "<cluster_uuid>/<ruleset_id>"
-
-  rules = [
-    {
-      rule_id  = <required, string>
-      type     = <required, string>  # "pinned" | "exclude"
-      priority = <optional, int64>
-
-      criteria = [
-        {
-          type     = <required, string>  # "always" | "exact" | "fuzzy" | "prefix" |
-                                         # "suffix" | "contains" | "lt" | "lte" | "gt" | "gte"
-          metadata = <optional, string>
-          values   = <optional, string>  # JSON-encoded array; plan-time validation requires this when type != "always"
-        }
-      ]
-
-      actions = {
-        ids  = <optional, list(string)>
-        docs = <optional, list(object({ _index = <required, string>, _id = <required, string> }))>  # mutually exclusive with ids
-      }
-    }
-  ]
-
-  elasticsearch_connection {  # optional
-    endpoints    = <optional, list(string)>
-    username     = <optional, string>
-    password     = <optional, string>
-    api_key      = <optional, string>
-    bearer_token = <optional, string>
-    es_client_authentication = <optional, string>
-    insecure     = <optional, bool>
-    ca_file      = <optional, string>
-    ca_data      = <optional, string>
-    cert_file    = <optional, string>
-    cert_data    = <optional, string>
-    key_file     = <optional, string>
-    key_data     = <optional, string>
-    headers      = <optional, map(string)>
-  }
-}
-```
-
-### Data source schema
-
-```hcl
-data "elasticstack_elasticsearch_query_ruleset" "example" {
-  ruleset_id = <required, string>
-  id         = <computed, string>  # "<cluster_uuid>/<ruleset_id>"
-  rules      = <computed, list>    # same nested structure as resource
-
-  elasticsearch_connection {  # optional
-    endpoints    = <optional, list(string)>
-    username     = <optional, string>
-    password     = <optional, string>
-    api_key      = <optional, string>
-    bearer_token = <optional, string>
-    es_client_authentication = <optional, string>
-    insecure     = <optional, bool>
-    ca_file      = <optional, string>
-    ca_data      = <optional, string>
-    cert_file    = <optional, string>
-    cert_data    = <optional, string>
-    key_file     = <optional, string>
-    key_data     = <optional, string>
-    headers      = <optional, map(string)>
-  }
-}
-```
-
-## ADDED Requirements
-
+TBD - created by archiving change elasticsearch-query-rulesets. Update Purpose after archive.
+## Requirements
 ### Requirement: Query ruleset APIs (REQ-001)
 
 The `elasticstack_elasticsearch_query_ruleset` resource SHALL use `PUT /_query_rules/{ruleset_id}` to create or atomically replace a ruleset (including all embedded rules), `GET /_query_rules/{ruleset_id}` to read it, and `DELETE /_query_rules/{ruleset_id}` to remove it.
@@ -144,7 +61,9 @@ Changing `ruleset_id` SHALL require resource replacement, because Elasticsearch 
 
 `rules` SHALL be a `ListNestedAttribute` (ordered, not a set). The resource SHALL preserve rule declaration order on create and update, and a subsequent plan against the same configuration SHALL show no changes.
 
-If the Elasticsearch `GET /_query_rules/{ruleset_id}` response does not preserve insertion order, the Read path SHALL reorder the API response to match the prior Terraform state order by `rule_id` when that prior order is available. If no prior order is available (for example on import), the provider SHALL sort rules by `rule_id` to produce a stable state order.
+Elasticsearch stores rules in declaration order and `GET /_query_rules/{ruleset_id}` returns them in that same order. On Read, the provider SHALL use the API response order directly when populating state after create, update, or refresh.
+
+When prior Terraform state is available and its rule order differs from the API response order (for example after out-of-band API changes), the Read path SHALL reorder the API response to match the prior state order by `rule_id`. When no prior order is available (for example on import), the resource SHALL sort rules by `rule_id` to produce a stable state order that avoids perpetual plan diffs. The data source SHALL preserve the API response order because it has no prior state and users expect declaration order.
 
 #### Scenario: Rule order preserved round-trip
 
@@ -152,6 +71,12 @@ If the Elasticsearch `GET /_query_rules/{ruleset_id}` response does not preserve
 - WHEN the resource reads state after create
 - THEN rules in state SHALL appear in the same order as configured
 - AND a subsequent plan SHALL show no changes
+
+#### Scenario: Data source preserves API rule order
+
+- GIVEN a ruleset with rules in declaration order
+- WHEN the data source reads
+- THEN rules in state SHALL appear in the same order as the API response
 
 ### Requirement: Rule schema (REQ-005)
 
@@ -306,7 +231,7 @@ The resource SHALL implement `resource.ResourceWithImportState`. The import ID S
 
 ### Requirement: Minimum ES version (REQ-012)
 
-The resource and data source SHALL enforce a minimum Elasticsearch version guard of **8.12.0** (Query Rules API GA). If the cluster reports a version below **8.12.0**, the provider SHALL return a clear diagnostic explaining the minimum version requirement rather than a raw API error.
+The resource and data source SHALL enforce a minimum Elasticsearch version guard of **8.16.0**. The Query Rules API reached GA in 8.12, but the schema this resource exposes (the `priority` field and the `exclude` rule type) only stabilized in 8.16.0. If the cluster reports a version below **8.16.0**, the provider SHALL return a clear diagnostic explaining the minimum version requirement rather than a raw API error.
 
 #### Scenario: Unsupported cluster version
 
@@ -340,3 +265,4 @@ All acceptance tests SHALL be gated with a `SkipFunc` if the minimum Elasticsear
 - GIVEN an existing ruleset managed by the resource
 - WHEN the data source reads by `ruleset_id`
 - THEN all `rules` returned SHALL match those in the resource state
+

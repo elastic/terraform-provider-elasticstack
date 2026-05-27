@@ -57,7 +57,7 @@ data "elasticstack_elasticsearch_query_ruleset" "example" {
 
 ### Version
 
-The Query Rules API reached GA in Elasticsearch 8.12. The minimum version guard (8.10 tech-preview vs 8.12 GA) is deferred to implementation.
+The Query Rules API reached GA in Elasticsearch 8.12. The provider SHALL enforce a minimum Elasticsearch version guard of **8.12.0** (see REQ-012).
 
 ### Acceptance tests
 
