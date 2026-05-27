@@ -82,14 +82,14 @@ elasticsearch_connection (Optional, SingleNestedBlock)
 ## Risks / Trade-offs
 
 - **Single-rule change rewrites entire ruleset**: Any change to any rule triggers `PUT /_query_rules/{ruleset_id}` with the full list. This is acceptable because the PUT is atomic and the API is designed for this pattern; however, with rulesets near the 100-rule limit, Terraform configs may become verbose.
-- **Rule ordering from API**: The research note flags uncertainty about whether `GET /_query_rules/{ruleset_id}` preserves declaration order. If Elasticsearch does not return rules in insertion order, the provider may need to sort by `rule_id` on read to produce a stable state. This is an implementation detail to verify during acceptance testing.
+- **Rule ordering from API**: Elasticsearch stores rules in declaration order and returns them in that order on `GET /_query_rules/{ruleset_id}`. The Read path uses API order directly; on import (no prior state), rules are sorted by `rule_id` for a stable initial state order.
 - **`criteria.values` as JSON string**: Practitioners must use `jsonencode([...])` rather than a native list. This is a trade-off for numeric criteria support. Validation that the string is valid JSON should be added.
 
 ## Open Questions
 
-1. **Minimum ES version guard**: The Query Rules API was introduced as technical preview in 8.10 and reached GA in 8.12. Which version should the provider guard against? The issue owner indicated this is an implementation detail, but a concrete decision (8.10 vs 8.12) must be made during implementation. Recommendation: guard at 8.12 (GA) unless the product team explicitly wants to support the tech-preview path.
+1. ~~**Minimum ES version guard**~~ **Resolved**: Guard at **8.12.0** (Query Rules API GA). The tech-preview path (8.10) is not supported.
 
-2. **Rule ordering guarantee**: Does `GET /_query_rules/{ruleset_id}` return rules in declaration/insertion order? If not, the read path must apply a stable sort (by `rule_id`) to avoid perpetual plan diffs. Verify during acceptance testing.
+2. ~~**Rule ordering guarantee**~~ **Resolved**: Elasticsearch stores rules in declaration order and `GET /_query_rules/{ruleset_id}` returns them in that order. The Read path uses API order directly; on import, sort by `rule_id` for stable initial state (see REQ-004).
 
 3. **`criteria.values` validation**: Should the provider validate that the `values` string is parseable JSON at plan time? Recommendation: yes, add a string validator that ensures valid JSON array.
 

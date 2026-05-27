@@ -1,8 +1,8 @@
 ## 1. Spec
 
-- [ ] 1.1 Keep delta spec aligned with `proposal.md` / `design.md`; run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate elasticsearch-query-rulesets --type change` (or `make check-openspec`) after any spec edits.
-- [ ] 1.2 Resolve the open question on minimum ES version guard (8.10 tech-preview vs 8.12 GA); update delta spec with the confirmed version compatibility requirement.
-- [ ] 1.3 Verify whether `GET /_query_rules/{ruleset_id}` returns rules in declaration order; if not, document the stable-sort-by-`rule_id` approach in the spec.
+- [x] 1.1 Keep delta spec aligned with `proposal.md` / `design.md`; run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate elasticsearch-query-rulesets --type change` (or `make check-openspec`) after any spec edits.
+- [x] 1.2 Resolve the open question on minimum ES version guard (8.10 tech-preview vs 8.12 GA); update delta spec with the confirmed version compatibility requirement.
+- [x] 1.3 Verify whether `GET /_query_rules/{ruleset_id}` returns rules in declaration order; if not, document the stable-sort-by-`rule_id` approach in the spec.
 - [ ] 1.4 On completion of implementation, **sync** delta into `openspec/specs/elasticsearch-query-rulesets/spec.md` or **archive** the change per project workflow.
 
 ## 2. Client wrapper

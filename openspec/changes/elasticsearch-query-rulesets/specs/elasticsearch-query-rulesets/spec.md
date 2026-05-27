@@ -1,7 +1,7 @@
 # elasticsearch-query-rulesets Specification
 
-Resource implementation: `internal/elasticsearch/query/ruleset`
-Data source implementation: `internal/elasticsearch/query/ruleset_data_source.go`
+Resource implementation: `internal/elasticsearch/queryrulesets`
+Data source implementation: `internal/elasticsearch/queryrulesets`
 
 ## Purpose
 
@@ -144,7 +144,9 @@ Changing `ruleset_id` SHALL require resource replacement, because Elasticsearch 
 
 `rules` SHALL be a `ListNestedAttribute` (ordered, not a set). The resource SHALL preserve rule declaration order on create and update, and a subsequent plan against the same configuration SHALL show no changes.
 
-If the Elasticsearch `GET /_query_rules/{ruleset_id}` response does not preserve insertion order, the Read path SHALL reorder the API response to match the prior Terraform state order by `rule_id` when that prior order is available. If no prior order is available (for example on import), the provider SHALL sort rules by `rule_id` to produce a stable state order.
+Elasticsearch stores rules in declaration order and `GET /_query_rules/{ruleset_id}` returns them in that same order. On Read, the provider SHALL use the API response order directly when populating state after create, update, or refresh.
+
+When prior Terraform state is available and its rule order differs from the API response order (for example after out-of-band API changes), the Read path SHALL reorder the API response to match the prior state order by `rule_id`. When no prior order is available (for example on import), the provider SHALL sort rules by `rule_id` to produce a stable state order that avoids perpetual plan diffs.
 
 #### Scenario: Rule order preserved round-trip
 
