@@ -7,8 +7,7 @@ variable "snapshot_name" {
 }
 
 locals {
-  index_name    = "${var.name}-idx"
-  restored_name = "restored-${var.name}-idx"
+  index_name = "${var.name}-idx"
 }
 
 provider "elasticstack" {
@@ -31,14 +30,18 @@ resource "elasticstack_elasticsearch_index" "source" {
       field1 = { type = "keyword" }
     }
   })
+
+  deletion_protection = false
 }
 
 action "elasticstack_elasticsearch_snapshot_create" "bootstrap" {
-  repository          = elasticstack_elasticsearch_snapshot_repository.repo.name
-  snapshot            = var.snapshot_name
-  indices             = [elasticstack_elasticsearch_index.source.name]
-  include_global_state = false
-  wait_for_completion = true
+  config {
+    repository           = elasticstack_elasticsearch_snapshot_repository.repo.name
+    snapshot             = var.snapshot_name
+    indices              = [elasticstack_elasticsearch_index.source.name]
+    include_global_state = false
+    wait_for_completion  = true
+  }
 }
 
 resource "terraform_data" "trigger_create" {
@@ -56,12 +59,14 @@ resource "terraform_data" "trigger_create" {
 }
 
 action "elasticstack_elasticsearch_snapshot_restore" "restore" {
-  repository           = elasticstack_elasticsearch_snapshot_repository.repo.name
-  snapshot             = var.snapshot_name
-  rename_pattern       = "(.+)"
-  rename_replacement   = "restored-$1"
-  include_global_state = false
-  wait_for_completion  = false
+  config {
+    repository           = elasticstack_elasticsearch_snapshot_repository.repo.name
+    snapshot             = var.snapshot_name
+    rename_pattern       = "(.+)"
+    rename_replacement   = "restored-$1"
+    include_global_state = false
+    wait_for_completion  = false
+  }
 }
 
 resource "terraform_data" "trigger_restore" {

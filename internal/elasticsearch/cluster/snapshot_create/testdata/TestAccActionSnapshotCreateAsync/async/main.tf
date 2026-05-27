@@ -36,8 +36,7 @@ action "elasticstack_elasticsearch_snapshot_create" "create" {
     snapshot             = var.snapshot_name
     indices              = [elasticstack_elasticsearch_index.source.name]
     include_global_state = false
-    metadata             = jsonencode({ created_by = "terraform", env = "test" })
-    wait_for_completion  = true
+    wait_for_completion  = false
   }
 }
 
