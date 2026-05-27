@@ -7,12 +7,12 @@
 
 ## 2. Client wrapper
 
-- [ ] 2.1 Create `internal/clients/elasticsearch/queryrulesets.go` with functions:
-  - `PutQueryRuleset(ctx, rulesetID string, rules []QueryRuleModel) error`
-  - `GetQueryRuleset(ctx, rulesetID string) (*QueryRulesetModel, error)` — returns `nil, nil` on 404 (resource Read removes from state; data source Read must treat nil as not found and return a diagnostic)
-  - `DeleteQueryRuleset(ctx, rulesetID string) error`
+- [x] 2.1 Create `internal/clients/elasticsearch/queryrulesets.go` with functions:
+  - `PutQueryRuleset(ctx, apiClient *clients.ElasticsearchScopedClient, rulesetID string, rules []types.QueryRule) fwdiag.Diagnostics`
+  - `GetQueryRuleset(ctx, apiClient *clients.ElasticsearchScopedClient, rulesetID string) (*getruleset.Response, fwdiag.Diagnostics)` — returns `nil, nil` on 404 (resource Read removes from state; data source Read must treat nil as not found and return a diagnostic)
+  - `DeleteQueryRuleset(ctx, apiClient *clients.ElasticsearchScopedClient, rulesetID string) fwdiag.Diagnostics` — returns nil on 404 (idempotent)
   Using the `go-elasticsearch` typed client (`typedapi/queryrules/putruleset`, `getruleset`, `deleteruleset`).
-- [ ] 2.2 Add an `internal/models` or inline model type for `QueryRulesetModel`, `QueryRuleModel`, `QueryRuleCriteriaModel`, and `QueryRuleActionsModel` that map cleanly to/from both the API types and the Terraform schema.
+- [x] 2.2 Terraform schema models (`QueryRulesetModel`, etc.) belong in `internal/elasticsearch/queryrulesets/models.go` (Task 3); the client wrapper uses API types directly (`types.QueryRule`, `getruleset.Response`), matching the synonym-set pattern.
 
 ## 3. Resource implementation
 
