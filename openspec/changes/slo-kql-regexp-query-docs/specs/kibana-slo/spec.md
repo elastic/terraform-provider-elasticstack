@@ -16,7 +16,7 @@ No code logic is changed by this delta. The work is limited to updating the sche
 
 The provider documentation and examples for `elasticstack_kibana_slo` SHALL include a worked example demonstrating how to use an ES Query DSL `regexp` query as the value of `filter_kql.filters[*].query` within a `kql_custom_indicator` block. The example SHALL use the `jsonencode({...})` helper so practitioners can construct the required JSON string inline.
 
-The schema attribute description for `query` inside the `filters` list (used by `filter_kql`, `good_kql`, and `total_kql`) SHALL explicitly state that the field accepts any valid ES Query DSL JSON object — including `regexp`, `wildcard`, `prefix`, `range`, and `bool` combinators — and SHALL reference the `jsonencode({...})` usage pattern.
+The schema attribute description for `query` inside the `filters` list (used by `filter_kql`, `good_kql`, and `total_kql`) SHALL explicitly state that the field accepts an ES Query DSL JSON object (including `regexp`, `wildcard`, `prefix`, `range`, and `bool` combinators; support is subject to the Kibana SLO API / stack version) and SHALL reference the `jsonencode({...})` usage pattern.
 
 #### Scenario: Regexp filter example is present in docs
 
