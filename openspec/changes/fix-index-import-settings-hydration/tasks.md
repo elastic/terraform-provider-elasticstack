@@ -40,4 +40,4 @@
 
 - [x] 8.1 Add a new test config directory `testdata/TestAccResourceIndexImport/` with an index config that sets `number_of_replicas`, `refresh_interval`, and `analysis_analyzer`
 - [x] 8.2 Add `TestAccResourceIndexImport` acceptance test in `acc_test.go` with two steps: (1) create the index, (2) import it with `ImportState: true` and verify no plan drift for `number_of_replicas`, `refresh_interval`, `analysis_analyzer`, `deletion_protection`, `wait_for_active_shards`, `master_timeout`, and `timeout`
-- [ ] 8.3 Run the acceptance test against a live Elasticsearch cluster to confirm it passes
+- [x] 8.3 Run the acceptance test against a live Elasticsearch cluster to confirm it passes
