@@ -1,8 +1,94 @@
 # elasticsearch-query-rulesets Specification
 
+Resource implementation: `internal/elasticsearch/query/ruleset`
+Data source implementation: `internal/elasticsearch/query/ruleset_data_source.go`
+
 ## Purpose
 
 Manage Elasticsearch [Query Rulesets](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-rules-apis.html) via Terraform. Query rulesets allow teams to declaratively pin or exclude search result documents based on contextual criteria, enabling consistent search-ranking behaviour as code.
+
+## Schema
+
+### Resource schema
+
+```hcl
+resource "elasticstack_elasticsearch_query_ruleset" "example" {
+  ruleset_id = <required, string, PlanModifier: RequiresReplace>
+  id         = <computed, string>  # "<cluster_uuid>/<ruleset_id>"
+
+  rules = [
+    {
+      rule_id  = <required, string>
+      type     = <required, string>  # "pinned" | "exclude"
+      priority = <optional, int64>
+
+      criteria = [
+        {
+          type     = <required, string>  # "always" | "exact" | "fuzzy" | "prefix" |
+                                         # "suffix" | "contains" | "lt" | "lte" | "gt" | "gte"
+          metadata = <optional, string>
+          values   = <optional, string>  # JSON-encoded array; required unless type == "always"
+        }
+      ]
+
+      actions = {
+        ids  = <optional, list(string)>
+        docs = <optional, list(object)>  # mutually exclusive with ids
+        [
+          {
+            _index = <required, string>
+            _id    = <required, string>
+          }
+        ]
+      }
+    }
+  ]
+
+  elasticsearch_connection {  # optional
+    endpoints    = <optional, list(string)>
+    username     = <optional, string>
+    password     = <optional, string>
+    api_key      = <optional, string>
+    bearer_token = <optional, string>
+    es_client_authentication = <optional, string>
+    insecure     = <optional, bool>
+    ca_file      = <optional, string>
+    ca_data      = <optional, string>
+    cert_file    = <optional, string>
+    cert_data    = <optional, string>
+    key_file     = <optional, string>
+    key_data     = <optional, string>
+    headers      = <optional, map(string)>
+  }
+}
+```
+
+### Data source schema
+
+```hcl
+data "elasticstack_elasticsearch_query_ruleset" "example" {
+  ruleset_id = <required, string>
+  id         = <computed, string>  # "<cluster_uuid>/<ruleset_id>"
+  rules      = <computed, list>    # same nested structure as resource
+
+  elasticsearch_connection {  # optional
+    endpoints    = <optional, list(string)>
+    username     = <optional, string>
+    password     = <optional, string>
+    api_key      = <optional, string>
+    bearer_token = <optional, string>
+    es_client_authentication = <optional, string>
+    insecure     = <optional, bool>
+    ca_file      = <optional, string>
+    ca_data      = <optional, string>
+    cert_file    = <optional, string>
+    cert_data    = <optional, string>
+    key_file     = <optional, string>
+    key_data     = <optional, string>
+    headers      = <optional, map(string)>
+  }
+}
+```
 
 ## ADDED Requirements
 
