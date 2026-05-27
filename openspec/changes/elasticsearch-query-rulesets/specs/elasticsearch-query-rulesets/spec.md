@@ -27,19 +27,13 @@ resource "elasticstack_elasticsearch_query_ruleset" "example" {
           type     = <required, string>  # "always" | "exact" | "fuzzy" | "prefix" |
                                          # "suffix" | "contains" | "lt" | "lte" | "gt" | "gte"
           metadata = <optional, string>
-          values   = <optional, string>  # JSON-encoded array; required unless type == "always"
+          values   = <optional, string>  # JSON-encoded array; plan-time validation requires this when type != "always"
         }
       ]
 
       actions = {
         ids  = <optional, list(string)>
-        docs = <optional, list(object)>  # mutually exclusive with ids
-        [
-          {
-            _index = <required, string>
-            _id    = <required, string>
-          }
-        ]
+        docs = <optional, list(object({ _index = <required, string>, _id = <required, string> }))>  # mutually exclusive with ids
       }
     }
   ]
