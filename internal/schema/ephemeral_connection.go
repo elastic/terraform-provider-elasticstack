@@ -46,18 +46,18 @@ func GetEsEphemeralConnectionBlock() schema.Block {
 		NestedObject: schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
 				attrUsername: schema.StringAttribute{
-					MarkdownDescription: "Username to use for API authentication to Elasticsearch.",
+					MarkdownDescription: descUsername,
 					Optional:            true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(passwordPath)},
 				},
 				attrPassword: schema.StringAttribute{
-					MarkdownDescription: "Password to use for API authentication to Elasticsearch.",
+					MarkdownDescription: descPassword,
 					Optional:            true,
 					Sensitive:           true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
 				},
 				attrAPIKey: schema.StringAttribute{
-					MarkdownDescription: "API Key to use for authentication to Elasticsearch",
+					MarkdownDescription: descAPIKey,
 					Optional:            true,
 					Sensitive:           true,
 					Validators: []validator.String{
@@ -65,7 +65,7 @@ func GetEsEphemeralConnectionBlock() schema.Block {
 					},
 				},
 				attrBearerToken: schema.StringAttribute{
-					MarkdownDescription: "Bearer Token to use for authentication to Elasticsearch",
+					MarkdownDescription: descBearerToken,
 					Optional:            true,
 					Sensitive:           true,
 					Validators: []validator.String{
@@ -73,7 +73,7 @@ func GetEsEphemeralConnectionBlock() schema.Block {
 					},
 				},
 				attrESClientAuthentication: schema.StringAttribute{
-					MarkdownDescription: "ES Client Authentication field to be used with the JWT token",
+					MarkdownDescription: descESClientAuthentication,
 					Optional:            true,
 					Sensitive:           true,
 					Validators: []validator.String{
@@ -82,13 +82,13 @@ func GetEsEphemeralConnectionBlock() schema.Block {
 					},
 				},
 				attrEndpoints: schema.ListAttribute{
-					MarkdownDescription: "A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
+					MarkdownDescription: descEndpoints,
 					Optional:            true,
 					Sensitive:           true,
 					ElementType:         types.StringType,
 				},
 				attrHeaders: schema.MapAttribute{
-					MarkdownDescription: "A list of headers to be sent with each request to Elasticsearch.",
+					MarkdownDescription: descHeaders,
 					Optional:            true,
 					Sensitive:           true,
 					ElementType:         types.StringType,
@@ -98,21 +98,21 @@ func GetEsEphemeralConnectionBlock() schema.Block {
 					Optional:            true,
 				},
 				attrCAFile: schema.StringAttribute{
-					MarkdownDescription: "Path to a custom Certificate Authority certificate",
+					MarkdownDescription: descCAFile,
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(caDataPath),
 					},
 				},
 				attrCAData: schema.StringAttribute{
-					MarkdownDescription: "PEM-encoded custom Certificate Authority certificate",
+					MarkdownDescription: descCAData,
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(caFilePath),
 					},
 				},
 				attrCertFile: schema.StringAttribute{
-					MarkdownDescription: "Path to a file containing the PEM encoded certificate for client auth",
+					MarkdownDescription: descCertFile,
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.AlsoRequires(keyFilePath),
@@ -120,7 +120,7 @@ func GetEsEphemeralConnectionBlock() schema.Block {
 					},
 				},
 				attrKeyFile: schema.StringAttribute{
-					MarkdownDescription: "Path to a file containing the PEM encoded private key for client auth",
+					MarkdownDescription: descKeyFile,
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.AlsoRequires(certFilePath),
@@ -128,7 +128,7 @@ func GetEsEphemeralConnectionBlock() schema.Block {
 					},
 				},
 				attrCertData: schema.StringAttribute{
-					MarkdownDescription: "PEM encoded certificate for client auth",
+					MarkdownDescription: descCertData,
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.AlsoRequires(keyDataPath),
@@ -136,7 +136,7 @@ func GetEsEphemeralConnectionBlock() schema.Block {
 					},
 				},
 				attrKeyData: schema.StringAttribute{
-					MarkdownDescription: "PEM encoded private key for client auth",
+					MarkdownDescription: descKeyData,
 					Optional:            true,
 					Sensitive:           true,
 					Validators: []validator.String{
@@ -161,11 +161,11 @@ func GetKbEphemeralConnectionBlock() schema.Block {
 	bearerTokenPath := path.MatchRelative().AtParent().AtName(attrBearerToken)
 
 	return schema.ListNestedBlock{
-		MarkdownDescription: "Kibana connection configuration block.",
+		MarkdownDescription: descKbConnectionBlock,
 		NestedObject: schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
 				attrAPIKey: schema.StringAttribute{
-					MarkdownDescription: "API Key to use for authentication to Kibana",
+					MarkdownDescription: descKbAPIKey,
 					Optional:            true,
 					Sensitive:           true,
 					Validators: []validator.String{
@@ -173,7 +173,7 @@ func GetKbEphemeralConnectionBlock() schema.Block {
 					},
 				},
 				attrBearerToken: schema.StringAttribute{
-					MarkdownDescription: "Bearer Token to use for authentication to Kibana",
+					MarkdownDescription: descKbBearerToken,
 					Optional:            true,
 					Sensitive:           true,
 					Validators: []validator.String{
@@ -181,24 +181,24 @@ func GetKbEphemeralConnectionBlock() schema.Block {
 					},
 				},
 				attrUsername: schema.StringAttribute{
-					MarkdownDescription: "Username to use for API authentication to Kibana.",
+					MarkdownDescription: descKbUsername,
 					Optional:            true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(passwordPath)},
 				},
 				attrPassword: schema.StringAttribute{
-					MarkdownDescription: "Password to use for API authentication to Kibana.",
+					MarkdownDescription: descKbPassword,
 					Optional:            true,
 					Sensitive:           true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
 				},
 				attrEndpoints: schema.ListAttribute{
-					MarkdownDescription: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
+					MarkdownDescription: descKbEndpoints,
 					Optional:            true,
 					Sensitive:           true,
 					ElementType:         types.StringType,
 				},
 				attrCACerts: schema.ListAttribute{
-					MarkdownDescription: "A list of paths to CA certificates to validate the certificate presented by the Kibana server.",
+					MarkdownDescription: descKbCACerts,
 					Optional:            true,
 					ElementType:         types.StringType,
 				},

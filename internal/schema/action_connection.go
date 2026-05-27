@@ -46,31 +46,31 @@ func GetEsActionConnectionBlock() schema.Block {
 		NestedObject: schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
 				attrUsername: schema.StringAttribute{
-					MarkdownDescription: "Username to use for API authentication to Elasticsearch.",
+					MarkdownDescription: descUsername,
 					Optional:            true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(passwordPath)},
 				},
 				attrPassword: schema.StringAttribute{
-					MarkdownDescription: "Password to use for API authentication to Elasticsearch.",
+					MarkdownDescription: descPassword,
 					Optional:            true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
 				},
 				attrAPIKey: schema.StringAttribute{
-					MarkdownDescription: "API Key to use for authentication to Elasticsearch",
+					MarkdownDescription: descAPIKey,
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(usernamePath, passwordPath, bearerTokenPath),
 					},
 				},
 				attrBearerToken: schema.StringAttribute{
-					MarkdownDescription: "Bearer Token to use for authentication to Elasticsearch",
+					MarkdownDescription: descBearerToken,
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
 					},
 				},
 				attrESClientAuthentication: schema.StringAttribute{
-					MarkdownDescription: "ES Client Authentication field to be used with the JWT token",
+					MarkdownDescription: descESClientAuthentication,
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
@@ -78,12 +78,12 @@ func GetEsActionConnectionBlock() schema.Block {
 					},
 				},
 				attrEndpoints: schema.ListAttribute{
-					MarkdownDescription: "A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
+					MarkdownDescription: descEndpoints,
 					Optional:            true,
 					ElementType:         types.StringType,
 				},
 				attrHeaders: schema.MapAttribute{
-					MarkdownDescription: "A list of headers to be sent with each request to Elasticsearch.",
+					MarkdownDescription: descHeaders,
 					Optional:            true,
 					ElementType:         types.StringType,
 				},
@@ -92,21 +92,21 @@ func GetEsActionConnectionBlock() schema.Block {
 					Optional:            true,
 				},
 				attrCAFile: schema.StringAttribute{
-					MarkdownDescription: "Path to a custom Certificate Authority certificate",
+					MarkdownDescription: descCAFile,
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(caDataPath),
 					},
 				},
 				attrCAData: schema.StringAttribute{
-					MarkdownDescription: "PEM-encoded custom Certificate Authority certificate",
+					MarkdownDescription: descCAData,
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(caFilePath),
 					},
 				},
 				attrCertFile: schema.StringAttribute{
-					MarkdownDescription: "Path to a file containing the PEM encoded certificate for client auth",
+					MarkdownDescription: descCertFile,
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.AlsoRequires(keyFilePath),
@@ -114,7 +114,7 @@ func GetEsActionConnectionBlock() schema.Block {
 					},
 				},
 				attrKeyFile: schema.StringAttribute{
-					MarkdownDescription: "Path to a file containing the PEM encoded private key for client auth",
+					MarkdownDescription: descKeyFile,
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.AlsoRequires(certFilePath),
@@ -122,7 +122,7 @@ func GetEsActionConnectionBlock() schema.Block {
 					},
 				},
 				attrCertData: schema.StringAttribute{
-					MarkdownDescription: "PEM encoded certificate for client auth",
+					MarkdownDescription: descCertData,
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.AlsoRequires(keyDataPath),
@@ -130,7 +130,7 @@ func GetEsActionConnectionBlock() schema.Block {
 					},
 				},
 				attrKeyData: schema.StringAttribute{
-					MarkdownDescription: "PEM encoded private key for client auth",
+					MarkdownDescription: descKeyData,
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.AlsoRequires(certDataPath),
