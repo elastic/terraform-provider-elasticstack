@@ -89,6 +89,7 @@ func checkResourceJSONAttrKey(key, expectedJSON string) resource.TestCheckFunc {
 
 var minVersionSupport = version.Must(version.NewVersion("8.11.0"))
 var minResponseActionVersionSupport = version.Must(version.NewVersion("8.16.0"))
+var minSetupFieldVersionSupport = version.Must(version.NewVersion("8.14.0"))
 
 const (
 	securityDetectionRuleResourceName      = "elasticstack_kibana_security_detection_rule.test"
@@ -2956,7 +2957,7 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_RuleMetadata(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minVersionSupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, minSetupFieldVersionSupport, versionutils.FlavorAny)
 
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-rule-metadata")
