@@ -24,14 +24,14 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/action"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 var (
-	_ action.Action               = (*snapshotRestoreAction)(nil)
-	_ action.ActionWithConfigure  = (*snapshotRestoreAction)(nil)
+	_ action.Action              = (*snapshotRestoreAction)(nil)
+	_ action.ActionWithConfigure = (*snapshotRestoreAction)(nil)
 )
 
 const defaultInvokeTimeout = 20 * time.Minute
@@ -140,12 +140,12 @@ func restoreRequestFromModel(ctx context.Context, model Model) (*esclient.Restor
 		body.IgnoreIndexSettings = ignoreSettings
 	}
 
-	body.IgnoreUnavailable = optionalBool(model.IgnoreUnavailable)
-	body.IncludeGlobalState = optionalBool(model.IncludeGlobalState)
-	body.IncludeAliases = optionalBool(model.IncludeAliases)
-	body.Partial = optionalBool(model.Partial)
-	body.RenamePattern = optionalString(model.RenamePattern)
-	body.RenameReplacement = optionalString(model.RenameReplacement)
+	body.IgnoreUnavailable = typeutils.OptionalBool(model.IgnoreUnavailable)
+	body.IncludeGlobalState = typeutils.OptionalBool(model.IncludeGlobalState)
+	body.IncludeAliases = typeutils.OptionalBool(model.IncludeAliases)
+	body.Partial = typeutils.OptionalBool(model.Partial)
+	body.RenamePattern = typeutils.OptionalString(model.RenamePattern)
+	body.RenameReplacement = typeutils.OptionalString(model.RenameReplacement)
 
 	if !model.IndexSettings.IsNull() && !model.IndexSettings.IsUnknown() {
 		settingsStr := model.IndexSettings.ValueString()
@@ -155,20 +155,4 @@ func restoreRequestFromModel(ctx context.Context, model Model) (*esclient.Restor
 	}
 
 	return body, diags
-}
-
-func optionalBool(value types.Bool) *bool {
-	if value.IsNull() || value.IsUnknown() {
-		return nil
-	}
-	v := value.ValueBool()
-	return &v
-}
-
-func optionalString(value types.String) *string {
-	if value.IsNull() || value.IsUnknown() || value.ValueString() == "" {
-		return nil
-	}
-	v := value.ValueString()
-	return &v
 }

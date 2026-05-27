@@ -24,9 +24,9 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/action"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 var (
@@ -131,10 +131,10 @@ func createRequestFromModel(ctx context.Context, model Model) (*esclient.CreateS
 		body.FeatureStates = featureStates
 	}
 
-	body.IgnoreUnavailable = optionalBool(model.IgnoreUnavailable)
-	body.IncludeGlobalState = optionalBool(model.IncludeGlobalState)
-	body.Partial = optionalBool(model.Partial)
-	body.ExpandWildcards = optionalString(model.ExpandWildcards)
+	body.IgnoreUnavailable = typeutils.OptionalBool(model.IgnoreUnavailable)
+	body.IncludeGlobalState = typeutils.OptionalBool(model.IncludeGlobalState)
+	body.Partial = typeutils.OptionalBool(model.Partial)
+	body.ExpandWildcards = typeutils.OptionalString(model.ExpandWildcards)
 
 	if !model.Metadata.IsNull() && !model.Metadata.IsUnknown() {
 		metaStr := model.Metadata.ValueString()
@@ -144,20 +144,4 @@ func createRequestFromModel(ctx context.Context, model Model) (*esclient.CreateS
 	}
 
 	return body, diags
-}
-
-func optionalBool(value types.Bool) *bool {
-	if value.IsNull() || value.IsUnknown() {
-		return nil
-	}
-	v := value.ValueBool()
-	return &v
-}
-
-func optionalString(value types.String) *string {
-	if value.IsNull() || value.IsUnknown() || value.ValueString() == "" {
-		return nil
-	}
-	v := value.ValueString()
-	return &v
 }
