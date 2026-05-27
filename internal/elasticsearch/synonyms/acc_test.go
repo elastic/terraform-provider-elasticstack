@@ -84,6 +84,53 @@ func TestAccResourceSynonymSet(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_synonym_set.test", "synonyms_set.2.synonyms", "laptop, notebook"),
 				),
 			},
+			// Step 3: Shrink — remove rule-2 and rule-3, leaving only rule-1.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("shrink"),
+				ConfigVariables:          config.Variables{"synonym_set_id": config.StringVariable(synonymSetID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_synonym_set.test", "synonyms_set.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_synonym_set.test", "synonyms_set.0.id", "rule-1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_synonym_set.test", "synonyms_set.0.synonyms", "i-pod, i pod => ipod"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceSynonymSetReplaceOnIDChange verifies that changing synonym_set_id triggers
+// a destroy+create (RequiresReplace plan modifier) rather than an in-place update.
+func TestAccResourceSynonymSetReplaceOnIDChange(t *testing.T) {
+	idA := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	idB := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkSynonymSetDestroy(idB),
+		Steps: []resource.TestStep{
+			// Step 1: Create with idA.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"synonym_set_id": config.StringVariable(idA)},
+				Check: resource.TestCheckResourceAttr(
+					"elasticstack_elasticsearch_synonym_set.test",
+					"synonym_set_id", idA,
+				),
+			},
+			// Step 2: Change synonym_set_id to idB — must trigger RequiresReplace (destroy+create).
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"synonym_set_id": config.StringVariable(idB)},
+				Check: resource.TestCheckResourceAttr(
+					"elasticstack_elasticsearch_synonym_set.test",
+					"synonym_set_id", idB,
+				),
+			},
 		},
 	})
 }
