@@ -1014,14 +1014,12 @@ func TestAccResourceIndexImport(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},
-				ResourceName:            "elasticstack_elasticsearch_index.test",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"settings_raw", "elasticsearch_connection"},
+				ResourceName: "elasticstack_elasticsearch_index.test",
+				ImportState:  true,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "number_of_replicas", "1"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "refresh_interval", "30s"),
@@ -1030,6 +1028,7 @@ func TestAccResourceIndexImport(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "wait_for_active_shards", "1"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "master_timeout", "30s"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "timeout", "30s"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index.test", "blocks_read"),
 				),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{

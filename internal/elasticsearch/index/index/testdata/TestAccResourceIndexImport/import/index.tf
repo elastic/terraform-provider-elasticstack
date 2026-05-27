@@ -18,7 +18,6 @@ resource "elasticstack_elasticsearch_index" "test" {
 
   number_of_replicas = 1
   refresh_interval   = "30s"
-  blocks_read        = true
 
   analysis_analyzer = jsonencode({
     import_test = {
