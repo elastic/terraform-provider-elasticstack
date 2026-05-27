@@ -32,6 +32,19 @@ func FrameworkDiagFromError(err error) fwdiag.Diagnostics {
 	}
 }
 
+// ErrDiag returns a Diagnostics containing a single error with the given summary
+// and the error's message as the detail. It is the context-rich counterpart to
+// FrameworkDiagFromError for cases where a human-readable summary differs from
+// the underlying error text.
+func ErrDiag(summary string, err error) fwdiag.Diagnostics {
+	if err == nil {
+		return nil
+	}
+	var diags fwdiag.Diagnostics
+	diags.AddError(summary, err.Error())
+	return diags
+}
+
 func FwDiagsAsError(diags fwdiag.Diagnostics) error {
 	for _, diag := range diags {
 		if diag.Severity() == fwdiag.SeverityError {

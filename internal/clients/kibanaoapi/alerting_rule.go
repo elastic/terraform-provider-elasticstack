@@ -33,13 +33,13 @@ import (
 func CreateAlertingRule(ctx context.Context, client *Client, spaceID string, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
 	body, err := buildCreateRequestBody(rule)
 	if err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to build alerting rule create request", err.Error())}
+		return nil, diagutil.ErrDiag("Unable to build alerting rule create request", err)
 	}
 
 	var req kbapi.PostAlertingRuleIdJSONRequestBody
 	err = req.FromAlertingRuleAPIBodyGeneric(body)
 	if err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to build alerting rule create request", err.Error())}
+		return nil, diagutil.ErrDiag("Unable to build alerting rule create request", err)
 	}
 
 	resp, err := client.API.PostAlertingRuleIdWithResponse(
@@ -49,7 +49,7 @@ func CreateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("HTTP request failed", err.Error())}
+		return nil, diagutil.ErrDiag("HTTP request failed", err)
 	}
 
 	switch resp.StatusCode() {
@@ -76,7 +76,7 @@ func GetAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID
 		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to get alerting rule", err.Error())}
+		return nil, diagutil.ErrDiag("Unable to get alerting rule", err)
 	}
 
 	switch resp.StatusCode() {
@@ -96,7 +96,7 @@ func GetAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID
 func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
 	body, err := buildUpdateRequestBody(rule)
 	if err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to build alerting rule update request", err.Error())}
+		return nil, diagutil.ErrDiag("Unable to build alerting rule update request", err)
 	}
 
 	resp, err := client.API.PutAlertingRuleIdWithResponse(
@@ -106,7 +106,7 @@ func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to update alerting rule", err.Error())}
+		return nil, diagutil.ErrDiag("Unable to update alerting rule", err)
 	}
 
 	switch resp.StatusCode() {
@@ -142,7 +142,7 @@ func DeleteAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to delete alerting rule", err.Error())}
+		return diagutil.ErrDiag("Unable to delete alerting rule", err)
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusNoContent, http.StatusOK, http.StatusNotFound)
@@ -155,7 +155,7 @@ func EnableAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to enable alerting rule", err.Error())}
+		return diagutil.ErrDiag("Unable to enable alerting rule", err)
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusNoContent, http.StatusOK)
@@ -170,7 +170,7 @@ func DisableAlertingRule(ctx context.Context, client *Client, spaceID string, ru
 		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to disable alerting rule", err.Error())}
+		return diagutil.ErrDiag("Unable to disable alerting rule", err)
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusNoContent, http.StatusOK)

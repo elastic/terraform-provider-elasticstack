@@ -33,7 +33,7 @@ import (
 func CreatePrivateLocation(ctx context.Context, client *Client, spaceID string, body kbapi.PostPrivateLocationJSONRequestBody) (*kbapi.SyntheticsGetPrivateLocation, diag.Diagnostics) {
 	resp, err := client.API.PostPrivateLocationWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("HTTP request failed creating private location", err.Error())}
+		return nil, diagutil.ErrDiag("HTTP request failed creating private location", err)
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -46,10 +46,7 @@ func CreatePrivateLocation(ctx context.Context, client *Client, spaceID string, 
 func GetPrivateLocation(ctx context.Context, client *Client, spaceID string, locationID string) (*kbapi.SyntheticsGetPrivateLocation, diag.Diagnostics) {
 	resp, err := client.API.GetPrivateLocationWithResponse(ctx, locationID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-			fmt.Sprintf("HTTP request failed reading private location %q", locationID),
-			err.Error(),
-		)}
+		return nil, diagutil.ErrDiag(fmt.Sprintf("HTTP request failed reading private location %q", locationID), err)
 	}
 
 	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
@@ -60,10 +57,7 @@ func GetPrivateLocation(ctx context.Context, client *Client, spaceID string, loc
 func DeletePrivateLocation(ctx context.Context, client *Client, spaceID string, locationID string) diag.Diagnostics {
 	resp, err := client.API.DeletePrivateLocationWithResponse(ctx, locationID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic(
-			fmt.Sprintf("HTTP request failed deleting private location %q", locationID),
-			err.Error(),
-		)}
+		return diagutil.ErrDiag(fmt.Sprintf("HTTP request failed deleting private location %q", locationID), err)
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)

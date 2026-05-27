@@ -35,7 +35,7 @@ import (
 func performBulkRulesActionByTag(ctx context.Context, client *Client, spaceID, key, value string, actionBody any, verb string) diag.Diagnostics {
 	bodyBytes, err := json.Marshal(actionBody)
 	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal bulk action request", err.Error())}
+		return diagutil.ErrDiag("Failed to marshal bulk action request", err)
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("%sing rules by tag", verb), map[string]any{
@@ -49,7 +49,7 @@ func performBulkRulesActionByTag(ctx context.Context, client *Client, spaceID, k
 		ctx, &kbapi.PerformRulesBulkActionParams{}, "application/json",
 		bytes.NewReader(bodyBytes), kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic(fmt.Sprintf("Failed to %s rules by tag", verb), err.Error())}
+		return diagutil.ErrDiag(fmt.Sprintf("Failed to %s rules by tag", verb), err)
 	}
 
 	tflog.Debug(ctx, "Bulk action response", map[string]any{
@@ -95,7 +95,7 @@ func CheckRulesEnabledByTag(ctx context.Context, client *Client, spaceID, key, v
 
 	resp, err := client.API.FindRulesWithResponse(ctx, params, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return false, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to query rules by tag", err.Error())}
+		return false, diagutil.ErrDiag("Failed to query rules by tag", err)
 	}
 
 	if resp.StatusCode() != 200 {
