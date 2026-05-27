@@ -89,6 +89,7 @@ func checkResourceJSONAttrKey(key, expectedJSON string) resource.TestCheckFunc {
 
 var minVersionSupport = version.Must(version.NewVersion("8.11.0"))
 var minResponseActionVersionSupport = version.Must(version.NewVersion("8.16.0"))
+var minSetupFieldVersionSupport = version.Must(version.NewVersion("8.14.0"))
 
 const (
 	securityDetectionRuleResourceName      = "elasticstack_kibana_security_detection_rule.test"
@@ -1295,6 +1296,11 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.comment", "Kill processes communicating with known threat indicators"),
 					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.config.field", "process.entity_id"),
 					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.config.overwrite", "false"),
+
+					// Check threat_indicator_path, concurrent_searches, items_per_search
+					resource.TestCheckResourceAttr(resourceName, "threat_indicator_path", "threat.indicator"),
+					resource.TestCheckResourceAttr(resourceName, "concurrent_searches", "2"),
+					resource.TestCheckResourceAttr(resourceName, "items_per_search", "25"),
 				),
 			},
 		},
@@ -1536,6 +1542,11 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 
 					// Check updated alert suppression (threshold rules only support duration)
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration", "45h"),
+
+					// Check threshold cardinality
+					resource.TestCheckResourceAttr(resourceName, "threshold.cardinality.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "threshold.cardinality.0.field", "host.name"),
+					resource.TestCheckResourceAttr(resourceName, "threshold.cardinality.0.value", "5"),
 				),
 			},
 		},
@@ -1866,6 +1877,9 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "actions.0.frequency.summary", "true"),
 					resource.TestCheckResourceAttr(resourceName, "actions.0.frequency.throttle", "10m"),
 					resource.TestCheckNoResourceAttr(resourceName, "actions.0.alerts_filter"),
+
+					// Check computed action uuid is set after create
+					resource.TestCheckResourceAttrSet(resourceName, "actions.0.uuid"),
 
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
@@ -2936,6 +2950,64 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "type", "machine_learning"),
 					resource.TestCheckNoResourceAttr(securityDetectionRuleResourceName, "index.0"),
 					resource.TestCheckNoResourceAttr(securityDetectionRuleResourceName, "data_view_id"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSecurityDetectionRule_RuleMetadata(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minSetupFieldVersionSupport, versionutils.FlavorAny)
+
+	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-rule-metadata")
+	updatedRuleName := testAccRandomizedRuleName("test-rule-metadata-updated")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(createRuleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
+					resource.TestCheckResourceAttr(resourceName, "type", "query"),
+					resource.TestCheckResourceAttr(resourceName, "version", "1"),
+					resource.TestCheckResourceAttr(resourceName, "setup", "Install the required integration before enabling this rule."),
+					resource.TestCheckResourceAttr(resourceName, "timeline_id", "test-timeline-id-abc123"),
+					resource.TestCheckResourceAttr(resourceName, "timeline_title", "Test Timeline Template"),
+
+					// Verify computed metadata fields are set
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "revision"),
+					resource.TestCheckResourceAttrSet(resourceName, "updated_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "updated_by"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_by"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(updatedRuleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
+					resource.TestCheckResourceAttr(resourceName, "version", "2"),
+					resource.TestCheckResourceAttr(resourceName, "setup", "Updated setup instructions with additional prerequisites."),
+					resource.TestCheckResourceAttr(resourceName, "timeline_id", "updated-timeline-id-xyz789"),
+					resource.TestCheckResourceAttr(resourceName, "timeline_title", "Updated Timeline Template"),
+
+					// Verify computed metadata fields remain set after update
+					resource.TestCheckResourceAttrSet(resourceName, "revision"),
+					resource.TestCheckResourceAttrSet(resourceName, "updated_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "updated_by"),
 				),
 			},
 		},
