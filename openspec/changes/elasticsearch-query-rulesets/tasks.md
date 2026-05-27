@@ -44,13 +44,13 @@
 
 ## 6. Testing
 
-- [ ] 6.1 Acceptance test — basic CRUD: create a ruleset with one `pinned` rule and one `exclude` rule; assert state matches; update rules (add a third rule); assert state; destroy.
-- [ ] 6.2 Acceptance test — rule ordering: create ruleset with multiple rules; assert state preserves declaration order; run plan again; assert no diff.
-- [ ] 6.3 Acceptance test — `criteria.values` with numeric values: create a rule with `criteria.type = "gt"` and `values = jsonencode([100])`; assert state round-trips the JSON string correctly.
-- [ ] 6.4 Acceptance test — `actions.docs` variant: create a rule using `docs = [{_index = "my-index", _id = "42"}]` instead of `ids`; assert state.
-- [ ] 6.5 Acceptance test — `criteria.type = "always"`: create a rule with an `always` criterion (no metadata or values); assert accepted and stored.
-- [ ] 6.6 Acceptance test — import: create resource, import by composite ID `<cluster_uuid>/<ruleset_id>`, verify imported state matches, run plan, confirm no diff.
-- [ ] 6.7 Acceptance test — data source: create resource, read via `data.elasticstack_elasticsearch_query_ruleset`, assert all attributes match.
-- [ ] 6.8 Acceptance test — not-found: delete ruleset outside Terraform; run refresh; assert resource is removed from state.
-- [ ] 6.9 Unit tests for `criteria.values` JSON validation and `actions` mutual-exclusion validator logic.
-- [ ] 6.10 If a minimum ES version is confirmed (task 1.2), add a `SkipFunc` to all acceptance tests that skips on unsupported cluster versions (mirroring the pattern used in other acceptance tests in this repo).
+- [x] 6.1 Acceptance test — basic CRUD: create a ruleset with one `pinned` rule and one `exclude` rule; assert state matches; update rules (add a third rule); assert state; destroy.
+- [x] 6.2 Acceptance test — rule ordering: create ruleset with multiple rules; assert state preserves declaration order; run plan again; assert no diff.
+- [x] 6.3 Acceptance test — `criteria.values` with numeric values: create a rule with `criteria.type = "gt"` and `values = jsonencode([100])`; assert state round-trips the JSON string correctly.
+- [x] 6.4 Acceptance test — `actions.docs` variant: create a rule using `docs = [{_index = "my-index", _id = "42"}]` instead of `ids`; assert state.
+- [x] 6.5 Acceptance test — `criteria.type = "always"`: create a rule with an `always` criterion (no metadata or values); assert accepted and stored.
+- [x] 6.6 Acceptance test — import: create resource, import by composite ID `<cluster_uuid>/<ruleset_id>`, verify imported state matches, run plan, confirm no diff.
+- [x] 6.7 Acceptance test — data source: create resource, read via `data.elasticstack_elasticsearch_query_ruleset`, assert all attributes match.
+- [x] 6.8 Acceptance test — not-found: delete ruleset outside Terraform; run refresh; assert resource is removed from state.
+- [x] 6.9 Unit tests for `criteria.values` JSON validation and `actions` mutual-exclusion validator logic.
+- [x] 6.10 If a minimum ES version is confirmed (task 1.2), add a `SkipFunc` to all acceptance tests that skips on unsupported cluster versions (mirroring the pattern used in other acceptance tests in this repo).
