@@ -118,6 +118,54 @@ resource "elasticstack_kibana_slo" "custom_kql" {
 
 }
 
+# ES Query DSL regexp example: filter requests with regexp on httpRequest.referer
+# (e.g., CDN PR-preview URLs). Supports any ES Query DSL expression inside query.
+# The same filters pattern works on good_kql and total_kql as well.
+resource "elasticstack_kibana_slo" "kql_regexp_filter" {
+  name        = "kql regexp filter example"
+  description = "KQL custom indicator with ES Query DSL regexp filter"
+
+  kql_custom_indicator {
+    index = "my-index"
+    total = "*"
+
+    filter_kql = {
+      kql_query = "service.name: checkout"
+      filters = [
+        {
+          query = jsonencode({
+            regexp = {
+              "httpRequest.referer" = {
+                case_insensitive = true
+                flags            = "ALL"
+                value            = ".*pr-preview.*"
+              }
+            }
+          })
+        }
+      ]
+    }
+  }
+
+  time_window {
+    duration = "7d"
+    type     = "rolling"
+  }
+
+  budgeting_method = "timeslices"
+
+  objective {
+    target           = 0.95
+    timeslice_target = 0.95
+    timeslice_window = "5m"
+  }
+
+  settings {
+    sync_delay = "5m"
+    frequency  = "5m"
+  }
+}
+
 # Object-form KQL (filter_kql, good_kql, total_kql) and optional settings.sync_field / enabled
 # (see resource schema). Use the attribute form `filter_kql = { kql_query = "..." }` inside
 # `kql_custom_indicator`, not a nested `filter_kql { }` block.
@@ -439,7 +487,7 @@ Optional:
 
 Optional:
 
-- `query` (String) Filter query as a JSON object.
+- `query` (String) Filter query as a JSON-encoded ES Query DSL object. Accepts any valid ES Query DSL (regexp, wildcard, bool, range, etc.). Use jsonencode({...}) to construct the value.
 
 
 
@@ -456,7 +504,7 @@ Optional:
 
 Optional:
 
-- `query` (String) Filter query as a JSON object.
+- `query` (String) Filter query as a JSON-encoded ES Query DSL object. Accepts any valid ES Query DSL (regexp, wildcard, bool, range, etc.). Use jsonencode({...}) to construct the value.
 
 
 
@@ -473,7 +521,7 @@ Optional:
 
 Optional:
 
-- `query` (String) Filter query as a JSON object.
+- `query` (String) Filter query as a JSON-encoded ES Query DSL object. Accepts any valid ES Query DSL (regexp, wildcard, bool, range, etc.). Use jsonencode({...}) to construct the value.
 
 
 
