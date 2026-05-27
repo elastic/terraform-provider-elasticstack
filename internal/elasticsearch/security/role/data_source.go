@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package security
+package role
 
 import (
 	"context"
@@ -30,7 +30,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -58,57 +58,57 @@ func NewRoleDataSource() datasource.DataSource {
 	)
 }
 
-func getDataSourceSchema(_ context.Context) schema.Schema {
-	return schema.Schema{
+func getDataSourceSchema(_ context.Context) dsschema.Schema {
+	return dsschema.Schema{
 		MarkdownDescription: "Retrieves roles in the native realm. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-role.html",
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
+		Attributes: map[string]dsschema.Attribute{
+			"id": dsschema.StringAttribute{
 				MarkdownDescription: "Internal identifier of the resource",
 				Computed:            true,
 			},
-			RoleAttrName: schema.StringAttribute{
+			attrName: dsschema.StringAttribute{
 				MarkdownDescription: "The name of the role.",
 				Required:            true,
 			},
-			RoleAttrDescription: schema.StringAttribute{
+			attrDescription: dsschema.StringAttribute{
 				MarkdownDescription: "The description of the role.",
 				Computed:            true,
 			},
-			RoleAttrCluster: schema.SetAttribute{
+			attrCluster: dsschema.SetAttribute{
 				MarkdownDescription: "A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.",
 				ElementType:         types.StringType,
 				Computed:            true,
 			},
-			"run_as": schema.SetAttribute{
+			"run_as": dsschema.SetAttribute{
 				MarkdownDescription: "A list of users that the owners of this role can impersonate.",
 				ElementType:         types.StringType,
 				Computed:            true,
 			},
-			RoleAttrGlobal: schema.StringAttribute{
+			attrGlobal: dsschema.StringAttribute{
 				MarkdownDescription: "An object defining global privileges.",
 				Computed:            true,
 				CustomType:          jsontypes.NormalizedType{},
 			},
-			RoleAttrMetadata: schema.StringAttribute{
+			attrMetadata: dsschema.StringAttribute{
 				MarkdownDescription: "Optional meta-data.",
 				Computed:            true,
 				CustomType:          jsontypes.NormalizedType{},
 			},
-			RoleBlockApplications: schema.SetNestedAttribute{
+			blockApplications: dsschema.SetNestedAttribute{
 				MarkdownDescription: "A list of application privilege entries.",
 				Computed:            true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						RoleAttrApplication: schema.StringAttribute{
+				NestedObject: dsschema.NestedAttributeObject{
+					Attributes: map[string]dsschema.Attribute{
+						attrApplication: dsschema.StringAttribute{
 							MarkdownDescription: "The name of the application to which this entry applies.",
 							Computed:            true,
 						},
-						RoleAttrPrivileges: schema.SetAttribute{
+						attrPrivileges: dsschema.SetAttribute{
 							MarkdownDescription: "A list of strings, where each element is the name of an application privilege or action.",
 							ElementType:         types.StringType,
 							Computed:            true,
 						},
-						RoleAttrResources: schema.SetAttribute{
+						attrResources: dsschema.SetAttribute{
 							MarkdownDescription: "A list resources to which the privileges are applied.",
 							ElementType:         types.StringType,
 							Computed:            true,
@@ -116,22 +116,22 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 					},
 				},
 			},
-			RoleBlockIndices: schema.SetNestedAttribute{
+			blockIndices: dsschema.SetNestedAttribute{
 				MarkdownDescription: "A list of indices permissions entries.",
 				Computed:            true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						RoleAttrFieldSecurity: schema.ListNestedAttribute{
+				NestedObject: dsschema.NestedAttributeObject{
+					Attributes: map[string]dsschema.Attribute{
+						attrFieldSecurity: dsschema.ListNestedAttribute{
 							MarkdownDescription: "The document fields that the owners of the role have read access to.",
 							Computed:            true,
-							NestedObject: schema.NestedAttributeObject{
-								Attributes: map[string]schema.Attribute{
-									RoleAttrGrant: schema.SetAttribute{
+							NestedObject: dsschema.NestedAttributeObject{
+								Attributes: map[string]dsschema.Attribute{
+									attrGrant: dsschema.SetAttribute{
 										MarkdownDescription: "List of the fields to grant the access to.",
 										ElementType:         types.StringType,
 										Computed:            true,
 									},
-									RoleAttrExcept: schema.SetAttribute{
+									attrExcept: dsschema.SetAttribute{
 										MarkdownDescription: "List of the fields to which the grants will not be applied.",
 										ElementType:         types.StringType,
 										Computed:            true,
@@ -139,49 +139,49 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 								},
 							},
 						},
-						RoleAttrNames: schema.SetAttribute{
+						attrNames: dsschema.SetAttribute{
 							MarkdownDescription: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
 							ElementType:         types.StringType,
 							Computed:            true,
 						},
-						RoleAttrPrivileges: schema.SetAttribute{
+						attrPrivileges: dsschema.SetAttribute{
 							MarkdownDescription: "The index level privileges that the owners of the role have on the specified indices.",
 							ElementType:         types.StringType,
 							Computed:            true,
 						},
-						RoleAttrQuery: schema.StringAttribute{
+						attrQuery: dsschema.StringAttribute{
 							MarkdownDescription: "A search query that defines the documents the owners of the role have read access to.",
 							Computed:            true,
 							CustomType:          jsontypes.NormalizedType{},
 						},
-						RoleAttrAllowRestrictedIndices: schema.BoolAttribute{
-							MarkdownDescription: roleAllowRestrictedIndicesDescription,
+						attrAllowRestrictedIndices: dsschema.BoolAttribute{
+							MarkdownDescription: allowRestrictedIndicesDescription,
 							Computed:            true,
 						},
 					},
 				},
 			},
-			RoleBlockRemoteIndices: schema.SetNestedAttribute{
-				MarkdownDescription: roleRemoteIndicesDescription,
+			blockRemoteIndices: dsschema.SetNestedAttribute{
+				MarkdownDescription: remoteIndicesDescription,
 				Computed:            true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						RoleAttrClusters: schema.SetAttribute{
+				NestedObject: dsschema.NestedAttributeObject{
+					Attributes: map[string]dsschema.Attribute{
+						attrClusters: dsschema.SetAttribute{
 							MarkdownDescription: "A list of cluster aliases to which the permissions in this entry apply.",
 							ElementType:         types.StringType,
 							Computed:            true,
 						},
-						RoleAttrFieldSecurity: schema.ListNestedAttribute{
+						attrFieldSecurity: dsschema.ListNestedAttribute{
 							MarkdownDescription: "The document fields that the owners of the role have read access to.",
 							Computed:            true,
-							NestedObject: schema.NestedAttributeObject{
-								Attributes: map[string]schema.Attribute{
-									RoleAttrGrant: schema.SetAttribute{
+							NestedObject: dsschema.NestedAttributeObject{
+								Attributes: map[string]dsschema.Attribute{
+									attrGrant: dsschema.SetAttribute{
 										MarkdownDescription: "List of the fields to grant the access to.",
 										ElementType:         types.StringType,
 										Computed:            true,
 									},
-									RoleAttrExcept: schema.SetAttribute{
+									attrExcept: dsschema.SetAttribute{
 										MarkdownDescription: "List of the fields to which the grants will not be applied.",
 										ElementType:         types.StringType,
 										Computed:            true,
@@ -189,17 +189,17 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 								},
 							},
 						},
-						RoleAttrNames: schema.SetAttribute{
+						attrNames: dsschema.SetAttribute{
 							MarkdownDescription: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
 							ElementType:         types.StringType,
 							Computed:            true,
 						},
-						RoleAttrPrivileges: schema.SetAttribute{
+						attrPrivileges: dsschema.SetAttribute{
 							MarkdownDescription: "The index level privileges that the owners of the role have on the specified indices.",
 							ElementType:         types.StringType,
 							Computed:            true,
 						},
-						RoleAttrQuery: schema.StringAttribute{
+						attrQuery: dsschema.StringAttribute{
 							MarkdownDescription: "A search query that defines the documents the owners of the role have read access to.",
 							Computed:            true,
 							CustomType:          jsontypes.NormalizedType{},
@@ -328,9 +328,9 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 			}
 
 			appObj, d := types.ObjectValue(getApplicationDSAttrTypes(), map[string]attr.Value{
-				RoleAttrApplication: types.StringValue(app.Application),
-				RoleAttrPrivileges:  privSet,
-				RoleAttrResources:   resSet,
+				attrApplication: types.StringValue(app.Application),
+				attrPrivileges:  privSet,
+				attrResources:   resSet,
 			})
 			diags.Append(d...)
 			if diags.HasError() {
@@ -410,8 +410,8 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 				}
 
 				fieldSecObj, d := types.ObjectValue(getFieldSecurityDSAttrTypes(), map[string]attr.Value{
-					RoleAttrGrant:  grantSet,
-					RoleAttrExcept: exceptSet,
+					attrGrant:  grantSet,
+					attrExcept: exceptSet,
 				})
 				diags.Append(d...)
 				if diags.HasError() {
@@ -428,11 +428,11 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 			}
 
 			indexObj, d := types.ObjectValue(getIndexPermsDSAttrTypes(), map[string]attr.Value{
-				RoleAttrFieldSecurity:          fieldSecList,
-				RoleAttrNames:                  namesSet,
-				RoleAttrPrivileges:             privSet,
-				RoleAttrQuery:                  queryVal,
-				RoleAttrAllowRestrictedIndices: allowRestrictedVal,
+				attrFieldSecurity:          fieldSecList,
+				attrNames:                  namesSet,
+				attrPrivileges:             privSet,
+				attrQuery:                  queryVal,
+				attrAllowRestrictedIndices: allowRestrictedVal,
 			})
 			diags.Append(d...)
 			if diags.HasError() {
@@ -511,8 +511,8 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 				}
 
 				fieldSecObj, d := types.ObjectValue(getFieldSecurityDSAttrTypes(), map[string]attr.Value{
-					RoleAttrGrant:  grantSet,
-					RoleAttrExcept: exceptSet,
+					attrGrant:  grantSet,
+					attrExcept: exceptSet,
 				})
 				diags.Append(d...)
 				if diags.HasError() {
@@ -529,11 +529,11 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 			}
 
 			remoteIndexObj, d := types.ObjectValue(getRemoteIndexPermsDSAttrTypes(), map[string]attr.Value{
-				RoleAttrClusters:      clustersSet,
-				RoleAttrFieldSecurity: fieldSecList,
-				RoleAttrNames:         namesSet,
-				RoleAttrPrivileges:    privSet,
-				RoleAttrQuery:         queryVal,
+				attrClusters:      clustersSet,
+				attrFieldSecurity: fieldSecList,
+				attrNames:         namesSet,
+				attrPrivileges:    privSet,
+				attrQuery:         queryVal,
 			})
 			diags.Append(d...)
 			if diags.HasError() {
@@ -559,39 +559,39 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 // Data source attribute type helpers (mirror data source schema structure)
 func getApplicationDSAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		RoleAttrApplication: types.StringType,
-		RoleAttrPrivileges:  types.SetType{ElemType: types.StringType},
-		RoleAttrResources:   types.SetType{ElemType: types.StringType},
+		attrApplication: types.StringType,
+		attrPrivileges:  types.SetType{ElemType: types.StringType},
+		attrResources:   types.SetType{ElemType: types.StringType},
 	}
 }
 
 func getFieldSecurityDSAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		RoleAttrGrant:  types.SetType{ElemType: types.StringType},
-		RoleAttrExcept: types.SetType{ElemType: types.StringType},
+		attrGrant:  types.SetType{ElemType: types.StringType},
+		attrExcept: types.SetType{ElemType: types.StringType},
 	}
 }
 
 func getIndexPermsDSAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		RoleAttrFieldSecurity: types.ListType{
+		attrFieldSecurity: types.ListType{
 			ElemType: types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()},
 		},
-		RoleAttrNames:                  types.SetType{ElemType: types.StringType},
-		RoleAttrPrivileges:             types.SetType{ElemType: types.StringType},
-		RoleAttrQuery:                  jsontypes.NormalizedType{},
-		RoleAttrAllowRestrictedIndices: types.BoolType,
+		attrNames:                  types.SetType{ElemType: types.StringType},
+		attrPrivileges:             types.SetType{ElemType: types.StringType},
+		attrQuery:                  jsontypes.NormalizedType{},
+		attrAllowRestrictedIndices: types.BoolType,
 	}
 }
 
 func getRemoteIndexPermsDSAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		RoleAttrClusters: types.SetType{ElemType: types.StringType},
-		RoleAttrFieldSecurity: types.ListType{
+		attrClusters: types.SetType{ElemType: types.StringType},
+		attrFieldSecurity: types.ListType{
 			ElemType: types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()},
 		},
-		RoleAttrNames:      types.SetType{ElemType: types.StringType},
-		RoleAttrPrivileges: types.SetType{ElemType: types.StringType},
-		RoleAttrQuery:      jsontypes.NormalizedType{},
+		attrNames:      types.SetType{ElemType: types.StringType},
+		attrPrivileges: types.SetType{ElemType: types.StringType},
+		attrQuery:      jsontypes.NormalizedType{},
 	}
 }

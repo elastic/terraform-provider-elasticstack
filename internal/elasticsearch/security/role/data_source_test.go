@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package security_test
+package role_test
 
 import (
 	"testing"
