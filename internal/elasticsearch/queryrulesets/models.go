@@ -21,6 +21,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"strconv"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/queryrulecriteriatype"
@@ -34,12 +36,6 @@ import (
 )
 
 var attrTypesString = fwtypes.StringType
-
-// QueryRuleActionDocModel represents a document reference in rule actions.
-type QueryRuleActionDocModel struct {
-	Index fwtypes.String `tfsdk:"_index"`
-	ID    fwtypes.String `tfsdk:"_id"`
-}
 
 func queryRuleActionDocModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
@@ -219,14 +215,19 @@ func queryRuleActionsFromAPI(ctx context.Context, actions types.QueryRuleActions
 	}
 
 	if len(actions.Docs) > 0 {
-		docModels := make([]QueryRuleActionDocModel, len(actions.Docs))
+		docValues := make([]attr.Value, len(actions.Docs))
 		for i, doc := range actions.Docs {
-			docModels[i] = QueryRuleActionDocModel{
-				Index: fwtypes.StringValue(doc.Index_),
-				ID:    fwtypes.StringValue(doc.Id_),
+			obj, d := fwtypes.ObjectValue(queryRuleActionDocModelAttrTypes(), map[string]attr.Value{
+				"_index": fwtypes.StringValue(doc.Index_),
+				"_id":    fwtypes.StringValue(doc.Id_),
+			})
+			diags.Append(d...)
+			if diags.HasError() {
+				return fwtypes.ObjectNull(queryRuleActionsModelAttrTypes()), diags
 			}
+			docValues[i] = obj
 		}
-		docs, d := fwtypes.ListValueFrom(ctx, fwtypes.ObjectType{AttrTypes: queryRuleActionDocModelAttrTypes()}, docModels)
+		docs, d := fwtypes.ListValue(fwtypes.ObjectType{AttrTypes: queryRuleActionDocModelAttrTypes()}, docValues)
 		diags.Append(d...)
 		if diags.HasError() {
 			return fwtypes.ObjectNull(queryRuleActionsModelAttrTypes()), diags
@@ -340,20 +341,7 @@ func (model QueryRuleActionsModel) toAPIActions(ctx context.Context, diagnostics
 	}
 
 	if !model.Docs.IsNull() && !model.Docs.IsUnknown() {
-		var docModels []QueryRuleActionDocModel
-		diagnostics.Append(model.Docs.ElementsAs(ctx, &docModels, false)...)
-		if diagnostics.HasError() {
-			return actions
-		}
-
-		docs := make([]types.PinnedDoc, len(docModels))
-		for i, doc := range docModels {
-			docs[i] = types.PinnedDoc{
-				Index_: doc.Index.ValueString(),
-				Id_:    doc.ID.ValueString(),
-			}
-		}
-		actions.Docs = docs
+		actions.Docs = pinnedDocsFromList(model.Docs, diagnostics)
 	}
 
 	return actions
@@ -366,6 +354,150 @@ func queryRuleTypeFromString(value string) (queryruletype.QueryRuleType, diag.Di
 		diags.AddError("Invalid rule type", fmt.Sprintf("Unable to parse rule type %q: %s", value, err))
 	}
 	return ruleType, diags
+}
+
+func pinnedDocsFromList(docs fwtypes.List, diagnostics *diag.Diagnostics) []types.PinnedDoc {
+	elems := docs.Elements()
+	result := make([]types.PinnedDoc, len(elems))
+	for i, elem := range elems {
+		obj, ok := elem.(fwtypes.Object)
+		if !ok {
+			diagnostics.AddError("Invalid actions docs", "Expected an object for each docs entry.")
+			return nil
+		}
+
+		attrs := obj.Attributes()
+		indexAttr, ok := attrs["_index"].(fwtypes.String)
+		if !ok || indexAttr.IsNull() || indexAttr.IsUnknown() {
+			diagnostics.AddError("Invalid actions docs", "Each docs entry must include `_index`.")
+			return nil
+		}
+		idAttr, ok := attrs["_id"].(fwtypes.String)
+		if !ok || idAttr.IsNull() || idAttr.IsUnknown() {
+			diagnostics.AddError("Invalid actions docs", "Each docs entry must include `_id`.")
+			return nil
+		}
+
+		result[i] = types.PinnedDoc{
+			Index_: indexAttr.ValueString(),
+			Id_:    idAttr.ValueString(),
+		}
+	}
+	return result
+}
+
+func preserveCriteriaValuesFromPrior(ctx context.Context, data *QueryRulesetData, priorRules fwtypes.List, diagnostics *diag.Diagnostics) {
+	if priorRules.IsNull() || priorRules.IsUnknown() || data.Rules.IsNull() || data.Rules.IsUnknown() {
+		return
+	}
+
+	var priorModels, currentModels []QueryRuleModel
+	diagnostics.Append(priorRules.ElementsAs(ctx, &priorModels, false)...)
+	diagnostics.Append(data.Rules.ElementsAs(ctx, &currentModels, false)...)
+	if diagnostics.HasError() {
+		return
+	}
+
+	priorByRuleID := make(map[string]QueryRuleModel, len(priorModels))
+	for _, rule := range priorModels {
+		priorByRuleID[rule.RuleID.ValueString()] = rule
+	}
+
+	for i := range currentModels {
+		priorRule, ok := priorByRuleID[currentModels[i].RuleID.ValueString()]
+		if !ok {
+			continue
+		}
+		preserveRuleCriteriaValuesFromPrior(ctx, &currentModels[i], priorRule, diagnostics)
+		if diagnostics.HasError() {
+			return
+		}
+	}
+
+	list, d := fwtypes.ListValueFrom(ctx, fwtypes.ObjectType{AttrTypes: queryRuleModelAttrTypes()}, currentModels)
+	diagnostics.Append(d...)
+	if diagnostics.HasError() {
+		return
+	}
+	data.Rules = list
+}
+
+func preserveRuleCriteriaValuesFromPrior(ctx context.Context, current *QueryRuleModel, prior QueryRuleModel, diagnostics *diag.Diagnostics) {
+	if current.Criteria.IsNull() || current.Criteria.IsUnknown() || prior.Criteria.IsNull() || prior.Criteria.IsUnknown() {
+		return
+	}
+
+	var currentCriteria, priorCriteria []QueryRuleCriteriaModel
+	diagnostics.Append(current.Criteria.ElementsAs(ctx, &currentCriteria, false)...)
+	diagnostics.Append(prior.Criteria.ElementsAs(ctx, &priorCriteria, false)...)
+	if diagnostics.HasError() {
+		return
+	}
+
+	for i := range currentCriteria {
+		if i >= len(priorCriteria) {
+			break
+		}
+		if criteriaValuesSemanticallyEqual(priorCriteria[i].Values, currentCriteria[i].Values) {
+			currentCriteria[i].Values = priorCriteria[i].Values
+		}
+	}
+
+	list, d := fwtypes.ListValueFrom(ctx, fwtypes.ObjectType{AttrTypes: queryRuleCriteriaModelAttrTypes()}, currentCriteria)
+	diagnostics.Append(d...)
+	if diagnostics.HasError() {
+		return
+	}
+	current.Criteria = list
+}
+
+func criteriaValuesSemanticallyEqual(prior, current jsontypes.Normalized) bool {
+	if prior.IsNull() || prior.IsUnknown() || current.IsNull() || current.IsUnknown() {
+		return prior.IsNull() == current.IsNull()
+	}
+
+	var priorVals, currentVals []json.RawMessage
+	if err := json.Unmarshal([]byte(prior.ValueString()), &priorVals); err != nil {
+		return false
+	}
+	if err := json.Unmarshal([]byte(current.ValueString()), &currentVals); err != nil {
+		return false
+	}
+	if len(priorVals) != len(currentVals) {
+		return false
+	}
+
+	for i := range priorVals {
+		if !jsonRawMessageSemanticallyEqual(priorVals[i], currentVals[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func jsonRawMessageSemanticallyEqual(a, b json.RawMessage) bool {
+	normalize := func(raw json.RawMessage) (any, bool) {
+		var value any
+		if err := json.Unmarshal(raw, &value); err != nil {
+			return nil, false
+		}
+		switch typed := value.(type) {
+		case string:
+			if number, err := strconv.ParseFloat(typed, 64); err == nil {
+				return number, true
+			}
+			return typed, true
+		default:
+			return typed, true
+		}
+	}
+
+	left, okLeft := normalize(a)
+	right, okRight := normalize(b)
+	if !okLeft || !okRight {
+		return string(a) == string(b)
+	}
+	return reflect.DeepEqual(left, right)
 }
 
 func queryRuleCriteriaTypeFromString(value string) (queryrulecriteriatype.QueryRuleCriteriaType, diag.Diagnostics) {

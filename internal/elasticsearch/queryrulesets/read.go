@@ -42,6 +42,8 @@ func readQueryRuleset(ctx context.Context, client *clients.ElasticsearchScopedCl
 		return data, false, diags
 	}
 
+	priorRules := data.Rules
+
 	orderedRules, orderDiags := orderRulesFromRead(ctx, resp.Rules, data.Rules)
 	diags.Append(orderDiags...)
 	if diags.HasError() {
@@ -49,6 +51,11 @@ func readQueryRuleset(ctx context.Context, client *clients.ElasticsearchScopedCl
 	}
 
 	data.populateFromAPI(ctx, orderedRules, &diags)
+	if diags.HasError() {
+		return data, false, diags
+	}
+
+	preserveCriteriaValuesFromPrior(ctx, &data, priorRules, &diags)
 	if diags.HasError() {
 		return data, false, diags
 	}
