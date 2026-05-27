@@ -32,6 +32,7 @@ var (
 	_ resource.Resource                = newResource()
 	_ resource.ResourceWithConfigure   = newResource()
 	_ resource.ResourceWithImportState = newResource()
+	_ resource.ResourceWithModifyPlan  = newResource()
 )
 
 type Resource struct {
@@ -49,7 +50,9 @@ func newResource() *Resource {
 	return &Resource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("index", entitycore.ElasticsearchResourceOptions[tfModel]{
 			Schema: getSchema,
-			Read:   readIndex,
+			Read: func(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, stateModel tfModel) (tfModel, bool, diag.Diagnostics) {
+				return readIndex(ctx, client, resourceID, stateModel, false)
+			},
 			Delete: deleteIndex,
 			Create: placeholder,
 			Update: placeholder,
@@ -81,7 +84,14 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	finalModel, found, readDiags := readIndex(ctx, client, compID.ResourceID, stateModel)
+	hydrateAllBytes, privDiags := req.Private.GetKey(ctx, importHydrationPrivateStateKey)
+	resp.Diagnostics.Append(privDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	hydrateAll := len(hydrateAllBytes) > 0
+
+	finalModel, found, readDiags := readIndex(ctx, client, compID.ResourceID, stateModel, hydrateAll)
 	resp.Diagnostics.Append(readDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -101,6 +111,47 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 }
 
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Retrieve import ID and save to id attribute
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, importHydrationPrivateStateKey, []byte("true"))...)
+}
+
+func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	hydrateAllBytes, diags := req.Private.GetKey(ctx, importHydrationPrivateStateKey)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if len(hydrateAllBytes) == 0 {
+		return
+	}
+
+	clearImportHydrationFlag := func() {
+		resp.Diagnostics.Append(resp.Private.SetKey(ctx, importHydrationPrivateStateKey, nil)...)
+	}
+
+	if req.Plan.Raw.IsNull() {
+		clearImportHydrationFlag()
+		return
+	}
+
+	var planModel, configModel tfModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &configModel)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &planModel)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	pruneImportHydratedPlanFields(ctx, &planModel, &configModel)
+
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, &planModel)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	clearImportHydrationFlag()
 }

@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -35,7 +36,7 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 
 	data, err := json.Marshal(resp)
 	if err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal response", err.Error())}
+		return nil, diagutil.ErrDiag("Failed to marshal response", err)
 	}
 
 	var intermediate struct {
@@ -90,7 +91,7 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 	}
 
 	if err := json.Unmarshal(data, &intermediate); err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to unmarshal response", err.Error())}
+		return nil, diagutil.ErrDiag("Failed to unmarshal response", err)
 	}
 
 	if intermediate.ID == "" || intermediate.Name == "" || intermediate.Consumer == "" || intermediate.RuleTypeID == "" {

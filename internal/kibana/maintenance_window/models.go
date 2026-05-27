@@ -19,7 +19,6 @@ package maintenancewindow
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -112,19 +111,11 @@ func (m Model) toAPICreateRequest(ctx context.Context) (kbapi.PostMaintenanceWin
 /* READ */
 
 func (m *Model) fromAPIReadResponse(ctx context.Context, data *kbapi.GetMaintenanceWindowIdResponse) diag.Diagnostics {
-	if data == nil {
+	if data == nil || data.JSON200 == nil {
 		return nil
 	}
 
-	var diags = diag.Diagnostics{}
-	var response = &ResponseJSON{}
-
-	if err := json.Unmarshal(data.Body, response); err != nil {
-		diags.AddError(err.Error(), "cannot unmarshal GetMaintenanceWindowIdResponse")
-		return diags
-	}
-
-	return m._fromAPIResponse(ctx, *response)
+	return m._fromAPIResponse(ctx, *data.JSON200)
 }
 
 /* UPDATE */
@@ -136,33 +127,9 @@ func (m Model) toAPIUpdateRequest(ctx context.Context) (kbapi.PatchMaintenanceWi
 	}
 
 	body.Schedule = &struct {
-		Custom struct {
-			Duration  string `json:"duration"`
-			Recurring *struct {
-				End         *string    `json:"end,omitempty"`
-				Every       *string    `json:"every,omitempty"`
-				Occurrences *float32   `json:"occurrences,omitempty"`
-				OnMonth     *[]float32 `json:"onMonth,omitempty"`
-				OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-				OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-			} `json:"recurring,omitempty"`
-			Start    string  `json:"start"`
-			Timezone *string `json:"timezone,omitempty"`
-		} `json:"custom"`
+		Custom kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRequest `json:"custom"`
 	}{
-		Custom: struct {
-			Duration  string `json:"duration"`
-			Recurring *struct {
-				End         *string    `json:"end,omitempty"`
-				Every       *string    `json:"every,omitempty"`
-				Occurrences *float32   `json:"occurrences,omitempty"`
-				OnMonth     *[]float32 `json:"onMonth,omitempty"`
-				OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-				OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-			} `json:"recurring,omitempty"`
-			Start    string  `json:"start"`
-			Timezone *string `json:"timezone,omitempty"`
-		}{
+		Custom: kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRequest{
 			Duration: m.CustomSchedule.Duration.ValueString(),
 			Start:    m.CustomSchedule.Start.ValueString(),
 		},
@@ -181,7 +148,7 @@ func (m Model) toAPIUpdateRequest(ctx context.Context) (kbapi.PatchMaintenanceWi
 
 /* RESPONSE HANDLER */
 
-func (m *Model) _fromAPIResponse(ctx context.Context, response ResponseJSON) diag.Diagnostics {
+func (m *Model) _fromAPIResponse(ctx context.Context, response kbapi.KibanaHTTPAPIsMaintenanceWindowResponse) diag.Diagnostics {
 	var diags = diag.Diagnostics{}
 
 	m.Title = types.StringValue(response.Title)
@@ -253,24 +220,12 @@ func (m *Model) _fromAPIResponse(ctx context.Context, response ResponseJSON) dia
 
 /* HELPERS */
 
-func (model *Scope) toAPIRequest() *struct {
-	Alerting struct {
-		Query struct {
-			Kql string `json:"kql"`
-		} `json:"query"`
-	} `json:"alerting"`
-} {
+func (model *Scope) toAPIRequest() *kbapi.KibanaHTTPAPIsMaintenanceWindowScope {
 	if model == nil {
 		return nil
 	}
 
-	return &struct {
-		Alerting struct {
-			Query struct {
-				Kql string `json:"kql"`
-			} `json:"query"`
-		} `json:"alerting"`
-	}{
+	return &kbapi.KibanaHTTPAPIsMaintenanceWindowScope{
 		Alerting: struct {
 			Query struct {
 				Kql string `json:"kql"`
@@ -285,27 +240,13 @@ func (model *Scope) toAPIRequest() *struct {
 	}
 }
 
-func (model *ScheduleRecurring) toAPIRequest(ctx context.Context) (*struct {
-	End         *string    `json:"end,omitempty"`
-	Every       *string    `json:"every,omitempty"`
-	Occurrences *float32   `json:"occurrences,omitempty"`
-	OnMonth     *[]float32 `json:"onMonth,omitempty"`
-	OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-	OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-}, diag.Diagnostics) {
+func (model *ScheduleRecurring) toAPIRequest(ctx context.Context) (*kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRecurringRequest, diag.Diagnostics) {
 	if model == nil {
 		return nil, nil
 	}
 
 	var diags diag.Diagnostics
-	result := &struct {
-		End         *string    `json:"end,omitempty"`
-		Every       *string    `json:"every,omitempty"`
-		Occurrences *float32   `json:"occurrences,omitempty"`
-		OnMonth     *[]float32 `json:"onMonth,omitempty"`
-		OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-		OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-	}{}
+	result := &kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRecurringRequest{}
 
 	if typeutils.IsKnown(model.End) {
 		result.End = model.End.ValueStringPointer()
