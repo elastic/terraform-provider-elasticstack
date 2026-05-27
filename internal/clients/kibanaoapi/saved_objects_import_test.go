@@ -156,6 +156,45 @@ func TestImportSavedObjects_400Response(t *testing.T) {
 	assert.Nil(t, result)
 }
 
+func TestImportSavedObjects_422Response(t *testing.T) {
+	const boomMessage = `Document "abc" belongs to a more recent version of Kibana [10.3.0] when the last known version is [7.9.3].`
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusUnprocessableEntity)
+		_ = json.NewEncoder(rw).Encode(map[string]any{
+			"statusCode": 422,
+			"error":      "Unprocessable Entity",
+			"message":    boomMessage,
+		})
+	}))
+	defer server.Close()
+
+	t.Setenv("ELASTICSEARCH_URL", server.URL)
+	t.Setenv("KIBANA_ENDPOINT", server.URL)
+
+	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	require.NoError(t, err)
+
+	oapiClient := apiClient.GetKibanaOapiClient()
+	require.NotNil(t, oapiClient)
+
+	params := kbapi.PostSavedObjectsImportParams{}
+	result, diags := kibanaoapi.ImportSavedObjects(t.Context(), oapiClient, "", []byte("{}"), params)
+	require.NotNil(t, diags)
+	require.True(t, diags.HasError())
+	assert.Nil(t, result)
+
+	var matched bool
+	for _, d := range diags {
+		if d.Detail() == boomMessage {
+			matched = true
+			break
+		}
+	}
+	assert.True(t, matched, "expected a diagnostic whose detail exactly equals the Boom message; got diagnostics: %#v", diags)
+}
+
 func TestImportSavedObjects_UnexpectedStatusCode(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(http.StatusInternalServerError)

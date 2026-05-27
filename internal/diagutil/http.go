@@ -18,6 +18,7 @@
 package diagutil
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -25,6 +26,11 @@ import (
 
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
+
+type kibanaBoomError struct {
+	Error   string `json:"error"`
+	Message string `json:"message"`
+}
 
 func CheckHTTPErrorFromFW(res *http.Response, errMsg string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
@@ -47,6 +53,22 @@ func ReportUnknownHTTPError(statusCode int, body []byte) fwdiag.Diagnostics {
 			string(body),
 		),
 	}
+}
+
+// ReportKibanaBoomHTTPError attempts to parse body as a Kibana Boom error
+// envelope (`{"statusCode": N, "error": "...", "message": "..."}`). When the
+// envelope is well-formed and the `message` field is non-empty, it returns a
+// single error diagnostic using the caller-supplied summary and the extracted
+// message as the detail. Otherwise it falls back to ReportUnknownHTTPError so
+// callers still receive the raw response body.
+func ReportKibanaBoomHTTPError(statusCode int, summary string, body []byte) fwdiag.Diagnostics {
+	var boom kibanaBoomError
+	if err := json.Unmarshal(body, &boom); err == nil && boom.Message != "" {
+		return fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic(summary, boom.Message),
+		}
+	}
+	return ReportUnknownHTTPError(statusCode, body)
 }
 
 // HandleStatusResponse returns nil when statusCode is one of successCodes, and
