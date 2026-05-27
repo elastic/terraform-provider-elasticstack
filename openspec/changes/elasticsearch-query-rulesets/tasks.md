@@ -16,19 +16,19 @@
 
 ## 3. Resource implementation
 
-- [ ] 3.1 Create `internal/elasticsearch/queryrulesets/` package with:
+- [x] 3.1 Create `internal/elasticsearch/queryrulesets/` package with:
   - `schema.go` — `Schema()` function defining the full resource schema (see design.md for shape); include `elasticsearch_connection` block, `ruleset_id` with RequiresReplace, `id` as computed, `rules` as ListNestedAttribute.
   - `model.go` — `queryRulesetModel`, `queryRuleModel`, `queryRuleCriteriaModel`, `queryRuleActionsModel`, `queryRuleActionDocModel` types with `tftypes` tags.
   - `resource.go` — implements `resource.Resource`; wire `Create`, `Read`, `Update`, `Delete`, `ImportState`.
   - `data_source.go` — implements `datasource.DataSource`; wire `Read`.
-- [ ] 3.2 Implement `Create`: call `PutQueryRuleset`, then `GetQueryRuleset` to populate computed fields; set `id` to `<cluster_uuid>/<ruleset_id>`.
-- [ ] 3.3 Implement `Read`: call `GetQueryRuleset`; if 404, call `resp.State.RemoveResource(ctx)` and return; otherwise map API response to state. Handle rule ordering: if the API does not preserve order, sort by `rule_id` to avoid perpetual plan diffs (verify during acceptance tests; document chosen approach).
-- [ ] 3.4 Implement `Update`: call `PutQueryRuleset` with the new full rule list; call `GetQueryRuleset` to refresh state.
-- [ ] 3.5 Implement `Delete`: call `DeleteQueryRuleset`.
-- [ ] 3.6 Implement `ImportState`: parse `<cluster_uuid>/<ruleset_id>` import ID; set `id` and `ruleset_id`; delegate to `Read`.
-- [ ] 3.7 Add plan-time validator for `actions` mutual exclusion: exactly one of `ids` or `docs` must be set per rule.
-- [ ] 3.8 Add plan-time validator (or schema-level `Validators`) for `criteria.values`: must be a valid JSON array string when `criteria.type != "always"`.
-- [ ] 3.9 Add a minimum ES version check for the Query Rules API (see open question 1 in design.md); surface a clear diagnostic if the cluster version is below the minimum.
+- [x] 3.2 Implement `Create`: call `PutQueryRuleset`, then `GetQueryRuleset` to populate computed fields; set `id` to `<cluster_uuid>/<ruleset_id>`.
+- [x] 3.3 Implement `Read`: call `GetQueryRuleset`; if 404, call `resp.State.RemoveResource(ctx)` and return; otherwise map API response to state. Handle rule ordering: if the API does not preserve order, sort by `rule_id` to avoid perpetual plan diffs (verify during acceptance tests; document chosen approach).
+- [x] 3.4 Implement `Update`: call `PutQueryRuleset` with the new full rule list; call `GetQueryRuleset` to refresh state.
+- [x] 3.5 Implement `Delete`: call `DeleteQueryRuleset`.
+- [x] 3.6 Implement `ImportState`: parse `<cluster_uuid>/<ruleset_id>` import ID; set `id` and `ruleset_id`; delegate to `Read`.
+- [x] 3.7 Add plan-time validator for `actions` mutual exclusion: exactly one of `ids` or `docs` must be set per rule.
+- [x] 3.8 Add plan-time validator (or schema-level `Validators`) for `criteria.values`: must be a valid JSON array string when `criteria.type != "always"`.
+- [x] 3.9 Add a minimum ES version check for the Query Rules API (see open question 1 in design.md); surface a clear diagnostic if the cluster version is below the minimum.
 
 ## 4. Provider registration
 
