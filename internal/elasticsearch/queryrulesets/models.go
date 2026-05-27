@@ -22,11 +22,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/queryrules/getruleset"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/queryrulecriteriatype"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/queryruletype"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
@@ -63,16 +63,16 @@ func queryRuleActionsModelAttrTypes() map[string]attr.Type {
 
 // QueryRuleCriteriaModel represents a single match criterion for a query rule.
 type QueryRuleCriteriaModel struct {
-	Type     fwtypes.String `tfsdk:"type"`
-	Metadata fwtypes.String `tfsdk:"metadata"`
-	Values   fwtypes.String `tfsdk:"values"`
+	Type     fwtypes.String       `tfsdk:"type"`
+	Metadata fwtypes.String       `tfsdk:"metadata"`
+	Values   jsontypes.Normalized `tfsdk:"values"`
 }
 
 func queryRuleCriteriaModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"type":     fwtypes.StringType,
 		"metadata": fwtypes.StringType,
-		"values":   fwtypes.StringType,
+		"values":   jsontypes.NormalizedType{},
 	}
 }
 
@@ -122,9 +122,9 @@ func (data QueryRulesetData) GetVersionRequirements() ([]entitycore.VersionRequi
 	}}, nil
 }
 
-func (data *QueryRulesetData) populateFromAPI(ctx context.Context, resp *getruleset.Response, diagnostics *diag.Diagnostics) {
-	models := make([]QueryRuleModel, len(resp.Rules))
-	for i, rule := range resp.Rules {
+func (data *QueryRulesetData) populateFromAPI(ctx context.Context, rules []types.QueryRule, diagnostics *diag.Diagnostics) {
+	models := make([]QueryRuleModel, len(rules))
+	for i, rule := range rules {
 		models[i] = queryRuleFromAPI(ctx, rule, diagnostics)
 		if diagnostics.HasError() {
 			return
@@ -189,14 +189,14 @@ func queryRuleCriteriaFromAPI(criterion types.QueryRuleCriteria, diagnostics *di
 	}
 
 	if len(criterion.Values) == 0 {
-		model.Values = fwtypes.StringNull()
+		model.Values = jsontypes.Normalized{StringValue: fwtypes.StringNull()}
 	} else {
 		encoded, err := json.Marshal(criterion.Values)
 		if err != nil {
 			diagnostics.AddError("Failed to encode criteria values", fmt.Sprintf("Unable to marshal criteria values to JSON: %s", err))
 			return QueryRuleCriteriaModel{}
 		}
-		model.Values = fwtypes.StringValue(string(encoded))
+		model.Values = jsontypes.Normalized{StringValue: fwtypes.StringValue(string(encoded))}
 	}
 
 	return model
