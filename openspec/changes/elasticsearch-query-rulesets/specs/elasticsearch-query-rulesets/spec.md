@@ -146,7 +146,7 @@ Changing `ruleset_id` SHALL require resource replacement, because Elasticsearch 
 
 Elasticsearch stores rules in declaration order and `GET /_query_rules/{ruleset_id}` returns them in that same order. On Read, the provider SHALL use the API response order directly when populating state after create, update, or refresh.
 
-When prior Terraform state is available and its rule order differs from the API response order (for example after out-of-band API changes), the Read path SHALL reorder the API response to match the prior state order by `rule_id`. When no prior order is available (for example on import), the provider SHALL sort rules by `rule_id` to produce a stable state order that avoids perpetual plan diffs.
+When prior Terraform state is available and its rule order differs from the API response order (for example after out-of-band API changes), the Read path SHALL reorder the API response to match the prior state order by `rule_id`. When no prior order is available (for example on import), the resource SHALL sort rules by `rule_id` to produce a stable state order that avoids perpetual plan diffs. The data source SHALL preserve the API response order because it has no prior state and users expect declaration order.
 
 #### Scenario: Rule order preserved round-trip
 
@@ -154,6 +154,12 @@ When prior Terraform state is available and its rule order differs from the API 
 - WHEN the resource reads state after create
 - THEN rules in state SHALL appear in the same order as configured
 - AND a subsequent plan SHALL show no changes
+
+#### Scenario: Data source preserves API rule order
+
+- GIVEN a ruleset with rules in declaration order
+- WHEN the data source reads
+- THEN rules in state SHALL appear in the same order as the API response
 
 ### Requirement: Rule schema (REQ-005)
 

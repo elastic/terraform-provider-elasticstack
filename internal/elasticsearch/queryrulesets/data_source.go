@@ -62,12 +62,6 @@ func readQueryRulesetDataSource(ctx context.Context, client *clients.Elasticsear
 		return data, diags
 	}
 
-	orderedRules, orderDiags := orderRulesFromRead(ctx, resp.Rules, data.Rules)
-	diags.Append(orderDiags...)
-	if diags.HasError() {
-		return data, diags
-	}
-
-	data.populateFromAPI(ctx, orderedRules, &diags)
+	data.populateFromAPI(ctx, resp.Rules, &diags)
 	return data, diags
 }
