@@ -151,7 +151,7 @@ func queryRuleFromAPI(ctx context.Context, rule types.QueryRule, diagnostics *di
 		return QueryRuleModel{}
 	}
 
-	actionsObj, d := queryRuleActionsFromAPI(ctx, rule.Actions, diagnostics)
+	actionsObj, d := queryRuleActionsFromAPI(ctx, rule.Actions)
 	diagnostics.Append(d...)
 	if diagnostics.HasError() {
 		return QueryRuleModel{}
@@ -198,7 +198,7 @@ func queryRuleCriteriaFromAPI(criterion types.QueryRuleCriteria, diagnostics *di
 	return model
 }
 
-func queryRuleActionsFromAPI(ctx context.Context, actions types.QueryRuleActions, diagnostics *diag.Diagnostics) (fwtypes.Object, diag.Diagnostics) {
+func queryRuleActionsFromAPI(ctx context.Context, actions types.QueryRuleActions) (fwtypes.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	model := QueryRuleActionsModel{
 		IDs:  fwtypes.ListNull(fwtypes.StringType),
