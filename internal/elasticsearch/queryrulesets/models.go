@@ -128,7 +128,7 @@ var (
 func (data QueryRulesetData) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{{
 		MinVersion:   *MinSupportedVersion,
-		ErrorMessage: "Elasticsearch query rulesets require Elasticsearch v8.12.0 or above (Query Rules API GA).",
+		ErrorMessage: "Elasticsearch query rulesets require Elasticsearch v8.16.0 or above (Query Rules API with `priority` and `exclude` rule type support).",
 	}}, nil
 }
 
@@ -192,7 +192,10 @@ func queryRuleCriteriaFromAPI(criterion types.QueryRuleCriteria, diagnostics *di
 		Type: fwtypes.StringValue(criterion.Type.String()),
 	}
 
-	if criterion.Metadata != nil {
+	// Elasticsearch returns metadata as an empty string for criteria types that do
+	// not use it (notably `always`, since 8.19). Normalize empty strings to null so
+	// state stays consistent with configurations that omit `metadata`.
+	if criterion.Metadata != nil && *criterion.Metadata != "" {
 		model.Metadata = fwtypes.StringValue(*criterion.Metadata)
 	} else {
 		model.Metadata = fwtypes.StringNull()
