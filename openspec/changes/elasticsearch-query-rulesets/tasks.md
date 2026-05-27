@@ -37,10 +37,10 @@
 
 ## 5. Documentation
 
-- [ ] 5.1 Add `MarkdownDescription` to every schema attribute (resource and data source).
-- [ ] 5.2 Create `templates/resources/elasticsearch_query_ruleset.md.tmpl` (or equivalent docs template) with usage example showing a `pinned` rule and an `exclude` rule.
-- [ ] 5.3 Create `templates/data-sources/elasticsearch_query_ruleset.md.tmpl` with a lookup example.
-- [ ] 5.4 Run `make generate-docs` and verify output in `docs/`.
+- [x] 5.1 Add `MarkdownDescription` to every schema attribute (resource and data source).
+- [x] 5.2 Create `templates/resources/elasticsearch_query_ruleset.md.tmpl` (or equivalent docs template) with usage example showing a `pinned` rule and an `exclude` rule.
+- [x] 5.3 Create `templates/data-sources/elasticsearch_query_ruleset.md.tmpl` with a lookup example.
+- [x] 5.4 Run `make generate-docs` and verify output in `docs/`.
 
 ## 6. Testing
 
