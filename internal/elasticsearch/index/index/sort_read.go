@@ -20,8 +20,6 @@ package index
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -79,25 +77,8 @@ func extractSortSetting(settings map[string]any, key string) []string {
 	prefixed := "index." + key
 	for _, lookup := range []string{prefixed, key} {
 		if v, ok := settings[lookup]; ok && v != nil {
-			switch x := v.(type) {
-			case []any:
-				result := make([]string, len(x))
-				for i, e := range x {
-					result[i] = fmt.Sprint(e)
-				}
+			if result := stringSliceFromAny(v); result != nil {
 				return result
-			case []string:
-				return x
-			case string:
-				// Single value wrapped in JSON array string
-				trimmed := strings.TrimSpace(x)
-				if strings.HasPrefix(trimmed, "[") {
-					var arr []string
-					if err := json.Unmarshal([]byte(trimmed), &arr); err == nil {
-						return arr
-					}
-				}
-				return []string{trimmed}
 			}
 		}
 	}

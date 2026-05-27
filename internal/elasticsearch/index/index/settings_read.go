@@ -20,7 +20,6 @@ package index
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -235,38 +234,13 @@ func hydrateQueryDefaultFieldFromRaw(ctx context.Context, model *tfModel, raw js
 }
 
 // extractStringSliceFromFlatRaw extracts string values from a flat-settings JSON
-// value (scalar string or JSON array), mirroring extractSortSetting.
+// value (scalar string or JSON array).
 func extractStringSliceFromFlatRaw(raw json.RawMessage) []string {
-	var s string
-	if err := json.Unmarshal(raw, &s); err == nil {
-		trimmed := strings.TrimSpace(s)
-		if strings.HasPrefix(trimmed, "[") {
-			var arr []string
-			if err := json.Unmarshal([]byte(trimmed), &arr); err == nil {
-				return arr
-			}
-		}
-		if trimmed != "" {
-			return []string{trimmed}
-		}
+	var v any
+	if err := json.Unmarshal(raw, &v); err != nil {
 		return nil
 	}
-
-	var arr []string
-	if err := json.Unmarshal(raw, &arr); err == nil {
-		return arr
-	}
-
-	var arrAny []any
-	if err := json.Unmarshal(raw, &arrAny); err == nil {
-		result := make([]string, len(arrAny))
-		for i, e := range arrAny {
-			result[i] = fmt.Sprint(e)
-		}
-		return result
-	}
-
-	return nil
+	return stringSliceFromAny(v)
 }
 
 func setFlatSettingOnModel(ctx context.Context, model *tfModel, tfFieldKey string, raw json.RawMessage, modelType reflect.Type) {
