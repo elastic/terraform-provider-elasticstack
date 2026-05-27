@@ -92,4 +92,33 @@ func TestReportKibanaBoomHTTPError(t *testing.T) {
 		assert.Equal(t, "Unexpected status code from server: got HTTP 422", diags[0].Summary())
 		assert.JSONEq(t, `{"statusCode":422,"error":"Unprocessable Entity","message":""}`, diags[0].Detail())
 	})
+
+	t.Run("falls back when body is empty", func(t *testing.T) {
+		diags := ReportKibanaBoomHTTPError(http.StatusUnprocessableEntity, summary, []byte{})
+
+		require.True(t, diags.HasError())
+		require.Len(t, diags, 1)
+		assert.Equal(t, "Unexpected status code from server: got HTTP 422", diags[0].Summary())
+		assert.Empty(t, diags[0].Detail())
+	})
+
+	t.Run("falls back when body is JSON null", func(t *testing.T) {
+		diags := ReportKibanaBoomHTTPError(http.StatusUnprocessableEntity, summary, []byte(`null`))
+
+		require.True(t, diags.HasError())
+		require.Len(t, diags, 1)
+		assert.Equal(t, "Unexpected status code from server: got HTTP 422", diags[0].Summary())
+		assert.Equal(t, "null", diags[0].Detail())
+	})
+
+	t.Run("falls back when message field is absent", func(t *testing.T) {
+		body := []byte(`{"statusCode":422,"error":"Unprocessable Entity"}`)
+
+		diags := ReportKibanaBoomHTTPError(http.StatusUnprocessableEntity, summary, body)
+
+		require.True(t, diags.HasError())
+		require.Len(t, diags, 1)
+		assert.Equal(t, "Unexpected status code from server: got HTTP 422", diags[0].Summary())
+		assert.JSONEq(t, `{"statusCode":422,"error":"Unprocessable Entity"}`, diags[0].Detail())
+	})
 }

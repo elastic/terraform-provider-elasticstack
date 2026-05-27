@@ -185,14 +185,10 @@ func TestImportSavedObjects_422Response(t *testing.T) {
 	require.True(t, diags.HasError())
 	assert.Nil(t, result)
 
-	var matched bool
-	for _, d := range diags {
-		if d.Detail() == boomMessage {
-			matched = true
-			break
-		}
-	}
-	assert.True(t, matched, "expected a diagnostic whose detail exactly equals the Boom message; got diagnostics: %#v", diags)
+	require.Len(t, diags, 1)
+	assert.Equal(t, "failed to import saved objects", diags[0].Summary())
+	assert.Equal(t, boomMessage, diags[0].Detail())
+	assert.NotContains(t, diags[0].Detail(), `"statusCode"`, "detail should be the extracted Boom message, not the raw JSON body")
 }
 
 func TestImportSavedObjects_UnexpectedStatusCode(t *testing.T) {

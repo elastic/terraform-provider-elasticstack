@@ -56,11 +56,13 @@ func ReportUnknownHTTPError(statusCode int, body []byte) fwdiag.Diagnostics {
 }
 
 // ReportKibanaBoomHTTPError attempts to parse body as a Kibana Boom error
-// envelope (`{"statusCode": N, "error": "...", "message": "..."}`). When the
-// envelope is well-formed and the `message` field is non-empty, it returns a
-// single error diagnostic using the caller-supplied summary and the extracted
-// message as the detail. Otherwise it falls back to ReportUnknownHTTPError so
-// callers still receive the raw response body.
+// envelope (`{"statusCode": N, "error": "...", "message": "..."}`) by
+// unmarshalling it as JSON and reading the `message` field. When unmarshal
+// succeeds and `message` is a non-empty string, it returns a single error
+// diagnostic using the caller-supplied summary and the extracted message as
+// the detail. Otherwise (invalid JSON, missing or empty `message`, or any
+// other shape) it falls back to ReportUnknownHTTPError so callers still
+// receive the raw response body.
 func ReportKibanaBoomHTTPError(statusCode int, summary string, body []byte) fwdiag.Diagnostics {
 	var boom kibanaBoomError
 	if err := json.Unmarshal(body, &boom); err == nil && boom.Message != "" {
