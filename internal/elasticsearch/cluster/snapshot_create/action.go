@@ -73,6 +73,11 @@ func (a *snapshotCreateAction) Invoke(ctx context.Context, req action.InvokeRequ
 		return
 	}
 
+	if a.factory == nil {
+		resp.Diagnostics.AddError("Provider not configured", "Expected configured provider client factory")
+		return
+	}
+
 	client, diags := a.factory.GetElasticsearchClient(ctx, model.ElasticsearchConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
