@@ -1,5 +1,13 @@
 # Tasks: Surface Kibana error messages for saved objects import failures
 
+## Status
+
+- [x] TASK-001 — `ReportKibanaBoomHTTPError` added in `internal/diagutil/http.go`
+- [x] TASK-002 — `TestReportKibanaBoomHTTPError` added in `internal/diagutil/http_test.go`
+- [x] TASK-003 — `ImportSavedObjects` `default:` branch now uses the new helper
+- [x] TASK-004 — `TestImportSavedObjects_422Response` added in `internal/clients/kibanaoapi/saved_objects_import_test.go`
+- [x] TASK-005 — Delta spec scenario added under REQ-002
+
 ## TASK-001: Add `ReportKibanaBoomHTTPError` to `diagutil`
 
 **File**: `internal/diagutil/http.go`
