@@ -129,7 +129,7 @@ resource "elasticstack_kibana_slo" "kql_regexp_filter" {
     index = "my-index"
     total = "*"
 
-    filter_kql {
+    filter_kql = {
       kql_query = "service.name: checkout"
       filters = [
         {
