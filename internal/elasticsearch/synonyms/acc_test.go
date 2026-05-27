@@ -168,6 +168,63 @@ func TestAccResourceSynonymSetImport(t *testing.T) {
 	})
 }
 
+// TestAccDataSourceSynonymSetNotFound verifies that looking up a non-existent synonym set
+// produces a clear "Synonym set not found" error diagnostic.
+func TestAccDataSourceSynonymSetNotFound(t *testing.T) {
+	nonExistentID := "does-not-exist-" + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("not-found"),
+				ConfigVariables:          config.Variables{"synonym_set_id": config.StringVariable(nonExistentID)},
+				ExpectError:              regexp.MustCompile(`Synonym set not found`),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceSynonymSetCountVariety verifies that the data source correctly reflects
+// synonym sets with different numbers of rules (1 rule, then 3 rules).
+func TestAccDataSourceSynonymSetCountVariety(t *testing.T) {
+	synonymSetID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// Step 1: read a synonym set with exactly 1 rule.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("one-rule"),
+				ConfigVariables:          config.Variables{"synonym_set_id": config.StringVariable(synonymSetID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_synonym_set.test", "synonyms_set.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_synonym_set.test", "synonyms_set.0.id", "only-rule"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_synonym_set.test", "synonyms_set.0.synonyms", "big, large"),
+				),
+			},
+			// Step 2: update the same synonym set to 3 rules and verify the count.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("three-rules"),
+				ConfigVariables:          config.Variables{"synonym_set_id": config.StringVariable(synonymSetID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_synonym_set.test", "synonyms_set.#", "3"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_synonym_set.test", "synonyms_set.0.id", "rule-a"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_synonym_set.test", "synonyms_set.0.synonyms", "cat, feline"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_synonym_set.test", "synonyms_set.1.id", "rule-b"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_synonym_set.test", "synonyms_set.1.synonyms", "dog, hound, canine"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_synonym_set.test", "synonyms_set.2.id", "rule-c"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_synonym_set.test", "synonyms_set.2.synonyms", "happy, joyful, cheerful"),
+				),
+			},
+		},
+	})
+}
+
 // TestAccDataSourceSynonymSet verifies that the synonym set data source reads a
 // resource created by the synonym set resource and reflects all attributes correctly.
 func TestAccDataSourceSynonymSet(t *testing.T) {
