@@ -111,3 +111,120 @@ func TestQueryRuleActionsValidator_requiresExactlyOne(t *testing.T) {
 		t.Fatal("expected validation error when neither ids nor docs is set")
 	}
 }
+
+func TestQueryRuleActionsValidator_acceptsOnlyIDs(t *testing.T) {
+	t.Parallel()
+
+	ids, diags := types.ListValueFrom(context.Background(), types.StringType, []string{"doc-1"})
+	if diags.HasError() {
+		t.Fatalf("building ids list: %v", diags)
+	}
+
+	actionsObj, objDiags := types.ObjectValue(
+		queryRuleActionsModelAttrTypes(),
+		map[string]attr.Value{
+			"ids":  ids,
+			"docs": types.ListNull(types.ObjectType{AttrTypes: queryRuleActionDocModelAttrTypes()}),
+		},
+	)
+	if objDiags.HasError() {
+		t.Fatalf("building actions object: %v", objDiags)
+	}
+
+	var resp validator.ObjectResponse
+	queryRuleActionsValidator{}.ValidateObject(context.Background(), validator.ObjectRequest{
+		Path:        path.Root("actions"),
+		ConfigValue: actionsObj,
+	}, &resp)
+
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("expected no error when only ids is set, got %v", resp.Diagnostics)
+	}
+}
+
+func TestQueryRuleActionsValidator_acceptsOnlyDocs(t *testing.T) {
+	t.Parallel()
+
+	docObj, docDiags := types.ObjectValue(
+		queryRuleActionDocModelAttrTypes(),
+		map[string]attr.Value{
+			"_index": types.StringValue("my-index"),
+			"_id":    types.StringValue("42"),
+		},
+	)
+	if docDiags.HasError() {
+		t.Fatalf("building doc object: %v", docDiags)
+	}
+
+	docs, listDiags := types.ListValue(types.ObjectType{AttrTypes: queryRuleActionDocModelAttrTypes()}, []attr.Value{docObj})
+	if listDiags.HasError() {
+		t.Fatalf("building docs list: %v", listDiags)
+	}
+
+	actionsObj, objDiags := types.ObjectValue(
+		queryRuleActionsModelAttrTypes(),
+		map[string]attr.Value{
+			"ids":  types.ListNull(types.StringType),
+			"docs": docs,
+		},
+	)
+	if objDiags.HasError() {
+		t.Fatalf("building actions object: %v", objDiags)
+	}
+
+	var resp validator.ObjectResponse
+	queryRuleActionsValidator{}.ValidateObject(context.Background(), validator.ObjectRequest{
+		Path:        path.Root("actions"),
+		ConfigValue: actionsObj,
+	}, &resp)
+
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("expected no error when only docs is set, got %v", resp.Diagnostics)
+	}
+}
+
+func TestQueryRuleActionsValidator_rejectsBothIDsAndDocs(t *testing.T) {
+	t.Parallel()
+
+	ids, diags := types.ListValueFrom(context.Background(), types.StringType, []string{"doc-1"})
+	if diags.HasError() {
+		t.Fatalf("building ids list: %v", diags)
+	}
+
+	docObj, docDiags := types.ObjectValue(
+		queryRuleActionDocModelAttrTypes(),
+		map[string]attr.Value{
+			"_index": types.StringValue("my-index"),
+			"_id":    types.StringValue("42"),
+		},
+	)
+	if docDiags.HasError() {
+		t.Fatalf("building doc object: %v", docDiags)
+	}
+
+	docs, listDiags := types.ListValue(types.ObjectType{AttrTypes: queryRuleActionDocModelAttrTypes()}, []attr.Value{docObj})
+	if listDiags.HasError() {
+		t.Fatalf("building docs list: %v", listDiags)
+	}
+
+	actionsObj, objDiags := types.ObjectValue(
+		queryRuleActionsModelAttrTypes(),
+		map[string]attr.Value{
+			"ids":  ids,
+			"docs": docs,
+		},
+	)
+	if objDiags.HasError() {
+		t.Fatalf("building actions object: %v", objDiags)
+	}
+
+	var resp validator.ObjectResponse
+	queryRuleActionsValidator{}.ValidateObject(context.Background(), validator.ObjectRequest{
+		Path:        path.Root("actions"),
+		ConfigValue: actionsObj,
+	}, &resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected validation error when both ids and docs are set")
+	}
+}
