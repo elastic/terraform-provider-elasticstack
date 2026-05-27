@@ -18,56 +18,26 @@
 package connectors_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 )
 
-// TestAccReproduceIssue1469 reproduces the bug reported in
+// TestAccReproduceIssue1469 is a regression test for
 // https://github.com/elastic/terraform-provider-elasticstack/issues/1469
 //
 // A webhook connector with hasAuth=false and an Authorization header in config
-// fails with "Provider produced inconsistent result after apply: .config:
-// inconsistent values for sensitive attribute" when the Terraform config
-// references a sensitive variable. The Kibana API adds method="post" as a
-// default field when it is omitted from the user's config. The provider's
-// ConnectorConfigWithDefaults for .webhook does not account for this default,
-// causing the post-apply read (which includes method="post") to differ from
-// the planned config (which does not include method), triggering the
-// inconsistency error from Terraform.
+// previously failed with "Provider produced inconsistent result after apply:
+// .config: inconsistent values for sensitive attribute" when the config
+// referenced a sensitive variable. The Kibana API adds method="post" as a
+// default field when it is omitted from the user's config. The fix adds
+// method="post" to ConnectorConfigWithDefaults for .webhook so that the
+// post-apply read matches the plan.
 func TestAccReproduceIssue1469(t *testing.T) {
 	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-
-	// The config mirrors the reporter's setup: hasAuth=false, Authorization
-	// header in config (not secrets), no method field, and the auth token
-	// is a sensitive variable so Terraform treats the entire config value
-	// as sensitive - matching the "(sensitive value)" plan output in the report.
-	makeConfig := func(name string) string {
-		return fmt.Sprintf(`
-variable "auth_token" {
-  type      = string
-  sensitive = true
-  default   = "test-bearer-token-for-issue-1469"
-}
-
-resource "elasticstack_kibana_action_connector" "test" {
-  name              = %q
-  connector_type_id = ".webhook"
-  config = jsonencode({
-    hasAuth = false
-    headers = {
-      "Authorization" = "Bearer ${var.auth_token}"
-      "Content-Type"  = "application/json"
-    }
-    url = "https://example.com/webhook"
-  })
-  secrets = jsonencode({})
-}
-`, name)
-	}
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -79,15 +49,21 @@ resource "elasticstack_kibana_action_connector" "test" {
 				// for .webhook, so the post-apply read matches the plan and no
 				// inconsistency error is produced.
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   makeConfig(connectorName),
-				Check:                    testCommonAttributes(connectorName, ".webhook"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"connector_name": config.StringVariable(connectorName),
+				},
+				Check: testCommonAttributes(connectorName, ".webhook"),
 			},
 			{
 				// A subsequent plan must produce no diff, confirming there is no
 				// persistent drift from the Kibana-added method="post" default.
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   makeConfig(connectorName),
-				PlanOnly:                 true,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"connector_name": config.StringVariable(connectorName),
+				},
+				PlanOnly: true,
 			},
 		},
 	})
