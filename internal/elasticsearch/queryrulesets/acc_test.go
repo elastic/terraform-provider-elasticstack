@@ -311,6 +311,17 @@ func TestAccDataSourceQueryRuleset(t *testing.T) {
 // TestAccResourceQueryRulesetNotFound verifies that when a ruleset is deleted outside
 // Terraform, refresh removes the resource from state and the next plan shows recreation.
 func TestAccResourceQueryRulesetNotFound(t *testing.T) {
+	// Guard the whole test so PreConfig never runs on unsupported versions.
+	// Step-level SkipFunc alone is not sufficient because PreConfig executes
+	// regardless of SkipFunc when an earlier step was skipped.
+	notSupported, err := versionutils.CheckIfVersionIsUnsupported(queryrulesets.MinSupportedVersion)()
+	if err != nil {
+		t.Fatalf("could not determine server version: %v", err)
+	}
+	if notSupported {
+		t.Skipf("skipping: requires Elasticsearch >= %s (Query Rules API)", queryrulesets.MinSupportedVersion)
+	}
+
 	rulesetID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	vars := config.Variables{"ruleset_id": config.StringVariable(rulesetID)}
 

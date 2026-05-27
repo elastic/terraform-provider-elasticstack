@@ -1,3 +1,7 @@
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 data "elasticstack_elasticsearch_query_ruleset" "example" {
   ruleset_id = "my-search-rules"
 }
