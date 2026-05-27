@@ -366,7 +366,7 @@ func pruneImportHydratedPlanFields(ctx context.Context, plan, config *tfModel) {
 
 	for _, fieldKey := range importHydrationPrunableFieldKeys {
 		configField, ok := config.getFieldValueByTagValue(fieldKey, modelType)
-		if !ok || (!configField.IsNull() && !configField.IsUnknown()) {
+		if !ok || !configField.IsNull() {
 			continue
 		}
 

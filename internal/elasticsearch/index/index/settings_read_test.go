@@ -200,7 +200,7 @@ func Test_pruneImportHydratedPlanFields(t *testing.T) {
 		require.Equal(t, int64(1), plan.NumberOfReplicas.ValueInt64())
 	})
 
-	t.Run("config unknown prunes plan field", func(t *testing.T) {
+	t.Run("config unknown leaves plan field", func(t *testing.T) {
 		plan := &tfModel{
 			BlocksRead: types.BoolValue(true),
 		}
@@ -208,7 +208,7 @@ func Test_pruneImportHydratedPlanFields(t *testing.T) {
 			BlocksRead: types.BoolUnknown(),
 		}
 		pruneImportHydratedPlanFields(ctx, plan, config)
-		require.True(t, plan.BlocksRead.IsNull())
+		require.True(t, plan.BlocksRead.ValueBool())
 	})
 
 	t.Run("analysis config null prunes normalized field", func(t *testing.T) {
