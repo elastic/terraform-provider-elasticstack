@@ -33,11 +33,11 @@ type RestoreSnapshotRequest struct {
 	IgnoreUnavailable   *bool
 	IncludeGlobalState  *bool
 	IncludeAliases      *bool
-	FeatureStates         []string
+	FeatureStates       []string
 	RenamePattern       *string
 	RenameReplacement   *string
-	Partial               *bool
-	IndexSettings         json.RawMessage
+	Partial             *bool
+	IndexSettings       json.RawMessage
 	IgnoreIndexSettings []string
 }
 
