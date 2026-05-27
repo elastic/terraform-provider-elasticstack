@@ -20,10 +20,12 @@ package snapshot_create
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster"
 	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	actionschema "github.com/hashicorp/terraform-plugin-framework/action/schema"
 	actiontimeouts "github.com/hashicorp/terraform-plugin-framework-timeouts/action/timeouts"
+	actionschema "github.com/hashicorp/terraform-plugin-framework/action/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -69,6 +71,9 @@ func GetSchema(ctx context.Context) actionschema.Schema {
 			"expand_wildcards": actionschema.StringAttribute{
 				MarkdownDescription: "Wildcard expansion for `indices`: `open`, `closed`, `hidden`, `none`, or `all`. Elasticsearch defaults to `open` when omitted.",
 				Optional:            true,
+				Validators: []validator.String{
+					cluster.ExpandWildcardsValidator{},
+				},
 			},
 			"metadata": actionschema.StringAttribute{
 				MarkdownDescription: "JSON-encoded metadata attached to the snapshot.",
@@ -81,7 +86,7 @@ func GetSchema(ctx context.Context) actionschema.Schema {
 			},
 		},
 		Blocks: map[string]actionschema.Block{
-			"timeouts": actiontimeouts.Block(ctx),
+			"timeouts":                 actiontimeouts.Block(ctx),
 			"elasticsearch_connection": schema.GetEsActionConnectionBlock(),
 		},
 	}

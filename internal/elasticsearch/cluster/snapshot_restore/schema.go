@@ -22,17 +22,23 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	actionschema "github.com/hashicorp/terraform-plugin-framework/action/schema"
 	actiontimeouts "github.com/hashicorp/terraform-plugin-framework-timeouts/action/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	actionschema "github.com/hashicorp/terraform-plugin-framework/action/schema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-const schemaMarkdownDescription = `Restores an Elasticsearch snapshot. **Requires Terraform 1.14+** (provider-defined actions).
-
-Invokes ` + "`POST /_snapshot/{repository}/{snapshot}/_restore`" + `. See the [restore snapshot API documentation](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-snapshot-restore).`
+const schemaMarkdownDescription = `Restores an Elasticsearch snapshot. **Requires Terraform 1.14+** (provider-defined actions).` +
+	"\n\nInvokes `POST /_snapshot/{repository}/{snapshot}/_restore`. See the " +
+	"[restore snapshot API documentation](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-snapshot-restore)."
 
 // GetSchema returns the action schema for snapshot restore.
 func GetSchema(ctx context.Context) actionschema.Schema {
+	renamePatternPath := path.MatchRoot("rename_pattern")
+	renameReplacementPath := path.MatchRoot("rename_replacement")
+
 	return actionschema.Schema{
 		MarkdownDescription: schemaMarkdownDescription,
 		Attributes: map[string]actionschema.Attribute{
@@ -73,10 +79,16 @@ func GetSchema(ctx context.Context) actionschema.Schema {
 			"rename_pattern": actionschema.StringAttribute{
 				MarkdownDescription: "Regular expression pattern used to rename restored indices.",
 				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.AlsoRequires(renameReplacementPath),
+				},
 			},
 			"rename_replacement": actionschema.StringAttribute{
 				MarkdownDescription: "Replacement string applied with `rename_pattern`.",
 				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.AlsoRequires(renamePatternPath),
+				},
 			},
 			"ignore_index_settings": actionschema.ListAttribute{
 				MarkdownDescription: "Index settings to ignore during restore.",
@@ -94,7 +106,7 @@ func GetSchema(ctx context.Context) actionschema.Schema {
 			},
 		},
 		Blocks: map[string]actionschema.Block{
-			"timeouts": actiontimeouts.Block(ctx),
+			"timeouts":                 actiontimeouts.Block(ctx),
 			"elasticsearch_connection": schema.GetEsActionConnectionBlock(),
 		},
 	}

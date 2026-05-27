@@ -20,6 +20,7 @@ package slm
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -68,7 +69,7 @@ func GetSchema(_ context.Context) schema.Schema {
 				Computed:            true,
 				Default:             stringdefault.StaticString(defaultExpandWildcards),
 				Validators: []validator.String{
-					expandWildcardsValidator{},
+					cluster.ExpandWildcardsValidator{},
 				},
 			},
 			"ignore_unavailable": schema.BoolAttribute{
