@@ -43,6 +43,7 @@ import (
 
 const indexSettingsAnalysisAnalyzerExpected = `{"text_en":{"char_filter":"zero_width_spaces","filter":["lowercase","minimal_english_stemmer"],` +
 	`"tokenizer":"standard","type":"custom"}}`
+const indexImportAnalysisAnalyzerExpected = `{"import_test":{"filter":["lowercase"],"tokenizer":"standard","type":"custom"}}`
 const indexAliasFilterExpected = `{"term":{"user.id":"developer"}}`
 
 func TestAccResourceIndex(t *testing.T) {
@@ -982,6 +983,66 @@ func TestAccResourceIndexDateMath(t *testing.T) {
 						"name": regexp.MustCompile("date_math_alias_1"),
 					}),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexImport(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "number_of_replicas", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "refresh_interval", "30s"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "analysis_analyzer", indexImportAnalysisAnalyzerExpected),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "deletion_protection", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "wait_for_active_shards", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "master_timeout", "30s"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "timeout", "30s"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ResourceName:            "elasticstack_elasticsearch_index.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"settings_raw", "elasticsearch_connection"},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "number_of_replicas", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "refresh_interval", "30s"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "analysis_analyzer", indexImportAnalysisAnalyzerExpected),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "deletion_protection", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "wait_for_active_shards", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "master_timeout", "30s"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "timeout", "30s"),
+				),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("destroy"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
 			},
 		},
 	})
