@@ -29,23 +29,43 @@ import (
 
 const sortConfigPrivateStateKey = "sort_config"
 
+type sortTuple struct {
+	Fields  []string
+	Orders  []string
+	Missing []string
+	Mode    []string
+}
+
+// readSortTuple parses the four sort setting slices from the model's raw
+// settings. Returns ok=false (with no error) when SettingsRaw is unknown/null.
+func readSortTuple(model tfModel) (sortTuple, bool, diag.Diagnostics) {
+	if !typeutils.IsKnown(model.SettingsRaw) {
+		return sortTuple{}, false, nil
+	}
+	var settings map[string]any
+	if diags := model.SettingsRaw.Unmarshal(&settings); diags.HasError() {
+		return sortTuple{}, false, diags
+	}
+	return sortTuple{
+		Fields:  extractSortSetting(settings, settingSortField),
+		Orders:  extractSortSetting(settings, settingSortOrder),
+		Missing: extractSortSetting(settings, settingSortMissing),
+		Mode:    extractSortSetting(settings, settingSortMode),
+	}, true, nil
+}
+
 // saveSortConfig extracts sort settings from the model's raw settings JSON
 // and stores the ordered sort configuration in private state.
 func saveSortConfig(ctx context.Context, model tfModel, priv privateData) diag.Diagnostics {
-	if !typeutils.IsKnown(model.SettingsRaw) {
-		return nil
-	}
-
-	// Parse raw settings to extract sort configuration.
-	var settings map[string]any
-	if diags := model.SettingsRaw.Unmarshal(&settings); diags.HasError() {
+	st, ok, diags := readSortTuple(model)
+	if !ok || diags.HasError() {
 		return diags
 	}
 
-	fields := extractSortSetting(settings, settingSortField)
-	orders := extractSortSetting(settings, settingSortOrder)
-	missing := extractSortSetting(settings, settingSortMissing)
-	mode := extractSortSetting(settings, settingSortMode)
+	fields := st.Fields
+	orders := st.Orders
+	missing := st.Missing
+	mode := st.Mode
 
 	// Only save to private state if there are sort fields configured.
 	if len(fields) == 0 {
@@ -61,12 +81,10 @@ func saveSortConfig(ctx context.Context, model tfModel, priv privateData) diag.D
 
 	data, err := json.Marshal(ps)
 	if err != nil {
-		var diags diag.Diagnostics
 		diags.AddError("failed to marshal sort config", err.Error())
 		return diags
 	}
 
-	var diags diag.Diagnostics
 	diags.Append(priv.SetKey(ctx, sortConfigPrivateStateKey, data)...)
 	return diags
 }
@@ -89,19 +107,15 @@ func extractSortSetting(settings map[string]any, key string) []string {
 // model's raw settings JSON. Only called when the sort attribute is non-null
 // in the current state.
 func populateSortFromSettings(ctx context.Context, model *tfModel) diag.Diagnostics {
-	if !typeutils.IsKnown(model.SettingsRaw) {
-		return nil
-	}
-
-	var settings map[string]any
-	if diags := model.SettingsRaw.Unmarshal(&settings); diags.HasError() {
+	st, ok, diags := readSortTuple(*model)
+	if !ok || diags.HasError() {
 		return diags
 	}
 
-	fields := extractSortSetting(settings, settingSortField)
-	orders := extractSortSetting(settings, settingSortOrder)
-	missing := extractSortSetting(settings, settingSortMissing)
-	mode := extractSortSetting(settings, settingSortMode)
+	fields := st.Fields
+	orders := st.Orders
+	missing := st.Missing
+	mode := st.Mode
 
 	if len(fields) == 0 {
 		return nil
@@ -132,7 +146,6 @@ func populateSortFromSettings(ctx context.Context, model *tfModel) diag.Diagnost
 
 	elemType := sortElementType(ctx)
 	sortList, listDiags := types.ListValueFrom(ctx, elemType, entries)
-	var diags diag.Diagnostics
 	diags.Append(listDiags...)
 	if diags.HasError() {
 		return diags
@@ -146,19 +159,13 @@ func populateSortFromSettings(ctx context.Context, model *tfModel) diag.Diagnost
 // model's raw settings JSON. Only called when the sort attribute is null/unknown
 // in the current state (legacy path).
 func populateLegacySortFromSettings(ctx context.Context, model *tfModel) diag.Diagnostics {
-	if !typeutils.IsKnown(model.SettingsRaw) {
-		return nil
-	}
-
-	var settings map[string]any
-	if diags := model.SettingsRaw.Unmarshal(&settings); diags.HasError() {
+	st, ok, diags := readSortTuple(*model)
+	if !ok || diags.HasError() {
 		return diags
 	}
 
-	fields := extractSortSetting(settings, settingSortField)
-	orders := extractSortSetting(settings, settingSortOrder)
-
-	var diags diag.Diagnostics
+	fields := st.Fields
+	orders := st.Orders
 
 	if len(fields) > 0 {
 		fieldSet, setDiags := types.SetValueFrom(ctx, types.StringType, fields)
