@@ -232,8 +232,8 @@ func queryRuleActionsFromAPI(ctx context.Context, actions types.QueryRuleActions
 		docValues := make([]attr.Value, len(actions.Docs))
 		for i, doc := range actions.Docs {
 			obj, d := fwtypes.ObjectValue(queryRuleActionDocModelAttrTypes(), map[string]attr.Value{
-				"_index": fwtypes.StringValue(doc.Index_),
-				"_id":    fwtypes.StringValue(doc.Id_),
+				queryRuleActionDocIndexAttrName: fwtypes.StringValue(doc.Index_),
+				queryRuleActionDocIDAttrName:    fwtypes.StringValue(doc.Id_),
 			})
 			diags.Append(d...)
 			if diags.HasError() {
@@ -381,12 +381,12 @@ func pinnedDocsFromList(docs fwtypes.List, diagnostics *diag.Diagnostics) []type
 		}
 
 		attrs := obj.Attributes()
-		indexAttr, ok := attrs["_index"].(fwtypes.String)
+		indexAttr, ok := attrs[queryRuleActionDocIndexAttrName].(fwtypes.String)
 		if !ok || indexAttr.IsNull() || indexAttr.IsUnknown() {
 			diagnostics.AddError("Invalid actions docs", "Each docs entry must include `_index`.")
 			return nil
 		}
-		idAttr, ok := attrs["_id"].(fwtypes.String)
+		idAttr, ok := attrs[queryRuleActionDocIDAttrName].(fwtypes.String)
 		if !ok || idAttr.IsNull() || idAttr.IsUnknown() {
 			diagnostics.AddError("Invalid actions docs", "Each docs entry must include `_id`.")
 			return nil
