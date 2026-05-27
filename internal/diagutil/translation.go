@@ -37,6 +37,9 @@ func FrameworkDiagFromError(err error) fwdiag.Diagnostics {
 // FrameworkDiagFromError for cases where a human-readable summary differs from
 // the underlying error text.
 func ErrDiag(summary string, err error) fwdiag.Diagnostics {
+	if err == nil {
+		return nil
+	}
 	var diags fwdiag.Diagnostics
 	diags.AddError(summary, err.Error())
 	return diags
