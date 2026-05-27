@@ -28,7 +28,7 @@ import (
 // readIndex is the envelope read callback. It fetches the index identified by
 // resourceID and populates the returned model. Returning found==false signals
 // the resource should be removed from state.
-func readIndex(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, stateModel tfModel) (tfModel, bool, diag.Diagnostics) {
+func readIndex(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, stateModel tfModel, hydrateAll bool) (tfModel, bool, diag.Diagnostics) {
 	apiModel, diags := elasticsearch.GetIndex(ctx, client, resourceID)
 	if diags.HasError() {
 		return tfModel{}, false, diags
@@ -38,7 +38,7 @@ func readIndex(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 		return tfModel{}, false, nil
 	}
 
-	diags = stateModel.populateFromAPI(ctx, resourceID, *apiModel)
+	diags = stateModel.populateFromAPI(ctx, resourceID, *apiModel, hydrateAll)
 	if diags.HasError() {
 		return tfModel{}, false, diags
 	}
