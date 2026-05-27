@@ -145,6 +145,32 @@ func Test_hydrateAllSettingsFromRaw(t *testing.T) {
 	}
 }
 
+func Test_hydrateAnalysisFromFlatSettings(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	model := &tfModel{
+		SettingsRaw: jsontypes.NewNormalizedValue(`{
+			"index.analysis.tokenizer.ngram.type": "ngram",
+			"index.analysis.tokenizer.ngram.min_gram": "3",
+			"index.analysis.tokenizer.ngram.max_gram": "5",
+			"index.analysis.filter.lower.type": "lowercase",
+			"index.analysis.filter.boolish.type": "stop",
+			"index.analysis.filter.boolish.ignore_case": "true"
+		}`),
+	}
+	diags := hydrateAllSettingsFromRaw(ctx, model)
+	require.Empty(t, diags)
+	require.JSONEq(t,
+		`{"ngram":{"type":"ngram","min_gram":3,"max_gram":5}}`,
+		model.AnalysisTokenizer.ValueString(),
+	)
+	require.JSONEq(t,
+		`{"boolish":{"type":"stop","ignore_case":true},"lower":{"type":"lowercase"}}`,
+		model.AnalysisFilter.ValueString(),
+	)
+}
+
 func Test_pruneImportHydratedPlanFields(t *testing.T) {
 	t.Parallel()
 

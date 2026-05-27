@@ -119,7 +119,7 @@ func hydrateAnalysisFromFlatSettings(model *tfModel, flat map[string]json.RawMes
 		category, name := parts[0], parts[1]
 		propParts := parts[2:]
 
-		value := parseFlatSettingJSONValue(raw)
+		value := parseFlatSettingJSONValue(coerceFlatScalar(raw))
 		if value == nil {
 			continue
 		}
@@ -160,6 +160,26 @@ func hydrateAnalysisFromNestedObject(model *tfModel, raw json.RawMessage) {
 			*target = normalized
 		}
 	}
+}
+
+// coerceFlatScalar normalizes flat-settings JSON string scalars ("3", "true") to
+// numeric/boolean JSON for analysis hydration. Non-string raw JSON passes through.
+func coerceFlatScalar(raw json.RawMessage) json.RawMessage {
+	var s string
+	if err := json.Unmarshal(raw, &s); err != nil {
+		return raw
+	}
+	if _, err := strconv.ParseFloat(s, 64); err == nil {
+		if coerced, err := json.Marshal(json.Number(s)); err == nil {
+			return coerced
+		}
+	}
+	if b, err := strconv.ParseBool(s); err == nil {
+		if coerced, err := json.Marshal(b); err == nil {
+			return coerced
+		}
+	}
+	return raw
 }
 
 func parseFlatSettingJSONValue(raw json.RawMessage) any {
