@@ -435,11 +435,12 @@ func preserveRuleCriteriaValuesFromPrior(ctx context.Context, current *QueryRule
 	}
 
 	for i := range currentCriteria {
-		if i >= len(priorCriteria) {
-			break
+		priorMatch, ok := matchingPriorCriterion(priorCriteria, currentCriteria, i)
+		if !ok {
+			continue
 		}
-		if criteriaValuesSemanticallyEqual(priorCriteria[i].Values, currentCriteria[i].Values) {
-			currentCriteria[i].Values = priorCriteria[i].Values
+		if criteriaValuesSemanticallyEqual(priorMatch.Values, currentCriteria[i].Values) {
+			currentCriteria[i].Values = priorMatch.Values
 		}
 	}
 
@@ -449,6 +450,47 @@ func preserveRuleCriteriaValuesFromPrior(ctx context.Context, current *QueryRule
 		return
 	}
 	current.Criteria = list
+}
+
+type criteriaIdentityKey struct {
+	typ      string
+	metadata string
+}
+
+func criteriaIdentityKeyFromModel(criterion QueryRuleCriteriaModel) criteriaIdentityKey {
+	metadata := ""
+	if !criterion.Metadata.IsNull() && !criterion.Metadata.IsUnknown() {
+		metadata = criterion.Metadata.ValueString()
+	}
+	return criteriaIdentityKey{
+		typ:      criterion.Type.ValueString(),
+		metadata: metadata,
+	}
+}
+
+func matchingPriorCriterion(priorCriteria, currentCriteria []QueryRuleCriteriaModel, currentIndex int) (QueryRuleCriteriaModel, bool) {
+	key := criteriaIdentityKeyFromModel(currentCriteria[currentIndex])
+
+	matches := make([]QueryRuleCriteriaModel, 0, len(priorCriteria))
+	for _, prior := range priorCriteria {
+		if criteriaIdentityKeyFromModel(prior) == key {
+			matches = append(matches, prior)
+		}
+	}
+	if len(matches) == 0 {
+		return QueryRuleCriteriaModel{}, false
+	}
+
+	occurrence := 0
+	for i := 0; i < currentIndex; i++ {
+		if criteriaIdentityKeyFromModel(currentCriteria[i]) == key {
+			occurrence++
+		}
+	}
+	if occurrence >= len(matches) {
+		return QueryRuleCriteriaModel{}, false
+	}
+	return matches[occurrence], true
 }
 
 func criteriaValuesSemanticallyEqual(prior, current jsontypes.Normalized) bool {
