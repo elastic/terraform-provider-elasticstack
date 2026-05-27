@@ -62,9 +62,9 @@ Changing `ruleset_id` SHALL require resource replacement, because Elasticsearch 
 
 ### Requirement: `rules` as an ordered list (REQ-004)
 
-`rules` SHALL be a `ListNestedAttribute` (ordered, not a set). The resource SHALL preserve rule declaration order on create and update. A subsequent plan against the same configuration SHALL show no changes as long as the API returns rules in the same order.
+`rules` SHALL be a `ListNestedAttribute` (ordered, not a set). The resource SHALL preserve rule declaration order on create and update, and a subsequent plan against the same configuration SHALL show no changes.
 
-If the Elasticsearch `GET /_query_rules/{ruleset_id}` response does not preserve insertion order, the read path SHALL apply a stable sort on `rule_id` to avoid perpetual plan diffs.
+If the Elasticsearch `GET /_query_rules/{ruleset_id}` response does not preserve insertion order, the Read path SHALL reorder the API response to match the prior Terraform state order by `rule_id` when that prior order is available. If no prior order is available (for example on import), the provider SHALL sort rules by `rule_id` to produce a stable state order.
 
 #### Scenario: Rule order preserved round-trip
 
@@ -226,9 +226,7 @@ The resource SHALL implement `resource.ResourceWithImportState`. The import ID S
 
 ### Requirement: Minimum ES version (REQ-012)
 
-The resource and data source SHALL enforce a minimum Elasticsearch version guard aligned with the Query Rules API GA release (8.12). If the cluster reports a version below the minimum, the provider SHALL return a clear diagnostic explaining the version requirement rather than a raw API error.
-
-The exact minimum version (8.10 tech-preview or 8.12 GA) SHALL be confirmed during implementation and this requirement updated accordingly.
+The resource and data source SHALL enforce a minimum Elasticsearch version guard of **8.12.0** (Query Rules API GA). If the cluster reports a version below **8.12.0**, the provider SHALL return a clear diagnostic explaining the minimum version requirement rather than a raw API error.
 
 #### Scenario: Unsupported cluster version
 

@@ -9,7 +9,7 @@
 
 - [ ] 2.1 Create `internal/clients/elasticsearch/queryrulesets.go` with functions:
   - `PutQueryRuleset(ctx, rulesetID string, rules []QueryRuleModel) error`
-  - `GetQueryRuleset(ctx, rulesetID string) (*QueryRulesetModel, error)` — returns `nil, nil` on 404
+  - `GetQueryRuleset(ctx, rulesetID string) (*QueryRulesetModel, error)` — returns `nil, nil` on 404 (resource Read removes from state; data source Read must treat nil as not found and return a diagnostic)
   - `DeleteQueryRuleset(ctx, rulesetID string) error`
   Using the `go-elasticsearch` typed client (`typedapi/queryrules/putruleset`, `getruleset`, `deleteruleset`).
 - [ ] 2.2 Add an `internal/models` or inline model type for `QueryRulesetModel`, `QueryRuleModel`, `QueryRuleCriteriaModel`, and `QueryRuleActionsModel` that map cleanly to/from both the API types and the Terraform schema.
