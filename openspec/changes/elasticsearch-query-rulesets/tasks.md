@@ -32,8 +32,8 @@
 
 ## 4. Provider registration
 
-- [ ] 4.1 Register `elasticstack_elasticsearch_query_ruleset` resource in `provider/plugin_framework.go` (or equivalent registration file).
-- [ ] 4.2 Register `data.elasticstack_elasticsearch_query_ruleset` data source in the same file.
+- [x] 4.1 Register `elasticstack_elasticsearch_query_ruleset` resource in `provider/plugin_framework.go` (or equivalent registration file).
+- [x] 4.2 Register `data.elasticstack_elasticsearch_query_ruleset` data source in the same file.
 
 ## 5. Documentation
 
