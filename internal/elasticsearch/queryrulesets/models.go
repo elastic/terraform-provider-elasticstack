@@ -37,10 +37,24 @@ import (
 
 var attrTypesString = fwtypes.StringType
 
+const (
+	queryRuleActionDocIndexAttrName   = "_index"
+	queryRuleActionDocIDAttrName      = "_id"
+	queryRuleActionsIDsAttrName       = "ids"
+	queryRuleActionsDocsAttrName      = "docs"
+	queryRuleCriteriaTypeAttrName     = "type"
+	queryRuleCriteriaMetadataAttrName = "metadata"
+	queryRuleCriteriaValuesAttrName   = "values"
+	queryRuleRuleIDAttrName           = "rule_id"
+	queryRulePriorityAttrName         = "priority"
+	queryRuleCriteriaAttrName         = "criteria"
+	queryRuleActionsAttrName          = "actions"
+)
+
 func queryRuleActionDocModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"_index": fwtypes.StringType,
-		"_id":    fwtypes.StringType,
+		queryRuleActionDocIndexAttrName: fwtypes.StringType,
+		queryRuleActionDocIDAttrName:    fwtypes.StringType,
 	}
 }
 
@@ -52,8 +66,8 @@ type QueryRuleActionsModel struct {
 
 func queryRuleActionsModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"ids":  fwtypes.ListType{ElemType: fwtypes.StringType},
-		"docs": fwtypes.ListType{ElemType: fwtypes.ObjectType{AttrTypes: queryRuleActionDocModelAttrTypes()}},
+		queryRuleActionsIDsAttrName:  fwtypes.ListType{ElemType: fwtypes.StringType},
+		queryRuleActionsDocsAttrName: fwtypes.ListType{ElemType: fwtypes.ObjectType{AttrTypes: queryRuleActionDocModelAttrTypes()}},
 	}
 }
 
@@ -66,9 +80,9 @@ type QueryRuleCriteriaModel struct {
 
 func queryRuleCriteriaModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"type":     fwtypes.StringType,
-		"metadata": fwtypes.StringType,
-		"values":   jsontypes.NormalizedType{},
+		queryRuleCriteriaTypeAttrName:     fwtypes.StringType,
+		queryRuleCriteriaMetadataAttrName: fwtypes.StringType,
+		queryRuleCriteriaValuesAttrName:   jsontypes.NormalizedType{},
 	}
 }
 
@@ -83,11 +97,11 @@ type QueryRuleModel struct {
 
 func queryRuleModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"rule_id":  fwtypes.StringType,
-		"type":     fwtypes.StringType,
-		"priority": fwtypes.Int64Type,
-		"criteria": fwtypes.ListType{ElemType: fwtypes.ObjectType{AttrTypes: queryRuleCriteriaModelAttrTypes()}},
-		"actions":  fwtypes.ObjectType{AttrTypes: queryRuleActionsModelAttrTypes()},
+		queryRuleRuleIDAttrName:       fwtypes.StringType,
+		queryRuleCriteriaTypeAttrName: fwtypes.StringType,
+		queryRulePriorityAttrName:     fwtypes.Int64Type,
+		queryRuleCriteriaAttrName:     fwtypes.ListType{ElemType: fwtypes.ObjectType{AttrTypes: queryRuleCriteriaModelAttrTypes()}},
+		queryRuleActionsAttrName:      fwtypes.ObjectType{AttrTypes: queryRuleActionsModelAttrTypes()},
 	}
 }
 
@@ -482,7 +496,7 @@ func matchingPriorCriterion(priorCriteria, currentCriteria []QueryRuleCriteriaMo
 	}
 
 	occurrence := 0
-	for i := 0; i < currentIndex; i++ {
+	for i := range currentIndex {
 		if criteriaIdentityKeyFromModel(currentCriteria[i]) == key {
 			occurrence++
 		}

@@ -78,24 +78,24 @@ func rulesListNestedAttributeResource() schema.ListNestedAttribute {
 func queryRuleNestedObjectResource() schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
-			"rule_id": schema.StringAttribute{
+			queryRuleRuleIDAttrName: schema.StringAttribute{
 				MarkdownDescription: "Unique identifier for the rule within the ruleset.",
 				Required:            true,
 			},
-			"type": schema.StringAttribute{
+			queryRuleCriteriaTypeAttrName: schema.StringAttribute{
 				MarkdownDescription: "Rule type: `pinned` or `exclude`.",
 				Required:            true,
 				Validators:          []validator.String{ruleTypeValidator},
 			},
-			"priority": schema.Int64Attribute{
+			queryRulePriorityAttrName: schema.Int64Attribute{
 				MarkdownDescription: "Relative priority within the ruleset; omitted from the API when null.",
 				Optional:            true,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.UseStateForUnknown(),
 				},
 			},
-			"criteria": queryRuleCriteriaListNestedAttributeResource(),
-			"actions":  queryRuleActionsSingleNestedAttributeResource(),
+			queryRuleCriteriaAttrName: queryRuleCriteriaListNestedAttributeResource(),
+			queryRuleActionsAttrName:  queryRuleActionsSingleNestedAttributeResource(),
 		},
 	}
 }
@@ -117,16 +117,16 @@ func queryRuleCriteriaNestedObjectResource() schema.NestedAttributeObject {
 			queryRuleCriteriaValidator{},
 		},
 		Attributes: map[string]schema.Attribute{
-			"type": schema.StringAttribute{
+			queryRuleCriteriaTypeAttrName: schema.StringAttribute{
 				MarkdownDescription: "Criteria type (for example `exact`, `always`, `gt`).",
 				Required:            true,
 				Validators:          []validator.String{criteriaTypeValidator},
 			},
-			"metadata": schema.StringAttribute{
+			queryRuleCriteriaMetadataAttrName: schema.StringAttribute{
 				MarkdownDescription: "Metadata field to match against; omitted from the API when null.",
 				Optional:            true,
 			},
-			"values": schema.StringAttribute{
+			queryRuleCriteriaValuesAttrName: schema.StringAttribute{
 				MarkdownDescription: "JSON-encoded array of string or numeric values; required unless `type` is `always`. Empty arrays are not allowed.",
 				Optional:            true,
 				CustomType:          jsontypes.NormalizedType{},
@@ -146,21 +146,21 @@ func queryRuleActionsSingleNestedAttributeResource() schema.SingleNestedAttribut
 			queryRuleActionsValidator{},
 		},
 		Attributes: map[string]schema.Attribute{
-			"ids": schema.ListAttribute{
+			queryRuleActionsIDsAttrName: schema.ListAttribute{
 				MarkdownDescription: "Document IDs to pin or exclude.",
 				Optional:            true,
 				ElementType:         attrTypesString,
 			},
-			"docs": schema.ListNestedAttribute{
+			queryRuleActionsDocsAttrName: schema.ListNestedAttribute{
 				MarkdownDescription: "Documents to pin or exclude, specified by index and ID.",
 				Optional:            true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"_index": schema.StringAttribute{
+						queryRuleActionDocIndexAttrName: schema.StringAttribute{
 							MarkdownDescription: "Index containing the document.",
 							Required:            true,
 						},
-						"_id": schema.StringAttribute{
+						queryRuleActionDocIDAttrName: schema.StringAttribute{
 							MarkdownDescription: "Unique document ID.",
 							Required:            true,
 						},
@@ -201,20 +201,20 @@ func rulesListNestedAttributeDataSource() dschema.ListNestedAttribute {
 func queryRuleNestedObjectDataSource() dschema.NestedAttributeObject {
 	return dschema.NestedAttributeObject{
 		Attributes: map[string]dschema.Attribute{
-			"rule_id": dschema.StringAttribute{
+			queryRuleRuleIDAttrName: dschema.StringAttribute{
 				MarkdownDescription: "Unique identifier for the rule within the ruleset.",
 				Computed:            true,
 			},
-			"type": dschema.StringAttribute{
+			queryRuleCriteriaTypeAttrName: dschema.StringAttribute{
 				MarkdownDescription: "Rule type: `pinned` or `exclude`.",
 				Computed:            true,
 			},
-			"priority": dschema.Int64Attribute{
+			queryRulePriorityAttrName: dschema.Int64Attribute{
 				MarkdownDescription: "Relative priority within the ruleset.",
 				Computed:            true,
 			},
-			"criteria": queryRuleCriteriaListNestedAttributeDataSource(),
-			"actions":  queryRuleActionsSingleNestedAttributeDataSource(),
+			queryRuleCriteriaAttrName: queryRuleCriteriaListNestedAttributeDataSource(),
+			queryRuleActionsAttrName:  queryRuleActionsSingleNestedAttributeDataSource(),
 		},
 	}
 }
@@ -230,15 +230,15 @@ func queryRuleCriteriaListNestedAttributeDataSource() dschema.ListNestedAttribut
 func queryRuleCriteriaNestedObjectDataSource() dschema.NestedAttributeObject {
 	return dschema.NestedAttributeObject{
 		Attributes: map[string]dschema.Attribute{
-			"type": dschema.StringAttribute{
+			queryRuleCriteriaTypeAttrName: dschema.StringAttribute{
 				MarkdownDescription: "Criteria type.",
 				Computed:            true,
 			},
-			"metadata": dschema.StringAttribute{
+			queryRuleCriteriaMetadataAttrName: dschema.StringAttribute{
 				MarkdownDescription: "Metadata field matched against.",
 				Computed:            true,
 			},
-			"values": dschema.StringAttribute{
+			queryRuleCriteriaValuesAttrName: dschema.StringAttribute{
 				MarkdownDescription: "JSON-encoded array of string or numeric values.",
 				Computed:            true,
 				CustomType:          jsontypes.NormalizedType{},
@@ -252,21 +252,21 @@ func queryRuleActionsSingleNestedAttributeDataSource() dschema.SingleNestedAttri
 		MarkdownDescription: "Actions taken when the rule matches.",
 		Computed:            true,
 		Attributes: map[string]dschema.Attribute{
-			"ids": dschema.ListAttribute{
+			queryRuleActionsIDsAttrName: dschema.ListAttribute{
 				MarkdownDescription: "Document IDs pinned or excluded.",
 				Computed:            true,
 				ElementType:         attrTypesString,
 			},
-			"docs": dschema.ListNestedAttribute{
+			queryRuleActionsDocsAttrName: dschema.ListNestedAttribute{
 				MarkdownDescription: "Documents pinned or excluded.",
 				Computed:            true,
 				NestedObject: dschema.NestedAttributeObject{
 					Attributes: map[string]dschema.Attribute{
-						"_index": dschema.StringAttribute{
+						queryRuleActionDocIndexAttrName: dschema.StringAttribute{
 							MarkdownDescription: "Index containing the document.",
 							Computed:            true,
 						},
-						"_id": dschema.StringAttribute{
+						queryRuleActionDocIDAttrName: dschema.StringAttribute{
 							MarkdownDescription: "Unique document ID.",
 							Computed:            true,
 						},

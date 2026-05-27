@@ -30,10 +30,10 @@ func TestPreserveRuleCriteriaValuesFromPrior_matchesByTypeAndMetadata(t *testing
 	t.Parallel()
 
 	ctx := context.Background()
-	prior := testRuleWithCriteria(t, ctx,
+	prior := testRuleWithCriteria(ctx, t,
 		criterion("exact", "query", `[100]`),
 	)
-	current := testRuleWithCriteria(t, ctx,
+	current := testRuleWithCriteria(ctx, t,
 		criterion("exact", "query", `["100"]`),
 	)
 
@@ -46,10 +46,10 @@ func TestPreserveRuleCriteriaValuesFromPrior_differentTypeAtSameIndex(t *testing
 	t.Parallel()
 
 	ctx := context.Background()
-	prior := testRuleWithCriteria(t, ctx,
+	prior := testRuleWithCriteria(ctx, t,
 		criterion("exact", "query", `[100]`),
 	)
-	current := testRuleWithCriteria(t, ctx,
+	current := testRuleWithCriteria(ctx, t,
 		criterion("contains", "query", `["100"]`),
 	)
 
@@ -62,11 +62,11 @@ func TestPreserveRuleCriteriaValuesFromPrior_reorderedCriteria(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	prior := testRuleWithCriteria(t, ctx,
+	prior := testRuleWithCriteria(ctx, t,
 		criterion("exact", "query", `["alpha"]`),
 		criterion("contains", "tags", `["beta"]`),
 	)
-	current := testRuleWithCriteria(t, ctx,
+	current := testRuleWithCriteria(ctx, t,
 		criterion("contains", "tags", `["beta"]`),
 		criterion("exact", "query", `["alpha"]`),
 	)
@@ -81,11 +81,11 @@ func TestPreserveRuleCriteriaValuesFromPrior_removedCriterion(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	prior := testRuleWithCriteria(t, ctx,
+	prior := testRuleWithCriteria(ctx, t,
 		criterion("exact", "query", `["alpha"]`),
 		criterion("contains", "tags", `["beta"]`),
 	)
-	current := testRuleWithCriteria(t, ctx,
+	current := testRuleWithCriteria(ctx, t,
 		criterion("exact", "query", `["alpha"]`),
 	)
 
@@ -98,10 +98,10 @@ func TestPreserveRuleCriteriaValuesFromPrior_newCriterionWithoutPriorMatch(t *te
 	t.Parallel()
 
 	ctx := context.Background()
-	prior := testRuleWithCriteria(t, ctx,
+	prior := testRuleWithCriteria(ctx, t,
 		criterion("exact", "query", `["alpha"]`),
 	)
-	current := testRuleWithCriteria(t, ctx,
+	current := testRuleWithCriteria(ctx, t,
 		criterion("exact", "query", `["alpha"]`),
 		criterion("contains", "tags", `["beta"]`),
 	)
@@ -116,11 +116,11 @@ func TestPreserveRuleCriteriaValuesFromPrior_duplicateTypeMetadataKeys(t *testin
 	t.Parallel()
 
 	ctx := context.Background()
-	prior := testRuleWithCriteria(t, ctx,
+	prior := testRuleWithCriteria(ctx, t,
 		criterion("exact", "query", `["first"]`),
 		criterion("exact", "query", `["second"]`),
 	)
-	current := testRuleWithCriteria(t, ctx,
+	current := testRuleWithCriteria(ctx, t,
 		criterion("exact", "query", `["first"]`),
 		criterion("exact", "query", `["second"]`),
 	)
@@ -136,14 +136,14 @@ func TestPreserveCriteriaValuesFromPrior_numericCreateRead(t *testing.T) {
 
 	ctx := context.Background()
 	priorRules, diags := fwtypes.ListValueFrom(ctx, fwtypes.ObjectType{AttrTypes: queryRuleModelAttrTypes()}, []QueryRuleModel{
-		testRuleModel(t, ctx, criterion("gt", "popularity", `[100]`)),
+		testRuleModel(ctx, t, criterion("gt", "popularity", `[100]`)),
 	})
 	if diags.HasError() {
 		t.Fatalf("building prior rules: %v", diags)
 	}
 
 	data := QueryRulesetData{
-		Rules: testRulesList(t, ctx, testRuleModel(t, ctx, criterion("gt", "popularity", `["100"]`))),
+		Rules: testRulesList(ctx, t, testRuleModel(ctx, t, criterion("gt", "popularity", `["100"]`))),
 	}
 
 	preserveCriteriaValuesFromPrior(ctx, &data, priorRules, &diag.Diagnostics{})
@@ -156,7 +156,7 @@ func TestPreserveCriteriaValuesFromPrior_emptyPriorRules(t *testing.T) {
 
 	ctx := context.Background()
 	data := QueryRulesetData{
-		Rules: testRulesList(t, ctx, testRuleModel(t, ctx, criterion("gt", "popularity", `["100"]`))),
+		Rules: testRulesList(ctx, t, testRuleModel(ctx, t, criterion("gt", "popularity", `["100"]`))),
 	}
 
 	preserveCriteriaValuesFromPrior(ctx, &data, fwtypes.ListNull(fwtypes.ObjectType{AttrTypes: queryRuleModelAttrTypes()}), &diag.Diagnostics{})
@@ -181,12 +181,12 @@ func criterion(typ, metadata, values string) QueryRuleCriteriaModel {
 	return model
 }
 
-func testRuleWithCriteria(t *testing.T, ctx context.Context, criteria ...QueryRuleCriteriaModel) QueryRuleModel {
+func testRuleWithCriteria(ctx context.Context, t *testing.T, criteria ...QueryRuleCriteriaModel) QueryRuleModel {
 	t.Helper()
-	return testRuleModel(t, ctx, criteria...)
+	return testRuleModel(ctx, t, criteria...)
 }
 
-func testRuleModel(t *testing.T, ctx context.Context, criteria ...QueryRuleCriteriaModel) QueryRuleModel {
+func testRuleModel(ctx context.Context, t *testing.T, criteria ...QueryRuleCriteriaModel) QueryRuleModel {
 	t.Helper()
 
 	criteriaList, diags := fwtypes.ListValueFrom(ctx, fwtypes.ObjectType{AttrTypes: queryRuleCriteriaModelAttrTypes()}, criteria)
@@ -216,7 +216,7 @@ func testRuleModel(t *testing.T, ctx context.Context, criteria ...QueryRuleCrite
 	}
 }
 
-func testRulesList(t *testing.T, ctx context.Context, rules ...QueryRuleModel) fwtypes.List {
+func testRulesList(ctx context.Context, t *testing.T, rules ...QueryRuleModel) fwtypes.List {
 	t.Helper()
 
 	list, diags := fwtypes.ListValueFrom(ctx, fwtypes.ObjectType{AttrTypes: queryRuleModelAttrTypes()}, rules)

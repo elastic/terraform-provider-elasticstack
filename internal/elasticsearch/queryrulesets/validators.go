@@ -94,7 +94,7 @@ func (v queryRuleCriteriaValidator) ValidateObject(_ context.Context, req valida
 
 	criteriaType := stringAttributeValue(attrs["type"])
 	valuesAttr := attrs["values"]
-	if normalized, ok := valuesAttr.(jsontypes.Normalized); ok && normalized.StringValue.IsUnknown() {
+	if normalized, ok := valuesAttr.(jsontypes.Normalized); ok && normalized.IsUnknown() {
 		return
 	}
 	valuesSet := valuesAttributeIsSet(valuesAttr)
@@ -201,7 +201,7 @@ func valuesAttributeIsSet(val attr.Value) bool {
 		return true
 	}
 
-	return !normalized.StringValue.IsNull() && !normalized.StringValue.IsUnknown()
+	return !normalized.IsNull() && !normalized.IsUnknown()
 }
 
 // Ensure validators satisfy interfaces at compile time.
