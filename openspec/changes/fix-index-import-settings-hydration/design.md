@@ -28,7 +28,7 @@ Private state is already used by this resource for `sort_config` (written by `sa
 Three approaches were considered:
 - **Always-populate** (`setSettingsFromAPI` always writes individual fields): Fixes import but causes regression — users who don't configure `number_of_replicas` would suddenly see it appear in state after a regular refresh, showing drift.
 - **Two-pass Read** (hydrate after `resp.State.Set`, then `Set` again): Works mechanically but is inelegant — two state writes per import read cycle.
-- **Private state flag** (chosen): `ImportState` writes `"import_hydration"` to private state; `Read` checks for it, passes `hydrateAll=true` down the call stack, populates before the single `resp.State.Set`, then clears the flag. Precisely scoped, no regressions, follows the existing `sort_config` pattern.
+- **Private state flag** (chosen): `ImportState` writes `"import_hydration"` to private state; `Read` checks for it, passes `hydrateAll=true` down the call stack, and populates all settings before the single `resp.State.Set` — but does NOT clear the flag. `ModifyPlan` then prunes hydrated values for Optional-only settings not in the user's config, and finally clears the flag. Precisely scoped, no regressions, follows the existing `sort_config` pattern.
 
 ### D2: `hydrateAll bool` flows through `readIndex` → `populateFromAPI`
 
@@ -46,11 +46,19 @@ With `FlatSettings(true)`, Elasticsearch returns analysis settings as a single n
 
 `hydrateAllSettingsFromRaw` and `populateOperationalDefaults` live in a new `settings_read.go` following the exact pattern of `sort_read.go`. This keeps read-path helpers co-located and separate from the main model file.
 
+### D6: `ModifyPlan` prunes unconfigured Optional-only settings to prevent post-import drift
+
+Individual settings attributes (`number_of_replicas`, `refresh_interval`, etc.) are `Optional` (not `Computed`) in the schema. If `Read` hydrates them from ES, the plan comparison sees state=<ES value> vs config=null for any setting the user did not configure, producing unwanted drift.
+
+`ModifyPlan` (resource-level, `resource.ResourceWithModifyPlan`) resolves this: it checks for the `"import_hydration"` flag and, for each Optional-only settings field where the config value is null, overrides the planned state value to null. Only the fields the user actually configured survive into the applied state.
+
+The provider-side operational defaults (`deletion_protection`, `wait_for_active_shards`, `master_timeout`, `timeout`) are `Optional+Computed` — the plan keeps prior-state values for unset Computed fields — so they are unaffected by this pruning step.
+
 ## Risks / Trade-offs
 
-- **Type conversion edge cases** → The flat settings map returns all scalar values as JSON strings (e.g., `"1"` for integers, `"true"` for booleans). Conversion uses `strconv.ParseInt` and `strconv.ParseBool`. An unexpected non-numeric/non-bool string from a future ES version would produce a diagnostic error on import. Mitigation: skip fields that fail conversion rather than erroring, and log the issue — consistent with how the provider handles unexpected values in other places.
-- **Re-import** → If a resource is re-imported, the flag is set again and hydration runs again. This is benign — it re-hydrates all settings from the current ES state.
-- **Private state key lifecycle** → The `"import_hydration"` key exists in private state for exactly one read cycle (set in `ImportState`, cleared in the following `Read`). If `Read` errors before clearing the flag, the key persists and hydration retries on the next read — also benign.
+- **Type conversion edge cases** → The flat settings map stores all scalar values as JSON strings (raw bytes for `number_of_replicas = 1` are `"1"` including the surrounding quotes). Conversion first `json.Unmarshal`s the raw bytes into a Go `string`, then applies `strconv.ParseInt` for `types.Int64` fields or `strconv.ParseBool` for `types.Bool` fields. A non-numeric/non-bool string from a future ES version would leave the field unset. Mitigation: skip fields that fail conversion, consistent with how the provider handles unexpected values elsewhere.
+- **Re-import** → If a resource is re-imported, the flag is set again, hydration runs again, and `ModifyPlan` prunes unconfigured settings again. This is benign.
+- **Private state key lifecycle** → The `"import_hydration"` key exists in private state for one read+plan cycle: set in `ImportState`, read in `Read` to trigger hydration (not cleared there), read and cleared in the following `ModifyPlan`. If `Read` errors, the key persists and hydration retries on the next read — benign. If `ModifyPlan` errors before clearing, the key persists and the pruning retries on the next plan — also benign.
 
 ## Migration Plan
 
