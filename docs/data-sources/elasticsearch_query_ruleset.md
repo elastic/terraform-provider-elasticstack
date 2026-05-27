@@ -13,6 +13,10 @@ Reads an Elasticsearch query ruleset by `ruleset_id`. See the [Query Rules API d
 ## Example Usage
 
 ```terraform
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 data "elasticstack_elasticsearch_query_ruleset" "example" {
   ruleset_id = "my-search-rules"
 }
