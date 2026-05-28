@@ -60,6 +60,8 @@ func TestAccResourceExceptionList(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "id"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "created_at"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "created_by"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "immutable", "false"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "tie_breaker_id"),
 				),
 			},
 			{
@@ -106,6 +108,9 @@ func TestAccResourceExceptionList(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "description", "Updated description"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_list.test", "tags.*", "test"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_list.test", "tags.*", "updated"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "updated_at"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "updated_by"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "os_types.#", "0"),
 				),
 			},
 			{ // Import
@@ -278,6 +283,34 @@ func TestAccResourceExceptionListWithSpace(t *testing.T) {
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccResourceExceptionListEndpointType(t *testing.T) {
+	listID := fmt.Sprintf("test-exception-list-endpoint-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionListDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_endpoint"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable(listID),
+					"name":           config.StringVariable("Test Endpoint Exception List"),
+					"description":    config.StringVariable("Test endpoint exception list"),
+					"namespace_type": config.StringVariable("single"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "list_id", listID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "type", "endpoint"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "created_at"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "created_by"),
+				),
 			},
 		},
 	})
