@@ -1,0 +1,39 @@
+variable "ruleset_id" {
+  type = string
+}
+
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_query_ruleset" "test" {
+  ruleset_id = var.ruleset_id
+
+  rules = [
+    {
+      rule_id = "docs-rule"
+      type    = "pinned"
+
+      criteria = [
+        {
+          type     = "exact"
+          metadata = "query"
+          values   = jsonencode(["laptop"])
+        }
+      ]
+
+      actions = {
+        docs = [
+          {
+            _index = "my-index"
+            _id    = "42"
+          }
+        ]
+      }
+    },
+  ]
+}
+
+data "elasticstack_elasticsearch_query_ruleset" "test" {
+  ruleset_id = elasticstack_elasticsearch_query_ruleset.test.ruleset_id
+}
