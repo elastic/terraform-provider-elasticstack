@@ -23,7 +23,52 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestAlignXYLegendStateFromPlan(t *testing.T) {
+	t.Run("clones plan legend when state is nil", func(t *testing.T) {
+		plan := &models.XYChartConfigModel{
+			Legend: &models.XYLegendModel{
+				Visibility: types.StringValue("visible"),
+				Position:   types.StringValue("right"),
+			},
+		}
+		state := &models.XYChartConfigModel{Legend: nil}
+
+		alignXYChartStateFromPlan(plan, state)
+
+		require.NotNil(t, state.Legend)
+		assert.Equal(t, "visible", state.Legend.Visibility.ValueString())
+		assert.Equal(t, "right", state.Legend.Position.ValueString())
+	})
+
+	t.Run("Visibility copies plan when state field is null", func(t *testing.T) {
+		plan := &models.XYLegendModel{Visibility: types.StringValue("visible")}
+		state := &models.XYLegendModel{Visibility: types.StringNull()}
+
+		alignXYLegendStateFromPlan(plan, state)
+
+		assert.Equal(t, "visible", state.Visibility.ValueString())
+	})
+
+	t.Run("clones plan legend when state legend is nil after Kibana omits block", func(t *testing.T) {
+		plan := &models.XYChartConfigModel{
+			Legend: &models.XYLegendModel{
+				Visibility: types.StringValue("visible"),
+				Position:   types.StringValue("right"),
+				Size:       types.StringValue("m"),
+				Inside:     types.BoolValue(false),
+			},
+		}
+		state := &models.XYChartConfigModel{Legend: nil}
+
+		alignXYChartStateFromPlan(plan, state)
+
+		require.NotNil(t, state.Legend)
+		assert.Equal(t, "m", state.Legend.Size.ValueString())
+	})
+}
 
 func TestAlignXYFittingStateFromPlan(t *testing.T) {
 	t.Run("Type copies plan when state is null", func(t *testing.T) {

@@ -288,3 +288,74 @@ func Test_alignPanelStateFromPlan_pinnedPanel_xyChart_appliesAlignment(t *testin
 	require.False(t, got.Inside.ValueBool())
 	require.Equal(t, "right", got.Position.ValueString())
 }
+
+func Test_alignDashboardStateFromPlanSections_sectionImage_preservesImageConfig(t *testing.T) {
+	t.Parallel()
+
+	planSections := []models.SectionModel{{
+		Panels: []models.PanelModel{{
+			Type: types.StringValue("image"),
+			ImageConfig: &models.ImagePanelConfigModel{
+				AltText: types.StringValue("Elastic logo"),
+				Src: models.ImagePanelSrcModel{
+					URL: &models.ImagePanelSrcURLModel{
+						URL: types.StringValue("https://www.elastic.co/favicon.ico"),
+					},
+				},
+			},
+		}},
+	}}
+	stateSections := []models.SectionModel{{
+		Panels: []models.PanelModel{{
+			Type:        types.StringValue("image"),
+			ImageConfig: nil,
+		}},
+	}}
+
+	alignDashboardStateFromPlanSections(t.Context(), planSections, stateSections)
+
+	require.NotNil(t, stateSections[0].Panels[0].ImageConfig)
+	assert.Equal(t, "Elastic logo", stateSections[0].Panels[0].ImageConfig.AltText.ValueString())
+}
+
+func Test_alignDashboardStateFromPlanSections_sectionXYChart_preservesLegend(t *testing.T) {
+	t.Parallel()
+
+	planSections := []models.SectionModel{{
+		Panels: []models.PanelModel{{
+			VisConfig: &models.VisConfigModel{
+				ByValue: &models.VisByValueModel{
+					LensByValueChartBlocks: models.LensByValueChartBlocks{
+						XYChartConfig: &models.XYChartConfigModel{
+							Legend: &models.XYLegendModel{
+								Visibility: types.StringValue("visible"),
+								Inside:     types.BoolValue(false),
+								Position:   types.StringValue("right"),
+								Size:       types.StringValue("m"),
+							},
+						},
+					},
+				},
+			},
+		}},
+	}}
+	stateSections := []models.SectionModel{{
+		Panels: []models.PanelModel{{
+			VisConfig: &models.VisConfigModel{
+				ByValue: &models.VisByValueModel{
+					LensByValueChartBlocks: models.LensByValueChartBlocks{
+						XYChartConfig: &models.XYChartConfigModel{Legend: nil},
+					},
+				},
+			},
+		}},
+	}}
+
+	alignDashboardStateFromPlanSections(t.Context(), planSections, stateSections)
+
+	got := stateSections[0].Panels[0].VisConfig.ByValue.XYChartConfig.Legend
+	require.NotNil(t, got)
+	assert.Equal(t, "visible", got.Visibility.ValueString())
+	assert.Equal(t, "right", got.Position.ValueString())
+	assert.Equal(t, "m", got.Size.ValueString())
+}

@@ -31,6 +31,26 @@ func alignDashboardStateFromPlanPanels(planPanels, statePanels []models.PanelMod
 	lenscommon.ApplySliceAligners(planPanels, statePanels)
 }
 
+// suppressReadTopLevelPanelsWhenPlanEmpty clears echoed top-level panels on read/create/update
+// when the practitioner omitted `panels` (e.g. dashboards that only use `sections` and `pinned_panels`).
+func suppressReadTopLevelPanelsWhenPlanEmpty(planPanels []models.PanelModel, readModel *models.DashboardModel) {
+	if readModel == nil || len(planPanels) != 0 {
+		return
+	}
+	readModel.Panels = []models.PanelModel{}
+}
+
+func alignDashboardStateFromPlanSections(ctx context.Context, planSections, stateSections []models.SectionModel) {
+	n := min(len(planSections), len(stateSections))
+	for i := range n {
+		alignDashboardStateFromPlanPanels(planSections[i].Panels, stateSections[i].Panels)
+		panelCount := min(len(planSections[i].Panels), len(stateSections[i].Panels))
+		for j := range panelCount {
+			alignPanelStateFromPlan(ctx, &planSections[i].Panels[j], &stateSections[i].Panels[j])
+		}
+	}
+}
+
 func alignDashboardStateFromPlanPinnedPanels(ctx context.Context, planPins, statePins []models.PinnedPanelModel) {
 	n := min(len(planPins), len(statePins))
 	for i := range n {

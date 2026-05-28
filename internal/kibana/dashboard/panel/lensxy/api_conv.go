@@ -767,6 +767,51 @@ func xyLegendFromAPI(ctx context.Context, m *models.XYLegendModel, apiLegend *kb
 		return diags
 	}
 
+	return xyLegendFromAPIFlatFallback(ctx, m, apiLegend)
+}
+
+// xyLegendFromAPIFlatFallback handles dashboard API responses that return outside legend
+// fields at the top level without union discriminator tags.
+func xyLegendFromAPIFlatFallback(ctx context.Context, m *models.XYLegendModel, apiLegend *kbapi.KibanaHTTPAPIsXyLegend) diag.Diagnostics {
+	var diags diag.Diagnostics
+	if apiLegend == nil {
+		return diags
+	}
+
+	raw, err := json.Marshal(apiLegend)
+	if err != nil {
+		return diags
+	}
+
+	var flat struct {
+		Visibility *string `json:"visibility"`
+		Placement  *string `json:"placement"`
+		Size       *string `json:"size"`
+		Position   *string `json:"position"`
+		Layout     *struct {
+			Type     *string `json:"type"`
+			Truncate *struct {
+				MaxLines *float32 `json:"max_lines"`
+			} `json:"truncate"`
+		} `json:"layout"`
+	}
+	if err := json.Unmarshal(raw, &flat); err != nil {
+		return diags
+	}
+	if flat.Placement == nil || *flat.Placement != "outside" {
+		return diags
+	}
+
+	m.Inside = types.BoolValue(false)
+	m.Visibility = typeutils.StringishPointerValue(flat.Visibility)
+	m.Position = typeutils.StringishPointerValue(flat.Position)
+	if flat.Size != nil {
+		m.Size = types.StringValue(*flat.Size)
+	}
+	if flat.Layout != nil && flat.Layout.Truncate != nil && flat.Layout.Truncate.MaxLines != nil {
+		m.TruncateAfterLines = types.Int64Value(int64(*flat.Layout.Truncate.MaxLines))
+	}
+	_ = ctx
 	return diags
 }
 
@@ -1185,9 +1230,13 @@ func xyChartConfigFromAPINoESQL(
 		xyFittingFromAPI(m.Fitting, apiChart.Styling.Fitting)
 	}
 
-	m.Legend = &models.XYLegendModel{}
-	legendDiags := xyLegendFromAPI(ctx, m.Legend, apiChart.Legend)
-	diags.Append(legendDiags...)
+	if apiChart.Legend == nil {
+		m.Legend = nil
+	} else {
+		m.Legend = &models.XYLegendModel{}
+		legendDiags := xyLegendFromAPI(ctx, m.Legend, apiChart.Legend)
+		diags.Append(legendDiags...)
+	}
 
 	// Preserve nil query when prior state omitted it (query is optional in schema).
 	if prior != nil && prior.Query == nil {
@@ -1262,9 +1311,13 @@ func xyChartConfigFromAPIESQL(
 		xyFittingFromAPI(m.Fitting, apiChart.Styling.Fitting)
 	}
 
-	m.Legend = &models.XYLegendModel{}
-	legendDiags := xyLegendFromAPI(ctx, m.Legend, apiChart.Legend)
-	diags.Append(legendDiags...)
+	if apiChart.Legend == nil {
+		m.Legend = nil
+	} else {
+		m.Legend = &models.XYLegendModel{}
+		legendDiags := xyLegendFromAPI(ctx, m.Legend, apiChart.Legend)
+		diags.Append(legendDiags...)
+	}
 
 	m.Query = nil
 

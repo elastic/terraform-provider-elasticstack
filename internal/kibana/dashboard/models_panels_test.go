@@ -915,6 +915,46 @@ func Test_unknownPanelRoundTrip(t *testing.T) {
 	assert.Equal(t, expectedAny, actualAny, "Round-trip should produce identical API JSON for unknown panel types")
 }
 
+func Test_dashboardMapPanelFromAPI_imagePreservesImageConfigWithPrior(t *testing.T) {
+	t.Parallel()
+
+	planPanel := models.PanelModel{
+		Type: types.StringValue("image"),
+		Grid: models.PanelGridModel{
+			X: types.Int64Value(0),
+			Y: types.Int64Value(0),
+			W: types.Int64Value(8),
+			H: types.Int64Value(8),
+		},
+		ImageConfig: &models.ImagePanelConfigModel{
+			Src: models.ImagePanelSrcModel{
+				URL: &models.ImagePanelSrcURLModel{
+					URL: types.StringValue("https://www.elastic.co/favicon.ico"),
+				},
+			},
+			AltText:         types.StringValue("Elastic logo"),
+			BackgroundColor: types.StringValue("#1d1e31"),
+			ObjectFit:       types.StringValue("contain"),
+			Title:           types.StringValue("Branding"),
+			Description:     types.StringValue("Static logo for dashboard branding"),
+			HideTitle:       types.BoolValue(false),
+			HideBorder:      types.BoolValue(true),
+		},
+	}
+
+	item, diags := panelToAPI(t.Context(), planPanel, &models.DashboardModel{})
+	require.False(t, diags.HasError())
+
+	got, diags := dashboardMapPanelFromAPI(t.Context(), nil, &planPanel, item)
+	require.False(t, diags.HasError())
+	require.NotNil(t, got.ImageConfig, "image_config must survive API read when prior panel is provided")
+
+	alignPanelStateFromPlan(t.Context(), &planPanel, &got)
+	require.NotNil(t, got.ImageConfig, "image_config must survive plan alignment")
+	assert.Equal(t, "Elastic logo", got.ImageConfig.AltText.ValueString())
+	assert.Equal(t, "Branding", got.ImageConfig.Title.ValueString())
+}
+
 func Test_unknownPanelToAPIErrorWithoutConfigJSON(t *testing.T) {
 	// When an unknown panel type is authored in config (not read from the API)
 	// and has no config_json, toAPI should produce an "unsupported panel type" error.

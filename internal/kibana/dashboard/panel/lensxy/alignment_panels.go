@@ -56,7 +56,11 @@ func alignXYChartStateFromPlan(plan, state *models.XYChartConfigModel) {
 	alignXYAxisStateFromPlan(plan.Axis, state.Axis)
 	alignXYDecorationsStateFromPlan(plan.Decorations, state.Decorations)
 	alignXYFittingStateFromPlan(plan.Fitting, state.Fitting)
-	alignXYLegendStateFromPlan(plan.Legend, state.Legend)
+	if plan.Legend != nil && (state.Legend == nil || xyLegendEffectivelyUnset(state.Legend)) {
+		state.Legend = cloneXYLegendModel(plan.Legend)
+	} else {
+		alignXYLegendStateFromPlan(plan.Legend, state.Legend)
+	}
 	alignXYLayerStateFromPlan(plan.Layers, state.Layers)
 }
 
@@ -138,6 +142,9 @@ func alignXYY2AxisStateFromPlan(plan, state *models.YAxisConfigModel) {
 		return
 	}
 
+	preserveNullBoolIfStateEquals(plan.Grid, &state.Grid, true)
+	preserveNullBoolIfStateEquals(plan.Ticks, &state.Ticks, true)
+	preserveNullStringIfStateEquals(plan.LabelOrientation, &state.LabelOrientation, "horizontal")
 	preserveKnownBoolIfStateNull(plan.Grid, &state.Grid)
 	preserveKnownBoolIfStateNull(plan.Ticks, &state.Ticks)
 	preserveKnownStringIfStateNull(plan.LabelOrientation, &state.LabelOrientation)
@@ -300,5 +307,27 @@ func cloneYAxisConfigModel(model *models.YAxisConfigModel) *models.YAxisConfigMo
 	}
 	cloned := *model
 	cloned.Title = cloneAxisTitleModel(model.Title)
+	return &cloned
+}
+
+func xyLegendEffectivelyUnset(m *models.XYLegendModel) bool {
+	if m == nil {
+		return true
+	}
+	return !typeutils.IsKnown(m.Visibility) &&
+		!typeutils.IsKnown(m.Position) &&
+		!typeutils.IsKnown(m.Size) &&
+		!typeutils.IsKnown(m.Inside) &&
+		!typeutils.IsKnown(m.Alignment) &&
+		!typeutils.IsKnown(m.Columns) &&
+		!typeutils.IsKnown(m.TruncateAfterLines) &&
+		(m.Statistics.IsNull() || m.Statistics.IsUnknown())
+}
+
+func cloneXYLegendModel(model *models.XYLegendModel) *models.XYLegendModel {
+	if model == nil {
+		return nil
+	}
+	cloned := *model
 	return &cloned
 }

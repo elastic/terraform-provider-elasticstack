@@ -43,8 +43,8 @@ func (Handler) PopulateJSONDefaults(config map[string]any) map[string]any {
 	return config
 }
 func (Handler) PinnedHandler() iface.PinnedHandler { return nil }
-func (Handler) AlignStateFromPlan(ctx context.Context, plan, state *models.PanelModel) {
-	_, _, _ = ctx, plan, state
+func (Handler) AlignStateFromPlan(_ context.Context, plan, state *models.PanelModel) {
+	alignImageStateFromPlan(plan, state)
 }
 
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {

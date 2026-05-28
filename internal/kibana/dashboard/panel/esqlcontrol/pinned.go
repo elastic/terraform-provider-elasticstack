@@ -54,6 +54,7 @@ func (pinnedHandler) ToAPI(ppm models.PinnedPanelModel) (kbapi.DashboardPinnedPa
 	pm := ppm.SyntheticPanel()
 	esqlPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl{
 		Grid: kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
+		Type: kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControlTypeEsqlControl,
 	}
 	diags.Append(BuildConfig(pm, &esqlPanel)...)
 	if diags.HasError() {
@@ -64,6 +65,7 @@ func (pinnedHandler) ToAPI(ppm models.PinnedPanelModel) (kbapi.DashboardPinnedPa
 		diags.AddError("Failed to remap pinned ES|QL control", err.Error())
 		return kbapi.DashboardPinnedPanels_Item{}, diags
 	}
+	group.Type = kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControlTypeEsqlControl
 	var item kbapi.DashboardPinnedPanels_Item
 	if err := item.FromKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControl(group); err != nil {
 		diags.AddError("Failed to build pinned ES|QL control payload", err.Error())

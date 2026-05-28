@@ -58,6 +58,8 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	}
 
 	alignDashboardStateFromPlanPanels(prevPanels, readModel.Panels)
+	suppressReadTopLevelPanelsWhenPlanEmpty(prevPanels, readModel)
+	alignDashboardStateFromPlanSections(ctx, stateModel.Sections, readModel.Sections)
 
 	alignDashboardStateFromPlanPinnedPanels(ctx, prevPinned, readModel.PinnedPanels)
 

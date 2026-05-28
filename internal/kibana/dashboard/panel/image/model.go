@@ -164,8 +164,11 @@ func drilldownItemToAPI(d models.ImagePanelDrilldownModel) (kbapi.KibanaHTTPAPIs
 func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage) {
 	apiCfg := apiPanel.Config
 
-	if tfPanel == nil {
+	if pm.ImageConfig == nil {
 		pm.ImageConfig = imagePanelConfigFromAPIImport(apiPanel)
+	}
+
+	if tfPanel == nil {
 		return
 	}
 
