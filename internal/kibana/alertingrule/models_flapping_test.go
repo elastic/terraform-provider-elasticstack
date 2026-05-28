@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	kibanacustomtypes "github.com/elastic/terraform-provider-elasticstack/internal/kibana/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
@@ -43,7 +44,7 @@ func Test_alertingRuleModel_toAPIModel_flappingVersionGate(t *testing.T) {
 		Name:       types.StringValue("n"),
 		Consumer:   types.StringValue("alerts"),
 		RuleTypeID: types.StringValue(".index-threshold"),
-		Interval:   types.StringValue("1m"),
+		Interval:   kibanacustomtypes.NewAlertingDurationValue("1m"),
 		Params: jsontypes.NewNormalizedValue(
 			`{"index":["i"],"threshold":[1],"thresholdComparator":">","timeField":"@timestamp","timeWindowSize":1,"timeWindowUnit":"m"}`,
 		),
@@ -79,7 +80,7 @@ func Test_alertingRuleModel_toAPIModel_flappingIntegersOnlyAllowedAt816(t *testi
 		Name:       types.StringValue("n"),
 		Consumer:   types.StringValue("alerts"),
 		RuleTypeID: types.StringValue(".index-threshold"),
-		Interval:   types.StringValue("1m"),
+		Interval:   kibanacustomtypes.NewAlertingDurationValue("1m"),
 		Params: jsontypes.NewNormalizedValue(
 			`{"index":["i"],"threshold":[1],"thresholdComparator":">","timeField":"@timestamp","timeWindowSize":1,"timeWindowUnit":"m"}`,
 		),
@@ -119,7 +120,7 @@ func Test_alertingRuleModel_toAPIModel_flappingEnabledRejectedBelow93(t *testing
 		Name:       types.StringValue("n"),
 		Consumer:   types.StringValue("alerts"),
 		RuleTypeID: types.StringValue(".index-threshold"),
-		Interval:   types.StringValue("1m"),
+		Interval:   kibanacustomtypes.NewAlertingDurationValue("1m"),
 		Params: jsontypes.NewNormalizedValue(
 			`{"index":["i"],"threshold":[1],"thresholdComparator":">","timeField":"@timestamp","timeWindowSize":1,"timeWindowUnit":"m"}`,
 		),
@@ -155,7 +156,7 @@ func Test_alertingRuleModel_toAPIModel_flappingEnabledAllowedAt93(t *testing.T) 
 		Name:       types.StringValue("n"),
 		Consumer:   types.StringValue("alerts"),
 		RuleTypeID: types.StringValue(".index-threshold"),
-		Interval:   types.StringValue("1m"),
+		Interval:   kibanacustomtypes.NewAlertingDurationValue("1m"),
 		Params: jsontypes.NewNormalizedValue(
 			`{"index":["i"],"threshold":[1],"thresholdComparator":">","timeField":"@timestamp","timeWindowSize":1,"timeWindowUnit":"m"}`,
 		),

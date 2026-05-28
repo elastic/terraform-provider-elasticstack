@@ -19,6 +19,8 @@ package maintenancewindow
 
 import (
 	"context"
+
+	kibanacustomtypes "github.com/elastic/terraform-provider-elasticstack/internal/kibana/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -81,9 +83,7 @@ func getSchema(_ context.Context) schema.Schema {
 					"duration": schema.StringAttribute{
 						Description: durationDescription,
 						Required:    true,
-						Validators: []validator.String{
-							validators.StringIsAlertingDuration,
-						},
+						CustomType:  kibanacustomtypes.AlertingDurationType{Units: kibanacustomtypes.AlertingDurationUnitsSubDay},
 					},
 					"timezone": schema.StringAttribute{
 						Description: "The timezone of the schedule. The default timezone is UTC.",
@@ -104,9 +104,7 @@ func getSchema(_ context.Context) schema.Schema {
 							"every": schema.StringAttribute{
 								Description: durationDescription,
 								Optional:    true,
-								Validators: []validator.String{
-									validators.StringIsMaintenanceWindowIntervalFrequency,
-								},
+								CustomType:  kibanacustomtypes.AlertingDurationType{Units: kibanacustomtypes.IntervalFrequencyUnits},
 							},
 							"occurrences": schema.Int32Attribute{
 								Description: "The total number of recurrences of the schedule.",

@@ -222,7 +222,7 @@ func discoverSessionApplyEnvelopeToConfig1(cfg *models.DiscoverSessionPanelConfi
 	}
 }
 
-func discoverSessionResolveTimeRange(panelTR *models.TimeRangeModel, dashTR *models.TimeRangeModel) (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, diag.Diagnostics) {
+func discoverSessionResolveTimeRange(panelTR *models.TimeRangeModel, dashTR *models.TimeRangeModel) (*kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	source := panelTR
 	if source == nil {
@@ -233,7 +233,7 @@ func discoverSessionResolveTimeRange(panelTR *models.TimeRangeModel, dashTR *mod
 			"Missing time range for discover_session panel",
 			"Set `discover_session_config.by_value.time_range` or `discover_session_config.by_reference.time_range`, or configure the dashboard root `time_range` so the panel can inherit it.",
 		)
-		return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}, diags
+		return nil, diags
 	}
 	out := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
 		From: source.From.ValueString(),
@@ -243,7 +243,7 @@ func discoverSessionResolveTimeRange(panelTR *models.TimeRangeModel, dashTR *mod
 		m := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode(source.Mode.ValueString())
 		out.Mode = &m
 	}
-	return out, diags
+	return &out, diags
 }
 
 func discoverSessionTabToAPI(ctx context.Context, tab models.DiscoverSessionTabModel) (kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_Item, diag.Diagnostics) {
@@ -516,8 +516,8 @@ func discoverSessionOverridesSortToAPI(sort []models.DiscoverSessionSortModel) [
 	return out
 }
 
-func discoverSessionQueryToKbnAsCode(m models.FilterSimpleModel) kbapi.KibanaHTTPAPIsKbnAsCodeQuery {
-	q := kbapi.KibanaHTTPAPIsKbnAsCodeQuery{
+func discoverSessionQueryToKbnAsCode(m models.FilterSimpleModel) *kbapi.KibanaHTTPAPIsKbnAsCodeQuery {
+	q := &kbapi.KibanaHTTPAPIsKbnAsCodeQuery{
 		Expression: m.Expression.ValueString(),
 	}
 	if typeutils.IsKnown(m.Language) {

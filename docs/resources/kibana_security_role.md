@@ -16,9 +16,11 @@ For Features, see the [features API documentation](https://www.elastic.co/guide/
 
 For Security Privileges, see the [security privileges documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-privileges.html).
 
+See also: [Security Roles Guide](../guides/security-roles)
+
 ## Example Usage
 
-### Using base privileges
+### Data analyst
 
 ```terraform
 provider "elasticstack" {
@@ -26,92 +28,71 @@ provider "elasticstack" {
   kibana {}
 }
 
-resource "elasticstack_kibana_security_role" "example" {
-  name = "sample_role"
+resource "elasticstack_kibana_security_role" "data_analyst" {
+  name = "data_analyst"
+
   elasticsearch {
-    cluster = ["create_snapshot"]
+    cluster = ["monitor"]
+
     indices {
-      field_security {
-        grant  = ["test"]
-        except = []
-      }
-      names      = ["test"]
-      privileges = ["create", "read", "write"]
-    }
-    remote_indices {
-      field_security {
-        grant  = ["test"]
-        except = []
-      }
-      names      = ["test"]
-      clusters   = ["test-cluster"]
-      privileges = ["create", "read", "write"]
+      names      = ["logs-*", "metrics-*"]
+      privileges = ["read", "view_index_metadata"]
     }
   }
-  kibana {
-    base   = ["all"]
-    spaces = ["default"]
-  }
-}
-```
 
-### Using feature privileges
-
-```terraform
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_kibana_security_role" "example" {
-  name = "sample_role"
-  elasticsearch {
-    cluster = ["create_snapshot"]
-    indices {
-      field_security {
-        grant  = ["test"]
-        except = []
-      }
-      names      = ["test"]
-      privileges = ["create", "read", "write"]
-    }
-    remote_indices {
-      field_security {
-        grant  = ["test"]
-        except = []
-      }
-      names      = ["test"]
-      clusters   = ["test-cluster"]
-      privileges = ["create", "read", "write"]
-    }
-  }
   kibana {
     feature {
-      name       = "actions"
+      name       = "dashboard"
       privileges = ["read"]
     }
+
     feature {
       name       = "discover"
       privileges = ["minimal_read", "url_create", "store_search_session"]
     }
-    feature {
-      name       = "observabilityCases"
-      privileges = ["minimal_read", "cases_delete"]
+
+    spaces = ["analytics"]
+  }
+}
+```
+
+### Multi-space access
+
+```terraform
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_role" "multi_space" {
+  name = "multi_space"
+
+  elasticsearch {
+    cluster = ["monitor"]
+
+    indices {
+      names      = ["logs-*", "metrics-*", "traces-*"]
+      privileges = ["read", "view_index_metadata"]
     }
+  }
+
+  kibana {
+    base   = ["all"]
+    spaces = ["dev", "staging"]
+  }
+
+  kibana {
     feature {
-      name       = "osquery"
-      privileges = ["minimal_read", "live_queries_all", "run_saved_queries", "saved_queries_read", "packs_all"]
-    }
-    feature {
-      name       = "rulesSettings"
-      privileges = ["minimal_read", "readFlappingSettings"]
-    }
-    feature {
-      name       = "securitySolutionCases"
-      privileges = ["minimal_read", "cases_delete"]
+      name       = "dashboard"
+      privileges = ["read"]
     }
 
-    spaces = ["default"]
+    feature {
+      name       = "discover"
+      privileges = ["minimal_read", "url_create", "store_search_session"]
+    }
+
+    spaces = ["prod"]
   }
 }
 ```

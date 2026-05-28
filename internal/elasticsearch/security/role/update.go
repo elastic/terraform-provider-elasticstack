@@ -19,12 +19,10 @@ package role
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -46,29 +44,6 @@ func writeRole(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 	diags.Append(idDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{}, diags
-	}
-
-	serverVersion, verDiags := client.ServerVersion(ctx)
-	diags.Append(verDiags...)
-	if diags.HasError() {
-		return entitycore.WriteResult[Data]{}, diags
-	}
-
-	// Check version requirements
-	if typeutils.IsKnown(data.Description) {
-		if serverVersion.LessThan(MinSupportedDescriptionVersion) {
-			diags.AddError("Unsupported Feature", fmt.Sprintf("'description' is supported only for Elasticsearch v%s and above", MinSupportedDescriptionVersion.String()))
-			return entitycore.WriteResult[Data]{}, diags
-		}
-	}
-
-	if typeutils.IsKnown(data.RemoteIndices) {
-		var remoteIndicesList []RemoteIndexPermsData
-		diags.Append(data.RemoteIndices.ElementsAs(ctx, &remoteIndicesList, false)...)
-		if len(remoteIndicesList) > 0 && serverVersion.LessThan(MinSupportedRemoteIndicesVersion) {
-			diags.AddError("Unsupported Feature", fmt.Sprintf("'remote_indices' is supported only for Elasticsearch v%s and above", MinSupportedRemoteIndicesVersion.String()))
-			return entitycore.WriteResult[Data]{}, diags
-		}
 	}
 
 	// Convert to API model

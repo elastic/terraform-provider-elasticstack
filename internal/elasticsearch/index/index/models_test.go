@@ -24,7 +24,6 @@ import (
 
 	fuzz "github.com/google/gofuzz"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -513,14 +512,12 @@ func Test_tfModel_toPutIndexParams(t *testing.T) {
 				WaitForActiveShards: basetypes.NewStringValue(expectedParams.WaitForActiveShards),
 			}
 
-			flavor := "not_serverless"
 			if isServerless {
-				flavor = clients.ServerlessFlavor
 				expectedParams.WaitForActiveShards = ""
 				expectedParams.MasterTimeout = 0
 			}
 
-			params := model.toPutIndexParams(flavor)
+			params := model.toPutIndexParams(isServerless)
 			require.Equal(t, expectedParams, params)
 		})
 	}

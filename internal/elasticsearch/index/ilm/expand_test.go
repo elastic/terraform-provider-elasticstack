@@ -26,6 +26,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// ilmSettingsSupportForVersion mirrors pre-migration expandAction behaviour for a
+// given cluster version. When v is nil (unknown version), version-gated settings
+// are allowed — the old code skipped gating when serverVersion was nil.
+func ilmSettingsSupportForVersion(v *version.Version) map[string]bool {
+	caps := make(map[string]bool, len(ilmActionSettingOptions))
+	for name, opt := range ilmActionSettingOptions {
+		if opt.minVersion == nil || v == nil {
+			caps[name] = true
+			continue
+		}
+		caps[name] = !opt.minVersion.GreaterThan(v)
+	}
+	return caps
+}
+
 func TestExpandAction(t *testing.T) {
 	t.Parallel()
 
@@ -34,24 +49,24 @@ func TestExpandAction(t *testing.T) {
 	v814 := version.Must(version.NewVersion("8.14.0"))
 
 	tests := []struct {
-		name          string
-		action        []any
-		serverVersion *version.Version
-		settings      []string
-		expected      map[string]any
-		errorSummary  string
-		errorDetail   string
+		name            string
+		action          []any
+		settingsSupport map[string]bool
+		settings        []string
+		expected        map[string]any
+		errorSummary    string
+		errorDetail     string
 	}{
 		{
-			name:          "ignores nil action body",
-			action:        []any{nil},
-			serverVersion: v80,
-			settings:      []string{"priority"},
-			expected:      map[string]any{},
+			name:            "ignores nil action body",
+			action:          []any{nil},
+			settingsSupport: ilmSettingsSupportForVersion(v80),
+			settings:        []string{"priority"},
+			expected:        map[string]any{},
 		},
 		{
-			name:          "decodes allocation filter JSON",
-			serverVersion: v80,
+			name:            "decodes allocation filter JSON",
+			settingsSupport: ilmSettingsSupportForVersion(v80),
 			action: []any{map[string]any{
 				"include": `{"box_type":"warm"}`,
 				"exclude": `{"rack":"rack-a"}`,
@@ -65,8 +80,8 @@ func TestExpandAction(t *testing.T) {
 			},
 		},
 		{
-			name:          "omits replica and shard settings when only routing filter is set",
-			serverVersion: v80,
+			name:            "omits replica and shard settings when only routing filter is set",
+			settingsSupport: ilmSettingsSupportForVersion(v80),
 			action: []any{map[string]any{
 				"require": `{"zone":"zone-1"}`,
 			}},
@@ -76,8 +91,8 @@ func TestExpandAction(t *testing.T) {
 			},
 		},
 		{
-			name:          "filters empty values but keeps skip empty settings",
-			serverVersion: v80,
+			name:            "filters empty values but keeps skip empty settings",
+			settingsSupport: ilmSettingsSupportForVersion(v80),
 			action: []any{map[string]any{
 				"priority":              0,
 				"number_of_replicas":    0,
@@ -92,8 +107,8 @@ func TestExpandAction(t *testing.T) {
 			},
 		},
 		{
-			name:          "keeps version gated settings on supported server",
-			serverVersion: v814,
+			name:            "keeps version gated settings on supported server",
+			settingsSupport: ilmSettingsSupportForVersion(v814),
 			action: []any{map[string]any{
 				"allow_write_after_shrink": true,
 				"max_primary_shard_docs":   100,
@@ -105,8 +120,8 @@ func TestExpandAction(t *testing.T) {
 			},
 		},
 		{
-			name:          "skips unsupported default values",
-			serverVersion: v80,
+			name:            "skips unsupported default values",
+			settingsSupport: ilmSettingsSupportForVersion(v80),
 			action: []any{map[string]any{
 				"min_age":                "",
 				"min_docs":               0,
@@ -116,8 +131,8 @@ func TestExpandAction(t *testing.T) {
 			expected: map[string]any{},
 		},
 		{
-			name:          "errors on unsupported non default setting",
-			serverVersion: v80,
+			name:            "errors on unsupported non default setting",
+			settingsSupport: ilmSettingsSupportForVersion(v80),
 			action: []any{map[string]any{
 				"min_age": "1d",
 			}},
@@ -126,8 +141,8 @@ func TestExpandAction(t *testing.T) {
 			errorDetail:  "[min_age] is not supported",
 		},
 		{
-			name:          "allows version gated setting when server version is unknown",
-			serverVersion: nil,
+			name:            "allows version gated setting when server version is unknown",
+			settingsSupport: ilmSettingsSupportForVersion(nil),
 			action: []any{map[string]any{
 				"min_age": "1d",
 			}},
@@ -135,8 +150,8 @@ func TestExpandAction(t *testing.T) {
 			expected: map[string]any{"min_age": "1d"},
 		},
 		{
-			name:          "errors on invalid JSON filter",
-			serverVersion: v82,
+			name:            "errors on invalid JSON filter",
+			settingsSupport: ilmSettingsSupportForVersion(v82),
 			action: []any{map[string]any{
 				"include": "{",
 			}},
@@ -149,7 +164,7 @@ func TestExpandAction(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			action, diags := expandAction(tt.action, tt.serverVersion, tt.settings...)
+			action, diags := expandAction(tt.action, tt.settingsSupport, tt.settings...)
 
 			if tt.errorSummary != "" {
 				require.True(t, diags.HasError())
@@ -171,18 +186,19 @@ func TestExpandPhase(t *testing.T) {
 	t.Parallel()
 
 	v814 := version.Must(version.NewVersion("8.14.0"))
+	settingsSupport := ilmSettingsSupportForVersion(v814)
 
 	tests := []struct {
-		name         string
-		input        func() map[string]any
-		server       *version.Version
-		expected     *models.Phase
-		errorSummary string
-		errorDetail  string
+		name            string
+		input           func() map[string]any
+		settingsSupport map[string]bool
+		expected        *models.Phase
+		errorSummary    string
+		errorDetail     string
 	}{
 		{
-			name:   "expands supported actions",
-			server: v814,
+			name:            "expands supported actions",
+			settingsSupport: settingsSupport,
 			input: func() map[string]any {
 				return map[string]any{
 					"min_age": "30d",
@@ -229,8 +245,8 @@ func TestExpandPhase(t *testing.T) {
 			},
 		},
 		{
-			name:   "skips disabled and invalid actions",
-			server: v814,
+			name:            "skips disabled and invalid actions",
+			settingsSupport: settingsSupport,
 			input: func() map[string]any {
 				return map[string]any{
 					"freeze":   []any{map[string]any{"enabled": false}},
@@ -243,8 +259,8 @@ func TestExpandPhase(t *testing.T) {
 			},
 		},
 		{
-			name:   "returns unknown action error",
-			server: v814,
+			name:            "returns unknown action error",
+			settingsSupport: settingsSupport,
 			input: func() map[string]any {
 				return map[string]any{
 					"mystery": []any{map[string]any{}},
@@ -254,8 +270,8 @@ func TestExpandPhase(t *testing.T) {
 			errorDetail:  `Configured action "mystery" is not supported`,
 		},
 		{
-			name:   "propagates action expansion error",
-			server: v814,
+			name:            "propagates action expansion error",
+			settingsSupport: settingsSupport,
 			input: func() map[string]any {
 				return map[string]any{
 					"allocate": []any{map[string]any{"include": "{"}},
@@ -267,7 +283,7 @@ func TestExpandPhase(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			phase, diags := expandPhase(tt.input(), tt.server)
+			phase, diags := expandPhase(tt.input(), tt.settingsSupport)
 
 			if tt.errorSummary != "" {
 				require.True(t, diags.HasError())
@@ -288,19 +304,21 @@ func TestExpandPhase(t *testing.T) {
 func TestExpandIlmPolicy(t *testing.T) {
 	t.Parallel()
 
+	unknownVersionSupport := ilmSettingsSupportForVersion(nil)
+
 	tests := []struct {
-		name         string
-		metadata     string
-		phases       func() map[string]map[string]any
-		server       *version.Version
-		expected     *models.Policy
-		errorSummary string
-		errorDetail  string
+		name            string
+		metadata        string
+		phases          func() map[string]map[string]any
+		settingsSupport map[string]bool
+		expected        *models.Policy
+		errorSummary    string
+		errorDetail     string
 	}{
 		{
-			name:     "expands metadata and phases",
-			metadata: `{"owner":"search-team"}`,
-			server:   nil,
+			name:            "expands metadata and phases",
+			metadata:        `{"owner":"search-team"}`,
+			settingsSupport: unknownVersionSupport,
 			phases: func() map[string]map[string]any {
 				return map[string]map[string]any{
 					ilmPhaseHot: {
@@ -326,9 +344,9 @@ func TestExpandIlmPolicy(t *testing.T) {
 			},
 		},
 		{
-			name:     "ignores blank metadata",
-			metadata: " \n\t ",
-			server:   nil,
+			name:            "ignores blank metadata",
+			metadata:        " \n\t ",
+			settingsSupport: unknownVersionSupport,
 			phases: func() map[string]map[string]any {
 				return map[string]map[string]any{}
 			},
@@ -338,16 +356,16 @@ func TestExpandIlmPolicy(t *testing.T) {
 			},
 		},
 		{
-			name:         "returns metadata decode error",
-			metadata:     "{",
-			server:       nil,
-			phases:       func() map[string]map[string]any { return map[string]map[string]any{} },
-			errorSummary: "Invalid metadata JSON",
+			name:            "returns metadata decode error",
+			metadata:        "{",
+			settingsSupport: unknownVersionSupport,
+			phases:          func() map[string]map[string]any { return map[string]map[string]any{} },
+			errorSummary:    "Invalid metadata JSON",
 		},
 		{
-			name:     "propagates phase expansion error",
-			metadata: "",
-			server:   nil,
+			name:            "propagates phase expansion error",
+			metadata:        "",
+			settingsSupport: unknownVersionSupport,
 			phases: func() map[string]map[string]any {
 				return map[string]map[string]any{
 					ilmPhaseHot: {
@@ -362,7 +380,7 @@ func TestExpandIlmPolicy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			policy, diags := expandIlmPolicy("policy-a", tt.metadata, tt.phases(), tt.server)
+			policy, diags := expandIlmPolicy("policy-a", tt.metadata, tt.phases(), tt.settingsSupport)
 
 			if tt.errorSummary != "" {
 				require.True(t, diags.HasError())

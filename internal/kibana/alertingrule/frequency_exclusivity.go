@@ -21,11 +21,13 @@ import (
 	"context"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/planmodifiers"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 const frequencyExclusivityDetail = "Rule-level notify_when and throttle cannot be combined with actions[*].frequency " +
@@ -37,7 +39,7 @@ func validateNotifyWhenThrottleFrequencyExclusivity(ctx context.Context, data *a
 		return
 	}
 	ruleNotify := ruleLevelNotifyWhenExclusive(data.NotifyWhen)
-	ruleThrottle := ruleLevelThrottleExclusive(data.Throttle)
+	ruleThrottle := ruleLevelThrottleExclusive(data.Throttle.StringValue)
 	if !ruleNotify && !ruleThrottle {
 		return
 	}
@@ -52,7 +54,7 @@ func ruleLevelNotifyWhenExclusive(v types.String) bool {
 	return typeutils.IsKnown(v) && !v.IsNull() && strings.TrimSpace(v.ValueString()) != ""
 }
 
-func ruleLevelThrottleExclusive(v types.String) bool {
+func ruleLevelThrottleExclusive(v basetypes.StringValue) bool {
 	return typeutils.IsKnown(v) && !v.IsNull() && strings.TrimSpace(v.ValueString()) != ""
 }
 
@@ -108,4 +110,66 @@ func (m notifyWhenActionFrequencyModifier) PlanModifyString(ctx context.Context,
 		return
 	}
 	resp.PlanValue = planNotifyWhenForActionFrequency(ctx, req.PlanValue, actions, &resp.Diagnostics)
+}
+
+// throttleShouldResetForActionFrequency is the predicate driving the
+// planmodifiers.StringSetUnknownIf modifier registered on rule-level throttle
+// after UseStateForUnknown. It is the StringRequest/StringResponse adapter
+// over actionFrequencyNewlyIntroduced.
+//
+// USFU restores the Kibana-preserved throttle when the practitioner removes
+// it from configuration (Kibana's PUT cannot clear deprecated rule-level
+// throttle). The predicate returns true — i.e. resets the plan back to
+// Unknown — only when the practitioner is newly introducing an
+// actions[*].frequency block (config has one, prior state does not). On
+// subsequent plans where the rule is already in frequency mode (state also
+// has actions[*].frequency), the predicate returns false so the modifier is
+// idempotent and does not produce a perpetual "value → (known after apply)"
+// diff against the Kibana-preserved throttle.
+//
+// When true, the surrounding StringSetUnknownIf wrapper omits throttle from
+// the API request and lets state resolve to whatever Kibana returns; combined
+// with the config-time REQ-042 exclusivity check, the stale throttle is never
+// silently sent alongside per-action frequency.
+func throttleShouldResetForActionFrequency(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) bool {
+	var configActions types.List
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("actions"), &configActions)...)
+	if resp.Diagnostics.HasError() {
+		return false
+	}
+
+	var stateActions types.List
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("actions"), &stateActions)...)
+	if resp.Diagnostics.HasError() {
+		return false
+	}
+
+	return actionFrequencyNewlyIntroduced(ctx, stateActions, configActions, &resp.Diagnostics)
+}
+
+// actionFrequencyNewlyIntroduced returns true when the configuration includes
+// an actions[*].frequency block AND the prior state did not. Extracted from
+// throttleShouldResetForActionFrequency to allow direct unit testing without
+// fabricating tfsdk.Config / tfsdk.State values, mirroring the existing
+// planNotifyWhenForActionFrequency pattern in this file.
+func actionFrequencyNewlyIntroduced(ctx context.Context, stateActions, configActions types.List, diags *diag.Diagnostics) bool {
+	if !configActionsIncludeKnownFrequencyBlock(ctx, configActions, diags) {
+		return false
+	}
+	if configActionsIncludeKnownFrequencyBlock(ctx, stateActions, diags) {
+		return false
+	}
+	return true
+}
+
+// throttleSetUnknownIfActionsFrequencyConfigured returns the throttle plan
+// modifier described by throttleShouldResetForActionFrequency, wired through
+// the reusable planmodifiers.StringSetUnknownIf helper.
+func throttleSetUnknownIfActionsFrequencyConfigured() planmodifier.String {
+	return planmodifiers.StringSetUnknownIf(
+		"Resets the planned rule-level throttle to unknown when actions[*].frequency is being newly introduced, "+
+			"so the value preserved from prior state by UseStateForUnknown is not sent alongside per-action frequency. "+
+			"No-op once the rule is already in frequency mode to keep the modifier idempotent.",
+		throttleShouldResetForActionFrequency,
+	)
 }

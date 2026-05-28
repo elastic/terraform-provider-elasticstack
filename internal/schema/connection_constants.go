@@ -38,4 +38,26 @@ const (
 
 	descESConnectionBlock = "Elasticsearch connection configuration block."
 	descInsecureTLS       = "Disable TLS certificate validation"
+
+	descUsername               = "Username to use for API authentication to Elasticsearch."
+	descPassword               = "Password to use for API authentication to Elasticsearch."
+	descAPIKey                 = "API Key to use for authentication to Elasticsearch"
+	descBearerToken            = "Bearer Token to use for authentication to Elasticsearch"
+	descESClientAuthentication = "ES Client Authentication field to be used with the JWT token"
+	descEndpoints              = "A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number."
+	descHeaders                = "A list of headers to be sent with each request to Elasticsearch."
+	descCAFile                 = "Path to a custom Certificate Authority certificate"
+	descCAData                 = "PEM-encoded custom Certificate Authority certificate"
+	descCertFile               = "Path to a file containing the PEM encoded certificate for client auth"
+	descKeyFile                = "Path to a file containing the PEM encoded private key for client auth"
+	descCertData               = "PEM encoded certificate for client auth"
+	descKeyData                = "PEM encoded private key for client auth"
+
+	descKbConnectionBlock = "Kibana connection configuration block."
+	descKbAPIKey          = "API Key to use for authentication to Kibana"
+	descKbBearerToken     = "Bearer Token to use for authentication to Kibana"
+	descKbUsername        = "Username to use for API authentication to Kibana."
+	descKbPassword        = "Password to use for API authentication to Kibana."
+	descKbEndpoints       = "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number."
+	descKbCACerts         = "A list of paths to CA certificates to validate the certificate presented by the Kibana server."
 )

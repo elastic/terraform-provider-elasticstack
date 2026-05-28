@@ -16,9 +16,7 @@ Manages Kibana [dashboards](https://www.elastic.co/docs/api/doc/kibana). This fu
 
 - **Image `file_id`**: `image_config.src.file.file_id` is an opaque Kibana file asset id. Uploading or lifecycle-managing that file is outside this resource for now; prepare the id outside Terraform (for example via Kibana UI or HTTP upload). A future `elasticstack_kibana_file` resource may cover uploads.
 - **`discover_session` `data_source_json`**: Must be JSON matching the Kibana Dashboard API tab payload — the polymorphic data source for DSL tabs (`data_view_reference`, `data_view_spec`, etc.) and the ES|QL branch for `tab.esql`. Follow the OpenAPI shapes published with the [Kibana REST API](https://www.elastic.co/docs/api/doc/kibana) (`kbn-dashboard-panel-type-discover_session`). For `data_view_reference`, use **`ref_id`** (not `id`) for the linked data view.
-- **Single Discover tab**: `discover_session_config.by_value.tab` is one object because the API currently allows a single tab entry; a future `tabs` list could be added without breaking existing configs if Kibana lifts the limit.
-
-## Example Usage
+- **Single Discover tab**: `discover_session_config.by_value.tab` is one object because the API currently allows a single tab entry; a future `tabs` list could be added without breaking existing configs if Kibana lifts the limit.## Example Usage
 
 ```terraform
 resource "elasticstack_kibana_dashboard" "my_dashboard" {

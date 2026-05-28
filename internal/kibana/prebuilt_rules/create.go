@@ -27,14 +27,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func createPrebuiltRules(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	req entitycore.KibanaWriteRequest[prebuiltRuleModel],
-) (entitycore.KibanaWriteResult[prebuiltRuleModel], diag.Diagnostics) {
-	return writePrebuiltRules(ctx, client, req)
-}
-
 func writePrebuiltRules(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,

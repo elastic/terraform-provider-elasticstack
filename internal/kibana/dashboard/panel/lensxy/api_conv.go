@@ -31,8 +31,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func xyAxisFromAPI(m *models.XYAxisModel, apiAxis kbapi.KibanaHTTPAPIsVisApiXyAxisConfig) diag.Diagnostics {
+func xyAxisFromAPI(m *models.XYAxisModel, apiAxis *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig) diag.Diagnostics {
 	var diags diag.Diagnostics
+	if apiAxis == nil {
+		return diags
+	}
 
 	if apiAxis.X != nil {
 		xBytes, err := json.Marshal(apiAxis.X)
@@ -74,13 +77,13 @@ func xyAxisFromAPI(m *models.XYAxisModel, apiAxis kbapi.KibanaHTTPAPIsVisApiXyAx
 	return diags
 }
 
-func xyAxisToAPI(m *models.XYAxisModel) (kbapi.KibanaHTTPAPIsVisApiXyAxisConfig, diag.Diagnostics) {
+func xyAxisToAPI(m *models.XYAxisModel) (*kbapi.KibanaHTTPAPIsVisApiXyAxisConfig, diag.Diagnostics) {
 	if m == nil {
-		return kbapi.KibanaHTTPAPIsVisApiXyAxisConfig{}, nil
+		return nil, nil
 	}
 
 	var diags diag.Diagnostics
-	var axis kbapi.KibanaHTTPAPIsVisApiXyAxisConfig
+	axis := &kbapi.KibanaHTTPAPIsVisApiXyAxisConfig{}
 
 	if m.X != nil {
 		xAxis, xDiags := xyAxisConfigToAPI(m.X)
@@ -145,7 +148,7 @@ type xyAxisConfigAPIModel = struct {
 		Visible bool `json:"visible"`
 	} `json:"grid,omitempty"`
 	Labels *struct {
-		Orientation kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation"`
+		Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
 	} `json:"labels,omitempty"`
 	Scale *kbapi.KibanaHTTPAPIsVisApiXyAxisConfigXScale `json:"scale,omitempty"`
 	Ticks *struct {
@@ -173,8 +176,8 @@ func xyAxisConfigFromAPI(m *models.XYAxisConfigModel, apiAxis *xyAxisConfigAPIMo
 	} else {
 		m.Ticks = types.BoolNull()
 	}
-	if apiAxis.Labels != nil {
-		m.LabelOrientation = types.StringValue(string(apiAxis.Labels.Orientation))
+	if apiAxis.Labels != nil && apiAxis.Labels.Orientation != nil {
+		m.LabelOrientation = types.StringValue(string(*apiAxis.Labels.Orientation))
 	} else {
 		m.LabelOrientation = types.StringNull()
 	}
@@ -214,9 +217,10 @@ func xyAxisConfigToAPI(m *models.XYAxisConfigModel) (*xyAxisConfigAPIModel, diag
 		}{Visible: m.Ticks.ValueBool()}
 	}
 	if typeutils.IsKnown(m.LabelOrientation) {
+		orientation := kbapi.KibanaHTTPAPIsVisApiOrientation(m.LabelOrientation.ValueString())
 		xAxis.Labels = &struct {
-			Orientation kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation"`
-		}{Orientation: kbapi.KibanaHTTPAPIsVisApiOrientation(m.LabelOrientation.ValueString())}
+			Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
+		}{Orientation: &orientation}
 	}
 	if typeutils.IsKnown(m.Scale) {
 		scale := kbapi.KibanaHTTPAPIsVisApiXyAxisConfigXScale(m.Scale.ValueString())
@@ -253,7 +257,7 @@ func YAxisConfigFromAPIY(m *models.YAxisConfigModel, apiAxis *struct {
 		Visible bool `json:"visible"`
 	} `json:"grid,omitempty"`
 	Labels *struct {
-		Orientation kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation"`
+		Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
 	} `json:"labels,omitempty"`
 	Scale *kbapi.KibanaHTTPAPIsVisApiXyAxisConfigYScale `json:"scale,omitempty"`
 	Ticks *struct {
@@ -279,8 +283,8 @@ func YAxisConfigFromAPIY(m *models.YAxisConfigModel, apiAxis *struct {
 	} else {
 		m.Ticks = types.BoolNull()
 	}
-	if apiAxis.Labels != nil {
-		m.LabelOrientation = types.StringValue(string(apiAxis.Labels.Orientation))
+	if apiAxis.Labels != nil && apiAxis.Labels.Orientation != nil {
+		m.LabelOrientation = types.StringValue(string(*apiAxis.Labels.Orientation))
 	} else {
 		m.LabelOrientation = types.StringNull()
 	}
@@ -305,7 +309,7 @@ func YAxisConfigToAPIY(m *models.YAxisConfigModel) (*struct {
 		Visible bool `json:"visible"`
 	} `json:"grid,omitempty"`
 	Labels *struct {
-		Orientation kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation"`
+		Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
 	} `json:"labels,omitempty"`
 	Scale *kbapi.KibanaHTTPAPIsVisApiXyAxisConfigYScale `json:"scale,omitempty"`
 	Ticks *struct {
@@ -327,7 +331,7 @@ func YAxisConfigToAPIY(m *models.YAxisConfigModel) (*struct {
 			Visible bool `json:"visible"`
 		} `json:"grid,omitempty"`
 		Labels *struct {
-			Orientation kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation"`
+			Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
 		} `json:"labels,omitempty"`
 		Scale *kbapi.KibanaHTTPAPIsVisApiXyAxisConfigYScale `json:"scale,omitempty"`
 		Ticks *struct {
@@ -350,9 +354,10 @@ func YAxisConfigToAPIY(m *models.YAxisConfigModel) (*struct {
 		}{Visible: m.Ticks.ValueBool()}
 	}
 	if typeutils.IsKnown(m.LabelOrientation) {
+		orientation := kbapi.KibanaHTTPAPIsVisApiOrientation(m.LabelOrientation.ValueString())
 		yAxis.Labels = &struct {
-			Orientation kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation"`
-		}{Orientation: kbapi.KibanaHTTPAPIsVisApiOrientation(m.LabelOrientation.ValueString())}
+			Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
+		}{Orientation: &orientation}
 	}
 	if typeutils.IsKnown(m.Scale) {
 		scale := kbapi.KibanaHTTPAPIsVisApiXyAxisConfigYScale(m.Scale.ValueString())
@@ -375,7 +380,7 @@ func YAxisConfigFromAPIY2(m *models.YAxisConfigModel, apiAxis *struct {
 		Visible bool `json:"visible"`
 	} `json:"grid,omitempty"`
 	Labels *struct {
-		Orientation kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation"`
+		Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
 	} `json:"labels,omitempty"`
 	Scale *kbapi.KibanaHTTPAPIsVisApiXyAxisConfigY2Scale `json:"scale,omitempty"`
 	Ticks *struct {
@@ -401,8 +406,8 @@ func YAxisConfigFromAPIY2(m *models.YAxisConfigModel, apiAxis *struct {
 	} else {
 		m.Ticks = types.BoolNull()
 	}
-	if apiAxis.Labels != nil {
-		m.LabelOrientation = types.StringValue(string(apiAxis.Labels.Orientation))
+	if apiAxis.Labels != nil && apiAxis.Labels.Orientation != nil {
+		m.LabelOrientation = types.StringValue(string(*apiAxis.Labels.Orientation))
 	} else {
 		m.LabelOrientation = types.StringNull()
 	}
@@ -427,7 +432,7 @@ func YAxisConfigToAPIY2(m *models.YAxisConfigModel) (*struct {
 		Visible bool `json:"visible"`
 	} `json:"grid,omitempty"`
 	Labels *struct {
-		Orientation kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation"`
+		Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
 	} `json:"labels,omitempty"`
 	Scale *kbapi.KibanaHTTPAPIsVisApiXyAxisConfigY2Scale `json:"scale,omitempty"`
 	Ticks *struct {
@@ -449,7 +454,7 @@ func YAxisConfigToAPIY2(m *models.YAxisConfigModel) (*struct {
 			Visible bool `json:"visible"`
 		} `json:"grid,omitempty"`
 		Labels *struct {
-			Orientation kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation"`
+			Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
 		} `json:"labels,omitempty"`
 		Scale *kbapi.KibanaHTTPAPIsVisApiXyAxisConfigY2Scale `json:"scale,omitempty"`
 		Ticks *struct {
@@ -472,9 +477,10 @@ func YAxisConfigToAPIY2(m *models.YAxisConfigModel) (*struct {
 		}{Visible: m.Ticks.ValueBool()}
 	}
 	if typeutils.IsKnown(m.LabelOrientation) {
+		orientation := kbapi.KibanaHTTPAPIsVisApiOrientation(m.LabelOrientation.ValueString())
 		yAxis.Labels = &struct {
-			Orientation kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation"`
-		}{Orientation: kbapi.KibanaHTTPAPIsVisApiOrientation(m.LabelOrientation.ValueString())}
+			Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
+		}{Orientation: &orientation}
 	}
 	if typeutils.IsKnown(m.Scale) {
 		scale := kbapi.KibanaHTTPAPIsVisApiXyAxisConfigY2Scale(m.Scale.ValueString())
@@ -504,18 +510,28 @@ func axisTitleIsDefault(title *models.AxisTitleModel) bool {
 	return true
 }
 
-func xyDecorationsReadFromStyling(m *models.XYDecorationsModel, s kbapi.KibanaHTTPAPIsXyStyling) {
-	if s.Overlays.PartialBuckets != nil && s.Overlays.PartialBuckets.Visible != nil {
+func xyDecorationsReadFromStyling(m *models.XYDecorationsModel, s *kbapi.KibanaHTTPAPIsXyStyling) {
+	if s == nil {
+		m.ShowEndZones = types.BoolNull()
+		m.ShowCurrentTimeMarker = types.BoolNull()
+		m.PointVisibility = types.StringNull()
+		m.LineInterpolation = types.StringNull()
+		m.MinimumBarHeight = types.Int64Null()
+		m.ShowValueLabels = types.BoolNull()
+		m.FillOpacity = types.Float64Null()
+		return
+	}
+	if s.Overlays != nil && s.Overlays.PartialBuckets != nil && s.Overlays.PartialBuckets.Visible != nil {
 		m.ShowEndZones = types.BoolValue(*s.Overlays.PartialBuckets.Visible)
 	} else {
 		m.ShowEndZones = types.BoolNull()
 	}
-	if s.Overlays.CurrentTimeMarker != nil && s.Overlays.CurrentTimeMarker.Visible != nil {
+	if s.Overlays != nil && s.Overlays.CurrentTimeMarker != nil && s.Overlays.CurrentTimeMarker.Visible != nil {
 		m.ShowCurrentTimeMarker = types.BoolValue(*s.Overlays.CurrentTimeMarker.Visible)
 	} else {
 		m.ShowCurrentTimeMarker = types.BoolNull()
 	}
-	if s.Points.Visibility != nil {
+	if s.Points != nil && s.Points.Visibility != nil {
 		switch *s.Points.Visibility {
 		case kbapi.KibanaHTTPAPIsXyStylingPointsVisibilityHidden:
 			m.PointVisibility = types.StringValue("never")
@@ -532,17 +548,17 @@ func xyDecorationsReadFromStyling(m *models.XYDecorationsModel, s kbapi.KibanaHT
 	} else {
 		m.LineInterpolation = types.StringNull()
 	}
-	if s.Bars.MinimumHeight != nil {
+	if s.Bars != nil && s.Bars.MinimumHeight != nil {
 		m.MinimumBarHeight = types.Int64Value(int64(*s.Bars.MinimumHeight))
 	} else {
 		m.MinimumBarHeight = types.Int64Null()
 	}
-	if s.Bars.DataLabels != nil && s.Bars.DataLabels.Visible != nil {
+	if s.Bars != nil && s.Bars.DataLabels != nil && s.Bars.DataLabels.Visible != nil {
 		m.ShowValueLabels = types.BoolValue(*s.Bars.DataLabels.Visible)
 	} else {
 		m.ShowValueLabels = types.BoolNull()
 	}
-	if s.Areas.FillOpacity != nil {
+	if s.Areas != nil && s.Areas.FillOpacity != nil {
 		val := float64(*s.Areas.FillOpacity)
 		m.FillOpacity = types.Float64Value(math.Round(val*100) / 100)
 	} else {
@@ -551,22 +567,31 @@ func xyDecorationsReadFromStyling(m *models.XYDecorationsModel, s kbapi.KibanaHT
 }
 
 func xyDecorationsWriteToStyling(m *models.XYDecorationsModel, s *kbapi.KibanaHTTPAPIsXyStyling) {
-	if m == nil {
+	if m == nil || s == nil {
 		return
 	}
 	if typeutils.IsKnown(m.ShowEndZones) {
+		if s.Overlays == nil {
+			s.Overlays = &kbapi.KibanaHTTPAPIsXyStylingOverlays{}
+		}
 		v := m.ShowEndZones.ValueBool()
 		s.Overlays.PartialBuckets = &struct {
 			Visible *bool `json:"visible,omitempty"`
 		}{Visible: &v}
 	}
 	if typeutils.IsKnown(m.ShowCurrentTimeMarker) {
+		if s.Overlays == nil {
+			s.Overlays = &kbapi.KibanaHTTPAPIsXyStylingOverlays{}
+		}
 		v := m.ShowCurrentTimeMarker.ValueBool()
 		s.Overlays.CurrentTimeMarker = &struct {
 			Visible *bool `json:"visible,omitempty"`
 		}{Visible: &v}
 	}
 	if typeutils.IsKnown(m.PointVisibility) {
+		if s.Points == nil {
+			s.Points = &kbapi.KibanaHTTPAPIsXyStylingPoints{}
+		}
 		switch m.PointVisibility.ValueString() {
 		case "never":
 			v := kbapi.KibanaHTTPAPIsXyStylingPointsVisibilityHidden
@@ -584,20 +609,35 @@ func xyDecorationsWriteToStyling(m *models.XYDecorationsModel, s *kbapi.KibanaHT
 		s.Interpolation = &interp
 	}
 	if typeutils.IsKnown(m.MinimumBarHeight) {
+		if s.Bars == nil {
+			s.Bars = &kbapi.KibanaHTTPAPIsXyStylingBars{}
+		}
 		s.Bars.MinimumHeight = new(float32(m.MinimumBarHeight.ValueInt64()))
 	}
 	if typeutils.IsKnown(m.ShowValueLabels) {
+		if s.Bars == nil {
+			s.Bars = &kbapi.KibanaHTTPAPIsXyStylingBars{}
+		}
 		v := m.ShowValueLabels.ValueBool()
 		s.Bars.DataLabels = &struct {
 			Visible *bool `json:"visible,omitempty"`
 		}{Visible: &v}
 	}
 	if typeutils.IsKnown(m.FillOpacity) {
+		if s.Areas == nil {
+			s.Areas = &kbapi.KibanaHTTPAPIsXyStylingAreas{}
+		}
 		s.Areas.FillOpacity = new(float32(m.FillOpacity.ValueFloat64()))
 	}
 }
 
-func xyFittingFromAPI(m *models.XYFittingModel, apiFitting kbapi.KibanaHTTPAPIsXyFitting) {
+func xyFittingFromAPI(m *models.XYFittingModel, apiFitting *kbapi.KibanaHTTPAPIsXyFitting) {
+	if apiFitting == nil {
+		m.Type = types.StringNull()
+		m.Dotted = types.BoolNull()
+		m.EndValue = types.StringNull()
+		return
+	}
 	m.Type = typeutils.StringishValue(apiFitting.Type)
 	m.Dotted = types.BoolPointerValue(apiFitting.Emphasize)
 	if apiFitting.Extend != nil {
@@ -625,7 +665,7 @@ func xyFittingToAPI(m *models.XYFittingModel) kbapi.KibanaHTTPAPIsXyFitting {
 	return out
 }
 
-func xyLegendFromAPI(ctx context.Context, m *models.XYLegendModel, apiLegend kbapi.KibanaHTTPAPIsXyLegend) diag.Diagnostics {
+func xyLegendFromAPI(ctx context.Context, m *models.XYLegendModel, apiLegend *kbapi.KibanaHTTPAPIsXyLegend) diag.Diagnostics {
 	var diags diag.Diagnostics
 	m.Position = types.StringNull()
 	m.Size = types.StringNull()
@@ -633,6 +673,10 @@ func xyLegendFromAPI(ctx context.Context, m *models.XYLegendModel, apiLegend kba
 	m.TruncateAfterLines = types.Int64Null()
 	m.Alignment = types.StringNull()
 	m.Statistics = types.ListNull(types.StringType)
+
+	if apiLegend == nil {
+		return diags
+	}
 
 	// Try inside legend first
 	legendInside, err := apiLegend.AsKibanaHTTPAPIsXyLegendInside()
@@ -675,11 +719,11 @@ func xyLegendFromAPI(ctx context.Context, m *models.XYLegendModel, apiLegend kba
 		(legendOutsideVertical.Position == nil ||
 			*legendOutsideVertical.Position == kbapi.KibanaHTTPAPIsXyLegendOutsideVerticalPositionLeft ||
 			*legendOutsideVertical.Position == kbapi.KibanaHTTPAPIsXyLegendOutsideVerticalPositionRight) &&
-		legendOutsideVertical.Size != "" {
+		legendOutsideVertical.Size != nil {
 		m.Inside = types.BoolValue(false)
 		m.Visibility = typeutils.StringishPointerValue(legendOutsideVertical.Visibility)
 		m.Position = typeutils.StringishPointerValue(legendOutsideVertical.Position)
-		m.Size = types.StringValue(string(legendOutsideVertical.Size))
+		m.Size = types.StringValue(string(*legendOutsideVertical.Size))
 
 		if legendOutsideVertical.Layout != nil && legendOutsideVertical.Layout.Truncate != nil && legendOutsideVertical.Layout.Truncate.MaxLines != nil {
 			m.TruncateAfterLines = types.Int64Value(int64(*legendOutsideVertical.Layout.Truncate.MaxLines))
@@ -866,9 +910,11 @@ func xyLegendToAPI(m *models.XYLegendModel) (kbapi.KibanaHTTPAPIsXyLegend, diag.
 		legend.Position = &pos
 	}
 	if typeutils.IsKnown(m.Size) {
-		legend.Size = kbapi.KibanaHTTPAPIsLegendSize(m.Size.ValueString())
+		size := kbapi.KibanaHTTPAPIsLegendSize(m.Size.ValueString())
+		legend.Size = &size
 	} else {
-		legend.Size = kbapi.KibanaHTTPAPIsLegendSizeM
+		size := kbapi.KibanaHTTPAPIsLegendSizeM
+		legend.Size = &size
 	}
 	if typeutils.IsKnown(m.TruncateAfterLines) {
 		legend.Layout = &struct {
@@ -928,20 +974,24 @@ func dataSourceJSONIsESQL(j jsontypes.Normalized) bool {
 	return probe.Type == "esql" || probe.Type == "table"
 }
 
-func xyChartConfigStylingToAPI(m *models.XYChartConfigModel) kbapi.KibanaHTTPAPIsXyStyling {
+func xyChartConfigStylingToAPI(m *models.XYChartConfigModel) *kbapi.KibanaHTTPAPIsXyStyling {
+	areas := kbapi.KibanaHTTPAPIsXyStylingAreas{}
+	bars := kbapi.KibanaHTTPAPIsXyStylingBars{}
+	overlays := kbapi.KibanaHTTPAPIsXyStylingOverlays{}
+	points := kbapi.KibanaHTTPAPIsXyStylingPoints{}
 	fit := kbapi.KibanaHTTPAPIsXyFitting{Type: kbapi.KibanaHTTPAPIsXyFittingTypeNone}
 	if m.Fitting != nil {
 		fit = xyFittingToAPI(m.Fitting)
 	}
-	s := kbapi.KibanaHTTPAPIsXyStyling{
-		Areas:    kbapi.KibanaHTTPAPIsXyStylingAreas{},
-		Bars:     kbapi.KibanaHTTPAPIsXyStylingBars{},
-		Fitting:  fit,
-		Overlays: kbapi.KibanaHTTPAPIsXyStylingOverlays{},
-		Points:   kbapi.KibanaHTTPAPIsXyStylingPoints{},
+	s := &kbapi.KibanaHTTPAPIsXyStyling{
+		Areas:    &areas,
+		Bars:     &bars,
+		Fitting:  &fit,
+		Overlays: &overlays,
+		Points:   &points,
 	}
 	if m.Decorations != nil {
-		xyDecorationsWriteToStyling(m.Decorations, &s)
+		xyDecorationsWriteToStyling(m.Decorations, s)
 	}
 	return s
 }
@@ -984,7 +1034,7 @@ func XYChartConfigToAPINoESQL(m *models.XYChartConfigModel, resolver lenscommon.
 		legend, legendDiags := xyLegendToAPI(m.Legend)
 		diags.Append(legendDiags...)
 		if !legendDiags.HasError() {
-			chart.Legend = legend
+			chart.Legend = &legend
 		}
 	}
 
@@ -1059,7 +1109,7 @@ func xyChartConfigToAPIESQL(m *models.XYChartConfigModel, resolver lenscommon.Re
 		legend, legendDiags := xyLegendToAPI(m.Legend)
 		diags.Append(legendDiags...)
 		if !legendDiags.HasError() {
-			chart.Legend = legend
+			chart.Legend = &legend
 		}
 	}
 
@@ -1131,7 +1181,9 @@ func xyChartConfigFromAPINoESQL(
 	xyDecorationsReadFromStyling(m.Decorations, apiChart.Styling)
 
 	m.Fitting = &models.XYFittingModel{}
-	xyFittingFromAPI(m.Fitting, apiChart.Styling.Fitting)
+	if apiChart.Styling != nil {
+		xyFittingFromAPI(m.Fitting, apiChart.Styling.Fitting)
+	}
 
 	m.Legend = &models.XYLegendModel{}
 	legendDiags := xyLegendFromAPI(ctx, m.Legend, apiChart.Legend)
@@ -1206,7 +1258,9 @@ func xyChartConfigFromAPIESQL(
 	xyDecorationsReadFromStyling(m.Decorations, apiChart.Styling)
 
 	m.Fitting = &models.XYFittingModel{}
-	xyFittingFromAPI(m.Fitting, apiChart.Styling.Fitting)
+	if apiChart.Styling != nil {
+		xyFittingFromAPI(m.Fitting, apiChart.Styling.Fitting)
+	}
 
 	m.Legend = &models.XYLegendModel{}
 	legendDiags := xyLegendFromAPI(ctx, m.Legend, apiChart.Legend)

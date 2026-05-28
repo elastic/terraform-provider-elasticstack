@@ -42,7 +42,7 @@ func TestPopulateFromAPI_PreservesConfiguredName(t *testing.T) {
 		ConcreteName: basetypes.NewStringNull(),
 	}
 
-	diags := model.populateFromAPI(ctx, concreteName, estypes.IndexState{})
+	diags := model.populateFromAPI(ctx, concreteName, estypes.IndexState{}, false)
 	require.False(t, diags.HasError(), "unexpected error: %v", diags)
 
 	// The configured date math expression must be preserved.
@@ -65,7 +65,7 @@ func TestPopulateFromAPI_BackfillsNameWhenAbsent(t *testing.T) {
 		ConcreteName: basetypes.NewStringNull(),
 	}
 
-	diags := model.populateFromAPI(ctx, concreteName, estypes.IndexState{})
+	diags := model.populateFromAPI(ctx, concreteName, estypes.IndexState{}, false)
 	require.False(t, diags.HasError(), "unexpected error: %v", diags)
 
 	// Both name and concrete_name should be set to the concrete index.
@@ -87,7 +87,7 @@ func TestPopulateFromAPI_StaticName(t *testing.T) {
 		ConcreteName: basetypes.NewStringNull(),
 	}
 
-	diags := model.populateFromAPI(ctx, staticName, estypes.IndexState{})
+	diags := model.populateFromAPI(ctx, staticName, estypes.IndexState{}, false)
 	require.False(t, diags.HasError(), "unexpected error: %v", diags)
 
 	assert.Equal(t, staticName, model.Name.ValueString())

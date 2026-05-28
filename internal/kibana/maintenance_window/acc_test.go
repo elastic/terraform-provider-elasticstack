@@ -31,6 +31,8 @@ var minMaintenanceWindowAPISupport = version.Must(version.NewVersion("9.1.0"))
 func TestAccResourceMaintenanceWindow(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minMaintenanceWindowAPISupport, versionutils.FlavorAny)
 
+	addr := "elasticstack_kibana_maintenance_window.test_maintenance_window"
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -38,34 +40,69 @@ func TestAccResourceMaintenanceWindow(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "title", "Terraform Maintenance Window"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.start", "1992-01-01T05:00:00.200Z"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.duration", "10d"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.timezone", "UTC"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.recurring.every", "20d"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.recurring.end", "2029-05-17T05:05:00.000Z"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.recurring.on_week_day.0", "MO"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.recurring.on_week_day.1", "TU"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "scope.alerting.kql", "_id: '1234'"),
+					resource.TestCheckResourceAttrSet(addr, "id"),
+					resource.TestCheckResourceAttr(addr, "space_id", "default"),
+					resource.TestCheckResourceAttr(addr, "title", "Terraform Maintenance Window"),
+					resource.TestCheckResourceAttr(addr, "enabled", "true"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.start", "1992-01-01T05:00:00.200Z"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.duration", "10d"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.timezone", "UTC"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.recurring.every", "20d"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.recurring.end", "2029-05-17T05:05:00.000Z"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.recurring.on_week_day.0", "MO"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.recurring.on_week_day.1", "TU"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.recurring.on_month_day.#", "0"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.recurring.on_month.#", "0"),
+					resource.TestCheckResourceAttr(addr, "scope.alerting.kql", "_id: '1234'"),
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "title", "Terraform Maintenance Window UPDATED"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "enabled", "false"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.start", "1999-02-02T05:00:00.200Z"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.duration", "12d"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.timezone", "Asia/Taipei"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.recurring.every", "21d"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.recurring.on_month_day.0", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.recurring.on_month_day.1", "2"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.recurring.on_month_day.2", "3"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.recurring.on_month.0", "4"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "custom_schedule.recurring.on_month.1", "5"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "scope.alerting.kql", "_id: 'foobar'"),
+					resource.TestCheckResourceAttr(addr, "title", "Terraform Maintenance Window UPDATED"),
+					resource.TestCheckResourceAttr(addr, "enabled", "false"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.start", "1999-02-02T05:00:00.200Z"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.duration", "12d"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.timezone", "Asia/Taipei"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.recurring.every", "21d"),
+					resource.TestCheckNoResourceAttr(addr, "custom_schedule.recurring.end"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.recurring.on_week_day.#", "0"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.recurring.on_month_day.0", "1"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.recurring.on_month_day.1", "2"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.recurring.on_month_day.2", "3"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.recurring.on_month.0", "4"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.recurring.on_month.1", "5"),
+					resource.TestCheckResourceAttr(addr, "scope.alerting.kql", "_id: 'foobar'"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceMaintenanceWindowNoScope verifies that a maintenance window
+// can be created without scope, and covers occurrences, nth-day on_week_day
+// values, and the enabled default (false when omitted).
+func TestAccResourceMaintenanceWindowNoScope(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minMaintenanceWindowAPISupport, versionutils.FlavorAny)
+
+	addr := "elasticstack_kibana_maintenance_window.test_maintenance_window"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(addr, "id"),
+					resource.TestCheckResourceAttr(addr, "title", "Terraform Maintenance Window NTH DAY"),
+					resource.TestCheckResourceAttr(addr, "enabled", "false"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.recurring.every", "1w"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.recurring.occurrences", "5"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.recurring.on_week_day.0", "+1MO"),
+					resource.TestCheckResourceAttr(addr, "custom_schedule.recurring.on_week_day.1", "-2FR"),
+					resource.TestCheckNoResourceAttr(addr, "scope.alerting.kql"),
 				),
 			},
 		},

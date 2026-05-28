@@ -101,7 +101,7 @@ func metricChartConfigPopulateCommonFields(m *models.MetricChartConfigModel,
 	sampling *float32,
 	datasetBytes []byte,
 	datasetErr error,
-	filters []kbapi.KibanaHTTPAPIsLensPanelFilters_Item,
+	filters *kbapi.KibanaHTTPAPIsLensPanelFilters,
 	diags *diag.Diagnostics,
 ) bool {
 	m.Title = types.StringPointerValue(title)
@@ -280,7 +280,8 @@ func metricChartConfigToAPIVariant0(m *models.MetricChartConfigModel, resolver l
 	variant0 := kbapi.KibanaHTTPAPIsMetricNoESQL{
 		Type: kbapi.KibanaHTTPAPIsMetricNoESQLTypeMetric,
 	}
-	variant0.Styling = kbapi.KibanaHTTPAPIsMetricStyling{}
+	styling0 := kbapi.KibanaHTTPAPIsMetricStyling{}
+	variant0.Styling = &styling0
 
 	// Set simple fields
 	if typeutils.IsKnown(m.Title) {
@@ -377,7 +378,8 @@ func metricChartConfigToAPIVariant1(m *models.MetricChartConfigModel, resolver l
 	variant1 := kbapi.KibanaHTTPAPIsMetricESQL{
 		Type: kbapi.KibanaHTTPAPIsMetricESQLTypeMetric,
 	}
-	variant1.Styling = kbapi.KibanaHTTPAPIsMetricStyling{}
+	styling1 := kbapi.KibanaHTTPAPIsMetricStyling{}
+	variant1.Styling = &styling1
 
 	// Set simple fields
 	if typeutils.IsKnown(m.Title) {
@@ -426,18 +428,22 @@ func metricChartConfigToAPIVariant1(m *models.MetricChartConfigModel, resolver l
 	// Set breakdown_by
 	if typeutils.IsKnown(m.BreakdownByJSON) {
 		var breakdownBy struct {
-			CollapseBy kbapi.KibanaHTTPAPIsCollapseBy `json:"collapse_by"`
-			Column     string                         `json:"column"`
-			Columns    *float32                       `json:"columns,omitempty"`
-			Format     kbapi.KibanaHTTPAPIsFormatType `json:"format"`
-			Label      *string                        `json:"label,omitempty"`
+			CollapseBy *kbapi.KibanaHTTPAPIsCollapseBy `json:"collapse_by,omitempty"`
+			Column     string                          `json:"column"`
+			Columns    *float32                        `json:"columns,omitempty"`
+			Format     *kbapi.KibanaHTTPAPIsFormatType `json:"format,omitempty"`
+			Label      *string                         `json:"label,omitempty"`
 		}
 		breakdownDiags := m.BreakdownByJSON.Unmarshal(&breakdownBy)
 		diags.Append(breakdownDiags...)
 		if !breakdownDiags.HasError() {
-			fb, _ := json.Marshal(breakdownBy.Format)
-			if string(fb) == jsonNullString || len(fb) == 0 {
-				_ = breakdownBy.Format.FromKibanaHTTPAPIsNumericFormat(kbapi.KibanaHTTPAPIsNumericFormat{Type: kbapi.Number})
+			if breakdownBy.Format != nil {
+				fb, _ := json.Marshal(breakdownBy.Format)
+				if string(fb) == jsonNullString || len(fb) == 0 {
+					var format kbapi.KibanaHTTPAPIsFormatType
+					_ = format.FromKibanaHTTPAPIsNumericFormat(kbapi.KibanaHTTPAPIsNumericFormat{Type: kbapi.Number})
+					breakdownBy.Format = &format
+				}
 			}
 			variant1.BreakdownBy = &breakdownBy
 		}

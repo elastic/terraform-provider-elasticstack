@@ -73,7 +73,7 @@ func VisByReferenceModelToAPIConfig1(
 	var diags diag.Diagnostics
 	api1 := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVisConfig1{
 		RefId: byRef.RefID.ValueString(),
-		TimeRange: kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
+		TimeRange: &kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
 			From: byRef.TimeRange.From.ValueString(),
 			To:   byRef.TimeRange.To.ValueString(),
 		},

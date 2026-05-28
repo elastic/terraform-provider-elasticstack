@@ -25,6 +25,7 @@ import (
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/clusterprivilege"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/indexprivilege"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -584,3 +585,33 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 func (data Data) GetID() types.String                    { return data.ID }
 func (data Data) GetResourceID() types.String            { return data.Name }
 func (data Data) GetElasticsearchConnection() types.List { return data.ElasticsearchConnection }
+
+var _ entitycore.WithVersionRequirements = Data{}
+
+// GetVersionRequirements satisfies [entitycore.WithVersionRequirements] and declares
+// conditional minimum Elasticsearch versions for configured description and remote_indices.
+func (data Data) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	var reqs []entitycore.VersionRequirement
+
+	if typeutils.IsKnown(data.Description) {
+		reqs = append(reqs, entitycore.VersionRequirement{
+			MinVersion: *MinSupportedDescriptionVersion,
+			ErrorMessage: fmt.Sprintf(
+				"'description' is supported only for Elasticsearch v%s and above",
+				MinSupportedDescriptionVersion.String(),
+			),
+		})
+	}
+
+	if typeutils.IsKnown(data.RemoteIndices) && len(data.RemoteIndices.Elements()) > 0 {
+		reqs = append(reqs, entitycore.VersionRequirement{
+			MinVersion: *MinSupportedRemoteIndicesVersion,
+			ErrorMessage: fmt.Sprintf(
+				"'remote_indices' is supported only for Elasticsearch v%s and above",
+				MinSupportedRemoteIndicesVersion.String(),
+			),
+		})
+	}
+
+	return reqs, nil
+}

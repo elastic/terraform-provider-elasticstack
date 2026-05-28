@@ -135,7 +135,7 @@ func getSchema(_ context.Context) schema.Schema {
 							Description: "Index alias name.",
 							Required:    true,
 						},
-						"filter": schema.StringAttribute{
+						attrFilter: schema.StringAttribute{
 							Description: "Query used to limit documents the alias can access.",
 							Optional:    true,
 							CustomType:  jsontypes.NormalizedType{},

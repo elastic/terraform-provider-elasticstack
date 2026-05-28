@@ -17,9 +17,7 @@ Creates a Kibana rule. See the [create rule API documentation](https://www.elast
 
 ```
 Could not create API key - Unsupported scheme "ApiKey" for granting API Key
-```
-
-## Example Usage
+```## Example Usage
 
 ```terraform
 provider "elasticstack" {
@@ -72,6 +70,8 @@ resource "elasticstack_kibana_alerting_rule" "example" {
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `tags` (Set of String) A list of tag names that are applied to the rule.
 - `throttle` (String) Deprecated in 8.13.0. Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `throttle` values.
+
+Kibana cannot clear this deprecated rule-level value via the update API: once set, omitting or sending `null` in a subsequent PUT is preserved server-side. The provider therefore marks `throttle` as Computed with `UseStateForUnknown` so removing it from configuration does not surface a provider inconsistency error; the value persists in state until the rule is recreated. If you switch the rule to use per-action `frequency` instead, the provider plans `throttle` as unknown (via the shared `StringSetUnknownIf` plan modifier) so the stale value is not sent alongside per-action frequency; state will then reflect whatever Kibana returns. To fully drop a rule-level `throttle`, recreate the resource (for example with `terraform taint`).
 
 ### Read-Only
 

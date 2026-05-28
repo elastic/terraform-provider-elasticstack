@@ -92,6 +92,10 @@ func ImportSavedObjects(ctx context.Context, client *Client, spaceID string, fil
 		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 
 	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportKibanaBoomHTTPError(
+			resp.StatusCode(),
+			"failed to import saved objects",
+			resp.Body,
+		)
 	}
 }

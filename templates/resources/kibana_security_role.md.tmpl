@@ -10,15 +10,17 @@ description: |-
 
 {{ .Description | trimspace }}
 
+See also: [Security Roles Guide](../guides/security-roles)
+
 ## Example Usage
 
-### Using base privileges
+### Data analyst
 
-{{ tffile "examples/resources/elasticstack_kibana_security_role/resource-with-base.tf" }}
+{{ tffile "examples/resources/elasticstack_kibana_security_role/resource-data-analyst.tf" }}
 
-### Using feature privileges
+### Multi-space access
 
-{{ tffile "examples/resources/elasticstack_kibana_security_role/resource-with-feature.tf" }}
+{{ tffile "examples/resources/elasticstack_kibana_security_role/resource-multi-space.tf" }}
 
 {{ .SchemaMarkdown | trimspace }}
 {{- if or .HasImport .HasImportIDConfig .HasImportIdentityConfig }}

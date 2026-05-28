@@ -83,7 +83,7 @@ func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, resolve
 	m.EsqlMetric = nil
 
 	m.Styling = &models.GaugeStylingModel{}
-	if api.Styling.Shape != nil {
+	if api.Styling != nil && api.Styling.Shape != nil {
 		shapeBytes, err := api.Styling.Shape.MarshalJSON()
 		sv, ok := lenscommon.MarshalToNormalized(shapeBytes, err, "shape", &diags)
 		if !ok {
@@ -226,7 +226,7 @@ func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, res
 	m.EsqlMetric = em
 
 	m.Styling = &models.GaugeStylingModel{}
-	if api.Styling.Shape != nil {
+	if api.Styling != nil && api.Styling.Shape != nil {
 		shapeBytes, err := api.Styling.Shape.MarshalJSON()
 		sv, ok := lenscommon.MarshalToNormalized(shapeBytes, err, "shape", &diags)
 		if !ok {
@@ -340,6 +340,9 @@ func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel, resolver lenscommon.Reso
 		shapeDiags := m.Styling.ShapeJSON.Unmarshal(&shape)
 		diags.Append(shapeDiags...)
 		if !shapeDiags.HasError() {
+			if api.Styling == nil {
+				api.Styling = &kbapi.KibanaHTTPAPIsGaugeStyling{}
+			}
 			api.Styling.Shape = &shape
 		}
 	}
@@ -490,6 +493,9 @@ func gaugeConfigToAPIESQL(m *models.GaugeConfigModel, resolver lenscommon.Resolv
 		shapeDiags := m.Styling.ShapeJSON.Unmarshal(&shape)
 		diags.Append(shapeDiags...)
 		if !shapeDiags.HasError() {
+			if api.Styling == nil {
+				api.Styling = &kbapi.KibanaHTTPAPIsGaugeStyling{}
+			}
 			api.Styling.Shape = &shape
 		}
 	}

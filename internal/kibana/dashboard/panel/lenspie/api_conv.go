@@ -55,8 +55,8 @@ func pieChartConfigPopulateCommonFields(
 	donutHole, labelPosition *string,
 	datasetBytes []byte,
 	datasetErr error,
-	legend kbapi.KibanaHTTPAPIsPieLegend,
-	filters []kbapi.KibanaHTTPAPIsLensPanelFilters_Item,
+	legend *kbapi.KibanaHTTPAPIsPieLegend,
+	filters *kbapi.KibanaHTTPAPIsLensPanelFilters,
 	diags *diag.Diagnostics,
 ) bool {
 	m.Title = types.StringPointerValue(title)
@@ -102,14 +102,16 @@ func pieChartConfigFromAPINoESQL(
 	var diags diag.Diagnostics
 
 	var donutHole *string
-	if apiChart.Styling.DonutHole != nil {
-		s := string(*apiChart.Styling.DonutHole)
-		donutHole = &s
-	}
 	var labelPosition *string
-	if apiChart.Styling.Labels != nil && apiChart.Styling.Labels.Position != nil {
-		s := string(*apiChart.Styling.Labels.Position)
-		labelPosition = &s
+	if apiChart.Styling != nil {
+		if apiChart.Styling.DonutHole != nil {
+			s := string(*apiChart.Styling.DonutHole)
+			donutHole = &s
+		}
+		if apiChart.Styling.Labels != nil && apiChart.Styling.Labels.Position != nil {
+			s := string(*apiChart.Styling.Labels.Position)
+			labelPosition = &s
+		}
 	}
 	datasetBytes, datasetErr := json.Marshal(apiChart.DataSource)
 
@@ -185,14 +187,16 @@ func pieChartConfigFromAPIESQL(
 	var diags diag.Diagnostics
 
 	var donutHole *string
-	if apiChart.Styling.DonutHole != nil {
-		s := string(*apiChart.Styling.DonutHole)
-		donutHole = &s
-	}
 	var labelPosition *string
-	if apiChart.Styling.Labels != nil && apiChart.Styling.Labels.Position != nil {
-		s := string(*apiChart.Styling.Labels.Position)
-		labelPosition = &s
+	if apiChart.Styling != nil {
+		if apiChart.Styling.DonutHole != nil {
+			s := string(*apiChart.Styling.DonutHole)
+			donutHole = &s
+		}
+		if apiChart.Styling.Labels != nil && apiChart.Styling.Labels.Position != nil {
+			s := string(*apiChart.Styling.Labels.Position)
+			labelPosition = &s
+		}
 	}
 	datasetBytes, datasetErr := json.Marshal(apiChart.DataSource)
 
@@ -270,7 +274,9 @@ func pieChartConfigToAPI(m *models.PieChartConfigModel, resolver lenscommon.Reso
 		var chart kbapi.KibanaHTTPAPIsPieNoESQL
 
 		defaultMode := kbapi.KibanaHTTPAPIsValueDisplayModePercentage
-		chart.Styling.Values = kbapi.KibanaHTTPAPIsValueDisplay{Mode: &defaultMode}
+		chart.Styling = &kbapi.KibanaHTTPAPIsPieStyling{
+			Values: &kbapi.KibanaHTTPAPIsValueDisplay{Mode: &defaultMode},
+		}
 
 		chart.Title = m.Title.ValueStringPointer()
 		chart.Description = m.Description.ValueStringPointer()
@@ -283,11 +289,17 @@ func pieChartConfigToAPI(m *models.PieChartConfigModel, resolver lenscommon.Reso
 
 		if !m.DonutHole.IsNull() {
 			val := kbapi.KibanaHTTPAPIsPieStylingDonutHole(m.DonutHole.ValueString())
+			if chart.Styling == nil {
+				chart.Styling = &kbapi.KibanaHTTPAPIsPieStyling{}
+			}
 			chart.Styling.DonutHole = &val
 		}
 
 		if !m.LabelPosition.IsNull() {
 			pos := kbapi.KibanaHTTPAPIsPieStylingLabelsPosition(m.LabelPosition.ValueString())
+			if chart.Styling == nil {
+				chart.Styling = &kbapi.KibanaHTTPAPIsPieStyling{}
+			}
 			chart.Styling.Labels = &struct {
 				Position *kbapi.KibanaHTTPAPIsPieStylingLabelsPosition `json:"position,omitempty"`
 				Visible  *bool                                         `json:"visible,omitempty"`
@@ -297,8 +309,9 @@ func pieChartConfigToAPI(m *models.PieChartConfigModel, resolver lenscommon.Reso
 		if m.Legend != nil {
 			chart.Legend = lenscommon.PartitionLegendToPieLegend(m.Legend)
 		}
-		if chart.Legend.Size == "" {
-			chart.Legend.Size = kbapi.KibanaHTTPAPIsLegendSizeAuto
+		if chart.Legend != nil && (chart.Legend.Size == nil || *chart.Legend.Size == "") {
+			size := kbapi.KibanaHTTPAPIsLegendSizeAuto
+			chart.Legend.Size = &size
 		}
 
 		if m.DataSourceJSON.IsNull() {
@@ -367,7 +380,9 @@ func pieChartConfigToAPI(m *models.PieChartConfigModel, resolver lenscommon.Reso
 		var chart kbapi.KibanaHTTPAPIsPieESQL
 
 		defaultMode := kbapi.KibanaHTTPAPIsValueDisplayModePercentage
-		chart.Styling.Values = kbapi.KibanaHTTPAPIsValueDisplay{Mode: &defaultMode}
+		chart.Styling = &kbapi.KibanaHTTPAPIsPieStyling{
+			Values: &kbapi.KibanaHTTPAPIsValueDisplay{Mode: &defaultMode},
+		}
 
 		chart.Title = m.Title.ValueStringPointer()
 		chart.Description = m.Description.ValueStringPointer()
@@ -380,11 +395,17 @@ func pieChartConfigToAPI(m *models.PieChartConfigModel, resolver lenscommon.Reso
 
 		if !m.DonutHole.IsNull() {
 			val := kbapi.KibanaHTTPAPIsPieStylingDonutHole(m.DonutHole.ValueString())
+			if chart.Styling == nil {
+				chart.Styling = &kbapi.KibanaHTTPAPIsPieStyling{}
+			}
 			chart.Styling.DonutHole = &val
 		}
 
 		if !m.LabelPosition.IsNull() {
 			pos := kbapi.KibanaHTTPAPIsPieStylingLabelsPosition(m.LabelPosition.ValueString())
+			if chart.Styling == nil {
+				chart.Styling = &kbapi.KibanaHTTPAPIsPieStyling{}
+			}
 			chart.Styling.Labels = &struct {
 				Position *kbapi.KibanaHTTPAPIsPieStylingLabelsPosition `json:"position,omitempty"`
 				Visible  *bool                                         `json:"visible,omitempty"`
@@ -394,8 +415,9 @@ func pieChartConfigToAPI(m *models.PieChartConfigModel, resolver lenscommon.Reso
 		if m.Legend != nil {
 			chart.Legend = lenscommon.PartitionLegendToPieLegend(m.Legend)
 		}
-		if chart.Legend.Size == "" {
-			chart.Legend.Size = kbapi.KibanaHTTPAPIsLegendSizeAuto
+		if chart.Legend != nil && (chart.Legend.Size == nil || *chart.Legend.Size == "") {
+			size := kbapi.KibanaHTTPAPIsLegendSizeAuto
+			chart.Legend.Size = &size
 		}
 
 		if m.DataSourceJSON.IsNull() {
@@ -413,7 +435,7 @@ func pieChartConfigToAPI(m *models.PieChartConfigModel, resolver lenscommon.Reso
 			metrics := make([]struct {
 				Color  *kbapi.KibanaHTTPAPIsPieESQL_Metrics_Color `json:"color,omitempty"`
 				Column string                                     `json:"column"`
-				Format kbapi.KibanaHTTPAPIsFormatType             `json:"format"`
+				Format *kbapi.KibanaHTTPAPIsFormatType            `json:"format,omitempty"`
 				Label  *string                                    `json:"label,omitempty"`
 			}, len(m.Metrics))
 			for i, metric := range m.Metrics {
@@ -426,19 +448,23 @@ func pieChartConfigToAPI(m *models.PieChartConfigModel, resolver lenscommon.Reso
 
 		if len(m.GroupBy) > 0 {
 			groupBy := make([]struct {
-				CollapseBy kbapi.KibanaHTTPAPIsCollapseBy   `json:"collapse_by"`
-				Color      kbapi.KibanaHTTPAPIsColorMapping `json:"color"`
-				Column     string                           `json:"column"`
-				Format     kbapi.KibanaHTTPAPIsFormatType   `json:"format"`
-				Label      *string                          `json:"label,omitempty"`
+				CollapseBy *kbapi.KibanaHTTPAPIsCollapseBy   `json:"collapse_by,omitempty"`
+				Color      *kbapi.KibanaHTTPAPIsColorMapping `json:"color,omitempty"`
+				Column     string                            `json:"column"`
+				Format     *kbapi.KibanaHTTPAPIsFormatType   `json:"format,omitempty"`
+				Label      *string                           `json:"label,omitempty"`
 			}, len(m.GroupBy))
 			for i, grp := range m.GroupBy {
 				if err := json.Unmarshal([]byte(grp.Config.ValueString()), &groupBy[i]); err != nil {
 					diags.AddError("Failed to unmarshal group_by", err.Error())
 				}
-				fb, _ := json.Marshal(groupBy[i].Format)
-				if string(fb) == jsonNullString || len(fb) == 0 {
-					_ = groupBy[i].Format.FromKibanaHTTPAPIsNumericFormat(kbapi.KibanaHTTPAPIsNumericFormat{Type: kbapi.Number})
+				if groupBy[i].Format != nil {
+					fb, _ := json.Marshal(groupBy[i].Format)
+					if string(fb) == jsonNullString || len(fb) == 0 {
+						var format kbapi.KibanaHTTPAPIsFormatType
+						_ = format.FromKibanaHTTPAPIsNumericFormat(kbapi.KibanaHTTPAPIsNumericFormat{Type: kbapi.Number})
+						groupBy[i].Format = &format
+					}
 				}
 			}
 			chart.GroupBy = &groupBy

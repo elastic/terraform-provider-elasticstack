@@ -45,8 +45,8 @@ func newPrebuiltRuleResource() *PrebuiltRuleResource {
 				Schema: getSchema,
 				Read:   readPrebuiltRules,
 				Delete: deletePrebuiltRules,
-				Create: createPrebuiltRules,
-				Update: updatePrebuiltRules,
+				Create: writePrebuiltRules,
+				Update: writePrebuiltRules,
 			},
 		),
 	}

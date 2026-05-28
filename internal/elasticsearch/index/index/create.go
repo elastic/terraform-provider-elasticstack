@@ -78,13 +78,13 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	serverFlavor, flavorDiags := client.ServerFlavor(ctx)
-	if flavorDiags.HasError() {
-		resp.Diagnostics.Append(flavorDiags...)
+	isServerless, isDiags := client.IsServerless(ctx)
+	if isDiags.HasError() {
+		resp.Diagnostics.Append(isDiags...)
 		return
 	}
 
-	params := planModel.toPutIndexParams(serverFlavor)
+	params := planModel.toPutIndexParams(isServerless)
 
 	concreteName, diags := elasticsearch.PutIndex(ctx, client, &apiModel, &params)
 	resp.Diagnostics.Append(diags...)
@@ -104,7 +104,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	planModel.ID = types.StringValue(id.String())
 	planModel.ConcreteName = types.StringValue(concreteName)
 
-	finalModel, found, diags := readIndex(ctx, client, concreteName, planModel)
+	finalModel, found, diags := readIndex(ctx, client, concreteName, planModel, false)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -150,7 +150,7 @@ func (r *Resource) adoptExistingIndexOnCreate(
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	resp.Diagnostics.Append(synthetic.populateFromAPI(ctx, concreteName, existingState)...)
+	resp.Diagnostics.Append(synthetic.populateFromAPI(ctx, concreteName, existingState, false)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -195,7 +195,7 @@ func (r *Resource) adoptExistingIndexOnCreate(
 	plan.ConcreteName = types.StringValue(concreteName)
 	plan.ID = types.StringValue(id.String())
 
-	finalModel, found, diags := readIndex(ctx, client, concreteName, *plan)
+	finalModel, found, diags := readIndex(ctx, client, concreteName, *plan, false)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

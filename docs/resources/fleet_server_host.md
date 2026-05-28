@@ -8,9 +8,7 @@ description: |-
 
 # elasticstack_fleet_server_host (Resource)
 
-Creates a new Fleet Server Host.
-
-## Example Usage
+Creates a new Fleet Server Host.## Example Usage
 
 ```terraform
 provider "elasticstack" {

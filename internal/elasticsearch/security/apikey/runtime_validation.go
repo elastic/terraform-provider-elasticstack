@@ -60,13 +60,13 @@ func ValidateRestrictionSupport(ctx context.Context, client *clients.Elasticsear
 		return diags
 	}
 
-	currentVersion, verDiags := client.ServerVersion(ctx)
-	diags.Append(verDiags...)
+	caps, capsDiags := resolveAPIKeyCapabilities(ctx, client)
+	diags.Append(capsDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	if currentVersion.LessThan(MinVersionWithRestriction) {
+	if !caps.SupportsRestriction {
 		diags.AddAttributeError(
 			path.Root("roles_descriptors"),
 			"Specifying `restriction` on an API key role description is not supported in this version of Elasticsearch",

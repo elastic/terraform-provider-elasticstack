@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -59,62 +60,68 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	var c converter
 	resolver := stubResolver{}
 
+	query := kbapi.KibanaHTTPAPIsFilterSimple{
+		Expression: "status:200",
+		Language: func() *kbapi.KibanaHTTPAPIsFilterSimpleLanguage {
+			lang := kbapi.KibanaHTTPAPIsFilterSimpleLanguage("kql")
+			return &lang
+		}(),
+	}
+	xOrientation := kbapi.KibanaHTTPAPIsVisApiOrientation("horizontal")
+	xAxis := kbapi.KibanaHTTPAPIsHeatmapXAxis{
+		Labels: &struct {
+			Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
+			Visible     *bool                                  `json:"visible,omitempty"`
+		}{
+			Orientation: &xOrientation,
+			Visible:     new(true),
+		},
+		Title: &struct {
+			Text    *string `json:"text,omitempty"`
+			Visible *bool   `json:"visible,omitempty"`
+		}{
+			Text:    new("X Axis"),
+			Visible: new(true),
+		},
+	}
+	yAxisConfig := kbapi.KibanaHTTPAPIsHeatmapYAxis{
+		Labels: &struct {
+			Visible *bool `json:"visible,omitempty"`
+		}{
+			Visible: new(false),
+		},
+		Title: &struct {
+			Text    *string `json:"text,omitempty"`
+			Visible *bool   `json:"visible,omitempty"`
+		}{
+			Text:    new("Y Axis"),
+			Visible: new(true),
+		},
+	}
+	cells := kbapi.KibanaHTTPAPIsHeatmapCells{
+		Labels: &struct {
+			Visible *bool `json:"visible,omitempty"`
+		}{
+			Visible: new(true),
+		},
+	}
+	legendSize := kbapi.KibanaHTTPAPIsLegendSizeM
 	heatmap := kbapi.KibanaHTTPAPIsHeatmapNoESQL{
 		Type:                kbapi.KibanaHTTPAPIsHeatmapNoESQLTypeHeatmap,
 		Title:               new("Test Heatmap"),
 		Description:         new("Heatmap description"),
 		IgnoreGlobalFilters: new(true),
 		Sampling:            new(float32(0.5)),
-		Query: kbapi.KibanaHTTPAPIsFilterSimple{
-			Expression: "status:200",
-			Language: func() *kbapi.KibanaHTTPAPIsFilterSimpleLanguage {
-				lang := kbapi.KibanaHTTPAPIsFilterSimpleLanguage("kql")
-				return &lang
-			}(),
+		Query:               &query,
+		Axis: &kbapi.KibanaHTTPAPIsHeatmapAxes{
+			X: &xAxis,
+			Y: &yAxisConfig,
 		},
-		Axis: kbapi.KibanaHTTPAPIsHeatmapAxes{
-			X: kbapi.KibanaHTTPAPIsHeatmapXAxis{
-				Labels: &struct {
-					Orientation kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation"`
-					Visible     *bool                                 `json:"visible,omitempty"`
-				}{
-					Orientation: kbapi.KibanaHTTPAPIsVisApiOrientation("horizontal"),
-					Visible:     new(true),
-				},
-				Title: &struct {
-					Text    *string `json:"text,omitempty"`
-					Visible *bool   `json:"visible,omitempty"`
-				}{
-					Text:    new("X Axis"),
-					Visible: new(true),
-				},
-			},
-			Y: kbapi.KibanaHTTPAPIsHeatmapYAxis{
-				Labels: &struct {
-					Visible *bool `json:"visible,omitempty"`
-				}{
-					Visible: new(false),
-				},
-				Title: &struct {
-					Text    *string `json:"text,omitempty"`
-					Visible *bool   `json:"visible,omitempty"`
-				}{
-					Text:    new("Y Axis"),
-					Visible: new(true),
-				},
-			},
+		Styling: &kbapi.KibanaHTTPAPIsHeatmapStyling{
+			Cells: &cells,
 		},
-		Styling: kbapi.KibanaHTTPAPIsHeatmapStyling{
-			Cells: kbapi.KibanaHTTPAPIsHeatmapCells{
-				Labels: &struct {
-					Visible *bool `json:"visible,omitempty"`
-				}{
-					Visible: new(true),
-				},
-			},
-		},
-		Legend: kbapi.KibanaHTTPAPIsHeatmapLegend{
-			Size: kbapi.KibanaHTTPAPIsLegendSizeM,
+		Legend: &kbapi.KibanaHTTPAPIsHeatmapLegend{
+			Size: &legendSize,
 			Visibility: func() *kbapi.KibanaHTTPAPIsHeatmapLegendVisibility {
 				visibility := kbapi.KibanaHTTPAPIsHeatmapLegendVisibilityVisible
 				return &visibility
@@ -132,7 +139,8 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 
 	var fItem kbapi.KibanaHTTPAPIsLensPanelFilters_Item
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"condition","condition":{"field":"status","operator":"is","value":"200"}}`), &fItem))
-	heatmap.Filters = []kbapi.KibanaHTTPAPIsLensPanelFilters_Item{fItem}
+	filters := kbapi.KibanaHTTPAPIsLensPanelFilters{fItem}
+	heatmap.Filters = &filters
 
 	var attrs lenscommon.VisByValueConfig0
 	require.NoError(t, attrs.FromKibanaHTTPAPIsHeatmapNoESQL(heatmap))
@@ -149,6 +157,7 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	assert.Equal(t, kbapi.KibanaHTTPAPIsHeatmapNoESQLTypeHeatmap, heatmapRoundTrip.Type)
 	require.NotNil(t, heatmapRoundTrip.Title)
 	assert.Equal(t, "Test Heatmap", *heatmapRoundTrip.Title)
+	require.NotNil(t, heatmapRoundTrip.Query)
 	assert.Equal(t, "status:200", heatmapRoundTrip.Query.Expression)
 }
 
@@ -201,4 +210,56 @@ func TestConverter_roundTrip_ESQL_heatmap(t *testing.T) {
 	dsBytes, err := json.Marshal(out.DataSource)
 	require.NoError(t, err)
 	assert.Contains(t, string(dsBytes), "FROM logs-*")
+}
+
+// Test_heatmapAxesFromAPI_preservesPriorWhenAPIDropsAxis covers a regression where
+// Kibana may omit axis.x or axis.y entirely from a GET response (the kbapi spec
+// types both as pointers with omitempty). Previously these were value-typed and
+// always present, so the prior-preserve logic inside the per-axis converters was
+// sufficient. Now that they are pointers, axis-level preservation must happen
+// in heatmapAxesFromAPI itself, otherwise round-tripping a config that set
+// axis.y produces an "inconsistent result after apply" because the read-back
+// state drops axis.y to null.
+func Test_heatmapAxesFromAPI_preservesPriorWhenAPIDropsAxis(t *testing.T) {
+	prior := &models.HeatmapAxesModel{
+		Y: &models.HeatmapYAxisModel{
+			Labels: &models.HeatmapYAxisLabelsModel{Visible: types.BoolValue(true)},
+			Title: &models.AxisTitleModel{
+				Value:   types.StringValue("Y Axis"),
+				Visible: types.BoolValue(true),
+			},
+		},
+		X: &models.HeatmapXAxisModel{
+			Labels: &models.HeatmapXAxisLabelsModel{
+				Orientation: types.StringValue("horizontal"),
+				Visible:     types.BoolValue(true),
+			},
+			Title: &models.AxisTitleModel{
+				Value:   types.StringValue("X Axis"),
+				Visible: types.BoolValue(true),
+			},
+		},
+	}
+
+	t.Run("api.Y nil preserves prior.Y", func(t *testing.T) {
+		api := &kbapi.KibanaHTTPAPIsHeatmapAxes{
+			X: &kbapi.KibanaHTTPAPIsHeatmapXAxis{},
+		}
+		got := &models.HeatmapAxesModel{}
+		diags := heatmapAxesFromAPI(got, api, prior)
+		require.False(t, diags.HasError(), "%v", diags)
+		require.NotNil(t, got.Y, "axis.y was lost when API omitted it")
+		assert.Equal(t, prior.Y, got.Y)
+	})
+
+	t.Run("api.X nil preserves prior.X", func(t *testing.T) {
+		api := &kbapi.KibanaHTTPAPIsHeatmapAxes{
+			Y: &kbapi.KibanaHTTPAPIsHeatmapYAxis{},
+		}
+		got := &models.HeatmapAxesModel{}
+		diags := heatmapAxesFromAPI(got, api, prior)
+		require.False(t, diags.HasError(), "%v", diags)
+		require.NotNil(t, got.X, "axis.x was lost when API omitted it")
+		assert.Equal(t, prior.X, got.X)
+	})
 }

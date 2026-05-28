@@ -8,9 +8,7 @@ description: |-
 
 # elasticstack_kibana_action_connector (Resource)
 
-Creates a Kibana action connector. See https://www.elastic.co/guide/en/kibana/current/action-types.html
-
-## Example Usage
+Creates a Kibana action connector. See https://www.elastic.co/guide/en/kibana/current/action-types.html## Example Usage
 
 ```terraform
 provider "elasticstack" {

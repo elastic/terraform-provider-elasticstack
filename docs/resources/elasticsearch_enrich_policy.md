@@ -8,9 +8,7 @@ description: |-
 
 # elasticstack_elasticsearch_enrich_policy (Resource)
 
-Managing Elasticsearch enrich policies. See the [enrich API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/enrich-apis.html) for more details.
-
-## Example Usage
+Managing Elasticsearch enrich policies. See the [enrich API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/enrich-apis.html) for more details.## Example Usage
 
 ```terraform
 provider "elasticstack" {

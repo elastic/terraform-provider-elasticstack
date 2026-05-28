@@ -95,7 +95,7 @@ func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel,
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
 
-	if len(api.Filters) > 0 {
+	if api.Filters != nil && len(*api.Filters) > 0 {
 		m.Filters = lenscommon.PopulateFiltersFromAPI(api.Filters, &diags)
 	} else {
 		m.Filters = nil
@@ -104,7 +104,7 @@ func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel,
 	m.Legend = &models.PartitionLegendModel{}
 	lenscommon.PartitionLegendFromMosaicLegend(m.Legend, api.Legend)
 
-	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
+	if api.Styling != nil && api.Styling.Values != nil && (api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil) {
 		m.ValueDisplay = &models.PartitionValueDisplay{}
 		lenscommon.PartitionValueDisplayFromAPI(m.ValueDisplay, api.Styling.Values)
 	} else {
@@ -181,8 +181,12 @@ func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, r
 	if api.GroupBy != nil && len(*api.GroupBy) > 0 {
 		m.EsqlGroupBy = make([]models.MosaicEsqlGroupBy, len(*api.GroupBy))
 		for i, gb := range *api.GroupBy {
+			collapseBy := ""
+			if gb.CollapseBy != nil {
+				collapseBy = string(*gb.CollapseBy)
+			}
 			m.EsqlGroupBy[i].Column = types.StringValue(gb.Column)
-			m.EsqlGroupBy[i].CollapseBy = types.StringValue(string(gb.CollapseBy))
+			m.EsqlGroupBy[i].CollapseBy = types.StringValue(collapseBy)
 			colorBytes, err := json.Marshal(gb.Color)
 			if err != nil {
 				diags.AddError("Failed to marshal esql group_by color", err.Error())
@@ -203,7 +207,7 @@ func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, r
 		}
 	}
 
-	if len(api.Filters) > 0 {
+	if api.Filters != nil && len(*api.Filters) > 0 {
 		m.Filters = lenscommon.PopulateFiltersFromAPI(api.Filters, &diags)
 	} else {
 		m.Filters = nil
@@ -212,7 +216,7 @@ func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, r
 	m.Legend = &models.PartitionLegendModel{}
 	lenscommon.PartitionLegendFromMosaicLegend(m.Legend, api.Legend)
 
-	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
+	if api.Styling != nil && api.Styling.Values != nil && (api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil) {
 		m.ValueDisplay = &models.PartitionValueDisplay{}
 		lenscommon.PartitionValueDisplayFromAPI(m.ValueDisplay, api.Styling.Values)
 	} else {
@@ -329,27 +333,32 @@ func mosaicConfigToAPIMosaicESQL(m *models.MosaicConfigModel, resolver lenscommo
 		return api, diags
 	}
 	groupBy := make([]struct {
-		CollapseBy kbapi.KibanaHTTPAPIsCollapseBy   `json:"collapse_by"`
-		Color      kbapi.KibanaHTTPAPIsColorMapping `json:"color"`
-		Column     string                           `json:"column"`
-		Format     kbapi.KibanaHTTPAPIsFormatType   `json:"format"`
-		Label      *string                          `json:"label,omitempty"`
+		CollapseBy *kbapi.KibanaHTTPAPIsCollapseBy   `json:"collapse_by,omitempty"`
+		Color      *kbapi.KibanaHTTPAPIsColorMapping `json:"color,omitempty"`
+		Column     string                            `json:"column"`
+		Format     *kbapi.KibanaHTTPAPIsFormatType   `json:"format,omitempty"`
+		Label      *string                           `json:"label,omitempty"`
 	}, len(m.EsqlGroupBy))
 	for i, eg := range m.EsqlGroupBy {
 		groupBy[i].Column = eg.Column.ValueString()
-		groupBy[i].CollapseBy = kbapi.KibanaHTTPAPIsCollapseBy(eg.CollapseBy.ValueString())
-		if err := json.Unmarshal([]byte(eg.ColorJSON.ValueString()), &groupBy[i].Color); err != nil {
+		collapseBy := kbapi.KibanaHTTPAPIsCollapseBy(eg.CollapseBy.ValueString())
+		groupBy[i].CollapseBy = &collapseBy
+		var color kbapi.KibanaHTTPAPIsColorMapping
+		if err := json.Unmarshal([]byte(eg.ColorJSON.ValueString()), &color); err != nil {
 			diags.AddError("Failed to unmarshal esql group_by color_json", err.Error())
 			return api, diags
 		}
+		groupBy[i].Color = &color
 		formatSrc := lenscommon.DefaultLensNumberFormatJSON
 		if typeutils.IsKnown(eg.FormatJSON) {
 			formatSrc = eg.FormatJSON.ValueString()
 		}
-		if err := json.Unmarshal([]byte(formatSrc), &groupBy[i].Format); err != nil {
+		var format kbapi.KibanaHTTPAPIsFormatType
+		if err := json.Unmarshal([]byte(formatSrc), &format); err != nil {
 			diags.AddError("Failed to unmarshal esql group_by format_json", err.Error())
 			return api, diags
 		}
+		groupBy[i].Format = &format
 		if typeutils.IsKnown(eg.Label) {
 			l := eg.Label.ValueString()
 			groupBy[i].Label = &l
@@ -373,10 +382,12 @@ func mosaicConfigToAPIMosaicESQL(m *models.MosaicConfigModel, resolver lenscommo
 	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
 	if m.ValueDisplay != nil {
-		api.Styling.Values = lenscommon.PartitionValueDisplayToAPI(m.ValueDisplay)
+		api.Styling = &kbapi.KibanaHTTPAPIsMosaicStyling{Values: lenscommon.PartitionValueDisplayToAPI(m.ValueDisplay)}
 	} else {
 		defaultMode := kbapi.KibanaHTTPAPIsValueDisplayModePercentage
-		api.Styling.Values = kbapi.KibanaHTTPAPIsValueDisplay{Mode: &defaultMode}
+		api.Styling = &kbapi.KibanaHTTPAPIsMosaicStyling{
+			Values: &kbapi.KibanaHTTPAPIsValueDisplay{Mode: &defaultMode},
+		}
 	}
 
 	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
@@ -497,7 +508,7 @@ func mosaicConfigToAPINoESQL(m *models.MosaicConfigModel, resolver lenscommon.Re
 	api.Legend = lenscommon.PartitionLegendToMosaicLegend(m.Legend)
 
 	if m.ValueDisplay != nil {
-		api.Styling.Values = lenscommon.PartitionValueDisplayToAPI(m.ValueDisplay)
+		api.Styling = &kbapi.KibanaHTTPAPIsMosaicStyling{Values: lenscommon.PartitionValueDisplayToAPI(m.ValueDisplay)}
 	}
 
 	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)

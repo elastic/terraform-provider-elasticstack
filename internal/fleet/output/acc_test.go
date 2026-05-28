@@ -363,6 +363,7 @@ func TestAccResourceOutputKafkaComplex(t *testing.T) {
 }
 
 func TestAccResourceOutputRemoteElasticsearch(t *testing.T) {
+	acctest.SkipIfNotAcceptanceTest(t)
 	versionutils.SkipIfUnsupported(t, minVersionOutput, versionutils.FlavorAny)
 
 	client, err := clients.NewAcceptanceTestingKibanaScopedClient()

@@ -46,6 +46,15 @@ var (
 		settingSortMode:    true,
 	}
 
+	// sortKeysSkippedOnImportHydration are not written into legacy flat attrs during
+	// import hydration; nested sort is handled by populateSortFromSettings instead.
+	sortKeysSkippedOnImportHydration = map[string]bool{
+		settingSortField:   true,
+		settingSortOrder:   true,
+		settingSortMissing: true,
+		settingSortMode:    true,
+	}
+
 	staticSettingsKeys = []string{
 		settingNumberOfShards,
 		settingNumberOfRoutingShards,
@@ -204,7 +213,7 @@ type sortEntryModel struct {
 	Mode    types.String `tfsdk:"mode"`
 }
 
-func (model *tfModel) populateFromAPI(ctx context.Context, indexName string, apiModel estypes.IndexState) diag.Diagnostics {
+func (model *tfModel) populateFromAPI(ctx context.Context, indexName string, apiModel estypes.IndexState, hydrateAll bool) diag.Diagnostics {
 	// Always set the concrete name to the actual index name from Elasticsearch.
 	model.ConcreteName = types.StringValue(indexName)
 
@@ -254,6 +263,13 @@ func (model *tfModel) populateFromAPI(ctx context.Context, indexName string, api
 		if sortDiags := populateSortFromSettings(ctx, model); sortDiags.HasError() {
 			return sortDiags
 		}
+	}
+
+	if hydrateAll {
+		if hydrateDiags := hydrateAllSettingsFromRaw(ctx, model); hydrateDiags.HasError() {
+			return hydrateDiags
+		}
+		populateOperationalDefaults(model)
 	}
 
 	return nil
@@ -319,7 +335,7 @@ func (model tfModel) toAPIModel(ctx context.Context) (models.Index, diag.Diagnos
 	return apiModel, diags
 }
 
-func (model tfModel) toPutIndexParams(serverFlavor string) models.PutIndexParams {
+func (model tfModel) toPutIndexParams(isServerless bool) models.PutIndexParams {
 	// The string values are validated as durations as part of schema validation
 	masterTimeout, _ := model.MasterTimeout.Parse()
 	timeout, _ := model.Timeout.Parse()
@@ -328,7 +344,7 @@ func (model tfModel) toPutIndexParams(serverFlavor string) models.PutIndexParams
 		Timeout: timeout,
 	}
 
-	if serverFlavor != clients.ServerlessFlavor {
+	if !isServerless {
 		params.MasterTimeout = masterTimeout
 		params.WaitForActiveShards = model.WaitForActiveShards.ValueString()
 	}
@@ -484,16 +500,8 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]any, diag.
 		}
 	}
 
-	analysisProperties := map[string]jsontypes.Normalized{
-		"analyzer":    model.AnalysisAnalyzer,
-		"tokenizer":   model.AnalysisTokenizer,
-		"char_filter": model.AnalysisCharFilter,
-		"filter":      model.AnalysisFilter,
-		"normalizer":  model.AnalysisNormalizer,
-	}
-
 	analysis := map[string]any{}
-	for name, property := range analysisProperties {
+	for name, property := range analysisNormalizedFields(model) {
 		if typeutils.IsKnown(property) {
 			var parsedValue map[string]any
 			if diags := property.Unmarshal(&parsedValue); diags.HasError() {
@@ -553,6 +561,28 @@ func (model tfModel) getFieldValueByTagValue(tagName string, t reflect.Type) (at
 
 func convertSettingsKeyToTFFieldKey(settingKey string) string {
 	return strings.ReplaceAll(settingKey, ".", "_")
+}
+
+// analysisNormalizedFields returns index.analysis sub-keys mapped to model fields.
+func analysisNormalizedFields(model tfModel) map[string]jsontypes.Normalized {
+	return map[string]jsontypes.Normalized{
+		"analyzer":    model.AnalysisAnalyzer,
+		"tokenizer":   model.AnalysisTokenizer,
+		"char_filter": model.AnalysisCharFilter,
+		attrFilter:    model.AnalysisFilter,
+		"normalizer":  model.AnalysisNormalizer,
+	}
+}
+
+// analysisNormalizedFieldTargets returns writable targets for import hydration.
+func analysisNormalizedFieldTargets(model *tfModel) map[string]*jsontypes.Normalized {
+	return map[string]*jsontypes.Normalized{
+		"analyzer":    &model.AnalysisAnalyzer,
+		"tokenizer":   &model.AnalysisTokenizer,
+		"char_filter": &model.AnalysisCharFilter,
+		attrFilter:    &model.AnalysisFilter,
+		"normalizer":  &model.AnalysisNormalizer,
+	}
 }
 
 func aliasToAPIModel(model aliasutil.AliasModel) (models.IndexAlias, diag.Diagnostics) {

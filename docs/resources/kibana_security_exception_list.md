@@ -11,9 +11,7 @@ description: |-
 
 Manages a Kibana Exception List. Exception lists are containers for exception items used to prevent security rules from generating alerts.
 
-See the [Kibana Exceptions API documentation](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-security-exceptions-api) for more details.
-
-## Example Usage
+See the [Kibana Exceptions API documentation](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-security-exceptions-api) for more details.## Example Usage
 
 ```terraform
 resource "elasticstack_kibana_security_exception_list" "endpoint" {
@@ -35,7 +33,7 @@ resource "elasticstack_kibana_security_exception_list" "endpoint" {
 
 - `description` (String) Describes the exception list.
 - `name` (String) The name of the exception list.
-- `type` (String) The type of exception list. Can be one of: `detection`, `endpoint`, `endpoint_trusted_apps`, `endpoint_events`, `endpoint_host_isolation_exceptions`, `endpoint_blocklists`.
+- `type` (String) The type of exception list. Can be one of: `detection`, `endpoint`, `endpoint_trusted_apps`, `endpoint_events`, `endpoint_host_isolation_exceptions`, `endpoint_blocklists`, `rule_default`.
 
 ### Optional
 

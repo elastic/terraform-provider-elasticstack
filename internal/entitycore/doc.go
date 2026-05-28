@@ -133,6 +133,47 @@
 //	    )
 //	}
 //
+// # Action patterns
+//
+// Provider-defined actions (Terraform 1.14+) use **envelope generics** —
+// [NewElasticsearchAction] or [NewKibanaAction] — which eliminate Configure,
+// Metadata, Schema, and Invoke prelude boilerplate. The constructor owns
+// config decode, scoped client resolution, optional version-requirement
+// enforcement, automatic injection of the connection block
+// (`elasticsearch_connection` or `kibana_connection`) and the `timeouts`
+// block, and applies the configured invoke timeout to ctx via
+// [context.WithTimeout]. The concrete package supplies a schema factory
+// (without those two blocks), a model embedding [ElasticsearchConnectionField]
+// or [KibanaConnectionField] plus [ActionTimeoutsField], and a single
+// [ActionInvokeFunc] callback.
+//
+// Every action MUST expose both the connection block and the `timeouts`
+// block. The envelope enforces this by injecting them unconditionally;
+// concrete actions MUST NOT declare blocks under those keys.
+//
+// Example action:
+//
+//	type Model struct {
+//	    entitycore.ElasticsearchConnectionField
+//	    entitycore.ActionTimeoutsField
+//	    Repository types.String `tfsdk:"repository"`
+//	    // … entity-specific attributes …
+//	}
+//
+//	func invokeMyAction(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ActionRequest[Model]) diag.Diagnostics {
+//	    // ctx already has the configured timeout applied.
+//	    // … API call and diagnostics …
+//	    return nil
+//	}
+//
+//	func NewMyAction() action.Action {
+//	    return entitycore.NewElasticsearchAction[Model]("my_action", entitycore.ElasticsearchActionOptions[Model]{
+//	        Schema:               getSchema, // without timeouts or elasticsearch_connection
+//	        Invoke:               invokeMyAction,
+//	        DefaultInvokeTimeout: 30 * time.Minute, // optional; defaults to entitycore.DefaultActionInvokeTimeout
+//	    })
+//	}
+//
 // Component is a typed Terraform resource type-name namespace segment (for example
 // "elasticsearch", "kibana"). It is not a client-resolution kind: the same API family
 // can use different component strings for Terraform naming, such as APM resources

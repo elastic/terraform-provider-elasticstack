@@ -56,13 +56,7 @@ func writeTransform(ctx context.Context, client *clients.ElasticsearchScopedClie
 func buildTransformAPIRequest(ctx context.Context, client *clients.ElasticsearchScopedClient, plan tfModel) (*models.Transform, time.Duration, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	serverVersion, verDiags := client.ServerVersion(ctx)
-	diags.Append(verDiags...)
-	if diags.HasError() {
-		return nil, 0, diags
-	}
-
-	apiTransform, convDiags := toAPIModel(ctx, plan, serverVersion)
+	apiTransform, convDiags := toAPIModel(ctx, client, plan)
 	diags.Append(convDiags...)
 	if diags.HasError() {
 		return nil, 0, diags

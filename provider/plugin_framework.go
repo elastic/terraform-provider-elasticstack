@@ -30,7 +30,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/script"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/settings"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/slm"
+	snapshot_create "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_create"
 	snapshot_repository "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_repository"
+	snapshot_restore "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_restore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/alias"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/componenttemplate"
@@ -53,6 +55,7 @@ import (
 	datafeedstate "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed_state"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/filter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/jobstate"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/queryrulesets"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	apikeyephemeral "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey/ephemeral"
 	apikeyresource "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey/resource"
@@ -60,6 +63,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/rolemapping"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/systemuser"
 	securityuser "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/user"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/synonyms"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/transform"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/watcher/watch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentdownloadsource"
@@ -102,6 +106,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/parameter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/privatelocation"
 	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/hashicorp/terraform-plugin-framework/action"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
 	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
@@ -123,6 +128,7 @@ const (
 var (
 	_ fwprovider.Provider                       = &Provider{}
 	_ fwprovider.ProviderWithEphemeralResources = &Provider{}
+	_ fwprovider.ProviderWithActions            = &Provider{}
 )
 
 type Provider struct {
@@ -168,6 +174,14 @@ func (p *Provider) Configure(ctx context.Context, req fwprovider.ConfigureReques
 	res.DataSourceData = factory
 	res.ResourceData = factory
 	res.EphemeralResourceData = factory
+	res.ActionData = factory
+}
+
+func (p *Provider) Actions(_ context.Context) []func() action.Action {
+	return []func() action.Action{
+		snapshot_restore.NewRestoreAction,
+		snapshot_create.NewCreateAction,
+	}
 }
 
 func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSource {
@@ -239,6 +253,8 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		logstash.NewLogstashPipelineResource,
 		maintenancewindow.NewResource,
 		enrich.NewEnrichPolicyResource,
+		synonyms.NewSynonymSetResource,
+		queryrulesets.NewQueryRulesetResource,
 		ingest.NewIngestPipelineResource,
 		rolemapping.NewRoleMappingResource,
 		alias.NewAliasResource,
@@ -292,6 +308,8 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		enrollmenttokens.NewDataSource,
 		integrationds.NewDataSource,
 		enrich.NewEnrichPolicyDataSource,
+		synonyms.NewSynonymSetDataSource,
+		queryrulesets.NewQueryRulesetDataSource,
 		rolemapping.NewRoleMappingDataSource,
 		security.NewRoleDataSource,
 		security.NewUserDataSource,
