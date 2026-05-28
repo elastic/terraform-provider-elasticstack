@@ -10,8 +10,9 @@ The `elasticstack_kibana_dashboard` resource has extensive generated reference d
 - **New example configs**: `examples/guides/guide1-getting-started/main.tf`, `examples/guides/guide2-operations/main.tf`, `examples/guides/guide3-advanced/main.tf` — fully runnable Terraform configurations for each guide
 - **New Playwright scripts**: `scripts/screenshots/guide{1,2,3}.mjs` — reproducible screenshot scripts for capturing dashboard images from a local Kibana instance
 - **New screenshots**: `docs/guides/images/g{1,2,3}-*.png` — 16 embedded screenshots across the three guides
+- **Provider fix surfaced while authoring guide 1**: align `vis_config.by_value.xy_chart_config.fitting` plan state with the Kibana response. Kibana omits the `fitting` block for `bar_horizontal` charts with terms breakdowns, which previously caused `terraform apply` to fail with an "inconsistent result after apply" error on the very chart shape demonstrated in guide 1.
 
-No changes to provider resource code or existing documentation.
+Apart from the targeted XY-chart `fitting` alignment fix above, no other changes to provider resource code or existing documentation.
 
 ## Capabilities
 
