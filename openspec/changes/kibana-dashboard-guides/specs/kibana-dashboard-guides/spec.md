@@ -43,7 +43,7 @@ The guide SHALL cover these topics in order:
 4. Lens Metric panels — `vis_config.by_value.metric_chart_config` for count and cardinality metrics
 5. Lens Line chart — `vis_config.by_value.xy_chart_config` for time-series request volume
 6. Lens Bar chart (horizontal) — `vis_config.by_value.xy_chart_config` for top-N URL breakdown
-7. Lens Donut chart — `vis_config.by_value.partition_chart_config` for response code distribution
+7. Lens Donut chart — `vis_config.by_value.pie_chart_config` for response code distribution
 
 The guide SHALL include an explicit section explaining how to obtain Lens visualization JSON from the Kibana UI using Inspect → Request → Response.
 
