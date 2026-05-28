@@ -11,6 +11,7 @@
  *   KIBANA_URL  (default http://localhost:5601)
  *   KIBANA_USER (default elastic)
  *   KIBANA_PASS (default password)
+ *   SCREENSHOT_ONLY  optional comma-separated PNG filenames to capture (e.g. g1-01-shell.png)
  *
  * Usage (from repo root):
  *   node scripts/screenshots/guide1.mjs
@@ -31,15 +32,22 @@ const KIBANA_USER = process.env.KIBANA_USER ?? 'elastic';
 const KIBANA_PASS = process.env.KIBANA_PASS ?? 'password';
 
 const SCREENSHOTS = [
-  { file: 'g1-01-shell.png', mode: 'viewport-top' },
+  { file: 'g1-01-shell.png', mode: 'viewport-top', shell: true },
   { file: 'g1-02-markdown.png', mode: 'panel', index: 0 },
   { file: 'g1-03-metric1.png', mode: 'panel', index: 1 },
   { file: 'g1-04-metric2.png', mode: 'panel', index: 2 },
   { file: 'g1-05-line.png', mode: 'panel', index: 3 },
   { file: 'g1-06-bar.png', mode: 'panel', index: 4 },
   { file: 'g1-07-final.png', mode: 'viewport-full' },
-  { file: 'g1-08-overview.png', mode: 'viewport-top' },
 ];
+
+function screenshotsToCapture() {
+  const only = process.env.SCREENSHOT_ONLY?.split(',').map((s) => s.trim()).filter(Boolean);
+  if (!only?.length) {
+    return SCREENSHOTS;
+  }
+  return SCREENSHOTS.filter((spec) => only.includes(spec.file));
+}
 
 function apiHeaders() {
   return {
@@ -49,19 +57,58 @@ function apiHeaders() {
   };
 }
 
-async function findDashboardId(request) {
+async function findDashboardId(request, { preferFullest = true } = {}) {
   const listRes = await request.get(`${KIBANA_URL}/api/dashboards?per_page=500`, { headers: apiHeaders() });
   if (!listRes.ok()) {
     throw new Error(`Dashboard list failed: HTTP ${listRes.status()} ${await listRes.text()}`);
   }
   const listBody = await listRes.json();
-  const match = (listBody.dashboards ?? []).find(
+  const candidates = (listBody.dashboards ?? []).filter(
     (d) => d.title === DASHBOARD_TITLE || d.data?.title === DASHBOARD_TITLE,
   );
-  if (!match?.id) {
+  if (!candidates.length) {
     throw new Error(`Dashboard not found with title "${DASHBOARD_TITLE}". Run terraform apply first.`);
   }
-  return match.id;
+
+  const dashboardId = process.env.DASHBOARD_ID?.trim();
+  if (dashboardId) {
+    const byId = candidates.find((d) => d.id === dashboardId);
+    if (!byId) {
+      throw new Error(`Dashboard id "${dashboardId}" not found for title "${DASHBOARD_TITLE}".`);
+    }
+    return byId.id;
+  }
+
+  // List API omits panels; fetch each candidate to compare layout size.
+  const counts = await Promise.all(
+    candidates.map(async (d) => {
+      const res = await request.get(`${KIBANA_URL}/api/dashboards/${d.id}`, { headers: apiHeaders() });
+      if (!res.ok()) {
+        return { id: d.id, count: 0 };
+      }
+      const body = await res.json();
+      const panels = body.data?.panels ?? body.panels ?? [];
+      return { id: d.id, count: panels.length };
+    }),
+  );
+  counts.sort((a, b) => (preferFullest ? b.count - a.count : a.count - b.count));
+  return counts[0].id;
+}
+
+async function loginIfNeeded(page) {
+  await page.goto(`${KIBANA_URL}/login`, { waitUntil: 'networkidle' });
+  const usernameField = page.locator('[data-test-subj="loginUsername"]');
+  if (await usernameField.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await usernameField.fill(KIBANA_USER);
+    await page.locator('[data-test-subj="loginPassword"]').fill(KIBANA_PASS);
+    await page.locator('[data-test-subj="loginSubmit"]').click();
+    await page.waitForLoadState('networkidle');
+  }
+}
+
+async function waitForDashboardShell(page) {
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(2000);
 }
 
 async function waitForDashboardPanels(page) {
@@ -72,6 +119,7 @@ async function waitForDashboardPanels(page) {
 
 async function captureScreenshot(page, spec) {
   const outPath = path.join(OUT_DIR, spec.file);
+  const minBytes = spec.shell ? 2000 : 5000;
   try {
     if (spec.mode === 'panel') {
       const panels = page.locator('[data-test-subj="embeddablePanel"]');
@@ -87,7 +135,7 @@ async function captureScreenshot(page, spec) {
     }
 
     const stat = fs.statSync(outPath);
-    if (stat.size < 5000) {
+    if (stat.size < minBytes) {
       throw new Error(`Screenshot too small (${stat.size} bytes) — panel may not have rendered`);
     }
     console.log(`OK ${spec.file} (${stat.size} bytes)`);
@@ -98,6 +146,11 @@ async function captureScreenshot(page, spec) {
 }
 
 async function main() {
+  const shots = screenshotsToCapture();
+  if (!shots.length) {
+    throw new Error('No screenshots matched SCREENSHOT_ONLY filter');
+  }
+
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
   const browser = await chromium.launch({ headless: true });
@@ -108,19 +161,22 @@ async function main() {
   const page = await context.newPage();
 
   try {
-    await page.goto(`${KIBANA_URL}/login`, { waitUntil: 'domcontentloaded' });
-    await page.locator('[data-test-subj="loginUsername"]').fill(KIBANA_USER);
-    await page.locator('[data-test-subj="loginPassword"]').fill(KIBANA_PASS);
-    await page.locator('[data-test-subj="loginSubmit"]').click();
-    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30_000 });
+    await loginIfNeeded(page);
 
-    const dashboardId = await findDashboardId(page.request);
+    const preferFullest = !shots.every((s) => s.shell);
+    const dashboardId = await findDashboardId(page.request, { preferFullest });
     const dashUrl = `${KIBANA_URL}/app/dashboards#/view/${dashboardId}?_g=(time:(from:now-7d,to:now))`;
     console.log(`Navigating to dashboard ${dashboardId}`);
     await page.goto(dashUrl, { waitUntil: 'domcontentloaded' });
-    await waitForDashboardPanels(page);
 
-    for (const spec of SCREENSHOTS) {
+    const needsPanels = shots.some((s) => !s.shell);
+    if (needsPanels) {
+      await waitForDashboardPanels(page);
+    } else {
+      await waitForDashboardShell(page);
+    }
+
+    for (const spec of shots) {
       await captureScreenshot(page, spec);
     }
   } finally {
