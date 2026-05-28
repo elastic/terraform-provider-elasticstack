@@ -65,7 +65,7 @@ type advancedSettingsAPIValues = struct {
 }
 
 // populateAdvancedSettingsFromAPI populates the advanced settings from API response
-func (model *agentPolicyModel) populateAdvancedSettingsFromAPI(ctx context.Context, data *kbapi.AgentPolicy) diag.Diagnostics {
+func (model *agentPolicyModel) populateAdvancedSettingsFromAPI(ctx context.Context, data *kbapi.KibanaHTTPAPIsAgentPolicyResponse) diag.Diagnostics {
 	if data.AdvancedSettings == nil {
 		model.AdvancedSettings = types.ObjectNull(advancedSettingsAttrTypes())
 		return nil

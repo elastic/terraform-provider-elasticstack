@@ -82,7 +82,7 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 	if policy != nil && policy.Id != "" {
 		// If space_ids is set, we need to use a space-aware GET request because the policy
 		// exists within that space context, not in the default space.
-		var readPolicy *kbapi.AgentPolicy
+		var readPolicy *kbapi.KibanaHTTPAPIsAgentPolicyResponse
 		var getDiags diag.Diagnostics
 
 		readPolicy, getDiags = fleet.GetAgentPolicy(ctx, fleetClient, policy.Id, spaceID)

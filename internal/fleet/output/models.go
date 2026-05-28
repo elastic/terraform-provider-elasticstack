@@ -63,15 +63,15 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 	}
 
 	switch output := output.(type) {
-	case kbapi.OutputElasticsearch:
+	case kbapi.KibanaHTTPAPIsOutputElasticsearch:
 		diags.Append(model.fromAPIElasticsearchModel(ctx, &output)...)
 
-	case kbapi.OutputLogstash:
+	case kbapi.KibanaHTTPAPIsOutputLogstash:
 		diags.Append(model.fromAPILogstashModel(ctx, &output)...)
 
-	case kbapi.OutputKafka:
+	case kbapi.KibanaHTTPAPIsOutputKafka:
 		diags.Append(model.fromAPIKafkaModel(ctx, &output)...)
-	case kbapi.OutputRemoteElasticsearch:
+	case kbapi.KibanaHTTPAPIsOutputRemoteElasticsearch:
 		diags.Append(model.fromAPIRemoteElasticsearchModel(ctx, &output)...)
 	default:
 		diags.AddError(fmt.Sprintf("unhandled output type: %T", output), "")
