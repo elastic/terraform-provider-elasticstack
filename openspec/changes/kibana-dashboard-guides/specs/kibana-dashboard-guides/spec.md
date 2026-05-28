@@ -48,8 +48,8 @@ The guide SHALL cover these topics in order:
 The guide SHALL include an explicit section explaining how to obtain Lens visualization JSON from the Kibana UI using Inspect → Request → Response.
 
 Each panel addition step SHALL include:
-- A complete Terraform snippet showing the full `panels` list up to that step
-- An embedded screenshot of the dashboard after applying that step
+- A Terraform snippet showing the panel being added (a single `panels` entry is sufficient; the guide SHALL also embed the complete final `main.tf` once near the end via `{{ tffile ... }}` so readers can see the full configuration)
+- An embedded screenshot illustrating that panel (a panel-focused crop is acceptable; a full-dashboard screenshot of the final state is acceptable for the last step)
 
 #### Scenario: Guide 1 Terraform config applies cleanly
 

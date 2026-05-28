@@ -8,7 +8,8 @@ description: |-
 
 # elasticstack_elasticsearch_watch (Resource)
 
-Manage Watches. See the [Watcher API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api.html) for more details.## Example Usage
+Manage Watches. See the [Watcher API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api.html) for more details.
+## Example Usage
 
 ```terraform
 provider "elasticstack" {

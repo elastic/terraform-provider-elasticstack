@@ -8,7 +8,8 @@ description: |-
 
 # elasticstack_apm_agent_configuration (Resource)
 
-Creates or updates an APM agent configuration. See https://www.elastic.co/docs/solutions/observability/apm/apm-agent-central-configuration.## Example Usage
+Creates or updates an APM agent configuration. See https://www.elastic.co/docs/solutions/observability/apm/apm-agent-central-configuration.
+## Example Usage
 
 ```terraform
 provider "elasticstack" {

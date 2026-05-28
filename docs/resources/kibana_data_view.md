@@ -8,7 +8,8 @@ description: |-
 
 # elasticstack_kibana_data_view (Resource)
 
-Manages Kibana [data views](https://www.elastic.co/guide/en/kibana/current/data-views-api.html)## Example Usage
+Manages Kibana [data views](https://www.elastic.co/guide/en/kibana/current/data-views-api.html)
+## Example Usage
 
 ```terraform
 provider "elasticstack" {

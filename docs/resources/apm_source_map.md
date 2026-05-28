@@ -8,7 +8,8 @@ description: |-
 
 # elasticstack_apm_source_map (Resource)
 
-Uploads and manages an APM source map artifact. Source maps allow APM to un-minify JavaScript stack traces.## Example Usage
+Uploads and manages an APM source map artifact. Source maps allow APM to un-minify JavaScript stack traces.
+## Example Usage
 
 ```terraform
 provider "elasticstack" {

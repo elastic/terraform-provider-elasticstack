@@ -18,7 +18,7 @@ The dashboard resource's `vis` panels embed Lens visualization JSON, which is co
 **Non-Goals:**
 - Covering feature-gated panels (SLO, Synthetics, ML) — out of scope for general guides
 - Geographic/Maps panels — geo-specific, narrow audience
-- Modifying provider resource code beyond the targeted XY chart `fitting` alignment fix that this work surfaced; no resource schema changes
+- Modifying provider resource code beyond the targeted alignment and ES|QL routing fixes surfaced while authoring guides 1 and 3 (see `proposal.md` for the full list); no resource schema changes
 - Replacing the generated reference documentation
 
 ## Decisions

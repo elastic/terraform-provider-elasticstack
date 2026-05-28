@@ -8,7 +8,8 @@ description: |-
 
 # elasticstack_elasticsearch_data_stream_lifecycle (Resource)
 
-Configures the data stream lifecycle for the targeted data streams, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/data-stream-apis.html## Example Usage
+Configures the data stream lifecycle for the targeted data streams, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/data-stream-apis.html
+## Example Usage
 
 ```terraform
 provider "elasticstack" {
