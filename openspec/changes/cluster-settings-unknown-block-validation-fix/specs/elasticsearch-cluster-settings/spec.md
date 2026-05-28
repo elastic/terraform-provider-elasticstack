@@ -18,7 +18,7 @@ validate time.
 rather than treating it as absent. An unknown block value means the block's contents have not yet
 been evaluated (e.g., because a `dynamic` block's `for_each` references a local variable that is
 not yet resolved at `ValidateResourceConfig` time). An unknown block is not the same as a null
-(absent) block. Known blocks whose `setting` set is null or empty SHALL still be treated as empty.
+(absent) block. Known blocks whose `setting` set is null or empty SHALL still be treated as empty (i.e., `categoryBlockEmpty` SHALL return `true`).
 
 **Previous behavior (incorrect):** `categoryBlockEmpty` returned `true` for both null and unknown
 blocks, causing `validateConfigModel` to emit "No cluster settings configured" even when the block
