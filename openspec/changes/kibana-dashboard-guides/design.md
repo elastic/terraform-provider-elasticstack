@@ -1,6 +1,6 @@
 ## Context
 
-The `elasticstack_kibana_dashboard` resource launched in the `dashboard-guides` branch. Its generated reference doc (`docs/resources/kibana_dashboard.md`) covers every field and panel type but is not approachable for first-time users. The project already has a guides pattern — `docs/guides/security-roles.md` and `docs/guides/elasticstack-kibana-rule.md` — that pairs prose with inline Terraform code blocks and demonstrates scenario-based use.
+The `elasticstack_kibana_dashboard` resource was recently introduced. Its generated reference doc (`docs/resources/kibana_dashboard.md`) covers every field and panel type but is not approachable for first-time users. The project already has a guides pattern — `docs/guides/security-roles.md` and `docs/guides/elasticstack-kibana-rule.md` — that pairs prose with inline Terraform code blocks and demonstrates scenario-based use.
 
 Guides live in `docs/guides/` as Markdown files and are registered in the provider's Terraform Registry template system via `make docs-generate`. Screenshots are static PNGs committed alongside the guide.
 
@@ -33,9 +33,9 @@ The dashboard resource's `vis` panels embed Lens visualization JSON, which is co
 
 ### Decision: Kibana sample data as the dataset
 
-**Choice**: Guide 1 uses `kibana_sample_data_logs`; guides 2 and 3 use `kibana_sample_data_ecommerce`. Both are installable with one click from the Kibana home page.
+**Choice**: Guide 1 uses `kibana_sample_data_logs`; guide 2 uses `kibana_sample_data_ecommerce`; guide 3 uses `kibana_sample_data_logs`. Both datasets are installable with one click from the Kibana home page.
 
-**Why**: Every Kibana instance ships with these datasets. Using them avoids any prerequisite data pipeline setup. The field names and data shapes are stable across Kibana versions. Elastic's own tutorial content already uses these datasets, so users can cross-reference.
+**Why**: Every Kibana instance ships with these datasets. Using them avoids any prerequisite data pipeline setup while letting each guide use the sample data best suited to its scenario. The field names and data shapes are stable across Kibana versions. Elastic's own tutorial content already uses these datasets, so users can cross-reference.
 
 **Alternative considered**: Custom synthetic data via `elasticstack_elasticsearch_index` + bulk ingest. Rejected — significantly increases prerequisite complexity and makes guides longer without adding value to the dashboard-specific content.
 

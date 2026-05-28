@@ -1,28 +1,33 @@
 # Kibana Dashboard Guides
 
-Guide implementation: `docs/guides/kibana-dashboard-getting-started.md`, `docs/guides/kibana-dashboard-operations.md`, `docs/guides/kibana-dashboard-advanced.md`
+Guide implementation: `templates/guides/kibana-dashboard-getting-started.md.tmpl`, `templates/guides/kibana-dashboard-operations.md.tmpl`, `templates/guides/kibana-dashboard-advanced.md.tmpl`, rendered to `docs/guides/kibana-dashboard-getting-started.md`, `docs/guides/kibana-dashboard-operations.md`, and `docs/guides/kibana-dashboard-advanced.md`
 
 ## ADDED Requirements
 
-### Requirement: Three guide files exist and are linked from the dashboard resource docs
+### Requirement: Three guide templates exist, render to guide files, and are linked from the dashboard resource docs
 
-Three standalone provider guides SHALL exist and be rendered by `make docs-generate`:
+Three standalone provider guide templates SHALL exist as sources consumed by `make docs-generate`:
+- `templates/guides/kibana-dashboard-getting-started.md.tmpl`
+- `templates/guides/kibana-dashboard-operations.md.tmpl`
+- `templates/guides/kibana-dashboard-advanced.md.tmpl`
+
+Running `make docs-generate` SHALL render those templates to these guide files:
 - `docs/guides/kibana-dashboard-getting-started.md`
 - `docs/guides/kibana-dashboard-operations.md`
 - `docs/guides/kibana-dashboard-advanced.md`
 
 The `elasticstack_kibana_dashboard` resource documentation SHALL include a "See also" section linking to all three guides.
 
-Each guide SHALL declare `subcategory: ""` and an appropriate `page_title` and `description` in its frontmatter.
+Each guide template SHALL declare `subcategory: ""` and an appropriate `page_title` and `description` in its frontmatter so the rendered guide preserves those values.
 
 #### Scenario: Guides render without error
 
-- **WHEN** `make docs-generate` is run
+- **WHEN** the three template files under `templates/guides/` are present and `make docs-generate` is run
 - **THEN** all three guide files are created under `docs/guides/` with no generation errors
 
 #### Scenario: make check-docs passes
 
-- **WHEN** all three guide files and their referenced example files are committed
+- **WHEN** all three guide template files, the rendered guide files, and their referenced example files are committed
 - **THEN** `make check-docs` exits with code 0
 
 ---
