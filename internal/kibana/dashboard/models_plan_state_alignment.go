@@ -102,9 +102,9 @@ func alignPlanTypedPanelConfigsWhenStateNil(plan, state *models.PanelModel) {
 	if plan.VisConfig != nil && state.VisConfig == nil {
 		state.VisConfig = panelkit.ShallowClonePtr(plan.VisConfig)
 	}
-	if plan.ImageConfig != nil && state.ImageConfig == nil {
-		state.ImageConfig = panelkit.ShallowClonePtr(plan.ImageConfig)
-	}
+	// ImageConfig is intentionally NOT seeded here: a shallow clone would alias
+	// nested Src.URL / Src.File pointers between plan and state. The image
+	// handler's AlignStateFromPlan owns the deep-clone path.
 	if plan.SloAlertsConfig != nil && state.SloAlertsConfig == nil {
 		state.SloAlertsConfig = panelkit.ShallowClonePtr(plan.SloAlertsConfig)
 	}

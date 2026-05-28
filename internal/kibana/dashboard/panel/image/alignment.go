@@ -18,9 +18,8 @@
 package image
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func alignImageStateFromPlan(plan, state *models.PanelModel) {
@@ -42,20 +41,20 @@ func alignImagePanelConfigFromPlan(plan, state *models.ImagePanelConfigModel) {
 		return
 	}
 
-	preserveKnownStringIfStateNull(plan.AltText, &state.AltText)
-	preserveKnownStringIfStateNull(plan.BackgroundColor, &state.BackgroundColor)
-	preserveKnownStringIfStateNull(plan.Title, &state.Title)
-	preserveKnownStringIfStateNull(plan.Description, &state.Description)
-	preserveKnownBoolIfStateNull(plan.HideTitle, &state.HideTitle)
-	preserveKnownBoolIfStateNull(plan.HideBorder, &state.HideBorder)
-	preserveKnownStringIfStateNull(plan.ObjectFit, &state.ObjectFit)
+	lenscommon.PreserveKnownTfStringIfStateNull(plan.AltText, &state.AltText)
+	lenscommon.PreserveKnownTfStringIfStateNull(plan.BackgroundColor, &state.BackgroundColor)
+	lenscommon.PreserveKnownTfStringIfStateNull(plan.Title, &state.Title)
+	lenscommon.PreserveKnownTfStringIfStateNull(plan.Description, &state.Description)
+	lenscommon.PreserveKnownTfBoolIfStateNull(plan.HideTitle, &state.HideTitle)
+	lenscommon.PreserveKnownTfBoolIfStateNull(plan.HideBorder, &state.HideBorder)
+	lenscommon.PreserveKnownTfStringIfStateNull(plan.ObjectFit, &state.ObjectFit)
 
 	if plan.Src.URL != nil {
 		if state.Src.URL == nil {
 			url := *plan.Src.URL
 			state.Src.URL = &url
 		} else {
-			preserveKnownStringIfStateNull(plan.Src.URL.URL, &state.Src.URL.URL)
+			lenscommon.PreserveKnownTfStringIfStateNull(plan.Src.URL.URL, &state.Src.URL.URL)
 		}
 	}
 	if plan.Src.File != nil {
@@ -63,20 +62,8 @@ func alignImagePanelConfigFromPlan(plan, state *models.ImagePanelConfigModel) {
 			file := *plan.Src.File
 			state.Src.File = &file
 		} else {
-			preserveKnownStringIfStateNull(plan.Src.File.FileID, &state.Src.File.FileID)
+			lenscommon.PreserveKnownTfStringIfStateNull(plan.Src.File.FileID, &state.Src.File.FileID)
 		}
-	}
-}
-
-func preserveKnownStringIfStateNull(plan types.String, state *types.String) {
-	if typeutils.IsKnown(plan) && (state.IsNull() || state.IsUnknown()) {
-		*state = plan
-	}
-}
-
-func preserveKnownBoolIfStateNull(plan types.Bool, state *types.Bool) {
-	if typeutils.IsKnown(plan) && (state.IsNull() || state.IsUnknown()) {
-		*state = plan
 	}
 }
 
