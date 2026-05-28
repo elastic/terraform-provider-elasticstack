@@ -48,9 +48,12 @@ resource "elasticstack_kibana_dashboard" "advanced" {
 
   tags = ["advanced", "production"]
 
-  access_control = {
-    access_mode = "write_restricted"
-  }
+  # Uncomment with a non-bootstrap Kibana user that has a profile id (see
+  # internal/kibana/dashboard/testdata/TestAccResourceDashboardAccessControl/basic).
+  # The default elastic superuser cannot create dashboards with access_mode set.
+  # access_control = {
+  #   access_mode = "write_restricted"
+  # }
 
   pinned_panels = [
     {
@@ -205,7 +208,8 @@ resource "elasticstack_kibana_dashboard" "advanced" {
                 })
                 styling = {
                   shape_json = jsonencode({
-                    type = "bullet"
+                    type        = "bullet"
+                    orientation = "horizontal"
                   })
                 }
                 ignore_global_filters = false
@@ -239,6 +243,8 @@ resource "elasticstack_kibana_dashboard" "advanced" {
                 legend = {
                   visibility = "visible"
                   position   = "right"
+                  size       = "m"
+                  inside     = false
                 }
                 query = { expression = "" }
                 layers = [
@@ -280,24 +286,27 @@ resource "elasticstack_kibana_dashboard" "advanced" {
           grid = { x = 0, y = 12, w = 48, h = 10 }
           vis_config = {
             by_value = {
-              metric_chart_config = {
-                title = "Requests for selected response"
-                data_source_json = jsonencode({
-                  type  = "esql"
-                  query = "FROM kibana_sample_data_logs | WHERE response == ?response_code | STATS requests = COUNT(*)"
-                })
-                ignore_global_filters = false
-                sampling              = 1
-                metrics = [{
-                  config_json = jsonencode({
-                    type      = "primary"
-                    operation = "value"
-                    column    = "requests"
-                    format = {
-                      id = "number"
-                    }
+              datatable_config = {
+                esql = {
+                  title = "Requests for selected response"
+                  data_source_json = jsonencode({
+                    type  = "esql"
+                    query = "FROM kibana_sample_data_logs | WHERE response == ?response_code | STATS requests = COUNT(*)"
                   })
-                }]
+                  styling = {
+                    density = {
+                      mode = "default"
+                    }
+                  }
+                  metrics = [{
+                    config_json = jsonencode({
+                      operation = "value"
+                      column    = "requests"
+                    })
+                  }]
+                  ignore_global_filters = false
+                  sampling              = 1
+                }
               }
             }
           }
