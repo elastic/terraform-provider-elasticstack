@@ -308,7 +308,7 @@ func TestPopulateFromAPI_Description_Null_vs_EmptyString(t *testing.T) {
 			model := &agentPolicyModel{
 				Description: tc.initial,
 			}
-			data := &kbapi.AgentPolicy{
+			data := &kbapi.KibanaHTTPAPIsAgentPolicyResponse{
 				Id:          "policy-id",
 				Description: tc.apiValue,
 			}

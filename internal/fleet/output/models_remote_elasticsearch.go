@@ -25,7 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (model *outputModel) fromAPIRemoteElasticsearchModel(ctx context.Context, data *kbapi.OutputRemoteElasticsearch) (diags diag.Diagnostics) {
+func (model *outputModel) fromAPIRemoteElasticsearchModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputRemoteElasticsearch) (diags diag.Diagnostics) {
 	diags = model.fromAPICommonFields(ctx, commonOutputReadData{
 		id:                   data.Id,
 		name:                 data.Name,
@@ -60,7 +60,7 @@ func (model outputModel) toAPICreateRemoteElasticsearchModel(ctx context.Context
 		return kbapi.NewOutputUnion{}, diags
 	}
 
-	body := kbapi.NewOutputRemoteElasticsearch{
+	body := kbapi.KibanaHTTPAPIsNewOutputRemoteElasticsearch{
 		Type:                        kbapi.KibanaHTTPAPIsNewOutputRemoteElasticsearchTypeRemoteElasticsearch,
 		CaSha256:                    f.CaSha256,
 		CaTrustedFingerprint:        f.CaTrustedFingerprint,
@@ -78,7 +78,7 @@ func (model outputModel) toAPICreateRemoteElasticsearchModel(ctx context.Context
 	}
 
 	var union kbapi.NewOutputUnion
-	err := union.FromNewOutputRemoteElasticsearch(body)
+	err := union.FromKibanaHTTPAPIsNewOutputRemoteElasticsearch(body)
 	if err != nil {
 		diags.AddError(err.Error(), "")
 		return kbapi.NewOutputUnion{}, diags
@@ -94,7 +94,7 @@ func (model outputModel) toAPIUpdateRemoteElasticsearchModel(ctx context.Context
 		return kbapi.UpdateOutputUnion{}, diags
 	}
 
-	body := kbapi.UpdateOutputRemoteElasticsearch{
+	body := kbapi.KibanaHTTPAPIsUpdateOutputRemoteElasticsearch{
 		Type: func() *kbapi.KibanaHTTPAPIsUpdateOutputRemoteElasticsearchType {
 			outputType := kbapi.RemoteElasticsearch
 			return &outputType
@@ -114,7 +114,7 @@ func (model outputModel) toAPIUpdateRemoteElasticsearchModel(ctx context.Context
 	}
 
 	var union kbapi.UpdateOutputUnion
-	err := union.FromUpdateOutputRemoteElasticsearch(body)
+	err := union.FromKibanaHTTPAPIsUpdateOutputRemoteElasticsearch(body)
 	if err != nil {
 		diags.AddError(err.Error(), "")
 		return kbapi.UpdateOutputUnion{}, diags

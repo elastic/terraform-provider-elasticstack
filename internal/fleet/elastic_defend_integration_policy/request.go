@@ -19,6 +19,7 @@ package elasticdefendintegrationpolicy
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -26,6 +27,35 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
+
+// typedInputConfig converts a raw config map into the typed
+// PackagePolicyRequestTypedInput.Config shape. The generated field is an
+// anonymous struct (`map[string]struct{Frozen, Type, Value}`) because the
+// upstream spec boxes each config entry in a `{value, type, frozen}` wrapper;
+// callers in this package already supply entries in that shape, so this helper
+// just JSON round-trips into the typed map.
+func typedInputConfig(raw map[string]any) *map[string]struct {
+	Frozen *bool   `json:"frozen,omitempty"`
+	Type   *string `json:"type,omitempty"`
+	Value  any     `json:"value,omitempty"`
+} {
+	if len(raw) == 0 {
+		return nil
+	}
+	bytes, err := json.Marshal(raw)
+	if err != nil {
+		return nil
+	}
+	var out map[string]struct {
+		Frozen *bool   `json:"frozen,omitempty"`
+		Type   *string `json:"type,omitempty"`
+		Value  any     `json:"value,omitempty"`
+	}
+	if err := json.Unmarshal(bytes, &out); err != nil {
+		return nil
+	}
+	return &out
+}
 
 const (
 	endpointInputType          = "endpoint"
@@ -81,8 +111,8 @@ func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationP
 		Enabled: true,
 		Streams: &streams,
 	}
-	if len(inputConfig) > 0 {
-		input.Config = &inputConfig
+	if cfg := typedInputConfig(inputConfig); cfg != nil {
+		input.Config = cfg
 	}
 	req.Inputs = &[]kbapi.PackagePolicyRequestTypedInput{input}
 
@@ -138,8 +168,8 @@ func buildFinalizeRequest(ctx context.Context, model *elasticDefendIntegrationPo
 		Enabled: true,
 		Streams: &streams,
 	}
-	if len(inputConfig) > 0 {
-		input.Config = &inputConfig
+	if cfg := typedInputConfig(inputConfig); cfg != nil {
+		input.Config = cfg
 	}
 	req.Inputs = &[]kbapi.PackagePolicyRequestTypedInput{input}
 

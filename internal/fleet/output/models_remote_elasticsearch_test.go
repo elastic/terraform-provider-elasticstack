@@ -47,7 +47,7 @@ func TestOutputModelToAPICreateRemoteElasticsearchModel(t *testing.T) {
 	union, diags := model.toAPICreateRemoteElasticsearchModel(context.Background())
 	require.False(t, diags.HasError())
 
-	body, err := union.AsNewOutputRemoteElasticsearch()
+	body, err := union.AsKibanaHTTPAPIsNewOutputRemoteElasticsearch()
 	require.NoError(t, err)
 
 	assert.Equal(t, kbapi.KibanaHTTPAPIsNewOutputRemoteElasticsearchTypeRemoteElasticsearch, body.Type)
@@ -94,7 +94,7 @@ func TestOutputModelRemoteElasticsearchModelMapsSSLCertificateAuthoritiesAndClie
 		union, diags := model.toAPICreateRemoteElasticsearchModel(context.Background())
 		require.False(t, diags.HasError())
 
-		body, err := union.AsNewOutputRemoteElasticsearch()
+		body, err := union.AsKibanaHTTPAPIsNewOutputRemoteElasticsearch()
 		require.NoError(t, err)
 
 		require.NotNil(t, body.Ssl)
@@ -120,7 +120,7 @@ func TestOutputModelRemoteElasticsearchModelMapsSSLCertificateAuthoritiesAndClie
 		union, diags := model.toAPIUpdateRemoteElasticsearchModel(context.Background())
 		require.False(t, diags.HasError())
 
-		body, err := union.AsUpdateOutputRemoteElasticsearch()
+		body, err := union.AsKibanaHTTPAPIsUpdateOutputRemoteElasticsearch()
 		require.NoError(t, err)
 
 		require.NotNil(t, body.Ssl)
@@ -146,7 +146,7 @@ func TestOutputModelToAPIUpdateRemoteElasticsearchModel(t *testing.T) {
 	union, diags := model.toAPIUpdateRemoteElasticsearchModel(context.Background())
 	require.False(t, diags.HasError())
 
-	body, err := union.AsUpdateOutputRemoteElasticsearch()
+	body, err := union.AsKibanaHTTPAPIsUpdateOutputRemoteElasticsearch()
 	require.NoError(t, err)
 
 	require.NotNil(t, body.Type)
@@ -167,7 +167,7 @@ func TestOutputModelFromAPIRemoteElasticsearchModelPreservesServiceToken(t *test
 		SpaceIDs:     types.SetNull(types.StringType),
 	}
 
-	diags := model.fromAPIRemoteElasticsearchModel(context.Background(), &kbapi.OutputRemoteElasticsearch{
+	diags := model.fromAPIRemoteElasticsearchModel(context.Background(), &kbapi.KibanaHTTPAPIsOutputRemoteElasticsearch{
 		Id:                 new("output-id"),
 		Name:               "remote-output",
 		Type:               kbapi.KibanaHTTPAPIsOutputRemoteElasticsearchTypeRemoteElasticsearch,

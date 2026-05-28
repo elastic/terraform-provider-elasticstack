@@ -61,7 +61,7 @@ func TestUpdateStreamsV1ToV2(t *testing.T) {
 		apiStreams := map[string]kbapi.PackagePolicyMappedInputStream{
 			"stream-1": {
 				Enabled: &enabled,
-				Vars:    &vars,
+				Vars:    varsMapToTypedMap[kbapi.PackagePolicyMappedInputStream_Vars_AdditionalProperties](vars),
 			},
 		}
 		streamsJSON, err := json.Marshal(apiStreams)
@@ -93,11 +93,11 @@ func TestUpdateStreamsV1ToV2(t *testing.T) {
 		apiStreams := map[string]kbapi.PackagePolicyMappedInputStream{
 			"stream-1": {
 				Enabled: &enabled1,
-				Vars:    &vars1,
+				Vars:    varsMapToTypedMap[kbapi.PackagePolicyMappedInputStream_Vars_AdditionalProperties](vars1),
 			},
 			"stream-2": {
 				Enabled: &enabled2,
-				Vars:    &vars2,
+				Vars:    varsMapToTypedMap[kbapi.PackagePolicyMappedInputStream_Vars_AdditionalProperties](vars2),
 			},
 		}
 		streamsJSON, err := json.Marshal(apiStreams)
@@ -122,7 +122,7 @@ func TestUpdateStreamsV1ToV2(t *testing.T) {
 		apiStreams := map[string]kbapi.PackagePolicyMappedInputStream{
 			"stream-1": {
 				Enabled: nil,
-				Vars:    &vars,
+				Vars:    varsMapToTypedMap[kbapi.PackagePolicyMappedInputStream_Vars_AdditionalProperties](vars),
 			},
 		}
 		streamsJSON, err := json.Marshal(apiStreams)
@@ -313,7 +313,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 		apiStreams := map[string]kbapi.PackagePolicyMappedInputStream{
 			"stream-1": {
 				Enabled: &enabled,
-				Vars:    &vars,
+				Vars:    varsMapToTypedMap[kbapi.PackagePolicyMappedInputStream_Vars_AdditionalProperties](vars),
 			},
 		}
 		streamsJSON, err := json.Marshal(apiStreams)
@@ -372,10 +372,10 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 		vars2 := map[string]any{"stream2_var": "value2"}
 
 		apiStreams1 := map[string]kbapi.PackagePolicyMappedInputStream{
-			"stream-1": {Enabled: &enabled1, Vars: &vars1},
+			"stream-1": {Enabled: &enabled1, Vars: varsMapToTypedMap[kbapi.PackagePolicyMappedInputStream_Vars_AdditionalProperties](vars1)},
 		}
 		apiStreams2 := map[string]kbapi.PackagePolicyMappedInputStream{
-			"stream-2": {Enabled: &enabled2, Vars: &vars2},
+			"stream-2": {Enabled: &enabled2, Vars: varsMapToTypedMap[kbapi.PackagePolicyMappedInputStream_Vars_AdditionalProperties](vars2)},
 		}
 
 		streamsJSON1, err := json.Marshal(apiStreams1)
