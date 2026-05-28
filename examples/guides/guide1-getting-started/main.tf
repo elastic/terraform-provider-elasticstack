@@ -133,7 +133,7 @@ resource "elasticstack_kibana_dashboard" "getting_started" {
                   suggested_interval      = "auto"
                   use_original_time_range = false
                   include_empty_rows      = true
-                  drop_partial_intervals    = false
+                  drop_partial_intervals  = false
                 })
                 y = [{
                   config_json = jsonencode({
