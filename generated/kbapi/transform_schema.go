@@ -1212,21 +1212,8 @@ func transformFleetPaths(schema *Schema) {
 		"$ref": "#/components/schemas/agent_policy_global_data_tags_item",
 	})
 
-	// Enrollment api keys
-	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/enrollment_api_key.ts
-	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/enrollment_api_key.ts
-
 	apiKeysPath := schema.MustGetPath("/api/fleet/enrollment_api_keys")
 	apiKeysPath.Get.CreateRef(schema, "enrollment_api_key", "responses.200.content.application/json.schema.properties.items.items")
-
-	// EPM
-	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/epm.ts
-	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/epm.ts
-
-	// packagesPath := schema.MustGetPath("/api/fleet/epm/packages")
-	// packagePath := schema.MustGetPath("/api/fleet/epm/packages/{pkgName}/{pkgVersion}")
-	// packagesPath.Get.CreateRef(schema, "package_list_item", "responses.200.content.application/json.schema.properties.items.items")
-	// packagePath.Get.CreateRef(schema, "package_info", "responses.200.content.application/json.schema.properties.item")
 
 	// Server hosts
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/fleet_server_policy_config.ts
@@ -1313,7 +1300,6 @@ func transformFleetPaths(schema *Schema) {
 	epmPolicyPath := schema.MustGetPath("/api/fleet/package_policies/{packagePolicyId}")
 
 	epmPoliciesPath.Get.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.items.items")
-	// epmPoliciesPath.Post.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
 
 	epmPolicyPath.Put.CreateRef(schema, "package_policy_request_typed_inputs", "requestBody.content.application/json.schema.anyOf.0")
 	epmPolicyPath.Put.CreateRef(schema, "package_policy_request_mapped_inputs", "requestBody.content.application/json.schema.anyOf.1")
@@ -1353,14 +1339,6 @@ func transformFleetPaths(schema *Schema) {
 	// update_package_policy_request component for the same chain-ref reason).
 	schema.Components.CreateRef(schema, "package_policy_request_typed_input", "schemas.Kibana_HTTP_APIs_update_package_policy_request.properties.inputs.items")
 	schema.Components.CreateRef(schema, "package_policy_request_typed_input_stream", "schemas.package_policy_request_typed_input.properties.streams.items")
-
-	// NOTE: The "Simplify all of the vars" transforms (formerly here) have
-	// been intentionally left out. Upstream redesigned package policy vars
-	// from a flat map<string, object> into a complex per-value union
-	// (string | number | boolean | string[] | number[] | secret_ref). The
-	// generated unions are usable as-is via the oapi-codegen As*/From*
-	// helpers, and forcing them back to `type: object` would discard type
-	// information that the consumer relies on. See: <var-complexity report>.
 }
 
 func setAllXOmitEmpty(key string, node Map) {
