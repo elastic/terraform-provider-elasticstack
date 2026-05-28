@@ -18,13 +18,13 @@
 package lensxy_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -49,7 +49,10 @@ func TestAccReproduceIssue3402(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccIssue3402Config(dashboardTitle),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("bar_stacked"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.repro_3402", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.repro_3402", "panels.0.vis_config.by_value.xy_chart_config.layers.0.type", "bar_stacked"),
@@ -59,70 +62,12 @@ func TestAccReproduceIssue3402(t *testing.T) {
 			{
 				// Plan-only follow-up must show no drift after a clean apply.
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccIssue3402Config(dashboardTitle),
-				PlanOnly:                 true,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("bar_stacked"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly: true,
 			},
 		},
 	})
-}
-
-func testAccIssue3402Config(title string) string {
-	return fmt.Sprintf(`
-resource "elasticstack_kibana_dashboard" "repro_3402" {
-  title = %q
-  time_range = {
-    from = "now-15m"
-    to   = "now"
-  }
-  refresh_interval = {
-    pause = true
-    value = 0
-  }
-  query = {
-    language = "kql"
-    text     = ""
-  }
-  panels = [{
-    type = "vis"
-    grid = {
-      x = 0
-      y = 0
-      w = 24
-      h = 15
-    }
-    vis_config = {
-      by_value = {
-        xy_chart_config = {
-          axis = {
-            y = {
-              domain_json = jsonencode({ type = "fit" })
-            }
-          }
-          decorations = {}
-          fitting = {
-            type = "none"
-          }
-          layers = [{
-            type = "bar_stacked"
-            data_layer = {
-              data_source_json = jsonencode({
-                type          = "data_view_spec"
-                index_pattern = "metrics-*"
-              })
-              y = [{
-                config_json = jsonencode({
-                  operation     = "count"
-                  empty_as_null = true
-                })
-              }]
-            }
-          }]
-          legend = {}
-          query  = { expression = "" }
-        }
-      }
-    }
-  }]
-}
-`, title)
 }
