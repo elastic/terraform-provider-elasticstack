@@ -638,10 +638,10 @@ func xyFittingFromAPI(m *models.XYFittingModel, apiFitting *kbapi.KibanaHTTPAPIs
 		m.EndValue = types.StringNull()
 		return
 	}
-	m.Type = typeutils.StringishValue(apiFitting.Type)
+	m.Type = typeutils.NonEmptyStringishValue(apiFitting.Type)
 	m.Dotted = types.BoolPointerValue(apiFitting.Emphasize)
 	if apiFitting.Extend != nil {
-		m.EndValue = types.StringValue(string(*apiFitting.Extend))
+		m.EndValue = typeutils.NonEmptyStringishValue(*apiFitting.Extend)
 	} else {
 		m.EndValue = types.StringNull()
 	}

@@ -18,22 +18,33 @@
 package lenstreemap
 
 import (
+	"context"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 )
 
-func alignTreemapStateFromPlan(plan, state *models.LensByValueChartBlocks) {
+func alignTreemapStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
 	if plan == nil || state == nil {
 		return
 	}
-	alignTreemapConfigStateFromPlan(plan.TreemapConfig, state.TreemapConfig)
+	alignTreemapConfigStateFromPlan(ctx, plan.TreemapConfig, state.TreemapConfig)
 }
 
-func alignTreemapConfigStateFromPlan(plan, state *models.TreemapConfigModel) {
+func alignTreemapConfigStateFromPlan(ctx context.Context, plan, state *models.TreemapConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
 	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field")
 	lenscommon.PreserveKnownTfBoolIfStateNull(plan.IgnoreGlobalFilters, &state.IgnoreGlobalFilters)
 	lenscommon.PreserveKnownTfFloat64IfStateNull(plan.Sampling, &state.Sampling)
+	// Partition group_by/metrics JSON gets re-emitted by Kibana with default keys
+	// (color, rank_by, format defaults). Treat them as semantically equal.
+	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.GroupBy, &state.GroupBy)
+	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.Metrics, &state.Metrics)
+	lenscommon.AlignPartitionLegendStateFromPlan(plan.Legend, state.Legend)
+	if plan.ValueDisplay == nil && state.ValueDisplay != nil && lenscommon.PartitionValueDisplayMatchesKibanaDefault(state.ValueDisplay) {
+		state.ValueDisplay = nil
+	}
 }

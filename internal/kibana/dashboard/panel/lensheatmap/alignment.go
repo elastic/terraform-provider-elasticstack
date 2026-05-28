@@ -30,8 +30,46 @@ func alignHeatmapStateFromPlan(ctx context.Context, plan, state *models.HeatmapC
 		return
 	}
 	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field")
 	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
+	alignHeatmapAxisStateFromPlan(plan.Axis, state.Axis)
+	alignHeatmapStylingStateFromPlan(plan.Styling, state.Styling)
 	alignHeatmapLegendStateFromPlan(plan.Legend, &state.Legend)
+}
+
+// Kibana materializes axis label/title visibility flags as true and cells
+// labels visibility as false when omitted by the practitioner. Preserve the
+// null plan values when the read-back matches those defaults.
+func alignHeatmapAxisStateFromPlan(plan, state *models.HeatmapAxesModel) {
+	if plan == nil || state == nil {
+		return
+	}
+	if plan.X != nil && state.X != nil {
+		if plan.X.Labels != nil && state.X.Labels != nil {
+			lenscommon.PreserveNullBoolIfStateEquals(plan.X.Labels.Visible, &state.X.Labels.Visible, true)
+		}
+		// Kibana reports axis.title.visible=false when the practitioner omits it.
+		if plan.X.Title != nil && state.X.Title != nil {
+			lenscommon.PreserveNullBoolIfStateEquals(plan.X.Title.Visible, &state.X.Title.Visible, false)
+		}
+	}
+	if plan.Y != nil && state.Y != nil {
+		if plan.Y.Labels != nil && state.Y.Labels != nil {
+			lenscommon.PreserveNullBoolIfStateEquals(plan.Y.Labels.Visible, &state.Y.Labels.Visible, true)
+		}
+		if plan.Y.Title != nil && state.Y.Title != nil {
+			lenscommon.PreserveNullBoolIfStateEquals(plan.Y.Title.Visible, &state.Y.Title.Visible, false)
+		}
+	}
+}
+
+func alignHeatmapStylingStateFromPlan(plan, state *models.HeatmapStylingModel) {
+	if plan == nil || state == nil {
+		return
+	}
+	if plan.Cells != nil && state.Cells != nil && plan.Cells.Labels != nil && state.Cells.Labels != nil {
+		lenscommon.PreserveNullBoolIfStateEquals(plan.Cells.Labels.Visible, &state.Cells.Labels.Visible, false)
+	}
 }
 
 func alignHeatmapLegendStateFromPlan(plan *models.HeatmapLegendModel, state **models.HeatmapLegendModel) {
@@ -42,6 +80,9 @@ func alignHeatmapLegendStateFromPlan(plan *models.HeatmapLegendModel, state **mo
 		*state = cloneHeatmapLegendModel(plan)
 		return
 	}
+	// Kibana renders the legend by default; preserve the null plan when the
+	// API read-back returns the default "visible" value.
+	lenscommon.PreserveNullStringIfStateEquals(plan.Visibility, &(*state).Visibility, "visible")
 	lenscommon.PreserveKnownTfStringIfStateNull(plan.Visibility, &(*state).Visibility)
 	lenscommon.PreserveKnownTfStringIfStateNull(plan.Size, &(*state).Size)
 	lenscommon.PreserveKnownTfInt64IfStateNull(plan.TruncateAfterLines, &(*state).TruncateAfterLines)

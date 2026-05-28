@@ -249,7 +249,8 @@ func Test_populatePanelConfigJSONDefaults_pie(t *testing.T) {
 					"operation": "terms",
 					"field": "status",
 					"size": 5,
-					"rank_by": {"type": "column", "metric": 0, "direction": "desc"}
+					"rank_by": {"type": "metric", "metric_index": 0, "direction": "desc"},
+					"color": {"mode": "categorical", "palette": "default", "mapping": []}
 				}
 			]
 		}
@@ -278,7 +279,8 @@ func Test_populatePanelConfigJSONDefaults_waffle(t *testing.T) {
 					"operation": "terms",
 					"field": "status",
 					"size": 5,
-					"rank_by": {"type": "column", "metric": 0, "direction": "desc"}
+					"rank_by": {"type": "metric", "metric_index": 0, "direction": "desc"},
+					"color": {"mode": "categorical", "palette": "default", "mapping": []}
 				}
 			]
 		}
@@ -368,7 +370,8 @@ func Test_populatePanelConfigJSONDefaults_treemap(t *testing.T) {
 							"collapse_by": "avg",
 							"format": {"type": "number", "decimals": 2},
 							"size": 5,
-							"rank_by": {"type": "column", "metric": 0, "direction": "desc"}
+							"rank_by": {"type": "metric", "metric_index": 0, "direction": "desc"},
+							"color": {"mode": "categorical", "palette": "default", "mapping": []}
 						}
 					],
 					"metrics": [{"operation": "count", "empty_as_null": false, "show_metric_label": true, "color": {"type": "auto"}}]
@@ -442,7 +445,8 @@ func Test_populatePanelConfigJSONDefaults_mosaic(t *testing.T) {
 							"collapse_by": "avg",
 							"format": {"type": "number", "decimals": 2},
 							"size": 5,
-							"rank_by": {"type": "column", "metric": 0, "direction": "desc"}
+							"rank_by": {"type": "metric", "metric_index": 0, "direction": "desc"},
+							"color": {"mode": "categorical", "palette": "default", "mapping": []}
 						}
 					],
 					"group_breakdown_by": [
@@ -452,7 +456,8 @@ func Test_populatePanelConfigJSONDefaults_mosaic(t *testing.T) {
 							"collapse_by": "avg",
 							"format": {"type": "number", "decimals": 2},
 							"size": 5,
-							"rank_by": {"type": "column", "metric": 0, "direction": "desc"}
+							"rank_by": {"type": "metric", "metric_index": 0, "direction": "desc"},
+							"color": {"mode": "categorical", "palette": "default", "mapping": []}
 						}
 					],
 					"metrics": [{"operation": "count", "empty_as_null": false, "show_metric_label": true, "color": {"type": "auto"}}]

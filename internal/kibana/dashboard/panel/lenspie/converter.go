@@ -145,8 +145,8 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver
 	return pieChartConfigToAPI(blocks.PieChartConfig, resolver)
 }
 
-func (converter) AlignStateFromPlan(_ context.Context, plan, state *models.LensByValueChartBlocks) {
-	alignPieStateFromPlan(plan, state)
+func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
+	alignPieStateFromPlan(ctx, plan, state)
 }
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {

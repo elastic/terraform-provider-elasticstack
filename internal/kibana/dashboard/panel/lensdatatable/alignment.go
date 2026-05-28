@@ -35,6 +35,21 @@ func alignDatatableNoESQLStateFromPlan(plan, state *models.DatatableNoESQLConfig
 		return
 	}
 	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field")
+	// Kibana re-emits metric/row/split_by config_json with default keys (color,
+	// empty_as_null, format.{decimals,compact}). Treat as semantically equal.
+	n := min(len(plan.Metrics), len(state.Metrics))
+	for i := range n {
+		lenscommon.PreservePlanNormalizedJSONWithDefaultsIfSemanticallyEqual(plan.Metrics[i].ConfigJSON, &state.Metrics[i].ConfigJSON, lenscommon.PopulateLensMetricDefaults)
+	}
+	r := min(len(plan.Rows), len(state.Rows))
+	for i := range r {
+		lenscommon.PreservePlanNormalizedJSONWithDefaultsIfSemanticallyEqual(plan.Rows[i].ConfigJSON, &state.Rows[i].ConfigJSON, lenscommon.PopulateLensGroupByDefaults)
+	}
+	s := min(len(plan.SplitMetricsBy), len(state.SplitMetricsBy))
+	for i := range s {
+		lenscommon.PreservePlanNormalizedJSONWithDefaultsIfSemanticallyEqual(plan.SplitMetricsBy[i].ConfigJSON, &state.SplitMetricsBy[i].ConfigJSON, lenscommon.PopulateLensGroupByDefaults)
+	}
 }
 
 func alignDatatableESQLStateFromPlan(plan, state *models.DatatableESQLConfigModel) {
