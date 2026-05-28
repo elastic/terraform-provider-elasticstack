@@ -370,21 +370,10 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 				return diags
 			}
 
-			var queryVal jsontypes.Normalized
-			if index.Query != nil {
-				switch q := index.Query.(type) {
-				case string:
-					queryVal = jsontypes.NewNormalizedValue(q)
-				default:
-					b, err := json.Marshal(index.Query)
-					if err != nil {
-						diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling query: %s", err))
-						return diags
-					}
-					queryVal = jsontypes.NewNormalizedValue(string(b))
-				}
-			} else {
-				queryVal = jsontypes.NewNormalizedNull()
+			queryVal, d := marshalIndexQuery(index.Query)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
 			}
 
 			var allowRestrictedVal types.Bool
@@ -478,21 +467,10 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 				return diags
 			}
 
-			var queryVal jsontypes.Normalized
-			if remoteIndex.Query != nil {
-				switch q := remoteIndex.Query.(type) {
-				case string:
-					queryVal = jsontypes.NewNormalizedValue(q)
-				default:
-					b, err := json.Marshal(remoteIndex.Query)
-					if err != nil {
-						diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling query: %s", err))
-						return diags
-					}
-					queryVal = jsontypes.NewNormalizedValue(string(b))
-				}
-			} else {
-				queryVal = jsontypes.NewNormalizedNull()
+			queryVal, d := marshalIndexQuery(remoteIndex.Query)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
 			}
 
 			// Build field_security as a types.List with 0 or 1 elements (ListNestedAttribute)
