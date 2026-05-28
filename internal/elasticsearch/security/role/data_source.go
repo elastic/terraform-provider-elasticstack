@@ -370,21 +370,10 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 				return diags
 			}
 
-			var queryVal jsontypes.Normalized
-			if index.Query != nil {
-				switch q := index.Query.(type) {
-				case string:
-					queryVal = jsontypes.NewNormalizedValue(q)
-				default:
-					b, err := json.Marshal(index.Query)
-					if err != nil {
-						diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling query: %s", err))
-						return diags
-					}
-					queryVal = jsontypes.NewNormalizedValue(string(b))
-				}
-			} else {
-				queryVal = jsontypes.NewNormalizedNull()
+			queryVal, d := marshalIndexQuery(index.Query)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
 			}
 
 			var allowRestrictedVal types.Bool
@@ -394,37 +383,10 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 				allowRestrictedVal = types.BoolNull()
 			}
 
-			// Build field_security as a types.List with 0 or 1 elements (ListNestedAttribute)
-			var fieldSecList types.List
-			if index.FieldSecurity != nil {
-				grantSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(index.FieldSecurity.Grant))
-				diags.Append(d...)
-				if diags.HasError() {
-					return diags
-				}
-
-				exceptSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(index.FieldSecurity.Except))
-				diags.Append(d...)
-				if diags.HasError() {
-					return diags
-				}
-
-				fieldSecObj, d := types.ObjectValue(getFieldSecurityDSAttrTypes(), map[string]attr.Value{
-					attrGrant:  grantSet,
-					attrExcept: exceptSet,
-				})
-				diags.Append(d...)
-				if diags.HasError() {
-					return diags
-				}
-
-				fieldSecList, d = types.ListValue(types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()}, []attr.Value{fieldSecObj})
-				diags.Append(d...)
-				if diags.HasError() {
-					return diags
-				}
-			} else {
-				fieldSecList = types.ListValueMust(types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()}, []attr.Value{})
+			fieldSecList, d := buildFieldSecurityDSList(ctx, index.FieldSecurity)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
 			}
 
 			indexObj, d := types.ObjectValue(getIndexPermsDSAttrTypes(), map[string]attr.Value{
@@ -478,54 +440,16 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 				return diags
 			}
 
-			var queryVal jsontypes.Normalized
-			if remoteIndex.Query != nil {
-				switch q := remoteIndex.Query.(type) {
-				case string:
-					queryVal = jsontypes.NewNormalizedValue(q)
-				default:
-					b, err := json.Marshal(remoteIndex.Query)
-					if err != nil {
-						diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling query: %s", err))
-						return diags
-					}
-					queryVal = jsontypes.NewNormalizedValue(string(b))
-				}
-			} else {
-				queryVal = jsontypes.NewNormalizedNull()
+			queryVal, d := marshalIndexQuery(remoteIndex.Query)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
 			}
 
-			// Build field_security as a types.List with 0 or 1 elements (ListNestedAttribute)
-			var fieldSecList types.List
-			if remoteIndex.FieldSecurity != nil {
-				grantSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(remoteIndex.FieldSecurity.Grant))
-				diags.Append(d...)
-				if diags.HasError() {
-					return diags
-				}
-
-				exceptSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(remoteIndex.FieldSecurity.Except))
-				diags.Append(d...)
-				if diags.HasError() {
-					return diags
-				}
-
-				fieldSecObj, d := types.ObjectValue(getFieldSecurityDSAttrTypes(), map[string]attr.Value{
-					attrGrant:  grantSet,
-					attrExcept: exceptSet,
-				})
-				diags.Append(d...)
-				if diags.HasError() {
-					return diags
-				}
-
-				fieldSecList, d = types.ListValue(types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()}, []attr.Value{fieldSecObj})
-				diags.Append(d...)
-				if diags.HasError() {
-					return diags
-				}
-			} else {
-				fieldSecList = types.ListValueMust(types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()}, []attr.Value{})
+			fieldSecList, d := buildFieldSecurityDSList(ctx, remoteIndex.FieldSecurity)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
 			}
 
 			remoteIndexObj, d := types.ObjectValue(getRemoteIndexPermsDSAttrTypes(), map[string]attr.Value{
@@ -554,6 +478,35 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 	}
 
 	return diags
+}
+
+func buildFieldSecurityDSList(ctx context.Context, fs *esTypes.FieldSecurity) (types.List, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	attrTypes := getFieldSecurityDSAttrTypes()
+	if fs == nil {
+		return types.ListValueMust(types.ObjectType{AttrTypes: attrTypes}, []attr.Value{}), diags
+	}
+	grantSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(fs.Grant))
+	diags.Append(d...)
+	if diags.HasError() {
+		return types.ListNull(types.ObjectType{AttrTypes: attrTypes}), diags
+	}
+	exceptSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(fs.Except))
+	diags.Append(d...)
+	if diags.HasError() {
+		return types.ListNull(types.ObjectType{AttrTypes: attrTypes}), diags
+	}
+	obj, d := types.ObjectValue(attrTypes, map[string]attr.Value{
+		attrGrant:  grantSet,
+		attrExcept: exceptSet,
+	})
+	diags.Append(d...)
+	if diags.HasError() {
+		return types.ListNull(types.ObjectType{AttrTypes: attrTypes}), diags
+	}
+	list, d := types.ListValue(types.ObjectType{AttrTypes: attrTypes}, []attr.Value{obj})
+	diags.Append(d...)
+	return list, diags
 }
 
 // Data source attribute type helpers (mirror data source schema structure)
