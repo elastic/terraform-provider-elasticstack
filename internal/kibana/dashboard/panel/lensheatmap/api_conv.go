@@ -89,8 +89,12 @@ func heatmapConfigPopulateCommonFields(m *models.HeatmapConfigModel,
 	diags.Append(axisDiags...)
 	m.Styling = &models.HeatmapStylingModel{}
 	heatmapStylingFromAPI(m.Styling, styling)
-	m.Legend = &models.HeatmapLegendModel{}
-	heatmapLegendFromAPI(m.Legend, legend)
+	if legend == nil {
+		m.Legend = nil
+	} else {
+		m.Legend = &models.HeatmapLegendModel{}
+		heatmapLegendFromAPI(m.Legend, legend)
+	}
 	return !diags.HasError()
 }
 

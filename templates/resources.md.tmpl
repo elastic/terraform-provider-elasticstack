@@ -32,6 +32,15 @@ description: |-
 See also: [Security Roles Guide](../guides/security-roles)
 
 {{- end }}
+{{ if eq .Name "elasticstack_kibana_dashboard" }}
+## See also
+
+- [Getting started with Kibana dashboards](/docs/guides/kibana-dashboard-getting-started) — build your first dashboard step by step
+- [Kibana dashboard operations guide](/docs/guides/kibana-dashboard-operations) — pinned controls, KPIs, and Discover sessions
+- [Advanced Kibana dashboard patterns](/docs/guides/kibana-dashboard-advanced) — sections, ES|QL controls, and access control
+
+{{ end }}
+
 {{- if eq .Name "elasticstack_elasticsearch_security_role" }}
 ## Example Usage
 

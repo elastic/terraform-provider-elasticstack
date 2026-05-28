@@ -2,6 +2,10 @@
 
 ### Changes
 
+- Fix `elasticstack_kibana_dashboard` "inconsistent result after apply" when using `vis_config.by_value.xy_chart_config` with `layers[].type = "bar_horizontal"` and terms breakdowns — provider now preserves planned `fitting` values when Kibana omits them.
+- Fix `elasticstack_kibana_dashboard` nested section panel reads (`image_config`, `xy_chart_config.legend`, `heatmap_config.legend`, gauge `styling.shape_json`) — planned values are preserved when Kibana omits them on read.
+- Fix `elasticstack_kibana_dashboard` top-level `panels = []` — an explicit empty list is preserved when the dashboard uses only `sections` and/or `pinned_panels` (omitted `panels` stays null).
+- Fix `elasticstack_kibana_dashboard` ES|QL pinned controls and ES|QL metric routing — controls send `type`, metrics use the ES|QL API variant, and `?variable` filtering no longer fails Kibana validation; panel reads clone plan-side typed configs when Kibana leaves blocks nil.
 - Add elasticsearch_snapshot_create and elasticsearch_snapshot_restore provider-defined actions for on-demand snapshot creation and restore. ([#3376](https://github.com/elastic/terraform-provider-elasticstack/pull/3376))
 - Add `elasticstack_elasticsearch_query_ruleset` resource and data source for the Elasticsearch Query Rules API. ([#3365](https://github.com/elastic/terraform-provider-elasticstack/pull/3365))
 - improve security role documentation and add automated drift detection for Kibana feature privilege docs ([#3339](https://github.com/elastic/terraform-provider-elasticstack/pull/3339))

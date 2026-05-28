@@ -69,9 +69,17 @@ func discoverSessionPriorTFBranchMismatchesAPI(apiLooksByRef bool, prior *models
 
 func populateDiscoverSessionPanelFromAPI(ctx context.Context, pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession) diag.Diagnostics {
 	if tfPanel == nil {
-		cfg, diags := discoverSessionPanelConfigFromAPIImport(ctx, apiPanel)
+		cfg, diags := discoverSessionPanelConfigFromAPIImport(ctx, apiPanel, nil)
 		pm.DiscoverSessionConfig = cfg
 		return diags
+	}
+
+	if pm.DiscoverSessionConfig == nil {
+		cfg, diags := discoverSessionPanelConfigFromAPIImport(ctx, apiPanel, tfPanel)
+		pm.DiscoverSessionConfig = cfg
+		if tfPanel == nil {
+			return diags
+		}
 	}
 
 	existing := pm.DiscoverSessionConfig
@@ -99,7 +107,11 @@ func populateDiscoverSessionPanelFromAPI(ctx context.Context, pm *models.PanelMo
 		if err != nil {
 			return discoverSessionDecodeDiagnostics(err, "by-value")
 		}
-		imported, tabDiags := discoverSessionConfig0FromAPIImport(ctx, cfg0)
+		var priorTab *models.DiscoverSessionTabModel
+		if tfPanel != nil && tfPanel.DiscoverSessionConfig != nil && tfPanel.DiscoverSessionConfig.ByValue != nil {
+			priorTab = &tfPanel.DiscoverSessionConfig.ByValue.Tab
+		}
+		imported, tabDiags := discoverSessionConfig0FromAPIImport(ctx, cfg0, priorTab)
 		if imported != nil {
 			*existing = *imported
 		}
@@ -132,7 +144,16 @@ func discoverSessionDecodeDiagnostics(err error, branch string) diag.Diagnostics
 	return diags
 }
 
-func discoverSessionPanelConfigFromAPIImport(ctx context.Context, apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession) (*models.DiscoverSessionPanelConfigModel, diag.Diagnostics) {
+func discoverSessionPanelConfigFromAPIImport(
+	ctx context.Context,
+	apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession,
+	tfPanel *models.PanelModel,
+) (*models.DiscoverSessionPanelConfigModel, diag.Diagnostics) {
+	var priorTab *models.DiscoverSessionTabModel
+	if tfPanel != nil && tfPanel.DiscoverSessionConfig != nil && tfPanel.DiscoverSessionConfig.ByValue != nil {
+		priorTab = &tfPanel.DiscoverSessionConfig.ByValue.Tab
+	}
+
 	if discoverSessionAPIConfigLooksByReference(apiPanel.Config) {
 		cfg1, err := apiPanel.Config.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1()
 		if err == nil {
@@ -143,13 +164,17 @@ func discoverSessionPanelConfigFromAPIImport(ctx context.Context, apiPanel kbapi
 
 	cfg0, err := apiPanel.Config.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0()
 	if err == nil {
-		return discoverSessionConfig0FromAPIImport(ctx, cfg0)
+		return discoverSessionConfig0FromAPIImport(ctx, cfg0, priorTab)
 	}
 	return nil, nil
 }
 
-func discoverSessionConfig0FromAPIImport(ctx context.Context, cfg0 kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0) (*models.DiscoverSessionPanelConfigModel, diag.Diagnostics) {
-	tab, tabDiags := discoverSessionTabFromAPIConfig0(ctx, cfg0.Tabs)
+func discoverSessionConfig0FromAPIImport(
+	ctx context.Context,
+	cfg0 kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0,
+	priorTab *models.DiscoverSessionTabModel,
+) (*models.DiscoverSessionPanelConfigModel, diag.Diagnostics) {
+	tab, tabDiags := discoverSessionTabFromAPIConfig0(ctx, cfg0.Tabs, priorTab)
 	cfg := &models.DiscoverSessionPanelConfigModel{
 		Title:       types.StringPointerValue(cfg0.Title),
 		Description: types.StringPointerValue(cfg0.Description),
@@ -206,11 +231,42 @@ func discoverSessionTimeRangePtrFromAPI(api *kbapi.KibanaHTTPAPIsKbnEsQueryServe
 	return tr
 }
 
-func discoverSessionTabFromAPIConfig0(ctx context.Context, tabs []kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_Item) (models.DiscoverSessionTabModel, diag.Diagnostics) {
+func discoverSessionTabFromAPIConfig0(
+	ctx context.Context,
+	tabs []kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_Item,
+	prior *models.DiscoverSessionTabModel,
+) (models.DiscoverSessionTabModel, diag.Diagnostics) {
 	if len(tabs) == 0 {
 		return models.DiscoverSessionTabModel{}, nil
 	}
 	tab := tabs[0]
+
+	if prior != nil && prior.ESQL != nil {
+		if esql, err := tab.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1(); err == nil {
+			m, d := discoverSessionESQLTabFromAPI(ctx, esql)
+			return models.DiscoverSessionTabModel{ESQL: m}, d
+		}
+	}
+	if prior != nil && prior.DSL != nil {
+		if dsl, err := tab.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0(); err == nil {
+			m, d := discoverSessionDSLTabFromAPI(ctx, dsl)
+			return models.DiscoverSessionTabModel{DSL: m}, d
+		}
+	}
+
+	switch discoverSessionTabBranchFromAPIItem(tab) {
+	case discoverSessionTabBranchESQL:
+		if esql, err := tab.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1(); err == nil {
+			m, d := discoverSessionESQLTabFromAPI(ctx, esql)
+			return models.DiscoverSessionTabModel{ESQL: m}, d
+		}
+	case discoverSessionTabBranchDSL:
+		if dsl, err := tab.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0(); err == nil {
+			m, d := discoverSessionDSLTabFromAPI(ctx, dsl)
+			return models.DiscoverSessionTabModel{DSL: m}, d
+		}
+	}
+
 	if dsl, err := tab.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0(); err == nil {
 		m, d := discoverSessionDSLTabFromAPI(ctx, dsl)
 		return models.DiscoverSessionTabModel{DSL: m}, d
@@ -220,6 +276,33 @@ func discoverSessionTabFromAPIConfig0(ctx context.Context, tabs []kbapi.KibanaHT
 		return models.DiscoverSessionTabModel{ESQL: m}, d
 	}
 	return models.DiscoverSessionTabModel{}, nil
+}
+
+type discoverSessionTabBranch int
+
+const (
+	discoverSessionTabBranchUnknown discoverSessionTabBranch = iota
+	discoverSessionTabBranchDSL
+	discoverSessionTabBranchESQL
+)
+
+func discoverSessionTabBranchFromAPIItem(tab kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_Item) discoverSessionTabBranch {
+	raw, err := tab.MarshalJSON()
+	if err != nil {
+		return discoverSessionTabBranchUnknown
+	}
+	var root map[string]any
+	if err := json.Unmarshal(raw, &root); err != nil {
+		return discoverSessionTabBranchUnknown
+	}
+	ds, _ := root["data_source"].(map[string]any)
+	if dsType, _ := ds["type"].(string); dsType == "esql" {
+		return discoverSessionTabBranchESQL
+	}
+	if _, ok := root["query"]; ok {
+		return discoverSessionTabBranchDSL
+	}
+	return discoverSessionTabBranchUnknown
 }
 
 func discoverSessionDSLTabFromAPI(ctx context.Context, api kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0) (*models.DiscoverSessionDSLTabModel, diag.Diagnostics) {
@@ -632,7 +715,27 @@ func discoverSessionMergeConfig0FromAPI(
 	if len(cfg0.Tabs) > 0 {
 		diags.Append(discoverSessionMergeTabFromAPI(ctx, &existing.ByValue.Tab, prior.ByValue.Tab, cfg0.Tabs[0])...)
 	}
+
+	discoverSessionPreserveEnvelopeNullIntent(existing, prior)
 	return diags
+}
+
+func discoverSessionPreserveEnvelopeNullIntent(existing, prior *models.DiscoverSessionPanelConfigModel) {
+	if prior == nil || existing == nil {
+		return
+	}
+	if !typeutils.IsKnown(prior.Title) {
+		existing.Title = prior.Title
+	}
+	if !typeutils.IsKnown(prior.Description) {
+		existing.Description = prior.Description
+	}
+	if !typeutils.IsKnown(prior.HideTitle) {
+		existing.HideTitle = prior.HideTitle
+	}
+	if !typeutils.IsKnown(prior.HideBorder) {
+		existing.HideBorder = prior.HideBorder
+	}
 }
 
 func discoverSessionMergeConfig1FromAPI(
@@ -660,7 +763,7 @@ func discoverSessionMergeConfig1FromAPI(
 		existing.HideBorder = types.BoolPointerValue(cfg1.HideBorder)
 	}
 
-	existing.Drilldowns = readDiscoverSessionDrilldownsFromConfig1(cfg1.Drilldowns, existing.Drilldowns)
+	existing.Drilldowns = readDiscoverSessionDrilldownsFromConfig1(cfg1.Drilldowns, prior.Drilldowns)
 
 	if prior.ByReference.TimeRange == nil {
 		existing.ByReference.TimeRange = nil
@@ -684,6 +787,13 @@ func discoverSessionMergeConfig1FromAPI(
 	if existing.ByReference.Overrides != nil && cfg1.Overrides != nil {
 		diags.Append(discoverSessionMergeOverridesFromAPI(ctx, existing.ByReference.Overrides, prior.ByReference.Overrides, *cfg1.Overrides)...)
 	}
+	if prior.ByReference.Overrides == nil {
+		existing.ByReference.Overrides = nil
+	} else if existing.ByReference.Overrides != nil {
+		discoverSessionPreserveOverridesNullIntent(existing.ByReference.Overrides, prior.ByReference.Overrides)
+	}
+
+	discoverSessionPreserveEnvelopeNullIntent(existing, prior)
 	return diags
 }
 
@@ -737,7 +847,7 @@ func discoverSessionMergeDSLTabFromAPI(
 		existing.ColumnSettings = discoverSessionColumnSettingsFromAPI(ctx, api.ColumnSettings, &diags)
 	}
 
-	if api.Sort != nil && len(*api.Sort) > 0 {
+	if len(prior.Sort) > 0 && api.Sort != nil && len(*api.Sort) > 0 {
 		existing.Sort = discoverSessionSortSliceFromAPI0(*api.Sort)
 	}
 
@@ -788,7 +898,42 @@ func discoverSessionMergeDSLTabFromAPI(
 		}
 		existing.Filters = filters
 	}
+
+	discoverSessionPreserveDSLTabNullIntent(existing, prior)
 	return diags
+}
+
+func discoverSessionPreserveDSLTabNullIntent(existing *models.DiscoverSessionDSLTabModel, prior models.DiscoverSessionDSLTabModel) {
+	if !typeutils.IsKnown(prior.Density) {
+		existing.Density = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.HeaderRowHeight) {
+		existing.HeaderRowHeight = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.RowHeight) {
+		existing.RowHeight = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.RowsPerPage) {
+		existing.RowsPerPage = types.Int64Null()
+	}
+	if !typeutils.IsKnown(prior.SampleSize) {
+		existing.SampleSize = types.Int64Null()
+	}
+	if !typeutils.IsKnown(prior.ViewMode) {
+		existing.ViewMode = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.ColumnOrder) {
+		existing.ColumnOrder = prior.ColumnOrder
+	}
+	if !typeutils.IsKnown(prior.ColumnSettings) {
+		existing.ColumnSettings = prior.ColumnSettings
+	}
+	if prior.Sort == nil {
+		existing.Sort = nil
+	}
+	if len(prior.Filters) == 0 {
+		existing.Filters = nil
+	}
 }
 
 func discoverSessionMergeESQLTabFromAPI(
@@ -807,7 +952,7 @@ func discoverSessionMergeESQLTabFromAPI(
 		existing.ColumnSettings = discoverSessionColumnSettingsFromAPI(ctx, api.ColumnSettings, &diags)
 	}
 
-	if api.Sort != nil && len(*api.Sort) > 0 {
+	if len(prior.Sort) > 0 && api.Sort != nil && len(*api.Sort) > 0 {
 		existing.Sort = discoverSessionSortSliceFromAPI1(*api.Sort)
 	}
 
@@ -830,7 +975,30 @@ func discoverSessionMergeESQLTabFromAPI(
 			existing.DataSourceJSON = jsontypes.NewNormalizedValue(string(dsBytes))
 		}
 	}
+
+	discoverSessionPreserveESQLTabNullIntent(existing, prior)
 	return diags
+}
+
+func discoverSessionPreserveESQLTabNullIntent(existing *models.DiscoverSessionESQLTabModel, prior models.DiscoverSessionESQLTabModel) {
+	if !typeutils.IsKnown(prior.Density) {
+		existing.Density = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.HeaderRowHeight) {
+		existing.HeaderRowHeight = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.RowHeight) {
+		existing.RowHeight = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.ColumnOrder) {
+		existing.ColumnOrder = prior.ColumnOrder
+	}
+	if !typeutils.IsKnown(prior.ColumnSettings) {
+		existing.ColumnSettings = prior.ColumnSettings
+	}
+	if prior.Sort == nil {
+		existing.Sort = nil
+	}
 }
 
 func discoverSessionMergeOverridesFromAPI(ctx context.Context, existing *models.DiscoverSessionOverridesModel, prior *models.DiscoverSessionOverridesModel, api struct {
@@ -886,5 +1054,37 @@ func discoverSessionMergeOverridesFromAPI(ctx context.Context, existing *models.
 	if prior != nil && typeutils.IsKnown(prior.SampleSize) && api.SampleSize != nil {
 		existing.SampleSize = types.Int64Value(int64(*api.SampleSize))
 	}
+
+	discoverSessionPreserveOverridesNullIntent(existing, prior)
 	return diags
+}
+
+func discoverSessionPreserveOverridesNullIntent(existing, prior *models.DiscoverSessionOverridesModel) {
+	if prior == nil || existing == nil {
+		return
+	}
+	if !typeutils.IsKnown(prior.ColumnOrder) {
+		existing.ColumnOrder = prior.ColumnOrder
+	}
+	if !typeutils.IsKnown(prior.ColumnSettings) {
+		existing.ColumnSettings = prior.ColumnSettings
+	}
+	if prior.Sort == nil {
+		existing.Sort = nil
+	}
+	if !typeutils.IsKnown(prior.Density) {
+		existing.Density = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.HeaderRowHeight) {
+		existing.HeaderRowHeight = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.RowHeight) {
+		existing.RowHeight = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.RowsPerPage) {
+		existing.RowsPerPage = types.Int64Null()
+	}
+	if !typeutils.IsKnown(prior.SampleSize) {
+		existing.SampleSize = types.Int64Null()
+	}
 }

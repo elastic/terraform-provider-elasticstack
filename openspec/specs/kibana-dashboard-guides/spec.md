@@ -1,9 +1,8 @@
-# Kibana Dashboard Guides
+# kibana-dashboard-guides Specification
 
-Guide implementation: `templates/guides/kibana-dashboard-getting-started.md.tmpl`, `templates/guides/kibana-dashboard-operations.md.tmpl`, `templates/guides/kibana-dashboard-advanced.md.tmpl`, rendered to `docs/guides/kibana-dashboard-getting-started.md`, `docs/guides/kibana-dashboard-operations.md`, and `docs/guides/kibana-dashboard-advanced.md`
-
-## ADDED Requirements
-
+## Purpose
+TBD - created by archiving change kibana-dashboard-guides. Update Purpose after archive.
+## Requirements
 ### Requirement: Three guide templates exist, render to guide files, and are linked from the dashboard resource docs
 
 Three standalone provider guide templates SHALL exist as sources consumed by `make docs-generate`:
@@ -48,8 +47,8 @@ The guide SHALL cover these topics in order:
 The guide SHALL include an explicit section explaining how to obtain Lens visualization JSON from the Kibana UI using Inspect → Request → Response.
 
 Each panel addition step SHALL include:
-- A complete Terraform snippet showing the full `panels` list up to that step
-- An embedded screenshot of the dashboard after applying that step
+- A Terraform snippet showing the panel being added (a single `panels` entry is sufficient; the guide SHALL also embed the complete final `main.tf` once near the end via `{{ tffile ... }}` so readers can see the full configuration)
+- An embedded screenshot illustrating that panel (a panel-focused crop is acceptable; a full-dashboard screenshot of the final state is acceptable for the last step)
 
 #### Scenario: Guide 1 Terraform config applies cleanly
 
@@ -111,7 +110,7 @@ The guide SHALL cover:
 - Collapsible `sections` grouping panels, with a tech-preview callout
 - `image_config.src.url` for branding
 - Lens Gauge chart (`vis_config.by_value.gauge_config`) with a goal value
-- Lens Heatmap chart (`vis_config.by_value.heatmap_config`) showing activity by day-of-week and hour
+- Lens Heatmap chart (`vis_config.by_value.heatmap_config`) showing request distribution across time and a categorical breakdown (the committed example uses hour-of-day × HTTP response code)
 - `esql_control` in `pinned_panels` with a named variable, and a panel query referencing that variable
 - `access_control` with `access_mode = "write_restricted"` and its replacement-on-change implication
 - `tags` field for dashboard organisation
@@ -166,18 +165,19 @@ Each script SHALL:
 - Accept `KIBANA_URL`, `KIBANA_USER`, and `KIBANA_PASS` environment variables with sensible defaults
 - Handle the Kibana login flow before navigating to the dashboard
 - Wait for panel rendering to complete (`networkidle` + panel selector) before capturing
-- Write output PNGs to `docs/guides/images/`
+- Write output PNGs to `templates/guides/images/` (the source-of-truth location)
 
-Screenshot PNG files SHALL be committed to the repository at `docs/guides/images/`.
+Screenshot PNG files SHALL be committed at `templates/guides/images/`; `make docs-generate` copies them to `docs/guides/images/` (the published location), and `make check-docs` enforces the published copy is in sync.
 
 #### Scenario: Screenshot scripts produce output PNGs
 
 - **WHEN** a local Kibana 9.4+ instance is running with sample data installed and the guide configs applied
 - **WHEN** `node scripts/screenshots/guide1.mjs` is run
-- **THEN** PNG files are written to `docs/guides/images/` with no errors
+- **THEN** PNG files are written to `templates/guides/images/` with no errors
 
 #### Scenario: README documents the full screenshot workflow
 
 - **WHEN** `scripts/screenshots/README.md` is read
 - **THEN** it lists the prerequisites: running Kibana, sample data installed, terraform applied, `npm install`
 - **THEN** it documents the environment variables and an example invocation
+

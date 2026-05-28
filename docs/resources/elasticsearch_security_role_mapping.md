@@ -8,7 +8,8 @@ description: |-
 
 # elasticstack_elasticsearch_security_role_mapping (Resource)
 
-Manage role mappings. See the [role mapping API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role-mapping.html) for more details.## Example Usage
+Manage role mappings. See the [role mapping API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role-mapping.html) for more details.
+## Example Usage
 
 ```terraform
 provider "elasticstack" {

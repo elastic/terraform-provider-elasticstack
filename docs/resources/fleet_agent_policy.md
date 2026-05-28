@@ -8,7 +8,8 @@ description: |-
 
 # elasticstack_fleet_agent_policy (Resource)
 
-Creates a new Fleet Agent Policy. See https://www.elastic.co/guide/en/fleet/current/agent-policy.html## Example Usage
+Creates a new Fleet Agent Policy. See https://www.elastic.co/guide/en/fleet/current/agent-policy.html
+## Example Usage
 
 ```terraform
 provider "elasticstack" {

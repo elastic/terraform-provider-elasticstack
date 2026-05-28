@@ -105,8 +105,11 @@ func BuildConfig(pm *models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardP
 func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts) {
 	apiCfg := apiPanel.Config
 
-	if tfPanel == nil {
+	if pm.SloAlertsConfig == nil {
 		pm.SloAlertsConfig = sloAlertsPanelConfigFromAPIImport(apiCfg)
+	}
+
+	if tfPanel == nil {
 		return
 	}
 
@@ -126,7 +129,11 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel
 	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, apiCfg.HideTitle)
 	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, apiCfg.HideBorder)
 
-	existing.Drilldowns = readDrilldownsFromAPI(apiCfg.Drilldowns, existing.Drilldowns)
+	var priorDrilldowns []models.URLDrilldownModel
+	if tfPanel.SloAlertsConfig != nil {
+		priorDrilldowns = tfPanel.SloAlertsConfig.Drilldowns
+	}
+	existing.Drilldowns = readDrilldownsFromAPI(apiCfg.Drilldowns, priorDrilldowns)
 }
 
 func sloAlertsPanelConfigFromAPIImport(apiCfg kbapi.KibanaHTTPAPIsSloAlertsEmbeddable) *models.SloAlertsPanelConfigModel {

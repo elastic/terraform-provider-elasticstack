@@ -41,6 +41,9 @@ func alignGaugeConfigStateFromPlan(ctx context.Context, plan, state *models.Gaug
 	}
 	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
 	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
+	if plan.Styling != nil && state.Styling != nil {
+		lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.Styling.ShapeJSON, &state.Styling.ShapeJSON, "orientation")
+	}
 	if plan.EsqlMetric != nil && state.EsqlMetric != nil {
 		alignGaugeEsqlMetricStateFromPlan(plan.EsqlMetric, state.EsqlMetric)
 	}

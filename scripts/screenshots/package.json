@@ -1,0 +1,12 @@
+{
+  "name": "terraform-provider-elasticstack-screenshots",
+  "private": true,
+  "description": "Playwright scripts to regenerate Kibana dashboard guide screenshots",
+  "type": "module",
+  "scripts": {
+    "install-browsers": "playwright install chromium"
+  },
+  "dependencies": {
+    "playwright": "^1.49.0"
+  }
+}

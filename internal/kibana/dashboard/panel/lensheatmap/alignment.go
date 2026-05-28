@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 )
 
 func alignHeatmapStateFromPlan(ctx context.Context, plan, state *models.HeatmapConfigModel) {
@@ -30,4 +31,33 @@ func alignHeatmapStateFromPlan(ctx context.Context, plan, state *models.HeatmapC
 	}
 	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
 	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
+	alignHeatmapLegendStateFromPlan(plan.Legend, &state.Legend)
+}
+
+func alignHeatmapLegendStateFromPlan(plan *models.HeatmapLegendModel, state **models.HeatmapLegendModel) {
+	if plan == nil {
+		return
+	}
+	if *state == nil || heatmapLegendEffectivelyUnset(*state) {
+		*state = cloneHeatmapLegendModel(plan)
+		return
+	}
+	lenscommon.PreserveKnownTfStringIfStateNull(plan.Visibility, &(*state).Visibility)
+	lenscommon.PreserveKnownTfStringIfStateNull(plan.Size, &(*state).Size)
+	lenscommon.PreserveKnownTfInt64IfStateNull(plan.TruncateAfterLines, &(*state).TruncateAfterLines)
+}
+
+func heatmapLegendEffectivelyUnset(m *models.HeatmapLegendModel) bool {
+	if m == nil {
+		return true
+	}
+	return !typeutils.IsKnown(m.Visibility) && !typeutils.IsKnown(m.Size) && !typeutils.IsKnown(m.TruncateAfterLines)
+}
+
+func cloneHeatmapLegendModel(model *models.HeatmapLegendModel) *models.HeatmapLegendModel {
+	if model == nil {
+		return nil
+	}
+	cloned := *model
+	return &cloned
 }

@@ -26,6 +26,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -913,6 +915,132 @@ func Test_unknownPanelRoundTrip(t *testing.T) {
 	require.NoError(t, json.Unmarshal(actualBytes, &actualAny))
 
 	assert.Equal(t, expectedAny, actualAny, "Round-trip should produce identical API JSON for unknown panel types")
+}
+
+func Test_dashboardMapPanelFromAPI_imagePreservesImageConfigWithPrior(t *testing.T) {
+	t.Parallel()
+
+	planPanel := models.PanelModel{
+		Type: types.StringValue("image"),
+		Grid: models.PanelGridModel{
+			X: types.Int64Value(0),
+			Y: types.Int64Value(0),
+			W: types.Int64Value(8),
+			H: types.Int64Value(8),
+		},
+		ImageConfig: &models.ImagePanelConfigModel{
+			Src: models.ImagePanelSrcModel{
+				URL: &models.ImagePanelSrcURLModel{
+					URL: types.StringValue("https://www.elastic.co/favicon.ico"),
+				},
+			},
+			AltText:         types.StringValue("Elastic logo"),
+			BackgroundColor: types.StringValue("#1d1e31"),
+			ObjectFit:       types.StringValue("contain"),
+			Title:           types.StringValue("Branding"),
+			Description:     types.StringValue("Static logo for dashboard branding"),
+			HideTitle:       types.BoolValue(false),
+			HideBorder:      types.BoolValue(true),
+		},
+	}
+
+	item, diags := panelToAPI(t.Context(), planPanel, &models.DashboardModel{})
+	require.False(t, diags.HasError())
+
+	got, diags := dashboardMapPanelFromAPI(t.Context(), nil, &planPanel, item)
+	require.False(t, diags.HasError())
+	require.NotNil(t, got.ImageConfig, "image_config must survive API read when prior panel is provided")
+
+	alignPanelStateFromPlan(t.Context(), &planPanel, &got)
+	require.NotNil(t, got.ImageConfig, "image_config must survive plan alignment")
+	assert.Equal(t, "Elastic logo", got.ImageConfig.AltText.ValueString())
+	assert.Equal(t, "Branding", got.ImageConfig.Title.ValueString())
+}
+
+func Test_dashboardMapPanelFromAPI_discoverSessionPreservesConfigWithPrior(t *testing.T) {
+	t.Parallel()
+
+	planPanel := models.PanelModel{
+		Type: types.StringValue("discover_session"),
+		Grid: models.PanelGridModel{
+			X: types.Int64Value(0),
+			Y: types.Int64Value(0),
+			W: types.Int64Value(24),
+			H: types.Int64Value(12),
+		},
+		DiscoverSessionConfig: &models.DiscoverSessionPanelConfigModel{
+			Title:       types.StringValue("DSL Discover"),
+			Description: types.StringValue("by_value dsl tab"),
+			HideTitle:   types.BoolValue(false),
+			HideBorder:  types.BoolValue(true),
+			ByValue: &models.DiscoverSessionPanelByValueModel{
+				Tab: models.DiscoverSessionTabModel{
+					DSL: &models.DiscoverSessionDSLTabModel{
+						Query: &models.FilterSimpleModel{
+							Language:   types.StringValue("kql"),
+							Expression: types.StringValue("host.name : *"),
+						},
+						DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_reference","ref_id":"kibana_sample_data_logs"}`),
+						ColumnOrder: types.ListValueMust(types.StringType, []attr.Value{
+							types.StringValue("@timestamp"),
+							types.StringValue("message"),
+						}),
+						ViewMode: types.StringValue("documents"),
+					},
+				},
+			},
+		},
+	}
+
+	dashboard := &models.DashboardModel{
+		TimeRange: &models.TimeRangeModel{
+			From: types.StringValue("now-15m"),
+			To:   types.StringValue("now"),
+		},
+	}
+
+	item, diags := panelToAPI(t.Context(), planPanel, dashboard)
+	require.False(t, diags.HasError())
+
+	got, diags := dashboardMapPanelFromAPI(t.Context(), nil, &planPanel, item)
+	require.False(t, diags.HasError())
+	require.NotNil(t, got.DiscoverSessionConfig, "discover_session_config must survive API read when prior panel is provided")
+	require.NotNil(t, got.DiscoverSessionConfig.ByValue)
+	require.NotNil(t, got.DiscoverSessionConfig.ByValue.Tab.DSL)
+	assert.Equal(t, "host.name : *", got.DiscoverSessionConfig.ByValue.Tab.DSL.Query.Expression.ValueString())
+	dsl := got.DiscoverSessionConfig.ByValue.Tab.DSL
+	assert.True(t, dsl.Density.IsNull(), "omitted density must stay null after API import+merge")
+	assert.True(t, dsl.HeaderRowHeight.IsNull(), "omitted header_row_height must stay null after API import+merge")
+	assert.Nil(t, dsl.Sort, "omitted sort must stay null after API import+merge")
+}
+
+func Test_dashboardMapPanelFromAPI_discoverSessionESQLTabOnly(t *testing.T) {
+	t.Parallel()
+
+	planPanel := models.PanelModel{
+		Type: types.StringValue("discover_session"),
+		Grid: models.PanelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(24), H: types.Int64Value(12)},
+		DiscoverSessionConfig: &models.DiscoverSessionPanelConfigModel{
+			Title: types.StringValue("ESQL Discover"),
+			ByValue: &models.DiscoverSessionPanelByValueModel{
+				Tab: models.DiscoverSessionTabModel{
+					ESQL: &models.DiscoverSessionESQLTabModel{
+						DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM kibana_sample_data_logs | LIMIT 50"}`),
+						RowHeight:      types.StringValue("auto"),
+					},
+				},
+			},
+		},
+	}
+	dashboard := &models.DashboardModel{
+		TimeRange: &models.TimeRangeModel{From: types.StringValue("now-15m"), To: types.StringValue("now")},
+	}
+	item, diags := panelToAPI(t.Context(), planPanel, dashboard)
+	require.False(t, diags.HasError())
+	got, diags := dashboardMapPanelFromAPI(t.Context(), nil, &planPanel, item)
+	require.False(t, diags.HasError())
+	require.Nil(t, got.DiscoverSessionConfig.ByValue.Tab.DSL)
+	require.NotNil(t, got.DiscoverSessionConfig.ByValue.Tab.ESQL)
 }
 
 func Test_unknownPanelToAPIErrorWithoutConfigJSON(t *testing.T) {

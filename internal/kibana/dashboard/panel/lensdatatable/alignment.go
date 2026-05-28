@@ -42,4 +42,12 @@ func alignDatatableESQLStateFromPlan(plan, state *models.DatatableESQLConfigMode
 		return
 	}
 	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	n := min(len(plan.Metrics), len(state.Metrics))
+	for i := range n {
+		lenscommon.PreservePlanJSONIfStateOmitsOptionalKeys(
+			plan.Metrics[i].ConfigJSON,
+			&state.Metrics[i].ConfigJSON,
+			"operation",
+		)
+	}
 }

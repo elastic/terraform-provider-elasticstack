@@ -258,19 +258,23 @@ func metricChartConfigFromAPIVariant1(
 	return diags
 }
 
+func metricChartConfigUsesESQL(m *models.MetricChartConfigModel) bool {
+	if m == nil || !typeutils.IsKnown(m.DataSourceJSON) {
+		return false
+	}
+	return lenscommon.LensDataSourceIsESQLOrTable([]byte(m.DataSourceJSON.ValueString()), nil)
+}
+
 func metricChartConfigToAPI(m *models.MetricChartConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 	if m == nil {
 		return attrs, diags
 	}
-	// Determine which variant to use based on whether we have a query
-	// Variant 0 (non-ESQL) requires a query
-	// Variant 1 (ESQL) doesn't require a query
-	if m.Query != nil {
-		return metricChartConfigToAPIVariant0(m, resolver)
+	if metricChartConfigUsesESQL(m) {
+		return metricChartConfigToAPIVariant1(m, resolver)
 	}
-	return metricChartConfigToAPIVariant1(m, resolver)
+	return metricChartConfigToAPIVariant0(m, resolver)
 }
 
 func metricChartConfigToAPIVariant0(m *models.MetricChartConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {

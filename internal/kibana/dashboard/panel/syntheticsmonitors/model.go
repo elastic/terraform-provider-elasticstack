@@ -193,8 +193,19 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 		return nil
 	}
 
-	existing := pm.SyntheticsMonitorsConfig
+	if pm.SyntheticsMonitorsConfig == nil && prior.SyntheticsMonitorsConfig != nil {
+		filters := fromSyntheticsAPIFilters(apiFilters)
+		pm.SyntheticsMonitorsConfig = &models.SyntheticsMonitorsConfigModel{
+			Title:       types.StringPointerValue(apiPanel.Config.Title),
+			Description: types.StringPointerValue(apiPanel.Config.Description),
+			HideTitle:   types.BoolPointerValue(apiPanel.Config.HideTitle),
+			HideBorder:  types.BoolPointerValue(apiPanel.Config.HideBorder),
+			View:        syntheticsMonitorsViewValue(apiPanel.Config.View),
+			Filters:     filters,
+		}
+	}
 
+	existing := pm.SyntheticsMonitorsConfig
 	if existing == nil {
 		return nil
 	}

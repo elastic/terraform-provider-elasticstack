@@ -8,7 +8,8 @@ description: |-
 
 # elasticstack_elasticsearch_security_user (Resource)
 
-Adds and updates users in the native realm. These users are commonly referred to as native users. See the [Elasticsearch security user API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html) for more details.## Example Usage
+Adds and updates users in the native realm. These users are commonly referred to as native users. See the [Elasticsearch security user API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html) for more details.
+## Example Usage
 
 ```terraform
 provider "elasticstack" {
