@@ -62,14 +62,14 @@
 
 ## 7. Guide 3 — Prose
 
-- [ ] 7.1 Write prerequisites section and overview of advanced features covered
-- [ ] 7.2 Write `sections` section with tech-preview callout; include `g3-01-full.png` and `g3-02-collapsed.png`
-- [ ] 7.3 Write `image` panel section (branding use-case)
-- [ ] 7.4 Write Gauge chart section with goal value explanation; include `g3-03-gauge.png`
-- [ ] 7.5 Write Heatmap chart section; include `g3-04-heatmap.png`
-- [ ] 7.6 Write `esql_control` section — explain variable declaration and `?variable` query syntax
-- [ ] 7.7 Write `access_control` section — explain `write_restricted`, replacement-on-change behavior
-- [ ] 7.8 Write `tags` section — explain tag IDs and dashboard organisation
+- [x] 7.1 Write prerequisites section and overview of advanced features covered
+- [x] 7.2 Write `sections` section with tech-preview callout; include `g3-01-full.png` and `g3-02-collapsed.png`
+- [x] 7.3 Write `image` panel section (branding use-case)
+- [x] 7.4 Write Gauge chart section with goal value explanation; include `g3-03-gauge.png`
+- [x] 7.5 Write Heatmap chart section; include `g3-04-heatmap.png`
+- [x] 7.6 Write `esql_control` section — explain variable declaration and `?variable` query syntax
+- [x] 7.7 Write `access_control` section — explain `write_restricted`, replacement-on-change behavior
+- [x] 7.8 Write `tags` section — explain tag IDs and dashboard organisation
 
 ## 8. Validation & Polish
 
