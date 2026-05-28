@@ -29,14 +29,14 @@
 
 ## 4. Guide 3 — Terraform Config & Screenshots
 
-- [ ] 4.1 Write `examples/guides/guide3-advanced/main.tf` — dashboard with `sections`, `image` panel, `access_control`, `tags`
-- [ ] 4.2 Add Lens Gauge panel with goal value to `main.tf` and verify
-- [ ] 4.3 Add Lens Heatmap panel (requests by day/hour) to `main.tf` and verify
-- [ ] 4.4 Add multi-layer Lens Area+Line chart to `main.tf` and verify
-- [ ] 4.5 Add `esql_control` to `pinned_panels` and a panel query referencing its variable — verify filtering works
-- [ ] 4.6 Wire panels into `sections` blocks and verify collapse/expand in Kibana
-- [ ] 4.7 Write `scripts/screenshots/guide3.mjs` — capture 4 PNGs including collapsed/expanded section states
-- [ ] 4.8 Run Playwright script and commit all `g3-*.png` screenshots to `templates/guides/images/`
+- [x] 4.1 Write `examples/guides/guide3-advanced/main.tf` — dashboard with `sections`, `image` panel, `access_control`, `tags`
+- [x] 4.2 Add Lens Gauge panel with goal value to `main.tf` and verify
+- [x] 4.3 Add Lens Heatmap panel (requests by day/hour) to `main.tf` and verify
+- [x] 4.4 Add multi-layer Lens Area+Line chart to `main.tf` and verify
+- [x] 4.5 Add `esql_control` to `pinned_panels` and a panel query referencing its variable — verify filtering works
+- [x] 4.6 Wire panels into `sections` blocks and verify collapse/expand in Kibana
+- [x] 4.7 Write `scripts/screenshots/guide3.mjs` — capture 4 PNGs including collapsed/expanded section states
+- [x] 4.8 Run Playwright script and commit all `g3-*.png` screenshots to `templates/guides/images/`
 
 ## 5. Guide 1 — Prose
 
