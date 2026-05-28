@@ -40,15 +40,15 @@
 
 ## 5. Guide 1 — Prose
 
-- [ ] 5.1 Write prerequisites section: provider setup, Kibana 9.4+ requirement, sample data installation steps
-- [ ] 5.2 Write dashboard shell section: explain `time_range`, `refresh_interval`, `query`; introduce the 48-column grid with a visual diagram
-- [ ] 5.3 Write "How to get Lens visualization JSON" section: Kibana UI → Inspect → Request → copy attributes
-- [ ] 5.4 Write markdown panel step with snippet and `g1-02-markdown.png`
-- [ ] 5.5 Write Metric panels step (count + cardinality) with snippet and `g1-04-metric2.png`
-- [ ] 5.6 Write Line chart step with snippet and `g1-05-line.png`
-- [ ] 5.7 Write Bar chart step with snippet and `g1-06-bar.png`
-- [ ] 5.8 Write Donut chart step with snippet and `g1-07-final.png` (final dashboard)
-- [ ] 5.9 Write "Next steps" section linking to guides 2 and 3 and the reference docs
+- [x] 5.1 Write prerequisites section: provider setup, Kibana 9.4+ requirement, sample data installation steps
+- [x] 5.2 Write dashboard shell section: explain `time_range`, `refresh_interval`, `query`; introduce the 48-column grid with a visual diagram
+- [x] 5.3 Write "How to get Lens visualization JSON" section: Kibana UI → Inspect → Request → copy attributes
+- [x] 5.4 Write markdown panel step with snippet and `g1-02-markdown.png`
+- [x] 5.5 Write Metric panels step (count + cardinality) with snippet and `g1-04-metric2.png`
+- [x] 5.6 Write Line chart step with snippet and `g1-05-line.png`
+- [x] 5.7 Write Bar chart step with snippet and `g1-06-bar.png`
+- [x] 5.8 Write Donut chart step with snippet and `g1-07-final.png` (final dashboard)
+- [x] 5.9 Write "Next steps" section linking to guides 2 and 3 and the reference docs
 
 ## 6. Guide 2 — Prose
 

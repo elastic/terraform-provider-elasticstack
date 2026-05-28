@@ -7,4 +7,406 @@ description: |-
 
 # Getting started with Kibana dashboards
 
-This guide is currently being written. Once published it will walk you through building a web server log monitoring dashboard step by step using the `elasticstack_kibana_dashboard` resource and the Kibana sample logs dataset.
+This guide walks you through building a **web server log monitoring dashboard** with Terraform. You will add panels one at a time—markdown, KPI metrics, a time-series line chart, a horizontal bar chart, and a donut chart—using the [`elasticstack_kibana_dashboard`](/docs/resources/kibana_dashboard) resource and Kibana's built-in **sample logs** dataset.
+
+Every visualization is defined **by value** in Terraform (no pre-existing saved objects required). Lens chart configuration is exported from the Kibana UI and embedded in `vis_config.by_value`; we explain that workflow explicitly so you can adapt the patterns to your own charts.
+
+The runnable example lives at [`examples/guides/guide1-getting-started/main.tf`](https://github.com/elastic/terraform-provider-elasticstack/tree/main/examples/guides/guide1-getting-started/main.tf).
+
+## Prerequisites
+
+### Provider setup
+
+Configure the Elasticstack provider with a Kibana connection. The example uses the default provider block (Kibana URL and credentials from environment variables or your usual provider configuration):
+
+```terraform
+terraform {
+  required_providers {
+    elasticstack = {
+      source = "elastic/elasticstack"
+    }
+  }
+}
+
+provider "elasticstack" {
+  kibana {}
+}
+```
+
+See the [provider documentation](/docs/index) for authentication options (API keys, Elasticsearch credentials, Elastic Cloud, and `kibana_connection` overrides).
+
+### Kibana version
+
+These examples were tested against **Kibana 9.4+**. Lens panel JSON can change between minor versions; if a panel fails to render after upgrading Kibana, re-export the visualization from the UI (see [How to get Lens visualization JSON](#how-to-get-lens-visualization-json) below) and update the Terraform blocks.
+
+### Install sample data
+
+This dashboard queries the **`kibana_sample_data_logs`** data view. Install it once per Kibana space:
+
+1. Open Kibana and go to the home page (or **Stack Management** → **Data** → **Sample Data**).
+2. Under **Sample data sets**, find **Sample web logs** and click **Add data**.
+3. Wait until Kibana reports the dataset as installed.
+
+You do not need to create indices or ingest pipelines—the sample dataset ships with the field names used in this guide (`@timestamp`, `clientip`, `url.keyword`, `response.keyword`, and so on).
+
+## Dashboard shell
+
+Start with the dashboard resource itself: title, global time range, refresh behavior, and the default query language. These settings apply to every panel unless a panel overrides them.
+
+```terraform
+resource "elasticstack_kibana_dashboard" "getting_started" {
+  title       = "Getting started: Web server logs"
+  description = "A step-by-step web server log monitoring dashboard built with Terraform using Kibana sample logs data."
+
+  time_range = {
+    from = "now-7d"
+    to   = "now"
+  }
+
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+
+  query = {
+    language = "kql"
+    text     = ""
+  }
+
+  panels = []
+}
+```
+
+- **`time_range`** — Sets the dashboard's global time picker. Here we look at the last seven days (`now-7d` through `now`). Panels inherit this range unless they define their own `time_range`.
+- **`refresh_interval`** — Controls auto-refresh. `pause = true` and `value = 0` mean the dashboard does not poll on a timer until a user enables refresh in the UI.
+- **`query`** — The dashboard-level query bar. An empty `text` with `language = "kql"` means no global filter is applied; panels still respect any filters users add later.
+
+Apply this configuration (with `panels = []` or before you add panels) and open the dashboard in Kibana. You should see the title, time picker, and an empty layout ready for panels.
+
+![Dashboard shell with title and time range, no panels yet](images/g1-01-shell.png)
+
+### The 48-column grid
+
+Each entry in `panels` is positioned on Kibana's layout grid, which is **48 columns** wide. Use `grid` to place and size panels:
+
+| Field | Meaning |
+| --- | --- |
+| `x` | Column offset from the left (0–47) |
+| `y` | Row offset from the top (0-based) |
+| `w` | Width in columns (1–48) |
+| `h` | Height in row units |
+
+Panels do not overlap: plan `x`, `y`, `w`, and `h` so each panel occupies a distinct rectangle. A full-width panel uses `w = 48`. Two side-by-side panels often use `w = 24` each.
+
+```
+ x=0          x=24         x=48
+  ┌────────────┬────────────┐ y=0
+  │            │            │
+  │ panel A    │ panel B    │
+  │ w=24, h=10 │ w=24, h=10 │
+  │            │            │
+  └────────────┴────────────┘ y=10
+```
+
+In the finished dashboard, the markdown header spans the full width (`w = 48`), the two metric panels sit on one row (`x = 0` and `x = 24`), and wider charts use the remaining vertical space.
+
+Reuse a data view definition across Lens panels with a `locals` block so you do not repeat the same JSON:
+
+```terraform
+locals {
+  logs_data_source = jsonencode({
+    type          = "data_view_spec"
+    index_pattern = "kibana_sample_data_logs"
+    time_field    = "@timestamp"
+  })
+}
+```
+
+Set `data_source_json = local.logs_data_source` on each `metric_chart_config`, `xy_chart_config`, or `pie_chart_config` that reads from the sample logs.
+
+> **By reference vs by value** — This guide uses only **by value** configs (`markdown_config.by_value`, `vis_config.by_value`, and so on) so `terraform apply` is self-contained. You can also reference existing saved visualizations with `by_reference` blocks; see the [`elasticstack_kibana_dashboard` resource reference](/docs/resources/kibana_dashboard) for that pattern.
+
+## How to get Lens visualization JSON
+
+Lens chart specs are not practical to write from scratch in Terraform. The supported workflow is to **prototype in Kibana**, then copy the serialized configuration into `vis_config.by_value`.
+
+1. In Kibana, go to **Visualize Library** → **Create visualization** → **Lens** (or edit an existing Lens visualization).
+2. Choose the **Sample web logs** data view and configure the chart (metrics, buckets, breakdowns) until it looks right.
+3. Click **Inspect** (top right) → open the **Request** tab → select **Response**.
+4. In the JSON response, find the saved-object **`attributes`** object. That structure is what Kibana stores for the visualization.
+5. Map the relevant parts into the provider's typed blocks:
+   - Count or single-number KPIs → `metric_chart_config` with `metrics[].config_json`
+   - Line, area, or bar charts → `xy_chart_config` with `layers[]` (`type` = `line`, `bar_horizontal`, and so on)
+   - Pie or donut → `pie_chart_config` with `metrics` and `group_by`
+6. Fields that Kibana stores as nested JSON strings—`data_source`, axis domains, layer `x`/`y` operations—become `data_source_json`, `domain_json`, `x_json`, `config_json`, and similar attributes in Terraform. Wrap dynamic objects with **`jsonencode(...)`** so the provider receives valid JSON strings.
+
+Re-export after Kibana upgrades if panels stop rendering or validation errors mention unknown Lens fields. The Terraform snippets in the following sections match exports taken from Kibana 9.4.
+
+## Markdown panel
+
+Add a full-width header panel that explains the dashboard. Markdown panels use `markdown_config.by_value` with `content`, `title`, and optional `settings`.
+
+```terraform
+{
+  type = "markdown"
+  grid = { x = 0, y = 0, w = 48, h = 6 }
+  markdown_config = {
+    by_value = {
+      title   = "About this dashboard"
+      content = <<-EOT
+        # Welcome
+
+        This dashboard monitors **web server logs** from the Kibana sample logs dataset.
+        Explore request volume, top URLs, and HTTP response codes over the last 7 days.
+
+        Learn more in the [Kibana dashboards guide](https://www.elastic.co/docs/explore-analyze/dashboards).
+      EOT
+      settings = {
+        open_links_in_new_tab = true
+      }
+    }
+  }
+},
+```
+
+`content` accepts standard Markdown (headings, links, emphasis). Set `open_links_in_new_tab = true` so links open in a new browser tab instead of navigating away from the dashboard.
+
+![Markdown panel across the top of the dashboard](images/g1-02-markdown.png)
+
+## Lens Metric panels
+
+Add two **Lens Metric** panels side by side: total event count and unique client IPs. Both use `vis_config.by_value.metric_chart_config`.
+
+**Total events** (count):
+
+```terraform
+{
+  type = "vis"
+  grid = { x = 0, y = 6, w = 24, h = 10 }
+  vis_config = {
+    by_value = {
+      metric_chart_config = {
+        title                 = "Total events"
+        data_source_json      = local.logs_data_source
+        ignore_global_filters = false
+        sampling              = 1
+        query                 = { expression = "" }
+        metrics = [{
+          config_json = jsonencode({
+            type      = "primary"
+            operation = "count"
+            format    = { type = "number" }
+          })
+        }]
+      }
+    }
+  }
+},
+```
+
+![First metric panel showing total event count](images/g1-03-metric1.png)
+
+**Unique client IPs** (cardinality):
+
+```terraform
+{
+  type = "vis"
+  grid = { x = 24, y = 6, w = 24, h = 10 }
+  vis_config = {
+    by_value = {
+      metric_chart_config = {
+        title                 = "Unique client IPs"
+        data_source_json      = local.logs_data_source
+        ignore_global_filters = false
+        sampling              = 1
+        query                 = { expression = "" }
+        metrics = [{
+          config_json = jsonencode({
+            type      = "primary"
+            operation = "unique_count"
+            field     = "clientip"
+            format    = { type = "number" }
+          })
+        }]
+      }
+    }
+  }
+},
+```
+
+For cardinality, the provider expects **`operation = "unique_count"`** inside `config_json`, with the field name set on the same object (`field = "clientip"`). This mirrors Lens's unique-count metric in the UI; do not use a different operation name for the same chart type.
+
+![Both metric panels in the KPI row](images/g1-04-metric2.png)
+
+## Lens Line chart
+
+Add a full-width **line chart** for request volume over time using `xy_chart_config`. The layer `type` is `line`; the X axis uses a date histogram on `@timestamp` and the Y axis uses a count operation.
+
+```terraform
+{
+  type = "vis"
+  grid = { x = 0, y = 16, w = 48, h = 14 }
+  vis_config = {
+    by_value = {
+      xy_chart_config = {
+        title = "Request volume over time"
+        axis = {
+          y = {
+            domain_json = jsonencode({ type = "fit" })
+            title       = { value = "Count", visible = true }
+          }
+          x = {
+            title = { value = "@timestamp", visible = true }
+          }
+        }
+        decorations = {}
+        fitting     = { type = "none" }
+        legend      = {}
+        query       = { expression = "" }
+        layers = [{
+          type = "line"
+          data_layer = {
+            data_source_json = local.logs_data_source
+            x_json = jsonencode({
+              operation               = "date_histogram"
+              field                   = "@timestamp"
+              suggested_interval      = "auto"
+              use_original_time_range = false
+              include_empty_rows      = true
+              drop_partial_intervals  = false
+            })
+            y = [{
+              config_json = jsonencode({
+                operation     = "count"
+                empty_as_null = true
+              })
+            }]
+          }
+        }]
+      }
+    }
+  }
+},
+```
+
+The dashboard's global `time_range` drives which buckets appear; `suggested_interval = "auto"` lets Lens choose a reasonable histogram interval for the selected range.
+
+![Line chart showing request volume over time](images/g1-05-line.png)
+
+## Lens horizontal Bar chart
+
+Add a **horizontal bar** chart for the top 10 URLs. This also uses `xy_chart_config`, but the layer `type` is **`bar_horizontal`**. The X dimension is a **terms** aggregation on `url.keyword` with `limit = 10`, sorted by the count metric descending via `rank_by`.
+
+```terraform
+{
+  type = "vis"
+  grid = { x = 0, y = 30, w = 24, h = 14 }
+  vis_config = {
+    by_value = {
+      xy_chart_config = {
+        title = "Top 10 URLs"
+        axis = {
+          y = { domain_json = jsonencode({ type = "fit" }) }
+        }
+        decorations = {
+          minimum_bar_height = 1
+          show_value_labels  = false
+        }
+        fitting = { type = "none" }
+        legend  = {}
+        query   = { expression = "" }
+        layers = [{
+          type = "bar_horizontal"
+          data_layer = {
+            data_source_json = local.logs_data_source
+            x_json = jsonencode({
+              operation = "terms"
+              fields    = ["url.keyword"]
+              limit     = 10
+              rank_by = {
+                type         = "metric"
+                metric_index = 0
+                direction    = "desc"
+              }
+            })
+            y = [{
+              config_json = jsonencode({
+                operation     = "count"
+                empty_as_null = true
+              })
+            }]
+          }
+        }]
+      }
+    }
+  }
+},
+```
+
+Use the `.keyword` subfield for terms aggregations on analyzed text fields. `rank_by` ties the terms order to metric index `0` (the count on `y`) in **descending** order so the longest bars are the highest-traffic URLs.
+
+![Horizontal bar chart of top 10 URLs](images/g1-06-bar.png)
+
+## Lens Donut chart
+
+Finish with a **donut** chart of HTTP response codes using `pie_chart_config`. The metric is a count; `group_by` terms on `response.keyword`.
+
+```terraform
+{
+  type = "vis"
+  grid = { x = 24, y = 30, w = 24, h = 14 }
+  vis_config = {
+    by_value = {
+      pie_chart_config = {
+        title                 = "Response codes"
+        donut_hole            = "s"
+        label_position        = "outside"
+        data_source_json      = local.logs_data_source
+        ignore_global_filters = false
+        sampling              = 1
+        query                 = { expression = "" }
+        metrics = [{
+          config_json = jsonencode({
+            operation = "count"
+            format    = { type = "number" }
+          })
+        }]
+        group_by = [{
+          config_json = jsonencode({
+            operation = "terms"
+            fields    = ["response.keyword"]
+            limit     = 10
+            rank_by = {
+              type         = "metric"
+              metric_index = 0
+              direction    = "desc"
+            }
+            color = {
+              mode    = "categorical"
+              palette = "default"
+              mapping = []
+            }
+          })
+        }]
+      }
+    }
+  }
+},
+```
+
+**`donut_hole`** controls the hole size (`"s"` small, `"m"` medium, `"l"` large in the schema). **`label_position = "outside"`** keeps slice labels readable on a dashboard tile.
+
+Apply the complete configuration:
+
+{{ tffile "examples/guides/guide1-getting-started/main.tf" }}
+
+![Finished dashboard with all panels](images/g1-07-final.png)
+
+## Next steps
+
+You now have a runnable logs dashboard defined entirely in Terraform. Continue with the other guides in this series:
+
+- [**Dashboard operations**](/docs/guides/kibana-dashboard-operations) — pinned **options list** controls, KPI rows, stacked area and data table panels, and an embedded **Discover** session on the sample eCommerce dataset.
+- [**Advanced dashboards**](/docs/guides/kibana-dashboard-advanced) — collapsible **sections**, branding **image** panels, gauge and heatmap charts, **ES|QL** controls, **access control**, and **tags**.
+
+For every field and panel type, use the [`elasticstack_kibana_dashboard` resource reference](/docs/resources/kibana_dashboard). Regenerate screenshots after UI or config changes with `node scripts/screenshots/guide1.mjs` (see [`scripts/screenshots/README.md`](https://github.com/elastic/terraform-provider-elasticstack/tree/main/scripts/screenshots/README.md)).
