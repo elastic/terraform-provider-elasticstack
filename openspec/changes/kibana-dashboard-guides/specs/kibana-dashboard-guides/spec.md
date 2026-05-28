@@ -109,9 +109,9 @@ Guide 3 (`kibana-dashboard-advanced.md`) SHALL demonstrate advanced dashboard fe
 
 The guide SHALL cover:
 - Collapsible `sections` grouping panels, with a tech-preview callout
-- `image_config.by_value` with `url` source for branding
-- Lens Gauge chart (`vis_config.by_value.gauge_chart_config`) with a goal value
-- Lens Heatmap chart (`vis_config.by_value.heatmap_chart_config`) showing activity by day-of-week and hour
+- `image_config.src.url` for branding
+- Lens Gauge chart (`vis_config.by_value.gauge_config`) with a goal value
+- Lens Heatmap chart (`vis_config.by_value.heatmap_config`) showing activity by day-of-week and hour
 - `esql_control` in `pinned_panels` with a named variable, and a panel query referencing that variable
 - `access_control` with `access_mode = "write_restricted"` and its replacement-on-change implication
 - `tags` field for dashboard organisation
