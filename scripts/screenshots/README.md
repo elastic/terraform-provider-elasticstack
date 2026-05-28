@@ -30,6 +30,8 @@ npm run install-browsers
 | `KIBANA_URL` | `http://localhost:5601` | Kibana base URL |
 | `KIBANA_USER` | `elastic` | Login username |
 | `KIBANA_PASS` | `password` | Login password |
+| `SCREENSHOT_ONLY` | _(unset)_ | Optional. Comma-separated PNG filenames to capture (e.g. `g2-01-full.png,g2-02-filtered.png`). Re-runs only those shots without redoing the rest. |
+| `DASHBOARD_ID` | _(unset)_ | Optional. Kibana dashboard saved-object ID. Skips title-based lookup when multiple dashboards share the same title. Useful for targeted re-captures. |
 
 ## Example invocations
 
@@ -41,4 +43,4 @@ node scripts/screenshots/guide3.mjs
 
 ## Where output goes
 
-Playwright scripts write PNGs to `templates/guides/images/` (for example `g1-01-shell.png`, `g2-01-full.png`). Running `make docs-generate` copies them to `docs/guides/images/` for publication. Commit PNGs in both directories after regenerating; `make check-docs` ensures the published copy stays in sync.
+Scripts write to `templates/guides/images/` — that directory is the source of truth; commit regenerated PNGs there. `make docs-generate` copies them to `docs/guides/images/` for publication; `make check-docs` verifies the published copy is in sync. Contributors normally do not commit `docs/guides/images/` by hand (it is generated). CI still expects `docs/guides/images/` to match `templates/guides/images/` after docs generation (task 8.2 committed the initial published copy; re-run `make docs-generate` when adding or replacing images).
