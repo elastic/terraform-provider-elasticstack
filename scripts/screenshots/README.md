@@ -1,6 +1,6 @@
 # Guide screenshot regeneration
 
-Regenerate guide screenshots after dashboard or Kibana UI changes. Each guide has a Playwright script that logs into Kibana, navigates to the dashboard created by the corresponding Terraform example, and writes PNGs under `docs/guides/images/`.
+Regenerate guide screenshots after dashboard or Kibana UI changes. Each guide has a Playwright script that logs into Kibana, navigates to the dashboard created by the corresponding Terraform example, and writes PNGs under `templates/guides/images/`.
 
 ## Prerequisites
 
@@ -39,6 +39,6 @@ node scripts/screenshots/guide2.mjs
 node scripts/screenshots/guide3.mjs
 ```
 
-## Output
+## Where output goes
 
-Screenshots are written to `docs/guides/images/` (for example `g1-01-shell.png`, `g2-01-full.png`). Commit the PNGs to the repository after regenerating them.
+Playwright scripts write PNGs to `templates/guides/images/` (for example `g1-01-shell.png`, `g2-01-full.png`). Running `make docs-generate` copies them to `docs/guides/images/` for publication. Commit PNGs in both directories after regenerating; `make check-docs` ensures the published copy stays in sync.
