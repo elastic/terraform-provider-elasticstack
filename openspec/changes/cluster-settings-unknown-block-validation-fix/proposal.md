@@ -28,7 +28,7 @@ validator in `terraform-plugin-framework-validators` and the project's own
 
 ### Modified Capabilities
 
-- `elasticsearch-cluster-settings-resource-validation`: `ValidateConfig` no longer emits false
+- `elasticsearch-cluster-settings`: `ValidateConfig` no longer emits false
   errors when `persistent`/`transient` blocks are populated by unevaluated `dynamic for_each`
   expressions.
 

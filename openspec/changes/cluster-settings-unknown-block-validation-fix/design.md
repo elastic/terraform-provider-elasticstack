@@ -104,9 +104,11 @@ These complement the four existing tests without modifying them.
 ## Risks / Trade-offs
 
 - **Silent deferral for unknown blocks**: when both blocks are unknown, no error is emitted at
-  validate time. The "at least one setting block" invariant is still enforced at plan time via
-  `setvalidator.SizeAtLeast(1)` on the nested `setting` set. This is correct behavior and is how
-  the Plugin Framework expects validators to behave with unknown values.
+  validate time. The cross-block "at least one of `persistent` or `transient` must be non-empty"
+  invariant is still enforced by `validateConfigModel` once values are known (i.e., at plan time
+  when the unknown blocks have been resolved). `setvalidator.SizeAtLeast(1)` is attached only to
+  the nested `setting` set and cannot enforce the cross-block invariant. This is correct behavior
+  and is how the Plugin Framework expects validators to behave with unknown values.
 - **`setvalidator.SizeAtLeast(1)` false positives**: the standard validator from
   `terraform-plugin-framework-validators` already short-circuits on unknown values, so this is
   not an issue. Confirmed by checking validators usage in `schema.go` and the framework's
