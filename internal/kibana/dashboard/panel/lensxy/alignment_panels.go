@@ -55,8 +55,20 @@ func alignXYChartStateFromPlan(plan, state *models.XYChartConfigModel) {
 
 	alignXYAxisStateFromPlan(plan.Axis, state.Axis)
 	alignXYDecorationsStateFromPlan(plan.Decorations, state.Decorations)
+	alignXYFittingStateFromPlan(plan.Fitting, state.Fitting)
 	alignXYLegendStateFromPlan(plan.Legend, state.Legend)
 	alignXYLayerStateFromPlan(plan.Layers, state.Layers)
+}
+
+func alignXYFittingStateFromPlan(plan, state *models.XYFittingModel) {
+	if plan == nil || state == nil {
+		return
+	}
+
+	// Kibana omits fitting for some XY chart kinds (e.g. bar_horizontal with terms).
+	preserveKnownStringIfStateNull(plan.Type, &state.Type)
+	preserveKnownBoolIfStateNull(plan.Dotted, &state.Dotted)
+	preserveKnownStringIfStateNull(plan.EndValue, &state.EndValue)
 }
 
 func alignXYAxisStateFromPlan(plan, state *models.XYAxisModel) {
