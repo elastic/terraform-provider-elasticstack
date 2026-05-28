@@ -2,7 +2,7 @@
 
 This page describes the **operational** loop around OpenSpec changes: how to prepare a change, implement it locally, and run it through verification before merge. For the spec-authoring rules themselves (file layout, requirement phrasing, validation), see [`openspec-requirements.md`](./openspec-requirements.md). For the maintainer view of the `verify-openspec` PR label, see [`code-review.md`](./code-review.md). For the broader picture of how this fits with CI factories, see [`agentic-development-workflow.md`](./agentic-development-workflow.md).
 
-The canonical step-by-step procedures live in skill files under [`.agents/skills/`](../../.agents/skills/) and [`.agents/skills/`](../../.agents/skills/). This page describes **which skill to reach for and when**, not the steps inside each skill.
+The canonical step-by-step procedures live in skill files under [`.agents/skills/`](../../.agents/skills/). This page describes **which skill to reach for and when**, not the steps inside each skill.
 
 ## Three phases
 

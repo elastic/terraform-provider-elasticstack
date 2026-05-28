@@ -8,7 +8,7 @@ For the broader picture, see [`agentic-development-workflow.md`](./agentic-devel
 
 Source: [`.github/workflows/issue-classifier.md`](../../.github/workflows/issue-classifier.md)
 
-Every new issue is read by the classifier on `issues.opened`. A daily scheduled run also picks up to **5** oldest untriaged open issues to catch anything that slipped through. The classifier applies exactly one routing label plus `triaged`:
+Every new issue is read by the classifier on `issues.opened`. A daily scheduled run also picks up to **5** of the most recent untriaged open issues to catch anything that slipped through. The classifier applies exactly one routing label plus `triaged`:
 
 | Label | Means | Typical next step |
 |-------|-------|-------------------|

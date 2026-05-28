@@ -16,7 +16,7 @@ For label-triggered factories that react to human-raised issues, see [`factory-w
 | Semantic Function Refactor | Daily | Issue → `code-factory` | [`semantic-function-refactor.md`](../../.github/workflows/semantic-function-refactor.md) |
 | Schema Coverage Rotation | Daily | Issue → `code-factory` | [`schema-coverage-rotation.md`](../../.github/workflows/schema-coverage-rotation.md) |
 | Flaky Test Catcher | Daily | Issue → `code-factory` | [`flaky-test-catcher.md`](../../.github/workflows/flaky-test-catcher.md) |
-| Kibana Spec Impact | Weekly Mon + push to `generated/kbapi/**` | Issue (manual handoff) | [`kibana-spec-impact.md`](../../.github/workflows/kibana-spec-impact.md) |
+| Kibana Spec Impact | Weekly Mon + push to `generated/kbapi/**` or `internal/clients/kibanaoapi/**` | Issue (manual handoff) | [`kibana-spec-impact.md`](../../.github/workflows/kibana-spec-impact.md) |
 | Dead-code Removal Rotation | Daily | Direct cleanup PR | [`ci-deadcode-removal-rotation.md`](../../.github/workflows/ci-deadcode-removal-rotation.md) |
 | Security Role Docs Drift | Weekly Mon + push to `generated/kbapi/**` | Direct cleanup PR | [`security-role-docs-drift.md`](../../.github/workflows/security-role-docs-drift.md) |
 
@@ -48,7 +48,7 @@ Each scanner runs a pre-activation step that counts how many of its own open iss
 | Flaky Test Catcher | `flaky-test` | computed from CI failures | Pre-activation script |
 | Kibana Spec Impact | `kibana`, `generated-clients`, `terraform-provider` | 5 (`issue_cap`) | Pre-activation script |
 
-The pre-activation script is implemented at [`.github/scripts/workflows/issue-slots/compute.js`](../../.github/scripts/workflows/issue-slots/compute.js) and sets `issue_slots_available`. The workflow's job-level `if:` short-circuits when it is zero.
+The three scanners using a fixed `ISSUE_SLOTS_CAP` share the helper at [`.github/scripts/workflows/issue-slots/compute.js`](../../.github/scripts/workflows/issue-slots/compute.js). Flaky Test Catcher computes its own slots in [`.github/scripts/workflows/flaky-test-catcher/catch.js`](../../.github/scripts/workflows/flaky-test-catcher/catch.js) (it needs to weigh CI-failure history in the same step), and Kibana Spec Impact uses the Go pre-activation command at [`scripts/kibana-spec-impact`](../../scripts/kibana-spec-impact). All three paths publish `issue_slots_available`, and the workflow's job-level `if:` short-circuits when it is zero.
 
 ## Scanners that hand off to `code-factory`
 
