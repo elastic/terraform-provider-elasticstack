@@ -24,3 +24,21 @@ var allowRestrictedIndicesDescription string
 
 //go:embed descriptions/remote_indices.md
 var remoteIndicesDescription string
+
+//go:embed descriptions/field_security.md
+var fieldSecurityDescription string
+
+//go:embed descriptions/field_grant.md
+var fieldGrantDescription string
+
+//go:embed descriptions/field_except.md
+var fieldExceptDescription string
+
+//go:embed descriptions/indices_names.md
+var indicesNamesDescription string
+
+//go:embed descriptions/indices_privileges.md
+var indicesPrivilegesDescription string
+
+//go:embed descriptions/indices_query.md
+var indicesQueryDescription string

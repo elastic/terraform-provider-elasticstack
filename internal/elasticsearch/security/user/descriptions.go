@@ -33,3 +33,6 @@ var passwordWriteOnlyDescription string
 
 //go:embed descriptions/password_wo_version.md
 var passwordWriteOnlyVersionDescription string
+
+//go:embed descriptions/user_data_source.md
+var userDataSourceDescription string

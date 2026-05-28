@@ -1,0 +1,1 @@
+The index level privileges that the owners of the role have on the specified indices.

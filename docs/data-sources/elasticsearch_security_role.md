@@ -43,9 +43,7 @@ data "elasticstack_elasticsearch_security_role" "role" {
 - `id` (String) Internal identifier of the resource
 - `indices` (Attributes Set) A list of indices permissions entries. (see [below for nested schema](#nestedatt--indices))
 - `metadata` (String) Optional meta-data.
-- `remote_indices` (Attributes Set) A list of remote indices permissions entries.
-
-Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model. (see [below for nested schema](#nestedatt--remote_indices))
+- `remote_indices` (Attributes Set) A list of remote indices permissions entries. Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model. (see [below for nested schema](#nestedatt--remote_indices))
 - `run_as` (Set of String) A list of users that the owners of this role can impersonate.
 
 <a id="nestedblock--elasticsearch_connection"></a>
@@ -84,9 +82,7 @@ Read-Only:
 
 Read-Only:
 
-- `allow_restricted_indices` (Boolean) Include matching restricted indices in names parameter.
-
-Usage is strongly discouraged as it can grant unrestricted operations on critical data, make the entire system unstable or leak sensitive information.
+- `allow_restricted_indices` (Boolean) Include matching restricted indices in names parameter. Usage is strongly discouraged as it can grant unrestricted operations on critical data, make the entire system unstable or leak sensitive information.
 - `field_security` (Attributes List) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedatt--indices--field_security))
 - `names` (Set of String) A list of indices (or index name patterns) to which the permissions in this entry apply.
 - `privileges` (Set of String) The index level privileges that the owners of the role have on the specified indices.
