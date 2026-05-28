@@ -296,12 +296,47 @@ func TestAccDataSourceQueryRuleset(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.#", "2"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.rule_id", "rule-1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.type", "pinned"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.priority", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.criteria.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.criteria.0.type", "exact"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.criteria.0.metadata", "query"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.criteria.0.values", `["laptop","notebook"]`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.actions.ids.#", "2"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.actions.ids.0", "doc-1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.actions.ids.1", "doc-2"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.rule_id", "rule-2"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.type", "exclude"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.criteria.0.type", "contains"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.criteria.0.values", `["deprecated"]`),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.actions.ids.0", "doc-old"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceQueryRulesetDocs verifies the data source correctly surfaces a docs-based ruleset.
+func TestAccDataSourceQueryRulesetDocs(t *testing.T) {
+	rulesetID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{"ruleset_id": config.StringVariable(rulesetID)}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(queryrulesets.MinSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_query_ruleset.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "ruleset_id", rulesetID),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.rule_id", "docs-rule"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.type", "pinned"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.actions.docs.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.actions.docs.0._index", "my-index"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.actions.docs.0._id", "42"),
 				),
 			},
 		},
