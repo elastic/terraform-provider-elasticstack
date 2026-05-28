@@ -126,22 +126,6 @@ Set `data_source_json = local.logs_data_source` on each `metric_chart_config`, `
 
 > **By reference vs by value** — This guide uses only **by value** configs (`markdown_config.by_value`, `vis_config.by_value`, and so on) so `terraform apply` is self-contained. You can also reference existing saved visualizations with `by_reference` blocks; see the [`elasticstack_kibana_dashboard` resource reference](/docs/resources/kibana_dashboard) for that pattern.
 
-## How to get Lens visualization JSON
-
-Lens chart specs are not practical to write from scratch in Terraform. The supported workflow is to **prototype in Kibana**, then copy the serialized configuration into `vis_config.by_value`.
-
-1. In Kibana, go to **Visualize Library** → **Create visualization** → **Lens** (or edit an existing Lens visualization).
-2. Choose the **Sample web logs** data view and configure the chart (metrics, buckets, breakdowns) until it looks right.
-3. Click **Inspect** (top right) → open the **Request** tab → select **Response**.
-4. In the JSON response, find the saved-object **`attributes`** object. That structure is what Kibana stores for the visualization.
-5. Map the relevant parts into the provider's typed blocks:
-   - Count or single-number KPIs → `metric_chart_config` with `metrics[].config_json`
-   - Line, area, or bar charts → `xy_chart_config` with `layers[]` (`type` = `line`, `bar_horizontal`, and so on)
-   - Pie or donut → `pie_chart_config` with `metrics` and `group_by`
-6. Fields that Kibana stores as nested JSON strings—`data_source`, axis domains, layer `x`/`y` operations—become `data_source_json`, `domain_json`, `x_json`, `config_json`, and similar attributes in Terraform. Wrap dynamic objects with **`jsonencode(...)`** so the provider receives valid JSON strings.
-
-Re-export after Kibana upgrades if panels stop rendering or validation errors mention unknown Lens fields. The Terraform snippets in the following sections match exports taken from Kibana 9.4.
-
 ## Markdown panel
 
 Add a full-width header panel that explains the dashboard. Markdown panels use `markdown_config.by_value` with `content`, `title`, and optional `settings`.
