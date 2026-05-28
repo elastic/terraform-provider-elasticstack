@@ -117,31 +117,6 @@ func calendarEventDateTimeToUnixMilli(dt estypes.DateTime) (int64, bool) {
 	return calendarEventAnyTimeToUnixMilli(any(dt))
 }
 
-func (m *CalendarEventTFModel) toAPIModel(_ context.Context) (*CalendarEventAPIModel, fwdiags.Diagnostics) {
-	var diags fwdiags.Diagnostics
-
-	startTime, d := m.StartTime.ValueRFC3339Time()
-	diags.Append(d...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	endTime, d := m.EndTime.ValueRFC3339Time()
-	diags.Append(d...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	return &CalendarEventAPIModel{
-		Description:     m.Description.ValueString(),
-		StartTime:       startTime.UnixMilli(),
-		EndTime:         endTime.UnixMilli(),
-		SkipResult:      typeutils.OptBoolPtr(m.SkipResult),
-		SkipModelUpdate: typeutils.OptBoolPtr(m.SkipModelUpdate),
-		ForceTimeShift:  typeutils.OptStringPtr(m.ForceTimeShift),
-	}, diags
-}
-
 func (m *CalendarEventTFModel) fromAPIModel(_ context.Context, apiModel *CalendarEventAPIModel) fwdiags.Diagnostics {
 	var diags fwdiags.Diagnostics
 
