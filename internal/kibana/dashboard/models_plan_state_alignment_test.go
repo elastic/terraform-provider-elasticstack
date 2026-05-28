@@ -359,3 +359,22 @@ func Test_alignDashboardStateFromPlanSections_sectionXYChart_preservesLegend(t *
 	assert.Equal(t, "right", got.Position.ValueString())
 	assert.Equal(t, "m", got.Size.ValueString())
 }
+
+func Test_suppressReadTopLevelPanelsWhenPlanEmpty(t *testing.T) {
+	t.Parallel()
+
+	echoed := []models.PanelModel{{Type: types.StringValue("esql_control")}}
+
+	t.Run("nil plan panels leaves read state unchanged", func(t *testing.T) {
+		readModel := &models.DashboardModel{Panels: echoed}
+		suppressReadTopLevelPanelsWhenPlanEmpty(nil, readModel)
+		assert.Equal(t, echoed, readModel.Panels)
+	})
+
+	t.Run("explicit empty plan panels clears echoed read panels", func(t *testing.T) {
+		readModel := &models.DashboardModel{Panels: echoed}
+		suppressReadTopLevelPanelsWhenPlanEmpty([]models.PanelModel{}, readModel)
+		assert.Empty(t, readModel.Panels)
+		assert.NotNil(t, readModel.Panels)
+	})
+}

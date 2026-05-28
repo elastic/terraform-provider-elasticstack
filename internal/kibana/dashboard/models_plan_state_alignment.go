@@ -32,9 +32,10 @@ func alignDashboardStateFromPlanPanels(planPanels, statePanels []models.PanelMod
 }
 
 // suppressReadTopLevelPanelsWhenPlanEmpty clears echoed top-level panels on read/create/update
-// when the practitioner omitted `panels` (e.g. dashboards that only use `sections` and `pinned_panels`).
+// when the practitioner set `panels = []` (explicit empty list). A nil plan slice means the
+// attribute was omitted and must remain null in state, not an empty list.
 func suppressReadTopLevelPanelsWhenPlanEmpty(planPanels []models.PanelModel, readModel *models.DashboardModel) {
-	if readModel == nil || len(planPanels) != 0 {
+	if readModel == nil || planPanels == nil || len(planPanels) != 0 {
 		return
 	}
 	readModel.Panels = []models.PanelModel{}
