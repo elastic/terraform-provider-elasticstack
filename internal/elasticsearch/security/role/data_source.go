@@ -122,17 +122,17 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				NestedObject: dsschema.NestedAttributeObject{
 					Attributes: map[string]dsschema.Attribute{
 						attrFieldSecurity: dsschema.ListNestedAttribute{
-							MarkdownDescription: "The document fields that the owners of the role have read access to.",
+							MarkdownDescription: fieldSecurityDescription,
 							Computed:            true,
 							NestedObject: dsschema.NestedAttributeObject{
 								Attributes: map[string]dsschema.Attribute{
 									attrGrant: dsschema.SetAttribute{
-										MarkdownDescription: "List of the fields to grant the access to.",
+										MarkdownDescription: fieldGrantDescription,
 										ElementType:         types.StringType,
 										Computed:            true,
 									},
 									attrExcept: dsschema.SetAttribute{
-										MarkdownDescription: "List of the fields to which the grants will not be applied.",
+										MarkdownDescription: fieldExceptDescription,
 										ElementType:         types.StringType,
 										Computed:            true,
 									},
@@ -140,17 +140,17 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 							},
 						},
 						attrNames: dsschema.SetAttribute{
-							MarkdownDescription: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
+							MarkdownDescription: indicesNamesDescription,
 							ElementType:         types.StringType,
 							Computed:            true,
 						},
 						attrPrivileges: dsschema.SetAttribute{
-							MarkdownDescription: "The index level privileges that the owners of the role have on the specified indices.",
+							MarkdownDescription: indicesPrivilegesDescription,
 							ElementType:         types.StringType,
 							Computed:            true,
 						},
 						attrQuery: dsschema.StringAttribute{
-							MarkdownDescription: "A search query that defines the documents the owners of the role have read access to.",
+							MarkdownDescription: indicesQueryDescription,
 							Computed:            true,
 							CustomType:          jsontypes.NormalizedType{},
 						},
@@ -172,17 +172,17 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 							Computed:            true,
 						},
 						attrFieldSecurity: dsschema.ListNestedAttribute{
-							MarkdownDescription: "The document fields that the owners of the role have read access to.",
+							MarkdownDescription: fieldSecurityDescription,
 							Computed:            true,
 							NestedObject: dsschema.NestedAttributeObject{
 								Attributes: map[string]dsschema.Attribute{
 									attrGrant: dsschema.SetAttribute{
-										MarkdownDescription: "List of the fields to grant the access to.",
+										MarkdownDescription: fieldGrantDescription,
 										ElementType:         types.StringType,
 										Computed:            true,
 									},
 									attrExcept: dsschema.SetAttribute{
-										MarkdownDescription: "List of the fields to which the grants will not be applied.",
+										MarkdownDescription: fieldExceptDescription,
 										ElementType:         types.StringType,
 										Computed:            true,
 									},
@@ -190,17 +190,17 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 							},
 						},
 						attrNames: dsschema.SetAttribute{
-							MarkdownDescription: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
+							MarkdownDescription: indicesNamesDescription,
 							ElementType:         types.StringType,
 							Computed:            true,
 						},
 						attrPrivileges: dsschema.SetAttribute{
-							MarkdownDescription: "The index level privileges that the owners of the role have on the specified indices.",
+							MarkdownDescription: indicesPrivilegesDescription,
 							ElementType:         types.StringType,
 							Computed:            true,
 						},
 						attrQuery: dsschema.StringAttribute{
-							MarkdownDescription: "A search query that defines the documents the owners of the role have read access to.",
+							MarkdownDescription: indicesQueryDescription,
 							Computed:            true,
 							CustomType:          jsontypes.NormalizedType{},
 						},

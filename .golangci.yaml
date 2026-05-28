@@ -35,6 +35,7 @@ linters:
       - third_party$
       - builtin$
       - examples$
+      - elasticsearch-snapshot-actions/
     rules:
       - linters:
           - goconst
@@ -57,3 +58,4 @@ formatters:
       - third_party$
       - builtin$
       - examples$
+      - elasticsearch-snapshot-actions/
