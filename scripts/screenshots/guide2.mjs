@@ -33,11 +33,12 @@ const KIBANA_URL = (process.env.KIBANA_URL ?? 'http://localhost:5601').replace(/
 const KIBANA_USER = process.env.KIBANA_USER ?? 'elastic';
 const KIBANA_PASS = process.env.KIBANA_PASS ?? 'password';
 
+// Panel shots run before the category filter is applied; full-dashboard shots follow.
 const SCREENSHOTS = [
-  { file: 'g2-01-full.png', mode: 'viewport-full', needsFilter: false },
-  { file: 'g2-02-filtered.png', mode: 'viewport-full', needsFilter: true },
   { file: 'g2-03-discover.png', mode: 'panel', index: 6 },
   { file: 'g2-04-table.png', mode: 'panel', index: 4 },
+  { file: 'g2-01-full.png', mode: 'viewport-full', needsFilter: false },
+  { file: 'g2-02-filtered.png', mode: 'viewport-full', needsFilter: true },
 ];
 
 function screenshotsToCapture() {
