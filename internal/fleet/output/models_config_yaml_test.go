@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -52,7 +53,7 @@ func TestToAPICreate_OmitConfigYamlWhenNull(t *testing.T) {
 			Name:       types.StringValue("example-" + outputType),
 			Type:       types.StringValue(outputType),
 			Hosts:      baseHosts,
-			ConfigYaml: types.StringNull(), // the user-facing scenario from #1067
+			ConfigYaml: customtypes.NewNormalizedYamlNull(), // the user-facing scenario from #1067
 		}
 	}
 
@@ -175,7 +176,7 @@ func TestToAPICreate_OmitConfigYamlWhenNull(t *testing.T) {
 			Name:       types.StringValue("example"),
 			Type:       types.StringValue("elasticsearch"),
 			Hosts:      baseHosts,
-			ConfigYaml: types.StringValue("bulk_max_size: 100\n"),
+			ConfigYaml: customtypes.NewNormalizedYamlValue("bulk_max_size: 100\n"),
 		}
 		union, diags := m.toAPICreateElasticsearchModel(context.Background())
 		require.False(t, diags.HasError())

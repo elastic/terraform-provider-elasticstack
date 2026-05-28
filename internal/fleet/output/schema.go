@@ -21,6 +21,7 @@ import (
 	"context"
 
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -136,9 +137,12 @@ func getSchema() schema.Schema {
 				Default:     booldefault.StaticBool(false),
 			},
 			"config_yaml": schema.StringAttribute{
-				Description: "Advanced YAML configuration. YAML settings here will be added to the output section of each agent policy.",
-				Optional:    true,
-				Sensitive:   true,
+				Description: "Advanced YAML configuration. YAML settings here will be added to the output section of each agent policy. " +
+					"Note: the Fleet API treats an omitted `config_yaml` in an update request as \"no change\" and does not clear the stored value. " +
+					"To clear a previously stored value, delete and re-create the output.",
+				Optional:   true,
+				Sensitive:  true,
+				CustomType: customtypes.NormalizedYamlType{},
 			},
 			"space_ids": schema.SetAttribute{
 				Description: spaceIDsDescription,

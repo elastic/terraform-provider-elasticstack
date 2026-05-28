@@ -73,7 +73,10 @@ func (r *outputResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Populate from API response
-	// With Sets, we don't need order preservation - Terraform handles set comparison automatically
+	// With Sets, we don't need order preservation - Terraform handles set comparison automatically.
+	// Note: fromAPICommonFields preserves a null config_yaml across the API echo
+	// (see issue #1856) so plan-null intent survives both this Update and the
+	// subsequent refresh Read.
 	diags = planModel.populateFromAPI(ctx, output)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

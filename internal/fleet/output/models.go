@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -30,24 +31,24 @@ import (
 )
 
 type outputModel struct {
-	ID                          types.String `tfsdk:"id"`
-	KibanaConnection            types.List   `tfsdk:"kibana_connection"`
-	OutputID                    types.String `tfsdk:"output_id"`
-	Name                        types.String `tfsdk:"name"`
-	Type                        types.String `tfsdk:"type"`
-	Hosts                       types.List   `tfsdk:"hosts"` // > string
-	ServiceToken                types.String `tfsdk:"service_token"`
-	CaSha256                    types.String `tfsdk:"ca_sha256"`
-	CaTrustedFingerprint        types.String `tfsdk:"ca_trusted_fingerprint"`
-	DefaultIntegrations         types.Bool   `tfsdk:"default_integrations"`
-	DefaultMonitoring           types.Bool   `tfsdk:"default_monitoring"`
-	ConfigYaml                  types.String `tfsdk:"config_yaml"`
-	SpaceIDs                    types.Set    `tfsdk:"space_ids"` // > string
-	Ssl                         types.Object `tfsdk:"ssl"`       // > outputSslModel
-	Kafka                       types.Object `tfsdk:"kafka"`     // > outputKafkaModel
-	SyncIntegrations            types.Bool   `tfsdk:"sync_integrations"`
-	SyncUninstalledIntegrations types.Bool   `tfsdk:"sync_uninstalled_integrations"`
-	WriteToLogsStreams          types.Bool   `tfsdk:"write_to_logs_streams"`
+	ID                          types.String                    `tfsdk:"id"`
+	KibanaConnection            types.List                      `tfsdk:"kibana_connection"`
+	OutputID                    types.String                    `tfsdk:"output_id"`
+	Name                        types.String                    `tfsdk:"name"`
+	Type                        types.String                    `tfsdk:"type"`
+	Hosts                       types.List                      `tfsdk:"hosts"` // > string
+	ServiceToken                types.String                    `tfsdk:"service_token"`
+	CaSha256                    types.String                    `tfsdk:"ca_sha256"`
+	CaTrustedFingerprint        types.String                    `tfsdk:"ca_trusted_fingerprint"`
+	DefaultIntegrations         types.Bool                      `tfsdk:"default_integrations"`
+	DefaultMonitoring           types.Bool                      `tfsdk:"default_monitoring"`
+	ConfigYaml                  customtypes.NormalizedYamlValue `tfsdk:"config_yaml"`
+	SpaceIDs                    types.Set                       `tfsdk:"space_ids"` // > string
+	Ssl                         types.Object                    `tfsdk:"ssl"`       // > outputSslModel
+	Kafka                       types.Object                    `tfsdk:"kafka"`     // > outputKafkaModel
+	SyncIntegrations            types.Bool                      `tfsdk:"sync_integrations"`
+	SyncUninstalledIntegrations types.Bool                      `tfsdk:"sync_uninstalled_integrations"`
+	WriteToLogsStreams          types.Bool                      `tfsdk:"write_to_logs_streams"`
 }
 
 func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) (diags diag.Diagnostics) {
@@ -155,6 +156,21 @@ type commonOutputReadData struct {
 }
 
 func (model *outputModel) fromAPICommonFields(ctx context.Context, d commonOutputReadData) (diags diag.Diagnostics) {
+	// Capture the existing config_yaml and name before we overwrite the
+	// model so we can preserve a user-removed null config_yaml over the
+	// Fleet API echo. Fleet treats an omitted config_yaml in update
+	// requests as "no change" and echoes the previously stored value (or
+	// "" for outputs that never had one) back in the response. Once the
+	// user has removed config_yaml from configuration we honour that
+	// intent across both update and refresh — otherwise the apply trips
+	// "inconsistent values for sensitive attribute" or refresh surfaces
+	// perpetual drift (issue #1856). On import the existing model carries
+	// only the importer-populated fields (output_id / space_ids), so we
+	// use Name being null as the discriminator: a refreshed or
+	// post-update model always has a non-null Name from prior state.
+	existingConfigYaml := model.ConfigYaml
+	isImport := model.Name.IsNull() || model.Name.IsUnknown()
+
 	model.ID = types.StringPointerValue(d.id)
 	model.OutputID = types.StringPointerValue(d.id)
 	model.Name = types.StringValue(d.name)
@@ -164,7 +180,10 @@ func (model *outputModel) fromAPICommonFields(ctx context.Context, d commonOutpu
 	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(d.caTrustedFingerprint)
 	model.DefaultIntegrations = types.BoolPointerValue(d.isDefault)
 	model.DefaultMonitoring = types.BoolPointerValue(d.isDefaultMonitoring)
-	model.ConfigYaml = types.StringPointerValue(d.configYaml)
+	model.ConfigYaml = configYamlFromAPI(d.configYaml)
+	if !isImport && existingConfigYaml.IsNull() {
+		model.ConfigYaml = customtypes.NewNormalizedYamlNull()
+	}
 	if d.ssl != nil {
 		model.Ssl, diags = sslToObjectValue(ctx, d.ssl.Certificate, d.ssl.CertificateAuthorities, d.ssl.Key, d.ssl.VerificationMode)
 	} else {
@@ -257,6 +276,18 @@ func assertSSLVerificationModeSupport(ctx context.Context, client *clients.Kiban
 	}
 
 	return nil
+}
+
+// configYamlFromAPI normalizes the Fleet API representation of config_yaml
+// into the resource's NormalizedYamlValue state attribute. Fleet treats an
+// omitted config_yaml as "no change" on update and serializes an unset value
+// as an empty string in responses; folding empty strings to null keeps state
+// stable across updates that don't touch the field. Issue #1856.
+func configYamlFromAPI(value *string) customtypes.NormalizedYamlValue {
+	if value == nil || *value == "" {
+		return customtypes.NewNormalizedYamlNull()
+	}
+	return customtypes.NewNormalizedYamlValue(*value)
 }
 
 func assertKafkaSupport(ctx context.Context, client *clients.KibanaScopedClient) diag.Diagnostics {
