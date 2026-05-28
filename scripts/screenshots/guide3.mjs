@@ -33,9 +33,9 @@ const KIBANA_USER = process.env.KIBANA_USER ?? 'elastic';
 const KIBANA_PASS = process.env.KIBANA_PASS ?? 'password';
 
 const SCREENSHOTS = [
+  { file: 'g3-01-full.png', mode: 'viewport-full' },
   { file: 'g3-04-heatmap.png', mode: 'panel', panelTitle: 'Requests by hour and response' },
   { file: 'g3-03-gauge.png', mode: 'panel', panelTitle: '95th percentile bytes', expandSection: 'Goal tracking' },
-  { file: 'g3-01-full.png', mode: 'viewport-full' },
   { file: 'g3-02-collapsed.png', mode: 'viewport-full', collapseAllSections: true },
 ];
 
