@@ -569,6 +569,22 @@ For XY chart `fitting` round-trips, the resource SHALL treat an empty string ret
 
 For XY chart `decorations` round-trips on bar-style layers (e.g. `bar`, `bar_stacked`, `bar_horizontal`), Kibana injects server-side bar-styling defaults — `decorations.show_value_labels = false` and `decorations.minimum_bar_height = 1` — even when the practitioner omitted those fields. When the plan value for such a field is null and the API read-back returns the matching default, the resource SHALL preserve the null plan value in state instead of materializing the server default.
 
+For every Lens chart block that exposes `data_source_json` (legacy_metric, region_map, gauge, heatmap, tagcloud, pie, treemap, mosaic, waffle, datatable, and XY data/reference-line layers), Kibana injects `"time_field":"@timestamp"` into the read-back payload when the practitioner omits it. When the practitioner-authored `data_source_json` does not include `time_field`, the resource SHALL strip that injected key from state before semantic comparison and SHALL preserve the practitioner's original JSON payload.
+
+For each Lens chart panel listed below, Kibana materializes hard-coded server defaults for optional fields when the practitioner omits them. The resource SHALL preserve the practitioner's null/unset plan value in state when the API read-back matches the documented default. The known defaults are:
+- `gauge_config.styling.shape_json` defaults to `{"type":"bullet","orientation":"horizontal"}`.
+- `tagcloud_config.orientation` defaults to `"horizontal"`.
+- `tagcloud_config.font_size` defaults to `{min=18, max=72}` (whole block).
+- `heatmap_config.axis.{x,y}.labels.visible` default to `true`.
+- `heatmap_config.axis.{x,y}.title.visible` default to `false`.
+- `heatmap_config.styling.cells.labels.visible` defaults to `false`.
+- `heatmap_config.legend.visibility` defaults to `"visible"`.
+- `pie_chart_config.label_position` defaults to `"outside"`.
+- `treemap_config.legend.visible` and `mosaic_config.legend.visible` default to `"auto"`.
+- `treemap_config.value_display` and `mosaic_config.value_display` default to the block `{mode="percentage", percent_decimals=null}` (whole block).
+
+For Lens partition charts (pie `group_by[].config_json`, treemap `group_by_json`, mosaic `group_by_json`/`group_breakdown_by_json`) and Lens datatable (`metrics[].config_json`, `rows[].config_json`, `split_metrics_by[].config_json`), Kibana re-emits each `terms` dimension with the following injected default keys: `rank_by = {type="metric", metric_index=0, direction="desc"}` and `color = {mode="categorical", palette="default", mapping=[]}`. The resource SHALL populate these defaults during semantic-equality comparison so the practitioner's authored JSON round-trips without drift.
+
 #### Scenario: Unset XY X-axis scale
 
 - GIVEN an XY chart panel whose configuration left `axis.x.scale` unset
@@ -587,6 +603,53 @@ For XY chart `decorations` round-trips on bar-style layers (e.g. `bar`, `bar_sta
 - GIVEN an XY chart panel with a `bar_stacked` data layer whose `decorations` block omits `show_value_labels` and `minimum_bar_height`
 - WHEN create runs and Kibana's read-back returns `decorations.show_value_labels = false` and `decorations.minimum_bar_height = 1`
 - THEN the provider SHALL keep both fields null in state and the apply SHALL NOT report "Provider produced inconsistent result after apply"
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: data_source_json without time_field round-trips on every Lens chart
+
+- GIVEN a Lens chart panel of any supported type whose `data_source_json` omits `time_field`
+- WHEN create runs and Kibana's read-back returns the same payload with `"time_field":"@timestamp"` injected
+- THEN the provider SHALL preserve the practitioner's JSON in state and the apply SHALL NOT report "Provider produced inconsistent result after apply"
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Minimal gauge panel preserves null styling.shape_json
+
+- GIVEN a gauge panel whose `gauge_config.styling` block omits `shape_json`
+- WHEN create runs and Kibana's read-back returns `styling.shape_json = {"type":"bullet","orientation":"horizontal"}`
+- THEN the provider SHALL keep `styling.shape_json` null in state and the apply SHALL NOT report "Provider produced inconsistent result after apply"
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Minimal tagcloud panel preserves null orientation and font_size
+
+- GIVEN a tagcloud panel whose `tagcloud_config` omits `orientation` and `font_size`
+- WHEN create runs and Kibana's read-back returns `orientation = "horizontal"` and `font_size = {min=18, max=72}`
+- THEN the provider SHALL keep both fields null/unset in state and a subsequent plan SHALL show no changes
+
+#### Scenario: Minimal heatmap panel preserves null axis, styling, and legend defaults
+
+- GIVEN a heatmap panel whose `axis.{x,y}.labels.visible`, `axis.{x,y}.title.visible`, `styling.cells.labels.visible`, and `legend.visibility` are unset
+- WHEN create runs and Kibana's read-back returns the documented defaults (`labels.visible=true`, `title.visible=false`, `cells.labels.visible=false`, `legend.visibility="visible"`)
+- THEN the provider SHALL keep each of those fields null in state and a subsequent plan SHALL show no changes
+
+#### Scenario: Minimal pie panel preserves null label_position and group_by JSON defaults
+
+- GIVEN a pie panel whose `pie_chart_config.label_position` is unset and whose `group_by[].config_json` for a `terms` operation omits `rank_by` and `color`
+- WHEN create runs and Kibana's read-back returns `label_position = "outside"` and injects the partition default keys into `group_by[].config_json`
+- THEN the provider SHALL keep `label_position` null in state and SHALL preserve the practitioner's `group_by[].config_json` payload
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Minimal treemap / mosaic panel preserves partition legend and value_display defaults
+
+- GIVEN a treemap or mosaic panel whose `legend.visible` is unset and whose `value_display` block is omitted
+- WHEN create runs and Kibana's read-back returns `legend.visible = "auto"` and a default `value_display = {mode="percentage", percent_decimals=null}` block
+- THEN the provider SHALL keep `legend.visible` null and SHALL drop the injected `value_display` block from state
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Datatable terms metrics preserve injected JSON defaults
+
+- GIVEN a datatable panel whose `metrics[].config_json` omits `color`, `empty_as_null`, and `format`
+- WHEN create runs and Kibana's read-back re-emits those keys with their documented defaults
+- THEN the provider SHALL preserve the practitioner's `metrics[].config_json` payload via semantic-equality comparison
 - AND a subsequent plan SHALL show no changes
 
 ### Requirement: Markdown panel behavior (REQ-012)

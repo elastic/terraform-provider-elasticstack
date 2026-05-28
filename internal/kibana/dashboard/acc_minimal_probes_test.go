@@ -39,11 +39,6 @@ import (
 // are caught:
 //   - inconsistent-result errors during apply (write-time)
 //   - drift on a subsequent plan (read-time)
-//
-// NOTE: All probes here currently FAIL against a real Kibana 9.4+ stack — they
-// are committed as TODO/regression markers. Each test calls t.Skip with the
-// specific field paths Kibana injects. Remove the Skip in the test guarding a
-// given panel's fix to turn the probe back on as a passing regression test.
 
 const minimalProbeDashboardPrefix = "Test Lens Minimal Probe "
 
@@ -93,7 +88,6 @@ func newProbeTitle(suffix string) string {
 }
 
 func TestAccLensMinimalProbe_LegacyMetric(t *testing.T) {
-	t.Skip("TODO: data_source_json drift — Kibana injects time_field=\"@timestamp\" on read-back; see acc_minimal_probes_test.go banner")
 	runMinimalLensProbe(t, newProbeTitle("LegacyMetric"), `
 legacy_metric_config = {
   data_source_json = jsonencode({ type = "data_view_spec", index_pattern = "metrics-*" })
@@ -104,7 +98,6 @@ legacy_metric_config = {
 }
 
 func TestAccLensMinimalProbe_Gauge(t *testing.T) {
-	t.Skip("TODO: data_source_json drift (time_field) + styling.shape_json default {\"type\":\"bullet\"} injected by Kibana when omitted")
 	runMinimalLensProbe(t, newProbeTitle("Gauge"), `
 gauge_config = {
   data_source_json = jsonencode({ type = "data_view_spec", index_pattern = "metrics-*" })
@@ -116,7 +109,6 @@ gauge_config = {
 }
 
 func TestAccLensMinimalProbe_Heatmap(t *testing.T) {
-	t.Skip("TODO: data_source_json drift + axis.*.labels.visible, axis.*.title.visible, styling.cells.labels.visible, legend.visibility server defaults need null-preservation")
 	runMinimalLensProbe(t, newProbeTitle("Heatmap"), `
 heatmap_config = {
   data_source_json = jsonencode({ type = "data_view_spec", index_pattern = "metrics-*" })
@@ -137,7 +129,6 @@ heatmap_config = {
 }
 
 func TestAccLensMinimalProbe_Tagcloud(t *testing.T) {
-	t.Skip("TODO: data_source_json drift + orientation=\"horizontal\" and font_size={min=18,max=72} injected by Kibana when omitted")
 	runMinimalLensProbe(t, newProbeTitle("Tagcloud"), `
 tagcloud_config = {
   data_source_json = jsonencode({ type = "data_view_spec", index_pattern = "metrics-*" })
@@ -149,7 +140,6 @@ tagcloud_config = {
 }
 
 func TestAccLensMinimalProbe_RegionMap(t *testing.T) {
-	t.Skip("TODO: data_source_json drift — Kibana injects time_field=\"@timestamp\" on read-back")
 	runMinimalLensProbe(t, newProbeTitle("RegionMap"), `
 region_map_config = {
   data_source_json = jsonencode({ type = "data_view_spec", index_pattern = "metrics-*" })
@@ -164,7 +154,6 @@ region_map_config = {
 }
 
 func TestAccLensMinimalProbe_Datatable(t *testing.T) {
-	t.Skip("TODO: data_source_json drift + metrics[*].config_json default normalization (color, empty_as_null, format.{decimals,compact}) needed")
 	runMinimalLensProbe(t, newProbeTitle("Datatable"), `
 datatable_config = {
   no_esql = {
@@ -178,7 +167,6 @@ datatable_config = {
 }
 
 func TestAccLensMinimalProbe_Pie(t *testing.T) {
-	t.Skip("TODO: data_source_json drift + label_position=\"outside\" default + group_by[*].config_json default normalization (color, rank_by, limit)")
 	runMinimalLensProbe(t, newProbeTitle("Pie"), `
 pie_chart_config = {
   data_source_json = jsonencode({ type = "data_view_spec", index_pattern = "metrics-*" })
@@ -190,7 +178,6 @@ pie_chart_config = {
 }
 
 func TestAccLensMinimalProbe_Treemap(t *testing.T) {
-	t.Skip("TODO: data_source_json drift + legend.visible=\"auto\" + value_display={mode=\"percentage\"} block + group_by_json default normalization (color, rank_by)")
 	runMinimalLensProbe(t, newProbeTitle("Treemap"), `
 treemap_config = {
   data_source_json = jsonencode({ type = "data_view_spec", index_pattern = "metrics-*" })
@@ -203,7 +190,6 @@ treemap_config = {
 }
 
 func TestAccLensMinimalProbe_Mosaic(t *testing.T) {
-	t.Skip("TODO: data_source_json drift + legend.visible=\"auto\" + value_display={mode=\"percentage\"} block + group_by_json / group_breakdown_by_json default normalization")
 	runMinimalLensProbe(t, newProbeTitle("Mosaic"), `
 mosaic_config = {
   data_source_json        = jsonencode({ type = "data_view_spec", index_pattern = "metrics-*" })
@@ -217,7 +203,6 @@ mosaic_config = {
 }
 
 func TestAccLensMinimalProbe_Waffle(t *testing.T) {
-	t.Skip("TODO: data_source_json drift — Kibana injects time_field=\"@timestamp\" on read-back")
 	runMinimalLensProbe(t, newProbeTitle("Waffle"), `
 waffle_config = {
   data_source_json = jsonencode({ type = "data_view_spec", index_pattern = "metrics-*" })
@@ -228,10 +213,6 @@ waffle_config = {
 `)
 }
 
-// TestAccLensMinimalProbe_Metric is the baseline — the lensmetric panel was
-// already hardened for this class of bug in #2355, so its minimal probe
-// passes. It is intentionally not skipped and serves as a control showing
-// the probe harness itself is correct.
 func TestAccLensMinimalProbe_Metric(t *testing.T) {
 	runMinimalLensProbe(t, newProbeTitle("Metric"), `
 metric_chart_config = {

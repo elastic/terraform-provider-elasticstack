@@ -123,8 +123,8 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver
 	return treemapConfigToAPI(blocks.TreemapConfig, resolver)
 }
 
-func (converter) AlignStateFromPlan(_ context.Context, plan, state *models.LensByValueChartBlocks) {
-	alignTreemapStateFromPlan(plan, state)
+func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
+	alignTreemapStateFromPlan(ctx, plan, state)
 }
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {

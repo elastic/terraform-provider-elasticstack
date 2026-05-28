@@ -239,40 +239,19 @@ func preserveKnownAxisTitleIfStateBlank(plan *models.AxisTitleModel, state **mod
 }
 
 func preserveNullStringIfStateEquals(plan types.String, state *types.String, expected string) {
-	if !plan.IsNull() || plan.IsUnknown() {
-		return
-	}
-	if typeutils.IsKnown(*state) && state.ValueString() == expected {
-		*state = plan
-	}
+	lenscommon.PreserveNullStringIfStateEquals(plan, state, expected)
 }
 
 func preserveNullBoolIfStateEquals(plan types.Bool, state *types.Bool, expected bool) {
-	if !plan.IsNull() || plan.IsUnknown() {
-		return
-	}
-	if typeutils.IsKnown(*state) && state.ValueBool() == expected {
-		*state = plan
-	}
+	lenscommon.PreserveNullBoolIfStateEquals(plan, state, expected)
 }
 
 func preserveNullInt64IfStateEquals(plan types.Int64, state *types.Int64, expected int64) {
-	if !plan.IsNull() || plan.IsUnknown() {
-		return
-	}
-	if typeutils.IsKnown(*state) && state.ValueInt64() == expected {
-		*state = plan
-	}
+	lenscommon.PreserveNullInt64IfStateEquals(plan, state, expected)
 }
 
 func preserveNullJSONIfStateMatches(plan jsontypes.Normalized, state *jsontypes.Normalized, expected string) {
-	if !plan.IsNull() || plan.IsUnknown() || !typeutils.IsKnown(*state) {
-		return
-	}
-	expectedNormalized := jsontypes.NewNormalizedValue(expected)
-	if state.ValueString() == expectedNormalized.ValueString() {
-		*state = plan
-	}
+	lenscommon.PreserveNullJSONIfStateMatchesDefault(plan, state, expected)
 }
 
 func cloneAxisTitleModel(model *models.AxisTitleModel) *models.AxisTitleModel {

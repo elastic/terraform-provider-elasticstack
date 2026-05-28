@@ -131,8 +131,8 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver
 	return mosaicConfigToAPI(blocks.MosaicConfig, resolver)
 }
 
-func (converter) AlignStateFromPlan(_ context.Context, plan, state *models.LensByValueChartBlocks) {
-	alignMosaicStateFromPlan(plan, state)
+func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
+	alignMosaicStateFromPlan(ctx, plan, state)
 }
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {

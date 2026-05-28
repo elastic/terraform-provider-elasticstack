@@ -29,6 +29,7 @@ func alignWaffleStateFromPlan(ctx context.Context, plan, state *models.WaffleCon
 		return
 	}
 	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field")
 	m := min(len(plan.Metrics), len(state.Metrics))
 	for i := range m {
 		lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.Metrics[i].Config, &state.Metrics[i].Config)

@@ -152,12 +152,14 @@ func PopulatePartitionGroupByDefaults(model []map[string]any) []map[string]any {
 				"decimals": float64(2),
 			}
 		}
+		// Kibana injects rank_by={type=metric, metric_index=0, direction=desc} and
+		// color={mode=categorical, palette=default, mapping=[]} when omitted. Treat
+		// these as semantic defaults to avoid spurious drift on read-back.
 		if _, exists := item["rank_by"]; !exists {
-			item["rank_by"] = map[string]any{
-				attrType:      attrColumn,
-				attrMetric:    float64(0),
-				attrDirection: sortDirectionDesc,
-			}
+			item["rank_by"] = partitionDefaultRankBy()
+		}
+		if _, exists := item["color"]; !exists {
+			item["color"] = partitionDefaultColor()
 		}
 		if _, exists := item["size"]; !exists {
 			item["size"] = float64(5)
@@ -165,6 +167,26 @@ func PopulatePartitionGroupByDefaults(model []map[string]any) []map[string]any {
 	}
 
 	return model
+}
+
+// partitionDefaultRankBy returns the rank_by block Kibana injects for partition
+// terms dimensions when the practitioner omits it.
+func partitionDefaultRankBy() map[string]any {
+	return map[string]any{
+		attrType:       attrMetric,
+		"metric_index": float64(0),
+		attrDirection:  sortDirectionDesc,
+	}
+}
+
+// partitionDefaultColor returns the color block Kibana injects for partition
+// terms dimensions when the practitioner omits it.
+func partitionDefaultColor() map[string]any {
+	return map[string]any{
+		attrMode:  "categorical",
+		"palette": "default",
+		"mapping": []any{},
+	}
 }
 
 // PopulatePartitionMetricsDefaults normalizes partition metric slices using tagcloud metric defaults.
@@ -275,12 +297,14 @@ func PopulateLensGroupByDefaults(model map[string]any) map[string]any {
 		if _, exists := model["size"]; !exists {
 			model["size"] = float64(5)
 		}
+		// Kibana injects rank_by={type=metric, metric_index=0, direction=desc} and
+		// color={mode=categorical, palette=default, mapping=[]} when omitted. Treat
+		// these as semantic defaults to avoid spurious drift on read-back.
 		if _, exists := model["rank_by"]; !exists {
-			model["rank_by"] = map[string]any{
-				attrDirection: sortDirectionDesc,
-				attrMetric:    float64(0),
-				attrType:      attrColumn,
-			}
+			model["rank_by"] = partitionDefaultRankBy()
+		}
+		if _, exists := model["color"]; !exists {
+			model["color"] = partitionDefaultColor()
 		}
 	}
 
