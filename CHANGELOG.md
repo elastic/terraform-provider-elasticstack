@@ -2,6 +2,7 @@
 
 ### Changes
 
+- Fix `elasticstack_kibana_dashboard` "inconsistent result after apply" when using `vis_config.by_value.xy_chart_config` with `layers[].type = "bar_horizontal"` and terms breakdowns — provider now preserves planned `fitting` values when Kibana omits them.
 - Add elasticsearch_snapshot_create and elasticsearch_snapshot_restore provider-defined actions for on-demand snapshot creation and restore. ([#3376](https://github.com/elastic/terraform-provider-elasticstack/pull/3376))
 - Add `elasticstack_elasticsearch_query_ruleset` resource and data source for the Elasticsearch Query Rules API. ([#3365](https://github.com/elastic/terraform-provider-elasticstack/pull/3365))
 - improve security role documentation and add automated drift detection for Kibana feature privilege docs ([#3339](https://github.com/elastic/terraform-provider-elasticstack/pull/3339))
