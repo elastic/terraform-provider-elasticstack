@@ -525,7 +525,7 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 					return diags
 				}
 
-				fieldSecObj, d = types.ObjectValue(getRemoteFieldSecurityAttrTypes(), map[string]attr.Value{
+				fieldSecObj, d = types.ObjectValue(getFieldSecurityAttrTypes(), map[string]attr.Value{
 					attrGrant:  grantSet,
 					attrExcept: exceptSet,
 				})
@@ -534,7 +534,7 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 					return diags
 				}
 			} else {
-				fieldSecObj = types.ObjectNull(getRemoteFieldSecurityAttrTypes())
+				fieldSecObj = types.ObjectNull(getFieldSecurityAttrTypes())
 			}
 
 			remoteIndexObj, d := types.ObjectValue(getRemoteIndexPermsAttrTypes(), map[string]attr.Value{

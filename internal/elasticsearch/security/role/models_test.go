@@ -50,7 +50,7 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 		privilegesSet := types.SetValueMust(types.StringType, []attr.Value{types.StringValue("read")})
 		remoteIndexObj := types.ObjectValueMust(attrTypes, map[string]attr.Value{
 			"clusters":       clustersSet,
-			"field_security": types.ObjectNull(getRemoteFieldSecurityAttrTypes()),
+			"field_security": types.ObjectNull(getFieldSecurityAttrTypes()),
 			"query":          jsontypes.NewNormalizedNull(),
 			"names":          namesSet,
 			"privileges":     privilegesSet,
