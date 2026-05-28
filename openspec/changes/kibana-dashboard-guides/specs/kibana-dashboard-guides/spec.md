@@ -166,15 +166,15 @@ Each script SHALL:
 - Accept `KIBANA_URL`, `KIBANA_USER`, and `KIBANA_PASS` environment variables with sensible defaults
 - Handle the Kibana login flow before navigating to the dashboard
 - Wait for panel rendering to complete (`networkidle` + panel selector) before capturing
-- Write output PNGs to `docs/guides/images/`
+- Write output PNGs to `templates/guides/images/` (the source-of-truth location)
 
-Screenshot PNG files SHALL be committed to the repository at `docs/guides/images/`.
+Screenshot PNG files SHALL be committed at `templates/guides/images/`; `make docs-generate` copies them to `docs/guides/images/` (the published location), and `make check-docs` enforces the published copy is in sync.
 
 #### Scenario: Screenshot scripts produce output PNGs
 
 - **WHEN** a local Kibana 9.4+ instance is running with sample data installed and the guide configs applied
 - **WHEN** `node scripts/screenshots/guide1.mjs` is run
-- **THEN** PNG files are written to `docs/guides/images/` with no errors
+- **THEN** PNG files are written to `templates/guides/images/` with no errors
 
 #### Scenario: README documents the full screenshot workflow
 

@@ -18,7 +18,7 @@ The dashboard resource's `vis` panels embed Lens visualization JSON, which is co
 **Non-Goals:**
 - Covering feature-gated panels (SLO, Synthetics, ML) — out of scope for general guides
 - Geographic/Maps panels — geo-specific, narrow audience
-- Modifying any provider resource code or schemas
+- Modifying provider resource code beyond the targeted XY chart `fitting` alignment fix that this work surfaced; no resource schema changes
 - Replacing the generated reference documentation
 
 ## Decisions
@@ -49,7 +49,7 @@ The dashboard resource's `vis` panels embed Lens visualization JSON, which is co
 
 ### Decision: Playwright for screenshots, committed as static PNGs
 
-**Choice**: Screenshot scripts under `scripts/screenshots/` using Playwright. Output PNGs committed to `docs/guides/images/`. Scripts reference dashboards by their Kibana-assigned `dashboard_id`.
+**Choice**: Screenshot scripts under `scripts/screenshots/` using Playwright. Scripts write PNGs to `templates/guides/images/` (source of truth); `make docs-generate` copies them to `docs/guides/images/` for publication. Both directories are committed so `make check-docs` enforces the published copy stays in sync. Scripts reference dashboards by their Kibana-assigned `dashboard_id`.
 
 **Why**: Playwright handles Kibana's JavaScript-heavy rendering and authentication. Scripts are committed so any contributor can regenerate screenshots when the UI or TF config changes. Static PNGs mean the guides work without running a live stack.
 
