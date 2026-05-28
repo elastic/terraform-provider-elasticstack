@@ -23,7 +23,6 @@ import (
 
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -118,22 +117,20 @@ func (k *KibanaScopedClient) getServerStatusRaw(ctx context.Context) (rawVersion
 
 // EnforceMinVersion returns true when the Kibana server version is greater than
 // or equal to minVersion, or when the server is running in serverless mode.
+// If minVersion is nil, no minimum is enforced and the method returns true.
 func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, fwdiag.Diagnostics) {
+	if minVersion == nil {
+		return true, nil
+	}
+
 	rawVersion, flavor, diags := k.getServerStatusRaw(ctx)
 	if diags.HasError() {
 		return false, diags
 	}
 
-	if flavor == ServerlessFlavor {
-		return true, nil
-	}
-
-	serverVersion, err := version.NewVersion(rawVersion)
-	if err != nil {
-		return false, diagutil.FrameworkDiagFromError(err)
-	}
-
-	return serverVersion.GreaterThanOrEqual(minVersion), nil
+	return applyVersionConstraint(flavor, rawVersion, func(sv *version.Version) bool {
+		return sv.GreaterThanOrEqual(minVersion)
+	})
 }
 
 // EnforceVersionCheck returns true when the given version check function
@@ -144,16 +141,7 @@ func (k *KibanaScopedClient) EnforceVersionCheck(ctx context.Context, check func
 		return false, diags
 	}
 
-	if flavor == ServerlessFlavor {
-		return true, nil
-	}
-
-	sv, err := version.NewVersion(rawVersion)
-	if err != nil {
-		return false, diagutil.FrameworkDiagFromError(err)
-	}
-
-	return check(sv), nil
+	return applyVersionConstraint(flavor, rawVersion, check)
 }
 
 // kibanaScopedClientFromAPIClient constructs a KibanaScopedClient from the
