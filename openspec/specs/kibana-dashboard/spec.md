@@ -79,7 +79,7 @@ resource "elasticstack_kibana_dashboard" "example" {
     xy_chart_config = <optional, object({
       title       = <optional, string>
       description = <optional, string>
-      axis        = <required, object({ x = <optional, object({ domain_json = <optional, json string, normalized>, ... })>, y = <optional, object({ domain_json = <required, json string, normalized>, ... })>, secondary_y = <optional, object({ domain_json = <required, json string, normalized>, ... })> })>
+      axis        = <required, object({ x = <optional, object({ domain_json = <optional, json string, normalized>, ... })>, y = <optional, object({ domain_json = <required, json string, normalized>, ... })>, y2 = <optional, object({ domain_json = <required, json string, normalized>, ... })> })>
       decorations = <required, object(...)>
       fitting     = <required, object({ type = <required, string>, dotted = <optional, bool>, end_value = <optional, string> })>
       layers      = <required, list(object({ type = <required, string>, data_layer = <optional, object(...)>, reference_line_layer = <optional, object(...)> }))> # at least 1
@@ -565,11 +565,29 @@ On write, practitioner-authored panel-level `config_json` SHALL be supported onl
 
 The resource SHALL normalize `config_json` and typed `vis` panel data with default-aware semantic equality so Kibana-injected defaults do not cause unnecessary drift. This normalization SHALL include panel-type-specific defaults such as missing empty `filters` arrays and visualization metric/grouping defaults used by the implementation. For XY chart panels, when `axis.x.scale` was unset in configuration and Kibana returns the implicit default `ordinal`, the resource SHALL preserve the unset Terraform value instead of forcing `ordinal` into state.
 
+For XY chart `fitting` round-trips, the resource SHALL treat an empty string returned by Kibana for `fitting.type` (which Kibana emits for some layer kinds such as `bar_stacked`) as semantically null and SHALL restore the practitioner's configured `fitting.type` from the plan. The same null-empty-string treatment SHALL apply to `fitting.end_value`. This prevents "Provider produced inconsistent result after apply" diagnostics when bar-style XY layers are used with an explicit `fitting.type` such as `"none"`.
+
+For XY chart `decorations` round-trips on bar-style layers (e.g. `bar`, `bar_stacked`, `bar_horizontal`), Kibana injects server-side bar-styling defaults — `decorations.show_value_labels = false` and `decorations.minimum_bar_height = 1` — even when the practitioner omitted those fields. When the plan value for such a field is null and the API read-back returns the matching default, the resource SHALL preserve the null plan value in state instead of materializing the server default.
+
 #### Scenario: Unset XY X-axis scale
 
 - GIVEN an XY chart panel whose configuration left `axis.x.scale` unset
 - WHEN read-back from Kibana returns `axis.x.scale = "ordinal"`
 - THEN the provider SHALL keep the Terraform state value unset for that field
+
+#### Scenario: Bar-stacked XY layer with fitting.type = "none"
+
+- GIVEN an XY chart panel with a `bar_stacked` data layer and `fitting = { type = "none" }`
+- WHEN create runs and Kibana's read-back returns `fitting.type = ""` (empty string)
+- THEN the provider SHALL preserve `fitting.type = "none"` in state and the apply SHALL NOT report "Provider produced inconsistent result after apply"
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Bar-stacked XY layer omits decorations.show_value_labels and minimum_bar_height
+
+- GIVEN an XY chart panel with a `bar_stacked` data layer whose `decorations` block omits `show_value_labels` and `minimum_bar_height`
+- WHEN create runs and Kibana's read-back returns `decorations.show_value_labels = false` and `decorations.minimum_bar_height = 1`
+- THEN the provider SHALL keep both fields null in state and the apply SHALL NOT report "Provider produced inconsistent result after apply"
+- AND a subsequent plan SHALL show no changes
 
 ### Requirement: Markdown panel behavior (REQ-012)
 
@@ -625,7 +643,7 @@ When the chart-level `time_range` is null in configuration and state, the provid
 
 When the chart-level `time_range` is set in configuration, the provider SHALL pass the configured values to the API verbatim, overriding the dashboard-level value for that panel only.
 
-For XY chart `vis` panels specifically, the resource SHALL require `axis`, `decorations`, `fitting`, `legend`, and at least one `layers` entry. The axis object SHALL use `x`, optional primary `y`, and optional `secondary_y`; `axis.x.domain_json` SHALL represent the X-axis domain, and each configured Y axis SHALL require `domain_json`. Each layer SHALL represent either a data layer or a reference-line layer, not both. **`query` SHALL be optional** on the XY chart schema so that ES|QL XY panels (which carry no `query` in the API) are valid without a dummy query block.
+For XY chart `vis` panels specifically, the resource SHALL require `axis`, `decorations`, `fitting`, `legend`, and at least one `layers` entry. The axis object SHALL use `x`, optional primary `y`, and optional secondary `y2`; `axis.x.domain_json` SHALL represent the X-axis domain, and each configured Y axis SHALL require `domain_json`. Each layer SHALL represent either a data layer or a reference-line layer, not both. **`query` SHALL be optional** on the XY chart schema so that ES|QL XY panels (which carry no `query` in the API) are valid without a dummy query block.
 
 REQ-025 governs raw `config_json` `vis` panels; the typed-vs-raw distinction is unchanged.
 

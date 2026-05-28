@@ -166,6 +166,12 @@ func alignXYDecorationsStateFromPlan(plan, state *models.XYDecorationsModel) {
 	preserveNullBoolIfStateEquals(plan.ShowCurrentTimeMarker, &state.ShowCurrentTimeMarker, false)
 	preserveNullStringIfStateEquals(plan.PointVisibility, &state.PointVisibility, "auto")
 	preserveNullStringIfStateEquals(plan.LineInterpolation, &state.LineInterpolation, "linear")
+	// Kibana injects bar-styling defaults (show_value_labels=false,
+	// minimum_bar_height=1) for bar/bar_stacked layers even when the
+	// practitioner omits decorations. Preserve the null plan so the apply
+	// matches and no spurious drift appears on subsequent plans.
+	preserveNullBoolIfStateEquals(plan.ShowValueLabels, &state.ShowValueLabels, false)
+	preserveNullInt64IfStateEquals(plan.MinimumBarHeight, &state.MinimumBarHeight, 1)
 	lenscommon.PreserveKnownTfBoolIfStateNull(plan.ShowEndZones, &state.ShowEndZones)
 	lenscommon.PreserveKnownTfBoolIfStateNull(plan.ShowCurrentTimeMarker, &state.ShowCurrentTimeMarker)
 	lenscommon.PreserveKnownTfStringIfStateNull(plan.PointVisibility, &state.PointVisibility)

@@ -19,7 +19,6 @@ package lensxy_test
 
 import (
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -29,16 +28,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-// TestAccReproduceIssue3402 reproduces the bug where using bar_stacked as the
-// XY chart layer type with fitting.type = "none" causes Kibana to return an
-// empty string for fitting.type on read-back, leading to
-// "Provider produced inconsistent result after apply".
+// TestAccReproduceIssue3402 covers the regression where bar_stacked layers
+// caused Kibana to return an empty string for fitting.type on read-back even
+// though the practitioner wrote "none". The provider previously surfaced
+// "Provider produced inconsistent result after apply" because the empty string
+// was stored as a known value, skipping the plan-preservation alignment step.
 //
-// Root cause: xyFittingFromAPI uses typeutils.StringishValue (which maps "" to
-// types.StringValue("") — a known non-null value) instead of
-// NonEmptyStringishValue. The alignment helper alignXYFittingStateFromPlan only
-// restores plan values when state is null, so the empty-string return slips
-// through unchanged.
+// The fix uses typeutils.NonEmptyStringishValue so the empty string maps to
+// types.StringNull(), letting alignXYFittingStateFromPlan restore the
+// practitioner's "none" intent.
 //
 // Related to: https://github.com/elastic/terraform-provider-elasticstack/issues/3402
 func TestAccReproduceIssue3402(t *testing.T) {
@@ -50,12 +48,19 @@ func TestAccReproduceIssue3402(t *testing.T) {
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				// When bar_stacked is used, Kibana returns fitting.type="" on read-back
-				// even though "none" was written. The provider detects the plan/state
-				// divergence and reports "Provider produced inconsistent result after apply".
 				ProtoV6ProviderFactories: acctest.Providers,
 				Config:                   testAccIssue3402Config(dashboardTitle),
-				ExpectError:              regexp.MustCompile(`inconsistent result after apply`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.repro_3402", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.repro_3402", "panels.0.vis_config.by_value.xy_chart_config.layers.0.type", "bar_stacked"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.repro_3402", "panels.0.vis_config.by_value.xy_chart_config.fitting.type", "none"),
+				),
+			},
+			{
+				// Plan-only follow-up must show no drift after a clean apply.
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   testAccIssue3402Config(dashboardTitle),
+				PlanOnly:                 true,
 			},
 		},
 	})
