@@ -69,6 +69,7 @@ func TestAccResourceQueryRuleset(t *testing.T) {
 					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.type", "exclude"),
 					resource.TestCheckNoResourceAttr(queryRulesetResourceAddr, "rules.1.priority"),
 					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.criteria.0.type", "contains"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.criteria.0.metadata", "query"),
 					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.criteria.0.values", `["deprecated"]`),
 					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.actions.ids.#", "1"),
 					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.actions.ids.0", "doc-old"),
@@ -204,6 +205,19 @@ func TestAccResourceQueryRulesetActionsDocs(t *testing.T) {
 					resource.TestCheckNoResourceAttr(queryRulesetResourceAddr, "rules.0.actions.ids.#"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(queryrulesets.MinSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.actions.docs.#", "2"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.actions.docs.0._index", "my-index-v2"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.actions.docs.0._id", "99"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.actions.docs.1._index", "other-index"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.actions.docs.1._id", "7"),
+				),
+			},
 		},
 	})
 }
@@ -226,6 +240,66 @@ func TestAccResourceQueryRulesetCriteriaAlways(t *testing.T) {
 					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.criteria.0.type", "always"),
 					resource.TestCheckNoResourceAttr(queryRulesetResourceAddr, "rules.0.criteria.0.metadata"),
 					resource.TestCheckNoResourceAttr(queryRulesetResourceAddr, "rules.0.criteria.0.values"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceQueryRulesetCriteriaTypes covers the untested criteria types
+// (fuzzy, prefix, suffix, lt, lte, gte) and multiple criteria in a single rule.
+func TestAccResourceQueryRulesetCriteriaTypes(t *testing.T) {
+	rulesetID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{"ruleset_id": config.StringVariable(rulesetID)}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkQueryRulesetDestroy(rulesetID),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(queryrulesets.MinSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.#", "7"),
+					// fuzzy
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.rule_id", "rule-fuzzy"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.criteria.0.type", "fuzzy"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.criteria.0.metadata", "query"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.criteria.0.values", `["lap"]`),
+					// prefix
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.rule_id", "rule-prefix"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.criteria.0.type", "prefix"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.criteria.0.metadata", "query"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.criteria.0.values", `["lap"]`),
+					// suffix
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.2.rule_id", "rule-suffix"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.2.criteria.0.type", "suffix"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.2.criteria.0.metadata", "query"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.2.criteria.0.values", `["top"]`),
+					// lt (numeric)
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.3.rule_id", "rule-lt"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.3.criteria.0.type", "lt"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.3.criteria.0.metadata", "popularity"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.3.criteria.0.values", "[10]"),
+					// lte (numeric)
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.4.rule_id", "rule-lte"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.4.criteria.0.type", "lte"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.4.criteria.0.metadata", "popularity"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.4.criteria.0.values", "[50]"),
+					// gte (numeric)
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.5.rule_id", "rule-gte"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.5.criteria.0.type", "gte"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.5.criteria.0.metadata", "popularity"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.5.criteria.0.values", "[5]"),
+					// multiple criteria in one rule
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.6.rule_id", "rule-multi"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.6.criteria.#", "2"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.6.criteria.0.type", "exact"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.6.criteria.0.metadata", "query"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.6.criteria.1.type", "prefix"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.6.criteria.1.metadata", "query"),
 				),
 			},
 		},
