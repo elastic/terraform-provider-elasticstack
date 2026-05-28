@@ -12,7 +12,7 @@
 - [x] 3.1 In `internal/elasticsearch/cluster/settings/helpers_test.go`, add `TestValidateConfigModel_BothUnknown_OK`: call `settings.ExportedValidateConfigModel` with two `types.ObjectUnknown(...)` arguments and assert no error is returned.
 - [x] 3.2 Add `TestValidateConfigModel_OneUnknown_OK`: call `settings.ExportedValidateConfigModel` with one `NullSettingsBlock()` and one `types.ObjectUnknown(...)` argument and assert no error is returned.
 - [x] 3.3 Add `TestCategoryBlockEmpty_Unknown_NotEmpty`: call `settings.ExportedCategoryBlockEmpty` with a `types.ObjectUnknown(...)` argument and assert it returns `false`.
-- [x] 3.4 Add `TestCategoryBlockEmpty_UnknownInnerSet_NotEmpty`: construct a known, non-null block object whose `setting` attribute is `types.SetUnknown(...)`, call `settings.
+- [x] 3.4 Add `TestCategoryBlockEmpty_UnknownInnerSet_NotEmpty`: construct a known, non-null block object whose `setting` attribute is `types.SetUnknown(...)`, call `settings.ExportedCategoryBlockEmpty` with it, and assert it returns `false`.
 
 ## 4. Verify
 
