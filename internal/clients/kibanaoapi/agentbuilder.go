@@ -28,71 +28,116 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
+// agentBuilderGet handles the transport-error guard and Get-response dispatch for
+// Agent Builder entity reads. call must invoke the OAPI method and return its
+// raw (statusCode, body, err) triple so the helper can apply uniform handling.
+func agentBuilderGet[T any](call func() (int, []byte, error)) (*T, diag.Diagnostics) {
+	code, body, err := call()
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	return handleGetResponse[T](code, body)
+}
+
+// agentBuilderMutate handles the transport-error guard and Create/Update-response
+// dispatch for Agent Builder entity mutations.
+func agentBuilderMutate[T any](call func() (int, []byte, error)) (*T, diag.Diagnostics) {
+	code, body, err := call()
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	return handleMutateResponse[T](code, body)
+}
+
+// agentBuilderDelete handles the transport-error guard and Delete-response dispatch
+// for Agent Builder entity deletions.
+func agentBuilderDelete(call func() (int, []byte, error)) diag.Diagnostics {
+	code, body, err := call()
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	return diagutil.HandleStatusResponse(code, body, http.StatusOK, http.StatusNotFound)
+}
+
 // --- Agent ---
 
 // GetAgent reads a specific agent from the API.
 func GetAgent(ctx context.Context, client *Client, spaceID, agentID string) (*models.Agent, diag.Diagnostics) {
-	resp, err := client.API.GetAgentBuilderAgentsIdWithResponse(ctx, agentID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	return handleGetResponse[models.Agent](resp.StatusCode(), resp.Body)
+	return agentBuilderGet[models.Agent](func() (int, []byte, error) {
+		resp, err := client.API.GetAgentBuilderAgentsIdWithResponse(ctx, agentID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
 
 // CreateAgent creates a new agent.
 func CreateAgent(ctx context.Context, client *Client, spaceID string, req kbapi.PostAgentBuilderAgentsJSONRequestBody) (*models.Agent, diag.Diagnostics) {
-	resp, err := client.API.PostAgentBuilderAgentsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	return handleMutateResponse[models.Agent](resp.StatusCode(), resp.Body)
+	return agentBuilderMutate[models.Agent](func() (int, []byte, error) {
+		resp, err := client.API.PostAgentBuilderAgentsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
 
 // UpdateAgent updates an existing agent.
 func UpdateAgent(ctx context.Context, client *Client, spaceID string, agentID string, req kbapi.PutAgentBuilderAgentsIdJSONRequestBody) (*models.Agent, diag.Diagnostics) {
-	resp, err := client.API.PutAgentBuilderAgentsIdWithResponse(ctx, agentID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	return handleMutateResponse[models.Agent](resp.StatusCode(), resp.Body)
+	return agentBuilderMutate[models.Agent](func() (int, []byte, error) {
+		resp, err := client.API.PutAgentBuilderAgentsIdWithResponse(ctx, agentID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
 
 // DeleteAgent deletes an existing agent.
 func DeleteAgent(ctx context.Context, client *Client, spaceID, agentID string) diag.Diagnostics {
-	resp, err := client.API.DeleteAgentBuilderAgentsIdWithResponse(ctx, agentID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
+	return agentBuilderDelete(func() (int, []byte, error) {
+		resp, err := client.API.DeleteAgentBuilderAgentsIdWithResponse(ctx, agentID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
 
 // --- Skill ---
 
 // GetSkill reads a specific skill from the API.
 func GetSkill(ctx context.Context, client *Client, spaceID, skillID string) (*models.Skill, diag.Diagnostics) {
-	resp, err := client.API.GetAgentBuilderSkillsSkillidWithResponse(ctx, skillID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	return handleGetResponse[models.Skill](resp.StatusCode(), resp.Body)
+	return agentBuilderGet[models.Skill](func() (int, []byte, error) {
+		resp, err := client.API.GetAgentBuilderSkillsSkillidWithResponse(ctx, skillID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
 
 // CreateSkill creates a new skill.
 func CreateSkill(ctx context.Context, client *Client, spaceID string, req kbapi.PostAgentBuilderSkillsJSONRequestBody) (*models.Skill, diag.Diagnostics) {
-	resp, err := client.API.PostAgentBuilderSkillsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	return handleMutateResponse[models.Skill](resp.StatusCode(), resp.Body)
+	return agentBuilderMutate[models.Skill](func() (int, []byte, error) {
+		resp, err := client.API.PostAgentBuilderSkillsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
 
 // UpdateSkill updates an existing skill.
 func UpdateSkill(ctx context.Context, client *Client, spaceID, skillID string, req kbapi.PutAgentBuilderSkillsSkillidJSONRequestBody) (*models.Skill, diag.Diagnostics) {
-	resp, err := client.API.PutAgentBuilderSkillsSkillidWithResponse(ctx, skillID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	return handleMutateResponse[models.Skill](resp.StatusCode(), resp.Body)
+	return agentBuilderMutate[models.Skill](func() (int, []byte, error) {
+		resp, err := client.API.PutAgentBuilderSkillsSkillidWithResponse(ctx, skillID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
 
 // DeleteSkill deletes an existing skill. The API also accepts a `force=true`
@@ -100,49 +145,59 @@ func UpdateSkill(ctx context.Context, client *Client, spaceID, skillID string, r
 // resource does not expose this in v1 so we always send an empty params
 // struct and let 409 Conflict flow through as a normal error diagnostic.
 func DeleteSkill(ctx context.Context, client *Client, spaceID, skillID string) diag.Diagnostics {
-	resp, err := client.API.DeleteAgentBuilderSkillsSkillidWithResponse(ctx, skillID, &kbapi.DeleteAgentBuilderSkillsSkillidParams{}, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
+	return agentBuilderDelete(func() (int, []byte, error) {
+		resp, err := client.API.DeleteAgentBuilderSkillsSkillidWithResponse(ctx, skillID, &kbapi.DeleteAgentBuilderSkillsSkillidParams{}, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
 
 // --- Tool ---
 
 // GetTool reads a specific tool from the API.
 func GetTool(ctx context.Context, client *Client, spaceID string, toolID string) (*models.Tool, diag.Diagnostics) {
-	resp, err := client.API.GetAgentBuilderToolsToolidWithResponse(ctx, toolID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	return handleGetResponse[models.Tool](resp.StatusCode(), resp.Body)
+	return agentBuilderGet[models.Tool](func() (int, []byte, error) {
+		resp, err := client.API.GetAgentBuilderToolsToolidWithResponse(ctx, toolID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
 
 // CreateTool creates a new tool.
 func CreateTool(ctx context.Context, client *Client, spaceID string, req kbapi.PostAgentBuilderToolsJSONRequestBody) (*models.Tool, diag.Diagnostics) {
-	resp, err := client.API.PostAgentBuilderToolsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	return handleMutateResponse[models.Tool](resp.StatusCode(), resp.Body)
+	return agentBuilderMutate[models.Tool](func() (int, []byte, error) {
+		resp, err := client.API.PostAgentBuilderToolsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
 
 // UpdateTool updates an existing tool.
 func UpdateTool(ctx context.Context, client *Client, spaceID string, toolID string, req kbapi.PutAgentBuilderToolsToolidJSONRequestBody) (*models.Tool, diag.Diagnostics) {
-	resp, err := client.API.PutAgentBuilderToolsToolidWithResponse(ctx, toolID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	return handleMutateResponse[models.Tool](resp.StatusCode(), resp.Body)
+	return agentBuilderMutate[models.Tool](func() (int, []byte, error) {
+		resp, err := client.API.PutAgentBuilderToolsToolidWithResponse(ctx, toolID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
 
 // DeleteTool deletes an existing tool.
 func DeleteTool(ctx context.Context, client *Client, spaceID string, toolID string) diag.Diagnostics {
-	resp, err := client.API.DeleteAgentBuilderToolsToolidWithResponse(ctx, toolID, nil, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
+	return agentBuilderDelete(func() (int, []byte, error) {
+		resp, err := client.API.DeleteAgentBuilderToolsToolidWithResponse(ctx, toolID, nil, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
 
 // --- Workflow ---
@@ -159,38 +214,46 @@ type PartialWorkflow struct {
 
 // GetWorkflow reads a specific workflow from the API.
 func GetWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string) (*models.Workflow, diag.Diagnostics) {
-	resp, err := client.API.GetWorkflowsWorkflowIdWithResponse(ctx, workflowID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	return handleGetResponse[models.Workflow](resp.StatusCode(), resp.Body)
+	return agentBuilderGet[models.Workflow](func() (int, []byte, error) {
+		resp, err := client.API.GetWorkflowsWorkflowIdWithResponse(ctx, workflowID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
 
 // CreateWorkflow creates a new workflow.
 func CreateWorkflow(ctx context.Context, client *Client, spaceID string, req kbapi.PostWorkflowsWorkflowJSONRequestBody) (*models.Workflow, diag.Diagnostics) {
-	resp, err := client.API.PostWorkflowsWorkflowWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	return handleMutateResponse[models.Workflow](resp.StatusCode(), resp.Body)
+	return agentBuilderMutate[models.Workflow](func() (int, []byte, error) {
+		resp, err := client.API.PostWorkflowsWorkflowWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
 
 // UpdateWorkflow updates an existing workflow. The returned PartialWorkflow
 // reflects the PUT response (id, valid, enabled only); callers needing full
 // state should rely on the resource envelope's read-after-write refresh.
 func UpdateWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string, req kbapi.PutWorkflowsWorkflowIdJSONRequestBody) (*PartialWorkflow, diag.Diagnostics) {
-	resp, err := client.API.PutWorkflowsWorkflowIdWithResponse(ctx, workflowID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	return handleMutateResponse[PartialWorkflow](resp.StatusCode(), resp.Body)
+	return agentBuilderMutate[PartialWorkflow](func() (int, []byte, error) {
+		resp, err := client.API.PutWorkflowsWorkflowIdWithResponse(ctx, workflowID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
 
 // DeleteWorkflow deletes an existing workflow.
 func DeleteWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string) diag.Diagnostics {
-	resp, err := client.API.DeleteWorkflowsWorkflowIdWithResponse(ctx, workflowID, nil, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
+	return agentBuilderDelete(func() (int, []byte, error) {
+		resp, err := client.API.DeleteWorkflowsWorkflowIdWithResponse(ctx, workflowID, nil, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
