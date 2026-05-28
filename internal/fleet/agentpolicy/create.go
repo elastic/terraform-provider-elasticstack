@@ -51,7 +51,7 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 
 	fleetClient := client.GetFleetClient()
 
-	feat, diags := r.buildFeatures(ctx, client)
+	feat, diags := resolveAgentPolicyFeatures(ctx, client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

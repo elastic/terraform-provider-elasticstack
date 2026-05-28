@@ -192,7 +192,7 @@ func (model *agentPolicyModel) populateAdvancedSettingsFromAPI(ctx context.Conte
 }
 
 // convertAdvancedSettingsToAPI converts the advanced settings config to API format
-func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context, feat features) (*advancedSettingsAPIValues, diag.Diagnostics) {
+func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context, feat agentPolicyFeatures) (*advancedSettingsAPIValues, diag.Diagnostics) {
 	if !typeutils.IsKnown(model.AdvancedSettings) {
 		return nil, nil
 	}

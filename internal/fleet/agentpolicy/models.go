@@ -60,20 +60,6 @@ func agentFeaturesFromPolicy(p *kbapi.AgentPolicy) []apiAgentFeature {
 	return out
 }
 
-type features struct {
-	SupportsGlobalDataTags                bool
-	SupportsSupportsAgentless             bool
-	SupportsInactivityTimeout             bool
-	SupportsUnenrollmentTimeout           bool
-	SupportsSpaceIDs                      bool
-	SupportsRequiredVersions              bool
-	SupportsAgentFeatures                 bool
-	SupportsAdvancedMonitoring            bool
-	SupportsAdvancedSettings              bool
-	SupportsMonitoringRuntimeExperimental bool
-	SupportsTamperProtection              bool
-}
-
 type globalDataTagsItemModel struct {
 	StringValue types.String  `tfsdk:"string_value"`
 	NumberValue types.Float32 `tfsdk:"number_value"`
@@ -268,7 +254,7 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 
 // convertGlobalDataTags converts the global data tags from terraform model to API model
 // and performs version validation
-func (model *agentPolicyModel) convertGlobalDataTags(ctx context.Context, feat features) (*[]kbapi.AgentPolicyGlobalDataTagsItem, diag.Diagnostics) {
+func (model *agentPolicyModel) convertGlobalDataTags(ctx context.Context, feat agentPolicyFeatures) (*[]kbapi.AgentPolicyGlobalDataTagsItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if len(model.GlobalDataTags.Elements()) == 0 {
@@ -324,7 +310,7 @@ func (model *agentPolicyModel) convertGlobalDataTags(ctx context.Context, feat f
 }
 
 // convertRequiredVersions converts the required versions from terraform model to API model
-func (model *agentPolicyModel) convertRequiredVersions(feat features) (*[]struct {
+func (model *agentPolicyModel) convertRequiredVersions(feat agentPolicyFeatures) (*[]struct {
 	Percentage float32 `json:"percentage"`
 	Version    string  `json:"version"`
 }, diag.Diagnostics) {
@@ -389,7 +375,7 @@ func (model *agentPolicyModel) convertRequiredVersions(feat features) (*[]struct
 	return &result, diags
 }
 
-func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat features) (kbapi.PostFleetAgentPoliciesJSONRequestBody, diag.Diagnostics) {
+func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat agentPolicyFeatures) (kbapi.PostFleetAgentPoliciesJSONRequestBody, diag.Diagnostics) {
 	monitoring := make([]kbapi.PostFleetAgentPoliciesJSONBodyMonitoringEnabled, 0, 2)
 
 	if model.MonitorLogs.ValueBool() {
@@ -567,7 +553,7 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 	return body, nil
 }
 
-func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat features, existingFeatures []apiAgentFeature) (kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, diag.Diagnostics) {
+func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat agentPolicyFeatures, existingFeatures []apiAgentFeature) (kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, diag.Diagnostics) {
 	monitoring := make([]kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled, 0, 2)
 	if model.MonitorLogs.ValueBool() {
 		monitoring = append(monitoring, kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabledLogs)
