@@ -56,7 +56,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/filter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/jobstate"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/queryrulesets"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	apikeyephemeral "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey/ephemeral"
 	apikeyresource "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey/resource"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role"
@@ -311,8 +310,8 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		synonyms.NewSynonymSetDataSource,
 		queryrulesets.NewQueryRulesetDataSource,
 		rolemapping.NewRoleMappingDataSource,
-		security.NewRoleDataSource,
-		security.NewUserDataSource,
+		role.NewRoleDataSource,
+		securityuser.NewUserDataSource,
 		outputds.NewDataSource,
 		ingest.NewProcessorAppendDataSource,
 		ingest.NewProcessorBytesDataSource,

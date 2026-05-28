@@ -1,0 +1,1 @@
+A list of indices (or index name patterns) to which the permissions in this entry apply.

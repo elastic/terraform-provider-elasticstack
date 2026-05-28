@@ -1,0 +1,1 @@
+The document fields that the owners of the role have read access to.
