@@ -7,14 +7,14 @@
 
 ## 2. Guide 1 — Terraform Config & Screenshots
 
-- [ ] 2.1 Write `examples/guides/guide1-getting-started/main.tf` — dashboard shell with `kibana_sample_data_logs` data view, `time_range`, `refresh_interval`, `query`
-- [ ] 2.2 Add markdown panel to `main.tf` and verify it renders in Kibana
-- [ ] 2.3 Add two Lens Metric panels (count + cardinality) to `main.tf` and verify
-- [ ] 2.4 Add Lens Line chart panel to `main.tf` and verify
-- [ ] 2.5 Add Lens horizontal Bar chart panel (top-10 URLs) to `main.tf` and verify
-- [ ] 2.6 Add Lens Donut chart panel (response codes) to `main.tf` and verify
-- [ ] 2.7 Write `scripts/screenshots/guide1.mjs` — login, navigate, wait for panels, capture 8 PNGs to `docs/guides/images/`
-- [ ] 2.8 Run Playwright script and commit all `g1-*.png` screenshots to `docs/guides/images/`
+- [x] 2.1 Write `examples/guides/guide1-getting-started/main.tf` — dashboard shell with `kibana_sample_data_logs` data view, `time_range`, `refresh_interval`, `query`
+- [x] 2.2 Add markdown panel to `main.tf` and verify it renders in Kibana
+- [x] 2.3 Add two Lens Metric panels (count + cardinality) to `main.tf` and verify
+- [x] 2.4 Add Lens Line chart panel to `main.tf` and verify
+- [x] 2.5 Add Lens horizontal Bar chart panel (top-10 URLs) to `main.tf` and verify
+- [x] 2.6 Add Lens Donut chart panel (response codes) to `main.tf` and verify
+- [x] 2.7 Write `scripts/screenshots/guide1.mjs` — login, navigate, wait for panels, capture 8 PNGs to `templates/guides/images/`
+- [x] 2.8 Run Playwright script and commit all `g1-*.png` screenshots to `templates/guides/images/`
 
 ## 3. Guide 2 — Terraform Config & Screenshots
 
