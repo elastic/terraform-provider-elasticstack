@@ -72,14 +72,12 @@ See [`repo-structure.md`](./repo-structure.md).
 
 ## Factory workflow labels (maintainers)
 
-The repository uses four persistent `phase-*` labels to track which pipeline stage an issue has reached. These labels must be created manually in the GitHub repository before the factory workflows can apply them:
+The repository uses agentic CI workflows ("factories") that react to labels on issues, plus scheduled scanners that dispatch to them. See [`agentic-development-workflow.md`](./agentic-development-workflow.md) for the overview, [`factory-workflows.md`](./factory-workflows.md) for per-factory details, and [`continuous-quality-workflows.md`](./continuous-quality-workflows.md) for the scheduled scanners that hand off to `code-factory`.
 
-- `phase-research` — set by `research-factory`
-- `phase-reproduction` — set by `reproducer-factory`
-- `phase-specification` — set by `change-factory`
-- `phase-coding` — set by `code-factory`
+Before the workflows can run, two label sets must exist in repo settings:
 
-Exactly one `phase-*` label is present on an issue at any time after a factory workflow runs. The labels are not removed on issue closure.
+- **Trigger labels** applied by maintainers: `research-factory`, `reproducer-factory`, `change-factory`, `code-factory`.
+- **Phase labels** applied by the workflows themselves: `phase-research`, `phase-reproduction`, `phase-specification`, `phase-coding`.
 
 ## Releasing (maintainers)
 

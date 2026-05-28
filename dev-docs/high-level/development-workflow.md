@@ -2,6 +2,8 @@
 
 For full contributor guidance (setup, PR expectations), see [`contributing.md`](./contributing.md).
 
+This page covers the local change loop and shared make targets. For the broader picture of how local work and CI automation fit together — issue classification, factory workflows, scheduled quality scanners, and PR verification — start at [`agentic-development-workflow.md`](./agentic-development-workflow.md).
+
 ## Typical change loop
 
 1. Prepare an OpenSpec proposal before writing provider code.
