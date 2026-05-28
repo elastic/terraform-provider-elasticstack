@@ -9,7 +9,7 @@ description: |-
 
 This guide builds an **interactive eCommerce operations dashboard** with Terraform. You will wire a pinned **options list** control that filters every content panel at once, add a KPI row of Lens metrics, trend and breakdown charts, a Lens **Data Table**, and an embedded **Discover** session—all on the Kibana **sample eCommerce** dataset.
 
-If you have not used `elasticstack_kibana_dashboard` before, start with [**Getting started with Kibana dashboards**](/docs/guides/kibana-dashboard-getting-started), which covers the dashboard shell, the 48-column grid, and how to export Lens JSON from the UI.
+If you have not used `elasticstack_kibana_dashboard` before, start with [**Getting started with Kibana dashboards**](/docs/guides/kibana-dashboard-getting-started), which covers the dashboard shell, and the 48-column grid.
 
 The runnable example lives at [`examples/guides/guide2-operations/main.tf`](https://github.com/elastic/terraform-provider-elasticstack/tree/main/examples/guides/guide2-operations/main.tf).
 

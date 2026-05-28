@@ -9,7 +9,7 @@ description: |-
 
 This guide covers **production-style** patterns for [`elasticstack_kibana_dashboard`](/docs/resources/kibana_dashboard): collapsible **sections**, a branding **image** panel, Lens **gauge** and **heatmap** charts, a multi-layer **area + line** chart, an **ES|QL** pinned control that drives panel queries, optional **write-restricted** access control, and **tags** for organisation in the Kibana UI.
 
-If you are new to the resource, start with [**Getting started with Kibana dashboards**](/docs/guides/kibana-dashboard-getting-started) (dashboard shell, grid, Lens export workflow) and [**Dashboard operations**](/docs/guides/kibana-dashboard-operations) (pinned **options list** controls and Discover sessions).
+If you are new to the resource, start with [**Getting started with Kibana dashboards**](/docs/guides/kibana-dashboard-getting-started) (dashboard shell, grid) and [**Dashboard operations**](/docs/guides/kibana-dashboard-operations) (pinned **options list** controls and Discover sessions).
 
 The runnable example lives at [`examples/guides/guide3-advanced/main.tf`](https://github.com/elastic/terraform-provider-elasticstack/tree/main/examples/guides/guide3-advanced/main.tf).
 
