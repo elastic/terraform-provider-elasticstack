@@ -24,7 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.OutputLogstash) (diags diag.Diagnostics) {
+func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputLogstash) (diags diag.Diagnostics) {
 	diags = model.fromAPICommonFields(ctx, commonOutputReadData{
 		id:                   data.Id,
 		name:                 data.Name,
@@ -48,7 +48,7 @@ func (model outputModel) toAPICreateLogstashModel(ctx context.Context) (kbapi.Ne
 		return kbapi.NewOutputUnion{}, diags
 	}
 
-	body := kbapi.NewOutputLogstash{
+	body := kbapi.KibanaHTTPAPIsNewOutputLogstash{
 		Type:                 kbapi.KibanaHTTPAPIsNewOutputLogstashTypeLogstash,
 		CaSha256:             f.CaSha256,
 		CaTrustedFingerprint: f.CaTrustedFingerprint,
@@ -62,7 +62,7 @@ func (model outputModel) toAPICreateLogstashModel(ctx context.Context) (kbapi.Ne
 	}
 
 	var union kbapi.NewOutputUnion
-	err := union.FromNewOutputLogstash(body)
+	err := union.FromKibanaHTTPAPIsNewOutputLogstash(body)
 	if err != nil {
 		diags.AddError(err.Error(), "")
 		return kbapi.NewOutputUnion{}, diags
@@ -78,7 +78,7 @@ func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context) (kbapi.Up
 		return kbapi.UpdateOutputUnion{}, diags
 	}
 
-	body := kbapi.UpdateOutputLogstash{
+	body := kbapi.KibanaHTTPAPIsUpdateOutputLogstash{
 		Type: func() *kbapi.KibanaHTTPAPIsUpdateOutputLogstashType {
 			outputType := kbapi.Logstash
 			return &outputType
@@ -94,7 +94,7 @@ func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context) (kbapi.Up
 	}
 
 	var union kbapi.UpdateOutputUnion
-	err := union.FromUpdateOutputLogstash(body)
+	err := union.FromKibanaHTTPAPIsUpdateOutputLogstash(body)
 	if err != nil {
 		diags.AddError(err.Error(), "")
 		return kbapi.UpdateOutputUnion{}, diags

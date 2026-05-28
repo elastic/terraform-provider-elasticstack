@@ -49,7 +49,7 @@ type apiAgentFeature = struct {
 	Name    string `json:"name"`
 }
 
-func agentFeaturesFromPolicy(p *kbapi.AgentPolicy) []apiAgentFeature {
+func agentFeaturesFromPolicy(p *kbapi.KibanaHTTPAPIsAgentPolicyResponse) []apiAgentFeature {
 	if p == nil || p.AgentFeatures == nil {
 		return nil
 	}
@@ -106,7 +106,7 @@ type agentPolicyModel struct {
 	AdvancedSettings          types.Object         `tfsdk:"advanced_settings"`
 }
 
-func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.AgentPolicy) diag.Diagnostics {
+func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.KibanaHTTPAPIsAgentPolicyResponse) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
@@ -147,10 +147,10 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	model.FleetServerHostID = preserveNullStr(model.FleetServerHostID, data.FleetServerHostId)
 
 	if data.MonitoringEnabled != nil {
-		if slices.Contains(*data.MonitoringEnabled, kbapi.AgentPolicyMonitoringEnabledLogs) {
+		if slices.Contains(*data.MonitoringEnabled, kbapi.KibanaHTTPAPIsAgentPolicyResponseMonitoringEnabledLogs) {
 			model.MonitorLogs = types.BoolValue(true)
 		}
-		if slices.Contains(*data.MonitoringEnabled, kbapi.AgentPolicyMonitoringEnabledMetrics) {
+		if slices.Contains(*data.MonitoringEnabled, kbapi.KibanaHTTPAPIsAgentPolicyResponseMonitoringEnabledMetrics) {
 			model.MonitorMetrics = types.BoolValue(true)
 		}
 	}
@@ -390,13 +390,13 @@ func (model *agentPolicyModel) convertRequiredVersions(feat features) (*[]struct
 }
 
 func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat features) (kbapi.PostFleetAgentPoliciesJSONRequestBody, diag.Diagnostics) {
-	monitoring := make([]kbapi.PostFleetAgentPoliciesJSONBodyMonitoringEnabled, 0, 2)
+	monitoring := make([]kbapi.KibanaHTTPAPIsNewAgentPolicyMonitoringEnabled, 0, 2)
 
 	if model.MonitorLogs.ValueBool() {
-		monitoring = append(monitoring, kbapi.PostFleetAgentPoliciesJSONBodyMonitoringEnabledLogs)
+		monitoring = append(monitoring, kbapi.KibanaHTTPAPIsNewAgentPolicyMonitoringEnabledLogs)
 	}
 	if model.MonitorMetrics.ValueBool() {
-		monitoring = append(monitoring, kbapi.PostFleetAgentPoliciesJSONBodyMonitoringEnabledMetrics)
+		monitoring = append(monitoring, kbapi.KibanaHTTPAPIsNewAgentPolicyMonitoringEnabledMetrics)
 	}
 
 	body := kbapi.PostFleetAgentPoliciesJSONRequestBody{
@@ -568,12 +568,12 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 }
 
 func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat features, existingFeatures []apiAgentFeature) (kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, diag.Diagnostics) {
-	monitoring := make([]kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled, 0, 2)
+	monitoring := make([]kbapi.KibanaHTTPAPIsNewAgentPolicyMonitoringEnabled, 0, 2)
 	if model.MonitorLogs.ValueBool() {
-		monitoring = append(monitoring, kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabledLogs)
+		monitoring = append(monitoring, kbapi.KibanaHTTPAPIsNewAgentPolicyMonitoringEnabledLogs)
 	}
 	if model.MonitorMetrics.ValueBool() {
-		monitoring = append(monitoring, kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabledMetrics)
+		monitoring = append(monitoring, kbapi.KibanaHTTPAPIsNewAgentPolicyMonitoringEnabledMetrics)
 	}
 
 	body := kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{

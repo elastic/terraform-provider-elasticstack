@@ -193,7 +193,7 @@ func TestNewVarsJSONWithIntegration(t *testing.T) {
 			"multi": true,
 		},
 	})
-	pkg := kbapi.PackageInfo{
+	pkg := kbapi.KibanaHTTPAPIsGetPackageInfo{
 		Vars: &vars,
 	}
 	knownPackages.Store(cacheKey, pkg)
@@ -279,7 +279,7 @@ func TestPopulateVarsJSONDefaults(t *testing.T) {
 			// no default
 		},
 	})
-	pkg := kbapi.PackageInfo{
+	pkg := kbapi.KibanaHTTPAPIsGetPackageInfo{
 		Vars: &vars,
 	}
 	knownPackages.Store(cacheKey, pkg)
