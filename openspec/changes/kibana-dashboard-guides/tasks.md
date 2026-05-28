@@ -1,9 +1,9 @@
 ## 1. Infrastructure & Setup
 
-- [ ] 1.1 Create `scripts/screenshots/` directory with `package.json` declaring `playwright` dependency
-- [ ] 1.2 Write `scripts/screenshots/README.md` documenting prerequisites, environment variables, and example invocations
-- [ ] 1.3 Create `examples/guides/guide1-getting-started/`, `examples/guides/guide2-operations/`, `examples/guides/guide3-advanced/` directories
-- [ ] 1.4 Register the three guide templates in the provider's docs generation system (frontmatter + template file wiring) so `make docs-generate` picks them up
+- [x] 1.1 Create `scripts/screenshots/` directory with `package.json` declaring `playwright` dependency
+- [x] 1.2 Write `scripts/screenshots/README.md` documenting prerequisites, environment variables, and example invocations
+- [x] 1.3 Create `examples/guides/guide1-getting-started/`, `examples/guides/guide2-operations/`, `examples/guides/guide3-advanced/` directories
+- [x] 1.4 Register the three guide templates in the provider's docs generation system (frontmatter + template file wiring) so `make docs-generate` picks them up
 
 ## 2. Guide 1 — Terraform Config & Screenshots
 
