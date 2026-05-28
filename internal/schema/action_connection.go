@@ -53,11 +53,13 @@ func GetEsActionConnectionBlock() schema.Block {
 				attrPassword: schema.StringAttribute{
 					MarkdownDescription: descPassword,
 					Optional:            true,
+					WriteOnly:           true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
 				},
 				attrAPIKey: schema.StringAttribute{
 					MarkdownDescription: descAPIKey,
 					Optional:            true,
+					WriteOnly:           true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(usernamePath, passwordPath, bearerTokenPath),
 					},
@@ -65,6 +67,7 @@ func GetEsActionConnectionBlock() schema.Block {
 				attrBearerToken: schema.StringAttribute{
 					MarkdownDescription: descBearerToken,
 					Optional:            true,
+					WriteOnly:           true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
 					},
@@ -72,6 +75,7 @@ func GetEsActionConnectionBlock() schema.Block {
 				attrESClientAuthentication: schema.StringAttribute{
 					MarkdownDescription: descESClientAuthentication,
 					Optional:            true,
+					WriteOnly:           true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
 						stringvalidator.AlsoRequires(bearerTokenPath),
@@ -85,6 +89,7 @@ func GetEsActionConnectionBlock() schema.Block {
 				attrHeaders: schema.MapAttribute{
 					MarkdownDescription: descHeaders,
 					Optional:            true,
+					WriteOnly:           true,
 					ElementType:         types.StringType,
 				},
 				attrInsecure: schema.BoolAttribute{
@@ -132,6 +137,7 @@ func GetEsActionConnectionBlock() schema.Block {
 				attrKeyData: schema.StringAttribute{
 					MarkdownDescription: descKeyData,
 					Optional:            true,
+					WriteOnly:           true,
 					Validators: []validator.String{
 						stringvalidator.AlsoRequires(certDataPath),
 						stringvalidator.ConflictsWith(certFilePath, keyFilePath),
@@ -162,6 +168,7 @@ func GetKbActionConnectionBlock() schema.Block {
 				attrAPIKey: schema.StringAttribute{
 					MarkdownDescription: descKbAPIKey,
 					Optional:            true,
+					WriteOnly:           true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(usernamePath, passwordPath, bearerTokenPath),
 					},
@@ -169,6 +176,7 @@ func GetKbActionConnectionBlock() schema.Block {
 				attrBearerToken: schema.StringAttribute{
 					MarkdownDescription: descKbBearerToken,
 					Optional:            true,
+					WriteOnly:           true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
 					},
@@ -181,6 +189,7 @@ func GetKbActionConnectionBlock() schema.Block {
 				attrPassword: schema.StringAttribute{
 					MarkdownDescription: descKbPassword,
 					Optional:            true,
+					WriteOnly:           true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
 				},
 				attrEndpoints: schema.ListAttribute{

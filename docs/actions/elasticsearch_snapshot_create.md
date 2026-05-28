@@ -49,6 +49,8 @@ action "elasticstack_elasticsearch_snapshot_create" "manual" {
 
 ### Optional
 
+> **NOTE**: [Write-only arguments](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments) are supported in Terraform 1.11 and later.
+
 - `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `expand_wildcards` (String) Wildcard expansion for `indices`: `open`, `closed`, `hidden`, `none`, or `all`. Elasticsearch defaults to `open` when omitted.
 - `feature_states` (List of String) Feature states to include in the snapshot.
@@ -65,19 +67,21 @@ action "elasticstack_elasticsearch_snapshot_create" "manual" {
 
 Optional:
 
-- `api_key` (String) API Key to use for authentication to Elasticsearch
-- `bearer_token` (String) Bearer Token to use for authentication to Elasticsearch
+> **NOTE**: [Write-only arguments](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments) are supported in Terraform 1.11 and later.
+
+- `api_key` (String, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) API Key to use for authentication to Elasticsearch
+- `bearer_token` (String, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Bearer Token to use for authentication to Elasticsearch
 - `ca_data` (String) PEM-encoded custom Certificate Authority certificate
 - `ca_file` (String) Path to a custom Certificate Authority certificate
 - `cert_data` (String) PEM encoded certificate for client auth
 - `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
 - `endpoints` (List of String) A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
-- `es_client_authentication` (String) ES Client Authentication field to be used with the JWT token
-- `headers` (Map of String) A list of headers to be sent with each request to Elasticsearch.
+- `es_client_authentication` (String, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) ES Client Authentication field to be used with the JWT token
+- `headers` (Map of String, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) A list of headers to be sent with each request to Elasticsearch.
 - `insecure` (Boolean) Disable TLS certificate validation
-- `key_data` (String) PEM encoded private key for client auth
+- `key_data` (String, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) PEM encoded private key for client auth
 - `key_file` (String) Path to a file containing the PEM encoded private key for client auth
-- `password` (String) Password to use for API authentication to Elasticsearch.
+- `password` (String, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Password to use for API authentication to Elasticsearch.
 - `username` (String) Username to use for API authentication to Elasticsearch.
 
 
