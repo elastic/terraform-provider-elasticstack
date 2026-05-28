@@ -255,53 +255,28 @@ func getFieldSecurityAttrTypes() map[string]attr.Type {
 	return result
 }
 
-func getIndexPermsAttrTypes() map[string]attr.Type {
-	nestedObj := GetSchema(CurrentSchemaVersion).Blocks[blockIndices].(schema.SetNestedBlock).NestedObject
+func getIndexLikePermsAttrTypes(blockName string) map[string]attr.Type {
+	nestedObj := GetSchema(CurrentSchemaVersion).Blocks[blockName].(schema.SetNestedBlock).NestedObject
 	result := make(map[string]attr.Type)
-	// Add attributes
-	for name, attr := range nestedObj.Attributes {
-		result[name] = attr.GetType()
+	for name, a := range nestedObj.Attributes {
+		result[name] = a.GetType()
 	}
-	// Add blocks as attributes (field_security is a block in indices)
 	for name, block := range nestedObj.Blocks {
 		if b, ok := block.(schema.SingleNestedBlock); ok {
-			// For SingleNestedBlock, the type is ObjectType
 			blockAttrs := make(map[string]attr.Type)
-			for attrName, attr := range b.Attributes {
-				blockAttrs[attrName] = attr.GetType()
+			for attrName, a := range b.Attributes {
+				blockAttrs[attrName] = a.GetType()
 			}
 			result[name] = types.ObjectType{AttrTypes: blockAttrs}
 		}
 	}
 	return result
+}
+
+func getIndexPermsAttrTypes() map[string]attr.Type {
+	return getIndexLikePermsAttrTypes(blockIndices)
 }
 
 func getRemoteIndexPermsAttrTypes() map[string]attr.Type {
-	nestedObj := GetSchema(CurrentSchemaVersion).Blocks[blockRemoteIndices].(schema.SetNestedBlock).NestedObject
-	result := make(map[string]attr.Type)
-	// Add attributes
-	for name, attr := range nestedObj.Attributes {
-		result[name] = attr.GetType()
-	}
-	// Add blocks as attributes (field_security is a block in remote_indices)
-	for name, block := range nestedObj.Blocks {
-		if b, ok := block.(schema.SingleNestedBlock); ok {
-			// For SingleNestedBlock, the type is ObjectType
-			blockAttrs := make(map[string]attr.Type)
-			for attrName, attr := range b.Attributes {
-				blockAttrs[attrName] = attr.GetType()
-			}
-			result[name] = types.ObjectType{AttrTypes: blockAttrs}
-		}
-	}
-	return result
-}
-
-func getRemoteFieldSecurityAttrTypes() map[string]attr.Type {
-	attrs := GetSchema(CurrentSchemaVersion).Blocks[blockRemoteIndices].(schema.SetNestedBlock).NestedObject.Blocks[attrFieldSecurity].(schema.SingleNestedBlock).Attributes
-	result := make(map[string]attr.Type)
-	for name, attr := range attrs {
-		result[name] = attr.GetType()
-	}
-	return result
+	return getIndexLikePermsAttrTypes(blockRemoteIndices)
 }
