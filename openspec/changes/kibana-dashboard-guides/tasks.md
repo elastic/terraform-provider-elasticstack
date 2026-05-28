@@ -52,13 +52,13 @@
 
 ## 6. Guide 2 — Prose
 
-- [ ] 6.1 Write prerequisites section and overview of what the dashboard will show
-- [ ] 6.2 Write `pinned_panels` and `options_list_control` section — explain controls vs. content panels, show before/after screenshots `g2-01-full.png` and `g2-02-filtered.png`
-- [ ] 6.3 Write KPI row section (three Metric panels) with snippet
-- [ ] 6.4 Write Stacked Area chart section with snippet
-- [ ] 6.5 Write Data Table section with `g2-04-table.png`
-- [ ] 6.6 Write `discover_session` section — explain `ref_id`, `column_order`, `view_mode`; include `g2-03-discover.png`
-- [ ] 6.7 Write dashboard `options` section explaining `use_margins`, `sync_colors`, `sync_tooltips`
+- [x] 6.1 Write prerequisites section and overview of what the dashboard will show
+- [x] 6.2 Write `pinned_panels` and `options_list_control` section — explain controls vs. content panels, show before/after screenshots `g2-01-full.png` and `g2-02-filtered.png`
+- [x] 6.3 Write KPI row section (three Metric panels) with snippet
+- [x] 6.4 Write Stacked Area chart section with snippet
+- [x] 6.5 Write Data Table section with `g2-04-table.png`
+- [x] 6.6 Write `discover_session` section — explain `ref_id`, `column_order`, `view_mode`; include `g2-03-discover.png`
+- [x] 6.7 Write dashboard `options` section explaining `use_margins`, `sync_colors`, `sync_tooltips`
 
 ## 7. Guide 3 — Prose
 
