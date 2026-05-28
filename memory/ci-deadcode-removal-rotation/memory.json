@@ -164,6 +164,16 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/template",
       "attemptedAt": "2026-05-26T04:41:49.395389888Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar_event.CalendarEventTFModel.toAPIModel",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar_event",
+      "attemptedAt": "2026-05-28T04:40:46.297158259Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
