@@ -410,10 +410,7 @@ Embed **Discover** on the dashboard with a panel `type` of **`discover_session`*
             expression = ""
             language   = "kql"
           }
-          data_source_json = jsonencode({
-            type   = "data_view_reference"
-            ref_id = "kibana_sample_data_ecommerce"
-          })
+          data_source_json = local.ecom_data_source
           column_order = [
             "order_date",
             "products.product_name",
@@ -428,7 +425,7 @@ Embed **Discover** on the dashboard with a panel `type` of **`discover_session`*
 },
 ```
 
-- **`data_source_json` / `ref_id`** — Points at an existing Kibana data view by ID. Here **`ref_id = "kibana_sample_data_ecommerce"`** matches the data view the sample data installer creates (the same dataset as `index_pattern` in `local.ecom_data_source`, but referenced by saved-object ID for Discover).
+- **`data_source_json`** — The same inline **`data_view_spec`** local (`local.ecom_data_source`) that the Lens panels reuse. The polymorphic DSL data source also supports **`data_view_reference`** for linking by saved-object ID, but that variant requires a matching entry in the dashboard's saved-object `references` list; the resource doesn't auto-populate references, so prefer the inline spec for self-contained dashboards.
 - **`column_order`** — Field names shown as table columns, in left-to-right order.
 - **`view_mode`** — `"documents"` shows the document-oriented table (as opposed to a pure field statistics view). Use the value that matches how you saved the Discover session in Kibana when exporting config.
 
@@ -773,10 +770,7 @@ resource "elasticstack_kibana_dashboard" "operations" {
                 expression = ""
                 language   = "kql"
               }
-              data_source_json = jsonencode({
-                type   = "data_view_reference"
-                ref_id = "kibana_sample_data_ecommerce"
-              })
+              data_source_json = local.ecom_data_source
               column_order = [
                 "order_date",
                 "products.product_name",

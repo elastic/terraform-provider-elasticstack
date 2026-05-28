@@ -306,10 +306,7 @@ resource "elasticstack_kibana_dashboard" "operations" {
                 expression = ""
                 language   = "kql"
               }
-              data_source_json = jsonencode({
-                type   = "data_view_reference"
-                ref_id = "kibana_sample_data_ecommerce"
-              })
+              data_source_json = local.ecom_data_source
               column_order = [
                 "order_date",
                 "products.product_name",
