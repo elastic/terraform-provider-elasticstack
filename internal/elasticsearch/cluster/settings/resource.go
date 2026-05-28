@@ -122,11 +122,15 @@ func validateConfigModel(config tfModel) fwdiag.Diagnostics {
 }
 
 // categoryBlockEmpty reports whether the given persistent/transient block is
-// effectively empty: null, unknown, or contains a setting set with no
-// elements.
+// effectively empty: null, or contains a setting set with no elements.
+// An unknown block (or unknown nested set) is NOT treated as empty,
+// because the value has not yet been evaluated at validate time.
 func categoryBlockEmpty(block types.Object) bool {
-	if block.IsNull() || block.IsUnknown() {
+	if block.IsNull() {
 		return true
+	}
+	if block.IsUnknown() {
+		return false
 	}
 	settingAttr, ok := block.Attributes()["setting"]
 	if !ok {
@@ -136,7 +140,10 @@ func categoryBlockEmpty(block types.Object) bool {
 	if !ok {
 		return true
 	}
-	return settingSet.IsNull() || settingSet.IsUnknown() || len(settingSet.Elements()) == 0
+	if settingSet.IsUnknown() {
+		return false
+	}
+	return settingSet.IsNull() || len(settingSet.Elements()) == 0
 }
 
 // UpgradeState migrates state written by the SDKv2-based implementation
