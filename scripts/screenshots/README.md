@@ -7,7 +7,9 @@ Regenerate guide screenshots after dashboard or Kibana UI changes. Each guide ha
 - Node.js 24.x (matches repo `make setup`)
 - Dependencies installed: run the [Setup](#setup) steps below (`npm install` and `npx playwright install chromium`)
 - A running Kibana 9.4+ instance with the **logs** and **eCommerce** sample datasets installed
-- `terraform apply` already run for the relevant guide config under `examples/guides/`
+- `terraform apply` already run for the relevant guide config under `examples/guides/` (creates the panel-populated dashboards each script screenshots)
+
+> Note: `guide1.mjs` also creates a short-lived **empty** dashboard via the Kibana REST API to capture `g1-01-shell.png`, then deletes it. No extra manual setup is required.
 
 ## Setup
 

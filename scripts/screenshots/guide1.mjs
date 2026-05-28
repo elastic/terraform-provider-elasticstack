@@ -57,7 +57,11 @@ function apiHeaders() {
   };
 }
 
-async function findDashboardId(request, { preferFullest = true } = {}) {
+async function findDashboardId(request) {
+  const dashboardId = process.env.DASHBOARD_ID?.trim();
+  if (dashboardId) {
+    return dashboardId;
+  }
   const listRes = await request.get(`${KIBANA_URL}/api/dashboards?per_page=500`, { headers: apiHeaders() });
   if (!listRes.ok()) {
     throw new Error(`Dashboard list failed: HTTP ${listRes.status()} ${await listRes.text()}`);
@@ -69,17 +73,11 @@ async function findDashboardId(request, { preferFullest = true } = {}) {
   if (!candidates.length) {
     throw new Error(`Dashboard not found with title "${DASHBOARD_TITLE}". Run terraform apply first.`);
   }
-
-  const dashboardId = process.env.DASHBOARD_ID?.trim();
-  if (dashboardId) {
-    const byId = candidates.find((d) => d.id === dashboardId);
-    if (!byId) {
-      throw new Error(`Dashboard id "${dashboardId}" not found for title "${DASHBOARD_TITLE}".`);
-    }
-    return byId.id;
+  if (candidates.length === 1) {
+    return candidates[0].id;
   }
-
-  // List API omits panels; fetch each candidate to compare layout size.
+  // Multiple matches: list API omits panels; fetch each and pick the fullest
+  // so we screenshot the real (panel-populated) dashboard rather than a leftover shell.
   const counts = await Promise.all(
     candidates.map(async (d) => {
       const res = await request.get(`${KIBANA_URL}/api/dashboards/${d.id}`, { headers: apiHeaders() });
@@ -91,17 +89,54 @@ async function findDashboardId(request, { preferFullest = true } = {}) {
       return { id: d.id, count: panels.length };
     }),
   );
-  counts.sort((a, b) => (preferFullest ? b.count - a.count : a.count - b.count));
+  counts.sort((a, b) => b.count - a.count);
   return counts[0].id;
 }
 
+async function createShellDashboard(request) {
+  const body = {
+    title: DASHBOARD_TITLE,
+    description: 'Temporary empty dashboard created for guide 1 shell screenshot. Safe to delete.',
+    panels: [],
+    time_range: { from: 'now-7d', to: 'now' },
+    refresh_interval: { pause: true, value: 0 },
+    query: { language: 'kql', expression: '' },
+  };
+  const res = await request.post(`${KIBANA_URL}/api/dashboards`, {
+    headers: { ...apiHeaders(), 'content-type': 'application/json' },
+    data: body,
+  });
+  if (!res.ok()) {
+    throw new Error(`Failed to create shell dashboard: HTTP ${res.status()} ${await res.text()}`);
+  }
+  const json = await res.json();
+  const id = json.id ?? json.data?.id;
+  if (!id) {
+    throw new Error(`Shell dashboard create returned no id: ${JSON.stringify(json)}`);
+  }
+  return id;
+}
+
+async function deleteDashboard(request, id) {
+  try {
+    await request.delete(`${KIBANA_URL}/api/dashboards/${id}`, { headers: apiHeaders() });
+  } catch (err) {
+    console.warn(`Warning: failed to delete shell dashboard ${id}: ${err.message}`);
+  }
+}
+
 async function loginIfNeeded(page) {
-  await page.goto(`${KIBANA_URL}/login`, { waitUntil: 'networkidle' });
+  await page.goto(`${KIBANA_URL}/login`, { waitUntil: 'domcontentloaded' });
   const usernameField = page.locator('[data-test-subj="loginUsername"]');
-  if (await usernameField.isVisible({ timeout: 5000 }).catch(() => false)) {
+  const needsLogin = await usernameField
+    .waitFor({ state: 'visible', timeout: 15_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (needsLogin) {
     await usernameField.fill(KIBANA_USER);
     await page.locator('[data-test-subj="loginPassword"]').fill(KIBANA_PASS);
     await page.locator('[data-test-subj="loginSubmit"]').click();
+    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30_000 });
     await page.waitForLoadState('networkidle');
   }
 }
@@ -160,26 +195,38 @@ async function main() {
   });
   const page = await context.newPage();
 
+  const shellShots = shots.filter((s) => s.shell);
+  const panelShots = shots.filter((s) => !s.shell);
+  let shellDashboardId;
+
   try {
     await loginIfNeeded(page);
 
-    const preferFullest = !shots.every((s) => s.shell);
-    const dashboardId = await findDashboardId(page.request, { preferFullest });
-    const dashUrl = `${KIBANA_URL}/app/dashboards#/view/${dashboardId}?_g=(time:(from:now-7d,to:now))`;
-    console.log(`Navigating to dashboard ${dashboardId}`);
-    await page.goto(dashUrl, { waitUntil: 'domcontentloaded' });
-
-    const needsPanels = shots.some((s) => !s.shell);
-    if (needsPanels) {
-      await waitForDashboardPanels(page);
-    } else {
+    if (shellShots.length) {
+      shellDashboardId = await createShellDashboard(page.request);
+      const shellUrl = `${KIBANA_URL}/app/dashboards#/view/${shellDashboardId}?_g=(time:(from:now-7d,to:now))`;
+      console.log(`Navigating to shell dashboard ${shellDashboardId}`);
+      await page.goto(shellUrl, { waitUntil: 'domcontentloaded' });
       await waitForDashboardShell(page);
+      for (const spec of shellShots) {
+        await captureScreenshot(page, spec);
+      }
     }
 
-    for (const spec of shots) {
-      await captureScreenshot(page, spec);
+    if (panelShots.length) {
+      const dashboardId = await findDashboardId(page.request);
+      const dashUrl = `${KIBANA_URL}/app/dashboards#/view/${dashboardId}?_g=(time:(from:now-7d,to:now))`;
+      console.log(`Navigating to dashboard ${dashboardId}`);
+      await page.goto(dashUrl, { waitUntil: 'domcontentloaded' });
+      await waitForDashboardPanels(page);
+      for (const spec of panelShots) {
+        await captureScreenshot(page, spec);
+      }
     }
   } finally {
+    if (shellDashboardId) {
+      await deleteDashboard(page.request, shellDashboardId);
+    }
     await browser.close();
   }
 }
