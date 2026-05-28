@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package slm
+package cluster
 
 import (
 	"context"
@@ -28,18 +28,18 @@ import (
 
 var validExpandWildcardValues = []string{"all", "open", "closed", "hidden", "none"}
 
-// expandWildcardsValidator validates a comma-separated list of wildcard expansion values.
-type expandWildcardsValidator struct{}
+// ExpandWildcardsValidator validates a comma-separated list of wildcard expansion values.
+type ExpandWildcardsValidator struct{}
 
-func (v expandWildcardsValidator) Description(_ context.Context) string {
+func (v ExpandWildcardsValidator) Description(_ context.Context) string {
 	return fmt.Sprintf("Each comma-separated value must be one of: %s", strings.Join(validExpandWildcardValues, ", "))
 }
 
-func (v expandWildcardsValidator) MarkdownDescription(_ context.Context) string {
+func (v ExpandWildcardsValidator) MarkdownDescription(_ context.Context) string {
 	return fmt.Sprintf("Each comma-separated value must be one of: `%s`", strings.Join(validExpandWildcardValues, "`, `"))
 }
 
-func (v expandWildcardsValidator) ValidateString(_ context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+func (v ExpandWildcardsValidator) ValidateString(_ context.Context, req validator.StringRequest, resp *validator.StringResponse) {
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}

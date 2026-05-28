@@ -15,12 +15,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package slm
+package cluster_test
 
 import (
 	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
@@ -29,7 +30,7 @@ import (
 func TestExpandWildcardsValidator(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	v := expandWildcardsValidator{}
+	v := cluster.ExpandWildcardsValidator{}
 
 	cases := []struct {
 		name    string
@@ -64,7 +65,7 @@ func TestExpandWildcardsValidator(t *testing.T) {
 func TestExpandWildcardsValidator_NullAndUnknown(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	v := expandWildcardsValidator{}
+	v := cluster.ExpandWildcardsValidator{}
 
 	t.Run("null", func(t *testing.T) {
 		t.Parallel()

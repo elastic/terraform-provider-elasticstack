@@ -20,15 +20,15 @@ package schema
 import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/ephemeral/schema"
+	"github.com/hashicorp/terraform-plugin-framework/action/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// GetEsEphemeralConnectionBlock returns the elasticsearch_connection block for
-// ephemeral resources, mirroring GetEsFWConnectionBlock for managed resources.
-func GetEsEphemeralConnectionBlock() schema.Block {
+// GetEsActionConnectionBlock returns the elasticsearch_connection block for
+// provider-defined actions, mirroring GetEsEphemeralConnectionBlock for ephemeral resources.
+func GetEsActionConnectionBlock() schema.Block {
 	usernamePath := path.MatchRelative().AtParent().AtName(attrUsername)
 	passwordPath := path.MatchRelative().AtParent().AtName(attrPassword)
 	apiKeyPath := path.MatchRelative().AtParent().AtName(attrAPIKey)
@@ -53,13 +53,13 @@ func GetEsEphemeralConnectionBlock() schema.Block {
 				attrPassword: schema.StringAttribute{
 					MarkdownDescription: descPassword,
 					Optional:            true,
-					Sensitive:           true,
+					WriteOnly:           true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
 				},
 				attrAPIKey: schema.StringAttribute{
 					MarkdownDescription: descAPIKey,
 					Optional:            true,
-					Sensitive:           true,
+					WriteOnly:           true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(usernamePath, passwordPath, bearerTokenPath),
 					},
@@ -67,7 +67,7 @@ func GetEsEphemeralConnectionBlock() schema.Block {
 				attrBearerToken: schema.StringAttribute{
 					MarkdownDescription: descBearerToken,
 					Optional:            true,
-					Sensitive:           true,
+					WriteOnly:           true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
 					},
@@ -75,7 +75,7 @@ func GetEsEphemeralConnectionBlock() schema.Block {
 				attrESClientAuthentication: schema.StringAttribute{
 					MarkdownDescription: descESClientAuthentication,
 					Optional:            true,
-					Sensitive:           true,
+					WriteOnly:           true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
 						stringvalidator.AlsoRequires(bearerTokenPath),
@@ -84,13 +84,12 @@ func GetEsEphemeralConnectionBlock() schema.Block {
 				attrEndpoints: schema.ListAttribute{
 					MarkdownDescription: descEndpoints,
 					Optional:            true,
-					Sensitive:           true,
 					ElementType:         types.StringType,
 				},
 				attrHeaders: schema.MapAttribute{
 					MarkdownDescription: descHeaders,
 					Optional:            true,
-					Sensitive:           true,
+					WriteOnly:           true,
 					ElementType:         types.StringType,
 				},
 				attrInsecure: schema.BoolAttribute{
@@ -138,7 +137,7 @@ func GetEsEphemeralConnectionBlock() schema.Block {
 				attrKeyData: schema.StringAttribute{
 					MarkdownDescription: descKeyData,
 					Optional:            true,
-					Sensitive:           true,
+					WriteOnly:           true,
 					Validators: []validator.String{
 						stringvalidator.AlsoRequires(certDataPath),
 						stringvalidator.ConflictsWith(certFilePath, keyFilePath),
@@ -152,9 +151,10 @@ func GetEsEphemeralConnectionBlock() schema.Block {
 	}
 }
 
-// GetKbEphemeralConnectionBlock returns the kibana_connection block for
-// ephemeral resources, mirroring GetKbFWConnectionBlock for managed resources.
-func GetKbEphemeralConnectionBlock() schema.Block {
+// GetKbActionConnectionBlock returns the kibana_connection block for
+// provider-defined actions, mirroring GetKbEphemeralConnectionBlock for
+// ephemeral resources.
+func GetKbActionConnectionBlock() schema.Block {
 	usernamePath := path.MatchRelative().AtParent().AtName(attrUsername)
 	passwordPath := path.MatchRelative().AtParent().AtName(attrPassword)
 	apiKeyPath := path.MatchRelative().AtParent().AtName(attrAPIKey)
@@ -162,12 +162,13 @@ func GetKbEphemeralConnectionBlock() schema.Block {
 
 	return schema.ListNestedBlock{
 		MarkdownDescription: descKbConnectionBlock,
+		Description:         descKbConnectionBlock,
 		NestedObject: schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
 				attrAPIKey: schema.StringAttribute{
 					MarkdownDescription: descKbAPIKey,
 					Optional:            true,
-					Sensitive:           true,
+					WriteOnly:           true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(usernamePath, passwordPath, bearerTokenPath),
 					},
@@ -175,7 +176,7 @@ func GetKbEphemeralConnectionBlock() schema.Block {
 				attrBearerToken: schema.StringAttribute{
 					MarkdownDescription: descKbBearerToken,
 					Optional:            true,
-					Sensitive:           true,
+					WriteOnly:           true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
 					},
@@ -188,13 +189,12 @@ func GetKbEphemeralConnectionBlock() schema.Block {
 				attrPassword: schema.StringAttribute{
 					MarkdownDescription: descKbPassword,
 					Optional:            true,
-					Sensitive:           true,
+					WriteOnly:           true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
 				},
 				attrEndpoints: schema.ListAttribute{
 					MarkdownDescription: descKbEndpoints,
 					Optional:            true,
-					Sensitive:           true,
 					ElementType:         types.StringType,
 				},
 				attrCACerts: schema.ListAttribute{
