@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 )
 
 // alignDashboardStateFromPlanPanels preserves practitioner intent that depends on
@@ -61,10 +62,62 @@ func alignDashboardStateFromPlanPinnedPanels(ctx context.Context, planPins, stat
 	}
 }
 
+// alignPlanTypedPanelConfigsWhenStateNil copies plan-side typed config blocks into state
+// when Kibana read left them nil (after mapPanelFromAPI stopped shallow-copying tfPanel).
+func alignPlanTypedPanelConfigsWhenStateNil(plan, state *models.PanelModel) {
+	if plan == nil || state == nil {
+		return
+	}
+	if plan.MarkdownConfig != nil && state.MarkdownConfig == nil {
+		state.MarkdownConfig = panelkit.ShallowClonePtr(plan.MarkdownConfig)
+	}
+	if plan.TimeSliderControlConfig != nil && state.TimeSliderControlConfig == nil {
+		state.TimeSliderControlConfig = panelkit.ShallowClonePtr(plan.TimeSliderControlConfig)
+	}
+	if plan.SloBurnRateConfig != nil && state.SloBurnRateConfig == nil {
+		state.SloBurnRateConfig = panelkit.ShallowClonePtr(plan.SloBurnRateConfig)
+	}
+	if plan.SloOverviewConfig != nil && state.SloOverviewConfig == nil {
+		state.SloOverviewConfig = panelkit.ShallowClonePtr(plan.SloOverviewConfig)
+	}
+	if plan.SloErrorBudgetConfig != nil && state.SloErrorBudgetConfig == nil {
+		state.SloErrorBudgetConfig = panelkit.ShallowClonePtr(plan.SloErrorBudgetConfig)
+	}
+	if plan.EsqlControlConfig != nil && state.EsqlControlConfig == nil {
+		state.EsqlControlConfig = panelkit.ShallowClonePtr(plan.EsqlControlConfig)
+	}
+	if plan.OptionsListControlConfig != nil && state.OptionsListControlConfig == nil {
+		state.OptionsListControlConfig = panelkit.ShallowClonePtr(plan.OptionsListControlConfig)
+	}
+	if plan.RangeSliderControlConfig != nil && state.RangeSliderControlConfig == nil {
+		state.RangeSliderControlConfig = panelkit.ShallowClonePtr(plan.RangeSliderControlConfig)
+	}
+	if plan.SyntheticsStatsOverviewConfig != nil && state.SyntheticsStatsOverviewConfig == nil {
+		state.SyntheticsStatsOverviewConfig = panelkit.ShallowClonePtr(plan.SyntheticsStatsOverviewConfig)
+	}
+	if plan.SyntheticsMonitorsConfig != nil && state.SyntheticsMonitorsConfig == nil {
+		state.SyntheticsMonitorsConfig = panelkit.ShallowClonePtr(plan.SyntheticsMonitorsConfig)
+	}
+	if plan.VisConfig != nil && state.VisConfig == nil {
+		state.VisConfig = panelkit.ShallowClonePtr(plan.VisConfig)
+	}
+	if plan.ImageConfig != nil && state.ImageConfig == nil {
+		state.ImageConfig = panelkit.ShallowClonePtr(plan.ImageConfig)
+	}
+	if plan.SloAlertsConfig != nil && state.SloAlertsConfig == nil {
+		state.SloAlertsConfig = panelkit.ShallowClonePtr(plan.SloAlertsConfig)
+	}
+	if plan.DiscoverSessionConfig != nil && state.DiscoverSessionConfig == nil {
+		state.DiscoverSessionConfig = panelkit.ShallowClonePtr(plan.DiscoverSessionConfig)
+	}
+}
+
 func alignPanelStateFromPlan(ctx context.Context, plan, state *models.PanelModel) {
 	if plan == nil || state == nil {
 		return
 	}
+
+	alignPlanTypedPanelConfigsWhenStateNil(plan, state)
 
 	lenscommon.PreservePlanJSONIfStateOmitsOptionalKeys(plan.ConfigJSON.Normalized, &state.ConfigJSON.Normalized, "filters", "query", "settings")
 	planBlocks := visByValueChartBlocksFromPanel(plan)

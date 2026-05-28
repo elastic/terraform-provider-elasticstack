@@ -67,9 +67,31 @@ func PopulateFromAPI(ctx context.Context, pm *models.PanelModel, tfPanel *models
 		return
 	}
 
-	// If the existing state has no config block, preserve nil intent.
 	if existing == nil {
-		return
+		if tfPanel == nil || tfPanel.RangeSliderControlConfig == nil {
+			return
+		}
+		pm.RangeSliderControlConfig = &models.RangeSliderControlConfigModel{
+			DataViewID: types.StringValue(apiConfig.DataViewId),
+			FieldName:  types.StringValue(apiConfig.FieldName),
+		}
+		existing = pm.RangeSliderControlConfig
+		if apiConfig.Title != nil {
+			existing.Title = types.StringValue(*apiConfig.Title)
+		}
+		if apiConfig.UseGlobalFilters != nil {
+			existing.UseGlobalFilters = types.BoolValue(*apiConfig.UseGlobalFilters)
+		}
+		if apiConfig.IgnoreValidations != nil {
+			existing.IgnoreValidations = types.BoolValue(*apiConfig.IgnoreValidations)
+		}
+		if apiConfig.Value != nil {
+			v, _ := types.ListValueFrom(ctx, types.StringType, *apiConfig.Value)
+			existing.Value = v
+		}
+		if apiConfig.Step != nil {
+			existing.Step = types.Float32Value(*apiConfig.Step)
+		}
 	}
 
 	// Block exists in state — always update required fields, update optional only when non-null.
@@ -91,6 +113,31 @@ func PopulateFromAPI(ctx context.Context, pm *models.PanelModel, tfPanel *models
 	}
 	if typeutils.IsKnown(existing.Step) && apiConfig.Step != nil {
 		existing.Step = types.Float32Value(*apiConfig.Step)
+	}
+
+	if tfPanel != nil && tfPanel.RangeSliderControlConfig != nil {
+		rangeSliderPreserveNullIntentFromPrior(tfPanel.RangeSliderControlConfig, existing)
+	}
+}
+
+func rangeSliderPreserveNullIntentFromPrior(prior, existing *models.RangeSliderControlConfigModel) {
+	if prior == nil || existing == nil {
+		return
+	}
+	if !typeutils.IsKnown(prior.Title) {
+		existing.Title = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.UseGlobalFilters) {
+		existing.UseGlobalFilters = types.BoolNull()
+	}
+	if !typeutils.IsKnown(prior.IgnoreValidations) {
+		existing.IgnoreValidations = types.BoolNull()
+	}
+	if !typeutils.IsKnown(prior.Value) {
+		existing.Value = types.ListNull(types.StringType)
+	}
+	if !typeutils.IsKnown(prior.Step) {
+		existing.Step = types.Float32Null()
 	}
 }
 

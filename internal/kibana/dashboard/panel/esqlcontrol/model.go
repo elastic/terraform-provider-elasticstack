@@ -148,9 +148,38 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 		return
 	}
 
-	// If the existing state has no config block, preserve nil intent.
 	if existing == nil {
-		return
+		if tfPanel == nil || tfPanel.EsqlControlConfig == nil {
+			return
+		}
+		singleSelect := types.BoolNull()
+		if api.SingleSelect != nil {
+			singleSelect = types.BoolValue(*api.SingleSelect)
+		}
+		existing = &models.EsqlControlConfigModel{
+			SelectedOptions:  stringsToList(api.SelectedOptions),
+			VariableName:     types.StringValue(api.VariableName),
+			VariableType:     types.StringValue(api.VariableType),
+			EsqlQuery:        types.StringValue(api.EsqlQuery),
+			ControlType:      types.StringValue(api.ControlType),
+			Title:            types.StringPointerValue(api.Title),
+			SingleSelect:     singleSelect,
+			AvailableOptions: types.ListNull(types.StringType),
+		}
+		pm.EsqlControlConfig = existing
+		if len(api.AvailableOptions) > 0 {
+			existing.AvailableOptions = stringsToList(api.AvailableOptions)
+		}
+		if api.DisplaySettings != nil {
+			d := api.DisplaySettings
+			existing.DisplaySettings = &models.EsqlControlDisplaySettingsModel{
+				Placeholder:   types.StringPointerValue(d.Placeholder),
+				HideActionBar: types.BoolPointerValue(d.HideActionBar),
+				HideExclude:   types.BoolPointerValue(d.HideExclude),
+				HideExists:    types.BoolPointerValue(d.HideExists),
+				HideSort:      types.BoolPointerValue(d.HideSort),
+			}
+		}
 	}
 
 	prevQuery := existing.EsqlQuery
@@ -199,6 +228,28 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 		if typeutils.IsKnown(ds.HideSort) && apiDS.HideSort != nil {
 			ds.HideSort = types.BoolValue(*apiDS.HideSort)
 		}
+	}
+
+	if tfPanel != nil && tfPanel.EsqlControlConfig != nil {
+		esqlControlPreserveNullIntentFromPrior(tfPanel.EsqlControlConfig, existing)
+	}
+}
+
+func esqlControlPreserveNullIntentFromPrior(prior, existing *models.EsqlControlConfigModel) {
+	if prior == nil || existing == nil {
+		return
+	}
+	if !typeutils.IsKnown(prior.SingleSelect) {
+		existing.SingleSelect = types.BoolNull()
+	}
+	if !typeutils.IsKnown(prior.Title) {
+		existing.Title = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.AvailableOptions) {
+		existing.AvailableOptions = types.ListNull(types.StringType)
+	}
+	if prior.DisplaySettings == nil {
+		existing.DisplaySettings = nil
 	}
 }
 

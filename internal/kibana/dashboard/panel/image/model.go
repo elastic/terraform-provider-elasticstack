@@ -199,7 +199,12 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel
 
 	existing.ObjectFit = nullPreservingImageObjectFit(existing.ObjectFit, apiCfg.ImageConfig.ObjectFit)
 	existing.Src = panelSrcFromAPI(apiCfg.ImageConfig.Src)
-	existing.Drilldowns = readImageDrilldownsFromAPI(apiCfg.Drilldowns, existing.Drilldowns)
+
+	var priorDrilldowns []models.ImagePanelDrilldownModel
+	if tfPanel.ImageConfig != nil {
+		priorDrilldowns = tfPanel.ImageConfig.Drilldowns
+	}
+	existing.Drilldowns = readImageDrilldownsFromAPI(apiCfg.Drilldowns, priorDrilldowns)
 }
 
 func nullPreservingImageObjectFit(prior types.String, api *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigObjectFit) types.String {

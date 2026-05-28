@@ -89,7 +89,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 	}
 
 	if existing == nil {
-		if prior != nil {
+		if prior != nil && prior.SloErrorBudgetConfig == nil {
 			return nil
 		}
 		pm.SloErrorBudgetConfig = &models.SloErrorBudgetConfigModel{}
