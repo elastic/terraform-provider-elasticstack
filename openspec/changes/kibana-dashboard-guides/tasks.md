@@ -18,14 +18,14 @@
 
 ## 3. Guide 2 — Terraform Config & Screenshots
 
-- [ ] 3.1 Write `examples/guides/guide2-operations/main.tf` — dashboard with `kibana_sample_data_ecommerce`, `options` block, `pinned_panels` with `options_list_control`
-- [ ] 3.2 Add three Lens Metric panels (revenue, order count, AOV) to `main.tf` and verify
-- [ ] 3.3 Add Lens Stacked Area chart panel to `main.tf` and verify
-- [ ] 3.4 Add Lens Data Table panel to `main.tf` and verify
-- [ ] 3.5 Add Lens Donut panel to `main.tf` and verify
-- [ ] 3.6 Add `discover_session` panel with `by_value.tab.dsl` to `main.tf` and verify
-- [ ] 3.7 Write `scripts/screenshots/guide2.mjs` — capture 4 PNGs including before/after filter screenshots
-- [ ] 3.8 Run Playwright script and commit all `g2-*.png` screenshots to `templates/guides/images/`
+- [x] 3.1 Write `examples/guides/guide2-operations/main.tf` — dashboard with `kibana_sample_data_ecommerce`, `options` block, `pinned_panels` with `options_list_control`
+- [x] 3.2 Add three Lens Metric panels (revenue, order count, AOV) to `main.tf` and verify
+- [x] 3.3 Add Lens Stacked Area chart panel to `main.tf` and verify
+- [x] 3.4 Add Lens Data Table panel to `main.tf` and verify
+- [x] 3.5 Add Lens Donut panel to `main.tf` and verify
+- [x] 3.6 Add `discover_session` panel with `by_value.tab.dsl` to `main.tf` and verify
+- [x] 3.7 Write `scripts/screenshots/guide2.mjs` — capture 4 PNGs including before/after filter screenshots
+- [x] 3.8 Run Playwright script and commit all `g2-*.png` screenshots to `templates/guides/images/`
 
 ## 4. Guide 3 — Terraform Config & Screenshots
 
