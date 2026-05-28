@@ -12,7 +12,9 @@ The `elasticstack_kibana_dashboard` resource has extensive generated reference d
 - **New screenshots**: `templates/guides/images/g{1,2,3}-*.png` (copied to `docs/guides/images/` by `make docs-generate`) — embedded screenshots across the three guides
 - **Provider fixes surfaced while authoring the guides**:
   - Guide 1: align `vis_config.by_value.xy_chart_config.fitting` plan state when Kibana omits the block (e.g. `bar_horizontal` with terms).
-  - Guide 3: route `metric_chart_config` with `type = "esql"` data sources to the ES|QL API variant (not non-ES|QL); set `type` on ES|QL control panels (including pinned controls); align nested section panels for XY legend; preserve planned `legend` when Kibana omits the whole block on area/line charts.
+  - Guide 3 — panel read and alignment: stop shallow-copying plan into read state; clone plan-side typed `*_config` blocks when Kibana leaves them nil (`alignPlanTypedPanelConfigsWhenStateNil`); preserve nested section panels (`image_config`, `xy_chart_config.legend`, `heatmap_config.legend`, gauge `styling.shape_json`); keep top-level `panels = []` when explicitly set (omit vs empty list).
+  - Guide 3 — Kibana API routing: route `metric_chart_config` with `type = "esql"` to the ES|QL API variant; set `type` on ES|QL control panels (including pinned controls).
+  - Guide 3 — operator note: `access_control = "write_restricted"` requires a non-bootstrap Kibana user (the committed example leaves this block commented out).
 
 Apart from the targeted dashboard alignment fixes above, no other changes to provider resource code or existing documentation.
 
@@ -28,7 +30,9 @@ Apart from the targeted dashboard alignment fixes above, no other changes to pro
 
 ## Impact
 
-- **Mostly new files** — provider code is unchanged except for the targeted `xy_chart_config.fitting` alignment fix in `internal/kibana/dashboard/panel/lensxy/`; no resource schema changes; generated docs change only because the three new guide templates render into `docs/guides/`
+- **Mostly new files** — three new guide templates and examples; generated docs change because templates render into `docs/guides/`
+- **Targeted `elasticstack_kibana_dashboard` provider fixes** (no schema changes): alignment in `lensxy`, `lensgauge`, `lensheatmap`, `lensmetric`, `image`, `esqlcontrol`, and shared panel read/plan-state flow (`models_panels.go`, `models_plan_state_alignment.go`); unit tests per area; CHANGELOG entries under Unreleased
+- **Guide 3 constraint**: `access_control = "write_restricted"` needs a Kibana user with a profile ID (not the default `elastic` bootstrap user)
 - **Kibana version baseline**: Kibana 9.4+ (minimum required by the dashboard API and resource)
 - **Dependencies**: Kibana sample data (logs + eCommerce datasets, installable from Kibana home); Playwright for screenshot generation
 - **Guide format**: Follows the established pattern of existing guides (`security-roles.md`, `elasticstack-kibana-rule.md`) — frontmatter, prerequisites, prose with inline Terraform code blocks, embedded images

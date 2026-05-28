@@ -29,9 +29,9 @@
 
 ## 4. Guide 3 — Terraform Config & Screenshots
 
-- [x] 4.1 Write `examples/guides/guide3-advanced/main.tf` — dashboard with `sections`, `image` panel, `access_control`, `tags`
+- [x] 4.1 Write `examples/guides/guide3-advanced/main.tf` — dashboard with `sections`, `image` panel, `tags` (`access_control` kept as a commented-out block with explanation — see task 7.7 for how the prose covers it)
 - [x] 4.2 Add Lens Gauge panel with goal value to `main.tf` and verify
-- [x] 4.3 Add Lens Heatmap panel (requests by day/hour) to `main.tf` and verify
+- [x] 4.3 Add Lens Heatmap panel (requests by hour × response code) to `main.tf` and verify
 - [x] 4.4 Add multi-layer Lens Area+Line chart to `main.tf` and verify
 - [x] 4.5 Add `esql_control` to `pinned_panels` and a panel query referencing its variable — verify filtering works
 - [x] 4.6 Wire panels into `sections` blocks and verify collapse/expand in Kibana
