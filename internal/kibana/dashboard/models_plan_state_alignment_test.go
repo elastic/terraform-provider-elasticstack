@@ -244,6 +244,28 @@ func mustTagcloudJSON(v string) customtypes.JSONWithDefaultsValue[map[string]any
 	return customtypes.NewJSONWithDefaultsValue(v, lenscommon.PopulateTagcloudTagByDefaults)
 }
 
+func Test_alignDashboardStateFromPlanPinnedPanels_seedsNilControlConfigFromPlan(t *testing.T) {
+	t.Parallel()
+
+	planCfg := &models.OptionsListControlConfigModel{
+		DataViewID: types.StringValue("dv"),
+		FieldName:  types.StringValue("status"),
+	}
+	planPins := []models.PinnedPanelModel{{
+		Type:                     types.StringValue(panelTypeOptionsListControl),
+		OptionsListControlConfig: planCfg,
+	}}
+	statePins := []models.PinnedPanelModel{{
+		Type: types.StringValue(panelTypeOptionsListControl),
+	}}
+
+	alignDashboardStateFromPlanPinnedPanels(t.Context(), planPins, statePins)
+
+	require.NotNil(t, statePins[0].OptionsListControlConfig)
+	require.Equal(t, "status", statePins[0].OptionsListControlConfig.FieldName.ValueString())
+	require.Equal(t, "dv", statePins[0].OptionsListControlConfig.DataViewID.ValueString())
+}
+
 // Test_alignPanelStateFromPlan_pinnedPanel_xyChart_appliesAlignment verifies XY drift alignment runs through
 // alignPanelStateFromPlan (the same helper alignDashboardStateFromPlanPinnedPanels delegates to once pinned panels
 // expose Lens vis blocks on their synthetic PanelModel surface).

@@ -59,6 +59,7 @@ func alignDashboardStateFromPlanPinnedPanels(ctx context.Context, planPins, stat
 		plan := planPins[i].SyntheticPanel()
 		state := statePins[i].SyntheticPanel()
 		alignPanelStateFromPlan(ctx, &plan, &state)
+		models.ApplyPinnedSiblingControlConfig(&statePins[i], statePins[i].Type.ValueString(), &state)
 	}
 }
 
