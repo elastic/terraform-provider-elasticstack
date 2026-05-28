@@ -73,10 +73,10 @@
 
 ## 8. Validation & Polish
 
-- [ ] 8.1 Run `terraform validate` in all three example directories; fix any schema errors
-- [ ] 8.2 Run `make docs-generate` and verify all three guides appear in `docs/guides/`
-- [ ] 8.3 Run `make check-docs` and fix any broken references or missing example files
-- [ ] 8.4 Review all screenshots — no loading spinners, no empty panels; re-run scripts if needed
-- [ ] 8.5 Verify all Terraform code blocks in the guides match the final `main.tf` configs
-- [ ] 8.6 Check frontmatter in all three guides matches the format of existing guides
-- [ ] 8.7 Verify `docs/resources/kibana_dashboard.md` includes "See also" links to the three guides
+- [x] 8.1 Run `terraform validate` in all three example directories; fix any schema errors
+- [x] 8.2 Run `make docs-generate` and verify all three guides appear in `docs/guides/`
+- [x] 8.3 Run `make check-docs` and fix any broken references or missing example files
+- [x] 8.4 Review all screenshots — no loading spinners, no empty panels; re-run scripts if needed
+- [x] 8.5 Verify all Terraform code blocks in the guides match the final `main.tf` configs
+- [x] 8.6 Check frontmatter in all three guides matches the format of existing guides
+- [x] 8.7 Verify `docs/resources/kibana_dashboard.md` includes "See also" links to the three guides
