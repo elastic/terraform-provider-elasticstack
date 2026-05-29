@@ -29,12 +29,12 @@
 
 ## 5. Resource: schema
 
-- [ ] 5.1 Implement `getSchema` in `schema.go` covering identity (`id`, `cloud_connector_id`, `space_id`, `name`, `cloud_provider`, `account_type`), `force_delete`, the typed `aws` and `azure` blocks (Optional+Computed), and the `vars` map (Optional+Computed) using the exact arm-mapped shape from design.md
-- [ ] 5.2 Add `RequiresReplace` plan modifiers on `cloud_provider`, `cloud_connector_id`, `space_id`
-- [ ] 5.3 Add `UseStateForUnknown` plan modifiers where dual-population could produce informational diffs (typed block, `vars`, computed read-only fields)
-- [ ] 5.4 Add the per-element `ConfigValidator` for `vars` enforcing the arm-exclusivity rules and rejecting computed-only fields in config
-- [ ] 5.5 Add the resource-level `ConfigValidator` enforcing `ExactlyOneOf(aws, azure, vars)` and provider-block-matches-cloud_provider
-- [ ] 5.6 Mark `secret_value` and `aws.external_id` as `WriteOnly` and `Sensitive`
+- [x] 5.1 Implement `getSchema` in `schema.go` covering identity (`id`, `cloud_connector_id`, `space_id`, `name`, `cloud_provider`, `account_type`), `force_delete`, the typed `aws` and `azure` blocks (Optional+Computed), and the `vars` map (Optional+Computed) using the exact arm-mapped shape from design.md
+- [x] 5.2 Add `RequiresReplace` plan modifiers on `cloud_provider`, `cloud_connector_id`, `space_id`
+- [x] 5.3 Add `UseStateForUnknown` plan modifiers where dual-population could produce informational diffs (typed block, `vars`, computed read-only fields)
+- [x] 5.4 Add the per-element `ConfigValidator` for `vars` enforcing the arm-exclusivity rules and rejecting computed-only fields in config
+- [x] 5.5 Add the resource-level `ConfigValidator` enforcing `ExactlyOneOf(aws, azure, vars)` and provider-block-matches-cloud_provider
+- [x] 5.6 Mark `secret_value` and `aws.external_id` as `WriteOnly` and `Sensitive`
 
 ## 6. Resource: CRUD + import
 
