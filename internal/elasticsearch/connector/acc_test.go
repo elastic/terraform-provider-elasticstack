@@ -895,6 +895,25 @@ func TestAccDataSourceContentConnector_filteringAndCustomScheduling(t *testing.T
 	})
 }
 
+// TestAccDataSourceContentConnector_notFound verifies a 404 surfaces as a diagnostic error.
+func TestAccDataSourceContentConnector_notFound(t *testing.T) {
+	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-nonexistent")
+	vars := connectorIDVariables(connectorID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          vars,
+				ExpectError:              regexp.MustCompile("Connector not found"),
+			},
+		},
+	})
+}
+
 // TestAccResourceContentConnector_versionGate verifies apply fails on Elasticsearch versions below 8.12.
 func TestAccResourceContentConnector_versionGate(t *testing.T) {
 	isUnsupported, err := skipConnectorUnsupported()()
