@@ -41,6 +41,6 @@ func TimeRangeModelToAPI(tr *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQu
 
 // ResolveChartTimeRange returns the API time_range for a typed Lens chart root when chart-level is set;
 // nil when chart-level time_range is unset (caller omits from API payload).
-func ResolveChartTimeRange(_ *models.DashboardModel, chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
+func ResolveChartTimeRange(chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
 	return TimeRangeModelToAPI(chartLevel)
 }

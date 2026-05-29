@@ -27,16 +27,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-type chartPresentationResolver struct {
-	dashboard *models.DashboardModel
+type chartPresentationResolver struct{}
+
+func lensChartResolver() lenscommon.Resolver {
+	return chartPresentationResolver{}
 }
 
-func lensChartResolver(dashboard *models.DashboardModel) lenscommon.Resolver {
-	return &chartPresentationResolver{dashboard: dashboard}
-}
-
-func (r *chartPresentationResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	return lenscommon.ResolveChartTimeRange(r.dashboard, chartLevel)
+func (chartPresentationResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
+	return lenscommon.ResolveChartTimeRange(chartLevel)
 }
 
 // lensByValueChartBlocksFromPanel returns vis_config.by_value chart blocks when populated.
@@ -149,7 +147,6 @@ func seedLensChartPriorIntoBlocks(tfPanel *models.PanelModel, dest *models.LensB
 
 func populateLensVisByValueFromTypedChartAPI(
 	ctx context.Context,
-	dashboard *models.DashboardModel,
 	tfPanel *models.PanelModel,
 	blocks *models.LensByValueChartBlocks,
 	config0 lenscommon.VisByValueConfig0,
@@ -180,6 +177,6 @@ func populateLensVisByValueFromTypedChartAPI(
 	}
 	seedWaffleLensByValueChartFromPriorPanel(blocks, tfPanel)
 	seedLensChartPriorIntoBlocks(tfPanel, blocks, visType)
-	diags.Append(conv.PopulateFromAttributes(ctx, lensChartResolver(dashboard), blocks, config0)...)
+	diags.Append(conv.PopulateFromAttributes(ctx, lensChartResolver(), blocks, config0)...)
 	return diags
 }

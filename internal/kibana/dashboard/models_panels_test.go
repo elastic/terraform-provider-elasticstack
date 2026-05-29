@@ -143,25 +143,17 @@ func buildLensWafflePanelForTest(t *testing.T) models.PanelModel {
 }
 
 func Test_resolveChartTimeRange_omitWhenUnset(t *testing.T) {
-	dash := &models.DashboardModel{
-		TimeRange: &models.TimeRangeModel{
-			From: types.StringValue("now-7d"),
-			To:   types.StringValue("now"),
-		},
-	}
-
 	chartTR := &models.TimeRangeModel{
 		From: types.StringValue("now-30d"),
 		To:   types.StringValue("now-1d"),
 	}
 
-	got := lenscommon.ResolveChartTimeRange(dash, chartTR)
+	got := lenscommon.ResolveChartTimeRange(chartTR)
 	require.NotNil(t, got)
 	assert.Equal(t, "now-30d", got.From)
 	assert.Equal(t, "now-1d", got.To)
 
-	assert.Nil(t, lenscommon.ResolveChartTimeRange(dash, nil))
-	assert.Nil(t, lenscommon.ResolveChartTimeRange(nil, nil))
+	assert.Nil(t, lenscommon.ResolveChartTimeRange(nil))
 }
 
 func Test_mapPanelsFromAPI(t *testing.T) {

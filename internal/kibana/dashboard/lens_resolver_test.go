@@ -23,15 +23,13 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 )
 
-type chartPresentationResolver struct {
-	dashboard *models.DashboardModel
-}
+type chartPresentationResolver struct{}
 
-// testLensChartResolver returns a Resolver with no enclosing dashboard (unit tests only).
+// testLensChartResolver returns a Resolver for unit tests.
 func testLensChartResolver() lenscommon.Resolver {
-	return &chartPresentationResolver{dashboard: nil}
+	return chartPresentationResolver{}
 }
 
-func (r *chartPresentationResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	return lenscommon.ResolveChartTimeRange(r.dashboard, chartLevel)
+func (chartPresentationResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
+	return lenscommon.ResolveChartTimeRange(chartLevel)
 }

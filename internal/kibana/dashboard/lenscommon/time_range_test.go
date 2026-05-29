@@ -30,12 +30,12 @@ import (
 type timeRangeStubResolver struct{}
 
 func (timeRangeStubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	return ResolveChartTimeRange(nil, chartLevel)
+	return ResolveChartTimeRange(chartLevel)
 }
 
 func TestResolveChartTimeRange_nilWhenChartUnset(t *testing.T) {
 	t.Parallel()
-	assert.Nil(t, ResolveChartTimeRange(nil, nil))
+	assert.Nil(t, ResolveChartTimeRange(nil))
 }
 
 func TestResolveChartTimeRange_returnsConfiguredChartLevel(t *testing.T) {
@@ -45,7 +45,7 @@ func TestResolveChartTimeRange_returnsConfiguredChartLevel(t *testing.T) {
 		To:   types.StringValue("now-1d"),
 		Mode: types.StringValue("relative"),
 	}
-	got := ResolveChartTimeRange(nil, chart)
+	got := ResolveChartTimeRange(chart)
 	require.NotNil(t, got)
 	assert.Equal(t, "now-30d", got.From)
 	assert.Equal(t, "now-1d", got.To)
