@@ -26,12 +26,19 @@ import (
 )
 
 func updateConnector(
-	_ context.Context,
-	_ *clients.ElasticsearchScopedClient,
-	_ entitycore.WriteRequest[ContentConnectorData],
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.WriteRequest[ContentConnectorData],
 ) (entitycore.WriteResult[ContentConnectorData], diag.Diagnostics) {
 	var diags diag.Diagnostics
-	diags.AddError("Connector resource not yet implemented", "internal: Section 5 work in progress")
-	var zero ContentConnectorData
-	return entitycore.WriteResult[ContentConnectorData]{Model: zero}, diags
+	data := req.Plan
+	connectorID := req.WriteID
+
+	if req.Prior != nil {
+		diags.Append(applyEnvelopePartialsOnUpdate(ctx, client, connectorID, data, *req.Prior)...)
+	}
+
+	diags.Append(applyConnectorFanOut(ctx, client, connectorID, data, req.Config, req.Prior, req.Private, true)...)
+
+	return entitycore.WriteResult[ContentConnectorData]{Model: data}, diags
 }
