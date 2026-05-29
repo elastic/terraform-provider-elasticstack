@@ -644,13 +644,14 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 			return types.ObjectNull(getAnalysisConfigAttrTypes(ctx)), diags
 		}
 	}
-	if apiConfig.PerPartitionCategorization == nil {
+	switch {
+	case apiConfig.PerPartitionCategorization == nil:
 		if !hadPriorPerPartition {
 			analysisConfigTF.PerPartitionCategorization = types.ObjectNull(getPerPartitionCategorizationAttrTypes(ctx))
 		}
-	} else if !hadPriorPerPartition && !apiConfig.PerPartitionCategorization.Enabled {
+	case !hadPriorPerPartition && !apiConfig.PerPartitionCategorization.Enabled:
 		analysisConfigTF.PerPartitionCategorization = types.ObjectNull(getPerPartitionCategorizationAttrTypes(ctx))
-	} else {
+	default:
 		perPartitionTF := PerPartitionCategorizationTFModel{
 			Enabled: types.BoolValue(apiConfig.PerPartitionCategorization.Enabled),
 		}
