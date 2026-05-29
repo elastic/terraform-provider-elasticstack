@@ -35,10 +35,7 @@ type CMReferenceSchema = kbapi.KibanaHTTPAPIsKbnContentManagementUtilsReferenceS
 
 // Resolver abstracts dashboard-level dependencies so Lens converters do not import the dashboard package.
 type Resolver interface {
-	ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema
-	// DashboardLensComparableTimeRange returns the dashboard-level time range used when comparing
-	// chart-root API time_range for Terraform null-preservation. ok is false when no comparable range exists.
-	DashboardLensComparableTimeRange() (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, bool)
+	ResolveChartTimeRange(chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema
 }
 
 // VizConverter converts one Lens chart kind between Terraform models and kbapi vis config.

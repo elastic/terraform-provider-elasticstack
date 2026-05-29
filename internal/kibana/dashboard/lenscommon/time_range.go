@@ -24,11 +24,11 @@ import (
 )
 
 // TimeRangeModelToAPI converts a TimeRangeModel to the Kibana API time range schema.
-func TimeRangeModelToAPI(tr *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
+func TimeRangeModelToAPI(tr *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
 	if tr == nil {
-		return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}
+		return nil
 	}
-	out := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
+	out := &kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
 		From: tr.From.ValueString(),
 		To:   tr.To.ValueString(),
 	}
@@ -39,32 +39,8 @@ func TimeRangeModelToAPI(tr *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQue
 	return out
 }
 
-// ResolveChartTimeRange returns the API time_range for a typed Lens chart root: chart-level when set,
-// otherwise copied from the dashboard-level time_range (both are required API inputs).
-//
-// Production dashboard writes always pass the enclosing models.DashboardModel, so null chart-level
-// time_range inherits dashboard-level values (REQ-013).
-//
-// The `now-15m` / `now` fallback applies when there is no chart-level override and either no parent
-// models.DashboardModel is in scope, or dashboard != nil but dashboard.TimeRange == nil.
-func ResolveChartTimeRange(dashboard *models.DashboardModel, chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	if chartLevel != nil {
-		return TimeRangeModelToAPI(chartLevel)
-	}
-	if dashboard != nil && dashboard.TimeRange != nil {
-		return TimeRangeModelToAPI(dashboard.TimeRange)
-	}
-	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
-		From: "now-15m",
-		To:   "now",
-	}
-}
-
-// DashboardLensComparableTimeRange returns the dashboard-level time range used when comparing
-// chart-root API time_range for Terraform null-preservation. ok is false when no comparable range exists.
-func DashboardLensComparableTimeRange(dashboard *models.DashboardModel) (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, bool) {
-	if dashboard == nil || dashboard.TimeRange == nil {
-		return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}, false
-	}
-	return TimeRangeModelToAPI(dashboard.TimeRange), true
+// ResolveChartTimeRange returns the API time_range for a typed Lens chart root when chart-level is set;
+// nil when chart-level time_range is unset (caller omits from API payload).
+func ResolveChartTimeRange(_ *models.DashboardModel, chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
+	return TimeRangeModelToAPI(chartLevel)
 }

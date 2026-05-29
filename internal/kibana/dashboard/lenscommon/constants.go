@@ -36,6 +36,8 @@ const (
 	attrMetric        = "metric"
 	attrDirection     = "direction"
 	attrAlignRight    = "right"
+	attrRefID         = "ref_id"
+	attrTimeRange     = "time_range"
 	colorTypeAuto     = "auto"
 	sortDirectionDesc = "desc"
 

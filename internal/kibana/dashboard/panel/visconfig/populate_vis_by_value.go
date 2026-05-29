@@ -35,12 +35,8 @@ func lensChartResolver(dashboard *models.DashboardModel) lenscommon.Resolver {
 	return &chartPresentationResolver{dashboard: dashboard}
 }
 
-func (r *chartPresentationResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
+func (r *chartPresentationResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
 	return lenscommon.ResolveChartTimeRange(r.dashboard, chartLevel)
-}
-
-func (r *chartPresentationResolver) DashboardLensComparableTimeRange() (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, bool) {
-	return lenscommon.DashboardLensComparableTimeRange(r.dashboard)
 }
 
 // lensByValueChartBlocksFromPanel returns vis_config.by_value chart blocks when populated.
