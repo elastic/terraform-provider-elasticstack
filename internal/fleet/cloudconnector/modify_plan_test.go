@@ -176,10 +176,11 @@ func TestResource_ModifyPlan(t *testing.T) {
 		assert.Empty(t, resp.Diagnostics.Warnings())
 	})
 
-	t.Run("create plan early return", func(t *testing.T) {
+	t.Run("create plan leaves unconfigured sibling unknown", func(t *testing.T) {
 		t.Parallel()
 
 		f := newModifyPlanFixture(t)
+		ctx := context.Background()
 		model := completeAWSCloudConnectorModel(t, types.StringValue(secretA))
 		plan := f.modelToPlan(model)
 		state := tfsdk.State{Schema: f.schema, Raw: f.nullRootValue()}
@@ -187,6 +188,9 @@ func TestResource_ModifyPlan(t *testing.T) {
 		resp := f.run(model, state, plan, newMapPrivateState())
 		require.False(t, resp.Diagnostics.HasError())
 		assert.Empty(t, resp.Diagnostics.Warnings())
+
+		planVars := planAttributeMap(ctx, t, resp.Plan)
+		assert.True(t, planVars.IsNull() || planVars.IsUnknown())
 	})
 
 	t.Run("no drift preserves updated_at", func(t *testing.T) {
@@ -292,9 +296,24 @@ func TestResource_ModifyPlan(t *testing.T) {
 func mustAzureBlockObject(t *testing.T) types.Object {
 	t.Helper()
 	obj, diags := types.ObjectValue(azureAttrTypes(), map[string]attr.Value{
-		attrAzureTenantID:         types.StringValue("tenant-1"),
-		attrAzureClientID:         types.StringValue("client-1"),
-		attrAzureCloudConnectorID: types.StringValue("azure-conn-1"),
+		attrAzureTenantID:          types.StringValue("tenant-1"),
+		attrAzureClientID:          types.StringValue("client-1"),
+		attrAzureTenantIDSecretRef: types.ObjectNull(secretRefAttrTypes()),
+		attrAzureClientIDSecretRef: types.ObjectNull(secretRefAttrTypes()),
+		attrAzureCloudConnectorID:  types.StringValue("azure-conn-1"),
+	})
+	require.False(t, diags.HasError())
+	return obj
+}
+
+func mustAzureBlockStateObject(t *testing.T) types.Object {
+	t.Helper()
+	obj, diags := types.ObjectValue(azureAttrTypes(), map[string]attr.Value{
+		attrAzureTenantID:          types.StringNull(),
+		attrAzureClientID:          types.StringNull(),
+		attrAzureTenantIDSecretRef: mustSecretRefObject(t, "tenant-ref"),
+		attrAzureClientIDSecretRef: mustSecretRefObject(t, "client-ref"),
+		attrAzureCloudConnectorID:  types.StringValue("azure-conn-1"),
 	})
 	require.False(t, diags.HasError())
 	return obj
@@ -361,10 +380,10 @@ func planAttributeObject(ctx context.Context, t *testing.T, plan tfsdk.Plan, att
 	return obj
 }
 
-func planAttributeMap(ctx context.Context, t *testing.T, plan tfsdk.Plan, attrName string) types.Map {
+func planAttributeMap(ctx context.Context, t *testing.T, plan tfsdk.Plan) types.Map {
 	t.Helper()
 	var m types.Map
-	diags := plan.GetAttribute(ctx, path.Root(attrName), &m)
+	diags := plan.GetAttribute(ctx, path.Root(attrVarsMap), &m)
 	require.False(t, diags.HasError(), diags)
 	return m
 }
@@ -382,13 +401,13 @@ func TestResource_ModifyPlan_DualPopulationPreservesVarsWhenAWSConfigured(t *tes
 	state.Vars = mustAWSRoleArnVarsMap(t, "arn:aws:iam::123:role/x")
 
 	plan := config
-	plan.Vars = types.MapNull(types.ObjectType{AttrTypes: varsElementAttrTypes()})
+	plan.Vars = types.MapUnknown(types.ObjectType{AttrTypes: varsElementAttrTypes()})
 
 	resp := f.run(config, f.modelToState(state), f.modelToPlan(plan), newMapPrivateState())
 	require.False(t, resp.Diagnostics.HasError())
 
-	planVars := planAttributeMap(ctx, t, resp.Plan, attrVarsMap)
-	assert.True(t, planVars.Equal(state.Vars))
+	planVars := planAttributeMap(ctx, t, resp.Plan)
+	assert.True(t, planVars.IsNull() || planVars.IsUnknown())
 }
 
 func TestResource_ModifyPlan_DualPopulationPreservesAWSWhenVarsConfigured(t *testing.T) {
@@ -438,12 +457,13 @@ func TestResource_ModifyPlan_DualPopulationPreservesVarsWhenAzureConfigured(t *t
 	state.Vars = mustAzureVarsMap(t)
 
 	plan := config
+	plan.Vars = types.MapUnknown(types.ObjectType{AttrTypes: varsElementAttrTypes()})
 
 	resp := f.run(config, f.modelToState(state), f.modelToPlan(plan), newMapPrivateState())
 	require.False(t, resp.Diagnostics.HasError())
 
-	planVars := planAttributeMap(ctx, t, resp.Plan, attrVarsMap)
-	assert.True(t, planVars.Equal(state.Vars))
+	planVars := planAttributeMap(ctx, t, resp.Plan)
+	assert.True(t, planVars.IsNull() || planVars.IsUnknown())
 }
 
 func TestResource_ModifyPlan_DualPopulationPreservesAzureWhenVarsConfigured(t *testing.T) {
@@ -457,7 +477,7 @@ func TestResource_ModifyPlan_DualPopulationPreservesAzureWhenVarsConfigured(t *t
 	config.CloudProvider = types.StringValue("azure")
 
 	state := config
-	state.Azure = mustAzureBlockObject(t)
+	state.Azure = mustAzureBlockStateObject(t)
 
 	plan := config
 	plan.Azure = types.ObjectNull(azureAttrTypes())
@@ -469,16 +489,20 @@ func TestResource_ModifyPlan_DualPopulationPreservesAzureWhenVarsConfigured(t *t
 	assert.True(t, planAzure.Equal(state.Azure))
 }
 
-func TestResource_ModifyPlan_DualPopulationOnCreateSkipsReconciliation(t *testing.T) {
+func TestResource_ModifyPlan_DualPopulationOnCreateLeavesSiblingNull(t *testing.T) {
 	t.Parallel()
 
 	f := newModifyPlanFixture(t)
+	ctx := context.Background()
 	model := completeAWSCloudConnectorModel(t, types.StringValue("secret"))
 	plan := f.modelToPlan(model)
 	state := tfsdk.State{Schema: f.schema, Raw: f.nullRootValue()}
 
 	resp := f.run(model, state, plan, newMapPrivateState())
 	require.False(t, resp.Diagnostics.HasError())
+
+	planVars := planAttributeMap(ctx, t, resp.Plan)
+	assert.True(t, planVars.IsNull())
 }
 
 func TestResource_ModifyPlan_DualPopulationOnDestroySkipsReconciliation(t *testing.T) {

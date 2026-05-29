@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -51,9 +52,23 @@ func reconcileDualRepresentationPlan(
 
 	switch {
 	case isNestedBlockConfigured(config.AWS):
-		copyStateSiblingToPlan(ctx, resp, state.Vars, path.Root(attrVarsMap), config.Vars)
+		if !awsBlockEqualIgnoringWriteOnly(plan.AWS, state.AWS) {
+			varsMap, varsDiags := planVarsMapFromAWSBlockForUpdate(ctx, plan, state)
+			resp.Diagnostics.Append(varsDiags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root(attrVarsMap), varsMap)...)
+		}
 	case isNestedBlockConfigured(config.Azure):
-		copyStateSiblingToPlan(ctx, resp, state.Vars, path.Root(attrVarsMap), config.Vars)
+		if !azureBlockEqualIgnoringWriteOnly(plan.Azure, state.Azure) {
+			varsMap, varsDiags := planVarsMapFromAzureBlockForUpdate(ctx, plan, state)
+			resp.Diagnostics.Append(varsDiags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root(attrVarsMap), varsMap)...)
+		}
 	case isVarsMapConfigured(config.Vars):
 		if isNestedBlockConfigured(config.AWS) || isNestedBlockConfigured(config.Azure) {
 			return
@@ -68,6 +83,148 @@ func reconcileDualRepresentationPlan(
 			copyStateSiblingToPlan(ctx, resp, state.Azure, path.Root(attrAzureBlock), config.Azure)
 		}
 	}
+}
+
+func nullVarsElement() cloudConnectorVarsElement {
+	return cloudConnectorVarsElement{
+		String:      types.StringNull(),
+		Number:      types.Float64Null(),
+		Bool:        types.BoolNull(),
+		Type:        types.StringNull(),
+		Frozen:      types.BoolNull(),
+		Value:       types.StringNull(),
+		SecretValue: types.StringNull(),
+		SecretRef:   types.ObjectNull(secretRefAttrTypes()),
+	}
+}
+
+func structuredTextPlanElement(value types.String) cloudConnectorVarsElement {
+	elem := nullVarsElement()
+	elem.Type = types.StringValue(varsStructuredTypeText)
+	elem.Value = value
+	return elem
+}
+
+func structuredPasswordPlanElement() cloudConnectorVarsElement {
+	elem := nullVarsElement()
+	elem.Type = types.StringValue(varsStructuredTypePassword)
+	return elem
+}
+
+// planVarsForCreate builds the create-plan vars map from config, leaving secret_ref
+// unknown for password elements so apply consistency checks pass after secrets are stored.
+func planVarsForCreate(ctx context.Context, configVars types.Map) (types.Map, diag.Diagnostics) {
+	elems, diags := varsElementsFromMap(configVars)
+	if diags.HasError() {
+		return types.MapNull(types.ObjectType{AttrTypes: varsElementAttrTypes()}), diags
+	}
+
+	for key, elem := range elems {
+		if elem.Type.ValueString() == varsStructuredTypePassword {
+			elem.SecretRef = types.ObjectUnknown(secretRefAttrTypes())
+		}
+		elems[key] = elem
+	}
+
+	return varsMapFromElements(ctx, elems)
+}
+
+func passwordPlanElementWithStateSecretRef(state cloudConnectorModel, varKey string) cloudConnectorVarsElement {
+	elem := structuredPasswordPlanElement()
+	stateElems, diags := varsElementsFromMap(state.Vars)
+	if diags.HasError() {
+		return elem
+	}
+	if stateElem, ok := stateElems[varKey]; ok {
+		elem.SecretRef = stateElem.SecretRef
+	}
+	return elem
+}
+
+func planVarsMapFromAWSBlockForUpdate(ctx context.Context, plan, state cloudConnectorModel) (types.Map, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	aws, awsDiags := awsBlockFromObject(plan.AWS)
+	diags.Append(awsDiags...)
+	if diags.HasError() {
+		return types.MapNull(types.ObjectType{AttrTypes: varsElementAttrTypes()}), diags
+	}
+
+	elems := map[string]cloudConnectorVarsElement{
+		attrAWSRoleArn:    structuredTextPlanElement(aws.RoleArn),
+		attrAWSExternalID: passwordPlanElementWithStateSecretRef(state, attrAWSExternalID),
+	}
+
+	return varsMapFromElements(ctx, elems)
+}
+
+func planVarsMapFromAzureBlockForUpdate(ctx context.Context, plan, state cloudConnectorModel) (types.Map, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	azure, azureDiags := azureBlockFromObject(plan.Azure)
+	diags.Append(azureDiags...)
+	if diags.HasError() {
+		return types.MapNull(types.ObjectType{AttrTypes: varsElementAttrTypes()}), diags
+	}
+
+	elems := map[string]cloudConnectorVarsElement{
+		attrAzureTenantID:                       passwordPlanElementWithStateSecretRef(state, attrAzureTenantID),
+		attrAzureClientID:                       passwordPlanElementWithStateSecretRef(state, attrAzureClientID),
+		wireKeyAzureCredentialsCloudConnectorID: structuredTextPlanElement(azure.CloudConnectorID),
+	}
+
+	return varsMapFromElements(ctx, elems)
+}
+
+func planVarsMapFromAWSBlock(ctx context.Context, config cloudConnectorModel) (types.Map, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	aws, awsDiags := awsBlockFromObject(config.AWS)
+	diags.Append(awsDiags...)
+	if diags.HasError() {
+		return types.MapNull(types.ObjectType{AttrTypes: varsElementAttrTypes()}), diags
+	}
+
+	elems := map[string]cloudConnectorVarsElement{
+		attrAWSRoleArn:    structuredTextPlanElement(aws.RoleArn),
+		attrAWSExternalID: structuredPasswordPlanElement(),
+	}
+
+	return varsMapFromElements(ctx, elems)
+}
+
+func planVarsMapFromAzureBlock(ctx context.Context, config cloudConnectorModel) (types.Map, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	azure, azureDiags := azureBlockFromObject(config.Azure)
+	diags.Append(azureDiags...)
+	if diags.HasError() {
+		return types.MapNull(types.ObjectType{AttrTypes: varsElementAttrTypes()}), diags
+	}
+
+	elems := map[string]cloudConnectorVarsElement{
+		attrAzureTenantID:                       structuredPasswordPlanElement(),
+		attrAzureClientID:                       structuredPasswordPlanElement(),
+		wireKeyAzureCredentialsCloudConnectorID: structuredTextPlanElement(azure.CloudConnectorID),
+	}
+
+	return varsMapFromElements(ctx, elems)
+}
+
+func varsMapFromElements(_ context.Context, elems map[string]cloudConnectorVarsElement) (types.Map, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	attrValues := make(map[string]attr.Value, len(elems))
+	for key, elem := range elems {
+		obj, objDiags := varsElementToObject(elem)
+		diags.Append(objDiags...)
+		if diags.HasError() {
+			return types.MapNull(types.ObjectType{AttrTypes: varsElementAttrTypes()}), diags
+		}
+		attrValues[key] = obj
+	}
+	varsMap, mapDiags := types.MapValue(types.ObjectType{AttrTypes: varsElementAttrTypes()}, attrValues)
+	diags.Append(mapDiags...)
+	return varsMap, diags
 }
 
 func isNestedBlockConfigured(block types.Object) bool {

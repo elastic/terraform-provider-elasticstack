@@ -34,6 +34,8 @@ const (
 	cloudConnectorResourceType = "elasticstack_fleet_cloud_connector"
 
 	writeOnlyAttributeAWSExternalID = "aws.external_id"
+	writeOnlyAttributeAzureTenantID = "azure.tenant_id"
+	writeOnlyAttributeAzureClientID = "azure.client_id"
 
 	// varsSecretIndexPrivateStateKey tracks var map keys that have secret_value
 	// hashes in private state. The Plugin Framework private-state API does not
@@ -135,6 +137,26 @@ func writeOnlyEntriesFromConfig(ctx context.Context, config cloudConnectorModel)
 		}
 	}
 
+	if !config.Azure.IsNull() && !config.Azure.IsUnknown() {
+		var azure azureBlockModel
+		diags.Append(config.Azure.As(ctx, &azure, basetypes.ObjectAsOptions{})...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		if typeutils.IsKnown(azure.TenantID) {
+			entries = append(entries, writeOnlyConfigEntry{
+				attributePath: writeOnlyAttributeAzureTenantID,
+				value:         azure.TenantID,
+			})
+		}
+		if typeutils.IsKnown(azure.ClientID) {
+			entries = append(entries, writeOnlyConfigEntry{
+				attributePath: writeOnlyAttributeAzureClientID,
+				value:         azure.ClientID,
+			})
+		}
+	}
+
 	if !config.Vars.IsNull() && !config.Vars.IsUnknown() {
 		var elems map[string]cloudConnectorVarsElement
 		diags.Append(config.Vars.ElementsAs(ctx, &elems, false)...)
@@ -219,8 +241,15 @@ func evaluateWriteOnlyDrift(
 		}
 	}
 
-	if _, inConfig := configPaths[writeOnlyAttributeAWSExternalID]; !inConfig {
-		storedHash, getDiags := priv.GetKey(ctx, hasher.PrivateStateKey(writeOnlyAttributeAWSExternalID))
+	for _, attrPath := range []string{
+		writeOnlyAttributeAWSExternalID,
+		writeOnlyAttributeAzureTenantID,
+		writeOnlyAttributeAzureClientID,
+	} {
+		if _, inConfig := configPaths[attrPath]; inConfig {
+			continue
+		}
+		storedHash, getDiags := priv.GetKey(ctx, hasher.PrivateStateKey(attrPath))
 		diags.Append(getDiags...)
 		if diags.HasError() {
 			return nil, diags
@@ -228,7 +257,7 @@ func evaluateWriteOnlyDrift(
 		if len(storedHash) > 0 {
 			results = append(results, driftResult{
 				Changed:       true,
-				AttributePath: writeOnlyAttributeAWSExternalID,
+				AttributePath: attrPath,
 			})
 		}
 	}

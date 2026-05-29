@@ -53,10 +53,20 @@ func onWrittenCloudConnector(
 	}
 
 	hasAWSExternalID := false
+	hasAzureTenantID := false
+	hasAzureClientID := false
 	currentVarKeys := make([]string, 0)
 	for _, entry := range entries {
-		if entry.attributePath == writeOnlyAttributeAWSExternalID {
+		switch entry.attributePath {
+		case writeOnlyAttributeAWSExternalID:
 			hasAWSExternalID = true
+		case writeOnlyAttributeAzureTenantID:
+			hasAzureTenantID = true
+		case writeOnlyAttributeAzureClientID:
+			hasAzureClientID = true
+		default:
+			varKey := entry.attributePath[len("vars.") : len(entry.attributePath)-len(".secret_value")]
+			currentVarKeys = append(currentVarKeys, varKey)
 		}
 		hash, err := hasher.Compute(entry.value.ValueString())
 		if err != nil {
@@ -70,14 +80,22 @@ func onWrittenCloudConnector(
 		if diags.HasError() {
 			return diags
 		}
-		if entry.attributePath != writeOnlyAttributeAWSExternalID {
-			varKey := entry.attributePath[len("vars.") : len(entry.attributePath)-len(".secret_value")]
-			currentVarKeys = append(currentVarKeys, varKey)
-		}
 	}
 
 	if !hasAWSExternalID {
 		diags.Append(priv.SetKey(ctx, awsExternalIDPrivateStateKey(), nil)...)
+		if diags.HasError() {
+			return diags
+		}
+	}
+	if !hasAzureTenantID {
+		diags.Append(priv.SetKey(ctx, hasher.PrivateStateKey(writeOnlyAttributeAzureTenantID), nil)...)
+		if diags.HasError() {
+			return diags
+		}
+	}
+	if !hasAzureClientID {
+		diags.Append(priv.SetKey(ctx, hasher.PrivateStateKey(writeOnlyAttributeAzureClientID), nil)...)
 		if diags.HasError() {
 			return diags
 		}

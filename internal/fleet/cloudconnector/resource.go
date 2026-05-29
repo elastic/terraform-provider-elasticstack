@@ -41,23 +41,27 @@ type Resource struct {
 
 	// testModifyPlanPrivate injects private state during ModifyPlan unit tests only.
 	testModifyPlanPrivate privateData
+
+	// pendingWriteOnlyResubmit tracks write-only attributes that changed in config
+	// and must be resent on the next Update in this apply cycle.
+	pendingWriteOnlyResubmit map[string]struct{}
 }
 
 func newResource() *Resource {
-	return &Resource{
-		KibanaResource: entitycore.NewKibanaResource[cloudConnectorModel](
-			entitycore.ComponentFleet,
-			"cloud_connector",
-			entitycore.KibanaResourceOptions[cloudConnectorModel]{
-				Schema:    getSchema,
-				Read:      readCloudConnector,
-				Delete:    deleteCloudConnector,
-				Create:    createCloudConnector,
-				Update:    updateCloudConnector,
-				OnWritten: onWrittenCloudConnector,
-			},
-		),
-	}
+	r := &Resource{}
+	r.KibanaResource = entitycore.NewKibanaResource[cloudConnectorModel](
+		entitycore.ComponentFleet,
+		"cloud_connector",
+		entitycore.KibanaResourceOptions[cloudConnectorModel]{
+			Schema:    getSchema,
+			Read:      readCloudConnector,
+			Delete:    deleteCloudConnector,
+			Create:    createCloudConnector,
+			Update:    r.updateCloudConnector,
+			OnWritten: onWrittenCloudConnector,
+		},
+	)
+	return r
 }
 
 // NewResource is a helper function to simplify the provider implementation.
