@@ -18,9 +18,11 @@
 package connector
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"time"
 
 	getconnector "github.com/elastic/go-elasticsearch/v8/typedapi/connector/get"
@@ -259,11 +261,23 @@ func connectorDateTimeToMillis(v any) (int64, bool) {
 	}
 }
 
+func isNilValue(v any) bool {
+	if v == nil {
+		return true
+	}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Map, reflect.Slice, reflect.Pointer, reflect.Interface:
+		return rv.IsNil()
+	}
+	return false
+}
+
 func marshalConnectorJSONField(attr string, value any, diags *diag.Diagnostics) jsontypes.Normalized {
-	if value == nil {
+	if isNilValue(value) {
 		return jsontypes.NewNormalizedNull()
 	}
-	bytes, err := json.Marshal(value)
+	encoded, err := json.Marshal(value)
 	if err != nil {
 		diags.AddError(
 			"Failed to encode connector field",
@@ -271,14 +285,14 @@ func marshalConnectorJSONField(attr string, value any, diags *diag.Diagnostics) 
 		)
 		return jsontypes.NewNormalizedNull()
 	}
-	if len(bytes) == 0 {
+	if string(encoded) == "null" {
 		return jsontypes.NewNormalizedNull()
 	}
-	return jsontypes.NewNormalizedValue(string(bytes))
+	return jsontypes.NewNormalizedValue(string(encoded))
 }
 
 func marshalConnectorRawJSONField(attr string, raw json.RawMessage, diags *diag.Diagnostics) jsontypes.Normalized {
-	if len(raw) == 0 {
+	if len(raw) == 0 || bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
 		return jsontypes.NewNormalizedNull()
 	}
 	if !json.Valid(raw) {
