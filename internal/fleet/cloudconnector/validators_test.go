@@ -304,11 +304,7 @@ func TestProviderBlockMatchesCloudProviderValidator(t *testing.T) {
 		t.Parallel()
 		cfg := buildCloudConnectorTestConfig(ctx, t, r, map[string]tftypes.Value{
 			attrCloudProvider: tftypes.NewValue(tftypes.String, cloudProviderAWS),
-			attrAzureBlock: tftypes.NewValue(azureTerraformObjectType(ctx, t, r), map[string]tftypes.Value{
-				attrAzureTenantID:         tftypes.NewValue(tftypes.String, "tenant-uuid"),
-				attrAzureClientID:         tftypes.NewValue(tftypes.String, "client-uuid"),
-				attrAzureCloudConnectorID: tftypes.NewValue(tftypes.String, "azure-connector-id"),
-			}),
+			attrAzureBlock:    tftypes.NewValue(azureTerraformObjectType(ctx, t, r), azureConfigBlockValues(ctx, t, r, "tenant-uuid", "client-uuid", "azure-connector-id")),
 		})
 
 		resp := &resource.ValidateConfigResponse{}
@@ -337,11 +333,7 @@ func TestProviderBlockMatchesCloudProviderValidator(t *testing.T) {
 		t.Parallel()
 		cfg := buildCloudConnectorTestConfig(ctx, t, r, map[string]tftypes.Value{
 			attrCloudProvider: tftypes.NewValue(tftypes.String, cloudProviderAzure),
-			attrAzureBlock: tftypes.NewValue(azureTerraformObjectType(ctx, t, r), map[string]tftypes.Value{
-				attrAzureTenantID:         tftypes.NewValue(tftypes.String, "tenant-uuid"),
-				attrAzureClientID:         tftypes.NewValue(tftypes.String, "client-uuid"),
-				attrAzureCloudConnectorID: tftypes.NewValue(tftypes.String, "azure-connector-id"),
-			}),
+			attrAzureBlock:    tftypes.NewValue(azureTerraformObjectType(ctx, t, r), azureConfigBlockValues(ctx, t, r, "tenant-uuid", "client-uuid", "azure-connector-id")),
 		})
 
 		resp := &resource.ValidateConfigResponse{}
@@ -404,6 +396,18 @@ func secretRefTerraformObjectType(ctx context.Context, t *testing.T, r resource.
 	require.False(t, schemaResp.Diagnostics.HasError())
 	awsAttr := schemaResp.Schema.Attributes[attrAWSBlock].(schema.SingleNestedAttribute)
 	return awsAttr.Attributes[attrAWSExternalIDSecretRef].GetType().TerraformType(ctx)
+}
+
+func azureConfigBlockValues(ctx context.Context, t *testing.T, r resource.Resource, tenantID, clientID, connectorID string) map[string]tftypes.Value {
+	t.Helper()
+	secretRefType := secretRefTerraformObjectType(ctx, t, r)
+	return map[string]tftypes.Value{
+		attrAzureTenantID:          tftypes.NewValue(tftypes.String, tenantID),
+		attrAzureClientID:          tftypes.NewValue(tftypes.String, clientID),
+		attrAzureTenantIDSecretRef: tftypes.NewValue(secretRefType, nil),
+		attrAzureClientIDSecretRef: tftypes.NewValue(secretRefType, nil),
+		attrAzureCloudConnectorID:  tftypes.NewValue(tftypes.String, connectorID),
+	}
 }
 
 func azureTerraformObjectType(ctx context.Context, t *testing.T, r resource.Resource) tftypes.Type {

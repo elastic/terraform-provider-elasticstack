@@ -24,6 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -123,11 +124,11 @@ func getSchema(_ context.Context) schema.Schema {
 						Attributes: map[string]schema.Attribute{
 							attrSecretRefID: schema.StringAttribute{
 								Computed:            true,
-								MarkdownDescription: "The secret reference identifier.",
+								MarkdownDescription: secretRefIDMarkdownDescription,
 							},
 							attrSecretRefIsSecretRef: schema.BoolAttribute{
 								Computed:            true,
-								MarkdownDescription: "Whether the value is a saved secret reference.",
+								MarkdownDescription: secretRefIsSecretRefMarkdownDescription,
 							},
 						},
 					},
@@ -135,22 +136,58 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 			attrAzureBlock: schema.SingleNestedAttribute{
 				Optional: true,
-				Computed: true,
 				MarkdownDescription: "Typed Azure authentication settings. Compiles to the same wire `vars` payload as the generic `vars` map. " +
 					"Populated in state after Read when all modelled Azure keys are present and `cloud_provider` is `azure`.",
-				PlanModifiers: []planmodifier.Object{
-					objectplanmodifier.UseStateForUnknown(),
-				},
 				Attributes: map[string]schema.Attribute{
 					attrAzureTenantID: schema.StringAttribute{
-						Optional:            true,
-						Computed:            true,
-						MarkdownDescription: "The Azure AD tenant ID.",
+						Optional:  true,
+						Sensitive: true,
+						WriteOnly: true,
+						MarkdownDescription: "The Azure AD tenant ID. Write-only: the value is sent to the API once and is never stored in Terraform state. " +
+							"A bcrypt hash of the last applied value is stored in resource private state for plan-time drift detection. " +
+							"After `terraform import`, plan and apply once with this attribute set to baseline the hash if you intend to manage the secret with Terraform.",
 					},
 					attrAzureClientID: schema.StringAttribute{
-						Optional:            true,
+						Optional:  true,
+						Sensitive: true,
+						WriteOnly: true,
+						MarkdownDescription: "The Azure application (client) ID. Write-only: the value is sent to the API once and is never stored in Terraform state. " +
+							"A bcrypt hash of the last applied value is stored in resource private state for plan-time drift detection. " +
+							"After `terraform import`, plan and apply once with this attribute set to baseline the hash if you intend to manage the secret with Terraform.",
+					},
+					attrAzureTenantIDSecretRef: schema.SingleNestedAttribute{
 						Computed:            true,
-						MarkdownDescription: "The Azure application (client) ID.",
+						MarkdownDescription: "The saved secret reference for `tenant_id` returned by the API after the secret is stored.",
+						PlanModifiers: []planmodifier.Object{
+							objectplanmodifier.UseStateForUnknown(),
+						},
+						Attributes: map[string]schema.Attribute{
+							attrSecretRefID: schema.StringAttribute{
+								Computed:            true,
+								MarkdownDescription: secretRefIDMarkdownDescription,
+							},
+							attrSecretRefIsSecretRef: schema.BoolAttribute{
+								Computed:            true,
+								MarkdownDescription: secretRefIsSecretRefMarkdownDescription,
+							},
+						},
+					},
+					attrAzureClientIDSecretRef: schema.SingleNestedAttribute{
+						Computed:            true,
+						MarkdownDescription: "The saved secret reference for `client_id` returned by the API after the secret is stored.",
+						PlanModifiers: []planmodifier.Object{
+							objectplanmodifier.UseStateForUnknown(),
+						},
+						Attributes: map[string]schema.Attribute{
+							attrSecretRefID: schema.StringAttribute{
+								Computed:            true,
+								MarkdownDescription: secretRefIDMarkdownDescription,
+							},
+							attrSecretRefIsSecretRef: schema.BoolAttribute{
+								Computed:            true,
+								MarkdownDescription: secretRefIsSecretRefMarkdownDescription,
+							},
+						},
 					},
 					attrAzureCloudConnectorID: schema.StringAttribute{
 						Optional:            true,
@@ -161,8 +198,12 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 			attrVarsMap: schema.MapNestedAttribute{
 				Optional: true,
+				Computed: true,
 				MarkdownDescription: "Generic cloud connector variables keyed by integration package field name. Each element represents one API union arm. " +
 					"Use this for GCP or when the typed blocks do not model every key returned by the API.",
+				PlanModifiers: []planmodifier.Map{
+					mapplanmodifier.UseStateForUnknown(),
+				},
 				NestedObject: schema.NestedAttributeObject{
 					Validators: []validator.Object{
 						varsElementValidator{},
@@ -199,8 +240,7 @@ func getSchema(_ context.Context) schema.Schema {
 						attrVarsSecretValue: schema.StringAttribute{
 							Optional:  true,
 							Sensitive: true,
-							WriteOnly: true,
-							MarkdownDescription: "Write-only secret value for a structured var (API union arm 4). The raw value is sent to the API once and is never stored in Terraform state. " +
+							MarkdownDescription: "Secret value for a structured var (API union arm 4). The raw value is sent to the API once and is never stored in Terraform state. " +
 								"A bcrypt hash of the last applied value is stored in resource private state for plan-time drift detection. " +
 								"After `terraform import`, plan and apply once with this attribute set to baseline the hash if you intend to manage the secret with Terraform.",
 						},
@@ -213,11 +253,11 @@ func getSchema(_ context.Context) schema.Schema {
 							Attributes: map[string]schema.Attribute{
 								attrSecretRefID: schema.StringAttribute{
 									Computed:            true,
-									MarkdownDescription: "The secret reference identifier.",
+									MarkdownDescription: secretRefIDMarkdownDescription,
 								},
 								attrSecretRefIsSecretRef: schema.BoolAttribute{
 									Computed:            true,
-									MarkdownDescription: "Whether the value is a saved secret reference.",
+									MarkdownDescription: secretRefIsSecretRefMarkdownDescription,
 								},
 							},
 						},

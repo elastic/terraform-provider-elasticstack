@@ -86,14 +86,20 @@ func TestPopulateFromAPI_AzureDualPopulation(t *testing.T) {
 		UpdatedAt:          "2026-01-02T00:00:00.000Z",
 		Vars: map[string]any{
 			"tenant_id": map[string]any{
-				"type":  "text",
-				"value": "tenant-uuid",
+				"type": "password",
+				"value": map[string]any{
+					"id":          "tenant-secret-ref",
+					"isSecretRef": true,
+				},
 			},
 			"client_id": map[string]any{
-				"type":  "text",
-				"value": "client-uuid",
+				"type": "password",
+				"value": map[string]any{
+					"id":          "client-secret-ref",
+					"isSecretRef": true,
+				},
 			},
-			"cloud_connector_id": map[string]any{
+			wireKeyAzureCredentialsCloudConnectorID: map[string]any{
 				"type":  "text",
 				"value": "azure-connector-id",
 			},
@@ -109,9 +115,11 @@ func TestPopulateFromAPI_AzureDualPopulation(t *testing.T) {
 
 	require.False(t, model.Azure.IsNull())
 	azureAttrs := model.Azure.Attributes()
-	assert.Equal(t, "tenant-uuid", azureAttrs["tenant_id"].(types.String).ValueString())
-	assert.Equal(t, "client-uuid", azureAttrs["client_id"].(types.String).ValueString())
+	assert.True(t, azureAttrs["tenant_id"].(types.String).IsNull())
+	assert.True(t, azureAttrs["client_id"].(types.String).IsNull())
 	assert.Equal(t, "azure-connector-id", azureAttrs["cloud_connector_id"].(types.String).ValueString())
+	assert.Equal(t, "tenant-secret-ref", azureAttrs["tenant_id_secret_ref"].(types.Object).Attributes()["id"].(types.String).ValueString())
+	assert.Equal(t, "client-secret-ref", azureAttrs["client_id_secret_ref"].(types.Object).Attributes()["id"].(types.String).ValueString())
 
 	assert.True(t, model.AWS.IsNull())
 	assert.Equal(t, "security", model.SpaceID.ValueString())

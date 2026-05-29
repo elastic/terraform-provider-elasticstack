@@ -97,32 +97,21 @@ func TestListParamsFromModel(t *testing.T) {
 
 			if tt.wantKuery == nil {
 				assert.Nil(t, got.Kuery)
-			} else {
-				if assert.NotNil(t, got.Kuery) {
-					assert.Equal(t, *tt.wantKuery, *got.Kuery)
-				}
+			} else if assert.NotNil(t, got.Kuery) {
+				assert.Equal(t, *tt.wantKuery, *got.Kuery)
 			}
 
 			if tt.wantPage == nil {
 				assert.Nil(t, got.Page)
-			} else {
-				if assert.NotNil(t, got.Page) {
-					assert.Equal(t, *tt.wantPage, *got.Page)
-				}
+			} else if assert.NotNil(t, got.Page) {
+				assert.Equal(t, *tt.wantPage, *got.Page)
 			}
 
 			if tt.wantPerPage == nil {
 				assert.Nil(t, got.PerPage)
-			} else {
-				if assert.NotNil(t, got.PerPage) {
-					assert.Equal(t, *tt.wantPerPage, *got.PerPage)
-				}
+			} else if assert.NotNil(t, got.PerPage) {
+				assert.Equal(t, *tt.wantPerPage, *got.PerPage)
 			}
 		})
 	}
-}
-
-//go:fix inline
-func ptrString(s string) *string {
-	return new(s)
 }

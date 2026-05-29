@@ -144,6 +144,9 @@ func (varsElementValidator) ValidateObject(_ context.Context, req validator.Obje
 		}
 
 		if valueArms == 0 {
+			if attrs[attrVarsValue].IsUnknown() || attrs[attrVarsSecretValue].IsUnknown() {
+				return
+			}
 			resp.Diagnostics.AddAttributeError(
 				req.Path,
 				"Invalid vars element",

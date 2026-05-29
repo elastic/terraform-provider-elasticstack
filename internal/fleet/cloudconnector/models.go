@@ -59,6 +59,12 @@ const (
 	attrVarsSecretValue = "secret_value"
 	attrVarsSecretRef   = "secret_ref"
 
+	varsStructuredTypeText     = "text"
+	varsStructuredTypePassword = "password"
+
+	secretRefIDMarkdownDescription          = "The secret reference identifier."
+	secretRefIsSecretRefMarkdownDescription = "Whether the value is a saved secret reference."
+
 	attrSecretRefID          = "id"
 	attrSecretRefIsSecretRef = "is_secret_ref"
 
@@ -66,9 +72,13 @@ const (
 	attrAWSExternalID          = "external_id"
 	attrAWSExternalIDSecretRef = "external_id_secret_ref"
 
-	attrAzureTenantID         = "tenant_id"
-	attrAzureClientID         = "client_id"
-	attrAzureCloudConnectorID = "cloud_connector_id"
+	attrAzureTenantID          = "tenant_id"
+	attrAzureClientID          = "client_id"
+	attrAzureTenantIDSecretRef = "tenant_id_secret_ref"
+	attrAzureClientIDSecretRef = "client_id_secret_ref"
+	attrAzureCloudConnectorID  = "cloud_connector_id"
+
+	wireKeyAzureCredentialsCloudConnectorID = "azure_credentials_cloud_connector_id"
 
 	cloudProviderAWS   = attrAWSBlock
 	cloudProviderAzure = attrAzureBlock
@@ -134,9 +144,11 @@ type awsBlockModel struct {
 }
 
 type azureBlockModel struct {
-	TenantID         types.String `tfsdk:"tenant_id"`
-	ClientID         types.String `tfsdk:"client_id"`
-	CloudConnectorID types.String `tfsdk:"cloud_connector_id"`
+	TenantID          types.String `tfsdk:"tenant_id"`
+	ClientID          types.String `tfsdk:"client_id"`
+	TenantIDSecretRef types.Object `tfsdk:"tenant_id_secret_ref"`
+	ClientIDSecretRef types.Object `tfsdk:"client_id_secret_ref"`
+	CloudConnectorID  types.String `tfsdk:"cloud_connector_id"`
 }
 
 var cloudConnectorMinVersion = version.Must(version.NewVersion("9.2.0"))
@@ -185,9 +197,11 @@ func awsAttrTypes() map[string]attr.Type {
 
 func azureAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		attrAzureTenantID:         types.StringType,
-		attrAzureClientID:         types.StringType,
-		attrAzureCloudConnectorID: types.StringType,
+		attrAzureTenantID:          types.StringType,
+		attrAzureClientID:          types.StringType,
+		attrAzureTenantIDSecretRef: types.ObjectType{AttrTypes: secretRefAttrTypes()},
+		attrAzureClientIDSecretRef: types.ObjectType{AttrTypes: secretRefAttrTypes()},
+		attrAzureCloudConnectorID:  types.StringType,
 	}
 }
 
@@ -531,51 +545,45 @@ func azureBlockFromVars(vars map[string]any) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	nullObj := types.ObjectNull(azureAttrTypes())
 
-	if !hasExactVarKeys(vars, attrAzureTenantID, attrAzureClientID, attrAzureCloudConnectorID) {
+	if !hasExactVarKeys(vars, attrAzureTenantID, attrAzureClientID, wireKeyAzureCredentialsCloudConnectorID) {
 		return nullObj, diags
 	}
 
 	tenantIDVal := vars[attrAzureTenantID]
 	clientIDVal := vars[attrAzureClientID]
-	connectorIDVal := vars[attrAzureCloudConnectorID]
-
-	tenantID, ok := stringVarValue(tenantIDVal)
-	if !ok {
-		diags.AddError(
-			"Unsupported cloud connector Azure block",
-			`Cloud connector var "tenant_id" is not a string or structured string value.`,
-		)
-		return nullObj, diags
-	}
-
-	clientID, ok := stringVarValue(clientIDVal)
-	if !ok {
-		diags.AddError(
-			"Unsupported cloud connector Azure block",
-			`Cloud connector var "client_id" is not a string or structured string value.`,
-		)
-		return nullObj, diags
-	}
+	connectorIDVal := vars[wireKeyAzureCredentialsCloudConnectorID]
 
 	cloudConnectorID, ok := stringVarValue(connectorIDVal)
 	if !ok {
 		diags.AddError(
 			"Unsupported cloud connector Azure block",
-			`Cloud connector var "cloud_connector_id" is not a string or structured string value.`,
+			fmt.Sprintf(`Cloud connector var %q is not a string or structured string value.`, wireKeyAzureCredentialsCloudConnectorID),
 		)
 		return nullObj, diags
 	}
 
 	block := azureBlockModel{
-		TenantID:         types.StringValue(tenantID),
-		ClientID:         types.StringValue(clientID),
-		CloudConnectorID: types.StringValue(cloudConnectorID),
+		TenantID:          types.StringNull(),
+		ClientID:          types.StringNull(),
+		TenantIDSecretRef: types.ObjectNull(secretRefAttrTypes()),
+		ClientIDSecretRef: types.ObjectNull(secretRefAttrTypes()),
+		CloudConnectorID:  types.StringValue(cloudConnectorID),
+	}
+
+	if secretRef, ok := secretRefVarValue(tenantIDVal); ok {
+		block.TenantIDSecretRef = secretRef
+	}
+
+	if secretRef, ok := secretRefVarValue(clientIDVal); ok {
+		block.ClientIDSecretRef = secretRef
 	}
 
 	obj, objDiags := types.ObjectValue(azureAttrTypes(), map[string]attr.Value{
-		attrAzureTenantID:         block.TenantID,
-		attrAzureClientID:         block.ClientID,
-		attrAzureCloudConnectorID: block.CloudConnectorID,
+		attrAzureTenantID:          block.TenantID,
+		attrAzureClientID:          block.ClientID,
+		attrAzureTenantIDSecretRef: block.TenantIDSecretRef,
+		attrAzureClientIDSecretRef: block.ClientIDSecretRef,
+		attrAzureCloudConnectorID:  block.CloudConnectorID,
 	})
 	diags.Append(objDiags...)
 	return obj, diags

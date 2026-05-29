@@ -66,13 +66,10 @@ func TestGetSchemaDualPopulationAttributesOptionalComputed(t *testing.T) {
 
 	s := getSchema(context.Background())
 
-	t.Run(attrAzureBlock, func(t *testing.T) {
-		t.Parallel()
-		attr, ok := s.Attributes[attrAzureBlock].(schema.SingleNestedAttribute)
-		require.True(t, ok)
-		assert.True(t, attr.Optional, "%s should be optional", attrAzureBlock)
-		assert.True(t, attr.Computed, "%s should be computed", attrAzureBlock)
-	})
+	varsAttr, ok := s.Attributes[attrVarsMap].(schema.MapNestedAttribute)
+	require.True(t, ok)
+	assert.True(t, varsAttr.Optional, "%s should be optional", attrVarsMap)
+	assert.True(t, varsAttr.Computed, "%s should be optional+computed for dual representation", attrVarsMap)
 }
 
 func TestGetSchemaWriteOnlyParentBlocksNotComputed(t *testing.T) {
@@ -80,23 +77,16 @@ func TestGetSchemaWriteOnlyParentBlocksNotComputed(t *testing.T) {
 
 	s := getSchema(context.Background())
 
-	for _, name := range []string{attrAWSBlock, attrVarsMap} {
+	for _, name := range []string{attrAWSBlock, attrAzureBlock} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			switch attr := s.Attributes[name].(type) {
-			case schema.SingleNestedAttribute:
-				assert.True(t, attr.Optional, "%s should be optional", name)
-				assert.False(t, attr.Computed, "%s must not be computed when it contains write-only children", name)
-			case schema.MapNestedAttribute:
-				assert.True(t, attr.Optional, "%s should be optional", name)
-				assert.False(t, attr.Computed, "%s must not be computed when it contains write-only children", name)
-			default:
-				t.Fatalf("unexpected attribute type for %q: %T", name, s.Attributes[name])
-			}
+			attr, ok := s.Attributes[name].(schema.SingleNestedAttribute)
+			require.True(t, ok)
+			assert.True(t, attr.Optional, "%s should be optional", name)
+			assert.False(t, attr.Computed, "%s must not be computed when it contains write-only children", name)
 		})
 	}
 }
-
 func TestGetSchemaRequiresReplacePlanModifiers(t *testing.T) {
 	t.Parallel()
 
@@ -113,7 +103,7 @@ func TestGetSchemaRequiresReplacePlanModifiers(t *testing.T) {
 	}
 }
 
-func TestGetSchemaWriteOnlySensitiveAttributes(t *testing.T) {
+func TestGetSchemaSecretSensitiveAttributes(t *testing.T) {
 	t.Parallel()
 
 	s := getSchema(context.Background())
@@ -126,11 +116,24 @@ func TestGetSchemaWriteOnlySensitiveAttributes(t *testing.T) {
 	assert.True(t, externalID.Sensitive)
 	assert.False(t, externalID.Computed)
 
+	azureAttr, ok := s.Attributes[attrAzureBlock].(schema.SingleNestedAttribute)
+	require.True(t, ok)
+	tenantID, ok := azureAttr.Attributes[attrAzureTenantID].(schema.StringAttribute)
+	require.True(t, ok)
+	assert.True(t, tenantID.WriteOnly)
+	assert.True(t, tenantID.Sensitive)
+	assert.False(t, tenantID.Computed)
+	clientID, ok := azureAttr.Attributes[attrAzureClientID].(schema.StringAttribute)
+	require.True(t, ok)
+	assert.True(t, clientID.WriteOnly)
+	assert.True(t, clientID.Sensitive)
+	assert.False(t, clientID.Computed)
+
 	varsAttr, ok := s.Attributes[attrVarsMap].(schema.MapNestedAttribute)
 	require.True(t, ok)
 	secretValue, ok := varsAttr.NestedObject.Attributes[attrVarsSecretValue].(schema.StringAttribute)
 	require.True(t, ok)
-	assert.True(t, secretValue.WriteOnly)
+	assert.False(t, secretValue.WriteOnly)
 	assert.True(t, secretValue.Sensitive)
 	assert.False(t, secretValue.Computed)
 }
@@ -143,8 +146,15 @@ func TestGetSchemaUseStateForUnknownOnDualPopulationFields(t *testing.T) {
 
 	azureAttr, ok := s.Attributes[attrAzureBlock].(schema.SingleNestedAttribute)
 	require.True(t, ok)
-	assert.NotEmpty(t, azureAttr.PlanModifiers, "azure block should have plan modifiers")
-	assert.True(t, hasUseStateForUnknownObjectPlanModifier(ctx, azureAttr.PlanModifiers))
+	for _, name := range []string{attrAzureTenantIDSecretRef, attrAzureClientIDSecretRef} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			attr, ok := azureAttr.Attributes[name].(schema.SingleNestedAttribute)
+			require.True(t, ok)
+			assert.NotEmpty(t, attr.PlanModifiers, "%s should have plan modifiers", name)
+			assert.True(t, hasUseStateForUnknownObjectPlanModifier(ctx, attr.PlanModifiers))
+		})
+	}
 }
 
 func TestGetSchemaVarsInnerDualPopulationAttributesOptionalComputed(t *testing.T) {
