@@ -72,6 +72,10 @@ const (
 
 	cloudProviderAWS   = attrAWSBlock
 	cloudProviderAzure = attrAzureBlock
+	cloudProviderGCP   = "gcp"
+
+	accountTypeSingleAccount       = "single-account"
+	accountTypeOrganizationAccount = "organization-account"
 
 	wireKeyFrozen      = "frozen"
 	wireKeyValue       = "value"

@@ -110,6 +110,7 @@ func TestGetSchemaWriteOnlySensitiveAttributes(t *testing.T) {
 	require.True(t, ok)
 	assert.True(t, externalID.WriteOnly)
 	assert.True(t, externalID.Sensitive)
+	assert.False(t, externalID.Computed)
 
 	varsAttr, ok := s.Attributes[attrVarsMap].(schema.MapNestedAttribute)
 	require.True(t, ok)
@@ -117,12 +118,56 @@ func TestGetSchemaWriteOnlySensitiveAttributes(t *testing.T) {
 	require.True(t, ok)
 	assert.True(t, secretValue.WriteOnly)
 	assert.True(t, secretValue.Sensitive)
+	assert.False(t, secretValue.Computed)
+}
+
+func TestGetSchemaUseStateForUnknownOnDualPopulationFields(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	s := getSchema(ctx)
+
+	awsAttr, ok := s.Attributes[attrAWSBlock].(schema.SingleNestedAttribute)
+	require.True(t, ok)
+	assert.NotEmpty(t, awsAttr.PlanModifiers, "aws block should have plan modifiers")
+
+	azureAttr, ok := s.Attributes[attrAzureBlock].(schema.SingleNestedAttribute)
+	require.True(t, ok)
+	assert.NotEmpty(t, azureAttr.PlanModifiers, "azure block should have plan modifiers")
+
+	varsAttr, ok := s.Attributes[attrVarsMap].(schema.MapNestedAttribute)
+	require.True(t, ok)
+	assert.NotEmpty(t, varsAttr.PlanModifiers, "vars map should have plan modifiers")
+
+	assert.True(t, hasUseStateForUnknownObjectPlanModifier(ctx, awsAttr.PlanModifiers))
+	assert.True(t, hasUseStateForUnknownObjectPlanModifier(ctx, azureAttr.PlanModifiers))
+	assert.True(t, hasUseStateForUnknownMapPlanModifier(ctx, varsAttr.PlanModifiers))
 }
 
 func hasRequiresReplaceStringPlanModifier(ctx context.Context, modifiers []planmodifier.String) bool {
 	for _, modifier := range modifiers {
 		desc := strings.ToLower(modifier.Description(ctx))
 		if strings.Contains(desc, "destroy and recreate") {
+			return true
+		}
+	}
+	return false
+}
+
+func hasUseStateForUnknownObjectPlanModifier(ctx context.Context, modifiers []planmodifier.Object) bool {
+	for _, modifier := range modifiers {
+		desc := strings.ToLower(modifier.Description(ctx))
+		if strings.Contains(desc, "once set") {
+			return true
+		}
+	}
+	return false
+}
+
+func hasUseStateForUnknownMapPlanModifier(ctx context.Context, modifiers []planmodifier.Map) bool {
+	for _, modifier := range modifiers {
+		desc := strings.ToLower(modifier.Description(ctx))
+		if strings.Contains(desc, "once set") {
 			return true
 		}
 	}

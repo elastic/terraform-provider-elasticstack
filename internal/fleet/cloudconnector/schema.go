@@ -77,7 +77,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 				Validators: []validator.String{
-					stringvalidator.OneOf(cloudProviderAWS, cloudProviderAzure, "gcp"),
+					stringvalidator.OneOf(cloudProviderAWS, cloudProviderAzure, cloudProviderGCP),
 				},
 			},
 			attrAccountType: schema.StringAttribute{
@@ -88,7 +88,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 				Validators: []validator.String{
-					stringvalidator.OneOf("single-account", "organization-account"),
+					stringvalidator.OneOf(accountTypeSingleAccount, accountTypeOrganizationAccount),
 				},
 			},
 			attrForceDelete: schema.BoolAttribute{
@@ -181,8 +181,9 @@ func getSchema(_ context.Context) schema.Schema {
 							MarkdownDescription: "Bare string var value (API union arm 1).",
 						},
 						attrVarsNumber: schema.Float64Attribute{
-							Optional:            true,
-							MarkdownDescription: "Bare numeric var value (API union arm 2).",
+							Optional: true,
+							MarkdownDescription: "Bare numeric var value (API union arm 2). " +
+								"The wire type is float32; this schema uses Float64 for Plugin Framework compatibility.",
 						},
 						attrVarsBool: schema.BoolAttribute{
 							Optional:            true,
