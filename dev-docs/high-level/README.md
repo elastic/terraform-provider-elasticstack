@@ -11,3 +11,11 @@ They intentionally stay high-level and link to deeper, canonical docs elsewhere 
 - Repo structure: [`repo-structure.md`](./repo-structure.md)
 - ML resource template: [`ml-resource-template.md`](./ml-resource-template.md)
 
+Agentic development (CI factories + OpenSpec loop):
+
+- Overview: [`agentic-development-workflow.md`](./agentic-development-workflow.md)
+- Factory workflows (label-triggered): [`factory-workflows.md`](./factory-workflows.md)
+- Continuous quality workflows (scheduled): [`continuous-quality-workflows.md`](./continuous-quality-workflows.md)
+- OpenSpec workflows (prepare / implement / verify): [`openspec-workflows.md`](./openspec-workflows.md)
+- Maintainer view of `verify-openspec`: [`code-review.md`](./code-review.md)
+

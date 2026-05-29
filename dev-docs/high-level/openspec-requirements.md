@@ -40,3 +40,4 @@ The **lint** job validates specs structurally with `openspec validate --specs` (
 
 - OpenSpec docs: [GitHub — OpenSpec](https://github.com/Fission-AI/OpenSpec)
 - Contributor setup (Node version): [contributing.md](./contributing.md)
+- Operational loop (prepare / implement / verify): [openspec-workflows.md](./openspec-workflows.md)
