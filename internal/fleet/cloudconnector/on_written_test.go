@@ -32,35 +32,51 @@ func TestOnWrittenCloudConnector_WritesHashesAndIndex(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	priv := newMapPrivateState()
-	hasher := cloudConnectorHasher()
 
-	config := cloudConnectorModel{
-		AWS: mustAWSBlockObject(t, types.StringValue("aws-secret")),
-		Vars: mustVarsMap(t, map[string]cloudConnectorVarsElement{
-			"token": {
-				Type:        types.StringValue("password"),
-				SecretValue: types.StringValue("var-secret"),
-			},
-		}),
-	}
+	t.Run("aws external_id", func(t *testing.T) {
+		t.Parallel()
+		priv := newMapPrivateState()
+		hasher := cloudConnectorHasher()
 
-	diags := onWrittenCloudConnector(ctx, nil, cloudConnectorModel{}, config, priv)
-	require.False(t, diags.HasError())
+		config := cloudConnectorModel{
+			AWS: mustAWSBlockObject(t, types.StringValue("aws-secret")),
+		}
 
-	awsHash := priv.data[awsExternalIDPrivateStateKey()]
-	require.NotEmpty(t, awsHash)
-	assert.True(t, hasher.Matches("aws-secret", awsHash))
+		diags := onWrittenCloudConnector(ctx, nil, cloudConnectorModel{}, config, priv)
+		require.False(t, diags.HasError())
 
-	varHash := priv.data[varsSecretValuePrivateStateKey("token")]
-	require.NotEmpty(t, varHash)
-	assert.True(t, hasher.Matches("var-secret", varHash))
+		awsHash := priv.data[awsExternalIDPrivateStateKey()]
+		require.NotEmpty(t, awsHash)
+		assert.True(t, hasher.Matches("aws-secret", awsHash))
+	})
 
-	indexBytes := priv.data[varsSecretIndexPrivateStateKey]
-	require.NotEmpty(t, indexBytes)
-	var indexed []string
-	require.NoError(t, json.Unmarshal(indexBytes, &indexed))
-	assert.Equal(t, []string{"token"}, indexed)
+	t.Run("vars secret_value", func(t *testing.T) {
+		t.Parallel()
+		priv := newMapPrivateState()
+		hasher := cloudConnectorHasher()
+
+		config := cloudConnectorModel{
+			Vars: mustVarsMap(t, map[string]cloudConnectorVarsElement{
+				"token": {
+					Type:        types.StringValue("password"),
+					SecretValue: types.StringValue("var-secret"),
+				},
+			}),
+		}
+
+		diags := onWrittenCloudConnector(ctx, nil, cloudConnectorModel{}, config, priv)
+		require.False(t, diags.HasError())
+
+		varHash := priv.data[varsSecretValuePrivateStateKey("token")]
+		require.NotEmpty(t, varHash)
+		assert.True(t, hasher.Matches("var-secret", varHash))
+
+		indexBytes := priv.data[varsSecretIndexPrivateStateKey]
+		require.NotEmpty(t, indexBytes)
+		var indexed []string
+		require.NoError(t, json.Unmarshal(indexBytes, &indexed))
+		assert.Equal(t, []string{"token"}, indexed)
+	})
 }
 
 func TestOnWrittenCloudConnector_RemovesStaleVarHashes(t *testing.T) {
@@ -115,6 +131,66 @@ func TestOnWrittenCloudConnector_RemovesAWSHashWhenUnset(t *testing.T) {
 
 	_, present := priv.data[awsExternalIDPrivateStateKey()]
 	assert.False(t, present)
+}
+
+func TestOnWrittenCloudConnector_RemovesIndexWhenVarsEmpty(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	priv := newMapPrivateState()
+	hasher := cloudConnectorHasher()
+
+	staleHash, err := hasher.Compute("old-secret")
+	require.NoError(t, err)
+	priv.data[varsSecretValuePrivateStateKey("stale")] = staleHash
+	oldIndex, err := json.Marshal([]string{"stale"})
+	require.NoError(t, err)
+	priv.data[varsSecretIndexPrivateStateKey] = oldIndex
+
+	config := cloudConnectorModel{
+		Vars: types.MapNull(types.ObjectType{AttrTypes: varsElementAttrTypes()}),
+	}
+
+	diags := onWrittenCloudConnector(ctx, nil, cloudConnectorModel{}, config, priv)
+	require.False(t, diags.HasError())
+
+	_, indexPresent := priv.data[varsSecretIndexPrivateStateKey]
+	assert.False(t, indexPresent)
+	_, stalePresent := priv.data[varsSecretValuePrivateStateKey("stale")]
+	assert.False(t, stalePresent)
+}
+
+func TestOnWrittenCloudConnector_CorruptIndexGraceful(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	priv := newMapPrivateState()
+	priv.data[varsSecretIndexPrivateStateKey] = []byte(`not-json`)
+
+	config := cloudConnectorModel{
+		Vars: mustVarsMap(t, map[string]cloudConnectorVarsElement{
+			"token": {
+				Type:        types.StringValue("password"),
+				SecretValue: types.StringValue("secret"),
+			},
+		}),
+	}
+
+	diags := onWrittenCloudConnector(ctx, nil, cloudConnectorModel{}, config, priv)
+	require.False(t, diags.HasError())
+	require.NotEmpty(t, diags.Warnings())
+	assert.NotEmpty(t, priv.data[varsSecretValuePrivateStateKey("token")])
+}
+
+func TestOnWrittenCloudConnector_WarnsWhenPrivateStateUnsupported(t *testing.T) {
+	t.Parallel()
+
+	config := cloudConnectorModel{
+		AWS: mustAWSBlockObject(t, types.StringValue("secret")),
+	}
+	diags := onWrittenCloudConnector(context.Background(), nil, cloudConnectorModel{}, config, "unsupported")
+	require.False(t, diags.HasError())
+	require.NotEmpty(t, diags.Warnings())
 }
 
 func TestOnWrittenCloudConnector_NilPrivateStateIsNoOp(t *testing.T) {

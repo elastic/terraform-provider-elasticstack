@@ -36,6 +36,12 @@ func onWrittenCloudConnector(
 
 	priv, ok := privateState.(privateData)
 	if !ok || priv == nil {
+		if privateState != nil {
+			diags.AddWarning(
+				"Cannot persist write-only secret hashes",
+				"Resource private state is unavailable; write-only drift detection may not work correctly until the next successful apply.",
+			)
+		}
 		return diags
 	}
 
