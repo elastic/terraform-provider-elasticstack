@@ -38,12 +38,12 @@
 
 ## 6. Resource: CRUD + import
 
-- [ ] 6.1 Implement `create.go` calling `POST /api/fleet/cloud_connectors`, populating dual representation from the response
-- [ ] 6.2 Implement `read.go` calling `GET /api/fleet/cloud_connectors/{id}`, treating 404 as removed-from-state
-- [ ] 6.3 Implement `update.go` calling `PUT /api/fleet/cloud_connectors/{id}` (omitting `cloudProvider`), preserving existing secret refs when secret values are not re-supplied in config
-- [ ] 6.4 Implement `delete.go` calling `DELETE /api/fleet/cloud_connectors/{id}` with `?force=` driven by `force_delete`, surfacing a helpful error mentioning `package_policy_count` on in-use conflicts
-- [ ] 6.5 Implement `ImportState` accepting the composite `"<space_id>/<cloud_connector_id>"` form
-- [ ] 6.6 Implement compilers: `compileAWS(awsBlockModel) -> wireVars`, `compileAzure(azureBlockModel) -> wireVars`, `compileVars(map) -> wireVars`
+- [x] 6.1 Implement `create.go` calling `POST /api/fleet/cloud_connectors`, populating dual representation from the response
+- [x] 6.2 Implement `read.go` calling `GET /api/fleet/cloud_connectors/{id}`, treating 404 as removed-from-state
+- [x] 6.3 Implement `update.go` calling `PUT /api/fleet/cloud_connectors/{id}` (omitting `cloudProvider`), preserving existing secret refs when secret values are not re-supplied in config
+- [x] 6.4 Implement `delete.go` calling `DELETE /api/fleet/cloud_connectors/{id}` with `?force=` driven by `force_delete`, surfacing a helpful error mentioning `package_policy_count` on in-use conflicts
+- [x] 6.5 Implement `ImportState` accepting the composite `"<space_id>/<cloud_connector_id>"` form
+- [x] 6.6 Implement compilers: `compileAWS`, `compileAzure`, `compileVars` (config drives branch selection; plan supplies field values; prior state used to preserve secret refs on update)
 
 ## 7. Resource: write-only drift detection
 
