@@ -6,7 +6,7 @@ The provider unconditionally forces a `time_range` onto every typed Lens panel i
 
 - **By-value Lens charts**: When a chart-level `time_range` is null in Terraform configuration, the provider SHALL omit `time_range` from the API payload entirely (no inheritance from dashboard, no hardcoded fallback).
 - **By-value Lens charts**: When a chart-level `time_range` is set in configuration, the provider SHALL send it verbatim to the API as before.
-- **By-reference vis panels**: `time_range` becomes optional (`Optional: true`) in the `vis_config.by_reference` Terraform schema — **BREAKING** for existing configs that omit it expecting it to be required (they will still work; only plan-time validation changes).
+- **By-reference vis panels**: `time_range` becomes optional (`Optional: true`) in the `vis_config.by_reference` Terraform schema — backward-compatible (existing configs that set `time_range` continue to work; only plan-time validation is relaxed).
 - **By-reference vis panels**: `VisByReferenceModelToAPIConfig1` only sets `TimeRange` on the API payload when the model has a configured value.
 - **Shape detection**: `HasLensByReferenceShapeAtRoot` detects by-reference config using `ref_id` alone; `time_range` presence is no longer part of the heuristic.
 - **Read path**: The dashboard-comparable null-preservation logic (`DashboardLensComparableTimeRange`) in the chart read path is removed — it was compensating for the forced-inheritance write behavior.
