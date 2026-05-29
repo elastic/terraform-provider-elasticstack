@@ -17,34 +17,12 @@
 
 package models
 
-import (
-	"encoding/json"
-	"errors"
-	"strings"
-)
-
-type StringSliceOrCSV []string
-
-var ErrInvalidStringSliceOrCSV = errors.New("expected array of strings, or a csv string")
-
-func (i *StringSliceOrCSV) UnmarshalJSON(data []byte) error {
-	// Ignore null, like in the main JSON package.
-	if string(data) == "null" || string(data) == `""` {
-		return nil
-	}
-
-	// First try to parse as an array
-	var sliceResult []string
-	if err := json.Unmarshal(data, &sliceResult); err == nil {
-		*i = StringSliceOrCSV(sliceResult)
-		return nil
-	}
-
-	var stringResult string
-	if err := json.Unmarshal(data, &stringResult); err == nil {
-		*i = StringSliceOrCSV(strings.Split(stringResult, ","))
-		return nil
-	}
-
-	return ErrInvalidStringSliceOrCSV
+type LogstashPipeline struct {
+	PipelineID       string         `json:"-"`
+	Description      string         `json:"description,omitempty"`
+	LastModified     string         `json:"last_modified"`
+	Pipeline         string         `json:"pipeline"`
+	PipelineMetadata map[string]any `json:"pipeline_metadata"`
+	PipelineSettings map[string]any `json:"pipeline_settings"`
+	Username         string         `json:"username"`
 }

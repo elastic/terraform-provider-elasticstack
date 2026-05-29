@@ -17,34 +17,28 @@
 
 package models
 
-import (
-	"encoding/json"
-	"errors"
-	"strings"
-)
+type Watch struct {
+	WatchID string `json:"-"`
+	Status  struct {
+		State struct {
+			Active bool `json:"active"`
+		} `json:"state"`
+	} `json:"status"`
+	Body WatchBody `json:"watch"`
+}
 
-type StringSliceOrCSV []string
+type PutWatch struct {
+	WatchID string
+	Active  bool
+	Body    WatchBody
+}
 
-var ErrInvalidStringSliceOrCSV = errors.New("expected array of strings, or a csv string")
-
-func (i *StringSliceOrCSV) UnmarshalJSON(data []byte) error {
-	// Ignore null, like in the main JSON package.
-	if string(data) == "null" || string(data) == `""` {
-		return nil
-	}
-
-	// First try to parse as an array
-	var sliceResult []string
-	if err := json.Unmarshal(data, &sliceResult); err == nil {
-		*i = StringSliceOrCSV(sliceResult)
-		return nil
-	}
-
-	var stringResult string
-	if err := json.Unmarshal(data, &stringResult); err == nil {
-		*i = StringSliceOrCSV(strings.Split(stringResult, ","))
-		return nil
-	}
-
-	return ErrInvalidStringSliceOrCSV
+type WatchBody struct {
+	Trigger                map[string]any `json:"trigger"`
+	Input                  map[string]any `json:"input"`
+	Condition              map[string]any `json:"condition"`
+	Actions                map[string]any `json:"actions"`
+	Metadata               map[string]any `json:"metadata"`
+	Transform              map[string]any `json:"transform,omitempty"`
+	ThrottlePeriodInMillis int            `json:"throttle_period_in_millis,omitempty"`
 }
