@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	clusterinfo "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/info"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/script"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/settings"
@@ -253,6 +254,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		maintenancewindow.NewResource,
 		enrich.NewEnrichPolicyResource,
 		synonyms.NewSynonymSetResource,
+		connector.NewContentConnectorResource,
 		queryrulesets.NewQueryRulesetResource,
 		ingest.NewIngestPipelineResource,
 		rolemapping.NewRoleMappingResource,
