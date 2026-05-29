@@ -237,11 +237,17 @@ func evaluateWriteOnlyDrift(
 }
 
 func driftWarningDiagnostic(result driftResult) diag.Diagnostic {
-	summary := fmt.Sprintf("Detected a change to write-only attribute %s; the resource will be updated.", result.AttributePath)
-	detail := "The configured write-only secret value differs from the value last applied, or the attribute was removed from configuration."
+	var summary, detail string
 	if result.IsImportBaseline {
+		summary = fmt.Sprintf(
+			"Establishing baseline hash for write-only attribute %s after import; the resource will be updated.",
+			result.AttributePath,
+		)
 		detail = "No prior hash exists in private state for this attribute (for example after terraform import). " +
 			"The next apply will baseline the hash of the configured value."
+	} else {
+		summary = fmt.Sprintf("Detected a change to write-only attribute %s; the resource will be updated.", result.AttributePath)
+		detail = "The configured write-only secret value differs from the value last applied, or the attribute was removed from configuration."
 	}
 	return diag.NewWarningDiagnostic(summary, detail)
 }
@@ -253,7 +259,10 @@ func parseVarsSecretIndex(data []byte) ([]string, diag.Diagnostics) {
 	}
 	var keys []string
 	if err := json.Unmarshal(data, &keys); err != nil {
-		diags.AddError("Failed to decode write-only vars index from private state", err.Error())
+		diags.AddWarning(
+			"Failed to decode write-only vars index from private state",
+			"The vars secret index could not be parsed and will be treated as empty until the next successful write rebuilds it.",
+		)
 		return nil, diags
 	}
 	return keys, diags
