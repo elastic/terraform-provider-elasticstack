@@ -42,7 +42,9 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 	}
 
 	var priv privateData
-	if req.Private != nil {
+	if r.testModifyPlanPrivate != nil {
+		priv = r.testModifyPlanPrivate
+	} else if req.Private != nil {
 		priv = req.Private
 	}
 	hasher := cloudConnectorHasher()

@@ -38,6 +38,9 @@ var (
 // Resource is the Fleet cloud connector resource.
 type Resource struct {
 	*entitycore.KibanaResource[cloudConnectorModel]
+
+	// testModifyPlanPrivate injects private state during ModifyPlan unit tests only.
+	testModifyPlanPrivate privateData
 }
 
 func newResource() *Resource {
