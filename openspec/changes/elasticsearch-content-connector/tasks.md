@@ -91,9 +91,9 @@
 
 ## 11. Examples & generated docs
 
-- [ ] 11.1 `examples/resources/elasticstack_elasticsearch_connector/` with idiomatic Terraform showing self-managed PostgreSQL setup (envelope only; `configuration_values` requires a running service so demonstrate via a comment)
-- [ ] 11.2 `examples/resources/elasticstack_elasticsearch_connector/import.sh` with `terraform import` invocation
-- [ ] 11.3 `examples/data-sources/elasticstack_elasticsearch_connector/`
-- [ ] 11.4 `examples/actions/elasticstack_elasticsearch_connector_sync_job_create/` (or wherever action examples live; mirror snapshot_create's location)
-- [ ] 11.5 Run `make docs-generate`; verify resource, data source, and action docs render correctly
-- [ ] 11.6 Run `TF_ACC=1 go test ./internal/acctest -run '^TestAccExamples_planOnly$' -count=1` to validate every example plans cleanly
+- [x] 11.1 `examples/resources/elasticstack_elasticsearch_connector/` with idiomatic Terraform showing self-managed PostgreSQL setup (envelope only; `configuration_values` requires a running service so demonstrate via a comment)
+- [x] 11.2 `examples/resources/elasticstack_elasticsearch_connector/import.sh` with `terraform import` invocation
+- [x] 11.3 `examples/data-sources/elasticstack_elasticsearch_connector/`
+- [x] 11.4 `examples/actions/elasticstack_elasticsearch_connector_sync_job_create/` (or wherever action examples live; mirror snapshot_create's location)
+- [x] 11.5 Run `make docs-generate`; verify resource, data source, and action docs render correctly
+- [x] 11.6 Run `TF_ACC=1 go test ./internal/acctest -run '^TestAccExamples_planOnly$' -count=1` to validate every example plans cleanly
