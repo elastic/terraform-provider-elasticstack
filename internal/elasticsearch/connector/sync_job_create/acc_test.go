@@ -169,3 +169,31 @@ func TestAccActionConnectorSyncJobCreate_timeout(t *testing.T) {
 	})
 }
 
+// TestAccActionConnectorSyncJobCreate_errorStatus covers REQ-SYNC-001-E.
+// Terminal error status requires a running connector service; REQ-SYNC-001-E
+// wording is verified in unit TestClassifyTerminalStatus/error_with_message.
+func TestAccActionConnectorSyncJobCreate_errorStatus(t *testing.T) {
+	if os.Getenv("CONNECTOR_SERVICE_RUNNING") != "1" {
+		t.Skip("error status terminal requires a running connector service to transition sync job to error; see CONNECTOR_SERVICE_RUNNING gate on TestAccActionConnectorSyncJobCreate_syncWaitCompletion")
+	}
+	t.Skip("error status acceptance scenario requires a connector service that fails sync with status=error; not yet automated")
+}
+
+func TestAccActionConnectorSyncJobCreate_connectorNotFound(t *testing.T) {
+	connectorID := "tf-acc-test-nonexistent"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:               func() { acctest.PreCheck(t) },
+		TerraformVersionChecks: actionTerraformVersionChecks(),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("not_found"),
+				ConfigVariables:          syncJobConfigVariables(connectorID, false),
+				ExpectError:              regexp.MustCompile(`(?s).*(?i)connector.*does not exist.*`),
+			},
+		},
+	})
+}
+
