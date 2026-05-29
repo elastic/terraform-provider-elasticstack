@@ -83,6 +83,11 @@ func TestEncodeSecretHashForPrivateState_validJSON(t *testing.T) {
 	require.Equal(t, hash, decoded)
 }
 
+func TestSecretHashKey_usesSpecBracketedPath(t *testing.T) {
+	t.Parallel()
+	require.Equal(t, `secret_hash:configuration_values["password"].secret_value`, secretHashKey("password"))
+}
+
 func TestStoreSecretHashes_storesJSONEncodedHash(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

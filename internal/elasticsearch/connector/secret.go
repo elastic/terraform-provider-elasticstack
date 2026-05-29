@@ -36,8 +36,7 @@ const (
 )
 
 func secretHashKey(mapKey string) string {
-	// Private-state keys must be valid JSON object keys (no quotes or brackets).
-	return secretHasher.PrivateStateKey("configuration_values." + mapKey + ".secret_value")
+	return secretHasher.PrivateStateKey(`configuration_values["` + mapKey + `"].secret_value`)
 }
 
 func encodeSecretHashForPrivateState(hash []byte) ([]byte, error) {
