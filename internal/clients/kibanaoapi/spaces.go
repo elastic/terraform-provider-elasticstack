@@ -19,6 +19,7 @@ package kibanaoapi
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -64,8 +65,19 @@ func CreateSpace(ctx context.Context, client *Client, body kbapi.PostSpacesSpace
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
-		func() *kbapi.SpaceResponse { return resp.JSON200 })
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
+			func() *kbapi.SpaceResponse { return resp.JSON200 })
+	case http.StatusConflict:
+		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic(
+			"Kibana space already exists",
+			fmt.Sprintf("Space %q already exists. To manage an existing Kibana space with Terraform, import it first:\n\n    terraform import elasticstack_kibana_space.<NAME> %s", body.Id, body.Id),
+		)}
+	default:
+		return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
+			func() *kbapi.SpaceResponse { return resp.JSON200 })
+	}
 }
 
 // UpdateSpace updates an existing Kibana space.
