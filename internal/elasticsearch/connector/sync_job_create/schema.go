@@ -20,14 +20,16 @@ package sync_job_create
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	actionschema "github.com/hashicorp/terraform-plugin-framework/action/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 )
 
 const schemaMarkdownDescription = `Creates an Elasticsearch connector sync job on demand. **Requires Terraform 1.14+** (provider-defined actions).
 
-Invokes ` + "`POST /_connector/_sync_job`" + ` for an existing connector. When ` + "`wait_for_completion`" + ` is ` + "`true`" + `, polls ` + "`GET /_connector/_sync_job/{id}`" + ` until the job reaches a terminal status or the invoke timeout elapses. Sync job documents are retained after the action completes.`
+Invokes ` + "`POST /_connector/_sync_job`" + ` for an existing connector. When ` + "`wait_for_completion`" + ` is ` + "`true`" + `, polls ` +
+	"`GET /_connector/_sync_job/{id}`" + ` until the job reaches a terminal status or the invoke timeout elapses. ` +
+	`Sync job documents are retained after the action completes.`
 
 // GetSchema returns the action schema for connector sync job create. The
 // elasticsearch_connection and timeouts blocks are added by

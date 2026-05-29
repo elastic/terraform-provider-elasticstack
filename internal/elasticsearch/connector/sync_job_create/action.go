@@ -34,6 +34,12 @@ import (
 const (
 	defaultInvokeTimeout = 30 * time.Minute
 	syncJobPollInterval  = 5 * time.Second
+
+	syncStatusCompleted = "completed"
+	syncStatusError     = "error"
+	syncStatusCanceled  = "canceled"
+	syncStatusCancelled = "cancelled"
+	syncStatusSuspended = "suspended"
 )
 
 // NewAction returns a constructor for the connector sync job create action. The
@@ -157,7 +163,7 @@ func parseTriggerMethod(value string) (syncjobtriggermethod.SyncJobTriggerMethod
 }
 
 func waitForSyncJobCompletion(ctx context.Context, client *clients.ElasticsearchScopedClient, syncJobID string) fwdiag.Diagnostics {
-	lastStatus := "pending"
+	var lastStatus string
 
 	for {
 		job, getDiags := esclient.GetSyncJob(ctx, client, syncJobID)
@@ -182,6 +188,9 @@ func waitForSyncJobCompletion(ctx context.Context, client *clients.Elasticsearch
 		select {
 		case <-ctx.Done():
 			var diags fwdiag.Diagnostics
+			if lastStatus == "" {
+				lastStatus = "unknown"
+			}
 			diags.AddError(
 				"Sync job did not complete within timeout",
 				fmt.Sprintf("Sync job %q last observed status: %q.", syncJobID, lastStatus),
@@ -196,19 +205,19 @@ func waitForSyncJobCompletion(ctx context.Context, client *clients.Elasticsearch
 // for non-success terminal states.
 func classifyTerminalStatus(status string, errorField string) (done bool, diags fwdiag.Diagnostics) {
 	switch status {
-	case "completed":
+	case syncStatusCompleted:
 		return true, diags
-	case "error":
+	case syncStatusError:
 		detail := errorField
 		if detail == "" {
 			detail = "no error message returned by the API"
 		}
 		diags.AddError("Sync job failed", fmt.Sprintf("Sync job reached status error: %s.", detail))
 		return true, diags
-	case "canceled", "cancelled":
+	case syncStatusCanceled, syncStatusCancelled:
 		diags.AddError("Sync job cancelled", "Sync job reached terminal status cancelled.")
 		return true, diags
-	case "suspended":
+	case syncStatusSuspended:
 		detail := "Sync job reached terminal status suspended."
 		if errorField != "" {
 			detail = fmt.Sprintf("Sync job reached terminal status suspended: %s.", errorField)
