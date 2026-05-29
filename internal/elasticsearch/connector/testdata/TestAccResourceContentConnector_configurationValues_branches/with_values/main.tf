@@ -1,0 +1,36 @@
+variable "connector_id" {
+  type = string
+}
+
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_connector" "test" {
+  connector_id = var.connector_id
+  service_type = "postgresql"
+  name         = "TF acc config branches"
+
+  scheduling = {
+    full = {
+      enabled  = false
+      interval = "0 0 0 * * ?"
+    }
+    incremental = {
+      enabled  = false
+      interval = "0 0 0 * * ?"
+    }
+    access_control = {
+      enabled  = false
+      interval = "0 0 0 * * ?"
+    }
+  }
+
+
+  configuration_values = {
+    s_branch = { string = "x" }
+    n_branch = { number = 42 }
+    b_branch = { bool = true }
+    j_branch = { string = jsonencode({ a = 1 }) }
+  }
+}
