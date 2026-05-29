@@ -66,16 +66,30 @@ func TestGetSchemaDualPopulationAttributesOptionalComputed(t *testing.T) {
 
 	s := getSchema(context.Background())
 
-	for _, name := range []string{attrAWSBlock, attrAzureBlock, attrVarsMap} {
+	t.Run(attrAzureBlock, func(t *testing.T) {
+		t.Parallel()
+		attr, ok := s.Attributes[attrAzureBlock].(schema.SingleNestedAttribute)
+		require.True(t, ok)
+		assert.True(t, attr.Optional, "%s should be optional", attrAzureBlock)
+		assert.True(t, attr.Computed, "%s should be computed", attrAzureBlock)
+	})
+}
+
+func TestGetSchemaWriteOnlyParentBlocksNotComputed(t *testing.T) {
+	t.Parallel()
+
+	s := getSchema(context.Background())
+
+	for _, name := range []string{attrAWSBlock, attrVarsMap} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			switch attr := s.Attributes[name].(type) {
 			case schema.SingleNestedAttribute:
 				assert.True(t, attr.Optional, "%s should be optional", name)
-				assert.True(t, attr.Computed, "%s should be computed", name)
+				assert.False(t, attr.Computed, "%s must not be computed when it contains write-only children", name)
 			case schema.MapNestedAttribute:
 				assert.True(t, attr.Optional, "%s should be optional", name)
-				assert.True(t, attr.Computed, "%s should be computed", name)
+				assert.False(t, attr.Computed, "%s must not be computed when it contains write-only children", name)
 			default:
 				t.Fatalf("unexpected attribute type for %q: %T", name, s.Attributes[name])
 			}
@@ -127,21 +141,35 @@ func TestGetSchemaUseStateForUnknownOnDualPopulationFields(t *testing.T) {
 	ctx := context.Background()
 	s := getSchema(ctx)
 
-	awsAttr, ok := s.Attributes[attrAWSBlock].(schema.SingleNestedAttribute)
-	require.True(t, ok)
-	assert.NotEmpty(t, awsAttr.PlanModifiers, "aws block should have plan modifiers")
-
 	azureAttr, ok := s.Attributes[attrAzureBlock].(schema.SingleNestedAttribute)
 	require.True(t, ok)
 	assert.NotEmpty(t, azureAttr.PlanModifiers, "azure block should have plan modifiers")
+	assert.True(t, hasUseStateForUnknownObjectPlanModifier(ctx, azureAttr.PlanModifiers))
+}
+
+func TestGetSchemaVarsInnerDualPopulationAttributesOptionalComputed(t *testing.T) {
+	t.Parallel()
+
+	s := getSchema(context.Background())
 
 	varsAttr, ok := s.Attributes[attrVarsMap].(schema.MapNestedAttribute)
 	require.True(t, ok)
-	assert.NotEmpty(t, varsAttr.PlanModifiers, "vars map should have plan modifiers")
 
-	assert.True(t, hasUseStateForUnknownObjectPlanModifier(ctx, awsAttr.PlanModifiers))
-	assert.True(t, hasUseStateForUnknownObjectPlanModifier(ctx, azureAttr.PlanModifiers))
-	assert.True(t, hasUseStateForUnknownMapPlanModifier(ctx, varsAttr.PlanModifiers))
+	for _, name := range []string{attrVarsType, attrVarsValue, attrVarsFrozen} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			switch attr := varsAttr.NestedObject.Attributes[name].(type) {
+			case schema.StringAttribute:
+				assert.True(t, attr.Optional, "%s should be optional", name)
+				assert.True(t, attr.Computed, "%s should be computed", name)
+			case schema.BoolAttribute:
+				assert.True(t, attr.Optional, "%s should be optional", name)
+				assert.True(t, attr.Computed, "%s should be computed", name)
+			default:
+				t.Fatalf("unexpected attribute type for %q: %T", name, varsAttr.NestedObject.Attributes[name])
+			}
+		})
+	}
 }
 
 func hasRequiresReplaceStringPlanModifier(ctx context.Context, modifiers []planmodifier.String) bool {
@@ -155,16 +183,6 @@ func hasRequiresReplaceStringPlanModifier(ctx context.Context, modifiers []planm
 }
 
 func hasUseStateForUnknownObjectPlanModifier(ctx context.Context, modifiers []planmodifier.Object) bool {
-	for _, modifier := range modifiers {
-		desc := strings.ToLower(modifier.Description(ctx))
-		if strings.Contains(desc, "once set") {
-			return true
-		}
-	}
-	return false
-}
-
-func hasUseStateForUnknownMapPlanModifier(ctx context.Context, modifiers []planmodifier.Map) bool {
 	for _, modifier := range modifiers {
 		desc := strings.ToLower(modifier.Description(ctx))
 		if strings.Contains(desc, "once set") {

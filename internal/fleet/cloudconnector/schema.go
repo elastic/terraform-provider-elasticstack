@@ -24,7 +24,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -92,18 +91,15 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 			attrForceDelete: schema.BoolAttribute{
 				Optional: true,
+				Computed: true,
 				MarkdownDescription: "When true, force-delete the connector even if it is still referenced by package policies. " +
 					"The default of `false` returns an error from the API that includes the current `package_policy_count`.",
 				Default: booldefault.StaticBool(false),
 			},
 			attrAWSBlock: schema.SingleNestedAttribute{
 				Optional: true,
-				Computed: true,
 				MarkdownDescription: "Typed AWS authentication settings. Compiles to the same wire `vars` payload as the generic `vars` map. " +
 					"Populated in state after Read when all modelled AWS keys are present and `cloud_provider` is `aws`.",
-				PlanModifiers: []planmodifier.Object{
-					objectplanmodifier.UseStateForUnknown(),
-				},
 				Attributes: map[string]schema.Attribute{
 					attrAWSRoleArn: schema.StringAttribute{
 						Optional:            true,
@@ -165,12 +161,8 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 			attrVarsMap: schema.MapNestedAttribute{
 				Optional: true,
-				Computed: true,
 				MarkdownDescription: "Generic cloud connector variables keyed by integration package field name. Each element represents one API union arm. " +
 					"Use this for GCP or when the typed blocks do not model every key returned by the API.",
-				PlanModifiers: []planmodifier.Map{
-					mapplanmodifier.UseStateForUnknown(),
-				},
 				NestedObject: schema.NestedAttributeObject{
 					Validators: []validator.Object{
 						varsElementValidator{},
@@ -191,14 +183,17 @@ func getSchema(_ context.Context) schema.Schema {
 						},
 						attrVarsType: schema.StringAttribute{
 							Optional:            true,
+							Computed:            true,
 							MarkdownDescription: "Structured var type (API union arm 4), for example `text` or `password`.",
 						},
 						attrVarsFrozen: schema.BoolAttribute{
 							Optional:            true,
+							Computed:            true,
 							MarkdownDescription: "Whether the structured var is frozen. Valid only alongside `type`.",
 						},
 						attrVarsValue: schema.StringAttribute{
 							Optional:            true,
+							Computed:            true,
 							MarkdownDescription: "Plain string value for a structured var (API union arm 4).",
 						},
 						attrVarsSecretValue: schema.StringAttribute{
