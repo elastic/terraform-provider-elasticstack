@@ -83,9 +83,9 @@
 ## 10. Acceptance tests — action
 
 - [x] 10.1 Async create (`wait_for_completion = false`): verify the sync job is created (visible via data source / raw API call) and the action returns immediately
-- [x] 10.2 Sync create with completion: requires a running connector service. Verify the action polls and returns once terminal status is reached. (Skip in CI if a running connector service isn't part of the test env; gate behind a build tag.)
+- [x] 10.2 Sync create with completion: requires a running connector service. Verify the action polls and returns once terminal status is reached. (Test is gated by `CONNECTOR_SERVICE_RUNNING=1`; skips otherwise.)
 - [x] 10.3 Timeout exceeded: `wait_for_completion = true` with `timeouts.invoke = "5s"`; verify the timeout diagnostic
-- [x] 10.4 Error status surfaced: simulate an error-status sync job (e.g. via misconfigured connector); verify the diagnostic includes the API error
+- [ ] 10.4 (deferred) Error status surfaced: requires a connector service that can be made to fail mid-sync, which is not part of the CI test env. Unit test `TestClassifyTerminalStatus/error_with_message` in `action_test.go` covers REQ-SYNC-001-E classification end-to-end at the helper level.
 - [x] 10.5 Connector not found: invoke with bogus `connector_id`; verify diagnostic
 - [x] 10.6 Sync job history preserved: after action completes, verify the sync job document still exists via raw API call
 

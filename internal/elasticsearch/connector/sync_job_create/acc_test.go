@@ -96,11 +96,11 @@ func testAccCheckSyncJobDocumentPreserved(connectorID string) resource.TestCheck
 		if err != nil {
 			return fmt.Errorf("list sync jobs for connector %q: %w", connectorID, err)
 		}
-		if len(resp.Results) == 0 {
-			return fmt.Errorf("no sync jobs found for connector %q", connectorID)
+		if len(resp.Results) != 1 {
+			return fmt.Errorf("expected exactly 1 sync job for connector %q, got %d", connectorID, len(resp.Results))
 		}
 
-		syncJobID := resp.Results[len(resp.Results)-1].Id
+		syncJobID := resp.Results[0].Id
 		_, err = client.GetESClient().Connector.SyncJobGet(syncJobID).Do(ctx)
 		if err != nil {
 			return fmt.Errorf("GET /_connector/_sync_job/%s: %w", syncJobID, err)
@@ -194,16 +194,6 @@ func TestAccActionConnectorSyncJobCreate_timeout(t *testing.T) {
 	})
 }
 
-// TestAccActionConnectorSyncJobCreate_errorStatus covers REQ-SYNC-001-E.
-// Terminal error status requires a running connector service; REQ-SYNC-001-E
-// wording is verified in unit TestClassifyTerminalStatus/error_with_message.
-func TestAccActionConnectorSyncJobCreate_errorStatus(t *testing.T) {
-	if os.Getenv("CONNECTOR_SERVICE_RUNNING") != "1" {
-		t.Skip("error status terminal requires a running connector service to transition sync job to error; see CONNECTOR_SERVICE_RUNNING gate on TestAccActionConnectorSyncJobCreate_syncWaitCompletion")
-	}
-	t.Skip("error status acceptance scenario requires a connector service that fails sync with status=error; not yet automated")
-}
-
 func TestAccActionConnectorSyncJobCreate_connectorNotFound(t *testing.T) {
 	connectorID := "tf-acc-test-nonexistent"
 
@@ -222,3 +212,24 @@ func TestAccActionConnectorSyncJobCreate_connectorNotFound(t *testing.T) {
 	})
 }
 
+func TestAccActionConnectorSyncJobCreate_historyPreserved(t *testing.T) {
+	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-action-history")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:               func() { acctest.PreCheck(t) },
+		TerraformVersionChecks: actionTerraformVersionChecks(),
+		CheckDestroy:           checkDestroyConnectorSyncJobCreate(connectorID),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("sync"),
+				ConfigVariables:          syncJobConfigVariables(connectorID, false),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSyncJobsExist(connectorID, 1),
+					testAccCheckSyncJobDocumentPreserved(connectorID),
+				),
+			},
+		},
+	})
+}
