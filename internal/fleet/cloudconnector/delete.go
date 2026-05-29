@@ -19,6 +19,10 @@ package cloudconnector
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -26,8 +30,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-const forceDeleteHint = "To force-delete a cloud connector that is still referenced by package policies, set force_delete = true. " +
+const forceDeleteHint = "Set force_delete = true to delete anyway. " +
 	"Note: this is destructive and will leave the package policies broken."
+
+var packagePolicyCountPattern = regexp.MustCompile(`"package_policy_count"\s*:\s*(\d+)`)
 
 func deleteCloudConnector(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model cloudConnectorModel) diag.Diagnostics {
 	fleetClient := client.GetFleetClient()
@@ -41,13 +47,54 @@ func deleteCloudConnector(ctx context.Context, client *clients.KibanaScopedClien
 }
 
 // augmentInUseConflictDiagnostic appends a force_delete hint when the API error
-// body mentions package_policy_count (option 1: pattern-match diagnostic detail).
+// body mentions package_policy_count. When the count can be parsed, it is included
+// in the supplemental diagnostic.
 func augmentInUseConflictDiagnostic(diags diag.Diagnostics) diag.Diagnostics {
 	for _, d := range diags {
-		if d.Severity() == diag.SeverityError && strings.Contains(d.Detail(), "package_policy_count") {
-			diags.AddError("Cloud connector in use", forceDeleteHint)
-			break
+		if d.Severity() != diag.SeverityError || !strings.Contains(d.Detail(), "package_policy_count") {
+			continue
 		}
+
+		if count, ok := packagePolicyCountFromDetail(d.Detail()); ok {
+			policyWord := "policies"
+			if count == 1 {
+				policyWord = "policy"
+			}
+			diags.AddError(
+				"Cloud connector in use",
+				fmt.Sprintf(
+					"This cloud connector is referenced by %d package %s. %s",
+					count,
+					policyWord,
+					forceDeleteHint,
+				),
+			)
+		} else {
+			// TODO(Task 10): validate the live API error envelope during acceptance tests.
+			diags.AddError("Cloud connector in use", forceDeleteHint)
+		}
+		break
 	}
 	return diags
+}
+
+func packagePolicyCountFromDetail(detail string) (int64, bool) {
+	var payload struct {
+		PackagePolicyCount json.Number `json:"package_policy_count"`
+	}
+	if err := json.Unmarshal([]byte(detail), &payload); err == nil {
+		if count, err := payload.PackagePolicyCount.Int64(); err == nil {
+			return count, true
+		}
+	}
+
+	matches := packagePolicyCountPattern.FindStringSubmatch(detail)
+	if len(matches) != 2 {
+		return 0, false
+	}
+	count, err := strconv.ParseInt(matches[1], 10, 64)
+	if err != nil {
+		return 0, false
+	}
+	return count, true
 }
