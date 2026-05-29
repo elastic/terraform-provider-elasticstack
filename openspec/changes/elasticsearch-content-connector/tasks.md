@@ -60,18 +60,18 @@
 
 ## 8. Acceptance tests — resource
 
-- [ ] 8.1 Create + Read + Delete with `service_type = "postgresql"`, narrow envelope only (no pipeline/scheduling/features/configuration_values)
-- [ ] 8.2 Create with full envelope + pipeline + scheduling + features (no configuration_values); verify each sub-update endpoint was called via state assertions
-- [ ] 8.3 Update path: change `name`/`description`/`index_name`/`pipeline`/`scheduling`/`features` and verify each triggers the correct partial-update endpoint
-- [ ] 8.4 `configuration_values` round-trip per branch: `string`, `number`, `bool`, `json`; verify state matches config and subsequent plan is clean
-- [ ] 8.5 `configuration_values` `secret_value` write: verify the value is sent to the API; verify state does not contain the value; verify a subsequent plan with the same value is clean; verify changing the value triggers update with a warning diagnostic; verify removing the element clears the private-state hash
-- [ ] 8.6 Validator failure: `configuration_values = { x = {} }` and `configuration_values = { x = { string = "a", number = 1 } }` both fail validation
-- [ ] 8.7 Sensitive-API-field warning: simulate a connector whose schema marks a field `sensitive: true`; verify the warning diagnostic is emitted when that field appears in a non-secret branch of `configuration_values`
-- [ ] 8.8 Pre-flight schema-not-registered: create a connector without the connector service running, attempt `configuration_values`; verify the structured diagnostic is returned and no `_configuration` PUT was made
-- [ ] 8.9 Import: bare connector ID and composite form both succeed; post-import refresh with secret in config produces no drift; first apply baselines the hash
-- [ ] 8.10 Read 404: pre-delete the connector via the raw API and verify Read removes the resource from state without error
-- [ ] 8.11 Delete 404: pre-delete the connector via the raw API and verify Delete succeeds
-- [ ] 8.12 Version gate: attempt apply against ES < 8.12 (skip if test env can't downgrade); verify diagnostic mentions 8.12
+- [x] 8.1 Create + Read + Delete with `service_type = "postgresql"`, narrow envelope only (no pipeline/scheduling/features/configuration_values)
+- [x] 8.2 Create with full envelope + pipeline + scheduling + features (no configuration_values); verify each sub-update endpoint was called via state assertions
+- [x] 8.3 Update path: change `name`/`description`/`index_name`/`pipeline`/`scheduling`/`features` and verify each triggers the correct partial-update endpoint
+- [x] 8.4 `configuration_values` round-trip per branch: `string`, `number`, `bool`, `json`; verify state matches config and subsequent plan is clean
+- [x] 8.5 `configuration_values` `secret_value` write: verify the value is sent to the API; verify state does not contain the value; verify a subsequent plan with the same value is clean; verify changing the value triggers update with a warning diagnostic; verify removing the element clears the private-state hash
+- [x] 8.6 Validator failure: `configuration_values = { x = {} }` and `configuration_values = { x = { string = "a", number = 1 } }` both fail validation
+- [x] 8.7 Sensitive-API-field warning: simulate a connector whose schema marks a field `sensitive: true`; verify the warning diagnostic is emitted when that field appears in a non-secret branch of `configuration_values`
+- [x] 8.8 Pre-flight schema-not-registered: create a connector without the connector service running, attempt `configuration_values`; verify the structured diagnostic is returned and no `_configuration` PUT was made
+- [x] 8.9 Import: bare connector ID and composite form both succeed; post-import refresh with secret in config produces no drift; first apply baselines the hash
+- [x] 8.10 Read 404: pre-delete the connector via the raw API and verify Read removes the resource from state without error
+- [x] 8.11 Delete 404: pre-delete the connector via the raw API and verify Delete succeeds
+- [x] 8.12 Version gate: attempt apply against ES < 8.12 (skip if test env can't downgrade); verify diagnostic mentions 8.12
 
 ## 9. Acceptance tests — data source
 
