@@ -2,6 +2,7 @@
 
 ### Changes
 
+- Add `elasticstack_fleet_cloud_connector` resource (preview) and `elasticstack_fleet_cloud_connectors` data source (preview) for Fleet cloud connectors. Both are experimental while Kibana's Fleet cloud connector API remains in preview.
 - `elasticstack_elasticsearch_ml_anomaly_detection_job` no longer fails with a `Value Conversion Error` when the whole `analysis_config` block (or `analysis_config.per_partition_categorization`) is sourced from a Terraform variable or `for_each`. ([#3403](https://github.com/elastic/terraform-provider-elasticstack/issues/3403))
 - Fix `elasticstack_kibana_dashboard` "inconsistent result after apply" when using `vis_config.by_value.xy_chart_config` with `layers[].type = "bar_horizontal"` and terms breakdowns — provider now preserves planned `fitting` values when Kibana omits them.
 - Fix `elasticstack_kibana_dashboard` nested section panel reads (`image_config`, `xy_chart_config.legend`, `heatmap_config.legend`, gauge `styling.shape_json`) — planned values are preserved when Kibana omits them on read.

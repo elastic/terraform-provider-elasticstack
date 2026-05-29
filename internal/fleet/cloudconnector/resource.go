@@ -1,0 +1,97 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package cloudconnector
+
+import (
+	"context"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+)
+
+var (
+	_ resource.Resource                     = newResource()
+	_ resource.ResourceWithConfigure        = newResource()
+	_ resource.ResourceWithConfigValidators = newResource()
+	_ resource.ResourceWithImportState      = newResource()
+	_ resource.ResourceWithModifyPlan       = newResource()
+)
+
+// Resource is the Fleet cloud connector resource.
+type Resource struct {
+	*entitycore.KibanaResource[cloudConnectorModel]
+
+	// testModifyPlanPrivate injects private state during ModifyPlan unit tests only.
+	testModifyPlanPrivate privateData
+}
+
+func newResource() *Resource {
+	r := &Resource{}
+	r.KibanaResource = entitycore.NewKibanaResource[cloudConnectorModel](
+		entitycore.ComponentFleet,
+		"cloud_connector",
+		entitycore.KibanaResourceOptions[cloudConnectorModel]{
+			Schema:    getSchema,
+			Read:      readCloudConnector,
+			Delete:    deleteCloudConnector,
+			Create:    createCloudConnector,
+			Update:    r.updateCloudConnector,
+			OnWritten: onWrittenCloudConnector,
+		},
+	)
+	return r
+}
+
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return newResource()
+}
+
+func (r *Resource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
+	return []resource.ConfigValidator{
+		resourcevalidator.ExactlyOneOf(
+			path.MatchRoot(attrAWSBlock),
+			path.MatchRoot(attrAzureBlock),
+			path.MatchRoot(attrVarsMap),
+		),
+		providerBlockMatchesCloudProvider{},
+	}
+}
+
+// ImportState accepts the composite import ID form "<space_id>/<cloud_connector_id>".
+func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	compID, diags := clients.CompositeIDFromStr(req.ID)
+	resp.Diagnostics.Append(diags...)
+	if diags.HasError() {
+		return
+	}
+	if compID == nil || compID.ClusterID == "" {
+		resp.Diagnostics.AddError(
+			"Invalid import ID",
+			`Expected format "<space_id>/<cloud_connector_id>".`,
+		)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("space_id"), compID.ClusterID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("cloud_connector_id"), compID.ResourceID)...)
+}

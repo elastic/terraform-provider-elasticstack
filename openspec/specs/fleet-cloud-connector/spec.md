@@ -1,18 +1,22 @@
-## ADDED Requirements
+# fleet-cloud-connector Specification
 
+## Purpose
+TBD - created by archiving change fleet-cloud-connector. Update Purpose after archive.
+## Requirements
 ### Requirement: Resource identity and composite ID
 
-The `elasticstack_fleet_cloud_connector` resource SHALL set its `id` to the composite string `"<space_id>/<cloud_connector_id>"` after every Create and Update. `cloud_connector_id` SHALL be Optional + Computed: when omitted from config, the API-assigned ID SHALL be populated into state; when supplied, the API SHALL be called with that ID. `space_id` SHALL default to `"default"`. Changing `space_id`, `cloud_connector_id`, or `cloud_provider` SHALL force resource replacement.
+The `elasticstack_fleet_cloud_connector` resource SHALL set its `id` to the composite string `"<space_id>/<cloud_connector_id>"` after every Create and Update. `cloud_connector_id` SHALL be Computed only: the API assigns the ID on Create and the provider SHALL populate it into state from the response. Users SHALL NOT be able to supply a custom `cloud_connector_id` at Create time because the Fleet API does not accept an explicit ID in the POST body. `space_id` SHALL default to `"default"`. Changing `space_id` or `cloud_provider` SHALL force resource replacement.
 
-#### Scenario: Create with auto-assigned cloud_connector_id
-- **WHEN** `cloud_connector_id` is not set in config and the resource is created
-- **THEN** `cloud_connector_id` SHALL be populated from the API-assigned ID
-- **AND** `id` SHALL equal `"default/<cloud_connector_id>"`
+#### Scenario: Create with API-assigned cloud_connector_id
+- **WHEN** the resource is created
+- **THEN** the POST request SHALL NOT include a client-supplied connector ID
+- **AND** `cloud_connector_id` SHALL be populated from the API-assigned ID in the response
+- **AND** `id` SHALL equal `"<space_id>/<cloud_connector_id>"`
 
-#### Scenario: Create with explicit cloud_connector_id
-- **WHEN** `cloud_connector_id = "my-connector"` is set and the resource is created
-- **THEN** the API SHALL be called with `id: "my-connector"`
-- **AND** `id` in state SHALL equal `"default/my-connector"`
+#### Scenario: cloud_connector_id is read-only in configuration
+- **WHEN** a practitioner inspects the resource schema
+- **THEN** `cloud_connector_id` SHALL be Computed only (not Optional)
+- **AND** the provider SHALL NOT attempt to influence the assigned ID during Create
 
 #### Scenario: cloud_provider change forces replacement
 - **WHEN** `cloud_provider` is changed in config from `"aws"` to `"azure"`
@@ -123,7 +127,7 @@ The resource SHALL support import via the composite ID `"<space_id>/<cloud_conne
 
 ### Requirement: `vars` schema covers all four API union arms
 
-The `vars` attribute SHALL be modelled as `map(object({...}))`. Each map element SHALL faithfully represent one of the four API union arms via the following nested attributes: `string` (arm 1), `number` (arm 2), `bool` (arm 3), and `type`+`frozen`+exactly-one-of(`value`, `secret_value`, `secret_ref`) (arm 4). `secret_ref` and `secret_value_wo_version` SHALL be Computed-only and rejected if set in config. A `ConfigValidator` SHALL enforce that within each element exactly one arm is configured.
+The `vars` attribute SHALL be modelled as `map(object({...}))`. Each map element SHALL faithfully represent one of the four API union arms via the following nested attributes: `string` (arm 1), `number` (arm 2), `bool` (arm 3), and `type`+`frozen`+exactly-one-of(`value`, `secret_value`, `secret_ref`) (arm 4). `secret_ref` SHALL be Computed-only and rejected if set in config. A `ConfigValidator` SHALL enforce that within each element exactly one arm is configured.
 
 #### Scenario: Arm (1) bare string
 - **WHEN** `vars = { "k" = { string = "hello" } }` is set
@@ -157,7 +161,7 @@ The `vars` attribute SHALL be modelled as `map(object({...}))`. Each map element
 
 ### Requirement: Typed `aws` and `azure` blocks compile to `vars`
 
-The resource SHALL expose Optional + Computed typed blocks `aws { role_arn, external_id, external_id_secret_ref }` and `azure { tenant_id, client_id, cloud_connector_id }`. A `ConfigValidator` SHALL enforce that exactly one of `aws`, `azure`, or `vars` is configured, and that any configured typed block matches the resource's `cloud_provider`. Typed blocks SHALL compile to the same wire `vars` payload during Create and Update; on Read, the typed block SHALL be populated only when ALL of its modelled keys appear in the API response under the expected provider.
+The resource SHALL expose typed blocks `aws { role_arn, external_id, external_id_secret_ref }` and `azure { tenant_id, client_id, cloud_connector_id, tenant_id_secret_ref, client_id_secret_ref }`. Parent blocks `aws` and `vars` SHALL be Optional only (not Computed) because Plugin Framework disallows Computed on blocks containing write-only children; inner fields such as `external_id_secret_ref` remain Computed where populated from Read. A `ConfigValidator` SHALL enforce that exactly one of `aws`, `azure`, or `vars` is configured, and that any configured typed block matches the resource's `cloud_provider`. Typed blocks SHALL compile to the same wire `vars` payload during Create and Update; on Read, the typed block SHALL be populated only when ALL of its modelled keys appear in the API response under the expected provider.
 
 #### Scenario: Typed block input compiles to vars wire payload
 - **WHEN** `aws { role_arn = "arn:..." external_id = "secret" }` is applied
@@ -227,3 +231,4 @@ The resource SHALL obtain its Fleet client via the resource-level `kibana_connec
 #### Scenario: Pre-cloud-connectors Kibana version
 - **WHEN** the resource is planned against a Kibana version older than the configured minimum
 - **THEN** Terraform SHALL fail with an error message stating the minimum required version
+

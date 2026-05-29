@@ -38,7 +38,7 @@ Implement the resource as an `entitycore.KibanaResource[cloudConnectorModel]` wi
 
 ### Decision 2: Composite ID `<space_id>/<cloud_connector_id>`
 
-Identity: `id` is computed and composite; `cloud_connector_id` is optional + computed (server-assigned if omitted) and forces replacement on change; `space_id` defaults to `"default"` and forces replacement on change. Import accepts the composite form.
+Identity: `id` is computed and composite; `cloud_connector_id` is computed only (API-assigned on Create; not user-settable because the POST body has no `id` field); `space_id` defaults to `"default"` and forces replacement on change. Import accepts the composite form.
 
 **Why:** Matches every other space-aware Fleet resource in the provider (`fleet_proxy`, `fleet_output`, `fleet_server_host`, etc.), so users get a consistent import idiom across the Fleet surface.
 
@@ -68,15 +68,15 @@ vars = map(object({
     id            = string
     is_secret_ref = bool                   # plain bool to faithfully echo wire
   }))
-
-  secret_value_wo_version  = computed(number)   # private-state-driven; see D5
 }))
 ```
+
+`secret_value_wo_version` is intentionally omitted; write-only drift uses private-state bcrypt hashes (Decision 5) instead of version companion attributes.
 
 `ConfigValidator` rules per element:
 - Group A (bare): exactly one of `string`, `number`, `bool`; mutually exclusive with Group B.
 - Group B (structured): `type` plus exactly one of `value`, `secret_value`, `secret_ref`. `frozen` only valid in Group B.
-- `secret_ref` and `secret_value_wo_version` are computed-only; rejected if set in config.
+- `secret_ref` is computed-only; rejected if set in config.
 
 **Why:** This is the smallest schema that captures all four arms faithfully without lossy conversion. A `DynamicAttribute` was considered but rejected because it cannot be sensitivity-marked per-key (whole-value only) and cannot host a write-only sub-attribute, both of which are essential for proper secret handling. A JSON-string fallback was rejected for the same reasons. The cost is a slightly verbose HCL surface for users using `vars` directly — mitigated by the per-provider typed blocks.
 
@@ -85,18 +85,22 @@ vars = map(object({
 The resource exposes optional + computed typed blocks for the well-known per-provider authentication flows:
 
 ```hcl
-aws = optional + computed(object({
+aws = optional(object({
   role_arn                = optional(string)
   external_id             = optional(string, write_only, sensitive)
   external_id_secret_ref  = computed(object({ id, is_secret_ref }))
 }))
 
-azure = optional + computed(object({
-  tenant_id           = optional(string)
-  client_id           = optional(string)
-  cloud_connector_id  = optional(string)
+azure = optional(object({
+  tenant_id              = optional(string, write_only, sensitive)
+  client_id              = optional(string, write_only, sensitive)
+  cloud_connector_id     = optional(string)
+  tenant_id_secret_ref   = computed(object({ id, is_secret_ref }))
+  client_id_secret_ref   = computed(object({ id, is_secret_ref }))
 }))
 ```
+
+Parent blocks `aws` and `vars` are **Optional only** (not Computed) because Plugin Framework disallows Computed on blocks containing write-only children. `azure` remains Optional + Computed + UseStateForUnknown because it has no write-only fields at the parent level (secrets are write-only on inner attributes with computed `*_secret_ref` siblings). Inner read-populated fields such as `external_id_secret_ref` and Azure `*_secret_ref` remain Computed.
 
 Config-time `ConfigValidator`: exactly one of `aws`, `azure`, `vars` may be set in config. The typed block, if set, must match the resource's `cloud_provider` attribute.
 
@@ -111,6 +115,8 @@ Typed blocks compile to the same wire `vars` shape during Create/Update; they ar
 Considered: populating only the typed block when matched (and only `vars` otherwise). Rejected because it forces a state-shape change when Kibana adds keys, which is a confusing diff.
 
 The GCP typed block is deliberately omitted (see Non-Goals). GCP users use `vars` directly.
+
+**Plan-time dual representation:** Plugin Framework disallows `Computed` on parent blocks that contain write-only children, so `aws` and `vars` are `Optional` only (unlike `azure`, which has no write-only fields at the parent block level and remains `Optional + Computed + UseStateForUnknown`). After Read populates both the configured representation and its read-populated sibling, a subsequent plan would otherwise mark the unconfigured sibling for removal. `ModifyPlan` preserves the sibling by copying the read-populated attribute from state into plan when the practitioner configures only one representation—the same branching logic `compileVarsForWrite` uses on config. Typed siblings are copied into vars-mode plans only when planned `vars` matches state (so explicit representation or value changes are not overwritten).
 
 ### Decision 5: Write-only secret drift detection via bcrypt hash in private state
 
@@ -154,19 +160,23 @@ The helper is exported and named for reuse; this change uses it from the cloud c
 
 **Imported-resource case:** On first refresh after `terraform import`, no hash exists in private state. The provider treats absence-of-hash as "no comparison possible" and produces no drift. On the first apply where a write-only attribute is set in config, the hash is computed and written. This matches `random_password`'s post-import behaviour.
 
+**Plan-to-apply resubmit:** When drift is detected (excluding the import-baseline case), `ModifyPlan` writes the set of attribute paths requiring resubmission into resource private state under `writeonly_resubmit:_pending`. During Update, the envelope passes `req.Private` to the write callback; the provider reads the resubmit set and forces raw secret values into the PUT body even when plan/state show no API-visible diff for those fields. `OnWritten` clears the resubmit key after hashes are persisted. This avoids storing resubmit intent on the shared `*Resource` struct, which would race when multiple resource instances plan in the same apply phase.
+
 ### Decision 6: `cloud_provider` change forces replacement; `account_type` is updatable
 
 The Kibana PUT endpoint does not accept `cloudProvider` in its body, so changing it must trigger replacement. `accountType` IS accepted by PUT and is therefore updatable in-place.
 
 #### Scenario impact
 
-This decision drives `RequiresReplace` plan modifiers on `cloud_provider`, `cloud_connector_id`, and `space_id`, and a plain Optional+Computed shape on `account_type`.
+This decision drives `RequiresReplace` plan modifiers on `cloud_provider` and `space_id`, a computed-only `cloud_connector_id`, and a plain Optional+Computed shape on `account_type`.
 
 ### Decision 7: `force_delete` as explicit attribute
 
 Expose the API's `?force=true` query parameter as a top-level boolean attribute defaulting to `false`. When `force_delete = false` and the API returns a conflict because `package_policy_count > 0`, the provider surfaces a helpful error mentioning the count and suggesting `force_delete = true` if intentional.
 
 **Why:** Considered: always force-delete (hides accidental destructive operations) — rejected. Considered: relying on Terraform's `lifecycle { prevent_destroy }` meta — rejected because providers cannot observe `lifecycle` blocks and the in-use case still needs server-side override. An explicit attribute is plan-visible and reversible.
+
+**Update no-op skip:** When the plan changes only config-only attributes (today `force_delete`) and there is no pending write-only resubmit work, Update skips the PUT. State keeps the prior `updated_at` from the last API refresh. This is correct because `force_delete` never appears in the API body.
 
 ### Decision 8: Read returns 404 → remove from state; Delete 404 → success
 
@@ -204,7 +214,9 @@ Minimum supported Kibana version is the first version that ships the `/api/fleet
 
 ## Open Questions
 
-1. **Exact minimum Kibana version**: The cloud connectors endpoints exist in earlier 9.x; only naming is 9.3+. Confirm via a Kibana CHANGELOG or by hitting the endpoint against a known-version snapshot during implementation. Pin in `GetVersionRequirements`.
-2. **`bcrypt` dependency**: Confirm `golang.org/x/crypto/bcrypt` is already a transitive dependency of the provider (likely via the AWS SDK if present). If not, add it explicitly.
+1. **Exact minimum Kibana version**: ANSWERED — pinned at `9.2.0` (preview release of cloud connectors). Naming is GA in 9.3; the preview API surface is present in 9.2 and is what `GetVersionRequirements` gates against. Acceptance tests run against the current default stack (9.4+), which exceeds the minimum.
+2. **`bcrypt` dependency**: ANSWERED — `golang.org/x/crypto v0.52.0` is already a direct module dependency and includes `golang.org/x/crypto/bcrypt`. No `go get` required.
 3. **Whether to surface `verification_*` fields with documentation about their async nature**: They will be `Computed`, but the docs should call out that values may not stabilise immediately on first Create. Confirmed yes in the spec.
 4. **Whether the data source should also be space-aware**: Current decision is yes (mirrors the resource). Confirm during implementation that the list endpoint accepts the space-aware path.
+5. **Plugin Framework `WriteOnly` support**: ANSWERED — provider is on `terraform-plugin-framework v1.19.0` (≥ 1.11), which supports `WriteOnly` on string attributes. No bump required.
+6. **`entitycore.KibanaResource` private-state hook**: ANSWERED — hash persistence runs in the `OnWritten` callback on `KibanaResourceOptions[T]`, invoked by the envelope after a successful Create or Update (after read-after-write refresh sets state and any optional `PostRead` runs). `OnWritten` receives the final model, the original config (so write-only values are available), and `privateState any` (the framework response `Private` field). `ModifyPlan` is implemented directly on the concrete `Resource` type via `resource.ResourceWithModifyPlan`, which has full access to `req.Private`/`resp.Private`. The envelope extension for `OnWritten` was added for this change; no hash writes occur in `PostRead`.

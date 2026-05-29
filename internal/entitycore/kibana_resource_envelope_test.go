@@ -2078,6 +2078,32 @@ func TestNewKibanaResource_Update_callbackReceivesNonNilPriorAndConfig(t *testin
 	require.False(t, resp.Diagnostics.HasError())
 }
 
+func TestNewKibanaResource_Update_callbackReceivesPrivateState(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	var capturedPrivate any
+	opts := defaultTestKibanaResourceOptions()
+	opts.Update = func(
+		_ context.Context,
+		_ *clients.KibanaScopedClient,
+		req KibanaWriteRequest[testKibanaResourceModel],
+	) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+		capturedPrivate = req.Private
+		return KibanaWriteResult[testKibanaResourceModel]{Model: req.Plan}, nil
+	}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
+	prior := makeTestKibanaResourceState(ctx, t, "default/my-resource")
+	resp := resource.UpdateResponse{State: prior}
+	r.Update(ctx, resource.UpdateRequest{Plan: plan, State: prior, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, resp.Private, capturedPrivate)
+}
+
 func TestNewKibanaResource_SingleWriteFuncServesCreateAndUpdate(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -2482,4 +2508,138 @@ func TestKibanaResource_Update_versionReqDiagsStopUpdate(t *testing.T) {
 	}
 	require.Contains(t, summaries, "version requirements error",
 		"diagnostic from GetVersionRequirements must be appended; got: %v", summaries)
+}
+
+// =============================================================================
+// OnWritten
+// =============================================================================
+
+func TestNewKibanaResource_Create_skipsOnWrittenWhenNil(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	opts := defaultTestKibanaResourceOptions()
+	opts.Read = testKibanaReadFuncDistinguishing
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	objType := testKibanaResourceObjectType()
+	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
+	resp := resource.CreateResponse{State: respState}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+}
+
+func TestNewKibanaResource_Create_invokesOnWrittenAfterPostRead(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+
+	var events []string
+	opts := defaultTestKibanaResourceOptions()
+	opts.Read = testKibanaReadFuncDistinguishing
+	opts.PostRead = func(_ context.Context, _ *clients.KibanaScopedClient, _ testKibanaResourceModel, _ any) diag.Diagnostics {
+		events = append(events, "postRead")
+		return nil
+	}
+	opts.OnWritten = func(_ context.Context, _ *clients.KibanaScopedClient, _ testKibanaResourceModel, _ testKibanaResourceModel, _ any) diag.Diagnostics {
+		events = append(events, "onWritten")
+		return nil
+	}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	objType := testKibanaResourceObjectType()
+	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
+	resp := resource.CreateResponse{State: respState}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, []string{"postRead", "onWritten"}, events)
+	require.False(t, resp.State.Raw.IsNull(), "state must be set before OnWritten")
+}
+
+func TestNewKibanaResource_Create_onWrittenReceivesConfigAndPrivateState(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+
+	var capturedConfig testKibanaResourceModel
+	var capturedPrivate any
+	opts := defaultTestKibanaResourceOptions()
+	opts.Read = testKibanaReadFuncDistinguishing
+	opts.OnWritten = func(_ context.Context, _ *clients.KibanaScopedClient, _ testKibanaResourceModel, config testKibanaResourceModel, priv any) diag.Diagnostics {
+		capturedConfig = config
+		capturedPrivate = priv
+		return nil
+	}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	objType := testKibanaResourceObjectType()
+	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
+	resp := resource.CreateResponse{State: respState}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, "my-resource", capturedConfig.GetResourceID().ValueString())
+	require.Equal(t, resp.Private, capturedPrivate)
+}
+
+func TestNewKibanaResource_Update_invokesOnWrittenAfterPostRead(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+
+	onWrittenCalls := 0
+	opts := defaultTestKibanaResourceOptions()
+	opts.Read = testKibanaReadFuncDistinguishing
+	opts.OnWritten = func(_ context.Context, _ *clients.KibanaScopedClient, _ testKibanaResourceModel, _ testKibanaResourceModel, _ any) diag.Diagnostics {
+		onWrittenCalls++
+		return nil
+	}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
+	prior := makeTestKibanaResourceState(ctx, t, "default/my-resource")
+	resp := resource.UpdateResponse{State: prior}
+	r.Update(ctx, resource.UpdateRequest{Plan: plan, State: prior, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, 1, onWrittenCalls)
+}
+
+func TestNewKibanaResource_Create_skipsOnWrittenWhenPostReadErrors(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+
+	onWrittenCalled := false
+	opts := defaultTestKibanaResourceOptions()
+	opts.Read = testKibanaReadFuncDistinguishing
+	opts.PostRead = func(_ context.Context, _ *clients.KibanaScopedClient, _ testKibanaResourceModel, _ any) diag.Diagnostics {
+		var d diag.Diagnostics
+		d.AddError("post read failed", "boom")
+		return d
+	}
+	opts.OnWritten = func(_ context.Context, _ *clients.KibanaScopedClient, _ testKibanaResourceModel, _ testKibanaResourceModel, _ any) diag.Diagnostics {
+		onWrittenCalled = true
+		return nil
+	}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	objType := testKibanaResourceObjectType()
+	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
+	resp := resource.CreateResponse{State: respState}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.False(t, onWrittenCalled)
 }
