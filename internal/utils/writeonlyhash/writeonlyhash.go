@@ -127,8 +127,7 @@ func (h *Hasher) hashInput(value string) []byte {
 }
 
 func computeError(err error) error {
-	var invalidCost bcrypt.InvalidCostError
-	if errors.As(err, &invalidCost) {
+	if errors.As(err, new(bcrypt.InvalidCostError)) {
 		return fmt.Errorf("bcrypt cost out of range")
 	}
 

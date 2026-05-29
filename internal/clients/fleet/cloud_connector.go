@@ -107,7 +107,12 @@ func CreateCloudConnector(ctx context.Context, client *Client, spaceID string, b
 }
 
 // UpdateCloudConnector updates an existing Fleet cloud connector.
-func UpdateCloudConnector(ctx context.Context, client *Client, spaceID, cloudConnectorID string, body kbapi.PutFleetCloudConnectorsCloudconnectoridJSONRequestBody) (*CloudConnectorItem, diag.Diagnostics) {
+func UpdateCloudConnector(
+	ctx context.Context,
+	client *Client,
+	spaceID, cloudConnectorID string,
+	body kbapi.PutFleetCloudConnectorsCloudconnectoridJSONRequestBody,
+) (*CloudConnectorItem, diag.Diagnostics) {
 	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*CloudConnectorItem, int, diag.Diagnostics) {
 		resp, err := client.API.PutFleetCloudConnectorsCloudconnectoridWithResponse(ctx, cloudConnectorID, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 		if err != nil {
@@ -204,7 +209,7 @@ func cloudConnectorItemFromAPIFields(
 	accountType *string,
 	namespace *string,
 	packagePolicyCount float32,
-	vars map[string]*interface{},
+	vars map[string]*any,
 	verificationStatus *string,
 	verificationStartedAt *string,
 	verificationFailedAt *string,
@@ -227,7 +232,7 @@ func cloudConnectorItemFromAPIFields(
 	}
 }
 
-func varsMapFromAPI(vars map[string]*interface{}) map[string]any {
+func varsMapFromAPI(vars map[string]*any) map[string]any {
 	if vars == nil {
 		return nil
 	}
