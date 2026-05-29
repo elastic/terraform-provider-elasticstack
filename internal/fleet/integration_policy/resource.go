@@ -23,7 +23,6 @@ import (
 	"sync"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fleetpkg "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
@@ -69,23 +68,6 @@ func (r *integrationPolicyResource) UpgradeState(context.Context) map[int64]reso
 		1: {PriorSchema: getSchemaV1(), StateUpgrader: upgradeV1ToV3},
 		2: {PriorSchema: &v2, StateUpgrader: upgradeV2ToV3},
 	}
-}
-
-func (r *integrationPolicyResource) buildFeatures(ctx context.Context, apiClient *clients.KibanaScopedClient) (features, diag.Diagnostics) {
-	supportsPolicyIDs, diags := apiClient.EnforceMinVersion(ctx, MinVersionPolicyIDs)
-	if diags.HasError() {
-		return features{}, diags
-	}
-
-	supportsOutputID, outputIDDiags := apiClient.EnforceMinVersion(ctx, MinVersionOutputID)
-	if outputIDDiags.HasError() {
-		return features{}, outputIDDiags
-	}
-
-	return features{
-		SupportsPolicyIDs: supportsPolicyIDs,
-		SupportsOutputID:  supportsOutputID,
-	}, nil
 }
 
 var knownPackages sync.Map
