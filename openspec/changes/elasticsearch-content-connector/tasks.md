@@ -75,10 +75,10 @@
 
 ## 9. Acceptance tests — data source
 
-- [ ] 9.1 Read existing connector; verify all envelope, pipeline, scheduling, features, and runtime-telemetry attributes are populated
-- [ ] 9.2 Read connector with non-empty `filtering` and `custom_scheduling`; verify both are exposed in state
-- [ ] 9.3 Read non-existent connector; verify diagnostic error
-- [ ] 9.4 Read connector whose `configuration` schema is registered with sensitive fields; verify the full schema document is exposed (sensitivity hiding is a resource-only concern; data source surfaces everything)
+- [x] 9.1 Read existing connector; verify all envelope, pipeline, scheduling, features, and runtime-telemetry attributes are populated
+- [x] 9.2 Read connector with non-empty `filtering` and `custom_scheduling`; verify both are exposed in state
+- [x] 9.3 Read non-existent connector; verify diagnostic error
+- [x] 9.4 Read connector whose `configuration` schema is registered with sensitive fields; verify the full schema document is exposed (sensitivity hiding is a resource-only concern; data source surfaces everything)
 
 ## 10. Acceptance tests — action
 
