@@ -211,7 +211,7 @@ The acceptance test suite SHALL include a test `TestAccResourceSpace_DefaultSpac
 - **GIVEN** a live Kibana instance with a default space
 - **WHEN** `TestAccResourceSpace_DefaultSpace` runs
 - **THEN** step 1 SHALL import the default space (`ResourceName: "elasticstack_kibana_space.default"`, `ImportState: true`, `ImportStateId: "default"`)
-- **AND** step 2 SHALL apply a fixture config with only `space_id` and `name` (no `solution`) and assert `space_id == "default"` and `name == "Default"`
+- **AND** step 2 SHALL apply a fixture config that sets only attributes supported on all stack versions (no `solution`) and matches the live default space's existing values to avoid drift (in practice: `space_id`, `name`, and `description`), and assert `space_id == "default"` and `name == "Default"`
 - **AND** the destroy step at the end of the test SHALL complete without error
 - **AND** the test SHALL use no `CheckDestroy` (the default space persists after Terraform destroy)
 
