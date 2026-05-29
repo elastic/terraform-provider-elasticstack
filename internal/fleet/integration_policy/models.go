@@ -30,11 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type features struct {
-	SupportsPolicyIDs bool
-	SupportsOutputID  bool
-}
-
 type integrationPolicyModel struct {
 	ID                 types.String  `tfsdk:"id"`
 	KibanaConnection   types.List    `tfsdk:"kibana_connection"`
@@ -223,7 +218,7 @@ func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, 
 	model.Inputs = inputsMap
 }
 
-func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat features) (kbapi.PackagePolicyRequest, diag.Diagnostics) {
+func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integrationPolicyFeatures) (kbapi.PackagePolicyRequest, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Check if agent_policy_ids is configured and version supports it
