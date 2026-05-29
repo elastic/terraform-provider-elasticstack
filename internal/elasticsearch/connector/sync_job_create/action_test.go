@@ -19,12 +19,16 @@ package sync_job_create
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/connector/syncjobget"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/syncjobtriggermethod"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/syncjobtype"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/syncstatus"
 	actionschema "github.com/hashicorp/terraform-plugin-framework/action/schema"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -229,6 +233,71 @@ func TestClassifyTerminalStatus(t *testing.T) {
 			require.False(t, diags.HasError())
 		})
 	}
+}
+
+func TestWaitForSyncJobCompletion_timeout(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	get := func(_ context.Context, _ string) (*syncjobget.Response, fwdiag.Diagnostics) {
+		return &syncjobget.Response{Status: syncstatus.Inprogress}, nil
+	}
+
+	diags := waitForSyncJobCompletionWithInterval(ctx, "test-job-id", get, 5*time.Millisecond)
+	require.True(t, diags.HasError())
+	require.Len(t, diags.Errors(), 1)
+	assert.Contains(t, diags.Errors()[0].Detail(), "test-job-id")
+	assert.Contains(t, diags.Errors()[0].Detail(), "in_progress")
+}
+
+func TestWaitForSyncJobCompletion_timeoutDuringFirstGET(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
+	defer cancel()
+
+	get := func(ctx context.Context, _ string) (*syncjobget.Response, fwdiag.Diagnostics) {
+		<-ctx.Done()
+		var diags fwdiag.Diagnostics
+		diags.AddError("Sync job get failed", ctx.Err().Error())
+		return nil, diags
+	}
+
+	diags := waitForSyncJobCompletionWithInterval(ctx, "hung-job", get, syncJobPollInterval)
+	require.True(t, diags.HasError())
+	require.Len(t, diags.Errors(), 1)
+	assert.Equal(t, "Sync job did not complete within timeout", diags.Errors()[0].Summary())
+	assert.Contains(t, diags.Errors()[0].Detail(), "hung-job")
+	assert.Contains(t, diags.Errors()[0].Detail(), "unknown")
+}
+
+func TestWaitForSyncJobCompletion_terminalAfterPolls(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	var calls int
+	get := func(_ context.Context, _ string) (*syncjobget.Response, fwdiag.Diagnostics) {
+		calls++
+		if calls == 1 {
+			return &syncjobget.Response{Status: syncstatus.Pending}, nil
+		}
+		return &syncjobget.Response{Status: syncstatus.Completed}, nil
+	}
+
+	diags := waitForSyncJobCompletionWithInterval(ctx, "job-1", get, 5*time.Millisecond)
+	require.False(t, diags.HasError())
+	assert.GreaterOrEqual(t, calls, 2)
+}
+
+func TestTimeoutDiagnostic(t *testing.T) {
+	t.Parallel()
+
+	diags := timeoutDiagnostic("job-42", "in_progress")
+	require.True(t, diags.HasError())
+	assert.Contains(t, diags.Errors()[0].Detail(), fmt.Sprintf("%q", "job-42"))
+	assert.Contains(t, diags.Errors()[0].Detail(), fmt.Sprintf("%q", "in_progress"))
 }
 
 func TestModel_GetVersionRequirements(t *testing.T) {
