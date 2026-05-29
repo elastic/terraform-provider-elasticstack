@@ -45,9 +45,9 @@
 
 ## 6. Data source
 
-- [ ] 6.1 Create `data_source.go` using `entitycore.NewElasticsearchDataSource` (envelope generic, simple read pipeline)
-- [ ] 6.2 Create `data_source_schema.go` exposing every read-time attribute per REQ-010 (envelope + pipeline + scheduling + features + the full `configuration` document + all runtime telemetry: `status`, `last_seen`, `last_synced`, `last_*_sync_*` family, `filtering`, `custom_scheduling`, `sync_cursor`, `sync_now`, etc.); all `Computed`
-- [ ] 6.3 Register the data source in `provider/`
+- [x] 6.1 Create `data_source.go` using `entitycore.NewElasticsearchDataSource` (envelope generic, simple read pipeline)
+- [x] 6.2 Create `data_source_schema.go` exposing every read-time attribute per REQ-010 (envelope + pipeline + scheduling + features + the full `configuration` document + all runtime telemetry: `status`, `last_seen`, `last_synced`, `last_*_sync_*` family, `filtering`, `custom_scheduling`, `sync_cursor`, `sync_now`, etc.); all `Computed`
+- [x] 6.3 Register the data source in `provider/`
 
 ## 7. Action — `connector_sync_job_create`
 
