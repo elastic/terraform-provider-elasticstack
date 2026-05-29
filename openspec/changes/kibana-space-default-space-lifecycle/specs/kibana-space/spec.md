@@ -1,8 +1,8 @@
 ## MODIFIED Requirements
 
-### Requirement: Delete lifecycle for the default Kibana space (REQ-DELETE-DEFAULT)
+### Requirement: Delete behavior (REQ-016)
 
-When the resource is configured with `space_id = "default"` and a delete operation runs, the provider SHALL NOT call `DELETE /api/spaces/space/default`. Instead, the provider SHALL remove the resource from Terraform state only and SHALL emit a warning-level log message to surface the skip to operators.
+When destroying, the resource SHALL derive the space id from state (extracting the resource portion from a composite id if needed). If the derived space id is `"default"`, the provider SHALL NOT call `DELETE /api/spaces/space/default`; instead, the provider SHALL remove the resource from Terraform state only and SHALL emit a warning-level log message to surface the skip to operators. For all other space ids, the provider SHALL call the Kibana Delete Space API with that identifier.
 
 The Kibana API permanently rejects `DELETE /api/spaces/space/default` with HTTP 400 Bad Request. This is a hard platform invariant on all supported Kibana versions; encoding it directly in the provider is the correct approach.
 
@@ -52,7 +52,7 @@ The acceptance test suite SHALL include a test `TestAccResourceSpace_DefaultSpac
 
 - **GIVEN** a live Kibana instance with a default space
 - **WHEN** `TestAccResourceSpace_DefaultSpace` runs
-- **THEN** step 1 SHALL import the default space (`ImportState: true`, `ImportStateId: "default"`)
+- **THEN** step 1 SHALL import the default space (`ResourceName: "elasticstack_kibana_space.default"`, `ImportState: true`, `ImportStateId: "default"`)
 - **AND** step 2 SHALL apply a fixture config with only `space_id` and `name` (no `solution`) and assert `space_id == "default"` and `name == "Default"`
 - **AND** the destroy step at the end of the test SHALL complete without error
 - **AND** the test SHALL use no `CheckDestroy` (the default space persists after Terraform destroy)

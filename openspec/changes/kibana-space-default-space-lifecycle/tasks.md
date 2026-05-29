@@ -12,13 +12,14 @@
 ## 3. Actionable Create 409 Diagnostic
 
 - [ ] 3.1 In `internal/clients/kibanaoapi/spaces.go`, in `CreateSpace`, add an explicit `http.StatusConflict` case after checking the API error and before calling `HandleMutateTypedResponse`. The case SHALL return an error diagnostic of the form: `"Space %q already exists. To manage an existing Kibana space with Terraform, import it first:\n\n    terraform import elasticstack_kibana_space.<NAME> %s"`.
-- [ ] 3.2 Confirm `"fmt"` and `"net/http"` are present in imports in `internal/clients/kibanaoapi/spaces.go` (add if missing).
+- [ ] 3.2 Add unit coverage for the 409 path in `internal/clients/kibanaoapi` (for example, a `CreateSpace` test that serves HTTP 409 and asserts the diagnostic names the space id and includes `terraform import elasticstack_kibana_space.<NAME> <space_id>`).
+- [ ] 3.3 Confirm `"fmt"` and `"net/http"` are present in imports in `internal/clients/kibanaoapi/spaces.go` (add if missing).
 
 ## 4. Acceptance Test
 
 - [ ] 4.1 Add `TestAccResourceSpace_DefaultSpace` to `internal/kibana/spaces/acc_test.go`. The test SHALL:
   - Use `acctest.NamedTestCaseDirectory("default_space")` as the `ConfigDirectory`.
-  - In step 1: import the default space using `ImportState: true`, `ImportStateId: "default"`.
+  - In step 1: import the default space using `ResourceName: "elasticstack_kibana_space.default"`, `ImportState: true`, and `ImportStateId: "default"`.
   - In step 2: apply the fixture config and check `space_id == "default"` and `name == "Default"`.
   - Use no `CheckDestroy` (the default space is never deleted).
   - Use no `solution` attribute in the fixture (ungated, runs on all stack versions).
