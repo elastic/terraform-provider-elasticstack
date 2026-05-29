@@ -262,6 +262,35 @@ func testAccCheckDataSourceConfigurationContains(keys ...string) resource.TestCh
 	}
 }
 
+func testAccCheckDataSourceJSONObjectEmpty(attr string) resource.TestCheckFunc {
+	return resource.TestCheckResourceAttrWith(contentConnectorDataSourceAddr, attr, func(value string) error {
+		var m map[string]any
+		if err := json.Unmarshal([]byte(value), &m); err != nil {
+			return fmt.Errorf("%s is not valid JSON object: %w", attr, err)
+		}
+		if len(m) != 0 {
+			return fmt.Errorf("expected empty %s object, got %v", attr, m)
+		}
+		return nil
+	})
+}
+
+func testAccCheckDataSourceJSONArrayNonEmpty(attr string) resource.TestCheckFunc {
+	return resource.TestCheckResourceAttrWith(contentConnectorDataSourceAddr, attr, func(value string) error {
+		var arr []json.RawMessage
+		if err := json.Unmarshal([]byte(value), &arr); err != nil {
+			return fmt.Errorf("%s is not valid JSON array: %w", attr, err)
+		}
+		if len(arr) == 0 {
+			return fmt.Errorf("expected non-empty %s array", attr)
+		}
+		if !strings.Contains(value, `"active"`) {
+			return fmt.Errorf("expected %s to contain filtering rule structure with \"active\"", attr)
+		}
+		return nil
+	})
+}
+
 func testAccCheckContentConnectorAbsentFromState(addr string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		if _, ok := s.RootModule().Resources[addr]; ok {
@@ -904,9 +933,9 @@ func TestAccDataSourceContentConnector_basic(t *testing.T) {
 					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "last_access_control_sync_scheduled_at"),
 					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "last_incremental_sync_scheduled_at"),
 					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "error"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "configuration", "{}"),
-					resource.TestMatchResourceAttr(contentConnectorDataSourceAddr, "filtering", regexp.MustCompile(`"DEFAULT"`)),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "custom_scheduling", "{}"),
+					testAccCheckDataSourceJSONObjectEmpty("configuration"),
+					testAccCheckDataSourceJSONArrayNonEmpty("filtering"),
+					testAccCheckDataSourceJSONObjectEmpty("custom_scheduling"),
 					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "sync_cursor"),
 					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "sync_now", "false"),
 				),
@@ -937,7 +966,7 @@ func TestAccDataSourceContentConnector_filteringAndCustomScheduling(t *testing.T
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(contentConnectorDataSourceAddr, "filtering", regexp.MustCompile(regexp.QuoteMeta(marker))),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "custom_scheduling", "{}"),
+					testAccCheckDataSourceJSONObjectEmpty("custom_scheduling"),
 				),
 			},
 		},
@@ -957,7 +986,7 @@ func TestAccDataSourceContentConnector_notFound(t *testing.T) {
 				SkipFunc:                 skipConnectorUnsupported(),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables:          vars,
-				ExpectError:              regexp.MustCompile("Connector not found"),
+				ExpectError:              regexp.MustCompile(`(?s)Connector not found.*` + regexp.QuoteMeta(connectorID)),
 			},
 		},
 	})
