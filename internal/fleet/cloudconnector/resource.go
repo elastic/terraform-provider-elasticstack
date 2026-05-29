@@ -49,8 +49,9 @@ func newResource() *Resource {
 				Schema:    getSchema,
 				Read:      readCloudConnector,
 				Delete:    deleteCloudConnector,
-				Create: createCloudConnector,
-				Update: updateCloudConnector,
+				Create:    createCloudConnector,
+				Update:    updateCloudConnector,
+				OnWritten: onWrittenCloudConnector,
 			},
 		),
 	}
