@@ -2,6 +2,7 @@
 
 ### Changes
 
+- Fix `elasticstack_kibana_dashboard` panel-level `time_range` is now optional on typed Lens chart panels and `vis_config.by_reference`; the provider no longer inherits the dashboard-level `time_range` or applies a `now-15m`/`now` fallback when the panel-level value is unset, and panels without a panel-level `time_range` no longer drift on read. ([#3424](https://github.com/elastic/terraform-provider-elasticstack/issues/3424))
 - `elasticstack_elasticsearch_ml_anomaly_detection_job` no longer fails with a `Value Conversion Error` when the whole `analysis_config` block (or `analysis_config.per_partition_categorization`) is sourced from a Terraform variable or `for_each`. ([#3403](https://github.com/elastic/terraform-provider-elasticstack/issues/3403))
 - Fix `elasticstack_kibana_dashboard` "inconsistent result after apply" when using `vis_config.by_value.xy_chart_config` with `layers[].type = "bar_horizontal"` and terms breakdowns — provider now preserves planned `fitting` values when Kibana omits them.
 - Fix `elasticstack_kibana_dashboard` nested section panel reads (`image_config`, `xy_chart_config.legend`, `heatmap_config.legend`, gauge `styling.shape_json`) — planned values are preserved when Kibana omits them on read.
