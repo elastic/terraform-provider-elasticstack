@@ -21,9 +21,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *contentConnectorResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
@@ -53,7 +51,18 @@ func (r *contentConnectorResource) ModifyPlan(ctx context.Context, req resource.
 	}
 
 	outcome, evalDiags := evaluateSecretPlanChanges(configMap, stateMap, func(key string) ([]byte, diag.Diagnostics) {
-		return req.Private.GetKey(ctx, secretHashKey(key))
+		var diags diag.Diagnostics
+		raw, getDiags := req.Private.GetKey(ctx, secretHashKey(key))
+		diags.Append(getDiags...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		decoded, err := decodeSecretHashFromPrivateState(raw)
+		if err != nil {
+			diags.AddError("Failed to decode write-only secret hash", err.Error())
+			return nil, diags
+		}
+		return decoded, diags
 	})
 	resp.Diagnostics.Append(evalDiags...)
 	if resp.Diagnostics.HasError() {
@@ -66,9 +75,5 @@ func (r *contentConnectorResource) ModifyPlan(ctx context.Context, req resource.
 
 	for _, key := range outcome.KeysToClear {
 		resp.Diagnostics.Append(resp.Private.SetKey(ctx, secretHashKey(key), nil)...)
-	}
-
-	if outcome.NeedsUpdate {
-		resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("id"), fwtypes.StringUnknown())...)
 	}
 }

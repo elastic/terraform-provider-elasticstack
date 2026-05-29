@@ -19,6 +19,7 @@ package connector
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -65,6 +66,34 @@ func TestStoreSecretHashes_nilPrivateNoSecrets(t *testing.T) {
 	var diags diag.Diagnostics
 	storeSecretHashes(ctx, nil, map[string]ConfigurationValueModel{"host": {String: fwtypes.StringValue("x")}}, &diags)
 	require.False(t, diags.HasError())
+}
+
+func TestEncodeSecretHashForPrivateState_validJSON(t *testing.T) {
+	t.Parallel()
+
+	hash, err := secretHasher.Compute("pw")
+	require.NoError(t, err)
+
+	encoded, err := encodeSecretHashForPrivateState(hash)
+	require.NoError(t, err)
+	require.True(t, json.Valid(encoded))
+
+	decoded, err := decodeSecretHashFromPrivateState(encoded)
+	require.NoError(t, err)
+	require.Equal(t, hash, decoded)
+}
+
+func TestStoreSecretHashes_storesJSONEncodedHash(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	ps := mapPrivateState{}
+	configMap := map[string]ConfigurationValueModel{
+		"password": {SecretValue: fwtypes.StringValue("pw")},
+	}
+	var diags diag.Diagnostics
+	storeSecretHashes(ctx, ps, configMap, &diags)
+	require.False(t, diags.HasError())
+	require.True(t, json.Valid(ps[secretHashKey("password")]))
 }
 
 func TestClearRemovedSecretHashes_nilPrivateWithRemovals(t *testing.T) {

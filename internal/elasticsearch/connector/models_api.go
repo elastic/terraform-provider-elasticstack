@@ -300,7 +300,21 @@ func populateConfigurationValuesFromAPI(
 		}
 	}
 
+	if len(result) == 0 && priorMap == nil {
+		return fwtypes.MapNull(fwtypes.ObjectType{AttrTypes: configurationValueModelAttrTypes()})
+	}
+
 	return typeutils.MapValueFrom(ctx, result, fwtypes.ObjectType{AttrTypes: configurationValueModelAttrTypes()}, configurationValuesPath, diags)
+}
+
+func configurationValuePresent(raw json.RawMessage) bool {
+	if len(raw) == 0 {
+		return false
+	}
+	if string(raw) == "null" {
+		return false
+	}
+	return true
 }
 
 func configurationValuesFromAPIResponse(
@@ -308,7 +322,7 @@ func configurationValuesFromAPIResponse(
 ) map[string]json.RawMessage {
 	out := make(map[string]json.RawMessage)
 	for key, props := range configuration {
-		if len(props.Value) == 0 {
+		if !configurationValuePresent(props.Value) {
 			continue
 		}
 		out[key] = props.Value

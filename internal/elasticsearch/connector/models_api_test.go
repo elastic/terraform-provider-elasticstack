@@ -159,7 +159,7 @@ func TestSecretHashKey(t *testing.T) {
 	t.Parallel()
 	require.Equal(
 		t,
-		`secret_hash:configuration_values["password"].secret_value`,
+		`secret_hash:configuration_values.password.secret_value`,
 		secretHashKey("password"),
 	)
 }

@@ -59,6 +59,8 @@ func readConnector(
 	}
 	if resp.IndexName != nil {
 		data.IndexName = fwtypes.StringValue(*resp.IndexName)
+	} else {
+		data.IndexName = fwtypes.StringNull()
 	}
 	data.IsNative = fwtypes.BoolValue(resp.IsNative)
 	if resp.Language != nil {

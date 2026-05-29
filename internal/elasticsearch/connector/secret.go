@@ -19,6 +19,7 @@ package connector
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -35,7 +36,23 @@ const (
 )
 
 func secretHashKey(mapKey string) string {
-	return secretHasher.PrivateStateKey(`configuration_values["` + mapKey + `"].secret_value`)
+	// Private-state keys must be valid JSON object keys (no quotes or brackets).
+	return secretHasher.PrivateStateKey("configuration_values." + mapKey + ".secret_value")
+}
+
+func encodeSecretHashForPrivateState(hash []byte) ([]byte, error) {
+	return json.Marshal(string(hash))
+}
+
+func decodeSecretHashFromPrivateState(raw []byte) ([]byte, error) {
+	if len(raw) == 0 {
+		return nil, nil
+	}
+	var stored string
+	if err := json.Unmarshal(raw, &stored); err != nil {
+		return nil, err
+	}
+	return []byte(stored), nil
 }
 
 func configMapHasSecretValues(configMap map[string]ConfigurationValueModel) bool {
@@ -81,7 +98,12 @@ func storeSecretHashes(
 			diags.AddError("Failed to hash write-only attribute", err.Error())
 			return
 		}
-		diags.Append(private.SetKey(ctx, secretHashKey(key), hash)...)
+		encoded, err := encodeSecretHashForPrivateState(hash)
+		if err != nil {
+			diags.AddError("Failed to encode write-only secret hash", err.Error())
+			return
+		}
+		diags.Append(private.SetKey(ctx, secretHashKey(key), encoded)...)
 	}
 }
 

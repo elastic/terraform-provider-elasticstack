@@ -50,6 +50,7 @@ func (v configurationValueBranchValidator) ValidateObject(_ context.Context, req
 	}
 
 	setCount := 0
+	unknownCount := 0
 	var setBranches []string
 
 	for _, name := range configurationValueBranchAttrNames {
@@ -57,13 +58,18 @@ func (v configurationValueBranchValidator) ValidateObject(_ context.Context, req
 		if !ok {
 			continue
 		}
-		if configurationValueBranchIsSet(val) {
+		switch {
+		case configurationValueBranchIsSet(val):
 			setCount++
 			setBranches = append(setBranches, name)
+		case val.IsUnknown():
+			unknownCount++
 		}
 	}
 
 	switch {
+	case setCount == 0 && unknownCount == 1:
+		// Write-only secret_value (or other branches) may be unknown during plan.
 	case setCount == 0:
 		resp.Diagnostics.AddAttributeError(
 			req.Path,

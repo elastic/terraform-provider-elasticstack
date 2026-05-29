@@ -188,6 +188,12 @@ func TestConfigurationValueBranchValidator_acceptsEachSingleBranch(t *testing.T)
 				secretValueBranchAttrName: types.StringValue("pw"),
 			}),
 		},
+		{
+			name: "secret_value unknown during plan",
+			attrs: mergeConfigurationValueAttrs(configurationValueNullFields(), map[string]attr.Value{
+				secretValueBranchAttrName: types.StringUnknown(),
+			}),
+		},
 	}
 
 	for _, tc := range tests {
