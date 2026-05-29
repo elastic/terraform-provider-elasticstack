@@ -48,6 +48,13 @@ func skipConnectorUnsupported() func() (bool, error) {
 	return versionutils.CheckIfVersionIsUnsupported(connector.MinSupportedVersion)
 }
 
+// accRequireConnectorSupported skips when the acceptance stack is below MinSupportedVersion.
+// Call from PreConfig and CheckDestroy helpers: PreConfig runs before TestStep SkipFunc.
+func accRequireConnectorSupported(t *testing.T) {
+	t.Helper()
+	versionutils.SkipIfUnsupported(t, connector.MinSupportedVersion, versionutils.FlavorAny)
+}
+
 func connectorIDVariables(connectorID string) config.Variables {
 	return config.Variables{
 		"connector_id": config.StringVariable(connectorID),
@@ -69,6 +76,7 @@ func accConnectorClient(t *testing.T) *clients.ElasticsearchScopedClient {
 
 func deleteConnectorAPI(t *testing.T, connectorID string) {
 	t.Helper()
+	accRequireConnectorSupported(t)
 	ctx := context.Background()
 	client := accConnectorClient(t)
 	if diags := esclient.DeleteConnector(ctx, client, connectorID); diags.HasError() {
@@ -78,6 +86,7 @@ func deleteConnectorAPI(t *testing.T, connectorID string) {
 
 func createConnectorViaAPI(t *testing.T, connectorID string) {
 	t.Helper()
+	accRequireConnectorSupported(t)
 	ctx := context.Background()
 	client := accConnectorClient(t)
 	name := "TF acc ds api"
@@ -97,6 +106,7 @@ func createConnectorViaAPI(t *testing.T, connectorID string) {
 func testAccCheckContentConnectorDestroyByID(t *testing.T, connectorID string) func(*terraform.State) error {
 	t.Helper()
 	return func(*terraform.State) error {
+		accRequireConnectorSupported(t)
 		deleteConnectorAPI(t, connectorID)
 		return nil
 	}
@@ -114,6 +124,7 @@ func connectorConfigurationSchemaField(label, fieldType string, sensitive bool) 
 
 func registerConnectorConfigurationSchema(t *testing.T, connectorID string, schema map[string]map[string]any) {
 	t.Helper()
+	accRequireConnectorSupported(t)
 	ctx := context.Background()
 	client := accConnectorClient(t)
 	body, err := json.Marshal(map[string]any{"configuration": schema})
@@ -220,6 +231,7 @@ func registerConnectorSensitiveConfigurationSchema(t *testing.T, connectorID str
 
 func putConnectorFilteringMarker(t *testing.T, connectorID, marker string) {
 	t.Helper()
+	accRequireConnectorSupported(t)
 	ctx := context.Background()
 	client := accConnectorClient(t)
 	body, err := json.Marshal(map[string]any{

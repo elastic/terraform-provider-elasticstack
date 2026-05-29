@@ -60,6 +60,14 @@ func checkDestroyConnectorSyncJobCreate(connectorID string) func(*terraform.Stat
 }
 
 func cleanupConnectorAndSyncJobs(connectorID string) error {
+	skip, err := skipConnectorUnsupported()()
+	if err != nil {
+		return err
+	}
+	if skip {
+		return nil
+	}
+
 	ctx := context.Background()
 	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
