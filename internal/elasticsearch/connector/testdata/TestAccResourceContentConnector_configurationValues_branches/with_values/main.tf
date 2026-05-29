@@ -31,6 +31,6 @@ resource "elasticstack_elasticsearch_connector" "test" {
     s_branch = { string = "x" }
     n_branch = { number = 42 }
     b_branch = { bool = true }
-    j_branch = { string = jsonencode({ a = 1 }) }
+    j_branch = { json = jsonencode({ a = 1 }) }
   }
 }

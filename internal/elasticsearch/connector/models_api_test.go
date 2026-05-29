@@ -200,6 +200,7 @@ func TestActiveConfigurationBranch(t *testing.T) {
 		{name: "bool", elem: ConfigurationValueModel{Bool: fwtypes.BoolValue(true)}, want: boolBranchAttrName},
 		{name: "json", elem: ConfigurationValueModel{JSON: jsontypes.NewNormalizedValue(`{}`)}, want: jsonBranchAttrName},
 		{name: "secret", elem: ConfigurationValueModel{SecretValue: fwtypes.StringValue("s")}, want: secretValueBranchAttrName},
+		{name: "secret unknown", elem: ConfigurationValueModel{SecretValue: fwtypes.StringUnknown()}, want: secretValueBranchAttrName},
 		{name: "none", elem: ConfigurationValueModel{}, want: ""},
 	}
 	for _, tt := range tests {
@@ -391,4 +392,26 @@ func mapFromResult(ctx context.Context, result fwtypes.Map, diags *diag.Diagnost
 		return map[string]ConfigurationValueModel{}
 	}
 	return typeutils.MapTypeAs[ConfigurationValueModel](ctx, result, configurationValuesPath, diags)
+}
+
+func TestConfigurationValuePresent(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		raw   json.RawMessage
+		want  bool
+	}{
+		{name: "absent", raw: nil, want: false},
+		{name: "empty", raw: json.RawMessage{}, want: false},
+		{name: "null", raw: json.RawMessage("null"), want: false},
+		{name: "string", raw: json.RawMessage(`"x"`), want: true},
+		{name: "number", raw: json.RawMessage(`42`), want: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tt.want, configurationValuePresent(tt.raw))
+		})
+	}
 }

@@ -232,6 +232,8 @@ func activeConfigurationBranch(elem ConfigurationValueModel) string {
 	switch {
 	case typeutils.IsKnown(elem.SecretValue):
 		return secretValueBranchAttrName
+	case !elem.SecretValue.IsNull() && elem.SecretValue.IsUnknown():
+		return secretValueBranchAttrName
 	case typeutils.IsKnown(elem.String):
 		return stringBranchAttrName
 	case typeutils.IsKnown(elem.Number):
