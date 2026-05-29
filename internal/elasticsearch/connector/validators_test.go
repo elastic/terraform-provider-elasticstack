@@ -249,6 +249,28 @@ func TestConfigurationValueBranchValidator_rejectsMultipleBranchesSet(t *testing
 	}
 }
 
+func TestConfigurationValueBranchValidator_rejectsTwoUnknownBranches(t *testing.T) {
+	t.Parallel()
+
+	attrs := map[string]attr.Value{
+		stringBranchAttrName: types.StringUnknown(),
+		numberBranchAttrName: types.NumberUnknown(),
+		boolBranchAttrName:   types.BoolNull(),
+		jsonBranchAttrName:   jsontypes.Normalized{StringValue: types.StringNull()},
+		secretValueBranchAttrName: types.StringNull(),
+	}
+
+	var resp validator.ObjectResponse
+	configurationValueBranchValidator{}.ValidateObject(context.Background(), validator.ObjectRequest{
+		Path:        path.Root("configuration_values").AtMapKey("x"),
+		ConfigValue: configurationValueObject(t, attrs),
+	}, &resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected validation error when two branches are unknown")
+	}
+}
+
 func TestConfigurationValueBranchValidator_acceptsOneBranchWithUnknowns(t *testing.T) {
 	t.Parallel()
 
