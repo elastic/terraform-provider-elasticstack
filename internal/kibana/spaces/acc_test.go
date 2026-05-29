@@ -141,6 +141,30 @@ func TestAccResourceSpace_disabledFeaturesSolutionValidation(t *testing.T) {
 	})
 }
 
+func TestAccResourceSpace_DefaultSpace(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("default_space"),
+				ResourceName:             "elasticstack_kibana_space.default",
+				ImportState:              true,
+				ImportStateId:            "default",
+				ImportStateVerify:        false,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("default_space"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.default", "space_id", "default"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.default", "name", "Default"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceSpace_importState(t *testing.T) {
 	spaceID := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
