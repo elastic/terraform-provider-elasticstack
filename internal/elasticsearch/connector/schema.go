@@ -113,15 +113,15 @@ func pipelineSingleNestedAttribute() schema.SingleNestedAttribute {
 				MarkdownDescription: "Ingest pipeline name.",
 				Required:            true,
 			},
-			"extract_binary_content": schema.BoolAttribute{
+			extractBinaryContentAttrName: schema.BoolAttribute{
 				MarkdownDescription: "Whether to extract binary content during ingestion.",
 				Required:            true,
 			},
-			"reduce_whitespace": schema.BoolAttribute{
+			reduceWhitespaceAttrName: schema.BoolAttribute{
 				MarkdownDescription: "Whether to reduce whitespace in extracted text.",
 				Required:            true,
 			},
-			"run_ml_inference": schema.BoolAttribute{
+			runMlInferenceAttrName: schema.BoolAttribute{
 				MarkdownDescription: "Whether to run ML inference during ingestion.",
 				Required:            true,
 			},
@@ -138,9 +138,9 @@ func schedulingSingleNestedAttribute() schema.SingleNestedAttribute {
 			objectplanmodifier.UseStateForUnknown(),
 		},
 		Attributes: map[string]schema.Attribute{
-			"full":           scheduleEntrySingleNestedAttribute("full"),
-			"incremental":    scheduleEntrySingleNestedAttribute("incremental"),
-			"access_control": scheduleEntrySingleNestedAttribute("access_control"),
+			fullScheduleAttrName:          scheduleEntrySingleNestedAttribute(fullScheduleAttrName),
+			incrementalScheduleAttrName:   scheduleEntrySingleNestedAttribute(incrementalScheduleAttrName),
+			accessControlScheduleAttrName: scheduleEntrySingleNestedAttribute(accessControlScheduleAttrName),
 		},
 	}
 }
@@ -171,10 +171,10 @@ func featuresSingleNestedAttribute() schema.SingleNestedAttribute {
 			objectplanmodifier.UseStateForUnknown(),
 		},
 		Attributes: map[string]schema.Attribute{
-			"document_level_security":   featureFlagSingleNestedAttribute("document_level_security"),
-			"incremental_sync":          featureFlagSingleNestedAttribute("incremental_sync"),
-			"native_connector_api_keys": featureFlagSingleNestedAttribute("native_connector_api_keys"),
-			"sync_rules":                syncRulesSingleNestedAttribute(),
+			documentLevelSecurityAttrName:  featureFlagSingleNestedAttribute(documentLevelSecurityAttrName),
+			incrementalSyncAttrName:        featureFlagSingleNestedAttribute(incrementalSyncAttrName),
+			nativeConnectorAPIKeysAttrName: featureFlagSingleNestedAttribute(nativeConnectorAPIKeysAttrName),
+			syncRulesAttrName:              syncRulesSingleNestedAttribute(),
 		},
 	}
 }
@@ -197,8 +197,8 @@ func syncRulesSingleNestedAttribute() schema.SingleNestedAttribute {
 		MarkdownDescription: "Sync rules feature flags.",
 		Optional:            true,
 		Attributes: map[string]schema.Attribute{
-			"basic":    featureFlagSingleNestedAttribute("basic"),
-			"advanced": featureFlagSingleNestedAttribute("advanced"),
+			basicSyncRulesAttrName:    featureFlagSingleNestedAttribute(basicSyncRulesAttrName),
+			advancedSyncRulesAttrName: featureFlagSingleNestedAttribute(advancedSyncRulesAttrName),
 		},
 	}
 }

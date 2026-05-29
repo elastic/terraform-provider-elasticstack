@@ -31,6 +31,22 @@ const (
 	enabledAttrName  = "enabled"
 	intervalAttrName = "interval"
 
+	extractBinaryContentAttrName = "extract_binary_content"
+	reduceWhitespaceAttrName     = "reduce_whitespace"
+	runMlInferenceAttrName       = "run_ml_inference"
+
+	fullScheduleAttrName          = "full"
+	incrementalScheduleAttrName   = "incremental"
+	accessControlScheduleAttrName = "access_control"
+
+	basicSyncRulesAttrName    = "basic"
+	advancedSyncRulesAttrName = "advanced"
+
+	documentLevelSecurityAttrName  = "document_level_security"
+	incrementalSyncAttrName        = "incremental_sync"
+	nativeConnectorAPIKeysAttrName = "native_connector_api_keys"
+	syncRulesAttrName              = "sync_rules"
+
 	stringBranchAttrName      = "string"
 	numberBranchAttrName      = "number"
 	boolBranchAttrName        = "bool"
@@ -107,10 +123,10 @@ type PipelineModel struct {
 
 func pipelineModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		nameAttrName:             fwtypes.StringType,
-		"extract_binary_content": fwtypes.BoolType,
-		"reduce_whitespace":      fwtypes.BoolType,
-		"run_ml_inference":       fwtypes.BoolType,
+		nameAttrName:                 fwtypes.StringType,
+		extractBinaryContentAttrName: fwtypes.BoolType,
+		reduceWhitespaceAttrName:     fwtypes.BoolType,
+		runMlInferenceAttrName:       fwtypes.BoolType,
 	}
 }
 
@@ -136,9 +152,9 @@ type SchedulingModel struct {
 
 func schedulingModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"full":           fwtypes.ObjectType{AttrTypes: scheduleEntryModelAttrTypes()},
-		"incremental":    fwtypes.ObjectType{AttrTypes: scheduleEntryModelAttrTypes()},
-		"access_control": fwtypes.ObjectType{AttrTypes: scheduleEntryModelAttrTypes()},
+		fullScheduleAttrName:          fwtypes.ObjectType{AttrTypes: scheduleEntryModelAttrTypes()},
+		incrementalScheduleAttrName:   fwtypes.ObjectType{AttrTypes: scheduleEntryModelAttrTypes()},
+		accessControlScheduleAttrName: fwtypes.ObjectType{AttrTypes: scheduleEntryModelAttrTypes()},
 	}
 }
 
@@ -161,8 +177,8 @@ type SyncRulesModel struct {
 
 func syncRulesModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"basic":    fwtypes.ObjectType{AttrTypes: featureFlagModelAttrTypes()},
-		"advanced": fwtypes.ObjectType{AttrTypes: featureFlagModelAttrTypes()},
+		basicSyncRulesAttrName:    fwtypes.ObjectType{AttrTypes: featureFlagModelAttrTypes()},
+		advancedSyncRulesAttrName: fwtypes.ObjectType{AttrTypes: featureFlagModelAttrTypes()},
 	}
 }
 
@@ -176,10 +192,10 @@ type FeaturesModel struct {
 
 func featuresModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"document_level_security":   fwtypes.ObjectType{AttrTypes: featureFlagModelAttrTypes()},
-		"incremental_sync":          fwtypes.ObjectType{AttrTypes: featureFlagModelAttrTypes()},
-		"native_connector_api_keys": fwtypes.ObjectType{AttrTypes: featureFlagModelAttrTypes()},
-		"sync_rules":                fwtypes.ObjectType{AttrTypes: syncRulesModelAttrTypes()},
+		documentLevelSecurityAttrName:  fwtypes.ObjectType{AttrTypes: featureFlagModelAttrTypes()},
+		incrementalSyncAttrName:        fwtypes.ObjectType{AttrTypes: featureFlagModelAttrTypes()},
+		nativeConnectorAPIKeysAttrName: fwtypes.ObjectType{AttrTypes: featureFlagModelAttrTypes()},
+		syncRulesAttrName:              fwtypes.ObjectType{AttrTypes: syncRulesModelAttrTypes()},
 	}
 }
 
