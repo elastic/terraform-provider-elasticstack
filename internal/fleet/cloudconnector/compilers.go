@@ -28,20 +28,20 @@ import (
 
 type postWireVars map[string]kbapi.PostFleetCloudConnectorsJSONBody_Vars_AdditionalProperties
 
-func (m cloudConnectorModel) toAPICreateBody() (kbapi.PostFleetCloudConnectorsJSONRequestBody, diag.Diagnostics) {
+func (plan cloudConnectorModel) toAPICreateBody(config cloudConnectorModel) (kbapi.PostFleetCloudConnectorsJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	body := kbapi.PostFleetCloudConnectorsJSONRequestBody{
-		Name:          m.Name.ValueString(),
-		CloudProvider: kbapi.PostFleetCloudConnectorsJSONBodyCloudProvider(m.CloudProvider.ValueString()),
+		Name:          plan.Name.ValueString(),
+		CloudProvider: kbapi.PostFleetCloudConnectorsJSONBodyCloudProvider(plan.CloudProvider.ValueString()),
 	}
 
-	if !m.AccountType.IsNull() && !m.AccountType.IsUnknown() {
-		at := kbapi.PostFleetCloudConnectorsJSONBodyAccountType(m.AccountType.ValueString())
+	if !plan.AccountType.IsNull() && !plan.AccountType.IsUnknown() {
+		at := kbapi.PostFleetCloudConnectorsJSONBodyAccountType(plan.AccountType.ValueString())
 		body.AccountType = &at
 	}
 
-	vars, varsDiags := m.compileVarsForWrite(nil, false)
+	vars, varsDiags := plan.compileVarsForWrite(config, nil, false)
 	diags.Append(varsDiags...)
 	if diags.HasError() {
 		return body, diags
@@ -51,19 +51,22 @@ func (m cloudConnectorModel) toAPICreateBody() (kbapi.PostFleetCloudConnectorsJS
 	return body, diags
 }
 
-func (m cloudConnectorModel) toAPIUpdateBody(prior cloudConnectorModel) (kbapi.PutFleetCloudConnectorsCloudconnectoridJSONRequestBody, diag.Diagnostics) {
+func (plan cloudConnectorModel) toAPIUpdateBody(
+	config cloudConnectorModel,
+	prior cloudConnectorModel,
+) (kbapi.PutFleetCloudConnectorsCloudconnectoridJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	body := kbapi.PutFleetCloudConnectorsCloudconnectoridJSONRequestBody{
-		Name: m.Name.ValueStringPointer(),
+		Name: plan.Name.ValueStringPointer(),
 	}
 
-	if !m.AccountType.IsNull() && !m.AccountType.IsUnknown() {
-		at := kbapi.PutFleetCloudConnectorsCloudconnectoridJSONBodyAccountType(m.AccountType.ValueString())
+	if !plan.AccountType.IsNull() && !plan.AccountType.IsUnknown() {
+		at := kbapi.PutFleetCloudConnectorsCloudconnectoridJSONBodyAccountType(plan.AccountType.ValueString())
 		body.AccountType = &at
 	}
 
-	vars, varsDiags := m.compileVarsForWrite(&prior, true)
+	vars, varsDiags := plan.compileVarsForWrite(config, &prior, true)
 	diags.Append(varsDiags...)
 	if diags.HasError() {
 		return body, diags
@@ -78,10 +81,16 @@ func (m cloudConnectorModel) toAPIUpdateBody(prior cloudConnectorModel) (kbapi.P
 	return body, diags
 }
 
-func (m cloudConnectorModel) compileVarsForWrite(prior *cloudConnectorModel, forUpdate bool) (postWireVars, diag.Diagnostics) {
+// compileVarsForWrite chooses the wire representation from config (user HCL only)
+// and compiles field values from plan (config plus computed state from Read).
+func (plan cloudConnectorModel) compileVarsForWrite(
+	config cloudConnectorModel,
+	prior *cloudConnectorModel,
+	forUpdate bool,
+) (postWireVars, diag.Diagnostics) {
 	switch {
-	case !m.AWS.IsNull() && !m.AWS.IsUnknown():
-		aws, awsDiags := awsBlockFromObject(m.AWS)
+	case !config.AWS.IsNull() && !config.AWS.IsUnknown():
+		aws, awsDiags := awsBlockFromObject(plan.AWS)
 		if awsDiags.HasError() {
 			return nil, awsDiags
 		}
@@ -94,8 +103,8 @@ func (m cloudConnectorModel) compileVarsForWrite(prior *cloudConnectorModel, for
 			priorAWS = &priorBlock
 		}
 		return compileAWS(aws, priorAWS, forUpdate)
-	case !m.Azure.IsNull() && !m.Azure.IsUnknown():
-		azure, azureDiags := azureBlockFromObject(m.Azure)
+	case !config.Azure.IsNull() && !config.Azure.IsUnknown():
+		azure, azureDiags := azureBlockFromObject(plan.Azure)
 		if azureDiags.HasError() {
 			return nil, azureDiags
 		}
@@ -105,7 +114,7 @@ func (m cloudConnectorModel) compileVarsForWrite(prior *cloudConnectorModel, for
 		if forUpdate && prior != nil {
 			priorVars = &prior.Vars
 		}
-		return compileVars(m.Vars, priorVars, forUpdate)
+		return compileVars(plan.Vars, priorVars, forUpdate)
 	}
 }
 
@@ -241,6 +250,8 @@ func compileVarsElement(
 		return wireBoolPost(elem.Bool.ValueBool())
 	case !elem.Type.IsNull() && !elem.Type.IsUnknown():
 		return compileStructuredVarElement(elem, prior, forUpdate, key)
+	case forUpdate && prior != nil && !prior.Type.IsNull() && !prior.Type.IsUnknown():
+		return compileStructuredVarElement(elem, prior, forUpdate, key)
 	default:
 		diags.AddError(
 			"Invalid cloud connector var",
@@ -265,14 +276,16 @@ func compileStructuredVarElement(
 		frozen = &frozenVal
 	}
 
+	typeVal := structuredVarType(elem, prior)
+
 	switch {
 	case !elem.SecretValue.IsNull() && !elem.SecretValue.IsUnknown():
-		return wireStructuredStringPost(elem.Type.ValueString(), elem.SecretValue.ValueString(), frozen)
+		return wireStructuredStringPost(typeVal, elem.SecretValue.ValueString(), frozen)
 	case !elem.Value.IsNull() && !elem.Value.IsUnknown():
-		return wireStructuredStringPost(elem.Type.ValueString(), elem.Value.ValueString(), frozen)
+		return wireStructuredStringPost(typeVal, elem.Value.ValueString(), frozen)
 	case forUpdate && prior != nil:
 		if ref, ok := secretRefFromObject(prior.SecretRef); ok {
-			return wireStructuredSecretRefPost(elem.Type.ValueString(), ref)
+			return wireStructuredSecretRefPost(typeVal, ref)
 		}
 	}
 
@@ -352,6 +365,20 @@ func wireStructuredSecretRefPost(
 	return out, diags
 }
 
+func structuredVarType(elem cloudConnectorVarsElement, prior *cloudConnectorVarsElement) string {
+	if !elem.Type.IsNull() && !elem.Type.IsUnknown() {
+		return elem.Type.ValueString()
+	}
+	if prior != nil && !prior.Type.IsNull() && !prior.Type.IsUnknown() {
+		return prior.Type.ValueString()
+	}
+	return ""
+}
+
+// postWireVarsToPut converts POST wire vars to PUT wire vars via JSON roundtrip.
+// POST and PUT union types differ in Go but share the same JSON shape, so marshal
+// then unmarshal avoids duplicating From* encoders. Integer-shaped JSON numbers
+// remain float32 on the PUT side; empty strings and null arms roundtrip as encoded.
 func postWireVarsToPut(in postWireVars) (map[string]kbapi.PutFleetCloudConnectorsCloudconnectoridJSONBody_Vars_AdditionalProperties, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	out := make(map[string]kbapi.PutFleetCloudConnectorsCloudconnectoridJSONBody_Vars_AdditionalProperties, len(in))

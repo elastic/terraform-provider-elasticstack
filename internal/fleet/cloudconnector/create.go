@@ -36,7 +36,7 @@ func createCloudConnector(
 
 	fleetClient := client.GetFleetClient()
 
-	body, bodyDiags := plan.toAPICreateBody()
+	body, bodyDiags := plan.toAPICreateBody(req.Config)
 	diags.Append(bodyDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[cloudConnectorModel]{}, diags

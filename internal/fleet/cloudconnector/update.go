@@ -41,7 +41,7 @@ func updateCloudConnector(
 
 	fleetClient := client.GetFleetClient()
 
-	body, bodyDiags := plan.toAPIUpdateBody(*req.Prior)
+	body, bodyDiags := plan.toAPIUpdateBody(req.Config, *req.Prior)
 	diags.Append(bodyDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[cloudConnectorModel]{}, diags
