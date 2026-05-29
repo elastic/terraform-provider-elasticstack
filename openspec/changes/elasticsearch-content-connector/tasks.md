@@ -25,12 +25,12 @@
 
 ## 4. Resource — package skeleton & schema
 
-- [ ] 4.1 Create `internal/elasticsearch/connector/` directory and `resource.go` registering `entitycore.NewElasticsearchResource[ContentConnectorData]` per Decision 2
-- [ ] 4.2 Create `models.go` with `ContentConnectorData`, branch-typed `ConfigurationValueModel`, and per-aspect nested models (`PipelineModel`, `SchedulingModel`, `FeaturesModel`, etc.)
-- [ ] 4.3 Create `schema.go` with the full resource schema per REQ-004 through REQ-008; mark `secret_value` as `WriteOnly + Sensitive`; gate via `entitycore.VersionRequirement` at 8.12.0 per REQ-013
-- [ ] 4.4 Add per-element `ObjectValidator` enforcing exactly-one-of `{string, number, bool, json, secret_value}` in `configuration_values`
-- [ ] 4.5 Embed `resource-description.md` for the long-form resource description; document the connector-service-first ordering and the post-import secret-baseline behaviour
-- [ ] 4.6 Register the resource in `provider/`
+- [x] 4.1 Create `internal/elasticsearch/connector/` directory and `resource.go` registering `entitycore.NewElasticsearchResource[ContentConnectorData]` per Decision 2
+- [x] 4.2 Create `models.go` with `ContentConnectorData`, branch-typed `ConfigurationValueModel`, and per-aspect nested models (`PipelineModel`, `SchedulingModel`, `FeaturesModel`, etc.)
+- [x] 4.3 Create `schema.go` with the full resource schema per REQ-004 through REQ-008; mark `secret_value` as `WriteOnly + Sensitive`; gate via `entitycore.VersionRequirement` at 8.12.0 per REQ-013
+- [x] 4.4 Add per-element `ObjectValidator` enforcing exactly-one-of `{string, number, bool, json, secret_value}` in `configuration_values`
+- [x] 4.5 Embed `resource-description.md` for the long-form resource description; document the connector-service-first ordering and the post-import secret-baseline behaviour
+- [x] 4.6 Register the resource in `provider/`
 
 ## 5. Resource — CRUD + drift detection
 
