@@ -89,9 +89,9 @@
 
 ## 12. Validation and cleanup
 
-- [ ] 12.1 Run `make build` and `make check-lint` — fix any issues
-- [ ] 12.2 Run `make check-openspec` — confirm the change validates
-- [ ] 12.3 Run targeted acceptance tests against a real Kibana matching the minimum version (per `dev-docs/high-level/testing.md`)
-- [ ] 12.4 Run the full unit test suite for `internal/utils/writeonlyhash` and `internal/fleet/cloudconnector`
-- [ ] 12.5 Verify generated docs render correctly and links to upstream Elastic docs resolve
-- [ ] 12.6 Self-review with the `requirements-verification` skill against this change's specs
+- [x] 12.1 Run `make build` and `make check-lint` — fix any issues
+- [x] 12.2 Run `make check-openspec` — confirm the change validates
+- [x] 12.3 Run targeted acceptance tests against a real Kibana matching the minimum version (per `dev-docs/high-level/testing.md`)
+- [x] 12.4 Run the full unit test suite for `internal/utils/writeonlyhash` and `internal/fleet/cloudconnector`
+- [x] 12.5 Verify generated docs render correctly and links to upstream Elastic docs resolve
+- [x] 12.6 Self-review with the `requirements-verification` skill against this change's specs
