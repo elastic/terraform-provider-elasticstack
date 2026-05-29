@@ -57,6 +57,6 @@ Read-Only:
 - `package_policy_count` (Number) The number of package policies using this cloud connector.
 - `space_id` (String) The Kibana space ID where this cloud connector is available.
 - `updated_at` (String) When the cloud connector was last updated, in ISO 8601 format.
-- `verification_failed_at` (String) When verification last failed, in ISO 8601 format.
-- `verification_started_at` (String) When verification last started, in ISO 8601 format.
-- `verification_status` (String) The verification status of the cloud connector.
+- `verification_failed_at` (String) When connector verification failed, if applicable. May be null on first read because verification is asynchronous.
+- `verification_started_at` (String) When connector verification started. May be null on first read because verification is asynchronous.
+- `verification_status` (String) The connector verification status. May be null on first read because verification is asynchronous.

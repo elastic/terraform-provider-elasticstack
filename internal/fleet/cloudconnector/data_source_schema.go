@@ -88,15 +88,15 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 							Computed:            true,
 						},
 						attrVerificationStatus: dsschema.StringAttribute{
-							MarkdownDescription: "The verification status of the cloud connector.",
+							MarkdownDescription: "The connector verification status. May be null on first read because verification is asynchronous.",
 							Computed:            true,
 						},
 						attrVerificationStartedAt: dsschema.StringAttribute{
-							MarkdownDescription: "When verification last started, in ISO 8601 format.",
+							MarkdownDescription: "When connector verification started. May be null on first read because verification is asynchronous.",
 							Computed:            true,
 						},
 						attrVerificationFailedAt: dsschema.StringAttribute{
-							MarkdownDescription: "When verification last failed, in ISO 8601 format.",
+							MarkdownDescription: "When connector verification failed, if applicable. May be null on first read because verification is asynchronous.",
 							Computed:            true,
 						},
 						attrCreatedAt: dsschema.StringAttribute{
