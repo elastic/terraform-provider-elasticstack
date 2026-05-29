@@ -34,6 +34,7 @@ import (
 	snapshot_repository "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_repository"
 	snapshot_restore "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_restore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector/sync_job_create"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/alias"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/componenttemplate"
@@ -181,6 +182,7 @@ func (p *Provider) Actions(_ context.Context) []func() action.Action {
 	return []func() action.Action{
 		snapshot_restore.NewRestoreAction,
 		snapshot_create.NewCreateAction,
+		sync_job_create.NewAction,
 	}
 }
 
