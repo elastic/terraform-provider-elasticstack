@@ -67,7 +67,7 @@ func innerSchemaAttributes() map[string]schema.Attribute {
 			},
 		},
 		"by_reference": schema.SingleNestedAttribute{
-			MarkdownDescription: "By-reference `vis` configuration: structured `drilldowns`, `ref_id`, optional `references_json`, and required `time_range`.",
+			MarkdownDescription: "By-reference `vis` configuration: structured `drilldowns`, `ref_id`, optional `references_json`, and optional `time_range`.",
 			Optional:            true,
 			Attributes:          lenscommon.LensByReferenceAttributes(),
 		},
@@ -79,7 +79,7 @@ func SchemaAttribute() schema.Attribute {
 	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
 		Description: "Configuration for a `vis` panel (`type = \"vis\"`). " +
 			"Typed alternative to panel-level `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. " +
-			"With `by_reference`, use structured `drilldowns` and required `time_range`.",
+			"With `by_reference`, use structured `drilldowns` and optional `time_range`.",
 		BlockName:  "vis_config",
 		PanelType:  panelType,
 		Required:   false,

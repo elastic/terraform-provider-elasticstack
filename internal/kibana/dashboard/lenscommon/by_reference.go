@@ -73,14 +73,16 @@ func VisByReferenceModelToAPIConfig1(
 	var diags diag.Diagnostics
 	api1 := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVisConfig1{
 		RefId: byRef.RefID.ValueString(),
-		TimeRange: &kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
+	}
+	if byRef.TimeRange != nil {
+		api1.TimeRange = &kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
 			From: byRef.TimeRange.From.ValueString(),
 			To:   byRef.TimeRange.To.ValueString(),
-		},
-	}
-	if typeutils.IsKnown(byRef.TimeRange.Mode) {
-		m := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode(byRef.TimeRange.Mode.ValueString())
-		api1.TimeRange.Mode = &m
+		}
+		if typeutils.IsKnown(byRef.TimeRange.Mode) {
+			m := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode(byRef.TimeRange.Mode.ValueString())
+			api1.TimeRange.Mode = &m
+		}
 	}
 	if typeutils.IsKnown(byRef.ReferencesJSON) {
 		refs, d := JSONBytesFromOptionalNormalizedArray(byRef.ReferencesJSON, referencesJSONFieldLabel)
@@ -127,31 +129,17 @@ func VisByReferenceModelToAPIConfig1(
 	return api1, diags
 }
 
-// HasLensByReferenceShapeAtRoot reports whether m has the by-reference shape: a non-empty ref_id
-// and a time_range with non-empty from/to strings.
+// HasLensByReferenceShapeAtRoot reports whether m has the by-reference shape: a non-empty ref_id.
 func HasLensByReferenceShapeAtRoot(m map[string]any) bool {
 	if m == nil {
 		return false
 	}
-	ref, ok := m["ref_id"]
+	ref, ok := m[attrRefID]
 	if !ok {
 		return false
 	}
 	refS, ok := ref.(string)
-	if !ok || refS == "" {
-		return false
-	}
-	trAny, ok := m["time_range"]
-	if !ok {
-		return false
-	}
-	tr, ok := trAny.(map[string]any)
-	if !ok {
-		return false
-	}
-	from, fOK := tr["from"].(string)
-	to, tOK := tr["to"].(string)
-	return fOK && tOK && from != "" && to != ""
+	return ok && refS != ""
 }
 
 // LensByReferenceAttributes returns the shared Terraform schema attribute map for a by-reference
@@ -159,7 +147,7 @@ func HasLensByReferenceShapeAtRoot(m map[string]any) bool {
 // drilldowns, time_range). Used by `vis_config.by_reference`.
 func LensByReferenceAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"ref_id": schema.StringAttribute{
+		attrRefID: schema.StringAttribute{
 			MarkdownDescription: "Reference name in the API `ref_id` field. When `references_json` is set, `ref_id` typically should match a `name` in that list so the link resolves as expected.",
 			Required:            true,
 		},
@@ -185,9 +173,9 @@ func LensByReferenceAttributes() map[string]schema.Attribute {
 			Optional:            true,
 		},
 		"drilldowns": panelkit.StructuredDrilldownsAttribute(),
-		"time_range": schema.SingleNestedAttribute{
-			MarkdownDescription: "Required time range for the by-reference panel config (`vis_config.by_reference`).",
-			Required:            true,
+		attrTimeRange: schema.SingleNestedAttribute{
+			MarkdownDescription: "Optional time range for the by-reference panel config (`vis_config.by_reference`). Omitted from the API payload when unset.",
+			Optional:            true,
 			Attributes:          panelkit.TimeRangeAttributes(),
 		},
 	}
@@ -200,21 +188,23 @@ func PopulateVisByReferenceTFModelFromAPIConfig1(
 	prior *models.VisByReferenceModel,
 ) (models.VisByReferenceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	tr := models.VisByReferenceTimeRangeModel{
-		From: types.StringValue(cfg1.TimeRange.From),
-		To:   types.StringValue(cfg1.TimeRange.To),
-	}
-	switch {
-	case cfg1.TimeRange.Mode != nil:
-		tr.Mode = types.StringValue(string(*cfg1.TimeRange.Mode))
-	case prior != nil && typeutils.IsKnown(prior.TimeRange.Mode):
-		tr.Mode = prior.TimeRange.Mode
-	default:
-		tr.Mode = types.StringNull()
-	}
 	by := models.VisByReferenceModel{
-		RefID:     types.StringValue(cfg1.RefId),
-		TimeRange: tr,
+		RefID: types.StringValue(cfg1.RefId),
+	}
+	if cfg1.TimeRange != nil {
+		tr := &models.VisByReferenceTimeRangeModel{
+			From: types.StringValue(cfg1.TimeRange.From),
+			To:   types.StringValue(cfg1.TimeRange.To),
+		}
+		switch {
+		case cfg1.TimeRange.Mode != nil:
+			tr.Mode = types.StringValue(string(*cfg1.TimeRange.Mode))
+		case prior != nil && prior.TimeRange != nil && typeutils.IsKnown(prior.TimeRange.Mode):
+			tr.Mode = prior.TimeRange.Mode
+		default:
+			tr.Mode = types.StringNull()
+		}
+		by.TimeRange = tr
 	}
 
 	by.Title = ByReferenceOptionalStringFromAPI(cfg1.Title, prior, func(br *models.VisByReferenceModel) types.String { return br.Title })

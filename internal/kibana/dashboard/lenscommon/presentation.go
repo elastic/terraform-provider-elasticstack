@@ -45,8 +45,7 @@ func LensChartPresentationWritesFor(resolver Resolver, in models.LensChartPresen
 	var writes LensChartPresentationWrites
 	var diags diag.Diagnostics
 
-	tr := resolver.ResolveChartTimeRange(in.TimeRange)
-	writes.TimeRange = &tr
+	writes.TimeRange = resolver.ResolveChartTimeRange(in.TimeRange)
 	if typeutils.IsKnown(in.HideTitle) {
 		v := in.HideTitle.ValueBool()
 		writes.HideTitle = &v
@@ -240,18 +239,11 @@ func LensTimeRangesAPILiteralEqual(a, b kbapi.KibanaHTTPAPIsKbnEsQueryServerTime
 }
 
 // chartTimeRangeFromAPI maps a chart-root API time range into Terraform state with REQ-038/REQ-009 null-preservation semantics.
-func chartTimeRangeFromAPI(resolver Resolver, apiTimeRange *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, priorState *models.TimeRangeModel) *models.TimeRangeModel {
+func chartTimeRangeFromAPI(apiTimeRange *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, priorState *models.TimeRangeModel) *models.TimeRangeModel {
 	if apiTimeRange == nil {
 		return nil
 	}
 	if apiTimeRange.From == "" && apiTimeRange.To == "" && (apiTimeRange.Mode == nil || lensTimeRangeModeString(apiTimeRange.Mode) == "") {
-		return nil
-	}
-
-	priorWasNil := priorState == nil
-
-	dashTR, dashOK := resolver.DashboardLensComparableTimeRange()
-	if priorWasNil && dashOK && LensTimeRangesAPILiteralEqual(*apiTimeRange, dashTR) {
 		return nil
 	}
 
@@ -459,7 +451,7 @@ func LensDrilldownItemFromAPIJSON(raw []byte, pathPrefix string) (models.LensDri
 // LensChartPresentationReadsFor maps optional chart-root presentation API fields into Terraform state with REQ-009-style null preservation.
 func LensChartPresentationReadsFor(
 	ctx context.Context,
-	resolver Resolver,
+	_ Resolver,
 	prior *models.LensChartPresentationTFModel,
 	apiTimeRange *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema,
 	hideTitle *bool,
@@ -489,7 +481,7 @@ func LensChartPresentationReadsFor(
 	}
 
 	var out models.LensChartPresentationTFModel
-	out.TimeRange = chartTimeRangeFromAPI(resolver, apiTimeRange, priorTime)
+	out.TimeRange = chartTimeRangeFromAPI(apiTimeRange, priorTime)
 	out.HideTitle = lensPresentationOptionalBoolRead(hideTitle, priorHideTitle)
 	out.HideBorder = lensPresentationOptionalBoolRead(hideBorder, priorHideBorder)
 

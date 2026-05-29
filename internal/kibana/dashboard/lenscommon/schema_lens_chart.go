@@ -227,9 +227,9 @@ func LensChartDrilldownListItemAttributes() map[string]schema.Attribute {
 // LensChartPresentationAttributes returns optional chart-root presentation fields shared by typed Lens chart blocks.
 func LensChartPresentationAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"time_range": schema.SingleNestedAttribute{
+		attrTimeRange: schema.SingleNestedAttribute{
 			MarkdownDescription: "Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. " +
-				"When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read.",
+				"When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read.",
 			Optional:   true,
 			Attributes: LensChartPresentationTimeRangeAttributes(),
 		},
