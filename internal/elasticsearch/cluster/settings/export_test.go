@@ -51,6 +51,11 @@ func ExportedValidateConfigModel(persistent, transient types.Object) diag.Diagno
 	return validateConfigModel(tfModel{Persistent: persistent, Transient: transient})
 }
 
+// ExportedCategoryBlockEmpty exposes categoryBlockEmpty for white-box testing.
+func ExportedCategoryBlockEmpty(block types.Object) bool {
+	return categoryBlockEmpty(block)
+}
+
 // SettingItem is a simplified view of a settingModel for assertions in tests.
 type SettingItem struct {
 	Name      string
