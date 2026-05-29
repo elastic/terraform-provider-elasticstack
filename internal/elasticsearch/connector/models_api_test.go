@@ -398,9 +398,9 @@ func TestConfigurationValuePresent(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name  string
-		raw   json.RawMessage
-		want  bool
+		name string
+		raw  json.RawMessage
+		want bool
 	}{
 		{name: "absent", raw: nil, want: false},
 		{name: "empty", raw: json.RawMessage{}, want: false},

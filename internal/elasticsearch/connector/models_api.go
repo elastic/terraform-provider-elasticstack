@@ -40,6 +40,7 @@ var configurationValuesPath = path.Root("configuration_values")
 const (
 	configurationSchemaNotRegisteredTitle = "Connector configuration schema not yet registered"
 	configurationSchemaNotRegisteredURL   = "https://www.elastic.co/docs/reference/search-connectors/api-tutorial"
+	jsonNullLiteral                       = "null"
 )
 
 func configurationSchemaNotRegisteredDetail(serviceType string) string {
@@ -313,7 +314,7 @@ func configurationValuePresent(raw json.RawMessage) bool {
 	if len(raw) == 0 {
 		return false
 	}
-	if string(raw) == "null" {
+	if string(raw) == jsonNullLiteral {
 		return false
 	}
 	return true

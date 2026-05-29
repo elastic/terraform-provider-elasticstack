@@ -253,10 +253,10 @@ func TestConfigurationValueBranchValidator_rejectsTwoUnknownBranches(t *testing.
 	t.Parallel()
 
 	attrs := map[string]attr.Value{
-		stringBranchAttrName: types.StringUnknown(),
-		numberBranchAttrName: types.NumberUnknown(),
-		boolBranchAttrName:   types.BoolNull(),
-		jsonBranchAttrName:   jsontypes.Normalized{StringValue: types.StringNull()},
+		stringBranchAttrName:      types.StringUnknown(),
+		numberBranchAttrName:      types.NumberUnknown(),
+		boolBranchAttrName:        types.BoolNull(),
+		jsonBranchAttrName:        jsontypes.Normalized{StringValue: types.StringNull()},
 		secretValueBranchAttrName: types.StringNull(),
 	}
 

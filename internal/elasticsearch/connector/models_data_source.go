@@ -285,14 +285,14 @@ func marshalConnectorJSONField(attr string, value any, diags *diag.Diagnostics) 
 		)
 		return jsontypes.NewNormalizedNull()
 	}
-	if string(encoded) == "null" {
+	if string(encoded) == jsonNullLiteral {
 		return jsontypes.NewNormalizedNull()
 	}
 	return jsontypes.NewNormalizedValue(string(encoded))
 }
 
 func marshalConnectorRawJSONField(attr string, raw json.RawMessage, diags *diag.Diagnostics) jsontypes.Normalized {
-	if len(raw) == 0 || bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+	if len(raw) == 0 || bytes.Equal(bytes.TrimSpace(raw), []byte(jsonNullLiteral)) {
 		return jsontypes.NewNormalizedNull()
 	}
 	if !json.Valid(raw) {
