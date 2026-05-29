@@ -32,34 +32,26 @@ import (
 )
 
 func TestAccResourceSecurityListDataStreams(t *testing.T) {
-	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
-
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceListDataStreamsDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{
-					"space_id": config.StringVariable(spaceID),
-				},
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("default_space"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_data_streams.test", "space_id", spaceID),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_data_streams.test", "id", spaceID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_data_streams.test", "space_id", "default"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_data_streams.test", "id", "default"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_data_streams.test", "list_index", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_data_streams.test", "list_item_index", "true"),
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers, // Import
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{
-					"space_id": config.StringVariable(spaceID),
-				},
-				ResourceName:      "elasticstack_kibana_security_list_data_streams.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("default_space"),
+				ResourceName:             "elasticstack_kibana_security_list_data_streams.test",
+				ImportState:              true,
+				ImportStateVerify:        true,
 			},
 		},
 	})
