@@ -2,10 +2,10 @@
 
 > Skip section 1 entirely if `internal/utils/writeonlyhash/` already exists (e.g. PR #3415 merged first). If skipping, jump to section 2 and adopt the helper as-is.
 
-- [ ] 1.1 Create `internal/utils/writeonlyhash/` package with `Hasher` struct, `New(resourceTypeName string) *Hasher`, `(*Hasher).Compute(value string) ([]byte, error)`, `(*Hasher).Matches(value string, storedHash []byte) bool`, `(*Hasher).PrivateStateKey(attributePath string) string`
-- [ ] 1.2 Implement bcrypt-backed `Compute` with per-resource-type salt derivation and configurable cost (default 10)
-- [ ] 1.3 Add table-driven unit tests for: roundtrip, mismatch, salt isolation across resource types, stable `PrivateStateKey` derivation, error messages do not leak input values
-- [ ] 1.4 Add per-method Godoc on all exported symbols matching the contract in `writeonly-secret-hashing-docs/spec.md`
+- [x] 1.1 Create `internal/utils/writeonlyhash/` package with `Hasher` struct, `New(resourceTypeName string) *Hasher`, `(*Hasher).Compute(value string) ([]byte, error)`, `(*Hasher).Matches(value string, storedHash []byte) bool`, `(*Hasher).PrivateStateKey(attributePath string) string`
+- [x] 1.2 Implement bcrypt-backed `Compute` with per-resource-type salt derivation and configurable cost (default 10)
+- [x] 1.3 Add table-driven unit tests for: roundtrip, mismatch, salt isolation across resource types, stable `PrivateStateKey` derivation, error messages do not leak input values
+- [x] 1.4 Add per-method Godoc on all exported symbols matching the contract in `writeonly-secret-hashing-docs/spec.md`
 
 ## 2. Documentation for `writeonlyhash` (always; this change owns docs)
 
