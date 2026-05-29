@@ -68,9 +68,32 @@ Read-Only:
 
 Optional:
 
-- `client_id` (String) The Azure application (client) ID.
+- `client_id` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) The Azure application (client) ID. Write-only: the value is sent to the API once and is never stored in Terraform state. A bcrypt hash of the last applied value is stored in resource private state for plan-time drift detection. After `terraform import`, plan and apply once with this attribute set to baseline the hash if you intend to manage the secret with Terraform.
 - `cloud_connector_id` (String) The Azure cloud connector identifier stored in Fleet vars.
-- `tenant_id` (String) The Azure AD tenant ID.
+- `tenant_id` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) The Azure AD tenant ID. Write-only: the value is sent to the API once and is never stored in Terraform state. A bcrypt hash of the last applied value is stored in resource private state for plan-time drift detection. After `terraform import`, plan and apply once with this attribute set to baseline the hash if you intend to manage the secret with Terraform.
+
+Read-Only:
+
+- `client_id_secret_ref` (Attributes) The saved secret reference for `client_id` returned by the API after the secret is stored. (see [below for nested schema](#nestedatt--azure--client_id_secret_ref))
+- `tenant_id_secret_ref` (Attributes) The saved secret reference for `tenant_id` returned by the API after the secret is stored. (see [below for nested schema](#nestedatt--azure--tenant_id_secret_ref))
+
+<a id="nestedatt--azure--client_id_secret_ref"></a>
+### Nested Schema for `azure.client_id_secret_ref`
+
+Read-Only:
+
+- `id` (String) The secret reference identifier.
+- `is_secret_ref` (Boolean) Whether the value is a saved secret reference.
+
+
+<a id="nestedatt--azure--tenant_id_secret_ref"></a>
+### Nested Schema for `azure.tenant_id_secret_ref`
+
+Read-Only:
+
+- `id` (String) The secret reference identifier.
+- `is_secret_ref` (Boolean) Whether the value is a saved secret reference.
+
 
 
 <a id="nestedblock--kibana_connection"></a>
@@ -95,7 +118,7 @@ Optional:
 - `bool` (Boolean) Bare boolean var value (API union arm 3).
 - `frozen` (Boolean) Whether the structured var is frozen. Valid only alongside `type`.
 - `number` (Number) Bare numeric var value (API union arm 2). The wire type is float32; this schema uses Float64 for Plugin Framework compatibility.
-- `secret_value` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only secret value for a structured var (API union arm 4). The raw value is sent to the API once and is never stored in Terraform state. A bcrypt hash of the last applied value is stored in resource private state for plan-time drift detection. After `terraform import`, plan and apply once with this attribute set to baseline the hash if you intend to manage the secret with Terraform.
+- `secret_value` (String, Sensitive) Secret value for a structured var (API union arm 4). The raw value is sent to the API once and is never stored in Terraform state. A bcrypt hash of the last applied value is stored in resource private state for plan-time drift detection. After `terraform import`, plan and apply once with this attribute set to baseline the hash if you intend to manage the secret with Terraform.
 - `string` (String) Bare string var value (API union arm 1).
 - `type` (String) Structured var type (API union arm 4), for example `text` or `password`.
 - `value` (String) Plain string value for a structured var (API union arm 4).
