@@ -22,14 +22,21 @@
 // secret value in configuration differs from the value last applied, without
 // ever persisting the raw secret in state.
 //
-// # Domain separation and per-resource-type salt
+// # Domain separation, SHA-256 pre-hash, and per-resource-type salt
 //
 // bcrypt.GenerateFromPassword generates a fresh random salt on each call and
 // embeds it in the returned hash. To ensure the same secret value produces
 // different hashes across resource types (rainbow-table protection across state
 // files), the helper domain-separates the input before hashing:
 //
-//	hash(resourceTypeName + "\x00" + value)
+//	SHA-256(resourceTypeName + "\x00" + value)
+//
+// The 32-byte digest is then passed to bcrypt. bcrypt limits raw password input
+// to 72 bytes; with a typical resource-type prefix the effective secret limit
+// would be roughly 38 bytes. Pre-hashing removes that ceiling so long secrets
+// (JWT-style tokens, base64 access keys, long external IDs, and so on) are
+// supported without caller-side length contracts, while preserving domain
+// separation and bcrypt's adaptive cost and per-call salt.
 //
 // The resourceTypeName passed to New is typically the Terraform resource type
 // string (for example "elasticstack_fleet_cloud_connector"). An empty
@@ -42,6 +49,7 @@
 package writeonlyhash
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 
@@ -58,6 +66,7 @@ const (
 // attributes on that resource.
 type Hasher struct {
 	// Cost is the bcrypt work factor used by Compute. When zero, bcrypt.DefaultCost (10) is used.
+	// Set Cost once before the first Compute call on this Hasher; do not mutate it concurrently.
 	Cost int
 
 	resourceTypeName string
@@ -108,21 +117,20 @@ func (h *Hasher) PrivateStateKey(attributePath string) string {
 }
 
 func (h *Hasher) hashInput(value string) []byte {
-	input := make([]byte, 0, len(h.resourceTypeName)+len(domainSeparator)+len(value))
-	input = append(input, h.resourceTypeName...)
-	input = append(input, domainSeparator...)
-	input = append(input, value...)
-	return input
+	domainSeparated := make([]byte, 0, len(h.resourceTypeName)+len(domainSeparator)+len(value))
+	domainSeparated = append(domainSeparated, h.resourceTypeName...)
+	domainSeparated = append(domainSeparated, domainSeparator...)
+	domainSeparated = append(domainSeparated, value...)
+
+	digest := sha256.Sum256(domainSeparated)
+	return digest[:]
 }
 
 func computeError(err error) error {
 	var invalidCost bcrypt.InvalidCostError
-	switch {
-	case errors.As(err, &invalidCost):
+	if errors.As(err, &invalidCost) {
 		return fmt.Errorf("bcrypt cost out of range")
-	case errors.Is(err, bcrypt.ErrPasswordTooLong):
-		return fmt.Errorf("bcrypt password length exceeds maximum")
-	default:
-		return fmt.Errorf("bcrypt hash computation failed")
 	}
+
+	return fmt.Errorf("bcrypt hash computation failed")
 }
