@@ -134,7 +134,7 @@ func GetListItem(ctx context.Context, client *Client, spaceID string, params *kb
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleGetResponse[kbapi.SecurityListsAPIListItem](resp.StatusCode(), resp.Body)
+	return HandleGetRawResponse[kbapi.SecurityListsAPIListItem](resp.StatusCode(), resp.Body)
 }
 
 // CreateListItem creates a new security list item.

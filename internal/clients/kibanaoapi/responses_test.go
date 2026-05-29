@@ -29,9 +29,9 @@ type testAgentBuilderModel struct {
 	ID string `json:"id"`
 }
 
-func TestHandleGetResponse(t *testing.T) {
+func TestHandleGetRawResponse(t *testing.T) {
 	t.Run("returns decoded model on 200", func(t *testing.T) {
-		result, diags := handleGetResponse[testAgentBuilderModel](http.StatusOK, []byte(`{"id":"test-id"}`))
+		result, diags := HandleGetRawResponse[testAgentBuilderModel](http.StatusOK, []byte(`{"id":"test-id"}`))
 
 		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
 		require.NotNil(t, result)
@@ -39,21 +39,21 @@ func TestHandleGetResponse(t *testing.T) {
 	})
 
 	t.Run("returns nil result on 404", func(t *testing.T) {
-		result, diags := handleGetResponse[testAgentBuilderModel](http.StatusNotFound, nil)
+		result, diags := HandleGetRawResponse[testAgentBuilderModel](http.StatusNotFound, nil)
 
 		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
 		assert.Nil(t, result)
 	})
 
 	t.Run("returns diagnostics for malformed json", func(t *testing.T) {
-		result, diags := handleGetResponse[testAgentBuilderModel](http.StatusOK, []byte(`{"id":`))
+		result, diags := HandleGetRawResponse[testAgentBuilderModel](http.StatusOK, []byte(`{"id":`))
 
 		require.True(t, diags.HasError())
 		assert.Nil(t, result)
 	})
 
 	t.Run("returns diagnostics for unexpected status", func(t *testing.T) {
-		result, diags := handleGetResponse[testAgentBuilderModel](http.StatusInternalServerError, []byte(`{"error":"boom"}`))
+		result, diags := HandleGetRawResponse[testAgentBuilderModel](http.StatusInternalServerError, []byte(`{"error":"boom"}`))
 
 		require.True(t, diags.HasError())
 		assert.Nil(t, result)
@@ -62,9 +62,9 @@ func TestHandleGetResponse(t *testing.T) {
 	})
 }
 
-func TestHandleMutateResponse(t *testing.T) {
+func TestHandleMutateRawResponse(t *testing.T) {
 	t.Run("returns decoded model on 200", func(t *testing.T) {
-		result, diags := handleMutateResponse[testAgentBuilderModel](http.StatusOK, []byte(`{"id":"test-id"}`))
+		result, diags := HandleMutateRawResponse[testAgentBuilderModel](http.StatusOK, []byte(`{"id":"test-id"}`))
 
 		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
 		require.NotNil(t, result)
@@ -72,7 +72,7 @@ func TestHandleMutateResponse(t *testing.T) {
 	})
 
 	t.Run("returns diagnostics for unexpected status", func(t *testing.T) {
-		result, diags := handleMutateResponse[testAgentBuilderModel](http.StatusNotFound, []byte(`{"error":"missing"}`))
+		result, diags := HandleMutateRawResponse[testAgentBuilderModel](http.StatusNotFound, []byte(`{"error":"missing"}`))
 
 		require.True(t, diags.HasError())
 		assert.Nil(t, result)
