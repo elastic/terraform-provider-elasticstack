@@ -15,9 +15,9 @@
 
 ## 3. Generated client wrappers
 
-- [ ] 3.1 Add `internal/clients/fleet/cloud_connector.go` with thin wrappers `CreateCloudConnector`, `ReadCloudConnector`, `UpdateCloudConnector`, `DeleteCloudConnector` (force-aware), `ListCloudConnectors` — each mirroring the structure of `proxy.go` and using `spaceAwarePathRequestEditor`
-- [ ] 3.2 Map kbapi non-2xx responses into provider diagnostics consistently with other Fleet clients
-- [ ] 3.3 Translate HTTP 404 to a sentinel/nil result for Read and a no-op for Delete
+- [x] 3.1 Add `internal/clients/fleet/cloud_connector.go` with thin wrappers `CreateCloudConnector`, `GetCloudConnector` (read), `UpdateCloudConnector`, `DeleteCloudConnector` (force-aware), `ListCloudConnectors` — each mirroring the structure of `proxy.go` and using `spaceAwarePathRequestEditor`
+- [x] 3.2 Map kbapi non-2xx responses into provider diagnostics consistently with other Fleet clients
+- [x] 3.3 Translate HTTP 404 to a sentinel/nil result for Read and a no-op for Delete
 
 ## 4. Resource: skeleton + model
 
