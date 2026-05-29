@@ -21,16 +21,15 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func deleteConnector(
-	_ context.Context,
-	_ *clients.ElasticsearchScopedClient,
-	_ string,
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	resourceID string,
 	_ ContentConnectorData,
 ) diag.Diagnostics {
-	var diags diag.Diagnostics
-	diags.AddError("Connector resource not yet implemented", "internal: Section 5 work in progress")
-	return diags
+	return esclient.DeleteConnector(ctx, client, resourceID)
 }

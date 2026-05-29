@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -30,6 +29,7 @@ var (
 	_ resource.Resource                = newContentConnectorResource()
 	_ resource.ResourceWithConfigure   = newContentConnectorResource()
 	_ resource.ResourceWithImportState = newContentConnectorResource()
+	_ resource.ResourceWithModifyPlan  = newContentConnectorResource()
 )
 
 type contentConnectorResource struct {
@@ -51,7 +51,17 @@ func newContentConnectorResource() *contentConnectorResource {
 // NewContentConnectorResource returns a new content connector resource for registration with the provider.
 func NewContentConnectorResource() resource.Resource { return newContentConnectorResource() }
 
-func (r *contentConnectorResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Placeholder: section 5.8 will implement bare-id + composite import per REQ-012.
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+func (r *contentConnectorResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var prior ContentConnectorData
+	resp.Diagnostics.Append(req.State.Get(ctx, &prior)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	r.ElasticsearchResource.Delete(ctx, req, resp)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	clearAllSecretHashesFromPrior(ctx, resp.Private, prior, &resp.Diagnostics)
 }
