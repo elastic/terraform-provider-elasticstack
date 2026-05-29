@@ -19,18 +19,76 @@ package connector
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func readConnector(
-	_ context.Context,
-	_ *clients.ElasticsearchScopedClient,
-	_ string,
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	resourceID string,
 	data ContentConnectorData,
 ) (ContentConnectorData, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	diags.AddError("Connector resource not yet implemented", "internal: Section 5 work in progress")
-	return data, false, diags
+
+	resp, getDiags := esclient.GetConnector(ctx, client, resourceID)
+	diags.Append(getDiags...)
+	if diags.HasError() {
+		return data, false, diags
+	}
+
+	if resp == nil {
+		tflog.Warn(ctx, fmt.Sprintf(`Connector "%s" not found, removing from state`, resourceID))
+		return data, false, diags
+	}
+
+	if resp.ServiceType != nil {
+		data.ServiceType = fwtypes.StringValue(*resp.ServiceType)
+	}
+	if resp.Name != nil {
+		data.Name = fwtypes.StringValue(*resp.Name)
+	}
+	if resp.Description != nil {
+		data.Description = fwtypes.StringValue(*resp.Description)
+	}
+	if resp.IndexName != nil {
+		data.IndexName = fwtypes.StringValue(*resp.IndexName)
+	}
+	data.IsNative = fwtypes.BoolValue(resp.IsNative)
+	if resp.Language != nil {
+		data.Language = fwtypes.StringValue(*resp.Language)
+	}
+	if resp.ApiKeyId != nil {
+		data.APIKeyID = fwtypes.StringValue(*resp.ApiKeyId)
+	}
+	if resp.ApiKeySecretId != nil {
+		data.APIKeySecretID = fwtypes.StringValue(*resp.ApiKeySecretId)
+	}
+
+	data.Pipeline = populatePipelineFromAPI(ctx, resp.Pipeline, &diags)
+	data.Scheduling = populateSchedulingFromAPI(ctx, resp.Scheduling, &diags)
+	data.Features = populateFeaturesFromAPI(ctx, resp.Features, &diags)
+
+	var priorConfig map[string]ConfigurationValueModel
+	if !data.ConfigurationValues.IsNull() && typeutils.IsKnown(data.ConfigurationValues) {
+		priorConfig = typeutils.MapTypeAs[ConfigurationValueModel](ctx, data.ConfigurationValues, configurationValuesPath, &diags)
+	}
+	data.ConfigurationValues = populateConfigurationValuesFromAPI(ctx, resp, priorConfig, &diags)
+
+	id, idDiags := client.ID(ctx, resourceID)
+	diags.Append(idDiags...)
+	if diags.HasError() {
+		return data, false, diags
+	}
+
+	data.ID = fwtypes.StringValue(id.String())
+	data.ConnectorID = fwtypes.StringValue(resourceID)
+
+	return data, true, diags
 }
