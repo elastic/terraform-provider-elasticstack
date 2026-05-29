@@ -697,6 +697,42 @@ func TestAccResourceAnomalyDetectionJobVariableSourcedAnalysisConfig(t *testing.
 	})
 }
 
+// Regression test for #3403: Value Conversion Error when analysis_config is sourced from an
+// unknown value at first plan (e.g. for_each / terraform_data.output). The root cause was
+// AnalysisConfig being typed as *AnalysisConfigTFModel instead of types.Object in TFModel.
+func TestAccResourceAnomalyDetectionJobUnknownAnalysisConfig(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-unknown-ac-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"job_id": config.StringVariable(jobID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.bucket_span", "15m"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.function", "count"),
+					resource.TestCheckResourceAttrSet(addr, "id"),
+				),
+			},
+			// Plan-after-apply must not regress: re-plan with the same unknown-at-first-plan config
+			// must not produce a Value Conversion Error on the read path.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"job_id": config.StringVariable(jobID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "analysis_config.bucket_span", "15m"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.function", "count"),
+				),
+			},
+		},
+	})
+}
+
 // TestAccResourceAnomalyDetectionJobExplicitConnection exercises the elasticsearch_connection block
 // (scoped Elasticsearch client) on the anomaly detection job resource directly.
 // It creates a job with an explicit connection using username/password (or api_key when available),
