@@ -1,9 +1,9 @@
 ## 1. Prep and discovery
 
-- [ ] 1.1 Confirm the minimum Kibana version that ships `/api/fleet/cloud_connectors` (resource + data source); record in design.md "Open Questions" answer
-- [ ] 1.2 Verify `golang.org/x/crypto/bcrypt` is already a (transitive) provider dependency; if not, add it via `go get`
-- [ ] 1.3 Verify Plugin Framework version supports `WriteOnly` string attributes (PF ≥ 1.11); bump in `go.mod` if required
-- [ ] 1.4 Confirm `entitycore.KibanaResource` exposes a hook for private-state read/write during `ModifyPlan`; if not, plan the smallest extension needed (separate task group)
+- [x] 1.1 Confirm the minimum Kibana version that ships `/api/fleet/cloud_connectors` (resource + data source); record in design.md "Open Questions" answer
+- [x] 1.2 Verify `golang.org/x/crypto/bcrypt` is already a (transitive) provider dependency; if not, add it via `go get`
+- [x] 1.3 Verify Plugin Framework version supports `WriteOnly` string attributes (PF ≥ 1.11); bump in `go.mod` if required
+- [x] 1.4 Confirm `entitycore.KibanaResource` exposes a hook for private-state read/write during `ModifyPlan`; if not, plan the smallest extension needed (separate task group)
 
 ## 2. `internal/utils/writeonlyhash` helper
 

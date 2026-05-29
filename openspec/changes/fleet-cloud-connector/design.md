@@ -204,7 +204,9 @@ Minimum supported Kibana version is the first version that ships the `/api/fleet
 
 ## Open Questions
 
-1. **Exact minimum Kibana version**: The cloud connectors endpoints exist in earlier 9.x; only naming is 9.3+. Confirm via a Kibana CHANGELOG or by hitting the endpoint against a known-version snapshot during implementation. Pin in `GetVersionRequirements`.
-2. **`bcrypt` dependency**: Confirm `golang.org/x/crypto/bcrypt` is already a transitive dependency of the provider (likely via the AWS SDK if present). If not, add it explicitly.
+1. **Exact minimum Kibana version**: ANSWERED — pinned at `9.2.0` (preview release of cloud connectors). Naming is GA in 9.3; the preview API surface is present in 9.2 and is what `GetVersionRequirements` gates against. Acceptance tests run against the current default stack (9.4+), which exceeds the minimum.
+2. **`bcrypt` dependency**: ANSWERED — `golang.org/x/crypto v0.52.0` is already a direct module dependency and includes `golang.org/x/crypto/bcrypt`. No `go get` required.
 3. **Whether to surface `verification_*` fields with documentation about their async nature**: They will be `Computed`, but the docs should call out that values may not stabilise immediately on first Create. Confirmed yes in the spec.
 4. **Whether the data source should also be space-aware**: Current decision is yes (mirrors the resource). Confirm during implementation that the list endpoint accepts the space-aware path.
+5. **Plugin Framework `WriteOnly` support**: ANSWERED — provider is on `terraform-plugin-framework v1.19.0` (≥ 1.11), which supports `WriteOnly` on string attributes. No bump required.
+6. **`entitycore.KibanaResource` private-state hook**: ANSWERED — the existing `PostRead` callback on `KibanaResourceOptions[T]` receives `privateState any` (the framework response `Private` field) after every successful read, including the read-after-write following Create and Update. That callback is where the resource writes fresh bcrypt hashes for write-only attributes. `ModifyPlan` is implemented directly on the concrete `Resource` type via `resource.ResourceWithModifyPlan`, which has full access to `req.Private`/`resp.Private`. No envelope extension required for this change.
