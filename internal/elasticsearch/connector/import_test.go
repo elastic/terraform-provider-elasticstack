@@ -18,10 +18,8 @@
 package connector
 
 import (
-	"strings"
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/stretchr/testify/require"
 )
 
@@ -40,6 +38,11 @@ func TestParseConnectorImportID(t *testing.T) {
 			wantConnectorID: "music",
 		},
 		{
+			name:            "whitespace trimmed",
+			importID:        "  music  ",
+			wantConnectorID: "music",
+		},
+		{
 			name:            "composite id",
 			importID:        "cluster-uuid/music",
 			wantConnectorID: "music",
@@ -50,39 +53,36 @@ func TestParseConnectorImportID(t *testing.T) {
 			wantConnectorID: "foo/bar",
 		},
 		{
+			name:            "trailing slash on bare id",
+			importID:        "music/",
+			wantConnectorID: "music",
+		},
+		{
+			name:            "leading slash on bare id",
+			importID:        "/music",
+			wantConnectorID: "music",
+		},
+		{
 			name:     "empty",
 			importID: "  ",
 			wantErr:  true,
 		},
 		{
-			name:            "invalid composite",
-			importID:        "not-a-composite-import-id",
-			wantErr:         false,
-			wantConnectorID: "not-a-composite-import-id",
+			name:     "only slashes",
+			importID: "///",
+			wantErr:  true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			importID := strings.TrimSpace(tt.importID)
-			if importID == "" {
-				require.True(t, tt.wantErr)
+			connectorID, diags := parseConnectorImportID(tt.importID)
+			if tt.wantErr {
+				require.True(t, diags.HasError())
 				return
 			}
-
-			var connectorID string
-			if strings.Contains(importID, "/") {
-				compID, diags := clients.CompositeIDFromStr(importID)
-				if tt.wantErr {
-					require.True(t, diags.HasError())
-					return
-				}
-				require.False(t, diags.HasError())
-				connectorID = compID.ResourceID
-			} else {
-				connectorID = importID
-			}
+			require.False(t, diags.HasError())
 			require.Equal(t, tt.wantConnectorID, connectorID)
 		})
 	}

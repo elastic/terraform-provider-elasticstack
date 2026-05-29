@@ -19,33 +19,17 @@ package connector
 
 import (
 	"context"
-	"strings"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *contentConnectorResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	importID := strings.TrimSpace(req.ID)
-	if importID == "" {
-		resp.Diagnostics.AddError("Invalid import ID", "Import ID must be a non-empty connector_id or composite <cluster_uuid>/<connector_id>.")
+	connectorID, diags := parseConnectorImportID(req.ID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var connectorID string
-	if strings.Contains(importID, "/") {
-		compID, diags := clients.CompositeIDFromStr(importID)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		connectorID = compID.ResourceID
-	} else {
-		connectorID = importID
-	}
-
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("connector_id"), connectorID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), fwtypes.StringValue(importID))...)
 }
