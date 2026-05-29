@@ -30,7 +30,9 @@ import (
 )
 
 const (
-	varsElementValidatorDescription = "each vars element must configure exactly one API union arm and must not set computed-only attributes in configuration"
+	varsElementValidatorDescription          = "each vars element must configure exactly one API union arm and must not set computed-only attributes in configuration"
+	structuredFieldsRequireTypeDetailMessage = "`type` is required when any of `value`, `secret_value`, or `frozen` is configured. " +
+		"Set `type` (e.g. `\"text\"` or `\"password\"`) or omit the structured fields."
 )
 
 // varsElementValidator enforces per-element exclusivity rules for the vars map union.
@@ -118,13 +120,15 @@ func (varsElementValidator) ValidateObject(_ context.Context, req validator.Obje
 		return
 	}
 
-	if configValueIsSet(attrs[attrVarsFrozen]) && !configValueIsSet(attrs[attrVarsType]) {
-		resp.Diagnostics.AddAttributeError(
-			req.Path.AtName(attrVarsFrozen),
-			"Invalid vars element",
-			"`frozen` is valid only alongside `type` in a structured var.",
-		)
-		return
+	if !configValueIsSet(attrs[attrVarsType]) {
+		if configValueIsSet(attrs[attrVarsValue]) || configValueIsSet(attrs[attrVarsSecretValue]) || configValueIsSet(attrs[attrVarsFrozen]) {
+			resp.Diagnostics.AddAttributeError(
+				req.Path,
+				"Invalid vars element",
+				structuredFieldsRequireTypeDetailMessage,
+			)
+			return
+		}
 	}
 
 	if configValueIsSet(attrs[attrVarsType]) {

@@ -22,6 +22,7 @@ import (
 	"maps"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -229,7 +230,35 @@ func TestVarsElementValidator(t *testing.T) {
 				attrVarsSecretValue: types.StringNull(),
 				attrVarsSecretRef:   nullSecretRef,
 			},
-			wantSubstr: "`frozen` is valid only alongside `type`",
+			wantSubstr: "`type` is required when any of `value`, `secret_value`, or `frozen`",
+		},
+		{
+			name: "value without type",
+			attrs: map[string]attr.Value{
+				attrVarsString:      types.StringNull(),
+				attrVarsNumber:      types.Float64Null(),
+				attrVarsBool:        types.BoolNull(),
+				attrVarsType:        types.StringNull(),
+				attrVarsFrozen:      types.BoolNull(),
+				attrVarsValue:       types.StringValue("abc"),
+				attrVarsSecretValue: types.StringNull(),
+				attrVarsSecretRef:   nullSecretRef,
+			},
+			wantSubstr: "`type` is required when any of `value`, `secret_value`, or `frozen`",
+		},
+		{
+			name: "secret_value without type",
+			attrs: map[string]attr.Value{
+				attrVarsString:      types.StringNull(),
+				attrVarsNumber:      types.Float64Null(),
+				attrVarsBool:        types.BoolNull(),
+				attrVarsType:        types.StringNull(),
+				attrVarsFrozen:      types.BoolNull(),
+				attrVarsValue:       types.StringNull(),
+				attrVarsSecretValue: types.StringValue("shhh"),
+				attrVarsSecretRef:   nullSecretRef,
+			},
+			wantSubstr: "`type` is required when any of `value`, `secret_value`, or `frozen`",
 		},
 	}
 
@@ -269,6 +298,55 @@ func TestProviderBlockMatchesCloudProviderValidator(t *testing.T) {
 		providerBlockMatchesCloudProvider{}.ValidateResource(ctx, resource.ValidateConfigRequest{Config: cfg}, resp)
 		require.True(t, resp.Diagnostics.HasError())
 		assert.Contains(t, resp.Diagnostics.Errors()[0].Detail(), "requires `cloud_provider = \"aws\"`")
+	})
+
+	t.Run("azure block with aws provider", func(t *testing.T) {
+		t.Parallel()
+		cfg := buildCloudConnectorTestConfig(ctx, t, r, map[string]tftypes.Value{
+			attrCloudProvider: tftypes.NewValue(tftypes.String, cloudProviderAWS),
+			attrAzureBlock: tftypes.NewValue(azureTerraformObjectType(ctx, t, r), map[string]tftypes.Value{
+				attrAzureTenantID:         tftypes.NewValue(tftypes.String, "tenant-uuid"),
+				attrAzureClientID:         tftypes.NewValue(tftypes.String, "client-uuid"),
+				attrAzureCloudConnectorID: tftypes.NewValue(tftypes.String, "azure-connector-id"),
+			}),
+		})
+
+		resp := &resource.ValidateConfigResponse{}
+		providerBlockMatchesCloudProvider{}.ValidateResource(ctx, resource.ValidateConfigRequest{Config: cfg}, resp)
+		require.True(t, resp.Diagnostics.HasError())
+		assert.Contains(t, resp.Diagnostics.Errors()[0].Detail(), "requires `cloud_provider = \"azure\"`")
+	})
+
+	t.Run("aws block with matching provider", func(t *testing.T) {
+		t.Parallel()
+		cfg := buildCloudConnectorTestConfig(ctx, t, r, map[string]tftypes.Value{
+			attrCloudProvider: tftypes.NewValue(tftypes.String, cloudProviderAWS),
+			attrAWSBlock: tftypes.NewValue(awsTerraformObjectType(ctx, t, r), map[string]tftypes.Value{
+				attrAWSRoleArn:             tftypes.NewValue(tftypes.String, "arn:aws:iam::123456789012:role/Elastic"),
+				attrAWSExternalID:          tftypes.NewValue(tftypes.String, nil),
+				attrAWSExternalIDSecretRef: tftypes.NewValue(secretRefTerraformObjectType(ctx, t, r), nil),
+			}),
+		})
+
+		resp := &resource.ValidateConfigResponse{}
+		providerBlockMatchesCloudProvider{}.ValidateResource(ctx, resource.ValidateConfigRequest{Config: cfg}, resp)
+		assert.False(t, resp.Diagnostics.HasError())
+	})
+
+	t.Run("azure block with matching provider", func(t *testing.T) {
+		t.Parallel()
+		cfg := buildCloudConnectorTestConfig(ctx, t, r, map[string]tftypes.Value{
+			attrCloudProvider: tftypes.NewValue(tftypes.String, cloudProviderAzure),
+			attrAzureBlock: tftypes.NewValue(azureTerraformObjectType(ctx, t, r), map[string]tftypes.Value{
+				attrAzureTenantID:         tftypes.NewValue(tftypes.String, "tenant-uuid"),
+				attrAzureClientID:         tftypes.NewValue(tftypes.String, "client-uuid"),
+				attrAzureCloudConnectorID: tftypes.NewValue(tftypes.String, "azure-connector-id"),
+			}),
+		})
+
+		resp := &resource.ValidateConfigResponse{}
+		providerBlockMatchesCloudProvider{}.ValidateResource(ctx, resource.ValidateConfigRequest{Config: cfg}, resp)
+		assert.False(t, resp.Diagnostics.HasError())
 	})
 
 	t.Run("tolerates unknown cloud_provider", func(t *testing.T) {
@@ -328,10 +406,63 @@ func secretRefTerraformObjectType(ctx context.Context, t *testing.T, r resource.
 	return awsAttr.Attributes[attrAWSExternalIDSecretRef].GetType().TerraformType(ctx)
 }
 
+func azureTerraformObjectType(ctx context.Context, t *testing.T, r resource.Resource) tftypes.Type {
+	t.Helper()
+	schemaResp := &resource.SchemaResponse{}
+	r.Schema(ctx, resource.SchemaRequest{}, schemaResp)
+	require.False(t, schemaResp.Diagnostics.HasError())
+	return schemaResp.Schema.Attributes[attrAzureBlock].GetType().TerraformType(ctx)
+}
+
+func varsTerraformMapType(ctx context.Context, t *testing.T, r resource.Resource) tftypes.Type {
+	t.Helper()
+	schemaResp := &resource.SchemaResponse{}
+	r.Schema(ctx, resource.SchemaRequest{}, schemaResp)
+	require.False(t, schemaResp.Diagnostics.HasError())
+	return schemaResp.Schema.Attributes[attrVarsMap].GetType().TerraformType(ctx)
+}
+
 func TestResourceConfigValidators(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 
 	r := NewResource().(resource.ResourceWithConfigValidators)
-	validators := r.ConfigValidators(context.Background())
+	validators := r.ConfigValidators(ctx)
 	require.Len(t, validators, 2)
+
+	t.Run("ExactlyOneOf rejects aws and vars together", func(t *testing.T) {
+		t.Parallel()
+		varsMapType := varsTerraformMapType(ctx, t, r)
+		mapType, ok := varsMapType.(tftypes.Map)
+		require.True(t, ok)
+		varsElemType := mapType.ElementType
+		cfg := buildCloudConnectorTestConfig(ctx, t, r, map[string]tftypes.Value{
+			attrAWSBlock: tftypes.NewValue(awsTerraformObjectType(ctx, t, r), map[string]tftypes.Value{
+				attrAWSRoleArn:             tftypes.NewValue(tftypes.String, "arn:aws:iam::123456789012:role/Elastic"),
+				attrAWSExternalID:          tftypes.NewValue(tftypes.String, nil),
+				attrAWSExternalIDSecretRef: tftypes.NewValue(secretRefTerraformObjectType(ctx, t, r), nil),
+			}),
+			attrVarsMap: tftypes.NewValue(varsMapType, map[string]tftypes.Value{
+				"role_arn": tftypes.NewValue(varsElemType, map[string]tftypes.Value{
+					attrVarsString:      tftypes.NewValue(tftypes.String, "arn:aws:iam::123456789012:role/Elastic"),
+					attrVarsNumber:      tftypes.NewValue(tftypes.Number, nil),
+					attrVarsBool:        tftypes.NewValue(tftypes.Bool, nil),
+					attrVarsType:        tftypes.NewValue(tftypes.String, nil),
+					attrVarsFrozen:      tftypes.NewValue(tftypes.Bool, nil),
+					attrVarsValue:       tftypes.NewValue(tftypes.String, nil),
+					attrVarsSecretValue: tftypes.NewValue(tftypes.String, nil),
+					attrVarsSecretRef:   tftypes.NewValue(secretRefTerraformObjectType(ctx, t, r), nil),
+				}),
+			}),
+		})
+
+		exactlyOne := resourcevalidator.ExactlyOneOf(
+			path.MatchRoot(attrAWSBlock),
+			path.MatchRoot(attrAzureBlock),
+			path.MatchRoot(attrVarsMap),
+		)
+		resp := &resource.ValidateConfigResponse{}
+		exactlyOne.ValidateResource(ctx, resource.ValidateConfigRequest{Config: cfg}, resp)
+		require.True(t, resp.Diagnostics.HasError())
+	})
 }
