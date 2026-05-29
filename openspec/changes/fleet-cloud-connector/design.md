@@ -68,15 +68,15 @@ vars = map(object({
     id            = string
     is_secret_ref = bool                   # plain bool to faithfully echo wire
   }))
-
-  secret_value_wo_version  = computed(number)   # private-state-driven; see D5
 }))
 ```
+
+`secret_value_wo_version` is intentionally omitted; write-only drift uses private-state bcrypt hashes (Decision 5) instead of version companion attributes.
 
 `ConfigValidator` rules per element:
 - Group A (bare): exactly one of `string`, `number`, `bool`; mutually exclusive with Group B.
 - Group B (structured): `type` plus exactly one of `value`, `secret_value`, `secret_ref`. `frozen` only valid in Group B.
-- `secret_ref` and `secret_value_wo_version` are computed-only; rejected if set in config.
+- `secret_ref` is computed-only; rejected if set in config.
 
 **Why:** This is the smallest schema that captures all four arms faithfully without lossy conversion. A `DynamicAttribute` was considered but rejected because it cannot be sensitivity-marked per-key (whole-value only) and cannot host a write-only sub-attribute, both of which are essential for proper secret handling. A JSON-string fallback was rejected for the same reasons. The cost is a slightly verbose HCL surface for users using `vars` directly — mitigated by the per-provider typed blocks.
 
@@ -85,18 +85,22 @@ vars = map(object({
 The resource exposes optional + computed typed blocks for the well-known per-provider authentication flows:
 
 ```hcl
-aws = optional + computed(object({
+aws = optional(object({
   role_arn                = optional(string)
   external_id             = optional(string, write_only, sensitive)
   external_id_secret_ref  = computed(object({ id, is_secret_ref }))
 }))
 
-azure = optional + computed(object({
-  tenant_id           = optional(string)
-  client_id           = optional(string)
-  cloud_connector_id  = optional(string)
+azure = optional(object({
+  tenant_id              = optional(string, write_only, sensitive)
+  client_id              = optional(string, write_only, sensitive)
+  cloud_connector_id     = optional(string)
+  tenant_id_secret_ref   = computed(object({ id, is_secret_ref }))
+  client_id_secret_ref   = computed(object({ id, is_secret_ref }))
 }))
 ```
+
+Parent blocks `aws` and `vars` are **Optional only** (not Computed) because Plugin Framework disallows Computed on blocks containing write-only children. `azure` remains Optional + Computed + UseStateForUnknown because it has no write-only fields at the parent level (secrets are write-only on inner attributes with computed `*_secret_ref` siblings). Inner read-populated fields such as `external_id_secret_ref` and Azure `*_secret_ref` remain Computed.
 
 Config-time `ConfigValidator`: exactly one of `aws`, `azure`, `vars` may be set in config. The typed block, if set, must match the resource's `cloud_provider` attribute.
 
@@ -112,7 +116,7 @@ Considered: populating only the typed block when matched (and only `vars` otherw
 
 The GCP typed block is deliberately omitted (see Non-Goals). GCP users use `vars` directly.
 
-**Plan-time dual representation:** Plugin Framework disallows `Computed` on parent blocks that contain write-only children, so `aws` and `vars` are `Optional` only (unlike `azure`, which has no write-only fields and remains `Optional + Computed + UseStateForUnknown`). After Read populates both the configured representation and its read-populated sibling, a subsequent plan would otherwise mark the unconfigured sibling for removal. `ModifyPlan` preserves the sibling by copying the read-populated attribute from state into plan when the practitioner configures only one representation—the same branching logic `compileVarsForWrite` uses on config. Typed siblings are copied into vars-mode plans only when planned `vars` matches state (so explicit representation or value changes are not overwritten).
+**Plan-time dual representation:** Plugin Framework disallows `Computed` on parent blocks that contain write-only children, so `aws` and `vars` are `Optional` only (unlike `azure`, which has no write-only fields at the parent block level and remains `Optional + Computed + UseStateForUnknown`). After Read populates both the configured representation and its read-populated sibling, a subsequent plan would otherwise mark the unconfigured sibling for removal. `ModifyPlan` preserves the sibling by copying the read-populated attribute from state into plan when the practitioner configures only one representation—the same branching logic `compileVarsForWrite` uses on config. Typed siblings are copied into vars-mode plans only when planned `vars` matches state (so explicit representation or value changes are not overwritten).
 
 ### Decision 5: Write-only secret drift detection via bcrypt hash in private state
 
@@ -156,6 +160,8 @@ The helper is exported and named for reuse; this change uses it from the cloud c
 
 **Imported-resource case:** On first refresh after `terraform import`, no hash exists in private state. The provider treats absence-of-hash as "no comparison possible" and produces no drift. On the first apply where a write-only attribute is set in config, the hash is computed and written. This matches `random_password`'s post-import behaviour.
 
+**Plan-to-apply resubmit:** When drift is detected (excluding the import-baseline case), `ModifyPlan` writes the set of attribute paths requiring resubmission into resource private state under `writeonly_resubmit:_pending`. During Update, the envelope passes `req.Private` to the write callback; the provider reads the resubmit set and forces raw secret values into the PUT body even when plan/state show no API-visible diff for those fields. `OnWritten` clears the resubmit key after hashes are persisted. This avoids storing resubmit intent on the shared `*Resource` struct, which would race when multiple resource instances plan in the same apply phase.
+
 ### Decision 6: `cloud_provider` change forces replacement; `account_type` is updatable
 
 The Kibana PUT endpoint does not accept `cloudProvider` in its body, so changing it must trigger replacement. `accountType` IS accepted by PUT and is therefore updatable in-place.
@@ -169,6 +175,8 @@ This decision drives `RequiresReplace` plan modifiers on `cloud_provider` and `s
 Expose the API's `?force=true` query parameter as a top-level boolean attribute defaulting to `false`. When `force_delete = false` and the API returns a conflict because `package_policy_count > 0`, the provider surfaces a helpful error mentioning the count and suggesting `force_delete = true` if intentional.
 
 **Why:** Considered: always force-delete (hides accidental destructive operations) — rejected. Considered: relying on Terraform's `lifecycle { prevent_destroy }` meta — rejected because providers cannot observe `lifecycle` blocks and the in-use case still needs server-side override. An explicit attribute is plan-visible and reversible.
+
+**Update no-op skip:** When the plan changes only config-only attributes (today `force_delete`) and there is no pending write-only resubmit work, Update skips the PUT. State keeps the prior `updated_at` from the last API refresh. This is correct because `force_delete` never appears in the API body.
 
 ### Decision 8: Read returns 404 → remove from state; Delete 404 → success
 

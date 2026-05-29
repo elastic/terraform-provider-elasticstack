@@ -124,7 +124,7 @@ The resource SHALL support import via the composite ID `"<space_id>/<cloud_conne
 
 ### Requirement: `vars` schema covers all four API union arms
 
-The `vars` attribute SHALL be modelled as `map(object({...}))`. Each map element SHALL faithfully represent one of the four API union arms via the following nested attributes: `string` (arm 1), `number` (arm 2), `bool` (arm 3), and `type`+`frozen`+exactly-one-of(`value`, `secret_value`, `secret_ref`) (arm 4). `secret_ref` and `secret_value_wo_version` SHALL be Computed-only and rejected if set in config. A `ConfigValidator` SHALL enforce that within each element exactly one arm is configured.
+The `vars` attribute SHALL be modelled as `map(object({...}))`. Each map element SHALL faithfully represent one of the four API union arms via the following nested attributes: `string` (arm 1), `number` (arm 2), `bool` (arm 3), and `type`+`frozen`+exactly-one-of(`value`, `secret_value`, `secret_ref`) (arm 4). `secret_ref` SHALL be Computed-only and rejected if set in config. A `ConfigValidator` SHALL enforce that within each element exactly one arm is configured.
 
 #### Scenario: Arm (1) bare string
 - **WHEN** `vars = { "k" = { string = "hello" } }` is set
@@ -158,7 +158,7 @@ The `vars` attribute SHALL be modelled as `map(object({...}))`. Each map element
 
 ### Requirement: Typed `aws` and `azure` blocks compile to `vars`
 
-The resource SHALL expose Optional + Computed typed blocks `aws { role_arn, external_id, external_id_secret_ref }` and `azure { tenant_id, client_id, cloud_connector_id }`. A `ConfigValidator` SHALL enforce that exactly one of `aws`, `azure`, or `vars` is configured, and that any configured typed block matches the resource's `cloud_provider`. Typed blocks SHALL compile to the same wire `vars` payload during Create and Update; on Read, the typed block SHALL be populated only when ALL of its modelled keys appear in the API response under the expected provider.
+The resource SHALL expose typed blocks `aws { role_arn, external_id, external_id_secret_ref }` and `azure { tenant_id, client_id, cloud_connector_id, tenant_id_secret_ref, client_id_secret_ref }`. Parent blocks `aws` and `vars` SHALL be Optional only (not Computed) because Plugin Framework disallows Computed on blocks containing write-only children; inner fields such as `external_id_secret_ref` remain Computed where populated from Read. A `ConfigValidator` SHALL enforce that exactly one of `aws`, `azure`, or `vars` is configured, and that any configured typed block matches the resource's `cloud_provider`. Typed blocks SHALL compile to the same wire `vars` payload during Create and Update; on Read, the typed block SHALL be populated only when ALL of its modelled keys appear in the API response under the expected provider.
 
 #### Scenario: Typed block input compiles to vars wire payload
 - **WHEN** `aws { role_arn = "arn:..." external_id = "secret" }` is applied
