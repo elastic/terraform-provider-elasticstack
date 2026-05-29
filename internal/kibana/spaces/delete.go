@@ -27,6 +27,10 @@ import (
 )
 
 func deleteSpace(ctx context.Context, client *clients.KibanaScopedClient, resourceID, _ string, _ resourceModel) diag.Diagnostics {
+	// The default Kibana space is a platform invariant: every Kibana
+	// deployment ships with it and DELETE /api/spaces/space/default is
+	// rejected unconditionally. Skip the API call and let Terraform remove
+	// the resource from state.
 	if resourceID == "default" {
 		tflog.Warn(ctx, "default Kibana space cannot be deleted; removing from Terraform state only")
 		return nil

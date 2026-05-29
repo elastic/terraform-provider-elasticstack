@@ -24,6 +24,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Passing a nil KibanaScopedClient is intentional: the guard must return
+// before any client access, so any code path that reached client.GetKibanaOapiClient()
+// would panic. A non-panicking, error-free return is therefore the strongest
+// possible proof that no API call is attempted.
 func TestDeleteSpace_DefaultSpaceSkipsAPI(t *testing.T) {
 	t.Parallel()
 
