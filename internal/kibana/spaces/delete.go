@@ -23,9 +23,15 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func deleteSpace(ctx context.Context, client *clients.KibanaScopedClient, resourceID, _ string, _ resourceModel) diag.Diagnostics {
+	if resourceID == "default" {
+		tflog.Warn(ctx, "default Kibana space cannot be deleted; removing from Terraform state only")
+		return nil
+	}
+
 	oapiClient := client.GetKibanaOapiClient()
 	return kibanaoapi.DeleteSpace(ctx, oapiClient, resourceID)
 }
