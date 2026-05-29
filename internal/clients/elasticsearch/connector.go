@@ -24,6 +24,8 @@ import (
 	getconnector "github.com/elastic/go-elasticsearch/v8/typedapi/connector/get"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/connector/post"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/connector/put"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/connector/syncjobget"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/connector/syncjobpost"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/connector/updateapikeyid"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/connector/updateconfiguration"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/connector/updatefeatures"
@@ -34,6 +36,8 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/connector/updatescheduling"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/connector/updateservicetype"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/syncjobtriggermethod"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/syncjobtype"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -309,4 +313,42 @@ func UpdateConnectorConfiguration(
 	}
 
 	return nil
+}
+
+// CreateSyncJob creates a sync job for the given connector. Returns the sync job id.
+func CreateSyncJob(
+	ctx context.Context,
+	apiClient *clients.ElasticsearchScopedClient,
+	connectorID string,
+	jobType syncjobtype.SyncJobType,
+	triggerMethod syncjobtriggermethod.SyncJobTriggerMethod,
+) (string, fwdiag.Diagnostics) {
+	typedClient := apiClient.GetESClient()
+
+	res, err := typedClient.Connector.SyncJobPost().Request(&syncjobpost.Request{
+		Id:            connectorID,
+		JobType:       &jobType,
+		TriggerMethod: &triggerMethod,
+	}).Do(ctx)
+	if err != nil {
+		return "", diagutil.FrameworkDiagFromError(err)
+	}
+
+	return res.Id, nil
+}
+
+// GetSyncJob returns the sync job document for polling.
+func GetSyncJob(
+	ctx context.Context,
+	apiClient *clients.ElasticsearchScopedClient,
+	syncJobID string,
+) (*syncjobget.Response, fwdiag.Diagnostics) {
+	typedClient := apiClient.GetESClient()
+
+	res, err := typedClient.Connector.SyncJobGet(syncJobID).Do(ctx)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	return res, nil
 }
