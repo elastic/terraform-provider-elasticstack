@@ -31,11 +31,11 @@ import (
 )
 
 const (
-	attrKuery             = "kuery"
-	attrPage              = "page"
-	attrPerPage           = "per_page"
-	attrCloudConnectors   = "cloud_connectors"
-	defaultSpaceID        = "default"
+	attrKuery           = "kuery"
+	attrPage            = "page"
+	attrPerPage         = "per_page"
+	attrCloudConnectors = "cloud_connectors"
+	defaultSpaceID      = "default"
 )
 
 type cloudConnectorsDataSourceModel struct {
