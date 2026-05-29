@@ -1,10 +1,8 @@
-# Regression test for #3403: "Value Conversion Error" when analysis_config is
-# sourced from an unknown value (e.g. each.value.job.analysis_config in for_each).
+# Regression test for #3403: plan must not fail with a Value Conversion Error when
+# analysis_config is sourced from an unknown value (e.g. each.value.job.analysis_config in for_each).
 #
 # terraform_data.source.output is unknown during the first plan (before apply),
-# reproducing the for_each pattern. The bug is that *AnalysisConfigTFModel cannot
-# hold unknown values; the fix is to change it to basetypes.ObjectValue.
-
+# reproducing the for_each pattern.
 variable "job_id" {
   description = "The job ID for the anomaly detection job"
   type        = string

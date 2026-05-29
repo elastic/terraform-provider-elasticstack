@@ -15,27 +15,29 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package spaces
+package integrationpolicy
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func deleteSpace(ctx context.Context, client *clients.KibanaScopedClient, resourceID, _ string, _ resourceModel) diag.Diagnostics {
-	// The default Kibana space is a platform invariant: every Kibana
-	// deployment ships with it and DELETE /api/spaces/space/default is
-	// rejected unconditionally. Skip the API call and let Terraform remove
-	// the resource from state.
-	if resourceID == "default" {
-		tflog.Warn(ctx, "default Kibana space cannot be deleted; removing from Terraform state only")
-		return nil
-	}
+type integrationPolicyFeatures struct {
+	SupportsPolicyIDs bool
+	SupportsOutputID  bool
+}
 
-	oapiClient := client.GetKibanaOapiClient()
-	return kibanaoapi.DeleteSpace(ctx, oapiClient, resourceID)
+func resolveIntegrationPolicyFeatures(ctx context.Context, client *clients.KibanaScopedClient) (integrationPolicyFeatures, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var f integrationPolicyFeatures
+
+	var bitDiags diag.Diagnostics
+	f.SupportsPolicyIDs, bitDiags = client.EnforceMinVersion(ctx, MinVersionPolicyIDs)
+	diags.Append(bitDiags...)
+	f.SupportsOutputID, bitDiags = client.EnforceMinVersion(ctx, MinVersionOutputID)
+	diags.Append(bitDiags...)
+
+	return f, diags
 }

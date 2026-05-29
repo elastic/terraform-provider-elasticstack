@@ -51,7 +51,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 
 	fleetClient := client.GetFleetClient()
 
-	feat, diags := r.buildFeatures(ctx, client)
+	feat, diags := resolveIntegrationPolicyFeatures(ctx, client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

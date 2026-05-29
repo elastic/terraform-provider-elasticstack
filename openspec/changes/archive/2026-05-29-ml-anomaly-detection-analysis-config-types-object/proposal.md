@@ -31,6 +31,9 @@ deeper in commit `bc23e6e2` (issue #2966), where `Detectors []DetectorTFModel` w
   `TestAccResourceAnomalyDetectionJobVariableSourcedAnalysisConfig` that assigns the full
   `analysis_config` block from a Terraform variable, mirroring the existing
   `TestAccResourceAnomalyDetectionJobVariableSourcedDetectors` test.
+- Replace `TestAccReproduceIssue3403` (which used `ExpectError` to assert the bug) with
+  `TestAccResourceAnomalyDetectionJobUnknownAnalysisConfig`, an inverted positive test that
+  asserts the same unknown-at-plan path now succeeds.
 
 ## Capabilities
 

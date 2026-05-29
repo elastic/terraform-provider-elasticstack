@@ -20,21 +20,27 @@ package anomalydetectionjob
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // validateConfigCustomRules ensures each configured custom rule satisfies Elasticsearch rules: a rule
 // must either have a non-empty scope or at least one condition (when both are known at plan time).
 func validateConfigCustomRules(ctx context.Context, config *TFModel) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if config == nil || config.AnalysisConfig == nil {
+	if config == nil || !typeutils.IsKnown(config.AnalysisConfig) {
 		return diags
 	}
 
-	ac := config.AnalysisConfig
-	if ac.Detectors.IsUnknown() || ac.Detectors.IsNull() {
+	var ac AnalysisConfigTFModel
+	diags.Append(config.AnalysisConfig.As(ctx, &ac, basetypes.ObjectAsOptions{})...)
+	if diags.HasError() {
+		return diags
+	}
+	if !typeutils.IsKnown(ac.Detectors) {
 		return diags
 	}
 	var detectors []DetectorTFModel
