@@ -18,36 +18,19 @@ Each Terraform resource type constructs its own `Hasher` via `writeonlyhash.New(
 
 ## `ModifyPlan` contract
 
-Implement `resource.ResourceWithModifyPlan` on the resource (or equivalent envelope hook). **Read must not read or write private-state hashes**; the stored hash always represents the last value successfully sent to the API.
-
-### Write-only attribute present in config
+Implement `resource.ResourceWithModifyPlan` on the resource (or equivalent envelope hook). The stored hash always represents the last value successfully sent to the API. Use `Hasher.Matches` at plan time — not `Compute`, which runs bcrypt and is reserved for Create/Update after a successful API write.
 
 For each write-only secret attribute set in `req.Config`:
 
-1. Read the string value from config (write-only values are available in config during plan, not in state after apply).
-2. `hash, err := hasher.Compute(value)` — propagate errors as diagnostics; error strings from the helper never include the input value.
-3. `storedHash, diags := req.Private.GetKey(ctx, hasher.PrivateStateKey(attributePath))` where `attributePath` is the Terraform attribute path (see [Private-state key convention](#private-state-key-convention)).
-4. If `storedHash` is absent or empty: **first apply or post-import** — no drift signal; do not emit a warning.
-5. If `hasher.Matches(value, storedHash)`: no drift.
-6. If the stored hash exists and does **not** match: **mark the resource for update** (see worked example) and emit a **warning** diagnostic, for example: `Detected a change to write-only attribute api_token; the resource will be updated.` The diagnostic must name the attribute path only; never include the secret value.
-
-### Write-only attribute removed from config
-
-When a write-only attribute (or a map element containing one) is removed from the new configuration, clear the corresponding private-state entry: `resp.Private.SetKey(ctx, hasher.PrivateStateKey(attributePath), nil)`.
-
-### After successful Create or Update
-
-Persist a hash for every write-only secret value that was applied to the API:
-
-```go
-hash, err := hasher.Compute(appliedValue)
-// ...
-resp.Private.SetKey(ctx, hasher.PrivateStateKey("api_token"), hash)
-```
-
-### Read
-
-Do not call `GetKey` / `SetKey` on private state for `secret_hash:*` keys during Read.
+1. Read the string value from `req.Config` (write-only values are available in config during plan, not in state after apply).
+2. Read the stored hash from private state: `storedHash, diags := req.Private.GetKey(ctx, hasher.PrivateStateKey(attributePath))` where `attributePath` is the Terraform attribute path (see [Private-state key convention](#private-state-key-convention)).
+3. If no stored hash exists (absent or empty): treat as **first apply or post-import** — no warning, no plan change.
+4. Else call `hasher.Matches(value, storedHash)`:
+   - `true` → no drift.
+   - `false` → **mark the resource for update** (see worked example) and emit a **warning** diagnostic naming the attribute path only, for example: `Detected a change to write-only attribute api_token; the resource will be updated.` Never include the secret value.
+5. For each write-only attribute removed from config: unconditionally clear the stored hash via `resp.Private.SetKey(ctx, hasher.PrivateStateKey(attributePath), nil)`.
+6. **Read** MUST NOT read or write private state for `secret_hash:*` keys.
+7. After a successful **Create** or **Update**: `hash, err := hasher.Compute(appliedValue)` then persist with `resp.Private.SetKey(ctx, hasher.PrivateStateKey(attributePath), hash)`. Propagate `Compute` errors as diagnostics; error strings from the helper never include the input value.
 
 ## Private-state key convention
 
@@ -100,21 +83,15 @@ func (r *exampleThingResource) ModifyPlan(ctx context.Context, req resource.Modi
     const attributePath = "api_token"
     key := apiTokenHasher.PrivateStateKey(attributePath)
 
-    var config, plan, state exampleThingModel
+    var config exampleThingModel
     resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
-    resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-    if req.State.Raw != nil {
-        resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-    }
     if resp.Diagnostics.HasError() {
         return
     }
 
-    // Attribute removed from config — clear stored hash.
     if config.APIToken.IsNull() {
-        if !state.APIToken.IsNull() || !plan.APIToken.IsNull() {
-            resp.Diagnostics.Append(resp.Private.SetKey(ctx, key, nil)...)
-        }
+        // Write-only attributes are never stored in state; config null means removal.
+        resp.Diagnostics.Append(resp.Private.SetKey(ctx, key, nil)...)
         return
     }
     if !typeutils.IsKnown(config.APIToken) {
@@ -127,8 +104,12 @@ func (r *exampleThingResource) ModifyPlan(ctx context.Context, req resource.Modi
     if resp.Diagnostics.HasError() {
         return
     }
+    // No stored hash: first apply (or post-import refresh). No drift signal.
+    if len(storedHash) == 0 {
+        return
+    }
 
-    if len(storedHash) > 0 && !apiTokenHasher.Matches(value, storedHash) {
+    if !apiTokenHasher.Matches(value, storedHash) {
         resp.Diagnostics.AddWarning(
             "Write-only attribute changed",
             fmt.Sprintf("Detected a change to write-only attribute %s; the resource will be updated.", attributePath),
@@ -165,12 +146,14 @@ resp.Diagnostics.Append(resp.Private.SetKey(ctx, apiTokenHasher.PrivateStateKey(
 
 The example above uses only exported symbols from `internal/utils/writeonlyhash/hasher.go`. Reviewers can verify:
 
-| Symbol | Signature |
+| Symbol | Signature / note |
 | --- | --- |
 | `Hasher` | struct type |
+| `Hasher.Salt` | `[]byte` — per-resource-type salt from `New` |
+| `Hasher.Cost` | `int` — bcrypt cost; `0` means default 10 |
 | `New` | `func New(resourceTypeName string) *Hasher` |
-| `(*Hasher).Compute` | `func (h *Hasher) Compute(value string) ([]byte, error)` |
-| `(*Hasher).Matches` | `func (h *Hasher) Matches(value string, storedHash []byte) bool` |
+| `(*Hasher).Compute` | `func (h *Hasher) Compute(value string) ([]byte, error)` — Create/Update only, not `ModifyPlan` |
+| `(*Hasher).Matches` | `func (h *Hasher) Matches(value string, storedHash []byte) bool` — `ModifyPlan` comparison |
 | `(*Hasher).PrivateStateKey` | `func (h *Hasher) PrivateStateKey(attributePath string) string` |
 
 This worked example is **not** compiled as an `Example_*` test: a faithful `ModifyPlan` walkthrough requires Terraform Plugin Framework `resource.ModifyPlanRequest` types and would duplicate acceptance-test patterns. The table above plus unit tests in [`hasher_test.go`](../../internal/utils/writeonlyhash/hasher_test.go) are the compile-time guarantee for the helper itself.
