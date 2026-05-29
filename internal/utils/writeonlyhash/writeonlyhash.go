@@ -50,6 +50,7 @@ package writeonlyhash
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -95,12 +96,30 @@ func (h *Hasher) Compute(value string) ([]byte, error) {
 		return nil, computeError(err)
 	}
 
-	return hash, nil
+	// Terraform resource private state values must be valid JSON.
+	return json.Marshal(string(hash))
+}
+
+// DecodeStoredHash returns the raw bcrypt hash bytes from a private-state value.
+// Values produced by Compute are JSON-encoded strings; legacy raw bcrypt bytes
+// are returned unchanged.
+func DecodeStoredHash(storedHash []byte) []byte {
+	if len(storedHash) == 0 {
+		return nil
+	}
+
+	var decoded string
+	if err := json.Unmarshal(storedHash, &decoded); err == nil {
+		return []byte(decoded)
+	}
+
+	return storedHash
 }
 
 // Matches reports whether value corresponds to storedHash on this Hasher.
 // Nil or empty storedHash returns false without error.
 func (h *Hasher) Matches(value string, storedHash []byte) bool {
+	storedHash = DecodeStoredHash(storedHash)
 	if len(storedHash) == 0 {
 		return false
 	}

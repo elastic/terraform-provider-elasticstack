@@ -62,7 +62,7 @@ func TestComputeAndMatches(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, hash)
 
-		_, err = bcrypt.Cost(hash)
+		_, err = bcrypt.Cost(writeonlyhash.DecodeStoredHash(hash))
 		require.NoError(t, err)
 
 		assert.True(t, hasher.Matches(secret, hash))
@@ -143,7 +143,7 @@ func TestComputeCost(t *testing.T) {
 		hash, err := hasher.Compute("secret")
 		require.NoError(t, err)
 
-		cost, err := bcrypt.Cost(hash)
+		cost, err := bcrypt.Cost(writeonlyhash.DecodeStoredHash(hash))
 		require.NoError(t, err)
 		assert.Equal(t, bcrypt.MinCost, cost)
 		assert.True(t, hasher.Matches("secret", hash))
@@ -158,7 +158,7 @@ func TestComputeCost(t *testing.T) {
 		hash, err := hasher.Compute("secret")
 		require.NoError(t, err)
 
-		cost, err := bcrypt.Cost(hash)
+		cost, err := bcrypt.Cost(writeonlyhash.DecodeStoredHash(hash))
 		require.NoError(t, err)
 		assert.Equal(t, bcrypt.DefaultCost, cost)
 	})
