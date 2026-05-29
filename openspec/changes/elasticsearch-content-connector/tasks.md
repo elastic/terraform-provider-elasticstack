@@ -51,12 +51,12 @@
 
 ## 7. Action — `connector_sync_job_create`
 
-- [ ] 7.1 Create `internal/elasticsearch/connector/sync_job_create/` mirroring `internal/elasticsearch/cluster/snapshot_create/` layout (`action.go`, `model.go`, `schema.go`, `acc_test.go`)
-- [ ] 7.2 Implement `schema.go` per REQ-SYNC-001 schema (connector_id, job_type, trigger_method, wait_for_completion, timeouts.invoke)
-- [ ] 7.3 Implement `action.go`: build `POST /_connector/_sync_job` body, call API, capture sync job id; if `wait_for_completion`, poll `GET /_connector/_sync_job/{id}` every 5s until terminal status or timeout
-- [ ] 7.4 Surface terminal-status `error`/`cancelled`/`suspended` as diagnostics per REQ-SYNC-001-E/F; surface timeout-exceeded per REQ-SYNC-001-D
-- [ ] 7.5 Gate via `entitycore.VersionRequirement` at 8.12.0 per REQ-SYNC-002
-- [ ] 7.6 Register the action in `provider/` via `ProviderWithActions`
+- [x] 7.1 Create `internal/elasticsearch/connector/sync_job_create/` mirroring `internal/elasticsearch/cluster/snapshot_create/` layout (`action.go`, `model.go`, `schema.go`, `acc_test.go`)
+- [x] 7.2 Implement `schema.go` per REQ-SYNC-001 schema (connector_id, job_type, trigger_method, wait_for_completion, timeouts.invoke)
+- [x] 7.3 Implement `action.go`: build `POST /_connector/_sync_job` body, call API, capture sync job id; if `wait_for_completion`, poll `GET /_connector/_sync_job/{id}` every 5s until terminal status or timeout
+- [x] 7.4 Surface terminal-status `error`/`cancelled`/`suspended` as diagnostics per REQ-SYNC-001-E/F; surface timeout-exceeded per REQ-SYNC-001-D
+- [x] 7.5 Gate via `entitycore.VersionRequirement` at 8.12.0 per REQ-SYNC-002
+- [x] 7.6 Register the action in `provider/` via `ProviderWithActions`
 
 ## 8. Acceptance tests — resource
 
