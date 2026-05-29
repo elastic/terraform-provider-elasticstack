@@ -51,6 +51,9 @@ func TestAccResourceSecurityList(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list.test", "created_by"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list.test", "updated_at"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list.test", "updated_by"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list.test", "version_id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "immutable", "false"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list.test", "tie_breaker_id"),
 				),
 			},
 			{
@@ -130,7 +133,7 @@ func TestAccResourceSecurityList_WithMetadata(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "name", "List with Metadata"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "type", "ip"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list.test", "meta"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "meta", `{"author":"test-user","category":"network","tags":["production","firewall"]}`),
 				),
 			},
 			{
@@ -146,7 +149,21 @@ func TestAccResourceSecurityList_WithMetadata(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "description", "A test list with updated metadata"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list.test", "meta"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "meta", `{"author":"updated-user","category":"security","tags":["staging","api"],"version":"2.0"}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers, // Remove metadata
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_meta"),
+				ConfigVariables: config.Variables{
+					"space_id":    config.StringVariable(spaceID),
+					"list_id":     config.StringVariable(listID),
+					"name":        config.StringVariable("List with Metadata"),
+					"description": config.StringVariable("A test list with metadata removed"),
+					"type":        config.StringVariable("ip"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_list.test", "meta"),
 				),
 			},
 		},
