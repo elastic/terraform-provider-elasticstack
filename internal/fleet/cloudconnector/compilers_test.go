@@ -29,75 +29,106 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCompileVars_StringArm(t *testing.T) {
-	vars, diags := compileVars(mustVarsMap(t, map[string]cloudConnectorVarsElement{
-		"region": {String: types.StringValue("us-east-1")},
-	}), nil, false)
-	require.False(t, diags.HasError(), diags)
+func TestCompileVars_UnionArms(t *testing.T) {
+	t.Parallel()
 
-	raw, err := json.Marshal(vars["region"])
-	require.NoError(t, err)
-	assert.JSONEq(t, `"us-east-1"`, string(raw))
-}
-
-func TestCompileVars_NumberArm(t *testing.T) {
-	vars, diags := compileVars(mustVarsMap(t, map[string]cloudConnectorVarsElement{
-		"count": {Number: types.Float64Value(42.5)},
-	}), nil, false)
-	require.False(t, diags.HasError(), diags)
-
-	v, err := vars["count"].AsPostFleetCloudConnectorsJSONBodyVars1()
-	require.NoError(t, err)
-	assert.InDelta(t, float32(42.5), v, 0.001)
-}
-
-func TestCompileVars_BoolArm(t *testing.T) {
-	vars, diags := compileVars(mustVarsMap(t, map[string]cloudConnectorVarsElement{
-		"enabled": {Bool: types.BoolValue(true)},
-	}), nil, false)
-	require.False(t, diags.HasError(), diags)
-
-	v, err := vars["enabled"].AsPostFleetCloudConnectorsJSONBodyVars2()
-	require.NoError(t, err)
-	assert.True(t, v)
-}
-
-func TestCompileVars_StructuredStringValueArm(t *testing.T) {
-	frozen := types.BoolValue(true)
-	vars, diags := compileVars(mustVarsMap(t, map[string]cloudConnectorVarsElement{
-		"role_arn": {
-			Type:   types.StringValue("text"),
-			Frozen: frozen,
-			Value:  types.StringValue("arn:aws:iam::123:role/x"),
+	tests := []struct {
+		name       string
+		elem       cloudConnectorVarsElement
+		assertFunc func(t *testing.T, wire kbapi.PostFleetCloudConnectorsJSONBody_Vars_AdditionalProperties)
+	}{
+		{
+			name: "string",
+			elem: cloudConnectorVarsElement{String: types.StringValue("us-east-1")},
+			assertFunc: func(t *testing.T, wire kbapi.PostFleetCloudConnectorsJSONBody_Vars_AdditionalProperties) {
+				t.Helper()
+				raw, err := json.Marshal(wire)
+				require.NoError(t, err)
+				assert.JSONEq(t, `"us-east-1"`, string(raw))
+			},
 		},
-	}), nil, false)
-	require.False(t, diags.HasError(), diags)
-
-	structured, err := vars["role_arn"].AsPostFleetCloudConnectorsJSONBodyVars3()
-	require.NoError(t, err)
-	assert.Equal(t, "text", structured.Type)
-	require.NotNil(t, structured.Frozen)
-	assert.True(t, *structured.Frozen)
-	value, err := structured.Value.AsPostFleetCloudConnectorsJSONBodyVars3Value0()
-	require.NoError(t, err)
-	assert.Equal(t, "arn:aws:iam::123:role/x", value)
-}
-
-func TestCompileVars_StructuredSecretValueArm(t *testing.T) {
-	vars, diags := compileVars(mustVarsMap(t, map[string]cloudConnectorVarsElement{
-		"token": {
-			Type:        types.StringValue("password"),
-			SecretValue: types.StringValue("super-secret"),
+		{
+			name: "number",
+			elem: cloudConnectorVarsElement{Number: types.Float64Value(42.5)},
+			assertFunc: func(t *testing.T, wire kbapi.PostFleetCloudConnectorsJSONBody_Vars_AdditionalProperties) {
+				t.Helper()
+				v, err := wire.AsPostFleetCloudConnectorsJSONBodyVars1()
+				require.NoError(t, err)
+				assert.InDelta(t, float32(42.5), v, 0.001)
+			},
 		},
-	}), nil, false)
-	require.False(t, diags.HasError(), diags)
+		{
+			name: "bool",
+			elem: cloudConnectorVarsElement{Bool: types.BoolValue(true)},
+			assertFunc: func(t *testing.T, wire kbapi.PostFleetCloudConnectorsJSONBody_Vars_AdditionalProperties) {
+				t.Helper()
+				v, err := wire.AsPostFleetCloudConnectorsJSONBodyVars2()
+				require.NoError(t, err)
+				assert.True(t, v)
+			},
+		},
+		{
+			name: "structured value",
+			elem: cloudConnectorVarsElement{
+				Type:   types.StringValue("text"),
+				Frozen: types.BoolValue(true),
+				Value:  types.StringValue("arn:aws:iam::123:role/x"),
+			},
+			assertFunc: func(t *testing.T, wire kbapi.PostFleetCloudConnectorsJSONBody_Vars_AdditionalProperties) {
+				t.Helper()
+				structured, err := wire.AsPostFleetCloudConnectorsJSONBodyVars3()
+				require.NoError(t, err)
+				assert.Equal(t, "text", structured.Type)
+				require.NotNil(t, structured.Frozen)
+				assert.True(t, *structured.Frozen)
+				value, err := structured.Value.AsPostFleetCloudConnectorsJSONBodyVars3Value0()
+				require.NoError(t, err)
+				assert.Equal(t, "arn:aws:iam::123:role/x", value)
+			},
+		},
+		{
+			name: "structured secret_value",
+			elem: cloudConnectorVarsElement{
+				Type:        types.StringValue("password"),
+				SecretValue: types.StringValue("super-secret"),
+			},
+			assertFunc: func(t *testing.T, wire kbapi.PostFleetCloudConnectorsJSONBody_Vars_AdditionalProperties) {
+				t.Helper()
+				structured, err := wire.AsPostFleetCloudConnectorsJSONBodyVars3()
+				require.NoError(t, err)
+				assert.Equal(t, "password", structured.Type)
+				value, err := structured.Value.AsPostFleetCloudConnectorsJSONBodyVars3Value0()
+				require.NoError(t, err)
+				assert.Equal(t, "super-secret", value)
+			},
+		},
+		{
+			name: "structured frozen false",
+			elem: cloudConnectorVarsElement{
+				Type:   types.StringValue("text"),
+				Frozen: types.BoolValue(false),
+				Value:  types.StringValue("plain"),
+			},
+			assertFunc: func(t *testing.T, wire kbapi.PostFleetCloudConnectorsJSONBody_Vars_AdditionalProperties) {
+				t.Helper()
+				structured, err := wire.AsPostFleetCloudConnectorsJSONBodyVars3()
+				require.NoError(t, err)
+				require.NotNil(t, structured.Frozen)
+				assert.False(t, *structured.Frozen)
+			},
+		},
+	}
 
-	structured, err := vars["token"].AsPostFleetCloudConnectorsJSONBodyVars3()
-	require.NoError(t, err)
-	assert.Equal(t, "password", structured.Type)
-	value, err := structured.Value.AsPostFleetCloudConnectorsJSONBodyVars3Value0()
-	require.NoError(t, err)
-	assert.Equal(t, "super-secret", value)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			vars, diags := compileVars(mustVarsMap(t, map[string]cloudConnectorVarsElement{
+				"key": tc.elem,
+			}), nil, false)
+			require.False(t, diags.HasError(), diags)
+			tc.assertFunc(t, vars["key"])
+		})
+	}
 }
 
 func TestCompileVars_UpdatePreservesSecretRef(t *testing.T) {
@@ -130,6 +161,55 @@ func TestCompileVars_UpdatePreservesSecretRef(t *testing.T) {
 	assert.True(t, ref.IsSecretRef)
 }
 
+func TestCompileStructuredVarElement_TypeFallbackFromPrior(t *testing.T) {
+	secretRef, refDiags := secretRefToObject(cloudConnectorSecretRef{
+		ID:          types.StringValue("secret-ref-1"),
+		IsSecretRef: types.BoolValue(true),
+	})
+	require.False(t, refDiags.HasError())
+
+	planElem := cloudConnectorVarsElement{
+		Type: types.StringNull(),
+	}
+	priorElem := cloudConnectorVarsElement{
+		Type:      types.StringValue("password"),
+		SecretRef: secretRef,
+	}
+
+	wire, diags := compileStructuredVarElement(planElem, &priorElem, true, "external_id")
+	require.False(t, diags.HasError(), diags)
+
+	structured, err := wire.AsPostFleetCloudConnectorsJSONBodyVars3()
+	require.NoError(t, err)
+	assert.Equal(t, "password", structured.Type)
+}
+
+func TestCompileStructuredVarElement_NewSecretOverridesPriorRef(t *testing.T) {
+	secretRef, refDiags := secretRefToObject(cloudConnectorSecretRef{
+		ID:          types.StringValue("old-ref"),
+		IsSecretRef: types.BoolValue(true),
+	})
+	require.False(t, refDiags.HasError())
+
+	planElem := cloudConnectorVarsElement{
+		Type:        types.StringValue("password"),
+		SecretValue: types.StringValue("new-secret"),
+	}
+	priorElem := cloudConnectorVarsElement{
+		Type:      types.StringValue("password"),
+		SecretRef: secretRef,
+	}
+
+	wire, diags := compileStructuredVarElement(planElem, &priorElem, true, "token")
+	require.False(t, diags.HasError(), diags)
+
+	structured, err := wire.AsPostFleetCloudConnectorsJSONBodyVars3()
+	require.NoError(t, err)
+	value, err := structured.Value.AsPostFleetCloudConnectorsJSONBodyVars3Value0()
+	require.NoError(t, err)
+	assert.Equal(t, "new-secret", value)
+}
+
 func TestCompileAWS_Create(t *testing.T) {
 	vars, diags := compileAWS(awsBlockModel{
 		RoleArn:    types.StringValue("arn:aws:iam::123:role/x"),
@@ -151,6 +231,15 @@ func TestCompileAWS_Create(t *testing.T) {
 	extValue, err := externalID.Value.AsPostFleetCloudConnectorsJSONBodyVars3Value0()
 	require.NoError(t, err)
 	assert.Equal(t, "ext-id", extValue)
+}
+
+func TestCompileAWS_CreateMissingExternalID(t *testing.T) {
+	_, diags := compileAWS(awsBlockModel{
+		RoleArn:    types.StringValue("arn:aws:iam::123:role/x"),
+		ExternalID: types.StringNull(),
+	}, nil, false)
+	require.True(t, diags.HasError())
+	assert.Equal(t, "Missing AWS external_id", diags.Errors()[0].Summary())
 }
 
 func TestCompileAWS_UpdatePreservesExternalIDSecretRef(t *testing.T) {
@@ -183,6 +272,31 @@ func TestCompileAWS_UpdatePreservesExternalIDSecretRef(t *testing.T) {
 	assert.True(t, ref.IsSecretRef)
 }
 
+func TestCompileAWSExternalID_NewSecretOverridesPriorRef(t *testing.T) {
+	secretRef, refDiags := secretRefToObject(cloudConnectorSecretRef{
+		ID:          types.StringValue("old-ref"),
+		IsSecretRef: types.BoolValue(true),
+	})
+	require.False(t, refDiags.HasError())
+
+	wire, diags := compileAWSExternalID(
+		awsBlockModel{
+			ExternalID: types.StringValue("new-secret"),
+		},
+		&awsBlockModel{
+			ExternalIDSecretRef: secretRef,
+		},
+		true,
+	)
+	require.False(t, diags.HasError(), diags)
+
+	structured, err := wire.AsPostFleetCloudConnectorsJSONBodyVars3()
+	require.NoError(t, err)
+	value, err := structured.Value.AsPostFleetCloudConnectorsJSONBodyVars3Value0()
+	require.NoError(t, err)
+	assert.Equal(t, "new-secret", value)
+}
+
 func TestCompileAzure(t *testing.T) {
 	vars, diags := compileAzure(azureBlockModel{
 		TenantID:         types.StringValue("tenant-1"),
@@ -206,6 +320,62 @@ func TestCompileAzure(t *testing.T) {
 	}
 }
 
+func TestCompileVarsForWrite_VarsOnlyUpdateUsesVarsPath(t *testing.T) {
+	awsObj, objDiags := types.ObjectValue(awsAttrTypes(), map[string]attr.Value{
+		attrAWSRoleArn:             types.StringValue("arn:aws:iam::123:role/x"),
+		attrAWSExternalID:          types.StringNull(),
+		attrAWSExternalIDSecretRef: types.ObjectNull(secretRefAttrTypes()),
+	})
+	require.False(t, objDiags.HasError())
+
+	config := cloudConnectorModel{
+		Vars: mustVarsMap(t, map[string]cloudConnectorVarsElement{
+			"custom_key": {String: types.StringValue("updated")},
+		}),
+		AWS: types.ObjectNull(awsAttrTypes()),
+	}
+	plan := cloudConnectorModel{
+		Vars: config.Vars,
+		AWS:  awsObj,
+	}
+
+	vars, diags := plan.compileVarsForWrite(config, nil, true)
+	require.False(t, diags.HasError(), diags)
+	require.Contains(t, vars, "custom_key")
+	assert.Len(t, vars, 1)
+}
+
+func TestCompileVarsForWrite_AWSConfigUsesAWSPath(t *testing.T) {
+	secretRef, refDiags := secretRefToObject(cloudConnectorSecretRef{
+		ID:          types.StringValue("secret-ref-1"),
+		IsSecretRef: types.BoolValue(true),
+	})
+	require.False(t, refDiags.HasError())
+
+	awsObj, objDiags := types.ObjectValue(awsAttrTypes(), map[string]attr.Value{
+		attrAWSRoleArn:             types.StringValue("arn:aws:iam::123:role/x"),
+		attrAWSExternalID:          types.StringNull(),
+		attrAWSExternalIDSecretRef: secretRef,
+	})
+	require.False(t, objDiags.HasError())
+
+	config := cloudConnectorModel{AWS: awsObj}
+	plan := cloudConnectorModel{
+		AWS: awsObj,
+		Vars: mustVarsMap(t, map[string]cloudConnectorVarsElement{
+			"custom_key": {String: types.StringValue("from-read")},
+		}),
+	}
+	prior := cloudConnectorModel{AWS: awsObj}
+
+	vars, diags := plan.compileVarsForWrite(config, &prior, true)
+	require.False(t, diags.HasError(), diags)
+	require.Len(t, vars, 2)
+	assert.Contains(t, vars, "role_arn")
+	assert.Contains(t, vars, "external_id")
+	assert.NotContains(t, vars, "custom_key")
+}
+
 func TestToAPIUpdateBody_OmitsCloudProvider(t *testing.T) {
 	secretRef, refDiags := secretRefToObject(cloudConnectorSecretRef{
 		ID:          types.StringValue("secret-ref-1"),
@@ -220,18 +390,16 @@ func TestToAPIUpdateBody_OmitsCloudProvider(t *testing.T) {
 	})
 	require.False(t, objDiags.HasError())
 
+	config := cloudConnectorModel{AWS: awsObj}
 	plan := cloudConnectorModel{
 		Name:          types.StringValue("updated-name"),
 		CloudProvider: types.StringValue("aws"),
 		AccountType:   types.StringValue(accountTypeSingleAccount),
 		AWS:           awsObj,
 	}
+	prior := cloudConnectorModel{AWS: awsObj}
 
-	prior := cloudConnectorModel{
-		AWS: awsObj,
-	}
-
-	body, diags := plan.toAPIUpdateBody(prior)
+	body, diags := plan.toAPIUpdateBody(config, prior)
 	require.False(t, diags.HasError(), diags)
 
 	require.NotNil(t, body.Name)
@@ -304,13 +472,23 @@ func normalizeVarsElement(elem cloudConnectorVarsElement) cloudConnectorVarsElem
 }
 
 func TestAugmentInUseConflictDiagnostic(t *testing.T) {
-	t.Run("adds hint when package_policy_count present", func(t *testing.T) {
+	t.Run("includes count when package_policy_count present", func(t *testing.T) {
 		diags := diag.Diagnostics{
 			diag.NewErrorDiagnostic("Delete failed", `{"package_policy_count":3}`),
 		}
 		out := augmentInUseConflictDiagnostic(diags)
 		require.Len(t, out, 2)
+		assert.Contains(t, out[1].Detail(), "3 package policies")
 		assert.Contains(t, out[1].Detail(), "force_delete = true")
+	})
+
+	t.Run("singular policy wording", func(t *testing.T) {
+		diags := diag.Diagnostics{
+			diag.NewErrorDiagnostic("Delete failed", `{"package_policy_count":1}`),
+		}
+		out := augmentInUseConflictDiagnostic(diags)
+		require.Len(t, out, 2)
+		assert.Contains(t, out[1].Detail(), "1 package policy")
 	})
 
 	t.Run("unchanged when package_policy_count absent", func(t *testing.T) {
