@@ -21,7 +21,9 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *contentConnectorResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
@@ -75,5 +77,9 @@ func (r *contentConnectorResource) ModifyPlan(ctx context.Context, req resource.
 
 	for _, key := range outcome.KeysToClear {
 		resp.Diagnostics.Append(resp.Private.SetKey(ctx, secretHashKey(key), nil)...)
+	}
+
+	if outcome.NeedsUpdate {
+		resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("id"), fwtypes.StringUnknown())...)
 	}
 }

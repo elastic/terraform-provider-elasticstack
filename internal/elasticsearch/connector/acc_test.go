@@ -379,7 +379,17 @@ func TestAccResourceContentConnector_configurationValues_secret(t *testing.T) {
 				ExpectNonEmptyPlan: false,
 			},
 			{
-				// REQ-011: write-only-only changes produce an empty plan; ModifyPlan emits a warning during plan/apply.
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_secret"),
+				ConfigVariables: config.Variables{
+					"connector_id": config.StringVariable(connectorID),
+					"secret_value": config.StringVariable("pw2"),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 skipConnectorUnsupported(),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_secret"),
