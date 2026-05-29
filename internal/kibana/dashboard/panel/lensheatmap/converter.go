@@ -46,7 +46,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("heatmap_config", heatmapSchemaAttrs(true))
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
 	var prior *models.HeatmapConfigModel
 	if blocks != nil && blocks.HeatmapConfig != nil {
 		cpy := *blocks.HeatmapConfig
@@ -60,13 +60,13 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 	blocks.HeatmapConfig = &models.HeatmapConfigModel{}
 
 	if heatmapNoESQL, err := attrs.AsKibanaHTTPAPIsHeatmapNoESQL(); err == nil && !isHeatmapNoESQLCandidateActuallyESQL(heatmapNoESQL) {
-		return heatmapConfigFromAPINoESQL(ctx, blocks.HeatmapConfig, resolver, prior, heatmapNoESQL)
+		return heatmapConfigFromAPINoESQL(ctx, blocks.HeatmapConfig, prior, heatmapNoESQL)
 	}
 	heatmapESQL, err := attrs.AsKibanaHTTPAPIsHeatmapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return heatmapConfigFromAPIESQL(ctx, blocks.HeatmapConfig, resolver, prior, heatmapESQL)
+	return heatmapConfigFromAPIESQL(ctx, blocks.HeatmapConfig, prior, heatmapESQL)
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {

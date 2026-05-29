@@ -112,7 +112,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("pie_chart_config", attrs)
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
 	var prior *models.PieChartConfigModel
 	if blocks != nil && blocks.PieChartConfig != nil {
 		cpy := *blocks.PieChartConfig
@@ -126,14 +126,14 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 	blocks.PieChartConfig = &models.PieChartConfigModel{}
 
 	if noESQL, err := attrs.AsKibanaHTTPAPIsPieNoESQL(); err == nil && !isPieNoESQLCandidateActuallyESQL(noESQL) {
-		return pieChartConfigFromAPINoESQL(ctx, blocks.PieChartConfig, resolver, prior, noESQL)
+		return pieChartConfigFromAPINoESQL(ctx, blocks.PieChartConfig, prior, noESQL)
 	}
 
 	esql, err := attrs.AsKibanaHTTPAPIsPieESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pieChartConfigFromAPIESQL(ctx, blocks.PieChartConfig, resolver, prior, esql)
+	return pieChartConfigFromAPIESQL(ctx, blocks.PieChartConfig, prior, esql)
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {

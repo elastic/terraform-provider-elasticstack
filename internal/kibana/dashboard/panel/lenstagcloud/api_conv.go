@@ -80,7 +80,6 @@ func tagcloudConfigUsesESQL(m *models.TagcloudConfigModel) bool {
 func tagcloudConfigFromAPI(
 	ctx context.Context,
 	m *models.TagcloudConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.TagcloudConfigModel,
 	api kbapi.KibanaHTTPAPIsTagcloudNoESQL,
 ) diag.Diagnostics {
@@ -137,7 +136,7 @@ func tagcloudConfigFromAPI(
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags
@@ -150,7 +149,6 @@ func tagcloudConfigFromAPI(
 func tagcloudConfigFromAPIESQL(
 	ctx context.Context,
 	m *models.TagcloudConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.TagcloudConfigModel,
 	api kbapi.KibanaHTTPAPIsTagcloudESQL,
 ) diag.Diagnostics {
@@ -225,7 +223,7 @@ func tagcloudConfigFromAPIESQL(
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags

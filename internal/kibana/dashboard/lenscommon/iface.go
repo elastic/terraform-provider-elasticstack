@@ -52,7 +52,7 @@ type VizConverter interface {
 	// (drilldowns, presentation, JSON defaults preservation) sees the pre-existing values. After this
 	// method returns successfully, blocks.<Chart>Config points to the freshly populated model.
 	// Implementations may copy blocks.<Chart>Config into a local prior variable before reconstruction.
-	PopulateFromAttributes(ctx context.Context, resolver Resolver, blocks *models.LensByValueChartBlocks, attrs VisByValueConfig0) diag.Diagnostics
+	PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs VisByValueConfig0) diag.Diagnostics
 	BuildAttributes(blocks *models.LensByValueChartBlocks, resolver Resolver) (VisByValueConfig0, diag.Diagnostics)
 	AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks)
 	PopulateJSONDefaults(attrs map[string]any) map[string]any

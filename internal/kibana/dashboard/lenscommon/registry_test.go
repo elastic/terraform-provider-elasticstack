@@ -63,7 +63,7 @@ func (fakeConverter) SchemaAttribute() schema.Attribute {
 	return schema.StringAttribute{Optional: true}
 }
 
-func (fakeConverter) PopulateFromAttributes(context.Context, Resolver, *models.LensByValueChartBlocks, VisByValueConfig0) diag.Diagnostics {
+func (fakeConverter) PopulateFromAttributes(context.Context, *models.LensByValueChartBlocks, VisByValueConfig0) diag.Diagnostics {
 	return nil
 }
 

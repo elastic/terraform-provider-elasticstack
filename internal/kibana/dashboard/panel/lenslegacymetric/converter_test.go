@@ -117,7 +117,7 @@ func TestConverter_BuildAttributes_PopulateFromAttributes_roundTrip_NoESQL(t *te
 	require.False(t, diags.HasError())
 
 	out := &models.LensByValueChartBlocks{}
-	diags = c.PopulateFromAttributes(ctx, resolver, out, attrs)
+	diags = c.PopulateFromAttributes(ctx,  out, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, out.LegacyMetricConfig)
 

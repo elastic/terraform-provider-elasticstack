@@ -46,7 +46,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("metric_chart_config", metricChartSchemaAttrs(true))
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
 	var priorConfig *models.MetricChartConfigModel
 	if blocks != nil && blocks.MetricChartConfig != nil {
 		cpy := *blocks.MetricChartConfig
@@ -63,13 +63,13 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 	}
 
 	if variant0, err := attrs.AsKibanaHTTPAPIsMetricNoESQL(); err == nil && !isMetricNoESQLCandidateActuallyESQL(variant0) {
-		return metricChartConfigFromAPIVariant0(ctx, blocks.MetricChartConfig, resolver, priorConfig, variant0)
+		return metricChartConfigFromAPIVariant0(ctx, blocks.MetricChartConfig, priorConfig, variant0)
 	}
 	variant1, err := attrs.AsKibanaHTTPAPIsMetricESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return metricChartConfigFromAPIVariant1(ctx, blocks.MetricChartConfig, resolver, priorConfig, variant1)
+	return metricChartConfigFromAPIVariant1(ctx, blocks.MetricChartConfig, priorConfig, variant1)
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {

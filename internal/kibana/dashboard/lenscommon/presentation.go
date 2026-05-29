@@ -443,7 +443,6 @@ func LensDrilldownItemFromAPIJSON(raw []byte, pathPrefix string) (models.LensDri
 // LensChartPresentationReadsFor maps optional chart-root presentation API fields into Terraform state with REQ-009-style null preservation.
 func LensChartPresentationReadsFor(
 	ctx context.Context,
-	_ Resolver,
 	prior *models.LensChartPresentationTFModel,
 	apiTimeRange *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema,
 	hideTitle *bool,

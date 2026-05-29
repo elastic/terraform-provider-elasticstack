@@ -46,7 +46,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("datatable_config", getDatatableSchema(true))
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
 	var priorNo *models.DatatableNoESQLConfigModel
 	var priorEsql *models.DatatableESQLConfigModel
 	if blocks != nil && blocks.DatatableConfig != nil {
@@ -68,7 +68,7 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 
 	if datatableNoESQL, err := attrs.AsKibanaHTTPAPIsDatatableNoESQL(); err == nil && !isDatatableNoESQLCandidateActuallyESQL(datatableNoESQL) {
 		blocks.DatatableConfig.NoESQL = &models.DatatableNoESQLConfigModel{}
-		return datatableNoESQLConfigFromAPI(ctx, blocks.DatatableConfig.NoESQL, resolver, priorNo, datatableNoESQL)
+		return datatableNoESQLConfigFromAPI(ctx, blocks.DatatableConfig.NoESQL, priorNo, datatableNoESQL)
 	}
 	datatableESQL, err := attrs.AsKibanaHTTPAPIsDatatableESQL()
 	if err != nil {
@@ -76,7 +76,7 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 	}
 
 	blocks.DatatableConfig.ESQL = &models.DatatableESQLConfigModel{}
-	return datatableESQLConfigFromAPI(ctx, blocks.DatatableConfig.ESQL, resolver, priorEsql, datatableESQL)
+	return datatableESQLConfigFromAPI(ctx, blocks.DatatableConfig.ESQL, priorEsql, datatableESQL)
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {

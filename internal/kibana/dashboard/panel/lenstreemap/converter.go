@@ -90,7 +90,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("treemap_config", attrs)
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
 	var prior *models.TreemapConfigModel
 	if blocks != nil && blocks.TreemapConfig != nil {
 		cpy := *blocks.TreemapConfig
@@ -104,14 +104,14 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 	blocks.TreemapConfig = &models.TreemapConfigModel{}
 
 	if noESQL, err := attrs.AsKibanaHTTPAPIsTreemapNoESQL(); err == nil && !isTreemapNoESQLCandidateActuallyESQL(noESQL) {
-		return treemapConfigFromAPINoESQL(ctx, blocks.TreemapConfig, resolver, prior, noESQL)
+		return treemapConfigFromAPINoESQL(ctx, blocks.TreemapConfig, prior, noESQL)
 	}
 
 	esql, err := attrs.AsKibanaHTTPAPIsTreemapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return treemapConfigFromAPIESQL(ctx, blocks.TreemapConfig, resolver, prior, esql)
+	return treemapConfigFromAPIESQL(ctx, blocks.TreemapConfig, prior, esql)
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {

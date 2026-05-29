@@ -124,7 +124,6 @@ func metricChartConfigPopulateCommonFields(m *models.MetricChartConfigModel,
 func metricChartConfigFromAPIVariant0(
 	ctx context.Context,
 	m *models.MetricChartConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.MetricChartConfigModel,
 	apiChart kbapi.KibanaHTTPAPIsMetricNoESQL,
 ) diag.Diagnostics {
@@ -180,7 +179,7 @@ func metricChartConfigFromAPIVariant0(
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags
@@ -193,7 +192,6 @@ func metricChartConfigFromAPIVariant0(
 func metricChartConfigFromAPIVariant1(
 	ctx context.Context,
 	m *models.MetricChartConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.MetricChartConfigModel,
 	apiChart kbapi.KibanaHTTPAPIsMetricESQL,
 ) diag.Diagnostics {
@@ -248,7 +246,7 @@ func metricChartConfigFromAPIVariant1(
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags

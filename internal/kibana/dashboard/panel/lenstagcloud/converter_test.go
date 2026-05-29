@@ -79,7 +79,7 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	require.False(t, diags.HasError(), "%v", diags)
 
 	out := &models.LensByValueChartBlocks{TagcloudConfig: &models.TagcloudConfigModel{}}
-	diags = c.PopulateFromAttributes(ctx, resolver, out, attrs)
+	diags = c.PopulateFromAttributes(ctx,  out, attrs)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	require.Equal(t, cfg.Title.ValueString(), out.TagcloudConfig.Title.ValueString())

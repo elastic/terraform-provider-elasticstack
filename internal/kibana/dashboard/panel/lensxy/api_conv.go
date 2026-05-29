@@ -1190,7 +1190,6 @@ func xyChartConfigToAPIESQL(m *models.XYChartConfigModel, resolver lenscommon.Re
 func xyChartConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.XYChartConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.XYChartConfigModel,
 	apiChart kbapi.KibanaHTTPAPIsXyChartNoESQL,
 ) diag.Diagnostics {
@@ -1258,7 +1257,7 @@ func xyChartConfigFromAPINoESQL(
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags
@@ -1271,7 +1270,6 @@ func xyChartConfigFromAPINoESQL(
 func xyChartConfigFromAPIESQL(
 	ctx context.Context,
 	m *models.XYChartConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.XYChartConfigModel,
 	apiChart kbapi.KibanaHTTPAPIsXyChartESQL,
 ) diag.Diagnostics {
@@ -1333,7 +1331,7 @@ func xyChartConfigFromAPIESQL(
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags

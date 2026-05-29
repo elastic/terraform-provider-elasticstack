@@ -88,7 +88,7 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	require.False(t, diags.HasError())
 
 	out := &models.LensByValueChartBlocks{}
-	diags = c.PopulateFromAttributes(ctx, resolver, out, attrs)
+	diags = c.PopulateFromAttributes(ctx,  out, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, out.PieChartConfig)
 
@@ -129,7 +129,7 @@ func TestConverter_roundTrip_ESQL(t *testing.T) {
 	require.NoError(t, attrs.FromKibanaHTTPAPIsPieESQL(apiESQL))
 
 	out := &models.LensByValueChartBlocks{}
-	diags := c.PopulateFromAttributes(ctx, resolver, out, attrs)
+	diags := c.PopulateFromAttributes(ctx,  out, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, out.PieChartConfig)
 

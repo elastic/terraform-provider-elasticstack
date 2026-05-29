@@ -38,7 +38,6 @@ func isDatatableNoESQLCandidateActuallyESQL(apiTable kbapi.KibanaHTTPAPIsDatatab
 func datatableNoESQLConfigFromAPI(
 	ctx context.Context,
 	m *models.DatatableNoESQLConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.DatatableNoESQLConfigModel,
 	api kbapi.KibanaHTTPAPIsDatatableNoESQL,
 ) diag.Diagnostics {
@@ -118,7 +117,7 @@ func datatableNoESQLConfigFromAPI(
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags
@@ -240,7 +239,6 @@ func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel, resolver l
 func datatableESQLConfigFromAPI(
 	ctx context.Context,
 	m *models.DatatableESQLConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.DatatableESQLConfigModel,
 	api kbapi.KibanaHTTPAPIsDatatableESQL,
 ) diag.Diagnostics {
@@ -317,7 +315,7 @@ func datatableESQLConfigFromAPI(
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags

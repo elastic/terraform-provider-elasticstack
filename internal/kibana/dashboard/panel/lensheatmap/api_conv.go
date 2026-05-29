@@ -101,7 +101,6 @@ func heatmapConfigPopulateCommonFields(m *models.HeatmapConfigModel,
 func heatmapConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.HeatmapConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.HeatmapConfigModel,
 	api kbapi.KibanaHTTPAPIsHeatmapNoESQL,
 ) diag.Diagnostics {
@@ -151,7 +150,7 @@ func heatmapConfigFromAPINoESQL(
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags
@@ -161,7 +160,7 @@ func heatmapConfigFromAPINoESQL(
 	return diags
 }
 
-func heatmapConfigFromAPIESQL(ctx context.Context, m *models.HeatmapConfigModel, resolver lenscommon.Resolver, prior *models.HeatmapConfigModel, api kbapi.KibanaHTTPAPIsHeatmapESQL) diag.Diagnostics {
+func heatmapConfigFromAPIESQL(ctx context.Context, m *models.HeatmapConfigModel, prior *models.HeatmapConfigModel, api kbapi.KibanaHTTPAPIsHeatmapESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -205,7 +204,7 @@ func heatmapConfigFromAPIESQL(ctx context.Context, m *models.HeatmapConfigModel,
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags

@@ -141,7 +141,7 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	require.NoError(t, attrs.FromKibanaHTTPAPIsHeatmapNoESQL(heatmap))
 
 	blocks := &models.LensByValueChartBlocks{}
-	diags := c.PopulateFromAttributes(ctx, resolver, blocks, attrs)
+	diags := c.PopulateFromAttributes(ctx,  blocks, attrs)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	attrs2, diags := c.BuildAttributes(blocks, resolver)
@@ -187,7 +187,7 @@ func TestConverter_roundTrip_ESQL_heatmap(t *testing.T) {
 	require.NoError(t, attrs.FromKibanaHTTPAPIsHeatmapESQL(heatmap))
 
 	blocks := &models.LensByValueChartBlocks{}
-	diags := c.PopulateFromAttributes(ctx, resolver, blocks, attrs)
+	diags := c.PopulateFromAttributes(ctx,  blocks, attrs)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.NotNil(t, blocks.HeatmapConfig)
 	require.Nil(t, blocks.HeatmapConfig.Query)

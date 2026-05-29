@@ -73,7 +73,6 @@ func regionMapConfigPopulateCommonFields(m *models.RegionMapConfigModel,
 func regionMapConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.RegionMapConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.RegionMapConfigModel,
 	api kbapi.KibanaHTTPAPIsRegionMapNoESQL,
 ) diag.Diagnostics {
@@ -111,7 +110,7 @@ func regionMapConfigFromAPINoESQL(
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags
@@ -124,7 +123,6 @@ func regionMapConfigFromAPINoESQL(
 func regionMapConfigFromAPIESQL(
 	ctx context.Context,
 	m *models.RegionMapConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.RegionMapConfigModel,
 	api kbapi.KibanaHTTPAPIsRegionMapESQL,
 ) diag.Diagnostics {
@@ -161,7 +159,7 @@ func regionMapConfigFromAPIESQL(
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags

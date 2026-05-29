@@ -48,7 +48,6 @@ func isTreemapNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsTreemapNoESQL)
 func treemapConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.TreemapConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.TreemapConfigModel,
 	api kbapi.KibanaHTTPAPIsTreemapNoESQL,
 ) diag.Diagnostics {
@@ -112,7 +111,7 @@ func treemapConfigFromAPINoESQL(
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags
@@ -124,7 +123,7 @@ func treemapConfigFromAPINoESQL(
 	return diags
 }
 
-func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel, resolver lenscommon.Resolver, prior *models.TreemapConfigModel, api kbapi.KibanaHTTPAPIsTreemapESQL) diag.Diagnostics {
+func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel, prior *models.TreemapConfigModel, api kbapi.KibanaHTTPAPIsTreemapESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// ES|QL charts don't have a query block. Clear it to avoid carrying over
@@ -227,7 +226,7 @@ func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel,
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags
