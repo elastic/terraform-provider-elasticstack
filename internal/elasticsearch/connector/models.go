@@ -25,6 +25,26 @@ import (
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const (
+	nameAttrName     = "name"
+	enabledAttrName  = "enabled"
+	intervalAttrName = "interval"
+
+	stringBranchAttrName      = "string"
+	numberBranchAttrName      = "number"
+	boolBranchAttrName        = "bool"
+	jsonBranchAttrName        = "json"
+	secretValueBranchAttrName = "secret_value"
+)
+
+var configurationValueBranchAttrNames = []string{
+	stringBranchAttrName,
+	numberBranchAttrName,
+	boolBranchAttrName,
+	jsonBranchAttrName,
+	secretValueBranchAttrName,
+}
+
 // ContentConnectorData is the Terraform state model for the content connector resource.
 type ContentConnectorData struct {
 	entitycore.ElasticsearchConnectionField
@@ -73,7 +93,7 @@ type PipelineModel struct {
 
 func pipelineModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"name":                   fwtypes.StringType,
+		nameAttrName:             fwtypes.StringType,
 		"extract_binary_content": fwtypes.BoolType,
 		"reduce_whitespace":      fwtypes.BoolType,
 		"run_ml_inference":       fwtypes.BoolType,
@@ -88,8 +108,8 @@ type ScheduleEntryModel struct {
 
 func scheduleEntryModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"enabled":  fwtypes.BoolType,
-		"interval": fwtypes.StringType,
+		enabledAttrName:  fwtypes.BoolType,
+		intervalAttrName: fwtypes.StringType,
 	}
 }
 
@@ -115,7 +135,7 @@ type FeatureFlagModel struct {
 
 func featureFlagModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"enabled": fwtypes.BoolType,
+		enabledAttrName: fwtypes.BoolType,
 	}
 }
 
@@ -160,10 +180,10 @@ type ConfigurationValueModel struct {
 
 func configurationValueModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"string":       fwtypes.StringType,
-		"number":       fwtypes.NumberType,
-		"bool":         fwtypes.BoolType,
-		"json":         jsontypes.NormalizedType{},
-		"secret_value": fwtypes.StringType,
+		stringBranchAttrName:      fwtypes.StringType,
+		numberBranchAttrName:      fwtypes.NumberType,
+		boolBranchAttrName:        fwtypes.BoolType,
+		jsonBranchAttrName:        jsontypes.NormalizedType{},
+		secretValueBranchAttrName: fwtypes.StringType,
 	}
 }

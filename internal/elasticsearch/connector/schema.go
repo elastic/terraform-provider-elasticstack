@@ -56,7 +56,7 @@ func schemaFactory(_ context.Context) schema.Schema {
 				MarkdownDescription: "Connector service type (for example `postgresql`, `mysql`, `github`). New service types may be added over time; the provider does not validate against a fixed enum.",
 				Required:            true,
 			},
-			"name": schema.StringAttribute{
+			nameAttrName: schema.StringAttribute{
 				MarkdownDescription: "Human-readable connector name.",
 				Optional:            true,
 			},
@@ -92,9 +92,9 @@ func schemaFactory(_ context.Context) schema.Schema {
 				MarkdownDescription: "ID of the connector secret holding the API key (Elastic-managed connectors only).",
 				Optional:            true,
 			},
-			"pipeline":           pipelineSingleNestedAttribute(),
-			"scheduling":         schedulingSingleNestedAttribute(),
-			"features":           featuresSingleNestedAttribute(),
+			"pipeline":             pipelineSingleNestedAttribute(),
+			"scheduling":           schedulingSingleNestedAttribute(),
+			"features":             featuresSingleNestedAttribute(),
 			"configuration_values": configurationValuesMapNestedAttribute(),
 		},
 	}
@@ -109,7 +109,7 @@ func pipelineSingleNestedAttribute() schema.SingleNestedAttribute {
 			objectplanmodifier.UseStateForUnknown(),
 		},
 		Attributes: map[string]schema.Attribute{
-			"name": schema.StringAttribute{
+			nameAttrName: schema.StringAttribute{
 				MarkdownDescription: "Ingest pipeline name.",
 				Required:            true,
 			},
@@ -150,11 +150,11 @@ func scheduleEntrySingleNestedAttribute(jobKind string) schema.SingleNestedAttri
 		MarkdownDescription: "Schedule for the `" + jobKind + "` sync job type.",
 		Optional:            true,
 		Attributes: map[string]schema.Attribute{
-			"enabled": schema.BoolAttribute{
+			enabledAttrName: schema.BoolAttribute{
 				MarkdownDescription: "Whether this scheduled job type is enabled.",
 				Required:            true,
 			},
-			"interval": schema.StringAttribute{
+			intervalAttrName: schema.StringAttribute{
 				MarkdownDescription: "Cron expression accepted by the Elasticsearch scheduler.",
 				Required:            true,
 			},
@@ -171,10 +171,10 @@ func featuresSingleNestedAttribute() schema.SingleNestedAttribute {
 			objectplanmodifier.UseStateForUnknown(),
 		},
 		Attributes: map[string]schema.Attribute{
-			"document_level_security":  featureFlagSingleNestedAttribute("document_level_security"),
-			"incremental_sync":         featureFlagSingleNestedAttribute("incremental_sync"),
+			"document_level_security":   featureFlagSingleNestedAttribute("document_level_security"),
+			"incremental_sync":          featureFlagSingleNestedAttribute("incremental_sync"),
 			"native_connector_api_keys": featureFlagSingleNestedAttribute("native_connector_api_keys"),
-			"sync_rules":               syncRulesSingleNestedAttribute(),
+			"sync_rules":                syncRulesSingleNestedAttribute(),
 		},
 	}
 }
@@ -184,7 +184,7 @@ func featureFlagSingleNestedAttribute(featureName string) schema.SingleNestedAtt
 		MarkdownDescription: "Feature flag for `" + featureName + "`.",
 		Optional:            true,
 		Attributes: map[string]schema.Attribute{
-			"enabled": schema.BoolAttribute{
+			enabledAttrName: schema.BoolAttribute{
 				MarkdownDescription: "Whether the feature is enabled.",
 				Required:            true,
 			},
@@ -205,31 +205,34 @@ func syncRulesSingleNestedAttribute() schema.SingleNestedAttribute {
 
 func configurationValuesMapNestedAttribute() schema.MapNestedAttribute {
 	return schema.MapNestedAttribute{
-		MarkdownDescription: "User-supplied connector configuration values keyed by field name. Each element must set exactly one of `string`, `number`, `bool`, `json`, or `secret_value`. Removing a key stops managing it but does not unset the value server-side.",
-		Optional:            true,
+		MarkdownDescription: "User-supplied connector configuration values keyed by field name. " +
+			"Each element must set exactly one of `string`, `number`, `bool`, `json`, or `secret_value`. " +
+			"Removing a key stops managing it but does not unset the value server-side.",
+		Optional: true,
 		NestedObject: schema.NestedAttributeObject{
 			Validators: []validator.Object{
 				configurationValueBranchValidator{},
 			},
 			Attributes: map[string]schema.Attribute{
-				"string": schema.StringAttribute{
+				stringBranchAttrName: schema.StringAttribute{
 					MarkdownDescription: "String configuration value.",
 					Optional:            true,
 				},
-				"number": schema.NumberAttribute{
+				numberBranchAttrName: schema.NumberAttribute{
 					MarkdownDescription: "Numeric configuration value (integer or float).",
 					Optional:            true,
 				},
-				"bool": schema.BoolAttribute{
+				boolBranchAttrName: schema.BoolAttribute{
 					MarkdownDescription: "Boolean configuration value.",
 					Optional:            true,
 				},
-				"json": schema.StringAttribute{
+				jsonBranchAttrName: schema.StringAttribute{
+					// jsontypes.NormalizedType enforces syntactic JSON validity at decode time (REQ-008).
 					MarkdownDescription: "JSON-encoded object or array configuration value.",
 					Optional:            true,
 					CustomType:          jsontypes.NormalizedType{},
 				},
-				"secret_value": schema.StringAttribute{
+				secretValueBranchAttrName: schema.StringAttribute{
 					MarkdownDescription: "Write-only secret configuration value. Drift is detected via private-state hashing (see resource documentation).",
 					Optional:            true,
 					WriteOnly:           true,
