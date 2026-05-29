@@ -130,6 +130,61 @@ func TestHasher_PrivateStateKey(t *testing.T) {
 	}
 }
 
+func TestHasher_Compute_customCostRoundtrip(t *testing.T) {
+	t.Parallel()
+
+	// Verifies that a caller-supplied Cost is used by Compute and that the
+	// hash still roundtrips through Matches.
+	h := &writeonlyhash.Hasher{Salt: []byte("elasticsearch_connector"), Cost: 4}
+	hash, err := h.Compute("secret")
+	require.NoError(t, err)
+	cost, err := bcrypt.Cost(hash)
+	require.NoError(t, err)
+	assert.Equal(t, 4, cost)
+	assert.True(t, h.Matches("secret", hash))
+}
+
+func TestHasher_Compute_defaultCost(t *testing.T) {
+	t.Parallel()
+
+	t.Run("default cost is 10", func(t *testing.T) {
+		t.Parallel()
+
+		h := writeonlyhash.New("elasticsearch_connector")
+		hash, err := h.Compute("secret")
+		require.NoError(t, err)
+		cost, err := bcrypt.Cost(hash)
+		require.NoError(t, err)
+		assert.Equal(t, 10, cost)
+	})
+}
+
+func TestHasher_Matches_malformedStoredHash(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Matches handles malformed storedHash without panic", func(t *testing.T) {
+		t.Parallel()
+
+		h := writeonlyhash.New("elasticsearch_connector")
+		cases := []struct {
+			name string
+			hash []byte
+		}{
+			{"nil", nil},
+			{"empty", []byte{}},
+			{"garbage", []byte("not-bcrypt-bytes")},
+			{"truncated bcrypt prefix", []byte("$2a$10$tooshort")},
+		}
+		for _, tc := range cases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				t.Parallel()
+				assert.False(t, h.Matches("x", tc.hash))
+			})
+		}
+	})
+}
+
 func TestHasher_Compute_errorDoesNotLeakInput(t *testing.T) {
 	t.Parallel()
 
