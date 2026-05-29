@@ -53,13 +53,12 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if len(results) == 0 {
-		return
+	if len(results) > 0 {
+		for _, result := range results {
+			resp.Diagnostics.Append(driftWarningDiagnostic(result))
+		}
+		resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root(attrUpdatedAt), types.StringUnknown())...)
 	}
 
-	for _, result := range results {
-		resp.Diagnostics.Append(driftWarningDiagnostic(result))
-	}
-
-	resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root(attrUpdatedAt), types.StringUnknown())...)
+	reconcileDualRepresentationPlan(ctx, req, resp, config)
 }

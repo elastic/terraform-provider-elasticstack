@@ -112,6 +112,8 @@ Considered: populating only the typed block when matched (and only `vars` otherw
 
 The GCP typed block is deliberately omitted (see Non-Goals). GCP users use `vars` directly.
 
+**Plan-time dual representation:** Plugin Framework disallows `Computed` on parent blocks that contain write-only children, so `aws` and `vars` are `Optional` only (unlike `azure`, which has no write-only fields and remains `Optional + Computed + UseStateForUnknown`). After Read populates both the configured representation and its read-populated sibling, a subsequent plan would otherwise mark the unconfigured sibling for removal. `ModifyPlan` preserves the sibling by copying the read-populated attribute from state into plan when the practitioner configures only one representation—the same branching logic `compileVarsForWrite` uses on config. Typed siblings are copied into vars-mode plans only when planned `vars` matches state (so explicit representation or value changes are not overwritten).
+
 ### Decision 5: Write-only secret drift detection via bcrypt hash in private state
 
 For each write-only secret attribute (`vars[*].secret_value`, `aws.external_id`, future `azure.client_secret` if added), the provider stores a salted bcrypt hash of the most recently applied value in the resource's private state, keyed by a stable per-attribute identifier (e.g. `secret_hash:aws.external_id`, `secret_hash:vars.external_id`).

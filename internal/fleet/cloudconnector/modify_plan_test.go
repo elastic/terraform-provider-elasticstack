@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -286,4 +287,236 @@ func TestResource_ModifyPlan(t *testing.T) {
 		updatedAt := planUpdatedAt(context.Background(), t, resp.Plan)
 		assert.True(t, updatedAt.IsUnknown())
 	})
+}
+
+func mustAzureBlockObject(t *testing.T) types.Object {
+	t.Helper()
+	obj, diags := types.ObjectValue(azureAttrTypes(), map[string]attr.Value{
+		attrAzureTenantID:         types.StringValue("tenant-1"),
+		attrAzureClientID:         types.StringValue("client-1"),
+		attrAzureCloudConnectorID: types.StringValue("azure-conn-1"),
+	})
+	require.False(t, diags.HasError())
+	return obj
+}
+
+func mustAWSRoleArnVarsMap(t *testing.T, roleArn string) types.Map {
+	t.Helper()
+	return mustVarsMap(t, map[string]cloudConnectorVarsElement{
+		attrAWSRoleArn: {
+			Type:  types.StringValue("text"),
+			Value: types.StringValue(roleArn),
+		},
+		attrAWSExternalID: {
+			Type:      types.StringValue("password"),
+			SecretRef: mustSecretRefObject(t, "secret-ref-1"),
+		},
+	})
+}
+
+func mustAzureVarsMap(t *testing.T) types.Map {
+	t.Helper()
+	return mustVarsMap(t, map[string]cloudConnectorVarsElement{
+		attrAzureTenantID: {
+			Type:  types.StringValue("text"),
+			Value: types.StringValue("tenant-1"),
+		},
+		attrAzureClientID: {
+			Type:  types.StringValue("text"),
+			Value: types.StringValue("client-1"),
+		},
+		attrAzureCloudConnectorID: {
+			Type:  types.StringValue("text"),
+			Value: types.StringValue("azure-conn-1"),
+		},
+	})
+}
+
+func mustSecretRefObject(t *testing.T, id string) types.Object {
+	t.Helper()
+	obj, diags := secretRefToObject(cloudConnectorSecretRef{
+		ID:          types.StringValue(id),
+		IsSecretRef: types.BoolValue(true),
+	})
+	require.False(t, diags.HasError())
+	return obj
+}
+
+func mustAWSBlockObjectWithRoleArn(t *testing.T, roleArn string) types.Object {
+	t.Helper()
+	obj, diags := types.ObjectValue(awsAttrTypes(), map[string]attr.Value{
+		attrAWSRoleArn:             types.StringValue(roleArn),
+		attrAWSExternalID:          types.StringNull(),
+		attrAWSExternalIDSecretRef: mustSecretRefObject(t, "secret-ref-1"),
+	})
+	require.False(t, diags.HasError())
+	return obj
+}
+
+func planAttributeObject(ctx context.Context, t *testing.T, plan tfsdk.Plan, attrName string) types.Object {
+	t.Helper()
+	var obj types.Object
+	diags := plan.GetAttribute(ctx, path.Root(attrName), &obj)
+	require.False(t, diags.HasError(), diags)
+	return obj
+}
+
+func planAttributeMap(ctx context.Context, t *testing.T, plan tfsdk.Plan, attrName string) types.Map {
+	t.Helper()
+	var m types.Map
+	diags := plan.GetAttribute(ctx, path.Root(attrName), &m)
+	require.False(t, diags.HasError(), diags)
+	return m
+}
+
+func TestResource_ModifyPlan_DualPopulationPreservesVarsWhenAWSConfigured(t *testing.T) {
+	t.Parallel()
+
+	f := newModifyPlanFixture(t)
+	ctx := context.Background()
+
+	config := completeAWSCloudConnectorModel(t, types.StringValue("secret"))
+	config.Vars = types.MapNull(types.ObjectType{AttrTypes: varsElementAttrTypes()})
+
+	state := config
+	state.Vars = mustAWSRoleArnVarsMap(t, "arn:aws:iam::123:role/x")
+
+	plan := config
+	plan.Vars = types.MapNull(types.ObjectType{AttrTypes: varsElementAttrTypes()})
+
+	resp := f.run(config, f.modelToState(state), f.modelToPlan(plan), newMapPrivateState())
+	require.False(t, resp.Diagnostics.HasError())
+
+	planVars := planAttributeMap(ctx, t, resp.Plan, attrVarsMap)
+	assert.True(t, planVars.Equal(state.Vars))
+}
+
+func TestResource_ModifyPlan_DualPopulationPreservesAWSWhenVarsConfigured(t *testing.T) {
+	t.Parallel()
+
+	f := newModifyPlanFixture(t)
+	ctx := context.Background()
+
+	vars := mustAWSRoleArnVarsMap(t, "arn:aws:iam::123:role/x")
+	config := completeVarsCloudConnectorModel(t, vars)
+	config.CloudProvider = types.StringValue("aws")
+
+	state := config
+	state.AWS = mustAWSBlockObjectWithRoleArn(t, "arn:aws:iam::123:role/x")
+
+	plan := config
+	plan.AWS = types.ObjectNull(awsAttrTypes())
+
+	resp := f.run(config, f.modelToState(state), f.modelToPlan(plan), newMapPrivateState())
+	require.False(t, resp.Diagnostics.HasError())
+
+	planAWS := planAttributeObject(ctx, t, resp.Plan, attrAWSBlock)
+	assert.True(t, planAWS.Equal(state.AWS))
+}
+
+func TestResource_ModifyPlan_DualPopulationPreservesVarsWhenAzureConfigured(t *testing.T) {
+	t.Parallel()
+
+	f := newModifyPlanFixture(t)
+	ctx := context.Background()
+
+	config := cloudConnectorModel{
+		ID:               types.StringValue("default/connector-1"),
+		KibanaConnection: providerschema.KibanaConnectionNullList(),
+		CloudConnectorID: types.StringValue("connector-1"),
+		SpaceID:          types.StringValue("default"),
+		Name:             types.StringValue("test-connector"),
+		CloudProvider:    types.StringValue("azure"),
+		ForceDelete:      types.BoolValue(false),
+		Azure:            mustAzureBlockObject(t),
+		AWS:              types.ObjectNull(awsAttrTypes()),
+		Vars:             types.MapNull(types.ObjectType{AttrTypes: varsElementAttrTypes()}),
+		UpdatedAt:        types.StringValue("2024-01-01T00:00:00Z"),
+	}
+
+	state := config
+	state.Vars = mustAzureVarsMap(t)
+
+	plan := config
+
+	resp := f.run(config, f.modelToState(state), f.modelToPlan(plan), newMapPrivateState())
+	require.False(t, resp.Diagnostics.HasError())
+
+	planVars := planAttributeMap(ctx, t, resp.Plan, attrVarsMap)
+	assert.True(t, planVars.Equal(state.Vars))
+}
+
+func TestResource_ModifyPlan_DualPopulationPreservesAzureWhenVarsConfigured(t *testing.T) {
+	t.Parallel()
+
+	f := newModifyPlanFixture(t)
+	ctx := context.Background()
+
+	vars := mustAzureVarsMap(t)
+	config := completeVarsCloudConnectorModel(t, vars)
+	config.CloudProvider = types.StringValue("azure")
+
+	state := config
+	state.Azure = mustAzureBlockObject(t)
+
+	plan := config
+	plan.Azure = types.ObjectNull(azureAttrTypes())
+
+	resp := f.run(config, f.modelToState(state), f.modelToPlan(plan), newMapPrivateState())
+	require.False(t, resp.Diagnostics.HasError())
+
+	planAzure := planAttributeObject(ctx, t, resp.Plan, attrAzureBlock)
+	assert.True(t, planAzure.Equal(state.Azure))
+}
+
+func TestResource_ModifyPlan_DualPopulationOnCreateSkipsReconciliation(t *testing.T) {
+	t.Parallel()
+
+	f := newModifyPlanFixture(t)
+	model := completeAWSCloudConnectorModel(t, types.StringValue("secret"))
+	plan := f.modelToPlan(model)
+	state := tfsdk.State{Schema: f.schema, Raw: f.nullRootValue()}
+
+	resp := f.run(model, state, plan, newMapPrivateState())
+	require.False(t, resp.Diagnostics.HasError())
+}
+
+func TestResource_ModifyPlan_DualPopulationOnDestroySkipsReconciliation(t *testing.T) {
+	t.Parallel()
+
+	f := newModifyPlanFixture(t)
+	model := completeAWSCloudConnectorModel(t, types.StringValue("secret"))
+	stateModel := model
+	stateModel.Vars = mustAWSRoleArnVarsMap(t, "arn:aws:iam::123:role/x")
+	state := f.modelToState(stateModel)
+	plan := tfsdk.Plan{Schema: f.schema, Raw: f.nullRootValue()}
+
+	resp := f.run(model, state, plan, newMapPrivateState())
+	require.False(t, resp.Diagnostics.HasError())
+}
+
+func TestResource_ModifyPlan_UserChangesConfigDoesNotRestoreOldSibling(t *testing.T) {
+	t.Parallel()
+
+	f := newModifyPlanFixture(t)
+	ctx := context.Background()
+
+	stateVars := mustAWSRoleArnVarsMap(t, "arn:aws:iam::123:role/old")
+	configVars := mustAWSRoleArnVarsMap(t, "arn:aws:iam::123:role/new")
+
+	config := completeVarsCloudConnectorModel(t, configVars)
+	config.CloudProvider = types.StringValue("aws")
+
+	state := completeVarsCloudConnectorModel(t, stateVars)
+	state.CloudProvider = types.StringValue("aws")
+	state.AWS = mustAWSBlockObjectWithRoleArn(t, "arn:aws:iam::123:role/old")
+
+	plan := config
+	plan.AWS = types.ObjectNull(awsAttrTypes())
+
+	resp := f.run(config, f.modelToState(state), f.modelToPlan(plan), newMapPrivateState())
+	require.False(t, resp.Diagnostics.HasError())
+
+	planAWS := planAttributeObject(ctx, t, resp.Plan, attrAWSBlock)
+	assert.True(t, planAWS.IsNull())
 }
