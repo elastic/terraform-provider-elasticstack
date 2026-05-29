@@ -60,11 +60,11 @@
 
 ## 9. Data source
 
-- [ ] 9.1 Create `internal/fleet/cloudconnector/datasource/` (or co-located, matching existing fleet datasource layout)
-- [ ] 9.2 Implement schema: `space_id`, `kuery`, `page`, `per_page`, `kibana_connection`, and computed `cloud_connectors` list (excluding `vars`)
-- [ ] 9.3 Implement Read calling `GET /api/fleet/cloud_connectors` with the configured query parameters
-- [ ] 9.4 Map API items to the data source model, omitting `vars`
-- [ ] 9.5 Register the data source in the provider entrypoint
+- [x] 9.1 Create `internal/fleet/cloudconnector/datasource/` (or co-located, matching existing fleet datasource layout)
+- [x] 9.2 Implement schema: `space_id`, `kuery`, `page`, `per_page`, `kibana_connection`, and computed `cloud_connectors` list (excluding `vars`)
+- [x] 9.3 Implement Read calling `GET /api/fleet/cloud_connectors` with the configured query parameters
+- [x] 9.4 Map API items to the data source model, omitting `vars`
+- [x] 9.5 Register the data source in the provider entrypoint
 
 ## 10. Acceptance tests
 

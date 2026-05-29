@@ -305,6 +305,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		agentbuilderskill.NewDataSource,
 		agentbuildertool.NewDataSource,
 		agentbuilderworkflow.NewDataSource,
+		cloudconnector.NewDataSource,
 		exportsavedobjects.NewDataSource,
 		enrollmenttokens.NewDataSource,
 		integrationds.NewDataSource,
