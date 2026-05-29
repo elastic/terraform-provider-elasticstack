@@ -27,7 +27,9 @@ import (
 	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
 
 const resourceName = "elasticstack_fleet_cloud_connector.test"
@@ -114,4 +116,35 @@ func testCheckCloudConnectorHasVarKeys(keys ...string) resource.TestCheckFunc {
 		checks = append(checks, resource.TestCheckResourceAttrSet(resourceName, fmt.Sprintf("vars.%s.type", key)))
 	}
 	return resource.ComposeTestCheckFunc(checks...)
+}
+
+type expectWriteOnlyDriftPlanCheck struct {
+	resourceAddress string
+	attributePath   string
+}
+
+func (c expectWriteOnlyDriftPlanCheck) CheckPlan(_ context.Context, req plancheck.CheckPlanRequest, resp *plancheck.CheckPlanResponse) {
+	for _, rc := range req.Plan.ResourceChanges {
+		if rc.Address != c.resourceAddress {
+			continue
+		}
+		if rc.Change.Actions.Update() {
+			return
+		}
+	}
+	resp.Error = fmt.Errorf("expected update for %s after write-only drift on %s", c.resourceAddress, c.attributePath)
+}
+
+func expectWriteOnlyDriftPlanChecks(attributePath string) resource.ConfigPlanChecks {
+	checks := []plancheck.PlanCheck{
+		plancheck.ExpectNonEmptyPlan(),
+		plancheck.ExpectUnknownValue(resourceName, tfjsonpath.New("updated_at")),
+		expectWriteOnlyDriftPlanCheck{
+			resourceAddress: resourceName,
+			attributePath:   attributePath,
+		},
+	}
+	return resource.ConfigPlanChecks{
+		PostApplyPreRefresh: checks,
+	}
 }

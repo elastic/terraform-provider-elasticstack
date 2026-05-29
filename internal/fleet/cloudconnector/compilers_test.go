@@ -422,6 +422,46 @@ func TestToAPIUpdateBody_OmitsCloudProvider(t *testing.T) {
 	assert.Equal(t, "secret-ref-1", ref.Id)
 }
 
+func TestToAPIUpdateBody_resubmitWriteOnlySecret(t *testing.T) {
+	t.Parallel()
+
+	const newSecret = "rotated-secret"
+	awsObj, diags := types.ObjectValue(awsAttrTypes(), map[string]attr.Value{
+		attrAWSRoleArn:             types.StringValue("arn:aws:iam::123:role/x"),
+		attrAWSExternalID:          types.StringNull(),
+		attrAWSExternalIDSecretRef: mustSecretRefObject(t, "secret-ref-1"),
+	})
+	require.False(t, diags.HasError())
+
+	configAWS, diags := types.ObjectValue(awsAttrTypes(), map[string]attr.Value{
+		attrAWSRoleArn:             types.StringValue("arn:aws:iam::123:role/x"),
+		attrAWSExternalID:          types.StringValue(newSecret),
+		attrAWSExternalIDSecretRef: types.ObjectNull(secretRefAttrTypes()),
+	})
+	require.False(t, diags.HasError())
+
+	plan := cloudConnectorModel{
+		Name:          types.StringValue("same-name"),
+		CloudProvider: types.StringValue("aws"),
+		AccountType:   types.StringValue(accountTypeSingleAccount),
+		AWS:           awsObj,
+	}
+	prior := plan
+	config := plan
+	config.AWS = configAWS
+
+	resubmit := map[string]struct{}{writeOnlyAttributeAWSExternalID: {}}
+	body, bodyDiags := plan.toAPIUpdateBody(config, prior, resubmit)
+	require.False(t, bodyDiags.HasError(), bodyDiags)
+
+	externalID := (*body.Vars)["external_id"]
+	structured, err := externalID.AsPutFleetCloudConnectorsCloudconnectoridJSONBodyVars3()
+	require.NoError(t, err)
+	plain, err := structured.Value.AsPutFleetCloudConnectorsCloudconnectoridJSONBodyVars3Value0()
+	require.NoError(t, err)
+	assert.Equal(t, newSecret, plain)
+}
+
 func mustVarsMap(t *testing.T, elems map[string]cloudConnectorVarsElement) types.Map {
 	t.Helper()
 

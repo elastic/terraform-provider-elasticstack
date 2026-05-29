@@ -200,6 +200,9 @@ func TestAccResourceFleetCloudConnector_DualStatePopulation(t *testing.T) {
 	})
 
 	t.Run("vars_matching_aws_keys", func(t *testing.T) {
+		// Plugin Framework limitation: vars-only create cannot plan the read-populated aws
+		// sibling when aws contains write-only children (see design.md Decision 4).
+		// Covered by unit tests and typed_aws_block acc scenario.
 		t.Skip("vars-only create cannot plan the read-populated aws sibling under Plugin Framework rules; covered by unit tests and typed_aws_block acc scenario")
 	})
 
@@ -347,6 +350,7 @@ func TestAccResourceFleetCloudConnector_WriteOnlyDrift(t *testing.T) {
 				},
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
+				ConfigPlanChecks:   expectWriteOnlyDriftPlanChecks("aws.external_id"),
 			},
 		},
 	})

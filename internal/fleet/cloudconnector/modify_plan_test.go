@@ -234,6 +234,11 @@ func TestResource_ModifyPlan(t *testing.T) {
 
 		updatedAt := planUpdatedAt(context.Background(), t, resp.Plan)
 		assert.True(t, updatedAt.IsUnknown())
+
+		resubmit, resubmitDiags := readWriteOnlyResubmitSet(context.Background(), priv)
+		require.False(t, resubmitDiags.HasError())
+		_, ok := resubmit[writeOnlyAttributeAWSExternalID]
+		assert.True(t, ok)
 	})
 
 	t.Run("import baseline", func(t *testing.T) {
@@ -517,6 +522,38 @@ func TestResource_ModifyPlan_DualPopulationOnDestroySkipsReconciliation(t *testi
 
 	resp := f.run(model, state, plan, newMapPrivateState())
 	require.False(t, resp.Diagnostics.HasError())
+}
+
+func TestResource_ModifyPlan_MetadataOnlyUpdatePreservesDualRepresentation(t *testing.T) {
+	t.Parallel()
+
+	f := newModifyPlanFixture(t)
+	ctx := context.Background()
+	priv := newMapPrivateState()
+	hash, err := cloudConnectorHasher().Compute("secret")
+	require.NoError(t, err)
+	priv.data[awsExternalIDPrivateStateKey()] = hash
+
+	state := completeAWSCloudConnectorModel(t, types.StringNull())
+	state.Name = types.StringValue("old-name")
+	state.Vars = mustAWSRoleArnVarsMap(t, "arn:aws:iam::123:role/x")
+	state.AWS = mustAWSBlockObjectWithRoleArn(t, "arn:aws:iam::123:role/x")
+
+	config := completeAWSCloudConnectorModel(t, types.StringValue("secret"))
+	config.Name = types.StringValue("new-name")
+	config.Vars = types.MapNull(types.ObjectType{AttrTypes: varsElementAttrTypes()})
+
+	plan := state
+	plan.Name = types.StringValue("new-name")
+
+	resp := f.run(config, f.modelToState(state), f.modelToPlan(plan), priv)
+	require.False(t, resp.Diagnostics.HasError())
+
+	planVars := planAttributeMap(ctx, t, resp.Plan)
+	assert.True(t, planVars.Equal(state.Vars))
+
+	planAWS := planAttributeObject(ctx, t, resp.Plan, attrAWSBlock)
+	assert.True(t, planAWS.Equal(state.AWS))
 }
 
 func TestResource_ModifyPlan_UserChangesConfigDoesNotRestoreOldSibling(t *testing.T) {
