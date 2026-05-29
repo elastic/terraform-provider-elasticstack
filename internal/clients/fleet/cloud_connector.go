@@ -29,7 +29,9 @@ import (
 
 // CloudConnectorItem is the provider-facing representation of a Fleet cloud connector.
 // The kbapi client uses anonymous struct types in its responses; this type is populated
-// by copying fields out of those response structs.
+// by copying fields out of those response structs. Field names mirror the anonymous item
+// structs in generated/kbapi/kibana.gen.go — when kbapi is regenerated, compare those
+// structs and add any new fields here and in cloudConnectorItemFromAPIFields.
 type CloudConnectorItem struct {
 	ID                    string
 	Name                  string
@@ -197,7 +199,7 @@ func ListCloudConnectors(ctx context.Context, client *Client, spaceID string, pa
 		return &items
 	})
 	if result == nil {
-		return nil, diags
+		return []CloudConnectorItem{}, diags
 	}
 	return *result, diags
 }
