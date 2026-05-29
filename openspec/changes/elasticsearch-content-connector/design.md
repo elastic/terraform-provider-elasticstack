@@ -157,9 +157,7 @@ A per-element `ObjectValidator` enforces exactly one of the five branches.
 
 For each map element where `secret_value` is set in config, the provider stores a bcrypt hash of the value in the resource's private state under the key:
 
-```
-secret_hash:configuration_values.<map_key>.secret_value
-```
+`secret_hash:configuration_values["<map_key>"].secret_value`
 
 (matching the path convention established by the [fleet-cloud-connector change](https://github.com/elastic/terraform-provider-elasticstack/pull/3415)).
 
@@ -167,11 +165,11 @@ secret_hash:configuration_values.<map_key>.secret_value
 
 1. For each `configuration_values` element with `secret_value` set in config:
    - Compute the hash with `Hasher{resourceTypeName: "elasticsearch_connector"}.Compute(value)`.
-   - Read the stored hash from private state via `PrivateStateKey("configuration_values." + key + ".secret_value")`.
+   - Read the stored hash from private state via `PrivateStateKey("configuration_values[\"" + key + "\"].secret_value")`.
    - If no stored hash exists, this is first-apply (or post-import) — no drift signal.
    - If stored hash exists and matches: no drift.
    - If stored hash exists and does NOT match: mark the resource as needing update and emit a warning diagnostic: `"Detected a change to write-only attribute configuration_values[\"<key>\"].secret_value; the resource will be updated."` (Value never logged.)
-2. For each `configuration_values` element with `secret_value` present in prior state but NOT in the new config: clear the private-state hash (the element was removed; document that removal doesn't unset server-side).
+2. For each `configuration_values` element that is removed from the new configuration: clear the private-state hash (the element was removed; document that removal doesn't unset server-side).
 
 `Create` / `Update`:
 

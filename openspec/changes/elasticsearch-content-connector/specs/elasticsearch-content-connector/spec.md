@@ -42,7 +42,7 @@ Non-success API responses other than 404 on Read SHALL be surfaced as Terraform 
 
 - **GIVEN** a connector exists with `connector_id = "music"`
 - **WHEN** the data source reads it
-- **THEN** state SHALL include all read-time attributes per REQ-009
+- **THEN** state SHALL include all read-time attributes per REQ-010
 
 #### Scenario: Data source returns error for missing connector
 
@@ -321,26 +321,26 @@ The data source SHALL expose ALL of the above as `Computed` attributes, plus eve
 
 ### Requirement: Write-only secret drift detection via private-state hash (REQ-011)
 
-The resource SHALL detect drift on each `configuration_values.<key>.secret_value` write-only attribute by storing a bcrypt hash of the most recently applied value in resource private state, using the shared `internal/utils/writeonlyhash` helper.
+The resource SHALL detect drift on each `configuration_values["<key>"].secret_value` write-only attribute by storing a bcrypt hash of the most recently applied value in resource private state, using the shared `internal/utils/writeonlyhash` helper.
 
 The provider SHALL:
 
 1. In `ModifyPlan`: for each `configuration_values` element with `secret_value` set in config:
    - Compute the hash with `Hasher{resourceTypeName: "elasticsearch_connector"}.Compute(value)`.
-   - Read the stored hash from private state under key `secret_hash:configuration_values.<key>.secret_value`.
+   - Read the stored hash from private state under key `secret_hash:configuration_values["<key>"].secret_value`.
    - If no stored hash exists, treat as first apply — no drift signal.
    - If stored hash matches the computed hash: no drift.
    - If stored hash does NOT match: mark the resource as needing update and emit a warning diagnostic of the form: `"Detected a change to write-only attribute configuration_values[\"<key>\"].secret_value; the resource will be updated."` The diagnostic SHALL NOT include the value.
-2. For each `configuration_values` element where `secret_value` was present in prior state but is NOT present in the new config: clear the corresponding private-state hash entry.
+2. For each `configuration_values` element that is removed from the new configuration: clear the corresponding private-state hash entry.
 3. After a successful Create or Update: store the bcrypt hash of every `secret_value` present in the applied configuration into private state under the corresponding key.
 4. Read SHALL NOT modify private state.
 
 #### Scenario: First apply baselines the hash
 
-- **GIVEN** no prior private state for `configuration_values.password.secret_value`
+- **GIVEN** no prior private state for `configuration_values["password"].secret_value`
 - **AND** the user applies `configuration_values = { password = { secret_value = "pw1" } }`
 - **WHEN** Create completes
-- **THEN** private state SHALL contain a bcrypt hash of `"pw1"` under key `secret_hash:configuration_values.password.secret_value`
+- **THEN** private state SHALL contain a bcrypt hash of `"pw1"` under key `secret_hash:configuration_values["password"].secret_value`
 
 #### Scenario: Subsequent apply with same value produces no drift
 
@@ -358,14 +358,14 @@ The provider SHALL:
 
 #### Scenario: Removing a secret element clears its private-state hash
 
-- **GIVEN** the prior private-state hash exists for `configuration_values.password.secret_value`
+- **GIVEN** the prior private-state hash exists for `configuration_values["password"].secret_value`
 - **AND** the user removes the `password` key from `configuration_values`
 - **WHEN** Update completes
 - **THEN** the corresponding private-state hash entry SHALL be cleared
 
 #### Scenario: Read does not modify private state
 
-- **GIVEN** a private-state hash exists for `configuration_values.password.secret_value`
+- **GIVEN** a private-state hash exists for `configuration_values["password"].secret_value`
 - **WHEN** Read runs (without a Create/Update)
 - **THEN** the private-state hash SHALL be unchanged
 
