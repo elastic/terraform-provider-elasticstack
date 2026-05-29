@@ -553,7 +553,11 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat agentP
 	return body, nil
 }
 
-func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat agentPolicyFeatures, existingFeatures []apiAgentFeature) (kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, diag.Diagnostics) {
+func (model *agentPolicyModel) toAPIUpdateModel(
+	ctx context.Context,
+	feat agentPolicyFeatures,
+	existingFeatures []apiAgentFeature,
+) (kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, diag.Diagnostics) {
 	monitoring := make([]kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled, 0, 2)
 	if model.MonitorLogs.ValueBool() {
 		monitoring = append(monitoring, kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabledLogs)
