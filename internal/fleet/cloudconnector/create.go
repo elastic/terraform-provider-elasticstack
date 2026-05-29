@@ -42,6 +42,18 @@ func createCloudConnector(
 		return entitycore.KibanaWriteResult[cloudConnectorModel]{}, diags
 	}
 
+	resolvedVars, secretDiags := resolveWireVarsSecrets(
+		ctx,
+		client.GetElasticsearchTypedClient(),
+		plan.CloudProvider.ValueString(),
+		body.Vars,
+	)
+	diags.Append(secretDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[cloudConnectorModel]{}, diags
+	}
+	body.Vars = resolvedVars
+
 	created, createDiags := fleetclient.CreateCloudConnector(ctx, fleetClient, req.SpaceID, body)
 	diags.Append(createDiags...)
 	if diags.HasError() || created == nil {

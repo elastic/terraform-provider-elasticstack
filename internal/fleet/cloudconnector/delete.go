@@ -33,7 +33,10 @@ import (
 const forceDeleteHint = "Set force_delete = true to delete anyway. " +
 	"Note: this is destructive and will leave the package policies broken."
 
-var packagePolicyCountPattern = regexp.MustCompile(`"package_policy_count"\s*:\s*(\d+)`)
+var (
+	packagePolicyCountPattern   = regexp.MustCompile(`"package_policy_count"\s*:\s*(\d+)`)
+	packagePoliciesInUsePattern = regexp.MustCompile(`used by (\d+) package policies`)
+)
 
 func deleteCloudConnector(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model cloudConnectorModel) diag.Diagnostics {
 	fleetClient := client.GetFleetClient()
@@ -51,11 +54,35 @@ func deleteCloudConnector(ctx context.Context, client *clients.KibanaScopedClien
 // in the supplemental diagnostic.
 func augmentInUseConflictDiagnostic(diags diag.Diagnostics) diag.Diagnostics {
 	for _, d := range diags {
-		if d.Severity() != diag.SeverityError || !strings.Contains(d.Detail(), "package_policy_count") {
+		if d.Severity() != diag.SeverityError {
+			continue
+		}
+		if !strings.Contains(d.Detail(), "package_policy_count") &&
+			!strings.Contains(d.Detail(), "package policies") &&
+			!strings.Contains(d.Summary(), "package policies") {
 			continue
 		}
 
-		if count, ok := packagePolicyCountFromDetail(d.Detail()); ok {
+		count, ok := packagePolicyCountFromDetail(d.Detail())
+		if !ok {
+			count, ok = packagePolicyCountFromDetail(d.Summary())
+		}
+		if !ok {
+			if matches := packagePoliciesInUsePattern.FindStringSubmatch(d.Detail()); len(matches) == 2 {
+				if parsed, err := strconv.ParseInt(matches[1], 10, 64); err == nil {
+					count, ok = parsed, true
+				}
+			}
+		}
+		if !ok {
+			if matches := packagePoliciesInUsePattern.FindStringSubmatch(d.Summary()); len(matches) == 2 {
+				if parsed, err := strconv.ParseInt(matches[1], 10, 64); err == nil {
+					count, ok = parsed, true
+				}
+			}
+		}
+
+		if ok {
 			policyWord := "policies"
 			if count == 1 {
 				policyWord = "policy"
@@ -70,7 +97,6 @@ func augmentInUseConflictDiagnostic(diags diag.Diagnostics) diag.Diagnostics {
 				),
 			)
 		} else {
-			// TODO(Task 10): validate the live API error envelope during acceptance tests.
 			diags.AddError("Cloud connector in use", forceDeleteHint)
 		}
 		break

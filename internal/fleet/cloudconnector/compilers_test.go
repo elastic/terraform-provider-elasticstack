@@ -214,7 +214,7 @@ func TestCompileAWS_Create(t *testing.T) {
 	vars, diags := compileAWS(awsBlockModel{
 		RoleArn:    types.StringValue("arn:aws:iam::123:role/x"),
 		ExternalID: types.StringValue("ext-id"),
-	}, nil, false)
+	}, nil, false, nil)
 	require.False(t, diags.HasError(), diags)
 	require.Len(t, vars, 2)
 
@@ -237,7 +237,7 @@ func TestCompileAWS_CreateMissingExternalID(t *testing.T) {
 	_, diags := compileAWS(awsBlockModel{
 		RoleArn:    types.StringValue("arn:aws:iam::123:role/x"),
 		ExternalID: types.StringNull(),
-	}, nil, false)
+	}, nil, false, nil)
 	require.True(t, diags.HasError())
 	assert.Equal(t, "Missing AWS external_id", diags.Errors()[0].Summary())
 }
@@ -261,6 +261,7 @@ func TestCompileAWS_UpdatePreservesExternalIDSecretRef(t *testing.T) {
 			ExternalIDSecretRef: secretRef,
 		},
 		true,
+		nil,
 	)
 	require.False(t, diags.HasError(), diags)
 
@@ -287,6 +288,7 @@ func TestCompileAWSExternalID_NewSecretOverridesPriorRef(t *testing.T) {
 			ExternalIDSecretRef: secretRef,
 		},
 		true,
+		map[string]struct{}{writeOnlyAttributeAWSExternalID: {}},
 	)
 	require.False(t, diags.HasError(), diags)
 
@@ -302,18 +304,22 @@ func TestCompileAzure(t *testing.T) {
 		TenantID:         types.StringValue("tenant-1"),
 		ClientID:         types.StringValue("client-1"),
 		CloudConnectorID: types.StringValue("connector-1"),
-	})
+	}, nil, false, nil)
 	require.False(t, diags.HasError(), diags)
 	require.Len(t, vars, 3)
 
 	for key, expected := range map[string]string{
-		"tenant_id":          "tenant-1",
-		"client_id":          "client-1",
-		"cloud_connector_id": "connector-1",
+		"tenant_id":                             "tenant-1",
+		"client_id":                             "client-1",
+		wireKeyAzureCredentialsCloudConnectorID: "connector-1",
 	} {
 		structured, err := vars[key].AsPostFleetCloudConnectorsJSONBodyVars3()
 		require.NoError(t, err, key)
-		assert.Equal(t, "text", structured.Type)
+		if key == wireKeyAzureCredentialsCloudConnectorID {
+			assert.Equal(t, "text", structured.Type)
+		} else {
+			assert.Equal(t, "password", structured.Type)
+		}
 		value, err := structured.Value.AsPostFleetCloudConnectorsJSONBodyVars3Value0()
 		require.NoError(t, err, key)
 		assert.Equal(t, expected, value)
@@ -339,7 +345,7 @@ func TestCompileVarsForWrite_VarsOnlyUpdateUsesVarsPath(t *testing.T) {
 		AWS:  awsObj,
 	}
 
-	vars, diags := plan.compileVarsForWrite(config, nil, true)
+	vars, diags := plan.compileVarsForWrite(config, nil, true, nil)
 	require.False(t, diags.HasError(), diags)
 	require.Contains(t, vars, "custom_key")
 	assert.Len(t, vars, 1)
@@ -368,7 +374,7 @@ func TestCompileVarsForWrite_AWSConfigUsesAWSPath(t *testing.T) {
 	}
 	prior := cloudConnectorModel{AWS: awsObj}
 
-	vars, diags := plan.compileVarsForWrite(config, &prior, true)
+	vars, diags := plan.compileVarsForWrite(config, &prior, true, nil)
 	require.False(t, diags.HasError(), diags)
 	require.Len(t, vars, 2)
 	assert.Contains(t, vars, "role_arn")
@@ -399,7 +405,7 @@ func TestToAPIUpdateBody_OmitsCloudProvider(t *testing.T) {
 	}
 	prior := cloudConnectorModel{AWS: awsObj}
 
-	body, diags := plan.toAPIUpdateBody(config, prior)
+	body, diags := plan.toAPIUpdateBody(config, prior, nil)
 	require.False(t, diags.HasError(), diags)
 
 	require.NotNil(t, body.Name)

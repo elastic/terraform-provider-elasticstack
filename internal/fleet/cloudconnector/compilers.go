@@ -18,10 +18,15 @@
 package cloudconnector
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -41,7 +46,7 @@ func (plan cloudConnectorModel) toAPICreateBody(config cloudConnectorModel) (kba
 		body.AccountType = &at
 	}
 
-	vars, varsDiags := plan.compileVarsForWrite(config, nil, false)
+	vars, varsDiags := plan.compileVarsForWrite(config, nil, false, nil)
 	diags.Append(varsDiags...)
 	if diags.HasError() {
 		return body, diags
@@ -54,6 +59,41 @@ func (plan cloudConnectorModel) toAPICreateBody(config cloudConnectorModel) (kba
 func (plan cloudConnectorModel) toAPIUpdateBody(
 	config cloudConnectorModel,
 	prior cloudConnectorModel,
+	resubmitWriteOnly map[string]struct{},
+) (kbapi.PutFleetCloudConnectorsCloudconnectoridJSONRequestBody, diag.Diagnostics) {
+	return plan.buildAPIUpdateBodyFromVars(config, prior, nil, resubmitWriteOnly)
+}
+
+func (plan cloudConnectorModel) buildAPIUpdateBody(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	config cloudConnectorModel,
+	prior cloudConnectorModel,
+	resubmitWriteOnly map[string]struct{},
+) (kbapi.PutFleetCloudConnectorsCloudconnectoridJSONRequestBody, diag.Diagnostics) {
+	vars, varsDiags := plan.compileVarsForWrite(config, &prior, true, resubmitWriteOnly)
+	if varsDiags.HasError() {
+		return kbapi.PutFleetCloudConnectorsCloudconnectoridJSONRequestBody{}, varsDiags
+	}
+
+	resolvedVars, secretDiags := resolveWireVarsSecrets(
+		ctx,
+		client.GetElasticsearchTypedClient(),
+		plan.CloudProvider.ValueString(),
+		vars,
+	)
+	if secretDiags.HasError() {
+		return kbapi.PutFleetCloudConnectorsCloudconnectoridJSONRequestBody{}, secretDiags
+	}
+
+	return plan.buildAPIUpdateBodyFromVars(config, prior, resolvedVars, resubmitWriteOnly)
+}
+
+func (plan cloudConnectorModel) buildAPIUpdateBodyFromVars(
+	config cloudConnectorModel,
+	prior cloudConnectorModel,
+	resolvedVars postWireVars,
+	resubmitWriteOnly map[string]struct{},
 ) (kbapi.PutFleetCloudConnectorsCloudconnectoridJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -66,11 +106,16 @@ func (plan cloudConnectorModel) toAPIUpdateBody(
 		body.AccountType = &at
 	}
 
-	vars, varsDiags := plan.compileVarsForWrite(config, &prior, true)
-	diags.Append(varsDiags...)
-	if diags.HasError() {
-		return body, diags
+	vars := resolvedVars
+	if vars == nil {
+		var varsDiags diag.Diagnostics
+		vars, varsDiags = plan.compileVarsForWrite(config, &prior, true, resubmitWriteOnly)
+		diags.Append(varsDiags...)
+		if diags.HasError() {
+			return body, diags
+		}
 	}
+
 	putVars, convertDiags := postWireVarsToPut(vars)
 	diags.Append(convertDiags...)
 	if diags.HasError() {
@@ -87,10 +132,11 @@ func (plan cloudConnectorModel) compileVarsForWrite(
 	config cloudConnectorModel,
 	prior *cloudConnectorModel,
 	forUpdate bool,
+	resubmitWriteOnly map[string]struct{},
 ) (postWireVars, diag.Diagnostics) {
 	switch {
 	case !config.AWS.IsNull() && !config.AWS.IsUnknown():
-		aws, awsDiags := awsBlockFromObject(plan.AWS)
+		aws, awsDiags := awsBlockForWrite(plan, config)
 		if awsDiags.HasError() {
 			return nil, awsDiags
 		}
@@ -102,23 +148,148 @@ func (plan cloudConnectorModel) compileVarsForWrite(
 			}
 			priorAWS = &priorBlock
 		}
-		return compileAWS(aws, priorAWS, forUpdate)
+		return compileAWS(aws, priorAWS, forUpdate, resubmitWriteOnly)
 	case !config.Azure.IsNull() && !config.Azure.IsUnknown():
-		azure, azureDiags := azureBlockFromObject(plan.Azure)
+		azure, azureDiags := azureBlockForWrite(plan, config)
 		if azureDiags.HasError() {
 			return nil, azureDiags
 		}
-		return compileAzure(azure)
+		var priorAzure *azureBlockModel
+		if forUpdate && prior != nil && !prior.Azure.IsNull() && !prior.Azure.IsUnknown() {
+			priorBlock, priorDiags := azureBlockFromObject(prior.Azure)
+			if priorDiags.HasError() {
+				return nil, priorDiags
+			}
+			priorAzure = &priorBlock
+		}
+		return compileAzure(azure, priorAzure, forUpdate, resubmitWriteOnly)
 	default:
 		var priorVars *types.Map
 		if forUpdate && prior != nil {
 			priorVars = &prior.Vars
 		}
-		return compileVars(plan.Vars, priorVars, forUpdate)
+		return compileVars(varsMapForWrite(plan.Vars, config.Vars), priorVars, forUpdate)
 	}
 }
 
-func compileAWS(aws awsBlockModel, priorAWS *awsBlockModel, forUpdate bool) (postWireVars, diag.Diagnostics) {
+func awsBlockForWrite(plan, config cloudConnectorModel) (awsBlockModel, diag.Diagnostics) {
+	aws, diags := awsBlockFromObject(plan.AWS)
+	if diags.HasError() {
+		return aws, diags
+	}
+	if config.AWS.IsNull() || config.AWS.IsUnknown() {
+		return aws, diags
+	}
+
+	cfgAWS, cfgDiags := awsBlockFromObject(config.AWS)
+	diags.Append(cfgDiags...)
+	if diags.HasError() {
+		return aws, diags
+	}
+
+	if typeutils.IsKnown(cfgAWS.ExternalID) {
+		aws.ExternalID = cfgAWS.ExternalID
+	}
+	if typeutils.IsKnown(cfgAWS.RoleArn) {
+		aws.RoleArn = cfgAWS.RoleArn
+	}
+
+	return aws, diags
+}
+
+func azureBlockForWrite(plan, config cloudConnectorModel) (azureBlockModel, diag.Diagnostics) {
+	azure, diags := azureBlockFromObject(plan.Azure)
+	if diags.HasError() {
+		return azure, diags
+	}
+	if config.Azure.IsNull() || config.Azure.IsUnknown() {
+		return azure, diags
+	}
+
+	cfgAzure, cfgDiags := azureBlockFromObject(config.Azure)
+	diags.Append(cfgDiags...)
+	if diags.HasError() {
+		return azure, diags
+	}
+
+	if typeutils.IsKnown(cfgAzure.TenantID) {
+		azure.TenantID = cfgAzure.TenantID
+	}
+	if typeutils.IsKnown(cfgAzure.ClientID) {
+		azure.ClientID = cfgAzure.ClientID
+	}
+	if typeutils.IsKnown(cfgAzure.CloudConnectorID) {
+		azure.CloudConnectorID = cfgAzure.CloudConnectorID
+	}
+
+	return azure, diags
+}
+
+func varsMapForWrite(plan, config types.Map) types.Map {
+	if config.IsNull() || config.IsUnknown() {
+		return plan
+	}
+	if plan.IsNull() || plan.IsUnknown() {
+		return config
+	}
+
+	planElems, planDiags := varsElementsFromMap(plan)
+	if planDiags.HasError() {
+		return plan
+	}
+	configElems, configDiags := varsElementsFromMap(config)
+	if configDiags.HasError() {
+		return plan
+	}
+
+	merged := make(map[string]cloudConnectorVarsElement, len(planElems))
+	maps.Copy(merged, planElems)
+	for key, cfgElem := range configElems {
+		elem := merged[key]
+		if typeutils.IsKnown(cfgElem.SecretValue) {
+			elem.SecretValue = cfgElem.SecretValue
+		}
+		if typeutils.IsKnown(cfgElem.String) {
+			elem.String = cfgElem.String
+		}
+		if typeutils.IsKnown(cfgElem.Number) {
+			elem.Number = cfgElem.Number
+		}
+		if typeutils.IsKnown(cfgElem.Bool) {
+			elem.Bool = cfgElem.Bool
+		}
+		if typeutils.IsKnown(cfgElem.Type) {
+			elem.Type = cfgElem.Type
+		}
+		if typeutils.IsKnown(cfgElem.Frozen) {
+			elem.Frozen = cfgElem.Frozen
+		}
+		if typeutils.IsKnown(cfgElem.Value) {
+			elem.Value = cfgElem.Value
+		}
+		merged[key] = elem
+	}
+
+	out, diags := types.MapValue(types.ObjectType{AttrTypes: varsElementAttrTypes()}, mapFromVarsElements(merged))
+	if diags.HasError() {
+		return plan
+	}
+	return out
+}
+
+func mapFromVarsElements(elems map[string]cloudConnectorVarsElement) map[string]attr.Value {
+	out := make(map[string]attr.Value, len(elems))
+	for key, elem := range elems {
+		obj, diags := varsElementToObject(elem)
+		if diags.HasError() {
+			continue
+		}
+		out[key] = obj
+	}
+	return out
+}
+
+func compileAWS(aws awsBlockModel, priorAWS *awsBlockModel, forUpdate bool, resubmitWriteOnly map[string]struct{}) (postWireVars, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	out := make(postWireVars, 2)
 
@@ -129,7 +300,7 @@ func compileAWS(aws awsBlockModel, priorAWS *awsBlockModel, forUpdate bool) (pos
 	}
 	out[attrAWSRoleArn] = roleArnVar
 
-	externalIDVar, externalDiags := compileAWSExternalID(aws, priorAWS, forUpdate)
+	externalIDVar, externalDiags := compileAWSExternalID(aws, priorAWS, forUpdate, resubmitWriteOnly)
 	diags.Append(externalDiags...)
 	if diags.HasError() {
 		return nil, diags
@@ -143,18 +314,21 @@ func compileAWSExternalID(
 	aws awsBlockModel,
 	priorAWS *awsBlockModel,
 	forUpdate bool,
+	resubmitWriteOnly map[string]struct{},
 ) (kbapi.PostFleetCloudConnectorsJSONBody_Vars_AdditionalProperties, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var zero kbapi.PostFleetCloudConnectorsJSONBody_Vars_AdditionalProperties
 
-	if !aws.ExternalID.IsNull() && !aws.ExternalID.IsUnknown() {
-		return wireStructuredStringPost("password", aws.ExternalID.ValueString(), nil)
-	}
-
 	if forUpdate && priorAWS != nil {
 		if ref, ok := secretRefFromObject(priorAWS.ExternalIDSecretRef); ok {
-			return wireStructuredSecretRefPost("password", ref)
+			if _, rotate := resubmitWriteOnly[writeOnlyAttributeAWSExternalID]; !rotate {
+				return wireStructuredSecretRefPost("password", ref)
+			}
 		}
+	}
+
+	if !aws.ExternalID.IsNull() && !aws.ExternalID.IsUnknown() {
+		return wireStructuredStringPost("password", aws.ExternalID.ValueString(), nil)
 	}
 
 	diags.AddError(
@@ -164,29 +338,85 @@ func compileAWSExternalID(
 	return zero, diags
 }
 
-func compileAzure(azure azureBlockModel) (postWireVars, diag.Diagnostics) {
+func compileAzure(
+	azure azureBlockModel,
+	priorAzure *azureBlockModel,
+	forUpdate bool,
+	resubmitWriteOnly map[string]struct{},
+) (postWireVars, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	out := make(postWireVars, 3)
 
-	entries := []struct {
-		key   string
-		value string
-	}{
-		{attrAzureTenantID, azure.TenantID.ValueString()},
-		{attrAzureClientID, azure.ClientID.ValueString()},
-		{attrAzureCloudConnectorID, azure.CloudConnectorID.ValueString()},
+	tenantVar, tenantDiags := compileAzurePasswordVar(
+		azure.TenantID,
+		writeOnlyAttributeAzureTenantID,
+		priorAzure,
+		forUpdate,
+		resubmitWriteOnly,
+		func(prior *azureBlockModel) (cloudConnectorSecretRef, bool) {
+			return secretRefFromObject(prior.TenantIDSecretRef)
+		},
+	)
+	diags.Append(tenantDiags...)
+	if diags.HasError() {
+		return nil, diags
 	}
+	out[attrAzureTenantID] = tenantVar
 
-	for _, entry := range entries {
-		wireVar, entryDiags := wireStructuredStringPost("text", entry.value, nil)
-		diags.Append(entryDiags...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		out[entry.key] = wireVar
+	clientVar, clientDiags := compileAzurePasswordVar(
+		azure.ClientID,
+		writeOnlyAttributeAzureClientID,
+		priorAzure,
+		forUpdate,
+		resubmitWriteOnly,
+		func(prior *azureBlockModel) (cloudConnectorSecretRef, bool) {
+			return secretRefFromObject(prior.ClientIDSecretRef)
+		},
+	)
+	diags.Append(clientDiags...)
+	if diags.HasError() {
+		return nil, diags
 	}
+	out[attrAzureClientID] = clientVar
+
+	connectorVar, connectorDiags := wireStructuredStringPost("text", azure.CloudConnectorID.ValueString(), nil)
+	diags.Append(connectorDiags...)
+	if diags.HasError() {
+		return nil, diags
+	}
+	out[wireKeyAzureCredentialsCloudConnectorID] = connectorVar
 
 	return out, diags
+}
+
+func compileAzurePasswordVar(
+	value types.String,
+	writeOnlyAttribute string,
+	priorAzure *azureBlockModel,
+	forUpdate bool,
+	resubmitWriteOnly map[string]struct{},
+	priorRef func(*azureBlockModel) (cloudConnectorSecretRef, bool),
+) (kbapi.PostFleetCloudConnectorsJSONBody_Vars_AdditionalProperties, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var zero kbapi.PostFleetCloudConnectorsJSONBody_Vars_AdditionalProperties
+
+	if forUpdate && priorAzure != nil {
+		if ref, ok := priorRef(priorAzure); ok {
+			if _, rotate := resubmitWriteOnly[writeOnlyAttribute]; !rotate {
+				return wireStructuredSecretRefPost("password", ref)
+			}
+		}
+	}
+
+	if !value.IsNull() && !value.IsUnknown() {
+		return wireStructuredStringPost("password", value.ValueString(), nil)
+	}
+
+	diags.AddError(
+		"Missing Azure secret value",
+		fmt.Sprintf("The azure block requires %s on create, or an existing secret reference in state when %s is not re-supplied on update.", writeOnlyAttribute, writeOnlyAttribute),
+	)
+	return zero, diags
 }
 
 func compileVars(plan types.Map, prior *types.Map, forUpdate bool) (postWireVars, diag.Diagnostics) {
@@ -431,9 +661,11 @@ func azureBlockFromObject(obj types.Object) (azureBlockModel, diag.Diagnostics) 
 
 	attrs := obj.Attributes()
 	return azureBlockModel{
-		TenantID:         attrs[attrAzureTenantID].(types.String),
-		ClientID:         attrs[attrAzureClientID].(types.String),
-		CloudConnectorID: attrs[attrAzureCloudConnectorID].(types.String),
+		TenantID:          attrs[attrAzureTenantID].(types.String),
+		ClientID:          attrs[attrAzureClientID].(types.String),
+		TenantIDSecretRef: attrs[attrAzureTenantIDSecretRef].(types.Object),
+		ClientIDSecretRef: attrs[attrAzureClientIDSecretRef].(types.Object),
+		CloudConnectorID:  attrs[attrAzureCloudConnectorID].(types.String),
 	}, diags
 }
 
