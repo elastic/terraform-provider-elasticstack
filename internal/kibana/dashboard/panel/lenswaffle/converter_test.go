@@ -71,7 +71,7 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	require.NoError(t, attrs.FromKibanaHTTPAPIsWaffleNoESQL(waffle))
 
 	blocks := &models.LensByValueChartBlocks{}
-	diags := c.PopulateFromAttributes(ctx,  blocks, attrs)
+	diags := c.PopulateFromAttributes(ctx, blocks, attrs)
 	require.False(t, diags.HasError(), "%s", diags)
 	require.NotNil(t, blocks.WaffleConfig)
 

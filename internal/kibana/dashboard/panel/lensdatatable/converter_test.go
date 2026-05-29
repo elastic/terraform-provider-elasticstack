@@ -82,7 +82,7 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	require.False(t, diags.HasError(), "%v", diags)
 
 	out := &models.LensByValueChartBlocks{DatatableConfig: &models.DatatableConfigModel{}}
-	diags = c.PopulateFromAttributes(ctx,  out, attrs)
+	diags = c.PopulateFromAttributes(ctx, out, attrs)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	require.Equal(t, noESQL.Title.ValueString(), out.DatatableConfig.NoESQL.Title.ValueString())
@@ -121,7 +121,7 @@ func TestConverter_roundTrip_ESQL_datatable(t *testing.T) {
 	require.NoError(t, attrs.FromKibanaHTTPAPIsDatatableESQL(api))
 
 	blocks := &models.LensByValueChartBlocks{}
-	diags := c.PopulateFromAttributes(ctx,  blocks, attrs)
+	diags := c.PopulateFromAttributes(ctx, blocks, attrs)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.NotNil(t, blocks.DatatableConfig)
 	require.Nil(t, blocks.DatatableConfig.NoESQL)

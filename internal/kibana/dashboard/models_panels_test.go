@@ -59,7 +59,7 @@ func buildLensMosaicPanelForTest(t *testing.T) models.PanelModel {
 	c := lenscommon.ForType(string(kbapi.KibanaHTTPAPIsMosaicNoESQLTypeMosaic))
 	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags := c.PopulateFromAttributes(context.Background(),  &visBv.LensByValueChartBlocks, attrs)
+	diags := c.PopulateFromAttributes(context.Background(), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 
 	return models.PanelModel{
@@ -94,7 +94,7 @@ func buildLensTreemapPanelForTest(t *testing.T) models.PanelModel {
 	c := lenscommon.ForType(string(kbapi.KibanaHTTPAPIsTreemapNoESQLTypeTreemap))
 	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags := c.PopulateFromAttributes(context.Background(),  &visBv.LensByValueChartBlocks, attrs)
+	diags := c.PopulateFromAttributes(context.Background(), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 
 	return models.PanelModel{
@@ -128,7 +128,7 @@ func buildLensWafflePanelForTest(t *testing.T) models.PanelModel {
 	c := lenscommon.ForType(string(kbapi.KibanaHTTPAPIsWaffleNoESQLTypeWaffle))
 	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags := c.PopulateFromAttributes(context.Background(),  &visBv.LensByValueChartBlocks, attrs)
+	diags := c.PopulateFromAttributes(context.Background(), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 
 	return models.PanelModel{

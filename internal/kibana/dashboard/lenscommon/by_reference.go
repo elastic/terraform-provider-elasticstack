@@ -182,21 +182,11 @@ func PopulateVisByReferenceTFModelFromAPIConfig1(
 	by := models.VisByReferenceModel{
 		RefID: types.StringValue(cfg1.RefId),
 	}
-	if cfg1.TimeRange != nil {
-		tr := &models.TimeRangeModel{
-			From: types.StringValue(cfg1.TimeRange.From),
-			To:   types.StringValue(cfg1.TimeRange.To),
-		}
-		switch {
-		case cfg1.TimeRange.Mode != nil:
-			tr.Mode = types.StringValue(string(*cfg1.TimeRange.Mode))
-		case prior != nil && prior.TimeRange != nil && typeutils.IsKnown(prior.TimeRange.Mode):
-			tr.Mode = prior.TimeRange.Mode
-		default:
-			tr.Mode = types.StringNull()
-		}
-		by.TimeRange = tr
+	var priorTR *models.TimeRangeModel
+	if prior != nil {
+		priorTR = prior.TimeRange
 	}
+	by.TimeRange = chartTimeRangeFromAPI(cfg1.TimeRange, priorTR)
 
 	by.Title = ByReferenceOptionalStringFromAPI(cfg1.Title, prior, func(br *models.VisByReferenceModel) types.String { return br.Title })
 	by.Description = ByReferenceOptionalStringFromAPI(cfg1.Description, prior, func(br *models.VisByReferenceModel) types.String { return br.Description })

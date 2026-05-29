@@ -165,7 +165,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 		}
 		seedWaffleLensByValueChartFromPriorPanel(&pm.VisConfig.ByValue.LensByValueChartBlocks, prior)
 		seedLensChartPriorIntoBlocks(prior, &pm.VisConfig.ByValue.LensByValueChartBlocks, visType)
-		diags.Append(conv.PopulateFromAttributes(ctx,  &pm.VisConfig.ByValue.LensByValueChartBlocks, config0)...)
+		diags.Append(conv.PopulateFromAttributes(ctx, &pm.VisConfig.ByValue.LensByValueChartBlocks, config0)...)
 	}
 
 	return diags

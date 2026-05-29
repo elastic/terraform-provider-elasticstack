@@ -66,6 +66,88 @@ func TestAccResourceDashboardVisConfigByReference_omitTimeRange(t *testing.T) {
 	})
 }
 
+func TestAccResourceDashboardVisConfigByReference_timeRangeLifecycle(t *testing.T) {
+	dashboardTitle := "Acc vis by-ref tr lifecycle " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	br := visByRefPath
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step_initial"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(visByRefDashboard, "id"),
+					resource.TestCheckResourceAttr(visByRefDashboard, br+".time_range.from", "now-7d"),
+					resource.TestCheckResourceAttr(visByRefDashboard, br+".time_range.to", "now"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step_initial"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step_unset"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(visByRefDashboard, "id"),
+					resource.TestCheckNoResourceAttr(visByRefDashboard, br+".time_range"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step_unset"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step_changed"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(visByRefDashboard, "id"),
+					resource.TestCheckResourceAttr(visByRefDashboard, br+".time_range.from", "now-30d"),
+					resource.TestCheckResourceAttr(visByRefDashboard, br+".time_range.to", "now-1d"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step_changed"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step_unset_again"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(visByRefDashboard, "id"),
+					resource.TestCheckNoResourceAttr(visByRefDashboard, br+".time_range"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step_unset_again"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+		},
+	})
+}
+
 func TestAccResourceDashboardVisConfigByReference_minimal(t *testing.T) {
 	dashboardTitle := "Acc vis by-ref min " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	br := visByRefPath

@@ -75,7 +75,7 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	require.NoError(t, attrs.FromKibanaHTTPAPIsMetricNoESQL(apiChart))
 
 	blocks := &models.LensByValueChartBlocks{}
-	diags := c.PopulateFromAttributes(ctx,  blocks, attrs)
+	diags := c.PopulateFromAttributes(ctx, blocks, attrs)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.NotNil(t, blocks.MetricChartConfig)
 
@@ -114,7 +114,7 @@ func TestConverter_roundTrip_ESQL_metric(t *testing.T) {
 	require.NoError(t, attrs.FromKibanaHTTPAPIsMetricESQL(apiChart))
 
 	blocks := &models.LensByValueChartBlocks{}
-	diags := c.PopulateFromAttributes(ctx,  blocks, attrs)
+	diags := c.PopulateFromAttributes(ctx, blocks, attrs)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.NotNil(t, blocks.MetricChartConfig)
 	require.Nil(t, blocks.MetricChartConfig.Query)

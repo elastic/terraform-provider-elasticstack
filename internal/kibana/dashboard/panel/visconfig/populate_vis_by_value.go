@@ -177,6 +177,6 @@ func populateLensVisByValueFromTypedChartAPI(
 	}
 	seedWaffleLensByValueChartFromPriorPanel(blocks, tfPanel)
 	seedLensChartPriorIntoBlocks(tfPanel, blocks, visType)
-	diags.Append(conv.PopulateFromAttributes(ctx,  blocks, config0)...)
+	diags.Append(conv.PopulateFromAttributes(ctx, blocks, config0)...)
 	return diags
 }
