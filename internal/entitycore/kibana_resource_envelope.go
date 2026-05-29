@@ -97,16 +97,30 @@ type KibanaPostReadFunc[T KibanaResourceModel] func(
 	privateState any,
 ) diag.Diagnostics
 
+// KibanaOnWrittenFunc is invoked after a successful Create or Update (after the
+// read-after-write refresh sets state and PostRead runs). It receives the final
+// model, the original config, and the resource's private state for writing
+// post-write artifacts such as hashes of write-only attributes. OnWritten is
+// optional.
+type KibanaOnWrittenFunc[T KibanaResourceModel] func(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	model T,
+	config T,
+	privateState any,
+) diag.Diagnostics
+
 // KibanaResourceOptions configures [NewKibanaResource]. PostRead is optional;
 // Schema, Read, Delete, Create, and Update must be non-nil or the envelope
 // surfaces configuration diagnostics instead of invoking nil callbacks.
 type KibanaResourceOptions[T KibanaResourceModel] struct {
-	Schema   func(context.Context) rschema.Schema
-	Read     kibanaReadFunc[T]
-	Delete   kibanaDeleteFunc[T]
-	Create   KibanaWriteFunc[T]
-	Update   KibanaWriteFunc[T]
-	PostRead KibanaPostReadFunc[T]
+	Schema    func(context.Context) rschema.Schema
+	Read      kibanaReadFunc[T]
+	Delete    kibanaDeleteFunc[T]
+	Create    KibanaWriteFunc[T]
+	Update    KibanaWriteFunc[T]
+	PostRead  KibanaPostReadFunc[T]
+	OnWritten KibanaOnWrittenFunc[T]
 }
 
 // KibanaResource implements [resource.Resource] and related interfaces
@@ -125,6 +139,7 @@ type KibanaResource[T KibanaResourceModel] struct {
 	createFunc    KibanaWriteFunc[T]
 	updateFunc    KibanaWriteFunc[T]
 	postReadFunc  KibanaPostReadFunc[T]
+	onWrittenFunc KibanaOnWrittenFunc[T]
 }
 
 const (
@@ -166,6 +181,7 @@ func NewKibanaResource[T KibanaResourceModel](
 		createFunc:    opts.Create,
 		updateFunc:    opts.Update,
 		postReadFunc:  opts.PostRead,
+		onWrittenFunc: opts.OnWritten,
 	}
 }
 
@@ -436,6 +452,13 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 
 	if r.postReadFunc != nil {
 		diags.Append(r.postReadFunc(ctx, client, stateModel, inv.privateState)...)
+		if diags.HasError() {
+			return diags
+		}
+	}
+
+	if r.onWrittenFunc != nil {
+		diags.Append(r.onWrittenFunc(ctx, client, stateModel, configModel, inv.privateState)...)
 	}
 
 	return diags
