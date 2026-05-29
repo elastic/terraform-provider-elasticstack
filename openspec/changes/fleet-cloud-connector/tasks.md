@@ -68,15 +68,15 @@
 
 ## 10. Acceptance tests
 
-- [ ] 10.1 Add `acc_test.go` covering full lifecycle with typed `aws` block (create → read → update name → update role_arn → destroy)
-- [ ] 10.2 Add coverage for typed `azure` block (create → read → update → destroy)
-- [ ] 10.3 Add coverage for generic `vars` block with each of the four union arms exercised at least once
-- [ ] 10.4 Add coverage for the dual-state-population rule: input via typed block → state has typed block + `vars`; input via `vars` matching known keys → state has `vars` + typed block; input via `vars` with an unknown extra key → state has only `vars` (typed block null)
-- [ ] 10.5 Add coverage for import via composite ID
-- [ ] 10.6 Add coverage for `force_delete`: in-use without force produces clear error; with force succeeds
-- [ ] 10.7 Add coverage for write-only secret drift: change `aws.external_id` in config between two applies and assert plan detects the change with warning diagnostic
-- [ ] 10.8 Add coverage for version gating against a too-old Kibana (skip-gated; document expected error)
-- [ ] 10.9 Add data source acceptance test: create N connectors, read with no kuery → all returned; read with `kuery` filtering to a single provider → only that subset returned; read with no connectors → empty list
+- [x] 10.1 Add `acc_test.go` covering full lifecycle with typed `aws` block (create → read → update name → update role_arn → destroy)
+- [x] 10.2 Add coverage for typed `azure` block (create → read → update → destroy)
+- [x] 10.3 Add coverage for generic `vars` block with each of the four union arms exercised at least once
+- [x] 10.4 Add coverage for the dual-state-population rule: input via typed block → state has typed block + `vars`; input via `vars` matching known keys → state has `vars` + typed block; input via `vars` with an unknown extra key → state has only `vars` (typed block null)
+- [x] 10.5 Add coverage for import via composite ID
+- [x] 10.6 Add coverage for `force_delete`: in-use without force produces clear error; with force succeeds
+- [x] 10.7 Add coverage for write-only secret drift: change `aws.external_id` in config between two applies and assert plan detects the change with warning diagnostic
+- [x] 10.8 Add coverage for version gating against a too-old Kibana (skip-gated; document expected error)
+- [x] 10.9 Add data source acceptance test: create N connectors, read with no kuery → all returned; read with `kuery` filtering to a single provider → only that subset returned; read with no connectors → empty list
 
 ## 11. Documentation and examples
 
