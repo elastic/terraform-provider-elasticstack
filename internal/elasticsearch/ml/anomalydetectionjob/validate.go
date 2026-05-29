@@ -23,17 +23,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // validateConfigCustomRules ensures each configured custom rule satisfies Elasticsearch rules: a rule
 // must either have a non-empty scope or at least one condition (when both are known at plan time).
 func validateConfigCustomRules(ctx context.Context, config *TFModel) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if config == nil || config.AnalysisConfig == nil {
+	if config == nil || config.AnalysisConfig.IsNull() || config.AnalysisConfig.IsUnknown() {
 		return diags
 	}
 
-	ac := config.AnalysisConfig
+	var ac AnalysisConfigTFModel
+	diags.Append(config.AnalysisConfig.As(ctx, &ac, basetypes.ObjectAsOptions{})...)
+	if diags.HasError() {
+		return diags
+	}
 	if ac.Detectors.IsUnknown() || ac.Detectors.IsNull() {
 		return diags
 	}
