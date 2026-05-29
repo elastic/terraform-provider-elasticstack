@@ -2,17 +2,18 @@
 
 ### Requirement: Resource identity and composite ID
 
-The `elasticstack_fleet_cloud_connector` resource SHALL set its `id` to the composite string `"<space_id>/<cloud_connector_id>"` after every Create and Update. `cloud_connector_id` SHALL be Optional + Computed: when omitted from config, the API-assigned ID SHALL be populated into state; when supplied, the API SHALL be called with that ID. `space_id` SHALL default to `"default"`. Changing `space_id`, `cloud_connector_id`, or `cloud_provider` SHALL force resource replacement.
+The `elasticstack_fleet_cloud_connector` resource SHALL set its `id` to the composite string `"<space_id>/<cloud_connector_id>"` after every Create and Update. `cloud_connector_id` SHALL be Computed only: the API assigns the ID on Create and the provider SHALL populate it into state from the response. Users SHALL NOT be able to supply a custom `cloud_connector_id` at Create time because the Fleet API does not accept an explicit ID in the POST body. `space_id` SHALL default to `"default"`. Changing `space_id` or `cloud_provider` SHALL force resource replacement.
 
-#### Scenario: Create with auto-assigned cloud_connector_id
-- **WHEN** `cloud_connector_id` is not set in config and the resource is created
-- **THEN** `cloud_connector_id` SHALL be populated from the API-assigned ID
-- **AND** `id` SHALL equal `"default/<cloud_connector_id>"`
+#### Scenario: Create with API-assigned cloud_connector_id
+- **WHEN** the resource is created
+- **THEN** the POST request SHALL NOT include a client-supplied connector ID
+- **AND** `cloud_connector_id` SHALL be populated from the API-assigned ID in the response
+- **AND** `id` SHALL equal `"<space_id>/<cloud_connector_id>"`
 
-#### Scenario: Create with explicit cloud_connector_id
-- **WHEN** `cloud_connector_id = "my-connector"` is set and the resource is created
-- **THEN** the API SHALL be called with `id: "my-connector"`
-- **AND** `id` in state SHALL equal `"default/my-connector"`
+#### Scenario: cloud_connector_id is read-only in configuration
+- **WHEN** a practitioner inspects the resource schema
+- **THEN** `cloud_connector_id` SHALL be Computed only (not Optional)
+- **AND** the provider SHALL NOT attempt to influence the assigned ID during Create
 
 #### Scenario: cloud_provider change forces replacement
 - **WHEN** `cloud_provider` is changed in config from `"aws"` to `"azure"`

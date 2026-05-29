@@ -38,7 +38,7 @@ Implement the resource as an `entitycore.KibanaResource[cloudConnectorModel]` wi
 
 ### Decision 2: Composite ID `<space_id>/<cloud_connector_id>`
 
-Identity: `id` is computed and composite; `cloud_connector_id` is optional + computed (server-assigned if omitted) and forces replacement on change; `space_id` defaults to `"default"` and forces replacement on change. Import accepts the composite form.
+Identity: `id` is computed and composite; `cloud_connector_id` is computed only (API-assigned on Create; not user-settable because the POST body has no `id` field); `space_id` defaults to `"default"` and forces replacement on change. Import accepts the composite form.
 
 **Why:** Matches every other space-aware Fleet resource in the provider (`fleet_proxy`, `fleet_output`, `fleet_server_host`, etc.), so users get a consistent import idiom across the Fleet surface.
 
@@ -160,7 +160,7 @@ The Kibana PUT endpoint does not accept `cloudProvider` in its body, so changing
 
 #### Scenario impact
 
-This decision drives `RequiresReplace` plan modifiers on `cloud_provider`, `cloud_connector_id`, and `space_id`, and a plain Optional+Computed shape on `account_type`.
+This decision drives `RequiresReplace` plan modifiers on `cloud_provider` and `space_id`, a computed-only `cloud_connector_id`, and a plain Optional+Computed shape on `account_type`.
 
 ### Decision 7: `force_delete` as explicit attribute
 

@@ -46,8 +46,7 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 			attrCloudConnectorID: schema.StringAttribute{
 				Computed:            true,
-				Optional:            true,
-				MarkdownDescription: "The cloud connector ID. Server-assigned when omitted from configuration.",
+				MarkdownDescription: "The API-assigned cloud connector ID.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
