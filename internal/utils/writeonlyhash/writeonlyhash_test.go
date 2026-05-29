@@ -88,6 +88,20 @@ func TestComputeAndMatches(t *testing.T) {
 
 		assert.False(t, hasher.Matches(secret, []byte{}))
 	})
+
+	t.Run("empty value roundtrip", func(t *testing.T) {
+		t.Parallel()
+
+		hash, err := hasher.Compute("")
+		require.NoError(t, err)
+		assert.True(t, hasher.Matches("", hash))
+	})
+
+	t.Run("invalid stored hash returns false without panic", func(t *testing.T) {
+		t.Parallel()
+
+		assert.False(t, hasher.Matches("value", []byte("not-a-bcrypt-hash")))
+	})
 }
 
 func TestPerResourceTypeSeparation(t *testing.T) {
@@ -117,6 +131,39 @@ func TestPerResourceTypeSeparation(t *testing.T) {
 	})
 }
 
+func TestComputeCost(t *testing.T) {
+	t.Parallel()
+
+	t.Run("custom cost is reflected in hash", func(t *testing.T) {
+		t.Parallel()
+
+		hasher := writeonlyhash.New("elasticstack_fleet_cloud_connector")
+		hasher.Cost = bcrypt.MinCost
+
+		hash, err := hasher.Compute("secret")
+		require.NoError(t, err)
+
+		cost, err := bcrypt.Cost(hash)
+		require.NoError(t, err)
+		assert.Equal(t, bcrypt.MinCost, cost)
+		assert.True(t, hasher.Matches("secret", hash))
+	})
+
+	t.Run("zero cost falls back to default", func(t *testing.T) {
+		t.Parallel()
+
+		hasher := writeonlyhash.New("elasticstack_fleet_cloud_connector")
+		hasher.Cost = 0
+
+		hash, err := hasher.Compute("secret")
+		require.NoError(t, err)
+
+		cost, err := bcrypt.Cost(hash)
+		require.NoError(t, err)
+		assert.Equal(t, bcrypt.DefaultCost, cost)
+	})
+}
+
 func TestComputeErrors(t *testing.T) {
 	t.Parallel()
 
@@ -132,6 +179,17 @@ func TestComputeErrors(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "bcrypt cost out of range")
 		assert.NotContains(t, err.Error(), secret)
+	})
+
+	t.Run("long secret succeeds without length error", func(t *testing.T) {
+		t.Parallel()
+
+		hasher := writeonlyhash.New("elasticstack_fleet_cloud_connector")
+		longSecret := strings.Repeat("x", 200)
+
+		hash, err := hasher.Compute(longSecret)
+		require.NoError(t, err)
+		assert.True(t, hasher.Matches(longSecret, hash))
 	})
 }
 
