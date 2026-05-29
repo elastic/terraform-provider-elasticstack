@@ -19,9 +19,8 @@ package connector
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
@@ -53,44 +52,23 @@ func (r *contentConnectorResource) ModifyPlan(ctx context.Context, req resource.
 		return
 	}
 
-	needsUpdate := false
-
-	for key, elem := range configMap {
-		if !typeutils.IsKnown(elem.SecretValue) {
-			continue
-		}
-		value := elem.SecretValue.ValueString()
-		storedHash, diags := req.Private.GetKey(ctx, secretHashKey(key))
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		if len(storedHash) == 0 {
-			continue
-		}
-		if !secretHasher.Matches(value, storedHash) {
-			needsUpdate = true
-			resp.Diagnostics.AddWarning(
-				"Write-only attribute changed",
-				fmt.Sprintf(
-					`Detected a change to write-only attribute configuration_values["%s"].secret_value; the resource will be updated.`,
-					key,
-				),
-			)
-		}
+	outcome, evalDiags := evaluateSecretPlanChanges(configMap, stateMap, func(key string) ([]byte, diag.Diagnostics) {
+		return req.Private.GetKey(ctx, secretHashKey(key))
+	})
+	resp.Diagnostics.Append(evalDiags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	for key, priorElem := range stateMap {
-		if !typeutils.IsKnown(priorElem.SecretValue) {
-			continue
-		}
-		if _, inConfig := configMap[key]; inConfig && typeutils.IsKnown(configMap[key].SecretValue) {
-			continue
-		}
+	for _, warning := range outcome.Warnings {
+		resp.Diagnostics.AddWarning("Write-only attribute changed", warning)
+	}
+
+	for _, key := range outcome.KeysToClear {
 		resp.Diagnostics.Append(resp.Private.SetKey(ctx, secretHashKey(key), nil)...)
 	}
 
-	if needsUpdate {
+	if outcome.NeedsUpdate {
 		resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("id"), fwtypes.StringUnknown())...)
 	}
 }
