@@ -69,6 +69,8 @@ type KibanaWriteRequest[T KibanaResourceModel] struct {
 	Config  T
 	WriteID string
 	SpaceID string
+	// Private is the framework response Private field during Update (nil on Create).
+	Private any
 }
 
 // KibanaWriteResult is returned by write callbacks; the envelope read-after-write
@@ -397,13 +399,17 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 	if inv.isUpdate {
 		writeFn = r.updateFunc
 	}
-	written, callDiags := writeFn(ctx, client, KibanaWriteRequest[T]{
+	writeReq := KibanaWriteRequest[T]{
 		Plan:    planModel,
 		Prior:   priorPtr,
 		Config:  configModel,
 		WriteID: writeID,
 		SpaceID: spaceID,
-	})
+	}
+	if inv.isUpdate {
+		writeReq.Private = inv.privateState
+	}
+	written, callDiags := writeFn(ctx, client, writeReq)
 	diags.Append(callDiags...)
 	if diags.HasError() {
 		return diags

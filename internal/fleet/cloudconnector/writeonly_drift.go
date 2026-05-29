@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"sync"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -43,6 +44,10 @@ const (
 	// write and consulted during ModifyPlan for stale-key drift and cleanup.
 	varsSecretIndexPrivateStateKey  = "secret_hash:vars._index"
 	varsSecretValueAttributePattern = "vars.%s.secret_value"
+
+	// writeOnlyResubmitPrivateStateKey stores attribute paths that must resubmit
+	// raw write-only secrets on the next Update in this apply cycle.
+	writeOnlyResubmitPrivateStateKey = "writeonly_resubmit:_pending"
 )
 
 var (
@@ -308,4 +313,77 @@ func marshalVarsSecretIndex(keys []string) ([]byte, diag.Diagnostics) {
 		return nil, diags
 	}
 	return data, diags
+}
+
+func readWriteOnlyResubmitSet(ctx context.Context, priv any) (map[string]struct{}, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if priv == nil {
+		return nil, diags
+	}
+	data, ok := priv.(privateData)
+	if !ok {
+		return nil, diags
+	}
+	indexBytes, getDiags := data.GetKey(ctx, writeOnlyResubmitPrivateStateKey)
+	diags.Append(getDiags...)
+	if diags.HasError() {
+		return nil, diags
+	}
+	return parseWriteOnlyResubmitSet(indexBytes)
+}
+
+func writeWriteOnlyResubmitSet(ctx context.Context, priv privateData, paths map[string]struct{}) diag.Diagnostics {
+	var diags diag.Diagnostics
+	if priv == nil {
+		return diags
+	}
+	if len(paths) == 0 {
+		diags.Append(priv.SetKey(ctx, writeOnlyResubmitPrivateStateKey, nil)...)
+		return diags
+	}
+	keys := make([]string, 0, len(paths))
+	for path := range paths {
+		keys = append(keys, path)
+	}
+	sort.Strings(keys)
+	data, err := json.Marshal(keys)
+	if err != nil {
+		diags.AddError("Failed to encode write-only resubmit set for private state", err.Error())
+		return diags
+	}
+	diags.Append(priv.SetKey(ctx, writeOnlyResubmitPrivateStateKey, data)...)
+	return diags
+}
+
+func clearWriteOnlyResubmitSet(ctx context.Context, priv any) diag.Diagnostics {
+	var diags diag.Diagnostics
+	if priv == nil {
+		return diags
+	}
+	data, ok := priv.(privateData)
+	if !ok {
+		return diags
+	}
+	diags.Append(data.SetKey(ctx, writeOnlyResubmitPrivateStateKey, nil)...)
+	return diags
+}
+
+func parseWriteOnlyResubmitSet(data []byte) (map[string]struct{}, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if len(data) == 0 {
+		return nil, diags
+	}
+	var keys []string
+	if err := json.Unmarshal(data, &keys); err != nil {
+		diags.AddWarning(
+			"Failed to decode write-only resubmit set from private state",
+			"The resubmit index could not be parsed and will be treated as empty.",
+		)
+		return nil, diags
+	}
+	out := make(map[string]struct{}, len(keys))
+	for _, key := range keys {
+		out[key] = struct{}{}
+	}
+	return out, diags
 }

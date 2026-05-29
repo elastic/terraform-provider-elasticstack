@@ -41,10 +41,6 @@ type Resource struct {
 
 	// testModifyPlanPrivate injects private state during ModifyPlan unit tests only.
 	testModifyPlanPrivate privateData
-
-	// pendingWriteOnlyResubmit tracks write-only attributes that changed in config
-	// and must be resent on the next Update in this apply cycle.
-	pendingWriteOnlyResubmit map[string]struct{}
 }
 
 func newResource() *Resource {

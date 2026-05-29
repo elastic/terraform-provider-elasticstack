@@ -2078,6 +2078,32 @@ func TestNewKibanaResource_Update_callbackReceivesNonNilPriorAndConfig(t *testin
 	require.False(t, resp.Diagnostics.HasError())
 }
 
+func TestNewKibanaResource_Update_callbackReceivesPrivateState(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	var capturedPrivate any
+	opts := defaultTestKibanaResourceOptions()
+	opts.Update = func(
+		_ context.Context,
+		_ *clients.KibanaScopedClient,
+		req KibanaWriteRequest[testKibanaResourceModel],
+	) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+		capturedPrivate = req.Private
+		return KibanaWriteResult[testKibanaResourceModel]{Model: req.Plan}, nil
+	}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
+	prior := makeTestKibanaResourceState(ctx, t, "default/my-resource")
+	resp := resource.UpdateResponse{State: prior}
+	r.Update(ctx, resource.UpdateRequest{Plan: plan, State: prior, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, resp.Private, capturedPrivate)
+}
+
 func TestNewKibanaResource_SingleWriteFuncServesCreateAndUpdate(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

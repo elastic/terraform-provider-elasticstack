@@ -66,13 +66,20 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 		return
 	}
 	if len(results) > 0 {
-		if r.pendingWriteOnlyResubmit == nil {
-			r.pendingWriteOnlyResubmit = make(map[string]struct{})
-		}
+		resubmitPaths := make(map[string]struct{})
 		for _, result := range results {
 			resp.Diagnostics.Append(driftWarningDiagnostic(result))
 			if !result.IsImportBaseline {
-				r.pendingWriteOnlyResubmit[result.AttributePath] = struct{}{}
+				resubmitPaths[result.AttributePath] = struct{}{}
+			}
+		}
+		if len(resubmitPaths) > 0 {
+			priv := r.testModifyPlanPrivate
+			if priv == nil && resp.Private != nil {
+				priv = resp.Private
+			}
+			if priv != nil {
+				resp.Diagnostics.Append(writeWriteOnlyResubmitSet(ctx, priv, resubmitPaths)...)
 			}
 		}
 		resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root(attrUpdatedAt), types.StringUnknown())...)

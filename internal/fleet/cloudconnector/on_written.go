@@ -130,6 +130,7 @@ func onWrittenCloudConnector(
 
 	if len(currentVarKeys) == 0 {
 		diags.Append(priv.SetKey(ctx, varsSecretIndexPrivateStateKey, nil)...)
+		diags.Append(clearWriteOnlyResubmitSet(ctx, privateState)...)
 		return diags
 	}
 
@@ -139,6 +140,8 @@ func onWrittenCloudConnector(
 		return diags
 	}
 	diags.Append(priv.SetKey(ctx, varsSecretIndexPrivateStateKey, indexData)...)
+
+	diags.Append(clearWriteOnlyResubmitSet(ctx, privateState)...)
 
 	return diags
 }

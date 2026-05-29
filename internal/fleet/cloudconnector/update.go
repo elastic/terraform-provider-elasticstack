@@ -39,16 +39,19 @@ func (r *Resource) updateCloudConnector(
 		return entitycore.KibanaWriteResult[cloudConnectorModel]{}, diags
 	}
 
-	if !planMutatesAPIResource(*req.Prior, plan, req.Config) {
+	resubmitSet, resubmitDiags := readWriteOnlyResubmitSet(ctx, req.Private)
+	diags.Append(resubmitDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[cloudConnectorModel]{}, diags
+	}
+
+	if !planMutatesAPIResource(*req.Prior, plan, req.Config) && len(resubmitSet) == 0 {
 		return entitycore.KibanaWriteResult[cloudConnectorModel]{Model: plan}, diags
 	}
 
-	resubmit := r.pendingWriteOnlyResubmit
-	r.pendingWriteOnlyResubmit = nil
-
 	fleetClient := client.GetFleetClient()
 
-	body, bodyDiags := plan.buildAPIUpdateBody(ctx, client, req.Config, *req.Prior, resubmit)
+	body, bodyDiags := plan.buildAPIUpdateBody(ctx, client, req.Config, *req.Prior, resubmitSet)
 	diags.Append(bodyDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[cloudConnectorModel]{}, diags
