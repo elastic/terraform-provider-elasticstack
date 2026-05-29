@@ -21,6 +21,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/elastic/go-elasticsearch/v8"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/go-version"
@@ -35,8 +36,9 @@ import (
 // version and identity checks always resolve against the scoped Kibana
 // connection rather than the provider-level Elasticsearch cluster.
 type KibanaScopedClient struct {
-	kibanaOapi *kibanaoapi.Client
-	fleet      *fleetclient.Client
+	kibanaOapi    *kibanaoapi.Client
+	fleet         *fleetclient.Client
+	elasticsearch *elasticsearch.TypedClient
 	// version is the provider version string used to tag API user-agent headers.
 	version string
 	// kibanaEndpoint holds the resolved Kibana endpoint URL captured after
@@ -77,6 +79,12 @@ func (k *KibanaScopedClient) GetKibanaOapiClient() *kibanaoapi.Client {
 // a scoped client is returned.
 func (k *KibanaScopedClient) GetFleetClient() *fleetclient.Client {
 	return k.fleet
+}
+
+// GetElasticsearchTypedClient returns the Elasticsearch typed client associated
+// with the same provider connection as this Kibana client, when configured.
+func (k *KibanaScopedClient) GetElasticsearchTypedClient() *elasticsearch.TypedClient {
+	return k.elasticsearch
 }
 
 // getServerStatusRaw fetches the Kibana server status, returning the raw version
@@ -151,6 +159,7 @@ func kibanaScopedClientFromAPIClient(a *apiClient) *KibanaScopedClient {
 	return &KibanaScopedClient{
 		kibanaOapi:     a.kibanaOapi,
 		fleet:          a.fleet,
+		elasticsearch:  a.elasticsearch,
 		version:        a.version,
 		kibanaEndpoint: a.kibanaEndpoint,
 		fleetEndpoint:  a.fleetEndpoint,

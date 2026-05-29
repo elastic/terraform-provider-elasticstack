@@ -19,6 +19,7 @@ package fleet
 
 import (
 	"context"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
@@ -47,11 +48,16 @@ type CloudConnectorItem struct {
 	UpdatedAt             string
 }
 
-// GetCloudConnector reads a specific Fleet cloud connector from the API. Returns (nil, nil) on HTTP 404.
+// GetCloudConnector reads a specific Fleet cloud connector from the API. Returns (nil, nil) on HTTP 404
+// and on HTTP 400 responses whose body indicates the saved object was not found (Kibana quirk).
 func GetCloudConnector(ctx context.Context, client *Client, spaceID, cloudConnectorID string) (*CloudConnectorItem, diag.Diagnostics) {
 	resp, err := client.API.GetFleetCloudConnectorsCloudconnectoridWithResponse(ctx, cloudConnectorID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	if resp.StatusCode() == 400 && isCloudConnectorNotFoundBody(resp.Body) {
+		return nil, nil
 	}
 
 	return kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *CloudConnectorItem {
@@ -247,4 +253,9 @@ func varsMapFromAPI(vars map[string]*any) map[string]any {
 		}
 	}
 	return out
+}
+
+func isCloudConnectorNotFoundBody(body []byte) bool {
+	msg := strings.ToLower(string(body))
+	return strings.Contains(msg, "not found")
 }
