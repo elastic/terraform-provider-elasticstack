@@ -150,8 +150,12 @@ func TestAccResourceSpace_DefaultSpace(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("default_space"),
 				ResourceName:             "elasticstack_kibana_space.default",
 				ImportState:              true,
+				ImportStatePersist:       true,
 				ImportStateId:            "default",
 				ImportStateVerify:        false,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.default", "space_id", "default"),
+				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,

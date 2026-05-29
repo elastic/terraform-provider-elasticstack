@@ -23,11 +23,16 @@
   - In step 2: apply the fixture config and check `space_id == "default"` and `name == "Default"`.
   - Use no `CheckDestroy` (the default space is never deleted).
   - Use no `solution` attribute in the fixture (ungated, runs on all stack versions).
-- [x] 4.2 Create the test fixture at `internal/kibana/spaces/testdata/TestAccResourceSpace_DefaultSpace/default_space/main.tf` with:
+- [x] 4.2 Create the test fixture at `internal/kibana/spaces/testdata/TestAccResourceSpace_DefaultSpace/default_space/space.tf` with:
   ```hcl
+  provider "elasticstack" {
+    kibana {}
+  }
+
   resource "elasticstack_kibana_space" "default" {
-    space_id = "default"
-    name     = "Default"
+    space_id    = "default"
+    name        = "Default"
+    description = "This is your default space!"
   }
   ```
 
@@ -35,4 +40,4 @@
 
 - [x] 5.1 Run `make build` to confirm the provider compiles cleanly after changes.
 - [x] 5.2 Run targeted Go unit tests for changed packages: `go test ./internal/kibana/spaces/... ./internal/clients/kibanaoapi/...`.
-- [ ] 5.3 Run the targeted acceptance test `TestAccResourceSpace_DefaultSpace` against a live stack (requires `TF_ACC=1` and stack environment variables per `dev-docs/high-level/testing.md`).
+- [x] 5.3 Run the targeted acceptance test `TestAccResourceSpace_DefaultSpace` against a live stack (requires `TF_ACC=1` and stack environment variables per `dev-docs/high-level/testing.md`).
