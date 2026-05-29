@@ -263,7 +263,6 @@ resource "elasticstack_kibana_dashboard" "example" {
       ignore_global_filters = <optional, bool>
     })> # only with type = "vis"
 
-
     synthetics_stats_overview_config = <optional, object({
       title       = <optional, string>
       description = <optional, string>
