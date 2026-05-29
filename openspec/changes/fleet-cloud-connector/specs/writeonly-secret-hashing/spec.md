@@ -5,9 +5,9 @@
 The provider SHALL provide a reusable utility package at `internal/utils/writeonlyhash` that resources can use to detect drift on write-only secret attributes by storing bcrypt hashes of those secrets in resource-private state. The helper SHALL expose a constructor parameterised by a resource-type-stable salt string, and methods to compute a hash, compare a value against a stored hash, and derive a stable private-state key from an attribute path string. The helper SHALL NOT log, expose, or otherwise leak secret values.
 
 #### Scenario: Constructor binds a per-resource-type salt
-- **WHEN** a resource calls `writeonlyhash.New("fleet_cloud_connector")`
-- **THEN** the returned `Hasher` SHALL use a deterministic salt derived from that string
-- **AND** two `Hasher`s constructed with different resource type strings SHALL produce different hashes for the same input value
+- **WHEN** a value is hashed with a `Hasher` created by `writeonlyhash.New("fleet_cloud_connector")`
+- **THEN** `Matches(value, hash)` SHALL return `true` on that `Hasher`
+- **AND** `Matches(value, hash)` SHALL return `false` on a `Hasher` created with a different resource type string
 
 #### Scenario: Hash comparison roundtrip
 - **WHEN** a value is hashed and the resulting bytes are passed back to `Matches(value, hash)` on the same `Hasher`
@@ -23,7 +23,7 @@ The provider SHALL provide a reusable utility package at `internal/utils/writeon
 
 ### Requirement: bcrypt with per-resource-type salt
 
-The helper SHALL use bcrypt (not SHA-256 or other fast hashes) for hashing. The cost parameter SHALL default to 10 and SHALL be configurable. The salt SHALL be derived from the resource-type-stable identifier passed to the constructor, ensuring that the same secret value produces different hashes across different resource types — protecting against rainbow-table attacks across state files.
+The helper SHALL use bcrypt (not SHA-256 or other fast hashes) for hashing. The cost parameter SHALL default to 10 and SHALL be configurable by the caller (for example, via a `Hasher.Cost` field set before calling `Compute`). The salt SHALL be derived from the resource-type-stable identifier passed to the constructor, ensuring that the same secret value produces different hashes across different resource types — protecting against rainbow-table attacks across state files.
 
 #### Scenario: bcrypt is the chosen algorithm
 - **WHEN** the helper hashes any value

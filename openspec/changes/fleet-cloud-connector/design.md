@@ -1,6 +1,6 @@
 ## Context
 
-Fleet cloud connectors are reusable cloud-credential bundles used by agentless integrations (Cloud Security Posture Management and Cloud Asset Discovery, today) to authenticate against AWS, Azure, and GCP. Kibana exposes them under `/api/fleet/cloud_connectors` with full CRUD plus a list endpoint. The generated `kbapi` client already includes all the operations (`PostFleetCloudConnectors`, `GetFleetCloudConnectorsCloudconnectorid`, `PutFleetCloudConnectorsCloudconnectorid`, `DeleteFleetCloudConnectorsCloudconnectorid`, `GetFleetCloudConnectors`) and types — no regeneration needed.
+Fleet cloud connectors are reusable cloud-credential bundles used by agentless integrations (Cloud Security Posture Management and Cloud Asset Discovery, today) to authenticate against AWS, Azure, and GCP. Kibana exposes them under `/api/fleet/cloud_connectors` with full CRUD plus a list endpoint. The current `generated/kbapi` client in this repo does not yet include these operations, so implementing this change will require adding/regenerating the `kbapi` client support for the cloud connectors endpoints.
 
 The non-trivial parts of this change are not in plumbing — the CRUD pattern matches the existing `internal/fleet/proxy` resource almost exactly — but in three modelling decisions:
 

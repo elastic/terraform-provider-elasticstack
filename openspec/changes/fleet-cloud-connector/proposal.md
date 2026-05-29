@@ -32,6 +32,6 @@ This change adds a first-class resource and data source for Fleet cloud connecto
 - **New docs/examples**: `docs/resources/fleet_cloud_connector.md`, `docs/data-sources/fleet_cloud_connectors.md`, `examples/resources/elasticstack_fleet_cloud_connector/`, `examples/data-sources/elasticstack_fleet_cloud_connectors/`.
 - **Provider registration**: register the new resource and data source in the Plugin Framework provider entrypoint.
 - **Dependencies**: adds `golang.org/x/crypto/bcrypt` (or equivalent) for the write-only hash helper if not already present.
-- **Generated clients**: no `kbapi` regeneration needed — `PostFleetCloudConnectors`, `GetFleetCloudConnectorsCloudconnectorid`, `PutFleetCloudConnectorsCloudconnectorid`, `DeleteFleetCloudConnectorsCloudconnectorid`, and `GetFleetCloudConnectors` are already generated.
+- **Generated clients**: `generated/kbapi` does not currently include the Fleet cloud connectors endpoints in this repo; this change will require adding/regenerating the `kbapi` client support for `POST/GET/PUT/DELETE /api/fleet/cloud_connectors` (and the list endpoint).
 - **Acceptance test infra**: requires Kibana ≥ 9.2 (cloud connectors are preview-in-9.2 and GA-in-9.3); skip-gating uses the existing `entitycore.VersionRequirement` pattern.
 - **Backward compatibility**: additive only — no breaking changes to existing resources or data sources.
