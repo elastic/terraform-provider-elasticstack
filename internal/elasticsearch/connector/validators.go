@@ -45,11 +45,14 @@ func (v configurationValueBranchValidator) ValidateObject(_ context.Context, req
 	}
 
 	attrs := req.ConfigValue.Attributes()
-	branchNames := []string{"string", "number", "bool", "json", "secret_value"}
+	if configurationValueAllBranchesUnknown(attrs) {
+		return
+	}
+
 	setCount := 0
 	var setBranches []string
 
-	for _, name := range branchNames {
+	for _, name := range configurationValueBranchAttrNames {
 		val, ok := attrs[name]
 		if !ok {
 			continue
@@ -91,8 +94,24 @@ func configurationValueBranchIsSet(val attr.Value) bool {
 	case jsontypes.Normalized:
 		return !v.IsNull() && !v.IsUnknown()
 	default:
-		return true
+		// Unexpected attribute types are treated as unset to avoid hiding schema drift.
+		return false
 	}
+}
+
+func configurationValueAllBranchesUnknown(attrs map[string]attr.Value) bool {
+	sawBranch := false
+	for _, name := range configurationValueBranchAttrNames {
+		val, ok := attrs[name]
+		if !ok {
+			continue
+		}
+		sawBranch = true
+		if !val.IsUnknown() {
+			return false
+		}
+	}
+	return sawBranch
 }
 
 // Ensure validators satisfy interfaces at compile time.
