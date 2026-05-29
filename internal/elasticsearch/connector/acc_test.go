@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/connectorfieldtype"
@@ -209,6 +210,14 @@ func registerConnectorAPIKeySchema(t *testing.T, connectorID string) {
 	})
 }
 
+func registerConnectorSensitiveConfigurationSchema(t *testing.T, connectorID string) {
+	t.Helper()
+	registerConnectorConfigurationSchema(t, connectorID, map[string]map[string]any{
+		"api_secret": connectorConfigurationSchemaField("API secret", connectorfieldtype.Str.Name, true),
+		"endpoint":   connectorConfigurationSchemaField("Endpoint", connectorfieldtype.Str.Name, false),
+	})
+}
+
 func putConnectorFilteringMarker(t *testing.T, connectorID, marker string) {
 	t.Helper()
 	ctx := context.Background()
@@ -231,6 +240,25 @@ func putConnectorFilteringMarker(t *testing.T, connectorID, marker string) {
 		Do(ctx)
 	if err != nil {
 		t.Fatalf("update filtering for %q: %v", connectorID, err)
+	}
+}
+
+func testAccCheckDataSourceConfigurationContains(keys ...string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[contentConnectorDataSourceAddr]
+		if !ok {
+			return fmt.Errorf("data source %q not in state", contentConnectorDataSourceAddr)
+		}
+		configJSON, ok := rs.Primary.Attributes["configuration"]
+		if !ok || configJSON == "" {
+			return fmt.Errorf("data source %q has no configuration attribute", contentConnectorDataSourceAddr)
+		}
+		for _, key := range keys {
+			if !strings.Contains(configJSON, fmt.Sprintf("%q", key)) {
+				return fmt.Errorf("configuration JSON missing key %q: %s", key, configJSON)
+			}
+		}
+		return nil
 	}
 }
 
@@ -909,6 +937,33 @@ func TestAccDataSourceContentConnector_notFound(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables:          vars,
 				ExpectError:              regexp.MustCompile("Connector not found"),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceContentConnector_configurationWithSensitiveFields verifies the data source exposes the full configuration schema including sensitive fields.
+func TestAccDataSourceContentConnector_configurationWithSensitiveFields(t *testing.T) {
+	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-ds-cfg")
+	vars := connectorIDVariables(connectorID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: testAccCheckContentConnectorDestroyByID(t, connectorID),
+		Steps: []resource.TestStep{
+			{
+				PreConfig: func() {
+					createConnectorViaAPI(t, connectorID)
+					registerConnectorSensitiveConfigurationSchema(t, connectorID)
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDataSourceConfigurationContains("api_secret", "endpoint"),
+					resource.TestMatchResourceAttr(contentConnectorDataSourceAddr, "configuration", regexp.MustCompile(`"api_secret"[^}]*"sensitive":\s*true`)),
+				),
 			},
 		},
 	})
