@@ -220,7 +220,7 @@ func TestConvertGlobalDataTags_MissingValueEntry(t *testing.T) {
 				GlobalDataTags: tagsMap,
 			}
 
-			result, diags := model.convertGlobalDataTags(ctx, features{SupportsGlobalDataTags: true})
+			result, diags := model.convertGlobalDataTags(ctx, agentPolicyFeatures{SupportsGlobalDataTags: true})
 
 			assert.True(t, diags.HasError(), "expected error diagnostics, got none")
 			assert.Nil(t, result, "expected nil result on error, got %v", result)
