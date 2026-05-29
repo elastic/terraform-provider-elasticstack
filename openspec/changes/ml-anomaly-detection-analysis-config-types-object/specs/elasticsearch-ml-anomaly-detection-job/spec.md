@@ -9,9 +9,9 @@ dynamic source (e.g. `for_each` / `each.value` or a Terraform variable typed as 
 The fix changes the internal Go representation from struct-pointers (which cannot hold unknown
 values) to `types.Object` (which can), following the established pattern in this resource.
 
-## MODIFIED Requirements
+## ADDED Requirements
 
-### Requirement: TFModel.AnalysisConfig uses a framework-native type
+### Requirement: TFModel.AnalysisConfig uses a framework-native type (REQ-036)
 `TFModel.AnalysisConfig` SHALL be typed as `types.Object` so the Plugin Framework can store null,
 unknown, and known values for `analysis_config` without panicking during plan evaluation.
 
@@ -41,7 +41,7 @@ value and produced the error reported in #3403.
 - **WHEN** `terraform apply` is run and then `terraform plan` is re-run
 - **THEN** the second plan SHALL show no diff and the resource SHALL NOT be replaced
 
-### Requirement: AnalysisConfigTFModel.PerPartitionCategorization uses a framework-native type
+### Requirement: AnalysisConfigTFModel.PerPartitionCategorization uses a framework-native type (REQ-037)
 `AnalysisConfigTFModel.PerPartitionCategorization` SHALL be typed as `types.Object` so the Plugin
 Framework can store null, unknown, and known values for `per_partition_categorization` without
 panicking.
@@ -69,7 +69,7 @@ produce the same class of error if `per_partition_categorization` were sourced f
 - **WHEN** `terraform apply` is run and then `terraform plan` is re-run
 - **THEN** the second plan SHALL show no diff for `per_partition_categorization`
 
-### Requirement: Schema and user-visible interface are unchanged
+### Requirement: Schema and user-visible interface are unchanged (REQ-038)
 The Terraform schema for `analysis_config` and `per_partition_categorization` SHALL remain
 unchanged. No attribute names, types, optionality, computability, or plan modifiers SHALL be
 added, removed, or altered as part of this fix.
@@ -79,7 +79,7 @@ added, removed, or altered as part of this fix.
 - **WHEN** the provider is upgraded to the fixed version
 - **THEN** the configuration SHALL plan and apply without errors or unexpected diffs
 
-### Requirement: Regression test for variable-sourced analysis_config
+### Requirement: Regression test for variable-sourced analysis_config (REQ-039)
 A regression acceptance test SHALL be added that assigns the full `analysis_config` block from a
 Terraform variable typed as `object({...})`, runs plan+apply, and then re-runs plan to confirm the
 read path does not produce a `Value Conversion Error`.
