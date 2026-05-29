@@ -254,11 +254,13 @@ func populateConfigurationValuesFromAPI(
 	apiValues := configurationValuesFromAPIResponse(resp.Configuration)
 	result := make(map[string]ConfigurationValueModel)
 
-	for key, apiValue := range apiValues {
-		schemaEntry, hasSchema := resp.Configuration[key]
-		priorElem, hasPrior := priorMap[key]
-
-		if hasPrior {
+	if priorMap != nil {
+		for key, priorElem := range priorMap {
+			apiValue, hasAPI := apiValues[key]
+			if !hasAPI {
+				continue
+			}
+			schemaEntry, hasSchema := resp.Configuration[key]
 			branch := activeConfigurationBranch(priorElem)
 			if hasSchema && schemaEntry.Sensitive && branch != secretValueBranchAttrName {
 				diags.AddWarning(
@@ -281,19 +283,21 @@ func populateConfigurationValuesFromAPI(
 				return fwtypes.MapNull(fwtypes.ObjectType{AttrTypes: configurationValueModelAttrTypes()})
 			}
 			result[key] = decoded
-			continue
 		}
-
-		if hasSchema && schemaEntry.Sensitive {
-			continue
+	} else {
+		for key, apiValue := range apiValues {
+			schemaEntry, hasSchema := resp.Configuration[key]
+			if hasSchema && schemaEntry.Sensitive {
+				continue
+			}
+			branch := schemaTypeToBranch(schemaEntry.Type)
+			decoded, d := decodeConfigurationValueIntoBranch(apiValue, branch)
+			diags.Append(d...)
+			if diags.HasError() {
+				return fwtypes.MapNull(fwtypes.ObjectType{AttrTypes: configurationValueModelAttrTypes()})
+			}
+			result[key] = decoded
 		}
-		branch := schemaTypeToBranch(schemaEntry.Type)
-		decoded, d := decodeConfigurationValueIntoBranch(apiValue, branch)
-		diags.Append(d...)
-		if diags.HasError() {
-			return fwtypes.MapNull(fwtypes.ObjectType{AttrTypes: configurationValueModelAttrTypes()})
-		}
-		result[key] = decoded
 	}
 
 	return typeutils.MapValueFrom(ctx, result, fwtypes.ObjectType{AttrTypes: configurationValueModelAttrTypes()}, configurationValuesPath, diags)
@@ -336,11 +340,19 @@ func decodeConfigurationValueIntoBranch(
 	switch branch {
 	case stringBranchAttrName, secretValueBranchAttrName:
 		var s string
-		if err := json.Unmarshal(raw, &s); err != nil {
-			diags.AddError("Failed to decode configuration value", err.Error())
-			return ConfigurationValueModel{}, diags
+		if err := json.Unmarshal(raw, &s); err == nil {
+			return ConfigurationValueModel{String: fwtypes.StringValue(s)}, diags
 		}
-		return ConfigurationValueModel{String: fwtypes.StringValue(s)}, diags
+		var n json.Number
+		if err := json.Unmarshal(raw, &n); err == nil {
+			return ConfigurationValueModel{String: fwtypes.StringValue(n.String())}, diags
+		}
+		var b bool
+		if err := json.Unmarshal(raw, &b); err == nil {
+			return ConfigurationValueModel{String: fwtypes.StringValue(fmt.Sprintf("%t", b))}, diags
+		}
+		diags.AddError("Failed to decode configuration value", "value is not a JSON string")
+		return ConfigurationValueModel{}, diags
 	case numberBranchAttrName:
 		var n json.Number
 		if err := json.Unmarshal(raw, &n); err != nil {
