@@ -62,6 +62,12 @@
   with a create step (plan+apply) and a plan-after-apply step, mirroring
   `TestAccResourceAnomalyDetectionJobVariableSourcedDetectors`.
 
+- [x] 5.3 Delete `internal/elasticsearch/ml/anomalydetectionjob/issue_3403_acc_test.go` and its
+  testdata directory `testdata/TestAccReproduceIssue3403/`. That test used `ExpectError` to
+  assert the bug; after the fix it would invert and fail. Replaced by
+  `TestAccResourceAnomalyDetectionJobUnknownAnalysisConfig` which asserts that the same
+  unknown-at-plan path now succeeds.
+
 ## 6. Validate and verify
 
 - [x] 6.1 Run `make build` and confirm the provider compiles without errors.
