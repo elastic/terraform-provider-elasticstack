@@ -47,11 +47,11 @@
 
 ## 7. Resource: write-only drift detection
 
-- [ ] 7.1 Wire `internal/utils/writeonlyhash` into the resource for each write-only attribute (`vars[*].secret_value`, `aws.external_id`, future expansion-ready)
-- [ ] 7.2 Implement `ModifyPlan` (or `PlanModifier`s on the relevant attributes) that reads config write-only values, looks up stored hashes from private state, compares, and marks the resource as needing update on mismatch
-- [ ] 7.3 Emit a plan-time warning diagnostic naming each changed write-only attribute (no values)
-- [ ] 7.4 On successful Create/Update, write fresh hashes to private state for every write-only attribute that is set
-- [ ] 7.5 Handle the imported-resource case: absence-of-hash is "no comparison possible"; first apply baselines the hash
+- [x] 7.1 Wire `internal/utils/writeonlyhash` into the resource for each write-only attribute (`vars[*].secret_value`, `aws.external_id`, future expansion-ready)
+- [x] 7.2 Implement `ModifyPlan` (or `PlanModifier`s on the relevant attributes) that reads config write-only values, looks up stored hashes from private state, compares, and marks the resource as needing update on mismatch
+- [x] 7.3 Emit a plan-time warning diagnostic naming each changed write-only attribute (no values)
+- [x] 7.4 On successful Create/Update, write fresh hashes to private state for every write-only attribute that is set
+- [x] 7.5 Handle the imported-resource case: absence-of-hash is "no comparison possible"; first apply baselines the hash
 
 ## 8. Resource: registration
 
