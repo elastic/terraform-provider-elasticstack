@@ -114,8 +114,9 @@ func getSchema(_ context.Context) schema.Schema {
 						Optional:  true,
 						Sensitive: true,
 						WriteOnly: true,
-						MarkdownDescription: "The external ID for the IAM trust relationship. Write-only: the value is sent to the API once and is never stored in state. " +
-							"Plan-time drift detection uses a bcrypt hash in private state (see resource documentation).",
+						MarkdownDescription: "The external ID for the IAM trust relationship. Write-only: the value is sent to the API once and is never stored in Terraform state. " +
+							"A bcrypt hash of the last applied value is stored in resource private state for plan-time drift detection. " +
+							"After `terraform import`, plan and apply once with this attribute set to baseline the hash if you intend to manage the secret with Terraform.",
 					},
 					attrAWSExternalIDSecretRef: schema.SingleNestedAttribute{
 						Computed:            true,
@@ -201,10 +202,12 @@ func getSchema(_ context.Context) schema.Schema {
 							MarkdownDescription: "Plain string value for a structured var (API union arm 4).",
 						},
 						attrVarsSecretValue: schema.StringAttribute{
-							Optional:            true,
-							Sensitive:           true,
-							WriteOnly:           true,
-							MarkdownDescription: "Write-only secret value for a structured var (API union arm 4). The raw value is sent to the API once and is never stored in state.",
+							Optional:  true,
+							Sensitive: true,
+							WriteOnly: true,
+							MarkdownDescription: "Write-only secret value for a structured var (API union arm 4). The raw value is sent to the API once and is never stored in Terraform state. " +
+								"A bcrypt hash of the last applied value is stored in resource private state for plan-time drift detection. " +
+								"After `terraform import`, plan and apply once with this attribute set to baseline the hash if you intend to manage the secret with Terraform.",
 						},
 						attrVarsSecretRef: schema.SingleNestedAttribute{
 							Computed:            true,
