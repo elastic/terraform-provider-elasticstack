@@ -193,6 +193,108 @@ func TestEvaluateWriteOnlyDrift_VarsKeys(t *testing.T) {
 	})
 }
 
+func TestEvaluateWriteOnlyDrift_AWSImportBaseline(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	hasher := cloudConnectorHasher()
+	priv := newMapPrivateState()
+
+	config := cloudConnectorModel{
+		AWS: mustAWSBlockObject(t, types.StringValue("import-secret")),
+	}
+	results, diags := evaluateWriteOnlyDrift(ctx, hasher, config, priv)
+	require.False(t, diags.HasError())
+	require.Len(t, results, 1)
+	assert.Equal(t, writeOnlyAttributeAWSExternalID, results[0].AttributePath)
+	assert.True(t, results[0].IsImportBaseline)
+}
+
+func TestEvaluateWriteOnlyDrift_AWSBlockRemoved(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	hasher := cloudConnectorHasher()
+	priv := newMapPrivateState()
+
+	hash, err := hasher.Compute("stored-secret")
+	require.NoError(t, err)
+	priv.data[awsExternalIDPrivateStateKey()] = hash
+
+	config := cloudConnectorModel{
+		AWS: types.ObjectNull(awsAttrTypes()),
+	}
+	results, diags := evaluateWriteOnlyDrift(ctx, hasher, config, priv)
+	require.False(t, diags.HasError())
+	require.Len(t, results, 1)
+	assert.Equal(t, writeOnlyAttributeAWSExternalID, results[0].AttributePath)
+	assert.True(t, results[0].Changed)
+	assert.False(t, results[0].IsImportBaseline)
+}
+
+func TestEvaluateWriteOnlyDrift_VarsSecretValueChanged(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	hasher := cloudConnectorHasher()
+	priv := newMapPrivateState()
+
+	hash, err := hasher.Compute("old-secret")
+	require.NoError(t, err)
+	priv.data[varsSecretValuePrivateStateKey("token")] = hash
+	index, err := json.Marshal([]string{"token"})
+	require.NoError(t, err)
+	priv.data[varsSecretIndexPrivateStateKey] = index
+
+	config := cloudConnectorModel{
+		Vars: mustVarsMap(t, map[string]cloudConnectorVarsElement{
+			"token": {
+				Type:        types.StringValue("password"),
+				SecretValue: types.StringValue("new-secret"),
+			},
+		}),
+	}
+	results, diags := evaluateWriteOnlyDrift(ctx, hasher, config, priv)
+	require.False(t, diags.HasError())
+	require.Len(t, results, 1)
+	assert.Equal(t, varsSecretValueAttributePath("token"), results[0].AttributePath)
+	assert.True(t, results[0].Changed)
+	assert.False(t, results[0].IsImportBaseline)
+}
+
+func TestParseVarsSecretIndex_InvalidJSON(t *testing.T) {
+	t.Parallel()
+
+	keys, diags := parseVarsSecretIndex([]byte(`not-json`))
+	require.False(t, diags.HasError())
+	require.NotEmpty(t, diags.Warnings())
+	require.Nil(t, keys)
+}
+
+func TestEvaluateWriteOnlyDrift_CorruptIndexGraceful(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	hasher := cloudConnectorHasher()
+	priv := newMapPrivateState()
+	priv.data[varsSecretIndexPrivateStateKey] = []byte(`not-json`)
+
+	config := cloudConnectorModel{
+		Vars: mustVarsMap(t, map[string]cloudConnectorVarsElement{
+			"token": {
+				Type:        types.StringValue("password"),
+				SecretValue: types.StringValue("secret"),
+			},
+		}),
+	}
+	results, diags := evaluateWriteOnlyDrift(ctx, hasher, config, priv)
+	require.False(t, diags.HasError())
+	require.NotEmpty(t, diags.Warnings())
+	require.Len(t, results, 1)
+	assert.Equal(t, varsSecretValueAttributePath("token"), results[0].AttributePath)
+	assert.True(t, results[0].IsImportBaseline)
+}
+
 func mustAWSBlockObject(t *testing.T, externalID types.String) types.Object {
 	t.Helper()
 	obj, diags := types.ObjectValue(awsAttrTypes(), map[string]attr.Value{
@@ -207,13 +309,21 @@ func mustAWSBlockObject(t *testing.T, externalID types.String) types.Object {
 func TestDriftWarningDiagnostic(t *testing.T) {
 	t.Parallel()
 
+	const secret = "super-secret"
+
 	normal := driftWarningDiagnostic(driftResult{AttributePath: writeOnlyAttributeAWSExternalID})
 	assert.Contains(t, normal.Summary(), writeOnlyAttributeAWSExternalID)
-	assert.NotContains(t, normal.Summary(), "super-secret")
+	assert.Contains(t, normal.Summary(), "Detected a change")
+	assert.NotContains(t, normal.Summary(), secret)
+	assert.NotContains(t, normal.Detail(), secret)
 
 	baseline := driftWarningDiagnostic(driftResult{
 		AttributePath:    writeOnlyAttributeAWSExternalID,
 		IsImportBaseline: true,
 	})
+	assert.Contains(t, baseline.Summary(), writeOnlyAttributeAWSExternalID)
+	assert.Contains(t, baseline.Summary(), "Establishing baseline hash")
 	assert.Contains(t, baseline.Detail(), "import")
+	assert.NotContains(t, baseline.Summary(), secret)
+	assert.NotContains(t, baseline.Detail(), secret)
 }
