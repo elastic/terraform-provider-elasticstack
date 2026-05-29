@@ -310,6 +310,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		integrationds.NewDataSource,
 		enrich.NewEnrichPolicyDataSource,
 		synonyms.NewSynonymSetDataSource,
+		connector.NewContentConnectorDataSource,
 		queryrulesets.NewQueryRulesetDataSource,
 		rolemapping.NewRoleMappingDataSource,
 		role.NewRoleDataSource,
