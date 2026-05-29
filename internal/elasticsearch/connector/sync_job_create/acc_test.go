@@ -84,6 +84,31 @@ func cleanupConnectorAndSyncJobs(connectorID string) error {
 	return nil
 }
 
+func testAccCheckSyncJobDocumentPreserved(connectorID string) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		ctx := context.Background()
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		if err != nil {
+			return err
+		}
+
+		resp, err := client.GetESClient().Connector.SyncJobList().ConnectorId(connectorID).Do(ctx)
+		if err != nil {
+			return fmt.Errorf("list sync jobs for connector %q: %w", connectorID, err)
+		}
+		if len(resp.Results) == 0 {
+			return fmt.Errorf("no sync jobs found for connector %q", connectorID)
+		}
+
+		syncJobID := resp.Results[len(resp.Results)-1].Id
+		_, err = client.GetESClient().Connector.SyncJobGet(syncJobID).Do(ctx)
+		if err != nil {
+			return fmt.Errorf("GET /_connector/_sync_job/%s: %w", syncJobID, err)
+		}
+		return nil
+	}
+}
+
 func testAccCheckSyncJobsExist(connectorID string, minCount int) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
 		ctx := context.Background()
