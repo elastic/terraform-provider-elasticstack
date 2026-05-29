@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Package cloudconnector provides Terraform Plugin Framework models and API
+// conversion helpers for the elasticstack_fleet_cloud_connector resource.
 package cloudconnector
 
 import (
@@ -126,7 +128,7 @@ func (m cloudConnectorModel) GetVersionRequirements() ([]entitycore.VersionRequi
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *cloudConnectorMinVersion,
-			ErrorMessage: "Fleet cloud connectors require Kibana v9.2.0 or later.",
+			ErrorMessage: fmt.Sprintf("Fleet cloud connectors require Kibana v%s or later.", cloudConnectorMinVersion),
 		},
 	}, nil
 }
@@ -168,6 +170,7 @@ func azureAttrTypes() map[string]attr.Type {
 }
 
 func (m *cloudConnectorModel) populateFromAPI(spaceID string, item fleetclient.CloudConnectorItem) diag.Diagnostics {
+	// Does not modify config-only attributes such as ForceDelete.
 	var diags diag.Diagnostics
 
 	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: item.ID}).String())
@@ -467,11 +470,12 @@ func awsBlockFromVars(vars map[string]any) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	nullObj := types.ObjectNull(awsAttrTypes())
 
-	roleArnVal, hasRoleArn := vars[attrAWSRoleArn]
-	externalIDVal, hasExternalID := vars[attrAWSExternalID]
-	if !hasRoleArn || !hasExternalID {
+	if !hasExactVarKeys(vars, attrAWSRoleArn, attrAWSExternalID) {
 		return nullObj, diags
 	}
+
+	roleArnVal := vars[attrAWSRoleArn]
+	externalIDVal := vars[attrAWSExternalID]
 
 	roleArn, ok := stringVarValue(roleArnVal)
 	if !ok {
@@ -505,12 +509,13 @@ func azureBlockFromVars(vars map[string]any) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	nullObj := types.ObjectNull(azureAttrTypes())
 
-	tenantIDVal, hasTenantID := vars[attrAzureTenantID]
-	clientIDVal, hasClientID := vars[attrAzureClientID]
-	connectorIDVal, hasConnectorID := vars[attrAzureCloudConnectorID]
-	if !hasTenantID || !hasClientID || !hasConnectorID {
+	if !hasExactVarKeys(vars, attrAzureTenantID, attrAzureClientID, attrAzureCloudConnectorID) {
 		return nullObj, diags
 	}
+
+	tenantIDVal := vars[attrAzureTenantID]
+	clientIDVal := vars[attrAzureClientID]
+	connectorIDVal := vars[attrAzureCloudConnectorID]
 
 	tenantID, ok := stringVarValue(tenantIDVal)
 	if !ok {
@@ -602,3 +607,23 @@ func secretRefVarValue(value any) (types.Object, bool) {
 	}
 	return obj, true
 }
+
+// hasExactVarKeys reports whether vars is non-nil, contains every required key,
+// and contains no keys outside the required set. A nil or empty map is exact
+// only when no keys are required.
+func hasExactVarKeys(vars map[string]any, requiredKeys ...string) bool {
+	if len(vars) != len(requiredKeys) {
+		return false
+	}
+	for _, key := range requiredKeys {
+		if _, ok := vars[key]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
+var (
+	_ entitycore.KibanaResourceModel     = cloudConnectorModel{}
+	_ entitycore.WithVersionRequirements = cloudConnectorModel{}
+)
