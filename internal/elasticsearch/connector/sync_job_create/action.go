@@ -1,0 +1,221 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package sync_job_create
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/syncjobtriggermethod"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/syncjobtype"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/action"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
+)
+
+const (
+	defaultInvokeTimeout = 30 * time.Minute
+	syncJobPollInterval  = 5 * time.Second
+)
+
+// NewAction returns a constructor for the connector sync job create action. The
+// Configure, Metadata, Schema, and Invoke prelude are owned by the
+// [entitycore] action envelope; this package supplies only the schema body
+// and the invoke callback.
+func NewAction() action.Action {
+	return entitycore.NewElasticsearchAction[Model]("connector_sync_job_create", entitycore.ElasticsearchActionOptions[Model]{
+		Schema:               GetSchema,
+		Invoke:               invokeCreate,
+		DefaultInvokeTimeout: defaultInvokeTimeout,
+	})
+}
+
+// invokeCreate is the entity-specific work for elasticstack_elasticsearch_connector_sync_job_create.
+// The envelope has already decoded req.Config, resolved client, enforced version
+// requirements, and applied the invoke timeout to ctx.
+func invokeCreate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ActionRequest[Model]) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
+	model := req.Config
+
+	connectorID, jobType, triggerMethod, paramsDiags := syncJobParamsFromModel(model)
+	diags.Append(paramsDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	waitForCompletion := false
+	if !model.WaitForCompletion.IsNull() && !model.WaitForCompletion.IsUnknown() {
+		waitForCompletion = model.WaitForCompletion.ValueBool()
+	}
+
+	syncJobID, createDiags := esclient.CreateSyncJob(ctx, client, connectorID, jobType, triggerMethod)
+	diags.Append(createDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	if !waitForCompletion {
+		return diags
+	}
+
+	return waitForSyncJobCompletion(ctx, client, syncJobID)
+}
+
+// syncJobCreateParams holds resolved POST /_connector/_sync_job parameters.
+type syncJobCreateParams struct {
+	ConnectorID   string
+	JobType       syncjobtype.SyncJobType
+	TriggerMethod syncjobtriggermethod.SyncJobTriggerMethod
+}
+
+func syncJobParamsFromModel(model Model) (string, syncjobtype.SyncJobType, syncjobtriggermethod.SyncJobTriggerMethod, fwdiag.Diagnostics) {
+	params, diags := syncJobCreateParamsFromModel(model)
+	if diags.HasError() {
+		return "", syncjobtype.SyncJobType{}, syncjobtriggermethod.SyncJobTriggerMethod{}, diags
+	}
+	return params.ConnectorID, params.JobType, params.TriggerMethod, diags
+}
+
+func syncJobCreateParamsFromModel(model Model) (syncJobCreateParams, fwdiag.Diagnostics) {
+	var diags fwdiag.Diagnostics
+
+	connectorID := model.ConnectorID.ValueString()
+	if connectorID == "" {
+		diags.AddError("Invalid connector_id", "connector_id must not be empty.")
+		return syncJobCreateParams{}, diags
+	}
+
+	jobTypeStr := "full"
+	if !model.JobType.IsNull() && !model.JobType.IsUnknown() {
+		jobTypeStr = model.JobType.ValueString()
+	}
+
+	triggerMethodStr := "on_demand"
+	if !model.TriggerMethod.IsNull() && !model.TriggerMethod.IsUnknown() {
+		triggerMethodStr = model.TriggerMethod.ValueString()
+	}
+
+	jobType, jobTypeDiags := parseJobType(jobTypeStr)
+	diags.Append(jobTypeDiags...)
+	triggerMethod, triggerDiags := parseTriggerMethod(triggerMethodStr)
+	diags.Append(triggerDiags...)
+	if diags.HasError() {
+		return syncJobCreateParams{}, diags
+	}
+
+	return syncJobCreateParams{
+		ConnectorID:   connectorID,
+		JobType:       jobType,
+		TriggerMethod: triggerMethod,
+	}, diags
+}
+
+func parseJobType(value string) (syncjobtype.SyncJobType, fwdiag.Diagnostics) {
+	switch value {
+	case "full":
+		return syncjobtype.Full, nil
+	case "incremental":
+		return syncjobtype.Incremental, nil
+	case "access_control":
+		return syncjobtype.Accesscontrol, nil
+	default:
+		var diags fwdiag.Diagnostics
+		diags.AddError("Invalid job_type", fmt.Sprintf("job_type must be one of full, incremental, access_control; got %q.", value))
+		return syncjobtype.SyncJobType{}, diags
+	}
+}
+
+func parseTriggerMethod(value string) (syncjobtriggermethod.SyncJobTriggerMethod, fwdiag.Diagnostics) {
+	switch value {
+	case "on_demand":
+		return syncjobtriggermethod.Ondemand, nil
+	case "scheduled":
+		return syncjobtriggermethod.Scheduled, nil
+	default:
+		var diags fwdiag.Diagnostics
+		diags.AddError("Invalid trigger_method", fmt.Sprintf("trigger_method must be one of on_demand, scheduled; got %q.", value))
+		return syncjobtriggermethod.SyncJobTriggerMethod{}, diags
+	}
+}
+
+func waitForSyncJobCompletion(ctx context.Context, client *clients.ElasticsearchScopedClient, syncJobID string) fwdiag.Diagnostics {
+	lastStatus := "pending"
+
+	for {
+		job, getDiags := esclient.GetSyncJob(ctx, client, syncJobID)
+		if getDiags.HasError() {
+			return getDiags
+		}
+
+		lastStatus = job.Status.String()
+		errorField := ""
+		if job.Error != nil {
+			errorField = *job.Error
+		}
+
+		done, statusDiags := classifyTerminalStatus(lastStatus, errorField)
+		if statusDiags.HasError() {
+			return statusDiags
+		}
+		if done {
+			return nil
+		}
+
+		select {
+		case <-ctx.Done():
+			var diags fwdiag.Diagnostics
+			diags.AddError(
+				"Sync job did not complete within timeout",
+				fmt.Sprintf("Sync job %q last observed status: %q.", syncJobID, lastStatus),
+			)
+			return diags
+		case <-time.After(syncJobPollInterval):
+		}
+	}
+}
+
+// classifyTerminalStatus reports whether status is terminal and returns diagnostics
+// for non-success terminal states.
+func classifyTerminalStatus(status string, errorField string) (done bool, diags fwdiag.Diagnostics) {
+	switch status {
+	case "completed":
+		return true, diags
+	case "error":
+		detail := errorField
+		if detail == "" {
+			detail = "no error message returned by the API"
+		}
+		diags.AddError("Sync job failed", fmt.Sprintf("Sync job reached status error: %s.", detail))
+		return true, diags
+	case "canceled", "cancelled":
+		diags.AddError("Sync job cancelled", "Sync job reached terminal status cancelled.")
+		return true, diags
+	case "suspended":
+		detail := "Sync job reached terminal status suspended."
+		if errorField != "" {
+			detail = fmt.Sprintf("Sync job reached terminal status suspended: %s.", errorField)
+		}
+		diags.AddError("Sync job suspended", detail)
+		return true, diags
+	default:
+		return false, diags
+	}
+}
