@@ -55,21 +55,32 @@ func TestConfigurationSchemaNotRegisteredDiagnostic(t *testing.T) {
 	require.Contains(t, detail, configurationSchemaNotRegisteredURL)
 }
 
-func TestSkipAspectOnUpdate(t *testing.T) {
+func TestShouldWriteAspect(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	nullObj := fwtypes.ObjectNull(pipelineModelAttrTypes())
-	knownObj, diags := fwtypes.ObjectValueFrom(ctx, pipelineModelAttrTypes(), PipelineModel{
+	knownA, diagsA := fwtypes.ObjectValueFrom(ctx, pipelineModelAttrTypes(), PipelineModel{
 		Name:                 fwtypes.StringValue("p"),
 		ExtractBinaryContent: fwtypes.BoolValue(true),
 		ReduceWhitespace:     fwtypes.BoolValue(true),
 		RunMlInference:       fwtypes.BoolValue(false),
 	})
-	require.False(t, diags.HasError())
+	require.False(t, diagsA.HasError())
+	knownB, diagsB := fwtypes.ObjectValueFrom(ctx, pipelineModelAttrTypes(), PipelineModel{
+		Name:                 fwtypes.StringValue("q"),
+		ExtractBinaryContent: fwtypes.BoolValue(false),
+		ReduceWhitespace:     fwtypes.BoolValue(false),
+		RunMlInference:       fwtypes.BoolValue(true),
+	})
+	require.False(t, diagsB.HasError())
 
-	require.True(t, skipAspectOnUpdate(nullObj, nullObj))
-	require.False(t, skipAspectOnUpdate(knownObj, nullObj))
-	require.False(t, skipAspectOnUpdate(knownObj, knownObj))
+	require.False(t, shouldWriteAspect(nullObj, nullObj, false))
+	require.True(t, shouldWriteAspect(knownA, nullObj, false))
+	require.True(t, shouldWriteAspect(knownA, knownA, false), "create always writes when plan is set")
+	require.False(t, shouldWriteAspect(knownA, knownA, true), "update skips when plan equals prior")
+	require.True(t, shouldWriteAspect(knownA, knownB, true), "update writes when plan differs from prior")
+	require.True(t, shouldWriteAspect(knownA, nullObj, true), "update writes when prior is null")
+	require.False(t, shouldWriteAspect(nullObj, knownA, true), "update skips when plan is unset")
 }
 
 func TestPlanObjectSet_andPlanMapSet(t *testing.T) {

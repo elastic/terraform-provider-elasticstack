@@ -76,7 +76,7 @@ func TestEncodeSecretHashForPrivateState_validJSON(t *testing.T) {
 
 	encoded, err := encodeSecretHashForPrivateState(hash)
 	require.NoError(t, err)
-	require.True(t, json.Valid(encoded))
+	require.True(t, json.Valid(encoded), "private state values must be valid JSON")
 
 	decoded, err := decodeSecretHashFromPrivateState(encoded)
 	require.NoError(t, err)
@@ -88,7 +88,7 @@ func TestSecretHashKey_usesSpecBracketedPath(t *testing.T) {
 	require.Equal(t, `secret_hash:configuration_values["password"].secret_value`, secretHashKey("password"))
 }
 
-func TestStoreSecretHashes_storesJSONEncodedHash(t *testing.T) {
+func TestStoreSecretHashes_storesVerifiableHash(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	ps := mapPrivateState{}
@@ -98,7 +98,32 @@ func TestStoreSecretHashes_storesJSONEncodedHash(t *testing.T) {
 	var diags diag.Diagnostics
 	storeSecretHashes(ctx, ps, configMap, &diags)
 	require.False(t, diags.HasError())
-	require.True(t, json.Valid(ps[secretHashKey("password")]))
+
+	stored := ps[secretHashKey("password")]
+	require.True(t, json.Valid(stored), "stored hash must be valid JSON")
+	decoded, err := decodeSecretHashFromPrivateState(stored)
+	require.NoError(t, err)
+	require.True(t, secretHasher.Matches("pw", decoded))
+}
+
+func TestStoreSecretHashes_skipsReHashWhenStoredMatches(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	ps := mapPrivateState{}
+
+	hash, err := secretHasher.Compute("pw")
+	require.NoError(t, err)
+	encoded, err := encodeSecretHashForPrivateState(hash)
+	require.NoError(t, err)
+	ps[secretHashKey("password")] = encoded
+
+	configMap := map[string]ConfigurationValueModel{
+		"password": {SecretValue: fwtypes.StringValue("pw")},
+	}
+	var diags diag.Diagnostics
+	storeSecretHashes(ctx, ps, configMap, &diags)
+	require.False(t, diags.HasError())
+	require.Equal(t, encoded, ps[secretHashKey("password")], "matching hash must be preserved verbatim")
 }
 
 func TestClearRemovedSecretHashes_nilPrivateWithRemovals(t *testing.T) {

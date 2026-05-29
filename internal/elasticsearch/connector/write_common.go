@@ -48,7 +48,7 @@ func applyConnectorFanOut(
 		priorFeatures = prior.Features
 	}
 
-	if planObjectSet(plan.Pipeline) && (!isUpdate || !skipAspectOnUpdate(plan.Pipeline, priorPipeline)) {
+	if shouldWriteAspect(plan.Pipeline, priorPipeline, isUpdate) {
 		pipeline := plan.toPipelineAPI(ctx, &diags)
 		if diags.HasError() {
 			return diags
@@ -56,7 +56,7 @@ func applyConnectorFanOut(
 		diags.Append(esclient.UpdateConnectorPipeline(ctx, client, connectorID, pipeline)...)
 	}
 
-	if planObjectSet(plan.Scheduling) && (!isUpdate || !skipAspectOnUpdate(plan.Scheduling, priorScheduling)) {
+	if shouldWriteAspect(plan.Scheduling, priorScheduling, isUpdate) {
 		scheduling := plan.toSchedulingAPI(ctx, &diags)
 		if diags.HasError() {
 			return diags
@@ -64,7 +64,7 @@ func applyConnectorFanOut(
 		diags.Append(esclient.UpdateConnectorScheduling(ctx, client, connectorID, scheduling)...)
 	}
 
-	if planObjectSet(plan.Features) && (!isUpdate || !skipAspectOnUpdate(plan.Features, priorFeatures)) {
+	if shouldWriteAspect(plan.Features, priorFeatures, isUpdate) {
 		features := plan.toFeaturesAPI(ctx, &diags)
 		if diags.HasError() {
 			return diags
@@ -125,6 +125,20 @@ func apiKeyChanged(plan ContentConnectorData, prior *ContentConnectorData) bool 
 		return true
 	}
 	return !plan.APIKeyID.Equal(prior.APIKeyID) || !plan.APIKeySecretID.Equal(prior.APIKeySecretID)
+}
+
+// shouldWriteAspect reports whether a connector aspect object (pipeline,
+// scheduling, features) should be PUT to the API. On Create it returns true
+// whenever the plan value is set. On Update it additionally suppresses the
+// PUT when the plan equals the prior state, avoiding no-op writes.
+func shouldWriteAspect(plan, prior fwtypes.Object, isUpdate bool) bool {
+	if !planObjectSet(plan) {
+		return false
+	}
+	if !isUpdate {
+		return true
+	}
+	return !plan.Equal(prior)
 }
 
 func configurationSchemaPreflight(

@@ -84,41 +84,28 @@ func (data ContentConnectorData) toSchedulingAPI(ctx context.Context, diags *dia
 	if diags.HasError() {
 		return estypes.SchedulingConfiguration{}
 	}
-	out := estypes.SchedulingConfiguration{}
-	if !model.Full.IsNull() && typeutils.IsKnown(model.Full) {
-		var entry ScheduleEntryModel
-		diags.Append(model.Full.As(ctx, &entry, basetypes.ObjectAsOptions{})...)
-		if diags.HasError() {
-			return out
-		}
-		out.Full = &estypes.ConnectorScheduling{
-			Enabled:  entry.Enabled.ValueBool(),
-			Interval: entry.Interval.ValueString(),
-		}
+	return estypes.SchedulingConfiguration{
+		Full:          scheduleEntryToAPI(ctx, model.Full, diags),
+		Incremental:   scheduleEntryToAPI(ctx, model.Incremental, diags),
+		AccessControl: scheduleEntryToAPI(ctx, model.AccessControl, diags),
 	}
-	if !model.Incremental.IsNull() && typeutils.IsKnown(model.Incremental) {
-		var entry ScheduleEntryModel
-		diags.Append(model.Incremental.As(ctx, &entry, basetypes.ObjectAsOptions{})...)
-		if diags.HasError() {
-			return out
-		}
-		out.Incremental = &estypes.ConnectorScheduling{
-			Enabled:  entry.Enabled.ValueBool(),
-			Interval: entry.Interval.ValueString(),
-		}
+}
+
+// scheduleEntryToAPI maps an optional ScheduleEntryModel object to *ConnectorScheduling.
+// Returns nil for null/unknown objects so the API treats the entry as "leave as-is".
+func scheduleEntryToAPI(ctx context.Context, obj fwtypes.Object, diags *diag.Diagnostics) *estypes.ConnectorScheduling {
+	if obj.IsNull() || !typeutils.IsKnown(obj) {
+		return nil
 	}
-	if !model.AccessControl.IsNull() && typeutils.IsKnown(model.AccessControl) {
-		var entry ScheduleEntryModel
-		diags.Append(model.AccessControl.As(ctx, &entry, basetypes.ObjectAsOptions{})...)
-		if diags.HasError() {
-			return out
-		}
-		out.AccessControl = &estypes.ConnectorScheduling{
-			Enabled:  entry.Enabled.ValueBool(),
-			Interval: entry.Interval.ValueString(),
-		}
+	var entry ScheduleEntryModel
+	diags.Append(obj.As(ctx, &entry, basetypes.ObjectAsOptions{})...)
+	if diags.HasError() {
+		return nil
 	}
-	return out
+	return &estypes.ConnectorScheduling{
+		Enabled:  entry.Enabled.ValueBool(),
+		Interval: entry.Interval.ValueString(),
+	}
 }
 
 func (data ContentConnectorData) toFeaturesAPI(ctx context.Context, diags *diag.Diagnostics) estypes.ConnectorFeatures {
@@ -127,30 +114,10 @@ func (data ContentConnectorData) toFeaturesAPI(ctx context.Context, diags *diag.
 	if diags.HasError() {
 		return estypes.ConnectorFeatures{}
 	}
-	out := estypes.ConnectorFeatures{}
-	if !model.DocumentLevelSecurity.IsNull() && typeutils.IsKnown(model.DocumentLevelSecurity) {
-		var flag FeatureFlagModel
-		diags.Append(model.DocumentLevelSecurity.As(ctx, &flag, basetypes.ObjectAsOptions{})...)
-		if diags.HasError() {
-			return out
-		}
-		out.DocumentLevelSecurity = &estypes.FeatureEnabled{Enabled: flag.Enabled.ValueBool()}
-	}
-	if !model.IncrementalSync.IsNull() && typeutils.IsKnown(model.IncrementalSync) {
-		var flag FeatureFlagModel
-		diags.Append(model.IncrementalSync.As(ctx, &flag, basetypes.ObjectAsOptions{})...)
-		if diags.HasError() {
-			return out
-		}
-		out.IncrementalSync = &estypes.FeatureEnabled{Enabled: flag.Enabled.ValueBool()}
-	}
-	if !model.NativeConnectorAPIKeys.IsNull() && typeutils.IsKnown(model.NativeConnectorAPIKeys) {
-		var flag FeatureFlagModel
-		diags.Append(model.NativeConnectorAPIKeys.As(ctx, &flag, basetypes.ObjectAsOptions{})...)
-		if diags.HasError() {
-			return out
-		}
-		out.NativeConnectorApiKeys = &estypes.FeatureEnabled{Enabled: flag.Enabled.ValueBool()}
+	out := estypes.ConnectorFeatures{
+		DocumentLevelSecurity:  featureFlagToAPI(ctx, model.DocumentLevelSecurity, diags),
+		IncrementalSync:        featureFlagToAPI(ctx, model.IncrementalSync, diags),
+		NativeConnectorApiKeys: featureFlagToAPI(ctx, model.NativeConnectorAPIKeys, diags),
 	}
 	if !model.SyncRules.IsNull() && typeutils.IsKnown(model.SyncRules) {
 		var rules SyncRulesModel
@@ -158,26 +125,26 @@ func (data ContentConnectorData) toFeaturesAPI(ctx context.Context, diags *diag.
 		if diags.HasError() {
 			return out
 		}
-		syncRules := &estypes.SyncRulesFeature{}
-		if !rules.Basic.IsNull() && typeutils.IsKnown(rules.Basic) {
-			var flag FeatureFlagModel
-			diags.Append(rules.Basic.As(ctx, &flag, basetypes.ObjectAsOptions{})...)
-			if diags.HasError() {
-				return out
-			}
-			syncRules.Basic = &estypes.FeatureEnabled{Enabled: flag.Enabled.ValueBool()}
+		out.SyncRules = &estypes.SyncRulesFeature{
+			Basic:    featureFlagToAPI(ctx, rules.Basic, diags),
+			Advanced: featureFlagToAPI(ctx, rules.Advanced, diags),
 		}
-		if !rules.Advanced.IsNull() && typeutils.IsKnown(rules.Advanced) {
-			var flag FeatureFlagModel
-			diags.Append(rules.Advanced.As(ctx, &flag, basetypes.ObjectAsOptions{})...)
-			if diags.HasError() {
-				return out
-			}
-			syncRules.Advanced = &estypes.FeatureEnabled{Enabled: flag.Enabled.ValueBool()}
-		}
-		out.SyncRules = syncRules
 	}
 	return out
+}
+
+// featureFlagToAPI maps an optional FeatureFlagModel object to *FeatureEnabled.
+// Returns nil for null/unknown objects so the API treats the flag as "leave as-is".
+func featureFlagToAPI(ctx context.Context, obj fwtypes.Object, diags *diag.Diagnostics) *estypes.FeatureEnabled {
+	if obj.IsNull() || !typeutils.IsKnown(obj) {
+		return nil
+	}
+	var flag FeatureFlagModel
+	diags.Append(obj.As(ctx, &flag, basetypes.ObjectAsOptions{})...)
+	if diags.HasError() {
+		return nil
+	}
+	return &estypes.FeatureEnabled{Enabled: flag.Enabled.ValueBool()}
 }
 
 func encodeConfigurationValuesWire(
@@ -480,8 +447,4 @@ func planObjectSet(obj fwtypes.Object) bool {
 
 func planMapSet(m fwtypes.Map) bool {
 	return typeutils.IsKnown(m) && !m.IsNull()
-}
-
-func skipAspectOnUpdate(plan, prior fwtypes.Object) bool {
-	return !planObjectSet(plan) && (prior.IsNull() || !typeutils.IsKnown(prior))
 }

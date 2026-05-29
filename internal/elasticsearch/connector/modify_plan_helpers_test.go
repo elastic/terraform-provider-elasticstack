@@ -40,7 +40,11 @@ func TestEvaluateSecretPlanChanges_driftDetected(t *testing.T) {
 	require.False(t, diags.HasError())
 	require.True(t, outcome.NeedsUpdate)
 	require.Len(t, outcome.Warnings, 1)
-	require.Equal(t, writeOnlySecretDriftWarning("password"), outcome.Warnings[0])
+	require.Equal(
+		t,
+		`Detected a change to write-only attribute configuration_values["password"].secret_value; the resource will be updated.`,
+		outcome.Warnings[0],
+	)
 }
 
 func TestEvaluateSecretPlanChanges_noHashBaseline(t *testing.T) {
@@ -69,13 +73,4 @@ func TestEvaluateSecretPlanChanges_clearsRemovedSecret(t *testing.T) {
 	})
 	require.False(t, diags.HasError())
 	require.Equal(t, []string{"password"}, outcome.KeysToClear)
-}
-
-func TestWriteOnlySecretDriftWarning_exactWording(t *testing.T) {
-	t.Parallel()
-	require.Equal(
-		t,
-		`Detected a change to write-only attribute configuration_values["password"].secret_value; the resource will be updated.`,
-		writeOnlySecretDriftWarning("password"),
-	)
 }

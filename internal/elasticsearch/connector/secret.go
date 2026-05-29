@@ -39,6 +39,10 @@ func secretHashKey(mapKey string) string {
 	return secretHasher.PrivateStateKey(`configuration_values["` + mapKey + `"].secret_value`)
 }
 
+// encodeSecretHashForPrivateState wraps a bcrypt hash as a JSON string. The
+// Terraform Plugin Framework rejects private-state values that are not valid
+// JSON, so raw bcrypt bytes (which contain '$' and other non-JSON characters)
+// must be JSON-encoded before storage.
 func encodeSecretHashForPrivateState(hash []byte) ([]byte, error) {
 	return json.Marshal(string(hash))
 }
@@ -54,26 +58,22 @@ func decodeSecretHashFromPrivateState(raw []byte) ([]byte, error) {
 	return []byte(stored), nil
 }
 
-func configMapHasSecretValues(configMap map[string]ConfigurationValueModel) bool {
-	for _, elem := range configMap {
-		if typeutils.IsKnown(elem.SecretValue) {
-			return true
-		}
-	}
-	return false
-}
-
-func priorMapHasRemovableSecretHashes(priorMap, configMap map[string]ConfigurationValueModel) bool {
+// secretHashKeysToClear reports the configuration keys whose private-state
+// hash should be removed because the prior state held a secret_value branch
+// that the new config no longer holds (either the key is gone or its branch
+// is no longer secret_value).
+func secretHashKeysToClear(priorMap, configMap map[string]ConfigurationValueModel) []string {
+	var keys []string
 	for key, priorElem := range priorMap {
 		if !typeutils.IsKnown(priorElem.SecretValue) {
 			continue
 		}
-		if _, inConfig := configMap[key]; inConfig && typeutils.IsKnown(configMap[key].SecretValue) {
+		if configElem, inConfig := configMap[key]; inConfig && typeutils.IsKnown(configElem.SecretValue) {
 			continue
 		}
-		return true
+		keys = append(keys, key)
 	}
-	return false
+	return keys
 }
 
 func storeSecretHashes(
@@ -83,8 +83,11 @@ func storeSecretHashes(
 	diags *diag.Diagnostics,
 ) {
 	if private == nil {
-		if configMapHasSecretValues(configMap) {
-			diags.AddError(privateStateUnavailableSummary, privateStateUnavailableDetail)
+		for _, elem := range configMap {
+			if typeutils.IsKnown(elem.SecretValue) {
+				diags.AddError(privateStateUnavailableSummary, privateStateUnavailableDetail)
+				return
+			}
 		}
 		return
 	}
@@ -92,7 +95,21 @@ func storeSecretHashes(
 		if !typeutils.IsKnown(elem.SecretValue) {
 			continue
 		}
-		hash, err := secretHasher.Compute(elem.SecretValue.ValueString())
+		value := elem.SecretValue.ValueString()
+
+		// bcrypt is intentionally slow (cost 10). Skip re-hashing when the
+		// existing hash already verifies the value — common on no-op applies
+		// where ModifyPlan triggered an update for non-secret reasons.
+		existingRaw, getDiags := private.GetKey(ctx, secretHashKey(key))
+		diags.Append(getDiags...)
+		if diags.HasError() {
+			return
+		}
+		if existing, err := decodeSecretHashFromPrivateState(existingRaw); err == nil && len(existing) > 0 && secretHasher.Matches(value, existing) {
+			continue
+		}
+
+		hash, err := secretHasher.Compute(value)
 		if err != nil {
 			diags.AddError("Failed to hash write-only attribute", err.Error())
 			return
@@ -112,36 +129,26 @@ func clearRemovedSecretHashes(
 	priorMap, configMap map[string]ConfigurationValueModel,
 	diags *diag.Diagnostics,
 ) {
+	keys := secretHashKeysToClear(priorMap, configMap)
+	if len(keys) == 0 {
+		return
+	}
 	if private == nil {
-		if priorMapHasRemovableSecretHashes(priorMap, configMap) {
-			diags.AddError(privateStateUnavailableSummary, privateStateUnavailableDetail)
-		}
+		diags.AddError(privateStateUnavailableSummary, privateStateUnavailableDetail)
 		return
 	}
-	if priorMap == nil {
-		return
-	}
-	for key, priorElem := range priorMap {
-		if !typeutils.IsKnown(priorElem.SecretValue) {
-			continue
-		}
-		if _, stillPresent := configMap[key]; stillPresent {
-			if typeutils.IsKnown(configMap[key].SecretValue) {
-				continue
-			}
-		}
+	for _, key := range keys {
 		diags.Append(private.SetKey(ctx, secretHashKey(key), nil)...)
 	}
 }
 
 func clearAllSecretHashesFromPrior(
 	ctx context.Context,
-	private any,
+	private entitycore.PrivateStateStorage,
 	prior ContentConnectorData,
 	diags *diag.Diagnostics,
 ) {
-	ps, ok := private.(entitycore.PrivateStateStorage)
-	if !ok || ps == nil || prior.ConfigurationValues.IsNull() || !typeutils.IsKnown(prior.ConfigurationValues) {
+	if private == nil || prior.ConfigurationValues.IsNull() || !typeutils.IsKnown(prior.ConfigurationValues) {
 		return
 	}
 	priorMap := typeutils.MapTypeAs[ConfigurationValueModel](ctx, prior.ConfigurationValues, configurationValuesPath, diags)
@@ -152,7 +159,7 @@ func clearAllSecretHashesFromPrior(
 		if activeConfigurationBranch(elem) != secretValueBranchAttrName {
 			continue
 		}
-		diags.Append(ps.SetKey(ctx, secretHashKey(key), nil)...)
+		diags.Append(private.SetKey(ctx, secretHashKey(key), nil)...)
 	}
 }
 

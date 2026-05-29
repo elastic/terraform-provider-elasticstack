@@ -30,13 +30,6 @@ type secretChangeOutcome struct {
 	KeysToClear []string
 }
 
-func writeOnlySecretDriftWarning(key string) string {
-	return fmt.Sprintf(
-		`Detected a change to write-only attribute configuration_values["%s"].secret_value; the resource will be updated.`,
-		key,
-	)
-}
-
 func evaluateSecretPlanChanges(
 	configMap, stateMap map[string]ConfigurationValueModel,
 	getHash func(key string) ([]byte, diag.Diagnostics),
@@ -59,19 +52,13 @@ func evaluateSecretPlanChanges(
 		}
 		if !secretHasher.Matches(value, storedHash) {
 			out.NeedsUpdate = true
-			out.Warnings = append(out.Warnings, writeOnlySecretDriftWarning(key))
+			out.Warnings = append(out.Warnings, fmt.Sprintf(
+				`Detected a change to write-only attribute configuration_values["%s"].secret_value; the resource will be updated.`,
+				key,
+			))
 		}
 	}
 
-	for key, priorElem := range stateMap {
-		if !typeutils.IsKnown(priorElem.SecretValue) {
-			continue
-		}
-		if _, inConfig := configMap[key]; inConfig && typeutils.IsKnown(configMap[key].SecretValue) {
-			continue
-		}
-		out.KeysToClear = append(out.KeysToClear, key)
-	}
-
+	out.KeysToClear = secretHashKeysToClear(stateMap, configMap)
 	return out, diags
 }

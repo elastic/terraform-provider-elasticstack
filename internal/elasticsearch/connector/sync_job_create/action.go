@@ -62,7 +62,7 @@ func invokeCreate(ctx context.Context, client *clients.ElasticsearchScopedClient
 	var diags fwdiag.Diagnostics
 	model := req.Config
 
-	connectorID, jobType, triggerMethod, paramsDiags := syncJobParamsFromModel(model)
+	params, paramsDiags := syncJobCreateParamsFromModel(model)
 	diags.Append(paramsDiags...)
 	if diags.HasError() {
 		return diags
@@ -73,7 +73,7 @@ func invokeCreate(ctx context.Context, client *clients.ElasticsearchScopedClient
 		waitForCompletion = model.WaitForCompletion.ValueBool()
 	}
 
-	syncJobID, createDiags := esclient.CreateSyncJob(ctx, client, connectorID, jobType, triggerMethod)
+	syncJobID, createDiags := esclient.CreateSyncJob(ctx, client, params.ConnectorID, params.JobType, params.TriggerMethod)
 	diags.Append(createDiags...)
 	if diags.HasError() {
 		return diags
@@ -93,14 +93,6 @@ type syncJobCreateParams struct {
 	ConnectorID   string
 	JobType       syncjobtype.SyncJobType
 	TriggerMethod syncjobtriggermethod.SyncJobTriggerMethod
-}
-
-func syncJobParamsFromModel(model Model) (string, syncjobtype.SyncJobType, syncjobtriggermethod.SyncJobTriggerMethod, fwdiag.Diagnostics) {
-	params, diags := syncJobCreateParamsFromModel(model)
-	if diags.HasError() {
-		return "", syncjobtype.SyncJobType{}, syncjobtriggermethod.SyncJobTriggerMethod{}, diags
-	}
-	return params.ConnectorID, params.JobType, params.TriggerMethod, diags
 }
 
 func syncJobCreateParamsFromModel(model Model) (syncJobCreateParams, fwdiag.Diagnostics) {

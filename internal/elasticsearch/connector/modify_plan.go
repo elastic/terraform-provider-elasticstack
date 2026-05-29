@@ -53,9 +53,7 @@ func (r *contentConnectorResource) ModifyPlan(ctx context.Context, req resource.
 	}
 
 	outcome, evalDiags := evaluateSecretPlanChanges(configMap, stateMap, func(key string) ([]byte, diag.Diagnostics) {
-		var diags diag.Diagnostics
-		raw, getDiags := req.Private.GetKey(ctx, secretHashKey(key))
-		diags.Append(getDiags...)
+		raw, diags := req.Private.GetKey(ctx, secretHashKey(key))
 		if diags.HasError() {
 			return nil, diags
 		}
