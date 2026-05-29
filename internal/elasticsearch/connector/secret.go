@@ -29,8 +29,35 @@ import (
 
 var secretHasher = writeonlyhash.New("elasticsearch_connector")
 
+const (
+	privateStateUnavailableSummary = "Failed to persist write-only secret hash"
+	privateStateUnavailableDetail  = "internal: private state writer unavailable; drift detection will not function. This is a bug."
+)
+
 func secretHashKey(mapKey string) string {
 	return secretHasher.PrivateStateKey(`configuration_values["` + mapKey + `"].secret_value`)
+}
+
+func configMapHasSecretValues(configMap map[string]ConfigurationValueModel) bool {
+	for _, elem := range configMap {
+		if typeutils.IsKnown(elem.SecretValue) {
+			return true
+		}
+	}
+	return false
+}
+
+func priorMapHasRemovableSecretHashes(priorMap, configMap map[string]ConfigurationValueModel) bool {
+	for key, priorElem := range priorMap {
+		if !typeutils.IsKnown(priorElem.SecretValue) {
+			continue
+		}
+		if _, inConfig := configMap[key]; inConfig && typeutils.IsKnown(configMap[key].SecretValue) {
+			continue
+		}
+		return true
+	}
+	return false
 }
 
 func storeSecretHashes(
@@ -40,6 +67,9 @@ func storeSecretHashes(
 	diags *diag.Diagnostics,
 ) {
 	if private == nil {
+		if configMapHasSecretValues(configMap) {
+			diags.AddError(privateStateUnavailableSummary, privateStateUnavailableDetail)
+		}
 		return
 	}
 	for key, elem := range configMap {
@@ -61,7 +91,13 @@ func clearRemovedSecretHashes(
 	priorMap, configMap map[string]ConfigurationValueModel,
 	diags *diag.Diagnostics,
 ) {
-	if private == nil || priorMap == nil {
+	if private == nil {
+		if priorMapHasRemovableSecretHashes(priorMap, configMap) {
+			diags.AddError(privateStateUnavailableSummary, privateStateUnavailableDetail)
+		}
+		return
+	}
+	if priorMap == nil {
 		return
 	}
 	for key, priorElem := range priorMap {
@@ -91,7 +127,10 @@ func clearAllSecretHashesFromPrior(
 	if diags.HasError() {
 		return
 	}
-	for key := range priorMap {
+	for key, elem := range priorMap {
+		if activeConfigurationBranch(elem) != secretValueBranchAttrName {
+			continue
+		}
 		diags.Append(ps.SetKey(ctx, secretHashKey(key), nil)...)
 	}
 }
