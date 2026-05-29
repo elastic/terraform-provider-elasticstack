@@ -596,8 +596,7 @@ func Test_panelsToAPI(t *testing.T) {
 						"query": {"language":"kql","expression":""},
 						"legend": {"size":"small"},
 						"metrics": [{"operation":"count"}],
-						"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}],
-						"time_range": {"from": "now-15m", "to": "now"}
+						"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}]
 					}
 				}
 			]`,
@@ -631,8 +630,7 @@ func Test_panelsToAPI(t *testing.T) {
 							"unassigned":{"type":"color_code","value":"#D3DAE6"}}}],
 						"group_breakdown_by": [{"operation":"terms","collapse_by":"avg","fields":["service.name"],
 							"color":{"mode":"categorical","palette":"default","mapping":[],
-							"unassigned":{"type":"color_code","value":"#D3DAE6"}}}],
-						"time_range": {"from": "now-15m", "to": "now"}
+							"unassigned":{"type":"color_code","value":"#D3DAE6"}}}]
 					}
 				}
 			]`,
@@ -661,8 +659,7 @@ func Test_panelsToAPI(t *testing.T) {
 						"query": {"language":"kql","expression":""},
 						"legend": {"size":"small"},
 						"metrics": [{"operation":"count"}],
-						"styling": {"values": {"mode": "percentage"}},
-						"time_range": {"from": "now-15m", "to": "now"}
+						"styling": {"values": {"mode": "percentage"}}
 					}
 				}
 			]`,
