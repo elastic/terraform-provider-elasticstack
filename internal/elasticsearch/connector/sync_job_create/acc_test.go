@@ -20,6 +20,8 @@ package sync_job_create_test
 import (
 	"context"
 	"fmt"
+	"os"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -117,6 +119,51 @@ func TestAccActionConnectorSyncJobCreate_async(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSyncJobsExist(connectorID, 1),
 				),
+			},
+		},
+	})
+}
+
+func TestAccActionConnectorSyncJobCreate_syncWaitCompletion(t *testing.T) {
+	if os.Getenv("CONNECTOR_SERVICE_RUNNING") != "1" {
+		t.Skip("requires a running connector service (set CONNECTOR_SERVICE_RUNNING=1 to enable)")
+	}
+
+	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-action-sync")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:               func() { acctest.PreCheck(t) },
+		TerraformVersionChecks: actionTerraformVersionChecks(),
+		CheckDestroy:           checkDestroyConnectorSyncJobCreate(connectorID),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("sync"),
+				ConfigVariables:          syncJobConfigVariables(connectorID, true),
+			},
+		},
+	})
+}
+
+func TestAccActionConnectorSyncJobCreate_timeout(t *testing.T) {
+	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-action-timeout")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:               func() { acctest.PreCheck(t) },
+		TerraformVersionChecks: actionTerraformVersionChecks(),
+		CheckDestroy:           checkDestroyConnectorSyncJobCreate(connectorID),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("sync"),
+				ConfigVariables: config.Variables{
+					"connector_id":        config.StringVariable(connectorID),
+					"wait_for_completion": config.BoolVariable(true),
+					"invoke_timeout":      config.StringVariable("5s"),
+				},
+				ExpectError: regexp.MustCompile(`(?s)Sync job did not complete within timeout.*Sync job.*last observed status`),
 			},
 		},
 	})
