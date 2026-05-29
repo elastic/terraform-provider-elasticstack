@@ -21,17 +21,29 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func createConnector(
-	_ context.Context,
-	_ *clients.ElasticsearchScopedClient,
-	_ entitycore.WriteRequest[ContentConnectorData],
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.WriteRequest[ContentConnectorData],
 ) (entitycore.WriteResult[ContentConnectorData], diag.Diagnostics) {
 	var diags diag.Diagnostics
-	diags.AddError("Connector resource not yet implemented", "internal: Section 5 work in progress")
-	var zero ContentConnectorData
-	return entitycore.WriteResult[ContentConnectorData]{Model: zero}, diags
+	data := req.Plan
+
+	connectorID, createDiags := esclient.CreateConnector(ctx, client, req.WriteID, data.toCreateConnectorBody())
+	diags.Append(createDiags...)
+	if diags.HasError() {
+		return entitycore.WriteResult[ContentConnectorData]{Model: data}, diags
+	}
+
+	data.ConnectorID = fwtypes.StringValue(connectorID)
+
+	diags.Append(applyConnectorFanOut(ctx, client, connectorID, data, req.Config, nil, req.Private, false)...)
+
+	return entitycore.WriteResult[ContentConnectorData]{Model: data}, diags
 }

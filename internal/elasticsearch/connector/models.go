@@ -19,6 +19,7 @@ package connector
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -73,7 +74,20 @@ func (data ContentConnectorData) GetElasticsearchConnection() fwtypes.List {
 var (
 	_ entitycore.ElasticsearchResourceModel = ContentConnectorData{}
 	_ entitycore.WithVersionRequirements    = ContentConnectorData{}
+	_ entitycore.WithOptionalWriteIdentity  = ContentConnectorData{}
+	_ entitycore.WithReadResourceID         = ContentConnectorData{}
 )
+
+// AllowsEmptyWriteIdentityOnCreate satisfies [entitycore.WithOptionalWriteIdentity].
+func (ContentConnectorData) AllowsEmptyWriteIdentityOnCreate() bool { return true }
+
+// GetReadResourceID satisfies [entitycore.WithReadResourceID].
+func (data ContentConnectorData) GetReadResourceID() string {
+	if typeutils.IsKnown(data.ConnectorID) {
+		return data.ConnectorID.ValueString()
+	}
+	return ""
+}
 
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
 func (data ContentConnectorData) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
