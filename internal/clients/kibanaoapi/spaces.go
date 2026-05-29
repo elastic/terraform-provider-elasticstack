@@ -66,9 +66,6 @@ func CreateSpace(ctx context.Context, client *Client, body kbapi.PostSpacesSpace
 	}
 
 	switch resp.StatusCode() {
-	case http.StatusOK:
-		return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
-			func() *kbapi.SpaceResponse { return resp.JSON200 })
 	case http.StatusConflict:
 		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic(
 			"Kibana space already exists",
