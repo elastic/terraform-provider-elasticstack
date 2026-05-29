@@ -16,12 +16,12 @@
 
 ## 3. Client wrappers in `internal/clients/elasticsearch/connector.go`
 
-- [ ] 3.1 Add `CreateConnector(ctx, client, plan) (id string, diags)` wrapping `POST /_connector` (no id) and `PUT /_connector/{id}` (id supplied)
-- [ ] 3.2 Add `GetConnector(ctx, client, id) (*get.Response, diags)` wrapping `GET /_connector/{id}`; return `nil, nil` on 404
-- [ ] 3.3 Add `DeleteConnector(ctx, client, id) diags` wrapping `DELETE /_connector/{id}`; tolerate 404
-- [ ] 3.4 Add partial-update wrappers for `_name`, `_index_name`, `_service_type`, `_native`, `_pipeline`, `_scheduling`, `_features`, `_api_key_id`, `_configuration`
-- [ ] 3.5 Add `CreateSyncJob(ctx, client, body) (id string, diags)` wrapping `POST /_connector/_sync_job`
-- [ ] 3.6 Add `GetSyncJob(ctx, client, id) (*syncjobget.Response, diags)` for the action's poll loop
+- [x] 3.1 Add `CreateConnector(ctx, client, plan) (id string, diags)` wrapping `POST /_connector` (no id) and `PUT /_connector/{id}` (id supplied)
+- [x] 3.2 Add `GetConnector(ctx, client, id) (*get.Response, diags)` wrapping `GET /_connector/{id}`; return `nil, nil` on 404
+- [x] 3.3 Add `DeleteConnector(ctx, client, id) diags` wrapping `DELETE /_connector/{id}`; tolerate 404
+- [x] 3.4 Add partial-update wrappers for `_name`, `_index_name`, `_service_type`, `_native`, `_pipeline`, `_scheduling`, `_features`, `_api_key_id`, `_configuration`
+- [x] 3.5 Add `CreateSyncJob(ctx, client, body) (id string, diags)` wrapping `POST /_connector/_sync_job`
+- [x] 3.6 Add `GetSyncJob(ctx, client, id) (*syncjobget.Response, diags)` for the action's poll loop
 
 ## 4. Resource — package skeleton & schema
 
