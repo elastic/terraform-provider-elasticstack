@@ -21,11 +21,11 @@
 
 ## 4. Resource: skeleton + model
 
-- [ ] 4.1 Create `internal/fleet/cloudconnector/` directory mirroring `internal/fleet/proxy/`
-- [ ] 4.2 Implement `models.go` with `cloudConnectorModel`, `GetID`, `GetResourceID`, `GetSpaceID`, `GetKibanaConnection`, `GetVersionRequirements`
-- [ ] 4.3 Implement `cloudConnectorVarsElement` model covering all four union arms and the computed `secret_ref` + `secret_value_wo_version` fields
-- [ ] 4.4 Implement `awsBlockModel` and `azureBlockModel` for the typed sugar
-- [ ] 4.5 Implement `populateFromAPI` performing the dual representation: raw `vars` map always; matching typed block when ALL of its modelled keys are present in the API response under the expected provider
+- [x] 4.1 Create `internal/fleet/cloudconnector/` directory mirroring `internal/fleet/proxy/`
+- [x] 4.2 Implement `models.go` with `cloudConnectorModel`, `GetID`, `GetResourceID`, `GetSpaceID`, `GetKibanaConnection`, `GetVersionRequirements`
+- [x] 4.3 Implement `cloudConnectorVarsElement` model covering all four union arms and the computed `secret_ref` field (the design's `secret_value_wo_version` companion is intentionally omitted — drift detection uses bcrypt hashes in private state per Decision 5)
+- [x] 4.4 Implement `awsBlockModel` and `azureBlockModel` for the typed sugar
+- [x] 4.5 Implement `populateFromAPI` performing the dual representation: raw `vars` map always; matching typed block populated only when (a) the modelled keys for that block are exactly the set of keys present in the API response (no extras), AND (b) the API's `cloud_provider` matches the typed block
 
 ## 5. Resource: schema
 
