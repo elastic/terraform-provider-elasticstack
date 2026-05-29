@@ -58,3 +58,25 @@ REQ-025 governs raw `config_json` `vis` panels; the typed-vs-raw distinction is 
 - GIVEN an XY chart panel configured for ES|QL mode (no usable query expression)
 - WHEN Terraform validates the resource schema
 - THEN the configuration SHALL be accepted without a `query` block
+
+### Requirement: Chart-level `time_range` null-preservation (REQ-040)
+
+The resource SHALL preserve practitioner intent for the chart-level `time_range` block on every typed Lens chart reachable under `panels[].vis_config.by_value.<chart>_config` (for `type = "vis"`), using the same null-preservation pattern as REQ-009 for `time_range.mode`.
+
+When the Kibana API response omits chart-level `time_range` (or returns an empty/zero-valued time range struct), the provider SHALL leave state's chart-level `time_range` as null. When the API returns a populated chart-level `time_range`, the provider SHALL populate state from the API response (subject to the `time_range.mode` null-preservation rule below).
+
+The chart-level `time_range.mode` attribute SHALL follow the same null-preservation rule as the dashboard-level `time_range.mode` in REQ-009: when prior state has `mode = null` and the API response omits or returns no usable mode, state SHALL preserve null rather than overwriting with a default.
+
+#### Scenario: Chart time_range stays null when API omits it
+
+- GIVEN a `vis` panel with a typed Lens chart block under `vis_config.by_value` whose prior state has `time_range = null`
+- AND the Kibana API response omits `time_range` on that chart root
+- WHEN the provider reads the panel
+- THEN state SHALL preserve `time_range = null` on the chart panel
+
+#### Scenario: Chart time_range mode null-preservation
+
+- GIVEN a typed Lens chart panel whose prior state has `time_range = { from = "now-7d", to = "now", mode = null }`
+- AND the Kibana API response omits `mode` on the chart-root `time_range`
+- WHEN the provider reads the panel
+- THEN state SHALL preserve `time_range.mode = null`

@@ -230,15 +230,7 @@ func lensTimeRangeModeString(mode *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRange
 	return string(*mode)
 }
 
-// LensTimeRangesAPILiteralEqual reports whether two API time range payloads match including mode.
-func LensTimeRangesAPILiteralEqual(a, b kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema) bool {
-	if a.From != b.From || a.To != b.To {
-		return false
-	}
-	return lensTimeRangeModeString(a.Mode) == lensTimeRangeModeString(b.Mode)
-}
-
-// chartTimeRangeFromAPI maps a chart-root API time range into Terraform state with REQ-038/REQ-009 null-preservation semantics.
+// chartTimeRangeFromAPI maps a chart-root API time range into Terraform state. It returns nil when the API omits the time range (REQ-040) and preserves null `mode` when the API omits mode (REQ-009).
 func chartTimeRangeFromAPI(apiTimeRange *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, priorState *models.TimeRangeModel) *models.TimeRangeModel {
 	if apiTimeRange == nil {
 		return nil

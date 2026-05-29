@@ -1797,29 +1797,20 @@ On read-back, the provider SHALL populate each attribute from the API response w
 - THEN the API payload SHALL include the parsed `references` array on the chart root
 - AND state SHALL show the normalized JSON form
 
-### Requirement: Chart-level `time_range` null-preservation and inheritance from dashboard (REQ-040)
+### Requirement: Chart-level `time_range` null-preservation (REQ-040)
 
 The resource SHALL preserve practitioner intent for the chart-level `time_range` block on every typed Lens chart reachable under `panels[].vis_config.by_value.<chart>_config` (for `type = "vis"`), using the same null-preservation pattern as REQ-009 for `time_range.mode`.
 
-When prior state has `time_range = null` on that chart block AND the API-returned chart-level `time_range` equals the dashboard-level `time_range` (compared by literal `from`, `to`, and `mode` string equality, treating both nulls as equal), the provider SHALL preserve null in state. Otherwise, the provider SHALL populate state with the API-returned chart-level `time_range`.
+When the Kibana API response omits chart-level `time_range` (or returns an empty/zero-valued time range struct), the provider SHALL leave state's chart-level `time_range` as null. When the API returns a populated chart-level `time_range`, the provider SHALL populate state from the API response (subject to the `time_range.mode` null-preservation rule below).
 
 The chart-level `time_range.mode` attribute SHALL follow the same null-preservation rule as the dashboard-level `time_range.mode` in REQ-009: when prior state has `mode = null` and the API response omits or returns no usable mode, state SHALL preserve null rather than overwriting with a default.
 
-#### Scenario: Chart time_range null-preserved when equal to dashboard
+#### Scenario: Chart time_range stays null when API omits it
 
 - GIVEN a `vis` panel with a typed Lens chart block under `vis_config.by_value` whose prior state has `time_range = null`
-- AND the dashboard-level `time_range` is `{ from = "now-7d", to = "now" }`
-- AND the Kibana API response returns `time_range = { from = "now-7d", to = "now" }` on that chart root
+- AND the Kibana API response omits `time_range` on that chart root
 - WHEN the provider reads the panel
 - THEN state SHALL preserve `time_range = null` on the chart panel
-
-#### Scenario: Chart time_range populated when not equal to dashboard
-
-- GIVEN a `vis` panel with a typed Lens chart block under `vis_config.by_value` whose prior state has `time_range = null`
-- AND the dashboard-level `time_range` is `{ from = "now-7d", to = "now" }`
-- AND the Kibana API response returns `time_range = { from = "now-30d", to = "now-1d" }` on that chart root
-- WHEN the provider reads the panel
-- THEN state SHALL populate `time_range = { from = "now-30d", to = "now-1d" }` on the chart panel
 
 #### Scenario: Chart time_range mode null-preservation
 
