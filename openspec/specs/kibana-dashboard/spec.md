@@ -702,20 +702,22 @@ On write, the resource SHALL build either the `KbnDashboardPanelTypeMarkdownConf
 
 For **typed** `vis` panels (those built through the provider's typed `*_config` blocks and the shared typed visualization write path, not panels managed solely through raw `config_json`), the resource SHALL expose `time_range` as an optional flat sibling attribute on every typed Lens chart block (`xy_chart_config`, `metric_chart_config`, `legacy_metric_config`, `gauge_config`, `heatmap_config`, `tagcloud_config`, `region_map_config`, `datatable_config`, `pie_chart_config`, `mosaic_config`, `treemap_config`, `waffle_config`). The attribute SHALL match the dashboard-level `time_range` shape: required `from` (string), required `to` (string), and optional `mode` enum (`absolute` | `relative`).
 
-When the chart-level `time_range` is null in configuration and state, the provider SHALL inherit the dashboard-level `time_range` when assembling the visualization payload, copying the dashboard-level `from`, `to`, and `mode` into the API request. The hardcoded `lensPanelTimeRange()` window (`now-15m..now`) SHALL NOT be used; it is removed in favor of inheritance.
+When the chart-level `time_range` is null in configuration and state, the provider SHALL omit `time_range` from the API payload entirely. The provider SHALL NOT inherit the dashboard-level `time_range` and SHALL NOT use any hardcoded fallback window. Kibana will apply its own default (global dashboard time range) for panels with no panel-level override.
 
 When the chart-level `time_range` is set in configuration, the provider SHALL pass the configured values to the API verbatim, overriding the dashboard-level value for that panel only.
+
+The `vis_config.by_reference` block SHALL expose `time_range` as an **optional** attribute (same shape: required `from`, required `to`, optional `mode`). When `time_range` is null in `by_reference` configuration, the provider SHALL omit it from the API payload. When set, the provider SHALL send it verbatim.
 
 For XY chart `vis` panels specifically, the resource SHALL require `axis`, `decorations`, `fitting`, `legend`, and at least one `layers` entry. The axis object SHALL use `x`, optional primary `y`, and optional secondary `y2`; `axis.x.domain_json` SHALL represent the X-axis domain, and each configured Y axis SHALL require `domain_json`. Each layer SHALL represent either a data layer or a reference-line layer, not both. **`query` SHALL be optional** on the XY chart schema so that ES|QL XY panels (which carry no `query` in the API) are valid without a dummy query block.
 
 REQ-025 governs raw `config_json` `vis` panels; the typed-vs-raw distinction is unchanged.
 
-#### Scenario: Typed `vis` write inherits dashboard time_range when chart time_range is null
+#### Scenario: Typed `vis` write omits time_range when chart time_range is null
 
 - GIVEN a typed `vis` panel on create or update whose chart-level `time_range` is null in configuration
 - AND the dashboard-level `time_range` is `{ from = "now-7d", to = "now" }`
 - WHEN the provider builds the visualization payload through the typed converter path
-- THEN it SHALL set `time_range` on the API payload to `{ from = "now-7d", to = "now" }` copied from the dashboard-level value
+- THEN it SHALL NOT include `time_range` in the API payload for that panel
 
 #### Scenario: Typed `vis` write uses configured chart-level time_range when set
 
@@ -723,6 +725,25 @@ REQ-025 governs raw `config_json` `vis` panels; the typed-vs-raw distinction is 
 - AND the dashboard-level `time_range` is `{ from = "now-7d", to = "now" }`
 - WHEN the provider builds the visualization payload through the typed converter path
 - THEN it SHALL set `time_range` on the API payload to the chart-level value `{ from = "now-30d", to = "now-1d" }`
+
+#### Scenario: by_reference write omits time_range when not configured
+
+- GIVEN a `vis_config.by_reference` panel on create or update where `time_range` is null in configuration
+- WHEN the provider builds the API payload
+- THEN it SHALL NOT include `time_range` in the by-reference config payload
+
+#### Scenario: by_reference write sends time_range when configured
+
+- GIVEN a `vis_config.by_reference` panel on create or update where `time_range` is set to `{ from = "now-7d", to = "now" }`
+- WHEN the provider builds the API payload
+- THEN it SHALL include `time_range = { from = "now-7d", to = "now" }` in the by-reference config payload
+
+#### Scenario: Read preserves null time_range when API returns none
+
+- GIVEN a typed `vis` panel where `time_range` is null in Terraform state
+- AND the Kibana API returns no `time_range` field for that panel on read
+- WHEN the provider processes the read response
+- THEN it SHALL keep `time_range` as null in state (no drift)
 
 #### Scenario: XY panel requires layers
 
@@ -1876,7 +1897,7 @@ For `type = "vis"` panels, the resource SHALL accept a `vis_config` block with e
 
 - `ref_id` (required string) — saved-object reference name; maps to the API `config.ref_id` field.
 - `references_json` (optional normalized JSON string) — array of `{ id, name, type }` saved-object references; maps to the API `config.references` array. A saved Lens visualization reference SHALL typically have a reference whose `name` matches `ref_id`, whose `type` is `lens`, and whose `id` is the saved object ID.
-- `time_range` (required object with `from`, `to`, optional `mode` ∈ `absolute`/`relative`) — required even though the API marks it optional, for by-reference vis panels.
+- `time_range` (optional object with `from`, `to`, optional `mode` ∈ `absolute`/`relative`) — omitted from the API payload when null in configuration; sent verbatim when set.
 - `title`, `description` (optional strings).
 - `hide_title`, `hide_border` (optional booleans).
 - `drilldowns` (optional list of structured drilldown blocks per REQ-041).
@@ -1889,7 +1910,7 @@ For `vis_config.by_reference` panels, the resource SHALL set the API `config.ref
 
 **On read:**
 
-The resource SHALL classify the API `config` JSON object in this order: (1) **By-reference**: if the object omits the by-value chart discriminator (`type` at the top level of the chart config) and has non-empty `ref_id` and a `time_range` with non-empty `from` and `to`, the resource SHALL populate `by_reference` and leave `by_value` unset. (2) **By-value**: otherwise, if the object has a non-empty top-level chart `type`, the resource SHALL populate `by_value.<chart_block>` from the API read using the matching typed chart block. (3) When prior plan or state had `by_reference`, the resource SHALL preserve that prior `by_reference` block per REQ-009 and SHALL NOT silently mode-flip to `by_value`.
+The resource SHALL classify the API `config` JSON object in this order: (1) **By-reference**: if the object omits the by-value chart discriminator (`type` at the top level of the chart config) and has a non-empty `ref_id`, the resource SHALL populate `by_reference` and leave `by_value` unset. (2) **By-value**: otherwise, if the object has a non-empty top-level chart `type`, the resource SHALL populate `by_value.<chart_block>` from the API read using the matching typed chart block. (3) When prior plan or state had `by_reference`, the resource SHALL preserve that prior `by_reference` block per REQ-009 and SHALL NOT silently mode-flip to `by_value`.
 
 #### Scenario: Creation of a typed by-value `vis` panel via `vis_config`
 
@@ -1945,11 +1966,11 @@ The resource SHALL classify the API `config` JSON object in this order: (1) **By
 - WHEN Terraform validates the configuration
 - THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that `vis_config` and `config_json` are mutually exclusive
 
-#### Scenario: `time_range` required on `vis_config.by_reference`
+#### Scenario: `time_range` optional on `vis_config.by_reference`
 
-- GIVEN a `vis_config.by_reference` block without `time_range`
+- GIVEN a `vis_config.by_reference` block with `ref_id` set and `time_range` omitted
 - WHEN Terraform validates the configuration
-- THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that `time_range` is required
+- THEN the configuration SHALL be accepted without a `time_range` block
 
 #### Scenario: Read-back detects by-reference mode
 
