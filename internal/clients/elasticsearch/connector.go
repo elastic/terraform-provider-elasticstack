@@ -43,8 +43,10 @@ import (
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// CreateConnectorBody holds the narrow create/update envelope fields for POST /_connector
-// or PUT /_connector/{id}. All fields are optional except ServiceType.
+// CreateConnectorBody is the narrow body for POST /_connector or PUT /_connector/{id}.
+// It carries only the envelope fields the connector create API accepts directly;
+// pipeline, scheduling, features, configuration, and api_key_id are written via
+// the corresponding partial-update wrappers (UpdateConnectorPipeline, etc.).
 type CreateConnectorBody struct {
 	Name        *string
 	Description *string
@@ -219,7 +221,10 @@ func UpdateConnectorNative(
 	return nil
 }
 
-// UpdateConnectorPipeline updates the connector ingest pipeline configuration.
+// UpdateConnectorPipeline replaces the connector's pipeline configuration via
+// PUT /_connector/{id}/_pipeline. The upstream API performs a full replace,
+// so callers must pass an API-complete IngestPipelineParams; sparse values
+// will overwrite server state with empty fields.
 func UpdateConnectorPipeline(
 	ctx context.Context,
 	apiClient *clients.ElasticsearchScopedClient,
@@ -238,7 +243,10 @@ func UpdateConnectorPipeline(
 	return nil
 }
 
-// UpdateConnectorScheduling updates the connector scheduling configuration.
+// UpdateConnectorScheduling replaces the connector's scheduling configuration via
+// PUT /_connector/{id}/_scheduling. The upstream API performs a full replace,
+// so callers must pass an API-complete SchedulingConfiguration; sparse values
+// will overwrite server state with empty fields.
 func UpdateConnectorScheduling(
 	ctx context.Context,
 	apiClient *clients.ElasticsearchScopedClient,
@@ -257,7 +265,10 @@ func UpdateConnectorScheduling(
 	return nil
 }
 
-// UpdateConnectorFeatures updates the connector features configuration.
+// UpdateConnectorFeatures replaces the connector's features configuration via
+// PUT /_connector/{id}/_features. The upstream API performs a full replace,
+// so callers must pass an API-complete ConnectorFeatures; sparse values
+// will overwrite server state with empty fields.
 func UpdateConnectorFeatures(
 	ctx context.Context,
 	apiClient *clients.ElasticsearchScopedClient,
@@ -315,7 +326,11 @@ func UpdateConnectorConfiguration(
 	return nil
 }
 
-// CreateSyncJob creates a sync job for the given connector. Returns the sync job id.
+// CreateSyncJob creates a sync job for the given connector and returns its id.
+// jobType and triggerMethod must be one of the canonical enum constants from
+// the syncjobtype and syncjobtriggermethod packages (e.g. syncjobtype.Full,
+// syncjobtriggermethod.Ondemand). The wrapper does not apply defaults;
+// the action layer is responsible for that per REQ-SYNC-001.
 func CreateSyncJob(
 	ctx context.Context,
 	apiClient *clients.ElasticsearchScopedClient,
