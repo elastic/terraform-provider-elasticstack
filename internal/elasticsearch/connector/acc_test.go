@@ -75,6 +75,32 @@ func deleteConnectorAPI(t *testing.T, connectorID string) {
 	}
 }
 
+func createConnectorViaAPI(t *testing.T, connectorID string) {
+	t.Helper()
+	ctx := context.Background()
+	client := accConnectorClient(t)
+	name := "TF acc ds api"
+	description := "created via API for data source acceptance test"
+	indexName := "content-connector-" + connectorID
+	_, diags := esclient.CreateConnector(ctx, client, connectorID, esclient.CreateConnectorBody{
+		Name:        &name,
+		Description: &description,
+		IndexName:   &indexName,
+		ServiceType: "postgresql",
+	})
+	if diags.HasError() {
+		t.Fatalf("create connector %q via API: %s", connectorID, diags[0].Summary())
+	}
+}
+
+func testAccCheckContentConnectorDestroyByID(t *testing.T, connectorID string) func(*terraform.State) error {
+	t.Helper()
+	return func(*terraform.State) error {
+		deleteConnectorAPI(t, connectorID)
+		return nil
+	}
+}
+
 func connectorConfigurationSchemaField(label, fieldType string, sensitive bool) map[string]any {
 	return map[string]any{
 		"label":     label,
@@ -181,6 +207,31 @@ func registerConnectorAPIKeySchema(t *testing.T, connectorID string) {
 	registerConnectorConfigurationSchema(t, connectorID, map[string]map[string]any{
 		"api_key": connectorConfigurationSchemaField("API key", connectorfieldtype.Str.Name, true),
 	})
+}
+
+func putConnectorFilteringMarker(t *testing.T, connectorID, marker string) {
+	t.Helper()
+	ctx := context.Background()
+	client := accConnectorClient(t)
+	body, err := json.Marshal(map[string]any{
+		"rules": []map[string]any{{
+			"id":     "rule-acc",
+			"order":  0,
+			"field":  "title",
+			"rule":   "contains",
+			"policy": "include",
+			"value":  marker,
+		}},
+	})
+	if err != nil {
+		t.Fatalf("marshal filtering rules: %v", err)
+	}
+	_, err = client.GetESClient().Connector.UpdateFiltering(connectorID).
+		Raw(bytes.NewReader(body)).
+		Do(ctx)
+	if err != nil {
+		t.Fatalf("update filtering for %q: %v", connectorID, err)
+	}
 }
 
 func testAccCheckContentConnectorAbsentFromState(addr string) resource.TestCheckFunc {
@@ -809,6 +860,35 @@ func TestAccDataSourceContentConnector_basic(t *testing.T) {
 					resource.TestMatchResourceAttr(contentConnectorDataSourceAddr, "filtering", regexp.MustCompile(`"DEFAULT"`)),
 					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "custom_scheduling", "{}"),
 					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "sync_now", "false"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceContentConnector_filteringAndCustomScheduling verifies filtering is exposed after API update.
+// custom_scheduling has no PUT endpoint (connector service only); empty {} exposure is asserted here.
+func TestAccDataSourceContentConnector_filteringAndCustomScheduling(t *testing.T) {
+	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-ds-filt")
+	marker := "tf-acc-filter-marker"
+	vars := connectorIDVariables(connectorID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: testAccCheckContentConnectorDestroyByID(t, connectorID),
+		Steps: []resource.TestStep{
+			{
+				PreConfig: func() {
+					createConnectorViaAPI(t, connectorID)
+					putConnectorFilteringMarker(t, connectorID, marker)
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestMatchResourceAttr(contentConnectorDataSourceAddr, "filtering", regexp.MustCompile(regexp.QuoteMeta(marker))),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "custom_scheduling", "{}"),
 				),
 			},
 		},
