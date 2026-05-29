@@ -74,16 +74,7 @@ func VisByReferenceModelToAPIConfig1(
 	api1 := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVisConfig1{
 		RefId: byRef.RefID.ValueString(),
 	}
-	if byRef.TimeRange != nil {
-		api1.TimeRange = &kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
-			From: byRef.TimeRange.From.ValueString(),
-			To:   byRef.TimeRange.To.ValueString(),
-		}
-		if typeutils.IsKnown(byRef.TimeRange.Mode) {
-			m := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode(byRef.TimeRange.Mode.ValueString())
-			api1.TimeRange.Mode = &m
-		}
-	}
+	api1.TimeRange = TimeRangeModelToAPI(byRef.TimeRange)
 	if typeutils.IsKnown(byRef.ReferencesJSON) {
 		refs, d := JSONBytesFromOptionalNormalizedArray(byRef.ReferencesJSON, referencesJSONFieldLabel)
 		diags.Append(d...)
@@ -192,7 +183,7 @@ func PopulateVisByReferenceTFModelFromAPIConfig1(
 		RefID: types.StringValue(cfg1.RefId),
 	}
 	if cfg1.TimeRange != nil {
-		tr := &models.VisByReferenceTimeRangeModel{
+		tr := &models.TimeRangeModel{
 			From: types.StringValue(cfg1.TimeRange.From),
 			To:   types.StringValue(cfg1.TimeRange.To),
 		}
