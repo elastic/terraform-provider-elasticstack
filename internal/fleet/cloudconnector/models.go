@@ -32,6 +32,24 @@ import (
 )
 
 const (
+	attrID                    = "id"
+	attrCloudConnectorID      = "cloud_connector_id"
+	attrSpaceID               = "space_id"
+	attrName                  = "name"
+	attrCloudProvider         = "cloud_provider"
+	attrAccountType           = "account_type"
+	attrForceDelete           = "force_delete"
+	attrAWSBlock              = "aws"
+	attrAzureBlock            = "azure"
+	attrVarsMap               = "vars"
+	attrNamespace             = "namespace"
+	attrPackagePolicyCount    = "package_policy_count"
+	attrVerificationStatus    = "verification_status"
+	attrVerificationStartedAt = "verification_started_at"
+	attrVerificationFailedAt  = "verification_failed_at"
+	attrCreatedAt             = "created_at"
+	attrUpdatedAt             = "updated_at"
+
 	attrVarsString      = "string"
 	attrVarsNumber      = "number"
 	attrVarsBool        = "bool"
@@ -52,8 +70,8 @@ const (
 	attrAzureClientID         = "client_id"
 	attrAzureCloudConnectorID = "cloud_connector_id"
 
-	cloudProviderAWS   = "aws"
-	cloudProviderAzure = "azure"
+	cloudProviderAWS   = attrAWSBlock
+	cloudProviderAzure = attrAzureBlock
 
 	wireKeyFrozen      = "frozen"
 	wireKeyValue       = "value"
