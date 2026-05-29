@@ -142,7 +142,7 @@ func buildLensWafflePanelForTest(t *testing.T) models.PanelModel {
 	}
 }
 
-func Test_resolveChartTimeRange_defaultWhenNoDashboard(t *testing.T) {
+func Test_resolveChartTimeRange_omitWhenUnset(t *testing.T) {
 	dash := &models.DashboardModel{
 		TimeRange: &models.TimeRangeModel{
 			From: types.StringValue("now-7d"),
@@ -156,17 +156,12 @@ func Test_resolveChartTimeRange_defaultWhenNoDashboard(t *testing.T) {
 	}
 
 	got := lenscommon.ResolveChartTimeRange(dash, chartTR)
+	require.NotNil(t, got)
 	assert.Equal(t, "now-30d", got.From)
 	assert.Equal(t, "now-1d", got.To)
 
-	gotInherit := lenscommon.ResolveChartTimeRange(dash, nil)
-	assert.Equal(t, "now-7d", gotInherit.From)
-	assert.Equal(t, "now", gotInherit.To)
-
-	// Scratch paths (no dashboard model) fall back to the legacy window when chart time is unset.
-	gotScratch := lenscommon.ResolveChartTimeRange(nil, nil)
-	assert.Equal(t, "now-15m", gotScratch.From)
-	assert.Equal(t, "now", gotScratch.To)
+	assert.Nil(t, lenscommon.ResolveChartTimeRange(dash, nil))
+	assert.Nil(t, lenscommon.ResolveChartTimeRange(nil, nil))
 }
 
 func Test_mapPanelsFromAPI(t *testing.T) {

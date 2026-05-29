@@ -30,13 +30,8 @@ import (
 
 type stubResolver struct{}
 
-func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	_ = chartLevel
-	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}
-}
-
-func (stubResolver) DashboardLensComparableTimeRange() (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, bool) {
-	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}, false
+func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
+	return lenscommon.TimeRangeModelToAPI(chartLevel)
 }
 
 func TestConverter_VizType(t *testing.T) {

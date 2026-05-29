@@ -32,13 +32,8 @@ import (
 
 type stubResolver struct{}
 
-func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	_ = chartLevel
-	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}
-}
-
-func (stubResolver) DashboardLensComparableTimeRange() (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, bool) {
-	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}, false
+func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
+	return lenscommon.TimeRangeModelToAPI(chartLevel)
 }
 
 func minimalXYNoESQLChartForRoundTrip() *models.XYChartConfigModel {
@@ -111,6 +106,19 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	require.Len(t, out.XYChartConfig.Layers[0].DataLayer.Y, 1)
 	require.NotNil(t, out.XYChartConfig.Query)
 	require.Equal(t, wantExpr, out.XYChartConfig.Query.Expression.ValueString())
+}
+
+func TestConverter_BuildAttributes_omitsTimeRangeWhenUnset(t *testing.T) {
+	var c converter
+	resolver := stubResolver{}
+	in := minimalXYNoESQLChartForRoundTrip()
+
+	attrs, diags := c.BuildAttributes(&models.LensByValueChartBlocks{XYChartConfig: in}, resolver)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	out, err := attrs.AsKibanaHTTPAPIsXyChartNoESQL()
+	require.NoError(t, err)
+	assert.Nil(t, out.TimeRange)
 }
 
 func TestConverter_roundTrip_ESQL_xy(t *testing.T) {

@@ -36,6 +36,36 @@ const (
 	visByRefPath      = "panels.0.vis_config.by_reference"
 )
 
+func TestAccResourceDashboardVisConfigByReference_omitTimeRange(t *testing.T) {
+	dashboardTitle := "Acc vis by-ref no tr " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	br := visByRefPath
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_time_range"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(visByRefDashboard, "panels.0.type", "vis"),
+					resource.TestCheckResourceAttr(visByRefDashboard, br+".ref_id", "lensRef"),
+					resource.TestCheckNoResourceAttr(visByRefDashboard, br+".time_range"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_time_range"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+		},
+	})
+}
+
 func TestAccResourceDashboardVisConfigByReference_minimal(t *testing.T) {
 	dashboardTitle := "Acc vis by-ref min " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	br := visByRefPath
