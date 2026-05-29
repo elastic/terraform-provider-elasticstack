@@ -25,7 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
-const schemaMarkdownDescription = `Creates an Elasticsearch connector sync job on demand. **Requires Terraform 1.14+** (provider-defined actions).
+const schemaMarkdownDescription = `Creates an Elasticsearch connector sync job on demand. **Requires Terraform 1.14+** (provider-defined actions) and **Elasticsearch 8.16.0+** (the on-wire body shape stabilized in 8.16; the underlying API is available from 8.12 but rejects the field name the typed client produces).
 
 Invokes ` + "`POST /_connector/_sync_job`" + ` for an existing connector. When ` + "`wait_for_completion`" + ` is ` + "`true`" + `, polls ` +
 	"`GET /_connector/_sync_job/{id}`" + ` until the job reaches a terminal status or the invoke timeout elapses. ` +

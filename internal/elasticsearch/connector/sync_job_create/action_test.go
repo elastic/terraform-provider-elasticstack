@@ -306,8 +306,8 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 	reqs, diags := Model{}.GetVersionRequirements()
 	require.False(t, diags.HasError())
 	require.Len(t, reqs, 1)
-	assert.Equal(t, "8.12.0", reqs[0].MinVersion.String())
-	assert.Contains(t, reqs[0].ErrorMessage, "8.12.0")
+	assert.Equal(t, "8.16.0", reqs[0].MinVersion.String())
+	assert.Contains(t, reqs[0].ErrorMessage, "8.16.0")
 }
 
 func assertStringValidatorRejects(t *testing.T, validators []validator.String, value string) {

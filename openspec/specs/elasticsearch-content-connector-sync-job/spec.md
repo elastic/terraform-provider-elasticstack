@@ -91,7 +91,7 @@ The action MUST implement `action.Action` and `action.ActionWithConfigure` from 
 
 The action SHALL require:
 - Terraform Core 1.14.0+ (for provider-defined actions).
-- Elasticsearch 8.12.0+ (for the sync job APIs).
+- Elasticsearch 8.16.0+ for the action. Although the connector resource itself is available from Elasticsearch 8.12.0 (sync job APIs were introduced in that release), the `POST /_connector/_sync_job` request body validation on 8.12.x–8.15.x rejects the on-wire field name produced by the current typed Elasticsearch Go client; the API stabilized on the field shape the provider sends starting with 8.16.0.
 
 Older versions of either SHALL produce a clear diagnostic.
 
@@ -103,7 +103,7 @@ Older versions of either SHALL produce a clear diagnostic.
 
 #### Scenario: Older Elasticsearch diagnostic
 
-- **GIVEN** the configured Elasticsearch is older than 8.12.0
+- **GIVEN** the configured Elasticsearch is older than 8.16.0
 - **WHEN** the action is invoked
-- **THEN** diagnostics SHALL include an error stating the action requires Elasticsearch 8.12.0 or later
+- **THEN** diagnostics SHALL include an error stating the action requires Elasticsearch 8.16.0 or later
 
