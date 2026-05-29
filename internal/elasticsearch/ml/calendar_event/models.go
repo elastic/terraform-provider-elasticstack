@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"time"
 
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -111,10 +110,6 @@ func calendarEventAnyTimeToUnixMilli(v any) (int64, bool) {
 	default:
 		return 0, false
 	}
-}
-
-func calendarEventDateTimeToUnixMilli(dt estypes.DateTime) (int64, bool) {
-	return calendarEventAnyTimeToUnixMilli(any(dt))
 }
 
 func (m *CalendarEventTFModel) fromAPIModel(_ context.Context, apiModel *CalendarEventAPIModel) fwdiags.Diagnostics {
