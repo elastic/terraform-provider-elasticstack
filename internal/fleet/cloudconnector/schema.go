@@ -35,6 +35,10 @@ import (
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages Fleet cloud connectors. " +
+			"Configure authentication with typed `aws` or `azure` blocks, or with the generic `vars` map for GCP and custom integrations; " +
+			"after Read, matching typed blocks are populated alongside `vars` when the API returns exactly the modelled keys for that provider. " +
+			"Write-only secrets use bcrypt hashes in resource private state for plan-time drift detection. " +
+			"Cloud connectors are a preview feature in Kibana; this resource is experimental and may change in future provider releases. " +
 			"See the [Fleet Cloud Connectors API documentation](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-fleet-cloud-connectors) for more information.",
 		Attributes: map[string]schema.Attribute{
 			attrID: schema.StringAttribute{

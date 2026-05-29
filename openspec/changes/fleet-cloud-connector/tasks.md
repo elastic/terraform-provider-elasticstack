@@ -80,12 +80,12 @@
 
 ## 11. Documentation and examples
 
-- [ ] 11.1 Add `examples/resources/elasticstack_fleet_cloud_connector/resource.tf` covering AWS, Azure, and generic `vars` usage with at least one write-only secret
-- [ ] 11.2 Add `examples/resources/elasticstack_fleet_cloud_connector/import.sh` showing the composite ID import form
-- [ ] 11.3 Add `examples/data-sources/elasticstack_fleet_cloud_connectors/data-source.tf` covering filtered and unfiltered reads
-- [ ] 11.4 Generate provider docs (`docs/resources/fleet_cloud_connector.md`, `docs/data-sources/fleet_cloud_connectors.md`) via the existing `make` target; verify rendered descriptions explain typed-vs-vars representation and write-only secret handling with the bcrypt-hash drift contract
-- [ ] 11.5 Add a CHANGELOG entry following the repo's existing format
-- [ ] 11.6 Mark the resource as preview/experimental in the resource docs while cloud connectors remain preview in Kibana
+- [x] 11.1 Add `examples/resources/elasticstack_fleet_cloud_connector/resource.tf` covering AWS, Azure, and generic `vars` usage with at least one write-only secret
+- [x] 11.2 Add `examples/resources/elasticstack_fleet_cloud_connector/import.sh` showing the composite ID import form
+- [x] 11.3 Add `examples/data-sources/elasticstack_fleet_cloud_connectors/data-source.tf` covering filtered and unfiltered reads
+- [x] 11.4 Generate provider docs (`docs/resources/fleet_cloud_connector.md`, `docs/data-sources/fleet_cloud_connectors.md`) via the existing `make` target; verify rendered descriptions explain typed-vs-vars representation and write-only secret handling with the bcrypt-hash drift contract
+- [x] 11.5 Add a CHANGELOG entry following the repo's existing format
+- [x] 11.6 Mark the resource as preview/experimental in the resource docs while cloud connectors remain preview in Kibana
 
 ## 12. Validation and cleanup
 
