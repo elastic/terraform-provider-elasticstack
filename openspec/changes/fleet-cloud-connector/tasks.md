@@ -7,11 +7,11 @@
 
 ## 2. `internal/utils/writeonlyhash` helper
 
-- [ ] 2.1 Create package `internal/utils/writeonlyhash` with `Hasher` struct, `New(resourceTypeName string) *Hasher`, `Compute(value string) ([]byte, error)`, `Matches(value string, storedHash []byte) bool`, `PrivateStateKey(attributePath string) string`
-- [ ] 2.2 Implement bcrypt-backed hashing with per-resource-type salt derived deterministically from the resource type string
-- [ ] 2.3 Implement diagnostic-safe error returns that never include the input value
-- [ ] 2.4 Add unit tests covering: constructor produces per-type salt, roundtrip Matches=true, different value Matches=false, different type salts produce different hashes, errors do not leak input
-- [ ] 2.5 Add usage docs as Go doc comments on the exported symbols
+- [x] 2.1 Create package `internal/utils/writeonlyhash` with `Hasher` struct, `New(resourceTypeName string) *Hasher`, `Compute(value string) ([]byte, error)`, `Matches(value string, storedHash []byte) bool`, `PrivateStateKey(attributePath string) string`
+- [x] 2.2 Implement bcrypt-backed hashing with per-resource-type salt derived deterministically from the resource type string
+- [x] 2.3 Implement diagnostic-safe error returns that never include the input value
+- [x] 2.4 Add unit tests covering: constructor produces per-type salt, roundtrip Matches=true, different value Matches=false, different type salts produce different hashes, errors do not leak input
+- [x] 2.5 Add usage docs as Go doc comments on the exported symbols
 
 ## 3. Generated client wrappers
 
