@@ -36,9 +36,9 @@ func TestUpdateCloudConnector_skipsWhenNoMutationAndNoResubmit(t *testing.T) {
 	priv := newMapPrivateState()
 
 	result, diags := r.updateCloudConnector(ctx, nil, entitycore.KibanaWriteRequest[cloudConnectorModel]{
-		Plan:   model,
-		Prior:  &model,
-		Config: model,
+		Plan:    model,
+		Prior:   &model,
+		Config:  model,
 		Private: priv,
 	})
 	require.False(t, diags.HasError())
