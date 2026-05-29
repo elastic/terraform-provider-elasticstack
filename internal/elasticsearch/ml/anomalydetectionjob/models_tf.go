@@ -296,7 +296,7 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 			Enabled: perPartition.Enabled.ValueBool(),
 		}
 		if typeutils.IsKnown(perPartition.StopOnWarn) {
-			apiModel.AnalysisConfig.PerPartitionCategorization.StopOnWarn = new(perPartition.StopOnWarn.ValueBool())
+			apiModel.AnalysisConfig.PerPartitionCategorization.StopOnWarn = perPartition.StopOnWarn.ValueBoolPointer()
 		}
 	}
 
