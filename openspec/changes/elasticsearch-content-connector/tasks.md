@@ -34,14 +34,14 @@
 
 ## 5. Resource — CRUD + drift detection
 
-- [ ] 5.1 `create.go`: fan-out per Decision 4 (POST/PUT envelope → fan-out sub-updates → GET refresh)
-- [ ] 5.2 `update.go`: same fan-out as Create plus `_name`/`_index_name`/`_service_type`/`_native` partials when those fields changed
-- [ ] 5.3 `read.go`: implement REQ-008 read-path branch selection (prior-state branch wins; new keys use registered-schema `type`; sensitive fields skipped on import; warning diag when a sensitive API field is set in a non-secret branch)
-- [ ] 5.4 `delete.go`: call `DELETE /_connector/{id}`; tolerate 404; clear the `secret_hash:configuration_values["<key>"].secret_value` private-state entry for each `configuration_values` element that existed in prior state
-- [ ] 5.5 `modify_plan.go`: implement REQ-011 — hash each `secret_value` from `req.Config`, compare to stored hash, mark for update + warn on mismatch, clear on removal
-- [ ] 5.6 `create.go`/`update.go`: after successful API write, store bcrypt hash for every applied `secret_value`
-- [ ] 5.7 Implement REQ-009 pre-flight: if `configuration_values` is set in plan but `GET /_connector/{id}.configuration == {}`, return the schema-not-yet-registered diagnostic
-- [ ] 5.8 `import.go` (or in `resource.go`): accept bare connector ID and composite form per REQ-012
+- [x] 5.1 `create.go`: fan-out per Decision 4 (POST/PUT envelope → fan-out sub-updates → GET refresh)
+- [x] 5.2 `update.go`: same fan-out as Create plus `_name`/`_index_name`/`_service_type`/`_native` partials when those fields changed
+- [x] 5.3 `read.go`: implement REQ-008 read-path branch selection (prior-state branch wins; new keys use registered-schema `type`; sensitive fields skipped on import; warning diag when a sensitive API field is set in a non-secret branch)
+- [x] 5.4 `delete.go`: call `DELETE /_connector/{id}`; tolerate 404; clear the `secret_hash:configuration_values["<key>"].secret_value` private-state entry for each `configuration_values` element that existed in prior state
+- [x] 5.5 `modify_plan.go`: implement REQ-011 — hash each `secret_value` from `req.Config`, compare to stored hash, mark for update + warn on mismatch, clear on removal
+- [x] 5.6 `create.go`/`update.go`: after successful API write, store bcrypt hash for every applied `secret_value`
+- [x] 5.7 Implement REQ-009 pre-flight: if `configuration_values` is set in plan but `GET /_connector/{id}.configuration == {}`, return the schema-not-yet-registered diagnostic
+- [x] 5.8 `import.go` (or in `resource.go`): accept bare connector ID and composite form per REQ-012
 
 ## 6. Data source
 
