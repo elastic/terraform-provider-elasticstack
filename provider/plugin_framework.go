@@ -67,6 +67,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/watcher/watch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentdownloadsource"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicy"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/cloudconnector"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/customintegration"
 	elasticdefendintegrationpolicy "github.com/elastic/terraform-provider-elasticstack/internal/fleet/elastic_defend_integration_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/enrollmenttokens"
@@ -240,6 +241,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		elasticdefendintegrationpolicy.NewResource,
 		output.NewResource,
 		agentdownloadsource.NewResource,
+		cloudconnector.NewResource,
 		serverhost.NewResource,
 		proxy.NewResource,
 		systemuser.NewSystemUserResource,

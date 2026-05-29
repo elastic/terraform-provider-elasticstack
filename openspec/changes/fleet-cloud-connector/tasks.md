@@ -55,8 +55,8 @@
 
 ## 8. Resource: registration
 
-- [ ] 8.1 Register `cloudconnector.NewResource()` in the Plugin Framework provider's resource list
-- [ ] 8.2 Confirm the resource is discoverable via `make build` and a smoke `terraform providers schema -json`
+- [x] 8.1 Register `cloudconnector.NewResource()` in the Plugin Framework provider's resource list
+- [x] 8.2 Confirm the resource is discoverable via `make build` and a smoke `terraform providers schema -json`
 
 ## 9. Data source
 
