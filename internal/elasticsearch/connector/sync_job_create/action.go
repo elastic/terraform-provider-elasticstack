@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/connector/syncjobget"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/syncjobtriggermethod"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/syncjobtype"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -82,7 +83,9 @@ func invokeCreate(ctx context.Context, client *clients.ElasticsearchScopedClient
 		return diags
 	}
 
-	return waitForSyncJobCompletion(ctx, client, syncJobID)
+	return waitForSyncJobCompletion(ctx, syncJobID, func(ctx context.Context, id string) (*syncjobget.Response, fwdiag.Diagnostics) {
+		return esclient.GetSyncJob(ctx, client, id)
+	})
 }
 
 // syncJobCreateParams holds resolved POST /_connector/_sync_job parameters.
@@ -162,12 +165,22 @@ func parseTriggerMethod(value string) (syncjobtriggermethod.SyncJobTriggerMethod
 	}
 }
 
-func waitForSyncJobCompletion(ctx context.Context, client *clients.ElasticsearchScopedClient, syncJobID string) fwdiag.Diagnostics {
-	var lastStatus string
+// syncJobGetter fetches a sync job document for polling.
+type syncJobGetter func(ctx context.Context, syncJobID string) (*syncjobget.Response, fwdiag.Diagnostics)
+
+func waitForSyncJobCompletion(ctx context.Context, syncJobID string, get syncJobGetter) fwdiag.Diagnostics {
+	return waitForSyncJobCompletionWithInterval(ctx, syncJobID, get, syncJobPollInterval)
+}
+
+func waitForSyncJobCompletionWithInterval(ctx context.Context, syncJobID string, get syncJobGetter, pollInterval time.Duration) fwdiag.Diagnostics {
+	lastStatus := "unknown"
 
 	for {
-		job, getDiags := esclient.GetSyncJob(ctx, client, syncJobID)
+		job, getDiags := get(ctx, syncJobID)
 		if getDiags.HasError() {
+			if ctx.Err() != nil {
+				return timeoutDiagnostic(syncJobID, lastStatus)
+			}
 			return getDiags
 		}
 
@@ -187,18 +200,19 @@ func waitForSyncJobCompletion(ctx context.Context, client *clients.Elasticsearch
 
 		select {
 		case <-ctx.Done():
-			var diags fwdiag.Diagnostics
-			if lastStatus == "" {
-				lastStatus = "unknown"
-			}
-			diags.AddError(
-				"Sync job did not complete within timeout",
-				fmt.Sprintf("Sync job %q last observed status: %q.", syncJobID, lastStatus),
-			)
-			return diags
-		case <-time.After(syncJobPollInterval):
+			return timeoutDiagnostic(syncJobID, lastStatus)
+		case <-time.After(pollInterval):
 		}
 	}
+}
+
+func timeoutDiagnostic(syncJobID, lastStatus string) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
+	diags.AddError(
+		"Sync job did not complete within timeout",
+		fmt.Sprintf("Sync job %q last observed status: %q.", syncJobID, lastStatus),
+	)
+	return diags
 }
 
 // classifyTerminalStatus reports whether status is terminal and returns diagnostics
