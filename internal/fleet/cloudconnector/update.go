@@ -26,7 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func updateCloudConnector(
+func (r *Resource) updateCloudConnector(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
 	req entitycore.KibanaWriteRequest[cloudConnectorModel],
@@ -39,9 +39,16 @@ func updateCloudConnector(
 		return entitycore.KibanaWriteResult[cloudConnectorModel]{}, diags
 	}
 
+	if !planMutatesAPIResource(*req.Prior, plan, req.Config) {
+		return entitycore.KibanaWriteResult[cloudConnectorModel]{Model: plan}, diags
+	}
+
+	resubmit := r.pendingWriteOnlyResubmit
+	r.pendingWriteOnlyResubmit = nil
+
 	fleetClient := client.GetFleetClient()
 
-	body, bodyDiags := plan.toAPIUpdateBody(req.Config, *req.Prior)
+	body, bodyDiags := plan.buildAPIUpdateBody(ctx, client, req.Config, *req.Prior, resubmit)
 	diags.Append(bodyDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[cloudConnectorModel]{}, diags
