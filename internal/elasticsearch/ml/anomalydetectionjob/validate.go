@@ -20,6 +20,7 @@ package anomalydetectionjob
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -30,7 +31,7 @@ import (
 // must either have a non-empty scope or at least one condition (when both are known at plan time).
 func validateConfigCustomRules(ctx context.Context, config *TFModel) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if config == nil || config.AnalysisConfig.IsNull() || config.AnalysisConfig.IsUnknown() {
+	if config == nil || !typeutils.IsKnown(config.AnalysisConfig) {
 		return diags
 	}
 
@@ -39,7 +40,7 @@ func validateConfigCustomRules(ctx context.Context, config *TFModel) diag.Diagno
 	if diags.HasError() {
 		return diags
 	}
-	if ac.Detectors.IsUnknown() || ac.Detectors.IsNull() {
+	if !typeutils.IsKnown(ac.Detectors) {
 		return diags
 	}
 	var detectors []DetectorTFModel

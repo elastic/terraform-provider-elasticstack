@@ -162,7 +162,7 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 		apiModel.Groups = groups
 	}
 
-	if plan.AnalysisConfig.IsNull() || plan.AnalysisConfig.IsUnknown() {
+	if !typeutils.IsKnown(plan.AnalysisConfig) {
 		diags.AddError("Missing analysis_config", "analysis_config is required")
 		return nil, diags
 	}
@@ -285,7 +285,7 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 	}
 
 	// Convert per_partition_categorization
-	if !analysisConfig.PerPartitionCategorization.IsNull() && !analysisConfig.PerPartitionCategorization.IsUnknown() {
+	if typeutils.IsKnown(analysisConfig.PerPartitionCategorization) {
 		var perPartition PerPartitionCategorizationTFModel
 		d := analysisConfig.PerPartitionCategorization.As(ctx, &perPartition, basetypes.ObjectAsOptions{})
 		diags.Append(d...)
@@ -429,9 +429,7 @@ func (plan *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) diag.
 	plan.ResultsRetentionDays = types.Int64PointerValue(apiModel.ResultsRetentionDays)
 
 	// Convert analysis_config
-	var analysisConfigDiags diag.Diagnostics
-	plan.AnalysisConfig, analysisConfigDiags = plan.convertAnalysisConfigFromAPI(ctx, &apiModel.AnalysisConfig)
-	diags.Append(analysisConfigDiags...)
+	plan.AnalysisConfig = plan.convertAnalysisConfigFromAPI(ctx, &apiModel.AnalysisConfig, &diags)
 
 	// Convert analysis_limits
 	plan.AnalysisLimits = plan.convertAnalysisLimitsFromAPI(ctx, apiModel.AnalysisLimits, &diags)
@@ -442,30 +440,23 @@ func (plan *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) diag.
 	// Convert model_plot_config
 	plan.ModelPlotConfig = plan.convertModelPlotConfigFromAPI(ctx, apiModel.ModelPlotConfig, &diags)
 
-	// Convert analysis_limits
-	plan.AnalysisLimits = plan.convertAnalysisLimitsFromAPI(ctx, apiModel.AnalysisLimits, &diags)
-
-	// Convert model_plot_config
-	plan.ModelPlotConfig = plan.convertModelPlotConfigFromAPI(ctx, apiModel.ModelPlotConfig, &diags)
-
 	return diags
 }
 
 // Helper functions for schema attribute types
 // Conversion helper methods
-func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig *AnalysisConfigAPIModel) (types.Object, diag.Diagnostics) {
-	var diags diag.Diagnostics
+func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig *AnalysisConfigAPIModel, diags *diag.Diagnostics) types.Object {
+	analysisConfigAttrTypes := getAnalysisConfigAttrTypes(ctx)
 
 	if apiConfig == nil || apiConfig.BucketSpan == "" {
-		return types.ObjectNull(getAnalysisConfigAttrTypes(ctx)), diags
+		return types.ObjectNull(analysisConfigAttrTypes)
 	}
 
 	var analysisConfigTF AnalysisConfigTFModel
-	if !plan.AnalysisConfig.IsNull() && !plan.AnalysisConfig.IsUnknown() {
-		d := plan.AnalysisConfig.As(ctx, &analysisConfigTF, basetypes.ObjectAsOptions{})
-		diags.Append(d...)
+	if typeutils.IsKnown(plan.AnalysisConfig) {
+		diags.Append(plan.AnalysisConfig.As(ctx, &analysisConfigTF, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
-			return types.ObjectNull(getAnalysisConfigAttrTypes(ctx)), diags
+			return types.ObjectNull(analysisConfigAttrTypes)
 		}
 	}
 	analysisConfigTF.BucketSpan = types.StringValue(apiConfig.BucketSpan)
@@ -634,23 +625,23 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 	// Convert per_partition_categorization. ES may return defaults (enabled=false)
 	// even when the user didn't configure it. Only populate if user configured it
 	// or if ES has it enabled.
+	perPartitionAttrTypes := getPerPartitionCategorizationAttrTypes(ctx)
 	var hadPriorPerPartition bool
 	var priorPerPartition PerPartitionCategorizationTFModel
-	if !analysisConfigTF.PerPartitionCategorization.IsNull() && !analysisConfigTF.PerPartitionCategorization.IsUnknown() {
+	if typeutils.IsKnown(analysisConfigTF.PerPartitionCategorization) {
 		hadPriorPerPartition = true
-		d := analysisConfigTF.PerPartitionCategorization.As(ctx, &priorPerPartition, basetypes.ObjectAsOptions{})
-		diags.Append(d...)
+		diags.Append(analysisConfigTF.PerPartitionCategorization.As(ctx, &priorPerPartition, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
-			return types.ObjectNull(getAnalysisConfigAttrTypes(ctx)), diags
+			return types.ObjectNull(analysisConfigAttrTypes)
 		}
 	}
 	switch {
 	case apiConfig.PerPartitionCategorization == nil:
 		if !hadPriorPerPartition {
-			analysisConfigTF.PerPartitionCategorization = types.ObjectNull(getPerPartitionCategorizationAttrTypes(ctx))
+			analysisConfigTF.PerPartitionCategorization = types.ObjectNull(perPartitionAttrTypes)
 		}
 	case !hadPriorPerPartition && !apiConfig.PerPartitionCategorization.Enabled:
-		analysisConfigTF.PerPartitionCategorization = types.ObjectNull(getPerPartitionCategorizationAttrTypes(ctx))
+		analysisConfigTF.PerPartitionCategorization = types.ObjectNull(perPartitionAttrTypes)
 	default:
 		perPartitionTF := PerPartitionCategorizationTFModel{
 			Enabled: types.BoolValue(apiConfig.PerPartitionCategorization.Enabled),
@@ -663,14 +654,14 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 		default:
 			perPartitionTF.StopOnWarn = types.BoolNull()
 		}
-		perPartitionObj, d := types.ObjectValueFrom(ctx, getPerPartitionCategorizationAttrTypes(ctx), perPartitionTF)
+		perPartitionObj, d := types.ObjectValueFrom(ctx, perPartitionAttrTypes, perPartitionTF)
 		diags.Append(d...)
 		analysisConfigTF.PerPartitionCategorization = perPartitionObj
 	}
 
-	analysisConfigObj, d := types.ObjectValueFrom(ctx, getAnalysisConfigAttrTypes(ctx), analysisConfigTF)
+	analysisConfigObj, d := types.ObjectValueFrom(ctx, analysisConfigAttrTypes, analysisConfigTF)
 	diags.Append(d...)
-	return analysisConfigObj, diags
+	return analysisConfigObj
 }
 
 func (plan *TFModel) convertDataDescriptionFromAPI(ctx context.Context, apiDataDescription *DataDescriptionAPIModel, diags *diag.Diagnostics) types.Object {

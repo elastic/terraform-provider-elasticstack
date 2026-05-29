@@ -661,9 +661,8 @@ func TestAccResourceAnomalyDetectionJobVariableSourcedDetectors(t *testing.T) {
 	})
 }
 
-// Regression test for #3403: Value Conversion Error when analysis_config is sourced
-// from a Terraform variable of type object({...}). The root cause was AnalysisConfig being typed
-// as *AnalysisConfigTFModel instead of types.Object in TFModel.
+// Regression for #3403: analysis_config sourced from a typed object variable must not produce
+// a Value Conversion Error at plan or read.
 func TestAccResourceAnomalyDetectionJobVariableSourcedAnalysisConfig(t *testing.T) {
 	jobID := fmt.Sprintf("test-ad-var-ac-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	addr := testResourceAddr
@@ -697,9 +696,8 @@ func TestAccResourceAnomalyDetectionJobVariableSourcedAnalysisConfig(t *testing.
 	})
 }
 
-// Regression test for #3403: Value Conversion Error when analysis_config is sourced from an
-// unknown value at first plan (e.g. for_each / terraform_data.output). The root cause was
-// AnalysisConfig being typed as *AnalysisConfigTFModel instead of types.Object in TFModel.
+// Regression for #3403: analysis_config sourced from a value unknown at first plan
+// (e.g. for_each / terraform_data.output) must not produce a Value Conversion Error.
 func TestAccResourceAnomalyDetectionJobUnknownAnalysisConfig(t *testing.T) {
 	jobID := fmt.Sprintf("test-ad-unknown-ac-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	addr := testResourceAddr
