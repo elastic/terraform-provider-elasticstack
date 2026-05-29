@@ -9,10 +9,10 @@
 
 ## 2. Documentation for `writeonlyhash` (always; this change owns docs)
 
-- [ ] 2.1 Create `dev-docs/high-level/writeonly-secret-hashing.md` covering: why over `_wo_version`, threat model, `ModifyPlan` contract, private-state key convention (`secret_hash:<attribute_path>`), post-import behaviour, worked adoption example, anti-patterns
-- [ ] 2.2 Link to the helper package Godoc and to `random_password.bcrypt_hash` precedent
-- [ ] 2.3 Add a "Write-only secret attributes" sub-heading to `dev-docs/high-level/coding-standards.md` referencing the new doc
-- [ ] 2.4 Verify the worked example compiles and matches the helper's actual exported API (build/test the example as part of the helper's test suite if helper is shipped here)
+- [x] 2.1 Create `dev-docs/high-level/writeonly-secret-hashing.md` covering: why over `_wo_version`, threat model, `ModifyPlan` contract, private-state key convention (`secret_hash:<attribute_path>`), post-import behaviour, worked adoption example, anti-patterns
+- [x] 2.2 Link to the helper package Godoc and to `random_password.bcrypt_hash` precedent
+- [x] 2.3 Add a "Write-only secret attributes" sub-heading to `dev-docs/high-level/coding-standards.md` referencing the new doc
+- [x] 2.4 Verify the worked example compiles and matches the helper's actual exported API (build/test the example as part of the helper's test suite if helper is shipped here)
 
 ## 3. Client wrappers in `internal/clients/elasticsearch/connector.go`
 
