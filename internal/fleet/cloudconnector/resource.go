@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -32,17 +31,15 @@ var (
 	_ resource.Resource                     = newResource()
 	_ resource.ResourceWithConfigure        = newResource()
 	_ resource.ResourceWithConfigValidators = newResource()
+	_ resource.ResourceWithImportState      = newResource()
 )
 
 // Resource is the Fleet cloud connector resource.
-// CRUD implementations are placeholders until Task 6 replaces readCloudConnector,
-// deleteCloudConnector, and the write callbacks wired below.
 type Resource struct {
 	*entitycore.KibanaResource[cloudConnectorModel]
 }
 
 func newResource() *Resource {
-	placeholder := entitycore.PlaceholderKibanaWriteCallback[cloudConnectorModel]()
 	return &Resource{
 		KibanaResource: entitycore.NewKibanaResource[cloudConnectorModel](
 			entitycore.ComponentFleet,
@@ -51,8 +48,8 @@ func newResource() *Resource {
 				Schema: getSchema,
 				Read:   readCloudConnector,
 				Delete: deleteCloudConnector,
-				Create: placeholder,
-				Update: placeholder,
+				Create: createCloudConnector,
+				Update: updateCloudConnector,
 			},
 		),
 	}
@@ -74,20 +71,22 @@ func (r *Resource) ConfigValidators(_ context.Context) []resource.ConfigValidato
 	}
 }
 
-func readCloudConnector(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, model cloudConnectorModel) (cloudConnectorModel, bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	diags.AddError(
-		"Fleet cloud connector read not implemented",
-		"Read is implemented in Task 6 of the fleet-cloud-connector change.",
-	)
-	return model, false, diags
-}
+// ImportState accepts the composite import ID form "<space_id>/<cloud_connector_id>".
+func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	compID, diags := clients.CompositeIDFromStr(req.ID)
+	resp.Diagnostics.Append(diags...)
+	if diags.HasError() {
+		return
+	}
+	if compID == nil || compID.ClusterID == "" {
+		resp.Diagnostics.AddError(
+			"Invalid import ID",
+			`Expected format "<space_id>/<cloud_connector_id>".`,
+		)
+		return
+	}
 
-func deleteCloudConnector(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ cloudConnectorModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-	diags.AddError(
-		"Fleet cloud connector delete not implemented",
-		"Delete is implemented in Task 6 of the fleet-cloud-connector change.",
-	)
-	return diags
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("space_id"), compID.ClusterID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("cloud_connector_id"), compID.ResourceID)...)
 }
