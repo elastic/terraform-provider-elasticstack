@@ -176,7 +176,6 @@ func TestHasher_Matches_malformedStoredHash(t *testing.T) {
 			{"truncated bcrypt prefix", []byte("$2a$10$tooshort")},
 		}
 		for _, tc := range cases {
-			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
 				t.Parallel()
 				assert.False(t, h.Matches("x", tc.hash))
