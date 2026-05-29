@@ -38,7 +38,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-const contentConnectorResourceAddr = "elasticstack_elasticsearch_connector.test"
+const (
+	contentConnectorResourceAddr   = "elasticstack_elasticsearch_connector.test"
+	contentConnectorDataSourceAddr = "data.elasticstack_elasticsearch_connector.lookup"
+)
 
 func skipConnectorUnsupported() func() (bool, error) {
 	return versionutils.CheckIfVersionIsUnsupported(connector.MinSupportedVersion)
@@ -764,6 +767,49 @@ func TestAccResourceContentConnector_importSecretBaseline(t *testing.T) {
 				ConfigVariables:          secretVars,
 				PlanOnly:                 true,
 				ExpectNonEmptyPlan:       false,
+			},
+		},
+	})
+}
+
+// TestAccDataSourceContentConnector_basic verifies envelope, aspects, and runtime telemetry (REQ-010).
+func TestAccDataSourceContentConnector_basic(t *testing.T) {
+	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-ds-basic")
+	vars := connectorIDVariables(connectorID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: testAccCheckContentConnectorDestroy(connectorID),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestMatchResourceAttr(contentConnectorDataSourceAddr, "id", connectorCompositeIDRegexp(connectorID)),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "connector_id", connectorID),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "service_type", "postgresql"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "name", "TF acc ds basic"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "description", "data source basic acceptance test"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "index_name", "content-connector-"+connectorID),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "language", "en"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "is_native", "false"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "status", "created"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "pipeline.name", "ent-search-generic-ingestion"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "pipeline.extract_binary_content", "true"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "pipeline.reduce_whitespace", "true"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "pipeline.run_ml_inference", "false"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "scheduling.full.enabled", "true"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "scheduling.full.interval", "0 0 * * * ?"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "scheduling.incremental.enabled", "false"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "features.incremental_sync.enabled", "true"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "features.sync_rules.basic.enabled", "true"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "configuration", "{}"),
+					resource.TestMatchResourceAttr(contentConnectorDataSourceAddr, "filtering", regexp.MustCompile(`"DEFAULT"`)),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "custom_scheduling", "{}"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "sync_now", "false"),
+				),
 			},
 		},
 	})
