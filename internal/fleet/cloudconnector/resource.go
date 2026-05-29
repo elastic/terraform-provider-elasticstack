@@ -32,6 +32,7 @@ var (
 	_ resource.ResourceWithConfigure        = newResource()
 	_ resource.ResourceWithConfigValidators = newResource()
 	_ resource.ResourceWithImportState      = newResource()
+	_ resource.ResourceWithModifyPlan       = newResource()
 )
 
 // Resource is the Fleet cloud connector resource.
@@ -45,9 +46,9 @@ func newResource() *Resource {
 			entitycore.ComponentFleet,
 			"cloud_connector",
 			entitycore.KibanaResourceOptions[cloudConnectorModel]{
-				Schema: getSchema,
-				Read:   readCloudConnector,
-				Delete: deleteCloudConnector,
+				Schema:    getSchema,
+				Read:      readCloudConnector,
+				Delete:    deleteCloudConnector,
 				Create: createCloudConnector,
 				Update: updateCloudConnector,
 			},
