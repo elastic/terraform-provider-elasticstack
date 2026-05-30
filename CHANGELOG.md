@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Fixed
+
+- Fix `elasticstack_elasticsearch_snapshot_repository` S3 repositories silently dropping `endpoint` and `path_style_access` from the PUT request body. ([#3434](https://github.com/elastic/terraform-provider-elasticstack/issues/3434))
+
 ### Changes
 
 - Fix `elasticstack_kibana_dashboard` panel-level `time_range` is now optional on typed Lens chart panels and `vis_config.by_reference`; the provider no longer inherits the dashboard-level `time_range` or applies a `now-15m`/`now` fallback when the panel-level value is unset, and panels without a panel-level `time_range` no longer drift on read. ([#3424](https://github.com/elastic/terraform-provider-elasticstack/issues/3424))

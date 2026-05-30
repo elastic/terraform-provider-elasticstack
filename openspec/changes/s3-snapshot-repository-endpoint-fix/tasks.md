@@ -36,7 +36,7 @@
 
 ## 5. Delta spec
 
-- [ ] 5.1 Keep the delta spec under
+- [x] 5.1 Keep the delta spec under
   `openspec/changes/s3-snapshot-repository-endpoint-fix/specs/elasticsearch-snapshot-repository/spec.md`
   aligned with the implementation once tasks 1–3 are complete.
 - [ ] 5.2 After merge: sync into `openspec/specs/elasticsearch-snapshot-repository/spec.md` or
