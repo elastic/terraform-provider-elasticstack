@@ -151,3 +151,36 @@ func TestS3ToSettingsWithDefaults(t *testing.T) {
 	require.NotContains(t, m, "endpoint")
 	require.NotContains(t, m, "base_path")
 }
+
+func TestS3ToSettingsWithEndpoint(t *testing.T) {
+	t.Parallel()
+
+	s3 := S3Settings{
+		CommonSettings: CommonSettings{
+			Compress: types.BoolValue(true),
+			Readonly: types.BoolValue(false),
+		},
+		Bucket:               types.StringValue("mybucket"),
+		Endpoint:             types.StringValue("https://minio.example.com:9000"),
+		Client:               types.StringValue("default"),
+		BasePath:             types.StringNull(),
+		ServerSideEncryption: types.BoolValue(false),
+		BufferSize:           types.StringNull(),
+		CannedACL:            types.StringValue("private"),
+		StorageClass:         types.StringValue("standard"),
+		PathStyleAccess:      types.BoolValue(true),
+	}
+
+	m := s3ToSettings(s3)
+	require.Equal(t, "mybucket", m["bucket"])
+	require.Equal(t, true, m["compress"])
+	require.Equal(t, false, m["readonly"])
+	require.Equal(t, false, m["server_side_encryption"])
+	require.Equal(t, true, m["path_style_access"])
+	require.Equal(t, "default", m["client"])
+	require.Equal(t, "private", m["canned_acl"])
+	require.Equal(t, "standard", m["storage_class"])
+	require.Contains(t, m, "endpoint")
+	require.Equal(t, "https://minio.example.com:9000", m["endpoint"])
+	require.NotContains(t, m, "base_path")
+}

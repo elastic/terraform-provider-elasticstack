@@ -1,6 +1,6 @@
 ## 1. Write path fix
 
-- [ ] 1.1 In `internal/clients/elasticsearch/snapshot_repository.go`, replace the `case "s3":` block
+- [x] 1.1 In `internal/clients/elasticsearch/snapshot_repository.go`, replace the `case "s3":` block
   (lines 65–72) with the raw-JSON bypass pattern used for HDFS (lines 87–105): marshal a
   `map[string]any{"type": repoType, "settings": settings}` and call
   `typedClient.Snapshot.CreateRepository(name).Raw(bytes.NewReader(bodyBytes)).Verify(verify).Do(ctx)`.
