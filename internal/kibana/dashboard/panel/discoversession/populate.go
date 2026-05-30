@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -607,8 +608,8 @@ func readDiscoverSessionDrilldownsFromConfig0(
 			p = &prior[i]
 		}
 		if p == nil {
-			out[i].EncodeURL = drilldownBoolImportPreserving(d.EncodeUrl, drilldownURLEncodeURLDefault)
-			out[i].OpenInNewTab = drilldownBoolImportPreserving(d.OpenInNewTab, drilldownURLOpenInNewTabDefault)
+			out[i].EncodeURL = panelkit.DrilldownBoolImportPreserving(d.EncodeUrl, drilldownURLEncodeURLDefault)
+			out[i].OpenInNewTab = panelkit.DrilldownBoolImportPreserving(d.OpenInNewTab, drilldownURLOpenInNewTabDefault)
 			continue
 		}
 		switch {
@@ -654,8 +655,8 @@ func readDiscoverSessionDrilldownsFromConfig1(
 			p = &prior[i]
 		}
 		if p == nil {
-			out[i].EncodeURL = drilldownBoolImportPreserving(d.EncodeUrl, drilldownURLEncodeURLDefault)
-			out[i].OpenInNewTab = drilldownBoolImportPreserving(d.OpenInNewTab, drilldownURLOpenInNewTabDefault)
+			out[i].EncodeURL = panelkit.DrilldownBoolImportPreserving(d.EncodeUrl, drilldownURLEncodeURLDefault)
+			out[i].OpenInNewTab = panelkit.DrilldownBoolImportPreserving(d.OpenInNewTab, drilldownURLOpenInNewTabDefault)
 			continue
 		}
 		switch {

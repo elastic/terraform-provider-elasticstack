@@ -30,16 +30,6 @@ const (
 	drilldownURLOpenInNewTabDefault = false
 )
 
-func drilldownBoolImportPreserving(api *bool, serverDefault bool) types.Bool {
-	if api == nil {
-		return types.BoolNull()
-	}
-	if *api == serverDefault {
-		return types.BoolNull()
-	}
-	return types.BoolValue(*api)
-}
-
 // BuildConfig fills panel.Config from Terraform state.
 func BuildConfig(pm *models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts) {
 	cfg := pm.SloAlertsConfig
@@ -208,8 +198,8 @@ func readDrilldownsFromAPI(
 		}
 
 		if prior == nil {
-			out[i].EncodeURL = drilldownBoolImportPreserving(d.EncodeUrl, drilldownURLEncodeURLDefault)
-			out[i].OpenInNewTab = drilldownBoolImportPreserving(d.OpenInNewTab, drilldownURLOpenInNewTabDefault)
+			out[i].EncodeURL = panelkit.DrilldownBoolImportPreserving(d.EncodeUrl, drilldownURLEncodeURLDefault)
+			out[i].OpenInNewTab = panelkit.DrilldownBoolImportPreserving(d.OpenInNewTab, drilldownURLOpenInNewTabDefault)
 			continue
 		}
 
