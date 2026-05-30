@@ -184,6 +184,18 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar_event.parseCalendarEventFullCompositeID",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar_event",
+      "attemptedAt": "2026-05-30T04:23:27.549113958Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed.GetChunkingConfigAttrTypes",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed",
+      "attemptedAt": "2026-05-30T04:35:48.369677163Z",
+      "reason": "pr_created"
     }
   ]
 }
