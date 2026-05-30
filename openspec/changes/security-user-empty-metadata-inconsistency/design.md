@@ -48,7 +48,7 @@ func isEmptyJSONObject(v jsontypes.Normalized) bool {
         return false
     }
     var m map[string]any
-    return json.Unmarshal([]byte(v.ValueString()), &m) == nil && len(m) == 0
+    return json.Unmarshal([]byte(v.ValueString()), &m) == nil && m != nil && len(m) == 0
 }
 ```
 

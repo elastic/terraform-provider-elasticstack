@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: Metadata JSON mapping — empty-object read-side equivalence (REQ-016)
+### Requirement: Metadata JSON mapping — empty-object read-side equivalence (REQ-016–REQ-017)
 
 When the Elasticsearch API returns an empty or absent metadata map, the resource SHALL treat
 the Terraform values `null` and `"{}"` as semantically equivalent. If the incoming state holds
