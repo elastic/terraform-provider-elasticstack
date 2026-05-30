@@ -252,17 +252,18 @@ func TestWaitForSyncJobCompletion_timeout(t *testing.T) {
 	assert.Contains(t, diags.Errors()[0].Detail(), "in_progress")
 }
 
-func TestWaitForSyncJobCompletion_timeoutDuringFirstGET(t *testing.T) {
+func TestWaitForSyncJobCompletion_timeoutBeforeFirstPoll(t *testing.T) {
 	t.Parallel()
 
+	// ctx times out long before the first 5s poll tick; the underlying
+	// asyncutils helper short-circuits on ctx.Done() and the wrapper
+	// surfaces a timeoutDiagnostic with lastStatus = "unknown".
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
 	defer cancel()
 
-	get := func(ctx context.Context, _ string) (*syncjobget.Response, fwdiag.Diagnostics) {
-		<-ctx.Done()
-		var diags fwdiag.Diagnostics
-		diags.AddError("Sync job get failed", ctx.Err().Error())
-		return nil, diags
+	get := func(_ context.Context, _ string) (*syncjobget.Response, fwdiag.Diagnostics) {
+		t.Fatal("get should not be called when ctx times out before first poll tick")
+		return nil, nil
 	}
 
 	diags := waitForSyncJobCompletionWithInterval(ctx, "hung-job", get, syncJobPollInterval)
@@ -271,6 +272,31 @@ func TestWaitForSyncJobCompletion_timeoutDuringFirstGET(t *testing.T) {
 	assert.Equal(t, "Sync job did not complete within timeout", diags.Errors()[0].Summary())
 	assert.Contains(t, diags.Errors()[0].Detail(), "hung-job")
 	assert.Contains(t, diags.Errors()[0].Detail(), "unknown")
+}
+
+func TestWaitForSyncJobCompletion_propagatesGetDiagnostics(t *testing.T) {
+	t.Parallel()
+
+	// When get() returns framework diagnostics and ctx is still alive, the
+	// wrapper must surface those diagnostics verbatim rather than the
+	// timeout message — this preserves rich API errors (auth failure, 404,
+	// transport problems) for the operator.
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	wantSummary := "Sync job get failed"
+	wantDetail := "permission denied"
+	get := func(_ context.Context, _ string) (*syncjobget.Response, fwdiag.Diagnostics) {
+		var diags fwdiag.Diagnostics
+		diags.AddError(wantSummary, wantDetail)
+		return nil, diags
+	}
+
+	diags := waitForSyncJobCompletionWithInterval(ctx, "broken-job", get, 5*time.Millisecond)
+	require.True(t, diags.HasError())
+	require.Len(t, diags.Errors(), 1)
+	assert.Equal(t, wantSummary, diags.Errors()[0].Summary())
+	assert.Equal(t, wantDetail, diags.Errors()[0].Detail())
 }
 
 func TestWaitForSyncJobCompletion_terminalAfterPolls(t *testing.T) {

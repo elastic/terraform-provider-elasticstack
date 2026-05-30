@@ -19,12 +19,14 @@ package sync_job_create
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/connector/syncjobget"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/syncjobtriggermethod"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/syncjobtype"
+	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -164,16 +166,27 @@ func waitForSyncJobCompletion(ctx context.Context, syncJobID string, get syncJob
 	return waitForSyncJobCompletionWithInterval(ctx, syncJobID, get, syncJobPollInterval)
 }
 
+// waitForSyncJobCompletionWithInterval delegates the poll loop to the shared
+// [asyncutils.WaitForStateTransition] helper. Sync-job terminal states carry
+// rich diagnostics (cancelled, suspended, error with a server message), so the
+// state checker captures those via closure variables and surfaces them after
+// the wait returns. ctx-deadline errors are translated into the action's own
+// timeout diagnostic which embeds the last observed status.
 func waitForSyncJobCompletionWithInterval(ctx context.Context, syncJobID string, get syncJobGetter, pollInterval time.Duration) fwdiag.Diagnostics {
-	lastStatus := "unknown"
+	var (
+		lastStatus    = "unknown"
+		terminalDiags fwdiag.Diagnostics
+		getDiags      fwdiag.Diagnostics
+	)
 
-	for {
-		job, getDiags := get(ctx, syncJobID)
-		if getDiags.HasError() {
+	stateChecker := func(ctx context.Context) (bool, error) {
+		job, diags := get(ctx, syncJobID)
+		if diags.HasError() {
 			if ctx.Err() != nil {
-				return timeoutDiagnostic(syncJobID, lastStatus)
+				return false, ctx.Err()
 			}
-			return getDiags
+			getDiags = diags
+			return false, errSyncJobGetFailed
 		}
 
 		lastStatus = job.Status.String()
@@ -184,19 +197,34 @@ func waitForSyncJobCompletionWithInterval(ctx context.Context, syncJobID string,
 
 		done, statusDiags := classifyTerminalStatus(lastStatus, errorField)
 		if statusDiags.HasError() {
-			return statusDiags
+			terminalDiags = statusDiags
+			return true, nil
 		}
-		if done {
-			return nil
-		}
+		return done, nil
+	}
 
-		select {
-		case <-ctx.Done():
-			return timeoutDiagnostic(syncJobID, lastStatus)
-		case <-time.After(pollInterval):
-		}
+	err := asyncutils.WaitForStateTransition(ctx, "connector_sync_job", syncJobID, stateChecker, asyncutils.WithPollInterval(pollInterval))
+
+	switch {
+	case terminalDiags.HasError():
+		return terminalDiags
+	case errors.Is(err, errSyncJobGetFailed):
+		return getDiags
+	case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+		return timeoutDiagnostic(syncJobID, lastStatus)
+	case err != nil:
+		var diags fwdiag.Diagnostics
+		diags.AddError("Sync job wait failed", err.Error())
+		return diags
+	default:
+		return nil
 	}
 }
+
+// errSyncJobGetFailed is a sentinel returned by the state checker to bail out
+// of the shared poll loop while preserving the original framework diagnostics
+// in a closure-captured variable.
+var errSyncJobGetFailed = errors.New("sync job get failed")
 
 func timeoutDiagnostic(syncJobID, lastStatus string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
