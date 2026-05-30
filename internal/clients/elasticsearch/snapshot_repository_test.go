@@ -42,10 +42,11 @@ func TestPutSnapshotRepository_S3RawBody(t *testing.T) {
 	}
 
 	var capturedBody string
+	var captureErr error
 	srv := newMockElasticsearchServerForILM(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPut && strings.Contains(r.URL.Path, "/_snapshot/my-repo") {
-			body, err := io.ReadAll(r.Body)
-			require.NoError(t, err)
+			var body []byte
+			body, captureErr = io.ReadAll(r.Body)
 			capturedBody = string(body)
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -55,6 +56,7 @@ func TestPutSnapshotRepository_S3RawBody(t *testing.T) {
 
 	client := newMockScopedClient(t, srv)
 	diags := PutSnapshotRepository(context.Background(), client, "my-repo", "s3", settings, false)
+	require.NoError(t, captureErr)
 	require.False(t, diags.HasError(), diags.Errors())
 	require.NotEmpty(t, capturedBody)
 
@@ -81,10 +83,11 @@ func TestPutSnapshotRepository_S3RawBodyWithoutEndpoint(t *testing.T) {
 	}
 
 	var capturedBody string
+	var captureErr error
 	srv := newMockElasticsearchServerForILM(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPut && strings.Contains(r.URL.Path, "/_snapshot/my-repo") {
-			body, err := io.ReadAll(r.Body)
-			require.NoError(t, err)
+			var body []byte
+			body, captureErr = io.ReadAll(r.Body)
 			capturedBody = string(body)
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -94,6 +97,7 @@ func TestPutSnapshotRepository_S3RawBodyWithoutEndpoint(t *testing.T) {
 
 	client := newMockScopedClient(t, srv)
 	diags := PutSnapshotRepository(context.Background(), client, "my-repo", "s3", settings, false)
+	require.NoError(t, captureErr)
 	require.False(t, diags.HasError(), diags.Errors())
 	require.NotEmpty(t, capturedBody)
 
@@ -117,10 +121,11 @@ func TestPutSnapshotRepository_HDFSRawBody(t *testing.T) {
 	}
 
 	var capturedBody string
+	var captureErr error
 	srv := newMockElasticsearchServerForILM(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPut && strings.Contains(r.URL.Path, "/_snapshot/hdfs-repo") {
-			body, err := io.ReadAll(r.Body)
-			require.NoError(t, err)
+			var body []byte
+			body, captureErr = io.ReadAll(r.Body)
 			capturedBody = string(body)
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -130,6 +135,7 @@ func TestPutSnapshotRepository_HDFSRawBody(t *testing.T) {
 
 	client := newMockScopedClient(t, srv)
 	diags := PutSnapshotRepository(context.Background(), client, "hdfs-repo", "hdfs", settings, false)
+	require.NoError(t, captureErr)
 	require.False(t, diags.HasError(), diags.Errors())
 	require.NotEmpty(t, capturedBody)
 

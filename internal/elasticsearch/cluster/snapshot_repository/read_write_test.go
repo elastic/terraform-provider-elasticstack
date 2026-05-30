@@ -272,7 +272,7 @@ func TestSettingsToS3StateInheritance(t *testing.T) {
 
 			state := Data{}
 			if !tc.stateS3Null {
-				state.S3 = mustS3Object(t, ctx, tc.stateS3)
+				state.S3 = mustS3Object(ctx, t, tc.stateS3)
 			}
 
 			result, diags := settingsToS3(ctx, repo, state)
@@ -309,7 +309,7 @@ func s3SettingsForState(endpoint types.String, pathStyleAccess types.Bool) S3Set
 	}
 }
 
-func mustS3Object(t *testing.T, ctx context.Context, s3 S3Settings) types.Object {
+func mustS3Object(ctx context.Context, t *testing.T, s3 S3Settings) types.Object {
 	t.Helper()
 	obj, diags := types.ObjectValueFrom(ctx, s3AttrTypes(), s3)
 	require.False(t, diags.HasError(), diags.Errors())
