@@ -43,10 +43,10 @@ returns `endpoint` in the S3 settings object.
 - If the GET response **does** return `endpoint`, no schema change is required and state will
   round-trip correctly.
 - If the GET response **does not** return `endpoint` (i.e. Elasticsearch treats it as a
-  write-only client-level setting), the `endpoint` attribute in the S3 block schema SHALL carry
-  a `UseStateForUnknown` plan modifier so that a second `apply` on an unchanged configuration
-  does not produce a spurious diff showing `endpoint` changing from its configured value to
-  `null`.
+  write-only client-level setting), the `settingsToS3` read function SHALL implement read-side
+  state inheritance: when the API omits `endpoint`, the prior state value SHALL be preserved
+  in the refreshed state rather than overwriting it with `null`. This mirrors the existing
+  `compressFallback` pattern used in `settingsToFs` and `settingsToURL`.
 
 The decision and its rationale SHALL be documented in the implementing PR description.
 

@@ -64,7 +64,8 @@ schema defines. Sending it as raw JSON bypasses the lossy unmarshal step entirel
   comment on issue #3434 for the full comparison.
 
 - The `settingsCannedACL` / `settingsStorageClass` defaults (`"private"` / `"standard"`) are
-  written unconditionally by `s3ToSettings`. The raw-JSON bypass preserves this behaviour
+  written conditionally via `setIfNotEmpty` by `s3ToSettings`, but because the schema provides
+  defaults they are always non-empty in practice. The raw-JSON bypass preserves this behaviour
   unchanged; no schema default changes are needed.
 
 - For `path_style_access`: `s3ToSettings` writes it unconditionally as a bool. The Elasticsearch
@@ -77,10 +78,12 @@ schema defines. Sending it as raw JSON bypasses the lossy unmarshal step entirel
   causing a perpetual plan diff on subsequent applies. The raw-JSON GET overlay in
   `GetSnapshotRepository` (snapshot_repository.go lines 155–165) captures raw settings from the GET
   response, so if ES echoes `endpoint` back, it will be preserved. If ES treats `endpoint` as a
-  write-only client-level setting (i.e. it is absent from GET), then `UseStateForUnknown` on the
-  `endpoint` schema attribute is required to prevent drift. This must be confirmed during
-  implementation; the implementer should test a create-then-read cycle with a real S3-compatible
-  endpoint or inspect the ES source.
+  write-only client-level setting (i.e. it is absent from GET), then `settingsToS3` must implement
+  read-side state inheritance: when the API omits `endpoint`, the prior state value should be
+  preserved instead of overwriting state with `null`. This mirrors the existing `compressFallback`
+  pattern in `settingsToFs` and `settingsToURL`. This must be confirmed during implementation; the
+  implementer should test a create-then-read cycle with a real S3-compatible endpoint or inspect
+  the ES source.
 
 - **Is `path_style_access` echoed by GET?** The debug trace in the issue does not show it in the
   request (evidence it was also being dropped by the typed struct). If ES echoes `false` back for

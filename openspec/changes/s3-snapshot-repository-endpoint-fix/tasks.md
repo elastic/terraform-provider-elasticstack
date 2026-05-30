@@ -17,9 +17,11 @@
 - [ ] 3.1 Determine whether the Elasticsearch GET `/_snapshot/{name}` response returns `endpoint`
   in the settings object for S3 repositories. Document the finding inline as a comment or in the
   PR description.
-- [ ] 3.2 If the GET response does NOT return `endpoint`, add `UseStateForUnknown` (or equivalent)
-  to the `endpoint` attribute in the S3 block schema
-  (`internal/elasticsearch/cluster/snapshot_repository/schema.go`) to prevent perpetual plan drift.
+- [ ] 3.2 If the GET response does NOT return `endpoint`, add read-side state inheritance to
+  `settingsToS3` in `read.go`: pass `state Data` (already available from the existing signature
+  pattern) and, when `StrSettingNull(s, settingEndpoint)` is null and the prior state `S3` block
+  is non-null, preserve the state value of `endpoint` instead of overwriting it with null. Mirror
+  the `compressFallback` pattern in `settingsToFs` and `settingsToURL`.
 - [ ] 3.3 If the GET response does NOT return `path_style_access` when it is `false`, consider
   whether the same plan-modifier treatment is required for that attribute.
 
