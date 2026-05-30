@@ -15,24 +15,18 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package discoversession
+package panelkit
 
-import (
-	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/types"
-)
+import "github.com/hashicorp/terraform-plugin-framework/types"
 
-const valueAuto = "auto"
-
-const (
-	drilldownURLEncodeURLDefault    = true
-	drilldownURLOpenInNewTabDefault = false
-)
-
-func columnSettingObjectType() types.ObjectType {
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"width": types.Float64Type,
-		},
+// DrilldownBoolImportPreserving maps an API *bool to a Terraform Bool, returning null when the
+// API omits the field or when the value equals the server default (so practitioners can omit it).
+func DrilldownBoolImportPreserving(api *bool, serverDefault bool) types.Bool {
+	if api == nil {
+		return types.BoolNull()
 	}
+	if *api == serverDefault {
+		return types.BoolNull()
+	}
+	return types.BoolValue(*api)
 }

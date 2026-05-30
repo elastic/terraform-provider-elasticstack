@@ -20,6 +20,7 @@ package image
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -30,16 +31,6 @@ const (
 	drilldownURLEncodeURLDefault    = true
 	drilldownURLOpenInNewTabDefault = false
 )
-
-func drilldownBoolImportPreserving(api *bool, serverDefault bool) types.Bool {
-	if api == nil {
-		return types.BoolNull()
-	}
-	if *api == serverDefault {
-		return types.BoolNull()
-	}
-	return types.BoolValue(*api)
-}
 
 // BuildConfig writes Terraform image panel state into the API panel's config (Grid/Id set separately).
 func BuildConfig(pm *models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage, diags *diag.Diagnostics) {
@@ -309,9 +300,9 @@ func readImageDashboardDrilldownFromAPI(
 	}
 
 	if prior == nil {
-		m.UseFilters = drilldownBoolImportPreserving(api.UseFilters, drilldownDashboardBoolDefault)
-		m.UseTimeRange = drilldownBoolImportPreserving(api.UseTimeRange, drilldownDashboardBoolDefault)
-		m.OpenInNewTab = drilldownBoolImportPreserving(api.OpenInNewTab, drilldownDashboardBoolDefault)
+		m.UseFilters = panelkit.DrilldownBoolImportPreserving(api.UseFilters, drilldownDashboardBoolDefault)
+		m.UseTimeRange = panelkit.DrilldownBoolImportPreserving(api.UseTimeRange, drilldownDashboardBoolDefault)
+		m.OpenInNewTab = panelkit.DrilldownBoolImportPreserving(api.OpenInNewTab, drilldownDashboardBoolDefault)
 		return m
 	}
 
@@ -353,8 +344,8 @@ func readImageURLDrilldownFromAPI(api kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeI
 	}
 
 	if prior == nil {
-		m.EncodeURL = drilldownBoolImportPreserving(api.EncodeUrl, drilldownURLEncodeURLDefault)
-		m.OpenInNewTab = drilldownBoolImportPreserving(api.OpenInNewTab, drilldownURLOpenInNewTabDefault)
+		m.EncodeURL = panelkit.DrilldownBoolImportPreserving(api.EncodeUrl, drilldownURLEncodeURLDefault)
+		m.OpenInNewTab = panelkit.DrilldownBoolImportPreserving(api.OpenInNewTab, drilldownURLOpenInNewTabDefault)
 		return m
 	}
 
