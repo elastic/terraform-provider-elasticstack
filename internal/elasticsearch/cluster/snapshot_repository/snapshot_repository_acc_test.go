@@ -176,6 +176,64 @@ func TestAccResourceSnapRepoURLExtended(t *testing.T) {
 	})
 }
 
+func TestAccResourceSnapRepoS3(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resourceName := "elasticstack_elasticsearch_snapshot_repository.test_s3_repo"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkRepoDestroy(name),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "verify", "false"),
+					resource.TestCheckResourceAttr(resourceName, "s3.bucket", "test-bucket"),
+					resource.TestCheckResourceAttr(resourceName, "s3.endpoint", "https://minio.example.com:9000"),
+					resource.TestCheckResourceAttr(resourceName, "s3.path_style_access", "true"),
+					resource.TestCheckResourceAttr(resourceName, "s3.client", "default"),
+					resource.TestCheckResourceAttr(resourceName, "s3.canned_acl", "private"),
+					resource.TestCheckResourceAttr(resourceName, "s3.storage_class", "standard"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "s3.endpoint", "https://minio-alt.example.com:9000"),
+					resource.TestCheckResourceAttr(resourceName, "s3.path_style_access", "true"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				ResourceName:             resourceName,
+				ImportState:              true,
+				ImportStateCheck: func(is []*terraform.InstanceState) error {
+					importedName := is[0].Attributes["name"]
+					if importedName != name {
+						return fmt.Errorf("expected imported snapshot name [%s] to equal [%s]", importedName, name)
+					}
+					return nil
+				},
+			},
+		},
+	})
+}
+
 func checkRepoDestroy(name string) func(s *terraform.State) error {
 	return func(s *terraform.State) error {
 		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()

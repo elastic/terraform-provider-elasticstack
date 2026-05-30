@@ -17,7 +17,7 @@
 - [x] 3.1 Determine whether the Elasticsearch GET `/_snapshot/{name}` response returns `endpoint`
   in the settings object for S3 repositories. Document the finding inline as a comment or in the
   PR description.
-- [ ] 3.2 If the GET response does NOT return `endpoint`, add read-side state inheritance to
+- [x] 3.2 If the GET response does NOT return `endpoint`, add read-side state inheritance to
   `settingsToS3` in `read.go`: pass `state Data` (already available from the existing signature
   pattern) and, when `StrSettingNull(s, settingEndpoint)` is null and the prior state `S3` block
   is non-null, preserve the state value of `endpoint` instead of overwriting it with null. Mirror
@@ -27,7 +27,7 @@
 
 ## 4. Acceptance test
 
-- [ ] 4.1 Add or update an acceptance test in
+- [x] 4.1 Add or update an acceptance test in
   `internal/elasticsearch/cluster/snapshot_repository/` that sets `endpoint` on an S3-type
   repository (using a mock or real S3-compatible target if available in CI) and asserts that the
   attribute value is preserved in state after apply. If a live S3-compatible target is not
