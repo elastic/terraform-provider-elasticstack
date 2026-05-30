@@ -64,9 +64,9 @@
     "elasticstack_kibana_security_list": "2026-05-29T07:15:16Z",
     "elasticstack_kibana_security_list_data_streams": "2026-05-29T07:15:16Z",
     "elasticstack_kibana_security_list_item": "2026-05-29T07:15:16Z",
-    "elasticstack_kibana_security_role": null,
-    "elasticstack_kibana_slo": null,
-    "elasticstack_kibana_space": null,
+    "elasticstack_kibana_security_role": "2026-05-30T06:55:50Z",
+    "elasticstack_kibana_slo": "2026-05-30T06:55:50Z",
+    "elasticstack_kibana_space": "2026-05-30T06:55:50Z",
     "elasticstack_kibana_synthetics_monitor": null,
     "elasticstack_kibana_synthetics_parameter": null,
     "elasticstack_kibana_synthetics_private_location": null
