@@ -45,7 +45,7 @@ func isMosaicNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsMosaicNoESQL) b
 	return ds.Type == lenscommon.LensDatasetTypeESQL || ds.Type == lenscommon.LensDatasetTypeTable
 }
 
-func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel, resolver lenscommon.Resolver, prior *models.MosaicConfigModel, api kbapi.KibanaHTTPAPIsMosaicNoESQL) diag.Diagnostics {
+func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel, prior *models.MosaicConfigModel, api kbapi.KibanaHTTPAPIsMosaicNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)
@@ -121,7 +121,7 @@ func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel,
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags
@@ -133,7 +133,7 @@ func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel,
 	return diags
 }
 
-func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, resolver lenscommon.Resolver, prior *models.MosaicConfigModel, api kbapi.KibanaHTTPAPIsMosaicESQL) diag.Diagnostics {
+func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, prior *models.MosaicConfigModel, api kbapi.KibanaHTTPAPIsMosaicESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Query = nil
@@ -233,7 +233,7 @@ func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, r
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags
@@ -243,7 +243,7 @@ func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, r
 	return diags
 }
 
-func mosaicConfigToAPI(m *models.MosaicConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func mosaicConfigToAPI(m *models.MosaicConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 
@@ -252,7 +252,7 @@ func mosaicConfigToAPI(m *models.MosaicConfigModel, resolver lenscommon.Resolver
 	}
 
 	if mosaicConfigUsesESQL(m) {
-		esql, esqlDiags := mosaicConfigToAPIMosaicESQL(m, resolver)
+		esql, esqlDiags := mosaicConfigToAPIMosaicESQL(m)
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
 			return attrs, diags
@@ -263,7 +263,7 @@ func mosaicConfigToAPI(m *models.MosaicConfigModel, resolver lenscommon.Resolver
 		return attrs, diags
 	}
 
-	noESQL, noESQLDiags := mosaicConfigToAPINoESQL(m, resolver)
+	noESQL, noESQLDiags := mosaicConfigToAPINoESQL(m)
 	diags.Append(noESQLDiags...)
 	if diags.HasError() {
 		return attrs, diags
@@ -285,7 +285,7 @@ func mosaicConfigUsesESQL(m *models.MosaicConfigModel) bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func mosaicConfigToAPIMosaicESQL(m *models.MosaicConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsMosaicESQL, diag.Diagnostics) {
+func mosaicConfigToAPIMosaicESQL(m *models.MosaicConfigModel) (kbapi.KibanaHTTPAPIsMosaicESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.KibanaHTTPAPIsMosaicESQL
 	api.Type = kbapi.KibanaHTTPAPIsMosaicESQLTypeMosaic
@@ -390,7 +390,7 @@ func mosaicConfigToAPIMosaicESQL(m *models.MosaicConfigModel, resolver lenscommo
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
@@ -417,7 +417,7 @@ func mosaicConfigToAPIMosaicESQL(m *models.MosaicConfigModel, resolver lenscommo
 	return api, diags
 }
 
-func mosaicConfigToAPINoESQL(m *models.MosaicConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsMosaicNoESQL, diag.Diagnostics) {
+func mosaicConfigToAPINoESQL(m *models.MosaicConfigModel) (kbapi.KibanaHTTPAPIsMosaicNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.KibanaHTTPAPIsMosaicNoESQL{
 		Type: kbapi.KibanaHTTPAPIsMosaicNoESQLTypeMosaic,
@@ -511,7 +511,7 @@ func mosaicConfigToAPINoESQL(m *models.MosaicConfigModel, resolver lenscommon.Re
 		api.Styling = &kbapi.KibanaHTTPAPIsMosaicStyling{Values: lenscommon.PartitionValueDisplayToAPI(m.ValueDisplay)}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags

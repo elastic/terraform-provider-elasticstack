@@ -59,7 +59,7 @@ func buildLensMosaicPanelForTest(t *testing.T) models.PanelModel {
 	c := lenscommon.ForType(string(kbapi.KibanaHTTPAPIsMosaicNoESQLTypeMosaic))
 	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags := c.PopulateFromAttributes(context.Background(), testLensChartResolver(), &visBv.LensByValueChartBlocks, attrs)
+	diags := c.PopulateFromAttributes(context.Background(), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 
 	return models.PanelModel{
@@ -94,7 +94,7 @@ func buildLensTreemapPanelForTest(t *testing.T) models.PanelModel {
 	c := lenscommon.ForType(string(kbapi.KibanaHTTPAPIsTreemapNoESQLTypeTreemap))
 	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags := c.PopulateFromAttributes(context.Background(), testLensChartResolver(), &visBv.LensByValueChartBlocks, attrs)
+	diags := c.PopulateFromAttributes(context.Background(), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 
 	return models.PanelModel{
@@ -128,7 +128,7 @@ func buildLensWafflePanelForTest(t *testing.T) models.PanelModel {
 	c := lenscommon.ForType(string(kbapi.KibanaHTTPAPIsWaffleNoESQLTypeWaffle))
 	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags := c.PopulateFromAttributes(context.Background(), testLensChartResolver(), &visBv.LensByValueChartBlocks, attrs)
+	diags := c.PopulateFromAttributes(context.Background(), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 
 	return models.PanelModel{
@@ -142,31 +142,18 @@ func buildLensWafflePanelForTest(t *testing.T) models.PanelModel {
 	}
 }
 
-func Test_resolveChartTimeRange_defaultWhenNoDashboard(t *testing.T) {
-	dash := &models.DashboardModel{
-		TimeRange: &models.TimeRangeModel{
-			From: types.StringValue("now-7d"),
-			To:   types.StringValue("now"),
-		},
-	}
-
+func Test_resolveChartTimeRange_omitWhenUnset(t *testing.T) {
 	chartTR := &models.TimeRangeModel{
 		From: types.StringValue("now-30d"),
 		To:   types.StringValue("now-1d"),
 	}
 
-	got := lenscommon.ResolveChartTimeRange(dash, chartTR)
+	got := lenscommon.ResolveChartTimeRange(chartTR)
+	require.NotNil(t, got)
 	assert.Equal(t, "now-30d", got.From)
 	assert.Equal(t, "now-1d", got.To)
 
-	gotInherit := lenscommon.ResolveChartTimeRange(dash, nil)
-	assert.Equal(t, "now-7d", gotInherit.From)
-	assert.Equal(t, "now", gotInherit.To)
-
-	// Scratch paths (no dashboard model) fall back to the legacy window when chart time is unset.
-	gotScratch := lenscommon.ResolveChartTimeRange(nil, nil)
-	assert.Equal(t, "now-15m", gotScratch.From)
-	assert.Equal(t, "now", gotScratch.To)
+	assert.Nil(t, lenscommon.ResolveChartTimeRange(nil))
 }
 
 func Test_mapPanelsFromAPI(t *testing.T) {
@@ -609,8 +596,7 @@ func Test_panelsToAPI(t *testing.T) {
 						"query": {"language":"kql","expression":""},
 						"legend": {"size":"small"},
 						"metrics": [{"operation":"count"}],
-						"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}],
-						"time_range": {"from": "now-15m", "to": "now"}
+						"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}]
 					}
 				}
 			]`,
@@ -644,8 +630,7 @@ func Test_panelsToAPI(t *testing.T) {
 							"unassigned":{"type":"color_code","value":"#D3DAE6"}}}],
 						"group_breakdown_by": [{"operation":"terms","collapse_by":"avg","fields":["service.name"],
 							"color":{"mode":"categorical","palette":"default","mapping":[],
-							"unassigned":{"type":"color_code","value":"#D3DAE6"}}}],
-						"time_range": {"from": "now-15m", "to": "now"}
+							"unassigned":{"type":"color_code","value":"#D3DAE6"}}}]
 					}
 				}
 			]`,
@@ -674,8 +659,7 @@ func Test_panelsToAPI(t *testing.T) {
 						"query": {"language":"kql","expression":""},
 						"legend": {"size":"small"},
 						"metrics": [{"operation":"count"}],
-						"styling": {"values": {"mode": "percentage"}},
-						"time_range": {"from": "now-15m", "to": "now"}
+						"styling": {"values": {"mode": "percentage"}}
 					}
 				}
 			]`,

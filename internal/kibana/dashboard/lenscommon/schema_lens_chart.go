@@ -20,6 +20,7 @@ package lenscommon
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -85,25 +86,22 @@ func (DrilldownListItemVariantsValidator) ValidateObject(_ context.Context, req 
 
 // LensChartPresentationTimeRangeAttributes returns nested attributes for chart-root time_range.
 func LensChartPresentationTimeRangeAttributes() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
-		"from": schema.StringAttribute{
-			MarkdownDescription: "Start of the chart time range.",
-			Required:            true,
-		},
-		"to": schema.StringAttribute{
-			MarkdownDescription: "End of the chart time range.",
-			Required:            true,
-		},
-		attrMode: schema.StringAttribute{
-			MarkdownDescription: "Optional time range mode. Valid values are `absolute` or `relative`. " +
-				"When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state " +
-				"(same pattern as REQ-009 on the dashboard `time_range`).",
-			Optional: true,
-			Validators: []validator.String{
-				stringvalidator.OneOf("absolute", "relative"),
-			},
-		},
+	attrs := panelkit.TimeRangeAttributes()
+	if from, ok := attrs["from"].(schema.StringAttribute); ok {
+		from.MarkdownDescription = "Start of the chart time range."
+		attrs["from"] = from
 	}
+	if to, ok := attrs["to"].(schema.StringAttribute); ok {
+		to.MarkdownDescription = "End of the chart time range."
+		attrs["to"] = to
+	}
+	if mode, ok := attrs["mode"].(schema.StringAttribute); ok {
+		mode.MarkdownDescription = "Optional time range mode. Valid values are `absolute` or `relative`. " +
+			"When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state " +
+			"(same pattern as REQ-009 on the dashboard `time_range`)."
+		attrs["mode"] = mode
+	}
+	return attrs
 }
 
 // LensChartDrilldownListItemAttributes returns attributes for one drilldown list entry.
@@ -227,9 +225,9 @@ func LensChartDrilldownListItemAttributes() map[string]schema.Attribute {
 // LensChartPresentationAttributes returns optional chart-root presentation fields shared by typed Lens chart blocks.
 func LensChartPresentationAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"time_range": schema.SingleNestedAttribute{
+		attrTimeRange: schema.SingleNestedAttribute{
 			MarkdownDescription: "Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. " +
-				"When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read.",
+				"When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read.",
 			Optional:   true,
 			Attributes: LensChartPresentationTimeRangeAttributes(),
 		},

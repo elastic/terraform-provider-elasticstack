@@ -30,17 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type stubResolver struct{}
-
-func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	_ = chartLevel
-	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}
-}
-
-func (stubResolver) DashboardLensComparableTimeRange() (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, bool) {
-	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}, false
-}
-
 func TestConverter_VizType(t *testing.T) {
 	var c converter
 	require.Equal(t, string(kbapi.KibanaHTTPAPIsDatatableNoESQLTypeDataTable), c.VizType())
@@ -58,8 +47,6 @@ func TestConverter_HandlesBlocks(t *testing.T) {
 func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	ctx := t.Context()
 	var c converter
-	resolver := stubResolver{}
-
 	noESQL := &models.DatatableNoESQLConfigModel{
 		Title:               types.StringValue("Datatable RT"),
 		Description:         types.StringValue("desc"),
@@ -83,11 +70,11 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	blocks := &models.LensByValueChartBlocks{
 		DatatableConfig: &models.DatatableConfigModel{NoESQL: noESQL},
 	}
-	attrs, diags := c.BuildAttributes(blocks, resolver)
+	attrs, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	out := &models.LensByValueChartBlocks{DatatableConfig: &models.DatatableConfigModel{}}
-	diags = c.PopulateFromAttributes(ctx, resolver, out, attrs)
+	diags = c.PopulateFromAttributes(ctx, out, attrs)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	require.Equal(t, noESQL.Title.ValueString(), out.DatatableConfig.NoESQL.Title.ValueString())
@@ -98,8 +85,6 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 func TestConverter_roundTrip_ESQL_datatable(t *testing.T) {
 	ctx := t.Context()
 	var c converter
-	resolver := stubResolver{}
-
 	metric := kbapi.KibanaHTTPAPIsDatatableESQLMetric{
 		Column: "host.name",
 	}
@@ -126,14 +111,14 @@ func TestConverter_roundTrip_ESQL_datatable(t *testing.T) {
 	require.NoError(t, attrs.FromKibanaHTTPAPIsDatatableESQL(api))
 
 	blocks := &models.LensByValueChartBlocks{}
-	diags := c.PopulateFromAttributes(ctx, resolver, blocks, attrs)
+	diags := c.PopulateFromAttributes(ctx, blocks, attrs)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.NotNil(t, blocks.DatatableConfig)
 	require.Nil(t, blocks.DatatableConfig.NoESQL)
 	require.NotNil(t, blocks.DatatableConfig.ESQL)
 	assert.Contains(t, blocks.DatatableConfig.ESQL.DataSourceJSON.ValueString(), "FROM metrics-*")
 
-	attrs2, diags := c.BuildAttributes(blocks, resolver)
+	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	out, err := attrs2.AsKibanaHTTPAPIsDatatableESQL()

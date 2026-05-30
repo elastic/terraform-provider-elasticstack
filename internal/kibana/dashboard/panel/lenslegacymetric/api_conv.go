@@ -65,7 +65,6 @@ func legacyMetricConfigPopulateCommonFields(
 func legacyMetricConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.LegacyMetricConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.LegacyMetricConfigModel,
 	api kbapi.KibanaHTTPAPIsLegacyMetricNoESQL,
 ) diag.Diagnostics {
@@ -95,7 +94,7 @@ func legacyMetricConfigFromAPINoESQL(
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags
@@ -105,7 +104,7 @@ func legacyMetricConfigFromAPINoESQL(
 	return diags
 }
 
-func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var result lenscommon.VisByValueConfig0
 
@@ -165,7 +164,7 @@ func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel, resolver lenscom
 			return result, diags
 		}
 
-		writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+		writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 		diags.Append(presDiags...)
 		if presDiags.HasError() {
 			return result, diags

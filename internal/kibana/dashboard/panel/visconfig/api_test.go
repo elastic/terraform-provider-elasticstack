@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/visconfig"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -125,6 +126,47 @@ func TestHandler_FromAPI_configJSONOnlyPreservesUnsetVisConfig(t *testing.T) {
 	diags := visconfig.Handler{}.FromAPI(ctx, &pm, &tfPrior, item)
 	require.False(t, diags.HasError(), "%s", diags)
 	assert.Nil(t, pm.VisConfig)
+}
+
+func TestHandler_roundTrip_byReference_withoutTimeRange(t *testing.T) {
+	ctx := iface.WithEnclosingDashboard(context.Background(), &models.DashboardModel{})
+	const apiPanelsJSON = `{
+		"type": "vis",
+		"grid": { "x": 0, "y": 0, "w": 24, "h": 12 },
+		"id": "vis-ref-panel",
+		"config": {
+			"ref_id": "lens:a1b2c3",
+			"title": "Linked lens"
+		}
+	}`
+	var vis kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis
+	require.NoError(t, json.Unmarshal([]byte(apiPanelsJSON), &vis))
+	var item kbapi.DashboardPanelItem
+	require.NoError(t, item.FromKibanaHTTPAPIsKbnDashboardPanelTypeVis(vis))
+
+	var pm models.PanelModel
+	diags := visconfig.Handler{}.FromAPI(ctx, &pm, nil, item)
+	require.False(t, diags.HasError(), "%s", diags)
+	require.NotNil(t, pm.VisConfig.ByReference)
+	assert.Nil(t, pm.VisConfig.ByReference.TimeRange)
+
+	out, d2 := visconfig.Handler{}.ToAPI(pm, nil)
+	require.False(t, d2.HasError(), "%s", d2)
+	back, err := out.AsKibanaHTTPAPIsKbnDashboardPanelTypeVis()
+	require.NoError(t, err)
+	cfg1, err := back.Config.AsKibanaHTTPAPIsKbnDashboardPanelTypeVisConfig1()
+	require.NoError(t, err)
+	assert.Equal(t, "lens:a1b2c3", cfg1.RefId)
+	assert.Nil(t, cfg1.TimeRange)
+}
+
+func TestVisByReferenceModelToAPIConfig1_omitsTimeRangeWhenUnset(t *testing.T) {
+	byRef := models.VisByReferenceModel{
+		RefID: types.StringValue("panel_0"),
+	}
+	api1, diags := lenscommon.VisByReferenceModelToAPIConfig1(byRef, "references_json")
+	require.False(t, diags.HasError())
+	assert.Nil(t, api1.TimeRange)
 }
 
 func TestHandler_roundTrip_byReference(t *testing.T) {

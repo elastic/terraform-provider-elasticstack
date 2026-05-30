@@ -111,20 +111,14 @@ type LensByValueChartBlocks struct {
 }
 
 type VisByReferenceModel struct {
-	RefID          types.String                 `tfsdk:"ref_id"`
-	ReferencesJSON jsontypes.Normalized         `tfsdk:"references_json"`
-	Title          types.String                 `tfsdk:"title"`
-	Description    types.String                 `tfsdk:"description"`
-	HideTitle      types.Bool                   `tfsdk:"hide_title"`
-	HideBorder     types.Bool                   `tfsdk:"hide_border"`
-	Drilldowns     DrilldownsModel              `tfsdk:"drilldowns"`
-	TimeRange      VisByReferenceTimeRangeModel `tfsdk:"time_range"`
-}
-
-type VisByReferenceTimeRangeModel struct {
-	From types.String `tfsdk:"from"`
-	To   types.String `tfsdk:"to"`
-	Mode types.String `tfsdk:"mode"`
+	RefID          types.String         `tfsdk:"ref_id"`
+	ReferencesJSON jsontypes.Normalized `tfsdk:"references_json"`
+	Title          types.String         `tfsdk:"title"`
+	Description    types.String         `tfsdk:"description"`
+	HideTitle      types.Bool           `tfsdk:"hide_title"`
+	HideBorder     types.Bool           `tfsdk:"hide_border"`
+	Drilldowns     DrilldownsModel      `tfsdk:"drilldowns"`
+	TimeRange      *TimeRangeModel      `tfsdk:"time_range"`
 }
 
 type VisConfigModel struct {

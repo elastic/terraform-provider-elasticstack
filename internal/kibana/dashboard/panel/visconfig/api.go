@@ -93,7 +93,6 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 	}
 
 	var diags diag.Diagnostics
-	dashboardModel := iface.EnclosingDashboard(ctx)
 	pm.Grid = panelkit.GridFromAPI(visPanel.Grid.X, visPanel.Grid.Y, visPanel.Grid.W, visPanel.Grid.H)
 	pm.ID = panelkit.IDFromAPI(visPanel.Id)
 
@@ -135,7 +134,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 		pm.VisConfig = &models.VisConfigModel{
 			ByValue: &models.VisByValueModel{},
 		}
-		diags.Append(populateLensVisByValueFromTypedChartAPI(ctx, dashboardModel, prior, &pm.VisConfig.ByValue.LensByValueChartBlocks, config0, true)...)
+		diags.Append(populateLensVisByValueFromTypedChartAPI(ctx, prior, &pm.VisConfig.ByValue.LensByValueChartBlocks, config0, true)...)
 
 	default:
 		if visPrior != nil && visPrior.ByReference != nil {
@@ -166,14 +165,14 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 		}
 		seedWaffleLensByValueChartFromPriorPanel(&pm.VisConfig.ByValue.LensByValueChartBlocks, prior)
 		seedLensChartPriorIntoBlocks(prior, &pm.VisConfig.ByValue.LensByValueChartBlocks, visType)
-		diags.Append(conv.PopulateFromAttributes(ctx, lensChartResolver(dashboardModel), &pm.VisConfig.ByValue.LensByValueChartBlocks, config0)...)
+		diags.Append(conv.PopulateFromAttributes(ctx, &pm.VisConfig.ByValue.LensByValueChartBlocks, config0)...)
 	}
 
 	return diags
 }
 
 // ToAPI serializes Terraform vis panel state into kbapi (mirrors legacy visConfigToAPI / visByReferenceToAPI).
-func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	grid := panelkit.GridToAPI(pm.Grid)
 	id := panelkit.IDToAPI(pm.ID)
 
@@ -212,7 +211,7 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 			diags.AddError("Invalid `vis_config.by_value`", "The typed chart block could not be resolved to a Lens visualization converter.")
 			return kbapi.DashboardPanelItem{}, diags
 		}
-		config0, d := conv.BuildAttributes(blocks, lensChartResolver(dashboard))
+		config0, d := conv.BuildAttributes(blocks)
 		diags.Append(d...)
 		if d.HasError() {
 			return kbapi.DashboardPanelItem{}, diags

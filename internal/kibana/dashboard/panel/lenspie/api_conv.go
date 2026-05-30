@@ -95,7 +95,6 @@ func pieChartConfigPopulateCommonFields(
 func pieChartConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.PieChartConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.PieChartConfigModel,
 	apiChart kbapi.KibanaHTTPAPIsPieNoESQL,
 ) diag.Diagnostics {
@@ -167,7 +166,7 @@ func pieChartConfigFromAPINoESQL(
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags
@@ -180,7 +179,6 @@ func pieChartConfigFromAPINoESQL(
 func pieChartConfigFromAPIESQL(
 	ctx context.Context,
 	m *models.PieChartConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.PieChartConfigModel,
 	apiChart kbapi.KibanaHTTPAPIsPieESQL,
 ) diag.Diagnostics {
@@ -251,7 +249,7 @@ func pieChartConfigFromAPIESQL(
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags
@@ -261,7 +259,7 @@ func pieChartConfigFromAPIESQL(
 	return diags
 }
 
-func pieChartConfigToAPI(m *models.PieChartConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func pieChartConfigToAPI(m *models.PieChartConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs lenscommon.VisByValueConfig0
 	if m == nil {
@@ -349,7 +347,7 @@ func pieChartConfigToAPI(m *models.PieChartConfigModel, resolver lenscommon.Reso
 
 		chart.Type = kbapi.KibanaHTTPAPIsPieNoESQLTypePie
 
-		writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+		writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 		diags.Append(presDiags...)
 		if presDiags.HasError() {
 			return attrs, diags
@@ -472,7 +470,7 @@ func pieChartConfigToAPI(m *models.PieChartConfigModel, resolver lenscommon.Reso
 
 		chart.Type = kbapi.KibanaHTTPAPIsPieESQLTypePie
 
-		writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+		writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 		diags.Append(presDiags...)
 		if presDiags.HasError() {
 			return attrs, diags

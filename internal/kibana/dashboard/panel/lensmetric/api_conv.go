@@ -124,7 +124,6 @@ func metricChartConfigPopulateCommonFields(m *models.MetricChartConfigModel,
 func metricChartConfigFromAPIVariant0(
 	ctx context.Context,
 	m *models.MetricChartConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.MetricChartConfigModel,
 	apiChart kbapi.KibanaHTTPAPIsMetricNoESQL,
 ) diag.Diagnostics {
@@ -180,7 +179,7 @@ func metricChartConfigFromAPIVariant0(
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags
@@ -193,7 +192,6 @@ func metricChartConfigFromAPIVariant0(
 func metricChartConfigFromAPIVariant1(
 	ctx context.Context,
 	m *models.MetricChartConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.MetricChartConfigModel,
 	apiChart kbapi.KibanaHTTPAPIsMetricESQL,
 ) diag.Diagnostics {
@@ -248,7 +246,7 @@ func metricChartConfigFromAPIVariant1(
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags
@@ -265,19 +263,19 @@ func metricChartConfigUsesESQL(m *models.MetricChartConfigModel) bool {
 	return lenscommon.LensDataSourceIsESQLOrTable([]byte(m.DataSourceJSON.ValueString()), nil)
 }
 
-func metricChartConfigToAPI(m *models.MetricChartConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func metricChartConfigToAPI(m *models.MetricChartConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 	if m == nil {
 		return attrs, diags
 	}
 	if metricChartConfigUsesESQL(m) {
-		return metricChartConfigToAPIVariant1(m, resolver)
+		return metricChartConfigToAPIVariant1(m)
 	}
-	return metricChartConfigToAPIVariant0(m, resolver)
+	return metricChartConfigToAPIVariant0(m)
 }
 
-func metricChartConfigToAPIVariant0(m *models.MetricChartConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func metricChartConfigToAPIVariant0(m *models.MetricChartConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs lenscommon.VisByValueConfig0
 
@@ -346,7 +344,7 @@ func metricChartConfigToAPIVariant0(m *models.MetricChartConfigModel, resolver l
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return lenscommon.VisByValueConfig0{}, diags
@@ -375,7 +373,7 @@ func metricChartConfigToAPIVariant0(m *models.MetricChartConfigModel, resolver l
 	return attrs, diags
 }
 
-func metricChartConfigToAPIVariant1(m *models.MetricChartConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func metricChartConfigToAPIVariant1(m *models.MetricChartConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs lenscommon.VisByValueConfig0
 
@@ -453,7 +451,7 @@ func metricChartConfigToAPIVariant1(m *models.MetricChartConfigModel, resolver l
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return lenscommon.VisByValueConfig0{}, diags

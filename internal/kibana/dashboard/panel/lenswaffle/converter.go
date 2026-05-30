@@ -46,7 +46,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("waffle_config", waffleSchemaAttrs(true))
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
 	if blocks == nil {
 		var d diag.Diagnostics
 		d.AddError("Lens chart blocks missing", "cannot populate waffle_config without chart blocks")
@@ -77,25 +77,25 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 		if err != nil {
 			return diagutil.FrameworkDiagFromError(err)
 		}
-		diags = waffleConfigFromAPIESQL(ctx, blocks.WaffleConfig, resolver, prior, wESQL)
+		diags = waffleConfigFromAPIESQL(ctx, blocks.WaffleConfig, prior, wESQL)
 	} else {
 		wNoESQL, err := attrs.AsKibanaHTTPAPIsWaffleNoESQL()
 		if err != nil {
 			return diagutil.FrameworkDiagFromError(err)
 		}
-		diags = waffleConfigFromAPINoESQL(ctx, blocks.WaffleConfig, resolver, prior, wNoESQL)
+		diags = waffleConfigFromAPINoESQL(ctx, blocks.WaffleConfig, prior, wNoESQL)
 	}
 	mergeWaffleConfigFromPlanSeed(blocks.WaffleConfig, seed)
 	return diags
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags
 	}
-	return waffleConfigToAPI(blocks.WaffleConfig, resolver)
+	return waffleConfigToAPI(blocks.WaffleConfig)
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {

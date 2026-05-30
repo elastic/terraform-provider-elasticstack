@@ -80,7 +80,6 @@ func tagcloudConfigUsesESQL(m *models.TagcloudConfigModel) bool {
 func tagcloudConfigFromAPI(
 	ctx context.Context,
 	m *models.TagcloudConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.TagcloudConfigModel,
 	api kbapi.KibanaHTTPAPIsTagcloudNoESQL,
 ) diag.Diagnostics {
@@ -137,7 +136,7 @@ func tagcloudConfigFromAPI(
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags
@@ -150,7 +149,6 @@ func tagcloudConfigFromAPI(
 func tagcloudConfigFromAPIESQL(
 	ctx context.Context,
 	m *models.TagcloudConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.TagcloudConfigModel,
 	api kbapi.KibanaHTTPAPIsTagcloudESQL,
 ) diag.Diagnostics {
@@ -225,7 +223,7 @@ func tagcloudConfigFromAPIESQL(
 	if ddWireDiags.HasError() {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return diags
@@ -235,7 +233,7 @@ func tagcloudConfigFromAPIESQL(
 	return diags
 }
 
-func tagcloudConfigToAPI(m *models.TagcloudConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func tagcloudConfigToAPI(m *models.TagcloudConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 
@@ -244,7 +242,7 @@ func tagcloudConfigToAPI(m *models.TagcloudConfigModel, resolver lenscommon.Reso
 	}
 
 	if tagcloudConfigUsesESQL(m) {
-		esql, d := tagcloudConfigToAPIESQL(m, resolver)
+		esql, d := tagcloudConfigToAPIESQL(m)
 		diags.Append(d...)
 		if diags.HasError() {
 			return attrs, diags
@@ -255,7 +253,7 @@ func tagcloudConfigToAPI(m *models.TagcloudConfigModel, resolver lenscommon.Reso
 		return attrs, diags
 	}
 
-	noESQL, d := tagcloudConfigToAPINoESQL(m, resolver)
+	noESQL, d := tagcloudConfigToAPINoESQL(m)
 	diags.Append(d...)
 	if diags.HasError() {
 		return attrs, diags
@@ -266,7 +264,7 @@ func tagcloudConfigToAPI(m *models.TagcloudConfigModel, resolver lenscommon.Reso
 	return attrs, diags
 }
 
-func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsTagcloudNoESQL, diag.Diagnostics) {
+func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPIsTagcloudNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.KibanaHTTPAPIsTagcloudNoESQL
 
@@ -346,7 +344,7 @@ func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel, resolver lenscommo
 		return api, diags
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
@@ -373,7 +371,7 @@ func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel, resolver lenscommo
 	return api, diags
 }
 
-func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsTagcloudESQL, diag.Diagnostics) {
+func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPIsTagcloudESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.KibanaHTTPAPIsTagcloudESQL
 	api.Type = kbapi.KibanaHTTPAPIsTagcloudESQLTypeTagCloud
@@ -458,7 +456,7 @@ func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel, resolver lenscommon.
 		api.TagBy.Label = &s
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
