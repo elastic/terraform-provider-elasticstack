@@ -23,9 +23,10 @@ resource "elasticstack_kibana_security_role" "test" {
     remote_indices {
       clusters = ["test-cluster"]
       field_security {
-        grant  = ["sample"]
-        except = []
+        grant  = ["sample", "restricted"]
+        except = ["restricted"]
       }
+      query      = jsonencode({ match_all = {} })
       names      = ["sample"]
       privileges = ["create", "read", "write"]
     }
