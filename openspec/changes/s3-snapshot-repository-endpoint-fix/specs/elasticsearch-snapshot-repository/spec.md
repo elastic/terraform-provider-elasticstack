@@ -70,5 +70,5 @@ The decision and its rationale SHALL be documented in the implementing PR descri
 The existing REQ-010 requirement for create and update is amended for the `"s3"` repository type:
 the provider SHALL use the raw JSON bypass (as specified in REQ-016) rather than the
 `types.S3Repository` typed struct, to ensure `endpoint` and `path_style_access` are not silently
-discarded. All other repository types (fs, url, gcs, azure, source) continue to use their
+discarded. All other repository types (fs, url, gcs, azure) continue to use their
 respective typed structs. The HDFS type continues to use its existing raw JSON bypass unchanged.
