@@ -1031,14 +1031,14 @@ func TestAccDataSourceContentConnector_configurationWithSensitiveFields(t *testi
 	})
 }
 
-// TestAccResourceContentConnector_versionGate verifies apply fails on Elasticsearch versions below 8.12.
+// TestAccResourceContentConnector_versionGate verifies apply fails on Elasticsearch versions below 8.16.
 func TestAccResourceContentConnector_versionGate(t *testing.T) {
 	isUnsupported, err := skipConnectorUnsupported()()
 	if err != nil {
 		t.Fatalf("could not determine server version: %v", err)
 	}
 	if !isUnsupported {
-		t.Skip("requires Elasticsearch < 8.12.0")
+		t.Skip("requires Elasticsearch < 8.16.0")
 	}
 
 	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-ver")
@@ -1051,7 +1051,7 @@ func TestAccResourceContentConnector_versionGate(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          vars,
-				ExpectError:              regexp.MustCompile(`8\.12\.0`),
+				ExpectError:              regexp.MustCompile(`8\.16\.0`),
 				Destroy:                  false,
 			},
 		},

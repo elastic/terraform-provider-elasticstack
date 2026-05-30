@@ -3,12 +3,12 @@
 page_title: "elasticstack_elasticsearch_connector Data Source - terraform-provider-elasticstack"
 subcategory: "Elasticsearch"
 description: |-
-  Reads an Elasticsearch content connector by connector_id via GET /_connector/{connector_id}. Requires Elasticsearch 8.12.0 or later.
+  Reads an Elasticsearch content connector by connector_id via GET /_connector/{connector_id}. Requires Elasticsearch 8.16.0 or later (the connector APIs are GA from 8.12.0, but the request body shapes the provider sends only stabilized in 8.16.0).
 ---
 
 # elasticstack_elasticsearch_connector (Data Source)
 
-Reads an Elasticsearch content connector by `connector_id` via `GET /_connector/{connector_id}`. Requires Elasticsearch **8.12.0** or later.
+Reads an Elasticsearch content connector by `connector_id` via `GET /_connector/{connector_id}`. Requires Elasticsearch **8.16.0** or later (the connector APIs are GA from 8.12.0, but the request body shapes the provider sends only stabilized in 8.16.0).
 
 ## Example Usage
 

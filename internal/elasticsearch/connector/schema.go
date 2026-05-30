@@ -31,7 +31,14 @@ import (
 )
 
 // MinSupportedVersion is the minimum Elasticsearch version supported by this resource.
-var MinSupportedVersion = version.Must(version.NewVersion("8.12.0"))
+//
+// The connector APIs are GA from Elasticsearch 8.12.0, but the request body
+// shapes used by the typed go-elasticsearch client (specifically the
+// `connector_id` field on POST /_connector and the `rules` field on
+// PUT /_connector/{id}/_filtering) only stabilized in 8.16.0. Older 8.12.x–
+// 8.15.x clusters reject those payloads, so the provider pins both this
+// resource and the data source to 8.16.0 as the minimum supported floor.
+var MinSupportedVersion = version.Must(version.NewVersion("8.16.0"))
 
 // schemaFactory returns the schema for the content connector resource. The
 // elasticsearch_connection block is injected automatically by the envelope.

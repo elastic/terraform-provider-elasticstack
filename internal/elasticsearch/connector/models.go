@@ -109,7 +109,7 @@ func (data ContentConnectorData) GetReadResourceID() string {
 func (data ContentConnectorData) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{{
 		MinVersion:   *MinSupportedVersion,
-		ErrorMessage: "elasticstack_elasticsearch_connector requires Elasticsearch 8.12.0 or later (connector APIs GA).",
+		ErrorMessage: "elasticstack_elasticsearch_connector requires Elasticsearch 8.16.0 or later (the connector request bodies the typed client sends are rejected on 8.12.x–8.15.x).",
 	}}, nil
 }
 

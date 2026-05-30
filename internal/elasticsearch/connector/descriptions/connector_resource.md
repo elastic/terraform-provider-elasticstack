@@ -1,4 +1,4 @@
-Manages an [Elasticsearch content connector](https://www.elastic.co/docs/reference/search-connectors) via the [connector APIs](https://www.elastic.co/docs/api/doc/elasticsearch/group/endpoint-connector). Requires Elasticsearch **8.12.0** or later and the `manage_connector` cluster privilege for write operations (`monitor_connector` or `manage_connector` for read-only access).
+Manages an [Elasticsearch content connector](https://www.elastic.co/docs/reference/search-connectors) via the [connector APIs](https://www.elastic.co/docs/api/doc/elasticsearch/group/endpoint-connector). Requires Elasticsearch **8.16.0** or later (the connector APIs are GA from 8.12.0, but the request body shapes the provider sends only stabilized in 8.16.0) and the `manage_connector` cluster privilege for write operations (`monitor_connector` or `manage_connector` for read-only access).
 
 ## Lifecycle
 

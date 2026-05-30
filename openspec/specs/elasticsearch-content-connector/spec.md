@@ -391,13 +391,15 @@ The resource SHALL support `terraform import` using either the bare connector ID
 
 ### Requirement: Minimum Elasticsearch version (REQ-013)
 
-The resource and data source SHALL gate against Elasticsearch 8.12.0 as the minimum supported version via `entitycore.VersionRequirement`. Older versions SHALL produce a clear diagnostic.
+The resource and data source SHALL gate against Elasticsearch 8.16.0 as the minimum supported version via `entitycore.VersionRequirement`. Older versions SHALL produce a clear diagnostic.
+
+Although the connector APIs are GA from Elasticsearch 8.12.0, the request body shapes the provider sends through the typed `go-elasticsearch` client (notably the `connector_id` field on `POST /_connector` and the `rules` field on `PUT /_connector/{id}/_filtering`) are rejected by 8.12.x–8.15.x clusters and stabilized starting with 8.16.0. The minimum floor reflects the lowest version where the provider's on-wire payloads are accepted end to end.
 
 #### Scenario: Older Elasticsearch returns version diagnostic
 
-- **GIVEN** the configured Elasticsearch is older than 8.12.0
+- **GIVEN** the configured Elasticsearch is older than 8.16.0
 - **WHEN** Terraform attempts to plan or apply
-- **THEN** diagnostics SHALL include an error stating the resource requires Elasticsearch 8.12.0 or later
+- **THEN** diagnostics SHALL include an error stating the resource requires Elasticsearch 8.16.0 or later
 
 ### Requirement: Required cluster privilege (REQ-014)
 
