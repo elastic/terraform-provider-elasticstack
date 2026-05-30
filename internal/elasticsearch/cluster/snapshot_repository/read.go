@@ -84,7 +84,7 @@ func readSnapshotRepository(ctx context.Context, client *esclients.Elasticsearch
 		}
 		data.Azure = azure
 	case repoTypeS3:
-		s3, s3Diags := settingsToS3(ctx, repo)
+		s3, s3Diags := settingsToS3(ctx, repo, state)
 		diags.Append(s3Diags...)
 		if diags.HasError() {
 			return state, false, diags
@@ -200,8 +200,32 @@ func settingsToAzure(ctx context.Context, repo *elasticsearch.SnapshotRepository
 	return types.ObjectValueFrom(ctx, azureAttrTypes(), azure)
 }
 
-func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo) (types.Object, diag.Diagnostics) {
+func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo, state Data) (types.Object, diag.Diagnostics) {
 	s := repo.Settings
+
+	endpointFallback := types.StringNull()
+	pathStyleAccessFallback := false
+	if !state.S3.IsNull() && !state.S3.IsUnknown() {
+		var stateS3 S3Settings
+		if diags := state.S3.As(ctx, &stateS3, basetypes.ObjectAsOptions{}); !diags.HasError() {
+			endpointFallback = stateS3.Endpoint
+			if !stateS3.PathStyleAccess.IsNull() && !stateS3.PathStyleAccess.IsUnknown() {
+				pathStyleAccessFallback = stateS3.PathStyleAccess.ValueBool()
+			}
+		}
+	}
+
+	// Elasticsearch may omit endpoint and path_style_access from GET responses;
+	// inherit prior state when absent to avoid spurious plan drift either way.
+	var endpoint types.String
+	if endpointStr := StrSetting(s, settingEndpoint); endpointStr != "" {
+		endpoint = StrSettingNull(s, settingEndpoint)
+	} else if !endpointFallback.IsNull() {
+		endpoint = endpointFallback
+	} else {
+		endpoint = types.StringNull()
+	}
+
 	s3 := S3Settings{
 		CommonSettings: CommonSettings{
 			ChunkSize:              StrSettingNull(s, settingChunkSize),
@@ -211,14 +235,14 @@ func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 			Readonly:               types.BoolValue(BoolSetting(s, settingReadonly, false)),
 		},
 		Bucket:               types.StringValue(StrSetting(s, settingBucket)),
-		Endpoint:             StrSettingNull(s, settingEndpoint),
+		Endpoint:             endpoint,
 		Client:               StrSettingNull(s, settingClient),
 		BasePath:             StrSettingNull(s, settingBasePath),
 		ServerSideEncryption: types.BoolValue(BoolSetting(s, settingServerSideEncryption, false)),
 		BufferSize:           StrSettingNull(s, settingBufferSize),
 		CannedACL:            StrSettingNull(s, settingCannedACL),
 		StorageClass:         StrSettingNull(s, settingStorageClass),
-		PathStyleAccess:      types.BoolValue(BoolSetting(s, settingPathStyleAccess, false)),
+		PathStyleAccess:      types.BoolValue(BoolSetting(s, settingPathStyleAccess, pathStyleAccessFallback)),
 	}
 	return types.ObjectValueFrom(ctx, s3AttrTypes(), s3)
 }

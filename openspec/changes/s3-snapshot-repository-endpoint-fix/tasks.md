@@ -7,14 +7,14 @@
 
 ## 2. Unit tests
 
-- [ ] 2.1 In `internal/elasticsearch/cluster/snapshot_repository/read_write_test.go`, add
+- [x] 2.1 In `internal/elasticsearch/cluster/snapshot_repository/read_write_test.go`, add
   `TestS3ToSettingsWithEndpoint`: construct an `S3Settings` with `Endpoint` set to a non-empty
   value and assert `require.Contains(t, m, "endpoint")` with the correct value. Mirror the
   structure of the existing `TestS3ToSettingsWithDefaults` test.
 
 ## 3. Read-back / plan drift investigation
 
-- [ ] 3.1 Determine whether the Elasticsearch GET `/_snapshot/{name}` response returns `endpoint`
+- [x] 3.1 Determine whether the Elasticsearch GET `/_snapshot/{name}` response returns `endpoint`
   in the settings object for S3 repositories. Document the finding inline as a comment or in the
   PR description.
 - [ ] 3.2 If the GET response does NOT return `endpoint`, add read-side state inheritance to
@@ -22,7 +22,7 @@
   pattern) and, when `StrSettingNull(s, settingEndpoint)` is null and the prior state `S3` block
   is non-null, preserve the state value of `endpoint` instead of overwriting it with null. Mirror
   the `compressFallback` pattern in `settingsToFs` and `settingsToURL`.
-- [ ] 3.3 If the GET response does NOT return `path_style_access` when it is `false`, consider
+- [x] 3.3 If the GET response does NOT return `path_style_access` when it is `false`, consider
   whether the same plan-modifier treatment is required for that attribute.
 
 ## 4. Acceptance test
