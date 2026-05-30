@@ -350,23 +350,9 @@ func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPA
 		return api, diags
 	}
 
-	api.TimeRange = writes.TimeRange
-	if writes.HideTitle != nil {
-		api.HideTitle = writes.HideTitle
-	}
-	if writes.HideBorder != nil {
-		api.HideBorder = writes.HideBorder
-	}
-	if writes.References != nil {
-		api.References = writes.References
-	}
-	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsTagcloudNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
-		diags.Append(ddDiags...)
-		if !ddDiags.HasError() {
-			api.Drilldowns = &items
-		}
-	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTagcloudNoESQL_Drilldowns_Item](
+		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+	)...)
 
 	return api, diags
 }
@@ -462,23 +448,9 @@ func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPI
 		return api, diags
 	}
 
-	api.TimeRange = writes.TimeRange
-	if writes.HideTitle != nil {
-		api.HideTitle = writes.HideTitle
-	}
-	if writes.HideBorder != nil {
-		api.HideBorder = writes.HideBorder
-	}
-	if writes.References != nil {
-		api.References = writes.References
-	}
-	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsTagcloudESQL_Drilldowns_Item](writes.DrilldownsRaw)
-		diags.Append(ddDiags...)
-		if !ddDiags.HasError() {
-			api.Drilldowns = &items
-		}
-	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTagcloudESQL_Drilldowns_Item](
+		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+	)...)
 
 	return api, diags
 }

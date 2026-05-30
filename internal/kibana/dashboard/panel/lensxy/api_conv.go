@@ -1095,23 +1095,9 @@ func XYChartConfigToAPINoESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPI
 		return chart, diags
 	}
 
-	chart.TimeRange = writes.TimeRange
-	if writes.HideTitle != nil {
-		chart.HideTitle = writes.HideTitle
-	}
-	if writes.HideBorder != nil {
-		chart.HideBorder = writes.HideBorder
-	}
-	if writes.References != nil {
-		chart.References = writes.References
-	}
-	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsXyChartNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
-		diags.Append(ddDiags...)
-		if !ddDiags.HasError() {
-			chart.Drilldowns = &items
-		}
-	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsXyChartNoESQL_Drilldowns_Item](
+		writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
+	)...)
 
 	return chart, diags
 }
@@ -1166,23 +1152,9 @@ func xyChartConfigToAPIESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPIsX
 		return chart, diags
 	}
 
-	chart.TimeRange = writes.TimeRange
-	if writes.HideTitle != nil {
-		chart.HideTitle = writes.HideTitle
-	}
-	if writes.HideBorder != nil {
-		chart.HideBorder = writes.HideBorder
-	}
-	if writes.References != nil {
-		chart.References = writes.References
-	}
-	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsXyChartESQL_Drilldowns_Item](writes.DrilldownsRaw)
-		diags.Append(ddDiags...)
-		if !ddDiags.HasError() {
-			chart.Drilldowns = &items
-		}
-	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsXyChartESQL_Drilldowns_Item](
+		writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
+	)...)
 
 	return chart, diags
 }

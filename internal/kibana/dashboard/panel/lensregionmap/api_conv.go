@@ -224,23 +224,9 @@ func regionMapConfigToAPI(m *models.RegionMapConfigModel) (lenscommon.VisByValue
 			return attrs, diags
 		}
 
-		api.TimeRange = writes.TimeRange
-		if writes.HideTitle != nil {
-			api.HideTitle = writes.HideTitle
-		}
-		if writes.HideBorder != nil {
-			api.HideBorder = writes.HideBorder
-		}
-		if writes.References != nil {
-			api.References = writes.References
-		}
-		if len(writes.DrilldownsRaw) > 0 {
-			items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsRegionMapNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
-			diags.Append(ddDiags...)
-			if !ddDiags.HasError() {
-				api.Drilldowns = &items
-			}
-		}
+		diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsRegionMapNoESQL_Drilldowns_Item](
+			writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+		)...)
 
 		if err := attrs.FromKibanaHTTPAPIsRegionMapNoESQL(api); err != nil {
 			diags.AddError("Failed to create region map schema", err.Error())
@@ -293,23 +279,9 @@ func regionMapConfigToAPI(m *models.RegionMapConfigModel) (lenscommon.VisByValue
 		return attrs, diags
 	}
 
-	api.TimeRange = writes.TimeRange
-	if writes.HideTitle != nil {
-		api.HideTitle = writes.HideTitle
-	}
-	if writes.HideBorder != nil {
-		api.HideBorder = writes.HideBorder
-	}
-	if writes.References != nil {
-		api.References = writes.References
-	}
-	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsRegionMapESQL_Drilldowns_Item](writes.DrilldownsRaw)
-		diags.Append(ddDiags...)
-		if !ddDiags.HasError() {
-			api.Drilldowns = &items
-		}
-	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsRegionMapESQL_Drilldowns_Item](
+		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+	)...)
 
 	if err := attrs.FromKibanaHTTPAPIsRegionMapESQL(api); err != nil {
 		diags.AddError("Failed to create region map schema", err.Error())
