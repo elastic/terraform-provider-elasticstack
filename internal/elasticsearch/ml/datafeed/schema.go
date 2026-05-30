@@ -257,11 +257,6 @@ func getSchema(_ context.Context) schema.Schema {
 	}
 }
 
-// GetChunkingConfigAttrTypes returns the attribute types for chunking_config
-func GetChunkingConfigAttrTypes() map[string]attr.Type {
-	return getSchema(context.Background()).Attributes["chunking_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
-}
-
 // GetDelayedDataCheckConfigAttrTypes returns the attribute types for delayed_data_check_config
 func GetDelayedDataCheckConfigAttrTypes() map[string]attr.Type {
 	return getSchema(context.Background()).Attributes["delayed_data_check_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
