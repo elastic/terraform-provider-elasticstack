@@ -30,6 +30,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -100,6 +101,46 @@ func TestAccResourceSecurityUser(t *testing.T) {
 					resource.TestCheckNoResourceAttr(resourceName, "password_wo_version"),
 					checks.CheckUserCanAuthenticate(username, password),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSecurityUserEmptyMetadata(t *testing.T) {
+	// Regression test for https://github.com/elastic/terraform-provider-elasticstack/issues/3437.
+	// `metadata = jsonencode({})` previously produced a "Provider produced
+	// inconsistent result after apply" error because readUser overwrote the
+	// "{}" plan value with null whenever the Elasticsearch API returned an
+	// empty metadata object.
+	username := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	const resourceName = "elasticstack_elasticsearch_security_user.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSecurityUserDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(username),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "username", username),
+					resource.TestCheckResourceAttr(resourceName, "metadata", "{}"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(username),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
 			},
 		},
 	})
