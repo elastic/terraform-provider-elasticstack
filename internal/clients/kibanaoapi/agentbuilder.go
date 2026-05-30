@@ -36,7 +36,7 @@ func GetAgent(ctx context.Context, client *Client, spaceID, agentID string) (*mo
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	return handleGetResponse[models.Agent](resp.StatusCode(), resp.Body)
+	return HandleGetRawResponse[models.Agent](resp.StatusCode(), resp.Body)
 }
 
 // CreateAgent creates a new agent.
@@ -45,7 +45,7 @@ func CreateAgent(ctx context.Context, client *Client, spaceID string, req kbapi.
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	return handleMutateResponse[models.Agent](resp.StatusCode(), resp.Body)
+	return HandleMutateRawResponse[models.Agent](resp.StatusCode(), resp.Body)
 }
 
 // UpdateAgent updates an existing agent.
@@ -54,7 +54,7 @@ func UpdateAgent(ctx context.Context, client *Client, spaceID string, agentID st
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	return handleMutateResponse[models.Agent](resp.StatusCode(), resp.Body)
+	return HandleMutateRawResponse[models.Agent](resp.StatusCode(), resp.Body)
 }
 
 // DeleteAgent deletes an existing agent.
@@ -74,7 +74,7 @@ func GetSkill(ctx context.Context, client *Client, spaceID, skillID string) (*mo
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	return handleGetResponse[models.Skill](resp.StatusCode(), resp.Body)
+	return HandleGetRawResponse[models.Skill](resp.StatusCode(), resp.Body)
 }
 
 // CreateSkill creates a new skill.
@@ -83,7 +83,7 @@ func CreateSkill(ctx context.Context, client *Client, spaceID string, req kbapi.
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	return handleMutateResponse[models.Skill](resp.StatusCode(), resp.Body)
+	return HandleMutateRawResponse[models.Skill](resp.StatusCode(), resp.Body)
 }
 
 // UpdateSkill updates an existing skill.
@@ -92,7 +92,7 @@ func UpdateSkill(ctx context.Context, client *Client, spaceID, skillID string, r
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	return handleMutateResponse[models.Skill](resp.StatusCode(), resp.Body)
+	return HandleMutateRawResponse[models.Skill](resp.StatusCode(), resp.Body)
 }
 
 // DeleteSkill deletes an existing skill. The API also accepts a `force=true`
@@ -115,7 +115,7 @@ func GetTool(ctx context.Context, client *Client, spaceID string, toolID string)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	return handleGetResponse[models.Tool](resp.StatusCode(), resp.Body)
+	return HandleGetRawResponse[models.Tool](resp.StatusCode(), resp.Body)
 }
 
 // CreateTool creates a new tool.
@@ -124,7 +124,7 @@ func CreateTool(ctx context.Context, client *Client, spaceID string, req kbapi.P
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	return handleMutateResponse[models.Tool](resp.StatusCode(), resp.Body)
+	return HandleMutateRawResponse[models.Tool](resp.StatusCode(), resp.Body)
 }
 
 // UpdateTool updates an existing tool.
@@ -133,7 +133,7 @@ func UpdateTool(ctx context.Context, client *Client, spaceID string, toolID stri
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	return handleMutateResponse[models.Tool](resp.StatusCode(), resp.Body)
+	return HandleMutateRawResponse[models.Tool](resp.StatusCode(), resp.Body)
 }
 
 // DeleteTool deletes an existing tool.
@@ -163,7 +163,7 @@ func GetWorkflow(ctx context.Context, client *Client, spaceID string, workflowID
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	return handleGetResponse[models.Workflow](resp.StatusCode(), resp.Body)
+	return HandleGetRawResponse[models.Workflow](resp.StatusCode(), resp.Body)
 }
 
 // CreateWorkflow creates a new workflow.
@@ -172,7 +172,7 @@ func CreateWorkflow(ctx context.Context, client *Client, spaceID string, req kba
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	return handleMutateResponse[models.Workflow](resp.StatusCode(), resp.Body)
+	return HandleMutateRawResponse[models.Workflow](resp.StatusCode(), resp.Body)
 }
 
 // UpdateWorkflow updates an existing workflow. The returned PartialWorkflow
@@ -183,7 +183,7 @@ func UpdateWorkflow(ctx context.Context, client *Client, spaceID string, workflo
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	return handleMutateResponse[PartialWorkflow](resp.StatusCode(), resp.Body)
+	return HandleMutateRawResponse[PartialWorkflow](resp.StatusCode(), resp.Body)
 }
 
 // DeleteWorkflow deletes an existing workflow.

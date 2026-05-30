@@ -94,7 +94,7 @@ func GetSecurityRole(ctx context.Context, client *Client, name string) (*Securit
 		return nil, diagutil.ErrDiag("Failed to read Kibana security role", err)
 	}
 
-	return handleGetResponse[SecurityRole](resp.StatusCode(), resp.Body)
+	return HandleGetRawResponse[SecurityRole](resp.StatusCode(), resp.Body)
 }
 
 // PutSecurityRole creates or updates a Kibana security role using the supplied body.

@@ -15,6 +15,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Package kibanaoapi provides HTTP response helpers for the Kibana API client.
+//
+// There are two handler families:
+//   - Raw handlers (HandleGetRawResponse, HandleMutateRawResponse): use json.Unmarshal
+//     directly on the response body. Use these when the kbapi generated struct cannot
+//     unmarshal the API response correctly, or when you need a custom struct type.
+//   - Typed handlers (HandleGetTypedResponse, HandleMutateTypedResponse): use a callback
+//     to extract a pre-parsed struct pointer from the kbapi response (e.g. resp.JSON200).
+//     Use these when the kbapi generated types correctly represent the API response.
 package kibanaoapi
 
 import (
@@ -26,7 +35,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func handleGetResponse[T any](statusCode int, body []byte) (*T, diag.Diagnostics) {
+// HandleGetRawResponse handles a read response by unmarshaling the body into T.
+// Use this when the kbapi generated struct cannot unmarshal the API response correctly.
+// Returns (nil, nil) on HTTP 404.
+func HandleGetRawResponse[T any](statusCode int, body []byte) (*T, diag.Diagnostics) {
 	switch statusCode {
 	case http.StatusOK:
 		var result T
@@ -41,7 +53,9 @@ func handleGetResponse[T any](statusCode int, body []byte) (*T, diag.Diagnostics
 	}
 }
 
-func handleMutateResponse[T any](statusCode int, body []byte) (*T, diag.Diagnostics) {
+// HandleMutateRawResponse handles a create/update response by unmarshaling the body into T.
+// Use this when the kbapi generated struct cannot unmarshal the API response correctly.
+func HandleMutateRawResponse[T any](statusCode int, body []byte) (*T, diag.Diagnostics) {
 	switch statusCode {
 	case http.StatusOK:
 		var result T
