@@ -15,11 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connector
+package data_source
 
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	dschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 )
@@ -42,7 +43,7 @@ func dataSourceSchemaFactory(_ context.Context) dschema.Schema {
 				MarkdownDescription: "Connector service type (for example `postgresql`, `mysql`, `github`).",
 				Computed:            true,
 			},
-			nameAttrName: dschema.StringAttribute{
+			connector.NameAttr: dschema.StringAttribute{
 				MarkdownDescription: "Human-readable connector name.",
 				Computed:            true,
 			},
@@ -135,19 +136,19 @@ func dataSourcePipelineSingleNestedAttribute() dschema.SingleNestedAttribute {
 		MarkdownDescription: "Ingest pipeline settings applied to synced documents.",
 		Computed:            true,
 		Attributes: map[string]dschema.Attribute{
-			nameAttrName: dschema.StringAttribute{
+			connector.NameAttr: dschema.StringAttribute{
 				MarkdownDescription: "Ingest pipeline name.",
 				Computed:            true,
 			},
-			extractBinaryContentAttrName: dschema.BoolAttribute{
+			connector.ExtractBinaryContentAttr: dschema.BoolAttribute{
 				MarkdownDescription: "Whether to extract binary content during ingestion.",
 				Computed:            true,
 			},
-			reduceWhitespaceAttrName: dschema.BoolAttribute{
+			connector.ReduceWhitespaceAttr: dschema.BoolAttribute{
 				MarkdownDescription: "Whether to reduce whitespace in extracted text.",
 				Computed:            true,
 			},
-			runMlInferenceAttrName: dschema.BoolAttribute{
+			connector.RunMlInferenceAttr: dschema.BoolAttribute{
 				MarkdownDescription: "Whether to run ML inference during ingestion.",
 				Computed:            true,
 			},
@@ -160,9 +161,9 @@ func dataSourceSchedulingSingleNestedAttribute() dschema.SingleNestedAttribute {
 		MarkdownDescription: "Sync scheduling for full, incremental, and access-control jobs.",
 		Computed:            true,
 		Attributes: map[string]dschema.Attribute{
-			fullScheduleAttrName:          dataSourceScheduleEntrySingleNestedAttribute(fullScheduleAttrName),
-			incrementalScheduleAttrName:   dataSourceScheduleEntrySingleNestedAttribute(incrementalScheduleAttrName),
-			accessControlScheduleAttrName: dataSourceScheduleEntrySingleNestedAttribute(accessControlScheduleAttrName),
+			connector.FullScheduleAttr:          dataSourceScheduleEntrySingleNestedAttribute(connector.FullScheduleAttr),
+			connector.IncrementalScheduleAttr:   dataSourceScheduleEntrySingleNestedAttribute(connector.IncrementalScheduleAttr),
+			connector.AccessControlScheduleAttr: dataSourceScheduleEntrySingleNestedAttribute(connector.AccessControlScheduleAttr),
 		},
 	}
 }
@@ -172,11 +173,11 @@ func dataSourceScheduleEntrySingleNestedAttribute(jobKind string) dschema.Single
 		MarkdownDescription: "Schedule for the `" + jobKind + "` sync job type.",
 		Computed:            true,
 		Attributes: map[string]dschema.Attribute{
-			enabledAttrName: dschema.BoolAttribute{
+			connector.EnabledAttr: dschema.BoolAttribute{
 				MarkdownDescription: "Whether this scheduled job type is enabled.",
 				Computed:            true,
 			},
-			intervalAttrName: dschema.StringAttribute{
+			connector.IntervalAttr: dschema.StringAttribute{
 				MarkdownDescription: "Cron expression accepted by the Elasticsearch scheduler.",
 				Computed:            true,
 			},
@@ -189,10 +190,10 @@ func dataSourceFeaturesSingleNestedAttribute() dschema.SingleNestedAttribute {
 		MarkdownDescription: "Connector feature flags.",
 		Computed:            true,
 		Attributes: map[string]dschema.Attribute{
-			documentLevelSecurityAttrName:  dataSourceFeatureFlagSingleNestedAttribute(documentLevelSecurityAttrName),
-			incrementalSyncAttrName:        dataSourceFeatureFlagSingleNestedAttribute(incrementalSyncAttrName),
-			nativeConnectorAPIKeysAttrName: dataSourceFeatureFlagSingleNestedAttribute(nativeConnectorAPIKeysAttrName),
-			syncRulesAttrName:              dataSourceSyncRulesSingleNestedAttribute(),
+			connector.DocumentLevelSecurityAttr:  dataSourceFeatureFlagSingleNestedAttribute(connector.DocumentLevelSecurityAttr),
+			connector.IncrementalSyncAttr:        dataSourceFeatureFlagSingleNestedAttribute(connector.IncrementalSyncAttr),
+			connector.NativeConnectorAPIKeysAttr: dataSourceFeatureFlagSingleNestedAttribute(connector.NativeConnectorAPIKeysAttr),
+			connector.SyncRulesAttr:              dataSourceSyncRulesSingleNestedAttribute(),
 		},
 	}
 }
@@ -202,7 +203,7 @@ func dataSourceFeatureFlagSingleNestedAttribute(featureName string) dschema.Sing
 		MarkdownDescription: "Feature flag for `" + featureName + "`.",
 		Computed:            true,
 		Attributes: map[string]dschema.Attribute{
-			enabledAttrName: dschema.BoolAttribute{
+			connector.EnabledAttr: dschema.BoolAttribute{
 				MarkdownDescription: "Whether the feature is enabled.",
 				Computed:            true,
 			},
@@ -215,8 +216,8 @@ func dataSourceSyncRulesSingleNestedAttribute() dschema.SingleNestedAttribute {
 		MarkdownDescription: "Sync rules feature flags.",
 		Computed:            true,
 		Attributes: map[string]dschema.Attribute{
-			basicSyncRulesAttrName:    dataSourceFeatureFlagSingleNestedAttribute(basicSyncRulesAttrName),
-			advancedSyncRulesAttrName: dataSourceFeatureFlagSingleNestedAttribute(advancedSyncRulesAttrName),
+			connector.BasicSyncRulesAttr:    dataSourceFeatureFlagSingleNestedAttribute(connector.BasicSyncRulesAttr),
+			connector.AdvancedSyncRulesAttr: dataSourceFeatureFlagSingleNestedAttribute(connector.AdvancedSyncRulesAttr),
 		},
 	}
 }

@@ -15,20 +15,30 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connector
+package resource
 
 import (
+	"context"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// NewContentConnectorDataSource returns the Plugin Framework data source for
-// elasticstack_elasticsearch_connector.
-func NewContentConnectorDataSource() datasource.DataSource {
-	return entitycore.NewElasticsearchDataSource(
-		entitycore.ComponentElasticsearch,
-		"connector",
-		dataSourceSchemaFactory,
-		readContentConnectorDataSource,
-	)
+func updateConnector(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.WriteRequest[ContentConnectorData],
+) (entitycore.WriteResult[ContentConnectorData], diag.Diagnostics) {
+	var diags diag.Diagnostics
+	data := req.Plan
+	connectorID := req.WriteID
+
+	if req.Prior != nil {
+		diags.Append(applyEnvelopePartialsOnUpdate(ctx, client, connectorID, data, *req.Prior)...)
+	}
+
+	diags.Append(applyConnectorFanOut(ctx, client, connectorID, data, req.Config, req.Prior, req.Private, true)...)
+
+	return entitycore.WriteResult[ContentConnectorData]{Model: data}, diags
 }

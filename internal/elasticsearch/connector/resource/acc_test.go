@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connector_test
+package resource_test
 
 import (
 	"bytes"
@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/connectorfieldtype"
@@ -39,10 +38,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-const (
-	contentConnectorResourceAddr   = "elasticstack_elasticsearch_connector.test"
-	contentConnectorDataSourceAddr = "data.elasticstack_elasticsearch_connector.lookup"
-)
+const contentConnectorResourceAddr = "elasticstack_elasticsearch_connector.test"
 
 func skipConnectorUnsupported() func() (bool, error) {
 	return versionutils.CheckIfVersionIsUnsupported(connector.MinSupportedVersion)
@@ -81,34 +77,6 @@ func deleteConnectorAPI(t *testing.T, connectorID string) {
 	client := accConnectorClient(t)
 	if diags := esclient.DeleteConnector(ctx, client, connectorID); diags.HasError() {
 		t.Fatalf("delete connector %q: %s", connectorID, diags[0].Summary())
-	}
-}
-
-func createConnectorViaAPI(t *testing.T, connectorID string) {
-	t.Helper()
-	accRequireConnectorSupported(t)
-	ctx := context.Background()
-	client := accConnectorClient(t)
-	name := "TF acc ds api"
-	description := "created via API for data source acceptance test"
-	indexName := "content-connector-" + connectorID
-	_, diags := esclient.CreateConnector(ctx, client, connectorID, esclient.CreateConnectorBody{
-		Name:        &name,
-		Description: &description,
-		IndexName:   &indexName,
-		ServiceType: "postgresql",
-	})
-	if diags.HasError() {
-		t.Fatalf("create connector %q via API: %s", connectorID, diags[0].Summary())
-	}
-}
-
-func testAccCheckContentConnectorDestroyByID(t *testing.T, connectorID string) func(*terraform.State) error {
-	t.Helper()
-	return func(*terraform.State) error {
-		accRequireConnectorSupported(t)
-		deleteConnectorAPI(t, connectorID)
-		return nil
 	}
 }
 
@@ -218,88 +186,6 @@ func registerConnectorAPIKeySchema(t *testing.T, connectorID string) {
 	t.Helper()
 	registerConnectorConfigurationSchema(t, connectorID, map[string]map[string]any{
 		"api_key": connectorConfigurationSchemaField("API key", connectorfieldtype.Str.Name, true),
-	})
-}
-
-func registerConnectorSensitiveConfigurationSchema(t *testing.T, connectorID string) {
-	t.Helper()
-	registerConnectorConfigurationSchema(t, connectorID, map[string]map[string]any{
-		"api_secret": connectorConfigurationSchemaField("API secret", connectorfieldtype.Str.Name, true),
-		"endpoint":   connectorConfigurationSchemaField("Endpoint", connectorfieldtype.Str.Name, false),
-	})
-}
-
-func putConnectorFilteringMarker(t *testing.T, connectorID, marker string) {
-	t.Helper()
-	accRequireConnectorSupported(t)
-	ctx := context.Background()
-	client := accConnectorClient(t)
-	body, err := json.Marshal(map[string]any{
-		"rules": []map[string]any{{
-			"id":     "rule-acc",
-			"order":  0,
-			"field":  "title",
-			"rule":   "contains",
-			"policy": "include",
-			"value":  marker,
-		}},
-	})
-	if err != nil {
-		t.Fatalf("marshal filtering rules: %v", err)
-	}
-	_, err = client.GetESClient().Connector.UpdateFiltering(connectorID).
-		Raw(bytes.NewReader(body)).
-		Do(ctx)
-	if err != nil {
-		t.Fatalf("update filtering for %q: %v", connectorID, err)
-	}
-}
-
-func testAccCheckDataSourceConfigurationContains(keys ...string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[contentConnectorDataSourceAddr]
-		if !ok {
-			return fmt.Errorf("data source %q not in state", contentConnectorDataSourceAddr)
-		}
-		configJSON, ok := rs.Primary.Attributes["configuration"]
-		if !ok || configJSON == "" {
-			return fmt.Errorf("data source %q has no configuration attribute", contentConnectorDataSourceAddr)
-		}
-		for _, key := range keys {
-			if !strings.Contains(configJSON, fmt.Sprintf("%q", key)) {
-				return fmt.Errorf("configuration JSON missing key %q: %s", key, configJSON)
-			}
-		}
-		return nil
-	}
-}
-
-func testAccCheckDataSourceJSONObjectEmpty(attr string) resource.TestCheckFunc {
-	return resource.TestCheckResourceAttrWith(contentConnectorDataSourceAddr, attr, func(value string) error {
-		var m map[string]any
-		if err := json.Unmarshal([]byte(value), &m); err != nil {
-			return fmt.Errorf("%s is not valid JSON object: %w", attr, err)
-		}
-		if len(m) != 0 {
-			return fmt.Errorf("expected empty %s object, got %v", attr, m)
-		}
-		return nil
-	})
-}
-
-func testAccCheckDataSourceJSONArrayNonEmpty(attr string) resource.TestCheckFunc {
-	return resource.TestCheckResourceAttrWith(contentConnectorDataSourceAddr, attr, func(value string) error {
-		var arr []json.RawMessage
-		if err := json.Unmarshal([]byte(value), &arr); err != nil {
-			return fmt.Errorf("%s is not valid JSON array: %w", attr, err)
-		}
-		if len(arr) == 0 {
-			return fmt.Errorf("expected non-empty %s array", attr)
-		}
-		if !strings.Contains(value, `"active"`) {
-			return fmt.Errorf("expected %s to contain filtering rule structure with \"active\"", attr)
-		}
-		return nil
 	})
 }
 
@@ -887,145 +773,6 @@ func TestAccResourceContentConnector_importSecretBaseline(t *testing.T) {
 				ConfigVariables:          secretVars,
 				PlanOnly:                 true,
 				ExpectNonEmptyPlan:       false,
-			},
-		},
-	})
-}
-
-// TestAccDataSourceContentConnector_basic verifies envelope, aspects, and runtime telemetry (REQ-010).
-func TestAccDataSourceContentConnector_basic(t *testing.T) {
-	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-ds-basic")
-	vars := connectorIDVariables(connectorID)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
-		CheckDestroy: testAccCheckContentConnectorDestroy(connectorID),
-		Steps: []resource.TestStep{
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 skipConnectorUnsupported(),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
-				ConfigVariables:          vars,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestMatchResourceAttr(contentConnectorDataSourceAddr, "id", connectorCompositeIDRegexp(connectorID)),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "connector_id", connectorID),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "service_type", "postgresql"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "name", "TF acc ds basic"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "description", "data source basic acceptance test"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "index_name", "content-connector-"+connectorID),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "language", "en"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "is_native", "false"),
-					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "api_key_id"),
-					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "api_key_secret_id"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "pipeline.name", "ent-search-generic-ingestion"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "pipeline.extract_binary_content", "true"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "pipeline.reduce_whitespace", "true"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "pipeline.run_ml_inference", "false"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "scheduling.full.enabled", "true"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "scheduling.full.interval", "0 0 * * * ?"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "scheduling.incremental.enabled", "false"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "scheduling.incremental.interval", "0 30 * * * ?"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "scheduling.access_control.enabled", "false"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "scheduling.access_control.interval", "0 0 0 * * ?"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "features.document_level_security.enabled", "false"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "features.incremental_sync.enabled", "true"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "features.sync_rules.basic.enabled", "true"),
-					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "features.native_connector_api_keys.enabled"),
-					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "features.sync_rules.advanced.enabled"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "status", "created"),
-					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "last_seen"),
-					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "last_synced"),
-					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "last_sync_status"),
-					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "last_indexed_document_count"),
-					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "last_deleted_document_count"),
-					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "last_sync_scheduled_at"),
-					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "last_sync_error"),
-					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "last_access_control_sync_status"),
-					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "last_access_control_sync_error"),
-					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "last_access_control_sync_scheduled_at"),
-					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "last_incremental_sync_scheduled_at"),
-					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "error"),
-					testAccCheckDataSourceJSONObjectEmpty("configuration"),
-					testAccCheckDataSourceJSONArrayNonEmpty("filtering"),
-					testAccCheckDataSourceJSONObjectEmpty("custom_scheduling"),
-					resource.TestCheckNoResourceAttr(contentConnectorDataSourceAddr, "sync_cursor"),
-					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "sync_now", "false"),
-				),
-			},
-		},
-	})
-}
-
-// TestAccDataSourceContentConnector_filteringAndCustomScheduling verifies filtering is exposed after API update.
-// custom_scheduling has no PUT endpoint (connector service only); empty {} exposure is asserted here.
-func TestAccDataSourceContentConnector_filteringAndCustomScheduling(t *testing.T) {
-	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-ds-filt")
-	marker := "tf-acc-filter-marker"
-	vars := connectorIDVariables(connectorID)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
-		CheckDestroy: testAccCheckContentConnectorDestroyByID(t, connectorID),
-		Steps: []resource.TestStep{
-			{
-				PreConfig: func() {
-					createConnectorViaAPI(t, connectorID)
-					putConnectorFilteringMarker(t, connectorID, marker)
-				},
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 skipConnectorUnsupported(),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
-				ConfigVariables:          vars,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestMatchResourceAttr(contentConnectorDataSourceAddr, "filtering", regexp.MustCompile(regexp.QuoteMeta(marker))),
-					testAccCheckDataSourceJSONObjectEmpty("custom_scheduling"),
-				),
-			},
-		},
-	})
-}
-
-// TestAccDataSourceContentConnector_notFound verifies a 404 surfaces as a diagnostic error.
-func TestAccDataSourceContentConnector_notFound(t *testing.T) {
-	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-nonexistent")
-	vars := connectorIDVariables(connectorID)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
-		Steps: []resource.TestStep{
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 skipConnectorUnsupported(),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
-				ConfigVariables:          vars,
-				ExpectError:              regexp.MustCompile(`(?s)Connector not found.*` + regexp.QuoteMeta(connectorID)),
-			},
-		},
-	})
-}
-
-// TestAccDataSourceContentConnector_configurationWithSensitiveFields verifies the data source exposes the full configuration schema including sensitive fields.
-func TestAccDataSourceContentConnector_configurationWithSensitiveFields(t *testing.T) {
-	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-ds-cfg")
-	vars := connectorIDVariables(connectorID)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
-		CheckDestroy: testAccCheckContentConnectorDestroyByID(t, connectorID),
-		Steps: []resource.TestStep{
-			{
-				PreConfig: func() {
-					createConnectorViaAPI(t, connectorID)
-					registerConnectorSensitiveConfigurationSchema(t, connectorID)
-				},
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 skipConnectorUnsupported(),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
-				ConfigVariables:          vars,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDataSourceConfigurationContains("api_secret", "endpoint"),
-					resource.TestMatchResourceAttr(contentConnectorDataSourceAddr, "configuration", regexp.MustCompile(`"api_secret"[^}]*"sensitive":\s*true`)),
-				),
 			},
 		},
 	})

@@ -15,11 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connector
+package resource
 
 import (
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -31,7 +32,7 @@ type secretChangeOutcome struct {
 }
 
 func evaluateSecretPlanChanges(
-	configMap, stateMap map[string]ConfigurationValueModel,
+	configMap, stateMap map[string]connector.ConfigurationValueModel,
 	getHash func(key string) ([]byte, diag.Diagnostics),
 ) (secretChangeOutcome, diag.Diagnostics) {
 	var diags diag.Diagnostics

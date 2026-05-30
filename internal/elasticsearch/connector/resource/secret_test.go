@@ -15,13 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connector
+package resource
 
 import (
 	"context"
 	"encoding/json"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
@@ -51,7 +52,7 @@ var _ entitycore.PrivateStateStorage = mapPrivateState{}
 func TestStoreSecretHashes_nilPrivateWithSecrets(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	configMap := map[string]ConfigurationValueModel{
+	configMap := map[string]connector.ConfigurationValueModel{
 		"password": {SecretValue: fwtypes.StringValue("pw")},
 	}
 	var diags diag.Diagnostics
@@ -64,7 +65,7 @@ func TestStoreSecretHashes_nilPrivateNoSecrets(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	var diags diag.Diagnostics
-	storeSecretHashes(ctx, nil, map[string]ConfigurationValueModel{"host": {String: fwtypes.StringValue("x")}}, &diags)
+	storeSecretHashes(ctx, nil, map[string]connector.ConfigurationValueModel{"host": {String: fwtypes.StringValue("x")}}, &diags)
 	require.False(t, diags.HasError())
 }
 
@@ -92,7 +93,7 @@ func TestStoreSecretHashes_storesVerifiableHash(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	ps := mapPrivateState{}
-	configMap := map[string]ConfigurationValueModel{
+	configMap := map[string]connector.ConfigurationValueModel{
 		"password": {SecretValue: fwtypes.StringValue("pw")},
 	}
 	var diags diag.Diagnostics
@@ -117,7 +118,7 @@ func TestStoreSecretHashes_skipsReHashWhenStoredMatches(t *testing.T) {
 	require.NoError(t, err)
 	ps[secretHashKey("password")] = encoded
 
-	configMap := map[string]ConfigurationValueModel{
+	configMap := map[string]connector.ConfigurationValueModel{
 		"password": {SecretValue: fwtypes.StringValue("pw")},
 	}
 	var diags diag.Diagnostics
@@ -129,10 +130,10 @@ func TestStoreSecretHashes_skipsReHashWhenStoredMatches(t *testing.T) {
 func TestClearRemovedSecretHashes_nilPrivateWithRemovals(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	priorMap := map[string]ConfigurationValueModel{
+	priorMap := map[string]connector.ConfigurationValueModel{
 		"password": {SecretValue: fwtypes.StringValue("x")},
 	}
 	var diags diag.Diagnostics
-	clearRemovedSecretHashes(ctx, nil, priorMap, map[string]ConfigurationValueModel{}, &diags)
+	clearRemovedSecretHashes(ctx, nil, priorMap, map[string]connector.ConfigurationValueModel{}, &diags)
 	require.True(t, diags.HasError())
 }

@@ -15,12 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connector
+package resource
 
 import _ "embed"
 
 //go:embed descriptions/connector_resource.md
 var contentConnectorResourceMarkdownDescription string
-
-//go:embed descriptions/connector_data_source.md
-var contentConnectorDataSourceMarkdownDescription string

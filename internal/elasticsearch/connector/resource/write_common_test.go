@@ -15,12 +15,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connector
+package resource
 
 import (
 	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
@@ -58,15 +59,15 @@ func TestConfigurationSchemaNotRegisteredDiagnostic(t *testing.T) {
 func TestShouldWriteAspect(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	nullObj := fwtypes.ObjectNull(pipelineModelAttrTypes())
-	knownA, diagsA := fwtypes.ObjectValueFrom(ctx, pipelineModelAttrTypes(), PipelineModel{
+	nullObj := fwtypes.ObjectNull(connector.PipelineModelAttrTypes())
+	knownA, diagsA := fwtypes.ObjectValueFrom(ctx, connector.PipelineModelAttrTypes(), connector.PipelineModel{
 		Name:                 fwtypes.StringValue("p"),
 		ExtractBinaryContent: fwtypes.BoolValue(true),
 		ReduceWhitespace:     fwtypes.BoolValue(true),
 		RunMlInference:       fwtypes.BoolValue(false),
 	})
 	require.False(t, diagsA.HasError())
-	knownB, diagsB := fwtypes.ObjectValueFrom(ctx, pipelineModelAttrTypes(), PipelineModel{
+	knownB, diagsB := fwtypes.ObjectValueFrom(ctx, connector.PipelineModelAttrTypes(), connector.PipelineModel{
 		Name:                 fwtypes.StringValue("q"),
 		ExtractBinaryContent: fwtypes.BoolValue(false),
 		ReduceWhitespace:     fwtypes.BoolValue(false),
@@ -86,10 +87,10 @@ func TestShouldWriteAspect(t *testing.T) {
 func TestPlanObjectSet_andPlanMapSet(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	require.False(t, planObjectSet(fwtypes.ObjectNull(pipelineModelAttrTypes())))
-	require.False(t, planMapSet(fwtypes.MapNull(fwtypes.ObjectType{AttrTypes: configurationValueModelAttrTypes()})))
+	require.False(t, planObjectSet(fwtypes.ObjectNull(connector.PipelineModelAttrTypes())))
+	require.False(t, planMapSet(fwtypes.MapNull(fwtypes.ObjectType{AttrTypes: connector.ConfigurationValueModelAttrTypes()})))
 
-	knownMap, diags := fwtypes.MapValueFrom(ctx, fwtypes.ObjectType{AttrTypes: configurationValueModelAttrTypes()}, map[string]ConfigurationValueModel{
+	knownMap, diags := fwtypes.MapValueFrom(ctx, fwtypes.ObjectType{AttrTypes: connector.ConfigurationValueModelAttrTypes()}, map[string]connector.ConfigurationValueModel{
 		"k": {String: fwtypes.StringValue("v")},
 	})
 	require.False(t, diags.HasError())

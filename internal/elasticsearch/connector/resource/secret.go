@@ -15,12 +15,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connector
+package resource
 
 import (
 	"context"
 	"encoding/json"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/writeonlyhash"
@@ -62,7 +63,7 @@ func decodeSecretHashFromPrivateState(raw []byte) ([]byte, error) {
 // hash should be removed because the prior state held a secret_value branch
 // that the new config no longer holds (either the key is gone or its branch
 // is no longer secret_value).
-func secretHashKeysToClear(priorMap, configMap map[string]ConfigurationValueModel) []string {
+func secretHashKeysToClear(priorMap, configMap map[string]connector.ConfigurationValueModel) []string {
 	var keys []string
 	for key, priorElem := range priorMap {
 		if !typeutils.IsKnown(priorElem.SecretValue) {
@@ -79,7 +80,7 @@ func secretHashKeysToClear(priorMap, configMap map[string]ConfigurationValueMode
 func storeSecretHashes(
 	ctx context.Context,
 	private entitycore.PrivateStateStorage,
-	configMap map[string]ConfigurationValueModel,
+	configMap map[string]connector.ConfigurationValueModel,
 	diags *diag.Diagnostics,
 ) {
 	if private == nil {
@@ -126,7 +127,7 @@ func storeSecretHashes(
 func clearRemovedSecretHashes(
 	ctx context.Context,
 	private entitycore.PrivateStateStorage,
-	priorMap, configMap map[string]ConfigurationValueModel,
+	priorMap, configMap map[string]connector.ConfigurationValueModel,
 	diags *diag.Diagnostics,
 ) {
 	keys := secretHashKeysToClear(priorMap, configMap)
@@ -151,12 +152,12 @@ func clearAllSecretHashesFromPrior(
 	if private == nil || prior.ConfigurationValues.IsNull() || !typeutils.IsKnown(prior.ConfigurationValues) {
 		return
 	}
-	priorMap := typeutils.MapTypeAs[ConfigurationValueModel](ctx, prior.ConfigurationValues, configurationValuesPath, diags)
+	priorMap := typeutils.MapTypeAs[connector.ConfigurationValueModel](ctx, prior.ConfigurationValues, configurationValuesPath, diags)
 	if diags.HasError() {
 		return
 	}
 	for key, elem := range priorMap {
-		if activeConfigurationBranch(elem) != secretValueBranchAttrName {
+		if activeConfigurationBranch(elem) != connector.SecretValueBranchAttr {
 			continue
 		}
 		diags.Append(private.SetKey(ctx, secretHashKey(key), nil)...)
@@ -167,9 +168,9 @@ func configurationValuesFromModel(
 	ctx context.Context,
 	config fwtypes.Map,
 	diags *diag.Diagnostics,
-) map[string]ConfigurationValueModel {
+) map[string]connector.ConfigurationValueModel {
 	if config.IsNull() || !typeutils.IsKnown(config) {
 		return nil
 	}
-	return typeutils.MapTypeAs[ConfigurationValueModel](ctx, config, configurationValuesPath, diags)
+	return typeutils.MapTypeAs[connector.ConfigurationValueModel](ctx, config, configurationValuesPath, diags)
 }

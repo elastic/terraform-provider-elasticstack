@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connector
+package data_source
 
 import (
 	"bytes"
@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/syncstatus"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -78,7 +79,7 @@ var _ entitycore.WithVersionRequirements = ContentConnectorDataSourceModel{}
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
 func (ContentConnectorDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{{
-		MinVersion:   *MinSupportedVersion,
+		MinVersion:   *connector.MinSupportedVersion,
 		ErrorMessage: "elasticstack_elasticsearch_connector requires Elasticsearch 8.16.0 or later (the connector request bodies the typed client sends are rejected on 8.12.x–8.15.x).",
 	}}, nil
 }
@@ -154,9 +155,9 @@ func populateContentConnectorDataSourceFromAPI(
 		model.APIKeySecretID = fwtypes.StringNull()
 	}
 
-	model.Pipeline = populatePipelineFromAPI(ctx, resp.Pipeline, diags)
-	model.Scheduling = populateSchedulingFromAPI(ctx, resp.Scheduling, diags)
-	model.Features = populateFeaturesFromAPI(ctx, resp.Features, diags)
+	model.Pipeline = connector.PopulatePipelineFromAPI(ctx, resp.Pipeline, diags)
+	model.Scheduling = connector.PopulateSchedulingFromAPI(ctx, resp.Scheduling, diags)
+	model.Features = connector.PopulateFeaturesFromAPI(ctx, resp.Features, diags)
 
 	model.Status = fwtypes.StringValue(resp.Status.String())
 	model.LastSeen = connectorDateTimeToString(resp.LastSeen)
@@ -285,14 +286,14 @@ func marshalConnectorJSONField(attr string, value any, diags *diag.Diagnostics) 
 		)
 		return jsontypes.NewNormalizedNull()
 	}
-	if string(encoded) == jsonNullLiteral {
+	if string(encoded) == connector.JSONNullLiteral {
 		return jsontypes.NewNormalizedNull()
 	}
 	return jsontypes.NewNormalizedValue(string(encoded))
 }
 
 func marshalConnectorRawJSONField(attr string, raw json.RawMessage, diags *diag.Diagnostics) jsontypes.Normalized {
-	if len(raw) == 0 || bytes.Equal(bytes.TrimSpace(raw), []byte(jsonNullLiteral)) {
+	if len(raw) == 0 || bytes.Equal(bytes.TrimSpace(raw), []byte(connector.JSONNullLiteral)) {
 		return jsontypes.NewNormalizedNull()
 	}
 	if !json.Valid(raw) {

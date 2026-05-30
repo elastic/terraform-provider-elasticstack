@@ -15,13 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connector
+package resource
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -39,9 +40,9 @@ func applyConnectorFanOut(
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	priorPipeline := fwtypes.ObjectNull(pipelineModelAttrTypes())
-	priorScheduling := fwtypes.ObjectNull(schedulingModelAttrTypes())
-	priorFeatures := fwtypes.ObjectNull(featuresModelAttrTypes())
+	priorPipeline := fwtypes.ObjectNull(connector.PipelineModelAttrTypes())
+	priorScheduling := fwtypes.ObjectNull(connector.SchedulingModelAttrTypes())
+	priorFeatures := fwtypes.ObjectNull(connector.FeaturesModelAttrTypes())
 	if prior != nil {
 		priorPipeline = prior.Pipeline
 		priorScheduling = prior.Scheduling
@@ -109,7 +110,7 @@ func applyConnectorFanOut(
 
 		storeSecretHashes(ctx, private, configMap, &diags)
 		if isUpdate {
-			var priorMap map[string]ConfigurationValueModel
+			var priorMap map[string]connector.ConfigurationValueModel
 			if prior != nil {
 				priorMap = configurationValuesFromModel(ctx, prior.ConfigurationValues, &diags)
 			}

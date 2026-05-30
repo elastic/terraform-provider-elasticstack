@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connector
+package resource
 
 import (
 	"context"
@@ -27,6 +27,7 @@ import (
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/connectorfieldtype"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -40,7 +41,6 @@ var configurationValuesPath = path.Root("configuration_values")
 const (
 	configurationSchemaNotRegisteredTitle = "Connector configuration schema not yet registered"
 	configurationSchemaNotRegisteredURL   = "https://www.elastic.co/docs/reference/search-connectors/api-tutorial"
-	jsonNullLiteral                       = "null"
 )
 
 func configurationSchemaNotRegisteredDetail(serviceType string) string {
@@ -65,7 +65,7 @@ func (data ContentConnectorData) toCreateConnectorBody() elasticsearch.CreateCon
 }
 
 func (data ContentConnectorData) toPipelineAPI(ctx context.Context, diags *diag.Diagnostics) estypes.IngestPipelineParams {
-	var model PipelineModel
+	var model connector.PipelineModel
 	diags.Append(data.Pipeline.As(ctx, &model, basetypes.ObjectAsOptions{})...)
 	if diags.HasError() {
 		return estypes.IngestPipelineParams{}
@@ -79,7 +79,7 @@ func (data ContentConnectorData) toPipelineAPI(ctx context.Context, diags *diag.
 }
 
 func (data ContentConnectorData) toSchedulingAPI(ctx context.Context, diags *diag.Diagnostics) estypes.SchedulingConfiguration {
-	var model SchedulingModel
+	var model connector.SchedulingModel
 	diags.Append(data.Scheduling.As(ctx, &model, basetypes.ObjectAsOptions{})...)
 	if diags.HasError() {
 		return estypes.SchedulingConfiguration{}
@@ -97,7 +97,7 @@ func scheduleEntryToAPI(ctx context.Context, obj fwtypes.Object, diags *diag.Dia
 	if obj.IsNull() || !typeutils.IsKnown(obj) {
 		return nil
 	}
-	var entry ScheduleEntryModel
+	var entry connector.ScheduleEntryModel
 	diags.Append(obj.As(ctx, &entry, basetypes.ObjectAsOptions{})...)
 	if diags.HasError() {
 		return nil
@@ -109,7 +109,7 @@ func scheduleEntryToAPI(ctx context.Context, obj fwtypes.Object, diags *diag.Dia
 }
 
 func (data ContentConnectorData) toFeaturesAPI(ctx context.Context, diags *diag.Diagnostics) estypes.ConnectorFeatures {
-	var model FeaturesModel
+	var model connector.FeaturesModel
 	diags.Append(data.Features.As(ctx, &model, basetypes.ObjectAsOptions{})...)
 	if diags.HasError() {
 		return estypes.ConnectorFeatures{}
@@ -120,7 +120,7 @@ func (data ContentConnectorData) toFeaturesAPI(ctx context.Context, diags *diag.
 		NativeConnectorApiKeys: featureFlagToAPI(ctx, model.NativeConnectorAPIKeys, diags),
 	}
 	if !model.SyncRules.IsNull() && typeutils.IsKnown(model.SyncRules) {
-		var rules SyncRulesModel
+		var rules connector.SyncRulesModel
 		diags.Append(model.SyncRules.As(ctx, &rules, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
 			return out
@@ -139,7 +139,7 @@ func featureFlagToAPI(ctx context.Context, obj fwtypes.Object, diags *diag.Diagn
 	if obj.IsNull() || !typeutils.IsKnown(obj) {
 		return nil
 	}
-	var flag FeatureFlagModel
+	var flag connector.FeatureFlagModel
 	diags.Append(obj.As(ctx, &flag, basetypes.ObjectAsOptions{})...)
 	if diags.HasError() {
 		return nil
@@ -148,7 +148,7 @@ func featureFlagToAPI(ctx context.Context, obj fwtypes.Object, diags *diag.Diagn
 }
 
 func encodeConfigurationValuesWire(
-	planMap, configMap map[string]ConfigurationValueModel,
+	planMap, configMap map[string]connector.ConfigurationValueModel,
 	diags *diag.Diagnostics,
 ) map[string]json.RawMessage {
 	if len(planMap) == 0 {
@@ -175,7 +175,7 @@ func encodeConfigurationValuesWire(
 	return out
 }
 
-func configurationValueToWireJSON(elem ConfigurationValueModel) (json.RawMessage, error) {
+func configurationValueToWireJSON(elem connector.ConfigurationValueModel) (json.RawMessage, error) {
 	switch {
 	case typeutils.IsKnown(elem.SecretValue):
 		return json.Marshal(elem.SecretValue.ValueString())
@@ -196,20 +196,20 @@ func configurationValueToWireJSON(elem ConfigurationValueModel) (json.RawMessage
 	}
 }
 
-func activeConfigurationBranch(elem ConfigurationValueModel) string {
+func activeConfigurationBranch(elem connector.ConfigurationValueModel) string {
 	switch {
 	case typeutils.IsKnown(elem.SecretValue):
-		return secretValueBranchAttrName
+		return connector.SecretValueBranchAttr
 	case !elem.SecretValue.IsNull() && elem.SecretValue.IsUnknown():
-		return secretValueBranchAttrName
+		return connector.SecretValueBranchAttr
 	case typeutils.IsKnown(elem.String):
-		return stringBranchAttrName
+		return connector.StringBranchAttr
 	case typeutils.IsKnown(elem.Number):
-		return numberBranchAttrName
+		return connector.NumberBranchAttr
 	case typeutils.IsKnown(elem.Bool):
-		return boolBranchAttrName
+		return connector.BoolBranchAttr
 	case typeutils.IsKnown(elem.JSON):
-		return jsonBranchAttrName
+		return connector.JSONBranchAttr
 	default:
 		return ""
 	}
@@ -218,11 +218,11 @@ func activeConfigurationBranch(elem ConfigurationValueModel) string {
 func populateConfigurationValuesFromAPI(
 	ctx context.Context,
 	resp *getconnector.Response,
-	priorMap map[string]ConfigurationValueModel,
+	priorMap map[string]connector.ConfigurationValueModel,
 	diags *diag.Diagnostics,
 ) fwtypes.Map {
 	apiValues := configurationValuesFromAPIResponse(resp.Configuration)
-	result := make(map[string]ConfigurationValueModel)
+	result := make(map[string]connector.ConfigurationValueModel)
 
 	if priorMap != nil {
 		for key, priorElem := range priorMap {
@@ -232,7 +232,7 @@ func populateConfigurationValuesFromAPI(
 			}
 			schemaEntry, hasSchema := resp.Configuration[key]
 			branch := activeConfigurationBranch(priorElem)
-			if hasSchema && schemaEntry.Sensitive && branch != secretValueBranchAttrName {
+			if hasSchema && schemaEntry.Sensitive && branch != connector.SecretValueBranchAttr {
 				diags.AddWarning(
 					"Sensitive configuration value should use secret_value",
 					fmt.Sprintf(
@@ -243,14 +243,14 @@ func populateConfigurationValuesFromAPI(
 				result[key] = priorElem
 				continue
 			}
-			if branch == secretValueBranchAttrName {
+			if branch == connector.SecretValueBranchAttr {
 				result[key] = priorElem
 				continue
 			}
 			decoded, d := decodeConfigurationValueIntoBranch(apiValue, branch)
 			diags.Append(d...)
 			if diags.HasError() {
-				return fwtypes.MapNull(fwtypes.ObjectType{AttrTypes: configurationValueModelAttrTypes()})
+				return fwtypes.MapNull(fwtypes.ObjectType{AttrTypes: connector.ConfigurationValueModelAttrTypes()})
 			}
 			result[key] = decoded
 		}
@@ -264,24 +264,24 @@ func populateConfigurationValuesFromAPI(
 			decoded, d := decodeConfigurationValueIntoBranch(apiValue, branch)
 			diags.Append(d...)
 			if diags.HasError() {
-				return fwtypes.MapNull(fwtypes.ObjectType{AttrTypes: configurationValueModelAttrTypes()})
+				return fwtypes.MapNull(fwtypes.ObjectType{AttrTypes: connector.ConfigurationValueModelAttrTypes()})
 			}
 			result[key] = decoded
 		}
 	}
 
 	if len(result) == 0 && priorMap == nil {
-		return fwtypes.MapNull(fwtypes.ObjectType{AttrTypes: configurationValueModelAttrTypes()})
+		return fwtypes.MapNull(fwtypes.ObjectType{AttrTypes: connector.ConfigurationValueModelAttrTypes()})
 	}
 
-	return typeutils.MapValueFrom(ctx, result, fwtypes.ObjectType{AttrTypes: configurationValueModelAttrTypes()}, configurationValuesPath, diags)
+	return typeutils.MapValueFrom(ctx, result, fwtypes.ObjectType{AttrTypes: connector.ConfigurationValueModelAttrTypes()}, configurationValuesPath, diags)
 }
 
 func configurationValuePresent(raw json.RawMessage) bool {
 	if len(raw) == 0 {
 		return false
 	}
-	if string(raw) == jsonNullLiteral {
+	if string(raw) == connector.JSONNullLiteral {
 		return false
 	}
 	return true
@@ -302,143 +302,66 @@ func configurationValuesFromAPIResponse(
 
 func schemaTypeToBranch(fieldType *connectorfieldtype.ConnectorFieldType) string {
 	if fieldType == nil {
-		return stringBranchAttrName
+		return connector.StringBranchAttr
 	}
 	switch fieldType.Name {
 	case connectorfieldtype.Int.Name:
-		return numberBranchAttrName
+		return connector.NumberBranchAttr
 	case connectorfieldtype.Bool.Name:
-		return boolBranchAttrName
+		return connector.BoolBranchAttr
 	case connectorfieldtype.List.Name:
-		return stringBranchAttrName
+		return connector.StringBranchAttr
 	default:
-		return stringBranchAttrName
+		return connector.StringBranchAttr
 	}
 }
 
 func decodeConfigurationValueIntoBranch(
 	raw json.RawMessage,
 	branch string,
-) (ConfigurationValueModel, diag.Diagnostics) {
+) (connector.ConfigurationValueModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	switch branch {
-	case stringBranchAttrName, secretValueBranchAttrName:
+	case connector.StringBranchAttr, connector.SecretValueBranchAttr:
 		var s string
 		if err := json.Unmarshal(raw, &s); err == nil {
-			return ConfigurationValueModel{String: fwtypes.StringValue(s)}, diags
+			return connector.ConfigurationValueModel{String: fwtypes.StringValue(s)}, diags
 		}
 		var n json.Number
 		if err := json.Unmarshal(raw, &n); err == nil {
-			return ConfigurationValueModel{String: fwtypes.StringValue(n.String())}, diags
+			return connector.ConfigurationValueModel{String: fwtypes.StringValue(n.String())}, diags
 		}
 		var b bool
 		if err := json.Unmarshal(raw, &b); err == nil {
-			return ConfigurationValueModel{String: fwtypes.StringValue(fmt.Sprintf("%t", b))}, diags
+			return connector.ConfigurationValueModel{String: fwtypes.StringValue(fmt.Sprintf("%t", b))}, diags
 		}
 		diags.AddError("Failed to decode configuration value", "value is not a JSON string")
-		return ConfigurationValueModel{}, diags
-	case numberBranchAttrName:
+		return connector.ConfigurationValueModel{}, diags
+	case connector.NumberBranchAttr:
 		var n json.Number
 		if err := json.Unmarshal(raw, &n); err != nil {
 			diags.AddError("Failed to decode configuration value", err.Error())
-			return ConfigurationValueModel{}, diags
+			return connector.ConfigurationValueModel{}, diags
 		}
 		bf, _, err := big.ParseFloat(n.String(), 10, 64, big.ToNearestEven)
 		if err != nil {
 			diags.AddError("Failed to decode configuration value", err.Error())
-			return ConfigurationValueModel{}, diags
+			return connector.ConfigurationValueModel{}, diags
 		}
-		return ConfigurationValueModel{Number: fwtypes.NumberValue(bf)}, diags
-	case boolBranchAttrName:
+		return connector.ConfigurationValueModel{Number: fwtypes.NumberValue(bf)}, diags
+	case connector.BoolBranchAttr:
 		var b bool
 		if err := json.Unmarshal(raw, &b); err != nil {
 			diags.AddError("Failed to decode configuration value", err.Error())
-			return ConfigurationValueModel{}, diags
+			return connector.ConfigurationValueModel{}, diags
 		}
-		return ConfigurationValueModel{Bool: fwtypes.BoolValue(b)}, diags
-	case jsonBranchAttrName:
-		return ConfigurationValueModel{JSON: jsontypes.NewNormalizedValue(string(raw))}, diags
+		return connector.ConfigurationValueModel{Bool: fwtypes.BoolValue(b)}, diags
+	case connector.JSONBranchAttr:
+		return connector.ConfigurationValueModel{JSON: jsontypes.NewNormalizedValue(string(raw))}, diags
 	default:
 		diags.AddError("Failed to decode configuration value", fmt.Sprintf("unsupported branch %q", branch))
-		return ConfigurationValueModel{}, diags
+		return connector.ConfigurationValueModel{}, diags
 	}
-}
-
-func populatePipelineFromAPI(ctx context.Context, pipeline *estypes.IngestPipelineParams, diags *diag.Diagnostics) fwtypes.Object {
-	if pipeline == nil {
-		return fwtypes.ObjectNull(pipelineModelAttrTypes())
-	}
-	model := PipelineModel{
-		Name:                 fwtypes.StringValue(pipeline.Name),
-		ExtractBinaryContent: fwtypes.BoolValue(pipeline.ExtractBinaryContent),
-		ReduceWhitespace:     fwtypes.BoolValue(pipeline.ReduceWhitespace),
-		RunMlInference:       fwtypes.BoolValue(pipeline.RunMlInference),
-	}
-	obj, d := fwtypes.ObjectValueFrom(ctx, pipelineModelAttrTypes(), model)
-	diags.Append(d...)
-	return obj
-}
-
-func populateSchedulingFromAPI(ctx context.Context, scheduling estypes.SchedulingConfiguration, diags *diag.Diagnostics) fwtypes.Object {
-	model := SchedulingModel{
-		Full:          scheduleEntryFromAPI(ctx, scheduling.Full, diags),
-		Incremental:   scheduleEntryFromAPI(ctx, scheduling.Incremental, diags),
-		AccessControl: scheduleEntryFromAPI(ctx, scheduling.AccessControl, diags),
-	}
-	obj, d := fwtypes.ObjectValueFrom(ctx, schedulingModelAttrTypes(), model)
-	diags.Append(d...)
-	return obj
-}
-
-func scheduleEntryFromAPI(ctx context.Context, entry *estypes.ConnectorScheduling, diags *diag.Diagnostics) fwtypes.Object {
-	if entry == nil {
-		return fwtypes.ObjectNull(scheduleEntryModelAttrTypes())
-	}
-	model := ScheduleEntryModel{
-		Enabled:  fwtypes.BoolValue(entry.Enabled),
-		Interval: fwtypes.StringValue(entry.Interval),
-	}
-	obj, d := fwtypes.ObjectValueFrom(ctx, scheduleEntryModelAttrTypes(), model)
-	diags.Append(d...)
-	return obj
-}
-
-func populateFeaturesFromAPI(ctx context.Context, features *estypes.ConnectorFeatures, diags *diag.Diagnostics) fwtypes.Object {
-	if features == nil {
-		return fwtypes.ObjectNull(featuresModelAttrTypes())
-	}
-	model := FeaturesModel{
-		DocumentLevelSecurity:  featureFlagFromAPI(ctx, features.DocumentLevelSecurity, diags),
-		IncrementalSync:        featureFlagFromAPI(ctx, features.IncrementalSync, diags),
-		NativeConnectorAPIKeys: featureFlagFromAPI(ctx, features.NativeConnectorApiKeys, diags),
-		SyncRules:              syncRulesFromAPI(ctx, features.SyncRules, diags),
-	}
-	obj, d := fwtypes.ObjectValueFrom(ctx, featuresModelAttrTypes(), model)
-	diags.Append(d...)
-	return obj
-}
-
-func featureFlagFromAPI(ctx context.Context, flag *estypes.FeatureEnabled, diags *diag.Diagnostics) fwtypes.Object {
-	if flag == nil {
-		return fwtypes.ObjectNull(featureFlagModelAttrTypes())
-	}
-	model := FeatureFlagModel{Enabled: fwtypes.BoolValue(flag.Enabled)}
-	obj, d := fwtypes.ObjectValueFrom(ctx, featureFlagModelAttrTypes(), model)
-	diags.Append(d...)
-	return obj
-}
-
-func syncRulesFromAPI(ctx context.Context, rules *estypes.SyncRulesFeature, diags *diag.Diagnostics) fwtypes.Object {
-	if rules == nil {
-		return fwtypes.ObjectNull(syncRulesModelAttrTypes())
-	}
-	model := SyncRulesModel{
-		Basic:    featureFlagFromAPI(ctx, rules.Basic, diags),
-		Advanced: featureFlagFromAPI(ctx, rules.Advanced, diags),
-	}
-	obj, d := fwtypes.ObjectValueFrom(ctx, syncRulesModelAttrTypes(), model)
-	diags.Append(d...)
-	return obj
 }
 
 func planObjectSet(obj fwtypes.Object) bool {

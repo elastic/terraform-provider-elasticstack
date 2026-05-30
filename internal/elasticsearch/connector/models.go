@@ -15,102 +15,79 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Package connector holds shared model types, attribute-type helpers, and
+// API→state converters used by both the connector resource and data source
+// subpackages. The resource (registered as elasticstack_elasticsearch_connector)
+// lives in connector/resource, the data source in connector/data_source, and
+// the provider-defined sync-job action in connector/sync_job_create. Nothing
+// in this base package registers a Terraform entity directly — it exists only
+// so the entities can share model shape and deserialization.
 package connector
 
 import (
-	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// MinSupportedVersion is the minimum Elasticsearch version supported by the
+// connector resource and data source.
+//
+// The connector APIs are GA from Elasticsearch 8.12.0, but the request body
+// shapes used by the typed go-elasticsearch client (specifically the
+// `connector_id` field on POST /_connector and the `rules` field on
+// PUT /_connector/{id}/_filtering) only stabilized in 8.16.0. Older 8.12.x–
+// 8.15.x clusters reject those payloads, so the provider pins both this
+// resource and the data source to 8.16.0 as the minimum supported floor.
+var MinSupportedVersion = version.Must(version.NewVersion("8.16.0"))
+
+// Shared attribute names used by the resource and data source schemas plus
+// the API↔state converters. Exported so the resource/data_source subpackages
+// can reference them without hardcoding string literals.
 const (
-	nameAttrName     = "name"
-	enabledAttrName  = "enabled"
-	intervalAttrName = "interval"
+	NameAttr     = "name"
+	EnabledAttr  = "enabled"
+	IntervalAttr = "interval"
 
-	extractBinaryContentAttrName = "extract_binary_content"
-	reduceWhitespaceAttrName     = "reduce_whitespace"
-	runMlInferenceAttrName       = "run_ml_inference"
+	ExtractBinaryContentAttr = "extract_binary_content"
+	ReduceWhitespaceAttr     = "reduce_whitespace"
+	RunMlInferenceAttr       = "run_ml_inference"
 
-	fullScheduleAttrName          = "full"
-	incrementalScheduleAttrName   = "incremental"
-	accessControlScheduleAttrName = "access_control"
+	FullScheduleAttr          = "full"
+	IncrementalScheduleAttr   = "incremental"
+	AccessControlScheduleAttr = "access_control"
 
-	basicSyncRulesAttrName    = "basic"
-	advancedSyncRulesAttrName = "advanced"
+	BasicSyncRulesAttr    = "basic"
+	AdvancedSyncRulesAttr = "advanced"
 
-	documentLevelSecurityAttrName  = "document_level_security"
-	incrementalSyncAttrName        = "incremental_sync"
-	nativeConnectorAPIKeysAttrName = "native_connector_api_keys"
-	syncRulesAttrName              = "sync_rules"
+	DocumentLevelSecurityAttr  = "document_level_security"
+	IncrementalSyncAttr        = "incremental_sync"
+	NativeConnectorAPIKeysAttr = "native_connector_api_keys"
+	SyncRulesAttr              = "sync_rules"
 
-	stringBranchAttrName      = "string"
-	numberBranchAttrName      = "number"
-	boolBranchAttrName        = "bool"
-	jsonBranchAttrName        = "json"
-	secretValueBranchAttrName = "secret_value"
+	StringBranchAttr      = "string"
+	NumberBranchAttr      = "number"
+	BoolBranchAttr        = "bool"
+	JSONBranchAttr        = "json"
+	SecretValueBranchAttr = "secret_value"
+
+	// JSONNullLiteral is the JSON `null` byte sequence used both by the
+	// resource's configuration-value decoder and the data source's
+	// jsontypes.Normalized field encoders to distinguish "value absent"
+	// from "value present and JSON-null".
+	JSONNullLiteral = "null"
 )
 
-var configurationValueBranchAttrNames = []string{
-	stringBranchAttrName,
-	numberBranchAttrName,
-	boolBranchAttrName,
-	jsonBranchAttrName,
-	secretValueBranchAttrName,
-}
-
-// ContentConnectorData is the Terraform state model for the content connector resource.
-type ContentConnectorData struct {
-	entitycore.ElasticsearchConnectionField
-	ID                  fwtypes.String `tfsdk:"id"`
-	ConnectorID         fwtypes.String `tfsdk:"connector_id"`
-	ServiceType         fwtypes.String `tfsdk:"service_type"`
-	Name                fwtypes.String `tfsdk:"name"`
-	Description         fwtypes.String `tfsdk:"description"`
-	IndexName           fwtypes.String `tfsdk:"index_name"`
-	IsNative            fwtypes.Bool   `tfsdk:"is_native"`
-	Language            fwtypes.String `tfsdk:"language"`
-	APIKeyID            fwtypes.String `tfsdk:"api_key_id"`
-	APIKeySecretID      fwtypes.String `tfsdk:"api_key_secret_id"`
-	Pipeline            fwtypes.Object `tfsdk:"pipeline"`
-	Scheduling          fwtypes.Object `tfsdk:"scheduling"`
-	Features            fwtypes.Object `tfsdk:"features"`
-	ConfigurationValues fwtypes.Map    `tfsdk:"configuration_values"`
-}
-
-func (data ContentConnectorData) GetID() fwtypes.String         { return data.ID }
-func (data ContentConnectorData) GetResourceID() fwtypes.String { return data.ConnectorID }
-func (data ContentConnectorData) GetElasticsearchConnection() fwtypes.List {
-	return data.ElasticsearchConnection
-}
-
-var (
-	_ entitycore.ElasticsearchResourceModel = ContentConnectorData{}
-	_ entitycore.WithVersionRequirements    = ContentConnectorData{}
-	_ entitycore.WithOptionalWriteIdentity  = ContentConnectorData{}
-	_ entitycore.WithReadResourceID         = ContentConnectorData{}
-)
-
-// AllowsEmptyWriteIdentityOnCreate satisfies [entitycore.WithOptionalWriteIdentity].
-func (ContentConnectorData) AllowsEmptyWriteIdentityOnCreate() bool { return true }
-
-// GetReadResourceID satisfies [entitycore.WithReadResourceID].
-func (data ContentConnectorData) GetReadResourceID() string {
-	if typeutils.IsKnown(data.ConnectorID) {
-		return data.ConnectorID.ValueString()
-	}
-	return ""
-}
-
-// GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
-func (data ContentConnectorData) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{{
-		MinVersion:   *MinSupportedVersion,
-		ErrorMessage: "elasticstack_elasticsearch_connector requires Elasticsearch 8.16.0 or later (the connector request bodies the typed client sends are rejected on 8.12.x–8.15.x).",
-	}}, nil
+// ConfigurationValueBranchAttrNames lists the configuration_value branches in
+// the canonical schema order. The branch validator and converters iterate this
+// slice so adding a new branch only requires touching one place.
+var ConfigurationValueBranchAttrNames = []string{
+	StringBranchAttr,
+	NumberBranchAttr,
+	BoolBranchAttr,
+	JSONBranchAttr,
+	SecretValueBranchAttr,
 }
 
 // PipelineModel represents the connector ingest pipeline settings.
@@ -121,12 +98,13 @@ type PipelineModel struct {
 	RunMlInference       fwtypes.Bool   `tfsdk:"run_ml_inference"`
 }
 
-func pipelineModelAttrTypes() map[string]attr.Type {
+// PipelineModelAttrTypes is the attribute-type map describing PipelineModel.
+func PipelineModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		nameAttrName:                 fwtypes.StringType,
-		extractBinaryContentAttrName: fwtypes.BoolType,
-		reduceWhitespaceAttrName:     fwtypes.BoolType,
-		runMlInferenceAttrName:       fwtypes.BoolType,
+		NameAttr:                 fwtypes.StringType,
+		ExtractBinaryContentAttr: fwtypes.BoolType,
+		ReduceWhitespaceAttr:     fwtypes.BoolType,
+		RunMlInferenceAttr:       fwtypes.BoolType,
 	}
 }
 
@@ -136,10 +114,11 @@ type ScheduleEntryModel struct {
 	Interval fwtypes.String `tfsdk:"interval"`
 }
 
-func scheduleEntryModelAttrTypes() map[string]attr.Type {
+// ScheduleEntryModelAttrTypes is the attribute-type map describing ScheduleEntryModel.
+func ScheduleEntryModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		enabledAttrName:  fwtypes.BoolType,
-		intervalAttrName: fwtypes.StringType,
+		EnabledAttr:  fwtypes.BoolType,
+		IntervalAttr: fwtypes.StringType,
 	}
 }
 
@@ -150,11 +129,12 @@ type SchedulingModel struct {
 	AccessControl fwtypes.Object `tfsdk:"access_control"`
 }
 
-func schedulingModelAttrTypes() map[string]attr.Type {
+// SchedulingModelAttrTypes is the attribute-type map describing SchedulingModel.
+func SchedulingModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		fullScheduleAttrName:          fwtypes.ObjectType{AttrTypes: scheduleEntryModelAttrTypes()},
-		incrementalScheduleAttrName:   fwtypes.ObjectType{AttrTypes: scheduleEntryModelAttrTypes()},
-		accessControlScheduleAttrName: fwtypes.ObjectType{AttrTypes: scheduleEntryModelAttrTypes()},
+		FullScheduleAttr:          fwtypes.ObjectType{AttrTypes: ScheduleEntryModelAttrTypes()},
+		IncrementalScheduleAttr:   fwtypes.ObjectType{AttrTypes: ScheduleEntryModelAttrTypes()},
+		AccessControlScheduleAttr: fwtypes.ObjectType{AttrTypes: ScheduleEntryModelAttrTypes()},
 	}
 }
 
@@ -163,9 +143,10 @@ type FeatureFlagModel struct {
 	Enabled fwtypes.Bool `tfsdk:"enabled"`
 }
 
-func featureFlagModelAttrTypes() map[string]attr.Type {
+// FeatureFlagModelAttrTypes is the attribute-type map describing FeatureFlagModel.
+func FeatureFlagModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		enabledAttrName: fwtypes.BoolType,
+		EnabledAttr: fwtypes.BoolType,
 	}
 }
 
@@ -175,10 +156,11 @@ type SyncRulesModel struct {
 	Advanced fwtypes.Object `tfsdk:"advanced"`
 }
 
-func syncRulesModelAttrTypes() map[string]attr.Type {
+// SyncRulesModelAttrTypes is the attribute-type map describing SyncRulesModel.
+func SyncRulesModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		basicSyncRulesAttrName:    fwtypes.ObjectType{AttrTypes: featureFlagModelAttrTypes()},
-		advancedSyncRulesAttrName: fwtypes.ObjectType{AttrTypes: featureFlagModelAttrTypes()},
+		BasicSyncRulesAttr:    fwtypes.ObjectType{AttrTypes: FeatureFlagModelAttrTypes()},
+		AdvancedSyncRulesAttr: fwtypes.ObjectType{AttrTypes: FeatureFlagModelAttrTypes()},
 	}
 }
 
@@ -190,16 +172,19 @@ type FeaturesModel struct {
 	SyncRules              fwtypes.Object `tfsdk:"sync_rules"`
 }
 
-func featuresModelAttrTypes() map[string]attr.Type {
+// FeaturesModelAttrTypes is the attribute-type map describing FeaturesModel.
+func FeaturesModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		documentLevelSecurityAttrName:  fwtypes.ObjectType{AttrTypes: featureFlagModelAttrTypes()},
-		incrementalSyncAttrName:        fwtypes.ObjectType{AttrTypes: featureFlagModelAttrTypes()},
-		nativeConnectorAPIKeysAttrName: fwtypes.ObjectType{AttrTypes: featureFlagModelAttrTypes()},
-		syncRulesAttrName:              fwtypes.ObjectType{AttrTypes: syncRulesModelAttrTypes()},
+		DocumentLevelSecurityAttr:  fwtypes.ObjectType{AttrTypes: FeatureFlagModelAttrTypes()},
+		IncrementalSyncAttr:        fwtypes.ObjectType{AttrTypes: FeatureFlagModelAttrTypes()},
+		NativeConnectorAPIKeysAttr: fwtypes.ObjectType{AttrTypes: FeatureFlagModelAttrTypes()},
+		SyncRulesAttr:              fwtypes.ObjectType{AttrTypes: SyncRulesModelAttrTypes()},
 	}
 }
 
 // ConfigurationValueModel is a branch-typed configuration value element.
+// Exactly one of String, Number, Bool, JSON, or SecretValue must be set —
+// the resource's configurationValueBranchValidator enforces this at plan time.
 type ConfigurationValueModel struct {
 	String      fwtypes.String       `tfsdk:"string"`
 	Number      fwtypes.Number       `tfsdk:"number"`
@@ -208,12 +193,14 @@ type ConfigurationValueModel struct {
 	SecretValue fwtypes.String       `tfsdk:"secret_value"`
 }
 
-func configurationValueModelAttrTypes() map[string]attr.Type {
+// ConfigurationValueModelAttrTypes is the attribute-type map describing
+// ConfigurationValueModel.
+func ConfigurationValueModelAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		stringBranchAttrName:      fwtypes.StringType,
-		numberBranchAttrName:      fwtypes.NumberType,
-		boolBranchAttrName:        fwtypes.BoolType,
-		jsonBranchAttrName:        jsontypes.NormalizedType{},
-		secretValueBranchAttrName: fwtypes.StringType,
+		StringBranchAttr:      fwtypes.StringType,
+		NumberBranchAttr:      fwtypes.NumberType,
+		BoolBranchAttr:        fwtypes.BoolType,
+		JSONBranchAttr:        jsontypes.NormalizedType{},
+		SecretValueBranchAttr: fwtypes.StringType,
 	}
 }

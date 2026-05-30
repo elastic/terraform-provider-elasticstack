@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connector
+package resource
 
 import (
 	"context"
@@ -24,6 +24,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -36,7 +37,7 @@ import (
 func configurationValueObject(t *testing.T, attrs map[string]attr.Value) types.Object {
 	t.Helper()
 
-	obj, diags := types.ObjectValue(configurationValueModelAttrTypes(), attrs)
+	obj, diags := types.ObjectValue(connector.ConfigurationValueModelAttrTypes(), attrs)
 	if diags.HasError() {
 		t.Fatalf("building configuration value object: %v", diags)
 	}
@@ -45,11 +46,11 @@ func configurationValueObject(t *testing.T, attrs map[string]attr.Value) types.O
 
 func configurationValueNullFields() map[string]attr.Value {
 	return map[string]attr.Value{
-		stringBranchAttrName:      types.StringNull(),
-		numberBranchAttrName:      types.NumberNull(),
-		boolBranchAttrName:        types.BoolNull(),
-		jsonBranchAttrName:        jsontypes.Normalized{StringValue: types.StringNull()},
-		secretValueBranchAttrName: types.StringNull(),
+		connector.StringBranchAttr:      types.StringNull(),
+		connector.NumberBranchAttr:      types.NumberNull(),
+		connector.BoolBranchAttr:        types.BoolNull(),
+		connector.JSONBranchAttr:        jsontypes.Normalized{StringValue: types.StringNull()},
+		connector.SecretValueBranchAttr: types.StringNull(),
 	}
 }
 
@@ -88,8 +89,8 @@ func TestConfigurationValueBranchValidator_rejectsMultipleBranchesSet_diagnostic
 
 	wantPath := path.Root("configuration_values").AtMapKey("x")
 	attrs := mergeConfigurationValueAttrs(configurationValueNullFields(), map[string]attr.Value{
-		stringBranchAttrName: types.StringValue("a"),
-		numberBranchAttrName: types.NumberValue(big.NewFloat(1)),
+		connector.StringBranchAttr: types.StringValue("a"),
+		connector.NumberBranchAttr: types.NumberValue(big.NewFloat(1)),
 	})
 
 	var resp validator.ObjectResponse
@@ -101,8 +102,8 @@ func TestConfigurationValueBranchValidator_rejectsMultipleBranchesSet_diagnostic
 	require.True(t, resp.Diagnostics.HasError())
 	assertConfigurationValueBranchDiagnostic(t, resp.Diagnostics[0], wantPath, configurationValueBranchErrorSummary, "found 2 set")
 	detail := resp.Diagnostics[0].Detail()
-	require.Contains(t, detail, stringBranchAttrName)
-	require.Contains(t, detail, numberBranchAttrName)
+	require.Contains(t, detail, connector.StringBranchAttr)
+	require.Contains(t, detail, connector.NumberBranchAttr)
 }
 
 func TestConfigurationValueBranchValidator_skipsNullOrUnknownObject(t *testing.T) {
@@ -112,8 +113,8 @@ func TestConfigurationValueBranchValidator_skipsNullOrUnknownObject(t *testing.T
 		name  string
 		value types.Object
 	}{
-		{name: "null object", value: types.ObjectNull(configurationValueModelAttrTypes())},
-		{name: "unknown object", value: types.ObjectUnknown(configurationValueModelAttrTypes())},
+		{name: "null object", value: types.ObjectNull(connector.ConfigurationValueModelAttrTypes())},
+		{name: "unknown object", value: types.ObjectUnknown(connector.ConfigurationValueModelAttrTypes())},
 	}
 
 	for _, tc := range tests {
@@ -135,11 +136,11 @@ func TestConfigurationValueBranchValidator_skipsAllBranchesUnknown(t *testing.T)
 	t.Parallel()
 
 	attrs := map[string]attr.Value{
-		stringBranchAttrName:      types.StringUnknown(),
-		numberBranchAttrName:      types.NumberUnknown(),
-		boolBranchAttrName:        types.BoolUnknown(),
-		jsonBranchAttrName:        jsontypes.Normalized{StringValue: types.StringUnknown()},
-		secretValueBranchAttrName: types.StringUnknown(),
+		connector.StringBranchAttr:      types.StringUnknown(),
+		connector.NumberBranchAttr:      types.NumberUnknown(),
+		connector.BoolBranchAttr:        types.BoolUnknown(),
+		connector.JSONBranchAttr:        jsontypes.Normalized{StringValue: types.StringUnknown()},
+		connector.SecretValueBranchAttr: types.StringUnknown(),
 	}
 
 	var resp validator.ObjectResponse
@@ -161,37 +162,37 @@ func TestConfigurationValueBranchValidator_acceptsEachSingleBranch(t *testing.T)
 		{
 			name: "string",
 			attrs: mergeConfigurationValueAttrs(configurationValueNullFields(), map[string]attr.Value{
-				stringBranchAttrName: types.StringValue("host"),
+				connector.StringBranchAttr: types.StringValue("host"),
 			}),
 		},
 		{
 			name: "number",
 			attrs: mergeConfigurationValueAttrs(configurationValueNullFields(), map[string]attr.Value{
-				numberBranchAttrName: types.NumberValue(big.NewFloat(5432)),
+				connector.NumberBranchAttr: types.NumberValue(big.NewFloat(5432)),
 			}),
 		},
 		{
 			name: "bool",
 			attrs: mergeConfigurationValueAttrs(configurationValueNullFields(), map[string]attr.Value{
-				boolBranchAttrName: types.BoolValue(true),
+				connector.BoolBranchAttr: types.BoolValue(true),
 			}),
 		},
 		{
 			name: "json",
 			attrs: mergeConfigurationValueAttrs(configurationValueNullFields(), map[string]attr.Value{
-				jsonBranchAttrName: jsontypes.Normalized{StringValue: types.StringValue(`{"k":"v"}`)},
+				connector.JSONBranchAttr: jsontypes.Normalized{StringValue: types.StringValue(`{"k":"v"}`)},
 			}),
 		},
 		{
 			name: "secret_value",
 			attrs: mergeConfigurationValueAttrs(configurationValueNullFields(), map[string]attr.Value{
-				secretValueBranchAttrName: types.StringValue("pw"),
+				connector.SecretValueBranchAttr: types.StringValue("pw"),
 			}),
 		},
 		{
 			name: "secret_value unknown during plan",
 			attrs: mergeConfigurationValueAttrs(configurationValueNullFields(), map[string]attr.Value{
-				secretValueBranchAttrName: types.StringUnknown(),
+				connector.SecretValueBranchAttr: types.StringUnknown(),
 			}),
 		},
 	}
@@ -218,17 +219,17 @@ func TestConfigurationValueBranchValidator_rejectsMultipleBranchesSet(t *testing
 
 	cases := []map[string]attr.Value{
 		mergeConfigurationValueAttrs(configurationValueNullFields(), map[string]attr.Value{
-			stringBranchAttrName: types.StringValue("a"),
-			numberBranchAttrName: types.NumberValue(big.NewFloat(1)),
+			connector.StringBranchAttr: types.StringValue("a"),
+			connector.NumberBranchAttr: types.NumberValue(big.NewFloat(1)),
 		}),
 		mergeConfigurationValueAttrs(configurationValueNullFields(), map[string]attr.Value{
-			boolBranchAttrName:        types.BoolValue(true),
-			secretValueBranchAttrName: types.StringValue("pw"),
+			connector.BoolBranchAttr:        types.BoolValue(true),
+			connector.SecretValueBranchAttr: types.StringValue("pw"),
 		}),
 		mergeConfigurationValueAttrs(configurationValueNullFields(), map[string]attr.Value{
-			stringBranchAttrName: types.StringValue("a"),
-			boolBranchAttrName:   types.BoolValue(false),
-			jsonBranchAttrName:   jsontypes.Normalized{StringValue: types.StringValue(`[]`)},
+			connector.StringBranchAttr: types.StringValue("a"),
+			connector.BoolBranchAttr:   types.BoolValue(false),
+			connector.JSONBranchAttr:   jsontypes.Normalized{StringValue: types.StringValue(`[]`)},
 		}),
 	}
 
@@ -253,11 +254,11 @@ func TestConfigurationValueBranchValidator_rejectsTwoUnknownBranches(t *testing.
 	t.Parallel()
 
 	attrs := map[string]attr.Value{
-		stringBranchAttrName:      types.StringUnknown(),
-		numberBranchAttrName:      types.NumberUnknown(),
-		boolBranchAttrName:        types.BoolNull(),
-		jsonBranchAttrName:        jsontypes.Normalized{StringValue: types.StringNull()},
-		secretValueBranchAttrName: types.StringNull(),
+		connector.StringBranchAttr:      types.StringUnknown(),
+		connector.NumberBranchAttr:      types.NumberUnknown(),
+		connector.BoolBranchAttr:        types.BoolNull(),
+		connector.JSONBranchAttr:        jsontypes.Normalized{StringValue: types.StringNull()},
+		connector.SecretValueBranchAttr: types.StringNull(),
 	}
 
 	var resp validator.ObjectResponse
@@ -275,11 +276,11 @@ func TestConfigurationValueBranchValidator_acceptsOneBranchWithUnknowns(t *testi
 	t.Parallel()
 
 	attrs := mergeConfigurationValueAttrs(configurationValueNullFields(), map[string]attr.Value{
-		stringBranchAttrName:      types.StringValue("host"),
-		numberBranchAttrName:      types.NumberUnknown(),
-		boolBranchAttrName:        types.BoolUnknown(),
-		jsonBranchAttrName:        jsontypes.Normalized{StringValue: types.StringUnknown()},
-		secretValueBranchAttrName: types.StringUnknown(),
+		connector.StringBranchAttr:      types.StringValue("host"),
+		connector.NumberBranchAttr:      types.NumberUnknown(),
+		connector.BoolBranchAttr:        types.BoolUnknown(),
+		connector.JSONBranchAttr:        jsontypes.Normalized{StringValue: types.StringUnknown()},
+		connector.SecretValueBranchAttr: types.StringUnknown(),
 	})
 
 	var resp validator.ObjectResponse

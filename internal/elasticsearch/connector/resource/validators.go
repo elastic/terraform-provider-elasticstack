@@ -15,12 +15,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connector
+package resource
 
 import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -53,7 +54,7 @@ func (v configurationValueBranchValidator) ValidateObject(_ context.Context, req
 	unknownCount := 0
 	var setBranches []string
 
-	for _, name := range configurationValueBranchAttrNames {
+	for _, name := range connector.ConfigurationValueBranchAttrNames {
 		val, ok := attrs[name]
 		if !ok {
 			continue
@@ -107,7 +108,7 @@ func configurationValueBranchIsSet(val attr.Value) bool {
 
 func configurationValueAllBranchesUnknown(attrs map[string]attr.Value) bool {
 	sawBranch := false
-	for _, name := range configurationValueBranchAttrNames {
+	for _, name := range connector.ConfigurationValueBranchAttrNames {
 		val, ok := attrs[name]
 		if !ok {
 			continue

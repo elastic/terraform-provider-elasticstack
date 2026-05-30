@@ -33,7 +33,7 @@ func TestNestedModelAttrTypes_objectRoundTrip(t *testing.T) {
 
 	t.Run("pipeline", func(t *testing.T) {
 		t.Parallel()
-		roundTripObject(ctx, t, pipelineModelAttrTypes(), PipelineModel{
+		roundTripObject(ctx, t, PipelineModelAttrTypes(), PipelineModel{
 			Name:                 fwtypes.StringValue("search-default-ingestion"),
 			ExtractBinaryContent: fwtypes.BoolValue(true),
 			ReduceWhitespace:     fwtypes.BoolValue(true),
@@ -43,7 +43,7 @@ func TestNestedModelAttrTypes_objectRoundTrip(t *testing.T) {
 
 	t.Run("schedule_entry", func(t *testing.T) {
 		t.Parallel()
-		roundTripObject(ctx, t, scheduleEntryModelAttrTypes(), ScheduleEntryModel{
+		roundTripObject(ctx, t, ScheduleEntryModelAttrTypes(), ScheduleEntryModel{
 			Enabled:  fwtypes.BoolValue(true),
 			Interval: fwtypes.StringValue("0 0 0 * * ?"),
 		})
@@ -51,54 +51,54 @@ func TestNestedModelAttrTypes_objectRoundTrip(t *testing.T) {
 
 	t.Run("scheduling", func(t *testing.T) {
 		t.Parallel()
-		full, diags := fwtypes.ObjectValueFrom(ctx, scheduleEntryModelAttrTypes(), ScheduleEntryModel{
+		full, diags := fwtypes.ObjectValueFrom(ctx, ScheduleEntryModelAttrTypes(), ScheduleEntryModel{
 			Enabled:  fwtypes.BoolValue(true),
 			Interval: fwtypes.StringValue("0 0 0 * * ?"),
 		})
 		if diags.HasError() {
 			t.Fatalf("building full schedule entry: %v", diags)
 		}
-		roundTripObject(ctx, t, schedulingModelAttrTypes(), SchedulingModel{
+		roundTripObject(ctx, t, SchedulingModelAttrTypes(), SchedulingModel{
 			Full:          full,
-			Incremental:   fwtypes.ObjectNull(scheduleEntryModelAttrTypes()),
-			AccessControl: fwtypes.ObjectNull(scheduleEntryModelAttrTypes()),
+			Incremental:   fwtypes.ObjectNull(ScheduleEntryModelAttrTypes()),
+			AccessControl: fwtypes.ObjectNull(ScheduleEntryModelAttrTypes()),
 		})
 	})
 
 	t.Run("feature_flag", func(t *testing.T) {
 		t.Parallel()
-		roundTripObject(ctx, t, featureFlagModelAttrTypes(), FeatureFlagModel{
+		roundTripObject(ctx, t, FeatureFlagModelAttrTypes(), FeatureFlagModel{
 			Enabled: fwtypes.BoolValue(true),
 		})
 	})
 
 	t.Run("sync_rules", func(t *testing.T) {
 		t.Parallel()
-		basic, diags := fwtypes.ObjectValueFrom(ctx, featureFlagModelAttrTypes(), FeatureFlagModel{
+		basic, diags := fwtypes.ObjectValueFrom(ctx, FeatureFlagModelAttrTypes(), FeatureFlagModel{
 			Enabled: fwtypes.BoolValue(true),
 		})
 		if diags.HasError() {
 			t.Fatalf("building basic sync rules flag: %v", diags)
 		}
-		roundTripObject(ctx, t, syncRulesModelAttrTypes(), SyncRulesModel{
+		roundTripObject(ctx, t, SyncRulesModelAttrTypes(), SyncRulesModel{
 			Basic:    basic,
-			Advanced: fwtypes.ObjectNull(featureFlagModelAttrTypes()),
+			Advanced: fwtypes.ObjectNull(FeatureFlagModelAttrTypes()),
 		})
 	})
 
 	t.Run("features", func(t *testing.T) {
 		t.Parallel()
-		dls, diags := fwtypes.ObjectValueFrom(ctx, featureFlagModelAttrTypes(), FeatureFlagModel{
+		dls, diags := fwtypes.ObjectValueFrom(ctx, FeatureFlagModelAttrTypes(), FeatureFlagModel{
 			Enabled: fwtypes.BoolValue(false),
 		})
 		if diags.HasError() {
 			t.Fatalf("building document_level_security flag: %v", diags)
 		}
-		roundTripObject(ctx, t, featuresModelAttrTypes(), FeaturesModel{
+		roundTripObject(ctx, t, FeaturesModelAttrTypes(), FeaturesModel{
 			DocumentLevelSecurity:  dls,
-			IncrementalSync:        fwtypes.ObjectNull(featureFlagModelAttrTypes()),
-			NativeConnectorAPIKeys: fwtypes.ObjectNull(featureFlagModelAttrTypes()),
-			SyncRules:              fwtypes.ObjectNull(syncRulesModelAttrTypes()),
+			IncrementalSync:        fwtypes.ObjectNull(FeatureFlagModelAttrTypes()),
+			NativeConnectorAPIKeys: fwtypes.ObjectNull(FeatureFlagModelAttrTypes()),
+			SyncRules:              fwtypes.ObjectNull(SyncRulesModelAttrTypes()),
 		})
 	})
 }
@@ -115,14 +115,5 @@ func roundTripObject[T any](ctx context.Context, t *testing.T, attrTypes map[str
 	diags = obj.As(ctx, &decoded, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		t.Fatalf("As: %v", diags)
-	}
-}
-
-func TestDataSourceSchemaFactory_usesEmbeddedDescription(t *testing.T) {
-	t.Parallel()
-
-	s := dataSourceSchemaFactory(context.Background())
-	if s.MarkdownDescription == "" {
-		t.Fatal("expected non-empty data source MarkdownDescription from embed")
 	}
 }

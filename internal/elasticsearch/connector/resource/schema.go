@@ -15,12 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connector
+package resource
 
 import (
 	"context"
 
-	"github.com/hashicorp/go-version"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
@@ -29,16 +29,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
-
-// MinSupportedVersion is the minimum Elasticsearch version supported by this resource.
-//
-// The connector APIs are GA from Elasticsearch 8.12.0, but the request body
-// shapes used by the typed go-elasticsearch client (specifically the
-// `connector_id` field on POST /_connector and the `rules` field on
-// PUT /_connector/{id}/_filtering) only stabilized in 8.16.0. Older 8.12.x–
-// 8.15.x clusters reject those payloads, so the provider pins both this
-// resource and the data source to 8.16.0 as the minimum supported floor.
-var MinSupportedVersion = version.Must(version.NewVersion("8.16.0"))
 
 // schemaFactory returns the schema for the content connector resource. The
 // elasticsearch_connection block is injected automatically by the envelope.
@@ -63,7 +53,7 @@ func schemaFactory(_ context.Context) schema.Schema {
 				MarkdownDescription: "Connector service type (for example `postgresql`, `mysql`, `github`). New service types may be added over time; the provider does not validate against a fixed enum.",
 				Required:            true,
 			},
-			nameAttrName: schema.StringAttribute{
+			connector.NameAttr: schema.StringAttribute{
 				MarkdownDescription: "Human-readable connector name.",
 				Optional:            true,
 			},
@@ -116,19 +106,19 @@ func pipelineSingleNestedAttribute() schema.SingleNestedAttribute {
 			objectplanmodifier.UseStateForUnknown(),
 		},
 		Attributes: map[string]schema.Attribute{
-			nameAttrName: schema.StringAttribute{
+			connector.NameAttr: schema.StringAttribute{
 				MarkdownDescription: "Ingest pipeline name.",
 				Required:            true,
 			},
-			extractBinaryContentAttrName: schema.BoolAttribute{
+			connector.ExtractBinaryContentAttr: schema.BoolAttribute{
 				MarkdownDescription: "Whether to extract binary content during ingestion.",
 				Required:            true,
 			},
-			reduceWhitespaceAttrName: schema.BoolAttribute{
+			connector.ReduceWhitespaceAttr: schema.BoolAttribute{
 				MarkdownDescription: "Whether to reduce whitespace in extracted text.",
 				Required:            true,
 			},
-			runMlInferenceAttrName: schema.BoolAttribute{
+			connector.RunMlInferenceAttr: schema.BoolAttribute{
 				MarkdownDescription: "Whether to run ML inference during ingestion.",
 				Required:            true,
 			},
@@ -145,9 +135,9 @@ func schedulingSingleNestedAttribute() schema.SingleNestedAttribute {
 			objectplanmodifier.UseStateForUnknown(),
 		},
 		Attributes: map[string]schema.Attribute{
-			fullScheduleAttrName:          scheduleEntrySingleNestedAttribute(fullScheduleAttrName),
-			incrementalScheduleAttrName:   scheduleEntrySingleNestedAttribute(incrementalScheduleAttrName),
-			accessControlScheduleAttrName: scheduleEntrySingleNestedAttribute(accessControlScheduleAttrName),
+			connector.FullScheduleAttr:          scheduleEntrySingleNestedAttribute(connector.FullScheduleAttr),
+			connector.IncrementalScheduleAttr:   scheduleEntrySingleNestedAttribute(connector.IncrementalScheduleAttr),
+			connector.AccessControlScheduleAttr: scheduleEntrySingleNestedAttribute(connector.AccessControlScheduleAttr),
 		},
 	}
 }
@@ -157,11 +147,11 @@ func scheduleEntrySingleNestedAttribute(jobKind string) schema.SingleNestedAttri
 		MarkdownDescription: "Schedule for the `" + jobKind + "` sync job type.",
 		Optional:            true,
 		Attributes: map[string]schema.Attribute{
-			enabledAttrName: schema.BoolAttribute{
+			connector.EnabledAttr: schema.BoolAttribute{
 				MarkdownDescription: "Whether this scheduled job type is enabled.",
 				Required:            true,
 			},
-			intervalAttrName: schema.StringAttribute{
+			connector.IntervalAttr: schema.StringAttribute{
 				MarkdownDescription: "Cron expression accepted by the Elasticsearch scheduler.",
 				Required:            true,
 			},
@@ -178,10 +168,10 @@ func featuresSingleNestedAttribute() schema.SingleNestedAttribute {
 			objectplanmodifier.UseStateForUnknown(),
 		},
 		Attributes: map[string]schema.Attribute{
-			documentLevelSecurityAttrName:  featureFlagSingleNestedAttribute(documentLevelSecurityAttrName),
-			incrementalSyncAttrName:        featureFlagSingleNestedAttribute(incrementalSyncAttrName),
-			nativeConnectorAPIKeysAttrName: featureFlagSingleNestedAttribute(nativeConnectorAPIKeysAttrName),
-			syncRulesAttrName:              syncRulesSingleNestedAttribute(),
+			connector.DocumentLevelSecurityAttr:  featureFlagSingleNestedAttribute(connector.DocumentLevelSecurityAttr),
+			connector.IncrementalSyncAttr:        featureFlagSingleNestedAttribute(connector.IncrementalSyncAttr),
+			connector.NativeConnectorAPIKeysAttr: featureFlagSingleNestedAttribute(connector.NativeConnectorAPIKeysAttr),
+			connector.SyncRulesAttr:              syncRulesSingleNestedAttribute(),
 		},
 	}
 }
@@ -191,7 +181,7 @@ func featureFlagSingleNestedAttribute(featureName string) schema.SingleNestedAtt
 		MarkdownDescription: "Feature flag for `" + featureName + "`.",
 		Optional:            true,
 		Attributes: map[string]schema.Attribute{
-			enabledAttrName: schema.BoolAttribute{
+			connector.EnabledAttr: schema.BoolAttribute{
 				MarkdownDescription: "Whether the feature is enabled.",
 				Required:            true,
 			},
@@ -204,8 +194,8 @@ func syncRulesSingleNestedAttribute() schema.SingleNestedAttribute {
 		MarkdownDescription: "Sync rules feature flags.",
 		Optional:            true,
 		Attributes: map[string]schema.Attribute{
-			basicSyncRulesAttrName:    featureFlagSingleNestedAttribute(basicSyncRulesAttrName),
-			advancedSyncRulesAttrName: featureFlagSingleNestedAttribute(advancedSyncRulesAttrName),
+			connector.BasicSyncRulesAttr:    featureFlagSingleNestedAttribute(connector.BasicSyncRulesAttr),
+			connector.AdvancedSyncRulesAttr: featureFlagSingleNestedAttribute(connector.AdvancedSyncRulesAttr),
 		},
 	}
 }
@@ -221,25 +211,25 @@ func configurationValuesMapNestedAttribute() schema.MapNestedAttribute {
 				configurationValueBranchValidator{},
 			},
 			Attributes: map[string]schema.Attribute{
-				stringBranchAttrName: schema.StringAttribute{
+				connector.StringBranchAttr: schema.StringAttribute{
 					MarkdownDescription: "String configuration value.",
 					Optional:            true,
 				},
-				numberBranchAttrName: schema.NumberAttribute{
+				connector.NumberBranchAttr: schema.NumberAttribute{
 					MarkdownDescription: "Numeric configuration value (integer or float).",
 					Optional:            true,
 				},
-				boolBranchAttrName: schema.BoolAttribute{
+				connector.BoolBranchAttr: schema.BoolAttribute{
 					MarkdownDescription: "Boolean configuration value.",
 					Optional:            true,
 				},
-				jsonBranchAttrName: schema.StringAttribute{
+				connector.JSONBranchAttr: schema.StringAttribute{
 					// jsontypes.NormalizedType enforces syntactic JSON validity at decode time (REQ-008).
 					MarkdownDescription: "JSON-encoded object or array configuration value.",
 					Optional:            true,
 					CustomType:          jsontypes.NormalizedType{},
 				},
-				secretValueBranchAttrName: schema.StringAttribute{
+				connector.SecretValueBranchAttr: schema.StringAttribute{
 					MarkdownDescription: "Write-only secret configuration value. Drift is detected via private-state hashing (see resource documentation).",
 					Optional:            true,
 					WriteOnly:           true,

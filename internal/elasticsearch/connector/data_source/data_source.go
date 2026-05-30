@@ -15,21 +15,20 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connector
+package data_source
 
 import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 )
 
-func deleteConnector(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	resourceID string,
-	_ ContentConnectorData,
-) diag.Diagnostics {
-	return esclient.DeleteConnector(ctx, client, resourceID)
+// NewContentConnectorDataSource returns the Plugin Framework data source for
+// elasticstack_elasticsearch_connector.
+func NewContentConnectorDataSource() datasource.DataSource {
+	return entitycore.NewElasticsearchDataSource(
+		entitycore.ComponentElasticsearch,
+		"connector",
+		dataSourceSchemaFactory,
+		readContentConnectorDataSource,
+	)
 }

@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connector
+package resource
 
 import (
 	"context"
@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
@@ -73,13 +74,13 @@ func readConnector(
 		data.APIKeySecretID = fwtypes.StringValue(*resp.ApiKeySecretId)
 	}
 
-	data.Pipeline = populatePipelineFromAPI(ctx, resp.Pipeline, &diags)
-	data.Scheduling = populateSchedulingFromAPI(ctx, resp.Scheduling, &diags)
-	data.Features = populateFeaturesFromAPI(ctx, resp.Features, &diags)
+	data.Pipeline = connector.PopulatePipelineFromAPI(ctx, resp.Pipeline, &diags)
+	data.Scheduling = connector.PopulateSchedulingFromAPI(ctx, resp.Scheduling, &diags)
+	data.Features = connector.PopulateFeaturesFromAPI(ctx, resp.Features, &diags)
 
-	var priorConfig map[string]ConfigurationValueModel
+	var priorConfig map[string]connector.ConfigurationValueModel
 	if !data.ConfigurationValues.IsNull() && typeutils.IsKnown(data.ConfigurationValues) {
-		priorConfig = typeutils.MapTypeAs[ConfigurationValueModel](ctx, data.ConfigurationValues, configurationValuesPath, &diags)
+		priorConfig = typeutils.MapTypeAs[connector.ConfigurationValueModel](ctx, data.ConfigurationValues, configurationValuesPath, &diags)
 	}
 	data.ConfigurationValues = populateConfigurationValuesFromAPI(ctx, resp, priorConfig, &diags)
 

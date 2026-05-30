@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connector
+package resource
 
 import (
 	"context"
@@ -26,6 +26,7 @@ import (
 	getconnector "github.com/elastic/go-elasticsearch/v8/typedapi/connector/get"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/connectorfieldtype"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -41,37 +42,37 @@ func TestConfigurationValueToWireJSON(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		elem    ConfigurationValueModel
+		elem    connector.ConfigurationValueModel
 		wantRaw string
 	}{
 		{
 			name:    "string",
-			elem:    ConfigurationValueModel{String: fwtypes.StringValue("hello")},
+			elem:    connector.ConfigurationValueModel{String: fwtypes.StringValue("hello")},
 			wantRaw: `"hello"`,
 		},
 		{
 			name:    "number",
-			elem:    ConfigurationValueModel{Number: num},
+			elem:    connector.ConfigurationValueModel{Number: num},
 			wantRaw: `-42.5`,
 		},
 		{
 			name:    "bool",
-			elem:    ConfigurationValueModel{Bool: fwtypes.BoolValue(true)},
+			elem:    connector.ConfigurationValueModel{Bool: fwtypes.BoolValue(true)},
 			wantRaw: `true`,
 		},
 		{
 			name:    "json",
-			elem:    ConfigurationValueModel{JSON: jsontypes.NewNormalizedValue(`{"k":"v"}`)},
+			elem:    connector.ConfigurationValueModel{JSON: jsontypes.NewNormalizedValue(`{"k":"v"}`)},
 			wantRaw: `{"k":"v"}`,
 		},
 		{
 			name:    "json array",
-			elem:    ConfigurationValueModel{JSON: jsontypes.NewNormalizedValue(`[1,2,3]`)},
+			elem:    connector.ConfigurationValueModel{JSON: jsontypes.NewNormalizedValue(`[1,2,3]`)},
 			wantRaw: `[1,2,3]`,
 		},
 		{
 			name:    "secret_value",
-			elem:    ConfigurationValueModel{SecretValue: fwtypes.StringValue("s3cr3t")},
+			elem:    connector.ConfigurationValueModel{SecretValue: fwtypes.StringValue("s3cr3t")},
 			wantRaw: `"s3cr3t"`,
 		},
 	}
@@ -92,34 +93,34 @@ func TestDecodeConfigurationValueIntoBranch_roundTrip(t *testing.T) {
 	cases := []struct {
 		branch  string
 		raw     string
-		checker func(t *testing.T, m ConfigurationValueModel)
+		checker func(t *testing.T, m connector.ConfigurationValueModel)
 	}{
 		{
-			branch: stringBranchAttrName,
+			branch: connector.StringBranchAttr,
 			raw:    `"text"`,
-			checker: func(t *testing.T, m ConfigurationValueModel) {
+			checker: func(t *testing.T, m connector.ConfigurationValueModel) {
 				require.Equal(t, "text", m.String.ValueString())
 			},
 		},
 		{
-			branch: numberBranchAttrName,
+			branch: connector.NumberBranchAttr,
 			raw:    `5432`,
-			checker: func(t *testing.T, m ConfigurationValueModel) {
+			checker: func(t *testing.T, m connector.ConfigurationValueModel) {
 				f, _ := m.Number.ValueBigFloat().Float64()
 				require.InEpsilon(t, float64(5432), f, 0.001)
 			},
 		},
 		{
-			branch: boolBranchAttrName,
+			branch: connector.BoolBranchAttr,
 			raw:    `false`,
-			checker: func(t *testing.T, m ConfigurationValueModel) {
+			checker: func(t *testing.T, m connector.ConfigurationValueModel) {
 				require.False(t, m.Bool.ValueBool())
 			},
 		},
 		{
-			branch: jsonBranchAttrName,
+			branch: connector.JSONBranchAttr,
 			raw:    `{"a":1}`,
-			checker: func(t *testing.T, m ConfigurationValueModel) {
+			checker: func(t *testing.T, m connector.ConfigurationValueModel) {
 				require.JSONEq(t, `{"a":1}`, m.JSON.ValueString())
 			},
 		},
@@ -142,10 +143,10 @@ func TestDecodeConfigurationValueIntoBranch_roundTrip(t *testing.T) {
 func TestEncodeConfigurationValuesWire_usesConfigSecrets(t *testing.T) {
 	t.Parallel()
 
-	planMap := map[string]ConfigurationValueModel{
+	planMap := map[string]connector.ConfigurationValueModel{
 		"password": {SecretValue: fwtypes.StringNull()},
 	}
-	configMap := map[string]ConfigurationValueModel{
+	configMap := map[string]connector.ConfigurationValueModel{
 		"password": {SecretValue: fwtypes.StringValue("from-config")},
 	}
 
@@ -172,12 +173,12 @@ func TestSchemaTypeToBranch(t *testing.T) {
 		fieldTyp *connectorfieldtype.ConnectorFieldType
 		want     string
 	}{
-		{name: "nil", fieldTyp: nil, want: stringBranchAttrName},
-		{name: "str", fieldTyp: new(connectorfieldtype.Str), want: stringBranchAttrName},
-		{name: "int", fieldTyp: new(connectorfieldtype.Int), want: numberBranchAttrName},
-		{name: "bool", fieldTyp: new(connectorfieldtype.Bool), want: boolBranchAttrName},
-		{name: "list", fieldTyp: new(connectorfieldtype.List), want: stringBranchAttrName},
-		{name: "unknown", fieldTyp: &connectorfieldtype.ConnectorFieldType{Name: "other"}, want: stringBranchAttrName},
+		{name: "nil", fieldTyp: nil, want: connector.StringBranchAttr},
+		{name: "str", fieldTyp: new(connectorfieldtype.Str), want: connector.StringBranchAttr},
+		{name: "int", fieldTyp: new(connectorfieldtype.Int), want: connector.NumberBranchAttr},
+		{name: "bool", fieldTyp: new(connectorfieldtype.Bool), want: connector.BoolBranchAttr},
+		{name: "list", fieldTyp: new(connectorfieldtype.List), want: connector.StringBranchAttr},
+		{name: "unknown", fieldTyp: &connectorfieldtype.ConnectorFieldType{Name: "other"}, want: connector.StringBranchAttr},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -192,16 +193,16 @@ func TestActiveConfigurationBranch(t *testing.T) {
 
 	tests := []struct {
 		name string
-		elem ConfigurationValueModel
+		elem connector.ConfigurationValueModel
 		want string
 	}{
-		{name: "string", elem: ConfigurationValueModel{String: fwtypes.StringValue("a")}, want: stringBranchAttrName},
-		{name: "number", elem: ConfigurationValueModel{Number: fwtypes.NumberValue(big.NewFloat(1))}, want: numberBranchAttrName},
-		{name: "bool", elem: ConfigurationValueModel{Bool: fwtypes.BoolValue(true)}, want: boolBranchAttrName},
-		{name: "json", elem: ConfigurationValueModel{JSON: jsontypes.NewNormalizedValue(`{}`)}, want: jsonBranchAttrName},
-		{name: "secret", elem: ConfigurationValueModel{SecretValue: fwtypes.StringValue("s")}, want: secretValueBranchAttrName},
-		{name: "secret unknown", elem: ConfigurationValueModel{SecretValue: fwtypes.StringUnknown()}, want: secretValueBranchAttrName},
-		{name: "none", elem: ConfigurationValueModel{}, want: ""},
+		{name: "string", elem: connector.ConfigurationValueModel{String: fwtypes.StringValue("a")}, want: connector.StringBranchAttr},
+		{name: "number", elem: connector.ConfigurationValueModel{Number: fwtypes.NumberValue(big.NewFloat(1))}, want: connector.NumberBranchAttr},
+		{name: "bool", elem: connector.ConfigurationValueModel{Bool: fwtypes.BoolValue(true)}, want: connector.BoolBranchAttr},
+		{name: "json", elem: connector.ConfigurationValueModel{JSON: jsontypes.NewNormalizedValue(`{}`)}, want: connector.JSONBranchAttr},
+		{name: "secret", elem: connector.ConfigurationValueModel{SecretValue: fwtypes.StringValue("s")}, want: connector.SecretValueBranchAttr},
+		{name: "secret unknown", elem: connector.ConfigurationValueModel{SecretValue: fwtypes.StringUnknown()}, want: connector.SecretValueBranchAttr},
+		{name: "none", elem: connector.ConfigurationValueModel{}, want: ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -215,18 +216,18 @@ func TestConfigurationValueToWireJSON_edgeCases(t *testing.T) {
 	t.Parallel()
 
 	bf, _, _ := big.ParseFloat("2.5", 10, 64, big.ToNearestEven)
-	raw, err := configurationValueToWireJSON(ConfigurationValueModel{Number: fwtypes.NumberValue(bf)})
+	raw, err := configurationValueToWireJSON(connector.ConfigurationValueModel{Number: fwtypes.NumberValue(bf)})
 	require.NoError(t, err)
 	require.JSONEq(t, `2.5`, string(raw))
 
-	_, err = configurationValueToWireJSON(ConfigurationValueModel{})
+	_, err = configurationValueToWireJSON(connector.ConfigurationValueModel{})
 	require.Error(t, err)
 }
 
 func TestEncodeConfigurationValuesWire_emptyPlan(t *testing.T) {
 	t.Parallel()
 	var diags diag.Diagnostics
-	values := encodeConfigurationValuesWire(map[string]ConfigurationValueModel{}, nil, &diags)
+	values := encodeConfigurationValuesWire(map[string]connector.ConfigurationValueModel{}, nil, &diags)
 	require.Nil(t, values)
 	require.False(t, diags.HasError())
 }
@@ -234,7 +235,7 @@ func TestEncodeConfigurationValuesWire_emptyPlan(t *testing.T) {
 func TestEncodeConfigurationValuesWire_invalidElement(t *testing.T) {
 	t.Parallel()
 	var diags diag.Diagnostics
-	values := encodeConfigurationValuesWire(map[string]ConfigurationValueModel{
+	values := encodeConfigurationValuesWire(map[string]connector.ConfigurationValueModel{
 		"bad": {},
 	}, nil, &diags)
 	require.Nil(t, values)
@@ -244,7 +245,7 @@ func TestEncodeConfigurationValuesWire_invalidElement(t *testing.T) {
 func TestDecodeConfigurationValueIntoBranch_errors(t *testing.T) {
 	t.Parallel()
 
-	_, diags := decodeConfigurationValueIntoBranch(json.RawMessage(`not-json`), stringBranchAttrName)
+	_, diags := decodeConfigurationValueIntoBranch(json.RawMessage(`not-json`), connector.StringBranchAttr)
 	require.True(t, diags.HasError())
 
 	_, diags = decodeConfigurationValueIntoBranch(json.RawMessage(`"x"`), "unsupported")
@@ -263,7 +264,7 @@ func TestPopulateConfigurationValuesFromAPI(t *testing.T) {
 				"a": {Value: json.RawMessage(`1`), Type: new(connectorfieldtype.Int)},
 			},
 		)
-		priorMap := map[string]ConfigurationValueModel{
+		priorMap := map[string]connector.ConfigurationValueModel{
 			"a": {String: fwtypes.StringValue("old")},
 		}
 		var diags diag.Diagnostics
@@ -275,14 +276,14 @@ func TestPopulateConfigurationValuesFromAPI(t *testing.T) {
 
 	t.Run("secret branch preserved from prior", func(t *testing.T) {
 		t.Parallel()
-		priorElem := ConfigurationValueModel{SecretValue: fwtypes.StringValue("ignored-in-state")}
+		priorElem := connector.ConfigurationValueModel{SecretValue: fwtypes.StringValue("ignored-in-state")}
 		resp := testConnectorResponse(
 			map[string]json.RawMessage{"password": json.RawMessage(`"redacted"`)},
 			map[string]estypes.ConnectorConfigProperties{
 				"password": {Value: json.RawMessage(`"redacted"`)},
 			},
 		)
-		priorMap := map[string]ConfigurationValueModel{"password": priorElem}
+		priorMap := map[string]connector.ConfigurationValueModel{"password": priorElem}
 		var diags diag.Diagnostics
 		result := populateConfigurationValuesFromAPI(ctx, resp, priorMap, &diags)
 		require.False(t, diags.HasError())
@@ -292,7 +293,7 @@ func TestPopulateConfigurationValuesFromAPI(t *testing.T) {
 
 	t.Run("sensitive non-secret branch warns and preserves prior", func(t *testing.T) {
 		t.Parallel()
-		priorElem := ConfigurationValueModel{String: fwtypes.StringValue("pw")}
+		priorElem := connector.ConfigurationValueModel{String: fwtypes.StringValue("pw")}
 		resp := testConnectorResponse(
 			map[string]json.RawMessage{"password": json.RawMessage(`"x"`)},
 			map[string]estypes.ConnectorConfigProperties{
@@ -300,7 +301,7 @@ func TestPopulateConfigurationValuesFromAPI(t *testing.T) {
 			},
 		)
 		var diags diag.Diagnostics
-		result := populateConfigurationValuesFromAPI(ctx, resp, map[string]ConfigurationValueModel{"password": priorElem}, &diags)
+		result := populateConfigurationValuesFromAPI(ctx, resp, map[string]connector.ConfigurationValueModel{"password": priorElem}, &diags)
 		require.False(t, diags.HasError())
 		require.NotEmpty(t, diags.Warnings())
 		decoded := mapFromResult(ctx, result, &diags)
@@ -341,7 +342,7 @@ func TestPopulateConfigurationValuesFromAPI(t *testing.T) {
 				"c": {Value: json.RawMessage(`"vc"`)},
 			},
 		)
-		priorMap := map[string]ConfigurationValueModel{
+		priorMap := map[string]connector.ConfigurationValueModel{
 			"a": {String: fwtypes.StringValue("a")},
 			"b": {String: fwtypes.StringValue("b")},
 		}
@@ -362,7 +363,7 @@ func TestPopulateConfigurationValuesFromAPI(t *testing.T) {
 				"a": {Value: json.RawMessage(`"va"`)},
 			},
 		)
-		priorMap := map[string]ConfigurationValueModel{
+		priorMap := map[string]connector.ConfigurationValueModel{
 			"a": {String: fwtypes.StringValue("a")},
 			"b": {String: fwtypes.StringValue("removed")},
 		}
@@ -387,11 +388,11 @@ func testConnectorResponse(
 	return &getconnector.Response{Configuration: cfg}
 }
 
-func mapFromResult(ctx context.Context, result fwtypes.Map, diags *diag.Diagnostics) map[string]ConfigurationValueModel {
+func mapFromResult(ctx context.Context, result fwtypes.Map, diags *diag.Diagnostics) map[string]connector.ConfigurationValueModel {
 	if result.IsNull() {
-		return map[string]ConfigurationValueModel{}
+		return map[string]connector.ConfigurationValueModel{}
 	}
-	return typeutils.MapTypeAs[ConfigurationValueModel](ctx, result, configurationValuesPath, diags)
+	return typeutils.MapTypeAs[connector.ConfigurationValueModel](ctx, result, configurationValuesPath, diags)
 }
 
 func TestConfigurationValuePresent(t *testing.T) {

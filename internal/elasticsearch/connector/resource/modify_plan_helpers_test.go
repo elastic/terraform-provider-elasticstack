@@ -15,11 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connector
+package resource
 
 import (
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
@@ -31,7 +32,7 @@ func TestEvaluateSecretPlanChanges_driftDetected(t *testing.T) {
 	hash, err := secretHasher.Compute("pw1")
 	require.NoError(t, err)
 
-	configMap := map[string]ConfigurationValueModel{
+	configMap := map[string]connector.ConfigurationValueModel{
 		"password": {SecretValue: fwtypes.StringValue("pw2")},
 	}
 	outcome, diags := evaluateSecretPlanChanges(configMap, nil, func(_ string) ([]byte, diag.Diagnostics) {
@@ -50,7 +51,7 @@ func TestEvaluateSecretPlanChanges_driftDetected(t *testing.T) {
 func TestEvaluateSecretPlanChanges_noHashBaseline(t *testing.T) {
 	t.Parallel()
 
-	configMap := map[string]ConfigurationValueModel{
+	configMap := map[string]connector.ConfigurationValueModel{
 		"password": {SecretValue: fwtypes.StringValue("pw1")},
 	}
 	outcome, diags := evaluateSecretPlanChanges(configMap, nil, func(_ string) ([]byte, diag.Diagnostics) {
@@ -64,8 +65,8 @@ func TestEvaluateSecretPlanChanges_noHashBaseline(t *testing.T) {
 func TestEvaluateSecretPlanChanges_clearsRemovedSecret(t *testing.T) {
 	t.Parallel()
 
-	configMap := map[string]ConfigurationValueModel{}
-	stateMap := map[string]ConfigurationValueModel{
+	configMap := map[string]connector.ConfigurationValueModel{}
+	stateMap := map[string]connector.ConfigurationValueModel{
 		"password": {SecretValue: fwtypes.StringValue("placeholder")},
 	}
 	outcome, diags := evaluateSecretPlanChanges(configMap, stateMap, func(_ string) ([]byte, diag.Diagnostics) {
