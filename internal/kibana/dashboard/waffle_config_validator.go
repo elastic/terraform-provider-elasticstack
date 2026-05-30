@@ -20,7 +20,7 @@ package dashboard
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lenswaffle"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -39,54 +39,14 @@ func (v waffleConfigModeValidator) MarkdownDescription(ctx context.Context) stri
 	return v.Description(ctx)
 }
 
-// waffleModeListState describes a Terraform list (or slice at apply time) for waffle mode validation.
-// When Unknown is true, count-based rules that depend on that list are skipped (deferred until values are known).
-type waffleModeListState struct {
-	Count   int
-	Unknown bool
-}
-
-func waffleModeListStateFromTF(list types.List) waffleModeListState {
+func waffleModeListStateFromTF(list types.List) lenswaffle.WaffleModeListState {
 	if list.IsUnknown() {
-		return waffleModeListState{Unknown: true}
+		return lenswaffle.WaffleModeListState{Unknown: true}
 	}
 	if list.IsNull() {
-		return waffleModeListState{Count: 0}
+		return lenswaffle.WaffleModeListState{Count: 0}
 	}
-	return waffleModeListState{Count: len(list.Elements())}
-}
-
-// waffleModeListStateFromSlice is used when converting from a parsed model at apply time (lengths are always known).
-func waffleModeListStateFromSlice(n int) waffleModeListState {
-	return waffleModeListState{Count: n}
-}
-
-// waffleConfigModeValidateDiags returns ES|QL vs non-ES|QL waffle field consistency diagnostics.
-func waffleConfigModeValidateDiags(esqlMode bool, metrics, groupBy, esqlMetrics, esqlGroupBy waffleModeListState) diag.Diagnostics {
-	var diags diag.Diagnostics
-	add := func(summary, detail string) {
-		diags.AddError(summary, detail)
-	}
-	if esqlMode {
-		if (!metrics.Unknown && metrics.Count > 0) || (!groupBy.Unknown && groupBy.Count > 0) {
-			add(
-				"Invalid waffle_config for ES|QL mode",
-				"Do not set `metrics` or `group_by` when using ES|QL mode (omit `query` or leave `query.expression` and `query.language` unset). Use `esql_metrics` instead.",
-			)
-		}
-		if !esqlMetrics.Unknown && esqlMetrics.Count < 1 {
-			add("Missing esql_metrics", "ES|QL waffles require at least one `esql_metrics` entry.")
-		}
-		return diags
-	}
-
-	if (!esqlMetrics.Unknown && esqlMetrics.Count > 0) || (!esqlGroupBy.Unknown && esqlGroupBy.Count > 0) {
-		add("Invalid waffle_config for non-ES|QL mode", "Do not set `esql_metrics` or `esql_group_by` when using a non-ES|QL waffle. Set `query` (and use `metrics` / optional `group_by`) instead.")
-	}
-	if !metrics.Unknown && metrics.Count < 1 {
-		add("Missing metrics", "Non-ES|QL waffles require at least one `metrics` entry.")
-	}
-	return diags
+	return lenswaffle.WaffleModeListState{Count: len(list.Elements())}
 }
 
 func (v waffleConfigModeValidator) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
@@ -120,7 +80,7 @@ func (v waffleConfigModeValidator) ValidateObject(ctx context.Context, req valid
 		return
 	}
 
-	resp.Diagnostics.Append(waffleConfigModeValidateDiags(esqlMode,
+	resp.Diagnostics.Append(lenswaffle.WaffleConfigModeValidateDiags(esqlMode,
 		waffleModeListStateFromTF(metrics),
 		waffleModeListStateFromTF(groupBy),
 		waffleModeListStateFromTF(esqlMetrics),

@@ -412,10 +412,10 @@ func waffleConfigToAPI(m *models.WaffleConfigModel) (lenscommon.VisByValueConfig
 		return attrs, diags
 	}
 
-	diags.Append(waffleConfigModeValidateDiags(waffleConfigUsesESQL(m), waffleModeListStateFromSlice(len(m.Metrics)),
-		waffleModeListStateFromSlice(len(m.GroupBy)),
-		waffleModeListStateFromSlice(len(m.EsqlMetrics)),
-		waffleModeListStateFromSlice(len(m.EsqlGroupBy)),
+	diags.Append(WaffleConfigModeValidateDiags(waffleConfigUsesESQL(m), WaffleModeListStateFromSlice(len(m.Metrics)),
+		WaffleModeListStateFromSlice(len(m.GroupBy)),
+		WaffleModeListStateFromSlice(len(m.EsqlMetrics)),
+		WaffleModeListStateFromSlice(len(m.EsqlGroupBy)),
 	)...)
 	if diags.HasError() {
 		return attrs, diags
