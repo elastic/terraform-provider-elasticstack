@@ -21,7 +21,9 @@ import (
 	"context"
 	"testing"
 
+	esclients "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/require"
 )
 
@@ -183,4 +185,133 @@ func TestS3ToSettingsWithEndpoint(t *testing.T) {
 	require.Contains(t, m, "endpoint")
 	require.Equal(t, "https://minio.example.com:9000", m["endpoint"])
 	require.NotContains(t, m, "base_path")
+}
+
+func TestSettingsToS3StateInheritance(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	cases := []struct {
+		name                   string
+		apiSettings            map[string]any
+		stateS3                S3Settings
+		stateS3Null            bool
+		wantEndpoint           types.String
+		wantPathStyleAccess    bool
+	}{
+		{
+			name: "ES echoes both",
+			apiSettings: map[string]any{
+				"bucket":            "api-bucket",
+				"endpoint":          "https://api.example",
+				"path_style_access": true,
+			},
+			stateS3: s3SettingsForState(
+				types.StringValue("https://prior.example"),
+				types.BoolValue(false),
+			),
+			wantEndpoint:        types.StringValue("https://api.example"),
+			wantPathStyleAccess: true,
+		},
+		{
+			name: "ES omits both, prior state populated",
+			apiSettings: map[string]any{
+				"bucket": "api-bucket",
+			},
+			stateS3: s3SettingsForState(
+				types.StringValue("https://prior.example"),
+				types.BoolValue(true),
+			),
+			wantEndpoint:        types.StringValue("https://prior.example"),
+			wantPathStyleAccess: true,
+		},
+		{
+			name: "ES omits both, no prior state (import)",
+			apiSettings: map[string]any{
+				"bucket": "api-bucket",
+			},
+			stateS3Null:         true,
+			wantEndpoint:        types.StringNull(),
+			wantPathStyleAccess: false,
+		},
+		{
+			name: "ES omits both, prior state has null fields",
+			apiSettings: map[string]any{
+				"bucket": "api-bucket",
+			},
+			stateS3: s3SettingsForState(
+				types.StringNull(),
+				types.BoolValue(false),
+			),
+			wantEndpoint:        types.StringNull(),
+			wantPathStyleAccess: false,
+		},
+		{
+			name: "ES echoes endpoint but not path_style_access",
+			apiSettings: map[string]any{
+				"bucket":   "api-bucket",
+				"endpoint": "https://api.example",
+			},
+			stateS3: s3SettingsForState(
+				types.StringValue("https://prior.example"),
+				types.BoolValue(true),
+			),
+			wantEndpoint:        types.StringValue("https://api.example"),
+			wantPathStyleAccess: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			repo := &esclients.SnapshotRepositoryInfo{
+				Type:     "s3",
+				Settings: tc.apiSettings,
+			}
+
+			state := Data{}
+			if !tc.stateS3Null {
+				state.S3 = mustS3Object(t, ctx, tc.stateS3)
+			}
+
+			result, diags := settingsToS3(ctx, repo, state)
+			require.False(t, diags.HasError(), diags.Errors())
+
+			var got S3Settings
+			require.False(t, result.As(ctx, &got, basetypes.ObjectAsOptions{}).HasError())
+
+			if tc.wantEndpoint.IsNull() {
+				require.True(t, got.Endpoint.IsNull())
+			} else {
+				require.Equal(t, tc.wantEndpoint.ValueString(), got.Endpoint.ValueString())
+			}
+			require.Equal(t, tc.wantPathStyleAccess, got.PathStyleAccess.ValueBool())
+		})
+	}
+}
+
+func s3SettingsForState(endpoint types.String, pathStyleAccess types.Bool) S3Settings {
+	return S3Settings{
+		CommonSettings: CommonSettings{
+			Compress: types.BoolValue(true),
+			Readonly: types.BoolValue(false),
+		},
+		Bucket:               types.StringValue("state-bucket"),
+		Endpoint:             endpoint,
+		Client:               types.StringValue("default"),
+		BasePath:             types.StringNull(),
+		ServerSideEncryption: types.BoolValue(false),
+		BufferSize:           types.StringNull(),
+		CannedACL:            types.StringNull(),
+		StorageClass:         types.StringNull(),
+		PathStyleAccess:      pathStyleAccess,
+	}
+}
+
+func mustS3Object(t *testing.T, ctx context.Context, s3 S3Settings) types.Object {
+	t.Helper()
+	obj, diags := types.ObjectValueFrom(ctx, s3AttrTypes(), s3)
+	require.False(t, diags.HasError(), diags.Errors())
+	return obj
 }
