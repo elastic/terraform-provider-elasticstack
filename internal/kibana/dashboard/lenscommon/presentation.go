@@ -91,6 +91,38 @@ func LensChartPresentationReferencesWrites(referencesJSON jsontypes.Normalized, 
 	return &refs, diags
 }
 
+// ApplyLensChartPresentationWrites assigns presentation fields from writes to the API struct pointer fields.
+// Pass pointers to the target struct fields: &api.TimeRange, &api.HideTitle, etc.
+// The DrilldownItem type parameter must match the Drilldowns_Item type of the target API struct.
+func ApplyLensChartPresentationWrites[DrilldownItem any](
+	writes LensChartPresentationWrites,
+	timeRange **kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema,
+	hideTitle **bool,
+	hideBorder **bool,
+	references **[]CMReferenceSchema,
+	drilldowns **[]DrilldownItem,
+) diag.Diagnostics {
+	var diags diag.Diagnostics
+	*timeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		*hideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		*hideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		*references = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := DecodeLensDrilldownSlice[DrilldownItem](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			*drilldowns = &items
+		}
+	}
+	return diags
+}
+
 // DecodeLensDrilldownSlice unmarshals raw drilldown JSON produced by LensDrilldownsToRawJSON into generated union item types.
 func DecodeLensDrilldownSlice[Item any](raw [][]byte) ([]Item, diag.Diagnostics) {
 	var diags diag.Diagnostics

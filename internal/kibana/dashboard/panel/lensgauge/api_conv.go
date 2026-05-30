@@ -353,23 +353,9 @@ func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGau
 		return api, diags
 	}
 
-	api.TimeRange = writes.TimeRange
-	if writes.HideTitle != nil {
-		api.HideTitle = writes.HideTitle
-	}
-	if writes.HideBorder != nil {
-		api.HideBorder = writes.HideBorder
-	}
-	if writes.References != nil {
-		api.References = writes.References
-	}
-	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsGaugeNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
-		diags.Append(ddDiags...)
-		if !ddDiags.HasError() {
-			api.Drilldowns = &items
-		}
-	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsGaugeNoESQL_Drilldowns_Item](
+		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+	)...)
 
 	return api, diags
 }
@@ -506,23 +492,9 @@ func gaugeConfigToAPIESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGauge
 		return api, diags
 	}
 
-	api.TimeRange = writes.TimeRange
-	if writes.HideTitle != nil {
-		api.HideTitle = writes.HideTitle
-	}
-	if writes.HideBorder != nil {
-		api.HideBorder = writes.HideBorder
-	}
-	if writes.References != nil {
-		api.References = writes.References
-	}
-	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsGaugeESQL_Drilldowns_Item](writes.DrilldownsRaw)
-		diags.Append(ddDiags...)
-		if !ddDiags.HasError() {
-			api.Drilldowns = &items
-		}
-	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsGaugeESQL_Drilldowns_Item](
+		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+	)...)
 
 	return api, diags
 }
