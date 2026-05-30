@@ -440,6 +440,33 @@ func LensDrilldownItemFromAPIJSON(raw []byte, pathPrefix string) (models.LensDri
 	}
 }
 
+// PopulateLensChartPresentation consolidates the repeated drilldown-wire and presentation-read
+// block found across all Lens panel FromAPI functions. It writes the result into *out.
+// Returns false if any error occurs; the caller should immediately return diags.
+func PopulateLensChartPresentation[Item any](
+	ctx context.Context,
+	out *models.LensChartPresentationTFModel,
+	prior *models.LensChartPresentationTFModel,
+	apiTimeRange *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema,
+	hideTitle, hideBorder *bool,
+	refs *[]CMReferenceSchema,
+	drilldowns *[]Item,
+	diags *diag.Diagnostics,
+) bool {
+	ddWire, ddOmit, ddWireDiags := LensDrilldownsAPIToWire(drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return false
+	}
+	pres, presDiags := LensChartPresentationReadsFor(ctx, prior, apiTimeRange, hideTitle, hideBorder, refs, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return false
+	}
+	*out = pres
+	return true
+}
+
 // LensChartPresentationReadsFor maps optional chart-root presentation API fields into Terraform state with REQ-009-style null preservation.
 func LensChartPresentationReadsFor(
 	ctx context.Context,

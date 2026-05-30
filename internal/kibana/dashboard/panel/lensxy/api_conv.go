@@ -1252,17 +1252,9 @@ func xyChartConfigFromAPINoESQL(
 		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
-	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(apiChart.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, apiChart.Drilldowns, &diags) {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
@@ -1326,17 +1318,9 @@ func xyChartConfigFromAPIESQL(
 		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
-	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(apiChart.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, apiChart.Drilldowns, &diags) {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
