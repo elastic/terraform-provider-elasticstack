@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -105,18 +106,8 @@ func populateToolBaseFromAPI(ctx context.Context, data *models.Tool, spaceID str
 		base.Description = types.StringNull()
 	}
 
-	diags.Append(populateSet(ctx, data.Tags, &base.Tags)...)
+	diags.Append(agentbuilder.PopulateSet(ctx, data.Tags, &base.Tags)...)
 	return base, diags
-}
-
-func populateSet(ctx context.Context, src []string, dst *types.Set) diag.Diagnostics {
-	if len(src) > 0 {
-		v, d := types.SetValueFrom(ctx, types.StringType, src)
-		*dst = v
-		return d
-	}
-	*dst = types.SetNull(types.StringType)
-	return nil
 }
 
 func (model *toolDataSourceModel) populateFromAPI(ctx context.Context, data *models.Tool) diag.Diagnostics {

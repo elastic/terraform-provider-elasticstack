@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -146,7 +147,7 @@ func populateAgentBaseFromAPI(ctx context.Context, spaceID string, data *models.
 		base.Instructions = types.StringNull()
 	}
 
-	diags.Append(populateSet(ctx, data.Labels, &base.Labels)...)
+	diags.Append(agentbuilder.PopulateSet(ctx, data.Labels, &base.Labels)...)
 	return base, diags
 }
 
@@ -164,7 +165,7 @@ func (model *agentDataSourceModel) populateFromAPI(ctx context.Context, spaceID 
 	model.AvatarSymbol = base.AvatarSymbol
 	model.Instructions = base.Instructions
 	model.Labels = base.Labels
-	diags.Append(populateSet(ctx, data.Configuration.SkillIDs, &model.SkillIDs)...)
+	diags.Append(agentbuilder.PopulateSet(ctx, data.Configuration.SkillIDs, &model.SkillIDs)...)
 	return diags
 }
 
@@ -186,19 +187,9 @@ func (model *agentModel) populateFromAPI(ctx context.Context, spaceID string, da
 	if len(data.Configuration.Tools) > 0 {
 		toolIDs = data.Configuration.Tools[0].ToolIDs
 	}
-	diags.Append(populateSet(ctx, toolIDs, &model.Tools)...)
-	diags.Append(populateSet(ctx, data.Configuration.SkillIDs, &model.SkillIDs)...)
+	diags.Append(agentbuilder.PopulateSet(ctx, toolIDs, &model.Tools)...)
+	diags.Append(agentbuilder.PopulateSet(ctx, data.Configuration.SkillIDs, &model.SkillIDs)...)
 	return diags
-}
-
-func populateSet(ctx context.Context, src []string, dst *types.Set) diag.Diagnostics {
-	if len(src) > 0 {
-		v, d := types.SetValueFrom(ctx, types.StringType, src)
-		*dst = v
-		return d
-	}
-	*dst = types.SetNull(types.StringType)
-	return nil
 }
 
 func (model agentModel) toAPICreateModel(ctx context.Context, supportsSkillIDs bool) (kbapi.PostAgentBuilderAgentsJSONRequestBody, diag.Diagnostics) {
@@ -220,21 +211,24 @@ func (model agentModel) toAPICreateModel(ctx context.Context, supportsSkillIDs b
 		body.Configuration.Instructions = model.Instructions.ValueStringPointer()
 	}
 
-	toolIDs, d := setToStrings(ctx, model.Tools)
+	toolIDs, d := agentbuilder.SetToStrings(ctx, model.Tools)
 	diags.Append(d...)
+	if toolIDs == nil {
+		toolIDs = []string{}
+	}
 	body.Configuration.Tools = []struct {
 		ToolIds []string `json:"tool_ids"` //nolint:revive
 	}{{ToolIds: toolIDs}}
 
 	if supportsSkillIDs {
-		skillIDs, d := setToStrings(ctx, model.SkillIDs)
+		skillIDs, d := agentbuilder.SetToStrings(ctx, model.SkillIDs)
 		diags.Append(d...)
 		if len(skillIDs) > 0 {
 			body.Configuration.SkillIds = &skillIDs
 		}
 	}
 
-	labels, d := setToStrings(ctx, model.Labels)
+	labels, d := agentbuilder.SetToStrings(ctx, model.Labels)
 	diags.Append(d...)
 	if len(labels) > 0 {
 		body.Labels = &labels
@@ -261,8 +255,11 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 		body.AvatarSymbol = model.AvatarSymbol.ValueStringPointer()
 	}
 
-	toolIDs, d := setToStrings(ctx, model.Tools)
+	toolIDs, d := agentbuilder.SetToStrings(ctx, model.Tools)
 	diags.Append(d...)
+	if toolIDs == nil {
+		toolIDs = []string{}
+	}
 	tools := []struct {
 		ToolIds []string `json:"tool_ids"` //nolint:revive
 	}{{ToolIds: toolIDs}}
@@ -274,7 +271,7 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 	// clears the value on 9.4+.
 	var skillIDsPtr *[]string
 	if supportsSkillIDs {
-		skillIDs, d := setToStrings(ctx, model.SkillIDs)
+		skillIDs, d := agentbuilder.SetToStrings(ctx, model.SkillIDs)
 		diags.Append(d...)
 		if skillIDs == nil {
 			skillIDs = []string{}
@@ -303,20 +300,11 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 		SkillIds:     skillIDsPtr,
 	}
 
-	labels, d := setToStrings(ctx, model.Labels)
+	labels, d := agentbuilder.SetToStrings(ctx, model.Labels)
 	diags.Append(d...)
 	if len(labels) > 0 {
 		body.Labels = &labels
 	}
 
 	return body, diags
-}
-
-func setToStrings(ctx context.Context, set types.Set) ([]string, diag.Diagnostics) {
-	if set.IsNull() || set.IsUnknown() {
-		return []string{}, nil
-	}
-	var out []string
-	d := set.ElementsAs(ctx, &out, false)
-	return out, d
 }

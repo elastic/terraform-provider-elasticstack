@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -108,7 +109,7 @@ func (model *skillModel) populateFromAPI(ctx context.Context, spaceID string, da
 	model.Description = types.StringValue(data.Description)
 	model.Content = types.StringValue(data.Content)
 
-	diags.Append(populateStringSet(ctx, data.ToolIDs, &model.ToolIDs)...)
+	diags.Append(agentbuilder.PopulateSet(ctx, data.ToolIDs, &model.ToolIDs)...)
 	model.ReferencedContent = referencedContentItemsFromAPI(data.ReferencedContent)
 
 	return diags
@@ -132,7 +133,7 @@ func (model *skillDataSourceModel) populateFromAPI(ctx context.Context, spaceID 
 	model.Description = types.StringValue(data.Description)
 	model.Content = types.StringValue(data.Content)
 
-	diags.Append(populateStringSet(ctx, data.ToolIDs, &model.ToolIDs)...)
+	diags.Append(agentbuilder.PopulateSet(ctx, data.ToolIDs, &model.ToolIDs)...)
 	model.ReferencedContent = referencedContentItemsFromAPI(data.ReferencedContent)
 
 	return diags
@@ -156,25 +157,6 @@ func referencedContentItemsFromAPI(in []models.SkillReferencedContent) []skillRe
 	return out
 }
 
-func populateStringSet(ctx context.Context, src []string, dst *types.Set) diag.Diagnostics {
-	if len(src) > 0 {
-		v, d := types.SetValueFrom(ctx, types.StringType, src)
-		*dst = v
-		return d
-	}
-	*dst = types.SetNull(types.StringType)
-	return nil
-}
-
-func setToStrings(ctx context.Context, set types.Set) ([]string, diag.Diagnostics) {
-	if set.IsNull() || set.IsUnknown() {
-		return nil, nil
-	}
-	var out []string
-	d := set.ElementsAs(ctx, &out, false)
-	return out, d
-}
-
 // referencedContentItem matches the anonymous struct shape used by both
 // kbapi.PostAgentBuilderSkillsJSONBody and
 // kbapi.PutAgentBuilderSkillsSkillidJSONBody for referenced_content entries.
@@ -194,7 +176,7 @@ func (model skillModel) toAPICreateModel(ctx context.Context) (kbapi.PostAgentBu
 		Content:     model.Content.ValueString(),
 	}
 
-	toolIDs, d := setToStrings(ctx, model.ToolIDs)
+	toolIDs, d := agentbuilder.SetToStrings(ctx, model.ToolIDs)
 	diags.Append(d...)
 	if len(toolIDs) > 0 {
 		body.ToolIds = &toolIDs
@@ -228,7 +210,7 @@ func (model skillModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBui
 		Content:     &content,
 	}
 
-	toolIDs, d := setToStrings(ctx, model.ToolIDs)
+	toolIDs, d := agentbuilder.SetToStrings(ctx, model.ToolIDs)
 	diags.Append(d...)
 	// Always send tool_ids on update (including empty) so cleared values are
 	// propagated to Kibana. The omitempty tag means a nil slice would skip the
