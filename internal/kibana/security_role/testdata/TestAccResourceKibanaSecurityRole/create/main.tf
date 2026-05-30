@@ -14,9 +14,10 @@ resource "elasticstack_kibana_security_role" "test" {
     cluster = ["create_snapshot"]
     indices {
       field_security {
-        grant  = ["sample"]
-        except = []
+        grant  = ["sample", "restricted"]
+        except = ["restricted"]
       }
+      query      = jsonencode({ match_all = {} })
       names      = ["sample"]
       privileges = ["create", "read", "write"]
     }
