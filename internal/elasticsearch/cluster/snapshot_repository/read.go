@@ -215,8 +215,13 @@ func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 		}
 	}
 
-	// Elasticsearch may omit endpoint and path_style_access from GET responses;
-	// inherit prior state when absent to avoid spurious plan drift either way.
+	// The Elasticsearch GET response may not echo endpoint and path_style_access
+	// (the typed S3RepositorySettings struct also omits both fields). Whether
+	// Elasticsearch returns them via the raw settings overlay is version-dependent
+	// and difficult to determine empirically once read-side inheritance is in place.
+	// We therefore inherit both values from the prior state when the GET response
+	// omits them, mirroring the compressFallback pattern in settingsToFs and
+	// settingsToURL. The API value wins when present.
 	var endpoint types.String
 	if endpointStr := StrSetting(s, settingEndpoint); endpointStr != "" {
 		endpoint = StrSettingNull(s, settingEndpoint)
