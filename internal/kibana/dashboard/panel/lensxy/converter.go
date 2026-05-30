@@ -70,13 +70,13 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	return xyChartConfigFromAPIESQL(ctx, blocks.XYChartConfig, prior, xyChart)
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags
 	}
-	return xyChartConfigToAPI(blocks.XYChartConfig, resolver)
+	return xyChartConfigToAPI(blocks.XYChartConfig)
 }
 
 func (converter) AlignStateFromPlan(_ context.Context, plan, state *models.LensByValueChartBlocks) {

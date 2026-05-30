@@ -127,7 +127,7 @@ func datatableNoESQLConfigFromAPI(
 	return diags
 }
 
-func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsDatatableNoESQL, diag.Diagnostics) {
+func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.KibanaHTTPAPIsDatatableNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.KibanaHTTPAPIsDatatableNoESQL{Type: kbapi.KibanaHTTPAPIsDatatableNoESQLTypeDataTable}
 
@@ -209,7 +209,7 @@ func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel, resolver l
 		api.SplitMetricsBy = &splits
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
@@ -325,7 +325,7 @@ func datatableESQLConfigFromAPI(
 	return diags
 }
 
-func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsDatatableESQL, diag.Diagnostics) {
+func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaHTTPAPIsDatatableESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.KibanaHTTPAPIsDatatableESQL{Type: kbapi.KibanaHTTPAPIsDatatableESQLTypeDataTable}
 
@@ -418,7 +418,7 @@ func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel, resolver lensc
 		api.SplitMetricsBy = &splits
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags

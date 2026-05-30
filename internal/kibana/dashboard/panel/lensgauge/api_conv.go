@@ -257,7 +257,7 @@ func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, pri
 	return diags
 }
 
-func gaugeConfigToAPI(m *models.GaugeConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func gaugeConfigToAPI(m *models.GaugeConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 
@@ -266,7 +266,7 @@ func gaugeConfigToAPI(m *models.GaugeConfigModel, resolver lenscommon.Resolver) 
 	}
 
 	if gaugeConfigUsesESQL(m) {
-		esql, d := gaugeConfigToAPIESQL(m, resolver)
+		esql, d := gaugeConfigToAPIESQL(m)
 		diags.Append(d...)
 		if diags.HasError() {
 			return attrs, diags
@@ -277,7 +277,7 @@ func gaugeConfigToAPI(m *models.GaugeConfigModel, resolver lenscommon.Resolver) 
 		return attrs, diags
 	}
 
-	noESQL, d := gaugeConfigToAPINoESQL(m, resolver)
+	noESQL, d := gaugeConfigToAPINoESQL(m)
 	diags.Append(d...)
 	if diags.HasError() {
 		return attrs, diags
@@ -288,7 +288,7 @@ func gaugeConfigToAPI(m *models.GaugeConfigModel, resolver lenscommon.Resolver) 
 	return attrs, diags
 }
 
-func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsGaugeNoESQL, diag.Diagnostics) {
+func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGaugeNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.KibanaHTTPAPIsGaugeNoESQL
 
@@ -347,7 +347,7 @@ func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel, resolver lenscommon.Reso
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
@@ -374,7 +374,7 @@ func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel, resolver lenscommon.Reso
 	return api, diags
 }
 
-func gaugeConfigToAPIESQL(m *models.GaugeConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsGaugeESQL, diag.Diagnostics) {
+func gaugeConfigToAPIESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGaugeESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.KibanaHTTPAPIsGaugeESQL
 	api.Type = kbapi.KibanaHTTPAPIsGaugeESQLTypeGauge
@@ -500,7 +500,7 @@ func gaugeConfigToAPIESQL(m *models.GaugeConfigModel, resolver lenscommon.Resolv
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags

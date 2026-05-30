@@ -30,12 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type stubResolver struct{}
-
-func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	return lenscommon.TimeRangeModelToAPI(chartLevel)
-}
-
 func minimalXYNoESQLChartForRoundTrip() *models.XYChartConfigModel {
 	return &models.XYChartConfigModel{
 		Title: types.StringValue("XY RT"),
@@ -84,15 +78,13 @@ func TestConverter_HandlesBlocks(t *testing.T) {
 func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	ctx := t.Context()
 	var c converter
-	resolver := stubResolver{}
-
 	cfg := minimalXYNoESQLChartForRoundTrip()
 	require.NotNil(t, cfg.Query)
 	wantTitle := cfg.Title.ValueString()
 	wantExpr := cfg.Query.Expression.ValueString()
 	in := &models.LensByValueChartBlocks{XYChartConfig: cfg}
 
-	attrs, diags := c.BuildAttributes(in, resolver)
+	attrs, diags := c.BuildAttributes(in)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	out := &models.LensByValueChartBlocks{}
@@ -110,10 +102,9 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 
 func TestConverter_BuildAttributes_omitsTimeRangeWhenUnset(t *testing.T) {
 	var c converter
-	resolver := stubResolver{}
 	in := minimalXYNoESQLChartForRoundTrip()
 
-	attrs, diags := c.BuildAttributes(&models.LensByValueChartBlocks{XYChartConfig: in}, resolver)
+	attrs, diags := c.BuildAttributes(&models.LensByValueChartBlocks{XYChartConfig: in})
 	require.False(t, diags.HasError(), "%v", diags)
 
 	out, err := attrs.AsKibanaHTTPAPIsXyChartNoESQL()
@@ -124,8 +115,6 @@ func TestConverter_BuildAttributes_omitsTimeRangeWhenUnset(t *testing.T) {
 func TestConverter_roundTrip_ESQL_xy(t *testing.T) {
 	ctx := t.Context()
 	var c converter
-	resolver := stubResolver{}
-
 	const xyESQLJSON = `{
 		"type": "xy",
 		"title": "XY ESQL RT",
@@ -162,7 +151,7 @@ func TestConverter_roundTrip_ESQL_xy(t *testing.T) {
 	require.Len(t, blocks.XYChartConfig.Layers, 1)
 	require.Contains(t, blocks.XYChartConfig.Layers[0].DataLayer.DataSourceJSON.ValueString(), "FROM logs-*")
 
-	attrs2, diags := c.BuildAttributes(blocks, resolver)
+	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	out, err := attrs2.AsKibanaHTTPAPIsXyChartESQL()

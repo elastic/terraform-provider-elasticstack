@@ -1042,7 +1042,7 @@ func xyChartConfigStylingToAPI(m *models.XYChartConfigModel) *kbapi.KibanaHTTPAP
 }
 
 // toAPINoESQL converts the XY chart config model to a non-ES|QL API payload.
-func XYChartConfigToAPINoESQL(m *models.XYChartConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsXyChartNoESQL, diag.Diagnostics) {
+func XYChartConfigToAPINoESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPIsXyChartNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	chart := kbapi.KibanaHTTPAPIsXyChartNoESQL{Type: kbapi.KibanaHTTPAPIsXyChartNoESQLTypeXy}
 
@@ -1089,7 +1089,7 @@ func XYChartConfigToAPINoESQL(m *models.XYChartConfigModel, resolver lenscommon.
 
 	chart.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return chart, diags
@@ -1117,7 +1117,7 @@ func XYChartConfigToAPINoESQL(m *models.XYChartConfigModel, resolver lenscommon.
 }
 
 // toAPIESQL converts the XY chart config model to an ES|QL API payload.
-func xyChartConfigToAPIESQL(m *models.XYChartConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsXyChartESQL, diag.Diagnostics) {
+func xyChartConfigToAPIESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPIsXyChartESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	chart := kbapi.KibanaHTTPAPIsXyChartESQL{Type: kbapi.KibanaHTTPAPIsXyChartESQLTypeXy}
 
@@ -1160,7 +1160,7 @@ func xyChartConfigToAPIESQL(m *models.XYChartConfigModel, resolver lenscommon.Re
 
 	chart.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return chart, diags
@@ -1341,7 +1341,7 @@ func xyChartConfigFromAPIESQL(
 	return diags
 }
 
-func xyChartConfigToAPI(m *models.XYChartConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func xyChartConfigToAPI(m *models.XYChartConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs lenscommon.VisByValueConfig0
 	if m == nil {
@@ -1350,7 +1350,7 @@ func xyChartConfigToAPI(m *models.XYChartConfigModel, resolver lenscommon.Resolv
 	configModel := *m
 
 	if xyChartConfigXyUsesESQL(&configModel) {
-		chart, xyDiags := xyChartConfigToAPIESQL(&configModel, resolver)
+		chart, xyDiags := xyChartConfigToAPIESQL(&configModel)
 		diags.Append(xyDiags...)
 		if diags.HasError() {
 			return attrs, diags
@@ -1362,7 +1362,7 @@ func xyChartConfigToAPI(m *models.XYChartConfigModel, resolver lenscommon.Resolv
 		return attrs, diags
 	}
 
-	chart, xyDiags := XYChartConfigToAPINoESQL(&configModel, resolver)
+	chart, xyDiags := XYChartConfigToAPINoESQL(&configModel)
 	diags.Append(xyDiags...)
 	if diags.HasError() {
 		return attrs, diags

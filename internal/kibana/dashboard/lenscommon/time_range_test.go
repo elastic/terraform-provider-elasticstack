@@ -20,18 +20,11 @@ package lenscommon
 import (
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-type timeRangeStubResolver struct{}
-
-func (timeRangeStubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	return ResolveChartTimeRange(chartLevel)
-}
 
 func TestResolveChartTimeRange_nilWhenChartUnset(t *testing.T) {
 	t.Parallel()
@@ -55,7 +48,7 @@ func TestResolveChartTimeRange_returnsConfiguredChartLevel(t *testing.T) {
 
 func TestLensChartPresentationWritesFor_omitsTimeRangeWhenUnset(t *testing.T) {
 	t.Parallel()
-	writes, diags := LensChartPresentationWritesFor(timeRangeStubResolver{}, models.LensChartPresentationTFModel{})
+	writes, diags := LensChartPresentationWritesFor(models.LensChartPresentationTFModel{})
 	require.False(t, diags.HasError())
 	assert.Nil(t, writes.TimeRange)
 }
@@ -68,7 +61,7 @@ func TestLensChartPresentationWritesFor_setsTimeRangeWhenConfigured(t *testing.T
 			To:   types.StringValue("now"),
 		},
 	}
-	writes, diags := LensChartPresentationWritesFor(timeRangeStubResolver{}, in)
+	writes, diags := LensChartPresentationWritesFor(in)
 	require.False(t, diags.HasError())
 	require.NotNil(t, writes.TimeRange)
 	assert.Equal(t, "now-7d", writes.TimeRange.From)

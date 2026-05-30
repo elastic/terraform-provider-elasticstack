@@ -69,13 +69,13 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	return heatmapConfigFromAPIESQL(ctx, blocks.HeatmapConfig, prior, heatmapESQL)
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags
 	}
-	attrs, heatmapDiags := heatmapConfigToAPI(blocks.HeatmapConfig, resolver)
+	attrs, heatmapDiags := heatmapConfigToAPI(blocks.HeatmapConfig)
 	diags.Append(heatmapDiags...)
 	return attrs, diags
 }

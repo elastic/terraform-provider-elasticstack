@@ -31,12 +31,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type stubResolver struct{}
-
-func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	return lenscommon.TimeRangeModelToAPI(chartLevel)
-}
-
 func TestConverter_VizType(t *testing.T) {
 	var c converter
 	require.Equal(t, string(kbapi.KibanaHTTPAPIsPieNoESQLTypePie), c.VizType())
@@ -54,8 +48,6 @@ func TestConverter_HandlesBlocks(t *testing.T) {
 func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	ctx := t.Context()
 	var c converter
-	resolver := stubResolver{}
-
 	nested := true
 	truncate := int64(3)
 	cfg := &models.PieChartConfigModel{
@@ -84,7 +76,7 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	}
 
 	in := &models.LensByValueChartBlocks{PieChartConfig: cfg}
-	attrs, diags := c.BuildAttributes(in, resolver)
+	attrs, diags := c.BuildAttributes(in)
 	require.False(t, diags.HasError())
 
 	out := &models.LensByValueChartBlocks{}
@@ -109,8 +101,6 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 func TestConverter_roundTrip_ESQL(t *testing.T) {
 	ctx := t.Context()
 	var c converter
-	resolver := stubResolver{}
-
 	apiJSON := `{
 		"type": "pie",
 		"title": "ESQL Pie Chart",
@@ -133,7 +123,7 @@ func TestConverter_roundTrip_ESQL(t *testing.T) {
 	require.False(t, diags.HasError())
 	require.NotNil(t, out.PieChartConfig)
 
-	attrs2, diags := c.BuildAttributes(out, resolver)
+	attrs2, diags := c.BuildAttributes(out)
 	require.False(t, diags.HasError())
 
 	p2, err := attrs2.AsKibanaHTTPAPIsPieESQL()

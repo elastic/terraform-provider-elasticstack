@@ -214,7 +214,7 @@ func heatmapConfigFromAPIESQL(ctx context.Context, m *models.HeatmapConfigModel,
 	return diags
 }
 
-func heatmapConfigToAPI(m *models.HeatmapConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func heatmapConfigToAPI(m *models.HeatmapConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs lenscommon.VisByValueConfig0
 
@@ -223,7 +223,7 @@ func heatmapConfigToAPI(m *models.HeatmapConfigModel, resolver lenscommon.Resolv
 	}
 
 	if heatmapConfigUsesESQL(m) {
-		esql, esqlDiags := heatmapConfigToAPIESQL(m, resolver)
+		esql, esqlDiags := heatmapConfigToAPIESQL(m)
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
 			return attrs, diags
@@ -234,7 +234,7 @@ func heatmapConfigToAPI(m *models.HeatmapConfigModel, resolver lenscommon.Resolv
 		return attrs, diags
 	}
 
-	noESQL, noESQLDiags := heatmapConfigToAPINoESQL(m, resolver)
+	noESQL, noESQLDiags := heatmapConfigToAPINoESQL(m)
 	diags.Append(noESQLDiags...)
 	if diags.HasError() {
 		return attrs, diags
@@ -256,7 +256,7 @@ func heatmapConfigUsesESQL(m *models.HeatmapConfigModel) bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsHeatmapNoESQL, diag.Diagnostics) {
+func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPIsHeatmapNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.KibanaHTTPAPIsHeatmapNoESQL{
 		Type: kbapi.KibanaHTTPAPIsHeatmapNoESQLTypeHeatmap,
@@ -344,7 +344,7 @@ func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel, resolver lenscommon.
 
 	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
@@ -371,7 +371,7 @@ func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel, resolver lenscommon.
 	return api, diags
 }
 
-func heatmapConfigToAPIESQL(m *models.HeatmapConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsHeatmapESQL, diag.Diagnostics) {
+func heatmapConfigToAPIESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPIsHeatmapESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.KibanaHTTPAPIsHeatmapESQL{
 		Type: kbapi.KibanaHTTPAPIsHeatmapESQLTypeHeatmap,
@@ -457,7 +457,7 @@ func heatmapConfigToAPIESQL(m *models.HeatmapConfigModel, resolver lenscommon.Re
 
 	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags

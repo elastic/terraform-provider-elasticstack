@@ -169,7 +169,7 @@ func regionMapConfigFromAPIESQL(
 	return diags
 }
 
-func regionMapConfigToAPI(m *models.RegionMapConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func regionMapConfigToAPI(m *models.RegionMapConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 
@@ -218,7 +218,7 @@ func regionMapConfigToAPI(m *models.RegionMapConfigModel, resolver lenscommon.Re
 			}
 		}
 
-		writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+		writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 		diags.Append(presDiags...)
 		if presDiags.HasError() {
 			return attrs, diags
@@ -287,7 +287,7 @@ func regionMapConfigToAPI(m *models.RegionMapConfigModel, resolver lenscommon.Re
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return attrs, diags

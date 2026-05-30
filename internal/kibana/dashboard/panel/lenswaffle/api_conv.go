@@ -420,7 +420,7 @@ func waffleValueDisplayToAPI(m *models.WaffleValueDisplay) *kbapi.KibanaHTTPAPIs
 	return vd
 }
 
-func waffleConfigToAPI(m *models.WaffleConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func waffleConfigToAPI(m *models.WaffleConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 
@@ -438,7 +438,7 @@ func waffleConfigToAPI(m *models.WaffleConfigModel, resolver lenscommon.Resolver
 	}
 
 	if waffleConfigUsesESQL(m) {
-		esql, d := waffleConfigToAPIESQL(m, resolver)
+		esql, d := waffleConfigToAPIESQL(m)
 		diags.Append(d...)
 		if diags.HasError() {
 			return attrs, diags
@@ -449,7 +449,7 @@ func waffleConfigToAPI(m *models.WaffleConfigModel, resolver lenscommon.Resolver
 		return attrs, diags
 	}
 
-	noESQL, d := waffleConfigToAPINoESQL(m, resolver)
+	noESQL, d := waffleConfigToAPINoESQL(m)
 	diags.Append(d...)
 	if diags.HasError() {
 		return attrs, diags
@@ -460,7 +460,7 @@ func waffleConfigToAPI(m *models.WaffleConfigModel, resolver lenscommon.Resolver
 	return attrs, diags
 }
 
-func waffleConfigToAPINoESQL(m *models.WaffleConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsWaffleNoESQL, diag.Diagnostics) {
+func waffleConfigToAPINoESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsWaffleNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.KibanaHTTPAPIsWaffleNoESQL{
 		Type: kbapi.KibanaHTTPAPIsWaffleNoESQLTypeWaffle,
@@ -532,7 +532,7 @@ func waffleConfigToAPINoESQL(m *models.WaffleConfigModel, resolver lenscommon.Re
 		api.GroupBy = &gb
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
@@ -559,7 +559,7 @@ func waffleConfigToAPINoESQL(m *models.WaffleConfigModel, resolver lenscommon.Re
 	return api, diags
 }
 
-func waffleConfigToAPIESQL(m *models.WaffleConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsWaffleESQL, diag.Diagnostics) {
+func waffleConfigToAPIESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsWaffleESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.KibanaHTTPAPIsWaffleESQL{
 		Type: kbapi.KibanaHTTPAPIsWaffleESQLTypeWaffle,
@@ -677,7 +677,7 @@ func waffleConfigToAPIESQL(m *models.WaffleConfigModel, resolver lenscommon.Reso
 		api.GroupBy = &gb
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags

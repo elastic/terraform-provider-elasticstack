@@ -67,7 +67,7 @@ func (fakeConverter) PopulateFromAttributes(context.Context, *models.LensByValue
 	return nil
 }
 
-func (fakeConverter) BuildAttributes(*models.LensByValueChartBlocks, Resolver) (VisByValueConfig0, diag.Diagnostics) {
+func (fakeConverter) BuildAttributes(*models.LensByValueChartBlocks) (VisByValueConfig0, diag.Diagnostics) {
 	return VisByValueConfig0{}, nil
 }
 

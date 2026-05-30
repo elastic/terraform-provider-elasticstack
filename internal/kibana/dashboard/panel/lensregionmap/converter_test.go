@@ -30,12 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type stubResolver struct{}
-
-func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	return lenscommon.TimeRangeModelToAPI(chartLevel)
-}
-
 func TestConverter_VizType(t *testing.T) {
 	var c converter
 	require.Equal(t, string(kbapi.KibanaHTTPAPIsRegionMapNoESQLTypeRegionMap), c.VizType())
@@ -53,8 +47,6 @@ func TestConverter_HandlesBlocks(t *testing.T) {
 func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	ctx := t.Context()
 	var c converter
-	resolver := stubResolver{}
-
 	cfg := &models.RegionMapConfigModel{
 		Title:               types.StringValue("RM"),
 		Description:         types.StringValue("d"),
@@ -70,7 +62,7 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	}
 
 	in := &models.LensByValueChartBlocks{RegionMapConfig: cfg}
-	attrs, diags := c.BuildAttributes(in, resolver)
+	attrs, diags := c.BuildAttributes(in)
 	require.False(t, diags.HasError())
 
 	out := &models.LensByValueChartBlocks{}

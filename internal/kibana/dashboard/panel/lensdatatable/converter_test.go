@@ -30,12 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type stubResolver struct{}
-
-func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	return lenscommon.TimeRangeModelToAPI(chartLevel)
-}
-
 func TestConverter_VizType(t *testing.T) {
 	var c converter
 	require.Equal(t, string(kbapi.KibanaHTTPAPIsDatatableNoESQLTypeDataTable), c.VizType())
@@ -53,8 +47,6 @@ func TestConverter_HandlesBlocks(t *testing.T) {
 func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	ctx := t.Context()
 	var c converter
-	resolver := stubResolver{}
-
 	noESQL := &models.DatatableNoESQLConfigModel{
 		Title:               types.StringValue("Datatable RT"),
 		Description:         types.StringValue("desc"),
@@ -78,7 +70,7 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	blocks := &models.LensByValueChartBlocks{
 		DatatableConfig: &models.DatatableConfigModel{NoESQL: noESQL},
 	}
-	attrs, diags := c.BuildAttributes(blocks, resolver)
+	attrs, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	out := &models.LensByValueChartBlocks{DatatableConfig: &models.DatatableConfigModel{}}
@@ -93,8 +85,6 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 func TestConverter_roundTrip_ESQL_datatable(t *testing.T) {
 	ctx := t.Context()
 	var c converter
-	resolver := stubResolver{}
-
 	metric := kbapi.KibanaHTTPAPIsDatatableESQLMetric{
 		Column: "host.name",
 	}
@@ -128,7 +118,7 @@ func TestConverter_roundTrip_ESQL_datatable(t *testing.T) {
 	require.NotNil(t, blocks.DatatableConfig.ESQL)
 	assert.Contains(t, blocks.DatatableConfig.ESQL.DataSourceJSON.ValueString(), "FROM metrics-*")
 
-	attrs2, diags := c.BuildAttributes(blocks, resolver)
+	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	out, err := attrs2.AsKibanaHTTPAPIsDatatableESQL()

@@ -29,12 +29,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type stubResolver struct{}
-
-func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	return lenscommon.TimeRangeModelToAPI(chartLevel)
-}
-
 func TestConverter_VizType(t *testing.T) {
 	var c converter
 	require.Equal(t, string(kbapi.KibanaHTTPAPIsGaugeNoESQLTypeGauge), c.VizType())
@@ -52,8 +46,6 @@ func TestConverter_HandlesBlocks(t *testing.T) {
 func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	ctx := t.Context()
 	var c converter
-	resolver := stubResolver{}
-
 	cfg := &models.GaugeConfigModel{
 		Title:          types.StringValue("Gauge RT"),
 		DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*"}`),
@@ -71,7 +63,7 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	}
 
 	blocks := &models.LensByValueChartBlocks{GaugeConfig: cfg}
-	attrs, diags := c.BuildAttributes(blocks, resolver)
+	attrs, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	out := &models.LensByValueChartBlocks{GaugeConfig: &models.GaugeConfigModel{}}

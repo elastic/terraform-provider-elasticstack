@@ -236,7 +236,7 @@ func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel,
 	return diags
 }
 
-func treemapConfigToAPI(m *models.TreemapConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func treemapConfigToAPI(m *models.TreemapConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 
@@ -245,7 +245,7 @@ func treemapConfigToAPI(m *models.TreemapConfigModel, resolver lenscommon.Resolv
 	}
 
 	if treemapConfigUsesESQL(m) {
-		esql, esqlDiags := treemapConfigToAPITreemapESQL(m, resolver)
+		esql, esqlDiags := treemapConfigToAPITreemapESQL(m)
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
 			return attrs, diags
@@ -256,7 +256,7 @@ func treemapConfigToAPI(m *models.TreemapConfigModel, resolver lenscommon.Resolv
 		return attrs, diags
 	}
 
-	noESQL, noESQLDiags := treemapConfigToAPINoESQL(m, resolver)
+	noESQL, noESQLDiags := treemapConfigToAPINoESQL(m)
 	diags.Append(noESQLDiags...)
 	if diags.HasError() {
 		return attrs, diags
@@ -268,7 +268,7 @@ func treemapConfigToAPI(m *models.TreemapConfigModel, resolver lenscommon.Resolv
 	return attrs, diags
 }
 
-func treemapConfigToAPITreemapESQL(m *models.TreemapConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsTreemapESQL, diag.Diagnostics) {
+func treemapConfigToAPITreemapESQL(m *models.TreemapConfigModel) (kbapi.KibanaHTTPAPIsTreemapESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.KibanaHTTPAPIsTreemapESQL
 	api.Type = kbapi.KibanaHTTPAPIsTreemapESQLTypeTreemap
@@ -388,7 +388,7 @@ func treemapConfigToAPITreemapESQL(m *models.TreemapConfigModel, resolver lensco
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
@@ -425,7 +425,7 @@ func treemapConfigUsesESQL(m *models.TreemapConfigModel) bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func treemapConfigToAPINoESQL(m *models.TreemapConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsTreemapNoESQL, diag.Diagnostics) {
+func treemapConfigToAPINoESQL(m *models.TreemapConfigModel) (kbapi.KibanaHTTPAPIsTreemapNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.KibanaHTTPAPIsTreemapNoESQL{
 		Type: kbapi.KibanaHTTPAPIsTreemapNoESQLTypeTreemap,
@@ -501,7 +501,7 @@ func treemapConfigToAPINoESQL(m *models.TreemapConfigModel, resolver lenscommon.
 		api.Styling = &kbapi.KibanaHTTPAPIsTreemapStyling{Values: lenscommon.PartitionValueDisplayToAPI(m.ValueDisplay)}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags

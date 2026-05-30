@@ -30,12 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type stubResolver struct{}
-
-func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	return lenscommon.TimeRangeModelToAPI(chartLevel)
-}
-
 func TestConverter_VizType(t *testing.T) {
 	var c converter
 	require.Equal(t, string(kbapi.KibanaHTTPAPIsHeatmapNoESQLTypeHeatmap), c.VizType())
@@ -53,8 +47,6 @@ func TestConverter_HandlesBlocks(t *testing.T) {
 func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	ctx := context.Background()
 	var c converter
-	resolver := stubResolver{}
-
 	query := kbapi.KibanaHTTPAPIsFilterSimple{
 		Expression: "status:200",
 		Language: func() *kbapi.KibanaHTTPAPIsFilterSimpleLanguage {
@@ -144,7 +136,7 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	diags := c.PopulateFromAttributes(ctx, blocks, attrs)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	attrs2, diags := c.BuildAttributes(blocks, resolver)
+	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	heatmapRoundTrip, err := attrs2.AsKibanaHTTPAPIsHeatmapNoESQL()
@@ -159,8 +151,6 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 func TestConverter_roundTrip_ESQL_heatmap(t *testing.T) {
 	ctx := context.Background()
 	var c converter
-	resolver := stubResolver{}
-
 	const esqlJSON = `{
 		"type": "heatmap",
 		"title": "Heatmap ESQL RT",
@@ -193,7 +183,7 @@ func TestConverter_roundTrip_ESQL_heatmap(t *testing.T) {
 	require.Nil(t, blocks.HeatmapConfig.Query)
 	assert.Contains(t, blocks.HeatmapConfig.DataSourceJSON.ValueString(), "FROM logs-*")
 
-	attrs2, diags := c.BuildAttributes(blocks, resolver)
+	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	out, err := attrs2.AsKibanaHTTPAPIsHeatmapESQL()

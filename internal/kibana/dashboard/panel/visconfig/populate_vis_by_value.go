@@ -27,16 +27,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-type chartPresentationResolver struct{}
-
-func lensChartResolver() lenscommon.Resolver {
-	return chartPresentationResolver{}
-}
-
-func (chartPresentationResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	return lenscommon.ResolveChartTimeRange(chartLevel)
-}
-
 // lensByValueChartBlocksFromPanel returns vis_config.by_value chart blocks when populated.
 func lensByValueChartBlocksFromPanel(pm *models.PanelModel) *models.LensByValueChartBlocks {
 	if pm == nil || pm.VisConfig == nil || pm.VisConfig.ByValue == nil {

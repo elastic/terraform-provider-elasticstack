@@ -79,7 +79,7 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	return datatableESQLConfigFromAPI(ctx, blocks.DatatableConfig.ESQL, priorEsql, datatableESQL)
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if blocks == nil || blocks.DatatableConfig == nil {
 		return lenscommon.VisByValueConfig0{}, diags
@@ -89,7 +89,7 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver
 
 	switch {
 	case blocks.DatatableConfig.NoESQL != nil:
-		noESQL, noDiags := datatableNoESQLConfigToAPI(blocks.DatatableConfig.NoESQL, resolver)
+		noESQL, noDiags := datatableNoESQLConfigToAPI(blocks.DatatableConfig.NoESQL)
 		diags.Append(noDiags...)
 		if diags.HasError() {
 			return lenscommon.VisByValueConfig0{}, diags
@@ -100,7 +100,7 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver
 			return lenscommon.VisByValueConfig0{}, diags
 		}
 	case blocks.DatatableConfig.ESQL != nil:
-		esql, esqlDiags := datatableESQLConfigToAPI(blocks.DatatableConfig.ESQL, resolver)
+		esql, esqlDiags := datatableESQLConfigToAPI(blocks.DatatableConfig.ESQL)
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
 			return lenscommon.VisByValueConfig0{}, diags

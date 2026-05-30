@@ -41,11 +41,11 @@ type LensChartPresentationWrites struct {
 }
 
 // LensChartPresentationWritesFor builds API presentation fields from Terraform chart-root attributes.
-func LensChartPresentationWritesFor(resolver Resolver, in models.LensChartPresentationTFModel) (LensChartPresentationWrites, diag.Diagnostics) {
+func LensChartPresentationWritesFor(in models.LensChartPresentationTFModel) (LensChartPresentationWrites, diag.Diagnostics) {
 	var writes LensChartPresentationWrites
 	var diags diag.Diagnostics
 
-	writes.TimeRange = resolver.ResolveChartTimeRange(in.TimeRange)
+	writes.TimeRange = ResolveChartTimeRange(in.TimeRange)
 	if typeutils.IsKnown(in.HideTitle) {
 		v := in.HideTitle.ValueBool()
 		writes.HideTitle = &v

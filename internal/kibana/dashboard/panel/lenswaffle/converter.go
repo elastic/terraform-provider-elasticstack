@@ -89,13 +89,13 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	return diags
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags
 	}
-	return waffleConfigToAPI(blocks.WaffleConfig, resolver)
+	return waffleConfigToAPI(blocks.WaffleConfig)
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {

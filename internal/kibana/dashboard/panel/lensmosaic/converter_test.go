@@ -28,12 +28,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type stubResolver struct{}
-
-func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	return lenscommon.TimeRangeModelToAPI(chartLevel)
-}
-
 func TestConverter_VizType(t *testing.T) {
 	var c converter
 	require.Equal(t, string(kbapi.KibanaHTTPAPIsMosaicNoESQLTypeMosaic), c.VizType())
@@ -76,13 +70,12 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	require.NoError(t, attrs.FromKibanaHTTPAPIsMosaicNoESQL(api))
 
 	var c converter
-	resolver := stubResolver{}
 	blocks := &models.LensByValueChartBlocks{}
 	diags := c.PopulateFromAttributes(ctx, blocks, attrs)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.NotNil(t, blocks.MosaicConfig)
 
-	attrs2, diags := c.BuildAttributes(blocks, resolver)
+	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	noESQL2, err := attrs2.AsKibanaHTTPAPIsMosaicNoESQL()
