@@ -192,12 +192,12 @@ func TestSettingsToS3StateInheritance(t *testing.T) {
 	ctx := context.Background()
 
 	cases := []struct {
-		name                   string
-		apiSettings            map[string]any
-		stateS3                S3Settings
-		stateS3Null            bool
-		wantEndpoint           types.String
-		wantPathStyleAccess    bool
+		name                string
+		apiSettings         map[string]any
+		stateS3             S3Settings
+		stateS3Null         bool
+		wantEndpoint        types.String
+		wantPathStyleAccess bool
 	}{
 		{
 			name: "ES echoes both",
