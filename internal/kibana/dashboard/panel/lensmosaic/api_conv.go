@@ -116,17 +116,9 @@ func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel,
 		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
-	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(api.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
 	m.EsqlMetrics = nil
 	m.EsqlGroupBy = nil
 
@@ -228,17 +220,9 @@ func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, p
 		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
-	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(api.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
