@@ -57,6 +57,14 @@ func PreserveKnownTfInt64IfStateNull(plan types.Int64, state *types.Int64) {
 	}
 }
 
+// PreserveKnownTfListIfStateNull copies plan into *state when plan is known but
+// state is null or unknown. Used to preserve practitioner intent across chart config round-trips.
+func PreserveKnownTfListIfStateNull(plan types.List, state *types.List) {
+	if typeutils.IsKnown(plan) && (state.IsNull() || state.IsUnknown()) {
+		*state = plan
+	}
+}
+
 // PreserveKnownStringIfStateBlank copies plan into *state when plan is known and state is null,
 // unknown, or empty. Used to preserve practitioner intent for chart titles and descriptions
 // that the API normalizes to empty values.
