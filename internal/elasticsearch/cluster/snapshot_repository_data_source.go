@@ -399,6 +399,11 @@ func readDataSource(
 	}
 
 	config.Type = types.StringValue(currentRepo.Type)
+	config, emptyDiags := initEmptyTypeBlocks(config)
+	diags.Append(emptyDiags...)
+	if diags.HasError() {
+		return config, false, diags
+	}
 	result, popDiags := populateRepositoryTypeBlocks(ctx, config, currentRepo)
 	return result, !popDiags.HasError(), popDiags
 }
