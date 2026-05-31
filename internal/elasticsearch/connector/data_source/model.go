@@ -41,19 +41,9 @@ import (
 // ContentConnectorDataSourceModel is the Terraform state model for the content connector data source.
 type ContentConnectorDataSourceModel struct {
 	entitycore.ElasticsearchConnectionField
+	connector.CoreConnectorFields
 	ID                               fwtypes.String       `tfsdk:"id"`
 	ConnectorID                      fwtypes.String       `tfsdk:"connector_id"`
-	ServiceType                      fwtypes.String       `tfsdk:"service_type"`
-	Name                             fwtypes.String       `tfsdk:"name"`
-	Description                      fwtypes.String       `tfsdk:"description"`
-	IndexName                        fwtypes.String       `tfsdk:"index_name"`
-	IsNative                         fwtypes.Bool         `tfsdk:"is_native"`
-	Language                         fwtypes.String       `tfsdk:"language"`
-	APIKeyID                         fwtypes.String       `tfsdk:"api_key_id"`
-	APIKeySecretID                   fwtypes.String       `tfsdk:"api_key_secret_id"`
-	Pipeline                         fwtypes.Object       `tfsdk:"pipeline"`
-	Scheduling                       fwtypes.Object       `tfsdk:"scheduling"`
-	Features                         fwtypes.Object       `tfsdk:"features"`
 	Status                           fwtypes.String       `tfsdk:"status"`
 	LastSeen                         fwtypes.String       `tfsdk:"last_seen"`
 	LastSynced                       fwtypes.String       `tfsdk:"last_synced"`
@@ -118,18 +108,7 @@ func populateContentConnectorDataSourceFromAPI(
 	model *ContentConnectorDataSourceModel,
 	diags *diag.Diagnostics,
 ) {
-	core := connector.PopulateCoreConnectorFieldsFromAPI(ctx, resp, diags)
-	model.ServiceType = core.ServiceType
-	model.Name = core.Name
-	model.Description = core.Description
-	model.IndexName = core.IndexName
-	model.IsNative = core.IsNative
-	model.Language = core.Language
-	model.APIKeyID = core.APIKeyID
-	model.APIKeySecretID = core.APIKeySecretID
-	model.Pipeline = core.Pipeline
-	model.Scheduling = core.Scheduling
-	model.Features = core.Features
+	model.CoreConnectorFields = connector.PopulateCoreConnectorFieldsFromAPI(ctx, resp, diags)
 
 	model.Status = fwtypes.StringValue(resp.Status.String())
 	model.LastSeen = connectorDateTimeToString(resp.LastSeen)

@@ -49,18 +49,7 @@ func readConnector(
 		return data, false, diags
 	}
 
-	core := connector.PopulateCoreConnectorFieldsFromAPI(ctx, resp, &diags)
-	data.ServiceType = core.ServiceType
-	data.Name = core.Name
-	data.Description = core.Description
-	data.IndexName = core.IndexName
-	data.IsNative = core.IsNative
-	data.Language = core.Language
-	data.APIKeyID = core.APIKeyID
-	data.APIKeySecretID = core.APIKeySecretID
-	data.Pipeline = core.Pipeline
-	data.Scheduling = core.Scheduling
-	data.Features = core.Features
+	data.CoreConnectorFields = connector.PopulateCoreConnectorFieldsFromAPI(ctx, resp, &diags)
 
 	var priorConfig map[string]connector.ConfigurationValueModel
 	if !data.ConfigurationValues.IsNull() && typeutils.IsKnown(data.ConfigurationValues) {

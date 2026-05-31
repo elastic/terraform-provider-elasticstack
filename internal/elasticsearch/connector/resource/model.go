@@ -28,19 +28,9 @@ import (
 // ContentConnectorData is the Terraform state model for the content connector resource.
 type ContentConnectorData struct {
 	entitycore.ElasticsearchConnectionField
+	connector.CoreConnectorFields
 	ID                  fwtypes.String `tfsdk:"id"`
 	ConnectorID         fwtypes.String `tfsdk:"connector_id"`
-	ServiceType         fwtypes.String `tfsdk:"service_type"`
-	Name                fwtypes.String `tfsdk:"name"`
-	Description         fwtypes.String `tfsdk:"description"`
-	IndexName           fwtypes.String `tfsdk:"index_name"`
-	IsNative            fwtypes.Bool   `tfsdk:"is_native"`
-	Language            fwtypes.String `tfsdk:"language"`
-	APIKeyID            fwtypes.String `tfsdk:"api_key_id"`
-	APIKeySecretID      fwtypes.String `tfsdk:"api_key_secret_id"`
-	Pipeline            fwtypes.Object `tfsdk:"pipeline"`
-	Scheduling          fwtypes.Object `tfsdk:"scheduling"`
-	Features            fwtypes.Object `tfsdk:"features"`
 	ConfigurationValues fwtypes.Map    `tfsdk:"configuration_values"`
 }
 
