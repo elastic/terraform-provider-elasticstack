@@ -67,6 +67,7 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "name", policyName),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "default"),
 					resource.TestCheckResourceAttrPair(resourceName, "agent_policy_id", agentPolicyResourceName, "policy_id"),
+					resource.TestCheckNoResourceAttr(resourceName, "agent_policy_ids"),
 					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
 					resource.TestCheckResourceAttr(resourceName, "integration_version", "8.14.0"),
 					resource.TestCheckResourceAttr(resourceName, "preset", "EDRComplete"),
@@ -163,6 +164,7 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", policyName),
 					resource.TestCheckResourceAttrPair(resourceName, "agent_policy_id", agentPolicyResourceName, "policy_id"),
+					resource.TestCheckNoResourceAttr(resourceName, "agent_policy_ids"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated description"),
 					resource.TestCheckResourceAttr(resourceName, "enabled", "false"),
 					resource.TestCheckResourceAttr(resourceName, "integration_version", "8.14.0"),
@@ -315,6 +317,19 @@ func TestAccResourceElasticDefendIntegrationPolicy_multiAgentPolicy(t *testing.T
 					resource.TestCheckResourceAttrPair(resourceName, "agent_policy_ids.1", "elasticstack_fleet_agent_policy.three", "policy_id"),
 					checkDefendPolicyAgentPolicyIDs(resourceName, []string{"elasticstack_fleet_agent_policy.one", "elasticstack_fleet_agent_policy.three"}),
 				),
+			},
+			// Import step to verify round-trip of agent_policy_ids
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateIdFunc:       testImportStateIDFunc(resourceName),
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "description"},
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,

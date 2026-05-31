@@ -46,16 +46,8 @@ func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationP
 		Package:   &pkg,
 		Enabled:   model.Enabled.ValueBoolPointer(),
 	}
-	if !model.AgentPolicyIDs.IsNull() && !model.AgentPolicyIDs.IsUnknown() {
-		var ids []string
-		_ = model.AgentPolicyIDs.ElementsAs(ctx, &ids, false)
-		req.PolicyIds = &ids
-		if len(ids) > 0 {
-			req.PolicyId = &ids[0]
-		}
-	} else {
-		req.PolicyId = model.AgentPolicyID.ValueStringPointer()
-	}
+	d := setAgentPoliciesOnRequest(ctx, model, &req)
+	_ = d
 
 	if !model.Description.IsNull() && !model.Description.IsUnknown() {
 		req.Description = model.Description.ValueStringPointer()
@@ -109,15 +101,10 @@ func buildFinalizeRequest(ctx context.Context, model *elasticDefendIntegrationPo
 		Package:   &pkg,
 		Enabled:   model.Enabled.ValueBoolPointer(),
 	}
-	if !model.AgentPolicyIDs.IsNull() && !model.AgentPolicyIDs.IsUnknown() {
-		var ids []string
-		_ = model.AgentPolicyIDs.ElementsAs(ctx, &ids, false)
-		req.PolicyIds = &ids
-		if len(ids) > 0 {
-			req.PolicyId = &ids[0]
-		}
-	} else {
-		req.PolicyId = model.AgentPolicyID.ValueStringPointer()
+	d := setAgentPoliciesOnRequest(ctx, model, &req)
+	if d.HasError() {
+		// Propagate errors from ElementsAs
+		return req, d
 	}
 
 	if !model.Description.IsNull() && !model.Description.IsUnknown() {
@@ -603,6 +590,26 @@ func setStringField(m map[string]any, key string, val types.String) {
 	if !val.IsNull() && !val.IsUnknown() {
 		m[key] = val.ValueString()
 	}
+}
+
+// setAgentPoliciesOnRequest populates PolicyIds / PolicyId on a request from the model.
+func setAgentPoliciesOnRequest(ctx context.Context, model *elasticDefendIntegrationPolicyModel, req *kbapi.PackagePolicyRequestTypedInputs) diag.Diagnostics {
+	var diags diag.Diagnostics
+	if !model.AgentPolicyIDs.IsNull() && !model.AgentPolicyIDs.IsUnknown() {
+		var ids []string
+		d := model.AgentPolicyIDs.ElementsAs(ctx, &ids, false)
+		if d.HasError() {
+			diags.Append(d...)
+			return diags
+		}
+		req.PolicyIds = &ids
+		if len(ids) > 0 {
+			req.PolicyId = &ids[0]
+		}
+	} else {
+		req.PolicyId = model.AgentPolicyID.ValueStringPointer()
+	}
+	return diags
 }
 
 // setPopupItem extracts a popup item from a Terraform object and adds it to the map.

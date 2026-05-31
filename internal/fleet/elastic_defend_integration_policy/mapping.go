@@ -90,7 +90,14 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 		}
 	}
 	if !originallyUsedAgentPolicyID && !originallyUsedAgentPolicyIDs {
-		model.AgentPolicyID = types.StringPointerValue(policy.PolicyId)
+		// Default: check API response structure and prefer list form when multiple IDs exist
+		if policy.PolicyIds != nil && len(*policy.PolicyIds) > 1 {
+			agentPolicyIDs, d := types.ListValueFrom(ctx, types.StringType, *policy.PolicyIds)
+			diags.Append(d...)
+			model.AgentPolicyIDs = agentPolicyIDs
+		} else if policy.PolicyId != nil {
+			model.AgentPolicyID = types.StringPointerValue(policy.PolicyId)
+		}
 	}
 
 	// Populate space_ids — only overwrite when the API actually returns them.

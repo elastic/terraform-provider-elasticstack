@@ -401,6 +401,61 @@ func TestPopulateModelFromAPIUsesAgentPolicyIDsWhenOriginallyConfigured(t *testi
 	}
 }
 
+func TestPopulateModelFromAPIFallsBackToAgentPolicyIDsWhenMultiple(t *testing.T) {
+	ctx := context.Background()
+	policyIDs := []string{"agent-123", "agent-456"}
+	inputs := kbapi.PackagePolicyTypedInputs{{Type: "endpoint", Enabled: true, Streams: []kbapi.PackagePolicyTypedInputStream{}}}
+	policy := buildTestPackagePolicy("policy-123", "my-endpoint-policy", "endpoint", "8.15.0", true, inputs)
+	policy.PolicyId = &policyIDs[0]
+	policy.PolicyIds = &policyIDs
+
+	// Neither field configured — simulates import with a fresh model
+	model := &edip.ElasticDefendIntegrationPolicyModel{}
+	diags := edip.PopulateModelFromAPI(ctx, model, policy)
+	if diags.HasError() {
+		t.Fatalf("unexpected error: %v", diags)
+	}
+	if !model.AgentPolicyID.IsNull() && !model.AgentPolicyID.IsUnknown() {
+		t.Fatalf("expected agent_policy_id to remain unset when API has multiple policy IDs, got %v", model.AgentPolicyID)
+	}
+	if model.AgentPolicyIDs.IsNull() || model.AgentPolicyIDs.IsUnknown() {
+		t.Fatalf("expected agent_policy_ids to be populated when API has multiple policy IDs, got %v", model.AgentPolicyIDs)
+	}
+	var actual []string
+	diags = model.AgentPolicyIDs.ElementsAs(ctx, &actual, false)
+	if diags.HasError() {
+		t.Fatalf("unexpected error reading agent_policy_ids: %v", diags)
+	}
+	if len(actual) != 2 || actual[0] != "agent-123" || actual[1] != "agent-456" {
+		t.Fatalf("unexpected agent_policy_ids: %#v", actual)
+	}
+}
+
+func TestPopulateModelFromAPIFallsBackToAgentPolicyIDWhenSingle(t *testing.T) {
+	ctx := context.Background()
+	policyID := "agent-123"
+	inputs := kbapi.PackagePolicyTypedInputs{{Type: "endpoint", Enabled: true, Streams: []kbapi.PackagePolicyTypedInputStream{}}}
+	policy := buildTestPackagePolicy("policy-123", "my-endpoint-policy", "endpoint", "8.15.0", true, inputs)
+	policy.PolicyId = &policyID
+	policy.PolicyIds = &[]string{policyID}
+
+	// Neither field configured — simulates import with a fresh model
+	model := &edip.ElasticDefendIntegrationPolicyModel{}
+	diags := edip.PopulateModelFromAPI(ctx, model, policy)
+	if diags.HasError() {
+		t.Fatalf("unexpected error: %v", diags)
+	}
+	if model.AgentPolicyID.IsNull() || model.AgentPolicyID.IsUnknown() {
+		t.Fatalf("expected agent_policy_id to be populated when API has a single policy ID, got %v", model.AgentPolicyID)
+	}
+	if model.AgentPolicyID.ValueString() != policyID {
+		t.Fatalf("expected agent_policy_id %q, got %q", policyID, model.AgentPolicyID.ValueString())
+	}
+	if !model.AgentPolicyIDs.IsNull() && !model.AgentPolicyIDs.IsUnknown() {
+		t.Fatalf("expected agent_policy_ids to remain unset when API has a single policy ID, got %v", model.AgentPolicyIDs)
+	}
+}
+
 func TestBuildFinalizeRequestIncludesArtifactManifest(t *testing.T) {
 	ctx := context.Background()
 	artifactManifest := map[string]any{
