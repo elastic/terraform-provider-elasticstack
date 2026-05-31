@@ -22,11 +22,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/connector/updatestatus"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/connectorfieldtype"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/connectorstatus"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -380,6 +385,178 @@ func TestAccDataSourceContentConnector_configurationWithSensitiveFields(t *testi
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDataSourceConfigurationContains("api_secret", "endpoint"),
 					resource.TestMatchResourceAttr(contentConnectorDataSourceAddr, "configuration", regexp.MustCompile(`"api_secret"[^}]*"sensitive":\s*true`)),
+				),
+			},
+		},
+	})
+}
+
+// setConnectorSyncNow sets sync_now = true on the connector document by updating the
+// .elastic-connectors index directly. This is a test-only helper because the ES typed
+// client does not expose a dedicated sync_now endpoint.
+func setConnectorSyncNow(t *testing.T, connectorID string) {
+	t.Helper()
+	accRequireConnectorSupported(t)
+
+	endpoint := strings.SplitN(os.Getenv("ELASTICSEARCH_ENDPOINTS"), ",", 2)[0]
+	endpoint = strings.TrimRight(endpoint, "/")
+
+	rawURL := fmt.Sprintf("%s/.elastic-connectors/_update/%s", endpoint, connectorID)
+	body := strings.NewReader(`{"doc":{"sync_now":true}}`)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, rawURL, body)
+	if err != nil {
+		t.Fatalf("build sync_now update request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(os.Getenv("ELASTICSEARCH_USERNAME"), os.Getenv("ELASTICSEARCH_PASSWORD"))
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("set sync_now for connector %q: %v", connectorID, err)
+	}
+	defer resp.Body.Close()
+	respBody, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 300 {
+		t.Fatalf("set sync_now for connector %q: HTTP %d: %s", connectorID, resp.StatusCode, string(respBody))
+	}
+}
+
+// updateConnectorStatusViaAPI updates the connector's lifecycle status.
+func updateConnectorStatusViaAPI(t *testing.T, connectorID string, status connectorstatus.ConnectorStatus) {
+	t.Helper()
+	accRequireConnectorSupported(t)
+	ctx := context.Background()
+	client := accConnectorClient(t)
+	_, err := client.GetESClient().Connector.UpdateStatus(connectorID).Request(&updatestatus.Request{
+		Status: status,
+	}).Do(ctx)
+	if err != nil {
+		t.Fatalf("update connector %q status to %q: %v", connectorID, status.Name, err)
+	}
+}
+
+// testAccCheckNativeConnectorAPIKeysOrSkip skips the test when the
+// native_connector_api_keys feature is absent from the data source state.
+// This guards the native connector test on ES clusters that do not populate
+// the feature (e.g., non-Elastic Cloud environments).
+func testAccCheckNativeConnectorAPIKeysOrSkip(t *testing.T) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[contentConnectorDataSourceAddr]
+		if !ok {
+			return fmt.Errorf("data source %q not in state", contentConnectorDataSourceAddr)
+		}
+		if _, present := rs.Primary.Attributes["features.native_connector_api_keys.enabled"]; !present {
+			t.Skip("native_connector_api_keys feature not returned by this Elasticsearch cluster; skipping native connector API keys assertion")
+		}
+		return nil
+	}
+}
+
+// TestAccDataSourceContentConnector_advancedSyncRules verifies that the data source
+// correctly reflects features.sync_rules.advanced.enabled when set to true (REQ-010 gap 1).
+func TestAccDataSourceContentConnector_advancedSyncRules(t *testing.T) {
+	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-ds-adv")
+	vars := connectorIDVariables(connectorID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: testAccCheckContentConnectorDestroy(connectorID),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "features.sync_rules.advanced.enabled", "true"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "features.sync_rules.basic.enabled", "true"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceContentConnector_syncNowQueued verifies the data source exposes
+// sync_now = true when set on the connector document (REQ-010 gap 2).
+func TestAccDataSourceContentConnector_syncNowQueued(t *testing.T) {
+	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-ds-snq")
+	vars := connectorIDVariables(connectorID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: testAccCheckContentConnectorDestroyByID(t, connectorID),
+		Steps: []resource.TestStep{
+			// Step 1: Create the connector via API; sync_now starts as false.
+			{
+				PreConfig: func() {
+					createConnectorViaAPI(t, connectorID)
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          vars,
+				Check:                    resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "sync_now", "false"),
+			},
+			// Step 2: Set sync_now = true out of band; verify the data source reads it.
+			{
+				PreConfig: func() {
+					setConnectorSyncNow(t, connectorID)
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          vars,
+				Check:                    resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "sync_now", "true"),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceContentConnector_statusNeedsConfiguration verifies the data source
+// exposes status values other than "created" (REQ-010 gap 3).
+func TestAccDataSourceContentConnector_statusNeedsConfiguration(t *testing.T) {
+	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-ds-ncon")
+	vars := connectorIDVariables(connectorID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: testAccCheckContentConnectorDestroyByID(t, connectorID),
+		Steps: []resource.TestStep{
+			{
+				PreConfig: func() {
+					createConnectorViaAPI(t, connectorID)
+					updateConnectorStatusViaAPI(t, connectorID, connectorstatus.Needsconfiguration)
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          vars,
+				Check:                    resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "status", "needs_configuration"),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceContentConnector_nativeConnector verifies features.native_connector_api_keys
+// is present for connectors created with is_native = true (REQ-010 gap 4).
+// The test skips when the ES cluster does not populate this feature.
+func TestAccDataSourceContentConnector_nativeConnector(t *testing.T) {
+	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-ds-nat")
+	vars := connectorIDVariables(connectorID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: testAccCheckContentConnectorDestroy(connectorID),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "is_native", "true"),
+					testAccCheckNativeConnectorAPIKeysOrSkip(t),
+					resource.TestCheckResourceAttrSet(contentConnectorDataSourceAddr, "features.native_connector_api_keys.enabled"),
 				),
 			},
 		},
