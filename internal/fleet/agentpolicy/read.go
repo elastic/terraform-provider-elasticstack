@@ -64,8 +64,6 @@ func (r *agentPolicyResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	// Populate from API response
-	// With Sets, we don't need order preservation - Terraform handles set comparison automatically
 	diags = stateModel.populateFromAPI(ctx, policy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -73,5 +71,4 @@ func (r *agentPolicyResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 
 	resp.State.Set(ctx, stateModel)
-	resp.Diagnostics.Append(diags...)
 }

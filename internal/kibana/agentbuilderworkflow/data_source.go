@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -64,14 +63,6 @@ func readWorkflowDataSource(
 	config workflowDataSourceModel,
 ) (workflowDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
-
-	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderAPIVersion, "workflows", &diags) {
-		return config, false, diags
-	}
-
-	if spaceID == "" {
-		spaceID = "default"
-	}
 
 	oapiClient := client.GetKibanaOapiClient()
 

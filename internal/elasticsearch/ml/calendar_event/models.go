@@ -137,12 +137,16 @@ func (m *CalendarEventTFModel) fromAPIModel(_ context.Context, apiModel *Calenda
 	}
 
 	startLoc := time.UTC
-	if t, d := m.StartTime.ValueRFC3339Time(); !d.HasError() && !m.StartTime.IsNull() && !m.StartTime.IsUnknown() {
-		startLoc = t.Location()
+	if typeutils.IsKnown(m.StartTime) {
+		if t, d := m.StartTime.ValueRFC3339Time(); !d.HasError() {
+			startLoc = t.Location()
+		}
 	}
 	endLoc := time.UTC
-	if t, d := m.EndTime.ValueRFC3339Time(); !d.HasError() && !m.EndTime.IsNull() && !m.EndTime.IsUnknown() {
-		endLoc = t.Location()
+	if typeutils.IsKnown(m.EndTime) {
+		if t, d := m.EndTime.ValueRFC3339Time(); !d.HasError() {
+			endLoc = t.Location()
+		}
 	}
 
 	startTime := time.UnixMilli(startMillis).In(startLoc)

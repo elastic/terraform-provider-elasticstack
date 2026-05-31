@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -97,7 +98,7 @@ func (data SynonymSetData) toAPIRules(ctx context.Context, diagnostics *diag.Dia
 	rules := make([]types.SynonymRule, len(models))
 	for i, model := range models {
 		var ruleID string
-		if model.ID.IsNull() || model.ID.IsUnknown() || model.ID.ValueString() == "" {
+		if !typeutils.IsKnown(model.ID) || model.ID.ValueString() == "" {
 			ruleID = uuid.New().String()
 		} else {
 			ruleID = model.ID.ValueString()

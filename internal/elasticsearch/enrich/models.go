@@ -62,7 +62,6 @@ func (data *PolicyData) populateFromPolicy(ctx context.Context, policy *models.E
 		data.Query = jsontypes.NewNormalizedNull()
 	}
 
-	// Convert string slices to Set
 	data.Indices = typeutils.SetValueFrom(ctx, policy.Indices, types.StringType, path.Empty(), diagnostics)
 	if diagnostics.HasError() {
 		return

@@ -176,9 +176,6 @@ func (model agentModel) toAPICreateModel(ctx context.Context, supportsSkillIDs b
 
 	toolIDs, d := agentbuilder.SetToStrings(ctx, model.Tools)
 	diags.Append(d...)
-	if toolIDs == nil {
-		toolIDs = []string{}
-	}
 	body.Configuration.Tools = []struct {
 		ToolIds []string `json:"tool_ids"` //nolint:revive
 	}{{ToolIds: toolIDs}}
@@ -220,9 +217,6 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 
 	toolIDs, d := agentbuilder.SetToStrings(ctx, model.Tools)
 	diags.Append(d...)
-	if toolIDs == nil {
-		toolIDs = []string{}
-	}
 	tools := []struct {
 		ToolIds []string `json:"tool_ids"` //nolint:revive
 	}{{ToolIds: toolIDs}}
@@ -236,9 +230,6 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 	if supportsSkillIDs {
 		skillIDs, d := agentbuilder.SetToStrings(ctx, model.SkillIDs)
 		diags.Append(d...)
-		if skillIDs == nil {
-			skillIDs = []string{}
-		}
 		skillIDsPtr = &skillIDs
 	}
 

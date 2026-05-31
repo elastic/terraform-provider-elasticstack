@@ -209,7 +209,7 @@ func TestMergeActionsPreservingRedactedLeaves_roundTripJSON(t *testing.T) {
 	var api, prior any
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 	require.NoError(t, json.Unmarshal([]byte(priorJSON), &prior))
-	got := mergeActionsPreservingRedactedLeaves(api.(map[string]any), prior)
+	got := mergeActionsPreservingRedactedLeaves(api.(map[string]any), prior.(map[string]any))
 	out, err := json.Marshal(got)
 	require.NoError(t, err)
 	require.Contains(t, string(out), `"password":"secret"`)
@@ -258,7 +258,7 @@ func TestMergeActionsPreservingRedactedLeaves_roundTripJSON_userPayload(t *testi
 	var api, prior any
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 	require.NoError(t, json.Unmarshal([]byte(priorJSON), &prior))
-	got := mergeActionsPreservingRedactedLeaves(api.(map[string]any), prior)
+	got := mergeActionsPreservingRedactedLeaves(api.(map[string]any), prior.(map[string]any))
 	out, err := json.Marshal(got)
 	require.NoError(t, err)
 	require.NotContains(t, string(out), elasticsearchWatcherRedactedSecret, "redacted sentinel must not survive in merged actions")

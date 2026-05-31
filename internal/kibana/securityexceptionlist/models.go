@@ -63,6 +63,58 @@ type ExceptionListModel struct {
 	TieBreakerID     types.String         `tfsdk:"tie_breaker_id"`
 }
 
+type exceptionListOptionalFields struct {
+	namespaceType *kbapi.SecurityExceptionsAPIExceptionNamespaceType
+	osTypes       *kbapi.SecurityExceptionsAPIExceptionListOsTypeArray
+	tags          *kbapi.SecurityExceptionsAPIExceptionListTags
+	meta          *kbapi.SecurityExceptionsAPIExceptionListMeta
+}
+
+func (m *ExceptionListModel) optionalExceptionListFields(ctx context.Context) (exceptionListOptionalFields, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var out exceptionListOptionalFields
+
+	if typeutils.IsKnown(m.NamespaceType) {
+		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(m.NamespaceType.ValueString())
+		out.namespaceType = &nsType
+	}
+
+	if typeutils.IsKnown(m.OsTypes) {
+		osTypes := typeutils.SetTypeAs[string](ctx, m.OsTypes, path.Empty(), &diags)
+		if diags.HasError() {
+			return out, diags
+		}
+		if len(osTypes) > 0 {
+			osTypesArray := make(kbapi.SecurityExceptionsAPIExceptionListOsTypeArray, len(osTypes))
+			for i, osType := range osTypes {
+				osTypesArray[i] = kbapi.SecurityExceptionsAPIExceptionListOsType(osType)
+			}
+			out.osTypes = &osTypesArray
+		}
+	}
+
+	if typeutils.IsKnown(m.Tags) {
+		tags := typeutils.SetTypeAs[string](ctx, m.Tags, path.Empty(), &diags)
+		if diags.HasError() {
+			return out, diags
+		}
+		if len(tags) > 0 {
+			out.tags = &tags
+		}
+	}
+
+	if typeutils.IsKnown(m.Meta) {
+		var meta kbapi.SecurityExceptionsAPIExceptionListMeta
+		diags.Append(m.Meta.Unmarshal(&meta)...)
+		if diags.HasError() {
+			return out, diags
+		}
+		out.meta = &meta
+	}
+
+	return out, diags
+}
+
 // toCreateRequest converts the Terraform model to API create request
 func (m *ExceptionListModel) toCreateRequest(ctx context.Context) (*kbapi.CreateExceptionListJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -72,54 +124,20 @@ func (m *ExceptionListModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 		Type:        kbapi.SecurityExceptionsAPIExceptionListType(m.Type.ValueString()),
 	}
 
-	// Set optional list_id
 	if typeutils.IsKnown(m.ListID) {
 		listID := m.ListID.ValueString()
 		req.ListId = &listID
 	}
 
-	// Set optional namespace_type
-	if typeutils.IsKnown(m.NamespaceType) {
-		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(m.NamespaceType.ValueString())
-		req.NamespaceType = &nsType
+	opt, d := m.optionalExceptionListFields(ctx)
+	diags.Append(d...)
+	if diags.HasError() {
+		return nil, diags
 	}
-
-	// Set optional os_types
-	if typeutils.IsKnown(m.OsTypes) {
-		osTypes := typeutils.SetTypeAs[string](ctx, m.OsTypes, path.Empty(), &diags)
-		if diags.HasError() {
-			return nil, diags
-		}
-		if len(osTypes) > 0 {
-			osTypesArray := make(kbapi.SecurityExceptionsAPIExceptionListOsTypeArray, len(osTypes))
-			for i, osType := range osTypes {
-				osTypesArray[i] = kbapi.SecurityExceptionsAPIExceptionListOsType(osType)
-			}
-			req.OsTypes = &osTypesArray
-		}
-	}
-
-	// Set optional tags
-	if typeutils.IsKnown(m.Tags) {
-		tags := typeutils.SetTypeAs[string](ctx, m.Tags, path.Empty(), &diags)
-		if diags.HasError() {
-			return nil, diags
-		}
-		if len(tags) > 0 {
-			req.Tags = &tags
-		}
-	}
-
-	// Set optional meta
-	if typeutils.IsKnown(m.Meta) {
-		var meta kbapi.SecurityExceptionsAPIExceptionListMeta
-		unmarshalDiags := m.Meta.Unmarshal(&meta)
-		diags.Append(unmarshalDiags...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		req.Meta = &meta
-	}
+	req.NamespaceType = opt.namespaceType
+	req.OsTypes = opt.osTypes
+	req.Tags = opt.tags
+	req.Meta = opt.meta
 
 	return req, diags
 }
@@ -137,49 +155,15 @@ func (m *ExceptionListModel) toUpdateRequest(ctx context.Context, resourceID str
 		Type: kbapi.SecurityExceptionsAPIExceptionListType(m.Type.ValueString()),
 	}
 
-	// Set optional namespace_type
-	if typeutils.IsKnown(m.NamespaceType) {
-		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(m.NamespaceType.ValueString())
-		req.NamespaceType = &nsType
+	opt, d := m.optionalExceptionListFields(ctx)
+	diags.Append(d...)
+	if diags.HasError() {
+		return nil, diags
 	}
-
-	// Set optional os_types
-	if typeutils.IsKnown(m.OsTypes) {
-		osTypes := typeutils.SetTypeAs[string](ctx, m.OsTypes, path.Empty(), &diags)
-		if diags.HasError() {
-			return nil, diags
-		}
-		if len(osTypes) > 0 {
-			osTypesArray := make(kbapi.SecurityExceptionsAPIExceptionListOsTypeArray, len(osTypes))
-			for i, osType := range osTypes {
-				osTypesArray[i] = kbapi.SecurityExceptionsAPIExceptionListOsType(osType)
-			}
-			req.OsTypes = &osTypesArray
-		}
-	}
-
-	// Set optional tags
-	if typeutils.IsKnown(m.Tags) {
-		tags := typeutils.SetTypeAs[string](ctx, m.Tags, path.Empty(), &diags)
-		if diags.HasError() {
-			return nil, diags
-		}
-		if len(tags) > 0 {
-			tagsArray := tags
-			req.Tags = &tagsArray
-		}
-	}
-
-	// Set optional meta
-	if typeutils.IsKnown(m.Meta) {
-		var meta kbapi.SecurityExceptionsAPIExceptionListMeta
-		unmarshalDiags := m.Meta.Unmarshal(&meta)
-		diags.Append(unmarshalDiags...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		req.Meta = &meta
-	}
+	req.NamespaceType = opt.namespaceType
+	req.OsTypes = opt.osTypes
+	req.Tags = opt.tags
+	req.Meta = opt.meta
 
 	return req, diags
 }

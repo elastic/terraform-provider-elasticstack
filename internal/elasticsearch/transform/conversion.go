@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -39,7 +40,7 @@ func toAPIModel(ctx context.Context, client *clients.ElasticsearchScopedClient, 
 
 	transform.Name = model.Name.ValueString()
 
-	if !model.Description.IsNull() && !model.Description.IsUnknown() {
+	if typeutils.IsKnown(model.Description) {
 		transform.Description = model.Description.ValueString()
 	}
 
@@ -54,7 +55,7 @@ func toAPIModel(ctx context.Context, client *clients.ElasticsearchScopedClient, 
 		}
 		transform.Source.Indices = indices
 
-		if !src.Query.IsNull() && !src.Query.IsUnknown() && src.Query.ValueString() != "" {
+		if typeutils.IsKnown(src.Query) && src.Query.ValueString() != "" {
 			var query any
 			if err := json.Unmarshal([]byte(src.Query.ValueString()), &query); err != nil {
 				diags.AddError("Error parsing source.query", err.Error())
@@ -63,7 +64,7 @@ func toAPIModel(ctx context.Context, client *clients.ElasticsearchScopedClient, 
 			transform.Source.Query = query
 		}
 
-		if !src.RuntimeMappings.IsNull() && !src.RuntimeMappings.IsUnknown() && src.RuntimeMappings.ValueString() != "" {
+		if typeutils.IsKnown(src.RuntimeMappings) && src.RuntimeMappings.ValueString() != "" {
 			allowed, allowDiags := isSettingAllowed(ctx, "source.runtime_mappings", client)
 			diags.Append(allowDiags...)
 			if allowDiags.HasError() {
@@ -104,13 +105,13 @@ func toAPIModel(ctx context.Context, client *clients.ElasticsearchScopedClient, 
 			}
 		}
 
-		if !dst.Pipeline.IsNull() && !dst.Pipeline.IsUnknown() && dst.Pipeline.ValueString() != "" {
+		if typeutils.IsKnown(dst.Pipeline) && dst.Pipeline.ValueString() != "" {
 			transform.Destination.Pipeline = dst.Pipeline.ValueString()
 		}
 	}
 
 	// Pivot
-	if !model.Pivot.IsNull() && !model.Pivot.IsUnknown() && model.Pivot.ValueString() != "" {
+	if typeutils.IsKnown(model.Pivot) && model.Pivot.ValueString() != "" {
 		var pivot any
 		if err := json.Unmarshal([]byte(model.Pivot.ValueString()), &pivot); err != nil {
 			diags.AddError("Error parsing pivot", err.Error())
@@ -120,7 +121,7 @@ func toAPIModel(ctx context.Context, client *clients.ElasticsearchScopedClient, 
 	}
 
 	// Latest
-	if !model.Latest.IsNull() && !model.Latest.IsUnknown() && model.Latest.ValueString() != "" {
+	if typeutils.IsKnown(model.Latest) && model.Latest.ValueString() != "" {
 		var latest any
 		if err := json.Unmarshal([]byte(model.Latest.ValueString()), &latest); err != nil {
 			diags.AddError("Error parsing latest", err.Error())
@@ -130,12 +131,12 @@ func toAPIModel(ctx context.Context, client *clients.ElasticsearchScopedClient, 
 	}
 
 	// Frequency
-	if !model.Frequency.IsNull() && !model.Frequency.IsUnknown() && model.Frequency.ValueString() != "" {
+	if typeutils.IsKnown(model.Frequency) && model.Frequency.ValueString() != "" {
 		transform.Frequency = model.Frequency.ValueString()
 	}
 
 	// Metadata
-	if !model.Metadata.IsNull() && !model.Metadata.IsUnknown() && model.Metadata.ValueString() != "" {
+	if typeutils.IsKnown(model.Metadata) && model.Metadata.ValueString() != "" {
 		var meta map[string]any
 		if err := json.Unmarshal([]byte(model.Metadata.ValueString()), &meta); err != nil {
 			diags.AddError("Error parsing metadata", err.Error())
@@ -177,13 +178,13 @@ func toAPIModel(ctx context.Context, client *clients.ElasticsearchScopedClient, 
 		set   bool
 		write func()
 	}{
-		{name: "align_checkpoints", set: isConfigured(model.AlignCheckpoints), write: func() { v := model.AlignCheckpoints.ValueBool(); settings.AlignCheckpoints = &v }},
-		{name: "dates_as_epoch_millis", set: isConfigured(model.DatesAsEpochMillis), write: func() { v := model.DatesAsEpochMillis.ValueBool(); settings.DatesAsEpochMillis = &v }},
-		{name: settingDeduceMappings, set: isConfigured(model.DeduceMappings), write: func() { v := model.DeduceMappings.ValueBool(); settings.DeduceMappings = &v }},
-		{name: "docs_per_second", set: isConfigured(model.DocsPerSecond), write: func() { v := model.DocsPerSecond.ValueFloat64(); settings.DocsPerSecond = &v }},
-		{name: "max_page_search_size", set: isConfigured(model.MaxPageSearchSize), write: func() { v := int(model.MaxPageSearchSize.ValueInt64()); settings.MaxPageSearchSize = &v }},
-		{name: settingNumFailureRetries, set: isConfigured(model.NumFailureRetries), write: func() { v := int(model.NumFailureRetries.ValueInt64()); settings.NumFailureRetries = &v }},
-		{name: settingUnattended, set: isConfigured(model.Unattended), write: func() { v := model.Unattended.ValueBool(); settings.Unattended = &v }},
+		{name: "align_checkpoints", set: typeutils.IsKnown(model.AlignCheckpoints), write: func() { v := model.AlignCheckpoints.ValueBool(); settings.AlignCheckpoints = &v }},
+		{name: "dates_as_epoch_millis", set: typeutils.IsKnown(model.DatesAsEpochMillis), write: func() { v := model.DatesAsEpochMillis.ValueBool(); settings.DatesAsEpochMillis = &v }},
+		{name: settingDeduceMappings, set: typeutils.IsKnown(model.DeduceMappings), write: func() { v := model.DeduceMappings.ValueBool(); settings.DeduceMappings = &v }},
+		{name: "docs_per_second", set: typeutils.IsKnown(model.DocsPerSecond), write: func() { v := model.DocsPerSecond.ValueFloat64(); settings.DocsPerSecond = &v }},
+		{name: "max_page_search_size", set: typeutils.IsKnown(model.MaxPageSearchSize), write: func() { v := int(model.MaxPageSearchSize.ValueInt64()); settings.MaxPageSearchSize = &v }},
+		{name: settingNumFailureRetries, set: typeutils.IsKnown(model.NumFailureRetries), write: func() { v := int(model.NumFailureRetries.ValueInt64()); settings.NumFailureRetries = &v }},
+		{name: settingUnattended, set: typeutils.IsKnown(model.Unattended), write: func() { v := model.Unattended.ValueBool(); settings.Unattended = &v }},
 	}
 
 	for _, s := range applies {
@@ -208,15 +209,6 @@ func toAPIModel(ctx context.Context, client *clients.ElasticsearchScopedClient, 
 
 	return &transform, diags
 }
-
-// isConfigured reports whether a Plugin Framework value was set in the
-// configuration (i.e. not null and not an unknown plan value).
-type configurable interface {
-	IsNull() bool
-	IsUnknown() bool
-}
-
-func isConfigured(v configurable) bool { return !v.IsNull() && !v.IsUnknown() }
 
 // fromAPIModel populates the PF model from a Get Transform response and Get Transform Stats.
 func fromAPIModel(ctx context.Context, transform *models.Transform, stats *types.TransformStats, state tfModel) (tfModel, fwdiag.Diagnostics) {

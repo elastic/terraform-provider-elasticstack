@@ -86,8 +86,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	// Remember if the user configured input in the plan
-	planHadInput := typeutils.IsKnown(planModel.Inputs) && !planModel.Inputs.IsNull() && len(planModel.Inputs.Elements()) > 0
+	planHadInput := inputsConfigured(planModel.Inputs)
 
 	if policy.Package == nil {
 		resp.Diagnostics.AddError(

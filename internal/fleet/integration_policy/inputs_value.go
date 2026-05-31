@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -30,6 +31,10 @@ import (
 // Disabled inputs (enabled=false) are ignored during equality checks
 type InputsValue struct {
 	basetypes.MapValue
+}
+
+func inputsConfigured(inputs InputsValue) bool {
+	return typeutils.IsKnown(inputs) && !inputs.IsNull() && len(inputs.Elements()) > 0
 }
 
 // Type returns an InputsType.

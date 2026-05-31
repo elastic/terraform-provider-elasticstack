@@ -52,7 +52,7 @@ func invokeCreate(ctx context.Context, client *clients.ElasticsearchScopedClient
 	model := req.Config
 
 	waitForCompletion := true
-	if !model.WaitForCompletion.IsNull() && !model.WaitForCompletion.IsUnknown() {
+	if typeutils.IsKnown(model.WaitForCompletion) {
 		waitForCompletion = model.WaitForCompletion.ValueBool()
 	}
 
@@ -77,7 +77,7 @@ func createRequestFromModel(ctx context.Context, model Model) (*esclient.CreateS
 	var diags fwdiag.Diagnostics
 	body := &esclient.CreateSnapshotRequest{}
 
-	if !model.Indices.IsNull() && !model.Indices.IsUnknown() {
+	if typeutils.IsKnown(model.Indices) {
 		var indices []string
 		diags.Append(model.Indices.ElementsAs(ctx, &indices, false)...)
 		if diags.HasError() {
@@ -86,7 +86,7 @@ func createRequestFromModel(ctx context.Context, model Model) (*esclient.CreateS
 		body.Indices = indices
 	}
 
-	if !model.FeatureStates.IsNull() && !model.FeatureStates.IsUnknown() {
+	if typeutils.IsKnown(model.FeatureStates) {
 		var featureStates []string
 		diags.Append(model.FeatureStates.ElementsAs(ctx, &featureStates, false)...)
 		if diags.HasError() {
@@ -100,7 +100,7 @@ func createRequestFromModel(ctx context.Context, model Model) (*esclient.CreateS
 	body.Partial = typeutils.OptionalBool(model.Partial)
 	body.ExpandWildcards = typeutils.OptionalString(model.ExpandWildcards)
 
-	if !model.Metadata.IsNull() && !model.Metadata.IsUnknown() {
+	if typeutils.IsKnown(model.Metadata) {
 		metaStr := model.Metadata.ValueString()
 		if metaStr != "" {
 			body.Metadata = json.RawMessage(metaStr)

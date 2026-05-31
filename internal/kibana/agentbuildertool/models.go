@@ -45,6 +45,8 @@ type toolModel struct {
 	Configuration    jsontypes.Normalized `tfsdk:"configuration"`
 }
 
+var _ entitycore.WithVersionRequirements = toolDataSourceModel{}
+
 type toolDataSourceModel struct {
 	entitycore.KibanaConnectionField
 	ID                        types.String                    `tfsdk:"id"`
@@ -75,12 +77,20 @@ var _ entitycore.KibanaResourceModel = toolModel{}
 var _ entitycore.WithVersionRequirements = toolModel{}
 
 func (model toolModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return toolVersionRequirements(), nil
+}
+
+func (m toolDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return toolVersionRequirements(), nil
+}
+
+func toolVersionRequirements() []entitycore.VersionRequirement {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *minKibanaAgentBuilderAPIVersion,
 			ErrorMessage: fmt.Sprintf("Agent Builder tools require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
 		},
-	}, nil
+	}
 }
 
 // toolBaseData holds fields shared between toolDataSourceModel and toolModel
@@ -182,16 +192,26 @@ func (model *toolModel) populateFromAPI(ctx context.Context, data *models.Tool) 
 	return diags
 }
 
+func toolConfigurationFromModel(config jsontypes.Normalized) (map[string]any, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	configuration := make(map[string]any)
+	if config.IsNull() || config.ValueString() == "" {
+		return configuration, diags
+	}
+	if err := json.Unmarshal([]byte(config.ValueString()), &configuration); err != nil {
+		diags.AddError("Configuration Error", "Failed to parse configuration JSON: "+err.Error())
+		return nil, diags
+	}
+	return configuration, diags
+}
+
 func (model toolModel) toAPICreateModel(ctx context.Context) (kbapi.PostAgentBuilderToolsJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	configuration := make(map[string]any)
-
-	if !model.Configuration.IsNull() && model.Configuration.ValueString() != "" {
-		if err := json.Unmarshal([]byte(model.Configuration.ValueString()), &configuration); err != nil {
-			diags.AddError("Configuration Error", "Failed to parse configuration JSON: "+err.Error())
-			return kbapi.PostAgentBuilderToolsJSONRequestBody{}, diags
-		}
+	configuration, d := toolConfigurationFromModel(model.Configuration)
+	diags.Append(d...)
+	if diags.HasError() {
+		return kbapi.PostAgentBuilderToolsJSONRequestBody{}, diags
 	}
 
 	body := kbapi.PostAgentBuilderToolsJSONRequestBody{
@@ -205,13 +225,10 @@ func (model toolModel) toAPICreateModel(ctx context.Context) (kbapi.PostAgentBui
 		body.Description = &desc
 	}
 
-	if !model.Tags.IsNull() {
-		var tags []string
-		d := model.Tags.ElementsAs(ctx, &tags, false)
-		diags.Append(d...)
-		if len(tags) > 0 {
-			body.Tags = &tags
-		}
+	tags, d := optionalTagsFromSet(ctx, model.Tags)
+	diags.Append(d...)
+	if len(tags) > 0 {
+		body.Tags = &tags
 	}
 
 	return body, diags
@@ -220,13 +237,10 @@ func (model toolModel) toAPICreateModel(ctx context.Context) (kbapi.PostAgentBui
 func (model toolModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBuilderToolsToolidJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	configuration := make(map[string]any)
-
-	if !model.Configuration.IsNull() && model.Configuration.ValueString() != "" {
-		if err := json.Unmarshal([]byte(model.Configuration.ValueString()), &configuration); err != nil {
-			diags.AddError("Configuration Error", "Failed to parse configuration JSON: "+err.Error())
-			return kbapi.PutAgentBuilderToolsToolidJSONRequestBody{}, diags
-		}
+	configuration, d := toolConfigurationFromModel(model.Configuration)
+	diags.Append(d...)
+	if diags.HasError() {
+		return kbapi.PutAgentBuilderToolsToolidJSONRequestBody{}, diags
 	}
 
 	apiConfiguration := typeutils.PointerInterfaceMapFromAnyMap(configuration)
@@ -239,14 +253,18 @@ func (model toolModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBuil
 		body.Description = &desc
 	}
 
-	if !model.Tags.IsNull() {
-		var tags []string
-		d := model.Tags.ElementsAs(ctx, &tags, false)
-		diags.Append(d...)
-		if len(tags) > 0 {
-			body.Tags = &tags
-		}
+	tags, d := optionalTagsFromSet(ctx, model.Tags)
+	diags.Append(d...)
+	if len(tags) > 0 {
+		body.Tags = &tags
 	}
 
 	return body, diags
+}
+
+func optionalTagsFromSet(ctx context.Context, set types.Set) ([]string, diag.Diagnostics) {
+	if set.IsNull() || set.IsUnknown() {
+		return nil, nil
+	}
+	return agentbuilder.SetToStrings(ctx, set)
 }

@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -228,13 +229,7 @@ func toolModelFromAPI(ctx context.Context, spaceID string, tool *models.Tool, wo
 		tm.Description = types.StringNull()
 	}
 
-	if len(tool.Tags) > 0 {
-		tags, tagDiags := types.SetValueFrom(ctx, types.StringType, tool.Tags)
-		diags.Append(tagDiags...)
-		tm.Tags = tags
-	} else {
-		tm.Tags = types.SetNull(types.StringType)
-	}
+	diags.Append(agentbuilder.PopulateSet(ctx, tool.Tags, &tm.Tags)...)
 
 	tm.ReadOnly = types.BoolValue(tool.ReadOnly)
 

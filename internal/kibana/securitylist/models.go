@@ -18,7 +18,6 @@
 package securitylist
 
 import (
-	"context"
 	"encoding/json"
 	"time"
 
@@ -124,9 +123,8 @@ func (m *Model) toUpdateRequest() (*kbapi.UpdateListJSONRequestBody, diag.Diagno
 }
 
 // fromAPI converts the API response to Terraform model
-func (m *Model) fromAPI(ctx context.Context, apiList *kbapi.SecurityListsAPIList) diag.Diagnostics {
+func (m *Model) fromAPI(apiList *kbapi.SecurityListsAPIList) diag.Diagnostics {
 	var diags diag.Diagnostics
-	_ = ctx
 
 	// Create composite ID from space_id and list_id
 	compID := clients.CompositeID{

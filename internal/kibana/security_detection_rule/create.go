@@ -68,12 +68,6 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 		return
 	}
 
-	// Parse the response to get the ID, then use Read logic for consistency
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	// Set the ID based on the created rule
 	id, diags := extractID(response.JSON200)
 	resp.Diagnostics.Append(diags...)

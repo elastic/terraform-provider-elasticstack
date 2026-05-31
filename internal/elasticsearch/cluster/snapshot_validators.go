@@ -23,6 +23,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
@@ -40,7 +41,7 @@ func (v ExpandWildcardsValidator) MarkdownDescription(_ context.Context) string 
 }
 
 func (v ExpandWildcardsValidator) ValidateString(_ context.Context, req validator.StringRequest, resp *validator.StringResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+	if !typeutils.IsKnown(req.ConfigValue) {
 		return
 	}
 	val := req.ConfigValue.ValueString()
