@@ -27,7 +27,9 @@ func NewDataSource() datasource.DataSource {
 	return entitycore.NewKibanaDataSource[enrollmentTokensModel](
 		entitycore.ComponentFleet,
 		"enrollment_tokens",
-		getDataSourceSchema,
-		readDataSource,
+		entitycore.KibanaDataSourceOptions[enrollmentTokensModel]{
+			Schema: getDataSourceSchema,
+			Read:   readDataSource,
+		},
 	)
 }

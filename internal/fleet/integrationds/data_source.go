@@ -27,7 +27,9 @@ func NewDataSource() datasource.DataSource {
 	return entitycore.NewKibanaDataSource[integrationDataSourceModel](
 		entitycore.ComponentFleet,
 		"integration",
-		getDataSourceSchema,
-		readDataSource,
+		entitycore.KibanaDataSourceOptions[integrationDataSourceModel]{
+			Schema: getDataSourceSchema,
+			Read:   readDataSource,
+		},
 	)
 }

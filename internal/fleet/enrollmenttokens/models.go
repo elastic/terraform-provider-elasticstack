@@ -36,6 +36,15 @@ type enrollmentTokensModel struct {
 	Tokens   types.List   `tfsdk:"tokens"` // > enrollmentTokenModel
 }
 
+func (m enrollmentTokensModel) GetID() types.String { return m.ID }
+func (m enrollmentTokensModel) GetResourceID() types.String {
+	if !m.PolicyID.IsNull() && m.PolicyID.ValueString() != "" {
+		return m.PolicyID
+	}
+	return types.StringValue("_")
+}
+func (m enrollmentTokensModel) GetSpaceID() types.String { return m.SpaceID }
+
 type enrollmentTokenModel struct {
 	KeyID     types.String `tfsdk:"key_id"`
 	APIKey    types.String `tfsdk:"api_key"`
