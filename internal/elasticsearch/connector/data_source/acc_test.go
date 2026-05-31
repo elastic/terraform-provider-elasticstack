@@ -398,7 +398,7 @@ func setConnectorSyncNow(t *testing.T, connectorID string) {
 	t.Helper()
 	accRequireConnectorSupported(t)
 
-	endpoint := strings.SplitN(os.Getenv("ELASTICSEARCH_ENDPOINTS"), ",", 2)[0]
+	endpoint, _, _ := strings.Cut(os.Getenv("ELASTICSEARCH_ENDPOINTS"), ",")
 	endpoint = strings.TrimRight(endpoint, "/")
 
 	rawURL := fmt.Sprintf("%s/.elastic-connectors/_update/%s", endpoint, connectorID)
