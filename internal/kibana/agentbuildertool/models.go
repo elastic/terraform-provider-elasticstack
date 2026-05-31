@@ -61,7 +61,7 @@ type toolDataSourceModel struct {
 }
 
 func (m toolDataSourceModel) GetID() types.String         { return m.ID }
-func (m toolDataSourceModel) GetResourceID() types.String { return m.ID }
+func (m toolDataSourceModel) GetResourceID() types.String { return m.ToolID }
 func (m toolDataSourceModel) GetSpaceID() types.String    { return m.SpaceID }
 
 func (model toolModel) GetID() types.String             { return model.ID }

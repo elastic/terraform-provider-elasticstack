@@ -56,7 +56,7 @@ type workflowDataSourceModel struct {
 }
 
 func (m workflowDataSourceModel) GetID() types.String         { return m.ID }
-func (m workflowDataSourceModel) GetResourceID() types.String { return m.ID }
+func (m workflowDataSourceModel) GetResourceID() types.String { return m.WorkflowID }
 func (m workflowDataSourceModel) GetSpaceID() types.String    { return m.SpaceID }
 
 type workflowModel struct {
