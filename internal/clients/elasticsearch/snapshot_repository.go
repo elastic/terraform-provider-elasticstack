@@ -63,12 +63,23 @@ func PutSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsearch
 		s.Type = "url"
 		repo = s
 	case "s3":
-		var s types.S3Repository
-		if err := json.Unmarshal(settingsBytes, &s.Settings); err != nil {
+		// types.S3RepositorySettings from go-elasticsearch omits endpoint and
+		// path_style_access, so unmarshaling the settings map silently drops those
+		// fields. Send raw JSON instead, mirroring the HDFS bypass below.
+		body := map[string]any{
+			"type":     repoType,
+			"settings": settings,
+		}
+		bodyBytes, err := json.Marshal(body)
+		if err != nil {
 			return diagutil.FrameworkDiagFromError(err)
 		}
-		s.Type = "s3"
-		repo = s
+		req := typedClient.Snapshot.CreateRepository(name).Raw(bytes.NewReader(bodyBytes)).Verify(verify)
+		_, err = req.Do(ctx)
+		if err != nil {
+			return diagutil.FrameworkDiagFromError(err)
+		}
+		return nil
 	case "gcs":
 		var s types.GcsRepository
 		if err := json.Unmarshal(settingsBytes, &s.Settings); err != nil {

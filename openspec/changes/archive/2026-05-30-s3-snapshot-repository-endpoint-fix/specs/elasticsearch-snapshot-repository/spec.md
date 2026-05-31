@@ -38,15 +38,16 @@ all schema-defined settings reach Elasticsearch without loss.
 ### Requirement: S3 endpoint plan drift prevention (REQ-017)
 
 The implementer SHALL determine whether the Elasticsearch GET `/_snapshot/{name}` response
-returns `endpoint` in the S3 settings object.
+returns `endpoint` and `path_style_access` in the S3 settings object.
 
-- If the GET response **does** return `endpoint`, no schema change is required and state will
-  round-trip correctly.
-- If the GET response **does not** return `endpoint` (i.e. Elasticsearch treats it as a
-  write-only client-level setting), the `settingsToS3` read function SHALL implement read-side
-  state inheritance: when the API omits `endpoint`, the prior state value SHALL be preserved
-  in the refreshed state rather than overwriting it with `null`. This mirrors the existing
-  `compressFallback` pattern used in `settingsToFs` and `settingsToURL`.
+- If the GET response **does** return a field, no schema change is required and state will
+  round-trip correctly for that attribute.
+- If the GET response **does not** return a field (i.e. Elasticsearch treats it as a
+  write-only or omitted setting), the `settingsToS3` read function SHALL implement read-side
+  state inheritance: when the API omits the field, the prior state value SHALL be preserved
+  in the refreshed state rather than overwriting it with `null` (for `endpoint`) or the schema
+  default (for `path_style_access`). This mirrors the existing `compressFallback` pattern
+  used in `settingsToFs` and `settingsToURL`.
 
 The decision and its rationale SHALL be documented in the implementing PR description.
 
@@ -56,6 +57,12 @@ The decision and its rationale SHALL be documented in the implementing PR descri
 - WHEN `terraform plan` is run again on the same unchanged configuration
 - THEN the plan SHALL show no changes for the `endpoint` attribute
 
+#### Scenario: No spurious diff for path_style_access after second apply
+
+- GIVEN a repository created with `path_style_access = true`
+- WHEN `terraform plan` is run again on the same unchanged configuration
+- THEN the plan SHALL show no changes for the `path_style_access` attribute
+
 ## AMENDED Requirements
 
 ### Requirement: Create and update (REQ-010) — S3 amendment
@@ -63,5 +70,5 @@ The decision and its rationale SHALL be documented in the implementing PR descri
 The existing REQ-010 requirement for create and update is amended for the `"s3"` repository type:
 the provider SHALL use the raw JSON bypass (as specified in REQ-016) rather than the
 `types.S3Repository` typed struct, to ensure `endpoint` and `path_style_access` are not silently
-discarded. All other repository types (fs, url, gcs, azure, source) continue to use their
+discarded. All other repository types (fs, url, gcs, azure) continue to use their
 respective typed structs. The HDFS type continues to use its existing raw JSON bypass unchanged.
