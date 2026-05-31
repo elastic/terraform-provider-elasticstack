@@ -1,6 +1,6 @@
 ## 1. Read-side fix
 
-- [ ] 1.1 In `internal/elasticsearch/security/user/read.go`, replace the unconditional
+- [x] 1.1 In `internal/elasticsearch/security/user/read.go`, replace the unconditional
   `state.Metadata = jsontypes.NewNormalizedNull()` in the `else` branch of
   `if len(user.Metadata) > 0` (lines 69–71) with a conditional that preserves the incoming state
   value when it already holds an empty JSON object:
@@ -13,7 +13,7 @@
   }
   ```
 
-- [ ] 1.2 Add the `isEmptyJSONObject` helper function to the same file (or to a small `helpers.go`
+- [x] 1.2 Add the `isEmptyJSONObject` helper function to the same file (or to a small `helpers.go`
   in the same package if one already exists):
 
   ```go
@@ -30,13 +30,13 @@
 
 ## 2. Unit test
 
-- [ ] 2.1 In the `securityuser` package (or a `_test` file in `internal/elasticsearch/security/user/`),
+- [x] 2.1 In the `securityuser` package (or a `_test` file in `internal/elasticsearch/security/user/`),
   add a table-driven unit test for `isEmptyJSONObject` covering: `null` value, `"{}"` value,
   `"{\"k\":\"v\"}"` value, and unknown value. Assert that only `"{}"` returns `true`.
 
 ## 3. Acceptance test
 
-- [ ] 3.1 In `internal/elasticsearch/security/user/acc_test.go`, add a test step to
+- [x] 3.1 In `internal/elasticsearch/security/user/acc_test.go`, add a test step to
   `TestAccResourceSecurityUser` (or a new `TestAccResourceSecurityUserEmptyMetadata`) that:
   - Creates a user with `metadata = jsonencode({})`.
   - Asserts the apply completes without a "Provider produced inconsistent result after apply" error.
@@ -45,7 +45,7 @@
 
 ## 4. Delta spec
 
-- [ ] 4.1 Keep the delta spec at
+- [x] 4.1 Keep the delta spec at
   `openspec/changes/security-user-empty-metadata-inconsistency/specs/elasticsearch-security-user/spec.md`
   aligned with the implementation: it amends REQ-016/REQ-017 to document the null/empty-object
   equivalence invariant on the read side.

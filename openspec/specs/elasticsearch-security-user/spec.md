@@ -188,19 +188,32 @@ When destroying, the resource SHALL parse `id` to extract the username and then 
 
 ### Requirement: Metadata JSON mapping (REQ-016–REQ-017)
 
-When `metadata` is configured (non-null, non-unknown), the resource SHALL parse it as JSON before sending it to the Put user API; if parsing fails, the resource SHALL return an error diagnostic and SHALL NOT call the API. When reading state, if the API response includes a non-empty metadata map the resource SHALL marshal it to a normalized JSON string and store it in state; if the metadata map is empty or absent the resource SHALL store null in state.
+When the Elasticsearch API returns an empty or absent metadata map, the resource SHALL treat
+the Terraform values `null` and `"{}"` as semantically equivalent. If the incoming state holds
+an empty JSON object (`"{}"`), the read path SHALL preserve that value rather than overwriting it
+with `null`. If the incoming state is `null`, unknown, or holds a non-empty JSON object, the read
+path SHALL set `metadata` to `null` (unchanged behaviour). Drift detection is preserved: if prior
+state holds non-empty metadata and the API returns empty, the resource SHALL set state to `null`.
 
-#### Scenario: Invalid metadata JSON on apply
+#### Scenario: Empty metadata JSON object round-trips correctly
 
-- GIVEN `metadata` contains invalid JSON
-- WHEN create or update runs
-- THEN the provider SHALL return an error diagnostic and SHALL NOT call Put user
+- GIVEN a user resource configured with `metadata = jsonencode({})`
+- WHEN the resource is created or updated (sending `metadata: {}` to the Elasticsearch API)
+- AND the Elasticsearch GET users API returns an empty metadata map
+- THEN `metadata` in Terraform state SHALL equal `"{}"` (not `null`)
+- AND no "Provider produced inconsistent result after apply" error SHALL occur
 
-#### Scenario: Empty metadata from API
+#### Scenario: null metadata preserved when API returns empty
 
-- GIVEN the API returns an empty or absent metadata map
-- WHEN read populates state
-- THEN `metadata` SHALL be null in state
+- GIVEN a user resource configured without a `metadata` attribute (state value is `null`)
+- WHEN the Elasticsearch GET users API returns an empty metadata map
+- THEN `metadata` in Terraform state SHALL remain `null`
+
+#### Scenario: Non-empty metadata drift detected
+
+- GIVEN a user resource with `metadata = "{\"key\":\"value\"}"` in prior state
+- WHEN the Elasticsearch GET users API returns an empty metadata map (server drift)
+- THEN `metadata` in Terraform state SHALL be set to `null`, reflecting the server state
 
 ### Requirement: Password conflict validation (REQ-018)
 
