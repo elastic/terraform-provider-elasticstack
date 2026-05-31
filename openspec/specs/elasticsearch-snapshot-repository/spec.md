@@ -309,23 +309,24 @@ The data source SHALL support only a read operation. It SHALL NOT perform create
 
 ### Requirement: Data source API (REQ-DS-002)
 
-The data source SHALL use the Elasticsearch Get Snapshot Repository API (`GET /_snapshot/<repository>`) to fetch the repository identified by `name`. When the API returns a non-success status, the data source SHALL surface the API error to Terraform diagnostics. When the repository is not found (API returns `nil` with no error), the data source SHALL set `id`, return a warning diagnostic with the message "Could not find snapshot repository [<name>]", and SHALL not attempt to populate type block attributes.
+The data source SHALL use the Elasticsearch Get Snapshot Repository API (`GET /_snapshot/<repository>`) to fetch the repository identified by `name`. When the API returns a non-success status, the data source SHALL surface the API error to Terraform diagnostics. When the repository is not found (API returns `nil` with no error), the read callback SHALL return `found == false` and the envelope SHALL append a standardized not-found error diagnostic; Terraform state SHALL NOT be set.
 
 #### Scenario: Repository not found
 
 - GIVEN no repository with the requested name exists
 - WHEN the data source is read
-- THEN a warning diagnostic SHALL be returned and all type block attributes SHALL be empty lists
+- THEN the envelope SHALL return an error diagnostic identifying the data source and requested name
+- AND Terraform state SHALL NOT be set
 
 ### Requirement: Data source identity (REQ-DS-003)
 
-The data source SHALL set `id` in the format `<cluster_uuid>/<repository_name>` by calling `client.ID(ctx, repoName)` after resolving the client. The `id` SHALL be set regardless of whether the repository was found.
+The data source read callback SHALL set `id` in the format `<cluster_uuid>/<repository_name>` by calling `client.ID(ctx, resourceID)` before returning `found == true`. The envelope SHALL NOT mutate `id`.
 
-#### Scenario: Data source id set
+#### Scenario: Data source id set on found read
 
-- **GIVEN** the data source read runs for a repository name
-- **WHEN** the provider resolves the Elasticsearch client
-- **THEN** `id` SHALL be set to `<cluster_uuid>/<repository_name>`
+- **GIVEN** the data source read finds a repository
+- **WHEN** the read callback returns `found == true`
+- **THEN** `id` SHALL be set to `<cluster_uuid>/<repository_name>` on the returned model
 
 ### Requirement: Data source connection (REQ-DS-004)
 

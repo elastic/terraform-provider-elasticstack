@@ -222,7 +222,7 @@ The data source SHALL use the Kibana Get Connectors API (`GET /api/actions/conne
 
 ### Requirement: Connector selection (REQ-DS-002–REQ-DS-004)
 
-The data source SHALL match connectors by exact name equality. When `connector_type_id` is set to a non-empty string, the data source SHALL additionally filter connectors by that connector type. If no connector matches the name and optional type filter, the data source SHALL return an error diagnostic indicating the connector was not found. If more than one connector matches, the data source SHALL return an error diagnostic indicating that multiple connectors were found.
+The data source SHALL match connectors by exact name equality. When `connector_type_id` is set to a non-empty string, the data source SHALL additionally filter connectors by that connector type. If no connector matches the name and optional type filter, the read callback SHALL return `found == false` and the envelope SHALL append a standardized not-found error diagnostic. If more than one connector matches, the read callback SHALL return an error diagnostic indicating that multiple connectors were found.
 
 #### Scenario: No matching connector
 

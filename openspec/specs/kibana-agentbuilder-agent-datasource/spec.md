@@ -59,13 +59,13 @@ The data source SHALL call `GET /api/agentbuilder/agents/{agentId}` to read the 
 
 ### Requirement: Agent not found (REQ-002)
 
-When the API returns HTTP 404, the data source SHALL return an error diagnostic instead of silently returning empty values.
+When the agent is not found, the read callback SHALL return `found == false` and the envelope SHALL append a standardized not-found error diagnostic; Terraform state SHALL NOT be set.
 
 #### Scenario: Agent does not exist
 
 - GIVEN the requested agent does not exist in Kibana
 - WHEN the data source is evaluated
-- THEN the provider SHALL return an error indicating the agent was not found
+- THEN diagnostics SHALL include a standardized not-found error identifying the data source and resolved identity
 
 ### Requirement: API error surfacing (REQ-003)
 
@@ -99,7 +99,7 @@ When `space_id` is not configured, the data source SHALL default to `"default"`.
 
 ### Requirement: Agent id parsing (REQ-006)
 
-When `agent_id` is given as a composite id in the format `<space_id>/<agent_id>`, the data source SHALL parse the space and agent id from it. If `space_id` is also configured explicitly, the explicit value SHALL take precedence.
+The entitycore Kibana data source envelope SHALL resolve read identity from configuration via `resolveKibanaResourceIdentity` (composite or bare `agent_id`/`id`, explicit `space_id` override, default space when unset). The read callback SHALL receive the resolved `resourceID` and `spaceID` and SHALL NOT re-parse composite ids inline.
 
 #### Scenario: Composite agent_id
 

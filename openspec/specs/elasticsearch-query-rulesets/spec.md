@@ -29,7 +29,7 @@ Required cluster privilege: `manage_search_query_rules`.
 
 - GIVEN a `ruleset_id` that does not exist in Elasticsearch
 - WHEN the data source reads
-- THEN diagnostics SHALL include an error indicating the ruleset was not found
+- THEN the read callback SHALL return `found == false`, the envelope SHALL append a standardized not-found error diagnostic, and Terraform state SHALL NOT be set
 
 ### Requirement: Identity (REQ-002)
 

@@ -40,13 +40,13 @@ The data source SHALL use the Kibana Agent Builder Tools API to read a tool by I
 
 ### Requirement: Tool not found (REQ-002)
 
-When the API returns HTTP 404 for the tool, the data source SHALL return an error diagnostic indicating the tool was not found rather than silently producing empty state.
+When the tool is not found, the read callback SHALL return `found == false` and the envelope SHALL append a standardized not-found error diagnostic; Terraform state SHALL NOT be set.
 
 #### Scenario: Tool does not exist
 
 - GIVEN the tool ID does not exist in Kibana
 - WHEN the data source reads
-- THEN the provider SHALL return a "Tool not found" error diagnostic
+- THEN diagnostics SHALL include a standardized not-found error identifying the data source and resolved identity
 
 ### Requirement: API error surfacing (REQ-003)
 
@@ -70,7 +70,7 @@ The data source SHALL set a computed `id` in the format `<space_id>/<tool_id>` a
 
 ### Requirement: Composite input id (REQ-005)
 
-When the `id` input is in the composite format `<space_id>/<tool_id>`, the data source SHALL parse it to extract the space and tool IDs. The extracted space SHALL be used for the API call unless `space_id` is also explicitly configured, in which case the explicit `space_id` SHALL take precedence.
+The entitycore Kibana data source envelope SHALL resolve read identity from configuration via `resolveKibanaResourceIdentity` (composite or bare `id`, explicit `space_id` override, default space when unset). The read callback SHALL receive the resolved `resourceID` and `spaceID` and SHALL NOT re-parse composite ids inline.
 
 #### Scenario: Composite id as input
 
@@ -80,7 +80,7 @@ When the `id` input is in the composite format `<space_id>/<tool_id>`, the data 
 
 ### Requirement: space_id default (REQ-006)
 
-When `space_id` is not configured and the input `id` is not a composite id, the data source SHALL use `"default"` as the space.
+When `space_id` is not configured and the input `id` is not a composite id, the envelope SHALL use `"default"` as the space when resolving identity.
 
 #### Scenario: Plain tool ID with no space_id
 

@@ -53,7 +53,7 @@ When the data source cannot obtain the effective Kibana OpenAPI client, it SHALL
 
 ### Requirement: Input id forms and space resolution (REQ-003)
 
-The data source SHALL accept the required `id` argument either as a bare workflow id or as a composite `<space_id>/<workflow_id>` string. If `id` parses as a composite id, the data source SHALL use the resource-id segment as the workflow id. When `space_id` is omitted or unknown, the data source SHALL use the composite id's space segment; when `space_id` is explicitly set in configuration, that explicit `space_id` SHALL take precedence over any space segment embedded in `id`.
+The entitycore Kibana data source envelope SHALL resolve read identity from configuration via `resolveKibanaResourceIdentity` (bare or composite `id`, explicit `space_id` override, default space when unset). The read callback SHALL receive the resolved `resourceID` and `spaceID` and SHALL NOT re-parse composite ids inline.
 
 #### Scenario: Composite id supplies the space
 
@@ -69,7 +69,7 @@ The data source SHALL accept the required `id` argument either as a bare workflo
 
 ### Requirement: Default space when none is provided (REQ-004)
 
-When configuration does not provide a known `space_id` and the required `id` is not a composite id, the data source SHALL default the target space to `default`.
+When configuration does not provide a known `space_id` and the required `id` is not a composite id, the envelope SHALL default the target space to `default` when resolving identity.
 
 #### Scenario: Bare workflow id without space
 
@@ -89,13 +89,13 @@ After a successful read, the data source SHALL store a canonical composite `id` 
 
 ### Requirement: Not-found handling (REQ-006)
 
-If the workflow get request returns not found, the data source SHALL fail with a `Workflow not found` diagnostic and SHALL NOT write successful state for that read.
+If the workflow get request returns not found, the read callback SHALL return `found == false` and the envelope SHALL append a standardized not-found error diagnostic; Terraform state SHALL NOT be set.
 
 #### Scenario: Missing workflow
 
 - GIVEN the resolved workflow id and space do not exist in Kibana
 - WHEN the data source read runs
-- THEN the provider SHALL return a `Workflow not found` diagnostic
+- THEN diagnostics SHALL include a standardized not-found error identifying the data source and resolved identity
 
 ## Traceability
 
