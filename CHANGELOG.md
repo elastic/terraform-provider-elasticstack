@@ -1,17 +1,15 @@
 ## [Unreleased]
 
-### Fixed
-
-- Fix `elasticstack_elasticsearch_snapshot_repository` S3 repositories silently dropping `endpoint` and `path_style_access` from the PUT request body. ([#3434](https://github.com/elastic/terraform-provider-elasticstack/issues/3434))
-
 ### Changes
 
-- Fix `elasticstack_kibana_dashboard` panel-level `time_range` is now optional on typed Lens chart panels and `vis_config.by_reference`; the provider no longer inherits the dashboard-level `time_range` or applies a `now-15m`/`now` fallback when the panel-level value is unset, and panels without a panel-level `time_range` no longer drift on read. ([#3424](https://github.com/elastic/terraform-provider-elasticstack/issues/3424))
-- `elasticstack_elasticsearch_ml_anomaly_detection_job` no longer fails with a `Value Conversion Error` when the whole `analysis_config` block (or `analysis_config.per_partition_categorization`) is sourced from a Terraform variable or `for_each`. ([#3403](https://github.com/elastic/terraform-provider-elasticstack/issues/3403))
-- Fix `elasticstack_kibana_dashboard` "inconsistent result after apply" when using `vis_config.by_value.xy_chart_config` with `layers[].type = "bar_horizontal"` and terms breakdowns — provider now preserves planned `fitting` values when Kibana omits them.
-- Fix `elasticstack_kibana_dashboard` nested section panel reads (`image_config`, `xy_chart_config.legend`, `heatmap_config.legend`, gauge `styling.shape_json`) — planned values are preserved when Kibana omits them on read.
-- Fix `elasticstack_kibana_dashboard` top-level `panels = []` — an explicit empty list is preserved when the dashboard uses only `sections` and/or `pinned_panels` (omitted `panels` stays null).
-- Fix `elasticstack_kibana_dashboard` ES|QL pinned controls and ES|QL metric routing — controls send `type`, metrics use the ES|QL API variant, and `?variable` filtering no longer fails Kibana validation; panel reads clone plan-side typed configs when Kibana leaves blocks nil.
+- Preserve S3 endpoint and path_style_access in snapshot repository PUT bodies ([#3447](https://github.com/elastic/terraform-provider-elasticstack/pull/3447))
+- Fix inconsistent state when metadata is set to jsonencode({}) on elasticsearch_security_user ([#3448](https://github.com/elastic/terraform-provider-elasticstack/pull/3448))
+- Make Kibana dashboard panel-level time_range optional so panels can use the dashboard global time range ([#3436](https://github.com/elastic/terraform-provider-elasticstack/pull/3436))
+- Fix plan-time `Value Conversion Error` when the whole `analysis_config` block (or `analysis_config.per_partition_categorization`) is sourced from a Terraform variable or `for_each`. ([#3425](https://github.com/elastic/terraform-provider-elasticstack/pull/3425))
+- Allow ``elasticstack_kibana_space`` to manage the default Kibana space without errors and return an actionable import diagnostic on create 409. ([#3423](https://github.com/elastic/terraform-provider-elasticstack/pull/3423))
+- Fixed false-positive validation error for cluster_settings when persistent/transient blocks are populated via dynamic blocks driven by local values. ([#3411](https://github.com/elastic/terraform-provider-elasticstack/pull/3411))
+- Fix `Provider produced inconsistent result after apply` and plan drift on Kibana Lens dashboard panels caused by Kibana-injected server defaults (issue #3402 and related across every Lens panel type) ([#3404](https://github.com/elastic/terraform-provider-elasticstack/pull/3404))
+- Fix `elasticstack_kibana_dashboard` round-trip drift for Lens XY/gauge/heatmap/image panels, ES|QL controls, and empty `panels` lists; add getting-started, operations, and advanced Kibana dashboard guides with example configs and screenshots. ([#3391](https://github.com/elastic/terraform-provider-elasticstack/pull/3391))
 - Add elasticsearch_snapshot_create and elasticsearch_snapshot_restore provider-defined actions for on-demand snapshot creation and restore. ([#3376](https://github.com/elastic/terraform-provider-elasticstack/pull/3376))
 - Add `elasticstack_elasticsearch_query_ruleset` resource and data source for the Elasticsearch Query Rules API. ([#3365](https://github.com/elastic/terraform-provider-elasticstack/pull/3365))
 - improve security role documentation and add automated drift detection for Kibana feature privilege docs ([#3339](https://github.com/elastic/terraform-provider-elasticstack/pull/3339))
