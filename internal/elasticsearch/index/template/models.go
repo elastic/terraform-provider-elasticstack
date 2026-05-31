@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -67,8 +68,7 @@ func (m Model) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.D
 	}
 	reqs = append(reqs, dsoReqs...)
 
-	if !m.IgnoreMissingComponentTemplates.IsNull() && !m.IgnoreMissingComponentTemplates.IsUnknown() &&
-		len(m.IgnoreMissingComponentTemplates.Elements()) > 0 {
+	if typeutils.IsKnown(m.IgnoreMissingComponentTemplates) && len(m.IgnoreMissingComponentTemplates.Elements()) > 0 {
 		reqs = append(reqs, entitycore.VersionRequirement{
 			MinVersion:   *index.MinSupportedIgnoreMissingComponentTemplateVersion,
 			ErrorMessage: fmt.Sprintf("'ignore_missing_component_templates' is supported only for Elasticsearch v%s and above", index.MinSupportedIgnoreMissingComponentTemplateVersion.String()),

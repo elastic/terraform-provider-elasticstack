@@ -20,10 +20,8 @@ package securityexceptionitem
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -70,34 +68,13 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	// In create/update paths we typically follow the write operation with a read, and then set the state from the read.
-	// We want to avoid a dirty plan immediately after an apply.
-	// Read back the updated resource to get the final state
-	readParams := &kbapi.ReadExceptionListItemParams{
-		Id: &updateResp.Id,
-	}
-
-	// Include namespace_type if specified (required for agnostic items)
-	if typeutils.IsKnown(plan.NamespaceType) {
-		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(plan.NamespaceType.ValueString())
-		readParams.NamespaceType = &nsType
-	}
-
-	readResp, diags := kibanaoapi.GetExceptionListItem(ctx, oapiClient, plan.SpaceID.ValueString(), readParams)
+	plan, remove, diags := refreshExceptionItemState(ctx, oapiClient, plan.SpaceID.ValueString(), plan, updateResp.Id)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	if readResp == nil {
+	if remove {
 		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	// Update state with read response using model method
-	diags = plan.fromAPI(ctx, readResp)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
 		return
 	}
 

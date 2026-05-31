@@ -26,6 +26,7 @@ import (
 	esclients "github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -51,17 +52,17 @@ func writeSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, 
 	// Build retention
 	var retention elasticsearch.SlmRetention
 	hasRetention := false
-	if !data.ExpireAfter.IsNull() && !data.ExpireAfter.IsUnknown() && data.ExpireAfter.ValueString() != "" {
+	if typeutils.IsKnown(data.ExpireAfter) && data.ExpireAfter.ValueString() != "" {
 		v := data.ExpireAfter.ValueString()
 		retention.ExpireAfter = &v
 		hasRetention = true
 	}
-	if !data.MaxCount.IsNull() && !data.MaxCount.IsUnknown() {
+	if typeutils.IsKnown(data.MaxCount) {
 		v := int(data.MaxCount.ValueInt64())
 		retention.MaxCount = &v
 		hasRetention = true
 	}
-	if !data.MinCount.IsNull() && !data.MinCount.IsUnknown() {
+	if typeutils.IsKnown(data.MinCount) {
 		v := int(data.MinCount.ValueInt64())
 		retention.MinCount = &v
 		hasRetention = true
@@ -81,7 +82,7 @@ func writeSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, 
 	cfg.Partial = &partial
 
 	// Indices
-	if !data.Indices.IsNull() && !data.Indices.IsUnknown() {
+	if typeutils.IsKnown(data.Indices) {
 		var indices []string
 		diags.Append(data.Indices.ElementsAs(ctx, &indices, false)...)
 		if diags.HasError() {
@@ -91,7 +92,7 @@ func writeSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, 
 	}
 
 	// FeatureStates
-	if !data.FeatureStates.IsNull() && !data.FeatureStates.IsUnknown() {
+	if typeutils.IsKnown(data.FeatureStates) {
 		var featureStates []string
 		diags.Append(data.FeatureStates.ElementsAs(ctx, &featureStates, false)...)
 		if diags.HasError() {
@@ -101,7 +102,7 @@ func writeSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, 
 	}
 
 	// Metadata
-	if !data.Metadata.IsNull() && !data.Metadata.IsUnknown() {
+	if typeutils.IsKnown(data.Metadata) {
 		metaStr := data.Metadata.ValueString()
 		if metaStr != "" {
 			var metadata map[string]any

@@ -40,12 +40,7 @@ var _ entitycore.KibanaResourceModel = agentModel{}
 var _ entitycore.WithVersionRequirements = agentModel{}
 
 func (model agentModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *minKibanaAgentBuilderAPIVersion,
-			ErrorMessage: fmt.Sprintf("Agent Builder agents require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
-		},
-	}, nil
+	return agentVersionRequirements(), nil
 }
 
 type agentModel struct {
@@ -79,18 +74,17 @@ type agentDataSourceModel struct {
 	Instructions        types.String `tfsdk:"instructions"`
 }
 
-// GetVersionRequirements returns the static minimum Kibana version requirements
-// for the Agent Builder agent data source. This satisfies the optional
-// entitycore.WithVersionRequirements interface, allowing the
-// generic Kibana data source envelope to enforce the requirement before invoking
-// the entity read callback.
 func (model agentDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return agentVersionRequirements(), nil
+}
+
+func agentVersionRequirements() []entitycore.VersionRequirement {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *minKibanaAgentBuilderAPIVersion,
 			ErrorMessage: fmt.Sprintf("Agent Builder agents require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
 		},
-	}, nil
+	}
 }
 
 type toolModel struct {
@@ -213,9 +207,6 @@ func (model agentModel) toAPICreateModel(ctx context.Context, supportsSkillIDs b
 
 	toolIDs, d := agentbuilder.SetToStrings(ctx, model.Tools)
 	diags.Append(d...)
-	if toolIDs == nil {
-		toolIDs = []string{}
-	}
 	body.Configuration.Tools = []struct {
 		ToolIds []string `json:"tool_ids"` //nolint:revive
 	}{{ToolIds: toolIDs}}
@@ -257,9 +248,6 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 
 	toolIDs, d := agentbuilder.SetToStrings(ctx, model.Tools)
 	diags.Append(d...)
-	if toolIDs == nil {
-		toolIDs = []string{}
-	}
 	tools := []struct {
 		ToolIds []string `json:"tool_ids"` //nolint:revive
 	}{{ToolIds: toolIDs}}
@@ -273,9 +261,6 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 	if supportsSkillIDs {
 		skillIDs, d := agentbuilder.SetToStrings(ctx, model.SkillIDs)
 		diags.Append(d...)
-		if skillIDs == nil {
-			skillIDs = []string{}
-		}
 		skillIDsPtr = &skillIDs
 	}
 

@@ -78,7 +78,7 @@ func readRoleMapping(ctx context.Context, stateData Data, roleMappingName string
 	// Preserve planned/state value when known to avoid representation drift
 	// caused by the typed client's Script type normalizing strings to objects.
 	switch {
-	case !stateData.RoleTemplates.IsNull() && !stateData.RoleTemplates.IsUnknown():
+	case typeutils.IsKnown(stateData.RoleTemplates):
 		data.RoleTemplates = stateData.RoleTemplates
 	case len(roleMapping.RoleTemplates) > 0:
 		templatesJSON, err := roleTemplatesToJSON(roleMapping.RoleTemplates)

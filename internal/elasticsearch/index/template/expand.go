@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -44,7 +45,7 @@ func (m Model) toAPIModel(ctx context.Context) (*models.IndexTemplate, diag.Diag
 	}
 
 	comps := make([]string, 0)
-	if !m.ComposedOf.IsNull() && !m.ComposedOf.IsUnknown() {
+	if typeutils.IsKnown(m.ComposedOf) {
 		diags.Append(m.ComposedOf.ElementsAs(ctx, &comps, false)...)
 		if diags.HasError() {
 			return nil, diags
@@ -52,7 +53,7 @@ func (m Model) toAPIModel(ctx context.Context) (*models.IndexTemplate, diag.Diag
 	}
 	out.ComposedOf = comps
 
-	if !m.IgnoreMissingComponentTemplates.IsNull() && !m.IgnoreMissingComponentTemplates.IsUnknown() {
+	if typeutils.IsKnown(m.IgnoreMissingComponentTemplates) {
 		var ignore []string
 		diags.Append(m.IgnoreMissingComponentTemplates.ElementsAs(ctx, &ignore, false)...)
 		if diags.HasError() {
@@ -61,7 +62,7 @@ func (m Model) toAPIModel(ctx context.Context) (*models.IndexTemplate, diag.Diag
 		out.IgnoreMissingComponentTemplates = ignore
 	}
 
-	if !m.DataStream.IsNull() && !m.DataStream.IsUnknown() {
+	if typeutils.IsKnown(m.DataStream) {
 		out.DataStream = expandDataStreamBlock(m.DataStream)
 	}
 
@@ -76,7 +77,7 @@ func (m Model) toAPIModel(ctx context.Context) (*models.IndexTemplate, diag.Diag
 	}
 	out.IndexPatterns = patterns
 
-	if !m.Metadata.IsNull() && !m.Metadata.IsUnknown() {
+	if typeutils.IsKnown(m.Metadata) {
 		s := strings.TrimSpace(m.Metadata.ValueString())
 		if s != "" {
 			meta := make(map[string]any)
@@ -88,12 +89,12 @@ func (m Model) toAPIModel(ctx context.Context) (*models.IndexTemplate, diag.Diag
 		}
 	}
 
-	if !m.Priority.IsNull() && !m.Priority.IsUnknown() {
+	if typeutils.IsKnown(m.Priority) {
 		p := m.Priority.ValueInt64()
 		out.Priority = &p
 	}
 
-	if !m.Template.IsNull() && !m.Template.IsUnknown() {
+	if typeutils.IsKnown(m.Template) {
 		tpl, d := expandTemplateBlock(ctx, m.Template)
 		diags.Append(d...)
 		if diags.HasError() {
@@ -102,12 +103,12 @@ func (m Model) toAPIModel(ctx context.Context) (*models.IndexTemplate, diag.Diag
 		out.Template = tpl
 	}
 
-	if !m.Version.IsNull() && !m.Version.IsUnknown() {
+	if typeutils.IsKnown(m.Version) {
 		v := m.Version.ValueInt64()
 		out.Version = &v
 	}
 
-	if !m.AllowAutoCreate.IsNull() && !m.AllowAutoCreate.IsUnknown() {
+	if typeutils.IsKnown(m.AllowAutoCreate) {
 		out.AllowAutoCreate = m.AllowAutoCreate.ValueBoolPointer()
 	}
 

@@ -19,13 +19,14 @@ package logstash
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -54,14 +55,11 @@ func readLogstashPipeline(ctx context.Context, client *clients.ElasticsearchScop
 	data.Pipeline = types.StringValue(pipeline.Pipeline)
 	data.Username = types.StringValue(pipeline.Username)
 
-	// Marshal pipeline_metadata back to JSON string.
 	if pipeline.PipelineMetadata != nil {
-		metaBytes, err := json.Marshal(pipeline.PipelineMetadata)
-		if err != nil {
-			diags.AddError("Error serializing pipeline_metadata", err.Error())
+		data.PipelineMetadata = typeutils.MapToNormalizedType(pipeline.PipelineMetadata, path.Root("pipeline_metadata"), &diags)
+		if diags.HasError() {
 			return state, false, diags
 		}
-		data.PipelineMetadata = jsontypes.NewNormalizedValue(string(metaBytes))
 	} else {
 		data.PipelineMetadata = jsontypes.NewNormalizedValue("{}")
 	}

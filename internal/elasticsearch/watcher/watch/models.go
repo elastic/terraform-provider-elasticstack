@@ -83,7 +83,7 @@ func (d *Data) toPutModel(_ context.Context) (*models.PutWatch, diag.Diagnostics
 		return nil, diags
 	}
 
-	if !d.Transform.IsNull() && !d.Transform.IsUnknown() {
+	if typeutils.IsKnown(d.Transform) {
 		var transform map[string]any
 		if err := json.Unmarshal([]byte(d.Transform.ValueString()), &transform); err != nil {
 			diags.AddError("Invalid transform JSON", fmt.Sprintf("Error parsing transform: %s", err))
@@ -165,8 +165,8 @@ func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch, priorActions
 				diags.AddError("Invalid actions JSON in Terraform state or plan", fmt.Sprintf("Error parsing prior actions: %s", err))
 				return diags
 			}
-			if _, ok := priorRoot.(map[string]any); ok {
-				mergedActions = mergeActionsPreservingRedactedLeaves(watch.Body.Actions, priorRoot)
+			if priorMap, ok := priorRoot.(map[string]any); ok {
+				mergedActions = mergeActionsPreservingRedactedLeaves(watch.Body.Actions, priorMap)
 			}
 		}
 		actions, err := marshalCompact(mergedActions)

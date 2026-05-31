@@ -133,14 +133,7 @@ func (model skillModel) toAPICreateModel(ctx context.Context) (kbapi.PostAgentBu
 	}
 
 	if len(model.ReferencedContent) > 0 {
-		entries := make([]referencedContentItem, 0, len(model.ReferencedContent))
-		for _, entry := range model.ReferencedContent {
-			entries = append(entries, referencedContentItem{
-				Content:      entry.Content.ValueString(),
-				Name:         entry.Name.ValueString(),
-				RelativePath: entry.RelativePath.ValueString(),
-			})
-		}
+		entries := referencedContentFromModel(model.ReferencedContent)
 		body.ReferencedContent = &entries
 	}
 
@@ -163,22 +156,23 @@ func (model skillModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBui
 	toolIDs, d := agentbuilder.SetToStrings(ctx, model.ToolIDs)
 	diags.Append(d...)
 	// Always send tool_ids on update (including empty) so cleared values are
-	// propagated to Kibana. The omitempty tag means a nil slice would skip the
-	// field; we explicitly allocate an empty slice when the model is null.
-	if toolIDs == nil {
-		toolIDs = []string{}
-	}
+	// propagated to Kibana.
 	body.ToolIds = &toolIDs
 
-	entries := make([]referencedContentItem, 0, len(model.ReferencedContent))
-	for _, entry := range model.ReferencedContent {
+	entries := referencedContentFromModel(model.ReferencedContent)
+	body.ReferencedContent = &entries
+
+	return body, diags
+}
+
+func referencedContentFromModel(items []skillReferencedContentItem) []referencedContentItem {
+	entries := make([]referencedContentItem, 0, len(items))
+	for _, entry := range items {
 		entries = append(entries, referencedContentItem{
 			Content:      entry.Content.ValueString(),
 			Name:         entry.Name.ValueString(),
 			RelativePath: entry.RelativePath.ValueString(),
 		})
 	}
-	body.ReferencedContent = &entries
-
-	return body, diags
+	return entries
 }

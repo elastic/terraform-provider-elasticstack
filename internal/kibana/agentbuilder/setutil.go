@@ -27,20 +27,20 @@ import (
 // PopulateSet sets dst to a types.Set containing the strings in src.
 // If src is empty, dst is set to a null set.
 func PopulateSet(ctx context.Context, src []string, dst *types.Set) diag.Diagnostics {
-	if len(src) > 0 {
-		v, d := types.SetValueFrom(ctx, types.StringType, src)
-		*dst = v
-		return d
+	if len(src) == 0 {
+		*dst = types.SetNull(types.StringType)
+		return nil
 	}
-	*dst = types.SetNull(types.StringType)
-	return nil
+	v, d := types.SetValueFrom(ctx, types.StringType, src)
+	*dst = v
+	return d
 }
 
 // SetToStrings converts a types.Set to a []string.
-// Returns nil when the set is null or unknown.
+// Returns an empty slice when the set is null or unknown.
 func SetToStrings(ctx context.Context, set types.Set) ([]string, diag.Diagnostics) {
 	if set.IsNull() || set.IsUnknown() {
-		return nil, nil
+		return []string{}, nil
 	}
 	var out []string
 	d := set.ElementsAs(ctx, &out, false)

@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -167,15 +168,15 @@ func calendarEventWireFromTFModel(m *CalendarEventTFModel) (calendarEventWire, f
 		StartTime:   millisJSONRaw(startTime.UnixMilli()),
 		EndTime:     millisJSONRaw(endTime.UnixMilli()),
 	}
-	if !m.SkipResult.IsNull() && !m.SkipResult.IsUnknown() {
+	if typeutils.IsKnown(m.SkipResult) {
 		v := m.SkipResult.ValueBool()
 		w.SkipResult = &v
 	}
-	if !m.SkipModelUpdate.IsNull() && !m.SkipModelUpdate.IsUnknown() {
+	if typeutils.IsKnown(m.SkipModelUpdate) {
 		v := m.SkipModelUpdate.ValueBool()
 		w.SkipModelUpdate = &v
 	}
-	if !m.ForceTimeShift.IsNull() && !m.ForceTimeShift.IsUnknown() {
+	if typeutils.IsKnown(m.ForceTimeShift) {
 		raw, err := forceTimeShiftStringToJSONRaw(m.ForceTimeShift.ValueString())
 		if err != nil {
 			diags.AddError("Invalid force_time_shift", err.Error())
