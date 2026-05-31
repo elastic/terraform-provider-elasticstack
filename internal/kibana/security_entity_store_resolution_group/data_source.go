@@ -28,7 +28,9 @@ func NewDataSource() datasource.DataSource {
 	return entitycore.NewKibanaDataSource[resolutionGroupModel](
 		entitycore.ComponentKibana,
 		"security_entity_store_resolution_group",
-		getDataSourceSchema,
-		readResolutionGroup,
+		entitycore.KibanaDataSourceOptions[resolutionGroupModel]{
+			Schema: getDataSourceSchema,
+			Read:   readResolutionGroup,
+		},
 	)
 }

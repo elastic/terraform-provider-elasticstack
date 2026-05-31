@@ -44,8 +44,10 @@ func NewDataSource() datasource.DataSource {
 	return entitycore.NewKibanaDataSource[agentDataSourceModel](
 		entitycore.ComponentKibana,
 		"agentbuilder_agent",
-		getDataSourceSchema,
-		readAgentDataSource,
+		entitycore.KibanaDataSourceOptions[agentDataSourceModel]{
+			Schema: getDataSourceSchema,
+			Read:   readAgentDataSource,
+		},
 	)
 }
 
@@ -53,18 +55,18 @@ func NewDataSource() datasource.DataSource {
 // The envelope owns config decode, GetKibanaClient, static version enforcement
 // via GetVersionRequirements, and resp.State.Set. This function only contains
 // entity-specific logic.
-func readAgentDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config agentDataSourceModel) (agentDataSourceModel, diag.Diagnostics) {
+func readAgentDataSource(
+	ctx context.Context,
+	kbClient *clients.KibanaScopedClient,
+	resourceID, spaceID string,
+	config agentDataSourceModel,
+) (agentDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	supportsAdvancedConfig, verDiags := kbClient.EnforceMinVersion(ctx, agentbuilder.MinExtendedAPIVersion)
 	diags.Append(verDiags...)
 	if diags.HasError() {
-		return config, diags
-	}
-
-	if !typeutils.IsKnown(config.AgentID) || config.AgentID.ValueString() == "" {
-		diags.AddError("Invalid configuration", "agent_id must be set.")
-		return config, diags
+		return config, false, diags
 	}
 
 	// Datasource BoolAttribute has no schema Default in this framework version; treat unset as false.
@@ -75,22 +77,23 @@ func readAgentDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 
 	client := kbClient.GetKibanaOapiClient()
 
-	spaceID, agentID := clients.ResolveCompositeSpaceAndID(config.SpaceID, config.AgentID.ValueString())
+	if spaceID == "" {
+		spaceID = clients.DefaultSpaceID
+	}
 
-	agent, agentDiags := kibanaoapi.GetAgent(ctx, client, spaceID, agentID)
+	agent, agentDiags := kibanaoapi.GetAgent(ctx, client, spaceID, resourceID)
 	diags.Append(agentDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 	if agent == nil {
-		diags.AddError("Agent not found", fmt.Sprintf("Unable to fetch agent with ID %s", agentID))
-		return config, diags
+		return config, false, diags
 	}
 
 	populateDiags := (&config).populateFromAPI(ctx, spaceID, agent)
 	diags.Append(populateDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	toolIDs := agentToolIDsInOrder(agent)
@@ -112,7 +115,7 @@ func readAgentDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 			tool, toolDiags := kibanaoapi.GetTool(ctx, client, spaceID, toolID)
 			diags.Append(toolDiags...)
 			if diags.HasError() {
-				return config, diags
+				return config, false, diags
 			}
 			if tool == nil {
 				continue
@@ -138,13 +141,13 @@ func readAgentDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 					agentbuilder.MinExtendedAPIVersion,
 				),
 			)
-			return config, diags
+			return config, false, diags
 		}
 		for workflowID := range toolWorkflowIDSet {
 			workflow, wDiags := kibanaoapi.GetWorkflow(ctx, client, spaceID, workflowID)
 			diags.Append(wDiags...)
 			if diags.HasError() {
-				return config, diags
+				return config, false, diags
 			}
 			if workflow != nil {
 				workflowsByID[workflowID] = workflow
@@ -161,7 +164,7 @@ func readAgentDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 			tm, tmDiags := toolModelFromAPI(ctx, spaceID, tool, workflowsByID)
 			diags.Append(tmDiags...)
 			if diags.HasError() {
-				return config, diags
+				return config, false, diags
 			}
 			config.Tools = append(config.Tools, tm)
 		}
@@ -169,7 +172,7 @@ func readAgentDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 
 	config.IncludeDependencies = types.BoolValue(includeDeps)
 
-	return config, diags
+	return config, true, diags
 }
 
 // agentToolIDsInOrder returns unique tool IDs from the agent configuration, preserving first-seen order.

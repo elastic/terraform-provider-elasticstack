@@ -52,6 +52,14 @@ type dsModel struct {
 	Items       types.List           `tfsdk:"items"`
 }
 
+// entitiesResourceID is the fixed identity used by this list-style data
+// source, whose optional entity_id is a query filter rather than a lookup key.
+const entitiesResourceID = "entity_store_entities"
+
+func (m dsModel) GetID() types.String       { return m.ID }
+func (dsModel) GetResourceID() types.String { return types.StringValue(entitiesResourceID) }
+func (m dsModel) GetSpaceID() types.String  { return m.SpaceID }
+
 var _ entitycore.WithVersionRequirements = (*dsModel)(nil)
 
 func (*dsModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {

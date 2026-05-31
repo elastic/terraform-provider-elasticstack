@@ -33,9 +33,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (model agentModel) GetID() types.String         { return model.ID }
-func (model agentModel) GetResourceID() types.String { return model.AgentID }
-func (model agentModel) GetSpaceID() types.String    { return model.SpaceID }
+func (model agentBaseModel) GetID() types.String         { return model.ID }
+func (model agentBaseModel) GetResourceID() types.String { return model.AgentID }
+func (model agentBaseModel) GetSpaceID() types.String    { return model.SpaceID }
 
 var _ entitycore.KibanaResourceModel = agentModel{}
 var _ entitycore.WithVersionRequirements = agentModel{}

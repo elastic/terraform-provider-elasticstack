@@ -45,6 +45,16 @@ type tagItemModel struct {
 	UpdatedAt   types.String `tfsdk:"updated_at"`
 }
 
+// tagsDataSourceResourceID is the fixed identity used by this list-style data
+// source, which has no lookup key and no id attribute (query is a filter).
+const tagsDataSourceResourceID = "tags"
+
+func (tagsDataSourceModel) GetID() types.String { return types.StringNull() }
+func (tagsDataSourceModel) GetResourceID() types.String {
+	return types.StringValue(tagsDataSourceResourceID)
+}
+func (m tagsDataSourceModel) GetSpaceID() types.String { return m.SpaceID }
+
 var _ entitycore.WithVersionRequirements = (*tagsDataSourceModel)(nil)
 
 func (tagsDataSourceModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {

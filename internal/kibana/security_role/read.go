@@ -139,27 +139,24 @@ func readRoleResourceWithHint(ctx context.Context, client *clients.KibanaScopedC
 	return out, true, diags
 }
 
-func readRoleDataSource(ctx context.Context, client *clients.KibanaScopedClient, config dataSourceModel) (dataSourceModel, diag.Diagnostics) {
+func readRoleDataSource(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, _ string, config dataSourceModel) (dataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	role, found, d := fetchRole(ctx, client, config.Name.ValueString())
+	role, found, d := fetchRole(ctx, client, resourceID)
 	diags.Append(d...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 	if !found {
-		config.Description = types.StringNull()
-		config.Metadata = jsontypes.NewNormalizedNull()
-		config.Elasticsearch = types.ObjectNull(elasticsearchResourceAttrTypes())
-		config.Kibana = types.SetNull(kibanaBlockObjectType())
-		return config, diags
+		return config, false, diags
 	}
 
 	fields, d := roleFieldsFromAPI(ctx, role, roleHint{})
 	diags.Append(d...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
+	config.Name = types.StringValue(resourceID)
 	config.Description = fields.Description
 	config.Elasticsearch = fields.Elasticsearch
 	config.Kibana = fields.Kibana
@@ -168,5 +165,5 @@ func readRoleDataSource(ctx context.Context, client *clients.KibanaScopedClient,
 	} else {
 		config.Metadata = jsontypes.NewNormalizedNull()
 	}
-	return config, diags
+	return config, true, diags
 }

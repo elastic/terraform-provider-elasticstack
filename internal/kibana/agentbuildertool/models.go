@@ -88,6 +88,11 @@ type toolDataSourceModel struct {
 
 var _ entitycore.WithVersionRequirements = toolDataSourceModel{}
 
+// GetResourceID returns the data source lookup key: the required `id`
+// attribute (plain tool id or composite `<space>/<tool>`). `tool_id` is
+// computed on the data source and is unset in configuration.
+func (model toolDataSourceModel) GetResourceID() types.String { return model.ID }
+
 func (model *toolBaseModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Tool) diag.Diagnostics {
 	if data == nil {
 		return nil
