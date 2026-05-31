@@ -19,6 +19,7 @@ package esqlcontrol
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -205,9 +206,9 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 	if typeutils.IsKnown(existing.AvailableOptions) && len(api.AvailableOptions) > 0 {
 		existing.AvailableOptions = stringsToList(api.AvailableOptions)
 	}
-	preserveKnownStringIfStateBlank(prevQuery, &existing.EsqlQuery)
-	preserveKnownStringIfStateBlank(prevTitle, &existing.Title)
-	preserveKnownListIfStateNull(prevAvailableOptions, &existing.AvailableOptions)
+	lenscommon.PreserveKnownStringIfStateBlank(prevQuery, &existing.EsqlQuery)
+	lenscommon.PreserveKnownStringIfStateBlank(prevTitle, &existing.Title)
+	lenscommon.PreserveKnownTfListIfStateNull(prevAvailableOptions, &existing.AvailableOptions)
 
 	// display_settings: if block is present in state, update from API; otherwise preserve nil.
 	if existing.DisplaySettings != nil && api.DisplaySettings != nil {
@@ -332,21 +333,6 @@ func BuildConfig(pm models.PanelModel, esqlPanel *kbapi.KibanaHTTPAPIsKbnDashboa
 	return diags
 }
 
-func preserveKnownStringIfStateBlank(plan types.String, state *types.String) {
-	if !typeutils.IsKnown(plan) {
-		return
-	}
-	if state.IsNull() || state.IsUnknown() || state.ValueString() == "" {
-		*state = plan
-	}
-}
-
-func preserveKnownListIfStateNull(plan types.List, state *types.List) {
-	if typeutils.IsKnown(plan) && (state.IsNull() || state.IsUnknown()) {
-		*state = plan
-	}
-}
-
 // AlignEsqlPanels reapplies practitioner plan fields when Kibana echoes sparse reads (parity with dashboard.alignEsqlControlStateFromPlan).
 func AlignEsqlPanels(plan, state *models.PanelModel) {
 	if plan == nil || state == nil {
@@ -359,7 +345,7 @@ func alignEsql(plan, state *models.EsqlControlConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
-	preserveKnownStringIfStateBlank(plan.EsqlQuery, &state.EsqlQuery)
-	preserveKnownStringIfStateBlank(plan.Title, &state.Title)
-	preserveKnownListIfStateNull(plan.AvailableOptions, &state.AvailableOptions)
+	lenscommon.PreserveKnownStringIfStateBlank(plan.EsqlQuery, &state.EsqlQuery)
+	lenscommon.PreserveKnownStringIfStateBlank(plan.Title, &state.Title)
+	lenscommon.PreserveKnownTfListIfStateNull(plan.AvailableOptions, &state.AvailableOptions)
 }
