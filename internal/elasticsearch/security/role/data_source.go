@@ -49,12 +49,17 @@ type roleDataSourceModel struct {
 	RemoteIndices types.Set            `tfsdk:"remote_indices"`
 }
 
+func (m roleDataSourceModel) GetID() types.String         { return m.ID }
+func (m roleDataSourceModel) GetResourceID() types.String { return m.Name }
+
 func NewRoleDataSource() datasource.DataSource {
 	return entitycore.NewElasticsearchDataSource[roleDataSourceModel](
 		entitycore.ComponentElasticsearch,
 		"security_role",
-		getDataSourceSchema,
-		readDataSource,
+		entitycore.ElasticsearchDataSourceOptions[roleDataSourceModel]{
+			Schema: getDataSourceSchema,
+			Read:   readDataSource,
+		},
 	)
 }
 
@@ -211,60 +216,44 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 	}
 }
 
-func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config roleDataSourceModel) (roleDataSourceModel, diag.Diagnostics) {
+func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, resourceID string, model roleDataSourceModel) (roleDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	roleName := config.Name.ValueString()
-
-	// Resolve the composite ID
-	id, idDiags := esClient.ID(ctx, roleName)
+	id, idDiags := esClient.ID(ctx, resourceID)
 	diags.Append(idDiags...)
 	if diags.HasError() {
-		return config, diags
+		return model, false, diags
 	}
-	config.ID = types.StringValue(id.String())
+	model.ID = types.StringValue(id.String())
 
-	// Call GetRole
-	role, roleDiags := elasticsearch.GetRole(ctx, esClient, roleName)
+	role, roleDiags := elasticsearch.GetRole(ctx, esClient, resourceID)
 	diags.Append(roleDiags...)
 	if diags.HasError() {
-		return config, diags
+		return model, false, diags
 	}
 
-	// Not-found: return empty ID, keep name, no diagnostics
 	if role == nil {
-		config.ID = types.StringValue("")
-		config.Description = types.StringNull()
-		config.Cluster = types.SetNull(types.StringType)
-		config.RunAs = types.SetNull(types.StringType)
-		config.Global = jsontypes.NewNormalizedNull()
-		config.Metadata = jsontypes.NewNormalizedNull()
-		config.Applications = types.SetNull(types.ObjectType{AttrTypes: getApplicationDSAttrTypes()})
-		config.Indices = types.SetNull(types.ObjectType{AttrTypes: getIndexPermsDSAttrTypes()})
-		config.RemoteIndices = types.SetNull(types.ObjectType{AttrTypes: getRemoteIndexPermsDSAttrTypes()})
-		return config, diags
+		return model, false, diags
 	}
 
-	// Map API response to model
-	diags.Append(config.fromAPIModel(ctx, role)...)
+	diags.Append((&model).fromAPIModel(ctx, role)...)
 	if diags.HasError() {
-		return config, diags
+		return model, false, diags
 	}
 
-	// Ensure name is set to the role name we looked up
-	config.Name = types.StringValue(roleName)
+	model.Name = types.StringValue(resourceID)
 
-	return config, diags
+	return model, true, diags
 }
 
-func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTypes.Role) diag.Diagnostics {
+func (m *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTypes.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Description
 	if role.Description != nil {
-		config.Description = types.StringValue(*role.Description)
+		m.Description = types.StringValue(*role.Description)
 	} else {
-		config.Description = types.StringNull()
+		m.Description = types.StringNull()
 	}
 
 	// Cluster
@@ -277,7 +266,7 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 	if diags.HasError() {
 		return diags
 	}
-	config.Cluster = clusterSet
+	m.Cluster = clusterSet
 
 	// RunAs
 	runAsSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(role.RunAs))
@@ -285,7 +274,7 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 	if diags.HasError() {
 		return diags
 	}
-	config.RunAs = runAsSet
+	m.RunAs = runAsSet
 
 	// Global
 	if role.Global != nil {
@@ -294,9 +283,9 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling global JSON: %s", err))
 			return diags
 		}
-		config.Global = jsontypes.NewNormalizedValue(string(globalBytes))
+		m.Global = jsontypes.NewNormalizedValue(string(globalBytes))
 	} else {
-		config.Global = jsontypes.NewNormalizedNull()
+		m.Global = jsontypes.NewNormalizedNull()
 	}
 
 	// Metadata
@@ -306,9 +295,9 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling metadata JSON: %s", err))
 			return diags
 		}
-		config.Metadata = jsontypes.NewNormalizedValue(string(metadataBytes))
+		m.Metadata = jsontypes.NewNormalizedValue(string(metadataBytes))
 	} else {
-		config.Metadata = jsontypes.NewNormalizedNull()
+		m.Metadata = jsontypes.NewNormalizedNull()
 	}
 
 	// Applications
@@ -345,9 +334,9 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 		if diags.HasError() {
 			return diags
 		}
-		config.Applications = appSet
+		m.Applications = appSet
 	} else {
-		config.Applications = types.SetNull(types.ObjectType{AttrTypes: getApplicationDSAttrTypes()})
+		m.Applications = types.SetNull(types.ObjectType{AttrTypes: getApplicationDSAttrTypes()})
 	}
 
 	// Indices
@@ -409,9 +398,9 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 		if diags.HasError() {
 			return diags
 		}
-		config.Indices = indicesSet
+		m.Indices = indicesSet
 	} else {
-		config.Indices = types.SetNull(types.ObjectType{AttrTypes: getIndexPermsDSAttrTypes()})
+		m.Indices = types.SetNull(types.ObjectType{AttrTypes: getIndexPermsDSAttrTypes()})
 	}
 
 	// Remote Indices
@@ -472,9 +461,9 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 		if diags.HasError() {
 			return diags
 		}
-		config.RemoteIndices = remoteIndicesSet
+		m.RemoteIndices = remoteIndicesSet
 	} else {
-		config.RemoteIndices = types.SetNull(types.ObjectType{AttrTypes: getRemoteIndexPermsDSAttrTypes()})
+		m.RemoteIndices = types.SetNull(types.ObjectType{AttrTypes: getRemoteIndexPermsDSAttrTypes()})
 	}
 
 	return diags

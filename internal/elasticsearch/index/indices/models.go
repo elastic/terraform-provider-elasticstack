@@ -108,6 +108,18 @@ type tfModel struct {
 	Indices types.List   `tfsdk:"indices"`
 }
 
+func (m tfModel) GetID() types.String         { return m.ID }
+func (m tfModel) GetResourceID() types.String { return m.Target }
+
+// GetReadResourceID satisfies [entitycore.WithReadResourceID]. An empty target
+// means all indices.
+func (m tfModel) GetReadResourceID() string {
+	if t := m.Target.ValueString(); t != "" {
+		return t
+	}
+	return "*"
+}
+
 type indexTfModel struct {
 	ID                                 types.String         `tfsdk:"id"`
 	Name                               types.String         `tfsdk:"name"`

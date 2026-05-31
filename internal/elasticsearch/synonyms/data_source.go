@@ -19,7 +19,6 @@ package synonyms
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -35,8 +34,10 @@ func NewSynonymSetDataSource() datasource.DataSource {
 	return entitycore.NewElasticsearchDataSource(
 		entitycore.ComponentElasticsearch,
 		"synonym_set",
-		dataSourceSchemaFactory,
-		readSynonymSetDataSource,
+		entitycore.ElasticsearchDataSourceOptions[SynonymSetData]{
+			Schema: dataSourceSchemaFactory,
+			Read:   readSynonymSetDataSource,
+		},
 	)
 }
 
@@ -74,29 +75,26 @@ func dataSourceSchemaFactory(_ context.Context) schema.Schema {
 	}
 }
 
-func readSynonymSetDataSource(ctx context.Context, client *clients.ElasticsearchScopedClient, data SynonymSetData) (SynonymSetData, diag.Diagnostics) {
+func readSynonymSetDataSource(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data SynonymSetData) (SynonymSetData, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	synonymSetID := data.SynonymSetID.ValueString()
-
-	id, idDiags := client.ID(ctx, synonymSetID)
+	id, idDiags := client.ID(ctx, resourceID)
 	diags.Append(idDiags...)
 	if diags.HasError() {
-		return data, diags
+		return data, false, diags
 	}
 	data.ID = types.StringValue(id.String())
 
-	rules, getDiags := elasticsearch.GetSynonymSet(ctx, client, synonymSetID)
+	rules, getDiags := elasticsearch.GetSynonymSet(ctx, client, resourceID)
 	diags.Append(getDiags...)
 	if diags.HasError() {
-		return data, diags
+		return data, false, diags
 	}
 
 	if rules == nil {
-		diags.AddError("Synonym set not found", fmt.Sprintf("Synonym set '%s' not found", synonymSetID))
-		return data, diags
+		return data, false, diags
 	}
 
 	data.populateFromAPI(ctx, rules, &diags)
-	return data, diags
+	return data, !diags.HasError(), diags
 }

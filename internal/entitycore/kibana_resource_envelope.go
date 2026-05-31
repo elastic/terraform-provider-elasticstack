@@ -180,14 +180,33 @@ func (r *KibanaResource[T]) Schema(ctx context.Context, _ resource.SchemaRequest
 	resp.Schema = schema
 }
 
+// kibanaIdentityModel is satisfied by resource and data source models for
+// shared read-identity resolution.
+type kibanaIdentityModel interface {
+	GetID() types.String
+	GetResourceID() types.String
+	GetSpaceID() types.String
+}
+
 // resolveKibanaResourceIdentity uses the composite-ID-or-fallback rule to
 // determine the resourceID and spaceID for a model. It attempts to parse
-// GetID() as a composite ID; on failure (nil result) it falls back to
-// GetResourceID() and GetSpaceID(). Composite-parse diagnostics are discarded.
-func resolveKibanaResourceIdentity[T KibanaResourceModel](model T) (resourceID string, spaceID string) {
+// GetID() as a composite ID; on failure it tries GetResourceID() as a
+// composite (common for data sources that accept composite lookup keys);
+// otherwise it falls back to plain GetResourceID() and GetSpaceID().
+// Composite-parse diagnostics are discarded.
+func resolveKibanaResourceIdentity(model kibanaIdentityModel) (resourceID string, spaceID string) {
 	compID, _ := clients.CompositeIDFromStr(model.GetID().ValueString())
 	if compID != nil {
 		return compID.ResourceID, compID.ClusterID
+	}
+	if usesCompositeResourceID(model) {
+		if compID, _ = clients.CompositeIDFromStr(model.GetResourceID().ValueString()); compID != nil {
+			spaceID = model.GetSpaceID().ValueString()
+			if spaceID == "" {
+				spaceID = compID.ClusterID
+			}
+			return compID.ResourceID, spaceID
+		}
 	}
 	return model.GetResourceID().ValueString(), model.GetSpaceID().ValueString()
 }

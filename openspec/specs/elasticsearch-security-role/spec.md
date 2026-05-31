@@ -167,14 +167,14 @@ The data source SHALL expose a computed `id` attribute in the format `<cluster_u
 
 ### Requirement: Data source not found behavior (DS-REQ-004)
 
-When a role is not found, the data source SHALL preserve SDK behavior by setting `id` to an empty string and returning no warning or error diagnostic.
+When a role is not found, the read callback SHALL return `found == false` and the envelope SHALL append a standardized not-found error diagnostic; Terraform state SHALL NOT be set.
 
 #### Scenario: Role not found
 
 - **GIVEN** a role does not exist with the requested `name`
 - **WHEN** the data source is read
-- **THEN** `id` SHALL be set to an empty string
-- **AND** no diagnostic SHALL be returned
+- **THEN** the envelope SHALL return a not-found error diagnostic
+- **AND** Terraform state SHALL NOT be set
 
 ### Requirement: Data source connection (DS-REQ-005–DS-REQ-006)
 

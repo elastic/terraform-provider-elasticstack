@@ -19,7 +19,6 @@ package queryrulesets
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -34,34 +33,33 @@ func NewQueryRulesetDataSource() datasource.DataSource {
 	return entitycore.NewElasticsearchDataSource(
 		entitycore.ComponentElasticsearch,
 		"query_ruleset",
-		dataSourceSchemaFactory,
-		readQueryRulesetDataSource,
+		entitycore.ElasticsearchDataSourceOptions[QueryRulesetData]{
+			Schema: dataSourceSchemaFactory,
+			Read:   readQueryRulesetDataSource,
+		},
 	)
 }
 
-func readQueryRulesetDataSource(ctx context.Context, client *clients.ElasticsearchScopedClient, data QueryRulesetData) (QueryRulesetData, diag.Diagnostics) {
+func readQueryRulesetDataSource(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data QueryRulesetData) (QueryRulesetData, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	rulesetID := data.RulesetID.ValueString()
-
-	id, idDiags := client.ID(ctx, rulesetID)
+	id, idDiags := client.ID(ctx, resourceID)
 	diags.Append(idDiags...)
 	if diags.HasError() {
-		return data, diags
+		return data, false, diags
 	}
 	data.ID = types.StringValue(id.String())
 
-	resp, getDiags := elasticsearch.GetQueryRuleset(ctx, client, rulesetID)
+	resp, getDiags := elasticsearch.GetQueryRuleset(ctx, client, resourceID)
 	diags.Append(getDiags...)
 	if diags.HasError() {
-		return data, diags
+		return data, false, diags
 	}
 
 	if resp == nil {
-		diags.AddError("Query ruleset not found", fmt.Sprintf("Query ruleset '%s' not found", rulesetID))
-		return data, diags
+		return data, false, diags
 	}
 
 	data.populateFromAPI(ctx, resp.Rules, &diags)
-	return data, diags
+	return data, !diags.HasError(), diags
 }

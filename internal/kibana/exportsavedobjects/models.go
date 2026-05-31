@@ -37,3 +37,7 @@ type dataSourceModel struct {
 	IncludeReferencesDeep types.Bool   `tfsdk:"include_references_deep"`
 	ExportedObjects       types.String `tfsdk:"exported_objects"`
 }
+
+func (m dataSourceModel) GetID() types.String         { return m.ID }
+func (m dataSourceModel) GetResourceID() types.String { return types.StringValue("export") }
+func (m dataSourceModel) GetSpaceID() types.String    { return m.SpaceID }

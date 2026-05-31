@@ -359,48 +359,53 @@ var (
 	hdfsElemType  = mustElementType(dataSourceSchema.Attributes[repoTypeHDFS].GetType())
 )
 
+func (m snapshotRepositoryDataSourceModel) GetID() types.String         { return m.ID }
+func (m snapshotRepositoryDataSourceModel) GetResourceID() types.String { return m.Name }
+
 func NewSnapshotRepositoryDataSource() datasource.DataSource {
 	return entitycore.NewElasticsearchDataSource[snapshotRepositoryDataSourceModel](
 		entitycore.ComponentElasticsearch,
 		"snapshot_repository",
-		getDataSourceSchema,
-		readDataSource,
+		entitycore.ElasticsearchDataSourceOptions[snapshotRepositoryDataSourceModel]{
+			Schema: getDataSourceSchema,
+			Read:   readDataSource,
+		},
 	)
 }
 
-func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config snapshotRepositoryDataSourceModel) (snapshotRepositoryDataSourceModel, diag.Diagnostics) {
+func readDataSource(
+	ctx context.Context,
+	esClient *clients.ElasticsearchScopedClient,
+	resourceID string,
+	config snapshotRepositoryDataSourceModel,
+) (snapshotRepositoryDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	repoName := config.Name.ValueString()
 
-	id, idDiags := esClient.ID(ctx, repoName)
+	id, idDiags := esClient.ID(ctx, resourceID)
 	diags.Append(idDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 	config.ID = types.StringValue(id.String())
 
-	currentRepo, repoDiags := elasticsearch.GetSnapshotRepository(ctx, esClient, repoName)
+	currentRepo, repoDiags := elasticsearch.GetSnapshotRepository(ctx, esClient, resourceID)
 	diags.Append(repoDiags...)
 	if diags.HasError() {
-		return config, diags
-	}
-
-	config, initDiags := initEmptyTypeBlocks(config)
-	diags.Append(initDiags...)
-	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	if currentRepo == nil {
-		diags.AddWarning(
-			fmt.Sprintf("Could not find snapshot repository [%s]", repoName),
-			"",
-		)
-		return config, diags
+		return config, false, diags
 	}
 
 	config.Type = types.StringValue(currentRepo.Type)
-	return populateRepositoryTypeBlocks(ctx, config, currentRepo)
+	config, emptyDiags := initEmptyTypeBlocks(config)
+	diags.Append(emptyDiags...)
+	if diags.HasError() {
+		return config, false, diags
+	}
+	result, popDiags := populateRepositoryTypeBlocks(ctx, config, currentRepo)
+	return result, !popDiags.HasError(), popDiags
 }
 
 func initEmptyTypeBlocks(config snapshotRepositoryDataSourceModel) (snapshotRepositoryDataSourceModel, diag.Diagnostics) {

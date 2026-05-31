@@ -74,6 +74,9 @@ type ContentConnectorDataSourceModel struct {
 	SyncNow                          fwtypes.Bool         `tfsdk:"sync_now"`
 }
 
+func (m ContentConnectorDataSourceModel) GetID() fwtypes.String         { return m.ID }
+func (m ContentConnectorDataSourceModel) GetResourceID() fwtypes.String { return m.ConnectorID }
+
 var _ entitycore.WithVersionRequirements = ContentConnectorDataSourceModel{}
 
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
@@ -87,32 +90,38 @@ func (ContentConnectorDataSourceModel) GetVersionRequirements() ([]entitycore.Ve
 func readContentConnectorDataSource(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
+	resourceID string,
 	model ContentConnectorDataSourceModel,
-) (ContentConnectorDataSourceModel, diag.Diagnostics) {
+) (ContentConnectorDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	connectorID := model.ConnectorID.ValueString()
-	resp, getDiags := esclient.GetConnector(ctx, client, connectorID)
+	id, idDiags := client.ID(ctx, resourceID)
+	diags.Append(idDiags...)
+	if diags.HasError() {
+		return model, false, diags
+	}
+	model.ID = fwtypes.StringValue(id.String())
+
+	resp, getDiags := esclient.GetConnector(ctx, client, resourceID)
 	diags.Append(getDiags...)
 	if diags.HasError() {
-		return model, diags
+		return model, false, diags
 	}
 
 	if resp == nil {
-		diags.AddError(
-			"Connector not found",
-			fmt.Sprintf("Connector %q was not found.", connectorID),
-		)
-		return model, diags
+		return model, false, diags
 	}
 
-	populateContentConnectorDataSourceFromAPI(ctx, client, connectorID, resp, &model, &diags)
-	return model, diags
+	populateContentConnectorDataSourceFromAPI(ctx, resourceID, resp, &model, &diags)
+	if diags.HasError() {
+		return model, false, diags
+	}
+
+	return model, true, diags
 }
 
 func populateContentConnectorDataSourceFromAPI(
 	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
 	connectorID string,
 	resp *getconnector.Response,
 	model *ContentConnectorDataSourceModel,
@@ -191,13 +200,6 @@ func populateContentConnectorDataSourceFromAPI(
 	model.SyncCursor = marshalConnectorRawJSONField("sync_cursor", resp.SyncCursor, diags)
 	model.SyncNow = fwtypes.BoolValue(resp.SyncNow)
 
-	id, idDiags := client.ID(ctx, connectorID)
-	diags.Append(idDiags...)
-	if diags.HasError() {
-		return
-	}
-
-	model.ID = fwtypes.StringValue(id.String())
 	model.ConnectorID = fwtypes.StringValue(connectorID)
 }
 

@@ -33,6 +33,7 @@ import (
 func (model workflowModel) GetID() types.String             { return model.ID }
 func (model workflowModel) GetResourceID() types.String     { return model.WorkflowID }
 func (model workflowModel) GetSpaceID() types.String        { return model.SpaceID }
+func (workflowModel) UsesCompositeResourceID() bool         { return true }
 func (model workflowModel) GetKibanaConnection() types.List { return model.KibanaConnection }
 
 var _ entitycore.KibanaResourceModel = workflowModel{}
@@ -52,7 +53,12 @@ type workflowDataSourceModel struct {
 	ConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"configuration_yaml"`
 }
 
-func (model workflowDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m workflowDataSourceModel) GetID() types.String         { return m.ID }
+func (m workflowDataSourceModel) GetResourceID() types.String { return m.WorkflowID }
+func (m workflowDataSourceModel) GetSpaceID() types.String    { return m.SpaceID }
+func (workflowDataSourceModel) UsesCompositeResourceID() bool { return true }
+
+func (m workflowDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return workflowVersionRequirements(), nil
 }
 

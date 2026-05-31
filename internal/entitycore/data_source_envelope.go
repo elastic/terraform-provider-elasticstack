@@ -19,6 +19,7 @@ package entitycore
 
 import (
 	"context"
+	"fmt"
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -55,18 +56,64 @@ func (f ElasticsearchConnectionField) GetElasticsearchConnection() types.List {
 }
 
 // KibanaDataSourceModel is the type constraint for models passed to
-// [NewKibanaDataSource]. It is satisfied by any struct that embeds
-// [KibanaConnectionField] (or otherwise provides a GetKibanaConnection method).
+// [NewKibanaDataSource]. Concrete types must provide value-receiver methods
+// GetID, GetResourceID, GetSpaceID, and GetKibanaConnection.
 type KibanaDataSourceModel interface {
+	GetID() types.String
+	GetResourceID() types.String
+	GetSpaceID() types.String
 	GetKibanaConnection() types.List
 }
 
 // ElasticsearchDataSourceModel is the type constraint for models passed to
-// [NewElasticsearchDataSource]. It is satisfied by any struct that embeds
-// [ElasticsearchConnectionField] (or otherwise provides a
-// GetElasticsearchConnection method).
+// [NewElasticsearchDataSource]. Concrete types must provide value-receiver
+// methods GetID, GetResourceID, and GetElasticsearchConnection.
 type ElasticsearchDataSourceModel interface {
+	GetID() types.String
+	GetResourceID() types.String
 	GetElasticsearchConnection() types.List
+}
+
+type elasticsearchDataSourceReadFunc[T ElasticsearchDataSourceModel] func(
+	context.Context,
+	*clients.ElasticsearchScopedClient,
+	string,
+	T,
+) (T, bool, diag.Diagnostics)
+
+type elasticsearchDataSourcePostReadFunc[T ElasticsearchDataSourceModel] func(
+	context.Context,
+	*clients.ElasticsearchScopedClient,
+	T,
+) diag.Diagnostics
+
+// ElasticsearchDataSourceOptions configures [NewElasticsearchDataSource].
+// PostRead is optional.
+type ElasticsearchDataSourceOptions[T ElasticsearchDataSourceModel] struct {
+	Schema   func(context.Context) dsschema.Schema
+	Read     elasticsearchDataSourceReadFunc[T]
+	PostRead elasticsearchDataSourcePostReadFunc[T]
+}
+
+type kibanaDataSourceReadFunc[T KibanaDataSourceModel] func(
+	context.Context,
+	*clients.KibanaScopedClient,
+	string,
+	string,
+	T,
+) (T, bool, diag.Diagnostics)
+
+type kibanaDataSourcePostReadFunc[T KibanaDataSourceModel] func(
+	context.Context,
+	*clients.KibanaScopedClient,
+	T,
+) diag.Diagnostics
+
+// KibanaDataSourceOptions configures [NewKibanaDataSource]. PostRead is optional.
+type KibanaDataSourceOptions[T KibanaDataSourceModel] struct {
+	Schema   func(context.Context) dsschema.Schema
+	Read     kibanaDataSourceReadFunc[T]
+	PostRead kibanaDataSourcePostReadFunc[T]
 }
 
 // VersionRequirement describes a minimum server version that an entity model
@@ -82,12 +129,13 @@ type VersionRequirement struct {
 
 // genericKibanaDataSource implements [datasource.DataSource] and
 // [datasource.DataSourceWithConfigure] for Kibana-backed data sources. It
-// owns config decode, scoped client resolution, and state persistence; entity
-// logic is delegated to the readFunc callback.
+// owns config decode, scoped client resolution, identity resolution, and state
+// persistence; entity logic is delegated to the readFunc callback.
 type genericKibanaDataSource[T KibanaDataSourceModel] struct {
 	*DataSourceBase
 	schemaFactory func(context.Context) dsschema.Schema
-	readFunc      func(context.Context, *clients.KibanaScopedClient, T) (T, diag.Diagnostics)
+	readFunc      kibanaDataSourceReadFunc[T]
+	postReadFunc  kibanaDataSourcePostReadFunc[T]
 }
 
 // genericElasticsearchDataSource implements [datasource.DataSource] and
@@ -95,60 +143,46 @@ type genericKibanaDataSource[T KibanaDataSourceModel] struct {
 type genericElasticsearchDataSource[T ElasticsearchDataSourceModel] struct {
 	*DataSourceBase
 	schemaFactory func(context.Context) dsschema.Schema
-	readFunc      func(context.Context, *clients.ElasticsearchScopedClient, T) (T, diag.Diagnostics)
+	readFunc      elasticsearchDataSourceReadFunc[T]
+	postReadFunc  elasticsearchDataSourcePostReadFunc[T]
 }
 
 // NewKibanaDataSource returns a [datasource.DataSource] that wraps the
 // provided schema and read function with automatic kibana_connection block
-// injection, config decode, scoped client resolution, and state persistence.
+// injection, config decode, scoped client resolution, identity resolution,
+// centralized not-found handling, and state persistence.
 //
-// The concrete model T must embed [KibanaConnectionField] so that the
-// connection block can be decoded alongside entity attributes.
-//
-// Example usage (package doc):
-//
-//	type myModel struct {
-//	    entitycore.KibanaConnectionField
-//	    ID types.String `tfsdk:"id"`
-//	}
-//
-//	func NewDataSource() datasource.DataSource {
-//	    return entitycore.NewKibanaDataSource[myModel](
-//	        entitycore.ComponentKibana,
-//	        "my_entity",
-//	        getDataSourceSchema, // func(ctx context.Context) datasource.Schema, without kibana_connection block
-//	        readMyEntity,
-//	    )
-//	}
+// The concrete model T must satisfy [KibanaDataSourceModel] so that the
+// connection block and read identity can be decoded and resolved.
 func NewKibanaDataSource[T KibanaDataSourceModel](
 	component Component,
 	name string,
-	schemaFactory func(context.Context) dsschema.Schema,
-	readFunc func(context.Context, *clients.KibanaScopedClient, T) (T, diag.Diagnostics),
+	opts KibanaDataSourceOptions[T],
 ) datasource.DataSource {
 	return &genericKibanaDataSource[T]{
 		DataSourceBase: NewDataSourceBase(component, name),
-		schemaFactory:  schemaFactory,
-		readFunc:       readFunc,
+		schemaFactory:  opts.Schema,
+		readFunc:       opts.Read,
+		postReadFunc:   opts.PostRead,
 	}
 }
 
 // NewElasticsearchDataSource returns a [datasource.DataSource] that wraps the
 // provided schema and read function with automatic elasticsearch_connection
-// block injection, config decode, scoped client resolution, and state
-// persistence.
+// block injection, config decode, scoped client resolution, identity
+// resolution, centralized not-found handling, and state persistence.
 //
-// The concrete model T must embed [ElasticsearchConnectionField].
+// The concrete model T must satisfy [ElasticsearchDataSourceModel].
 func NewElasticsearchDataSource[T ElasticsearchDataSourceModel](
 	component Component,
 	name string,
-	schemaFactory func(context.Context) dsschema.Schema,
-	readFunc func(context.Context, *clients.ElasticsearchScopedClient, T) (T, diag.Diagnostics),
+	opts ElasticsearchDataSourceOptions[T],
 ) datasource.DataSource {
 	return &genericElasticsearchDataSource[T]{
 		DataSourceBase: NewDataSourceBase(component, name),
-		schemaFactory:  schemaFactory,
-		readFunc:       readFunc,
+		schemaFactory:  opts.Schema,
+		readFunc:       opts.Read,
+		postReadFunc:   opts.PostRead,
 	}
 }
 
@@ -174,20 +208,49 @@ func (d *genericElasticsearchDataSource[T]) Schema(ctx context.Context, _ dataso
 	resp.Schema = injectConnectionBlockIntoSchema(ctx, d.schemaFactory, blockElasticsearchConnection, providerschema.GetEsFWConnectionBlock())
 }
 
-// doDataSourceRead is the shared Read orchestration for genericKibanaDataSource
-// and genericElasticsearchDataSource. getClient encapsulates the only
-// caller-supplied variation: which backend client to resolve.
-func doDataSourceRead[C MinVersionClient, T any](
+func dataSourceNotFoundDiagnostic(component Component, name string, resourceID string, spaceID string) diag.Diagnostics {
+	var diags diag.Diagnostics
+	summary := fmt.Sprintf("%s_%s not found", component, name)
+	detail := fmt.Sprintf("%s_%s %q was not found", component, name, resourceID)
+	if spaceID != "" {
+		detail = fmt.Sprintf("%s_%s %q in space %q was not found", component, name, resourceID, spaceID)
+	}
+	diags.AddError(summary, detail)
+	return diags
+}
+
+type dataSourceReadParams struct {
+	component Component
+	name      string
+}
+
+// doElasticsearchDataSourceRead is the shared Read orchestration for
+// genericElasticsearchDataSource.
+func doElasticsearchDataSourceRead[T ElasticsearchDataSourceModel](
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
-	getClient func(context.Context, T) (C, diag.Diagnostics),
-	readFunc func(context.Context, C, T) (T, diag.Diagnostics),
+	params dataSourceReadParams,
+	getClient func(context.Context, T) (*clients.ElasticsearchScopedClient, diag.Diagnostics),
+	readFunc elasticsearchDataSourceReadFunc[T],
+	postReadFunc elasticsearchDataSourcePostReadFunc[T],
 ) {
 	var model T
-	diags := req.Config.Get(ctx, &model)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resourceID, idDiags := resolveElasticsearchReadResourceID(model, "")
+	resp.Diagnostics.Append(idDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if resourceID == "" {
+		resp.Diagnostics.AddError(
+			"Invalid resource identifier",
+			"The resolved read identity is empty; cannot read.",
+		)
 		return
 	}
 
@@ -197,37 +260,121 @@ func doDataSourceRead[C MinVersionClient, T any](
 		return
 	}
 
-	resp.Diagnostics.Append(EnforceVersionRequirements(ctx, client, &model)...)
+	if vDiags := EnforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
+		resp.Diagnostics.Append(vDiags...)
+		return
+	}
+
+	if readFunc == nil {
+		resp.Diagnostics.AddError(
+			"Elasticsearch envelope configuration error",
+			"The read callback passed via ElasticsearchDataSourceOptions must not be nil.",
+		)
+		return
+	}
+
+	result, found, callDiags := readFunc(ctx, client, resourceID, model)
+	resp.Diagnostics.Append(callDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	result, diags := readFunc(ctx, client, model)
+	if !found {
+		resp.Diagnostics.Append(dataSourceNotFoundDiagnostic(params.component, params.name, resourceID, "")...)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &result)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if postReadFunc != nil {
+		resp.Diagnostics.Append(postReadFunc(ctx, client, result)...)
+	}
+}
+
+// doKibanaDataSourceRead is the shared Read orchestration for genericKibanaDataSource.
+func doKibanaDataSourceRead[T KibanaDataSourceModel](
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+	params dataSourceReadParams,
+	getClient func(context.Context, T) (*clients.KibanaScopedClient, diag.Diagnostics),
+	readFunc kibanaDataSourceReadFunc[T],
+	postReadFunc kibanaDataSourcePostReadFunc[T],
+) {
+	var model T
+	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resourceID, spaceID := resolveKibanaResourceIdentity(model)
+	if resourceID == "" {
+		resp.Diagnostics.AddError(
+			"Invalid resource identifier",
+			"The resolved read identity is empty; cannot read.",
+		)
+		return
+	}
+
+	client, diags := getClient(ctx, model)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	diags = resp.State.Set(ctx, &result)
-	resp.Diagnostics.Append(diags...)
+	if vDiags := EnforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
+		resp.Diagnostics.Append(vDiags...)
+		return
+	}
+
+	if readFunc == nil {
+		resp.Diagnostics.AddError(
+			"Kibana envelope configuration error",
+			"The read callback passed via KibanaDataSourceOptions must not be nil.",
+		)
+		return
+	}
+
+	result, found, callDiags := readFunc(ctx, client, resourceID, spaceID, model)
+	resp.Diagnostics.Append(callDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if !found {
+		resp.Diagnostics.Append(dataSourceNotFoundDiagnostic(params.component, params.name, resourceID, spaceID)...)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &result)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if postReadFunc != nil {
+		resp.Diagnostics.Append(postReadFunc(ctx, client, result)...)
+	}
 }
 
 // Read implements [datasource.DataSource].
 func (d *genericKibanaDataSource[T]) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	doDataSourceRead(ctx, req, resp,
-		func(ctx context.Context, model T) (*clients.KibanaScopedClient, diag.Diagnostics) {
-			return d.Client().GetKibanaClient(ctx, model.GetKibanaConnection())
-		},
-		d.readFunc,
-	)
+	doKibanaDataSourceRead(ctx, req, resp, dataSourceReadParams{
+		component: d.component,
+		name:      d.dataSourceName,
+	}, func(ctx context.Context, model T) (*clients.KibanaScopedClient, diag.Diagnostics) {
+		return d.Client().GetKibanaClient(ctx, model.GetKibanaConnection())
+	}, d.readFunc, d.postReadFunc)
 }
 
 // Read implements [datasource.DataSource].
 func (d *genericElasticsearchDataSource[T]) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	doDataSourceRead(ctx, req, resp,
-		func(ctx context.Context, model T) (*clients.ElasticsearchScopedClient, diag.Diagnostics) {
-			return d.Client().GetElasticsearchClient(ctx, model.GetElasticsearchConnection())
-		},
-		d.readFunc,
-	)
+	doElasticsearchDataSourceRead(ctx, req, resp, dataSourceReadParams{
+		component: d.component,
+		name:      d.dataSourceName,
+	}, func(ctx context.Context, model T) (*clients.ElasticsearchScopedClient, diag.Diagnostics) {
+		return d.Client().GetElasticsearchClient(ctx, model.GetElasticsearchConnection())
+	}, d.readFunc, d.postReadFunc)
 }

@@ -27,7 +27,6 @@ import (
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/connectorstatus"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/syncstatus"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -194,7 +193,6 @@ func TestPopulateContentConnectorDataSourceFromAPI_populated(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	client := clients.NewElasticsearchScopedClientForTest(nil, []string{"http://localhost:9200"})
 
 	serviceType := "postgresql"
 	name := "Test Connector"
@@ -246,7 +244,7 @@ func TestPopulateContentConnectorDataSourceFromAPI_populated(t *testing.T) {
 	model := ContentConnectorDataSourceModel{
 		ConnectorID: fwtypes.StringValue("music"),
 	}
-	populateContentConnectorDataSourceFromAPI(ctx, client, "music", resp, &model, &diags)
+	populateContentConnectorDataSourceFromAPI(ctx, "music", resp, &model, &diags)
 
 	require.False(t, model.Status.IsNull())
 	assert.Equal(t, "connected", model.Status.ValueString())
@@ -277,7 +275,6 @@ func TestPopulateContentConnectorDataSourceFromAPI_sparseAPIValues(t *testing.T)
 	t.Parallel()
 
 	ctx := context.Background()
-	client := clients.NewElasticsearchScopedClientForTest(nil, []string{"http://localhost:9200"})
 
 	resp := &getconnector.Response{
 		Status:           connectorstatus.Created,
@@ -292,7 +289,7 @@ func TestPopulateContentConnectorDataSourceFromAPI_sparseAPIValues(t *testing.T)
 	model := ContentConnectorDataSourceModel{
 		ConnectorID: fwtypes.StringValue("sparse"),
 	}
-	populateContentConnectorDataSourceFromAPI(ctx, client, "sparse", resp, &model, &diags)
+	populateContentConnectorDataSourceFromAPI(ctx, "sparse", resp, &model, &diags)
 
 	assert.Equal(t, "created", model.Status.ValueString())
 	assert.True(t, model.ServiceType.IsNull())

@@ -62,9 +62,15 @@ type toolDataSourceModel struct {
 	WorkflowConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"workflow_configuration_yaml"`
 }
 
+func (m toolDataSourceModel) GetID() types.String         { return m.ID }
+func (m toolDataSourceModel) GetResourceID() types.String { return m.ToolID }
+func (m toolDataSourceModel) GetSpaceID() types.String    { return m.SpaceID }
+func (toolDataSourceModel) UsesCompositeResourceID() bool { return true }
+
 func (model toolModel) GetID() types.String             { return model.ID }
 func (model toolModel) GetResourceID() types.String     { return model.ToolID }
 func (model toolModel) GetSpaceID() types.String        { return model.SpaceID }
+func (toolModel) UsesCompositeResourceID() bool         { return true }
 func (model toolModel) GetKibanaConnection() types.List { return model.KibanaConnection }
 
 var _ entitycore.KibanaResourceModel = toolModel{}
@@ -74,7 +80,7 @@ func (model toolModel) GetVersionRequirements() ([]entitycore.VersionRequirement
 	return toolVersionRequirements(), nil
 }
 
-func (model toolDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m toolDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return toolVersionRequirements(), nil
 }
 
@@ -120,25 +126,25 @@ func populateToolBaseFromAPI(ctx context.Context, data *models.Tool, spaceID str
 	return base, diags
 }
 
-func (model *toolDataSourceModel) populateFromAPI(ctx context.Context, data *models.Tool) diag.Diagnostics {
+func (m *toolDataSourceModel) populateFromAPI(ctx context.Context, data *models.Tool) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
 
-	spaceID := model.SpaceID.ValueString()
+	spaceID := m.SpaceID.ValueString()
 	if spaceID == "" {
 		spaceID = defaultSpaceID
 	}
 
 	base, diags := populateToolBaseFromAPI(ctx, data, spaceID)
-	model.ID = base.ID
-	model.ToolID = base.ToolID
-	model.SpaceID = base.SpaceID
-	model.Type = base.Type
-	model.Description = base.Description
-	model.Tags = base.Tags
+	m.ID = base.ID
+	m.ToolID = base.ToolID
+	m.SpaceID = base.SpaceID
+	m.Type = base.Type
+	m.Description = base.Description
+	m.Tags = base.Tags
 
-	model.ReadOnly = types.BoolValue(data.ReadOnly)
+	m.ReadOnly = types.BoolValue(data.ReadOnly)
 
 	if data.Configuration != nil {
 		configJSON, err := json.Marshal(data.Configuration)
@@ -146,9 +152,9 @@ func (model *toolDataSourceModel) populateFromAPI(ctx context.Context, data *mod
 			diags.AddError("Configuration Error", "Failed to marshal configuration to JSON: "+err.Error())
 			return diags
 		}
-		model.Configuration = types.StringValue(string(configJSON))
+		m.Configuration = types.StringValue(string(configJSON))
 	} else {
-		model.Configuration = types.StringNull()
+		m.Configuration = types.StringNull()
 	}
 
 	return diags

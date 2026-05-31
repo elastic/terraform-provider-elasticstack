@@ -203,8 +203,15 @@ func NewElasticsearchResource[T ElasticsearchResourceModel](name string, opts El
 	}
 }
 
+// elasticsearchIdentityModel is satisfied by resource and data source models
+// for shared read-identity resolution.
+type elasticsearchIdentityModel interface {
+	GetID() types.String
+	GetResourceID() types.String
+}
+
 //nolint:unparam // diag.Diagnostics is always nil in current paths but is part of the public signature used by callers.
-func resolveElasticsearchReadResourceID(model ElasticsearchResourceModel, writeFallback string) (string, diag.Diagnostics) {
+func resolveElasticsearchReadResourceID(model elasticsearchIdentityModel, writeFallback string) (string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if m, ok := any(model).(WithReadResourceID); ok {
 		if id := strings.TrimSpace(m.GetReadResourceID()); id != "" {

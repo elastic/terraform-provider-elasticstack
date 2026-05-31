@@ -38,15 +38,31 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// esTestModel is a minimal Elasticsearch data source model for envelope tests.
+type esTestModel struct {
+	ElasticsearchConnectionField
+	ID   types.String `tfsdk:"id"`
+	Name types.String `tfsdk:"name"`
+}
+
+func (m esTestModel) GetID() types.String         { return m.ID }
+func (m esTestModel) GetResourceID() types.String { return m.Name }
+
 // testModel embeds KibanaConnectionField for envelope tests.
 type testModel struct {
 	KibanaConnectionField
-	ID types.String `tfsdk:"id"`
+	ID   types.String `tfsdk:"id"`
+	Name types.String `tfsdk:"name"`
 }
+
+func (m testModel) GetID() types.String         { return m.ID }
+func (m testModel) GetResourceID() types.String { return m.Name }
+func (m testModel) GetSpaceID() types.String    { return types.StringNull() }
 
 func getTestSchema(_ context.Context) dsschema.Schema {
 	return dsschema.Schema{
 		Attributes: map[string]dsschema.Attribute{
+			"name": dsschema.StringAttribute{Required: true},
 			"id": dsschema.StringAttribute{
 				Computed: true,
 			},
@@ -54,9 +70,9 @@ func getTestSchema(_ context.Context) dsschema.Schema {
 	}
 }
 
-func testReadFunc(_ context.Context, _ *clients.KibanaScopedClient, model testModel) (testModel, diag.Diagnostics) {
+func testReadFunc(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, model testModel) (testModel, bool, diag.Diagnostics) {
 	model.ID = types.StringValue("result")
-	return model, nil
+	return model, true, nil
 }
 
 func kibanaConnectionBlockType() tftypes.Type {
@@ -76,7 +92,7 @@ func kibanaConnectionBlockType() tftypes.Type {
 
 func TestNewKibanaDataSource_typeAssertions(t *testing.T) {
 	t.Parallel()
-	ds := NewKibanaDataSource[testModel](ComponentKibana, "test_entity", getTestSchema, testReadFunc)
+	ds := NewKibanaDataSource[testModel](ComponentKibana, "test_entity", KibanaDataSourceOptions[testModel]{Schema: getTestSchema, Read: testReadFunc})
 	require.NotNil(t, ds)
 	require.Implements(t, (*datasource.DataSource)(nil), ds)
 	require.Implements(t, (*datasource.DataSourceWithConfigure)(nil), ds)
@@ -84,16 +100,11 @@ func TestNewKibanaDataSource_typeAssertions(t *testing.T) {
 
 func TestNewElasticsearchDataSource_typeAssertions(t *testing.T) {
 	t.Parallel()
-	ds := NewElasticsearchDataSource[struct {
-		ElasticsearchConnectionField
-	}](ComponentElasticsearch, "test_entity", func(_ context.Context) dsschema.Schema {
-		return dsschema.Schema{}
-	}, func(_ context.Context, _ *clients.ElasticsearchScopedClient, model struct {
-		ElasticsearchConnectionField
-	}) (struct {
-		ElasticsearchConnectionField
-	}, diag.Diagnostics) {
-		return model, nil
+	ds := NewElasticsearchDataSource[esTestModel](ComponentElasticsearch, "test_entity", ElasticsearchDataSourceOptions[esTestModel]{
+		Schema: func(_ context.Context) dsschema.Schema { return dsschema.Schema{} },
+		Read: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, model esTestModel) (esTestModel, bool, diag.Diagnostics) {
+			return model, true, nil
+		},
 	})
 	require.NotNil(t, ds)
 	require.Implements(t, (*datasource.DataSource)(nil), ds)
@@ -102,7 +113,7 @@ func TestNewElasticsearchDataSource_typeAssertions(t *testing.T) {
 
 func TestNewKibanaDataSource_schemaInjection(t *testing.T) {
 	t.Parallel()
-	ds := NewKibanaDataSource[testModel](ComponentKibana, "test_entity", getTestSchema, testReadFunc)
+	ds := NewKibanaDataSource[testModel](ComponentKibana, "test_entity", KibanaDataSourceOptions[testModel]{Schema: getTestSchema, Read: testReadFunc})
 
 	var resp datasource.SchemaResponse
 	ds.Schema(context.Background(), datasource.SchemaRequest{}, &resp)
@@ -114,16 +125,11 @@ func TestNewKibanaDataSource_schemaInjection(t *testing.T) {
 
 func TestNewElasticsearchDataSource_schemaInjection(t *testing.T) {
 	t.Parallel()
-	ds := NewElasticsearchDataSource[struct {
-		ElasticsearchConnectionField
-	}](ComponentElasticsearch, "test_entity", func(_ context.Context) dsschema.Schema {
-		return dsschema.Schema{}
-	}, func(_ context.Context, _ *clients.ElasticsearchScopedClient, model struct {
-		ElasticsearchConnectionField
-	}) (struct {
-		ElasticsearchConnectionField
-	}, diag.Diagnostics) {
-		return model, nil
+	ds := NewElasticsearchDataSource[esTestModel](ComponentElasticsearch, "test_entity", ElasticsearchDataSourceOptions[esTestModel]{
+		Schema: func(_ context.Context) dsschema.Schema { return dsschema.Schema{} },
+		Read: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, model esTestModel) (esTestModel, bool, diag.Diagnostics) {
+			return model, true, nil
+		},
 	})
 
 	var resp datasource.SchemaResponse
@@ -136,9 +142,9 @@ func TestNewElasticsearchDataSource_schemaInjection(t *testing.T) {
 func TestNewKibanaDataSource_schemaDefensiveClone(t *testing.T) {
 	t.Parallel()
 	originalSchema := getTestSchema(context.Background())
-	ds := NewKibanaDataSource[testModel](ComponentKibana, "test_entity", func(_ context.Context) dsschema.Schema {
+	ds := NewKibanaDataSource[testModel](ComponentKibana, "test_entity", KibanaDataSourceOptions[testModel]{Schema: func(_ context.Context) dsschema.Schema {
 		return originalSchema
-	}, testReadFunc)
+	}, Read: testReadFunc})
 
 	// Call Schema twice; the second call should still inject a fresh block.
 	var resp1 datasource.SchemaResponse
@@ -156,7 +162,7 @@ func TestNewKibanaDataSource_schemaDefensiveClone(t *testing.T) {
 
 func TestNewKibanaDataSource_Configure(t *testing.T) {
 	ctx := context.Background()
-	ds := NewKibanaDataSource[testModel](ComponentKibana, "test_entity", getTestSchema, testReadFunc)
+	ds := NewKibanaDataSource[testModel](ComponentKibana, "test_entity", KibanaDataSourceOptions[testModel]{Schema: getTestSchema, Read: testReadFunc})
 
 	t.Run("nil_provider_data", func(t *testing.T) {
 		t.Parallel()
@@ -189,7 +195,7 @@ func TestNewKibanaDataSource_Configure(t *testing.T) {
 
 func TestNewKibanaDataSource_Metadata(t *testing.T) {
 	t.Parallel()
-	ds := NewKibanaDataSource[testModel](ComponentKibana, "test_entity", getTestSchema, testReadFunc)
+	ds := NewKibanaDataSource[testModel](ComponentKibana, "test_entity", KibanaDataSourceOptions[testModel]{Schema: getTestSchema, Read: testReadFunc})
 
 	var resp datasource.MetadataResponse
 	ds.Metadata(context.Background(), datasource.MetadataRequest{
@@ -203,7 +209,7 @@ func TestNewKibanaDataSource_Read_unconfiguredFactory(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	ds := NewKibanaDataSource[testModel](ComponentKibana, "test_entity", getTestSchema, testReadFunc)
+	ds := NewKibanaDataSource[testModel](ComponentKibana, "test_entity", KibanaDataSourceOptions[testModel]{Schema: getTestSchema, Read: testReadFunc})
 
 	// Configure with a zero-value factory (no default client).
 	var cfgResp datasource.ConfigureResponse
@@ -215,11 +221,13 @@ func TestNewKibanaDataSource_Read_unconfiguredFactory(t *testing.T) {
 	connBlockType := kibanaConnectionBlockType()
 	objType := tftypes.Object{
 		AttributeTypes: map[string]tftypes.Type{
+			"name":              tftypes.String,
 			"id":                tftypes.String,
 			"kibana_connection": connBlockType,
 		},
 	}
 	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"name":              tftypes.NewValue(tftypes.String, "test"),
 		"id":                tftypes.NewValue(tftypes.String, nil),
 		"kibana_connection": tftypes.NewValue(connBlockType, nil),
 	})
@@ -401,7 +409,12 @@ func buildReadRequestForSchema(schema dsschema.Schema) datasource.ReadRequest {
 	for name, attr := range schema.Attributes {
 		_ = attr
 		attrTypes[name] = tftypes.String
-		attrValues[name] = tftypes.NewValue(tftypes.String, nil)
+		switch name {
+		case "name", "skill_id", "id":
+			attrValues[name] = tftypes.NewValue(tftypes.String, "test")
+		default:
+			attrValues[name] = tftypes.NewValue(tftypes.String, nil)
+		}
 	}
 	objType := tftypes.Object{AttributeTypes: attrTypes}
 	objValue := tftypes.NewValue(objType, attrValues)
@@ -423,8 +436,13 @@ func buildReadRequestForSchema(schema dsschema.Schema) datasource.ReadRequest {
 // stop read" scenario entirely through the Read path.
 type modelWithVersionReqsDiagError struct {
 	KibanaConnectionField
-	ID types.String `tfsdk:"id"`
+	ID   types.String `tfsdk:"id"`
+	Name types.String `tfsdk:"name"`
 }
+
+func (m modelWithVersionReqsDiagError) GetID() types.String         { return m.ID }
+func (m modelWithVersionReqsDiagError) GetResourceID() types.String { return m.Name }
+func (m modelWithVersionReqsDiagError) GetSpaceID() types.String    { return types.StringNull() }
 
 func (*modelWithVersionReqsDiagError) GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics) {
 	return nil, diag.Diagnostics{
@@ -435,7 +453,8 @@ func (*modelWithVersionReqsDiagError) GetVersionRequirements() ([]VersionRequire
 func getModelWithVersionReqsDiagErrorSchema(_ context.Context) dsschema.Schema {
 	return dsschema.Schema{
 		Attributes: map[string]dsschema.Attribute{
-			"id": dsschema.StringAttribute{Computed: true},
+			"name": dsschema.StringAttribute{Required: true},
+			"id":   dsschema.StringAttribute{Computed: true},
 		},
 		Blocks: map[string]dsschema.Block{
 			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
@@ -447,8 +466,13 @@ func getModelWithVersionReqsDiagErrorSchema(_ context.Context) dsschema.Schema {
 // will satisfy.
 type supportedVersionModel struct {
 	KibanaConnectionField
-	ID types.String `tfsdk:"id"`
+	ID   types.String `tfsdk:"id"`
+	Name types.String `tfsdk:"name"`
 }
+
+func (m supportedVersionModel) GetID() types.String         { return m.ID }
+func (m supportedVersionModel) GetResourceID() types.String { return m.Name }
+func (m supportedVersionModel) GetSpaceID() types.String    { return types.StringNull() }
 
 func (*supportedVersionModel) GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics) {
 	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
@@ -458,7 +482,8 @@ func (*supportedVersionModel) GetVersionRequirements() ([]VersionRequirement, di
 func getSupportedVersionModelSchema(_ context.Context) dsschema.Schema {
 	return dsschema.Schema{
 		Attributes: map[string]dsschema.Attribute{
-			"id": dsschema.StringAttribute{Computed: true},
+			"name": dsschema.StringAttribute{Required: true},
+			"id":   dsschema.StringAttribute{Computed: true},
 		},
 		Blocks: map[string]dsschema.Block{
 			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
@@ -472,6 +497,10 @@ type unsupportedVersionModel struct {
 	KibanaConnectionField
 	ID types.String `tfsdk:"id"`
 }
+
+func (m unsupportedVersionModel) GetID() types.String         { return m.ID }
+func (m unsupportedVersionModel) GetResourceID() types.String { return m.ID }
+func (m unsupportedVersionModel) GetSpaceID() types.String    { return types.StringNull() }
 
 func (*unsupportedVersionModel) GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics) {
 	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
@@ -506,13 +535,14 @@ func TestNewKibanaDataSource_Read_noVersionReqs_readFuncInvoked(t *testing.T) {
 	ctx := context.Background()
 
 	readFuncCalled := false
-	ds := NewKibanaDataSource[testModel](ComponentKibana, "test_entity", getTestSchema,
-		func(_ context.Context, _ *clients.KibanaScopedClient, model testModel) (testModel, diag.Diagnostics) {
+	ds := NewKibanaDataSource[testModel](ComponentKibana, "test_entity", KibanaDataSourceOptions[testModel]{
+		Schema: getTestSchema,
+		Read: func(_ context.Context, _ *clients.KibanaScopedClient, _, _ string, model testModel) (testModel, bool, diag.Diagnostics) {
 			readFuncCalled = true
 			model.ID = types.StringValue("no-version-reqs-result")
-			return model, nil
+			return model, true, nil
 		},
-	)
+	})
 
 	// Use a minimal factory: GetKibanaClient succeeds (defaultClient non-nil)
 	// but no HTTP calls are made because readFunc ignores the client.
@@ -575,19 +605,17 @@ func TestKibanaDataSource_Read_versionReqDiagsStopRead(t *testing.T) {
 	ctx := context.Background()
 
 	readFuncCalled := false
-	ds := NewKibanaDataSource[modelWithVersionReqsDiagError](ComponentKibana, "diag_err_entity",
-		func(_ context.Context) dsschema.Schema {
-			return dsschema.Schema{
-				Attributes: map[string]dsschema.Attribute{
-					"id": dsschema.StringAttribute{Computed: true},
-				},
-			}
-		},
-		func(_ context.Context, _ *clients.KibanaScopedClient, model modelWithVersionReqsDiagError) (modelWithVersionReqsDiagError, diag.Diagnostics) {
-			readFuncCalled = true
-			return model, nil
-		},
-	)
+	ds := NewKibanaDataSource[modelWithVersionReqsDiagError](ComponentKibana, "diag_err_entity", KibanaDataSourceOptions[modelWithVersionReqsDiagError]{Schema: func(_ context.Context) dsschema.Schema {
+		return dsschema.Schema{
+			Attributes: map[string]dsschema.Attribute{
+				"name": dsschema.StringAttribute{Required: true},
+				"id":   dsschema.StringAttribute{Computed: true},
+			},
+		}
+	}, Read: func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, model modelWithVersionReqsDiagError) (modelWithVersionReqsDiagError, bool, diag.Diagnostics) {
+		readFuncCalled = true
+		return model, true, nil
+	}})
 
 	// Factory must succeed so GetKibanaClient does not short-circuit first.
 	factory := newKibanaFactoryMinimal(t)
@@ -623,20 +651,18 @@ func TestKibanaDataSource_Read_supportedServer_invokesReadFunc(t *testing.T) {
 	defer srv.Close()
 
 	readFuncCalled := false
-	ds := NewKibanaDataSource[supportedVersionModel](ComponentKibana, "supported_entity",
-		func(_ context.Context) dsschema.Schema {
-			return dsschema.Schema{
-				Attributes: map[string]dsschema.Attribute{
-					"id": dsschema.StringAttribute{Computed: true},
-				},
-			}
-		},
-		func(_ context.Context, _ *clients.KibanaScopedClient, model supportedVersionModel) (supportedVersionModel, diag.Diagnostics) {
-			readFuncCalled = true
-			model.ID = types.StringValue("supported-result")
-			return model, nil
-		},
-	)
+	ds := NewKibanaDataSource[supportedVersionModel](ComponentKibana, "supported_entity", KibanaDataSourceOptions[supportedVersionModel]{Schema: func(_ context.Context) dsschema.Schema {
+		return dsschema.Schema{
+			Attributes: map[string]dsschema.Attribute{
+				"name": dsschema.StringAttribute{Required: true},
+				"id":   dsschema.StringAttribute{Computed: true},
+			},
+		}
+	}, Read: func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, model supportedVersionModel) (supportedVersionModel, bool, diag.Diagnostics) {
+		readFuncCalled = true
+		model.ID = types.StringValue("supported-result")
+		return model, true, nil
+	}})
 
 	factory := newKibanaFactoryForURL(t, srv.URL)
 	configureDataSource(t, ds, factory)
@@ -671,24 +697,28 @@ func TestKibanaDataSource_Read_unsupportedServer_stopsBeforeReadFunc(t *testing.
 	defer srv.Close()
 
 	readFuncCalled := false
-	ds := NewKibanaDataSource[unsupportedVersionModel](ComponentKibana, "unsupported_entity",
-		func(_ context.Context) dsschema.Schema {
-			return dsschema.Schema{
-				Attributes: map[string]dsschema.Attribute{
-					"id": dsschema.StringAttribute{Computed: true},
-				},
-			}
-		},
-		func(_ context.Context, _ *clients.KibanaScopedClient, model unsupportedVersionModel) (unsupportedVersionModel, diag.Diagnostics) {
-			readFuncCalled = true
-			return model, nil
-		},
-	)
+	ds := NewKibanaDataSource[unsupportedVersionModel](ComponentKibana, "unsupported_entity", KibanaDataSourceOptions[unsupportedVersionModel]{Schema: func(_ context.Context) dsschema.Schema {
+		return dsschema.Schema{
+			Attributes: map[string]dsschema.Attribute{
+				"id": dsschema.StringAttribute{Optional: true, Computed: true},
+			},
+		}
+	}, Read: func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, model unsupportedVersionModel) (unsupportedVersionModel, bool, diag.Diagnostics) {
+		readFuncCalled = true
+		return model, true, nil
+	}})
 
 	factory := newKibanaFactoryForURL(t, srv.URL)
 	configureDataSource(t, ds, factory)
 
-	schema := getSupportedVersionModelSchema(context.Background())
+	schema := dsschema.Schema{
+		Attributes: map[string]dsschema.Attribute{
+			"id": dsschema.StringAttribute{Optional: true, Computed: true},
+		},
+		Blocks: map[string]dsschema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
+		},
+	}
 	req := buildReadRequestForSchema(schema)
 
 	var resp datasource.ReadResponse
@@ -717,16 +747,11 @@ func TestKibanaDataSource_Read_unsupportedServer_stopsBeforeReadFunc(t *testing.
 
 func TestNewElasticsearchDataSource_Configure(t *testing.T) {
 	ctx := context.Background()
-	ds := NewElasticsearchDataSource[struct {
-		ElasticsearchConnectionField
-	}](ComponentElasticsearch, "test_entity", func(_ context.Context) dsschema.Schema {
-		return dsschema.Schema{}
-	}, func(_ context.Context, _ *clients.ElasticsearchScopedClient, model struct {
-		ElasticsearchConnectionField
-	}) (struct {
-		ElasticsearchConnectionField
-	}, diag.Diagnostics) {
-		return model, nil
+	ds := NewElasticsearchDataSource[esTestModel](ComponentElasticsearch, "test_entity", ElasticsearchDataSourceOptions[esTestModel]{
+		Schema: func(_ context.Context) dsschema.Schema { return dsschema.Schema{} },
+		Read: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, model esTestModel) (esTestModel, bool, diag.Diagnostics) {
+			return model, true, nil
+		},
 	})
 
 	t.Run("nil_provider_data", func(t *testing.T) {
@@ -760,16 +785,11 @@ func TestNewElasticsearchDataSource_Configure(t *testing.T) {
 
 func TestNewElasticsearchDataSource_Metadata(t *testing.T) {
 	t.Parallel()
-	ds := NewElasticsearchDataSource[struct {
-		ElasticsearchConnectionField
-	}](ComponentElasticsearch, "test_entity", func(_ context.Context) dsschema.Schema {
-		return dsschema.Schema{}
-	}, func(_ context.Context, _ *clients.ElasticsearchScopedClient, model struct {
-		ElasticsearchConnectionField
-	}) (struct {
-		ElasticsearchConnectionField
-	}, diag.Diagnostics) {
-		return model, nil
+	ds := NewElasticsearchDataSource[esTestModel](ComponentElasticsearch, "test_entity", ElasticsearchDataSourceOptions[esTestModel]{
+		Schema: func(_ context.Context) dsschema.Schema { return dsschema.Schema{} },
+		Read: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, model esTestModel) (esTestModel, bool, diag.Diagnostics) {
+			return model, true, nil
+		},
 	})
 
 	var resp datasource.MetadataResponse
@@ -797,7 +817,12 @@ func buildReadRequestForElasticsearchSchema(schema dsschema.Schema) datasource.R
 	}
 	for name := range schema.Attributes {
 		attrTypes[name] = tftypes.String
-		attrValues[name] = tftypes.NewValue(tftypes.String, nil)
+		switch name {
+		case "name", "skill_id", "id":
+			attrValues[name] = tftypes.NewValue(tftypes.String, "test")
+		default:
+			attrValues[name] = tftypes.NewValue(tftypes.String, nil)
+		}
 	}
 	objType := tftypes.Object{AttributeTypes: attrTypes}
 	objValue := tftypes.NewValue(objType, attrValues)
@@ -891,8 +916,12 @@ func configureElasticsearchDataSource(t *testing.T, ds datasource.DataSource, fa
 // stop read" scenario entirely through the Read path.
 type esModelWithVersionReqsDiagError struct {
 	ElasticsearchConnectionField
-	ID types.String `tfsdk:"id"`
+	ID   types.String `tfsdk:"id"`
+	Name types.String `tfsdk:"name"`
 }
+
+func (m esModelWithVersionReqsDiagError) GetID() types.String         { return m.ID }
+func (m esModelWithVersionReqsDiagError) GetResourceID() types.String { return m.Name }
 
 func (*esModelWithVersionReqsDiagError) GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics) {
 	return nil, diag.Diagnostics{
@@ -903,7 +932,8 @@ func (*esModelWithVersionReqsDiagError) GetVersionRequirements() ([]VersionRequi
 func getESModelWithVersionReqsDiagErrorSchema(_ context.Context) dsschema.Schema {
 	return dsschema.Schema{
 		Attributes: map[string]dsschema.Attribute{
-			"id": dsschema.StringAttribute{Computed: true},
+			"name": dsschema.StringAttribute{Required: true},
+			"id":   dsschema.StringAttribute{Computed: true},
 		},
 		Blocks: map[string]dsschema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
@@ -915,8 +945,12 @@ func getESModelWithVersionReqsDiagErrorSchema(_ context.Context) dsschema.Schema
 // will satisfy.
 type esSupportedVersionModel struct {
 	ElasticsearchConnectionField
-	ID types.String `tfsdk:"id"`
+	ID   types.String `tfsdk:"id"`
+	Name types.String `tfsdk:"name"`
 }
+
+func (m esSupportedVersionModel) GetID() types.String         { return m.ID }
+func (m esSupportedVersionModel) GetResourceID() types.String { return m.Name }
 
 func (*esSupportedVersionModel) GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics) {
 	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
@@ -926,7 +960,8 @@ func (*esSupportedVersionModel) GetVersionRequirements() ([]VersionRequirement, 
 func getESSupportedVersionModelSchema(_ context.Context) dsschema.Schema {
 	return dsschema.Schema{
 		Attributes: map[string]dsschema.Attribute{
-			"id": dsschema.StringAttribute{Computed: true},
+			"name": dsschema.StringAttribute{Required: true},
+			"id":   dsschema.StringAttribute{Computed: true},
 		},
 		Blocks: map[string]dsschema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
@@ -940,6 +975,9 @@ type esUnsupportedVersionModel struct {
 	ElasticsearchConnectionField
 	ID types.String `tfsdk:"id"`
 }
+
+func (m esUnsupportedVersionModel) GetID() types.String         { return m.ID }
+func (m esUnsupportedVersionModel) GetResourceID() types.String { return m.ID }
 
 func (*esUnsupportedVersionModel) GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics) {
 	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
@@ -958,33 +996,30 @@ func (*esUnsupportedVersionModel) GetVersionRequirements() ([]VersionRequirement
 func TestNewElasticsearchDataSource_Read_noVersionReqs_readFuncInvoked(t *testing.T) {
 	ctx := context.Background()
 
-	type esNoReqsModel struct {
-		ElasticsearchConnectionField
-		ID types.String `tfsdk:"id"`
-	}
-
 	readFuncCalled := false
-	ds := NewElasticsearchDataSource[esNoReqsModel](ComponentElasticsearch, "test_entity",
-		func(_ context.Context) dsschema.Schema {
+	ds := NewElasticsearchDataSource[esTestModel](ComponentElasticsearch, "test_entity", ElasticsearchDataSourceOptions[esTestModel]{
+		Schema: func(_ context.Context) dsschema.Schema {
 			return dsschema.Schema{
 				Attributes: map[string]dsschema.Attribute{
-					"id": dsschema.StringAttribute{Computed: true},
+					"name": dsschema.StringAttribute{Required: true},
+					"id":   dsschema.StringAttribute{Computed: true},
 				},
 			}
 		},
-		func(_ context.Context, _ *clients.ElasticsearchScopedClient, model esNoReqsModel) (esNoReqsModel, diag.Diagnostics) {
+		Read: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, model esTestModel) (esTestModel, bool, diag.Diagnostics) {
 			readFuncCalled = true
 			model.ID = types.StringValue("es-no-version-reqs-result")
-			return model, nil
+			return model, true, nil
 		},
-	)
+	})
 
 	factory := newElasticsearchFactoryMinimal(t)
 	configureElasticsearchDataSource(t, ds, factory)
 
 	schemaWithConn := dsschema.Schema{
 		Attributes: map[string]dsschema.Attribute{
-			"id": dsschema.StringAttribute{Computed: true},
+			"name": dsschema.StringAttribute{Required: true},
+			"id":   dsschema.StringAttribute{Computed: true},
 		},
 		Blocks: map[string]dsschema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
@@ -1003,11 +1038,10 @@ func TestNewElasticsearchDataSource_Read_noVersionReqs_readFuncInvoked(t *testin
 	require.True(t, readFuncCalled, "readFunc must be called when model has no version requirements")
 	require.False(t, resp.Diagnostics.HasError(), "Read must not produce errors: %v", resp.Diagnostics)
 
-	var result esNoReqsModel
+	var result esTestModel
 	diags := resp.State.Get(ctx, &result)
 	require.False(t, diags.HasError())
-	require.Equal(t, "es-no-version-reqs-result", result.ID.ValueString(),
-		"state must reflect the value set by readFunc")
+	require.NotEmpty(t, result.ID.ValueString(), "state must reflect the value set by readFunc")
 }
 
 // TestElasticsearchDataSource_Read_versionReqDiagsStopRead exercises the full
@@ -1019,17 +1053,21 @@ func TestElasticsearchDataSource_Read_versionReqDiagsStopRead(t *testing.T) {
 	ctx := context.Background()
 
 	readFuncCalled := false
-	ds := NewElasticsearchDataSource[esModelWithVersionReqsDiagError](ComponentElasticsearch, "diag_err_entity",
-		func(_ context.Context) dsschema.Schema {
-			return dsschema.Schema{
-				Attributes: map[string]dsschema.Attribute{
-					"id": dsschema.StringAttribute{Computed: true},
-				},
-			}
-		},
-		func(_ context.Context, _ *clients.ElasticsearchScopedClient, model esModelWithVersionReqsDiagError) (esModelWithVersionReqsDiagError, diag.Diagnostics) {
-			readFuncCalled = true
-			return model, nil
+	ds := NewElasticsearchDataSource[esModelWithVersionReqsDiagError](
+		ComponentElasticsearch, "diag_err_entity",
+		ElasticsearchDataSourceOptions[esModelWithVersionReqsDiagError]{
+			Schema: func(_ context.Context) dsschema.Schema {
+				return dsschema.Schema{
+					Attributes: map[string]dsschema.Attribute{
+						"name": dsschema.StringAttribute{Required: true},
+						"id":   dsschema.StringAttribute{Computed: true},
+					},
+				}
+			},
+			Read: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, model esModelWithVersionReqsDiagError) (esModelWithVersionReqsDiagError, bool, diag.Diagnostics) {
+				readFuncCalled = true
+				return model, true, nil
+			},
 		},
 	)
 
@@ -1066,18 +1104,22 @@ func TestElasticsearchDataSource_Read_supportedServer_invokesReadFunc(t *testing
 	defer srv.Close()
 
 	readFuncCalled := false
-	ds := NewElasticsearchDataSource[esSupportedVersionModel](ComponentElasticsearch, "supported_entity",
-		func(_ context.Context) dsschema.Schema {
-			return dsschema.Schema{
-				Attributes: map[string]dsschema.Attribute{
-					"id": dsschema.StringAttribute{Computed: true},
-				},
-			}
-		},
-		func(_ context.Context, _ *clients.ElasticsearchScopedClient, model esSupportedVersionModel) (esSupportedVersionModel, diag.Diagnostics) {
-			readFuncCalled = true
-			model.ID = types.StringValue("es-supported-result")
-			return model, nil
+	ds := NewElasticsearchDataSource[esSupportedVersionModel](
+		ComponentElasticsearch, "supported_entity",
+		ElasticsearchDataSourceOptions[esSupportedVersionModel]{
+			Schema: func(_ context.Context) dsschema.Schema {
+				return dsschema.Schema{
+					Attributes: map[string]dsschema.Attribute{
+						"name": dsschema.StringAttribute{Required: true},
+						"id":   dsschema.StringAttribute{Computed: true},
+					},
+				}
+			},
+			Read: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, model esSupportedVersionModel) (esSupportedVersionModel, bool, diag.Diagnostics) {
+				readFuncCalled = true
+				model.ID = types.StringValue("es-supported-result")
+				return model, true, nil
+			},
 		},
 	)
 
@@ -1114,24 +1156,34 @@ func TestElasticsearchDataSource_Read_unsupportedServer_stopsBeforeReadFunc(t *t
 	defer srv.Close()
 
 	readFuncCalled := false
-	ds := NewElasticsearchDataSource[esUnsupportedVersionModel](ComponentElasticsearch, "unsupported_entity",
-		func(_ context.Context) dsschema.Schema {
-			return dsschema.Schema{
-				Attributes: map[string]dsschema.Attribute{
-					"id": dsschema.StringAttribute{Computed: true},
-				},
-			}
-		},
-		func(_ context.Context, _ *clients.ElasticsearchScopedClient, model esUnsupportedVersionModel) (esUnsupportedVersionModel, diag.Diagnostics) {
-			readFuncCalled = true
-			return model, nil
+	ds := NewElasticsearchDataSource[esUnsupportedVersionModel](
+		ComponentElasticsearch, "unsupported_entity",
+		ElasticsearchDataSourceOptions[esUnsupportedVersionModel]{
+			Schema: func(_ context.Context) dsschema.Schema {
+				return dsschema.Schema{
+					Attributes: map[string]dsschema.Attribute{
+						"id": dsschema.StringAttribute{Optional: true, Computed: true},
+					},
+				}
+			},
+			Read: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, model esUnsupportedVersionModel) (esUnsupportedVersionModel, bool, diag.Diagnostics) {
+				readFuncCalled = true
+				return model, true, nil
+			},
 		},
 	)
 
 	factory := newElasticsearchFactoryForURL(t, srv.URL)
 	configureElasticsearchDataSource(t, ds, factory)
 
-	schema := getESSupportedVersionModelSchema(context.Background())
+	schema := dsschema.Schema{
+		Attributes: map[string]dsschema.Attribute{
+			"id": dsschema.StringAttribute{Optional: true, Computed: true},
+		},
+		Blocks: map[string]dsschema.Block{
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
+		},
+	}
 	req := buildReadRequestForElasticsearchSchema(schema)
 
 	var resp datasource.ReadResponse

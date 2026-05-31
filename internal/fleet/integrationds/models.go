@@ -32,6 +32,10 @@ type integrationDataSourceModel struct {
 	SpaceID    types.String `tfsdk:"space_id"`
 }
 
+func (m integrationDataSourceModel) GetID() types.String         { return m.ID }
+func (m integrationDataSourceModel) GetResourceID() types.String { return m.Name }
+func (m integrationDataSourceModel) GetSpaceID() types.String    { return m.SpaceID }
+
 func (m *integrationDataSourceModel) populateFromAPI(pkgName string, packages []kbapi.PackageListItem) {
 	m.Version = types.StringNull()
 	for _, pkg := range packages {

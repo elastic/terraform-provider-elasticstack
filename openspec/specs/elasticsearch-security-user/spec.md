@@ -251,14 +251,14 @@ The data source SHALL expose a computed `id` attribute in the format `<cluster_u
 
 ### Requirement: User not found (REQ-DS-003)
 
-When the Elasticsearch Get users API returns nil without an error, the data source SHALL preserve SDK behavior by setting `id` to an empty string and returning no warning or error diagnostic.
+When the Elasticsearch Get users API returns nil without an error, the read callback SHALL return `found == false` and the envelope SHALL append a standardized not-found error diagnostic; Terraform state SHALL NOT be set.
 
 #### Scenario: User does not exist
 
 - **GIVEN** a user does not exist with the requested `username`
 - **WHEN** the data source is read
-- **THEN** `id` SHALL be set to an empty string
-- **AND** no diagnostic SHALL be returned
+- **THEN** the envelope SHALL return a not-found error diagnostic
+- **AND** Terraform state SHALL NOT be set
 
 ### Requirement: State mapping (REQ-DS-004–REQ-DS-005)
 

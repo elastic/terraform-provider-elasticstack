@@ -19,13 +19,11 @@ package agentbuilderworkflow
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -58,32 +56,23 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 	}
 }
 
-func readWorkflowDataSource(ctx context.Context, client *clients.KibanaScopedClient, config workflowDataSourceModel) (workflowDataSourceModel, diag.Diagnostics) {
+func readWorkflowDataSource(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	resourceID, spaceID string,
+	config workflowDataSourceModel,
+) (workflowDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	oapiClient := client.GetKibanaOapiClient()
 
-	spaceID := defaultSpaceID
-	if typeutils.IsKnown(config.SpaceID) {
-		spaceID = config.SpaceID.ValueString()
-	}
-
-	workflowID := config.ID.ValueString()
-	if compID, d := clients.CompositeIDFromStr(workflowID); !d.HasError() {
-		workflowID = compID.ResourceID
-		if !typeutils.IsKnown(config.SpaceID) {
-			spaceID = compID.ClusterID
-		}
-	}
-
-	workflow, d := kibanaoapi.GetWorkflow(ctx, oapiClient, spaceID, workflowID)
+	workflow, d := kibanaoapi.GetWorkflow(ctx, oapiClient, spaceID, resourceID)
 	diags.Append(d...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 	if workflow == nil {
-		diags.AddError("Workflow not found", fmt.Sprintf("Unable to fetch workflow with ID %s", workflowID))
-		return config, diags
+		return config, false, diags
 	}
 
 	compositeID := &clients.CompositeID{ClusterID: spaceID, ResourceID: workflow.ID}
@@ -93,7 +82,7 @@ func readWorkflowDataSource(ctx context.Context, client *clients.KibanaScopedCli
 	config.WorkflowID = types.StringValue(workflow.ID)
 	config.ConfigurationYaml = customtypes.NewNormalizedYamlValue(workflow.Yaml)
 
-	return config, diags
+	return config, true, diags
 }
 
 // NewDataSource is a helper function to simplify the provider implementation.
@@ -101,7 +90,9 @@ func NewDataSource() datasource.DataSource {
 	return entitycore.NewKibanaDataSource[workflowDataSourceModel](
 		entitycore.ComponentKibana,
 		"agentbuilder_workflow",
-		getDataSourceSchema,
-		readWorkflowDataSource,
+		entitycore.KibanaDataSourceOptions[workflowDataSourceModel]{
+			Schema: getDataSourceSchema,
+			Read:   readWorkflowDataSource,
+		},
 	)
 }

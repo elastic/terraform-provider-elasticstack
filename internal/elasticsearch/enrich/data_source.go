@@ -19,7 +19,6 @@ package enrich
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -31,12 +30,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+func (d PolicyData) GetID() types.String         { return d.ID }
+func (d PolicyData) GetResourceID() types.String { return d.Name }
+
 func NewEnrichPolicyDataSource() datasource.DataSource {
 	return entitycore.NewElasticsearchDataSource[PolicyData](
 		entitycore.ComponentElasticsearch,
 		"enrich_policy",
-		GetDataSourceSchema,
-		readDataSource,
+		entitycore.ElasticsearchDataSourceOptions[PolicyData]{
+			Schema: GetDataSourceSchema,
+			Read:   readDataSource,
+		},
 	)
 }
 
@@ -79,28 +83,26 @@ func GetDataSourceSchema(_ context.Context) schema.Schema {
 	}
 }
 
-func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config PolicyData) (PolicyData, diag.Diagnostics) {
+func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, resourceID string, config PolicyData) (PolicyData, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	policyName := config.Name.ValueString()
 
-	id, idDiags := esClient.ID(ctx, policyName)
+	id, idDiags := esClient.ID(ctx, resourceID)
 	diags.Append(idDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 	config.ID = types.StringValue(id.String())
 
-	policy, policyDiags := elasticsearch.GetEnrichPolicy(ctx, esClient, policyName)
+	policy, policyDiags := elasticsearch.GetEnrichPolicy(ctx, esClient, resourceID)
 	diags.Append(policyDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	if policy == nil {
-		diags.AddError("Policy not found", fmt.Sprintf("Enrich policy '%s' not found", policyName))
-		return config, diags
+		return config, false, diags
 	}
 
 	config.populateFromPolicy(ctx, policy, &diags)
-	return config, diags
+	return config, !diags.HasError(), diags
 }

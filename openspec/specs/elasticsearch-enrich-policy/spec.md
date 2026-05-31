@@ -215,13 +215,13 @@ The resource SHALL validate that `indices` contains at least one element and tha
 
 ### Requirement: Data source read (REQ-018–REQ-020)
 
-The data source SHALL use the Elasticsearch Get enrich policy API to read an enrich policy by `name`. When the policy is not found (404 or empty response), the data source SHALL return an error diagnostic. The data source SHALL populate `id`, `policy_type`, `indices`, `match_field`, `enrich_fields`, and `query` from the API response.
+The data source SHALL use the Elasticsearch Get enrich policy API to read an enrich policy by `name`. When the policy is not found (404 or empty response), the read callback SHALL return `found == false` and the envelope SHALL append a standardized not-found error diagnostic; Terraform state SHALL NOT be set. When found, the read callback SHALL populate `id`, `policy_type`, `indices`, `match_field`, `enrich_fields`, and `query` from the API response before returning `found == true`.
 
 #### Scenario: Data source policy not found
 
 - GIVEN a `name` that does not exist in Elasticsearch
 - WHEN the data source reads
-- THEN diagnostics SHALL include a "Policy not found" error
+- THEN diagnostics SHALL include a standardized not-found error identifying the data source and resolved name
 
 #### Scenario: Data source populates all fields
 

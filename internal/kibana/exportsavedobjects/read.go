@@ -32,16 +32,13 @@ import (
 )
 
 // readDataSource is the envelope read callback for the export saved objects data source.
-func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config dataSourceModel) (dataSourceModel, diag.Diagnostics) {
+func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, _ string, spaceID string, config dataSourceModel) (dataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	// Get Kibana client
 	oapiClient := kbClient.GetKibanaOapiClient()
 
-	// Set default space_id if not provided
-	spaceID := "default"
-	if !config.SpaceID.IsNull() && !config.SpaceID.IsUnknown() {
-		spaceID = config.SpaceID.ValueString()
+	if spaceID == "" {
+		spaceID = "default"
 	}
 
 	objectsList := typeutils.ListTypeToSlice(ctx, config.Objects, path.Root("objects"), &diags, func(item objectModel, _ typeutils.ListMeta) struct {
@@ -59,7 +56,7 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, c
 		}
 	})
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	// Set default values for boolean options
@@ -84,7 +81,7 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, c
 	apiResp, err := oapiClient.API.PostSavedObjectsExportWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		diags.AddError("API call failed", fmt.Sprintf("Unable to export saved objects: %v", err))
-		return config, diags
+		return config, false, diags
 	}
 
 	if apiResp.StatusCode() != http.StatusOK {
@@ -92,7 +89,7 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, c
 			"Unexpected API response",
 			fmt.Sprintf("Unexpected status code from server: got HTTP %d, response: %s", apiResp.StatusCode(), string(apiResp.Body)),
 		)
-		return config, diags
+		return config, false, diags
 	}
 
 	// Create composite ID for state tracking
@@ -104,5 +101,5 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, c
 	config.IncludeReferencesDeep = types.BoolValue(includeReferencesDeep)
 	config.ExportedObjects = types.StringValue(string(apiResp.Body))
 
-	return config, diags
+	return config, true, diags
 }

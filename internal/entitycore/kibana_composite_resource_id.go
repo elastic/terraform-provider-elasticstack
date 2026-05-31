@@ -15,32 +15,17 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package outputds
+package entitycore
 
-import (
-	"context"
+// KibanaCompositeResourceID marks models whose GetResourceID() field may encode
+// a composite "<space>/<resource>" lookup key (for example Agent Builder
+// skill_id). Only those models opt into parsing GetResourceID() as composite;
+// plain identifiers that happen to contain "/" must not be reinterpreted.
+type KibanaCompositeResourceID interface {
+	UsesCompositeResourceID() bool
+}
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-)
-
-func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, _ string, spaceID string, config outputModel) (outputModel, bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	client := kbClient.GetFleetClient()
-
-	outputs, oDiags := fleet.GetOutputs(ctx, client, spaceID)
-	diags.Append(oDiags...)
-	if diags.HasError() {
-		return config, false, diags
-	}
-
-	pDiags := (&config).populateFromAPI(ctx, outputs)
-	diags.Append(pDiags...)
-	if diags.HasError() {
-		return config, false, diags
-	}
-
-	return config, true, diags
+func usesCompositeResourceID(model kibanaIdentityModel) bool {
+	c, ok := any(model).(KibanaCompositeResourceID)
+	return ok && c.UsesCompositeResourceID()
 }
