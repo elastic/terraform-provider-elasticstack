@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, _ string, spaceID string, config outputModel) (outputModel, bool, diag.Diagnostics) {
@@ -42,8 +41,6 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, _
 	if diags.HasError() {
 		return config, false, diags
 	}
-
-	config.SpaceID = types.StringValue(spaceID)
 
 	return config, true, diags
 }

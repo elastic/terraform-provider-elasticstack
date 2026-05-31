@@ -57,7 +57,5 @@ func readDataSource(
 	}
 	config.ID = types.StringPointerValue(hash)
 	config.Name = types.StringValue(resourceID)
-	config.SpaceID = types.StringValue(spaceID)
-
 	return config, true, diags
 }

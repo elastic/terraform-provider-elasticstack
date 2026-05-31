@@ -62,8 +62,6 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, r
 		}
 		config.ID = types.StringPointerValue(hash)
 	}
-	config.SpaceID = types.StringValue(spaceID)
-
 	pDiags := (&config).populateFromAPI(ctx, tokens)
 	diags.Append(pDiags...)
 	if diags.HasError() {
