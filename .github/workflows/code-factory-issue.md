@@ -401,7 +401,45 @@ The linked pull request must:
 - use branch `code-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`
 - be the only open `code-factory` pull request for this issue
 - include explicit issue linkage via `Closes #${{ needs.pre_activation.outputs.issue_number }}` in the PR body
+- include a valid `## Changelog` section (see **PR body** below) — the CI changelog check will block the PR if this is missing or malformed
 - stay focused on implementing the triggering issue only
+
+## PR body
+
+The pull request body must include all three of the following blocks, in order:
+
+### Changelog (required — CI validates this)
+
+Select `Customer impact` based on the nature of the change:
+- `fix` — user-visible bug fix
+- `enhancement` — new capability or attribute exposed to users
+- `breaking` — removes or incompatibly changes existing behaviour
+- `none` — internal only (refactoring, test coverage, CI, docs)
+
+Most code-factory issues fall into one of these categories:
+- Refactoring / deduplication / test-coverage gaps → `none`
+- User-visible bug fixes → `fix`
+- New resource attributes or resources → `enhancement`
+
+When in doubt, prefer `none` over inventing customer impact that isn't described in the issue.
+
+```
+## Changelog
+Customer impact: <none|fix|enhancement|breaking>
+Summary: <one-line description of user impact; omit if Customer impact is none>
+```
+
+For `breaking`, also add a `### Breaking changes` block with a prose description, terminated by `<!-- /breaking-changes -->`.
+
+### Issue linkage (required — prevents duplicate PRs on rerun)
+
+```
+Closes #${{ needs.pre_activation.outputs.issue_number }}
+```
+
+### Detailed changes (required)
+
+Describe intent, approach, notable design decisions, and follow-up work.
 
 ## Guardrails
 
@@ -412,4 +450,5 @@ The linked pull request must:
 - Do not change the branch naming convention.
 - Do not open issues in this workflow.
 - Do not use another issue, pull request, or external request as the source of truth over the triggering issue.
+- Do not omit or leave placeholder text in the `## Changelog` section — `Customer impact:` must be one of `none`, `fix`, `enhancement`, or `breaking`, and `Summary:` must be a real sentence unless `Customer impact: none`.
 - If you cannot make progress safely, use `noop` with a concise explanation instead of opening an extra pull request.
