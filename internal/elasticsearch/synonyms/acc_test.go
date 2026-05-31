@@ -227,7 +227,7 @@ func TestAccDataSourceSynonymSetNotFound(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("not-found"),
 				ConfigVariables:          config.Variables{"synonym_set_id": config.StringVariable(nonExistentID)},
-				ExpectError:              regexp.MustCompile(`Synonym set not found`),
+				ExpectError:              regexp.MustCompile(`elasticsearch_synonym_set not found`),
 			},
 		},
 	})
