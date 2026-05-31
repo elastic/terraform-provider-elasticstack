@@ -20,10 +20,80 @@ package connector
 import (
 	"context"
 
+	getconnector "github.com/elastic/go-elasticsearch/v8/typedapi/connector/get"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+// CoreConnectorFields holds the scalar connector fields shared between the
+// resource and data source models.
+type CoreConnectorFields struct {
+	ServiceType    fwtypes.String `tfsdk:"service_type"`
+	Name           fwtypes.String `tfsdk:"name"`
+	Description    fwtypes.String `tfsdk:"description"`
+	IndexName      fwtypes.String `tfsdk:"index_name"`
+	IsNative       fwtypes.Bool   `tfsdk:"is_native"`
+	Language       fwtypes.String `tfsdk:"language"`
+	APIKeyID       fwtypes.String `tfsdk:"api_key_id"`
+	APIKeySecretID fwtypes.String `tfsdk:"api_key_secret_id"`
+	Pipeline       fwtypes.Object `tfsdk:"pipeline"`
+	Scheduling     fwtypes.Object `tfsdk:"scheduling"`
+	Features       fwtypes.Object `tfsdk:"features"`
+}
+
+// PopulateCoreConnectorFieldsFromAPI maps scalar connector fields from the API
+// response into a CoreConnectorFields value, setting null for absent optional
+// fields. Shared by the connector resource Read and the data source Read.
+func PopulateCoreConnectorFieldsFromAPI(
+	ctx context.Context,
+	resp *getconnector.Response,
+	diags *diag.Diagnostics,
+) CoreConnectorFields {
+	f := CoreConnectorFields{IsNative: fwtypes.BoolValue(resp.IsNative)}
+
+	if resp.ServiceType != nil {
+		f.ServiceType = fwtypes.StringValue(*resp.ServiceType)
+	} else {
+		f.ServiceType = fwtypes.StringNull()
+	}
+	if resp.Name != nil {
+		f.Name = fwtypes.StringValue(*resp.Name)
+	} else {
+		f.Name = fwtypes.StringNull()
+	}
+	if resp.Description != nil {
+		f.Description = fwtypes.StringValue(*resp.Description)
+	} else {
+		f.Description = fwtypes.StringNull()
+	}
+	if resp.IndexName != nil {
+		f.IndexName = fwtypes.StringValue(*resp.IndexName)
+	} else {
+		f.IndexName = fwtypes.StringNull()
+	}
+	if resp.Language != nil {
+		f.Language = fwtypes.StringValue(*resp.Language)
+	} else {
+		f.Language = fwtypes.StringNull()
+	}
+	if resp.ApiKeyId != nil {
+		f.APIKeyID = fwtypes.StringValue(*resp.ApiKeyId)
+	} else {
+		f.APIKeyID = fwtypes.StringNull()
+	}
+	if resp.ApiKeySecretId != nil {
+		f.APIKeySecretID = fwtypes.StringValue(*resp.ApiKeySecretId)
+	} else {
+		f.APIKeySecretID = fwtypes.StringNull()
+	}
+
+	f.Pipeline = PopulatePipelineFromAPI(ctx, resp.Pipeline, diags)
+	f.Scheduling = PopulateSchedulingFromAPI(ctx, resp.Scheduling, diags)
+	f.Features = PopulateFeaturesFromAPI(ctx, resp.Features, diags)
+
+	return f
+}
 
 // PopulatePipelineFromAPI converts an Elasticsearch IngestPipelineParams into
 // a typed Terraform object, returning a null object when the API value is nil.

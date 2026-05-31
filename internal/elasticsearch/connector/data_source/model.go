@@ -118,46 +118,18 @@ func populateContentConnectorDataSourceFromAPI(
 	model *ContentConnectorDataSourceModel,
 	diags *diag.Diagnostics,
 ) {
-	if resp.ServiceType != nil {
-		model.ServiceType = fwtypes.StringValue(*resp.ServiceType)
-	} else {
-		model.ServiceType = fwtypes.StringNull()
-	}
-	if resp.Name != nil {
-		model.Name = fwtypes.StringValue(*resp.Name)
-	} else {
-		model.Name = fwtypes.StringNull()
-	}
-	if resp.Description != nil {
-		model.Description = fwtypes.StringValue(*resp.Description)
-	} else {
-		model.Description = fwtypes.StringNull()
-	}
-	if resp.IndexName != nil {
-		model.IndexName = fwtypes.StringValue(*resp.IndexName)
-	} else {
-		model.IndexName = fwtypes.StringNull()
-	}
-	model.IsNative = fwtypes.BoolValue(resp.IsNative)
-	if resp.Language != nil {
-		model.Language = fwtypes.StringValue(*resp.Language)
-	} else {
-		model.Language = fwtypes.StringNull()
-	}
-	if resp.ApiKeyId != nil {
-		model.APIKeyID = fwtypes.StringValue(*resp.ApiKeyId)
-	} else {
-		model.APIKeyID = fwtypes.StringNull()
-	}
-	if resp.ApiKeySecretId != nil {
-		model.APIKeySecretID = fwtypes.StringValue(*resp.ApiKeySecretId)
-	} else {
-		model.APIKeySecretID = fwtypes.StringNull()
-	}
-
-	model.Pipeline = connector.PopulatePipelineFromAPI(ctx, resp.Pipeline, diags)
-	model.Scheduling = connector.PopulateSchedulingFromAPI(ctx, resp.Scheduling, diags)
-	model.Features = connector.PopulateFeaturesFromAPI(ctx, resp.Features, diags)
+	core := connector.PopulateCoreConnectorFieldsFromAPI(ctx, resp, diags)
+	model.ServiceType = core.ServiceType
+	model.Name = core.Name
+	model.Description = core.Description
+	model.IndexName = core.IndexName
+	model.IsNative = core.IsNative
+	model.Language = core.Language
+	model.APIKeyID = core.APIKeyID
+	model.APIKeySecretID = core.APIKeySecretID
+	model.Pipeline = core.Pipeline
+	model.Scheduling = core.Scheduling
+	model.Features = core.Features
 
 	model.Status = fwtypes.StringValue(resp.Status.String())
 	model.LastSeen = connectorDateTimeToString(resp.LastSeen)
