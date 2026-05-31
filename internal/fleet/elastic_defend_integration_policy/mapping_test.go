@@ -226,7 +226,10 @@ func TestBuildBootstrapRequest(t *testing.T) {
 		Preset:             types.StringValue("NGAv1"),
 	}
 
-	req := edip.BuildBootstrapRequest(context.Background(), model)
+	req, diags := edip.BuildBootstrapRequest(context.Background(), model)
+	if diags.HasError() {
+		t.Fatalf("unexpected error: %v", diags)
+	}
 
 	if req.Package == nil || req.Package.Name != "endpoint" {
 		name := "<nil>"
@@ -331,7 +334,10 @@ func TestBuildBootstrapRequestNullPreset(t *testing.T) {
 		Preset:             types.StringNull(),
 	}
 
-	req := edip.BuildBootstrapRequest(context.Background(), model)
+	req, diags := edip.BuildBootstrapRequest(context.Background(), model)
+	if diags.HasError() {
+		t.Fatalf("unexpected error: %v", diags)
+	}
 
 	if req.Inputs == nil || len(*req.Inputs) != 1 {
 		count := 0
@@ -361,7 +367,10 @@ func TestBuildBootstrapRequestWithAgentPolicyIDs(t *testing.T) {
 		Preset:             types.StringValue("NGAv1"),
 	}
 
-	req := edip.BuildBootstrapRequest(ctx, model)
+	req, diags := edip.BuildBootstrapRequest(ctx, model)
+	if diags.HasError() {
+		t.Fatalf("unexpected error: %v", diags)
+	}
 	if req.PolicyIds == nil || len(*req.PolicyIds) != 2 {
 		t.Fatalf("expected 2 policy IDs, got %#v", req.PolicyIds)
 	}

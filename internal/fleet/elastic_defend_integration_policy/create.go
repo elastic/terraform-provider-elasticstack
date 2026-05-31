@@ -19,6 +19,7 @@ package elasticdefendintegrationpolicy
 
 import (
 	"context"
+	"fmt"
 
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
@@ -44,7 +45,14 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 	if !planModel.AgentPolicyIDs.IsNull() && !planModel.AgentPolicyIDs.IsUnknown() {
 		supported, d := client.EnforceMinVersion(ctx, MinVersionPolicyIDs)
 		resp.Diagnostics.Append(d...)
-		if resp.Diagnostics.HasError() || !supported {
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if !supported {
+			resp.Diagnostics.AddError(
+				"Unsupported Elasticsearch version",
+				fmt.Sprintf("agent_policy_ids requires Elastic Stack >= %s", MinVersionPolicyIDs.String()),
+			)
 			return
 		}
 	}
@@ -59,7 +67,11 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 	}
 
 	// Step 1: Bootstrap create using ENDPOINT_INTEGRATION_CONFIG input type
-	bootstrapReq := buildBootstrapRequest(ctx, &planModel)
+	bootstrapReq, d := buildBootstrapRequest(ctx, &planModel)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	bootstrapPolicy, d := fleetclient.CreateDefendPackagePolicy(ctx, fleetClient, spaceID, bootstrapReq)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {

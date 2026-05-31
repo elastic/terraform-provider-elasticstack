@@ -35,7 +35,9 @@ const (
 // for the first create step (bootstrap). Kibana expects the create bootstrap to
 // use the special ENDPOINT_INTEGRATION_CONFIG input type with preset mapped
 // under config._config.value.endpointConfig.preset.
-func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationPolicyModel) kbapi.PackagePolicyRequestTypedInputs {
+func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationPolicyModel) (kbapi.PackagePolicyRequestTypedInputs, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
 	pkg := kbapi.PackagePolicyRequestPackage{
 		Name:    endpointPackageName,
 		Version: model.IntegrationVersion.ValueString(),
@@ -47,7 +49,9 @@ func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationP
 		Enabled:   model.Enabled.ValueBoolPointer(),
 	}
 	d := setAgentPoliciesOnRequest(ctx, model, &req)
-	_ = d
+	if d.HasError() {
+		return req, d
+	}
 
 	if !model.Description.IsNull() && !model.Description.IsUnknown() {
 		req.Description = model.Description.ValueStringPointer()
@@ -81,7 +85,7 @@ func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationP
 	}
 	req.Inputs = &[]kbapi.PackagePolicyRequestTypedInput{input}
 
-	return req
+	return req, diags
 }
 
 // buildFinalizeRequest builds the Defend package policy update request used
