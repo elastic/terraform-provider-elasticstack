@@ -71,7 +71,6 @@ func readConnectorDataSource(
 	model.ID = types.StringValue(compositeID.String())
 	model.ConnectorID = types.StringValue(connector.ConnectorID)
 	model.SpaceID = types.StringValue(connector.SpaceID)
-	model.Name = types.StringValue(connector.Name)
 	model.ConnectorTypeID = types.StringValue(connector.ConnectorTypeID)
 	if connector.ConfigJSON != "" {
 		model.Config = jsontypes.NewNormalizedValue(connector.ConfigJSON)
