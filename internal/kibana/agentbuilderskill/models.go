@@ -30,12 +30,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (model skillModel) GetID() types.String             { return model.ID }
-func (model skillModel) GetResourceID() types.String     { return model.SkillID }
-func (model skillModel) GetSpaceID() types.String        { return model.SpaceID }
-func (model skillModel) GetKibanaConnection() types.List { return model.KibanaConnection }
+func (model skillModel) GetID() types.String         { return model.ID }
+func (model skillModel) GetResourceID() types.String { return model.SkillID }
+func (model skillModel) GetSpaceID() types.String    { return model.SpaceID }
 
 var _ entitycore.KibanaResourceModel = skillModel{}
+var _ entitycore.KibanaDataSourceModel = skillModel{}
 var _ entitycore.WithVersionRequirements = skillModel{}
 
 func (model skillModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
@@ -48,18 +48,6 @@ func (model skillModel) GetVersionRequirements() ([]entitycore.VersionRequiremen
 }
 
 type skillModel struct {
-	ID                types.String                 `tfsdk:"id"`
-	KibanaConnection  types.List                   `tfsdk:"kibana_connection"`
-	SkillID           types.String                 `tfsdk:"skill_id"`
-	SpaceID           types.String                 `tfsdk:"space_id"`
-	Name              types.String                 `tfsdk:"name"`
-	Description       types.String                 `tfsdk:"description"`
-	Content           types.String                 `tfsdk:"content"`
-	ToolIDs           types.Set                    `tfsdk:"tool_ids"`
-	ReferencedContent []skillReferencedContentItem `tfsdk:"referenced_content"`
-}
-
-type skillDataSourceModel struct {
 	entitycore.KibanaConnectionField
 	ID                types.String                 `tfsdk:"id"`
 	SkillID           types.String                 `tfsdk:"skill_id"`
@@ -77,82 +65,27 @@ type skillReferencedContentItem struct {
 	Content      types.String `tfsdk:"content"`
 }
 
-// skillBaseData holds fields shared between skillModel and skillDataSourceModel
-// populated from the API response.
-type skillBaseData struct {
-	ID                types.String
-	SkillID           types.String
-	SpaceID           types.String
-	Name              types.String
-	Description       types.String
-	Content           types.String
-	ToolIDs           types.Set
-	ReferencedContent []skillReferencedContentItem
-}
-
-// populateSkillBaseFromAPI extracts the fields common to both skillModel and
-// skillDataSourceModel from an API response, eliminating duplicated population logic.
-func populateSkillBaseFromAPI(ctx context.Context, spaceID string, data *models.Skill) (skillBaseData, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if spaceID == "" {
-		spaceID = defaultSpaceID
-	}
-	base := skillBaseData{
-		ID:                types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String()),
-		SkillID:           types.StringValue(data.ID),
-		SpaceID:           types.StringValue(spaceID),
-		Name:              types.StringValue(data.Name),
-		Description:       types.StringValue(data.Description),
-		Content:           types.StringValue(data.Content),
-		ReferencedContent: referencedContentItemsFromAPI(data.ReferencedContent),
-	}
-	diags.Append(agentbuilder.PopulateSet(ctx, data.ToolIDs, &base.ToolIDs)...)
-	return base, diags
-}
-
-// GetVersionRequirements returns the static minimum Kibana version requirements
-// for the Agent Builder skill data source. This satisfies the optional
-// entitycore.WithVersionRequirements interface, allowing the generic Kibana
-// data source envelope to enforce the requirement before invoking the entity
-// read callback.
-func (model skillDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *minKibanaAgentBuilderSkillsAPIVersion,
-			ErrorMessage: fmt.Sprintf("Agent Builder skills require Elastic Stack v%s or later.", minKibanaAgentBuilderSkillsAPIVersion),
-		},
-	}, nil
-}
-
 func (model *skillModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Skill) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
-	base, diags := populateSkillBaseFromAPI(ctx, spaceID, data)
-	model.ID = base.ID
-	model.SkillID = base.SkillID
-	model.SpaceID = base.SpaceID
-	model.Name = base.Name
-	model.Description = base.Description
-	model.Content = base.Content
-	model.ToolIDs = base.ToolIDs
-	model.ReferencedContent = base.ReferencedContent
-	return diags
-}
 
-func (model *skillDataSourceModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Skill) diag.Diagnostics {
-	if data == nil {
-		return nil
+	var diags diag.Diagnostics
+
+	if spaceID == "" {
+		spaceID = defaultSpaceID
 	}
-	base, diags := populateSkillBaseFromAPI(ctx, spaceID, data)
-	model.ID = base.ID
-	model.SkillID = base.SkillID
-	model.SpaceID = base.SpaceID
-	model.Name = base.Name
-	model.Description = base.Description
-	model.Content = base.Content
-	model.ToolIDs = base.ToolIDs
-	model.ReferencedContent = base.ReferencedContent
+
+	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
+	model.SkillID = types.StringValue(data.ID)
+	model.SpaceID = types.StringValue(spaceID)
+	model.Name = types.StringValue(data.Name)
+	model.Description = types.StringValue(data.Description)
+	model.Content = types.StringValue(data.Content)
+	model.ReferencedContent = referencedContentItemsFromAPI(data.ReferencedContent)
+
+	diags.Append(agentbuilder.PopulateSet(ctx, data.ToolIDs, &model.ToolIDs)...)
+
 	return diags
 }
 
