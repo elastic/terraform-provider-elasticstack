@@ -52,7 +52,7 @@ func invokeRestore(ctx context.Context, client *clients.ElasticsearchScopedClien
 	model := req.Config
 
 	waitForCompletion := true
-	if !model.WaitForCompletion.IsNull() && !model.WaitForCompletion.IsUnknown() {
+	if typeutils.IsKnown(model.WaitForCompletion) {
 		waitForCompletion = model.WaitForCompletion.ValueBool()
 	}
 
@@ -77,7 +77,7 @@ func restoreRequestFromModel(ctx context.Context, model Model) (*esclient.Restor
 	var diags fwdiag.Diagnostics
 	body := &esclient.RestoreSnapshotRequest{}
 
-	if !model.Indices.IsNull() && !model.Indices.IsUnknown() {
+	if typeutils.IsKnown(model.Indices) {
 		var indices []string
 		diags.Append(model.Indices.ElementsAs(ctx, &indices, false)...)
 		if diags.HasError() {
@@ -86,7 +86,7 @@ func restoreRequestFromModel(ctx context.Context, model Model) (*esclient.Restor
 		body.Indices = indices
 	}
 
-	if !model.FeatureStates.IsNull() && !model.FeatureStates.IsUnknown() {
+	if typeutils.IsKnown(model.FeatureStates) {
 		var featureStates []string
 		diags.Append(model.FeatureStates.ElementsAs(ctx, &featureStates, false)...)
 		if diags.HasError() {
@@ -95,7 +95,7 @@ func restoreRequestFromModel(ctx context.Context, model Model) (*esclient.Restor
 		body.FeatureStates = featureStates
 	}
 
-	if !model.IgnoreIndexSettings.IsNull() && !model.IgnoreIndexSettings.IsUnknown() {
+	if typeutils.IsKnown(model.IgnoreIndexSettings) {
 		var ignoreSettings []string
 		diags.Append(model.IgnoreIndexSettings.ElementsAs(ctx, &ignoreSettings, false)...)
 		if diags.HasError() {
@@ -111,7 +111,7 @@ func restoreRequestFromModel(ctx context.Context, model Model) (*esclient.Restor
 	body.RenamePattern = typeutils.OptionalString(model.RenamePattern)
 	body.RenameReplacement = typeutils.OptionalString(model.RenameReplacement)
 
-	if !model.IndexSettings.IsNull() && !model.IndexSettings.IsUnknown() {
+	if typeutils.IsKnown(model.IndexSettings) {
 		settingsStr := model.IndexSettings.ValueString()
 		if settingsStr != "" {
 			body.IndexSettings = json.RawMessage(settingsStr)

@@ -62,38 +62,19 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		IgnoreConstraints: planModel.IgnoreConstraints.ValueBool(),
 	}
 
-	// Validate version-dependent parameters when set.
+	respDiags.Append(enforceMinVersionForKnownBool(ctx, apiClient, planModel.IgnoreMappingUpdateErrors, MinVersionIgnoreMappingUpdateErrors, "ignore_mapping_update_errors")...)
+	if respDiags.HasError() {
+		return
+	}
 	if typeutils.IsKnown(planModel.IgnoreMappingUpdateErrors) {
-		supported, versionDiags := apiClient.EnforceMinVersion(ctx, MinVersionIgnoreMappingUpdateErrors)
-		respDiags.Append(versionDiags...)
-		if respDiags.HasError() {
-			return
-		}
-		if !supported {
-			respDiags.AddError(
-				"Unsupported parameter for server version",
-				fmt.Sprintf("The 'ignore_mapping_update_errors' parameter requires server version %s or higher.",
-					MinVersionIgnoreMappingUpdateErrors.String()),
-			)
-			return
-		}
 		installOptions.IgnoreMappingUpdateErrors = planModel.IgnoreMappingUpdateErrors.ValueBoolPointer()
 	}
 
+	respDiags.Append(enforceMinVersionForKnownBool(ctx, apiClient, planModel.SkipDataStreamRollover, MinVersionSkipDataStreamRollover, "skip_data_stream_rollover")...)
+	if respDiags.HasError() {
+		return
+	}
 	if typeutils.IsKnown(planModel.SkipDataStreamRollover) {
-		supported, versionDiags := apiClient.EnforceMinVersion(ctx, MinVersionSkipDataStreamRollover)
-		respDiags.Append(versionDiags...)
-		if respDiags.HasError() {
-			return
-		}
-		if !supported {
-			respDiags.AddError(
-				"Unsupported parameter for server version",
-				fmt.Sprintf("The 'skip_data_stream_rollover' parameter requires server version %s or higher.",
-					MinVersionSkipDataStreamRollover.String()),
-			)
-			return
-		}
 		installOptions.SkipDataStreamRollover = planModel.SkipDataStreamRollover.ValueBoolPointer()
 	}
 

@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -75,13 +74,7 @@ func (r *securityDetectionRuleResource) Update(ctx context.Context, req resource
 		return
 	}
 
-	uid, err := uuid.Parse(compID.ResourceID)
-	if err != nil {
-		resp.Diagnostics.AddError("ID was not a valid UUID", err.Error())
-		return
-	}
-
-	readData, diags := r.read(ctx, client, uid.String(), compID.ClusterID)
+	readData, diags := r.read(ctx, client, compID.ResourceID, compID.ClusterID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

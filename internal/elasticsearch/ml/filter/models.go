@@ -21,6 +21,7 @@ import (
 	"context"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -43,6 +44,17 @@ type UpdateAPIModel struct {
 	Description *string  `json:"description,omitempty"`
 	AddItems    []string `json:"add_items,omitempty"`
 	RemoveItems []string `json:"remove_items,omitempty"`
+}
+
+// itemsFromPlan returns planned filter items when the set attribute is known.
+func itemsFromPlan(ctx context.Context, plan TFModel) ([]string, fwdiags.Diagnostics) {
+	var diags fwdiags.Diagnostics
+	if !typeutils.IsKnown(plan.Items) {
+		return nil, diags
+	}
+	var items []string
+	diags.Append(plan.Items.ElementsAs(ctx, &items, false)...)
+	return items, diags
 }
 
 func descriptionFromMLFilter(f *estypes.MLFilter) string {

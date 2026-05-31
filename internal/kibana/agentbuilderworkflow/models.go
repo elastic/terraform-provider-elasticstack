@@ -39,13 +39,10 @@ var _ entitycore.KibanaResourceModel = workflowModel{}
 var _ entitycore.WithVersionRequirements = workflowModel{}
 
 func (model workflowModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *minKibanaAgentBuilderAPIVersion,
-			ErrorMessage: fmt.Sprintf("Agent Builder workflows require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
-		},
-	}, nil
+	return workflowVersionRequirements(), nil
 }
+
+var _ entitycore.WithVersionRequirements = workflowDataSourceModel{}
 
 type workflowDataSourceModel struct {
 	entitycore.KibanaConnectionField
@@ -53,6 +50,19 @@ type workflowDataSourceModel struct {
 	SpaceID           types.String                    `tfsdk:"space_id"`
 	WorkflowID        types.String                    `tfsdk:"workflow_id"`
 	ConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"configuration_yaml"`
+}
+
+func (model workflowDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return workflowVersionRequirements(), nil
+}
+
+func workflowVersionRequirements() []entitycore.VersionRequirement {
+	return []entitycore.VersionRequirement{
+		{
+			MinVersion:   *minKibanaAgentBuilderAPIVersion,
+			ErrorMessage: fmt.Sprintf("Agent Builder workflows require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
+		},
+	}
 }
 
 type workflowModel struct {
@@ -74,7 +84,7 @@ func (model *workflowModel) populateFromAPI(data *models.Workflow) {
 
 	spaceID := model.SpaceID.ValueString()
 	if spaceID == "" {
-		spaceID = "default"
+		spaceID = defaultSpaceID
 	}
 
 	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())

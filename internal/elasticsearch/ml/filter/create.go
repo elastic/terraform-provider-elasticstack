@@ -48,13 +48,12 @@ func createFilter(ctx context.Context, client *clients.ElasticsearchScopedClient
 		put = put.Description(plan.Description.ValueString())
 	}
 
-	if !plan.Items.IsNull() && !plan.Items.IsUnknown() {
-		var items []string
-		d := plan.Items.ElementsAs(ctx, &items, false)
-		diags.Append(d...)
-		if diags.HasError() {
-			return entitycore.WriteResult[TFModel]{Model: plan}, diags
-		}
+	items, itemDiags := itemsFromPlan(ctx, plan)
+	diags.Append(itemDiags...)
+	if diags.HasError() {
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
+	}
+	if items != nil {
 		put = put.Items(items...)
 	}
 

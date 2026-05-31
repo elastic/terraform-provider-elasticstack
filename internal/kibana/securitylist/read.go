@@ -48,6 +48,6 @@ func readSecurityList(ctx context.Context, client *clients.KibanaScopedClient, r
 		return prior, false, diags
 	}
 
-	diags.Append(prior.fromAPI(ctx, list)...)
+	diags.Append(prior.fromAPI(list)...)
 	return prior, true, diags
 }

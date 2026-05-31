@@ -123,8 +123,6 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	// this field. See https://github.com/elastic/terraform-provider-elasticstack/issues/993.
 	apiEmpty := data.Description != nil && *data.Description == ""
 	if apiEmpty && model.Description.IsNull() {
-		// Explicit no-op: keep the null we already have in state so the
-		// plan/apply round-trip stays consistent.
 		model.Description = types.StringNull()
 	} else {
 		model.Description = types.StringPointerValue(data.Description)

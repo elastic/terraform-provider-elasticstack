@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -53,19 +54,7 @@ func (r *ExceptionItemResource) Read(ctx context.Context, req resource.ReadReque
 
 	oapiClient := client.GetKibanaOapiClient()
 
-	// Read by ID
-	id := compID.ResourceID
-	params := &kbapi.ReadExceptionListItemParams{
-		Id: &id,
-	}
-
-	// Include namespace_type if specified (required for agnostic items)
-	if typeutils.IsKnown(state.NamespaceType) {
-		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(state.NamespaceType.ValueString())
-		params.NamespaceType = &nsType
-	}
-
-	readResp, diags := kibanaoapi.GetExceptionListItem(ctx, oapiClient, state.SpaceID.ValueString(), params)
+	readResp, diags := kibanaoapi.GetExceptionListItem(ctx, oapiClient, state.SpaceID.ValueString(), exceptionItemReadParams(compID.ResourceID, state.NamespaceType))
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -75,8 +64,12 @@ func (r *ExceptionItemResource) Read(ctx context.Context, req resource.ReadReque
 	// try reading with namespace_type=agnostic
 	if readResp == nil && !typeutils.IsKnown(state.NamespaceType) {
 		agnosticNsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType("agnostic")
-		params.NamespaceType = &agnosticNsType
-		readResp, diags = kibanaoapi.GetExceptionListItem(ctx, oapiClient, state.SpaceID.ValueString(), params)
+		id := compID.ResourceID
+		retryParams := &kbapi.ReadExceptionListItemParams{
+			Id:            &id,
+			NamespaceType: &agnosticNsType,
+		}
+		readResp, diags = kibanaoapi.GetExceptionListItem(ctx, oapiClient, state.SpaceID.ValueString(), retryParams)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -97,4 +90,38 @@ func (r *ExceptionItemResource) Read(ctx context.Context, req resource.ReadReque
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
+}
+
+func exceptionItemReadParams(itemID string, namespaceType types.String) *kbapi.ReadExceptionListItemParams {
+	id := itemID
+	params := &kbapi.ReadExceptionListItemParams{Id: &id}
+	if typeutils.IsKnown(namespaceType) {
+		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(namespaceType.ValueString())
+		params.NamespaceType = &nsType
+	}
+	return params
+}
+
+// refreshExceptionItemState reads an item after create/update so state matches the API.
+// The second return value is true when the resource should be removed from state (not found).
+func refreshExceptionItemState(
+	ctx context.Context,
+	oapiClient *kibanaoapi.Client,
+	spaceID string,
+	plan ExceptionItemModel,
+	itemID string,
+) (ExceptionItemModel, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	readResp, d := kibanaoapi.GetExceptionListItem(ctx, oapiClient, spaceID, exceptionItemReadParams(itemID, plan.NamespaceType))
+	diags.Append(d...)
+	if diags.HasError() {
+		return plan, false, diags
+	}
+	if readResp == nil {
+		return plan, true, diags
+	}
+
+	diags.Append(plan.fromAPI(ctx, readResp)...)
+	return plan, false, diags
 }
