@@ -22,8 +22,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // alignXYChartStateFromPlanPanels preserves practitioner intent for XY charts when Kibana
@@ -100,10 +98,10 @@ func alignXYXAxisStateFromPlan(plan, state *models.XYAxisConfigModel) {
 		return
 	}
 
-	preserveNullBoolIfStateEquals(plan.Grid, &state.Grid, true)
-	preserveNullBoolIfStateEquals(plan.Ticks, &state.Ticks, true)
-	preserveNullStringIfStateEquals(plan.LabelOrientation, &state.LabelOrientation, "horizontal")
-	preserveNullStringIfStateEquals(plan.Scale, &state.Scale, string(kbapi.KibanaHTTPAPIsVisApiXyAxisConfigXScaleOrdinal))
+	lenscommon.PreserveNullBoolIfStateEquals(plan.Grid, &state.Grid, true)
+	lenscommon.PreserveNullBoolIfStateEquals(plan.Ticks, &state.Ticks, true)
+	lenscommon.PreserveNullStringIfStateEquals(plan.LabelOrientation, &state.LabelOrientation, "horizontal")
+	lenscommon.PreserveNullStringIfStateEquals(plan.Scale, &state.Scale, string(kbapi.KibanaHTTPAPIsVisApiXyAxisConfigXScaleOrdinal))
 	lenscommon.PreserveKnownTfBoolIfStateNull(plan.Grid, &state.Grid)
 	lenscommon.PreserveKnownTfBoolIfStateNull(plan.Ticks, &state.Ticks)
 	lenscommon.PreserveKnownTfStringIfStateNull(plan.LabelOrientation, &state.LabelOrientation)
@@ -113,7 +111,7 @@ func alignXYXAxisStateFromPlan(plan, state *models.XYAxisConfigModel) {
 		state.Title = nil
 	}
 	preserveKnownAxisTitleIfStateBlank(plan.Title, &state.Title)
-	preserveNullJSONIfStateMatches(plan.DomainJSON, &state.DomainJSON, `{"type":"fit","rounding":false}`)
+	lenscommon.PreserveNullJSONIfStateMatchesDefault(plan.DomainJSON, &state.DomainJSON, `{"type":"fit","rounding":false}`)
 	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DomainJSON, &state.DomainJSON, "rounding")
 }
 
@@ -122,9 +120,9 @@ func alignXYYAxisStateFromPlan(plan, state *models.YAxisConfigModel) {
 		return
 	}
 
-	preserveNullBoolIfStateEquals(plan.Grid, &state.Grid, true)
-	preserveNullBoolIfStateEquals(plan.Ticks, &state.Ticks, true)
-	preserveNullStringIfStateEquals(plan.LabelOrientation, &state.LabelOrientation, "horizontal")
+	lenscommon.PreserveNullBoolIfStateEquals(plan.Grid, &state.Grid, true)
+	lenscommon.PreserveNullBoolIfStateEquals(plan.Ticks, &state.Ticks, true)
+	lenscommon.PreserveNullStringIfStateEquals(plan.LabelOrientation, &state.LabelOrientation, "horizontal")
 	lenscommon.PreserveKnownTfBoolIfStateNull(plan.Grid, &state.Grid)
 	lenscommon.PreserveKnownTfBoolIfStateNull(plan.Ticks, &state.Ticks)
 	lenscommon.PreserveKnownTfStringIfStateNull(plan.LabelOrientation, &state.LabelOrientation)
@@ -142,9 +140,9 @@ func alignXYY2AxisStateFromPlan(plan, state *models.YAxisConfigModel) {
 		return
 	}
 
-	preserveNullBoolIfStateEquals(plan.Grid, &state.Grid, true)
-	preserveNullBoolIfStateEquals(plan.Ticks, &state.Ticks, true)
-	preserveNullStringIfStateEquals(plan.LabelOrientation, &state.LabelOrientation, "horizontal")
+	lenscommon.PreserveNullBoolIfStateEquals(plan.Grid, &state.Grid, true)
+	lenscommon.PreserveNullBoolIfStateEquals(plan.Ticks, &state.Ticks, true)
+	lenscommon.PreserveNullStringIfStateEquals(plan.LabelOrientation, &state.LabelOrientation, "horizontal")
 	lenscommon.PreserveKnownTfBoolIfStateNull(plan.Grid, &state.Grid)
 	lenscommon.PreserveKnownTfBoolIfStateNull(plan.Ticks, &state.Ticks)
 	lenscommon.PreserveKnownTfStringIfStateNull(plan.LabelOrientation, &state.LabelOrientation)
@@ -162,16 +160,16 @@ func alignXYDecorationsStateFromPlan(plan, state *models.XYDecorationsModel) {
 		return
 	}
 
-	preserveNullBoolIfStateEquals(plan.ShowEndZones, &state.ShowEndZones, false)
-	preserveNullBoolIfStateEquals(plan.ShowCurrentTimeMarker, &state.ShowCurrentTimeMarker, false)
-	preserveNullStringIfStateEquals(plan.PointVisibility, &state.PointVisibility, "auto")
-	preserveNullStringIfStateEquals(plan.LineInterpolation, &state.LineInterpolation, "linear")
+	lenscommon.PreserveNullBoolIfStateEquals(plan.ShowEndZones, &state.ShowEndZones, false)
+	lenscommon.PreserveNullBoolIfStateEquals(plan.ShowCurrentTimeMarker, &state.ShowCurrentTimeMarker, false)
+	lenscommon.PreserveNullStringIfStateEquals(plan.PointVisibility, &state.PointVisibility, "auto")
+	lenscommon.PreserveNullStringIfStateEquals(plan.LineInterpolation, &state.LineInterpolation, "linear")
 	// Kibana injects bar-styling defaults (show_value_labels=false,
 	// minimum_bar_height=1) for bar/bar_stacked layers even when the
 	// practitioner omits decorations. Preserve the null plan so the apply
 	// matches and no spurious drift appears on subsequent plans.
-	preserveNullBoolIfStateEquals(plan.ShowValueLabels, &state.ShowValueLabels, false)
-	preserveNullInt64IfStateEquals(plan.MinimumBarHeight, &state.MinimumBarHeight, 1)
+	lenscommon.PreserveNullBoolIfStateEquals(plan.ShowValueLabels, &state.ShowValueLabels, false)
+	lenscommon.PreserveNullInt64IfStateEquals(plan.MinimumBarHeight, &state.MinimumBarHeight, 1)
 	lenscommon.PreserveKnownTfBoolIfStateNull(plan.ShowEndZones, &state.ShowEndZones)
 	lenscommon.PreserveKnownTfBoolIfStateNull(plan.ShowCurrentTimeMarker, &state.ShowCurrentTimeMarker)
 	lenscommon.PreserveKnownTfStringIfStateNull(plan.PointVisibility, &state.PointVisibility)
@@ -186,7 +184,7 @@ func alignXYLegendStateFromPlan(plan, state *models.XYLegendModel) {
 		return
 	}
 
-	preserveNullInt64IfStateEquals(plan.TruncateAfterLines, &state.TruncateAfterLines, 1)
+	lenscommon.PreserveNullInt64IfStateEquals(plan.TruncateAfterLines, &state.TruncateAfterLines, 1)
 	lenscommon.PreserveKnownTfStringIfStateNull(plan.Visibility, &state.Visibility)
 	lenscommon.PreserveKnownTfBoolIfStateNull(plan.Inside, &state.Inside)
 	lenscommon.PreserveKnownTfStringIfStateNull(plan.Position, &state.Position)
@@ -236,22 +234,6 @@ func preserveKnownAxisTitleIfStateBlank(plan *models.AxisTitleModel, state **mod
 
 	lenscommon.PreserveKnownStringIfStateBlank(plan.Value, &(*state).Value)
 	lenscommon.PreserveKnownTfBoolIfStateNull(plan.Visible, &(*state).Visible)
-}
-
-func preserveNullStringIfStateEquals(plan types.String, state *types.String, expected string) {
-	lenscommon.PreserveNullStringIfStateEquals(plan, state, expected)
-}
-
-func preserveNullBoolIfStateEquals(plan types.Bool, state *types.Bool, expected bool) {
-	lenscommon.PreserveNullBoolIfStateEquals(plan, state, expected)
-}
-
-func preserveNullInt64IfStateEquals(plan types.Int64, state *types.Int64, expected int64) {
-	lenscommon.PreserveNullInt64IfStateEquals(plan, state, expected)
-}
-
-func preserveNullJSONIfStateMatches(plan jsontypes.Normalized, state *jsontypes.Normalized, expected string) {
-	lenscommon.PreserveNullJSONIfStateMatchesDefault(plan, state, expected)
 }
 
 func cloneAxisTitleModel(model *models.AxisTitleModel) *models.AxisTitleModel {
