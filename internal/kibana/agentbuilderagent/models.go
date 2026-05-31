@@ -90,6 +90,10 @@ type agentDataSourceModel struct {
 	Tools               []toolModel `tfsdk:"tools"`
 }
 
+// UsesCompositeResourceID opts the data source into parsing agent_id as a
+// composite "<space>/<agent>" lookup key.
+func (agentDataSourceModel) UsesCompositeResourceID() bool { return true }
+
 type toolModel struct {
 	ID                        types.String                    `tfsdk:"id"`
 	SpaceID                   types.String                    `tfsdk:"space_id"`

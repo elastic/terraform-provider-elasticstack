@@ -44,6 +44,10 @@ type skillDataSourceModel struct {
 
 var _ entitycore.WithVersionRequirements = skillDataSourceModel{}
 
+// UsesCompositeResourceID opts the data source into parsing skill_id as a
+// composite "<space>/<skill>" lookup key.
+func (skillDataSourceModel) UsesCompositeResourceID() bool { return true }
+
 // NewDataSource is a helper function to simplify the provider implementation.
 func NewDataSource() datasource.DataSource {
 	return entitycore.NewKibanaDataSource[skillDataSourceModel](

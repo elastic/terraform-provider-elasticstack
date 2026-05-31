@@ -43,6 +43,7 @@ type kibanaDSIdentityModel struct {
 func (m kibanaDSIdentityModel) GetID() types.String         { return m.ID }
 func (m kibanaDSIdentityModel) GetResourceID() types.String { return m.SkillID }
 func (m kibanaDSIdentityModel) GetSpaceID() types.String    { return m.SpaceID }
+func (kibanaDSIdentityModel) UsesCompositeResourceID() bool { return true }
 
 type esDSIdentityModel struct {
 	ElasticsearchConnectionField
