@@ -12,7 +12,7 @@ As a result, concrete data sources re-implement identity resolution, composite-I
 **Goals:**
 - Resolve read identity (`resourceID`, plus `spaceID` for Kibana) once in the envelope and pass it to the read callback, reusing the existing resource resolution helpers.
 - Add a `found bool` return to the read callback and centralize a single not-found policy in the envelope.
-- Have the envelope compute and assign the composite `id` so read callbacks never touch `config.ID`.
+- Keep composite `id` assignment in the read callback (matching the resource envelope, where the read callback sets `id`), so standard and non-standard id entities are handled uniformly without envelope branching.
 - Move data source constructors to an options struct with an optional `PostRead` hook, matching the resource envelope ergonomics.
 - Make Kibana space resolution (default space, composite, unscoped opt-out) identical between data sources and resources.
 - Let a single entity read function be sharable between a data source and its resource where the mapping is identical.
@@ -47,13 +47,15 @@ When the read callback returns `found == false`, the envelope appends a single s
 
 *Alternative considered:* warning + empty state (snapshot-repository's current behavior). Rejected as the default — it silently yields null attributes that break dependent config; standardizing on an error is the safer contract. See Risks for the behavior-change handling.
 
-### 5. Envelope owns composite `id` assignment
-After a successful read, the envelope sets the model's composite `id` from the scoped client and resolved resource identity (the same `client.ID(ctx, resourceID)` path data sources call today). Read callbacks stop computing or assigning `config.ID`.
+### 5. Read callback owns `id` assignment (parity with the resource envelope)
+The concrete read callback computes and assigns the model's `id` and returns it on the model `T`; the envelope does not mutate `id`. This matches the resource envelope exactly, where the read callback sets `data.ID` (for example `data.ID = types.StringValue(client.ID(ctx, resourceID).String())`) and the envelope only persists the returned model. The data source model constraint exposes `GetID()` for read-identity resolution but intentionally provides no identity mutator, so a value-typed generic `T` cannot be assigned by the envelope.
 
-*Alternative considered:* leave `id` to the callback. Rejected — it is pure boilerplate present in nearly every Elasticsearch data source.
+Standard entities assign the composite `id` via `client.ID(...)`. Non-standard entities assign an entity-specific `id` directly in the callback with no envelope opt-out: `internal/elasticsearch/cluster/info` derives `id` from `cluster_uuid`, and `internal/elasticsearch/index/indices` uses the target pattern rather than `client.ID(resourceID)`.
+
+*Alternative considered:* have the envelope own `id` assignment via a new `SetID` mutator on the model constraint. Rejected — it would require a pointer-receiver / `*T` constraint pattern the resource envelope does not use (breaking the "match the resource model constraints" parity goal) and could not express non-standard ids (cluster UUID, index target pattern) without an opt-out. Keeping `id` in the callback handles standard and non-standard entities uniformly with no envelope branching.
 
 ### 6. Options-struct constructors with optional `PostRead`
-Introduce `ElasticsearchDataSourceOptions[T]{ Schema, Read, PostRead }` and `KibanaDataSourceOptions[T]{ Schema, Read, PostRead }`. `NewElasticsearchDataSource[T]`/`NewKibanaDataSource[T]` take the options struct. `PostRead` mirrors the resource `PostReadFunc` shape (runs after state is set on a found read).
+Introduce `ElasticsearchDataSourceOptions[T]{ Schema, Read, PostRead }` and `KibanaDataSourceOptions[T]{ Schema, Read, PostRead }`. `NewElasticsearchDataSource[T]`/`NewKibanaDataSource[T]` take the options struct. `PostRead` runs after state is set on a found read, mirroring the resource `PostReadFunc` ordering. The data source signatures are `func(ctx, *clients.ElasticsearchScopedClient, T) diag.Diagnostics` and `func(ctx, *clients.KibanaScopedClient, T) diag.Diagnostics`; they deliberately omit the resource `PostReadFunc`'s trailing `privateState any` argument because `datasource.ReadResponse` has no `Private` field (data sources have no private state).
 
 *Alternative considered:* add `PostRead` as a trailing positional parameter. Rejected — positional growth is exactly the brittleness the resource envelope avoided with an options struct.
 
@@ -62,7 +64,7 @@ Introduce `ElasticsearchDataSourceOptions[T]{ Schema, Read, PostRead }` and `Kib
 - **Breaking envelope API** → All call sites are in-repo; migrate every concrete data source in the same change and rely on `make build` plus existing acceptance tests to catch regressions.
 - **Not-found behavior change for data sources that previously warned (e.g. snapshot repository) or returned partial empty state (e.g. security role)** → Audit each migrated data source; where a hard error materially changes documented behavior, capture it in the delta spec scenarios and the data source's own spec, and confirm acceptance tests still reflect intended behavior. If any data source genuinely requires soft semantics, the callback can return `found == true` with explicitly emptied fields rather than reintroducing envelope branching.
 - **Models must add identity accessors** → Mechanical addition of value-receiver methods; covered by the compile-time type constraint, so omissions fail the build rather than at runtime.
-- **Composite `id` assignment moving into the envelope could differ from a data source's bespoke id logic** → Verify each migrated data source used the standard `client.ID(...)` composite form (most do); any non-standard cases stay in the callback and set their own id before return.
+- **Non-standard `id` derivation** → Because the read callback owns `id`, standard entities call `client.ID(...)` while non-standard entities set their own `id` directly in the callback with no envelope opt-out (`internal/elasticsearch/cluster/info` derives `id` from `cluster_uuid`; `internal/elasticsearch/index/indices` uses the target pattern). Verify each migrated data source still assigns `id` in its read function.
 
 ## Migration Plan
 

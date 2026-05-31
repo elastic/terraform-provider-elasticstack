@@ -7,7 +7,7 @@ The `entitycore` data source envelope (`NewKibanaDataSource`/`NewElasticsearchDa
 - Extend the data source model constraints to require identity accessors (`GetID`, `GetResourceID`, and `GetSpaceID` for Kibana), mirroring the resource model constraints. **BREAKING** for the envelope's exported type constraints and read-callback signature.
 - The envelope resolves read identity centrally (reusing the resource helpers `resolveElasticsearchReadResourceID` / `resolveKibanaResourceIdentity`) and passes a ready-made `resourceID string` (and `spaceID string` for Kibana) into the read callback.
 - Change the read callback return type to `(T, bool, diag.Diagnostics)`. The `found` bool drives a single, centralized not-found policy in the envelope instead of bespoke per-data-source handling.
-- The envelope computes and assigns the composite `id` from the scoped client and resolved identity, so read callbacks no longer call `client.ID(...)` or set `config.ID`.
+- The read callback continues to compute and assign the model's `id` (matching the resource envelope, where the read callback sets `id`); the envelope resolves read identity but never mutates `id`, since the model constraint exposes `GetID()` with no setter. Standard entities call `client.ID(...)`, while non-standard entities (`cluster/info` cluster UUID, `index/indices` target pattern) assign their own `id`.
 - Replace the positional data source constructors with an options struct (`ElasticsearchDataSourceOptions[T]` / `KibanaDataSourceOptions[T]`) carrying `Schema`, `Read`, and an optional `PostRead` hook — parity with `ElasticsearchResourceOptions`/`KibanaResourceOptions`.
 - Reuse Kibana space-identifier resolution (default space, composite `<space>/<id>`, and the `KibanaUnscopedSpace` opt-out) so space handling is identical across data sources and resources.
 - Migrate all existing envelope-based data sources to the new contract.
@@ -18,7 +18,7 @@ The `entitycore` data source envelope (`NewKibanaDataSource`/`NewElasticsearchDa
 <!-- None: this refines the existing data source envelope contract. -->
 
 ### Modified Capabilities
-- `entitycore-datasource-envelope`: Read-callback signature gains a resolved identity argument (`resourceID`, plus `spaceID` for Kibana) and a `found` boolean return; the envelope owns identity resolution, composite-`id` assignment, centralized not-found handling, and an optional `PostRead` hook; constructors move to an options struct; model constraints require identity accessors.
+- `entitycore-datasource-envelope`: Read-callback signature gains a resolved identity argument (`resourceID`, plus `spaceID` for Kibana) and a `found` boolean return; the envelope owns identity resolution, centralized not-found handling, and an optional `PostRead` hook; constructors move to an options struct; model constraints require identity accessors. The read callback continues to own `id` assignment, matching the resource envelope.
 
 ## Impact
 

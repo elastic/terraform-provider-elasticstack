@@ -78,20 +78,32 @@ The system SHALL apply a single not-found policy when the concrete read function
 - **THEN** the envelope SHALL append a standardized not-found error diagnostic
 - **AND** `resp.State.Set` SHALL NOT be called
 
-### Requirement: Envelope assigns the composite id
-The system SHALL compute and assign the composite `id` of the resolved entity from the scoped client and resolved identity, so concrete read functions do not compute or assign `id`.
+### Requirement: Read function owns id assignment
+Mirroring the resource envelope, the concrete read function SHALL compute and assign the model's `id` on the returned model `T`; the envelope SHALL NOT mutate `id`. The model constraint exposes `GetID()` for read-identity resolution only and intentionally provides no identity mutator (`SetID`), so a value-typed generic `T` cannot be assigned by the envelope. Standard entities assign the composite `id` via `client.ID(ctx, resourceID)`; entities whose identity is non-standard assign their own `id` in the read function with no envelope opt-out.
 
-#### Scenario: Composite id assigned after successful read
-- **WHEN** the concrete read function returns `found == true` without error diagnostics
-- **THEN** the envelope SHALL assign the model's `id` from the scoped client and resolved identity before setting state
+#### Scenario: Read function assigns composite id for a standard entity
+- **WHEN** the concrete read function resolves a standard entity for a non-empty `resourceID`
+- **THEN** the read function SHALL set the model's `id` via `client.ID(ctx, resourceID)` before returning `found == true`
+- **AND** the envelope SHALL persist the returned `id` without modifying it
+
+#### Scenario: Read function assigns a non-standard id
+- **WHEN** the concrete read function resolves an entity whose `id` is not `client.ID(ctx, resourceID)` (for example `internal/elasticsearch/cluster/info`, where `id` derives from `cluster_uuid`, or `internal/elasticsearch/index/indices`, where `id` is the target pattern)
+- **THEN** the read function SHALL set the model's `id` to the entity-specific value before returning `found == true`
+- **AND** no envelope opt-out mechanism SHALL be required
 
 ### Requirement: Data source constructors accept an options struct with optional PostRead
-The system SHALL accept data source configuration via `ElasticsearchDataSourceOptions[T]` and `KibanaDataSourceOptions[T]` structs carrying `Schema` and `Read`, and an optional `PostRead` hook. When `PostRead` is non-nil it SHALL run after state is set on a found read, mirroring the resource envelope `PostRead` semantics.
+The system SHALL accept data source configuration via `ElasticsearchDataSourceOptions[T]` and `KibanaDataSourceOptions[T]` structs carrying `Schema` and `Read`, and an optional `PostRead` hook. The data source `PostRead` signatures SHALL be:
+
+- Elasticsearch: `func(ctx context.Context, client *clients.ElasticsearchScopedClient, model T) diag.Diagnostics`
+- Kibana: `func(ctx context.Context, client *clients.KibanaScopedClient, model T) diag.Diagnostics`
+
+These SHALL intentionally omit the resource `PostReadFunc`'s trailing `privateState any` argument, because data sources have no private state (the framework `datasource.ReadResponse` exposes no `Private` field). When `PostRead` is non-nil it SHALL run after state is set on a found read, mirroring the resource envelope `PostRead` ordering.
 
 #### Scenario: PostRead runs after found read
 - **GIVEN** a data source constructed with a non-nil `PostRead`
 - **WHEN** the concrete read function returns `found == true` and state is set
-- **THEN** the envelope SHALL invoke `PostRead` with the persisted model
+- **THEN** the envelope SHALL invoke `PostRead` with the scoped client and the persisted model
+- **AND** the envelope SHALL NOT pass any private-state argument
 
 #### Scenario: PostRead omitted
 - **GIVEN** a data source constructed without a `PostRead`
