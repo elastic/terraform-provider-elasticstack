@@ -2328,3 +2328,253 @@ func TestNewElasticsearchResource_Update_shortCircuitConfigGetError(t *testing.T
 	require.True(t, resp.Diagnostics.HasError())
 	require.False(t, updateCalled, "updateFunc should not be called when config decode fails")
 }
+
+// optionalWriteIdentityModel allows an empty GetResourceID on Create (POST-style identity).
+type optionalWriteIdentityModel struct {
+	ID                      types.String `tfsdk:"id"`
+	Name                    types.String `tfsdk:"name"`
+	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
+}
+
+func (m optionalWriteIdentityModel) GetID() types.String { return m.ID }
+
+func (m optionalWriteIdentityModel) GetResourceID() types.String { return m.Name }
+
+func (m optionalWriteIdentityModel) GetElasticsearchConnection() types.List {
+	return m.ElasticsearchConnection
+}
+
+func (optionalWriteIdentityModel) AllowsEmptyWriteIdentityOnCreate() bool { return true }
+
+func optionalWriteIdentityObjectType() tftypes.Type {
+	return tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"id":                       tftypes.String,
+			"name":                     tftypes.String,
+			"elasticsearch_connection": elasticsearchConnectionBlockType(),
+		},
+	}
+}
+
+func optionalWriteIdentitySchemaWithConnection(ctx context.Context) rschema.Schema {
+	s := getTestResourceSchema(ctx)
+	s.Blocks = map[string]rschema.Block{
+		"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
+	}
+	return s
+}
+
+func TestNewElasticsearchResource_Create_optionalWriteIdentityAllowsEmptyWriteID(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+
+	var receivedWriteID string
+	createCalled := false
+	createFn := func(
+		_ context.Context,
+		_ *clients.ElasticsearchScopedClient,
+		req WriteRequest[optionalWriteIdentityModel],
+	) (WriteResult[optionalWriteIdentityModel], diag.Diagnostics) {
+		createCalled = true
+		receivedWriteID = req.WriteID
+		model := req.Plan
+		model.ID = types.StringValue("cluster/auto-id")
+		return WriteResult[optionalWriteIdentityModel]{Model: model}, nil
+	}
+
+	r := NewElasticsearchResource[optionalWriteIdentityModel]("test_entity", ElasticsearchResourceOptions[optionalWriteIdentityModel]{
+		Schema: getTestResourceSchema,
+		Read: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, model optionalWriteIdentityModel) (optionalWriteIdentityModel, bool, diag.Diagnostics) {
+			return model, true, nil
+		},
+		Delete: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ optionalWriteIdentityModel) diag.Diagnostics {
+			return nil
+		},
+		Create: createFn,
+		Update: func(_ context.Context, _ *clients.ElasticsearchScopedClient, req WriteRequest[optionalWriteIdentityModel]) (WriteResult[optionalWriteIdentityModel], diag.Diagnostics) {
+			model := req.Plan
+			model.ID = types.StringValue("cluster/" + req.WriteID)
+			return WriteResult[optionalWriteIdentityModel]{Model: model}, nil
+		},
+	})
+	r.client = factory
+
+	schema := optionalWriteIdentitySchemaWithConnection(ctx)
+	ot := optionalWriteIdentityObjectType()
+	planRaw := tftypes.NewValue(ot, map[string]tftypes.Value{
+		"id":                       tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"name":                     tftypes.NewValue(tftypes.String, ""),
+		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+	})
+	plan := tfsdk.Plan{Raw: planRaw, Schema: schema}
+	resp := resource.CreateResponse{State: tfsdk.State{
+		Raw:    tftypes.NewValue(ot, nil),
+		Schema: schema,
+	}}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: tfsdk.Config(plan)}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.True(t, createCalled, "create callback should run when optional write identity allows empty WriteID")
+	require.Empty(t, receivedWriteID)
+}
+
+func TestNewElasticsearchResource_Create_nonOptionalModelStillRejectsEmptyWriteID(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	createCalled := false
+	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
+		Schema: getTestResourceSchema,
+		Read:   testReadFuncFound,
+		Delete: testDeleteFunc,
+		Create: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ WriteRequest[testResourceModel]) (WriteResult[testResourceModel], diag.Diagnostics) {
+			createCalled = true
+			return WriteResult[testResourceModel]{Model: testResourceModel{}}, nil
+		},
+		Update: testWriteFuncFoundUpdate,
+	})
+	r.client = factory
+
+	schema := testResourceSchemaWithConnectionBlock(ctx)
+	ot := testResourceObjectType()
+	planRaw := tftypes.NewValue(ot, map[string]tftypes.Value{
+		"id":                       tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"name":                     tftypes.NewValue(tftypes.String, ""),
+		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+	})
+	plan := tfsdk.Plan{Raw: planRaw, Schema: schema}
+	resp := resource.CreateResponse{State: tfsdk.State{
+		Raw:    tftypes.NewValue(ot, nil),
+		Schema: schema,
+	}}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: tfsdk.Config(plan)}, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Invalid resource identifier")
+	require.False(t, createCalled)
+}
+
+type envelopeTestPrivateData map[string][]byte
+
+func (p envelopeTestPrivateData) GetKey(_ context.Context, key string) ([]byte, diag.Diagnostics) {
+	if val, ok := p[key]; ok {
+		return val, nil
+	}
+	return nil, nil
+}
+
+func (p envelopeTestPrivateData) SetKey(_ context.Context, key string, value []byte) diag.Diagnostics {
+	if value == nil {
+		delete(p, key)
+	} else {
+		p[key] = value
+	}
+	return nil
+}
+
+var _ PrivateStateStorage = envelopeTestPrivateData{}
+
+func TestRunWrite_propagatesPrivateStateToCreateCallback(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+
+	private := make(envelopeTestPrivateData)
+	var captured PrivateStateStorage
+	createFn := func(
+		ctx context.Context,
+		_ *clients.ElasticsearchScopedClient,
+		req WriteRequest[testResourceModel],
+	) (WriteResult[testResourceModel], diag.Diagnostics) {
+		captured = req.Private
+		require.NotNil(t, captured)
+		var diags diag.Diagnostics
+		diags.Append(captured.SetKey(ctx, "probe", []byte("stored"))...)
+		if diags.HasError() {
+			return WriteResult[testResourceModel]{Model: req.Plan}, diags
+		}
+		model := req.Plan
+		model.ID = types.StringValue("cluster/" + req.WriteID)
+		return WriteResult[testResourceModel]{Model: model}, nil
+	}
+
+	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
+		Schema: getTestResourceSchema,
+		Read:   testReadFuncFound,
+		Delete: testDeleteFunc,
+		Create: createFn,
+		Update: testWriteFuncFoundUpdate,
+	})
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
+	schema := testResourceSchemaWithConnectionBlock(ctx)
+	outState := tfsdk.State{
+		Raw:    tftypes.NewValue(testResourceObjectType(), nil),
+		Schema: schema,
+	}
+	diags := RunWriteForTest(ctx, r, ResourceWriteInvocation{
+		plan:         plan,
+		config:       tfsdk.Config(plan),
+		outState:     &outState,
+		privateState: private,
+		isUpdate:     false,
+	})
+	require.False(t, diags.HasError())
+	require.Equal(t, private, captured)
+	stored, getDiags := captured.GetKey(ctx, "probe")
+	require.False(t, getDiags.HasError())
+	require.Equal(t, []byte("stored"), stored)
+}
+
+func TestRunWrite_propagatesPrivateStateToUpdateCallback(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+
+	private := make(envelopeTestPrivateData)
+	var captured PrivateStateStorage
+	updateFn := func(
+		ctx context.Context,
+		_ *clients.ElasticsearchScopedClient,
+		req WriteRequest[testResourceModel],
+	) (WriteResult[testResourceModel], diag.Diagnostics) {
+		captured = req.Private
+		require.NotNil(t, captured)
+		var diags diag.Diagnostics
+		diags.Append(captured.SetKey(ctx, "probe", []byte("updated"))...)
+		if diags.HasError() {
+			return WriteResult[testResourceModel]{Model: req.Plan}, diags
+		}
+		model := req.Plan
+		model.ID = types.StringValue("cluster/" + req.WriteID)
+		return WriteResult[testResourceModel]{Model: model}, nil
+	}
+
+	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
+		Schema: getTestResourceSchema,
+		Read:   testReadFuncFound,
+		Delete: testDeleteFunc,
+		Create: testWriteFuncFoundCreate,
+		Update: updateFn,
+	})
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "cluster/user1"))
+	prior := makeTestResourceState(ctx, t, "cluster/user1")
+	outState := prior
+	diags := RunWriteForTest(ctx, r, ResourceWriteInvocation{
+		plan:         plan,
+		priorState:   &prior,
+		config:       tfsdk.Config(plan),
+		outState:     &outState,
+		privateState: private,
+		isUpdate:     true,
+	})
+	require.False(t, diags.HasError())
+	require.Equal(t, private, captured)
+	stored, getDiags := captured.GetKey(ctx, "probe")
+	require.False(t, getDiags.HasError())
+	require.Equal(t, []byte("updated"), stored)
+}

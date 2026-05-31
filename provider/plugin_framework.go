@@ -33,6 +33,9 @@ import (
 	snapshot_create "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_create"
 	snapshot_repository "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_repository"
 	snapshot_restore "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_restore"
+	connectordatasource "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector/data_source"
+	connectorresource "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector/sync_job_create"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/alias"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/componenttemplate"
@@ -180,6 +183,7 @@ func (p *Provider) Actions(_ context.Context) []func() action.Action {
 	return []func() action.Action{
 		snapshot_restore.NewRestoreAction,
 		snapshot_create.NewCreateAction,
+		sync_job_create.NewAction,
 	}
 }
 
@@ -253,6 +257,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		maintenancewindow.NewResource,
 		enrich.NewEnrichPolicyResource,
 		synonyms.NewSynonymSetResource,
+		connectorresource.NewContentConnectorResource,
 		queryrulesets.NewQueryRulesetResource,
 		ingest.NewIngestPipelineResource,
 		rolemapping.NewRoleMappingResource,
@@ -308,6 +313,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		integrationds.NewDataSource,
 		enrich.NewEnrichPolicyDataSource,
 		synonyms.NewSynonymSetDataSource,
+		connectordatasource.NewContentConnectorDataSource,
 		queryrulesets.NewQueryRulesetDataSource,
 		rolemapping.NewRoleMappingDataSource,
 		role.NewRoleDataSource,

@@ -58,6 +58,9 @@ This document outlines the coding standards and conventions used in the terrafor
   - The provider supports a wide range of Stack versions, and so newer features will not be available in all versions.
   - See [`assertKafkaSupport`](../../internal/fleet/output/models.go) for an example of how to handle the use of unsupported attributes.
 
+### Write-only secret attributes
+
+Resources exposing `WriteOnly` + `Sensitive` attributes (passwords, tokens, API secrets) MUST detect drift using the shared [`internal/utils/writeonlyhash`](../../internal/utils/writeonlyhash/) helper. The helper stores bcrypt hashes of applied values in resource private state, surfacing in-config edits as plan-time updates without revealing the value. See [`writeonly-secret-hashing.md`](./writeonly-secret-hashing.md) for the contract, threat model, and a worked adoption example.
 
 ## JSON Handling
 
