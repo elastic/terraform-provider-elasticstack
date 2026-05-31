@@ -257,11 +257,6 @@ func getSchema(_ context.Context) schema.Schema {
 	}
 }
 
-// GetDelayedDataCheckConfigAttrTypes returns the attribute types for delayed_data_check_config
-func GetDelayedDataCheckConfigAttrTypes() map[string]attr.Type {
-	return getSchema(context.Background()).Attributes["delayed_data_check_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
-}
-
 // GetIndicesOptionsAttrTypes returns the attribute types for indices_options
 func GetIndicesOptionsAttrTypes() map[string]attr.Type {
 	return getSchema(context.Background()).Attributes["indices_options"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
