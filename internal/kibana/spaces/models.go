@@ -31,6 +31,10 @@ type dataSourceModel struct {
 	Spaces []SpaceModel `tfsdk:"spaces"`
 }
 
+func (m dataSourceModel) GetID() types.String         { return m.ID }
+func (m dataSourceModel) GetResourceID() types.String { return types.StringValue("spaces") }
+func (m dataSourceModel) GetSpaceID() types.String    { return types.StringValue("default") }
+
 // SpaceModel maps spaces schema data for the list data source.
 type SpaceModel struct {
 	ID               types.String `tfsdk:"id"`

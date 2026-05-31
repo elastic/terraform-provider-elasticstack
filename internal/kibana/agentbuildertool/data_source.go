@@ -26,7 +26,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -87,57 +86,52 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 	}
 }
 
-func readToolDataSource(ctx context.Context, client *clients.KibanaScopedClient, config toolDataSourceModel) (toolDataSourceModel, diag.Diagnostics) {
+func readToolDataSource(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	resourceID, spaceID string,
+	config toolDataSourceModel,
+) (toolDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderAPIVersion, "tools", &diags) {
-		return config, diags
+		return config, false, diags
+	}
+
+	if spaceID == "" {
+		spaceID = defaultSpaceID
 	}
 
 	oapiClient := client.GetKibanaOapiClient()
 
-	spaceID := defaultSpaceID
-	if typeutils.IsKnown(config.SpaceID) {
-		spaceID = config.SpaceID.ValueString()
-	}
-
-	toolID := config.ID.ValueString()
-	if compID, compDiags := clients.CompositeIDFromStr(toolID); !compDiags.HasError() {
-		toolID = compID.ResourceID
-		if !typeutils.IsKnown(config.SpaceID) {
-			spaceID = compID.ClusterID
-		}
-	}
-
-	tool, d := kibanaoapi.GetTool(ctx, oapiClient, spaceID, toolID)
+	tool, d := kibanaoapi.GetTool(ctx, oapiClient, spaceID, resourceID)
 	diags.Append(d...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 	if tool == nil {
-		diags.AddError("Tool not found", fmt.Sprintf("Unable to fetch tool with ID %s", toolID))
-		return config, diags
+		return config, false, diags
 	}
 
 	config.SpaceID = types.StringValue(spaceID)
 	d = config.populateFromAPI(ctx, tool)
 	diags.Append(d...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	if config.IncludeWorkflow.ValueBool() {
 		supported, verDiags := client.EnforceMinVersion(ctx, minKibanaAgentBuilderWorkflowAPIVersion)
 		diags.Append(verDiags...)
 		if diags.HasError() {
-			return config, diags
+			return config, false, diags
 		}
 		if !supported {
 			diags.AddError(
 				"Unsupported server version",
 				fmt.Sprintf("Exporting workflow configuration requires Elastic Stack v%s or later.", minKibanaAgentBuilderWorkflowAPIVersion),
 			)
-			return config, diags
+			return config, false, diags
 		}
 
 		if tool.Type != "workflow" {
@@ -145,28 +139,28 @@ func readToolDataSource(ctx context.Context, client *clients.KibanaScopedClient,
 				"Invalid use of include_workflow",
 				fmt.Sprintf("include_workflow is true but the tool type is %q, not \"workflow\".", tool.Type),
 			)
-			return config, diags
+			return config, false, diags
 		}
 
 		workflowIDRaw, ok := tool.Configuration["workflow_id"]
 		if !ok {
 			diags.AddError("Missing workflow_id", "Tool configuration does not contain a workflow_id.")
-			return config, diags
+			return config, false, diags
 		}
 		workflowID, ok := workflowIDRaw.(string)
 		if !ok || workflowID == "" {
 			diags.AddError("Invalid workflow_id", "workflow_id in tool configuration is not a valid string.")
-			return config, diags
+			return config, false, diags
 		}
 
 		workflow, wDiags := kibanaoapi.GetWorkflow(ctx, oapiClient, spaceID, workflowID)
 		diags.Append(wDiags...)
 		if diags.HasError() {
-			return config, diags
+			return config, false, diags
 		}
 		if workflow == nil {
 			diags.AddError("Workflow not found", fmt.Sprintf("Unable to fetch workflow with ID %s.", workflowID))
-			return config, diags
+			return config, false, diags
 		}
 
 		config.WorkflowID = types.StringValue(workflow.ID)
@@ -176,7 +170,7 @@ func readToolDataSource(ctx context.Context, client *clients.KibanaScopedClient,
 		config.WorkflowConfigurationYaml = customtypes.NewNormalizedYamlNull()
 	}
 
-	return config, diags
+	return config, true, diags
 }
 
 // NewDataSource is a helper function to simplify the provider implementation.
@@ -184,7 +178,9 @@ func NewDataSource() datasource.DataSource {
 	return entitycore.NewKibanaDataSource[toolDataSourceModel](
 		entitycore.ComponentKibana,
 		"agentbuilder_tool",
-		getDataSourceSchema,
-		readToolDataSource,
+		entitycore.KibanaDataSourceOptions[toolDataSourceModel]{
+			Schema: getDataSourceSchema,
+			Read:   readToolDataSource,
+		},
 	)
 }

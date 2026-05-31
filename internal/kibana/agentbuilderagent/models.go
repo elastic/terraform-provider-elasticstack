@@ -79,12 +79,16 @@ type agentDataSourceModel struct {
 	Instructions        types.String `tfsdk:"instructions"`
 }
 
+func (m agentDataSourceModel) GetID() types.String         { return m.ID }
+func (m agentDataSourceModel) GetResourceID() types.String { return m.AgentID }
+func (m agentDataSourceModel) GetSpaceID() types.String    { return m.SpaceID }
+
 // GetVersionRequirements returns the static minimum Kibana version requirements
 // for the Agent Builder agent data source. This satisfies the optional
 // entitycore.WithVersionRequirements interface, allowing the
 // generic Kibana data source envelope to enforce the requirement before invoking
 // the entity read callback.
-func (model agentDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m agentDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *minKibanaAgentBuilderAPIVersion,
@@ -151,21 +155,21 @@ func populateAgentBaseFromAPI(ctx context.Context, spaceID string, data *models.
 	return base, diags
 }
 
-func (model *agentDataSourceModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Agent) diag.Diagnostics {
+func (m *agentDataSourceModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Agent) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
 	base, diags := populateAgentBaseFromAPI(ctx, spaceID, data)
-	model.ID = base.ID
-	model.AgentID = base.AgentID
-	model.SpaceID = base.SpaceID
-	model.Name = base.Name
-	model.Description = base.Description
-	model.AvatarColor = base.AvatarColor
-	model.AvatarSymbol = base.AvatarSymbol
-	model.Instructions = base.Instructions
-	model.Labels = base.Labels
-	diags.Append(agentbuilder.PopulateSet(ctx, data.Configuration.SkillIDs, &model.SkillIDs)...)
+	m.ID = base.ID
+	m.AgentID = base.AgentID
+	m.SpaceID = base.SpaceID
+	m.Name = base.Name
+	m.Description = base.Description
+	m.AvatarColor = base.AvatarColor
+	m.AvatarSymbol = base.AvatarSymbol
+	m.Instructions = base.Instructions
+	m.Labels = base.Labels
+	diags.Append(agentbuilder.PopulateSet(ctx, data.Configuration.SkillIDs, &m.SkillIDs)...)
 	return diags
 }
 

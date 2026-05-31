@@ -27,7 +27,9 @@ func NewDataSource() datasource.DataSource {
 	return entitycore.NewKibanaDataSource[connectorDataSourceModel](
 		entitycore.ComponentKibana,
 		"action_connector",
-		getDataSourceSchema,
-		readConnectorDataSource,
+		entitycore.KibanaDataSourceOptions[connectorDataSourceModel]{
+			Schema: getDataSourceSchema,
+			Read:   readConnectorDataSource,
+		},
 	)
 }

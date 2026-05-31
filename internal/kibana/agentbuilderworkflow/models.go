@@ -55,6 +55,10 @@ type workflowDataSourceModel struct {
 	ConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"configuration_yaml"`
 }
 
+func (m workflowDataSourceModel) GetID() types.String         { return m.ID }
+func (m workflowDataSourceModel) GetResourceID() types.String { return m.ID }
+func (m workflowDataSourceModel) GetSpaceID() types.String    { return m.SpaceID }
+
 type workflowModel struct {
 	ID                types.String                    `tfsdk:"id"`
 	KibanaConnection  types.List                      `tfsdk:"kibana_connection"`

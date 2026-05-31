@@ -28,47 +28,42 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func readConnectorDataSource(ctx context.Context, client *clients.KibanaScopedClient, model connectorDataSourceModel) (connectorDataSourceModel, diag.Diagnostics) {
+func readConnectorDataSource(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	resourceID, spaceID string,
+	model connectorDataSourceModel,
+) (connectorDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	oapiClient := client.GetKibanaOapiClient()
 
-	spaceID := ""
-	if !model.SpaceID.IsNull() {
-		spaceID = model.SpaceID.ValueString()
-	}
 	if spaceID == "" {
 		spaceID = defaultSpaceID
-		model.SpaceID = types.StringValue(defaultSpaceID)
 	}
-
-	connectorName := model.Name.ValueString()
+	model.SpaceID = types.StringValue(spaceID)
 
 	connectorType := ""
 	if !model.ConnectorTypeID.IsNull() {
 		connectorType = model.ConnectorTypeID.ValueString()
 	}
 
-	foundConnectors, searchDiags := kibanaoapi.SearchConnectors(ctx, oapiClient, connectorName, spaceID, connectorType)
+	foundConnectors, searchDiags := kibanaoapi.SearchConnectors(ctx, oapiClient, resourceID, spaceID, connectorType)
 	diags.Append(searchDiags...)
 	if diags.HasError() {
-		return model, diags
+		return model, false, diags
 	}
 
 	if len(foundConnectors) == 0 {
-		diags.AddError(
-			"error while creating elasticstack_kibana_action_connector datasource",
-			fmt.Sprintf("connector with name [%s/%s] and type [%s] not found", spaceID, connectorName, connectorType),
-		)
-		return model, diags
+		return model, false, diags
 	}
 
 	if len(foundConnectors) > 1 {
 		diags.AddError(
 			"error while creating elasticstack_kibana_action_connector datasource",
-			fmt.Sprintf("multiple connectors found with name [%s/%s] and type [%s]", spaceID, connectorName, connectorType),
+			fmt.Sprintf("multiple connectors found with name [%s/%s] and type [%s]", spaceID, resourceID, connectorType),
 		)
-		return model, diags
+		return model, false, diags
 	}
 
 	connector := foundConnectors[0]
@@ -86,6 +81,7 @@ func readConnectorDataSource(ctx context.Context, client *clients.KibanaScopedCl
 	model.IsDeprecated = types.BoolValue(connector.IsDeprecated)
 	model.IsMissingSecrets = types.BoolValue(connector.IsMissingSecrets)
 	model.IsPreconfigured = types.BoolValue(connector.IsPreconfigured)
+	model.Name = types.StringValue(resourceID)
 
-	return model, diags
+	return model, true, diags
 }

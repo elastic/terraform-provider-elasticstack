@@ -36,3 +36,7 @@ type connectorDataSourceModel struct {
 	IsMissingSecrets types.Bool           `tfsdk:"is_missing_secrets"`
 	IsPreconfigured  types.Bool           `tfsdk:"is_preconfigured"`
 }
+
+func (m connectorDataSourceModel) GetID() types.String         { return m.ID }
+func (m connectorDataSourceModel) GetResourceID() types.String { return m.Name }
+func (m connectorDataSourceModel) GetSpaceID() types.String    { return m.SpaceID }
