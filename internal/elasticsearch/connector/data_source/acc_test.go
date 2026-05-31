@@ -353,7 +353,7 @@ func TestAccDataSourceContentConnector_notFound(t *testing.T) {
 				SkipFunc:                 skipConnectorUnsupported(),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables:          vars,
-				ExpectError:              regexp.MustCompile(`(?s)Connector not found.*` + regexp.QuoteMeta(connectorID)),
+				ExpectError:              regexp.MustCompile(`(?s)elasticsearch_connector not found.*` + regexp.QuoteMeta(connectorID)),
 			},
 		},
 	})
