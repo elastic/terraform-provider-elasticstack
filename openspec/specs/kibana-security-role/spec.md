@@ -181,7 +181,7 @@ When creating a role, the resource SHALL set the `createOnly` query parameter to
 
 ### Requirement: Read and refresh (REQ-012–REQ-014)
 
-When refreshing state, the resource and data source SHALL use `id` (or `name` for the data source) as the role name to fetch. If the Get role HTTP response indicates the role does not exist (for example HTTP 404, or the documented empty success response if applicable), the resource SHALL remove itself from state (role not found) and the data source SHALL behave as today for a missing role (diagnostics or empty result per existing implementation). When a role is found, the resource SHALL set `name`, `elasticsearch`, `kibana`, `description`, and `metadata` in state from the decoded API response.
+When refreshing state, the resource and data source SHALL use `id` (or `name` for the data source) as the role name to fetch. If the Get role HTTP response indicates the role does not exist (for example HTTP 404, or the documented empty success response if applicable), the resource SHALL remove itself from state (role not found). For the data source, the read callback SHALL return `found == false` and the envelope SHALL append a standardized not-found error diagnostic; Terraform state SHALL NOT be set. When a role is found, the resource SHALL set `name`, `elasticsearch`, `kibana`, `description`, and `metadata` in state from the decoded API response.
 
 #### Scenario: Role removed in Kibana
 
