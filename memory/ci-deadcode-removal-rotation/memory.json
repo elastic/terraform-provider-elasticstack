@@ -196,6 +196,42 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed",
       "attemptedAt": "2026-05-30T04:35:48.369677163Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.NewAcceptanceTestingElasticsearchScopedClient",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-05-31T04:30:28.786442007Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.NewAcceptanceTestingKibanaScopedClient",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-05-31T04:30:28.786444571Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.NewElasticsearchScopedClientForTest",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-05-31T04:30:28.786444651Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.newAcceptanceTestingClient",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-05-31T04:30:28.786444721Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients/config.NewFromEnv",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients/config",
+      "attemptedAt": "2026-05-31T04:30:28.786444801Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed.GetDelayedDataCheckConfigAttrTypes",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed",
+      "attemptedAt": "2026-05-31T04:42:05.937627774Z",
+      "reason": "pr_created"
     }
   ]
 }
