@@ -403,18 +403,10 @@ func PopulateTagcloudTagByDefaults(model map[string]any) map[string]any {
 	}
 	if operation, ok := model["operation"].(string); ok && operation == OperationTerms {
 		if _, exists := model["rank_by"]; !exists {
-			model["rank_by"] = map[string]any{
-				"type":         "metric",
-				"metric_index": float64(0),
-				"direction":    "desc",
-			}
+			model["rank_by"] = partitionDefaultRankBy()
 		}
 		if _, exists := model["color"]; !exists {
-			model["color"] = map[string]any{
-				"mode":    "categorical",
-				"palette": "default",
-				"mapping": []any{},
-			}
+			model["color"] = partitionDefaultColor()
 		}
 	}
 	return model
