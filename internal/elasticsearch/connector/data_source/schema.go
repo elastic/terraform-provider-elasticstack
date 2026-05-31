@@ -131,34 +131,37 @@ func dataSourceSchemaFactory(_ context.Context) dschema.Schema {
 	}
 }
 
+// leafAttrsToDataSource converts shared LeafAttr definitions into data source schema attributes.
+// All leaf attributes are marked Computed.
+func leafAttrsToDataSource(leaves []connector.LeafAttr) map[string]dschema.Attribute {
+	result := make(map[string]dschema.Attribute, len(leaves))
+	for _, a := range leaves {
+		if a.IsString {
+			result[a.Name] = dschema.StringAttribute{
+				MarkdownDescription: a.Description,
+				Computed:            true,
+			}
+		} else {
+			result[a.Name] = dschema.BoolAttribute{
+				MarkdownDescription: a.Description,
+				Computed:            true,
+			}
+		}
+	}
+	return result
+}
+
 func dataSourcePipelineSingleNestedAttribute() dschema.SingleNestedAttribute {
 	return dschema.SingleNestedAttribute{
-		MarkdownDescription: "Ingest pipeline settings applied to synced documents.",
+		MarkdownDescription: connector.PipelineNestedDesc,
 		Computed:            true,
-		Attributes: map[string]dschema.Attribute{
-			connector.NameAttr: dschema.StringAttribute{
-				MarkdownDescription: "Ingest pipeline name.",
-				Computed:            true,
-			},
-			connector.ExtractBinaryContentAttr: dschema.BoolAttribute{
-				MarkdownDescription: "Whether to extract binary content during ingestion.",
-				Computed:            true,
-			},
-			connector.ReduceWhitespaceAttr: dschema.BoolAttribute{
-				MarkdownDescription: "Whether to reduce whitespace in extracted text.",
-				Computed:            true,
-			},
-			connector.RunMlInferenceAttr: dschema.BoolAttribute{
-				MarkdownDescription: "Whether to run ML inference during ingestion.",
-				Computed:            true,
-			},
-		},
+		Attributes:          leafAttrsToDataSource(connector.PipelineLeafAttrs()),
 	}
 }
 
 func dataSourceSchedulingSingleNestedAttribute() dschema.SingleNestedAttribute {
 	return dschema.SingleNestedAttribute{
-		MarkdownDescription: "Sync scheduling for full, incremental, and access-control jobs.",
+		MarkdownDescription: connector.SchedulingNestedDesc,
 		Computed:            true,
 		Attributes: map[string]dschema.Attribute{
 			connector.FullScheduleAttr:          dataSourceScheduleEntrySingleNestedAttribute(connector.FullScheduleAttr),
@@ -172,22 +175,13 @@ func dataSourceScheduleEntrySingleNestedAttribute(jobKind string) dschema.Single
 	return dschema.SingleNestedAttribute{
 		MarkdownDescription: "Schedule for the `" + jobKind + "` sync job type.",
 		Computed:            true,
-		Attributes: map[string]dschema.Attribute{
-			connector.EnabledAttr: dschema.BoolAttribute{
-				MarkdownDescription: "Whether this scheduled job type is enabled.",
-				Computed:            true,
-			},
-			connector.IntervalAttr: dschema.StringAttribute{
-				MarkdownDescription: "Cron expression accepted by the Elasticsearch scheduler.",
-				Computed:            true,
-			},
-		},
+		Attributes:          leafAttrsToDataSource(connector.ScheduleEntryLeafAttrs()),
 	}
 }
 
 func dataSourceFeaturesSingleNestedAttribute() dschema.SingleNestedAttribute {
 	return dschema.SingleNestedAttribute{
-		MarkdownDescription: "Connector feature flags.",
+		MarkdownDescription: connector.FeaturesNestedDesc,
 		Computed:            true,
 		Attributes: map[string]dschema.Attribute{
 			connector.DocumentLevelSecurityAttr:  dataSourceFeatureFlagSingleNestedAttribute(connector.DocumentLevelSecurityAttr),
@@ -202,18 +196,13 @@ func dataSourceFeatureFlagSingleNestedAttribute(featureName string) dschema.Sing
 	return dschema.SingleNestedAttribute{
 		MarkdownDescription: "Feature flag for `" + featureName + "`.",
 		Computed:            true,
-		Attributes: map[string]dschema.Attribute{
-			connector.EnabledAttr: dschema.BoolAttribute{
-				MarkdownDescription: "Whether the feature is enabled.",
-				Computed:            true,
-			},
-		},
+		Attributes:          leafAttrsToDataSource(connector.FeatureFlagLeafAttrs()),
 	}
 }
 
 func dataSourceSyncRulesSingleNestedAttribute() dschema.SingleNestedAttribute {
 	return dschema.SingleNestedAttribute{
-		MarkdownDescription: "Sync rules feature flags.",
+		MarkdownDescription: connector.SyncRulesNestedDesc,
 		Computed:            true,
 		Attributes: map[string]dschema.Attribute{
 			connector.BasicSyncRulesAttr:    dataSourceFeatureFlagSingleNestedAttribute(connector.BasicSyncRulesAttr),
