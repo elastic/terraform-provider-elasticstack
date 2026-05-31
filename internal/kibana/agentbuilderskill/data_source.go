@@ -38,7 +38,7 @@ var (
 
 // NewDataSource is a helper function to simplify the provider implementation.
 func NewDataSource() datasource.DataSource {
-	return entitycore.NewKibanaDataSource[skillDataSourceModel](
+	return entitycore.NewKibanaDataSource[skillModel](
 		entitycore.ComponentKibana,
 		"agentbuilder_skill",
 		getDataSourceSchema,
@@ -112,7 +112,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 // The envelope owns config decode, GetKibanaClient, static version enforcement
 // via GetVersionRequirements, and resp.State.Set. This function only contains
 // entity-specific logic.
-func readSkillDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config skillDataSourceModel) (skillDataSourceModel, diag.Diagnostics) {
+func readSkillDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config skillModel) (skillModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if !typeutils.IsKnown(config.SkillID) || config.SkillID.ValueString() == "" {

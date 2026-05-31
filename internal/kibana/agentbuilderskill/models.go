@@ -30,12 +30,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (model skillModel) GetID() types.String             { return model.ID }
-func (model skillModel) GetResourceID() types.String     { return model.SkillID }
-func (model skillModel) GetSpaceID() types.String        { return model.SpaceID }
-func (model skillModel) GetKibanaConnection() types.List { return model.KibanaConnection }
+func (model skillModel) GetID() types.String         { return model.ID }
+func (model skillModel) GetResourceID() types.String { return model.SkillID }
+func (model skillModel) GetSpaceID() types.String    { return model.SpaceID }
 
 var _ entitycore.KibanaResourceModel = skillModel{}
+var _ entitycore.KibanaDataSourceModel = skillModel{}
 var _ entitycore.WithVersionRequirements = skillModel{}
 
 func (model skillModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
@@ -48,18 +48,6 @@ func (model skillModel) GetVersionRequirements() ([]entitycore.VersionRequiremen
 }
 
 type skillModel struct {
-	ID                types.String                 `tfsdk:"id"`
-	KibanaConnection  types.List                   `tfsdk:"kibana_connection"`
-	SkillID           types.String                 `tfsdk:"skill_id"`
-	SpaceID           types.String                 `tfsdk:"space_id"`
-	Name              types.String                 `tfsdk:"name"`
-	Description       types.String                 `tfsdk:"description"`
-	Content           types.String                 `tfsdk:"content"`
-	ToolIDs           types.Set                    `tfsdk:"tool_ids"`
-	ReferencedContent []skillReferencedContentItem `tfsdk:"referenced_content"`
-}
-
-type skillDataSourceModel struct {
 	entitycore.KibanaConnectionField
 	ID                types.String                 `tfsdk:"id"`
 	SkillID           types.String                 `tfsdk:"skill_id"`
@@ -75,20 +63,6 @@ type skillReferencedContentItem struct {
 	Name         types.String `tfsdk:"name"`
 	RelativePath types.String `tfsdk:"relative_path"`
 	Content      types.String `tfsdk:"content"`
-}
-
-// GetVersionRequirements returns the static minimum Kibana version requirements
-// for the Agent Builder skill data source. This satisfies the optional
-// entitycore.WithVersionRequirements interface, allowing the generic Kibana
-// data source envelope to enforce the requirement before invoking the entity
-// read callback.
-func (model skillDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *minKibanaAgentBuilderSkillsAPIVersion,
-			ErrorMessage: fmt.Sprintf("Agent Builder skills require Elastic Stack v%s or later.", minKibanaAgentBuilderSkillsAPIVersion),
-		},
-	}, nil
 }
 
 func (model *skillModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Skill) diag.Diagnostics {
@@ -108,33 +82,9 @@ func (model *skillModel) populateFromAPI(ctx context.Context, spaceID string, da
 	model.Name = types.StringValue(data.Name)
 	model.Description = types.StringValue(data.Description)
 	model.Content = types.StringValue(data.Content)
-
-	diags.Append(agentbuilder.PopulateSet(ctx, data.ToolIDs, &model.ToolIDs)...)
 	model.ReferencedContent = referencedContentItemsFromAPI(data.ReferencedContent)
 
-	return diags
-}
-
-func (model *skillDataSourceModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Skill) diag.Diagnostics {
-	if data == nil {
-		return nil
-	}
-
-	var diags diag.Diagnostics
-
-	if spaceID == "" {
-		spaceID = defaultSpaceID
-	}
-
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
-	model.SkillID = types.StringValue(data.ID)
-	model.SpaceID = types.StringValue(spaceID)
-	model.Name = types.StringValue(data.Name)
-	model.Description = types.StringValue(data.Description)
-	model.Content = types.StringValue(data.Content)
-
 	diags.Append(agentbuilder.PopulateSet(ctx, data.ToolIDs, &model.ToolIDs)...)
-	model.ReferencedContent = referencedContentItemsFromAPI(data.ReferencedContent)
 
 	return diags
 }
