@@ -48,12 +48,17 @@ type roleDataSourceModel struct {
 	RemoteIndices types.Set            `tfsdk:"remote_indices"`
 }
 
+func (m roleDataSourceModel) GetID() types.String         { return m.ID }
+func (m roleDataSourceModel) GetResourceID() types.String { return m.Name }
+
 func NewRoleDataSource() datasource.DataSource {
 	return entitycore.NewElasticsearchDataSource[roleDataSourceModel](
 		entitycore.ComponentElasticsearch,
 		"security_role",
-		getDataSourceSchema,
-		readDataSource,
+		entitycore.ElasticsearchDataSourceOptions[roleDataSourceModel]{
+			Schema: getDataSourceSchema,
+			Read:   readDataSource,
+		},
 	)
 }
 
@@ -214,50 +219,34 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 	}
 }
 
-func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config roleDataSourceModel) (roleDataSourceModel, diag.Diagnostics) {
+func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, resourceID string, model roleDataSourceModel) (roleDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	roleName := config.Name.ValueString()
-
-	// Resolve the composite ID
-	id, idDiags := esClient.ID(ctx, roleName)
+	id, idDiags := esClient.ID(ctx, resourceID)
 	diags.Append(idDiags...)
 	if diags.HasError() {
-		return config, diags
+		return model, false, diags
 	}
-	config.ID = types.StringValue(id.String())
+	model.ID = types.StringValue(id.String())
 
-	// Call GetRole
-	role, roleDiags := elasticsearch.GetRole(ctx, esClient, roleName)
+	role, roleDiags := elasticsearch.GetRole(ctx, esClient, resourceID)
 	diags.Append(roleDiags...)
 	if diags.HasError() {
-		return config, diags
+		return model, false, diags
 	}
 
-	// Not-found: return empty ID, keep name, no diagnostics
 	if role == nil {
-		config.ID = types.StringValue("")
-		config.Description = types.StringNull()
-		config.Cluster = types.SetNull(types.StringType)
-		config.RunAs = types.SetNull(types.StringType)
-		config.Global = jsontypes.NewNormalizedNull()
-		config.Metadata = jsontypes.NewNormalizedNull()
-		config.Applications = types.SetNull(types.ObjectType{AttrTypes: getApplicationAttrTypes()})
-		config.Indices = types.SetNull(types.ObjectType{AttrTypes: getIndexPermsDSAttrTypes()})
-		config.RemoteIndices = types.SetNull(types.ObjectType{AttrTypes: getRemoteIndexPermsDSAttrTypes()})
-		return config, diags
+		return model, false, diags
 	}
 
-	// Map API response to model
-	diags.Append(config.fromAPIModel(ctx, role)...)
+	diags.Append(model.fromAPIModel(ctx, role)...)
 	if diags.HasError() {
-		return config, diags
+		return model, false, diags
 	}
 
-	// Ensure name is set to the role name we looked up
-	config.Name = types.StringValue(roleName)
+	model.Name = types.StringValue(resourceID)
 
-	return config, diags
+	return model, true, diags
 }
 
 func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *elasticsearch.Role) diag.Diagnostics {

@@ -36,8 +36,10 @@ func NewDataSource() datasource.DataSource {
 	return entitycore.NewElasticsearchDataSource[dataSourceModel](
 		entitycore.ComponentElasticsearch,
 		"info",
-		getDataSourceSchema,
-		readDataSource,
+		entitycore.ElasticsearchDataSourceOptions[dataSourceModel]{
+			Schema: getDataSourceSchema,
+			Read:   readDataSource,
+		},
 	)
 }
 
@@ -57,13 +59,13 @@ func versionAttrTypes() map[string]attr.Type {
 	}
 }
 
-func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config dataSourceModel) (dataSourceModel, diag.Diagnostics) {
+func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, _ string, config dataSourceModel) (dataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	res, clusterDiags := elasticsearch.GetClusterInfo(ctx, esClient)
 	diags.Append(clusterDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	config.ID = types.StringValue(res.ClusterUuid)
@@ -101,9 +103,9 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	versionList, listDiags := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: versionAttrTypes()}, []versionModel{verObj})
 	diags.Append(listDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	config.Version = versionList
-	return config, diags
+	return config, true, diags
 }

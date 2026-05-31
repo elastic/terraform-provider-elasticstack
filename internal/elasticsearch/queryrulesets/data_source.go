@@ -19,7 +19,6 @@ package queryrulesets
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -46,6 +45,9 @@ func (queryRulesetDataSourceModel) GetVersionRequirements(ctx context.Context) (
 	return QueryRulesetData{}.GetVersionRequirements(ctx)
 }
 
+func (m queryRulesetDataSourceModel) GetID() types.String         { return m.ID }
+func (m queryRulesetDataSourceModel) GetResourceID() types.String { return m.RulesetID }
+
 func (m queryRulesetDataSourceModel) toData() QueryRulesetData {
 	return QueryRulesetData{
 		ElasticsearchConnectionField: m.ElasticsearchConnectionField,
@@ -69,35 +71,35 @@ func NewQueryRulesetDataSource() datasource.DataSource {
 	return entitycore.NewElasticsearchDataSource[queryRulesetDataSourceModel](
 		entitycore.ComponentElasticsearch,
 		"query_ruleset",
-		dataSourceSchemaFactory,
-		readQueryRulesetDataSource,
+		entitycore.ElasticsearchDataSourceOptions[queryRulesetDataSourceModel]{
+			Schema: dataSourceSchemaFactory,
+			Read:   readQueryRulesetDataSource,
+		},
 	)
 }
 
-func readQueryRulesetDataSource(ctx context.Context, client *clients.ElasticsearchScopedClient, config queryRulesetDataSourceModel) (queryRulesetDataSourceModel, diag.Diagnostics) {
+func readQueryRulesetDataSource(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, config queryRulesetDataSourceModel) (queryRulesetDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	data := config.toData()
-	rulesetID := data.RulesetID.ValueString()
 
-	id, idDiags := client.ID(ctx, rulesetID)
+	id, idDiags := client.ID(ctx, resourceID)
 	diags.Append(idDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 	data.ID = types.StringValue(id.String())
 
-	resp, getDiags := elasticsearch.GetQueryRuleset(ctx, client, rulesetID)
+	resp, getDiags := elasticsearch.GetQueryRuleset(ctx, client, resourceID)
 	diags.Append(getDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	if resp == nil {
-		diags.AddError("Query ruleset not found", fmt.Sprintf("Query ruleset '%s' not found", rulesetID))
-		return config, diags
+		return config, false, diags
 	}
 
 	data.populateFromAPI(ctx, resp.Rules, &diags)
-	return queryRulesetDataSourceModelFromData(data), diags
+	return queryRulesetDataSourceModelFromData(data), !diags.HasError(), diags
 }

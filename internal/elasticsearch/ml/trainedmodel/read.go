@@ -33,53 +33,32 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config trainedModelData) (trainedModelData, diag.Diagnostics) {
+func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, resourceID string, config trainedModelData) (trainedModelData, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	modelID := config.ModelID.ValueString()
-
-	// Resolve the composite ID
-	id, idDiags := esClient.ID(ctx, modelID)
+	id, idDiags := esClient.ID(ctx, resourceID)
 	diags.Append(idDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 	config.ID = types.StringValue(id.String())
 
-	// Call GetTrainedModel
-	model, found, modelDiags := elasticsearch.GetTrainedModel(ctx, esClient, modelID)
+	model, found, modelDiags := elasticsearch.GetTrainedModel(ctx, esClient, resourceID)
 	diags.Append(modelDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
-	// Not-found: return empty ID with computed attributes null
 	if !found || model == nil {
-		config.ID = types.StringValue("")
-		config.Description = types.StringNull()
-		config.ModelType = types.StringNull()
-		config.ModelSizeBytes = types.Int64Null()
-		config.FullyDefined = types.BoolNull()
-		config.Tags = types.SetNull(types.StringType)
-		config.CreateTime = types.StringNull()
-		config.CreatedBy = types.StringNull()
-		config.Version = types.StringNull()
-		config.PlatformArchitecture = types.StringNull()
-		config.LicenseLevel = types.StringNull()
-		config.InputJSON = jsontypes.NewNormalizedNull()
-		config.InferenceConfigJSON = jsontypes.NewNormalizedNull()
-		config.MetadataJSON = jsontypes.NewNormalizedNull()
-		config.DefaultFieldMap = types.MapNull(types.StringType)
-		return config, diags
+		return config, false, diags
 	}
 
-	// Map API response to model
 	diags.Append(mapTrainedModelConfig(ctx, model, &config)...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
-	return config, diags
+	return config, true, diags
 }
 
 func mapTrainedModelConfig(ctx context.Context, model *estypes.TrainedModelConfig, data *trainedModelData) diag.Diagnostics {
