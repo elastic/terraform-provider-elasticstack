@@ -97,38 +97,41 @@ func schemaFactory(_ context.Context) schema.Schema {
 	}
 }
 
+// leafAttrsToResource converts shared LeafAttr definitions into resource schema attributes.
+// All leaf attributes are marked Required.
+func leafAttrsToResource(leaves []connector.LeafAttr) map[string]schema.Attribute {
+	result := make(map[string]schema.Attribute, len(leaves))
+	for _, a := range leaves {
+		if a.IsString {
+			result[a.Name] = schema.StringAttribute{
+				MarkdownDescription: a.Description,
+				Required:            true,
+			}
+		} else {
+			result[a.Name] = schema.BoolAttribute{
+				MarkdownDescription: a.Description,
+				Required:            true,
+			}
+		}
+	}
+	return result
+}
+
 func pipelineSingleNestedAttribute() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
-		MarkdownDescription: "Ingest pipeline settings applied to synced documents. Changes trigger `PUT /_connector/{id}/_pipeline`.",
+		MarkdownDescription: connector.PipelineNestedDesc + " Changes trigger `PUT /_connector/{id}/_pipeline`.",
 		Optional:            true,
 		Computed:            true,
 		PlanModifiers: []planmodifier.Object{
 			objectplanmodifier.UseStateForUnknown(),
 		},
-		Attributes: map[string]schema.Attribute{
-			connector.NameAttr: schema.StringAttribute{
-				MarkdownDescription: "Ingest pipeline name.",
-				Required:            true,
-			},
-			connector.ExtractBinaryContentAttr: schema.BoolAttribute{
-				MarkdownDescription: "Whether to extract binary content during ingestion.",
-				Required:            true,
-			},
-			connector.ReduceWhitespaceAttr: schema.BoolAttribute{
-				MarkdownDescription: "Whether to reduce whitespace in extracted text.",
-				Required:            true,
-			},
-			connector.RunMlInferenceAttr: schema.BoolAttribute{
-				MarkdownDescription: "Whether to run ML inference during ingestion.",
-				Required:            true,
-			},
-		},
+		Attributes: leafAttrsToResource(connector.PipelineLeafAttrs()),
 	}
 }
 
 func schedulingSingleNestedAttribute() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
-		MarkdownDescription: "Sync scheduling for full, incremental, and access-control jobs. Changes trigger `PUT /_connector/{id}/_scheduling`.",
+		MarkdownDescription: connector.SchedulingNestedDesc + " Changes trigger `PUT /_connector/{id}/_scheduling`.",
 		Optional:            true,
 		Computed:            true,
 		PlanModifiers: []planmodifier.Object{
@@ -146,22 +149,13 @@ func scheduleEntrySingleNestedAttribute(jobKind string) schema.SingleNestedAttri
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: "Schedule for the `" + jobKind + "` sync job type.",
 		Optional:            true,
-		Attributes: map[string]schema.Attribute{
-			connector.EnabledAttr: schema.BoolAttribute{
-				MarkdownDescription: "Whether this scheduled job type is enabled.",
-				Required:            true,
-			},
-			connector.IntervalAttr: schema.StringAttribute{
-				MarkdownDescription: "Cron expression accepted by the Elasticsearch scheduler.",
-				Required:            true,
-			},
-		},
+		Attributes:          leafAttrsToResource(connector.ScheduleEntryLeafAttrs()),
 	}
 }
 
 func featuresSingleNestedAttribute() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
-		MarkdownDescription: "Connector feature flags. Changes trigger `PUT /_connector/{id}/_features`.",
+		MarkdownDescription: connector.FeaturesNestedDesc + " Changes trigger `PUT /_connector/{id}/_features`.",
 		Optional:            true,
 		Computed:            true,
 		PlanModifiers: []planmodifier.Object{
@@ -180,18 +174,13 @@ func featureFlagSingleNestedAttribute(featureName string) schema.SingleNestedAtt
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: "Feature flag for `" + featureName + "`.",
 		Optional:            true,
-		Attributes: map[string]schema.Attribute{
-			connector.EnabledAttr: schema.BoolAttribute{
-				MarkdownDescription: "Whether the feature is enabled.",
-				Required:            true,
-			},
-		},
+		Attributes:          leafAttrsToResource(connector.FeatureFlagLeafAttrs()),
 	}
 }
 
 func syncRulesSingleNestedAttribute() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
-		MarkdownDescription: "Sync rules feature flags.",
+		MarkdownDescription: connector.SyncRulesNestedDesc,
 		Optional:            true,
 		Attributes: map[string]schema.Attribute{
 			connector.BasicSyncRulesAttr:    featureFlagSingleNestedAttribute(connector.BasicSyncRulesAttr),
