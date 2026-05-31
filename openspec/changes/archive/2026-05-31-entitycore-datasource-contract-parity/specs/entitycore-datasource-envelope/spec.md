@@ -39,7 +39,7 @@ The system SHALL set the Terraform state from the model returned by the concrete
 - **THEN** `resp.State.Set` SHALL NOT be called
 - **AND** the error diagnostics SHALL be appended to `resp.Diagnostics`
 
-### Requirement: Kibana data source models embed KibanaConnectionField and expose identity accessors
+### Requirement: Kibana data source models embed KibanaConnectionField
 Kibana-backed envelope data source models SHALL embed `entitycore.KibanaConnectionField` (or an equivalent struct field with the `GetKibanaConnection` accessor) and SHALL provide value-receiver methods `GetID() types.String`, `GetResourceID() types.String`, and `GetSpaceID() types.String` so the envelope can decode the `kibana_connection` block and resolve read identity.
 
 #### Scenario: Model embedding satisfies KibanaDataSourceModel
@@ -47,7 +47,7 @@ Kibana-backed envelope data source models SHALL embed `entitycore.KibanaConnecti
 - **THEN** the model SHALL satisfy the `KibanaDataSourceModel` type constraint
 - **AND** the envelope SHALL decode the `kibana_connection` block into that field during `Read`
 
-### Requirement: Elasticsearch data source models embed ElasticsearchConnectionField and expose identity accessors
+### Requirement: Elasticsearch data source models embed ElasticsearchConnectionField
 Elasticsearch-backed envelope data source models SHALL embed `entitycore.ElasticsearchConnectionField` (or an equivalent struct field with the `GetElasticsearchConnection` accessor) and SHALL provide value-receiver methods `GetID() types.String` and `GetResourceID() types.String` so the envelope can decode the `elasticsearch_connection` block and resolve read identity.
 
 #### Scenario: Model embedding satisfies ElasticsearchDataSourceModel
