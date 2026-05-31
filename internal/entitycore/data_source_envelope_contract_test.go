@@ -294,3 +294,315 @@ func TestKibanaDataSource_Read_notFound_skipsPostRead(t *testing.T) {
 	require.True(t, found, "expected not-found diagnostic, got: %v", resp.Diagnostics.Errors())
 	require.False(t, postReadCalled)
 }
+
+func TestElasticsearchDataSource_Read_notFound_stateNotSet(t *testing.T) {
+	ctx := context.Background()
+
+	ds := NewElasticsearchDataSource[esDSIdentityModel](ComponentElasticsearch, "test_entity", ElasticsearchDataSourceOptions[esDSIdentityModel]{
+		Schema: func(_ context.Context) dsschema.Schema {
+			return dsschema.Schema{Attributes: map[string]dsschema.Attribute{
+				"name": dsschema.StringAttribute{Required: true},
+				"id":   dsschema.StringAttribute{Computed: true},
+			}}
+		},
+		Read: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, model esDSIdentityModel) (esDSIdentityModel, bool, diag.Diagnostics) {
+			return model, false, nil
+		},
+	})
+
+	factory := newElasticsearchFactoryMinimal(t)
+	configureElasticsearchDataSource(t, ds, factory)
+
+	schema := dsschema.Schema{
+		Blocks: map[string]dsschema.Block{"elasticsearch_connection": providerschema.GetEsFWConnectionBlock()},
+		Attributes: map[string]dsschema.Attribute{
+			"name": dsschema.StringAttribute{Required: true},
+			"id":   dsschema.StringAttribute{Computed: true},
+		},
+	}
+	req := buildReadRequestForElasticsearchSchema(schema)
+
+	var resp datasource.ReadResponse
+	ds.Read(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.True(t, resp.State.Raw.IsNull(), "state must not be set on not-found")
+}
+
+func TestKibanaDataSource_Read_notFound_stateNotSet(t *testing.T) {
+	ctx := context.Background()
+
+	ds := NewKibanaDataSource[testModel](ComponentKibana, "test_entity", KibanaDataSourceOptions[testModel]{
+		Schema: getTestSchema,
+		Read: func(_ context.Context, _ *clients.KibanaScopedClient, _, _ string, model testModel) (testModel, bool, diag.Diagnostics) {
+			return model, false, nil
+		},
+	})
+
+	factory := newKibanaFactoryMinimal(t)
+	configureDataSource(t, ds, factory)
+
+	schemaWithConn := getTestSchema(context.Background())
+	schemaWithConn.Blocks = map[string]dsschema.Block{
+		"kibana_connection": providerschema.GetKbFWConnectionBlock(),
+	}
+	req := buildReadRequestForSchema(schemaWithConn)
+
+	var resp datasource.ReadResponse
+	ds.Read(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.True(t, resp.State.Raw.IsNull(), "state must not be set on not-found")
+}
+
+func TestElasticsearchDataSource_Read_compositeID_resolvesResourceID(t *testing.T) {
+	ctx := context.Background()
+
+	var gotResourceID string
+	ds := NewElasticsearchDataSource[esDSIdentityModel](ComponentElasticsearch, "test_entity", ElasticsearchDataSourceOptions[esDSIdentityModel]{
+		Schema: func(_ context.Context) dsschema.Schema {
+			return dsschema.Schema{Attributes: map[string]dsschema.Attribute{
+				"name":   dsschema.StringAttribute{Optional: true, Computed: true},
+				"id":     dsschema.StringAttribute{Optional: true, Computed: true},
+				"result": dsschema.StringAttribute{Computed: true},
+			}}
+		},
+		Read: func(_ context.Context, _ *clients.ElasticsearchScopedClient, resourceID string, model esDSIdentityModel) (esDSIdentityModel, bool, diag.Diagnostics) {
+			gotResourceID = resourceID
+			model.ID = types.StringValue("cluster/" + resourceID)
+			return model, true, nil
+		},
+	})
+
+	factory := newElasticsearchFactoryMinimal(t)
+	configureElasticsearchDataSource(t, ds, factory)
+
+	schema := dsschema.Schema{
+		Blocks: map[string]dsschema.Block{"elasticsearch_connection": providerschema.GetEsFWConnectionBlock()},
+		Attributes: map[string]dsschema.Attribute{
+			"name":   dsschema.StringAttribute{Optional: true, Computed: true},
+			"id":     dsschema.StringAttribute{Optional: true, Computed: true},
+			"result": dsschema.StringAttribute{Computed: true},
+		},
+	}
+	connBlockType := elasticsearchConnectionBlockType()
+	objType := tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"elasticsearch_connection": connBlockType,
+			"name":                     tftypes.String,
+			"id":                       tftypes.String,
+			"result":                   tftypes.String,
+		},
+	}
+	req := datasource.ReadRequest{
+		Config: tfsdk.Config{
+			Raw: tftypes.NewValue(objType, map[string]tftypes.Value{
+				"elasticsearch_connection": tftypes.NewValue(connBlockType, nil),
+				"name":                     tftypes.NewValue(tftypes.String, nil),
+				"id":                       tftypes.NewValue(tftypes.String, "mycluster/my-index"),
+				"result":                   tftypes.NewValue(tftypes.String, nil),
+			}),
+			Schema: schema,
+		},
+	}
+
+	var resp datasource.ReadResponse
+	resp.State = tfsdk.State{Schema: schema}
+	ds.Read(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+	require.Equal(t, "my-index", gotResourceID)
+}
+
+func TestKibanaDataSource_Read_invalidIdentity_readNotInvoked(t *testing.T) {
+	ctx := context.Background()
+
+	readCalled := false
+	ds := NewKibanaDataSource[kibanaDSIdentityModel](ComponentKibana, "test_entity", KibanaDataSourceOptions[kibanaDSIdentityModel]{
+		Schema: func(_ context.Context) dsschema.Schema {
+			return dsschema.Schema{Attributes: map[string]dsschema.Attribute{
+				"skill_id": dsschema.StringAttribute{Optional: true, Computed: true},
+				"space_id": dsschema.StringAttribute{Optional: true, Computed: true},
+				"id":       dsschema.StringAttribute{Computed: true},
+				"result":   dsschema.StringAttribute{Computed: true},
+			}}
+		},
+		Read: func(_ context.Context, _ *clients.KibanaScopedClient, _, _ string, model kibanaDSIdentityModel) (kibanaDSIdentityModel, bool, diag.Diagnostics) {
+			readCalled = true
+			return model, true, nil
+		},
+	})
+
+	factory := newKibanaFactoryMinimal(t)
+	configureDataSource(t, ds, factory)
+
+	schema := dsschema.Schema{
+		Blocks: map[string]dsschema.Block{"kibana_connection": providerschema.GetKbFWConnectionBlock()},
+		Attributes: map[string]dsschema.Attribute{
+			"skill_id": dsschema.StringAttribute{Optional: true, Computed: true},
+			"space_id": dsschema.StringAttribute{Optional: true, Computed: true},
+			"id":       dsschema.StringAttribute{Computed: true},
+			"result":   dsschema.StringAttribute{Computed: true},
+		},
+	}
+	connBlockType := kibanaConnectionBlockType()
+	objType := tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"kibana_connection": connBlockType,
+			"skill_id":          tftypes.String,
+			"space_id":          tftypes.String,
+			"id":                tftypes.String,
+			"result":            tftypes.String,
+		},
+	}
+	req := datasource.ReadRequest{
+		Config: tfsdk.Config{
+			Raw: tftypes.NewValue(objType, map[string]tftypes.Value{
+				"kibana_connection": tftypes.NewValue(connBlockType, nil),
+				"skill_id":          tftypes.NewValue(tftypes.String, nil),
+				"space_id":          tftypes.NewValue(tftypes.String, nil),
+				"id":                tftypes.NewValue(tftypes.String, nil),
+				"result":            tftypes.NewValue(tftypes.String, nil),
+			}),
+			Schema: schema,
+		},
+	}
+
+	var resp datasource.ReadResponse
+	ds.Read(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Invalid resource identifier")
+	require.False(t, readCalled)
+}
+
+func TestElasticsearchDataSource_Read_preservesCallbackID(t *testing.T) {
+	ctx := context.Background()
+
+	ds := NewElasticsearchDataSource[esDSIdentityModel](ComponentElasticsearch, "test_entity", ElasticsearchDataSourceOptions[esDSIdentityModel]{
+		Schema: func(_ context.Context) dsschema.Schema {
+			return dsschema.Schema{Attributes: map[string]dsschema.Attribute{
+				"name":   dsschema.StringAttribute{Required: true},
+				"id":     dsschema.StringAttribute{Computed: true},
+				"result": dsschema.StringAttribute{Computed: true},
+			}}
+		},
+		Read: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, model esDSIdentityModel) (esDSIdentityModel, bool, diag.Diagnostics) {
+			model.ID = types.StringValue("callback-owned-id")
+			return model, true, nil
+		},
+	})
+
+	factory := newElasticsearchFactoryMinimal(t)
+	configureElasticsearchDataSource(t, ds, factory)
+
+	schema := dsschema.Schema{
+		Blocks: map[string]dsschema.Block{"elasticsearch_connection": providerschema.GetEsFWConnectionBlock()},
+		Attributes: map[string]dsschema.Attribute{
+			"name":   dsschema.StringAttribute{Required: true},
+			"id":     dsschema.StringAttribute{Computed: true},
+			"result": dsschema.StringAttribute{Computed: true},
+		},
+	}
+	req := buildReadRequestForElasticsearchSchema(schema)
+
+	var resp datasource.ReadResponse
+	resp.State = tfsdk.State{Schema: schema}
+	ds.Read(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+
+	var result esDSIdentityModel
+	diags := resp.State.Get(ctx, &result)
+	require.False(t, diags.HasError())
+	require.Equal(t, "callback-owned-id", result.ID.ValueString())
+}
+
+func TestElasticsearchDataSource_Read_readError_stateNotSet(t *testing.T) {
+	ctx := context.Background()
+
+	ds := NewElasticsearchDataSource[esDSIdentityModel](ComponentElasticsearch, "test_entity", ElasticsearchDataSourceOptions[esDSIdentityModel]{
+		Schema: func(_ context.Context) dsschema.Schema {
+			return dsschema.Schema{Attributes: map[string]dsschema.Attribute{
+				"name": dsschema.StringAttribute{Required: true},
+				"id":   dsschema.StringAttribute{Computed: true},
+			}}
+		},
+		Read: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, model esDSIdentityModel) (esDSIdentityModel, bool, diag.Diagnostics) {
+			var diags diag.Diagnostics
+			diags.AddError("read failed", "injected")
+			return model, true, diags
+		},
+	})
+
+	factory := newElasticsearchFactoryMinimal(t)
+	configureElasticsearchDataSource(t, ds, factory)
+
+	schema := dsschema.Schema{
+		Blocks: map[string]dsschema.Block{"elasticsearch_connection": providerschema.GetEsFWConnectionBlock()},
+		Attributes: map[string]dsschema.Attribute{
+			"name": dsschema.StringAttribute{Required: true},
+			"id":   dsschema.StringAttribute{Computed: true},
+		},
+	}
+	req := buildReadRequestForElasticsearchSchema(schema)
+
+	var resp datasource.ReadResponse
+	resp.State = tfsdk.State{Schema: schema}
+	ds.Read(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.True(t, resp.State.Raw.IsNull(), "state must not be set when read returns error diags")
+}
+
+type kibanaDSUnscopedModel struct {
+	KibanaConnectionField
+	ID      types.String `tfsdk:"id"`
+	SkillID types.String `tfsdk:"skill_id"`
+}
+
+func (m kibanaDSUnscopedModel) GetID() types.String         { return m.ID }
+func (m kibanaDSUnscopedModel) GetResourceID() types.String { return m.SkillID }
+func (m kibanaDSUnscopedModel) GetSpaceID() types.String    { return types.StringNull() }
+func (kibanaDSUnscopedModel) IsUnscopedSpace() bool         { return true }
+
+func TestKibanaDataSource_Read_unscopedSpace_invokesRead(t *testing.T) {
+	ctx := context.Background()
+
+	var gotSpaceID string
+	readCalled := false
+	ds := NewKibanaDataSource[kibanaDSUnscopedModel](ComponentKibana, "test_entity", KibanaDataSourceOptions[kibanaDSUnscopedModel]{
+		Schema: func(_ context.Context) dsschema.Schema {
+			return dsschema.Schema{Attributes: map[string]dsschema.Attribute{
+				"skill_id": dsschema.StringAttribute{Required: true},
+				"id":       dsschema.StringAttribute{Computed: true},
+			}}
+		},
+		Read: func(_ context.Context, _ *clients.KibanaScopedClient, _, spaceID string, model kibanaDSUnscopedModel) (kibanaDSUnscopedModel, bool, diag.Diagnostics) {
+			readCalled = true
+			gotSpaceID = spaceID
+			model.ID = types.StringValue("unscoped-result")
+			return model, true, nil
+		},
+	})
+
+	factory := newKibanaFactoryMinimal(t)
+	configureDataSource(t, ds, factory)
+
+	schema := dsschema.Schema{
+		Blocks: map[string]dsschema.Block{"kibana_connection": providerschema.GetKbFWConnectionBlock()},
+		Attributes: map[string]dsschema.Attribute{
+			"skill_id": dsschema.StringAttribute{Required: true},
+			"id":       dsschema.StringAttribute{Computed: true},
+		},
+	}
+	req := buildReadRequestForSchema(schema)
+
+	var resp datasource.ReadResponse
+	resp.State = tfsdk.State{Schema: schema}
+	ds.Read(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+	require.True(t, readCalled)
+	require.Empty(t, gotSpaceID)
+}
