@@ -63,10 +63,12 @@ type toolDataSourceModel struct {
 func (m toolDataSourceModel) GetID() types.String         { return m.ID }
 func (m toolDataSourceModel) GetResourceID() types.String { return m.ToolID }
 func (m toolDataSourceModel) GetSpaceID() types.String    { return m.SpaceID }
+func (toolDataSourceModel) UsesCompositeResourceID() bool { return true }
 
 func (model toolModel) GetID() types.String             { return model.ID }
 func (model toolModel) GetResourceID() types.String     { return model.ToolID }
 func (model toolModel) GetSpaceID() types.String        { return model.SpaceID }
+func (toolModel) UsesCompositeResourceID() bool         { return true }
 func (model toolModel) GetKibanaConnection() types.List { return model.KibanaConnection }
 
 var _ entitycore.KibanaResourceModel = toolModel{}

@@ -33,6 +33,7 @@ import (
 func (model skillModel) GetID() types.String         { return model.ID }
 func (model skillModel) GetResourceID() types.String { return model.SkillID }
 func (model skillModel) GetSpaceID() types.String    { return model.SpaceID }
+func (skillModel) UsesCompositeResourceID() bool     { return true }
 
 var _ entitycore.KibanaResourceModel = skillModel{}
 var _ entitycore.KibanaDataSourceModel = skillModel{}

@@ -199,12 +199,14 @@ func resolveKibanaResourceIdentity(model kibanaIdentityModel) (resourceID string
 	if compID != nil {
 		return compID.ResourceID, compID.ClusterID
 	}
-	if compID, _ = clients.CompositeIDFromStr(model.GetResourceID().ValueString()); compID != nil {
-		spaceID = model.GetSpaceID().ValueString()
-		if spaceID == "" {
-			spaceID = compID.ClusterID
+	if usesCompositeResourceID(model) {
+		if compID, _ = clients.CompositeIDFromStr(model.GetResourceID().ValueString()); compID != nil {
+			spaceID = model.GetSpaceID().ValueString()
+			if spaceID == "" {
+				spaceID = compID.ClusterID
+			}
+			return compID.ResourceID, spaceID
 		}
-		return compID.ResourceID, spaceID
 	}
 	return model.GetResourceID().ValueString(), model.GetSpaceID().ValueString()
 }

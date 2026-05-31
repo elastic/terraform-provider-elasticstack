@@ -785,6 +785,19 @@ func TestNewKibanaResource_Read_multiSlashIDFallback(t *testing.T) {
 	require.Equal(t, "fallback-space", receivedSpaceID, "fallback should use GetSpaceID")
 }
 
+func Test_resolveKibanaResourceIdentity_slashInPlainResourceIDWithoutOptIn(t *testing.T) {
+	t.Parallel()
+
+	model := testKibanaResourceModel{
+		ID:      types.StringNull(),
+		Name:    types.StringValue("team/a"),
+		SpaceID: types.StringValue("custom"),
+	}
+	resourceID, spaceID := resolveKibanaResourceIdentity(model)
+	require.Equal(t, "team/a", resourceID)
+	require.Equal(t, "custom", spaceID)
+}
+
 // =============================================================================
 // Additional C: resolveResourceIdentity with "/"-containing ID
 // =============================================================================
