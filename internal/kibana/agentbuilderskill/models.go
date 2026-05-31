@@ -38,7 +38,9 @@ func (model skillModel) GetKibanaConnection() types.List { return model.KibanaCo
 var _ entitycore.KibanaResourceModel = skillModel{}
 var _ entitycore.WithVersionRequirements = skillModel{}
 
-func (model skillModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+type skillVersionGate struct{}
+
+func (skillVersionGate) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *minKibanaAgentBuilderSkillsAPIVersion,
@@ -48,6 +50,7 @@ func (model skillModel) GetVersionRequirements() ([]entitycore.VersionRequiremen
 }
 
 type skillModel struct {
+	skillVersionGate
 	ID                types.String                 `tfsdk:"id"`
 	KibanaConnection  types.List                   `tfsdk:"kibana_connection"`
 	SkillID           types.String                 `tfsdk:"skill_id"`
@@ -61,6 +64,7 @@ type skillModel struct {
 
 type skillDataSourceModel struct {
 	entitycore.KibanaConnectionField
+	skillVersionGate
 	ID                types.String                 `tfsdk:"id"`
 	SkillID           types.String                 `tfsdk:"skill_id"`
 	SpaceID           types.String                 `tfsdk:"space_id"`
@@ -75,20 +79,6 @@ type skillReferencedContentItem struct {
 	Name         types.String `tfsdk:"name"`
 	RelativePath types.String `tfsdk:"relative_path"`
 	Content      types.String `tfsdk:"content"`
-}
-
-// GetVersionRequirements returns the static minimum Kibana version requirements
-// for the Agent Builder skill data source. This satisfies the optional
-// entitycore.WithVersionRequirements interface, allowing the generic Kibana
-// data source envelope to enforce the requirement before invoking the entity
-// read callback.
-func (model skillDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *minKibanaAgentBuilderSkillsAPIVersion,
-			ErrorMessage: fmt.Sprintf("Agent Builder skills require Elastic Stack v%s or later.", minKibanaAgentBuilderSkillsAPIVersion),
-		},
-	}, nil
 }
 
 func (model *skillModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Skill) diag.Diagnostics {

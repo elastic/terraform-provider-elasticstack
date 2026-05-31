@@ -39,7 +39,9 @@ func (model agentModel) GetKibanaConnection() types.List { return model.KibanaCo
 var _ entitycore.KibanaResourceModel = agentModel{}
 var _ entitycore.WithVersionRequirements = agentModel{}
 
-func (model agentModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+type agentVersionGate struct{}
+
+func (agentVersionGate) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *minKibanaAgentBuilderAPIVersion,
@@ -49,6 +51,7 @@ func (model agentModel) GetVersionRequirements() ([]entitycore.VersionRequiremen
 }
 
 type agentModel struct {
+	agentVersionGate
 	ID               types.String `tfsdk:"id"`
 	KibanaConnection types.List   `tfsdk:"kibana_connection"`
 	AgentID          types.String `tfsdk:"agent_id"`
@@ -65,6 +68,7 @@ type agentModel struct {
 
 type agentDataSourceModel struct {
 	entitycore.KibanaConnectionField
+	agentVersionGate
 	ID                  types.String `tfsdk:"id"`
 	AgentID             types.String `tfsdk:"agent_id"`
 	SpaceID             types.String `tfsdk:"space_id"`
@@ -77,20 +81,6 @@ type agentDataSourceModel struct {
 	Tools               []toolModel  `tfsdk:"tools"`
 	SkillIDs            types.Set    `tfsdk:"skill_ids"`
 	Instructions        types.String `tfsdk:"instructions"`
-}
-
-// GetVersionRequirements returns the static minimum Kibana version requirements
-// for the Agent Builder agent data source. This satisfies the optional
-// entitycore.WithVersionRequirements interface, allowing the
-// generic Kibana data source envelope to enforce the requirement before invoking
-// the entity read callback.
-func (model agentDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *minKibanaAgentBuilderAPIVersion,
-			ErrorMessage: fmt.Sprintf("Agent Builder agents require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
-		},
-	}, nil
 }
 
 type toolModel struct {
