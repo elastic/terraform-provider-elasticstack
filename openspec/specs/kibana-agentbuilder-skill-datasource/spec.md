@@ -77,7 +77,7 @@ The data source SHALL use the provider's configured Kibana OpenAPI client by def
 
 ### Requirement: Space and skill ID resolution (REQ-005)
 
-The data source SHALL resolve the effective `space_id` and `skill_id` as follows: if `skill_id` parses as a composite `<space_id>/<skill_id>` string, the embedded space is used as the default space; if `space_id` is also explicitly provided, `space_id` SHALL override the composite-embedded space. If neither provides a space, the data source SHALL default to `default`. The data source SHALL normalize `skill_id` in state to the bare resource id regardless of whether a composite was supplied.
+The entitycore Kibana data source envelope SHALL resolve read identity from configuration via `resolveKibanaResourceIdentity` (composite ids in `id` or `skill_id`, explicit `space_id` override, default space when unset). The read callback SHALL receive the resolved `resourceID` and `spaceID` and SHALL NOT re-parse composite ids inline. The read callback SHALL normalize `skill_id` in state to the bare resource id regardless of whether a composite was supplied.
 
 #### Scenario: Bare skill id defaults to default space
 
@@ -105,13 +105,13 @@ The data source SHALL resolve the effective `space_id` and `skill_id` as follows
 
 ### Requirement: Not-found behavior (REQ-006)
 
-If the skill does not exist in Kibana, the data source SHALL fail with a `Skill not found` error diagnostic rather than silently returning empty state.
+If the skill does not exist in Kibana, the read callback SHALL return `found == false` and the envelope SHALL append a standardized not-found error diagnostic; Terraform state SHALL NOT be set.
 
 #### Scenario: Skill does not exist
 
 - GIVEN a `skill_id` that does not correspond to any skill in Kibana
 - WHEN read runs
-- THEN the data source SHALL fail with a `Skill not found` error diagnostic
+- THEN diagnostics SHALL include a standardized not-found error identifying the data source and resolved identity
 
 ### Requirement: State mapping from skill response (REQ-007)
 

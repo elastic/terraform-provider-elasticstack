@@ -72,8 +72,10 @@ When `space_id` is configured and the Kibana server version is at least 9.1.0, t
 #### Scenario: Data source package lookup
 
 - GIVEN a valid `name` and optional `prerelease` flag
-- WHEN read runs on the data source
-- THEN the data source SHALL set `version` to the version returned by the Fleet list packages API for the matching package name, or null if not found
+- WHEN read runs on the data source and the named package exists in the Fleet list
+- THEN the read callback SHALL set `version` from the API response, set `id`, and return `found == true`
+- WHEN read runs on the data source and the named package is absent from the Fleet list
+- THEN the read callback SHALL return `found == false` and the envelope SHALL append a standardized not-found error diagnostic; Terraform state SHALL NOT be set
 
 #### Scenario: Data source with space_id
 
