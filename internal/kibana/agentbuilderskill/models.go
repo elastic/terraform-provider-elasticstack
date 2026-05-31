@@ -77,6 +77,39 @@ type skillReferencedContentItem struct {
 	Content      types.String `tfsdk:"content"`
 }
 
+// skillBaseData holds fields shared between skillModel and skillDataSourceModel
+// populated from the API response.
+type skillBaseData struct {
+	ID                types.String
+	SkillID           types.String
+	SpaceID           types.String
+	Name              types.String
+	Description       types.String
+	Content           types.String
+	ToolIDs           types.Set
+	ReferencedContent []skillReferencedContentItem
+}
+
+// populateSkillBaseFromAPI extracts the fields common to both skillModel and
+// skillDataSourceModel from an API response, eliminating duplicated population logic.
+func populateSkillBaseFromAPI(ctx context.Context, spaceID string, data *models.Skill) (skillBaseData, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if spaceID == "" {
+		spaceID = defaultSpaceID
+	}
+	base := skillBaseData{
+		ID:                types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String()),
+		SkillID:           types.StringValue(data.ID),
+		SpaceID:           types.StringValue(spaceID),
+		Name:              types.StringValue(data.Name),
+		Description:       types.StringValue(data.Description),
+		Content:           types.StringValue(data.Content),
+		ReferencedContent: referencedContentItemsFromAPI(data.ReferencedContent),
+	}
+	diags.Append(agentbuilder.PopulateSet(ctx, data.ToolIDs, &base.ToolIDs)...)
+	return base, diags
+}
+
 // GetVersionRequirements returns the static minimum Kibana version requirements
 // for the Agent Builder skill data source. This satisfies the optional
 // entitycore.WithVersionRequirements interface, allowing the generic Kibana
@@ -95,23 +128,15 @@ func (model *skillModel) populateFromAPI(ctx context.Context, spaceID string, da
 	if data == nil {
 		return nil
 	}
-
-	var diags diag.Diagnostics
-
-	if spaceID == "" {
-		spaceID = defaultSpaceID
-	}
-
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
-	model.SkillID = types.StringValue(data.ID)
-	model.SpaceID = types.StringValue(spaceID)
-	model.Name = types.StringValue(data.Name)
-	model.Description = types.StringValue(data.Description)
-	model.Content = types.StringValue(data.Content)
-
-	diags.Append(agentbuilder.PopulateSet(ctx, data.ToolIDs, &model.ToolIDs)...)
-	model.ReferencedContent = referencedContentItemsFromAPI(data.ReferencedContent)
-
+	base, diags := populateSkillBaseFromAPI(ctx, spaceID, data)
+	model.ID = base.ID
+	model.SkillID = base.SkillID
+	model.SpaceID = base.SpaceID
+	model.Name = base.Name
+	model.Description = base.Description
+	model.Content = base.Content
+	model.ToolIDs = base.ToolIDs
+	model.ReferencedContent = base.ReferencedContent
 	return diags
 }
 
@@ -119,23 +144,15 @@ func (model *skillDataSourceModel) populateFromAPI(ctx context.Context, spaceID 
 	if data == nil {
 		return nil
 	}
-
-	var diags diag.Diagnostics
-
-	if spaceID == "" {
-		spaceID = defaultSpaceID
-	}
-
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
-	model.SkillID = types.StringValue(data.ID)
-	model.SpaceID = types.StringValue(spaceID)
-	model.Name = types.StringValue(data.Name)
-	model.Description = types.StringValue(data.Description)
-	model.Content = types.StringValue(data.Content)
-
-	diags.Append(agentbuilder.PopulateSet(ctx, data.ToolIDs, &model.ToolIDs)...)
-	model.ReferencedContent = referencedContentItemsFromAPI(data.ReferencedContent)
-
+	base, diags := populateSkillBaseFromAPI(ctx, spaceID, data)
+	model.ID = base.ID
+	model.SkillID = base.SkillID
+	model.SpaceID = base.SpaceID
+	model.Name = base.Name
+	model.Description = base.Description
+	model.Content = base.Content
+	model.ToolIDs = base.ToolIDs
+	model.ReferencedContent = base.ReferencedContent
 	return diags
 }
 
