@@ -289,7 +289,9 @@ The resource SHALL model Defend-owned configuration through typed Terraform attr
 
 ### Requirement: Create uses the documented Defend bootstrap flow (REQ-008)
 
-On create, the resource SHALL create the Elastic Defend package policy using the Defend-specific bootstrap request shape, attached to the configured `agent_policy_id`. The bootstrap request SHALL use package name `endpoint`, the configured `integration_version`, and the configured `preset`. The bootstrap request SHALL use the typed input shape with input `type = "endpoint"`, input `enabled = true`, input `streams = []`, and preset mapped under `config.integration_config.value.endpointConfig.preset`. After the bootstrap call succeeds, the resource SHALL use the API response as the source of truth for server-managed Defend data required for subsequent operations.
+On create, the resource SHALL create the Elastic Defend package policy using the Defend-specific bootstrap request shape, attached to the configured `agent_policy_id` or `agent_policy_ids`. The bootstrap request SHALL use package name `endpoint`, the configured `integration_version`, and the configured `preset`. The bootstrap request SHALL use the typed input shape with input `type = "endpoint"`, input `enabled = true`, input `streams = []`, and preset mapped under `config.integration_config.value.endpointConfig.preset`. After the bootstrap call succeeds, the resource SHALL use the API response as the source of truth for server-managed Defend data required for subsequent operations.
+
+When `agent_policy_ids` is configured, the bootstrap request SHALL set `PolicyIds` to the full list and `PolicyId` to the first element for compatibility.
 
 **Note:** Kibana rejects `"ENDPOINT_INTEGRATION_CONFIG"` as the input type and `"_config"` as the config key. Both bootstrap and finalize/update paths use `"endpoint"` and `"integration_config"` respectively.
 
