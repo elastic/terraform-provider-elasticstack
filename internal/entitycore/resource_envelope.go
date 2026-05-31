@@ -50,6 +50,20 @@ type WithReadResourceID interface {
 	GetReadResourceID() string
 }
 
+// WithOptionalWriteIdentity marks models whose write identity (GetResourceID) may
+// be empty on Create when the API auto-generates an identifier (for example
+// POST /_connector without a connector_id).
+type WithOptionalWriteIdentity interface {
+	AllowsEmptyWriteIdentityOnCreate() bool
+}
+
+// PrivateStateStorage is the subset of Terraform resource private state used by
+// envelope write callbacks.
+type PrivateStateStorage interface {
+	GetKey(ctx context.Context, key string) ([]byte, diag.Diagnostics)
+	SetKey(ctx context.Context, key string, value []byte) diag.Diagnostics
+}
+
 type elasticsearchReadFunc[T ElasticsearchResourceModel] func(
 	context.Context,
 	*clients.ElasticsearchScopedClient,
@@ -74,6 +88,9 @@ type WriteRequest[T ElasticsearchResourceModel] struct {
 	Prior   *T
 	Config  T
 	WriteID string
+	// Private is the framework response Private field (typically
+	// *internal/privatestate.Data). Nil when the callback does not need it.
+	Private PrivateStateStorage
 }
 
 // WriteResult is returned by write callbacks; the envelope read-after-write
@@ -359,10 +376,22 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWri
 	}
 
 	writeID := planModel.GetResourceID()
-	if !typeutils.IsKnown(writeID) || writeID.ValueString() == "" {
+	if !typeutils.IsKnown(writeID) {
 		diags.AddError(
 			"Invalid resource identifier",
-			"The resource write identity from configuration is unknown or empty; cannot create or update.",
+			"The resource write identity from configuration is unknown; cannot create or update.",
+		)
+		return diags
+	}
+	allowEmptyCreate := false
+	if opt, ok := any(planModel).(WithOptionalWriteIdentity); ok {
+		allowEmptyCreate = opt.AllowsEmptyWriteIdentityOnCreate()
+	}
+	writeKey := writeID.ValueString()
+	if writeKey == "" && (inv.isUpdate || !allowEmptyCreate) {
+		diags.AddError(
+			"Invalid resource identifier",
+			"The resource write identity from configuration is empty; cannot create or update.",
 		)
 		return diags
 	}
@@ -392,12 +421,16 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWri
 	if inv.isUpdate {
 		writeFn = r.updateFunc
 	}
-	writeKey := writeID.ValueString()
+	var private PrivateStateStorage
+	if ps, ok := inv.privateState.(PrivateStateStorage); ok {
+		private = ps
+	}
 	written, callDiags := writeFn(ctx, client, WriteRequest[T]{
 		Plan:    planModel,
 		Prior:   priorPtr,
 		Config:  configModel,
 		WriteID: writeKey,
+		Private: private,
 	})
 	diags.Append(callDiags...)
 	if diags.HasError() {
