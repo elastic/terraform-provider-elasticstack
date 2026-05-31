@@ -47,6 +47,14 @@ func (r *elasticDefendIntegrationPolicyResource) Update(ctx context.Context, req
 		return
 	}
 
+	if !planModel.AgentPolicyIDs.IsNull() && !planModel.AgentPolicyIDs.IsUnknown() {
+		supported, d := client.EnforceMinVersion(ctx, MinVersionPolicyIDs)
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() || !supported {
+			return
+		}
+	}
+
 	fleetClient := client.GetFleetClient()
 
 	policyID := stateModel.PolicyID.ValueString()

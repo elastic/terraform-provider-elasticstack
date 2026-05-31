@@ -41,6 +41,14 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 		return
 	}
 
+	if !planModel.AgentPolicyIDs.IsNull() && !planModel.AgentPolicyIDs.IsUnknown() {
+		supported, d := client.EnforceMinVersion(ctx, MinVersionPolicyIDs)
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() || !supported {
+			return
+		}
+	}
+
 	fleetClient := client.GetFleetClient()
 
 	// Determine space context for creating the package policy
@@ -51,7 +59,7 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 	}
 
 	// Step 1: Bootstrap create using ENDPOINT_INTEGRATION_CONFIG input type
-	bootstrapReq := buildBootstrapRequest(&planModel)
+	bootstrapReq := buildBootstrapRequest(ctx, &planModel)
 	bootstrapPolicy, d := fleetclient.CreateDefendPackagePolicy(ctx, fleetClient, spaceID, bootstrapReq)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {

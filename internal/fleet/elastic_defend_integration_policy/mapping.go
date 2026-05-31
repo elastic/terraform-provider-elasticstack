@@ -74,7 +74,24 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 		model.IntegrationVersion = types.StringValue(policy.Package.Version)
 	}
 
-	model.AgentPolicyID = types.StringPointerValue(policy.PolicyId)
+	originallyUsedAgentPolicyID := typeutils.IsKnown(model.AgentPolicyID)
+	originallyUsedAgentPolicyIDs := typeutils.IsKnown(model.AgentPolicyIDs)
+
+	if originallyUsedAgentPolicyID {
+		model.AgentPolicyID = types.StringPointerValue(policy.PolicyId)
+	}
+	if originallyUsedAgentPolicyIDs {
+		if policy.PolicyIds != nil {
+			agentPolicyIDs, d := types.ListValueFrom(ctx, types.StringType, *policy.PolicyIds)
+			diags.Append(d...)
+			model.AgentPolicyIDs = agentPolicyIDs
+		} else {
+			model.AgentPolicyIDs = types.ListNull(types.StringType)
+		}
+	}
+	if !originallyUsedAgentPolicyID && !originallyUsedAgentPolicyIDs {
+		model.AgentPolicyID = types.StringPointerValue(policy.PolicyId)
+	}
 
 	// Populate space_ids — only overwrite when the API actually returns them.
 	// If the API omits space_ids, preserve the existing model value so

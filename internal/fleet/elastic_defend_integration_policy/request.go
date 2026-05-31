@@ -35,7 +35,7 @@ const (
 // for the first create step (bootstrap). Kibana expects the create bootstrap to
 // use the special ENDPOINT_INTEGRATION_CONFIG input type with preset mapped
 // under config._config.value.endpointConfig.preset.
-func buildBootstrapRequest(model *elasticDefendIntegrationPolicyModel) kbapi.PackagePolicyRequestTypedInputs {
+func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationPolicyModel) kbapi.PackagePolicyRequestTypedInputs {
 	pkg := kbapi.PackagePolicyRequestPackage{
 		Name:    endpointPackageName,
 		Version: model.IntegrationVersion.ValueString(),
@@ -44,8 +44,17 @@ func buildBootstrapRequest(model *elasticDefendIntegrationPolicyModel) kbapi.Pac
 		Name:      &[]string{model.Name.ValueString()}[0],
 		Namespace: model.Namespace.ValueStringPointer(),
 		Package:   &pkg,
-		PolicyId:  model.AgentPolicyID.ValueStringPointer(),
 		Enabled:   model.Enabled.ValueBoolPointer(),
+	}
+	if !model.AgentPolicyIDs.IsNull() && !model.AgentPolicyIDs.IsUnknown() {
+		var ids []string
+		_ = model.AgentPolicyIDs.ElementsAs(ctx, &ids, false)
+		req.PolicyIds = &ids
+		if len(ids) > 0 {
+			req.PolicyId = &ids[0]
+		}
+	} else {
+		req.PolicyId = model.AgentPolicyID.ValueStringPointer()
 	}
 
 	if !model.Description.IsNull() && !model.Description.IsUnknown() {
@@ -98,8 +107,17 @@ func buildFinalizeRequest(ctx context.Context, model *elasticDefendIntegrationPo
 		Name:      &[]string{model.Name.ValueString()}[0],
 		Namespace: model.Namespace.ValueStringPointer(),
 		Package:   &pkg,
-		PolicyId:  model.AgentPolicyID.ValueStringPointer(),
 		Enabled:   model.Enabled.ValueBoolPointer(),
+	}
+	if !model.AgentPolicyIDs.IsNull() && !model.AgentPolicyIDs.IsUnknown() {
+		var ids []string
+		_ = model.AgentPolicyIDs.ElementsAs(ctx, &ids, false)
+		req.PolicyIds = &ids
+		if len(ids) > 0 {
+			req.PolicyId = &ids[0]
+		}
+	} else {
+		req.PolicyId = model.AgentPolicyID.ValueStringPointer()
 	}
 
 	if !model.Description.IsNull() && !model.Description.IsUnknown() {
