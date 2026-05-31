@@ -19,50 +19,45 @@ package template
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func NewDataSource() datasource.DataSource {
 	return entitycore.NewElasticsearchDataSource[Model](
 		entitycore.ComponentElasticsearch,
 		"index_template",
-		getDataSourceSchema,
-		readDataSource,
+		entitycore.ElasticsearchDataSourceOptions[Model]{
+			Schema: getDataSourceSchema,
+			Read:   readDataSource,
+		},
 	)
 }
 
-func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config Model) (Model, diag.Diagnostics) {
+func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, resourceID string, config Model) (Model, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	name := config.Name.ValueString()
-
-	// For the data source there is no prior state: pass config as the prior so that
-	// ElasticsearchConnection and any alias reference values come from configuration.
-	out, found, diags := readIndexTemplate(ctx, esClient, name, config)
+	out, found, diags := readIndexTemplate(ctx, esClient, resourceID, config)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 	if !found {
-		tflog.Info(ctx, fmt.Sprintf(`Index template "%s" not found; leaving data source attributes unset (legacy SDK behavior)`, name))
-		return config, diags
+		return config, false, diags
 	}
 
-	id, idDiags := esClient.ID(ctx, name)
+	id, idDiags := esClient.ID(ctx, resourceID)
 	diags.Append(idDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	out.ElasticsearchConnection = config.ElasticsearchConnection
-	out.Name = types.StringValue(name)
+	out.Name = types.StringValue(resourceID)
 	out.ID = types.StringValue(id.String())
 
-	return out, diags
+	return out, true, diags
 }

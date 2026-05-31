@@ -19,7 +19,6 @@ package rolemapping
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -34,8 +33,10 @@ func NewRoleMappingDataSource() datasource.DataSource {
 	return entitycore.NewElasticsearchDataSource[Data](
 		entitycore.ComponentElasticsearch,
 		"security_role_mapping",
-		getDataSourceSchema,
-		readDataSource,
+		entitycore.ElasticsearchDataSourceOptions[Data]{
+			Schema: getDataSourceSchema,
+			Read:   readDataSource,
+		},
 	)
 }
 
@@ -79,30 +80,25 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 	}
 }
 
-func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config Data) (Data, diag.Diagnostics) {
+func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, resourceID string, config Data) (Data, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	roleMappingName := config.Name.ValueString()
 
-	id, idDiags := esClient.ID(ctx, roleMappingName)
+	id, idDiags := esClient.ID(ctx, resourceID)
 	diags.Append(idDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 	config.ID = types.StringValue(id.String())
 
-	readData, readDiags := readRoleMapping(ctx, config, roleMappingName, esClient)
+	readData, readDiags := readRoleMapping(ctx, config, resourceID, esClient)
 	diags.Append(readDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	if readData == nil {
-		diags.AddError(
-			"Role mapping not found",
-			fmt.Sprintf("Role mapping '%s' not found", roleMappingName),
-		)
-		return config, diags
+		return config, false, diags
 	}
 
-	return *readData, diags
+	return *readData, true, diags
 }

@@ -35,6 +35,13 @@ type dataSourceModel struct {
 	Version     types.List   `tfsdk:"version"`
 }
 
+func (m dataSourceModel) GetID() types.String         { return m.ID }
+func (m dataSourceModel) GetResourceID() types.String { return types.StringNull() }
+
+// GetReadResourceID satisfies [entitycore.WithReadResourceID]. Cluster info has no
+// lookup key; the envelope requires a non-empty read identity.
+func (m dataSourceModel) GetReadResourceID() string { return "_" }
+
 // versionModel holds the nested version block fields.
 type versionModel struct {
 	BuildDate                        types.String `tfsdk:"build_date"`
