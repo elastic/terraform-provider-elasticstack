@@ -56,7 +56,6 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	}
 
 	config.ID = types.StringValue(resourceID)
-	config.Target = types.StringValue(resourceID)
 	config.Indices = indicesList
 
 	return config, true, diags
