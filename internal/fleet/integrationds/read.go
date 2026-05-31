@@ -27,30 +27,37 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config integrationDataSourceModel) (integrationDataSourceModel, diag.Diagnostics) {
+func readDataSource(
+	ctx context.Context,
+	kbClient *clients.KibanaScopedClient,
+	resourceID, spaceID string,
+	config integrationDataSourceModel,
+) (integrationDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	client := kbClient.GetFleetClient()
 
-	name := config.Name.ValueString()
 	prerelease := config.Prerelease.ValueBool()
-	spaceID := config.SpaceID.ValueString()
 	packages, pDiags := fleet.GetPackages(ctx, client, prerelease, spaceID)
 	diags.Append(pDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
-	if config.ID.ValueString() == "" {
-		hash, err := typeutils.StringToHash(name)
-		if err != nil {
-			diags.AddError(err.Error(), "")
-			return config, diags
-		}
-		config.ID = types.StringPointerValue(hash)
+	(&config).populateFromAPI(resourceID, packages)
+
+	if config.Version.IsNull() {
+		return config, false, diags
 	}
 
-	(&config).populateFromAPI(name, packages)
+	hash, err := typeutils.StringToHash(resourceID)
+	if err != nil {
+		diags.AddError(err.Error(), "")
+		return config, false, diags
+	}
+	config.ID = types.StringPointerValue(hash)
+	config.Name = types.StringValue(resourceID)
+	config.SpaceID = types.StringValue(spaceID)
 
-	return config, diags
+	return config, true, diags
 }
