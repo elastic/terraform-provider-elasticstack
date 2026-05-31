@@ -23,10 +23,10 @@
   var MinVersionPolicyIDs = version.Must(version.NewVersion("8.15.0"))
   ```
   Add the `"github.com/hashicorp/go-version"` import.
-- [ ] 3.2 In the `Create` operation, before using `agent_policy_ids` from model, check if
+- [ ] 3.2 In `internal/fleet/elastic_defend_integration_policy/create.go` (`Create`), before using `agent_policy_ids` from model, check if
   `model.AgentPolicyIDs` is non-null/non-unknown and call `client.EnforceMinVersion(ctx,
   MinVersionPolicyIDs)`. Return an error diagnostic if the version gate fails.
-- [ ] 3.3 Apply the same version gate in the `Update` operation.
+- [ ] 3.3 Apply the same version gate in `internal/fleet/elastic_defend_integration_policy/update.go` (`Update`).
 
 ## 4. Request — populate `PolicyIds` in bootstrap and finalize requests
 
@@ -81,5 +81,5 @@
 ## 8. Build and validation
 
 - [ ] 8.1 `make build` — provider compiles without errors.
-- [ ] 8.2 `go test ./internal/fleet/elastic_defend_integration_policy/... -v` — unit tests pass.
+- [ ] 8.2 `go test ./internal/fleet/elastic_defend_integration_policy/... -v` — package tests pass.
 - [ ] 8.3 `make check-openspec` — spec validation passes.
