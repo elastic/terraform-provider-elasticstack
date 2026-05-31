@@ -49,34 +49,7 @@ func readConnector(
 		return data, false, diags
 	}
 
-	if resp.ServiceType != nil {
-		data.ServiceType = fwtypes.StringValue(*resp.ServiceType)
-	}
-	if resp.Name != nil {
-		data.Name = fwtypes.StringValue(*resp.Name)
-	}
-	if resp.Description != nil {
-		data.Description = fwtypes.StringValue(*resp.Description)
-	}
-	if resp.IndexName != nil {
-		data.IndexName = fwtypes.StringValue(*resp.IndexName)
-	} else {
-		data.IndexName = fwtypes.StringNull()
-	}
-	data.IsNative = fwtypes.BoolValue(resp.IsNative)
-	if resp.Language != nil {
-		data.Language = fwtypes.StringValue(*resp.Language)
-	}
-	if resp.ApiKeyId != nil {
-		data.APIKeyID = fwtypes.StringValue(*resp.ApiKeyId)
-	}
-	if resp.ApiKeySecretId != nil {
-		data.APIKeySecretID = fwtypes.StringValue(*resp.ApiKeySecretId)
-	}
-
-	data.Pipeline = connector.PopulatePipelineFromAPI(ctx, resp.Pipeline, &diags)
-	data.Scheduling = connector.PopulateSchedulingFromAPI(ctx, resp.Scheduling, &diags)
-	data.Features = connector.PopulateFeaturesFromAPI(ctx, resp.Features, &diags)
+	data.CoreConnectorFields = connector.PopulateCoreConnectorFieldsFromAPI(ctx, resp, &diags)
 
 	var priorConfig map[string]connector.ConfigurationValueModel
 	if !data.ConfigurationValues.IsNull() && typeutils.IsKnown(data.ConfigurationValues) {

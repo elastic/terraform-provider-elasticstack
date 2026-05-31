@@ -41,19 +41,9 @@ import (
 // ContentConnectorDataSourceModel is the Terraform state model for the content connector data source.
 type ContentConnectorDataSourceModel struct {
 	entitycore.ElasticsearchConnectionField
+	connector.CoreConnectorFields
 	ID                               fwtypes.String       `tfsdk:"id"`
 	ConnectorID                      fwtypes.String       `tfsdk:"connector_id"`
-	ServiceType                      fwtypes.String       `tfsdk:"service_type"`
-	Name                             fwtypes.String       `tfsdk:"name"`
-	Description                      fwtypes.String       `tfsdk:"description"`
-	IndexName                        fwtypes.String       `tfsdk:"index_name"`
-	IsNative                         fwtypes.Bool         `tfsdk:"is_native"`
-	Language                         fwtypes.String       `tfsdk:"language"`
-	APIKeyID                         fwtypes.String       `tfsdk:"api_key_id"`
-	APIKeySecretID                   fwtypes.String       `tfsdk:"api_key_secret_id"`
-	Pipeline                         fwtypes.Object       `tfsdk:"pipeline"`
-	Scheduling                       fwtypes.Object       `tfsdk:"scheduling"`
-	Features                         fwtypes.Object       `tfsdk:"features"`
 	Status                           fwtypes.String       `tfsdk:"status"`
 	LastSeen                         fwtypes.String       `tfsdk:"last_seen"`
 	LastSynced                       fwtypes.String       `tfsdk:"last_synced"`
@@ -118,46 +108,7 @@ func populateContentConnectorDataSourceFromAPI(
 	model *ContentConnectorDataSourceModel,
 	diags *diag.Diagnostics,
 ) {
-	if resp.ServiceType != nil {
-		model.ServiceType = fwtypes.StringValue(*resp.ServiceType)
-	} else {
-		model.ServiceType = fwtypes.StringNull()
-	}
-	if resp.Name != nil {
-		model.Name = fwtypes.StringValue(*resp.Name)
-	} else {
-		model.Name = fwtypes.StringNull()
-	}
-	if resp.Description != nil {
-		model.Description = fwtypes.StringValue(*resp.Description)
-	} else {
-		model.Description = fwtypes.StringNull()
-	}
-	if resp.IndexName != nil {
-		model.IndexName = fwtypes.StringValue(*resp.IndexName)
-	} else {
-		model.IndexName = fwtypes.StringNull()
-	}
-	model.IsNative = fwtypes.BoolValue(resp.IsNative)
-	if resp.Language != nil {
-		model.Language = fwtypes.StringValue(*resp.Language)
-	} else {
-		model.Language = fwtypes.StringNull()
-	}
-	if resp.ApiKeyId != nil {
-		model.APIKeyID = fwtypes.StringValue(*resp.ApiKeyId)
-	} else {
-		model.APIKeyID = fwtypes.StringNull()
-	}
-	if resp.ApiKeySecretId != nil {
-		model.APIKeySecretID = fwtypes.StringValue(*resp.ApiKeySecretId)
-	} else {
-		model.APIKeySecretID = fwtypes.StringNull()
-	}
-
-	model.Pipeline = connector.PopulatePipelineFromAPI(ctx, resp.Pipeline, diags)
-	model.Scheduling = connector.PopulateSchedulingFromAPI(ctx, resp.Scheduling, diags)
-	model.Features = connector.PopulateFeaturesFromAPI(ctx, resp.Features, diags)
+	model.CoreConnectorFields = connector.PopulateCoreConnectorFieldsFromAPI(ctx, resp, diags)
 
 	model.Status = fwtypes.StringValue(resp.Status.String())
 	model.LastSeen = connectorDateTimeToString(resp.LastSeen)

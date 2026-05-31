@@ -30,18 +30,24 @@ func TestApiKeyChanged(t *testing.T) {
 	t.Parallel()
 
 	prior := &ContentConnectorData{
-		APIKeyID:       fwtypes.StringValue("a"),
-		APIKeySecretID: fwtypes.StringValue("b"),
+		CoreConnectorFields: connector.CoreConnectorFields{
+			APIKeyID:       fwtypes.StringValue("a"),
+			APIKeySecretID: fwtypes.StringValue("b"),
+		},
 	}
 	unchanged := ContentConnectorData{
-		APIKeyID:       fwtypes.StringValue("a"),
-		APIKeySecretID: fwtypes.StringValue("b"),
+		CoreConnectorFields: connector.CoreConnectorFields{
+			APIKeyID:       fwtypes.StringValue("a"),
+			APIKeySecretID: fwtypes.StringValue("b"),
+		},
 	}
 	require.False(t, apiKeyChanged(unchanged, prior))
 
 	changedID := ContentConnectorData{
-		APIKeyID:       fwtypes.StringValue("z"),
-		APIKeySecretID: fwtypes.StringValue("b"),
+		CoreConnectorFields: connector.CoreConnectorFields{
+			APIKeyID:       fwtypes.StringValue("z"),
+			APIKeySecretID: fwtypes.StringValue("b"),
+		},
 	}
 	require.True(t, apiKeyChanged(changedID, prior))
 
