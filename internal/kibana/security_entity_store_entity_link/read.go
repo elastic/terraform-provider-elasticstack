@@ -27,8 +27,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -36,8 +37,7 @@ func readEntityLink(ctx context.Context, client *clients.KibanaScopedClient, res
 	var diags diag.Diagnostics
 	targetID := resourceID
 
-	expectedEntityIDs, d := agentbuilder.SetToStrings(ctx, prior.EntityIDs)
-	diags.Append(d...)
+	expectedEntityIDs := typeutils.SetTypeAs[string](ctx, prior.EntityIDs, path.Root("entity_ids"), &diags)
 	if diags.HasError() {
 		return prior, false, diags
 	}

@@ -25,15 +25,15 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 )
 
 func deleteEntityLink(ctx context.Context, client *clients.KibanaScopedClient, _ string, spaceID string, state entityLinkModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	entityIDs, d := agentbuilder.SetToStrings(ctx, state.EntityIDs)
-	diags.Append(d...)
+	entityIDs := typeutils.SetTypeAs[string](ctx, state.EntityIDs, path.Root("entity_ids"), &diags)
 	if diags.HasError() {
 		return diags
 	}

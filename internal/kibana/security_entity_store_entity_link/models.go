@@ -24,7 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -85,10 +85,12 @@ func (model *entityLinkModel) populateFromAPI(ctx context.Context, spaceID strin
 	// Extract the entity identifiers present in the resolution group.
 	apiEntityIDs := extractEntityIDsFromPayload(rawPayload, model.TargetID.ValueString())
 
-	diags.Append(agentbuilder.PopulateSet(ctx, apiEntityIDs, &model.EntityIDs)...)
-	if diags.HasError() {
+	entityIDsSet, setDiag := typeutils.StringSetOrNull(ctx, apiEntityIDs)
+	diags.Append(setDiag...)
+	if setDiag.HasError() {
 		return diags
 	}
+	model.EntityIDs = entityIDsSet
 
 	// Warn when any managed entity_ids are absent from the response.
 	if len(expectedEntityIDs) > 0 {

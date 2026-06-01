@@ -26,8 +26,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 )
 
 func createEntityLink(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[entityLinkModel]) (entitycore.KibanaWriteResult[entityLinkModel], diag.Diagnostics) {
@@ -40,8 +41,7 @@ func createEntityLink(ctx context.Context, client *clients.KibanaScopedClient, r
 		return entitycore.KibanaWriteResult[entityLinkModel]{}, diags
 	}
 
-	entityIDs, d := agentbuilder.SetToStrings(ctx, plan.EntityIDs)
-	diags.Append(d...)
+	entityIDs := typeutils.SetTypeAs[string](ctx, plan.EntityIDs, path.Root("entity_ids"), &diags)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[entityLinkModel]{}, diags
 	}
