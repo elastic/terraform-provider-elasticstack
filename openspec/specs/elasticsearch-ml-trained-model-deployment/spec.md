@@ -58,7 +58,7 @@ resource "elasticstack_elasticsearch_ml_trained_model_deployment" "example" {
 }
 ```
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: API — Start, Update, Stop, and Stats (REQ-001–REQ-004)
 
