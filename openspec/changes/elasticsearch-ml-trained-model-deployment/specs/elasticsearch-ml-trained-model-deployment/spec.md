@@ -19,8 +19,8 @@ resource "elasticstack_elasticsearch_ml_trained_model_deployment" "example" {
   threads_per_allocation = <optional, int>     # ForceNew; threads used per allocation during inference
   priority               = <optional, string>  # ForceNew; "low" | "normal"
   queue_capacity         = <optional, int>     # ForceNew; max queued inference requests
-  wait_for               = <optional, string>  # ForceNew; "starting" | "started" | "fully_allocated"; allocation state to wait for
-  api_timeout            = <optional, string>  # ForceNew; Go duration string; server-side start timeout
+  wait_for               = <optional, string>  # "starting" | "started" | "fully_allocated"; allocation state to wait for; default: "fully_allocated"
+  api_timeout            = <optional, string>  # Go duration string; server-side start timeout
 
   adaptive_allocations {  # optional, updatable
     enabled                   = <required, bool>
@@ -115,7 +115,7 @@ The resource SHALL support import via `ImportStatePassthroughID` on the `id` att
 
 ### Requirement: ForceNew attributes (REQ-007)
 
-The attributes `model_id`, `deployment_id`, `threads_per_allocation`, `priority`, `queue_capacity`, `wait_for`, and `api_timeout` SHALL be marked `RequiresReplace`. Any change to these attributes SHALL trigger destroy-then-create (stop the existing deployment and start a new one).
+The attributes `model_id`, `deployment_id`, `threads_per_allocation`, `priority`, and `queue_capacity` SHALL be marked `RequiresReplace`. Any change to these attributes SHALL trigger destroy-then-create (stop the existing deployment and start a new one).
 
 #### Scenario: threads_per_allocation change triggers replace
 
@@ -157,27 +157,28 @@ Changes to `number_of_allocations` and `adaptive_allocations` SHALL call `POST _
 - THEN Terraform plan SHALL show an in-place update
 - AND update SHALL call the Update Deployment API with the new adaptive_allocations settings
 
-### Requirement: Adaptive allocations drift suppression (REQ-010)
+### Requirement: Adaptive allocations (REQ-010)
 
-When `adaptive_allocations.enabled = true`, the Elasticsearch server controls the effective `number_of_allocations`. The resource SHALL suppress plan diffs on `number_of_allocations` when adaptive allocations are enabled, to prevent perpetual plan noise. On read, the provider SHALL NOT overwrite `number_of_allocations` in state from the API when adaptive allocations are enabled.
+The schema SHALL enforce mutual exclusivity between `number_of_allocations` and `adaptive_allocations` via a `ConflictsWith` validator. Practitioners SHALL configure exactly one of fixed allocations (`number_of_allocations`) or adaptive allocations (`adaptive_allocations`). When `adaptive_allocations.enabled = true`, the Elasticsearch server controls the effective `number_of_allocations`.
 
-#### Scenario: No diff on number_of_allocations when adaptive enabled
+#### Scenario: Configuring both number_of_allocations and adaptive_allocations fails validation
 
-- GIVEN `adaptive_allocations.enabled = true` and `number_of_allocations` set in config
-- WHEN `terraform plan` runs after apply
-- THEN the plan SHALL NOT show a diff for `number_of_allocations`
+- GIVEN a configuration with both `number_of_allocations = 1` and `adaptive_allocations.enabled = true`
+ WHEN `terraform plan` runs
+- THEN Terraform SHALL emit a validation error because the attributes are mutually exclusive
 
-#### Scenario: Diff surfaces on number_of_allocations when adaptive disabled
+#### Scenario: Diff surfaces on number_of_allocations when fixed allocations used
 
-- GIVEN `adaptive_allocations.enabled = false` and the API returns a different `number_of_allocations` than configured
+- GIVEN `adaptive_allocations` is not configured and the API returns a different `number_of_allocations` than configured
 - WHEN `terraform plan` runs after apply
 - THEN the plan SHALL show a diff for `number_of_allocations`
 
-#### Scenario: number_of_allocations preserved in state when adaptive enabled
+#### Scenario: Switch from adaptive to fixed allocations triggers update
 
-- GIVEN prior state has `number_of_allocations = 1` and `adaptive_allocations.enabled = true`
-- WHEN Read runs and the API returns `number_of_allocations = 3` (server-managed)
-- THEN `number_of_allocations` in state SHALL remain `1` (user intent preserved)
+- GIVEN a running deployment with `adaptive_allocations.enabled = true`
+- WHEN the configuration removes `adaptive_allocations` and sets `number_of_allocations = 2`
+- THEN Terraform plan SHALL show an in-place update
+- AND update SHALL call the Update Deployment API with `number_of_allocations = 2`
 
 ### Requirement: Computed attributes — state, allocation_status, stats_json (REQ-011)
 

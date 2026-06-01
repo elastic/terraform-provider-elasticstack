@@ -39,11 +39,11 @@ The `types.AdaptiveAllocationsSettings` struct has `Enabled bool`, `MaxNumberOfA
 | Package location | `internal/elasticsearch/ml/trainedmodeldeployment/` |
 | File structure | `resource.go`, `schema.go`, `models.go`, `create.go`, `read.go`, `update.go`, `delete.go`, `acc_test.go`, `descriptions.go` |
 | Identity | Composite `id` = `<cluster_uuid>/<deployment_id>`. `deployment_id` ForceNew, defaults to `model_id` at creation when not specified. `UseStateForUnknown` on both `id` and `deployment_id`. |
-| ForceNew attributes | `model_id`, `deployment_id`, `threads_per_allocation`, `priority`, `queue_capacity`, `wait_for`, `api_timeout` — changes require stop-then-start (destroy + create). |
+| ForceNew attributes | `model_id`, `deployment_id`, `threads_per_allocation`, `priority`, `queue_capacity` — changes require stop-then-start (destroy + create). |
 | Mutable attributes | `number_of_allocations`, `adaptive_allocations` block — use Update API. |
-| Adaptive allocations drift | When `adaptive_allocations.enabled = true`, the server controls effective `number_of_allocations`. Add a plan modifier (`ModifyPlan`) that suppresses the diff on `number_of_allocations` when adaptive allocations are enabled, to prevent perpetual plan noise. |
-| `number_of_allocations` on read | When `adaptive_allocations.enabled = true`, do not overwrite state's `number_of_allocations` from the API on Read (preserve user intent). When `adaptive_allocations.enabled = false`, update from API. |
-| Wait-for polling | After Start, if `wait_for` is set, poll `_stats` until the allocation status matches or the configured timeout elapses. Reuse `internal/asyncutils/state_waiter.go` pattern. |
+| Adaptive allocations | `number_of_allocations` and `adaptive_allocations` are mutually exclusive in the schema via a `ConflictsWith` validator. When `adaptive_allocations.enabled = true`, the server controls effective `number_of_allocations`. |
+| `number_of_allocations` on read | When `adaptive_allocations.enabled = false`, update from API on Read. |
+| Wait-for polling | After Start, poll `_stats` until the allocation status matches `wait_for` (default `"fully_allocated"`) or the configured timeout elapses. Reuse `internal/asyncutils/state_waiter.go` pattern. |
 | `stats_json` | Populated on every Read as the raw JSON of `TrainedModelStats` from the API. Read-only from the practitioner's perspective; useful for debugging or extracting fields not yet modelled. |
 | `state` and `allocation_status` | Computed strings derived from `deployment_stats.state` and `deployment_stats.allocation_status.state` in the stats response. |
 | Delete (stop) | Call Stop Deployment API. Treat HTTP 404 as success (idempotent). Force-stop on timeout if needed. |
@@ -59,15 +59,14 @@ The `types.AdaptiveAllocationsSettings` struct has `Enabled bool`, `MaxNumberOfA
 
 ## Risks / Trade-offs
 
-- **Adaptive allocations conflict with `number_of_allocations`**: The plan modifier approach is a heuristic—if the user explicitly sets `number_of_allocations` AND enables adaptive allocations, the intent is ambiguous. This is an open decision to be resolved during implementation (e.g. surface a validation error, emit a diagnostic warning, or silently ignore).
+- **Adaptive allocations conflict with `number_of_allocations`**: The schema uses `ConflictsWith` to prevent both attributes from being configured simultaneously. This avoids ambiguous intent by design—users choose either fixed allocations or adaptive allocations.
 - **Start-API timeout vs Terraform timeout**: `api_timeout` is the server-side deployment start timeout. The Terraform `timeouts.create` covers the total wait including post-start polling. These are orthogonal; document clearly.
 - **Multiple deployments per model**: The Elasticsearch API allows deploying the same model with different `deployment_id` values. This resource manages exactly one deployment. Practitioners who need multiple deployments create multiple resource instances with distinct `deployment_id` values.
 - **Import with model_id vs deployment_id**: The composite ID format `<cluster_uuid>/<deployment_id>` is used for import. Since `deployment_id` defaults to `model_id`, import works naturally for the common case.
 
 ## Open Questions
 
-1. **`number_of_allocations` validation**: Should the provider return an error at plan time when `adaptive_allocations.enabled = true` and `number_of_allocations` is also explicitly set? Or should it silently ignore? The conservative choice (emit a diagnostic warning) is noted here; implementation MUST confirm the UX.
-2. **`wait_for` default**: Should `wait_for` default to `"started"` if omitted, or leave the choice to the Elasticsearch server default? Confirm against API docs during implementation.
+1. **`wait_for` default**: Confirmed `"fully_allocated"` as the sensible default.
 3. **Stop force flag**: Should the Delete path always pass `force=true` to the Stop API, or should force be a configurable attribute? The issue body leaves this unspecified; default to `force=false` with documentation noting it can be destroyed with force if needed. This SHOULD be resolved during implementation.
 4. **Stats polling on Read**: `GET _ml/trained_models/{model_id}/_stats` returns stats per `deployment_id`. Confirm that querying by `model_id` returns stats for all deployments of that model, and filter by `deployment_id` client-side if needed.
 
