@@ -29,16 +29,6 @@ func ValueStringPointer(value types.String) *string {
 	return value.ValueStringPointer()
 }
 
-// NonEmptyStringPointerValue returns nil if the value is null, unknown, or empty string,
-// otherwise returns a pointer to the string value.
-func NonEmptyStringPointerValue(value types.String) *string {
-	if value.IsNull() || value.IsUnknown() || value.ValueString() == "" {
-		return nil
-	}
-	s := value.ValueString()
-	return &s
-}
-
 // Float64PointerValue returns nil if unknown, otherwise the same as value.ValueFloat64Pointer().
 func Float64PointerValue(value types.Float64) *float64 {
 	if value.IsUnknown() {
@@ -55,10 +45,20 @@ func OptStringPtr(v types.String) *string {
 	return v.ValueStringPointer()
 }
 
-// OptBoolPtr returns nil if the value is null or unknown, otherwise returns a pointer to the bool value.
-func OptBoolPtr(v types.Bool) *bool {
-	if v.IsNull() || v.IsUnknown() {
+// OptionalBool returns a pointer to the bool value when set, or nil when null or unknown.
+func OptionalBool(value types.Bool) *bool {
+	if !IsKnown(value) {
 		return nil
 	}
-	return v.ValueBoolPointer()
+	v := value.ValueBool()
+	return &v
+}
+
+// OptionalString returns a pointer to the string value when set and non-empty, or nil otherwise.
+func OptionalString(value types.String) *string {
+	if !IsKnown(value) || value.ValueString() == "" {
+		return nil
+	}
+	v := value.ValueString()
+	return &v
 }
