@@ -29,8 +29,8 @@ import (
 )
 
 var (
-	_ entitycore.KibanaDataSourceModel     = resolutionGroupModel{}
-	_ entitycore.WithVersionRequirements   = resolutionGroupModel{}
+	_ entitycore.KibanaDataSourceModel   = resolutionGroupModel{}
+	_ entitycore.WithVersionRequirements = resolutionGroupModel{}
 )
 
 var minKibanaEntityStoreResolutionVersion = version.Must(version.NewVersion("9.1.0"))
