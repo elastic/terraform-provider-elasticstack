@@ -490,6 +490,34 @@ func TestAccResourceAlertingRuleEnabledFalseOnCreate(t *testing.T) {
 	})
 }
 
+// TestAccResourceAlertingRuleCustomThreshold validates the default discriminator
+// validation path end-to-end for observability.rules.custom_threshold (REQ-018,
+// REQ-051). This is the primary motivating rule type from issue #940.
+func TestAccResourceAlertingRuleCustomThreshold(t *testing.T) {
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.custom_threshold", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.custom_threshold", "rule_type_id", "observability.rules.custom_threshold"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.custom_threshold", "consumer", "logs"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.custom_threshold", "interval", "1m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.custom_threshold", "enabled", "false"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceAlertingRuleInconsistentParams(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("8.13.0"))
 

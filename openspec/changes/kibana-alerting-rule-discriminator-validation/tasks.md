@@ -17,7 +17,7 @@
 - [x] 3.2 Add fixture tests for `observability.rules.custom_threshold` (valid params pass, unknown key accepted via AdditionalProperties)
 - [x] 3.3 Add fixture tests for at least one stack monitoring rule type and `apm.anomaly`
 - [x] 3.4 Run existing `validate_test.go` fixtures and fix any regressions from stricter default validation
-- [ ] 3.5 Add acceptance test for `observability.rules.custom_threshold` if CI Kibana supports it; otherwise document skip reason in test
+- [x] 3.5 Add acceptance test for `observability.rules.custom_threshold` if CI Kibana supports it; otherwise document skip reason in test
 
 ## 4. Validation and docs
 
