@@ -77,9 +77,17 @@ The kbapi generated client returns `[]byte` for entity store operation responses
 
 `EnforceMinVersion("9.1.0")` is set on the resource and data source models. This value is tentative; implementation should verify actual API availability in Kibana release notes and adjust if needed. The test config uses `CheckDestroyWithVersionConstraint` or `SkipIfVersionConstraintNotMet` helpers to skip acceptance tests when the target Elastic Stack version is too old.
 
-## Open Questions
+### 10. Single-entity lookup via `entity_id` on the list data source
 
-1. **Exact minimum version**: The issue proposes `9.1.0`. Is this confirmed from Kibana release notes for the individual entity CRUD endpoints? Acceptance testing should verify; if the API is available earlier, lower the version gate.
+The list data source supports an optional `entity_id` attribute as a convenience filter for single-entity lookup. When set, the provider generates `filter = entity.id:"<entity_id>"` and passes it to the list endpoint. This replaces the need for a separate single-item data source.
+
+**`entity_id` conflicts with `filter` and `filter_query`** at plan time to avoid ambiguous filter composition. Practitioners who need complex KQL or ES query string filters should use the raw parameters instead of `entity_id`.
+
+**`entity_types` can be combined with `entity_id`** for type-safe lookup (e.g., `entity_id = "host:web-01"` + `entity_types = ["host"]`). This is the recommended pattern when the entity type is known.
+
+**Output shape tradeoff**: Because the lookup goes through the list endpoint, the result is returned in `results_json` as a list response (including pagination metadata) rather than a flat `document_json`. Practitioners accessing a single entity should expect to extract the record from the list array. This is an intentional simplification to avoid maintaining two nearly identical API call paths.
+
+## Open Questions The issue proposes `9.1.0`. Is this confirmed from Kibana release notes for the individual entity CRUD endpoints? Acceptance testing should verify; if the API is available earlier, lower the version gate.
 2. **KQL filter for entity.id read**: Does `entity.id:"<id>"` work without tokenization issues for all valid entity ID values (values containing colons, slashes, etc.)? If KQL tokenizes colons, the filter may need escaping or a different expression. Implementation should test edge cases.
 3. **Multiple results from list on single-entity read**: Is `entity.id` guaranteed unique within a space+entity_type scope by the API? Or can two different entity types share the same `entity.id` string? If they can share the same ID across types, the read filter must always include `entity_types`.
 4. **`entity.id` vs `entity_id` field**: The issue shows the `entity.id` nested within the `entity` block in the request body. When `entity_id` is provided as a top-level resource attribute, must it match `entity.id` inside the `entity` block? If yes, implement a plan-time validator that checks consistency between `entity_id` and the `entity.id` field in the typed `entity` block or the `entity_json` fallback.
