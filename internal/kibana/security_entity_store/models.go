@@ -45,14 +45,14 @@ type logExtractionModel struct {
 }
 
 type tfModel struct {
-	ID                    types.String `tfsdk:"id"`
-	KibanaConnection      types.List   `tfsdk:"kibana_connection"`
-	SpaceID               types.String `tfsdk:"space_id"`
-	EntityTypes           types.Set    `tfsdk:"entity_types"`
-	AllowEntityTypeShrink types.Bool   `tfsdk:"allow_entity_type_shrink"`
-	Started               types.Bool   `tfsdk:"started"`
-	HistorySnapshot       types.Object `tfsdk:"history_snapshot"`
-	LogExtraction         types.Object      `tfsdk:"log_extraction"`
+	ID                    types.String         `tfsdk:"id"`
+	KibanaConnection      types.List           `tfsdk:"kibana_connection"`
+	SpaceID               types.String         `tfsdk:"space_id"`
+	EntityTypes           types.Set            `tfsdk:"entity_types"`
+	AllowEntityTypeShrink types.Bool           `tfsdk:"allow_entity_type_shrink"`
+	Started               types.Bool           `tfsdk:"started"`
+	HistorySnapshot       types.Object         `tfsdk:"history_snapshot"`
+	LogExtraction         types.Object         `tfsdk:"log_extraction"`
 	StatusJSON            jsontypes.Normalized `tfsdk:"status_json"`
 }
 

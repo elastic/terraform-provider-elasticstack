@@ -28,11 +28,11 @@ import (
 
 type dsModel struct {
 	entitycore.KibanaConnectionField
-	SpaceID           types.String `tfsdk:"space_id"`
-	IncludeComponents types.Bool   `tfsdk:"include_components"`
-	Installed         types.Bool   `tfsdk:"installed"`
-	OverallStatus     types.String `tfsdk:"overall_status"`
-	EnginesJSON       types.String       `tfsdk:"engines_json"`
+	SpaceID           types.String         `tfsdk:"space_id"`
+	IncludeComponents types.Bool           `tfsdk:"include_components"`
+	Installed         types.Bool           `tfsdk:"installed"`
+	OverallStatus     types.String         `tfsdk:"overall_status"`
+	EnginesJSON       types.String         `tfsdk:"engines_json"`
 	StatusJSON        jsontypes.Normalized `tfsdk:"status_json"`
 }
 
