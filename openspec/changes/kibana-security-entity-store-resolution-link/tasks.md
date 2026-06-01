@@ -1,8 +1,8 @@
 ## 1. Spec
 
-- [ ] 1.1 Keep delta specs aligned with `proposal.md` / `design.md`; run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate kibana-security-entity-store-resolution-link --type change` (or `make check-openspec` after sync).
-- [ ] 1.2 Resolve open question on set-diff update atomicity (see `design.md` Q1); update delta spec with the chosen update strategy (set-diff or RequiresReplace).
-- [ ] 1.3 Verify minimum Stack version (9.1.0 vs possible 8.x backport); update `EnforceMinVersion` call and delta spec version gate accordingly.
+- [x] 1.1 Keep delta specs aligned with `proposal.md` / `design.md`; run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate kibana-security-entity-store-resolution-link --type change` (or `make check-openspec` after sync).
+- [x] 1.2 Resolve open question on set-diff update atomicity (see `design.md` Q1); update delta spec with the chosen update strategy (set-diff or RequiresReplace).
+- [x] 1.3 Verify minimum Stack version (9.1.0 vs possible 8.x backport); update `EnforceMinVersion` call and delta spec version gate accordingly.
 - [ ] 1.4 On completion of implementation, **sync** delta specs into canonical `openspec/specs/` or **archive** the change per project workflow.
 
 ## 2. Resource — `elasticstack_kibana_security_entity_store_entity_link`
