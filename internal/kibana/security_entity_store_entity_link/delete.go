@@ -29,7 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func deleteEntityLink(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, state entityLinkModel) diag.Diagnostics {
+func deleteEntityLink(ctx context.Context, client *clients.KibanaScopedClient, _ string, spaceID string, state entityLinkModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	entityIDs, d := agentbuilder.SetToStrings(ctx, state.EntityIDs)

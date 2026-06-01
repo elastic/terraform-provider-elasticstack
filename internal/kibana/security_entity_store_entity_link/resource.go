@@ -20,6 +20,7 @@ package security_entity_store_entity_link
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -91,14 +92,12 @@ func (r *EntityLinkResource) ValidateConfig(ctx context.Context, req resource.Va
 		return
 	}
 
-	for _, id := range entityIDs {
-		if id == targetID {
-			resp.Diagnostics.AddAttributeError(
-				path.Root(attrEntityIDs),
-				"Self-link not allowed",
-				fmt.Sprintf("target_id %q must not appear in entity_ids", targetID),
-			)
-			return
-		}
+	if slices.Contains(entityIDs, targetID) {
+		resp.Diagnostics.AddAttributeError(
+			path.Root(attrEntityIDs),
+			"Self-link not allowed",
+			fmt.Sprintf("target_id %q must not appear in entity_ids", targetID),
+		)
+		return
 	}
 }

@@ -113,26 +113,41 @@ func (model *entityLinkModel) populateFromAPI(ctx context.Context, spaceID strin
 	return diags
 }
 
-// extractEntityIDsFromPayload attempts to read the list of entity identifiers
-// from the raw API payload.  It looks for an "entity_ids" array and, if the
-// target_id is present in that array, removes it so the resulting set contains
-// only the linked alias entities.
+// extractEntityIDsFromPayload attempts to read the list of alias entity
+// identifiers from the raw API payload.  It walks the "aliases" array and
+// extracts each alias's "entity.id" value, filtering out the target itself.
 func extractEntityIDsFromPayload(payload map[string]any, targetID string) []string {
 	var result []string
 
-	raw, ok := payload["entity_ids"]
+	rawAliases, ok := payload["aliases"]
 	if !ok {
 		return result
 	}
 
-	arr, ok := raw.([]any)
+	aliases, ok := rawAliases.([]any)
 	if !ok {
 		return result
 	}
 
-	for _, v := range arr {
-		if s, ok := v.(string); ok && s != targetID {
-			result = append(result, s)
+	for _, v := range aliases {
+		aliasMap, ok := v.(map[string]any)
+		if !ok {
+			continue
+		}
+		entityRaw, ok := aliasMap["entity"]
+		if !ok {
+			continue
+		}
+		entityMap, ok := entityRaw.(map[string]any)
+		if !ok {
+			continue
+		}
+		idRaw, ok := entityMap["id"]
+		if !ok {
+			continue
+		}
+		if idStr, ok := idRaw.(string); ok && idStr != targetID {
+			result = append(result, idStr)
 		}
 	}
 

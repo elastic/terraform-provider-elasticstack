@@ -19,6 +19,7 @@ package security_entity_store_entity_link
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -45,6 +46,16 @@ func updateEntityLink(ctx context.Context, client *clients.KibanaScopedClient, r
 	diags.Append(d...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[entityLinkModel]{}, diags
+	}
+
+	for _, id := range planEntityIDs {
+		if id == plan.TargetID.ValueString() {
+			diags.AddError(
+				"Self-link not allowed",
+				fmt.Sprintf("target_id %q must not appear in entity_ids", plan.TargetID.ValueString()),
+			)
+			return entitycore.KibanaWriteResult[entityLinkModel]{}, diags
+		}
 	}
 
 	priorEntityIDs, d := agentbuilder.SetToStrings(ctx, prior.EntityIDs)
@@ -89,22 +100,22 @@ func updateEntityLink(ctx context.Context, client *clients.KibanaScopedClient, r
 	return entitycore.KibanaWriteResult[entityLinkModel]{Model: plan}, diags
 }
 
-func computeSetDiff(old, new []string) (added, removed []string) {
+func computeSetDiff(old, next []string) (added, removed []string) {
 	oldSet := make(map[string]struct{}, len(old))
 	for _, id := range old {
 		oldSet[id] = struct{}{}
 	}
-	newSet := make(map[string]struct{}, len(new))
-	for _, id := range new {
-		newSet[id] = struct{}{}
+	nextSet := make(map[string]struct{}, len(next))
+	for _, id := range next {
+		nextSet[id] = struct{}{}
 	}
-	for _, id := range new {
+	for _, id := range next {
 		if _, ok := oldSet[id]; !ok {
 			added = append(added, id)
 		}
 	}
 	for _, id := range old {
-		if _, ok := newSet[id]; !ok {
+		if _, ok := nextSet[id]; !ok {
 			removed = append(removed, id)
 		}
 	}

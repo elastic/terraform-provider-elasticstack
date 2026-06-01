@@ -40,7 +40,9 @@ const (
 
 func getResourceSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Manages entity resolution links in the Kibana Entity Store. Links one or more alias entity identifiers to a single target (golden) entity, forming a resolution group. Requires Elastic Stack 9.1.0 or later.",
+		MarkdownDescription: "Manages entity resolution links in the Kibana Entity Store. " +
+			"Links one or more alias entity identifiers to a single target (golden) entity, forming a resolution group. " +
+			"Requires Elastic Stack 9.1.0 or later.",
 		Attributes: map[string]schema.Attribute{
 			attrID: schema.StringAttribute{
 				Computed:            true,
