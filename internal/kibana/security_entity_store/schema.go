@@ -26,6 +26,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
@@ -100,22 +102,66 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:    true,
 				Computed:    true,
 				Attributes: map[string]schema.Attribute{
-					"additional_index_patterns": schema.ListAttribute{Optional: true, ElementType: types.StringType},
-					"excluded_index_patterns":   schema.ListAttribute{Optional: true, ElementType: types.StringType},
-					"delay":                     schema.StringAttribute{Optional: true},
-					"docs_limit":                schema.Int64Attribute{Optional: true},
-					"field_history_length":      schema.Int64Attribute{Optional: true},
-					"frequency":                 schema.StringAttribute{Optional: true},
-					"lookback_period":           schema.StringAttribute{Optional: true},
-					"max_logs_per_page":         schema.Int64Attribute{Optional: true},
-					"max_logs_per_window":       schema.Int64Attribute{Optional: true},
+					"additional_index_patterns": schema.ListAttribute{
+						Optional:     true,
+						Computed:     true,
+						ElementType:  types.StringType,
+						PlanModifiers: []planmodifier.List{listplanmodifier.UseStateForUnknown()},
+					},
+					"excluded_index_patterns": schema.ListAttribute{
+						Optional:     true,
+						Computed:     true,
+						ElementType:  types.StringType,
+						PlanModifiers: []planmodifier.List{listplanmodifier.UseStateForUnknown()},
+					},
+					"delay": schema.StringAttribute{
+						Optional:      true,
+						Computed:      true,
+						PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+					},
+					"docs_limit": schema.Int64Attribute{
+						Optional:      true,
+						Computed:      true,
+						PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
+					},
+					"field_history_length": schema.Int64Attribute{
+						Optional:      true,
+						Computed:      true,
+						PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
+					},
+					"frequency": schema.StringAttribute{
+						Optional:      true,
+						Computed:      true,
+						PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+					},
+					"lookback_period": schema.StringAttribute{
+						Optional:      true,
+						Computed:      true,
+						PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+					},
+					"max_logs_per_page": schema.Int64Attribute{
+						Optional:      true,
+						Computed:      true,
+						PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
+					},
+					"max_logs_per_window": schema.Int64Attribute{
+						Optional:      true,
+						Computed:      true,
+						PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
+					},
 					"max_logs_per_window_cap_behavior": schema.StringAttribute{
 						Optional: true,
+						Computed: true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("drop", "defer"),
 						},
+						PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 					},
-					"max_time_window_size": schema.StringAttribute{Optional: true},
+					"max_time_window_size": schema.StringAttribute{
+						Optional:      true,
+						Computed:      true,
+						PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+					},
 				},
 				PlanModifiers: []planmodifier.Object{
 					objectplanmodifier.UseStateForUnknown(),
