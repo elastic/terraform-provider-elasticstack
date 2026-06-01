@@ -19,13 +19,10 @@ package security_entity_store
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -37,14 +34,6 @@ func updateEntityStore(
 	client *clients.KibanaScopedClient,
 	req entitycore.KibanaWriteRequest[tfModel],
 ) (entitycore.KibanaWriteResult[tfModel], diag.Diagnostics) {
-	if supported, diags := client.EnforceMinVersion(ctx, MinVersion); diags.HasError() {
-		return entitycore.KibanaWriteResult[tfModel]{}, diags
-	} else if !supported {
-		var out diag.Diagnostics
-		out.AddError("Unsupported server version", fmt.Sprintf("elasticstack_kibana_security_entity_store is supported only for Kibana v%s and above", MinVersion.String()))
-		return entitycore.KibanaWriteResult[tfModel]{}, out
-	}
-
 	plan := req.Plan
 	prior := *req.Prior
 	spaceID := normalizeSpaceID(plan.SpaceID)
@@ -59,11 +48,7 @@ func updateEntityStore(
 		if d.HasError() {
 			return entitycore.KibanaWriteResult[tfModel]{}, d
 		}
-		resp, err := client.GetKibanaOapiClient().API.PutSecurityEntityStoreWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-		if err != nil {
-			return entitycore.KibanaWriteResult[tfModel]{}, diagutil.FrameworkDiagFromError(err)
-		}
-		if d := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); d.HasError() {
+		if d := kibanaoapi.UpdateSecurityEntityStore(ctx, client.GetKibanaOapiClient(), spaceID, body); d.HasError() {
 			return entitycore.KibanaWriteResult[tfModel]{}, d
 		}
 	}
@@ -73,11 +58,7 @@ func updateEntityStore(
 		if d.HasError() {
 			return entitycore.KibanaWriteResult[tfModel]{}, d
 		}
-		resp, err := client.GetKibanaOapiClient().API.PostSecurityEntityStoreInstallWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-		if err != nil {
-			return entitycore.KibanaWriteResult[tfModel]{}, diagutil.FrameworkDiagFromError(err)
-		}
-		if d := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusCreated); d.HasError() {
+		if d := kibanaoapi.InstallSecurityEntityStore(ctx, client.GetKibanaOapiClient(), spaceID, body); d.HasError() {
 			return entitycore.KibanaWriteResult[tfModel]{}, d
 		}
 	}
@@ -88,34 +69,23 @@ func updateEntityStore(
 			out.AddError("Entity type shrink blocked", "Removing values from entity_types requires allow_entity_type_shrink = true. No API calls were made.")
 			return entitycore.KibanaWriteResult[tfModel]{}, out
 		}
-		resp, err := client.GetKibanaOapiClient().API.PostSecurityEntityStoreUninstallWithResponse(
+		if d := kibanaoapi.UninstallSecurityEntityStore(
 			ctx,
+			client.GetKibanaOapiClient(),
+			spaceID,
 			kbapi.PostSecurityEntityStoreUninstallJSONRequestBody{EntityTypes: uninstallTypes(removed)},
-			kibanautil.SpaceAwarePathRequestEditor(spaceID),
-		)
-		if err != nil {
-			return entitycore.KibanaWriteResult[tfModel]{}, diagutil.FrameworkDiagFromError(err)
-		}
-		if d := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); d.HasError() {
+		); d.HasError() {
 			return entitycore.KibanaWriteResult[tfModel]{}, d
 		}
 	}
 
 	if !plan.Started.Equal(prior.Started) {
 		if plan.Started.ValueBool() {
-			resp, err := client.GetKibanaOapiClient().API.PutSecurityEntityStoreStartWithResponse(ctx, kbapi.PutSecurityEntityStoreStartJSONRequestBody{}, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-			if err != nil {
-				return entitycore.KibanaWriteResult[tfModel]{}, diagutil.FrameworkDiagFromError(err)
-			}
-			if d := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); d.HasError() {
+			if d := kibanaoapi.StartSecurityEntityStore(ctx, client.GetKibanaOapiClient(), spaceID, kbapi.PutSecurityEntityStoreStartJSONRequestBody{}); d.HasError() {
 				return entitycore.KibanaWriteResult[tfModel]{}, d
 			}
 		} else {
-			resp, err := client.GetKibanaOapiClient().API.PutSecurityEntityStoreStopWithResponse(ctx, kbapi.PutSecurityEntityStoreStopJSONRequestBody{}, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-			if err != nil {
-				return entitycore.KibanaWriteResult[tfModel]{}, diagutil.FrameworkDiagFromError(err)
-			}
-			if d := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); d.HasError() {
+			if d := kibanaoapi.StopSecurityEntityStore(ctx, client.GetKibanaOapiClient(), spaceID, kbapi.PutSecurityEntityStoreStopJSONRequestBody{}); d.HasError() {
 				return entitycore.KibanaWriteResult[tfModel]{}, d
 			}
 		}

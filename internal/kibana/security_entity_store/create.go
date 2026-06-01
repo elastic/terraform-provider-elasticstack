@@ -19,12 +19,10 @@ package security_entity_store
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -42,20 +40,12 @@ func createEntityStore(
 		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}
 
-	resp, err := client.GetKibanaOapiClient().API.PostSecurityEntityStoreInstallWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return entitycore.KibanaWriteResult[tfModel]{}, diagutil.FrameworkDiagFromError(err)
-	}
-	if d := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusCreated); d.HasError() {
+	if d := kibanaoapi.InstallSecurityEntityStore(ctx, client.GetKibanaOapiClient(), spaceID, body); d.HasError() {
 		return entitycore.KibanaWriteResult[tfModel]{}, d
 	}
 
 	if !plan.Started.IsNull() && !plan.Started.IsUnknown() && !plan.Started.ValueBool() {
-		stopResp, err := client.GetKibanaOapiClient().API.PutSecurityEntityStoreStopWithResponse(ctx, kbapi.PutSecurityEntityStoreStopJSONRequestBody{}, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-		if err != nil {
-			return entitycore.KibanaWriteResult[tfModel]{}, diagutil.FrameworkDiagFromError(err)
-		}
-		if d := diagutil.HandleStatusResponse(stopResp.StatusCode(), stopResp.Body, http.StatusOK); d.HasError() {
+		if d := kibanaoapi.StopSecurityEntityStore(ctx, client.GetKibanaOapiClient(), spaceID, kbapi.PutSecurityEntityStoreStopJSONRequestBody{}); d.HasError() {
 			return entitycore.KibanaWriteResult[tfModel]{}, d
 		}
 	}

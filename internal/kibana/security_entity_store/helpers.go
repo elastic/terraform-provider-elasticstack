@@ -25,10 +25,12 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -76,14 +78,6 @@ type entityStoreEngineError struct {
 	Message string `json:"message"`
 }
 
-func stringPtr(v types.String) *string {
-	if v.IsNull() || v.IsUnknown() {
-		return nil
-	}
-	s := v.ValueString()
-	return &s
-}
-
 func intPtr(v types.Int64) *int {
 	if v.IsNull() || v.IsUnknown() {
 		return nil
@@ -92,12 +86,16 @@ func intPtr(v types.Int64) *int {
 	return &i
 }
 
-func listStringPtr(ctx context.Context, list types.List) (*[]string, diag.Diagnostics) {
+func stringListPtr(ctx context.Context, list types.List) (*[]string, diag.Diagnostics) {
 	if list.IsNull() || list.IsUnknown() {
 		return nil, nil
 	}
-	var values []string
-	return &values, list.ElementsAs(ctx, &values, false)
+	var diags diag.Diagnostics
+	result := typeutils.ListTypeToSliceString(ctx, list, path.Empty(), &diags)
+	if diags.HasError() {
+		return nil, diags
+	}
+	return &result, diags
 }
 
 func buildInstallBody(ctx context.Context, model tfModel) (kbapi.PostSecurityEntityStoreInstallJSONRequestBody, diag.Diagnostics) {
@@ -115,7 +113,7 @@ func buildInstallBody(ctx context.Context, model tfModel) (kbapi.PostSecurityEnt
 		if diags.HasError() {
 			return body, diags
 		}
-		if p := stringPtr(hs.Frequency); p != nil {
+		if p := typeutils.OptionalString(hs.Frequency); p != nil {
 			body.HistorySnapshot = &struct {
 				Frequency *string `json:"frequency,omitempty"`
 			}{Frequency: p}
@@ -194,9 +192,9 @@ func expandInstallLogExtraction(ctx context.Context, obj types.Object) (*struct 
 	if diags.HasError() {
 		return nil, diags
 	}
-	add, d := listStringPtr(ctx, model.AdditionalIndexPatterns)
+	add, d := stringListPtr(ctx, model.AdditionalIndexPatterns)
 	diags.Append(d...)
-	excl, d := listStringPtr(ctx, model.ExcludedIndexPatterns)
+	excl, d := stringListPtr(ctx, model.ExcludedIndexPatterns)
 	diags.Append(d...)
 	if diags.HasError() {
 		return nil, diags
@@ -215,15 +213,15 @@ func expandInstallLogExtraction(ctx context.Context, obj types.Object) (*struct 
 		MaxTimeWindowSize           *string                                                                               `json:"maxTimeWindowSize,omitempty"`
 	}{
 		AdditionalIndexPatterns: add,
-		Delay:                   stringPtr(model.Delay),
+		Delay:                   typeutils.OptionalString(model.Delay),
 		DocsLimit:               intPtr(model.DocsLimit),
 		ExcludedIndexPatterns:   excl,
 		FieldHistoryLength:      intPtr(model.FieldHistoryLength),
-		Frequency:               stringPtr(model.Frequency),
-		LookbackPeriod:          stringPtr(model.LookbackPeriod),
+		Frequency:               typeutils.OptionalString(model.Frequency),
+		LookbackPeriod:          typeutils.OptionalString(model.LookbackPeriod),
 		MaxLogsPerPage:          intPtr(model.MaxLogsPerPage),
 		MaxLogsPerWindow:        intPtr(model.MaxLogsPerWindow),
-		MaxTimeWindowSize:       stringPtr(model.MaxTimeWindowSize),
+		MaxTimeWindowSize:       typeutils.OptionalString(model.MaxTimeWindowSize),
 	}
 	if !model.MaxLogsPerWindowCapBehavior.IsNull() && !model.MaxLogsPerWindowCapBehavior.IsUnknown() {
 		behavior := kbapi.PostSecurityEntityStoreInstallJSONBodyLogExtractionMaxLogsPerWindowCapBehavior(model.MaxLogsPerWindowCapBehavior.ValueString())
@@ -251,9 +249,9 @@ func expandUpdateLogExtraction(ctx context.Context, obj types.Object) (*struct {
 	if diags.HasError() {
 		return nil, diags
 	}
-	add, d := listStringPtr(ctx, model.AdditionalIndexPatterns)
+	add, d := stringListPtr(ctx, model.AdditionalIndexPatterns)
 	diags.Append(d...)
-	excl, d := listStringPtr(ctx, model.ExcludedIndexPatterns)
+	excl, d := stringListPtr(ctx, model.ExcludedIndexPatterns)
 	diags.Append(d...)
 	if diags.HasError() {
 		return nil, diags
@@ -272,15 +270,15 @@ func expandUpdateLogExtraction(ctx context.Context, obj types.Object) (*struct {
 		MaxTimeWindowSize           *string                                                                       `json:"maxTimeWindowSize,omitempty"`
 	}{
 		AdditionalIndexPatterns: add,
-		Delay:                   stringPtr(model.Delay),
+		Delay:                   typeutils.OptionalString(model.Delay),
 		DocsLimit:               intPtr(model.DocsLimit),
 		ExcludedIndexPatterns:   excl,
 		FieldHistoryLength:      intPtr(model.FieldHistoryLength),
-		Frequency:               stringPtr(model.Frequency),
-		LookbackPeriod:          stringPtr(model.LookbackPeriod),
+		Frequency:               typeutils.OptionalString(model.Frequency),
+		LookbackPeriod:          typeutils.OptionalString(model.LookbackPeriod),
 		MaxLogsPerPage:          intPtr(model.MaxLogsPerPage),
 		MaxLogsPerWindow:        intPtr(model.MaxLogsPerWindow),
-		MaxTimeWindowSize:       stringPtr(model.MaxTimeWindowSize),
+		MaxTimeWindowSize:       typeutils.OptionalString(model.MaxTimeWindowSize),
 	}
 	if !model.MaxLogsPerWindowCapBehavior.IsNull() && !model.MaxLogsPerWindowCapBehavior.IsUnknown() {
 		behavior := kbapi.PutSecurityEntityStoreJSONBodyLogExtractionMaxLogsPerWindowCapBehavior(model.MaxLogsPerWindowCapBehavior.ValueString())
@@ -380,8 +378,7 @@ func flattenStatus(ctx context.Context, engines []entityStoreEngine) (entityType
 }
 
 func getEntityStoreStatus(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, includeComponents bool) (*entityStoreStatus, []byte, diag.Diagnostics) {
-	params := &kbapi.GetSecurityEntityStoreStatusParams{}
-	editors := []kbapi.RequestEditorFn{kibanautil.SpaceAwarePathRequestEditor(spaceID)}
+	var editors []kbapi.RequestEditorFn
 	if includeComponents {
 		editors = append(editors, func(_ context.Context, req *http.Request) error {
 			q := req.URL.Query()
@@ -391,12 +388,9 @@ func getEntityStoreStatus(ctx context.Context, client *clients.KibanaScopedClien
 		})
 	}
 
-	resp, err := client.GetKibanaOapiClient().API.GetSecurityEntityStoreStatusWithResponse(ctx, params, editors...)
-	if err != nil {
-		return nil, nil, diagutil.FrameworkDiagFromError(err)
-	}
-	if d := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); d.HasError() {
-		return nil, nil, d
+	resp, diags := kibanaoapi.GetSecurityEntityStoreStatus(ctx, client.GetKibanaOapiClient(), spaceID, editors...)
+	if diags.HasError() {
+		return nil, nil, diags
 	}
 
 	var status entityStoreStatus

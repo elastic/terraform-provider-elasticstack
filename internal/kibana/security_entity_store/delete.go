@@ -19,12 +19,10 @@ package security_entity_store
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -45,9 +43,5 @@ func deleteEntityStore(
 		body.EntityTypes = uninstallTypes(entityTypes)
 	}
 
-	resp, err := client.GetKibanaOapiClient().API.PostSecurityEntityStoreUninstallWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
+	return kibanaoapi.UninstallSecurityEntityStore(ctx, client.GetKibanaOapiClient(), spaceID, body)
 }
