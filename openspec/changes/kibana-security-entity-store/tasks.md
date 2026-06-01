@@ -1,10 +1,9 @@
 ## 1. Provider registration
 
 - [ ] 1.1 Register `elasticstack_kibana_security_entity_store` in the provider's resource list
-  (wherever existing Kibana resources are registered, e.g. `internal/provider/provider.go` or
-  the resource factory map).
+  in `provider/plugin_framework.go`.
 - [ ] 1.2 Register `elasticstack_kibana_security_entity_store_status` in the provider's data
-  source list.
+  source list in `provider/plugin_framework.go`.
 
 ## 2. Package scaffold
 
@@ -46,7 +45,7 @@
 - [ ] 4.2 Define nested structs `historySnapshotModel` and `logExtractionModel`.
 - [ ] 4.3 Implement `KibanaResourceModel` interface methods on `tfModel`:
   - `GetID() types.String`
-  - `GetResourceID() types.String` (returns same as `GetID` for this resource)
+  - `GetResourceID() types.String` (returns `types.StringValue("entity_store")`)
   - `GetSpaceID() types.String`
   - `GetKibanaConnection() types.List`
 
@@ -74,7 +73,7 @@
 
 ## 7. Read callback — `read.go`
 
-- [ ] 7.1 Call `GetEntityStoreStatusWithResponse` with `IncludeComponents: false` (or true if
+- [ ] 7.1 Call `GetSecurityEntityStoreStatusWithResponse` with `IncludeComponents: false` (or true if
   needed for extraction settings).
 - [ ] 7.2 If response status is `not_installed`, call `resp.State.RemoveResource(ctx)` and return.
 - [ ] 7.3 Collect engine `Type` values and populate `entity_types` in state.
@@ -120,7 +119,8 @@
   - `kibana_connection` — injected by the data source envelope pattern.
 - [ ] 10.2 In `data_source_models.go`, define `dsModel` struct.
 - [ ] 10.3 In `data_source_read.go`, implement the read callback:
-  - Call `GetEntityStoreStatusWithResponse`, passing `IncludeComponents` from the config.
+  - Enforce `MinVersion` at 9.1.0 before any API call.
+  - Call `GetSecurityEntityStoreStatusWithResponse`, passing `IncludeComponents` from the config.
   - Populate `installed` from `status != "not_installed"`.
   - Populate `overall_status` from `status` field.
   - Serialize `engines` to `engines_json` and the full response to `status_json`.

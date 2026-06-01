@@ -7,7 +7,7 @@ The Kibana Security Entity Store API is available via the generated kbapi client
 
 - `PostSecurityEntityStoreInstallWithResponse` — `POST /api/security/entity_store/install`
 - `PutSecurityEntityStoreWithResponse` (via `PutSecurityEntityStoreJSONRequestBody`) — `PUT /api/security/entity_store`
-- `GetEntityStoreStatusWithResponse` — `GET /api/security/entity_store/status`
+- `GetSecurityEntityStoreStatusWithResponse` — `GET /api/security/entity_store/status`
 - `PutSecurityEntityStoreStartWithResponse` — `PUT /api/security/entity_store/start`
 - `PutSecurityEntityStoreStopWithResponse` — `PUT /api/security/entity_store/stop`
 - `PostSecurityEntityStoreUninstallWithResponse` — `POST /api/security/entity_store/uninstall`
@@ -22,7 +22,7 @@ The request bodies are typed as:
   optional `EntityTypes`.
 - Uninstall: `PostSecurityEntityStoreUninstallJSONBody` — optional `EntityTypes`.
 
-The status response (`GetEntityStoreStatusResponse.JSON200`) contains an overall `Status`
+The status response (`GetSecurityEntityStoreStatusResponse.JSON200`) contains an overall `Status`
 (`SecurityEntityAnalyticsAPIStoreStatus`) and a per-engine `Engines` slice with per-engine status,
 type, extraction settings (delay, frequency, etc.), and optional component detail.
 
@@ -102,8 +102,8 @@ kibana_connection  = <optional, single-nested block>
 1. Call `PostSecurityEntityStoreInstallWithResponse` with `EntityTypes` (nil = all default types),
    `HistorySnapshot`, and `LogExtraction` fields from the plan.
 2. Accept HTTP 200 (already installed) and 201 (newly installed) as success.
-3. Call Read to populate computed fields.
-4. If `started == false`, call `PutSecurityEntityStoreStopWithResponse`.
+3. If `started == false`, call `PutSecurityEntityStoreStopWithResponse`.
+4. Call Read to populate computed fields.
 
 ### Read
 

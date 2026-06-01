@@ -5,6 +5,8 @@
 The `elasticstack_kibana_security_entity_store_status` data source SHALL call
 `GET /api/security/entity_store/status` and expose the result as computed attributes.
 
+The data source SHALL enforce `EnforceMinVersion("9.1.0")` before calling the API.
+
 The data source SHALL NOT modify any API state. It is read-only.
 
 #### Schema
