@@ -8,6 +8,7 @@ resource "elasticstack_kibana_alerting_rule" "custom_threshold" {
   consumer     = "logs"
   enabled      = false
   interval     = "1m"
+  notify_when  = "onActiveAlert"
 
   params = jsonencode({
     criteria = [
