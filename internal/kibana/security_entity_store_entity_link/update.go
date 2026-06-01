@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -48,14 +49,12 @@ func updateEntityLink(ctx context.Context, client *clients.KibanaScopedClient, r
 		return entitycore.KibanaWriteResult[entityLinkModel]{}, diags
 	}
 
-	for _, id := range planEntityIDs {
-		if id == plan.TargetID.ValueString() {
-			diags.AddError(
-				"Self-link not allowed",
-				fmt.Sprintf("target_id %q must not appear in entity_ids", plan.TargetID.ValueString()),
-			)
-			return entitycore.KibanaWriteResult[entityLinkModel]{}, diags
-		}
+	if slices.Contains(planEntityIDs, plan.TargetID.ValueString()) {
+		diags.AddError(
+			"Self-link not allowed",
+			fmt.Sprintf("target_id %q must not appear in entity_ids", plan.TargetID.ValueString()),
+		)
+		return entitycore.KibanaWriteResult[entityLinkModel]{}, diags
 	}
 
 	priorEntityIDs := typeutils.SetTypeAs[string](ctx, prior.EntityIDs, path.Root("entity_ids"), &diags)

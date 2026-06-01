@@ -27,34 +27,17 @@ import (
 
 func TestAccResourceSecurityEntityStoreEntityLink_Validation(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: `
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_kibana_security_entity_store_entity_link" "self_link" {
-  target_id  = "user:target@example.com"
-  entity_ids = ["user:target@example.com", "user:alias@example.com"]
-}
-`,
-				ExpectError: regexp.MustCompile(`Self-link not allowed`),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("self_link"),
+				ExpectError:              regexp.MustCompile(`Self-link not allowed`),
 			},
 			{
-				Config: `
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_kibana_security_entity_store_entity_link" "empty" {
-  target_id  = "user:target@example.com"
-  entity_ids = []
-}
-`,
-				ExpectError: regexp.MustCompile(`size must be at least`),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ExpectError:              regexp.MustCompile(`size must be at least`),
 			},
 		},
 	})
