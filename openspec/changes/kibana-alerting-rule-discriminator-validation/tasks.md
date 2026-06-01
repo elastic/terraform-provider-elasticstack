@@ -13,7 +13,7 @@
 
 ## 3. Tests
 
-- [ ] 3.1 Add `TestDiscriminatorValidationCoversAllKbapiRuleTypes` listing all 35 `ValueByDiscriminator()` cases and asserting each is default-validated or in override table
+- [ ] 3.1 Add `TestDiscriminatorValidationCoversAllKbapiRuleTypes` that derives the `rule_type_id` list from `kbapi.AlertingRuleAPIBody.ValueByDiscriminator()` (for example by parsing `generated/kbapi/kibana.gen.go`) and asserts each is either default-validated or in the override table
 - [ ] 3.2 Add fixture tests for `observability.rules.custom_threshold` (valid params pass, unknown key fails)
 - [ ] 3.3 Add fixture tests for at least one stack monitoring rule type and `apm.anomaly`
 - [ ] 3.4 Run existing `validate_test.go` fixtures and fix any regressions from stricter default validation
