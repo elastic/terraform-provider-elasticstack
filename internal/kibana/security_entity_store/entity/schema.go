@@ -141,7 +141,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
 				Validators: []validator.String{
-					stringvalidator.ConflictsWith(path.MatchRoot("asset")),
+					stringvalidator.ConflictsWith(path.MatchRoot(attrAsset)),
 				},
 			},
 			"orchestrator_json": schema.StringAttribute{
@@ -178,12 +178,12 @@ func getSchema(_ context.Context) schema.Schema {
 						Description: "Unique identifier for this entity.",
 						Required:    true,
 					},
-					"name": schema.StringAttribute{
+					attrName: schema.StringAttribute{
 						Description: "Human-readable name of the entity.",
 						Optional:    true,
 						Computed:    true,
 					},
-					"type": schema.StringAttribute{
+					attrType: schema.StringAttribute{
 						Description: "The entity type.",
 						Optional:    true,
 						Computed:    true,
@@ -203,7 +203,7 @@ func getSchema(_ context.Context) schema.Schema {
 						Optional:    true,
 						Computed:    true,
 						Attributes: map[string]schema.Attribute{
-							"asset": schema.BoolAttribute{
+							attrAsset: schema.BoolAttribute{
 								Description: "Whether the entity is classified as an asset.",
 								Optional:    true,
 								Computed:    true,
@@ -269,23 +269,23 @@ func getSchema(_ context.Context) schema.Schema {
 							},
 						},
 					},
-					"risk": schema.SingleNestedAttribute{
+					attrRisk: schema.SingleNestedAttribute{
 						Description: "Risk scoring information for the entity.",
 						Optional:    true,
 						Computed:    true,
 						Attributes: map[string]schema.Attribute{
-							"calculated_level": schema.StringAttribute{
-								Description: "The calculated risk level.",
+							attrCalculatedLevel: schema.StringAttribute{
+								Description: descCalculatedLevel,
 								Optional:    true,
 								Computed:    true,
 							},
-							"calculated_score": schema.Float64Attribute{
-								Description: "The raw numeric value of the given entity's risk score.",
+							attrCalculatedScore: schema.Float64Attribute{
+								Description: descCalculatedScore,
 								Optional:    true,
 								Computed:    true,
 							},
-							"calculated_score_norm": schema.Float64Attribute{
-								Description: "The normalized numeric value of the given entity's risk score.",
+							attrCalculatedScoreNorm: schema.Float64Attribute{
+								Description: descCalculatedScoreNorm,
 								Optional:    true,
 								Computed:    true,
 							},
@@ -368,11 +368,11 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:    true,
 				Computed:    true,
 				Attributes: map[string]schema.Attribute{
-					"name": schema.StringAttribute{
+					attrName: schema.StringAttribute{
 						Description: "Primary host name.",
 						Required:    true,
 					},
-					"domain": schema.SetAttribute{
+					attrDomain: schema.SetAttribute{
 						Description: "Observed host domains.",
 						Optional:    true,
 						Computed:    true,
@@ -402,7 +402,7 @@ func getSchema(_ context.Context) schema.Schema {
 						Computed:    true,
 						ElementType: types.StringType,
 					},
-					"type": schema.SetAttribute{
+					attrType: schema.SetAttribute{
 						Description: "Observed host types.",
 						Optional:    true,
 						Computed:    true,
@@ -434,7 +434,7 @@ func getSchema(_ context.Context) schema.Schema {
 								Optional:    true,
 								Computed:    true,
 							},
-							"name": schema.StringAttribute{
+							attrName: schema.StringAttribute{
 								Description: "Operating system name.",
 								Optional:    true,
 								Computed:    true,
@@ -444,7 +444,7 @@ func getSchema(_ context.Context) schema.Schema {
 								Optional:    true,
 								Computed:    true,
 							},
-							"type": schema.StringAttribute{
+							attrType: schema.StringAttribute{
 								Description: "Operating system type.",
 								Optional:    true,
 								Computed:    true,
@@ -456,23 +456,23 @@ func getSchema(_ context.Context) schema.Schema {
 							},
 						},
 					},
-					"risk": schema.SingleNestedAttribute{
+					attrRisk: schema.SingleNestedAttribute{
 						Description: "Risk scoring information for the host.",
 						Optional:    true,
 						Computed:    true,
 						Attributes: map[string]schema.Attribute{
-							"calculated_level": schema.StringAttribute{
-								Description: "The calculated risk level.",
+							attrCalculatedLevel: schema.StringAttribute{
+								Description: descCalculatedLevel,
 								Optional:    true,
 								Computed:    true,
 							},
-							"calculated_score": schema.Float64Attribute{
-								Description: "The raw numeric value of the given entity's risk score.",
+							attrCalculatedScore: schema.Float64Attribute{
+								Description: descCalculatedScore,
 								Optional:    true,
 								Computed:    true,
 							},
-							"calculated_score_norm": schema.Float64Attribute{
-								Description: "The normalized numeric value of the given entity's risk score.",
+							attrCalculatedScoreNorm: schema.Float64Attribute{
+								Description: descCalculatedScoreNorm,
 								Optional:    true,
 								Computed:    true,
 							},
@@ -488,17 +488,17 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:    true,
 				Computed:    true,
 				Attributes: map[string]schema.Attribute{
-					"name": schema.StringAttribute{
+					attrName: schema.StringAttribute{
 						Description: "Primary user name.",
 						Required:    true,
 					},
-					"domain": schema.SetAttribute{
+					attrDomain: schema.SetAttribute{
 						Description: "Observed user domains.",
 						Optional:    true,
 						Computed:    true,
 						ElementType: types.StringType,
 					},
-					"email": schema.SetAttribute{
+					attrEmail: schema.SetAttribute{
 						Description: "Observed email addresses.",
 						Optional:    true,
 						Computed:    true,
@@ -528,23 +528,23 @@ func getSchema(_ context.Context) schema.Schema {
 						Computed:    true,
 						ElementType: types.StringType,
 					},
-					"risk": schema.SingleNestedAttribute{
+					attrRisk: schema.SingleNestedAttribute{
 						Description: "Risk scoring information for the user.",
 						Optional:    true,
 						Computed:    true,
 						Attributes: map[string]schema.Attribute{
-							"calculated_level": schema.StringAttribute{
-								Description: "The calculated risk level.",
+							attrCalculatedLevel: schema.StringAttribute{
+								Description: descCalculatedLevel,
 								Optional:    true,
 								Computed:    true,
 							},
-							"calculated_score": schema.Float64Attribute{
-								Description: "The raw numeric value of the given entity's risk score.",
+							attrCalculatedScore: schema.Float64Attribute{
+								Description: descCalculatedScore,
 								Optional:    true,
 								Computed:    true,
 							},
-							"calculated_score_norm": schema.Float64Attribute{
-								Description: "The normalized numeric value of the given entity's risk score.",
+							attrCalculatedScoreNorm: schema.Float64Attribute{
+								Description: descCalculatedScoreNorm,
 								Optional:    true,
 								Computed:    true,
 							},
@@ -560,27 +560,27 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:    true,
 				Computed:    true,
 				Attributes: map[string]schema.Attribute{
-					"name": schema.StringAttribute{
+					attrName: schema.StringAttribute{
 						Description: "Primary service name.",
 						Required:    true,
 					},
-					"risk": schema.SingleNestedAttribute{
+					attrRisk: schema.SingleNestedAttribute{
 						Description: "Risk scoring information for the service.",
 						Optional:    true,
 						Computed:    true,
 						Attributes: map[string]schema.Attribute{
-							"calculated_level": schema.StringAttribute{
-								Description: "The calculated risk level.",
+							attrCalculatedLevel: schema.StringAttribute{
+								Description: descCalculatedLevel,
 								Optional:    true,
 								Computed:    true,
 							},
-							"calculated_score": schema.Float64Attribute{
-								Description: "The raw numeric value of the given entity's risk score.",
+							attrCalculatedScore: schema.Float64Attribute{
+								Description: descCalculatedScore,
 								Optional:    true,
 								Computed:    true,
 							},
-							"calculated_score_norm": schema.Float64Attribute{
-								Description: "The normalized numeric value of the given entity's risk score.",
+							attrCalculatedScoreNorm: schema.Float64Attribute{
+								Description: descCalculatedScoreNorm,
 								Optional:    true,
 								Computed:    true,
 							},
@@ -596,12 +596,12 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:    true,
 				Computed:    true,
 				Attributes: map[string]schema.Attribute{
-					"name": schema.StringAttribute{
+					attrName: schema.StringAttribute{
 						Description: "Orchestrator name.",
 						Optional:    true,
 						Computed:    true,
 					},
-					"type": schema.StringAttribute{
+					attrType: schema.StringAttribute{
 						Description: "Orchestrator type.",
 						Optional:    true,
 						Computed:    true,
@@ -651,7 +651,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:    true,
 				Computed:    true,
 				Attributes: map[string]schema.Attribute{
-					"provider": schema.StringAttribute{
+					attrProvider: schema.StringAttribute{
 						Description: "Cloud provider.",
 						Optional:    true,
 						Computed:    true,
@@ -701,7 +701,7 @@ func getSchema(_ context.Context) schema.Schema {
 						Optional:    true,
 						Computed:    true,
 					},
-					"type": schema.StringAttribute{
+					attrType: schema.StringAttribute{
 						Description: "Event type.",
 						Optional:    true,
 						Computed:    true,
@@ -721,7 +721,7 @@ func getSchema(_ context.Context) schema.Schema {
 						Optional:    true,
 						Computed:    true,
 					},
-					"provider": schema.StringAttribute{
+					attrProvider: schema.StringAttribute{
 						Description: "Event provider.",
 						Optional:    true,
 						Computed:    true,
@@ -741,7 +741,7 @@ func getSchema(_ context.Context) schema.Schema {
 						Optional:    true,
 						Computed:    true,
 					},
-					"reason": schema.StringAttribute{
+					attrReason: schema.StringAttribute{
 						Description: "Event reason.",
 						Optional:    true,
 						Computed:    true,
@@ -771,7 +771,7 @@ func getSchema(_ context.Context) schema.Schema {
 					objectvalidator.ConflictsWith(path.MatchRoot("event_json")),
 				},
 			},
-			"asset": schema.SingleNestedAttribute{
+			attrAsset: schema.SingleNestedAttribute{
 				Description: "Asset metadata associated with the entity.",
 				Optional:    true,
 				Computed:    true,
@@ -791,7 +791,7 @@ func getSchema(_ context.Context) schema.Schema {
 								Optional:    true,
 								Computed:    true,
 							},
-							"reason": schema.StringAttribute{
+							attrReason: schema.StringAttribute{
 								Description: "Feedback reason.",
 								Optional:    true,
 								Computed:    true,
@@ -803,7 +803,7 @@ func getSchema(_ context.Context) schema.Schema {
 						Optional:    true,
 						Computed:    true,
 						Attributes: map[string]schema.Attribute{
-							"name": schema.StringAttribute{
+							attrName: schema.StringAttribute{
 								Description: "Owner name.",
 								Optional:    true,
 								Computed:    true,
@@ -813,7 +813,7 @@ func getSchema(_ context.Context) schema.Schema {
 								Optional:    true,
 								Computed:    true,
 							},
-							"email": schema.StringAttribute{
+							attrEmail: schema.StringAttribute{
 								Description: "Owner email.",
 								Optional:    true,
 								Computed:    true,

@@ -43,6 +43,10 @@ const (
 	attrEmail               = "email"
 	attrProvider            = "provider"
 	attrReason              = "reason"
+
+	descCalculatedLevel     = "The calculated risk level."
+	descCalculatedScore     = "The raw numeric value of the given entity's risk score."
+	descCalculatedScoreNorm = "The normalized numeric value of the given entity's risk score."
 )
 
 // canonicalJSON normalizes a Go value to canonical JSON (sorted keys).
@@ -163,21 +167,21 @@ func appendStringSetToMap(m map[string]any, key string, set types.Set) {
 func entityBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"id":            types.StringType,
-		"name":          types.StringType,
-		"type":          types.StringType,
+		attrName:        types.StringType,
+		attrType:        types.StringType,
 		"sub_type":      types.StringType,
 		"source":        types.StringType,
 		"attributes":    types.ObjectType{AttrTypes: entityAttributesBlockAttrTypes()},
 		"behaviors":     types.ObjectType{AttrTypes: entityBehaviorsBlockAttrTypes()},
 		"lifecycle":     types.ObjectType{AttrTypes: entityLifecycleBlockAttrTypes()},
-		"risk":          types.ObjectType{AttrTypes: entityRiskBlockAttrTypes()},
+		attrRisk:        types.ObjectType{AttrTypes: entityRiskBlockAttrTypes()},
 		"relationships": types.ObjectType{AttrTypes: entityRelationshipsBlockAttrTypes()},
 	}
 }
 
 func entityAttributesBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"asset":       types.BoolType,
+		attrAsset:     types.BoolType,
 		"managed":     types.BoolType,
 		"privileged":  types.BoolType,
 		"mfa_enabled": types.BoolType,
@@ -202,9 +206,9 @@ func entityLifecycleBlockAttrTypes() map[string]attr.Type {
 
 func entityRiskBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"calculated_level":      types.StringType,
-		"calculated_score":      types.Float64Type,
-		"calculated_score_norm": types.Float64Type,
+		attrCalculatedLevel:     types.StringType,
+		attrCalculatedScore:     types.Float64Type,
+		attrCalculatedScoreNorm: types.Float64Type,
 	}
 }
 
@@ -225,16 +229,16 @@ func entityRelationshipsBlockAttrTypes() map[string]attr.Type {
 
 func hostBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"name":         types.StringType,
-		"domain":       types.SetType{ElemType: types.StringType},
+		attrName:       types.StringType,
+		attrDomain:     types.SetType{ElemType: types.StringType},
 		"hostname":     types.SetType{ElemType: types.StringType},
 		"id":           types.SetType{ElemType: types.StringType},
 		"ip":           types.SetType{ElemType: types.StringType},
 		"mac":          types.SetType{ElemType: types.StringType},
-		"type":         types.SetType{ElemType: types.StringType},
+		attrType:       types.SetType{ElemType: types.StringType},
 		"architecture": types.SetType{ElemType: types.StringType},
 		"os":           types.ObjectType{AttrTypes: hostOsBlockAttrTypes()},
-		"risk":         types.ObjectType{AttrTypes: entityRiskBlockAttrTypes()},
+		attrRisk:       types.ObjectType{AttrTypes: entityRiskBlockAttrTypes()},
 	}
 }
 
@@ -243,37 +247,37 @@ func hostOsBlockAttrTypes() map[string]attr.Type {
 		"family":   types.StringType,
 		"full":     types.StringType,
 		"kernel":   types.StringType,
-		"name":     types.StringType,
+		attrName:   types.StringType,
 		"platform": types.StringType,
-		"type":     types.StringType,
+		attrType:   types.StringType,
 		"version":  types.StringType,
 	}
 }
 
 func userBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"name":      types.StringType,
-		"domain":    types.SetType{ElemType: types.StringType},
-		"email":     types.SetType{ElemType: types.StringType},
+		attrName:    types.StringType,
+		attrDomain:  types.SetType{ElemType: types.StringType},
+		attrEmail:   types.SetType{ElemType: types.StringType},
 		"full_name": types.SetType{ElemType: types.StringType},
 		"hash":      types.SetType{ElemType: types.StringType},
 		"id":        types.SetType{ElemType: types.StringType},
 		"roles":     types.SetType{ElemType: types.StringType},
-		"risk":      types.ObjectType{AttrTypes: entityRiskBlockAttrTypes()},
+		attrRisk:    types.ObjectType{AttrTypes: entityRiskBlockAttrTypes()},
 	}
 }
 
 func serviceBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"name": types.StringType,
-		"risk": types.ObjectType{AttrTypes: entityRiskBlockAttrTypes()},
+		attrName: types.StringType,
+		attrRisk: types.ObjectType{AttrTypes: entityRiskBlockAttrTypes()},
 	}
 }
 
 func orchestratorBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"name":            types.StringType,
-		"type":            types.StringType,
+		attrName:          types.StringType,
+		attrType:          types.StringType,
 		"namespace":       types.StringType,
 		"cluster_id":      types.StringType,
 		"cluster_name":    types.StringType,
@@ -286,7 +290,7 @@ func orchestratorBlockAttrTypes() map[string]attr.Type {
 
 func cloudBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"provider":     types.StringType,
+		attrProvider:   types.StringType,
 		"region":       types.StringType,
 		"account_id":   types.StringType,
 		"account_name": types.StringType,
@@ -298,20 +302,20 @@ func cloudBlockAttrTypes() map[string]attr.Type {
 
 func eventBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"category":  types.StringType,
-		"type":      types.StringType,
-		"dataset":   types.StringType,
-		"kind":      types.StringType,
-		"outcome":   types.StringType,
-		"provider":  types.StringType,
-		"action":    types.StringType,
-		"code":      types.StringType,
-		"reference": types.StringType,
-		"reason":    types.StringType,
-		"severity":  types.StringType,
-		"timezone":  types.StringType,
-		"url":       types.StringType,
-		"ingested":  types.StringType,
+		"category":   types.StringType,
+		attrType:     types.StringType,
+		"dataset":    types.StringType,
+		"kind":       types.StringType,
+		"outcome":    types.StringType,
+		attrProvider: types.StringType,
+		"action":     types.StringType,
+		"code":       types.StringType,
+		"reference":  types.StringType,
+		attrReason:   types.StringType,
+		"severity":   types.StringType,
+		"timezone":   types.StringType,
+		"url":        types.StringType,
+		"ingested":   types.StringType,
 	}
 }
 
@@ -326,16 +330,16 @@ func assetBlockAttrTypes() map[string]attr.Type {
 
 func assetCriticalityFeedbackBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"notes":  types.StringType,
-		"reason": types.StringType,
+		"notes":    types.StringType,
+		attrReason: types.StringType,
 	}
 }
 
 func assetOwnerBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"name":       types.StringType,
+		attrName:     types.StringType,
 		"department": types.StringType,
-		"email":      types.StringType,
+		attrEmail:    types.StringType,
 		"ext":        types.StringType,
 	}
 }
@@ -464,12 +468,12 @@ func modelToAPIBody(ctx context.Context, model tfModel) (map[string]any, diag.Di
 	if !model.Asset.IsNull() && !model.Asset.IsUnknown() {
 		m := assetBlockToMap(ctx, model.Asset, &diags)
 		if m != nil {
-			body["asset"] = m
+			body[attrAsset] = m
 		}
 	} else if !model.AssetJSON.IsNull() && !model.AssetJSON.IsUnknown() {
 		m := typeutils.NormalizedTypeToMap[any](model.AssetJSON, path.Root("asset_json"), &diags)
 		if m != nil {
-			body["asset"] = m
+			body[attrAsset] = m
 		}
 	}
 
@@ -489,10 +493,10 @@ func entityBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnos
 
 	m := map[string]any{"id": model.ID.ValueString()}
 	if !model.Name.IsNull() && !model.Name.IsUnknown() {
-		m["name"] = model.Name.ValueString()
+		m[attrName] = model.Name.ValueString()
 	}
 	if !model.Type.IsNull() && !model.Type.IsUnknown() {
-		m["type"] = model.Type.ValueString()
+		m[attrType] = model.Type.ValueString()
 	}
 	if !model.SubType.IsNull() && !model.SubType.IsUnknown() {
 		m["sub_type"] = model.SubType.ValueString()
@@ -507,7 +511,7 @@ func entityBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnos
 		if !diags.HasError() {
 			am := make(map[string]any)
 			if !attr.Asset.IsNull() {
-				am["asset"] = attr.Asset.ValueBool()
+				am[attrAsset] = attr.Asset.ValueBool()
 			}
 			if !attr.Managed.IsNull() {
 				am["managed"] = attr.Managed.ValueBool()
@@ -565,7 +569,7 @@ func entityBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnos
 	}
 	if !model.Risk.IsNull() && !model.Risk.IsUnknown() {
 		if rm := riskBlockToMap(ctx, model.Risk, diags); rm != nil {
-			m["risk"] = rm
+			m[attrRisk] = rm
 		}
 	}
 	if !model.Relationships.IsNull() && !model.Relationships.IsUnknown() {
@@ -604,13 +608,13 @@ func riskBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnosti
 	}
 	m := make(map[string]any)
 	if !model.CalculatedLevel.IsNull() {
-		m["calculated_level"] = model.CalculatedLevel.ValueString()
+		m[attrCalculatedLevel] = model.CalculatedLevel.ValueString()
 	}
 	if !model.CalculatedScore.IsNull() {
-		m["calculated_score"] = model.CalculatedScore.ValueFloat64()
+		m[attrCalculatedScore] = model.CalculatedScore.ValueFloat64()
 	}
 	if !model.CalculatedScoreNorm.IsNull() {
-		m["calculated_score_norm"] = model.CalculatedScoreNorm.ValueFloat64()
+		m[attrCalculatedScoreNorm] = model.CalculatedScoreNorm.ValueFloat64()
 	}
 	return m
 }
@@ -625,13 +629,13 @@ func hostBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnosti
 	if diags.HasError() {
 		return nil
 	}
-	m := map[string]any{"name": model.Name.ValueString()}
-	appendStringSetToMap(m, "domain", model.Domain)
+	m := map[string]any{attrName: model.Name.ValueString()}
+	appendStringSetToMap(m, attrDomain, model.Domain)
 	appendStringSetToMap(m, "hostname", model.Hostname)
 	appendStringSetToMap(m, "id", model.ID)
 	appendStringSetToMap(m, "ip", model.IP)
 	appendStringSetToMap(m, "mac", model.Mac)
-	appendStringSetToMap(m, "type", model.Type)
+	appendStringSetToMap(m, attrType, model.Type)
 	appendStringSetToMap(m, "architecture", model.Architecture)
 	if !model.Os.IsNull() && !model.Os.IsUnknown() {
 		var osModel hostOsBlockModel
@@ -649,13 +653,13 @@ func hostBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnosti
 				om["kernel"] = osModel.Kernel.ValueString()
 			}
 			if !osModel.Name.IsNull() {
-				om["name"] = osModel.Name.ValueString()
+				om[attrName] = osModel.Name.ValueString()
 			}
 			if !osModel.Platform.IsNull() {
 				om["platform"] = osModel.Platform.ValueString()
 			}
 			if !osModel.Type.IsNull() {
-				om["type"] = osModel.Type.ValueString()
+				om[attrType] = osModel.Type.ValueString()
 			}
 			if !osModel.Version.IsNull() {
 				om["version"] = osModel.Version.ValueString()
@@ -667,7 +671,7 @@ func hostBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnosti
 	}
 	if !model.Risk.IsNull() && !model.Risk.IsUnknown() {
 		if rm := riskBlockToMap(ctx, model.Risk, diags); rm != nil {
-			m["risk"] = rm
+			m[attrRisk] = rm
 		}
 	}
 	return m
@@ -683,16 +687,16 @@ func userBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnosti
 	if diags.HasError() {
 		return nil
 	}
-	m := map[string]any{"name": model.Name.ValueString()}
-	appendStringSetToMap(m, "domain", model.Domain)
-	appendStringSetToMap(m, "email", model.Email)
+	m := map[string]any{attrName: model.Name.ValueString()}
+	appendStringSetToMap(m, attrDomain, model.Domain)
+	appendStringSetToMap(m, attrEmail, model.Email)
 	appendStringSetToMap(m, "full_name", model.FullName)
 	appendStringSetToMap(m, "hash", model.Hash)
 	appendStringSetToMap(m, "id", model.ID)
 	appendStringSetToMap(m, "roles", model.Roles)
 	if !model.Risk.IsNull() && !model.Risk.IsUnknown() {
 		if rm := riskBlockToMap(ctx, model.Risk, diags); rm != nil {
-			m["risk"] = rm
+			m[attrRisk] = rm
 		}
 	}
 	return m
@@ -708,10 +712,10 @@ func serviceBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagno
 	if diags.HasError() {
 		return nil
 	}
-	m := map[string]any{"name": model.Name.ValueString()}
+	m := map[string]any{attrName: model.Name.ValueString()}
 	if !model.Risk.IsNull() && !model.Risk.IsUnknown() {
 		if rm := riskBlockToMap(ctx, model.Risk, diags); rm != nil {
-			m["risk"] = rm
+			m[attrRisk] = rm
 		}
 	}
 	return m
@@ -729,10 +733,10 @@ func orchestratorBlockToMap(ctx context.Context, obj types.Object, diags *diag.D
 	}
 	m := make(map[string]any)
 	if !model.Name.IsNull() {
-		m["name"] = model.Name.ValueString()
+		m[attrName] = model.Name.ValueString()
 	}
 	if !model.Type.IsNull() {
-		m["type"] = model.Type.ValueString()
+		m[attrType] = model.Type.ValueString()
 	}
 	if !model.Namespace.IsNull() {
 		m["namespace"] = model.Namespace.ValueString()
@@ -770,7 +774,7 @@ func cloudBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnost
 	}
 	m := make(map[string]any)
 	if !model.Provider.IsNull() {
-		m["provider"] = model.Provider.ValueString()
+		m[attrProvider] = model.Provider.ValueString()
 	}
 	if !model.Region.IsNull() {
 		m["region"] = model.Region.ValueString()
@@ -808,7 +812,7 @@ func eventBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnost
 		m["category"] = model.Category.ValueString()
 	}
 	if !model.Type.IsNull() {
-		m["type"] = model.Type.ValueString()
+		m[attrType] = model.Type.ValueString()
 	}
 	if !model.Dataset.IsNull() {
 		m["dataset"] = model.Dataset.ValueString()
@@ -820,7 +824,7 @@ func eventBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnost
 		m["outcome"] = model.Outcome.ValueString()
 	}
 	if !model.Provider.IsNull() {
-		m["provider"] = model.Provider.ValueString()
+		m[attrProvider] = model.Provider.ValueString()
 	}
 	if !model.Action.IsNull() {
 		m["action"] = model.Action.ValueString()
@@ -832,7 +836,7 @@ func eventBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnost
 		m["reference"] = model.Reference.ValueString()
 	}
 	if !model.Reason.IsNull() {
-		m["reason"] = model.Reason.ValueString()
+		m[attrReason] = model.Reason.ValueString()
 	}
 	if !model.Severity.IsNull() {
 		m["severity"] = model.Severity.ValueString()
@@ -876,7 +880,7 @@ func assetBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnost
 				fbm["notes"] = fb.Notes.ValueString()
 			}
 			if !fb.Reason.IsNull() {
-				fbm["reason"] = fb.Reason.ValueString()
+				fbm[attrReason] = fb.Reason.ValueString()
 			}
 			if len(fbm) > 0 {
 				m["criticality_feedback"] = fbm
@@ -890,13 +894,13 @@ func assetBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnost
 		if !diags.HasError() {
 			om := make(map[string]any)
 			if !owner.Name.IsNull() {
-				om["name"] = owner.Name.ValueString()
+				om[attrName] = owner.Name.ValueString()
 			}
 			if !owner.Department.IsNull() {
 				om["department"] = owner.Department.ValueString()
 			}
 			if !owner.Email.IsNull() {
-				om["email"] = owner.Email.ValueString()
+				om[attrEmail] = owner.Email.ValueString()
 			}
 			if !owner.Ext.IsNull() {
 				om["ext"] = owner.Ext.ValueString()
@@ -1023,7 +1027,7 @@ func apiBodyToModel(ctx context.Context, body map[string]any, model *tfModel, di
 		model.Event = types.ObjectNull(eventBlockAttrTypes())
 	}
 
-	if assetRaw, ok := body["asset"].(map[string]any); ok {
+	if assetRaw, ok := body[attrAsset].(map[string]any); ok {
 		am := mapToAssetBlockModel(ctx, assetRaw, diags)
 		av, d := types.ObjectValueFrom(ctx, assetBlockAttrTypes(), am)
 		diags.Append(d...)
@@ -1036,14 +1040,14 @@ func apiBodyToModel(ctx context.Context, body map[string]any, model *tfModel, di
 func mapToEntityBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnostics) entityBlockModel {
 	model := entityBlockModel{
 		ID:      getStringValue(m, "id"),
-		Name:    getStringValue(m, "name"),
-		Type:    getStringValue(m, "type"),
+		Name:    getStringValue(m, attrName),
+		Type:    getStringValue(m, attrType),
 		SubType: getStringValue(m, "sub_type"),
 		Source:  getStringValue(m, "source"),
 	}
 	if attrsRaw, ok := m["attributes"].(map[string]any); ok {
 		attr := entityAttributesBlockModel{
-			Asset:      getBoolValue(attrsRaw, "asset"),
+			Asset:      getBoolValue(attrsRaw, attrAsset),
 			Managed:    getBoolValue(attrsRaw, "managed"),
 			Privileged: getBoolValue(attrsRaw, "privileged"),
 			MfaEnabled: getBoolValue(attrsRaw, "mfa_enabled"),
@@ -1072,7 +1076,7 @@ func mapToEntityBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagno
 	} else {
 		model.Lifecycle = types.ObjectNull(entityLifecycleBlockAttrTypes())
 	}
-	if riskRaw, ok := m["risk"].(map[string]any); ok {
+	if riskRaw, ok := m[attrRisk].(map[string]any); ok {
 		model.Risk = mapToRiskBlockModel(ctx, riskRaw)
 	} else {
 		model.Risk = types.ObjectNull(entityRiskBlockAttrTypes())
@@ -1099,9 +1103,9 @@ func mapToEntityBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagno
 
 func mapToRiskBlockModel(ctx context.Context, m map[string]any) types.Object {
 	model := entityRiskBlockModel{
-		CalculatedLevel:     getStringValue(m, "calculated_level"),
-		CalculatedScore:     getFloat64Value(m, "calculated_score"),
-		CalculatedScoreNorm: getFloat64Value(m, "calculated_score_norm"),
+		CalculatedLevel:     getStringValue(m, attrCalculatedLevel),
+		CalculatedScore:     getFloat64Value(m, attrCalculatedScore),
+		CalculatedScoreNorm: getFloat64Value(m, attrCalculatedScoreNorm),
 	}
 	obj, _ := types.ObjectValueFrom(ctx, entityRiskBlockAttrTypes(), model)
 	return obj
@@ -1109,13 +1113,13 @@ func mapToRiskBlockModel(ctx context.Context, m map[string]any) types.Object {
 
 func mapToHostBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnostics) hostBlockModel {
 	model := hostBlockModel{
-		Name:         getStringValue(m, "name"),
-		Domain:       getStringSetValue(m, "domain"),
+		Name:         getStringValue(m, attrName),
+		Domain:       getStringSetValue(m, attrDomain),
 		Hostname:     getStringSetValue(m, "hostname"),
 		ID:           getStringSetValue(m, "id"),
 		IP:           getStringSetValue(m, "ip"),
 		Mac:          getStringSetValue(m, "mac"),
-		Type:         getStringSetValue(m, "type"),
+		Type:         getStringSetValue(m, attrType),
 		Architecture: getStringSetValue(m, "architecture"),
 	}
 	if osRaw, ok := m["os"].(map[string]any); ok {
@@ -1123,16 +1127,16 @@ func mapToHostBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnost
 			Family:   getStringValue(osRaw, "family"),
 			Full:     getStringValue(osRaw, "full"),
 			Kernel:   getStringValue(osRaw, "kernel"),
-			Name:     getStringValue(osRaw, "name"),
+			Name:     getStringValue(osRaw, attrName),
 			Platform: getStringValue(osRaw, "platform"),
-			Type:     getStringValue(osRaw, "type"),
+			Type:     getStringValue(osRaw, attrType),
 			Version:  getStringValue(osRaw, "version"),
 		}
 		model.Os, _ = types.ObjectValueFrom(ctx, hostOsBlockAttrTypes(), osModel)
 	} else {
 		model.Os = types.ObjectNull(hostOsBlockAttrTypes())
 	}
-	if riskRaw, ok := m["risk"].(map[string]any); ok {
+	if riskRaw, ok := m[attrRisk].(map[string]any); ok {
 		model.Risk = mapToRiskBlockModel(ctx, riskRaw)
 	} else {
 		model.Risk = types.ObjectNull(entityRiskBlockAttrTypes())
@@ -1142,15 +1146,15 @@ func mapToHostBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnost
 
 func mapToUserBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnostics) userBlockModel {
 	model := userBlockModel{
-		Name:     getStringValue(m, "name"),
-		Domain:   getStringSetValue(m, "domain"),
-		Email:    getStringSetValue(m, "email"),
+		Name:     getStringValue(m, attrName),
+		Domain:   getStringSetValue(m, attrDomain),
+		Email:    getStringSetValue(m, attrEmail),
 		FullName: getStringSetValue(m, "full_name"),
 		Hash:     getStringSetValue(m, "hash"),
 		ID:       getStringSetValue(m, "id"),
 		Roles:    getStringSetValue(m, "roles"),
 	}
-	if riskRaw, ok := m["risk"].(map[string]any); ok {
+	if riskRaw, ok := m[attrRisk].(map[string]any); ok {
 		model.Risk = mapToRiskBlockModel(ctx, riskRaw)
 	} else {
 		model.Risk = types.ObjectNull(entityRiskBlockAttrTypes())
@@ -1160,9 +1164,9 @@ func mapToUserBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnost
 
 func mapToServiceBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnostics) serviceBlockModel {
 	model := serviceBlockModel{
-		Name: getStringValue(m, "name"),
+		Name: getStringValue(m, attrName),
 	}
-	if riskRaw, ok := m["risk"].(map[string]any); ok {
+	if riskRaw, ok := m[attrRisk].(map[string]any); ok {
 		model.Risk = mapToRiskBlockModel(ctx, riskRaw)
 	} else {
 		model.Risk = types.ObjectNull(entityRiskBlockAttrTypes())
@@ -1172,8 +1176,8 @@ func mapToServiceBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagn
 
 func mapToOrchestratorBlockModel(_ context.Context, m map[string]any) orchestratorBlockModel {
 	model := orchestratorBlockModel{
-		Name:           getStringValue(m, "name"),
-		Type:           getStringValue(m, "type"),
+		Name:           getStringValue(m, attrName),
+		Type:           getStringValue(m, attrType),
 		Namespace:      getStringValue(m, "namespace"),
 		ClusterID:      getStringValue(m, "cluster_id"),
 		ClusterName:    getStringValue(m, "cluster_name"),
@@ -1187,7 +1191,7 @@ func mapToOrchestratorBlockModel(_ context.Context, m map[string]any) orchestrat
 
 func mapToCloudBlockModel(_ context.Context, m map[string]any) cloudBlockModel {
 	return cloudBlockModel{
-		Provider:    getStringValue(m, "provider"),
+		Provider:    getStringValue(m, attrProvider),
 		Region:      getStringValue(m, "region"),
 		AccountID:   getStringValue(m, "account_id"),
 		AccountName: getStringValue(m, "account_name"),
@@ -1200,15 +1204,15 @@ func mapToCloudBlockModel(_ context.Context, m map[string]any) cloudBlockModel {
 func mapToEventBlockModel(_ context.Context, m map[string]any) eventBlockModel {
 	return eventBlockModel{
 		Category:  getStringValue(m, "category"),
-		Type:      getStringValue(m, "type"),
+		Type:      getStringValue(m, attrType),
 		Dataset:   getStringValue(m, "dataset"),
 		Kind:      getStringValue(m, "kind"),
 		Outcome:   getStringValue(m, "outcome"),
-		Provider:  getStringValue(m, "provider"),
+		Provider:  getStringValue(m, attrProvider),
 		Action:    getStringValue(m, "action"),
 		Code:      getStringValue(m, "code"),
 		Reference: getStringValue(m, "reference"),
-		Reason:    getStringValue(m, "reason"),
+		Reason:    getStringValue(m, attrReason),
 		Severity:  getStringValue(m, "severity"),
 		Timezone:  getStringValue(m, "timezone"),
 		URL:       getStringValue(m, "url"),
@@ -1224,7 +1228,7 @@ func mapToAssetBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnos
 	if fbRaw, ok := m["criticality_feedback"].(map[string]any); ok {
 		fb := assetCriticalityFeedbackBlockModel{
 			Notes:  getStringValue(fbRaw, "notes"),
-			Reason: getStringValue(fbRaw, "reason"),
+			Reason: getStringValue(fbRaw, attrReason),
 		}
 		model.CriticalityFeedback, _ = types.ObjectValueFrom(ctx, assetCriticalityFeedbackBlockAttrTypes(), fb)
 	} else {
@@ -1232,9 +1236,9 @@ func mapToAssetBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnos
 	}
 	if ownerRaw, ok := m["owner"].(map[string]any); ok {
 		owner := assetOwnerBlockModel{
-			Name:       getStringValue(ownerRaw, "name"),
+			Name:       getStringValue(ownerRaw, attrName),
 			Department: getStringValue(ownerRaw, "department"),
-			Email:      getStringValue(ownerRaw, "email"),
+			Email:      getStringValue(ownerRaw, attrEmail),
 			Ext:        getStringValue(ownerRaw, "ext"),
 		}
 		model.Owner, _ = types.ObjectValueFrom(ctx, assetOwnerBlockAttrTypes(), owner)
