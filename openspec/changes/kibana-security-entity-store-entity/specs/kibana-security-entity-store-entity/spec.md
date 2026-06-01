@@ -78,6 +78,7 @@ The resource SHALL expose typed attributes and JSON fallback escape hatches for 
 | `cloud` (nested block) | `cloud_json` (string) | Optional |
 | `asset` (nested block) | `asset_json` (string) | Optional |
 | `orchestrator` (nested block) | `orchestrator_json` (string) | Optional |
+| `event` (nested block) | `event_json` (string) | Optional |
 | `labels` (map of string) | `labels_json` (string) | Optional; JSON fallback supports non-string values |
 
 Additional attributes:

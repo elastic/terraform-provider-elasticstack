@@ -7,7 +7,7 @@ Practitioners cannot manage **Entity Store entity records** via Terraform today 
 Add three new Terraform entities backed by the Kibana Security Entity Store API (requires Elastic Stack ≥ 9.1.0):
 
 1. **Resource** `elasticstack_kibana_security_entity_store_entity` — manages a single entity record (create, read, update, delete, import) with first-class typed attributes for the full API body and JSON escape-hatch fallbacks for each top-level section.
-2. **Data source** `elasticstack_kibana_security_entity_store_entity` — single-entity lookup by `entity_id` (and optionally `entity_type`), returning typed + computed fields.
+2. **Data source** `elasticstack_kibana_security_entity_store_entity` — single-entity lookup by `entity_id` (and optionally `entity_type`), returning computed identity fields and `document_json`.
 3. **Data source** `elasticstack_kibana_security_entity_store_entities` — list/search data source exposing both page-based and cursor-based pagination modes via the `GET /api/security/entity_store/entities` endpoint.
 
 ### Schema sketch
