@@ -345,6 +345,8 @@ func TestAccResourceElasticDefendIntegrationPolicy_multiAgentPolicy(t *testing.T
 }
 
 func TestAccResourceElasticDefendIntegrationPolicy_agentPolicyIDsVersionGate(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefend, versionutils.FlavorAny)
+
 	unsupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefendPolicyIDs)()
 	if err != nil {
 		t.Fatalf("failed to check stack version: %v", err)
