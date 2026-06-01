@@ -1,7 +1,8 @@
-## [Unreleased]
+## [0.16.1] - 2026-06-01
 
 ### Changes
 
+- Add elasticstack_elasticsearch_connector resource and data source plus elasticstack_elasticsearch_connector_sync_job_create action for Elasticsearch content connectors. ([#3435](https://github.com/elastic/terraform-provider-elasticstack/pull/3435))
 - Preserve S3 endpoint and path_style_access in snapshot repository PUT bodies ([#3447](https://github.com/elastic/terraform-provider-elasticstack/pull/3447))
 - Fix inconsistent state when metadata is set to jsonencode({}) on elasticsearch_security_user ([#3448](https://github.com/elastic/terraform-provider-elasticstack/pull/3448))
 - Make Kibana dashboard panel-level time_range optional so panels can use the dashboard global time range ([#3436](https://github.com/elastic/terraform-provider-elasticstack/pull/3436))
@@ -971,7 +972,8 @@ resource "elasticstack_fleet_output" "output" {
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.1...HEAD
+[0.16.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.15.2...v0.16.0
 [0.15.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.15.1...v0.15.2
 [0.15.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.15.0...v0.15.1
