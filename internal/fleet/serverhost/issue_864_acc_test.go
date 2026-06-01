@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -42,42 +43,19 @@ func TestAccReproduceIssue864(t *testing.T) {
 
 	suffix := sdkacctest.RandString(12)
 	name := fmt.Sprintf("fleet-864-%s", suffix)
-
-	// Both configs omit host_id entirely, relying on the Computed value.
-	createConfig := fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_server_host" "fleet_host" {
-  name    = %q
-  default = false
-  hosts   = ["https://fleet-server-issue-864-a.example:8220"]
-}
-`, name)
-
-	updateConfig := fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_server_host" "fleet_host" {
-  name    = %q
-  default = false
-  hosts   = ["https://fleet-server-issue-864-b.example:8220"]
-}
-`, name)
+	vars := config.Variables{
+		"name": config.StringVariable(name),
+	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
-		CheckDestroy:             checkResourceFleetServerHostDestroy,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetServerHostDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: create a fleet server host without an explicit host_id.
 			{
-				Config: createConfig,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_server_host.fleet_host", "host_id"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.fleet_host", "hosts.0", "https://fleet-server-issue-864-a.example:8220"),
@@ -89,8 +67,10 @@ resource "elasticstack_fleet_server_host" "fleet_host" {
 			//   PUT /api/fleet/fleet_server_hosts/  →  HTTP 404
 			// The ExpectError confirms the bug is present.
 			{
-				Config:      updateConfig,
-				ExpectError: regexp.MustCompile(`404`),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          vars,
+				ExpectError:              regexp.MustCompile(`404`),
 			},
 		},
 	})
