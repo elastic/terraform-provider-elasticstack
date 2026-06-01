@@ -143,40 +143,19 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 	)
 }
 
-var ruleTypeParamsSpecs = map[string][]paramsSchemaSpec{
-	"apm.rules.anomaly": {
-		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsApmAnomalyCreateRuleBodyAlerting{} }),
-	},
-	"apm.error_rate": {
-		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsApmErrorRateCreateRuleBodyAlerting{} }),
-	},
-	"apm.transaction_duration": {
-		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsApmTransactionDurationCreateRuleBodyAlerting{} }),
-	},
-	ruleTypeApmTransactionErrorRate: {
-		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsApmTransactionErrorRateCreateRuleBodyAlerting{} }),
-	},
+// ruleTypeParamsOverrides contains explicit validation overrides for rule types
+// where OpenAPI does not match Kibana runtime behavior or where params are
+// nested unions requiring multiple variant attempts.
+var ruleTypeParamsOverrides = map[string][]paramsSchemaSpec{
 	ruleTypeIndexThreshold: {
 		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsIndexThresholdCreateRuleBodyAlerting{} }),
 	},
-	"metrics.alert.inventory.threshold": {
-		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsMetricsAlertInventoryThresholdCreateRuleBodyAlerting{} }),
-	},
-	"metrics.alert.threshold": {
-		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsMetricsAlertThresholdCreateRuleBodyAlerting{} }),
-	},
-	"slo.rules.burnRate": {
-		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsSloRulesBurnrateCreateRuleBodyAlerting{} }),
-	},
-	"xpack.uptime.alerts.tls": {
-		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsXpackSyntheticsAlertsTlsCreateRuleBodyAlerting{} }),
+	ruleTypeESQuery: {
+		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsEsQueryCreateRuleBodyAlerting{} }),
 	},
 	ruleTypeUptimeMonitorStatus: {
 		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsXpackUptimeAlertsMonitorstatusCreateRuleBodyAlerting{} }),
 		mustNewParamsSchemaSpec(func() any { return &legacyMonitorStatusParams{} }),
-	},
-	ruleTypeESQuery: {
-		mustNewParamsSchemaSpecFromContainer(func() any { return &kbapi.KibanaHTTPAPIsEsQueryCreateRuleBodyAlerting{} }),
 	},
 	"logs.alert.document.count": {
 		mustNewParamsSchemaSpec(func() any { return &kbapi.KibanaHTTPAPIsLogsAlertDocumentCountCreateRuleBodyAlertingParams0{} }),
@@ -186,6 +165,102 @@ var ruleTypeParamsSpecs = map[string][]paramsSchemaSpec{
 
 var ruleTypeAdditionalAllowedParamsKeys = map[string][]string{}
 
+// validateParamsViaDiscriminator validates params for a rule type by dispatching
+// through kbapi.AlertingRuleAPIBody.ValueByDiscriminator(), extracting the typed
+// Params value via reflection, and re-decoding the practitioner's params with
+// DisallowUnknownFields(). Unknown discriminators return nil (pass-through).
+func validateParamsViaDiscriminator(ruleTypeID string, params map[string]any) []string {
+	// Build a minimal stub rule body sufficient for discriminator dispatch.
+	stub := map[string]any{
+		"rule_type_id": ruleTypeID,
+		"params":       params,
+	}
+	stubRaw, err := json.Marshal(stub)
+	if err != nil {
+		return []string{fmt.Sprintf("failed to marshal stub rule body: %v", err)}
+	}
+
+	var body kbapi.AlertingRuleAPIBody
+	if err := body.UnmarshalJSON(stubRaw); err != nil {
+		return []string{fmt.Sprintf("failed to unmarshal stub rule body: %v", err)}
+	}
+
+	typedVal, err := body.ValueByDiscriminator()
+	if err != nil {
+		if strings.Contains(err.Error(), "unknown discriminator value") {
+			return nil
+		}
+		return []string{fmt.Sprintf("failed to dispatch by discriminator: %v", err)}
+	}
+
+	// Extract the Params field from the discriminated value via reflection.
+	typedReflect := reflect.ValueOf(typedVal)
+	if typedReflect.Kind() == reflect.Pointer {
+		typedReflect = typedReflect.Elem()
+	}
+	paramsField := typedReflect.FieldByName("Params")
+	if !paramsField.IsValid() {
+		return []string{fmt.Sprintf("discriminated type %T has no Params field", typedVal)}
+	}
+
+	paramsType := paramsField.Type()
+
+	// Marshal practitioner params for strict re-decode.
+	rawParams, err := json.Marshal(params)
+	if err != nil {
+		return []string{fmt.Sprintf("failed to marshal params for validation: %v", err)}
+	}
+
+	// Strip globally allowed keys before strict decode.
+	allowedKeys := ruleTypeAdditionalAllowedParamsKeys[ruleTypeID]
+	if len(allowedKeys) > 0 {
+		rawParams, err = stripKeys(rawParams, allowedKeys)
+		if err != nil {
+			return []string{fmt.Sprintf("failed to pre-process params for validation: %v", err)}
+		}
+	}
+
+	// Create a fresh target for strict decode.
+	var paramsTarget any
+	if paramsType.Kind() == reflect.Pointer {
+		paramsTarget = reflect.New(paramsType.Elem()).Interface()
+	} else {
+		paramsTarget = reflect.New(paramsType).Interface()
+	}
+
+	decoder := json.NewDecoder(bytes.NewReader(rawParams))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(paramsTarget); err != nil {
+		return []string{fmt.Sprintf("params did not match schema for rule type %q: %v", ruleTypeID, err)}
+	}
+
+	// Required-keys heuristic: create a fresh zero value to discover
+	// non-omitempty fields.
+	var paramsZero any
+	if paramsType.Kind() == reflect.Pointer {
+		paramsZero = reflect.New(paramsType.Elem()).Interface()
+	} else {
+		paramsZero = reflect.New(paramsType).Interface()
+	}
+
+	requiredKeys, err := computeRequiredKeys(paramsZero)
+	if err != nil {
+		return []string{fmt.Sprintf("failed to compute required keys for rule type %q: %v", ruleTypeID, err)}
+	}
+
+	missingKeys := missingRequiredKeys(requiredKeys, params, ruleTypeAdditionalRequiredParamsKeys[ruleTypeID])
+	if len(missingKeys) > 0 {
+		return []string{fmt.Sprintf("missing required params keys for rule type %q: %s", ruleTypeID, strings.Join(missingKeys, ", "))}
+	}
+
+	postDecodeErrs := validateRuleParamsPostDecode(ruleTypeID, params)
+	if len(postDecodeErrs) > 0 {
+		return postDecodeErrs
+	}
+
+	return nil
+}
+
 var ruleTypeAdditionalRequiredParamsKeys = map[string][]string{
 	// Kibana rejects `.es-query` params without `size` even when the generated
 	// DSL variant currently models it as optional.
@@ -193,10 +268,9 @@ var ruleTypeAdditionalRequiredParamsKeys = map[string][]string{
 }
 
 func validateRuleParams(ruleTypeID string, params map[string]any) []string {
-	specs, ok := ruleTypeParamsSpecs[ruleTypeID]
+	specs, ok := ruleTypeParamsOverrides[ruleTypeID]
 	if !ok {
-		// Backward compatible fallback for custom/unknown rules.
-		return nil
+		return validateParamsViaDiscriminator(ruleTypeID, params)
 	}
 
 	raw, err := json.Marshal(params)
