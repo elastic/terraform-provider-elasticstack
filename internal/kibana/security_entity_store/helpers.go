@@ -407,7 +407,7 @@ func flattenStatus(ctx context.Context, engines []entityStoreEngine) (entityType
 
 func flattenEngines(ctx context.Context, engines []entityStoreEngine) (types.List, diag.Diagnostics) {
 	if len(engines) == 0 {
-		return types.ListNull(engineObjectType), nil
+		return types.ListValueFrom(ctx, engineObjectType, []engineModel{})
 	}
 
 	elems := make([]engineModel, 0, len(engines))
