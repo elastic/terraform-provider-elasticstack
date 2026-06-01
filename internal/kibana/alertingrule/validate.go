@@ -173,7 +173,7 @@ func validateParamsViaDiscriminator(ruleTypeID string, params map[string]any) []
 	// Build a minimal stub rule body sufficient for discriminator dispatch.
 	stub := map[string]any{
 		"rule_type_id": ruleTypeID,
-		"params":       params,
+		attrParams:     params,
 	}
 	stubRaw, err := json.Marshal(stub)
 	if err != nil {
