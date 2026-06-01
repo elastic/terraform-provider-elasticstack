@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/starttrainedmodeldeployment"
@@ -182,13 +181,8 @@ func StopTrainedModelDeployment(ctx context.Context, apiClient *clients.Elastics
 
 	_, err := req.Do(ctx)
 	if err != nil {
-		// Check for HTTP 404 using raw response
-		res, performErr := req.Perform(ctx)
-		if performErr == nil && res != nil {
-			defer res.Body.Close()
-			if res.StatusCode == http.StatusNotFound {
-				return diags
-			}
+		if IsNotFoundElasticsearchError(err) {
+			return diags
 		}
 		diags.AddError("Failed to stop trained model deployment", fmt.Sprintf("Unable to stop trained model deployment %s: %s", deploymentID, err.Error()))
 		return diags

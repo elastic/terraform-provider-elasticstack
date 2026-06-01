@@ -150,6 +150,14 @@ func TestAccResourceMLTrainedModelDeployment_basic(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables: config.Variables{
+					"model_id": config.StringVariable(modelID),
+				},
+				Destroy: true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("force_stop"),
 				ConfigVariables: config.Variables{
 					"model_id": config.StringVariable(modelID),
