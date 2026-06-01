@@ -25,12 +25,12 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -102,6 +102,7 @@ type toolBaseData struct {
 // and toolModel from an API response, eliminating duplicated population logic.
 func populateToolBaseFromAPI(ctx context.Context, data *models.Tool, spaceID string) (toolBaseData, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	var d diag.Diagnostics
 
 	base := toolBaseData{
 		ID:      types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String()),
@@ -116,7 +117,8 @@ func populateToolBaseFromAPI(ctx context.Context, data *models.Tool, spaceID str
 		base.Description = types.StringNull()
 	}
 
-	diags.Append(agentbuilder.PopulateSet(ctx, data.Tags, &base.Tags)...)
+	base.Tags, d = typeutils.StringSetOrNull(ctx, data.Tags)
+	diags.Append(d...)
 	return base, diags
 }
 
@@ -260,5 +262,7 @@ func optionalTagsFromSet(ctx context.Context, set types.Set) ([]string, diag.Dia
 	if set.IsNull() || set.IsUnknown() {
 		return nil, nil
 	}
-	return agentbuilder.SetToStrings(ctx, set)
+	var diags diag.Diagnostics
+	tags := typeutils.SetTypeAs[string](ctx, set, path.Empty(), &diags)
+	return tags, diags
 }
