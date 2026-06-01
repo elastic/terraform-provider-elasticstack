@@ -58,8 +58,7 @@ At apply time, if `params` cannot be decoded as JSON for the request, the resour
 
 ### Requirement: Discriminator validation coverage guard (REQ-051)
 
-The provider SHALL maintain automated tests ensuring every `rule_type_id` case in `kbapi.AlertingRuleAPIBody.ValueByDiscriminator()` is either validated by the default discriminator params path or explicitly listed in the params validation override table with documented rationale.
-
+The provider SHALL maintain automated tests ensuring every `rule_type_id` case in `kbapi.AlertingRuleAPIBody.ValueByDiscriminator()` is either validated by the default discriminator params path or explicitly listed in the params validation override table with documented rationale. The coverage-guard test SHALL derive the set of `rule_type_id` values from the generated `ValueByDiscriminator()` implementation (for example by parsing `generated/kbapi/kibana.gen.go`) so kbapi regeneration that adds a new case is detected automatically.
 #### Scenario: New kbapi rule type without validation decision
 
 - GIVEN `kbapi` regeneration adds a new case to `ValueByDiscriminator()`
