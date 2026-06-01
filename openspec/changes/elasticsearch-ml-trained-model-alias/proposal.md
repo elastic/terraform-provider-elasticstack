@@ -21,4 +21,4 @@ Add a new resource `elasticstack_elasticsearch_ml_trained_model_alias` that wrap
 - New package `internal/elasticsearch/ml/trainedmodelalias/` (resource.go, schema.go, models.go, read.go, create.go, update.go, delete.go, acc_test.go, descriptions.go)
 - New client wrappers in `internal/clients/elasticsearch/ml_trained_model_alias.go`
 - Provider registration in `provider/plugin_framework.go`
-- New spec at `openspec/specs/elasticsearch-ml-trained-model-alias/spec.md`
+- New delta spec at `openspec/changes/elasticsearch-ml-trained-model-alias/specs/elasticsearch-ml-trained-model-alias/spec.md`

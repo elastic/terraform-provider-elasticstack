@@ -144,23 +144,26 @@ To change `model_id` in-place, `reassign` MUST be `true`; otherwise Elasticsearc
 
 ### Requirement: API — Delete (REQ-005)
 
-The resource SHALL call `DELETE _ml/trained_models/{model_id}/model_aliases/{model_alias}` using `model_id` from the prior state.
+The resource SHALL first call `GET _ml/trained_models/{model_alias}` to resolve the current model the alias points to. If the alias does not exist (404 or empty result), Delete SHALL treat this as already-gone and remove the resource from state without error.
 
-A 404 response during delete SHALL be treated as idempotent success.
+If the alias exists, the resource SHALL call `DELETE _ml/trained_models/{resolved_model_id}/model_aliases/{model_alias}` using the resolved `model_id` from the GET response.
+
+A 404 response during DELETE SHALL be treated as idempotent success.
 
 Any other API error SHALL be surfaced as a "Failed to delete ML trained model alias" error.
 
 #### Scenario: Delete existing alias
 - GIVEN a resource with `model_alias = "my-alias"` and `model_id = "model-1"` in state
 - WHEN Delete is called
-- THEN `DELETE _ml/trained_models/model-1/model_aliases/my-alias` is called
+- THEN `GET _ml/trained_models/my-alias` resolves the alias to `model-1`
+- AND `DELETE _ml/trained_models/model-1/model_aliases/my-alias` is called
 - AND the resource is removed from state
 
 #### Scenario: Delete already-removed alias is idempotent
 - GIVEN the alias was deleted out-of-band before Terraform runs destroy
 - WHEN Delete is called
-- THEN Elasticsearch returns 404
-- AND the resource SHALL treat this as success and remove from state without error
+- THEN `GET _ml/trained_models/my-alias` returns 404 / empty result
+- AND the resource SHALL be removed from state without error
 
 ### Requirement: Import (REQ-006)
 

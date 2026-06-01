@@ -40,9 +40,9 @@ The `model_alias` is the unique, stable name for the alias (must be unique acros
 
 The Elasticsearch typed client does not expose a dedicated "get alias" endpoint. Read calls `typedClient.Ml.GetTrainedModels().ModelId(alias).Do(ctx)`. An empty result or 404 means the alias does not exist (not-found). The resolved `model_id` is extracted from the returned `TrainedModelConfig`.
 
-### 4. Delete requires current model_id from state
+### 4. Delete resolves current model_id by alias first
 
-The DELETE API path includes the model_id: `DELETE /_ml/trained_models/{model_id}/model_aliases/{model_alias}`. The delete callback reads `model_id` from the prior state rather than resolving it via a GET at delete time, to keep the operation simple. A 404 from the delete call is treated as idempotent success.
+The DELETE API path includes the model_id: `DELETE /_ml/trained_models/{model_id}/model_aliases/{model_alias}`. To avoid orphaning an alias when state is stale (e.g. the alias was reassigned out-of-band), the delete callback first calls `GET /_ml/trained_models/{model_alias}` to resolve the current model_id. If the alias no longer exists (404 or empty result), Delete treats it as already-gone. Otherwise, it calls DELETE with the resolved model_id. A 404 from the DELETE call is treated as idempotent success.
 
 ### 5. reassign flag semantics
 

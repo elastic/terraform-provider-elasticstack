@@ -7,7 +7,7 @@
 - [ ] 2.1 Create `internal/clients/elasticsearch/ml_trained_model_alias.go` with:
   - `PutMLTrainedModelAlias(ctx, client, modelID, alias string, reassign bool) diag.Diagnostics`
   - `GetMLTrainedModelAlias(ctx, client, alias string) (modelID string, found bool, diags diag.Diagnostics)` — calls `GetTrainedModels` with alias as model_id, extracts model_id from response, returns not-found on empty result or 404
-  - `DeleteMLTrainedModelAlias(ctx, client, modelID, alias string) diag.Diagnostics` — treats 404 as idempotent success
+  - `DeleteMLTrainedModelAlias(ctx, client, alias string) diag.Diagnostics` — first resolves the alias via `GetTrainedModels` to obtain the current model_id, then calls DELETE; treats GET 404/empty and DELETE 404 as idempotent success
 
 ## 3. TF model and schema
 
@@ -29,7 +29,7 @@
 - [ ] 4.1 Create `internal/elasticsearch/ml/trainedmodelalias/create.go` — calls `PutMLTrainedModelAlias` with modelID from plan, alias from plan, reassign from plan; sets composite `id` via `client.ID(ctx, alias).String()`
 - [ ] 4.2 Create `internal/elasticsearch/ml/trainedmodelalias/read.go` — calls `GetMLTrainedModelAlias`; on found, populates `model_id` from response; on not-found, returns `(state, false, nil)`
 - [ ] 4.3 Create `internal/elasticsearch/ml/trainedmodelalias/update.go` — calls `PutMLTrainedModelAlias` with planned model_id, alias from resource identity, reassign from plan
-- [ ] 4.4 Create `internal/elasticsearch/ml/trainedmodelalias/delete.go` — calls `DeleteMLTrainedModelAlias` with model_id from prior state, alias from resource identity
+- [ ] 4.4 Create `internal/elasticsearch/ml/trainedmodelalias/delete.go` — calls `DeleteMLTrainedModelAlias` with alias from resource identity; the client wrapper resolves the current model_id and handles not-found
 
 ## 5. Resource registration
 
