@@ -52,7 +52,7 @@ func (model resolutionGroupModel) GetVersionRequirements() ([]entitycore.Version
 	}, nil
 }
 
-//nolint: unparam // kept for consistency with other populateFromAPI signatures
+// nolint: unparam // kept for consistency with other populateFromAPI signatures
 func (model *resolutionGroupModel) populateFromAPI(spaceID string, body []byte) diag.Diagnostics {
 	var diags diag.Diagnostics
 
