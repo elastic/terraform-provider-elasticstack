@@ -44,7 +44,11 @@ func readEntityStoreDataSource(ctx context.Context, client *clients.KibanaScoped
 		return model, diags
 	}
 
-	enginesJSON, err := json.Marshal(status.Engines)
+	engines := status.Engines
+	if engines == nil {
+		engines = []entityStoreEngine{}
+	}
+	enginesJSON, err := json.Marshal(engines)
 	if err != nil {
 		return model, diagutil.FrameworkDiagFromError(err)
 	}

@@ -90,7 +90,7 @@ When `started = true`, the provider SHALL call `PUT /api/security/entity_store/s
 engine is not running after install or update. When `started = false`, the provider SHALL call
 `PUT /api/security/entity_store/stop`.
 
-On Read, `started` SHALL be set to `true` if at least one engine reports status `running`, otherwise
+On Read, `started` SHALL be set to `true` if at least one engine reports status `started`, otherwise
 `false`.
 
 #### Scenario: Create with started = false stops engines

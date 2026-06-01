@@ -26,15 +26,21 @@ import (
 )
 
 func TestAccResourceKibanaSecurityEntityStore_basic(t *testing.T) {
-	testAccEntityStoreApplyAndPlan(t, basicConfig())
+	testAccEntityStoreApplyAndPlan(t, basicConfig(), resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store.test", "id"))
 }
 
 func TestAccResourceKibanaSecurityEntityStore_singleType(t *testing.T) {
-	testAccEntityStoreApplyAndPlan(t, singleTypeConfig())
+	testAccEntityStoreApplyAndPlan(t, singleTypeConfig(),
+		resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "entity_types.#", "1"),
+		resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store.test", "entity_types.*", "host"),
+	)
 }
 
 func TestAccResourceKibanaSecurityEntityStore_updateLogExtraction(t *testing.T) {
-	testAccEntityStoreApplyAndPlan(t, updateLogExtractionConfig())
+	testAccEntityStoreApplyAndPlan(t, updateLogExtractionConfig(),
+		resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "log_extraction.0.delay", "5m"),
+		resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "log_extraction.0.frequency", "10m"),
+	)
 }
 
 func TestAccResourceKibanaSecurityEntityStore_import(t *testing.T) {
@@ -75,11 +81,17 @@ func TestAccResourceKibanaSecurityEntityStore_shrinkGuardFails(t *testing.T) {
 }
 
 func TestAccResourceKibanaSecurityEntityStore_shrinkWithFlag(t *testing.T) {
-	testAccEntityStoreApplyAndPlan(t, shrinkWithFlagConfig())
+	testAccEntityStoreApplyAndPlan(t, shrinkWithFlagConfig(),
+		resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "entity_types.#", "1"),
+		resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store.test", "entity_types.*", "host"),
+		resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "allow_entity_type_shrink", "true"),
+	)
 }
 
 func TestAccResourceKibanaSecurityEntityStore_startedFalse(t *testing.T) {
-	testAccEntityStoreApplyAndPlan(t, startedFalseConfig())
+	testAccEntityStoreApplyAndPlan(t, startedFalseConfig(),
+		resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "started", "false"),
+	)
 }
 
 func TestAccDataSourceKibanaSecurityEntityStoreStatus_basic(t *testing.T) {
@@ -89,21 +101,36 @@ func TestAccDataSourceKibanaSecurityEntityStoreStatus_basic(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("default"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "installed"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "overall_status"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "engines_json"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "status_json"),
+				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_components"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "installed"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "overall_status"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "engines_json"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "status_json"),
+				),
 			},
 		},
 	})
 }
 
-func testAccEntityStoreApplyAndPlan(t *testing.T, cfg string) {
+func testAccEntityStoreApplyAndPlan(t *testing.T, cfg string, checks ...resource.TestCheckFunc) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
-			{Config: cfg},
+			{
+				Config: cfg,
+				Check:  resource.ComposeTestCheckFunc(checks...),
+			},
 			{Config: cfg, PlanOnly: true},
 		},
 	})
