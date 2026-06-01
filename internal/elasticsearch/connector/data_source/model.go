@@ -42,6 +42,7 @@ import (
 type ContentConnectorDataSourceModel struct {
 	entitycore.ElasticsearchConnectionField
 	connector.CoreConnectorFields
+	connector.VersionGate
 	ID                               fwtypes.String       `tfsdk:"id"`
 	ConnectorID                      fwtypes.String       `tfsdk:"connector_id"`
 	Status                           fwtypes.String       `tfsdk:"status"`
@@ -65,14 +66,6 @@ type ContentConnectorDataSourceModel struct {
 }
 
 var _ entitycore.WithVersionRequirements = ContentConnectorDataSourceModel{}
-
-// GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
-func (ContentConnectorDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{{
-		MinVersion:   *connector.MinSupportedVersion,
-		ErrorMessage: "elasticstack_elasticsearch_connector requires Elasticsearch 8.16.0 or later (the connector request bodies the typed client sends are rejected on 8.12.x–8.15.x).",
-	}}, nil
-}
 
 func readContentConnectorDataSource(
 	ctx context.Context,
