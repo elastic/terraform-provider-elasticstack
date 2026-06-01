@@ -121,11 +121,7 @@ func (model *agentBaseModel) populateFromAPI(ctx context.Context, spaceID string
 	model.AvatarColor = types.StringPointerValue(data.AvatarColor)
 	model.AvatarSymbol = types.StringPointerValue(data.AvatarSymbol)
 
-	if data.Description != nil && *data.Description != "" {
-		model.Description = types.StringValue(*data.Description)
-	} else {
-		model.Description = types.StringNull()
-	}
+	model.Description = typeutils.NonEmptyStringOrNull(data.Description)
 
 	if cfg := data.Configuration; cfg.Instructions != nil && *cfg.Instructions != "" {
 		model.Instructions = types.StringValue(*cfg.Instructions)

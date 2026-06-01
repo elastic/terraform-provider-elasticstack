@@ -158,6 +158,30 @@ func TestValueStringPointer(t *testing.T) {
 	}
 }
 
+func TestNonEmptyStringOrNull(t *testing.T) {
+	t.Parallel()
+
+	nonEmpty := "hello"
+	empty := ""
+
+	tests := []struct {
+		name  string
+		input *string
+		want  types.String
+	}{
+		{name: "nil pointer", input: nil, want: types.StringNull()},
+		{name: "empty string", input: &empty, want: types.StringNull()},
+		{name: "non-empty string", input: &nonEmpty, want: types.StringValue("hello")},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := typeutils.NonEmptyStringOrNull(tt.input)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestOptionalString(t *testing.T) {
 	t.Parallel()
 
