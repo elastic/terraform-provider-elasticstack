@@ -81,7 +81,7 @@ Remove incorrect entries:
 
 ### 5. Coverage guard test
 
-**Decision:** Add `TestDiscriminatorValidationCoversAllKbapiRuleTypes` that parses or enumerates all cases in `ValueByDiscriminator()` (via test fixture list synced manually once, or by calling a helper that documents expected IDs) and asserts each is either handled by default path or listed in overrides.
+**Decision:** Add `TestDiscriminatorValidationCoversAllKbapiRuleTypes` that parses the generated `kbapi.AlertingRuleAPIBody.ValueByDiscriminator()` switch (for example by parsing `generated/kbapi/kibana.gen.go` with `go/parser`) and asserts each discriminator value is either handled by the default path or listed in overrides.
 
 **Rationale:** Prevents kbapi regen from adding types that silently fall back to pass-through without an explicit override decision.
 
