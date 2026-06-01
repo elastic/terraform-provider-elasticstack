@@ -42,7 +42,13 @@ func readEntityLink(ctx context.Context, client *clients.KibanaScopedClient, res
 		return prior, false, diags
 	}
 
-	body, statusCode, d := readResolutionGroupWithRetry(ctx, client, targetID, spaceID, expectedEntityIDs)
+	// Only verify consistency (retry) during read-after-write when
+	// ResolutionGroupJSON is still unknown. During normal refresh the state
+	// is already populated; retrying would delay unnecessarily when IDs
+	// were removed out-of-band.
+	verifyConsistency := prior.ResolutionGroupJSON.IsUnknown() || prior.ResolutionGroupJSON.IsNull()
+
+	body, statusCode, d := readResolutionGroupWithRetry(ctx, client, targetID, spaceID, expectedEntityIDs, verifyConsistency)
 	diags.Append(d...)
 	if diags.HasError() {
 		return prior, false, diags
@@ -65,7 +71,7 @@ func readEntityLink(ctx context.Context, client *clients.KibanaScopedClient, res
 	return result, true, diags
 }
 
-func readResolutionGroupWithRetry(ctx context.Context, client *clients.KibanaScopedClient, targetID, spaceID string, expectedEntityIDs []string) ([]byte, int, diag.Diagnostics) {
+func readResolutionGroupWithRetry(ctx context.Context, client *clients.KibanaScopedClient, targetID, spaceID string, expectedEntityIDs []string, verifyConsistency bool) ([]byte, int, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	backoff := 100 * time.Millisecond
 	const maxDuration = 2 * time.Second
@@ -97,12 +103,14 @@ func readResolutionGroupWithRetry(ctx context.Context, client *clients.KibanaSco
 			return body, statusCode, diags
 		}
 
-		apiEntityIDs := extractEntityIDsFromBody(body, targetID)
-		if containsAll(apiEntityIDs, expectedEntityIDs) {
-			return body, statusCode, diags
+		if verifyConsistency {
+			apiEntityIDs := extractEntityIDsFromBody(body, targetID)
+			if containsAll(apiEntityIDs, expectedEntityIDs) {
+				return body, statusCode, diags
+			}
 		}
 
-		if time.Since(start) >= maxDuration {
+		if !verifyConsistency || time.Since(start) >= maxDuration {
 			return body, statusCode, diags
 		}
 
