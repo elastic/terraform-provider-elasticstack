@@ -6,10 +6,9 @@ The generated Kibana client (`generated/kbapi/kibana.gen.go`) provides request b
 
 This change introduces:
 - A managed resource (`elasticstack_kibana_security_entity_store_entity`) that owns the full lifecycle of a single entity record.
-- A single-entity lookup data source (`elasticstack_kibana_security_entity_store_entity`) that retrieves one entity by `entity_id`.
-- A list/search data source (`elasticstack_kibana_security_entity_store_entities`) that exposes the full query capability of the list endpoint.
+- A list/search data source (`elasticstack_kibana_security_entity_store_entities`) that exposes the full query capability of the list endpoint, including an optional `entity_id` filter for single-entity lookup.
 
-All three entities are Kibana-backed and follow the Kibana Plugin Framework envelope (`NewKibanaResource[T]`, `NewKibanaDataSource[T]`) and `KibanaResourceModel`/`KibanaDataSourceModel` interface contracts.
+Both entities are Kibana-backed and follow the Kibana Plugin Framework envelope (`NewKibanaResource[T]`, `NewKibanaDataSource[T]`) and `KibanaResourceModel`/`KibanaDataSourceModel` interface contracts.
 
 ## Goals / Non-Goals
 
@@ -17,9 +16,9 @@ All three entities are Kibana-backed and follow the Kibana Plugin Framework enve
 - Provide full CRUD + import for a single entity record with typed attributes covering the complete API body.
 - Provide JSON escape-hatch fallbacks (`entity_json`, `host_json`, etc.) for fields whose typed schema would be impractically large or that need non-string value support.
 - Enforce `ConflictsWithValidator` between each typed block and its JSON fallback at plan time.
-- Use the list endpoint for Read and single-entity data source reads, applying the most deterministic KQL filter available.
-- Expose the full list/search parameter surface in the list data source, covering both pagination modes.
-- Version-gate all three entities at Elastic Stack ≥ 9.1.0 via `EnforceMinVersion`.
+- Use the list endpoint for Read, applying the most deterministic KQL filter available.
+- Expose the full list/search parameter surface in the list data source, covering both pagination modes and an optional `entity_id` single-record lookup.
+- Version-gate all entities at Elastic Stack ≥ 9.1.0 via `EnforceMinVersion`.
 
 **Non-Goals:**
 - Bulk entity upsert (`PutSecurityEntityStoreEntitiesBulk`) — not within scope; the bulk endpoint is for high-volume operations, not single-record management.

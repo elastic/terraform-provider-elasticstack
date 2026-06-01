@@ -7,8 +7,7 @@ Practitioners cannot manage **Entity Store entity records** via Terraform today 
 Add three new Terraform entities backed by the Kibana Security Entity Store API (requires Elastic Stack ≥ 9.1.0):
 
 1. **Resource** `elasticstack_kibana_security_entity_store_entity` — manages a single entity record (create, read, update, delete, import) with first-class typed attributes for the full API body and JSON escape-hatch fallbacks for each top-level section.
-2. **Data source** `elasticstack_kibana_security_entity_store_entity` — single-entity lookup by `entity_id` (and optionally `entity_type`), returning computed identity fields and `document_json`.
-3. **Data source** `elasticstack_kibana_security_entity_store_entities` — list/search data source exposing both page-based and cursor-based pagination modes via the `GET /api/security/entity_store/entities` endpoint.
+2. **Data source** `elasticstack_kibana_security_entity_store_entities` — list/search data source exposing both page-based and cursor-based pagination modes via the `GET /api/security/entity_store/entities` endpoint, with an optional `entity_id` filter for single-entity lookup.
 
 ### Schema sketch
 
@@ -55,24 +54,14 @@ resource "elasticstack_kibana_security_entity_store_entity" "example" {
 }
 ```
 
-**Data source** `elasticstack_kibana_security_entity_store_entity`:
-
-```hcl
-data "elasticstack_kibana_security_entity_store_entity" "example" {
-  space_id    = "default"    # optional, computed
-  entity_id   = "host:web-01"  # required
-  entity_type = "host"       # optional filter
-
-  # Computed
-  document_json = "<computed>"
-}
-```
-
 **Data source** `elasticstack_kibana_security_entity_store_entities`:
 
 ```hcl
 data "elasticstack_kibana_security_entity_store_entities" "example" {
   space_id      = "default"    # optional, computed
+
+  # Single-entity lookup (convenience)
+  entity_id     = "host:web-01"
 
   # Search-after mode (cursor pagination)
   filter        = "entity.type: host"
@@ -101,11 +90,11 @@ data "elasticstack_kibana_security_entity_store_entities" "example" {
 - `POST /api/security/entity_store/entities/{entityType}` — create (HTTP 200 on success; 409 if entity ID already exists).
 - `PUT /api/security/entity_store/entities/{entityType}` — update (supports `?force=true` query parameter).
 - `DELETE /api/security/entity_store/entities/` — delete; entity ID supplied in JSON request body as `{ "entityId": "<id>" }`.
-- `GET /api/security/entity_store/entities` — list/search; supports both page-based and cursor-based pagination (modes cannot be combined). Used for resource read and single-entity lookup (filter by `entity.id`).
+- `GET /api/security/entity_store/entities` — list/search; supports both page-based and cursor-based pagination (modes cannot be combined). Used for resource read (filter by `entity.id`).
 
 ### Read strategy
 
-The API has no `GET /entities/{id}` endpoint. The resource's Read callback and the single lookup data source both call `GET /api/security/entity_store/entities` with the most deterministic filter expression available (`entity.id: "<id>"`) to retrieve a unique record by ID.
+The API has no `GET /entities/{id}` endpoint. The resource's Read callback calls `GET /api/security/entity_store/entities` with the most deterministic filter expression available (`entity.id: "<id>"`) to retrieve a unique record by ID. Single-entity lookup is also supported via the list data source using the `entity_id` filter parameter.
 
 ### Version gating
 
@@ -124,18 +113,16 @@ Each typed top-level block (`entity`, `host`, `user`, `service`, `cloud`, `asset
 ### New Capabilities
 
 - `kibana-security-entity-store-entity`: Resource CRUD and import for a single Entity Store entity record with typed attributes, JSON escape hatches, conflict validation, `force` update support, and computed `document_json`/`response_json` outputs.
-- `kibana-security-entity-store-entity-datasource`: Single-entity lookup data source filtered via the list endpoint.
-- `kibana-security-entity-store-entities-datasource`: List/search data source with page-based and cursor-based pagination, entity type filtering, and computed `results_json`.
+- `kibana-security-entity-store-entities-datasource`: List/search data source with page-based and cursor-based pagination, entity type filtering, optional single-entity lookup via `entity_id`, and computed `results_json`.
 
 ### Modified Capabilities
 
-_(none — all three entities are net-new)_
+_\(none — both entities are net-new\)_
 
 ## Impact
 
 - **New specs** (delta under this change):
   - `openspec/changes/kibana-security-entity-store-entity/specs/kibana-security-entity-store-entity/spec.md` (resource)
-  - `openspec/changes/kibana-security-entity-store-entity/specs/kibana-security-entity-store-entity-datasource/spec.md` (single-entity data source)
-  - `openspec/changes/kibana-security-entity-store-entity/specs/kibana-security-entity-store-entities-datasource/spec.md` (list/search data source)
+  - `openspec/changes/kibana-security-entity-store-entity/specs/kibana-security-entity-store-entities-datasource/spec.md` (list/search data source, including single-entity lookup via `entity_id`)
 - **Implementation** (future): `internal/kibana/security_entity_store/` (resource schema, models, CRUD, plan modifier), `internal/clients/kibanaoapi/` or inline JSON parsing for API response handling, provider registration, docs/descriptions, acceptance tests.
 - No changes to existing resources or data sources.

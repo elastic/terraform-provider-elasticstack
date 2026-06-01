@@ -9,7 +9,7 @@
 ## 2. Project structure
 
 - [ ] 2.1 Create package `internal/kibana/security_entity_store/` with subdirectories for resource and data source files.
-- [ ] 2.2 Register the resource and both data sources in the provider's resource/data source lists (follow the existing registration pattern in `internal/provider/`).
+- [ ] 2.2 Register the resource and data source in the provider's resource/data source lists (follow the existing registration pattern in `internal/provider/`).
 
 ## 3. Shared types and API client helpers
 
@@ -50,23 +50,19 @@
 - [ ] 4.8 Implement `ImportState` — split composite `<space_id>/<entity_id>` to populate `space_id` and `entity_id` in state; trigger read.
 - [ ] 4.9 Add `EnforceMinVersion("9.1.0")` in the resource model's `GetVersionRequirements()` (or equivalent mechanism); adjust version per OQ-1 / task 1.2.
 
-## 5. Data source: `elasticstack_kibana_security_entity_store_entity`
-
-- [ ] 5.1 Implement schema with `space_id` (optional, computed), `entity_id` (required), `entity_type` (optional), and computed `document_json`.
-- [ ] 5.2 Implement `Read` callback using `readEntities` helper; error if not found; populate computed `document_json`.
-- [ ] 5.3 Add `EnforceMinVersion("9.1.0")` in the data source model's `GetVersionRequirements()`.
-
-## 6. Data source: `elasticstack_kibana_security_entity_store_entities`
+## 5. Data source: `elasticstack_kibana_security_entity_store_entities`
 
 - [ ] 6.1 Implement schema with:
   - `space_id` (optional, computed).
+  - Single-entity convenience: `entity_id` (optional string; conflicts with `filter` and `filter_query`).
   - Search-after mode: `filter`, `size`, `search_after`, `source`, `fields`.
   - Page mode: `sort_field`, `sort_order` (enum: asc/desc), `page`, `per_page`, `filter_query`.
   - Common: `entity_types` (optional set of string).
   - Computed: `results_json`.
-- [ ] 6.2 Implement plan-time validation that rejects mixing search-after and page-mode parameters.
+- [ ] 6.2 Implement plan-time validation that rejects mixing search-after and page-mode parameters, and rejects `entity_id` combined with `filter` or `filter_query`.
 - [ ] 6.3 Implement `Read` callback:
   - Build `GetSecurityEntityStoreEntitiesParams` from configured attributes.
+  - When `entity_id` is set, generate `filter = entity.id:"<entity_id>"` and do not allow a user-supplied `filter`/`filter_query`.
   - Call `GET /api/security/entity_store/entities`.
   - Serialize full response to normalized JSON and set `results_json`.
 - [ ] 6.4 Add `EnforceMinVersion("9.1.0")` in the data source model's `GetVersionRequirements()`.
@@ -78,12 +74,13 @@
 - [ ] 7.3 Add acceptance test for typed `entity` block vs `entity_json` fallback: verify both produce the same API result and that using both together produces a plan-time error.
 - [ ] 7.4 Add acceptance test for the `force` flag on update (if a protected-field scenario is available in the test environment).
 - [ ] 7.5 Add acceptance test for `import`: create entity via resource → `terraform import` using composite ID → verify state matches.
-- [ ] 7.6 Add acceptance test for the single-entity data source: create entity via resource → read via data source → assert `document_json` is non-empty and contains expected fields.
+- [ ] 7.6 Add acceptance test for single-entity lookup via the list data source `entity_id` filter: create entity via resource → read list data source with `entity_id` → assert `results_json` contains exactly one record with the expected `entity.id`.
 - [ ] 7.7 Add acceptance test for the list data source in page mode: verify `results_json` is non-empty when entities exist; verify plan error when page-mode and search-after parameters are combined.
-- [ ] 7.8 Add unit tests for composite ID construction and parsing (encode/decode of `<space_id>/<entity_id>`).
-- [ ] 7.9 Add unit tests for canonical JSON normalization to guard against false diffs.
-- [ ] 7.10 Add unit tests for the pagination-mode exclusivity validator.
-- [ ] 7.11 Gate all acceptance tests with `SkipIfVersionConstraintNotMet("9.1.0")` (or project-equivalent helper) so they are skipped when the test Elastic Stack is below the minimum version.
+- [ ] 7.8 Add acceptance test for `entity_id` conflict validation: verify plan error when `entity_id` is combined with `filter` or `filter_query`.
+- [ ] 7.9 Add unit tests for composite ID construction and parsing (encode/decode of `<space_id>/<entity_id>`).
+- [ ] 7.10 Add unit tests for canonical JSON normalization to guard against false diffs.
+- [ ] 7.11 Add unit tests for the pagination-mode exclusivity validator and `entity_id` conflict validator.
+- [ ] 7.12 Gate all acceptance tests with `SkipIfVersionConstraintNotMet("9.1.0")` (or project-equivalent helper) so they are skipped when the test Elastic Stack is below the minimum version.
 
 ## 8. Verify
 

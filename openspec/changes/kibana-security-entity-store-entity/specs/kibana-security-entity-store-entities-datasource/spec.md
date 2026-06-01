@@ -50,6 +50,9 @@ The `elasticstack_kibana_security_entity_store_entities` data source SHALL expos
 - `id` — computed string; set by the provider to a stable value reflecting the query parameters.
 - `space_id` — optional computed string; default `"default"`.
 
+**Single-entity convenience lookup (optional):**
+- `entity_id` — optional string; when set, the provider calls the list endpoint with `filter = entity.id:"<entity_id>"`. Conflicts with `filter` and `filter_query`.
+
 **Cursor/search-after mode (optional):**
 - `filter` — optional string; KQL filter expression.
 - `size` — optional int; number of results to return.
@@ -75,6 +78,27 @@ The `elasticstack_kibana_security_entity_store_entities` data source SHALL expos
 - **WHEN** a data source configuration specifies only `space_id` with no additional parameters
 - **THEN** the provider SHALL call `GET /api/security/entity_store/entities` with no filter parameters
 - **AND** SHALL serialize the raw response to `results_json`
+
+---
+
+### Requirement: Single-entity `entity_id` exclusivity (REQ-ENT-006)
+
+The `entity_id` attribute SHALL be mutually exclusive with `filter` (cursor-mode) and `filter_query` (page-mode) at plan time. When `entity_id` is set, the provider generates an implicit KQL filter and does not accept a user-supplied filter expression.
+
+#### Scenario: Single-entity lookup via entity_id
+
+- **GIVEN** a data source configuration with `entity_id = "host:web-01"` and no `filter` or `filter_query`
+- **WHEN** the data source read executes
+- **THEN** the provider SHALL call `GET /api/security/entity_store/entities` with `filter = entity.id:"host:web-01"`
+- **AND** `entity_types` MAY be passed alongside `entity_id` if also configured
+- **AND** SHALL serialize the response to `results_json`
+
+#### Scenario: entity_id conflicts with filter and filter_query
+
+- **GIVEN** a data source configuration with `entity_id = "host:web-01"` and `filter = "entity.type:host"`
+- **WHEN** `terraform plan` is executed
+- **THEN** the provider SHALL produce a plan-time error indicating `entity_id` cannot be combined with `filter` or `filter_query`
+- **AND** SHALL NOT make any API call
 
 ---
 
