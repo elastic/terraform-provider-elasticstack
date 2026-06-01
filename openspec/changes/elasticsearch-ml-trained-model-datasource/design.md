@@ -27,9 +27,9 @@ The `TrainedModelConfig` Go type is defined in `typedapi/types/trainedmodelconfi
 |-------|-----------|
 | Package location | `internal/elasticsearch/ml/trainedmodel/` — mirrors the convention for other ML entities (`ml/filter`, `ml/anomalydetectionjob`, etc.) |
 | Schema type | Plugin Framework data source via the entitycore `NewElasticsearchDataSource` envelope |
-| Identity | `model_id` (required); composite `id` = `<cluster_uuid>/<model_id>` via `client.ID(clusterUUID, modelID)` |
+| Identity | `model_id` (required); composite `id` = `<cluster_uuid>/<model_id>` via `client.ID(ctx, modelID)` |
 | API call | `client.Ml.GetTrainedModels().ModelId(modelID).Do(ctx)` — requests exactly one model; response is `[]TrainedModelConfig`; take `[0]` |
-| 404 / not found | When the API returns 404 or the results array is empty, signal not-found to the framework (no error); mirrors ML filter read behavior |
+| 404 / not found | When the API returns 404 or the results array is empty, return no error diagnostics and set `id` to `""` with computed attributes null; mirrors existing data source not-found convention (e.g. `internal/elasticsearch/security/role/data_source.go`) |
 | JSON computed fields | `input_json`, `inference_config_json`, `metadata_json` — marshal the corresponding struct fields to JSON string; null when the field is absent from the API response |
 | `default_field_map` | Expose as `map(string)` — matches `TrainedModelConfig.DefaultFieldMap` which is `map[string]string` |
 | `tags` | Expose as `set(string)` |

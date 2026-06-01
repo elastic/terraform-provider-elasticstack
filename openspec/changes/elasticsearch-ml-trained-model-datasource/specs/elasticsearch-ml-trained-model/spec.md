@@ -59,7 +59,7 @@ The data source SHALL call `GET _ml/trained_models/<model_id>` via the typed Ela
 
 Required cluster privilege: `monitor_ml`.
 
-When the Elasticsearch API returns HTTP 404, or when the response `trained_model_configs` array is empty, the data source SHALL signal not-found to the framework (removing the data source from state with no error diagnostic). In all other API error cases, the data source SHALL surface the error.
+When the Elasticsearch API returns HTTP 404, or when the response `trained_model_configs` array is empty, the data source SHALL return no error diagnostics and set `id` to an empty string with all computed attributes null. In all other API error cases, the data source SHALL surface the error.
 
 #### Scenario: Read an existing trained model
 
@@ -73,20 +73,21 @@ When the Elasticsearch API returns HTTP 404, or when the response `trained_model
 
 - GIVEN no trained model with the specified `model_id` exists
 - WHEN the data source is read
-- THEN the data source signals not-found (no error returned to Terraform)
-- AND no state is persisted for this data source
+- THEN the data source returns no error diagnostics
+- AND `id` is set to an empty string and all computed attributes are null
 
 #### Scenario: Empty results array
 
 - GIVEN the API returns an empty `trained_model_configs` array
 - WHEN the data source is read
-- THEN the data source signals not-found identically to the 404 case
+- THEN the data source returns no error diagnostics
+- AND `id` is set to an empty string and all computed attributes are null
 
 ### Requirement: Identity (REQ-002)
 
 The `model_id` attribute SHALL be a required string input. It accepts the canonical model ID or a model alias.
 
-The computed `id` attribute SHALL be set to `"<cluster_uuid>/<model_id>"` using the provider's standard composite ID helper (`client.ID(clusterUUID, modelID)`), where `model_id` is the value supplied by the practitioner (not the API-resolved canonical ID).
+The computed `id` attribute SHALL be set to `"<cluster_uuid>/<model_id>"` using the provider's standard composite ID helper (`client.ID(ctx, modelID)`), where `model_id` is the value supplied by the practitioner (not the API-resolved canonical ID).
 
 #### Scenario: Composite id is set after read
 

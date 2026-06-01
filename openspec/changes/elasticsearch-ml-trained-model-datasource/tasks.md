@@ -7,9 +7,9 @@
 ## 2. Implementation
 
 - [ ] 2.1 Create package `internal/elasticsearch/ml/trainedmodel/` with the following files: `data_source.go`, `read.go`, `models.go`, `schema.go`.
-- [ ] 2.2 In `models.go`, define `trainedModelData` struct with `tfsdk:"..."` field tags for all computed attributes: `id`, `model_id`, `description`, `model_type`, `model_size_bytes`, `fully_defined`, `tags`, `create_time`, `created_by`, `version`, `platform_architecture`, `license_level`, `input_json`, `inference_config_json`, `metadata_json`, `default_field_map`.
+- [ ] 2.2 In `models.go`, define `trainedModelData` struct with `tfsdk:"..."` field tags. `model_id` is a required string input; all remaining fields (`id`, `description`, `model_type`, `model_size_bytes`, `fully_defined`, `tags`, `create_time`, `created_by`, `version`, `platform_architecture`, `license_level`, `input_json`, `inference_config_json`, `metadata_json`, `default_field_map`) are computed outputs.
 - [ ] 2.3 In `schema.go`, define the schema factory: `model_id` as required string input; all other fields as computed. Do not add an `elasticsearch_connection` block — it is injected by the entitycore envelope.
-- [ ] 2.4 In `read.go`, implement the read callback: call `client.Ml.GetTrainedModels().ModelId(modelID).Do(ctx)`, handle 404 / empty-results as not-found (signal `found=false`), map `TrainedModelConfig` fields to the TF model, marshal struct fields (`Input`, `InferenceConfig`, `Metadata`) to JSON strings.
+- [ ] 2.4 In `read.go`, implement the read callback: call `client.Ml.GetTrainedModels().ModelId(modelID).Do(ctx)`, handle 404 / empty-results by returning no error diagnostics and setting `id` to `""` with computed attributes null, map `TrainedModelConfig` fields to the TF model, marshal struct fields (`Input`, `InferenceConfig`, `Metadata`) to JSON strings.
 - [ ] 2.5 In `data_source.go`, register the data source via `entitycore.NewElasticsearchDataSource` (or equivalent envelope constructor), using the schema from `schema.go` and read callback from `read.go`.
 - [ ] 2.6 Add a client helper (or inline the call) in `internal/clients/elasticsearch/` for `GetTrainedModel(ctx, modelID string) (*types.TrainedModelConfig, bool, error)` — returns `(config, found, err)`.
 - [ ] 2.7 Register the new data source in `provider/plugin_framework.go` in the `dataSources()` list.
