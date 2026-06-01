@@ -16,7 +16,6 @@ Manages an Elastic Defend Fleet integration policy (package policy for the `endp
 
 ### Required
 
-- `agent_policy_id` (String) ID of the agent policy.
 - `integration_version` (String) The version of the Elastic Defend integration package.
 - `name` (String) The name of the integration policy.
 - `namespace` (String) The namespace of the integration policy.
@@ -24,6 +23,8 @@ Manages an Elastic Defend Fleet integration policy (package policy for the `endp
 
 ### Optional
 
+- `agent_policy_id` (String) ID of the agent policy. Conflicts with agent_policy_ids.
+- `agent_policy_ids` (List of String) List of agent policy IDs. Requires Elastic Stack >= 8.15.0. Conflicts with agent_policy_id.
 - `description` (String) The description of the integration policy.
 - `enabled` (Boolean) Enable the integration policy.
 - `force` (Boolean) Force operations, such as creation and deletion, to occur.

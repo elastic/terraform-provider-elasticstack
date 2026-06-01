@@ -30,6 +30,7 @@ type elasticDefendIntegrationPolicyModel struct {
 	Name               types.String `tfsdk:"name"`
 	Namespace          types.String `tfsdk:"namespace"`
 	AgentPolicyID      types.String `tfsdk:"agent_policy_id"`
+	AgentPolicyIDs     types.List   `tfsdk:"agent_policy_ids"`
 	Description        types.String `tfsdk:"description"`
 	Enabled            types.Bool   `tfsdk:"enabled"`
 	Force              types.Bool   `tfsdk:"force"`

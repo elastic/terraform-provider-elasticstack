@@ -20,6 +20,8 @@ package elasticdefendintegrationpolicy_test
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"sort"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -34,6 +36,7 @@ import (
 )
 
 var minVersionElasticDefend = version.Must(version.NewVersion("8.14.0"))
+var minVersionElasticDefendPolicyIDs = version.Must(version.NewVersion("8.15.0"))
 var minVersionElasticDefendSpaceIDs = version.Must(version.NewVersion("9.1.0"))
 
 const (
@@ -64,6 +67,7 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "name", policyName),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "default"),
 					resource.TestCheckResourceAttrPair(resourceName, "agent_policy_id", agentPolicyResourceName, "policy_id"),
+					resource.TestCheckNoResourceAttr(resourceName, "agent_policy_ids"),
 					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
 					resource.TestCheckResourceAttr(resourceName, "integration_version", "8.14.0"),
 					resource.TestCheckResourceAttr(resourceName, "preset", "EDRComplete"),
@@ -160,6 +164,7 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", policyName),
 					resource.TestCheckResourceAttrPair(resourceName, "agent_policy_id", agentPolicyResourceName, "policy_id"),
+					resource.TestCheckNoResourceAttr(resourceName, "agent_policy_ids"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated description"),
 					resource.TestCheckResourceAttr(resourceName, "enabled", "false"),
 					resource.TestCheckResourceAttr(resourceName, "integration_version", "8.14.0"),
@@ -270,6 +275,99 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.antivirus_registration.mode", "sync_with_malware_prevent"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.attack_surface_reduction.credential_hardening.enabled", "false"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceElasticDefendIntegrationPolicy_multiAgentPolicy(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefendPolicyIDs, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", policyName),
+					resource.TestCheckResourceAttr(resourceName, "agent_policy_ids.#", "2"),
+					resource.TestCheckNoResourceAttr(resourceName, "agent_policy_id"),
+					resource.TestCheckResourceAttrPair(resourceName, "agent_policy_ids.0", "elasticstack_fleet_agent_policy.one", "policy_id"),
+					resource.TestCheckResourceAttrPair(resourceName, "agent_policy_ids.1", "elasticstack_fleet_agent_policy.two", "policy_id"),
+					checkDefendPolicyAgentPolicyIDs(resourceName, []string{"elasticstack_fleet_agent_policy.one", "elasticstack_fleet_agent_policy.two"}),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "agent_policy_ids.#", "2"),
+					resource.TestCheckNoResourceAttr(resourceName, "agent_policy_id"),
+					resource.TestCheckResourceAttrPair(resourceName, "agent_policy_ids.0", "elasticstack_fleet_agent_policy.one", "policy_id"),
+					resource.TestCheckResourceAttrPair(resourceName, "agent_policy_ids.1", "elasticstack_fleet_agent_policy.three", "policy_id"),
+					checkDefendPolicyAgentPolicyIDs(resourceName, []string{"elasticstack_fleet_agent_policy.one", "elasticstack_fleet_agent_policy.three"}),
+				),
+			},
+			// Import step to verify round-trip of agent_policy_ids
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateIdFunc:       testImportStateIDFunc(resourceName),
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "description"},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+func TestAccResourceElasticDefendIntegrationPolicy_agentPolicyIDsVersionGate(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefend, versionutils.FlavorAny)
+
+	unsupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefendPolicyIDs)()
+	if err != nil {
+		t.Fatalf("failed to check stack version: %v", err)
+	}
+	if !unsupported {
+		t.Skip("stack supports agent_policy_ids; skipping version gate test")
+	}
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				ExpectError: regexp.MustCompile(`(?s)(Unsupported Elasticsearch version|8\.15\.0)`),
 			},
 		},
 	})
@@ -424,6 +522,55 @@ func deleteDefendPolicyOutOfBand(resourceName string) resource.TestCheckFunc {
 		diags := fleetclient.DeletePackagePolicy(context.Background(), fleetClient, policyID, spaceID, false)
 		if diags.HasError() {
 			return fmt.Errorf("error deleting Defend policy %q: %v", policyID, diags)
+		}
+		return nil
+	}
+}
+
+func checkDefendPolicyAgentPolicyIDs(resourceAddress string, agentPolicyResourceNames []string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceAddress]
+		if !ok {
+			return fmt.Errorf("resource %q not found", resourceAddress)
+		}
+		policyID := rs.Primary.Attributes["policy_id"]
+
+		apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+		fleetClient := apiClient.GetFleetClient()
+
+		policy, diags := fleetclient.GetDefendPackagePolicy(context.Background(), fleetClient, policyID, "")
+		if diags.HasError() {
+			return fmt.Errorf("error getting Defend policy %q: %v", policyID, diags)
+		}
+		if policy == nil {
+			return fmt.Errorf("Elastic Defend policy %q not found", policyID)
+		}
+		if policy.PolicyIds == nil {
+			return fmt.Errorf("policy %q did not return policy_ids", policyID)
+		}
+
+		expected := make([]string, 0, len(agentPolicyResourceNames))
+		for _, name := range agentPolicyResourceNames {
+			ap, ok := s.RootModule().Resources[name]
+			if !ok {
+				return fmt.Errorf("agent policy resource %q not found", name)
+			}
+			expected = append(expected, ap.Primary.Attributes["policy_id"])
+		}
+
+		actual := append([]string(nil), (*policy.PolicyIds)...)
+		sort.Strings(expected)
+		sort.Strings(actual)
+		if len(actual) != len(expected) {
+			return fmt.Errorf("expected %d policy_ids, got %d (%v)", len(expected), len(actual), actual)
+		}
+		for i := range expected {
+			if expected[i] != actual[i] {
+				return fmt.Errorf("expected policy_ids %v, got %v", expected, actual)
+			}
 		}
 		return nil
 	}
