@@ -32,8 +32,31 @@ type dsModel struct {
 	IncludeComponents types.Bool           `tfsdk:"include_components"`
 	Installed         types.Bool           `tfsdk:"installed"`
 	OverallStatus     types.String         `tfsdk:"overall_status"`
-	EnginesJSON       types.String         `tfsdk:"engines_json"`
+	Engines           types.List           `tfsdk:"engines"`
 	StatusJSON        jsontypes.Normalized `tfsdk:"status_json"`
+}
+
+type engineModel struct {
+	Type               types.String `tfsdk:"type"`
+	Status             types.String `tfsdk:"status"`
+	IndexPattern       types.String `tfsdk:"index_pattern"`
+	FieldHistoryLength types.Int64  `tfsdk:"field_history_length"`
+	Delay              types.String `tfsdk:"delay"`
+	Frequency          types.String `tfsdk:"frequency"`
+	LookbackPeriod     types.String `tfsdk:"lookback_period"`
+	Filter             types.String `tfsdk:"filter"`
+	Timeout            types.String `tfsdk:"timeout"`
+	TimestampField     types.String `tfsdk:"timestamp_field"`
+	ErrorAction        types.String `tfsdk:"error_action"`
+	ErrorMessage       types.String `tfsdk:"error_message"`
+	Components         types.List   `tfsdk:"components"`
+}
+
+type engineComponentModel struct {
+	ID        types.String `tfsdk:"id"`
+	Installed types.Bool   `tfsdk:"installed"`
+	Resource  types.String `tfsdk:"resource"`
+	Health    types.String `tfsdk:"health"`
 }
 
 var _ entitycore.WithVersionRequirements = (*dsModel)(nil)

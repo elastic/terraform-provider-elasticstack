@@ -19,7 +19,6 @@ package security_entity_store
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -35,14 +34,6 @@ func readEntityStore(
 	spaceID string,
 	model tfModel,
 ) (tfModel, bool, diag.Diagnostics) {
-	if supported, diags := client.EnforceMinVersion(ctx, MinVersion); diags.HasError() {
-		return model, true, diags
-	} else if !supported {
-		var out diag.Diagnostics
-		out.AddError("Unsupported server version", fmt.Sprintf("elasticstack_kibana_security_entity_store is supported only for Kibana v%s and above", MinVersion.String()))
-		return model, true, out
-	}
-
 	status, rawBody, diags := getEntityStoreStatus(ctx, client, spaceID, false)
 	if diags.HasError() {
 		return model, true, diags

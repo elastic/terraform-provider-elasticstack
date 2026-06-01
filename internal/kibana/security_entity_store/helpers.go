@@ -20,7 +20,6 @@ package security_entity_store
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"sort"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -49,6 +48,29 @@ var logExtractionObjectType = types.ObjectType{AttrTypes: map[string]attr.Type{
 	"max_logs_per_window":              types.Int64Type,
 	"max_logs_per_window_cap_behavior": types.StringType,
 	"max_time_window_size":             types.StringType,
+}}
+
+var engineObjectType = types.ObjectType{AttrTypes: map[string]attr.Type{
+	"type":                 types.StringType,
+	"status":               types.StringType,
+	"index_pattern":        types.StringType,
+	"field_history_length": types.Int64Type,
+	"delay":                types.StringType,
+	"frequency":            types.StringType,
+	"lookback_period":      types.StringType,
+	"filter":               types.StringType,
+	"timeout":              types.StringType,
+	"timestamp_field":      types.StringType,
+	"error_action":         types.StringType,
+	"error_message":        types.StringType,
+	"components":           types.ListType{ElemType: engineComponentObjectType},
+}}
+
+var engineComponentObjectType = types.ObjectType{AttrTypes: map[string]attr.Type{
+	"id":        types.StringType,
+	"installed": types.BoolType,
+	"resource":  types.StringType,
+	"health":    types.StringType,
 }}
 
 // entityStoreStatus mirrors the JSON shape returned by GET /api/security/entity_store/status.
@@ -377,18 +399,91 @@ func flattenStatus(ctx context.Context, engines []entityStoreEngine) (entityType
 	return entityTypes, started, logExtraction, diags
 }
 
-func getEntityStoreStatus(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, includeComponents bool) (*entityStoreStatus, []byte, diag.Diagnostics) {
-	var editors []kbapi.RequestEditorFn
-	if includeComponents {
-		editors = append(editors, func(_ context.Context, req *http.Request) error {
-			q := req.URL.Query()
-			q.Set("include_components", "true")
-			req.URL.RawQuery = q.Encode()
-			return nil
-		})
+func flattenEngines(ctx context.Context, engines []entityStoreEngine) (types.List, diag.Diagnostics) {
+	if len(engines) == 0 {
+		return types.ListNull(engineObjectType), nil
 	}
 
-	resp, diags := kibanaoapi.GetSecurityEntityStoreStatus(ctx, client.GetKibanaOapiClient(), spaceID, editors...)
+	elems := make([]engineModel, 0, len(engines))
+	for _, e := range engines {
+		em := engineModel{
+			Type:               types.StringValue(string(e.Type)),
+			Status:             types.StringValue(string(e.Status)),
+			IndexPattern:       types.StringValue(e.IndexPattern),
+			FieldHistoryLength: types.Int64Value(int64(e.FieldHistoryLength)),
+		}
+		if e.Delay != nil {
+			em.Delay = types.StringValue(*e.Delay)
+		} else {
+			em.Delay = types.StringNull()
+		}
+		if e.Frequency != nil {
+			em.Frequency = types.StringValue(*e.Frequency)
+		} else {
+			em.Frequency = types.StringNull()
+		}
+		if e.LookbackPeriod != nil {
+			em.LookbackPeriod = types.StringValue(*e.LookbackPeriod)
+		} else {
+			em.LookbackPeriod = types.StringNull()
+		}
+		if e.Filter != nil {
+			em.Filter = types.StringValue(*e.Filter)
+		} else {
+			em.Filter = types.StringNull()
+		}
+		if e.Timeout != nil {
+			em.Timeout = types.StringValue(*e.Timeout)
+		} else {
+			em.Timeout = types.StringNull()
+		}
+		if e.TimestampField != nil {
+			em.TimestampField = types.StringValue(*e.TimestampField)
+		} else {
+			em.TimestampField = types.StringNull()
+		}
+		if e.Error != nil {
+			em.ErrorAction = types.StringValue(e.Error.Action)
+			em.ErrorMessage = types.StringValue(e.Error.Message)
+		} else {
+			em.ErrorAction = types.StringNull()
+			em.ErrorMessage = types.StringNull()
+		}
+		if e.Components != nil && len(*e.Components) > 0 {
+			components := make([]engineComponentModel, 0, len(*e.Components))
+			for _, c := range *e.Components {
+				cm := engineComponentModel{
+					ID:        types.StringValue(c.Id),
+					Installed: types.BoolValue(c.Installed),
+					Resource:  types.StringValue(string(c.Resource)),
+				}
+				if c.Health != nil {
+					cm.Health = types.StringValue(string(*c.Health))
+				} else {
+					cm.Health = types.StringNull()
+				}
+				components = append(components, cm)
+			}
+			cmpList, diags := types.ListValueFrom(ctx, engineComponentObjectType, components)
+			if diags.HasError() {
+				return types.ListNull(engineObjectType), diags
+			}
+			em.Components = cmpList
+		} else {
+			em.Components = types.ListNull(engineComponentObjectType)
+		}
+		elems = append(elems, em)
+	}
+
+	list, diags := types.ListValueFrom(ctx, engineObjectType, elems)
+	if diags.HasError() {
+		return types.ListNull(engineObjectType), diags
+	}
+	return list, nil
+}
+
+func getEntityStoreStatus(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, includeComponents bool) (*entityStoreStatus, []byte, diag.Diagnostics) {
+	resp, diags := kibanaoapi.GetSecurityEntityStoreStatus(ctx, client.GetKibanaOapiClient(), spaceID, includeComponents)
 	if diags.HasError() {
 		return nil, nil, diags
 	}

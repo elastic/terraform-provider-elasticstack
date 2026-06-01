@@ -18,34 +18,76 @@
 package security_entity_store_test
 
 import (
-	"context"
-	"net/http"
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	securityentitystore "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccResourceKibanaSecurityEntityStore_basic(t *testing.T) {
-	testAccEntityStoreApplyAndPlan(t, basicConfig(), resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store.test", "id"))
+	skipIfUnsupported(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				ConfigDirectory: acctest.NamedTestCaseDirectory("basic"),
+				Check:           resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store.test", "id"),
+			},
+			{
+				ConfigDirectory: acctest.NamedTestCaseDirectory("basic"),
+				PlanOnly:        true,
+			},
+		},
+	})
 }
 
 func TestAccResourceKibanaSecurityEntityStore_singleType(t *testing.T) {
-	testAccEntityStoreApplyAndPlan(t, singleTypeConfig(),
-		resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "entity_types.#", "1"),
-		resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store.test", "entity_types.*", "host"),
-	)
+	skipIfUnsupported(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				ConfigDirectory: acctest.NamedTestCaseDirectory("single_type"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "entity_types.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store.test", "entity_types.*", "host"),
+				),
+			},
+			{
+				ConfigDirectory: acctest.NamedTestCaseDirectory("single_type"),
+				PlanOnly:        true,
+			},
+		},
+	})
 }
 
 func TestAccResourceKibanaSecurityEntityStore_updateLogExtraction(t *testing.T) {
-	testAccEntityStoreApplyAndPlan(t, updateLogExtractionConfig(),
-		resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "log_extraction.delay", "5m"),
-		resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "log_extraction.frequency", "10m"),
-	)
+	skipIfUnsupported(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update_log_extraction"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "log_extraction.delay", "5m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "log_extraction.frequency", "10m"),
+				),
+			},
+			{
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update_log_extraction"),
+				PlanOnly:        true,
+			},
+		},
+	})
 }
 
 func TestAccResourceKibanaSecurityEntityStore_import(t *testing.T) {
@@ -90,17 +132,45 @@ func TestAccResourceKibanaSecurityEntityStore_shrinkGuardFails(t *testing.T) {
 }
 
 func TestAccResourceKibanaSecurityEntityStore_shrinkWithFlag(t *testing.T) {
-	testAccEntityStoreApplyAndPlan(t, shrinkWithFlagConfig(),
-		resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "entity_types.#", "1"),
-		resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store.test", "entity_types.*", "host"),
-		resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "allow_entity_type_shrink", "true"),
-	)
+	skipIfUnsupported(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				ConfigDirectory: acctest.NamedTestCaseDirectory("shrink_with_flag"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "entity_types.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store.test", "entity_types.*", "host"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "allow_entity_type_shrink", "true"),
+				),
+			},
+			{
+				ConfigDirectory: acctest.NamedTestCaseDirectory("shrink_with_flag"),
+				PlanOnly:        true,
+			},
+		},
+	})
 }
 
 func TestAccResourceKibanaSecurityEntityStore_startedFalse(t *testing.T) {
-	testAccEntityStoreApplyAndPlan(t, startedFalseConfig(),
-		resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "started", "false"),
-	)
+	skipIfUnsupported(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				ConfigDirectory: acctest.NamedTestCaseDirectory("started_false"),
+				Check:           resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "started", "false"),
+			},
+			{
+				ConfigDirectory: acctest.NamedTestCaseDirectory("started_false"),
+				PlanOnly:        true,
+			},
+		},
+	})
 }
 
 func TestAccDataSourceKibanaSecurityEntityStoreStatus_basic(t *testing.T) {
@@ -115,7 +185,7 @@ func TestAccDataSourceKibanaSecurityEntityStoreStatus_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "installed"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "overall_status"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "engines_json"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "engines.#"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "status_json"),
 				),
 			},
@@ -125,7 +195,7 @@ func TestAccDataSourceKibanaSecurityEntityStoreStatus_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "installed"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "overall_status"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "engines_json"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "engines.#"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "status_json"),
 				),
 			},
@@ -133,81 +203,6 @@ func TestAccDataSourceKibanaSecurityEntityStoreStatus_basic(t *testing.T) {
 	})
 }
 
-func testAccEntityStoreApplyAndPlan(t *testing.T, cfg string, checks ...resource.TestCheckFunc) {
-	skipIfUnsupported(t)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
-		Steps: []resource.TestStep{
-			{
-				Config: cfg,
-				Check:  resource.ComposeTestCheckFunc(checks...),
-			},
-			{Config: cfg, PlanOnly: true},
-		},
-	})
-}
-
 func skipIfUnsupported(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, securityentitystore.MinVersion, versionutils.FlavorAny)
-
-	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
-	if err != nil {
-		t.Fatalf("Failed to create API client: %v", err)
-	}
-
-	kibanaClient := client.GetKibanaOapiClient()
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, kibanaClient.URL+"/api/security/entity_store/status", nil)
-	if err != nil {
-		t.Fatalf("Failed to create request: %v", err)
-	}
-	req.Header.Set("kbn-xsrf", "true")
-
-	resp, err := kibanaClient.HTTP.Do(req)
-	if err != nil {
-		t.Fatalf("Failed to probe entity store API: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		t.Skip("Skipping test: Entity Store API is not available in this Kibana instance")
-	}
-}
-
-func basicConfig() string {
-	return `resource "elasticstack_kibana_security_entity_store" "test" {}
-`
-}
-
-func singleTypeConfig() string {
-	return `resource "elasticstack_kibana_security_entity_store" "test" {
-  entity_types = ["host"]
-}
-`
-}
-
-func updateLogExtractionConfig() string {
-	return `resource "elasticstack_kibana_security_entity_store" "test" {
-  log_extraction = {
-    delay     = "5m"
-    frequency = "10m"
-  }
-}
-`
-}
-
-func shrinkWithFlagConfig() string {
-	return `resource "elasticstack_kibana_security_entity_store" "test" {
-  entity_types             = ["host"]
-  allow_entity_type_shrink = true
-}
-`
-}
-
-func startedFalseConfig() string {
-	return `resource "elasticstack_kibana_security_entity_store" "test" {
-  started = false
-}
-`
 }

@@ -73,7 +73,17 @@ func StopSecurityEntityStore(ctx context.Context, client *Client, spaceID string
 }
 
 // GetSecurityEntityStoreStatus reads the entity store status. The caller is responsible for unmarshaling the response body.
-func GetSecurityEntityStoreStatus(ctx context.Context, client *Client, spaceID string, editors ...kbapi.RequestEditorFn) (*kbapi.GetSecurityEntityStoreStatusResponse, diag.Diagnostics) {
+func GetSecurityEntityStoreStatus(ctx context.Context, client *Client, spaceID string, includeComponents bool) (*kbapi.GetSecurityEntityStoreStatusResponse, diag.Diagnostics) {
+	var editors []kbapi.RequestEditorFn
+	if includeComponents {
+		editors = append(editors, func(_ context.Context, req *http.Request) error {
+			q := req.URL.Query()
+			q.Set("include_components", "true")
+			req.URL.RawQuery = q.Encode()
+			return nil
+		})
+	}
+
 	allEditors := append([]kbapi.RequestEditorFn{kibanautil.SpaceAwarePathRequestEditor(spaceID)}, editors...)
 	resp, err := client.API.GetSecurityEntityStoreStatusWithResponse(ctx, &kbapi.GetSecurityEntityStoreStatusParams{}, allEditors...)
 	if err != nil {

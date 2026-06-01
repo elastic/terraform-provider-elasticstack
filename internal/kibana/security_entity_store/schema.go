@@ -70,7 +70,7 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"allow_entity_type_shrink": schema.BoolAttribute{
-				Description: "Terraform-only guard that permits removing installed entity types when true.",
+				Description: "Terraform-only guard that permits removing installed entity types when true. Removing an entity type will also remove any registered entities of that type.",
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),

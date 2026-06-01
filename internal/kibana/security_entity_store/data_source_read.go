@@ -19,25 +19,14 @@ package security_entity_store
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func readEntityStoreDataSource(ctx context.Context, client *clients.KibanaScopedClient, model dsModel) (dsModel, diag.Diagnostics) {
-	if supported, diags := client.EnforceMinVersion(ctx, MinVersion); diags.HasError() {
-		return model, diags
-	} else if !supported {
-		var out diag.Diagnostics
-		out.AddError("Unsupported server version", fmt.Sprintf("elasticstack_kibana_security_entity_store_status is supported only for Kibana v%s and above", MinVersion.String()))
-		return model, out
-	}
-
 	spaceID := normalizeSpaceID(model.SpaceID)
 	includeComponents := !model.IncludeComponents.IsNull() && !model.IncludeComponents.IsUnknown() && model.IncludeComponents.ValueBool()
 	status, rawBody, diags := getEntityStoreStatus(ctx, client, spaceID, includeComponents)
@@ -45,18 +34,16 @@ func readEntityStoreDataSource(ctx context.Context, client *clients.KibanaScoped
 		return model, diags
 	}
 
-	engines := status.Engines
-	if engines == nil {
-		engines = []entityStoreEngine{}
-	}
-	enginesJSON, err := json.Marshal(engines)
-	if err != nil {
-		return model, diagutil.FrameworkDiagFromError(err)
-	}
 	model.SpaceID = types.StringValue(spaceID)
 	model.Installed = types.BoolValue(string(status.Status) != "not_installed")
 	model.OverallStatus = types.StringValue(string(status.Status))
-	model.EnginesJSON = types.StringValue(string(enginesJSON))
+
+	engines, engineDiags := flattenEngines(ctx, status.Engines)
+	if engineDiags.HasError() {
+		return model, engineDiags
+	}
+	model.Engines = engines
+
 	model.StatusJSON = jsontypes.NewNormalizedValue(string(rawBody))
 	return model, nil
 }

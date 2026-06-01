@@ -38,7 +38,7 @@ var (
 	_ resource.ResourceWithConfigure   = newResource()
 	_ resource.ResourceWithImportState = newResource()
 
-	MinVersion = version.Must(version.NewVersion("9.1.0"))
+	MinVersion = version.Must(version.NewVersion("9.4.0"))
 )
 
 type Resource struct {
