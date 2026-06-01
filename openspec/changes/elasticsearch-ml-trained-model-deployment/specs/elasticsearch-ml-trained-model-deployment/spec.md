@@ -21,6 +21,7 @@ resource "elasticstack_elasticsearch_ml_trained_model_deployment" "example" {
   queue_capacity         = <optional, int>     # ForceNew; max queued inference requests
   wait_for               = <optional, string>  # "starting" | "started" | "fully_allocated"; allocation state to wait for; default: "fully_allocated"
   api_timeout            = <optional, string>  # Go duration string; server-side start timeout
+  force_stop             = <optional, bool>    # default: false; pass force=true to the Stop API on destroy
 
   adaptive_allocations {  # optional, updatable
     enabled                   = <required, bool>
@@ -86,6 +87,12 @@ To deploy a trained model, the resource SHALL call `POST _ml/trained_models/{mod
 - GIVEN the Stop Deployment API returns HTTP 404
 - WHEN delete runs
 - THEN the resource SHALL be removed from state without error (idempotent delete)
+
+#### Scenario: Force stop on destroy
+
+- GIVEN a deployment with `force_stop = true`
+- WHEN delete runs
+- THEN the Stop Deployment API SHALL be called with `force=true`
 
 ### Requirement: Identity (REQ-005)
 

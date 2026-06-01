@@ -14,13 +14,13 @@
 ## 3. Package and Resource Implementation
 
 - [ ] 3.1 Create package `internal/elasticsearch/ml/trainedmodeldeployment/`.
-- [ ] 3.2 Implement `models.go`: define `TrainedModelDeploymentData` struct with `tfsdk` tags for all schema attributes (model_id, deployment_id, number_of_allocations, threads_per_allocation, priority, queue_capacity, wait_for, api_timeout, adaptive_allocations, id, state, allocation_status, stats_json, timeouts).
+- [ ] 3.2 Implement `models.go`: define `TrainedModelDeploymentData` struct with `tfsdk` tags for all schema attributes (model_id, deployment_id, number_of_allocations, threads_per_allocation, priority, queue_capacity, wait_for, api_timeout, force_stop, adaptive_allocations, id, state, allocation_status, stats_json, timeouts).
 - [ ] 3.3 Implement `schema.go`: define `GetSchema()` returning the Plugin Framework schema. Mark ForceNew attributes with `RequiresReplace`. Add `ConflictsWith` validator so `number_of_allocations` and `adaptive_allocations` cannot both be configured.
 - [ ] 3.4 Implement `resource.go`: register via `entitycore.NewElasticsearchResource[TrainedModelDeploymentData]` with `PlaceholderElasticsearchWriteCallback` for Create/Update; override `Create`, `Update` on the concrete struct; implement `ImportState` via `ImportStatePassthroughID`.
 - [ ] 3.5 Implement `create.go`: call `StartTrainedModelDeployment` with user-specified parameters; poll `GetTrainedModelStats` until allocation status matches `wait_for` (default `"fully_allocated"`) or `timeouts.create` elapses (reuse `internal/asyncutils/state_waiter.go` pattern); populate computed attributes (id, deployment_id, state, allocation_status, stats_json).
 - [ ] 3.6 Implement `read.go`: call `GetTrainedModelStats`; populate `state`, `allocation_status`, `stats_json`; update `number_of_allocations` from API when `adaptive_allocations` is not configured.
 - [ ] 3.7 Implement `update.go`: call `UpdateTrainedModelDeployment` with updated `number_of_allocations` and/or `adaptive_allocations`; re-read stats; update state.
-- [ ] 3.8 Implement `delete.go`: call `StopTrainedModelDeployment`; treat 404 as success; log warning if already stopped.
+- [ ] 3.8 Implement `delete.go`: call `StopTrainedModelDeployment` passing `force_stop` from state; treat 404 as success; log warning if already stopped.
 - [ ] 3.9 Implement `descriptions.go` (or `resource-description.md`): user-facing Markdown descriptions for schema attributes and resource overview.
 
 ## 4. Provider Registration
@@ -35,6 +35,7 @@
 - [ ] 5.4 Add acceptance test: **Update `number_of_allocations`** — change value; assert update call made and state reflects new value.
 - [ ] 5.5 Add acceptance test: **Update `adaptive_allocations`** — switch from fixed allocations to adaptive allocations; assert update applies adaptive settings and subsequent plan shows no diff.
 - [ ] 5.6 Add acceptance test: **Import** — import existing deployment by composite id `<cluster_uuid>/<deployment_id>`; assert state matches.
-- [ ] 5.7 Add acceptance test: **Delete** — destroy resource; assert deployment is stopped and resource removed from state.
-- [ ] 5.8 Add acceptance test: **Model not found** — attempt to deploy a non-existent model id; assert Terraform error diagnostic.
-- [ ] 5.9 Add unit tests for schema validation: assert `number_of_allocations` and `adaptive_allocations` cannot both be configured (ConflictsWith).
+- [ ] 5.7 Add acceptance test: **Delete** — destroy resource with `force_stop = false`; assert deployment is stopped and resource removed from state.
+- [ ] 5.8 Add acceptance test: **Force delete** — destroy resource with `force_stop = true`; assert Stop API is called with `force=true`.
+- [ ] 5.9 Add acceptance test: **Model not found** — attempt to deploy a non-existent model id; assert Terraform error diagnostic.
+- [ ] 5.10 Add unit tests for schema validation: assert `number_of_allocations` and `adaptive_allocations` cannot both be configured (ConflictsWith).

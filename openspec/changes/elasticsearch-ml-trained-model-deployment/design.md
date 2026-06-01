@@ -46,7 +46,7 @@ The `types.AdaptiveAllocationsSettings` struct has `Enabled bool`, `MaxNumberOfA
 | Wait-for polling | After Start, poll `_stats` until the allocation status matches `wait_for` (default `"fully_allocated"`) or the configured timeout elapses. Reuse `internal/asyncutils/state_waiter.go` pattern. |
 | `stats_json` | Populated on every Read as the raw JSON of `TrainedModelStats` from the API. Read-only from the practitioner's perspective; useful for debugging or extracting fields not yet modelled. |
 | `state` and `allocation_status` | Computed strings derived from `deployment_stats.state` and `deployment_stats.allocation_status.state` in the stats response. |
-| Delete (stop) | Call Stop Deployment API. Treat HTTP 404 as success (idempotent). Force-stop on timeout if needed. |
+| Delete (stop) | Call Stop Deployment API. Treat HTTP 404 as success (idempotent). `force_stop` attribute (default false) controls whether `force=true` is passed to the Stop API. |
 | External stop (drift) | If the deployment is stopped externally, Read will not find the deployment (querying by `deployment_id` returns no matching stats). The resource SHALL treat this as not-found, removing it from state. The next plan will show a re-create and the next apply will call the Start API. |
 | Client wrappers | Add functions in `internal/clients/elasticsearch/`: `StartTrainedModelDeployment`, `GetTrainedModelStats`, `UpdateTrainedModelDeployment`, `StopTrainedModelDeployment`. |
 | Provider registration | Add `NewTrainedModelDeploymentResource()` to `resources()` list in `provider/plugin_framework.go`. |
@@ -67,7 +67,7 @@ The `types.AdaptiveAllocationsSettings` struct has `Enabled bool`, `MaxNumberOfA
 ## Open Questions
 
 1. **`wait_for` default**: Confirmed `"fully_allocated"` as the sensible default.
-3. **Stop force flag**: Should the Delete path always pass `force=true` to the Stop API, or should force be a configurable attribute? The issue body leaves this unspecified; default to `force=false` with documentation noting it can be destroyed with force if needed. This SHOULD be resolved during implementation.
+3. **Stop force flag**: Exposed as `force_stop` (default false) in the schema. Practitioners can set `force_stop = true` to force-stop a deployment on destroy.
 4. **Stats polling on Read**: `GET _ml/trained_models/{model_id}/_stats` returns stats per `deployment_id`. Confirm that querying by `model_id` returns stats for all deployments of that model, and filter by `deployment_id` client-side if needed.
 
 ## Migration / State
