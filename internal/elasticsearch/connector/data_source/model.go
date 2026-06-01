@@ -42,7 +42,7 @@ import (
 type ContentConnectorDataSourceModel struct {
 	entitycore.ElasticsearchConnectionField
 	connector.CoreConnectorFields
-	connector.ConnectorVersionGate
+	connector.VersionGate
 	ID                               fwtypes.String       `tfsdk:"id"`
 	ConnectorID                      fwtypes.String       `tfsdk:"connector_id"`
 	Status                           fwtypes.String       `tfsdk:"status"`
