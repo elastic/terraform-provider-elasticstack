@@ -18,10 +18,13 @@
 package security_entity_store_test
 
 import (
+	"context"
+	"net/http"
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	securityentitystore "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -148,6 +151,28 @@ func testAccEntityStoreApplyAndPlan(t *testing.T, cfg string, checks ...resource
 
 func skipIfUnsupported(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, securityentitystore.MinVersion, versionutils.FlavorAny)
+
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		t.Fatalf("Failed to create API client: %v", err)
+	}
+
+	kibanaClient := client.GetKibanaOapiClient()
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, kibanaClient.URL+"/api/security/entity_store/status", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	req.Header.Set("kbn-xsrf", "true")
+
+	resp, err := kibanaClient.HTTP.Do(req)
+	if err != nil {
+		t.Fatalf("Failed to probe entity store API: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		t.Skip("Skipping test: Entity Store API is not available in this Kibana instance")
+	}
 }
 
 func basicConfig() string {
