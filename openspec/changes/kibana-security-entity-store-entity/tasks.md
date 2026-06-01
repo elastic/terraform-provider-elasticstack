@@ -22,10 +22,10 @@
 - [ ] 4.1 Implement `schema.go` with the full attribute set:
   - Identity: `id` (computed, composite), `space_id` (optional, computed, RequiresReplace), `entity_type` (required, RequiresReplace), `entity_id` (required, RequiresReplace).
   - Timestamp: `timestamp` (optional string, maps to `@timestamp`).
-  - Typed blocks: `entity`, `host`, `user`, `service`, `cloud`, `asset`, `orchestrator` (each optional nested block).
+  - Typed blocks: `entity`, `host`, `user`, `service`, `cloud`, `asset`, `orchestrator`, `event` (each optional nested block).
   - Labels: `labels` (optional map of string).
   - Tags: `tags` (optional set of string).
-  - JSON fallbacks: `entity_json`, `host_json`, `user_json`, `service_json`, `cloud_json`, `asset_json`, `orchestrator_json`, `labels_json` (each optional string, conflicts with typed counterpart).
+  - JSON fallbacks: `entity_json`, `host_json`, `user_json`, `service_json`, `cloud_json`, `asset_json`, `orchestrator_json`, `event_json`, `labels_json` (each optional string, conflicts with typed counterpart).
   - Update control: `force` (optional bool, default false).
   - Computed outputs: `document_json`, `response_json`.
   - `kibana_connection` block (injected by envelope).
@@ -35,11 +35,11 @@
   - Build POST request body from typed blocks (merged with JSON fallbacks where typed block absent).
   - Call `POST /api/security/entity_store/entities/{entity_type}`.
   - Treat HTTP 200 as success; treat HTTP 409 as a create error with a descriptive diagnostic.
-  - After create, invoke Read to populate state (authoritative read-after-write pattern).
+  - After create, invoke Read to populate state (including computed `document_json`) using an authoritative read-after-write pattern.
 - [ ] 4.5 Implement `Read` callback:
   - Call `readEntities` helper with KQL filter for `entity.id` and `entity_types=[entity_type]`.
   - On not-found, remove resource from state (standard envelope behavior).
-  - Map response fields back to typed attributes and set `document_json` from normalized response.
+  - Map response fields back to typed attributes and set computed outputs `document_json` and `response_json` from normalized response payloads.
 - [ ] 4.6 Implement `Update` callback:
   - Build PUT request body from typed blocks / JSON fallbacks.
   - Pass `?force=true` when `force` attribute is true.
@@ -53,7 +53,7 @@
 ## 5. Data source: `elasticstack_kibana_security_entity_store_entity`
 
 - [ ] 5.1 Implement schema with `space_id` (optional, computed), `entity_id` (required), `entity_type` (optional), and computed `document_json`.
-- [ ] 5.2 Implement `Read` callback using `readEntities` helper; error if not found.
+- [ ] 5.2 Implement `Read` callback using `readEntities` helper; error if not found; populate computed `document_json`.
 - [ ] 5.3 Add `EnforceMinVersion("9.1.0")` in the data source model's `GetVersionRequirements()`.
 
 ## 6. Data source: `elasticstack_kibana_security_entity_store_entities`
