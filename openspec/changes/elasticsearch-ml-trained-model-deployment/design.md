@@ -13,7 +13,7 @@ The typed Go client (`go-elasticsearch` v8) exposes:
 - `client.Ml.StartTrainedModelDeployment(modelID)` → builder with `.Request(req)`, `.DeploymentId(...)`, `.NumberOfAllocations(...)`, `.Priority(...)`, `.QueueCapacity(...)`, `.ThreadsPerAllocation(...)`, `.Timeout(...)`, `.WaitFor(...)`, `.Do(ctx)`
 - `client.Ml.GetTrainedModelsStats().ModelId(modelID).Do(ctx)` → `gettrainedmodelsstats.Response`
 - `client.Ml.UpdateTrainedModelDeployment(deploymentID).Request(req).Do(ctx)`
-- `client.Ml.StopTrainedModelDeployment(modelID).Force(...).Do(ctx)`
+- `client.Ml.StopTrainedModelDeployment(deploymentID).Force(...).Do(ctx)`
 
 The `types.AdaptiveAllocationsSettings` struct has `Enabled bool`, `MaxNumberOfAllocations *int`, `MinNumberOfAllocations *int`.
 
@@ -47,7 +47,7 @@ The `types.AdaptiveAllocationsSettings` struct has `Enabled bool`, `MaxNumberOfA
 | `stats_json` | Populated on every Read as the raw JSON of `TrainedModelStats` from the API. Read-only from the practitioner's perspective; useful for debugging or extracting fields not yet modelled. |
 | `state` and `allocation_status` | Computed strings derived from `deployment_stats.state` and `deployment_stats.allocation_status.state` in the stats response. |
 | Delete (stop) | Call Stop Deployment API. Treat HTTP 404 as success (idempotent). Force-stop on timeout if needed. |
-| External stop (drift) | If the deployment is stopped externally, Read will see state = "stopped". The next plan shows a diff and the next apply calls Start again. This is expected state-transition behaviour. |
+| External stop (drift) | If the deployment is stopped externally, Read will not find the deployment (querying by `deployment_id` returns no matching stats). The resource SHALL treat this as not-found, removing it from state. The next plan will show a re-create and the next apply will call the Start API. |
 | Client wrappers | Add functions in `internal/clients/elasticsearch/`: `StartTrainedModelDeployment`, `GetTrainedModelStats`, `UpdateTrainedModelDeployment`, `StopTrainedModelDeployment`. |
 | Provider registration | Add `NewTrainedModelDeploymentResource()` to `resources()` list in `provider/plugin_framework.go`. |
 | Minimum ES version | Trained model deployment APIs are GA in Elasticsearch 8.0+. No version gate required beyond the provider's existing minimum ES version. |
@@ -59,7 +59,7 @@ The `types.AdaptiveAllocationsSettings` struct has `Enabled bool`, `MaxNumberOfA
 
 ## Risks / Trade-offs
 
-- **Adaptive allocations conflict with `number_of_allocations`**: The plan modifier approach is a heuristic—if the user explicitly sets `number_of_allocations` AND enables adaptive allocations, the intent is ambiguous. The spec requires surfacing a validation error in this case.
+- **Adaptive allocations conflict with `number_of_allocations`**: The plan modifier approach is a heuristic—if the user explicitly sets `number_of_allocations` AND enables adaptive allocations, the intent is ambiguous. This is an open decision to be resolved during implementation (e.g. surface a validation error, emit a diagnostic warning, or silently ignore).
 - **Start-API timeout vs Terraform timeout**: `api_timeout` is the server-side deployment start timeout. The Terraform `timeouts.create` covers the total wait including post-start polling. These are orthogonal; document clearly.
 - **Multiple deployments per model**: The Elasticsearch API allows deploying the same model with different `deployment_id` values. This resource manages exactly one deployment. Practitioners who need multiple deployments create multiple resource instances with distinct `deployment_id` values.
 - **Import with model_id vs deployment_id**: The composite ID format `<cluster_uuid>/<deployment_id>` is used for import. Since `deployment_id` defaults to `model_id`, import works naturally for the common case.

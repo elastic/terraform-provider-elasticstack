@@ -195,13 +195,14 @@ After every create, update, and read operation, the resource SHALL populate:
 
 ### Requirement: External stop detection (REQ-012)
 
-If the deployment is stopped by an external actor (outside Terraform), the Read operation SHALL detect this and set `state` to `"stopped"` in state. The next `terraform plan` SHALL show a diff and the next `terraform apply` SHALL call the Start API to restore the deployment.
+If the deployment is stopped by an external actor (outside Terraform), the Read operation SHALL treat the deployment as not-found (no matching stats for `deployment_id`). The resource SHALL be removed from state with no error. The next `terraform plan` SHALL show a re-create and the next `terraform apply` SHALL call the Start API to restore the deployment.
 
 #### Scenario: External stop detected on plan
 
 - GIVEN a deployment stopped outside Terraform
-- WHEN `terraform plan` runs
-- THEN the plan SHALL show a non-empty diff (re-deploy needed)
+- WHEN Read runs during refresh
+- THEN the resource is removed from state
+- AND the next plan shows a re-create
 
 ### Requirement: Minimum Elasticsearch version (REQ-013)
 
@@ -213,7 +214,17 @@ Trained model deployment APIs are GA from Elasticsearch 8.0. The provider SHALL 
 - WHEN the resource is applied
 - THEN the provider SHALL call the deployment APIs without emitting a version-gate error
 
-### Requirement: Acceptance tests (REQ-014)
+### Requirement: Connection (REQ-015)
+
+The resource SHALL support the standard (deprecated) `elasticsearch_connection` override block. When `elasticsearch_connection` is configured, the resource SHALL resolve the Elasticsearch client from the override rather than the provider-level configuration, matching the behavior of other ML state-transition resources (e.g. `elasticstack_elasticsearch_ml_job_state`).
+
+#### Scenario: Resource-level connection override
+
+- GIVEN a resource with `elasticsearch_connection` configured
+- WHEN any API call is made
+- THEN the resource SHALL use the overridden client settings
+
+### Requirement: Acceptance tests (REQ-016)
 
 The acceptance test suite SHALL:
 
