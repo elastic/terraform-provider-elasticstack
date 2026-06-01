@@ -38,8 +38,8 @@ func TestAccResourceKibanaSecurityEntityStore_singleType(t *testing.T) {
 
 func TestAccResourceKibanaSecurityEntityStore_updateLogExtraction(t *testing.T) {
 	testAccEntityStoreApplyAndPlan(t, updateLogExtractionConfig(),
-		resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "log_extraction.0.delay", "5m"),
-		resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "log_extraction.0.frequency", "10m"),
+		resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "log_extraction.delay", "5m"),
+		resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "log_extraction.frequency", "10m"),
 	)
 }
 
