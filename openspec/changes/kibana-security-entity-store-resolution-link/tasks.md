@@ -7,20 +7,20 @@
 
 ## 2. Resource — `elasticstack_kibana_security_entity_store_entity_link`
 
-- [ ] 2.1 Create package `internal/kibana/security_entity_store_entity_link/`. Add `resource.go` with factory function `NewEntityLinkResource()`, `Metadata`, `Configure`, and `ImportState` (parses `<space_id>/<target_id>`); add PF interface assertions.
-- [ ] 2.2 Add `schema.go` with the resource schema:
+- [x] 2.1 Create package `internal/kibana/security_entity_store_entity_link/`. Add `resource.go` with factory function `NewEntityLinkResource()`, `Metadata`, `Configure`, and `ImportState` (parses `<space_id>/<target_id>`); add PF interface assertions.
+- [x] 2.2 Add `schema.go` with the resource schema:
   - `id` (computed string, UseStateForUnknown) — composite `<space_id>/<target_id>`.
   - `space_id` (optional, computed string, default `"default"`, RequiresReplace).
   - `target_id` (required string, RequiresReplace).
   - `entity_ids` (required `schema.SetAttribute` of string, 1–1000 items; custom validator: target_id not in entity_ids).
   - `resolution_group_json` (computed `jsontypes.NormalizedType{}`).
   - `kibana_connection` block via `schema.GetKbFWConnectionBlock()`.
-- [ ] 2.3 Add `models.go` with `entityLinkModel` (Terraform PF model struct with `ID`, `SpaceID`, `TargetID`, `EntityIDs`, `ResolutionGroupJSON`, `KibanaConnection` fields).
-- [ ] 2.4 Add `create.go`: call `PostSecurityEntityStoreResolutionLink` with `{target_id, entity_ids}` + space request editor; on 200, call `read()` to populate final state; enforce `EnforceMinVersion("9.1.0")`.
-- [ ] 2.5 Add `read.go`: call `GetSecurityEntityStoreResolutionGroup` with `entity_id = target_id`; if 404, remove resource from state; parse raw JSON body, store in `resolution_group_json`; verify managed `entity_ids` are all present in the response (surface a warning diagnostic if any are missing — they may have been removed out-of-band).
-- [ ] 2.6 Add `update.go`: compute set-diff between plan `entity_ids` and current state `entity_ids`; call `PostSecurityEntityStoreResolutionLink` for added IDs; call `PostSecurityEntityStoreResolutionUnlink` for removed IDs; call `read()` to populate final state.
-- [ ] 2.7 Add `delete.go`: call `PostSecurityEntityStoreResolutionUnlink` with the managed `entity_ids`; treat 404 as already-deleted (no error).
-- [ ] 2.8 Register the resource in `provider/plugin_framework.go`.
+- [x] 2.3 Add `models.go` with `entityLinkModel` (Terraform PF model struct with `ID`, `SpaceID`, `TargetID`, `EntityIDs`, `ResolutionGroupJSON`, `KibanaConnection` fields).
+- [x] 2.4 Add `create.go`: call `PostSecurityEntityStoreResolutionLink` with `{target_id, entity_ids}` + space request editor; on 200, call `read()` to populate final state; enforce `EnforceMinVersion("9.1.0")`.
+- [x] 2.5 Add `read.go`: call `GetSecurityEntityStoreResolutionGroup` with `entity_id = target_id`; if 404, remove resource from state; parse raw JSON body, store in `resolution_group_json`; verify managed `entity_ids` are all present in the response (surface a warning diagnostic if any are missing — they may have been removed out-of-band).
+- [x] 2.6 Add `update.go`: compute set-diff between plan `entity_ids` and current state `entity_ids`; call `PostSecurityEntityStoreResolutionLink` for added IDs; call `PostSecurityEntityStoreResolutionUnlink` for removed IDs; call `read()` to populate final state.
+- [x] 2.7 Add `delete.go`: call `PostSecurityEntityStoreResolutionUnlink` with the managed `entity_ids`; treat 404 as already-deleted (no error).
+- [x] 2.8 Register the resource in `provider/plugin_framework.go`.
 
 ## 3. Data Source — `elasticstack_kibana_security_entity_store_resolution_group`
 

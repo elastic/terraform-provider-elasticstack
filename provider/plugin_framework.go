@@ -95,6 +95,7 @@ import (
 	prebuilt_rules "github.com/elastic/terraform-provider-elasticstack/internal/kibana/prebuilt_rules"
 	security_detection_rule "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
 	securityenablerule "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_enable_rule"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store_entity_link"
 	securityexceptionitem "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_exception_item"
 	securitylistdatastreams "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list_data_streams"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_role"
@@ -281,6 +282,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		securitylistdatastreams.NewResource,
 		securityexceptionlist.NewResource,
 		securityexceptionitem.NewResource,
+		security_entity_store_entity_link.NewEntityLinkResource,
 		security_role.NewResource,
 		spaces.NewResource,
 		slm.NewSlmResource,
