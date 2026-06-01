@@ -43,6 +43,9 @@ resource "elasticstack_elasticsearch_connector" "test" {
     incremental_sync = {
       enabled = true
     }
+    native_connector_api_keys = {
+      enabled = false
+    }
     sync_rules = {
       basic = {
         enabled = true

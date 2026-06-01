@@ -111,11 +111,7 @@ func populateToolBaseFromAPI(ctx context.Context, data *models.Tool, spaceID str
 		Type:    types.StringValue(data.Type),
 	}
 
-	if data.Description != nil && *data.Description != "" {
-		base.Description = types.StringValue(*data.Description)
-	} else {
-		base.Description = types.StringNull()
-	}
+	base.Description = typeutils.NonEmptyStringOrNull(data.Description)
 
 	base.Tags, d = typeutils.StringSetOrNull(ctx, data.Tags)
 	diags.Append(d...)
@@ -142,13 +138,10 @@ func (model *toolDataSourceModel) populateFromAPI(ctx context.Context, data *mod
 
 	model.ReadOnly = types.BoolValue(data.ReadOnly)
 
-	if data.Configuration != nil {
-		configJSON, err := json.Marshal(data.Configuration)
-		if err != nil {
-			diags.AddError("Configuration Error", "Failed to marshal configuration to JSON: "+err.Error())
-			return diags
-		}
-		model.Configuration = types.StringValue(string(configJSON))
+	jsonStr, ok, d := marshalToolConfigurationJSON(data.Configuration)
+	diags.Append(d...)
+	if ok {
+		model.Configuration = types.StringValue(jsonStr)
 	} else {
 		model.Configuration = types.StringNull()
 	}
@@ -174,18 +167,30 @@ func (model *toolModel) populateFromAPI(ctx context.Context, data *models.Tool) 
 	model.Description = base.Description
 	model.Tags = base.Tags
 
-	if data.Configuration != nil {
-		configJSON, err := json.Marshal(data.Configuration)
-		if err != nil {
-			diags.AddError("Configuration Error", "Failed to marshal configuration to JSON: "+err.Error())
-			return diags
-		}
-		model.Configuration = jsontypes.NewNormalizedValue(string(configJSON))
+	jsonStr, ok, d := marshalToolConfigurationJSON(data.Configuration)
+	diags.Append(d...)
+	if ok {
+		model.Configuration = jsontypes.NewNormalizedValue(jsonStr)
 	} else {
 		model.Configuration = jsontypes.NewNormalizedNull()
 	}
 
 	return diags
+}
+
+// marshalToolConfigurationJSON marshals a Tool's configuration map to a JSON
+// string. Returns ("", false, nil) when config is nil.
+func marshalToolConfigurationJSON(config any) (string, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if config == nil {
+		return "", false, diags
+	}
+	b, err := json.Marshal(config)
+	if err != nil {
+		diags.AddError("Configuration Error", "Failed to marshal configuration to JSON: "+err.Error())
+		return "", false, diags
+	}
+	return string(b), true, diags
 }
 
 func toolConfigurationFromModel(config jsontypes.Normalized) (map[string]any, diag.Diagnostics) {

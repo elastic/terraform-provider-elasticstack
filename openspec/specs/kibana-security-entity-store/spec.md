@@ -1,4 +1,9 @@
-## ADDED Requirements
+## Purpose
+
+Define the behavior of the `elasticstack_kibana_security_entity_store` Terraform resource,
+which manages the lifecycle of the Elastic Security Entity Store within a Kibana space.
+
+## Requirements
 
 ### Requirement: Resource manages Entity Store lifecycle (REQ-001)
 
@@ -17,7 +22,7 @@ Elastic Security Entity Store within a single Kibana space:
   desired engine state.
 - **Delete**: call `POST /api/security/entity_store/uninstall` for the entity types held in state.
 
-The resource SHALL enforce `EnforceMinVersion("9.1.0")` in Create, Read, and Update.
+The resource SHALL enforce `EnforceMinVersion("9.4.0")` in Create, Read, and Update.
 
 #### Scenario: Create installs the Entity Store
 
@@ -85,7 +90,7 @@ When `started = true`, the provider SHALL call `PUT /api/security/entity_store/s
 engine is not running after install or update. When `started = false`, the provider SHALL call
 `PUT /api/security/entity_store/stop`.
 
-On Read, `started` SHALL be set to `true` if at least one engine reports status `running`, otherwise
+On Read, `started` SHALL be set to `true` if at least one engine reports status `started`, otherwise
 `false`.
 
 #### Scenario: Create with started = false stops engines

@@ -97,6 +97,7 @@ import (
 	securityenablerule "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_enable_rule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store_entity_link"
 	securityentitystoreresolutiongroup "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store_resolution_group"
+	securityentitystore "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store"
 	securityexceptionitem "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_exception_item"
 	securitylistdatastreams "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list_data_streams"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_role"
@@ -285,6 +286,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		securityexceptionitem.NewResource,
 		security_entity_store_entity_link.NewEntityLinkResource,
 		security_role.NewResource,
+		securityentitystore.NewResource,
 		spaces.NewResource,
 		slm.NewSlmResource,
 		snapshot_repository.NewSnapshotRepositoryResource,
@@ -307,6 +309,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		spaces.NewDataSource,
 		security_role.NewDataSource,
 		securityentitystoreresolutiongroup.NewDataSource,
+		securityentitystore.NewDataSource,
 		connectors.NewDataSource,
 		agentbuilderagent.NewDataSource,
 		agentbuilderskill.NewDataSource,
