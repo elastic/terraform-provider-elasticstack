@@ -1,0 +1,311 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package trainedmodel
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"time"
+
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config trainedModelData) (trainedModelData, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	modelID := config.ModelID.ValueString()
+
+	// Resolve the composite ID
+	id, idDiags := esClient.ID(ctx, modelID)
+	diags.Append(idDiags...)
+	if diags.HasError() {
+		return config, diags
+	}
+	config.ID = types.StringValue(id.String())
+
+	// Call GetTrainedModel
+	model, found, modelDiags := elasticsearch.GetTrainedModel(ctx, esClient, modelID)
+	diags.Append(modelDiags...)
+	if diags.HasError() {
+		return config, diags
+	}
+
+	// Not-found: return empty ID with computed attributes null
+	if !found || model == nil {
+		config.ID = types.StringValue("")
+		config.Description = types.StringNull()
+		config.ModelType = types.StringNull()
+		config.ModelSizeBytes = types.Int64Null()
+		config.FullyDefined = types.BoolNull()
+		config.Tags = types.SetNull(types.StringType)
+		config.CreateTime = types.StringNull()
+		config.CreatedBy = types.StringNull()
+		config.Version = types.StringNull()
+		config.PlatformArchitecture = types.StringNull()
+		config.LicenseLevel = types.StringNull()
+		config.InputJSON = jsontypes.NewNormalizedNull()
+		config.InferenceConfigJSON = jsontypes.NewNormalizedNull()
+		config.MetadataJSON = jsontypes.NewNormalizedNull()
+		config.DefaultFieldMap = types.MapNull(types.StringType)
+		return config, diags
+	}
+
+	// Map API response to model
+	diags.Append(mapTrainedModelConfig(ctx, model, &config)...)
+	if diags.HasError() {
+		return config, diags
+	}
+
+	return config, diags
+}
+
+func mapTrainedModelConfig(ctx context.Context, model *estypes.TrainedModelConfig, data *trainedModelData) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	// Description
+	if model.Description != nil && *model.Description != "" {
+		data.Description = types.StringValue(*model.Description)
+	} else {
+		data.Description = types.StringNull()
+	}
+
+	// ModelType
+	if model.ModelType != nil {
+		data.ModelType = types.StringValue(model.ModelType.String())
+	} else {
+		data.ModelType = types.StringNull()
+	}
+
+	// ModelSizeBytes
+	data.ModelSizeBytes = byteSizeToInt64Value(model.ModelSizeBytes)
+
+	// FullyDefined
+	if model.FullyDefined != nil {
+		data.FullyDefined = types.BoolValue(*model.FullyDefined)
+	} else {
+		data.FullyDefined = types.BoolNull()
+	}
+
+	// Tags
+	if model.Tags == nil {
+		data.Tags = types.SetNull(types.StringType)
+	} else {
+		tagsSet, d := types.SetValueFrom(ctx, types.StringType, model.Tags)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+		data.Tags = tagsSet
+	}
+
+	// CreateTime
+	data.CreateTime = dateTimeToStringValue(model.CreateTime)
+
+	// CreatedBy
+	if model.CreatedBy != nil && *model.CreatedBy != "" {
+		data.CreatedBy = types.StringValue(*model.CreatedBy)
+	} else {
+		data.CreatedBy = types.StringNull()
+	}
+
+	// Version
+	if model.Version != nil && *model.Version != "" {
+		data.Version = types.StringValue(*model.Version)
+	} else {
+		data.Version = types.StringNull()
+	}
+
+	// PlatformArchitecture
+	if model.PlatformArchitecture != nil && *model.PlatformArchitecture != "" {
+		data.PlatformArchitecture = types.StringValue(*model.PlatformArchitecture)
+	} else {
+		data.PlatformArchitecture = types.StringNull()
+	}
+
+	// LicenseLevel
+	if model.LicenseLevel != nil && *model.LicenseLevel != "" {
+		data.LicenseLevel = types.StringValue(*model.LicenseLevel)
+	} else {
+		data.LicenseLevel = types.StringNull()
+	}
+
+	// InputJSON
+	inputJSON, d := marshalInputToJSON(model.Input)
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
+	}
+	if inputJSON != "" {
+		data.InputJSON = jsontypes.NewNormalizedValue(inputJSON)
+	} else {
+		data.InputJSON = jsontypes.NewNormalizedNull()
+	}
+
+	// InferenceConfigJSON
+	if model.InferenceConfig != nil {
+		infBytes, err := json.Marshal(model.InferenceConfig)
+		if err != nil {
+			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling inference_config JSON: %s", err))
+			return diags
+		}
+		if string(infBytes) != "null" {
+			data.InferenceConfigJSON = jsontypes.NewNormalizedValue(string(infBytes))
+		} else {
+			data.InferenceConfigJSON = jsontypes.NewNormalizedNull()
+		}
+	} else {
+		data.InferenceConfigJSON = jsontypes.NewNormalizedNull()
+	}
+
+	// MetadataJSON
+	if model.Metadata != nil {
+		metaBytes, err := json.Marshal(model.Metadata)
+		if err != nil {
+			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling metadata JSON: %s", err))
+			return diags
+		}
+		if string(metaBytes) != "null" {
+			data.MetadataJSON = jsontypes.NewNormalizedValue(string(metaBytes))
+		} else {
+			data.MetadataJSON = jsontypes.NewNormalizedNull()
+		}
+	} else {
+		data.MetadataJSON = jsontypes.NewNormalizedNull()
+	}
+
+	// DefaultFieldMap
+	if model.DefaultFieldMap == nil {
+		data.DefaultFieldMap = types.MapNull(types.StringType)
+	} else {
+		fmMap, d := types.MapValueFrom(ctx, types.StringType, model.DefaultFieldMap)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+		data.DefaultFieldMap = fmMap
+	}
+
+	return diags
+}
+
+func byteSizeToInt64Value(b estypes.ByteSize) types.Int64 {
+	if b == nil {
+		return types.Int64Null()
+	}
+	switch v := b.(type) {
+	case int64:
+		if v == 0 {
+			return types.Int64Null()
+		}
+		return types.Int64Value(v)
+	case int:
+		if v == 0 {
+			return types.Int64Null()
+		}
+		return types.Int64Value(int64(v))
+	case float64:
+		if v == 0 {
+			return types.Int64Null()
+		}
+		return types.Int64Value(int64(v))
+	case string:
+		if v == "" || v == "0" {
+			return types.Int64Null()
+		}
+		// Try to parse as int64
+		var i int64
+		_, err := fmt.Sscanf(v, "%d", &i)
+		if err != nil {
+			return types.Int64Null()
+		}
+		return types.Int64Value(i)
+	default:
+		return types.Int64Null()
+	}
+}
+
+func dateTimeToStringValue(dt estypes.DateTime) types.String {
+	if dt == nil {
+		return types.StringNull()
+	}
+	ms, ok := dateTimeToMillis(dt)
+	if !ok || ms == 0 {
+		return types.StringNull()
+	}
+	return typeutils.TimeToStringValue(time.UnixMilli(ms).UTC())
+}
+
+func dateTimeToMillis(v any) (int64, bool) {
+	switch x := v.(type) {
+	case float64:
+		return int64(x), true
+	case int64:
+		return x, true
+	case int:
+		return int64(x), true
+	case uint64:
+		return int64(x), true
+	case json.Number:
+		i, err := x.Int64()
+		if err == nil {
+			return i, true
+		}
+		f, err := x.Float64()
+		if err != nil {
+			return 0, false
+		}
+		return int64(f), true
+	case string:
+		if x == "" {
+			return 0, false
+		}
+		t, err := time.Parse(time.RFC3339, x)
+		if err != nil {
+			return 0, false
+		}
+		return t.UnixMilli(), true
+	case estypes.DateTime:
+		return dateTimeToMillis(any(x))
+	default:
+		return 0, false
+	}
+}
+
+func marshalInputToJSON(input estypes.TrainedModelConfigInput) (string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Treat effectively empty input as null
+	if len(input.FieldNames) == 0 {
+		return "", diags
+	}
+
+	bytes, err := json.Marshal(input)
+	if err != nil {
+		diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling input JSON: %s", err))
+		return "", diags
+	}
+
+	return string(bytes), diags
+}
