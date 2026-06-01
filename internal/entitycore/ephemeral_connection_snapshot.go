@@ -191,18 +191,18 @@ func elasticsearchConnectionFromSnapshot(snapshot *ephemeralESConnectionSnapshot
 	var diags diag.Diagnostics
 
 	conn := clientconfig.ElasticsearchConnection{
-		Username:               optionalStringValue(snapshot.Username),
-		Password:               optionalStringValue(snapshot.Password),
-		APIKey:                 optionalStringValue(snapshot.APIKey),
-		BearerToken:            optionalStringValue(snapshot.BearerToken),
-		ESClientAuthentication: optionalStringValue(snapshot.ESClientAuthentication),
-		Insecure:               optionalBoolPointerValue(snapshot.Insecure),
-		CAFile:                 optionalStringValue(snapshot.CAFile),
-		CAData:                 optionalStringValue(snapshot.CAData),
-		CertFile:               optionalStringValue(snapshot.CertFile),
-		CertData:               optionalStringValue(snapshot.CertData),
-		KeyFile:                optionalStringValue(snapshot.KeyFile),
-		KeyData:                optionalStringValue(snapshot.KeyData),
+		Username:               typeutils.NonEmptyStringishValue(snapshot.Username),
+		Password:               typeutils.NonEmptyStringishValue(snapshot.Password),
+		APIKey:                 typeutils.NonEmptyStringishValue(snapshot.APIKey),
+		BearerToken:            typeutils.NonEmptyStringishValue(snapshot.BearerToken),
+		ESClientAuthentication: typeutils.NonEmptyStringishValue(snapshot.ESClientAuthentication),
+		Insecure:               typeutils.BoolPointerValue(snapshot.Insecure),
+		CAFile:                 typeutils.NonEmptyStringishValue(snapshot.CAFile),
+		CAData:                 typeutils.NonEmptyStringishValue(snapshot.CAData),
+		CertFile:               typeutils.NonEmptyStringishValue(snapshot.CertFile),
+		CertData:               typeutils.NonEmptyStringishValue(snapshot.CertData),
+		KeyFile:                typeutils.NonEmptyStringishValue(snapshot.KeyFile),
+		KeyData:                typeutils.NonEmptyStringishValue(snapshot.KeyData),
 	}
 
 	if len(snapshot.Endpoints) > 0 {
@@ -292,11 +292,11 @@ func kibanaConnectionFromSnapshot(snapshot *ephemeralKibanaConnectionSnapshot) (
 	var diags diag.Diagnostics
 
 	conn := clientconfig.KibanaConnection{
-		Username:    optionalStringValue(snapshot.Username),
-		Password:    optionalStringValue(snapshot.Password),
-		APIKey:      optionalStringValue(snapshot.APIKey),
-		BearerToken: optionalStringValue(snapshot.BearerToken),
-		Insecure:    optionalBoolPointerValue(snapshot.Insecure),
+		Username:    typeutils.NonEmptyStringishValue(snapshot.Username),
+		Password:    typeutils.NonEmptyStringishValue(snapshot.Password),
+		APIKey:      typeutils.NonEmptyStringishValue(snapshot.APIKey),
+		BearerToken: typeutils.NonEmptyStringishValue(snapshot.BearerToken),
+		Insecure:    typeutils.BoolPointerValue(snapshot.Insecure),
 	}
 
 	if len(snapshot.Endpoints) > 0 {
@@ -331,18 +331,4 @@ func knownStringValue(value types.String) string {
 		return ""
 	}
 	return value.ValueString()
-}
-
-func optionalStringValue(value string) types.String {
-	if value == "" {
-		return types.StringNull()
-	}
-	return types.StringValue(value)
-}
-
-func optionalBoolPointerValue(value *bool) types.Bool {
-	if value == nil {
-		return types.BoolNull()
-	}
-	return types.BoolValue(*value)
 }

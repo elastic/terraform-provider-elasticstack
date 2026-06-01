@@ -62,3 +62,11 @@ func OptionalString(value types.String) *string {
 	v := value.ValueString()
 	return &v
 }
+
+// BoolPointerValue converts a *bool to a types.Bool, returning types.BoolNull() when the pointer is nil.
+func BoolPointerValue(v *bool) types.Bool {
+	if v == nil {
+		return types.BoolNull()
+	}
+	return types.BoolValue(*v)
+}

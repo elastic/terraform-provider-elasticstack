@@ -182,6 +182,30 @@ func TestOptionalString(t *testing.T) {
 	}
 }
 
+func TestBoolPointerValue(t *testing.T) {
+	t.Parallel()
+
+	trueVal := true
+	falseVal := false
+
+	tests := []struct {
+		name  string
+		input *bool
+		want  types.Bool
+	}{
+		{name: "converts nil", input: nil, want: types.BoolNull()},
+		{name: "converts true", input: &trueVal, want: types.BoolValue(true)},
+		{name: "converts false", input: &falseVal, want: types.BoolValue(false)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := typeutils.BoolPointerValue(tt.input)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestFloat64PointerValue(t *testing.T) {
 	t.Parallel()
 
