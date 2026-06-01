@@ -103,15 +103,15 @@ func getSchema(_ context.Context) schema.Schema {
 				Computed:    true,
 				Attributes: map[string]schema.Attribute{
 					"additional_index_patterns": schema.ListAttribute{
-						Optional:     true,
-						Computed:     true,
-						ElementType:  types.StringType,
+						Optional:      true,
+						Computed:      true,
+						ElementType:   types.StringType,
 						PlanModifiers: []planmodifier.List{listplanmodifier.UseStateForUnknown()},
 					},
 					"excluded_index_patterns": schema.ListAttribute{
-						Optional:     true,
-						Computed:     true,
-						ElementType:  types.StringType,
+						Optional:      true,
+						Computed:      true,
+						ElementType:   types.StringType,
 						PlanModifiers: []planmodifier.List{listplanmodifier.UseStateForUnknown()},
 					},
 					"delay": schema.StringAttribute{
