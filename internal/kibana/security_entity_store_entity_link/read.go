@@ -71,7 +71,13 @@ func readEntityLink(ctx context.Context, client *clients.KibanaScopedClient, res
 	return result, true, diags
 }
 
-func readResolutionGroupWithRetry(ctx context.Context, client *clients.KibanaScopedClient, targetID, spaceID string, expectedEntityIDs []string, verifyConsistency bool) ([]byte, int, diag.Diagnostics) {
+func readResolutionGroupWithRetry(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	targetID, spaceID string,
+	expectedEntityIDs []string,
+	verifyConsistency bool,
+) ([]byte, int, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	backoff := 100 * time.Millisecond
 	const maxDuration = 2 * time.Second
