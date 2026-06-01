@@ -21,6 +21,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -119,7 +121,7 @@ func TestValidateRuleParamsApmAnomalyRequiredKeys(t *testing.T) {
 		"anomalySeverityType": "critical",
 	}
 
-	if errs := validateRuleParams("apm.rules.anomaly", valid); len(errs) > 0 {
+	if errs := validateRuleParams("apm.anomaly", valid); len(errs) > 0 {
 		t.Fatalf("expected no validation errors, got: %v", errs)
 	}
 
@@ -129,7 +131,7 @@ func TestValidateRuleParamsApmAnomalyRequiredKeys(t *testing.T) {
 		"environment": "production",
 	}
 
-	if errs := validateRuleParams("apm.rules.anomaly", invalid); len(errs) == 0 {
+	if errs := validateRuleParams("apm.anomaly", invalid); len(errs) == 0 {
 		t.Fatalf("expected required field validation errors for apm anomaly params")
 	}
 }
@@ -195,7 +197,7 @@ func TestValidateRuleParamsRejectsUnexpectedKeys(t *testing.T) {
 		"extraParam":          true,
 	}
 
-	errs := validateRuleParams("apm.rules.anomaly", params)
+	errs := validateRuleParams("apm.anomaly", params)
 	if len(errs) == 0 {
 		t.Fatalf("expected validation errors for unexpected params key")
 	}
@@ -312,8 +314,8 @@ func TestValidateRuleParamsIndexThresholdRejectsSourceFields(t *testing.T) {
 	}
 }
 
-func TestAllParamsSpecsInitialize(t *testing.T) {
-	for ruleType, specs := range ruleTypeParamsSpecs {
+func TestAllParamsOverridesInitialize(t *testing.T) {
+	for ruleType, specs := range ruleTypeParamsOverrides {
 		for _, spec := range specs {
 			if spec.requiredKeys == nil {
 				t.Errorf("spec %q for rule type %q has nil requiredKeys", spec.name, ruleType)
@@ -324,9 +326,9 @@ func TestAllParamsSpecsInitialize(t *testing.T) {
 
 func TestAllowedKeyOverridesAreNotInSchema(t *testing.T) {
 	for ruleType, allowlistedKeys := range ruleTypeAdditionalAllowedParamsKeys {
-		specs, ok := ruleTypeParamsSpecs[ruleType]
+		specs, ok := ruleTypeParamsOverrides[ruleType]
 		if !ok || len(specs) == 0 {
-			t.Fatalf("rule type %q has allowlisted keys but no params specs", ruleType)
+			t.Fatalf("rule type %q has allowlisted keys but no params overrides", ruleType)
 		}
 
 		for _, key := range allowlistedKeys {
@@ -337,7 +339,7 @@ func TestAllowedKeyOverridesAreNotInSchema(t *testing.T) {
 	}
 
 	// Also verify per-spec additionalAllowedKeys are not in the spec's own schema.
-	for ruleType, specs := range ruleTypeParamsSpecs {
+	for ruleType, specs := range ruleTypeParamsOverrides {
 		for _, spec := range specs {
 			for _, key := range spec.additionalAllowedKeys {
 				if paramsSchemaAcceptsKey([]paramsSchemaSpec{spec}, key) {
@@ -576,19 +578,86 @@ func TestValidateRuleParamsFixturesFromSreO11yModules(t *testing.T) {
 			},
 		},
 		{
-			name:     "unknown custom threshold from modules remains pass through",
+			name:     "custom threshold valid fixture",
 			ruleType: "observability.rules.custom_threshold",
 			params: map[string]any{
-				"criteria":      []any{},
-				"alertOnNoData": true,
+				"criteria": []any{
+					map[string]any{
+						"comparator": ">",
+						"metrics":    []any{},
+						"threshold":  []any{1.0},
+						"timeSize":   5.0,
+						"timeUnit":   "m",
+					},
+				},
+				"searchConfiguration": map[string]any{
+					"index": "logs-*",
+					"query": map[string]any{
+						"language": "kuery",
+						"query":    "",
+					},
+				},
 			},
 		},
 		{
-			name:     "unknown transform_health from modules remains pass through",
+			name:     "transform_health valid fixture",
 			ruleType: "transform_health",
 			params: map[string]any{
-				"transforms": []any{"foo-transform"},
-				"unhealthy":  true,
+				"includeTransforms": []any{"foo-transform"},
+			},
+		},
+		{
+			name:     "apm anomaly valid fixture",
+			ruleType: "apm.anomaly",
+			params: map[string]any{
+				"windowSize":          5.0,
+				"windowUnit":          "m",
+				"environment":         "production",
+				"anomalySeverityType": "critical",
+			},
+		},
+		{
+			name:     "monitoring alert cluster health valid fixture",
+			ruleType: "monitoring_alert_cluster_health",
+			params: map[string]any{
+				"duration": "1d",
+			},
+		},
+		{
+			name:     "custom threshold accepts unknown key via additionalProperties",
+			ruleType: "observability.rules.custom_threshold",
+			params: map[string]any{
+				"criteria": []any{},
+				"alertOnNoData": true,
+				"searchConfiguration": map[string]any{
+					"index": "logs-*",
+					"query": map[string]any{
+						"language": "kuery",
+						"query":    "",
+					},
+				},
+				"bogusKey": true,
+			},
+		},
+		{
+			name:      "apm anomaly rejects unknown key",
+			ruleType:  "apm.anomaly",
+			expectErr: "json: unknown field \"bogusKey\"",
+			params: map[string]any{
+				"windowSize":          5.0,
+				"windowUnit":          "m",
+				"environment":         "production",
+				"anomalySeverityType": "critical",
+				"bogusKey":            true,
+			},
+		},
+		{
+			name:      "transform health rejects unknown key",
+			ruleType:  "transform_health",
+			expectErr: "json: unknown field \"bogusKey\"",
+			params: map[string]any{
+				"includeTransforms": []any{"foo-transform"},
+				"bogusKey":          true,
 			},
 		},
 	}
@@ -807,5 +876,72 @@ func TestValidateRuleParamsUptimeMonitorStatusRejectsSyntheticsFields(t *testing
 	}
 	if !strings.Contains(strings.Join(errs, "; "), "unknown field \"monitorIds\"") {
 		t.Fatalf("expected unknown field error for 'monitorIds', got: %v", errs)
+	}
+}
+
+func TestDiscriminatorValidationCoversAllKbapiRuleTypes(t *testing.T) {
+	// Parse generated/kbapi/kibana.gen.go to extract all ValueByDiscriminator cases.
+	src, err := os.ReadFile("../../../generated/kbapi/kibana.gen.go")
+	if err != nil {
+		t.Fatalf("failed to read generated file: %v", err)
+	}
+
+	content := string(src)
+	funcStart := strings.Index(content, "func (t AlertingRuleAPIBody) ValueByDiscriminator()")
+	if funcStart == -1 {
+		t.Fatalf("ValueByDiscriminator function not found in generated file")
+	}
+
+	switchStart := strings.Index(content[funcStart:], "switch discriminator {")
+	if switchStart == -1 {
+		t.Fatalf("switch statement not found in ValueByDiscriminator")
+	}
+	switchStart += funcStart
+
+	switchEnd := strings.Index(content[switchStart:], "default:")
+	if switchEnd == -1 {
+		t.Fatalf("default case not found in switch statement")
+	}
+	switchEnd += switchStart
+
+	switchBody := content[switchStart:switchEnd]
+	re := regexp.MustCompile(`case "([^"]+)":`)
+	matches := re.FindAllStringSubmatch(switchBody, -1)
+
+	cases := make([]string, 0, len(matches))
+	casesSet := make(map[string]struct{}, len(matches))
+	for _, m := range matches {
+		cases = append(cases, m[1])
+		casesSet[m[1]] = struct{}{}
+	}
+
+	if len(cases) == 0 {
+		t.Fatalf("no discriminator cases found in generated file")
+	}
+
+	// Every case value must either dispatch successfully through the default
+	// path (no "unknown discriminator" error) or be listed in overrides.
+	for _, ruleTypeID := range cases {
+		t.Run(ruleTypeID, func(t *testing.T) {
+			errs := validateParamsViaDiscriminator(ruleTypeID, map[string]any{})
+			if len(errs) > 0 {
+				lower := strings.ToLower(errs[0])
+				if strings.Contains(lower, "unknown discriminator value") {
+					t.Fatalf("rule type %q not handled by discriminator validation: %v", ruleTypeID, errs)
+				}
+				if strings.Contains(lower, "has no params field") {
+					t.Fatalf("rule type %q discriminated type lacks Params field: %v", ruleTypeID, errs)
+				}
+				// Other errors (missing required keys, etc.) are fine — they mean
+				// the dispatcher recognized the rule type.
+			}
+		})
+	}
+
+	// Override table must not contain unknown discriminators.
+	for ruleTypeID := range ruleTypeParamsOverrides {
+		if _, ok := casesSet[ruleTypeID]; !ok {
+			t.Errorf("override table contains rule type %q that is not in ValueByDiscriminator()", ruleTypeID)
+		}
 	}
 }
