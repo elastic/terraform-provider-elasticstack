@@ -149,6 +149,12 @@ func TestAccResourceFleetServerHost_computedID(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionFleetServerHost, versionutils.FlavorAny)
 
 	hostName := sdkacctest.RandString(22)
+	var capturedHostID string
+
+	captureHostID := func(value string) error {
+		capturedHostID = value
+		return nil
+	}
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -162,7 +168,7 @@ func TestAccResourceFleetServerHost_computedID(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_computed_id", "name", fmt.Sprintf("FleetServerHost %s", hostName)),
-					resource.TestCheckResourceAttrSet("elasticstack_fleet_server_host.test_computed_id", "host_id"),
+					resource.TestCheckResourceAttrWith("elasticstack_fleet_server_host.test_computed_id", "host_id", captureHostID),
 				),
 			},
 			{
@@ -173,7 +179,7 @@ func TestAccResourceFleetServerHost_computedID(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_computed_id", "name", fmt.Sprintf("Updated FleetServerHost %s", hostName)),
-					resource.TestCheckResourceAttrSet("elasticstack_fleet_server_host.test_computed_id", "host_id"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_computed_id", "host_id", capturedHostID),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_computed_id", "hosts.#", "2"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_computed_id", "hosts.0", "https://fleet-server:8220"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_computed_id", "hosts.1", "https://fleet-server-2:8220"),
