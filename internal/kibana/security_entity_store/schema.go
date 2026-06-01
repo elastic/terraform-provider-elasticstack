@@ -20,6 +20,7 @@ package security_entity_store
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -123,6 +124,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"status_json": schema.StringAttribute{
 				Description: "Normalized JSON representation of the most recent entity store status response.",
 				Computed:    true,
+				CustomType:  jsontypes.NormalizedType{},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

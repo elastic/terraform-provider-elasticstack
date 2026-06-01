@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -51,8 +52,8 @@ type tfModel struct {
 	AllowEntityTypeShrink types.Bool   `tfsdk:"allow_entity_type_shrink"`
 	Started               types.Bool   `tfsdk:"started"`
 	HistorySnapshot       types.Object `tfsdk:"history_snapshot"`
-	LogExtraction         types.Object `tfsdk:"log_extraction"`
-	StatusJSON            types.String `tfsdk:"status_json"`
+	LogExtraction         types.Object      `tfsdk:"log_extraction"`
+	StatusJSON            jsontypes.Normalized `tfsdk:"status_json"`
 }
 
 var _ entitycore.KibanaResourceModel = tfModel{}

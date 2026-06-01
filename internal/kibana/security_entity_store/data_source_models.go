@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -31,8 +32,8 @@ type dsModel struct {
 	IncludeComponents types.Bool   `tfsdk:"include_components"`
 	Installed         types.Bool   `tfsdk:"installed"`
 	OverallStatus     types.String `tfsdk:"overall_status"`
-	EnginesJSON       types.String `tfsdk:"engines_json"`
-	StatusJSON        types.String `tfsdk:"status_json"`
+	EnginesJSON       types.String       `tfsdk:"engines_json"`
+	StatusJSON        jsontypes.Normalized `tfsdk:"status_json"`
 }
 
 var _ entitycore.WithVersionRequirements = (*dsModel)(nil)

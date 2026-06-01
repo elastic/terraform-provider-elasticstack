@@ -20,6 +20,7 @@ package security_entity_store
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 )
 
@@ -51,6 +52,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 			"status_json": schema.StringAttribute{
 				Description: "Normalized JSON of the full status response.",
 				Computed:    true,
+				CustomType:  jsontypes.NormalizedType{},
 			},
 		},
 	}

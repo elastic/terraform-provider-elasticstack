@@ -379,18 +379,6 @@ func flattenStatus(ctx context.Context, engines []entityStoreEngine) (entityType
 	return entityTypes, started, logExtraction, diags
 }
 
-func normalizeJSONBytes(raw []byte) (string, diag.Diagnostics) {
-	var v any
-	if err := json.Unmarshal(raw, &v); err != nil {
-		return "", diagutil.FrameworkDiagFromError(err)
-	}
-	b, err := json.Marshal(v)
-	if err != nil {
-		return "", diagutil.FrameworkDiagFromError(err)
-	}
-	return string(b), nil
-}
-
 func getEntityStoreStatus(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, includeComponents bool) (*entityStoreStatus, []byte, diag.Diagnostics) {
 	params := &kbapi.GetSecurityEntityStoreStatusParams{}
 	editors := []kbapi.RequestEditorFn{kibanautil.SpaceAwarePathRequestEditor(spaceID)}

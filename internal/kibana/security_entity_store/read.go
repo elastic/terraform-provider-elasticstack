@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -56,16 +57,11 @@ func readEntityStore(
 		return model, true, flattenDiags
 	}
 
-	statusJSON, marshalDiags := normalizeJSONBytes(rawBody)
-	if marshalDiags.HasError() {
-		return model, true, marshalDiags
-	}
-
 	model.ID = types.StringValue(buildID(spaceID))
 	model.SpaceID = types.StringValue(spaceID)
 	model.EntityTypes = entityTypes
 	model.Started = types.BoolValue(started)
 	model.LogExtraction = logExtraction
-	model.StatusJSON = types.StringValue(statusJSON)
+	model.StatusJSON = jsontypes.NewNormalizedValue(string(rawBody))
 	return model, true, nil
 }

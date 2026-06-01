@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -52,15 +53,10 @@ func readEntityStoreDataSource(ctx context.Context, client *clients.KibanaScoped
 	if err != nil {
 		return model, diagutil.FrameworkDiagFromError(err)
 	}
-	statusJSON, marshalDiags := normalizeJSONBytes(rawBody)
-	if marshalDiags.HasError() {
-		return model, marshalDiags
-	}
-
 	model.SpaceID = types.StringValue(spaceID)
 	model.Installed = types.BoolValue(string(status.Status) != "not_installed")
 	model.OverallStatus = types.StringValue(string(status.Status))
 	model.EnginesJSON = types.StringValue(string(enginesJSON))
-	model.StatusJSON = types.StringValue(statusJSON)
+	model.StatusJSON = jsontypes.NewNormalizedValue(string(rawBody))
 	return model, nil
 }
