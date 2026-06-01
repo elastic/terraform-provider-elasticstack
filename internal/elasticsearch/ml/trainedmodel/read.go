@@ -196,7 +196,7 @@ func mapTrainedModelConfig(ctx context.Context, model *estypes.TrainedModelConfi
 	}
 
 	// DefaultFieldMap
-	if model.DefaultFieldMap == nil {
+	if len(model.DefaultFieldMap) == 0 {
 		data.DefaultFieldMap = types.MapNull(types.StringType)
 	} else {
 		fmMap, d := types.MapValueFrom(ctx, types.StringType, model.DefaultFieldMap)

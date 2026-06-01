@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/include"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -31,7 +32,7 @@ import (
 func GetTrainedModel(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, modelID string) (*types.TrainedModelConfig, bool, fwdiag.Diagnostics) {
 	typedClient := apiClient.GetESClient()
 
-	res, err := typedClient.Ml.GetTrainedModels().ModelId(modelID).Do(ctx)
+	res, err := typedClient.Ml.GetTrainedModels().ModelId(modelID).Include(include.Definitionstatus).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
 			return nil, false, nil

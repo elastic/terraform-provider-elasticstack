@@ -167,8 +167,7 @@ func TestMapTrainedModelConfig_emptyDefaultFieldMap(t *testing.T) {
 	diags := mapTrainedModelConfig(ctx, model, &data)
 	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
 
-	assert.False(t, data.DefaultFieldMap.IsNull(), "expected default_field_map to be non-null empty map")
-	assert.Empty(t, data.DefaultFieldMap.Elements())
+	assert.True(t, data.DefaultFieldMap.IsNull(), "expected default_field_map to be null for empty map")
 }
 
 func TestByteSizeToInt64Value(t *testing.T) {
@@ -218,12 +217,3 @@ func TestDateTimeToStringValue(t *testing.T) {
 		})
 	}
 }
-
-//go:fix inline
-func strPtr(s string) *string { return new(s) }
-
-//go:fix inline
-func boolPtr(b bool) *bool { return new(b) }
-
-//go:fix inline
-func intPtr(i int) *int { return new(i) }
