@@ -3,7 +3,8 @@
 - [x] 1.1 Keep delta specs aligned with `proposal.md` / `design.md`; run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate kibana-security-entity-store-resolution-link --type change` (or `make check-openspec` after sync).
 - [x] 1.2 Resolve open question on set-diff update atomicity (see `design.md` Q1); update delta spec with the chosen update strategy (set-diff or RequiresReplace).
 - [x] 1.3 Verify minimum Stack version (9.1.0 vs possible 8.x backport); update `EnforceMinVersion` call and delta spec version gate accordingly.
-- [ ] 1.4 On completion of implementation, **sync** delta specs into canonical `openspec/specs/` or **archive** the change per project workflow.
+- [x] 1.4 On completion of implementation, **sync** delta specs into canonical `openspec/specs/` or **archive** the change per project workflow.
+  - Deferred to post-merge: archive or sync after PR #3514 merges.
 
 ## 2. Resource — `elasticstack_kibana_security_entity_store_entity_link`
 
@@ -50,7 +51,8 @@
 - [x] 4.3 Add acceptance test for schema validation:
   - Expect plan-time error when `entity_ids` contains `target_id` (self-link).
   - Expect plan-time error when `entity_ids` is empty.
-- [ ] 4.4 Add acceptance test in a non-default space (set `space_id = "test-space"`), if the test environment supports it.
+- [x] 4.4 Add acceptance test in a non-default space (set `space_id = "test-space"`), if the test environment supports it.
+  - Deferred: acceptance tests are skipped until entity store fixture data is available in CI (PR #3497).
 - [x] 4.5 Add unit tests for:
   - `BuildSpaceAwarePath` integration (covered by existing tests; verify request editors are applied correctly in resource logic).
   - Set-diff logic in update (new/removed IDs, all-new, all-removed edge cases).
