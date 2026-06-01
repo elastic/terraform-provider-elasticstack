@@ -627,7 +627,7 @@ func TestValidateRuleParamsFixturesFromSreO11yModules(t *testing.T) {
 			name:     "custom threshold accepts unknown key via additionalProperties",
 			ruleType: "observability.rules.custom_threshold",
 			params: map[string]any{
-				"criteria": []any{},
+				"criteria":      []any{},
 				"alertOnNoData": true,
 				"searchConfiguration": map[string]any{
 					"index": "logs-*",
