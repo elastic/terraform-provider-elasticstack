@@ -13,6 +13,10 @@ Retrieves an Elasticsearch ML trained model. See, https://www.elastic.co/guide/e
 ## Example Usage
 
 ```terraform
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 data "elasticstack_elasticsearch_ml_trained_model" "example" {
   model_id = "lang_ident_model_current"
 }
