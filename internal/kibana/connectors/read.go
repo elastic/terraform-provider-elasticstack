@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -35,6 +36,10 @@ func readConnector(
 ) (tfModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	// After terraform import the prior state contains only the resource id.
+	// Every other attribute (including the required 'name') is null.
+	justImported := model.Name.IsNull()
+
 	oapiClient := client.GetKibanaOapiClient()
 
 	connector, readDiags := kibanaoapi.GetConnector(ctx, oapiClient, resourceID, spaceID)
@@ -46,7 +51,21 @@ func readConnector(
 		return model, false, diags
 	}
 
-	return finishConnectorRead(model, connector, spaceID, resourceID)
+	result, found, finishDiags := finishConnectorRead(model, connector, spaceID, resourceID)
+	diags.Append(finishDiags...)
+	if diags.HasError() {
+		return model, false, diags
+	}
+
+	// The Kibana API never returns secrets in read responses for security.
+	// When importing a connector that is not missing secrets, defaulting
+	// secrets to "{}" prevents the perpetual drift reported in
+	// https://github.com/elastic/terraform-provider-elasticstack/issues/634
+	if justImported && result.Secrets.IsNull() && !result.IsMissingSecrets.ValueBool() {
+		result.Secrets = jsontypes.NewNormalizedValue("{}")
+	}
+
+	return result, found, diags
 }
 
 // connectorReadExists reports whether GetConnector found a connector. A nil

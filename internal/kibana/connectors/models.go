@@ -110,5 +110,11 @@ func (model *tfModel) populateFromAPI(apiModel *models.KibanaActionConnector, co
 		}
 	}
 
+	// Secrets are intentionally NOT set here. The Kibana API never returns
+	// secrets in read responses for security reasons. By leaving Secrets
+	// untouched, the prior state value is preserved during refresh. For
+	// import, readConnector detects the fresh import via model.Name.IsNull()
+	// and seeds a sensible default before returning.
+	// See https://github.com/elastic/terraform-provider-elasticstack/issues/634
 	return nil
 }

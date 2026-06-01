@@ -18,7 +18,6 @@
 package connectors_test
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -30,13 +29,11 @@ import (
 // TestAccReproduceIssue634 is a regression test for
 // https://github.com/elastic/terraform-provider-elasticstack/issues/634
 //
-// Importing a .webhook connector that has no secrets sets "secrets" to null in
-// state rather than "{}" (empty object). ImportStateVerify (without ignoring
-// "secrets") detects this: the pre-import state has secrets="{}" but the
-// imported state has secrets=null, causing a verification mismatch.
-//
-// The fix should make populateFromAPI preserve secrets="{}" after import so
-// that ImportStateVerify passes without ignoring the secrets attribute.
+// Importing a .webhook connector that has no secrets used to set "secrets" to
+// null in state rather than "{}" (empty object). The readConnector function
+// now detects a fresh import (name is null in the decoded state) and seeds
+// secrets="{}" when the API reports the connector is not missing secrets.
+// ImportStateVerify (without ignoring "secrets") should therefore pass.
 func TestAccReproduceIssue634(t *testing.T) {
 	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -59,11 +56,9 @@ func TestAccReproduceIssue634(t *testing.T) {
 			{
 				// Import and verify all attributes, ignoring the config field only
 				// (Kibana adds __tf_provider_context which was not in the original
-				// config and is expected). secrets is intentionally NOT ignored:
-				// the bug causes secrets to be null after import (was "{}" before),
-				// so the ImportStateVerify diff will mention "secrets".
-				// ExpectError matches that diff, so the step passes when the bug is
-				// present and fails (no matching error) when the bug is fixed.
+				// config and is expected). secrets is intentionally NOT ignored so
+				// that ImportStateVerify confirms secrets="{}" is preserved after
+				// import.
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -73,7 +68,6 @@ func TestAccReproduceIssue634(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"config"},
 				ResourceName:            "elasticstack_kibana_action_connector.test",
-				ExpectError:             regexp.MustCompile(`"secrets"`),
 			},
 		},
 	})
