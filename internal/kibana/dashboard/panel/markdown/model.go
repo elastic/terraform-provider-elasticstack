@@ -316,8 +316,8 @@ func BuildConfigByValue(pm models.PanelModel) kbapi.KibanaHTTPAPIsKbnDashboardPa
 	config := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0{
 		Content:     bv.Content.ValueString(),
 		Description: typeutils.OptStringPtr(bv.Description),
-		HideTitle:   typeutils.OptBoolPtr(bv.HideTitle),
-		HideBorder:  typeutils.OptBoolPtr(bv.HideBorder),
+		HideTitle:   typeutils.OptionalBool(bv.HideTitle),
+		HideBorder:  typeutils.OptionalBool(bv.HideBorder),
 		Title:       typeutils.OptStringPtr(bv.Title),
 	}
 	if bv.Settings != nil && typeutils.IsKnown(bv.Settings.OpenLinksInNewTab) {
@@ -335,8 +335,8 @@ func BuildConfigByReference(pm models.PanelModel) kbapi.KibanaHTTPAPIsKbnDashboa
 	return kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig1{
 		RefId:       br.RefID.ValueString(),
 		Description: typeutils.OptStringPtr(br.Description),
-		HideTitle:   typeutils.OptBoolPtr(br.HideTitle),
-		HideBorder:  typeutils.OptBoolPtr(br.HideBorder),
+		HideTitle:   typeutils.OptionalBool(br.HideTitle),
+		HideBorder:  typeutils.OptionalBool(br.HideBorder),
 		Title:       typeutils.OptStringPtr(br.Title),
 	}
 }
