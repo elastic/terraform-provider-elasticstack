@@ -26,6 +26,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// StringSetOrNull converts a []string to a types.Set. Returns a null string
+// set when src is empty so that unset attributes are stored as null in state.
+func StringSetOrNull(ctx context.Context, src []string) (types.Set, diag.Diagnostics) {
+	if len(src) == 0 {
+		return types.SetNull(types.StringType), nil
+	}
+	return types.SetValueFrom(ctx, types.StringType, src)
+}
+
 // NonEmptySetOrDefault returns the original set if slice is empty,
 // otherwise converts slice into a types.Set.
 func NonEmptySetOrDefault[T any](ctx context.Context, original types.Set, elemType attr.Type, slice []T) (types.Set, diag.Diagnostics) {

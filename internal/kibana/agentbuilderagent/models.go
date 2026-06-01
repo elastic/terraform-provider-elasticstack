@@ -24,10 +24,11 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -108,6 +109,7 @@ type toolModel struct {
 // the callers.
 func (model *agentBaseModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Agent) diag.Diagnostics {
 	var diags diag.Diagnostics
+	var d diag.Diagnostics
 	if data == nil {
 		return diags
 	}
@@ -131,8 +133,10 @@ func (model *agentBaseModel) populateFromAPI(ctx context.Context, spaceID string
 		model.Instructions = types.StringNull()
 	}
 
-	diags.Append(agentbuilder.PopulateSet(ctx, data.Labels, &model.Labels)...)
-	diags.Append(agentbuilder.PopulateSet(ctx, data.Configuration.SkillIDs, &model.SkillIDs)...)
+	model.Labels, d = typeutils.StringSetOrNull(ctx, data.Labels)
+	diags.Append(d...)
+	model.SkillIDs, d = typeutils.StringSetOrNull(ctx, data.Configuration.SkillIDs)
+	diags.Append(d...)
 	return diags
 }
 
@@ -141,11 +145,13 @@ func (model *agentModel) populateFromAPI(ctx context.Context, spaceID string, da
 		return nil
 	}
 	diags := model.agentBaseModel.populateFromAPI(ctx, spaceID, data)
+	var d diag.Diagnostics
 	var toolIDs []string
 	if len(data.Configuration.Tools) > 0 {
 		toolIDs = data.Configuration.Tools[0].ToolIDs
 	}
-	diags.Append(agentbuilder.PopulateSet(ctx, toolIDs, &model.Tools)...)
+	model.Tools, d = typeutils.StringSetOrNull(ctx, toolIDs)
+	diags.Append(d...)
 	return diags
 }
 
@@ -168,22 +174,22 @@ func (model agentModel) toAPICreateModel(ctx context.Context, supportsSkillIDs b
 		body.Configuration.Instructions = model.Instructions.ValueStringPointer()
 	}
 
-	toolIDs, d := agentbuilder.SetToStrings(ctx, model.Tools)
-	diags.Append(d...)
+	toolIDs := typeutils.SetTypeAs[string](ctx, model.Tools, path.Empty(), &diags)
+	if toolIDs == nil {
+		toolIDs = []string{}
+	}
 	body.Configuration.Tools = []struct {
 		ToolIds []string `json:"tool_ids"` //nolint:revive
 	}{{ToolIds: toolIDs}}
 
 	if supportsSkillIDs {
-		skillIDs, d := agentbuilder.SetToStrings(ctx, model.SkillIDs)
-		diags.Append(d...)
+		skillIDs := typeutils.SetTypeAs[string](ctx, model.SkillIDs, path.Empty(), &diags)
 		if len(skillIDs) > 0 {
 			body.Configuration.SkillIds = &skillIDs
 		}
 	}
 
-	labels, d := agentbuilder.SetToStrings(ctx, model.Labels)
-	diags.Append(d...)
+	labels := typeutils.SetTypeAs[string](ctx, model.Labels, path.Empty(), &diags)
 	if len(labels) > 0 {
 		body.Labels = &labels
 	}
@@ -209,8 +215,10 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 		body.AvatarSymbol = model.AvatarSymbol.ValueStringPointer()
 	}
 
-	toolIDs, d := agentbuilder.SetToStrings(ctx, model.Tools)
-	diags.Append(d...)
+	toolIDs := typeutils.SetTypeAs[string](ctx, model.Tools, path.Empty(), &diags)
+	if toolIDs == nil {
+		toolIDs = []string{}
+	}
 	tools := []struct {
 		ToolIds []string `json:"tool_ids"` //nolint:revive
 	}{{ToolIds: toolIDs}}
@@ -222,8 +230,10 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 	// clears the value on 9.4+.
 	var skillIDsPtr *[]string
 	if supportsSkillIDs {
-		skillIDs, d := agentbuilder.SetToStrings(ctx, model.SkillIDs)
-		diags.Append(d...)
+		skillIDs := typeutils.SetTypeAs[string](ctx, model.SkillIDs, path.Empty(), &diags)
+		if skillIDs == nil {
+			skillIDs = []string{}
+		}
 		skillIDsPtr = &skillIDs
 	}
 
@@ -248,8 +258,7 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 		SkillIds:     skillIDsPtr,
 	}
 
-	labels, d := agentbuilder.SetToStrings(ctx, model.Labels)
-	diags.Append(d...)
+	labels := typeutils.SetTypeAs[string](ctx, model.Labels, path.Empty(), &diags)
 	if len(labels) > 0 {
 		body.Labels = &labels
 	}
