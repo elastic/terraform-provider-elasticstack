@@ -97,6 +97,8 @@ import (
 	security_detection_rule "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
 	securityenablerule "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_enable_rule"
 	securityentitystore "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store"
+	securityentitystoreentities "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store/entities"
+	securityentitystoreentity "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store/entity"
 	securityexceptionitem "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_exception_item"
 	securitylistdatastreams "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list_data_streams"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_role"
@@ -286,6 +288,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		securityexceptionitem.NewResource,
 		security_role.NewResource,
 		securityentitystore.NewResource,
+		securityentitystoreentity.NewResource,
 		spaces.NewResource,
 		snapshotlifecycle.NewSlmResource,
 		snapshotrepo.NewSnapshotRepositoryResource,
@@ -308,6 +311,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		spaces.NewDataSource,
 		security_role.NewDataSource,
 		securityentitystore.NewDataSource,
+		securityentitystoreentities.NewDataSource,
 		connectors.NewDataSource,
 		agentbuilderagent.NewDataSource,
 		agentbuilderskill.NewDataSource,
