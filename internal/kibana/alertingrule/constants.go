@@ -30,7 +30,10 @@ const (
 const defaultSpaceID = "default"
 
 // Terraform schema attribute keys.
-const attrTags = "tags"
+const (
+	attrTags   = "tags"
+	attrParams = "params"
+)
 
 // JSON params keys used across rule types.
 const (
