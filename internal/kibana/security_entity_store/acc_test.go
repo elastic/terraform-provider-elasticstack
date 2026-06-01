@@ -22,6 +22,8 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	securityentitystore "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -44,6 +46,8 @@ func TestAccResourceKibanaSecurityEntityStore_updateLogExtraction(t *testing.T) 
 }
 
 func TestAccResourceKibanaSecurityEntityStore_import(t *testing.T) {
+	skipIfUnsupported(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -64,6 +68,8 @@ func TestAccResourceKibanaSecurityEntityStore_import(t *testing.T) {
 }
 
 func TestAccResourceKibanaSecurityEntityStore_shrinkGuardFails(t *testing.T) {
+	skipIfUnsupported(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -95,6 +101,8 @@ func TestAccResourceKibanaSecurityEntityStore_startedFalse(t *testing.T) {
 }
 
 func TestAccDataSourceKibanaSecurityEntityStoreStatus_basic(t *testing.T) {
+	skipIfUnsupported(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -123,6 +131,8 @@ func TestAccDataSourceKibanaSecurityEntityStoreStatus_basic(t *testing.T) {
 }
 
 func testAccEntityStoreApplyAndPlan(t *testing.T, cfg string, checks ...resource.TestCheckFunc) {
+	skipIfUnsupported(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
@@ -134,6 +144,10 @@ func testAccEntityStoreApplyAndPlan(t *testing.T, cfg string, checks ...resource
 			{Config: cfg, PlanOnly: true},
 		},
 	})
+}
+
+func skipIfUnsupported(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, securityentitystore.MinVersion, versionutils.FlavorAny)
 }
 
 func basicConfig() string {
@@ -150,7 +164,7 @@ func singleTypeConfig() string {
 
 func updateLogExtractionConfig() string {
 	return `resource "elasticstack_kibana_security_entity_store" "test" {
-  log_extraction {
+  log_extraction = {
     delay     = "5m"
     frequency = "10m"
   }
