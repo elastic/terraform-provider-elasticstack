@@ -79,7 +79,7 @@ func getResourceSchema(_ context.Context) schema.Schema {
 			attrResolutionGroupJSON: schema.StringAttribute{
 				Computed:            true,
 				CustomType:          jsontypes.NormalizedType{},
-				MarkdownDescription: "The normalised JSON representation of the resolution group returned by the Kibana API.",
+				MarkdownDescription: "The normalized JSON representation of the resolution group returned by the Kibana API.",
 			},
 		},
 	}

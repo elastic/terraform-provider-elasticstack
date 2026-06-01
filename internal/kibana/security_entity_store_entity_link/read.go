@@ -106,7 +106,12 @@ func readResolutionGroupWithRetry(ctx context.Context, client *clients.KibanaSco
 			return body, statusCode, diags
 		}
 
-		time.Sleep(backoff)
+		select {
+		case <-ctx.Done():
+			diags.AddError("Context cancelled during read-with-retry", ctx.Err().Error())
+			return nil, 0, diags
+		case <-time.After(backoff):
+		}
 		backoff *= 2
 		if backoff > 500*time.Millisecond {
 			backoff = 500 * time.Millisecond
