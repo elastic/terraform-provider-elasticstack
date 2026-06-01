@@ -111,11 +111,7 @@ func populateToolBaseFromAPI(ctx context.Context, data *models.Tool, spaceID str
 		Type:    types.StringValue(data.Type),
 	}
 
-	if data.Description != nil && *data.Description != "" {
-		base.Description = types.StringValue(*data.Description)
-	} else {
-		base.Description = types.StringNull()
-	}
+	base.Description = typeutils.NonEmptyStringOrNull(data.Description)
 
 	base.Tags, d = typeutils.StringSetOrNull(ctx, data.Tags)
 	diags.Append(d...)

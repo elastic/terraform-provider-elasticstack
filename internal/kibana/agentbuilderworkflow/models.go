@@ -93,11 +93,7 @@ func (model *workflowModel) populateFromAPI(data *models.Workflow) {
 	model.ConfigurationYaml = customtypes.NewNormalizedYamlValue(data.Yaml)
 	model.Name = types.StringValue(data.Name)
 
-	if data.Description != nil && *data.Description != "" {
-		model.Description = types.StringValue(*data.Description)
-	} else {
-		model.Description = types.StringNull()
-	}
+	model.Description = typeutils.NonEmptyStringOrNull(data.Description)
 
 	model.Enabled = types.BoolValue(data.Enabled)
 	model.Valid = types.BoolValue(data.Valid)

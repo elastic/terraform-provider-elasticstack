@@ -70,3 +70,12 @@ func BoolPointerValue(v *bool) types.Bool {
 	}
 	return types.BoolValue(*v)
 }
+
+// NonEmptyStringOrNull returns types.StringValue(*s) when s is non-nil and non-empty,
+// and types.StringNull() otherwise. Use for API fields that use an empty string to signal absence.
+func NonEmptyStringOrNull(s *string) types.String {
+	if s != nil && *s != "" {
+		return types.StringValue(*s)
+	}
+	return types.StringNull()
+}
