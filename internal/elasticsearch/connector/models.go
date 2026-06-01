@@ -25,9 +25,11 @@
 package connector
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -41,6 +43,17 @@ import (
 // 8.15.x clusters reject those payloads, so the provider pins both this
 // resource and the data source to 8.16.0 as the minimum supported floor.
 var MinSupportedVersion = version.Must(version.NewVersion("8.16.0"))
+
+// ConnectorVersionGate is a zero-size embedded struct that satisfies
+// entitycore.WithVersionRequirements for connector resource and data source models.
+type ConnectorVersionGate struct{}
+
+func (ConnectorVersionGate) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{{
+		MinVersion:   *MinSupportedVersion,
+		ErrorMessage: "elasticstack_elasticsearch_connector requires Elasticsearch 8.16.0 or later (the connector request bodies the typed client sends are rejected on 8.12.x–8.15.x).",
+	}}, nil
+}
 
 // Shared attribute names used by the resource and data source schemas plus
 // the API↔state converters. Exported so the resource/data_source subpackages
