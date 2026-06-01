@@ -494,7 +494,7 @@ func TestAccResourceAlertingRuleEnabledFalseOnCreate(t *testing.T) {
 // validation path end-to-end for observability.rules.custom_threshold (REQ-018,
 // REQ-051). This is the primary motivating rule type from issue #940.
 func TestAccResourceAlertingRuleCustomThreshold(t *testing.T) {
-	minSupportedVersion := version.Must(version.NewSemver("8.10.0"))
+	minSupportedVersion := version.Must(version.NewSemver("8.15.0"))
 
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
