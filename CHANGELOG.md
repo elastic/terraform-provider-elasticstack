@@ -2,6 +2,7 @@
 
 ### Changes
 
+- Fix 404 error on update and destroy of `elasticstack_fleet_server_host` when `host_id` is omitted from config by adding `UseStateForUnknown()` and `RequiresReplace()` plan modifiers to `host_id`. Changing `host_id` explicitly now triggers destroy-and-recreate instead of a broken update. Fixes [#864](https://github.com/elastic/terraform-provider-elasticstack/issues/864).
 - Add elasticstack_elasticsearch_connector resource and data source plus elasticstack_elasticsearch_connector_sync_job_create action for Elasticsearch content connectors. ([#3435](https://github.com/elastic/terraform-provider-elasticstack/pull/3435))
 - Preserve S3 endpoint and path_style_access in snapshot repository PUT bodies ([#3447](https://github.com/elastic/terraform-provider-elasticstack/pull/3447))
 - Fix inconsistent state when metadata is set to jsonencode({}) on elasticsearch_security_user ([#3448](https://github.com/elastic/terraform-provider-elasticstack/pull/3448))

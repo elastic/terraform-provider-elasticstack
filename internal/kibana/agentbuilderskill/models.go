@@ -24,9 +24,10 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -71,6 +72,7 @@ func (model *skillModel) populateFromAPI(ctx context.Context, spaceID string, da
 	}
 
 	var diags diag.Diagnostics
+	var d diag.Diagnostics
 
 	if spaceID == "" {
 		spaceID = defaultSpaceID
@@ -84,7 +86,8 @@ func (model *skillModel) populateFromAPI(ctx context.Context, spaceID string, da
 	model.Content = types.StringValue(data.Content)
 	model.ReferencedContent = referencedContentItemsFromAPI(data.ReferencedContent)
 
-	diags.Append(agentbuilder.PopulateSet(ctx, data.ToolIDs, &model.ToolIDs)...)
+	model.ToolIDs, d = typeutils.StringSetOrNull(ctx, data.ToolIDs)
+	diags.Append(d...)
 
 	return diags
 }
@@ -126,8 +129,7 @@ func (model skillModel) toAPICreateModel(ctx context.Context) (kbapi.PostAgentBu
 		Content:     model.Content.ValueString(),
 	}
 
-	toolIDs, d := agentbuilder.SetToStrings(ctx, model.ToolIDs)
-	diags.Append(d...)
+	toolIDs := typeutils.SetTypeAs[string](ctx, model.ToolIDs, path.Empty(), &diags)
 	if len(toolIDs) > 0 {
 		body.ToolIds = &toolIDs
 	}
@@ -153,8 +155,10 @@ func (model skillModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBui
 		Content:     &content,
 	}
 
-	toolIDs, d := agentbuilder.SetToStrings(ctx, model.ToolIDs)
-	diags.Append(d...)
+	toolIDs := typeutils.SetTypeAs[string](ctx, model.ToolIDs, path.Empty(), &diags)
+	if toolIDs == nil {
+		toolIDs = []string{}
+	}
 	// Always send tool_ids on update (including empty) so cleared values are
 	// propagated to Kibana.
 	body.ToolIds = &toolIDs

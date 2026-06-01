@@ -19,8 +19,10 @@ package elasticdefendintegrationpolicy
 
 import (
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
@@ -63,8 +65,20 @@ func resourceSchema() schema.Schema {
 				Required:    true,
 			},
 			"agent_policy_id": schema.StringAttribute{
-				Description: "ID of the agent policy.",
-				Required:    true,
+				Description: "ID of the agent policy. Conflicts with agent_policy_ids.",
+				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.Root("agent_policy_ids").Expression()),
+				},
+			},
+			"agent_policy_ids": schema.ListAttribute{
+				Description: "List of agent policy IDs. Requires Elastic Stack >= 8.15.0. Conflicts with agent_policy_id.",
+				ElementType: types.StringType,
+				Optional:    true,
+				Validators: []validator.List{
+					listvalidator.ConflictsWith(path.Root("agent_policy_id").Expression()),
+					listvalidator.SizeAtLeast(1),
+				},
 			},
 			"description": schema.StringAttribute{
 				Description: "The description of the integration policy.",

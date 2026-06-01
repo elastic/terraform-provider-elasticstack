@@ -19,6 +19,7 @@ package elasticdefendintegrationpolicy
 
 import (
 	"context"
+	"fmt"
 
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
@@ -47,6 +48,21 @@ func (r *elasticDefendIntegrationPolicyResource) Update(ctx context.Context, req
 		return
 	}
 
+	if !planModel.AgentPolicyIDs.IsNull() && !planModel.AgentPolicyIDs.IsUnknown() {
+		supported, d := client.EnforceMinVersion(ctx, MinVersionPolicyIDs)
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if !supported {
+			resp.Diagnostics.AddError(
+				"Unsupported Elasticsearch version",
+				fmt.Sprintf("agent_policy_ids requires Elastic Stack >= %s", MinVersionPolicyIDs.String()),
+			)
+			return
+		}
+	}
+
 	fleetClient := client.GetFleetClient()
 
 	policyID := stateModel.PolicyID.ValueString()
@@ -72,6 +88,16 @@ func (r *elasticDefendIntegrationPolicyResource) Update(ctx context.Context, req
 		return
 	}
 	// ID is passed as the URL path parameter to UpdateDefendPackagePolicy
+
+	// Do not use the version token from private state for normal updates.
+	// Kibana may perform background processing on the document (e.g. agent
+	// policy assignment reconciliation) between our Read and Update, making
+	// the stored version stale. The version token is only needed for the
+	// initial create finalize step where we transition from bootstrap to
+	// the full typed policy. Omitting it here lets Kibana apply the update
+	// with last-write-wins semantics, matching the generic integration_policy
+	// resource behaviour.
+	updateReq.Version = nil
 
 	_, diags = fleetclient.UpdateDefendPackagePolicy(ctx, fleetClient, policyID, spaceID, updateReq)
 	resp.Diagnostics.Append(diags...)

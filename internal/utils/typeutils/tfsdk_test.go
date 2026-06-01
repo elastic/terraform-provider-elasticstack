@@ -158,7 +158,7 @@ func TestValueStringPointer(t *testing.T) {
 	}
 }
 
-func TestNonEmptyStringPointerValue(t *testing.T) {
+func TestOptionalString(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -175,9 +175,33 @@ func TestNonEmptyStringPointerValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var diags diag.Diagnostics
-			got := typeutils.NonEmptyStringPointerValue(tt.input)
+			got := typeutils.OptionalString(tt.input)
 			require.Equal(t, tt.want, got)
 			require.Empty(t, diags)
+		})
+	}
+}
+
+func TestBoolPointerValue(t *testing.T) {
+	t.Parallel()
+
+	trueVal := true
+	falseVal := false
+
+	tests := []struct {
+		name  string
+		input *bool
+		want  types.Bool
+	}{
+		{name: "converts nil", input: nil, want: types.BoolNull()},
+		{name: "converts true", input: &trueVal, want: types.BoolValue(true)},
+		{name: "converts false", input: &falseVal, want: types.BoolValue(false)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := typeutils.BoolPointerValue(tt.input)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
