@@ -58,6 +58,7 @@ import (
 	datafeedstate "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed_state"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/filter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/jobstate"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/trainedmodeldeployment"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/queryrulesets"
 	apikeyephemeral "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey/ephemeral"
 	apikeyresource "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey/resource"
@@ -273,6 +274,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		filter.NewFilterResource,
 		security_detection_rule.NewSecurityDetectionRuleResource,
 		jobstate.NewMLJobStateResource,
+		trainedmodeldeployment.NewTrainedModelDeploymentResource,
 		datafeedstate.NewMLDatafeedStateResource,
 		kibanaslo.NewResource,
 		prebuilt_rules.NewResource,
