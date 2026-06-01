@@ -15,9 +15,9 @@ resource "elasticstack_kibana_security_entity_store_entity" "test" {
   entity_id   = "host:acc-test-host-01"
 
   entity_json = jsonencode({
-    id   = "host:acc-test-host-01"
-    name = "acc-test-host-01"
-    type = "host"
+    id     = "host:acc-test-host-01"
+    name   = "acc-test-host-01"
+    type   = "host"
     source = "terraform-acc-test"
   })
 

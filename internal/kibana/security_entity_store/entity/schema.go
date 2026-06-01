@@ -20,6 +20,7 @@ package entity
 import (
 	"context"
 
+	jsontypes "github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -30,7 +31,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	jsontypes "github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 )
 
 func getSchema(_ context.Context) schema.Schema {
@@ -68,10 +68,10 @@ func getSchema(_ context.Context) schema.Schema {
 				Computed:    true,
 			},
 			"labels": schema.MapAttribute{
-				Description:   "Labels associated with the entity as a map of string to string.",
-				Optional:      true,
-				ElementType:   types.StringType,
-				Validators:    []validator.Map{},
+				Description: "Labels associated with the entity as a map of string to string.",
+				Optional:    true,
+				ElementType: types.StringType,
+				Validators:  []validator.Map{},
 			},
 			"tags": schema.SetAttribute{
 				Description: "Tags associated with the entity.",
@@ -80,9 +80,9 @@ func getSchema(_ context.Context) schema.Schema {
 				ElementType: types.StringType,
 			},
 			"document_json": schema.StringAttribute{
-				Description:   "Canonical JSON (sorted keys) containing the full entity document as read back from Kibana.",
-				Computed:      true,
-				CustomType:    jsontypes.NormalizedType{},
+				Description: "Canonical JSON (sorted keys) containing the full entity document as read back from Kibana.",
+				Computed:    true,
+				CustomType:  jsontypes.NormalizedType{},
 			},
 			"response_json": schema.StringAttribute{
 				Description: "Raw API response body serialized as normalized JSON for troubleshooting.",

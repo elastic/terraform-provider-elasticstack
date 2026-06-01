@@ -22,27 +22,27 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	jsontypes "github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	jsontypes "github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // Common attribute keys used throughout schema and helpers
 const (
-	attrName            = "name"
-	attrType            = "type"
-	attrRisk            = "risk"
-	attrAsset           = "asset"
-	attrCalculatedLevel = "calculated_level"
-	attrCalculatedScore = "calculated_score"
+	attrName                = "name"
+	attrType                = "type"
+	attrRisk                = "risk"
+	attrAsset               = "asset"
+	attrCalculatedLevel     = "calculated_level"
+	attrCalculatedScore     = "calculated_score"
 	attrCalculatedScoreNorm = "calculated_score_norm"
-	attrDomain          = "domain"
-	attrEmail           = "email"
-	attrProvider        = "provider"
-	attrReason          = "reason"
+	attrDomain              = "domain"
+	attrEmail               = "email"
+	attrProvider            = "provider"
+	attrReason              = "reason"
 )
 
 // canonicalJSON normalizes a Go value to canonical JSON (sorted keys).
@@ -1035,11 +1035,11 @@ func apiBodyToModel(ctx context.Context, body map[string]any, model *tfModel, di
 
 func mapToEntityBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnostics) entityBlockModel {
 	model := entityBlockModel{
-		ID:     getStringValue(m, "id"),
-		Name:   getStringValue(m, "name"),
-		Type:   getStringValue(m, "type"),
+		ID:      getStringValue(m, "id"),
+		Name:    getStringValue(m, "name"),
+		Type:    getStringValue(m, "type"),
 		SubType: getStringValue(m, "sub_type"),
-		Source: getStringValue(m, "source"),
+		Source:  getStringValue(m, "source"),
 	}
 	if attrsRaw, ok := m["attributes"].(map[string]any); ok {
 		attr := entityAttributesBlockModel{

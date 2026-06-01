@@ -221,9 +221,9 @@ type eventBlockModel struct {
 
 // assetBlockModel represents the typed "asset" block.
 type assetBlockModel struct {
-	Criticality         types.String `tfsdk:"criticality"`
-	CriticalityFeedback types.Object `tfsdk:"criticality_feedback"`
-	Owner               types.Object `tfsdk:"owner"`
+	Criticality         types.String  `tfsdk:"criticality"`
+	CriticalityFeedback types.Object  `tfsdk:"criticality_feedback"`
+	Owner               types.Object  `tfsdk:"owner"`
 	Value               types.Float64 `tfsdk:"value"`
 }
 
