@@ -24,34 +24,34 @@
 
 ## 3. Data Source — `elasticstack_kibana_security_entity_store_resolution_group`
 
-- [ ] 3.1 Create package `internal/kibana/security_entity_store_resolution_group/`. Add `data_source.go` with factory `NewResolutionGroupDataSource()`, `Metadata`, and `Configure`; add PF interface assertions.
-- [ ] 3.2 Add `schema.go` for data source schema:
+- [x] 3.1 Create package `internal/kibana/security_entity_store_resolution_group/`. Add `data_source.go` with factory `NewResolutionGroupDataSource()`, `Metadata`, and `Configure`; add PF interface assertions.
+- [x] 3.2 Add `schema.go` for data source schema:
   - `id` (computed string) — composite `<space_id>/<entity_id>`.
   - `space_id` (optional, computed string, default `"default"`).
   - `entity_id` (required string).
   - `resolution_group_json` (computed `jsontypes.NormalizedType{}`).
   - `kibana_connection` block via `schema.GetKbFWConnectionBlock()`.
-- [ ] 3.3 Add `models.go` with `resolutionGroupModel` (PF model struct).
-- [ ] 3.4 Add `read.go` for the data source Read: call `GetSecurityEntityStoreResolutionGroup` with `entity_id`; enforce `EnforceMinVersion("9.1.0")`; parse and store raw JSON body in `resolution_group_json`.
-- [ ] 3.5 Register the data source in `provider/plugin_framework.go`.
+- [x] 3.3 Add `models.go` with `resolutionGroupModel` (PF model struct).
+- [x] 3.4 Add `read.go` for the data source Read: call `GetSecurityEntityStoreResolutionGroup` with `entity_id`; enforce `EnforceMinVersion("9.1.0")`; parse and store raw JSON body in `resolution_group_json`.
+- [x] 3.5 Register the data source in `provider/plugin_framework.go`.
 
 ## 4. Testing
 
-- [ ] 4.1 Add acceptance test in `internal/kibana/security_entity_store_entity_link/acc_test.go`:
+- [x] 4.1 Add acceptance test in `internal/kibana/security_entity_store_entity_link/acc_test.go`:
   - Skip if enterprise license unavailable (detect 403 from link API or use `acctest.SkipIfEnterpriseNotAvailable`-style helper).
   - **Step 1**: Create a link resource with 2 entity_ids; assert `id`, `target_id`, `entity_ids`, `resolution_group_json` in state.
   - **Step 2**: Add a third entity_id (update); assert state reflects new set.
   - **Step 3**: Remove one entity_id (update); assert state reflects reduced set.
   - **Step 4**: Import via `<space_id>/<target_id>`; assert state reconstructed correctly.
   - **Step 5**: Destroy; assert no residual links.
-- [ ] 4.2 Add acceptance test for the data source in `internal/kibana/security_entity_store_resolution_group/acc_test.go`:
+- [x] 4.2 Add acceptance test for the data source in `internal/kibana/security_entity_store_resolution_group/acc_test.go`:
   - Depends on a linked resource from 4.1 (or creates its own).
   - Assert `resolution_group_json` is non-empty and contains the expected entity IDs.
-- [ ] 4.3 Add acceptance test for schema validation:
+- [x] 4.3 Add acceptance test for schema validation:
   - Expect plan-time error when `entity_ids` contains `target_id` (self-link).
   - Expect plan-time error when `entity_ids` is empty.
 - [ ] 4.4 Add acceptance test in a non-default space (set `space_id = "test-space"`), if the test environment supports it.
-- [ ] 4.5 Add unit tests for:
+- [x] 4.5 Add unit tests for:
   - `BuildSpaceAwarePath` integration (covered by existing tests; verify request editors are applied correctly in resource logic).
   - Set-diff logic in update (new/removed IDs, all-new, all-removed edge cases).
   - `id` composite construction and `ImportState` parsing.
