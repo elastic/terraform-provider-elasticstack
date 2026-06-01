@@ -44,7 +44,7 @@ data "elasticstack_elasticsearch_ml_trained_model" "example" {
 - `model_size_bytes` (Number) The estimated memory usage in bytes to keep the trained model in memory.
 - `model_type` (String) The model type.
 - `platform_architecture` (String) The platform identifier (e.g. linux-x86_64).
-- `tags` (Set of String) A comma delimited string of tags. A trained model can have many tags, or none.
+- `tags` (Set of String) A set of tags for the trained model.
 - `version` (String) The Elasticsearch version number in which the trained model was created.
 
 <a id="nestedblock--elasticsearch_connection"></a>

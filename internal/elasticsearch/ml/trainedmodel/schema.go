@@ -54,7 +54,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				Computed:            true,
 			},
 			"tags": dsschema.SetAttribute{
-				MarkdownDescription: "A comma delimited string of tags. A trained model can have many tags, or none.",
+				MarkdownDescription: "A set of tags for the trained model.",
 				ElementType:         types.StringType,
 				Computed:            true,
 			},
