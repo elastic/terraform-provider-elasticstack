@@ -31,16 +31,17 @@ func TestAccResourceKibanaSecurityEntityStore_basic(t *testing.T) {
 	skipIfUnsupported(t)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("basic"),
-				Check:           resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store.test", "id"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				Check:                    resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store.test", "id"),
 			},
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("basic"),
-				PlanOnly:        true,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				PlanOnly:                 true,
 			},
 		},
 	})
@@ -50,19 +51,20 @@ func TestAccResourceKibanaSecurityEntityStore_singleType(t *testing.T) {
 	skipIfUnsupported(t)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("single_type"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("single_type"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "entity_types.#", "1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store.test", "entity_types.*", "host"),
 				),
 			},
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("single_type"),
-				PlanOnly:        true,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("single_type"),
+				PlanOnly:                 true,
 			},
 		},
 	})
@@ -72,19 +74,20 @@ func TestAccResourceKibanaSecurityEntityStore_updateLogExtraction(t *testing.T) 
 	skipIfUnsupported(t)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update_log_extraction"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_log_extraction"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "log_extraction.delay", "5m"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "log_extraction.frequency", "10m"),
 				),
 			},
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update_log_extraction"),
-				PlanOnly:        true,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_log_extraction"),
+				PlanOnly:                 true,
 			},
 		},
 	})
@@ -135,11 +138,11 @@ func TestAccResourceKibanaSecurityEntityStore_shrinkWithFlag(t *testing.T) {
 	skipIfUnsupported(t)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("shrink_with_flag"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("shrink_with_flag"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "entity_types.#", "1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store.test", "entity_types.*", "host"),
@@ -147,8 +150,9 @@ func TestAccResourceKibanaSecurityEntityStore_shrinkWithFlag(t *testing.T) {
 				),
 			},
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("shrink_with_flag"),
-				PlanOnly:        true,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("shrink_with_flag"),
+				PlanOnly:                 true,
 			},
 		},
 	})
@@ -158,16 +162,17 @@ func TestAccResourceKibanaSecurityEntityStore_startedFalse(t *testing.T) {
 	skipIfUnsupported(t)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("started_false"),
-				Check:           resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "started", "false"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("started_false"),
+				Check:                    resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "started", "false"),
 			},
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("started_false"),
-				PlanOnly:        true,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("started_false"),
+				PlanOnly:                 true,
 			},
 		},
 	})

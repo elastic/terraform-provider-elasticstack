@@ -114,7 +114,7 @@ func getSchema(_ context.Context) schema.Schema {
 						ElementType:   types.StringType,
 						PlanModifiers: []planmodifier.List{listplanmodifier.UseStateForUnknown()},
 					},
-					"delay": schema.StringAttribute{
+					delayAttr: schema.StringAttribute{
 						Optional:      true,
 						Computed:      true,
 						PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
@@ -124,17 +124,17 @@ func getSchema(_ context.Context) schema.Schema {
 						Computed:      true,
 						PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
 					},
-					"field_history_length": schema.Int64Attribute{
+					fieldHistoryLengthAttr: schema.Int64Attribute{
 						Optional:      true,
 						Computed:      true,
 						PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
 					},
-					"frequency": schema.StringAttribute{
+					frequencyAttr: schema.StringAttribute{
 						Optional:      true,
 						Computed:      true,
 						PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 					},
-					"lookback_period": schema.StringAttribute{
+					lookbackPeriodAttr: schema.StringAttribute{
 						Optional:      true,
 						Computed:      true,
 						PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},

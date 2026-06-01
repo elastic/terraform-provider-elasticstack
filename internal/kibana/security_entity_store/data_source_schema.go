@@ -37,7 +37,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 				Description: "If true, returns a detailed status of each engine including all its components.",
 				Optional:    true,
 			},
-			"installed": schema.BoolAttribute{
+			installedAttr: schema.BoolAttribute{
 				Description: "True when the Entity Store is installed.",
 				Computed:    true,
 			},
@@ -62,19 +62,19 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 							Description: "Index pattern used by the engine.",
 							Computed:    true,
 						},
-						"field_history_length": schema.Int64Attribute{
+						fieldHistoryLengthAttr: schema.Int64Attribute{
 							Description: "Number of historical values kept per field.",
 							Computed:    true,
 						},
-						"delay": schema.StringAttribute{
+						delayAttr: schema.StringAttribute{
 							Description: "Delay used for log extraction.",
 							Computed:    true,
 						},
-						"frequency": schema.StringAttribute{
+						frequencyAttr: schema.StringAttribute{
 							Description: "Frequency used for log extraction.",
 							Computed:    true,
 						},
-						"lookback_period": schema.StringAttribute{
+						lookbackPeriodAttr: schema.StringAttribute{
 							Description: "Lookback period used for log extraction.",
 							Computed:    true,
 						},
@@ -107,7 +107,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 										Description: "Component identifier.",
 										Computed:    true,
 									},
-									"installed": schema.BoolAttribute{
+									installedAttr: schema.BoolAttribute{
 										Description: "Whether the component is installed.",
 										Computed:    true,
 									},

@@ -34,16 +34,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-const frequencyAttr = "frequency"
+const (
+	delayAttr              = "delay"
+	fieldHistoryLengthAttr = "field_history_length"
+	frequencyAttr          = "frequency"
+	installedAttr          = "installed"
+	lookbackPeriodAttr     = "lookback_period"
+)
 
 var logExtractionObjectType = types.ObjectType{AttrTypes: map[string]attr.Type{
 	"additional_index_patterns":        types.ListType{ElemType: types.StringType},
 	"excluded_index_patterns":          types.ListType{ElemType: types.StringType},
-	"delay":                            types.StringType,
+	delayAttr:                          types.StringType,
 	"docs_limit":                       types.Int64Type,
-	"field_history_length":             types.Int64Type,
-	"frequency":                        types.StringType,
-	"lookback_period":                  types.StringType,
+	fieldHistoryLengthAttr:             types.Int64Type,
+	frequencyAttr:                      types.StringType,
+	lookbackPeriodAttr:                 types.StringType,
 	"max_logs_per_page":                types.Int64Type,
 	"max_logs_per_window":              types.Int64Type,
 	"max_logs_per_window_cap_behavior": types.StringType,
@@ -54,10 +60,10 @@ var engineObjectType = types.ObjectType{AttrTypes: map[string]attr.Type{
 	"type":                 types.StringType,
 	"status":               types.StringType,
 	"index_pattern":        types.StringType,
-	"field_history_length": types.Int64Type,
-	"delay":                types.StringType,
-	"frequency":            types.StringType,
-	"lookback_period":      types.StringType,
+	fieldHistoryLengthAttr: types.Int64Type,
+	delayAttr:              types.StringType,
+	frequencyAttr:          types.StringType,
+	lookbackPeriodAttr:     types.StringType,
 	"filter":               types.StringType,
 	"timeout":              types.StringType,
 	"timestamp_field":      types.StringType,
@@ -67,10 +73,10 @@ var engineObjectType = types.ObjectType{AttrTypes: map[string]attr.Type{
 }}
 
 var engineComponentObjectType = types.ObjectType{AttrTypes: map[string]attr.Type{
-	"id":        types.StringType,
-	"installed": types.BoolType,
-	"resource":  types.StringType,
-	"health":    types.StringType,
+	"id":          types.StringType,
+	installedAttr: types.BoolType,
+	"resource":    types.StringType,
+	"health":      types.StringType,
 }}
 
 // entityStoreStatus mirrors the JSON shape returned by GET /api/security/entity_store/status.
