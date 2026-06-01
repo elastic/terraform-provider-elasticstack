@@ -16,7 +16,7 @@ Manages the Elastic Security Entity Store lifecycle within a Kibana space.
 
 ### Optional
 
-- `allow_entity_type_shrink` (Boolean) Terraform-only guard that permits removing installed entity types when true.
+- `allow_entity_type_shrink` (Boolean) Terraform-only guard that permits removing installed entity types when true. Removing an entity type will also remove any registered entities of that type.
 - `entity_types` (Set of String) Entity types to install and manage. Valid values are user, host, service, and generic.
 - `history_snapshot` (Attributes) Install-only history snapshot settings. (see [below for nested schema](#nestedatt--history_snapshot))
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))

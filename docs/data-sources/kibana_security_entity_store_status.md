@@ -23,7 +23,7 @@ Reads Elastic Security Entity Store status for a Kibana space.
 
 ### Read-Only
 
-- `engines_json` (String) Normalized JSON of the engines array.
+- `engines` (Attributes List) Per-engine status details. (see [below for nested schema](#nestedatt--engines))
 - `installed` (Boolean) True when the Entity Store is installed.
 - `overall_status` (String) The overall operational status of the Entity Store.
 - `status_json` (String) Normalized JSON of the full status response.
@@ -40,3 +40,33 @@ Optional:
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.
+
+
+<a id="nestedatt--engines"></a>
+### Nested Schema for `engines`
+
+Read-Only:
+
+- `components` (Attributes List) Component-level status for the engine. (see [below for nested schema](#nestedatt--engines--components))
+- `delay` (String) Delay used for log extraction.
+- `error_action` (String) Action associated with the last engine error, if any.
+- `error_message` (String) Message describing the last engine error, if any.
+- `field_history_length` (Number) Number of historical values kept per field.
+- `filter` (String) Filter query applied to the engine.
+- `frequency` (String) Frequency used for log extraction.
+- `index_pattern` (String) Index pattern used by the engine.
+- `lookback_period` (String) Lookback period used for log extraction.
+- `status` (String) Current status of the engine.
+- `timeout` (String) Timeout setting for the engine.
+- `timestamp_field` (String) Timestamp field used by the engine.
+- `type` (String) The entity type managed by this engine.
+
+<a id="nestedatt--engines--components"></a>
+### Nested Schema for `engines.components`
+
+Read-Only:
+
+- `health` (String) Health status of the component.
+- `id` (String) Component identifier.
+- `installed` (Boolean) Whether the component is installed.
+- `resource` (String) Type of Elasticsearch or Kibana resource backing this component.
