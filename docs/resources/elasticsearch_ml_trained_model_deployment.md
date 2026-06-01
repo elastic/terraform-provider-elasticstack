@@ -25,7 +25,7 @@ On Terraform destroy the resource stops (undeploys) the model deployment.
 
 ### Optional
 
-- `adaptive_allocations` (Block, Optional) Adaptive allocations configuration. When enabled, the number of allocations is set based on the current load. Cannot be set when `number_of_allocations` is configured. (see [below for nested schema](#nestedblock--adaptive_allocations))
+- `adaptive_allocations` (Attributes) Adaptive allocations configuration. When enabled, the number of allocations is set based on the current load. Cannot be set when `number_of_allocations` is configured. (see [below for nested schema](#nestedatt--adaptive_allocations))
 - `api_timeout` (String) Specifies the amount of time to wait for the model to deploy. This is the server-side start timeout.
 - `deployment_id` (String) A unique identifier for the deployment of the model. Defaults to the value of `model_id`.
 - `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
@@ -44,7 +44,7 @@ On Terraform destroy the resource stops (undeploys) the model deployment.
 - `state` (String) The overall state of the deployment.
 - `stats_json` (String) The raw JSON of the trained model stats for this deployment.
 
-<a id="nestedblock--adaptive_allocations"></a>
+<a id="nestedatt--adaptive_allocations"></a>
 ### Nested Schema for `adaptive_allocations`
 
 Required:

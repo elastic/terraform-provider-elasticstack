@@ -85,7 +85,7 @@ func readTrainedModelDeployment(
 	state.StatsJSON = types.StringValue(statsJSON)
 
 	// Update number_of_allocations from API only when adaptive_allocations is NOT configured
-	if len(state.AdaptiveAllocations) == 0 {
+	if state.AdaptiveAllocations.Enabled.IsNull() {
 		if stats.DeploymentStats.NumberOfAllocations != nil {
 			state.NumberOfAllocations = types.Int64Value(int64(*stats.DeploymentStats.NumberOfAllocations))
 		} else {

@@ -131,10 +131,9 @@ func GetSchema(ctx context.Context) schema.Schema {
 				Create: true,
 				Update: true,
 			}),
-		},
-		Blocks: map[string]schema.Block{
-			"adaptive_allocations": schema.SingleNestedBlock{
+			"adaptive_allocations": schema.SingleNestedAttribute{
 				MarkdownDescription: "Adaptive allocations configuration. When enabled, the number of allocations is set based on the current load. Cannot be set when `number_of_allocations` is configured.",
+				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
 						MarkdownDescription: "If `true`, adaptive allocations is enabled.",

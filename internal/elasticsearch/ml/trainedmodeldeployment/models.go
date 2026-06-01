@@ -29,22 +29,22 @@ import (
 //
 //nolint:revive // consistent naming with other ML resources
 type TrainedModelDeploymentData struct {
-	ID                      types.String              `tfsdk:"id"`
-	ElasticsearchConnection types.List                `tfsdk:"elasticsearch_connection"`
-	ModelID                 types.String              `tfsdk:"model_id"`
-	DeploymentID            types.String              `tfsdk:"deployment_id"`
-	NumberOfAllocations     types.Int64               `tfsdk:"number_of_allocations"`
-	ThreadsPerAllocation    types.Int64               `tfsdk:"threads_per_allocation"`
-	Priority                types.String              `tfsdk:"priority"`
-	QueueCapacity           types.Int64               `tfsdk:"queue_capacity"`
-	WaitFor                 types.String              `tfsdk:"wait_for"`
-	APITimeout              customtypes.Duration      `tfsdk:"api_timeout"`
-	ForceStop               types.Bool                `tfsdk:"force_stop"`
-	AdaptiveAllocations     []AdaptiveAllocationsData `tfsdk:"adaptive_allocations"`
-	Timeouts                timeouts.Value            `tfsdk:"timeouts"`
-	State                   types.String              `tfsdk:"state"`
-	AllocationStatus        types.String              `tfsdk:"allocation_status"`
-	StatsJSON               types.String              `tfsdk:"stats_json"`
+	ID                      types.String            `tfsdk:"id"`
+	ElasticsearchConnection types.List              `tfsdk:"elasticsearch_connection"`
+	ModelID                 types.String            `tfsdk:"model_id"`
+	DeploymentID            types.String            `tfsdk:"deployment_id"`
+	NumberOfAllocations     types.Int64             `tfsdk:"number_of_allocations"`
+	ThreadsPerAllocation    types.Int64             `tfsdk:"threads_per_allocation"`
+	Priority                types.String            `tfsdk:"priority"`
+	QueueCapacity           types.Int64             `tfsdk:"queue_capacity"`
+	WaitFor                 types.String            `tfsdk:"wait_for"`
+	APITimeout              customtypes.Duration    `tfsdk:"api_timeout"`
+	ForceStop               types.Bool              `tfsdk:"force_stop"`
+	AdaptiveAllocations     AdaptiveAllocationsData `tfsdk:"adaptive_allocations"`
+	Timeouts                timeouts.Value          `tfsdk:"timeouts"`
+	State                   types.String            `tfsdk:"state"`
+	AllocationStatus        types.String            `tfsdk:"allocation_status"`
+	StatsJSON               types.String            `tfsdk:"stats_json"`
 }
 
 type AdaptiveAllocationsData struct {
