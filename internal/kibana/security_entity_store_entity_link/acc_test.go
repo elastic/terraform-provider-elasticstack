@@ -32,6 +32,10 @@ var minVersionEntityStoreResolution = version.Must(version.NewVersion("9.1.0"))
 func TestAccResourceSecurityEntityStoreEntityLink(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionEntityStoreResolution, versionutils.FlavorAny)
 
+	// Skipping until entity store fixture data can be created in CI.
+	// The resolution APIs require pre-existing entities with enterprise license.
+	t.Skip("Skipping: requires entity store with pre-existing entities and enterprise license")
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
