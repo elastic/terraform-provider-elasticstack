@@ -28,7 +28,7 @@ import (
 )
 
 var (
-	minVersion = version.Must(version.NewVersion("9.4.0"))
+	MinVersion = version.Must(version.NewVersion("9.4.0"))
 )
 
 type tfModel struct {
@@ -72,8 +72,8 @@ func (model tfModel) GetResourceID() types.String     { return types.StringValue
 
 func (*tfModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{{
-		MinVersion:   *minVersion,
-		ErrorMessage: fmt.Sprintf("elasticstack_kibana_security_entity_store_entity is supported only for Kibana v%s and above", minVersion.String()),
+		MinVersion:   *MinVersion,
+		ErrorMessage: fmt.Sprintf("elasticstack_kibana_security_entity_store_entity is supported only for Kibana v%s and above", MinVersion.String()),
 	}}, nil
 }
 
