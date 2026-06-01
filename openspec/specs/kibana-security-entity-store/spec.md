@@ -22,7 +22,7 @@ Elastic Security Entity Store within a single Kibana space:
   desired engine state.
 - **Delete**: call `POST /api/security/entity_store/uninstall` for the entity types held in state.
 
-The resource SHALL enforce `EnforceMinVersion("9.1.0")` in Create, Read, and Update.
+The resource SHALL enforce `EnforceMinVersion("9.4.0")` in Create, Read, and Update.
 
 #### Scenario: Create installs the Entity Store
 
