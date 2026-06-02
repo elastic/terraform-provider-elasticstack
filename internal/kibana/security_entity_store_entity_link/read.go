@@ -68,7 +68,7 @@ func readEntityLink(ctx context.Context, client *clients.KibanaScopedClient, res
 	} else {
 		result.TargetID = types.StringValue(targetID)
 	}
-	diags.Append(result.populateFromAPI(ctx, spaceID, payload, expectedEntityIDs)...)
+	diags.Append(result.populateFromAPI(ctx, spaceID, payload)...)
 	return result, true, diags
 }
 

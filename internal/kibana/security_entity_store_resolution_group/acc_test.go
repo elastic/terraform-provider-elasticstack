@@ -27,7 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-var minVersionEntityStoreResolution = version.Must(version.NewVersion("9.1.0"))
+var minVersionEntityStoreResolution = version.Must(version.NewVersion("9.4.0"))
 
 func TestAccDataSourceSecurityEntityStoreResolutionGroup(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionEntityStoreResolution, versionutils.FlavorAny)

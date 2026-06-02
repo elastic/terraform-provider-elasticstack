@@ -36,12 +36,6 @@ func updateEntityLink(ctx context.Context, client *clients.KibanaScopedClient, r
 	prior := *req.Prior
 	var diags diag.Diagnostics
 
-	_, d := client.EnforceMinVersion(ctx, minKibanaEntityStoreResolutionVersion)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[entityLinkModel]{}, diags
-	}
-
 	planEntityIDs := typeutils.SetTypeAs[string](ctx, plan.EntityIDs, path.Root("entity_ids"), &diags)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[entityLinkModel]{}, diags

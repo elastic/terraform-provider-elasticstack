@@ -61,9 +61,7 @@ func (model entityLinkModel) GetVersionRequirements() ([]entitycore.VersionRequi
 }
 
 // populateFromAPI updates the model from a parsed resolution group response.
-// expectedEntityIDs is the set of IDs the resource manages; if any are absent
-// from the API response a warning diagnostic is emitted.
-func (model *entityLinkModel) populateFromAPI(ctx context.Context, spaceID string, payload map[string]any, expectedEntityIDs []string) diag.Diagnostics {
+func (model *entityLinkModel) populateFromAPI(ctx context.Context, spaceID string, payload map[string]any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: model.TargetID.ValueString()}).String())
@@ -86,26 +84,6 @@ func (model *entityLinkModel) populateFromAPI(ctx context.Context, spaceID strin
 		return diags
 	}
 	model.EntityIDs = entityIDsSet
-
-	// Warn when any managed entity_ids are absent from the response.
-	if len(expectedEntityIDs) > 0 {
-		apiSet := make(map[string]struct{}, len(apiEntityIDs))
-		for _, id := range apiEntityIDs {
-			apiSet[id] = struct{}{}
-		}
-		var missing []string
-		for _, id := range expectedEntityIDs {
-			if _, ok := apiSet[id]; !ok {
-				missing = append(missing, id)
-			}
-		}
-		if len(missing) > 0 {
-			diags.AddWarning(
-				"Missing entity IDs in resolution group",
-				fmt.Sprintf("The following managed entity IDs are not present in the API response and may have been removed out-of-band: %v", missing),
-			)
-		}
-	}
 
 	return diags
 }
