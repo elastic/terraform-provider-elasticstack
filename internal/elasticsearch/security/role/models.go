@@ -568,7 +568,7 @@ var _ entitycore.WithVersionRequirements = Data{}
 
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements] and declares
 // conditional minimum Elasticsearch versions for configured description and remote_indices.
-func (data Data) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (data Data) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	var reqs []entitycore.VersionRequirement
 
 	if typeutils.IsKnown(data.Description) {

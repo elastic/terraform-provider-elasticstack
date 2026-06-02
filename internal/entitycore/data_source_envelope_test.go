@@ -426,7 +426,7 @@ type modelWithVersionReqsDiagError struct {
 	ID types.String `tfsdk:"id"`
 }
 
-func (*modelWithVersionReqsDiagError) GetVersionRequirements(ctx context.Context) ([]VersionRequirement, diag.Diagnostics) {
+func (*modelWithVersionReqsDiagError) GetVersionRequirements(_ context.Context) ([]VersionRequirement, diag.Diagnostics) {
 	return nil, diag.Diagnostics{
 		diag.NewErrorDiagnostic("version requirements error", "injected GetVersionRequirements failure"),
 	}
@@ -450,7 +450,7 @@ type supportedVersionModel struct {
 	ID types.String `tfsdk:"id"`
 }
 
-func (*supportedVersionModel) GetVersionRequirements(ctx context.Context) ([]VersionRequirement, diag.Diagnostics) {
+func (*supportedVersionModel) GetVersionRequirements(_ context.Context) ([]VersionRequirement, diag.Diagnostics) {
 	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
 	return []VersionRequirement{{MinVersion: *minVer, ErrorMessage: "needs 8.0.0"}}, nil
 }
@@ -473,7 +473,7 @@ type unsupportedVersionModel struct {
 	ID types.String `tfsdk:"id"`
 }
 
-func (*unsupportedVersionModel) GetVersionRequirements(ctx context.Context) ([]VersionRequirement, diag.Diagnostics) {
+func (*unsupportedVersionModel) GetVersionRequirements(_ context.Context) ([]VersionRequirement, diag.Diagnostics) {
 	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
 	return []VersionRequirement{{MinVersion: *minVer, ErrorMessage: "requires Kibana 8.0.0 or later"}}, nil
 }
@@ -894,7 +894,7 @@ type esModelWithVersionReqsDiagError struct {
 	ID types.String `tfsdk:"id"`
 }
 
-func (*esModelWithVersionReqsDiagError) GetVersionRequirements(ctx context.Context) ([]VersionRequirement, diag.Diagnostics) {
+func (*esModelWithVersionReqsDiagError) GetVersionRequirements(_ context.Context) ([]VersionRequirement, diag.Diagnostics) {
 	return nil, diag.Diagnostics{
 		diag.NewErrorDiagnostic("es version requirements error", "injected ES GetVersionRequirements failure"),
 	}
@@ -918,7 +918,7 @@ type esSupportedVersionModel struct {
 	ID types.String `tfsdk:"id"`
 }
 
-func (*esSupportedVersionModel) GetVersionRequirements(ctx context.Context) ([]VersionRequirement, diag.Diagnostics) {
+func (*esSupportedVersionModel) GetVersionRequirements(_ context.Context) ([]VersionRequirement, diag.Diagnostics) {
 	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
 	return []VersionRequirement{{MinVersion: *minVer, ErrorMessage: "needs 8.0.0"}}, nil
 }
@@ -941,7 +941,7 @@ type esUnsupportedVersionModel struct {
 	ID types.String `tfsdk:"id"`
 }
 
-func (*esUnsupportedVersionModel) GetVersionRequirements(ctx context.Context) ([]VersionRequirement, diag.Diagnostics) {
+func (*esUnsupportedVersionModel) GetVersionRequirements(_ context.Context) ([]VersionRequirement, diag.Diagnostics) {
 	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
 	return []VersionRequirement{{MinVersion: *minVer, ErrorMessage: "requires Elasticsearch 8.0.0 or later"}}, nil
 }
