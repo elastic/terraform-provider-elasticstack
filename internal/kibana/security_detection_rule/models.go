@@ -590,8 +590,13 @@ func (d Data) setCommonUpdateProps(
 }
 
 // Helper function to initialize fields that should be set to default values for all rule types
-func (d Data) GetID() types.String             { return d.ID }
-func (d Data) GetResourceID() types.String     { return d.RuleID }
+func (d Data) GetID() types.String { return d.ID }
+func (d Data) GetResourceID() types.String {
+	if compID, _ := clients.CompositeIDFromStr(d.ID.ValueString()); compID != nil {
+		return types.StringValue(compID.ResourceID)
+	}
+	return d.RuleID
+}
 func (d Data) GetSpaceID() types.String        { return d.SpaceID }
 func (d Data) GetKibanaConnection() types.List { return d.KibanaConnection }
 

@@ -75,7 +75,6 @@ func createDetectionRule(
 		ResourceID: id,
 	}
 	data.ID = types.StringValue(compID.String())
-	data.RuleID = types.StringValue(id)
 
 	return entitycore.KibanaWriteResult[Data]{Model: data}, diags
 }

@@ -64,8 +64,13 @@ type ExceptionItemModel struct {
 	TieBreakerID     types.String         `tfsdk:"tie_breaker_id"`
 }
 
-func (m ExceptionItemModel) GetID() types.String             { return m.ID }
-func (m ExceptionItemModel) GetResourceID() types.String     { return m.ItemID }
+func (m ExceptionItemModel) GetID() types.String { return m.ID }
+func (m ExceptionItemModel) GetResourceID() types.String {
+	if compID, _ := clients.CompositeIDFromStr(m.ID.ValueString()); compID != nil {
+		return types.StringValue(compID.ResourceID)
+	}
+	return m.ItemID
+}
 func (m ExceptionItemModel) GetSpaceID() types.String        { return m.SpaceID }
 func (m ExceptionItemModel) GetKibanaConnection() types.List { return m.KibanaConnection }
 
