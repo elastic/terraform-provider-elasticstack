@@ -22,7 +22,7 @@
   - `id` (computed, UseStateForUnknown)
   - `model_alias` (required, RequiresReplace)
   - `model_id` (required)
-  - `reassign` (optional, bool, default false)
+  - `reassign` (optional, bool, default true)
 
 ## 4. CRUD callbacks
 
@@ -41,9 +41,9 @@
 
 - [ ] 6.1 Create `internal/elasticsearch/ml/trainedmodelalias/acc_test.go` with:
   - TestAccResourceMLTrainedModelAlias_basic — create alias, verify id set, re-plan (no diff), import by composite id, delete
-  - TestAccResourceMLTrainedModelAlias_reassign — create alias pointing to model A, update model_id to model B with reassign=true, verify model_id updated in state
-  - TestAccResourceMLTrainedModelAlias_collisionWithoutReassign — attempt to create alias that already exists without reassign=true; expect error
-  - TestAccResourceMLTrainedModelAlias_updateReassignFlag — change reassign from false to true on an existing resource
+  - TestAccResourceMLTrainedModelAlias_reassign — create alias pointing to model A, update model_id to model B, verify model_id updated in state (default reassign=true)
+  - TestAccResourceMLTrainedModelAlias_collisionWithReassignDisabled — attempt to create alias that already exists with reassign=false; expect error
+  - TestAccResourceMLTrainedModelAlias_updateReassignFlag — change reassign from true to false on an existing resource
 
 ## 7. Verify
 

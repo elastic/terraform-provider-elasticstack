@@ -46,7 +46,7 @@ The DELETE API path includes the model_id: `DELETE /_ml/trained_models/{model_id
 
 ### 5. reassign flag semantics
 
-`reassign` is an optional boolean (default false). It is sent as a query parameter on every PUT (create and update). When false, the PUT fails if the alias already points to a different model. When true, the PUT succeeds. In update scenarios, `reassign=true` is required to change `model_id`. The spec will document this constraint.
+`reassign` is an optional boolean (default true). It is sent as a query parameter on every PUT (create and update). When true (default), the PUT succeeds even if the alias already points to a different model, which is the sensible default for a Terraform-managed alias. When explicitly set to false, the PUT fails if the alias already points to a different model, providing strict collision detection for users who need it.
 
 ### 6. Client wrappers in internal/clients/elasticsearch/
 

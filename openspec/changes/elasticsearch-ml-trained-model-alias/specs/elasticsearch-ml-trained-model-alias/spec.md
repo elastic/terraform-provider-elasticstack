@@ -13,7 +13,7 @@ resource "elasticstack_elasticsearch_ml_trained_model_alias" "example" {
   id          = <computed, string>  # internal identifier: <cluster_uuid>/<model_alias>; UseStateForUnknown
   model_alias = <required, string>  # force new; unique logical alias name; cannot end in digits per ES validation
   model_id    = <required, string>  # the trained model this alias refers to; mutable (not force new)
-  reassign    = <optional, bool>    # default: false; when true, allows PUT to succeed if alias already refers to a different model
+  reassign    = <optional, bool>    # default: true; when false, PUT fails if alias already refers to a different model
 
   # Resource-level Elasticsearch connection override (injected by entitycore)
   elasticsearch_connection {
@@ -63,33 +63,33 @@ The `model_id` attribute SHALL NOT be marked ForceNew. Changing `model_id` trigg
 
 ### Requirement: API — Create (REQ-002)
 
-The resource SHALL call `PUT _ml/trained_models/{model_id}/model_aliases/{model_alias}` with the `reassign` query parameter set to the plan value (default false) to create the alias.
-
-When `reassign = false` and an alias with the same name already exists pointing to a different model, Elasticsearch returns an error; the resource SHALL surface that error and leave no state.
+The resource SHALL call `PUT _ml/trained_models/{model_id}/model_aliases/{model_alias}` with the `reassign` query parameter set to the plan value (default true) to create the alias.
 
 When `reassign = true`, the PUT succeeds even if the alias already points to a different model.
 
+When `reassign = false` and an alias with the same name already exists pointing to a different model, Elasticsearch returns an error; the resource SHALL surface that error and leave no state.
+
 #### Scenario: Create new alias
-- GIVEN a plan with `model_alias = "my-alias"`, `model_id = "model-1"`, `reassign = false`
+- GIVEN a plan with `model_alias = "my-alias"`, `model_id = "model-1"`
 - AND no alias named `my-alias` exists
 - WHEN Create is called
-- THEN `PUT _ml/trained_models/model-1/model_aliases/my-alias?reassign=false` is called
+- THEN `PUT _ml/trained_models/model-1/model_aliases/my-alias?reassign=true` is called
 - AND the composite `id` is set in state as `<cluster_uuid>/my-alias`
 
-#### Scenario: Create fails when alias already exists without reassign
+#### Scenario: Create succeeds with reassignment when alias already exists
+- GIVEN an alias named `my-alias` already exists pointing to `model-2`
+- AND the plan has `model_id = "model-1"`
+- WHEN Create is called
+- THEN `PUT _ml/trained_models/model-1/model_aliases/my-alias?reassign=true` is called
+- AND the alias is reassigned to `model-1`
+- AND the composite `id` is set in state
+
+#### Scenario: Create fails when alias already exists with reassign disabled
 - GIVEN an alias named `my-alias` already exists pointing to `model-2`
 - AND the plan has `reassign = false`
 - WHEN Create is called
 - THEN Elasticsearch returns an error
 - AND the resource SHALL surface the error with no state persisted
-
-#### Scenario: Create succeeds with reassign when alias already exists
-- GIVEN an alias named `my-alias` already exists pointing to `model-2`
-- AND the plan has `reassign = true` and `model_id = "model-1"`
-- WHEN Create is called
-- THEN `PUT _ml/trained_models/model-1/model_aliases/my-alias?reassign=true` is called
-- AND the alias is reassigned to `model-1`
-- AND the composite `id` is set in state
 
 ### Requirement: API — Read (REQ-003)
 
@@ -120,16 +120,16 @@ When the alias is found, the resource SHALL map the resolved `model_id` from the
 
 When `model_id` or `reassign` changes, the resource SHALL call `PUT _ml/trained_models/{model_id}/model_aliases/{model_alias}` using the planned `model_id` and `reassign` values.
 
-To change `model_id` in-place, `reassign` MUST be `true`; otherwise Elasticsearch returns an error because the alias already exists pointing to a different model.
+To change `model_id` in-place, `reassign` MUST NOT be `false`; otherwise Elasticsearch returns an error because the alias already exists pointing to a different model.
 
-#### Scenario: Update model_id with reassign=true
+#### Scenario: Update model_id
 - GIVEN a resource with `model_alias = "my-alias"`, `model_id = "model-1"`, `reassign = true`
-- AND the plan has `model_id = "model-2"`, `reassign = true`
+- AND the plan has `model_id = "model-2"`
 - WHEN Update is called
 - THEN `PUT _ml/trained_models/model-2/model_aliases/my-alias?reassign=true` is called
 - AND Read is called afterward; state reflects `model_id = "model-2"`
 
-#### Scenario: Update model_id without reassign fails
+#### Scenario: Update model_id with reassign disabled fails
 - GIVEN a resource with `model_alias = "my-alias"`, `model_id = "model-1"`, `reassign = false`
 - AND the plan has `model_id = "model-2"`, `reassign = false`
 - WHEN Update is called
@@ -137,10 +137,10 @@ To change `model_id` in-place, `reassign` MUST be `true`; otherwise Elasticsearc
 - AND the resource SHALL surface the error
 
 #### Scenario: Update reassign flag only
-- GIVEN a resource with `reassign = false` and `model_id = "model-1"`
-- AND the plan changes only `reassign = true`
+- GIVEN a resource with `reassign = true` and `model_id = "model-1"`
+- AND the plan changes only `reassign = false`
 - WHEN Update is called
-- THEN `PUT _ml/trained_models/model-1/model_aliases/{alias}?reassign=true` is called successfully
+- THEN `PUT _ml/trained_models/model-1/model_aliases/{alias}?reassign=false` is called successfully
 
 ### Requirement: API — Delete (REQ-005)
 
@@ -169,14 +169,14 @@ Any other API error SHALL be surfaced as a "Failed to delete ML trained model al
 
 The resource SHALL support import by composite `<cluster_uuid>/<model_alias>` ID.
 
-On import, the resource SHALL set `id` to the full composite ID and call Read using `model_alias` as the resource identity. `model_id` is populated from the API response. `reassign` defaults to false on import (the API does not persist or return this flag).
+On import, the resource SHALL set `id` to the full composite ID and call Read using `model_alias` as the resource identity. `model_id` is populated from the API response. `reassign` defaults to true on import (the API does not persist or return this flag).
 
 #### Scenario: Import by composite id
 - GIVEN an alias `my-alias` exists in Elasticsearch pointing to `model-1`
 - WHEN `terraform import elasticstack_elasticsearch_ml_trained_model_alias.example <cluster_uuid>/my-alias` is run
 - THEN `model_alias` is set to `my-alias`
 - AND `model_id` is set to `model-1`
-- AND `reassign` defaults to false
+- AND `reassign` defaults to true
 
 ### Requirement: Drift handling (REQ-007)
 
