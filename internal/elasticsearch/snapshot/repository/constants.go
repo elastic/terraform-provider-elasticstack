@@ -31,6 +31,7 @@ const (
 // attribute names and as keys in the request/response JSON sent to the
 // Elasticsearch _snapshot API.
 const (
+	attrName                      = "name"
 	settingChunkSize              = "chunk_size"
 	settingCompress               = "compress"
 	settingMaxSnapshotBytesPerSec = "max_snapshot_bytes_per_sec"

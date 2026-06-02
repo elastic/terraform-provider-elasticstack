@@ -57,7 +57,7 @@ func GetSchema(_ context.Context) schema.Schema {
 				MarkdownDescription: "Internal identifier of the resource",
 				Computed:            true,
 			},
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				MarkdownDescription: "Name of the snapshot repository to register or update.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{

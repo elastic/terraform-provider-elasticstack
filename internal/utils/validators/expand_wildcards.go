@@ -27,7 +27,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
-var validExpandWildcardValues = []string{"all", "open", "closed", "hidden", "none"}
+const expandWildcardNone = "none"
+
+var validExpandWildcardValues = []string{"all", "open", "closed", "hidden", expandWildcardNone}
 
 // ExpandWildcardsValidator validates a comma-separated list of wildcard expansion values.
 type ExpandWildcardsValidator struct{}

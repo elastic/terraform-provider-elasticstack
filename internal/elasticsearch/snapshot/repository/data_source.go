@@ -144,11 +144,11 @@ func buildDataSourceSchema() schema.Schema {
 			MarkdownDescription: "URL location of the root of the shared filesystem repository.",
 			Computed:            true,
 		},
-		"http_max_retries": schema.Int64Attribute{
+		settingHTTPMaxRetries: schema.Int64Attribute{
 			MarkdownDescription: "Maximum number of retries for http and https URLs.",
 			Computed:            true,
 		},
-		"http_socket_timeout": schema.StringAttribute{
+		settingHTTPSocketTimeout: schema.StringAttribute{
 			MarkdownDescription: "Maximum wait time for data transfers over a connection.",
 			Computed:            true,
 		},
@@ -217,7 +217,7 @@ func buildDataSourceSchema() schema.Schema {
 			MarkdownDescription: "Sets the S3 storage class for objects stored in the snapshot repository.",
 			Computed:            true,
 		},
-		"path_style_access": schema.BoolAttribute{
+		settingPathStyleAccess: schema.BoolAttribute{
 			MarkdownDescription: "If true, path style access pattern will be used.",
 			Computed:            true,
 		},
@@ -245,7 +245,7 @@ func buildDataSourceSchema() schema.Schema {
 				MarkdownDescription: "Internal identifier of the resource",
 				Computed:            true,
 			},
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				MarkdownDescription: "Name of the snapshot repository.",
 				Required:            true,
 			},
