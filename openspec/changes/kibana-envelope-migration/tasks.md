@@ -51,6 +51,6 @@
 
 ## 4. Final validation
 
-- [ ] 4.1 Run `make build` across the full provider
-- [ ] 4.2 Run `make lint` (or `make check-lint`) and fix any issues
-- [ ] 4.3 Verify no schema changes: confirm `make docs` produces no diff for the three affected resources
+- [x] 4.1 Run `make build` across the full provider
+- [x] 4.2 Run `make lint` (or `make check-lint`) and fix any issues
+- [x] 4.3 Verify no schema changes: confirm `make docs` produces no diff for the three affected resources
