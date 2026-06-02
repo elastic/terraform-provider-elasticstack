@@ -39,6 +39,19 @@ import (
 
 var minSelfManagedVersionForSpaceSolution = version.Must(version.NewVersion("8.18.0"))
 
+func testCheckSolutionIfSupported(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		unsupported, err := versionutils.CheckIfVersionIsUnsupported(minSelfManagedVersionForSpaceSolution)()
+		if err != nil {
+			return err
+		}
+		if unsupported {
+			return nil
+		}
+		return resource.TestCheckResourceAttrSet(resourceName, "solution")(s)
+	}
+}
+
 func TestAccResourceSpace(t *testing.T) {
 	spaceID := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -133,7 +146,7 @@ func TestAccResourceSpace(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Test Space"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "color", "#FFFFFF"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_space.test_space", "image_url"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_space.test_space", "solution"),
+					testCheckSolutionIfSupported("elasticstack_kibana_space.test_space"),
 				),
 			},
 		},
