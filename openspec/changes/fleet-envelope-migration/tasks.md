@@ -1,15 +1,15 @@
 ## 1. fleet/serverhost
 
-- [ ] 1.1 Add `GetID()`, `GetResourceID()` (→ `HostID`), `GetSpaceID()` (→ first of `SpaceIDs` or `""`), `GetKibanaConnection()` value-receiver methods to `serverHostModel`
-- [ ] 1.2 Add `IsUnscopedSpace() bool` returning `true` to `serverHostModel` (implements `entitycore.KibanaUnscopedSpace`)
-- [ ] 1.3 Remove `kibana_connection` block from `schema.go` schema function
-- [ ] 1.4 Extract `Create` method body to `func createServerHost(ctx, *KibanaScopedClient, KibanaWriteRequest[serverHostModel]) (KibanaWriteResult[serverHostModel], diag.Diagnostics)`
-- [ ] 1.5 Extract `Read` method body to `func readServerHost(ctx, *KibanaScopedClient, resourceID, spaceID string, model serverHostModel) (serverHostModel, bool, diag.Diagnostics)`
-- [ ] 1.6 Extract `Update` method body to `func updateServerHost(ctx, *KibanaScopedClient, KibanaWriteRequest[serverHostModel]) (KibanaWriteResult[serverHostModel], diag.Diagnostics)` — use `req.Prior.GetSpaceID()` as operational space for the API call
-- [ ] 1.7 Extract `Delete` method body to `func deleteServerHost(ctx, *KibanaScopedClient, resourceID, spaceID string, model serverHostModel) diag.Diagnostics` — retain the pre-delete clear-`IsDefault` logic inside the callback
-- [ ] 1.8 Swap `*entitycore.ResourceBase` for `*entitycore.KibanaResource[serverHostModel]` in the resource struct and constructor; pass callbacks via `KibanaResourceOptions`; retain `*fleet.SpaceImporter` on the wrapper struct
-- [ ] 1.9 Add `entitycore_contract_test.go` asserting the resource embeds `KibanaResource[serverHostModel]` (follow pattern in `internal/fleet/agentdownloadsource/`)
-- [ ] 1.10 Run `make build` and `go test ./internal/fleet/serverhost/...`
+- [x] 1.1 Add `GetID()`, `GetResourceID()` (→ `HostID`), `GetSpaceID()` (→ first of `SpaceIDs` or `""`), `GetKibanaConnection()` value-receiver methods to `serverHostModel`
+- [x] 1.2 Add `IsUnscopedSpace() bool` returning `true` to `serverHostModel` (implements `entitycore.KibanaUnscopedSpace`)
+- [x] 1.3 Remove `kibana_connection` block from `schema.go` schema function
+- [x] 1.4 Extract `Create` method body to `func createServerHost(ctx, *KibanaScopedClient, KibanaWriteRequest[serverHostModel]) (KibanaWriteResult[serverHostModel], diag.Diagnostics)`
+- [x] 1.5 Extract `Read` method body to `func readServerHost(ctx, *KibanaScopedClient, resourceID, spaceID string, model serverHostModel) (serverHostModel, bool, diag.Diagnostics)`
+- [x] 1.6 Extract `Update` method body to `func updateServerHost(ctx, *KibanaScopedClient, KibanaWriteRequest[serverHostModel]) (KibanaWriteResult[serverHostModel], diag.Diagnostics)` — use `req.Prior.GetSpaceID()` as operational space for the API call
+- [x] 1.7 Extract `Delete` method body to `func deleteServerHost(ctx, *KibanaScopedClient, resourceID, spaceID string, model serverHostModel) diag.Diagnostics` — retain the pre-delete clear-`IsDefault` logic inside the callback
+- [x] 1.8 Swap `*entitycore.ResourceBase` for `*entitycore.KibanaResource[serverHostModel]` in the resource struct and constructor; pass callbacks via `KibanaResourceOptions`; retain `*fleet.SpaceImporter` on the wrapper struct
+- [x] 1.9 Add `entitycore_contract_test.go` asserting the resource embeds `KibanaResource[serverHostModel]` (follow pattern in `internal/fleet/agentdownloadsource/`)
+- [x] 1.10 Run `make build` and `go test ./internal/fleet/serverhost/...`
 
 ## 2. fleet/output
 
