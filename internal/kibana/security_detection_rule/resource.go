@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
 var (
@@ -42,7 +43,7 @@ func newSecurityDetectionRuleResource() *securityDetectionRuleResource {
 			entitycore.ComponentKibana,
 			"security_detection_rule",
 			entitycore.KibanaResourceOptions[Data]{
-				Schema: GetSchema,
+				Schema: func(_ context.Context) schema.Schema { return GetSchema() },
 				Read:   readDetectionRule,
 				Delete: deleteDetectionRule,
 				Create: createDetectionRule,
