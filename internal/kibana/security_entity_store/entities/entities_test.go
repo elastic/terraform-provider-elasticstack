@@ -28,14 +28,8 @@ import (
 
 // hasMixedPaginationModes checks whether page-mode and cursor-mode parameters are both set.
 func hasMixedPaginationModes(model dsModel) bool {
-	hasPageMode := false
-	if !model.SortField.IsNull() || !model.SortOrder.IsNull() || !model.Page.IsNull() || !model.PerPage.IsNull() || !model.FilterQuery.IsNull() {
-		hasPageMode = true
-	}
-	hasCursorMode := false
-	if !model.Filter.IsNull() || !model.Size.IsNull() || !model.SearchAfter.IsNull() || !model.Source.IsNull() || !model.Fields.IsNull() {
-		hasCursorMode = true
-	}
+	hasPageMode := !model.SortField.IsNull() || !model.SortOrder.IsNull() || !model.Page.IsNull() || !model.PerPage.IsNull() || !model.FilterQuery.IsNull()
+	hasCursorMode := !model.Filter.IsNull() || !model.Size.IsNull() || !model.SearchAfter.IsNull() || !model.Source.IsNull() || !model.Fields.IsNull()
 	return hasPageMode && hasCursorMode
 }
 
