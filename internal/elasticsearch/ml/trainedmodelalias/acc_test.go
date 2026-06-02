@@ -27,6 +27,8 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -62,6 +64,8 @@ func getAvailableTrainedModelID(t *testing.T) string {
 }
 
 func TestAccResourceMLTrainedModelAlias_basic(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, version.Must(version.NewVersion("8.8.0")), versionutils.FlavorAny)
+
 	modelID := getAvailableTrainedModelID(t)
 	if modelID == "" {
 		t.Skip("No trained models available in the cluster; skipping ML trained model alias tests")
@@ -133,6 +137,8 @@ func TestAccResourceMLTrainedModelAlias_collisionWithReassignDisabled(t *testing
 }
 
 func TestAccResourceMLTrainedModelAlias_updateReassignFlag(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, version.Must(version.NewVersion("8.8.0")), versionutils.FlavorAny)
+
 	modelID := getAvailableTrainedModelID(t)
 	if modelID == "" {
 		t.Skip("No trained models available in the cluster; skipping ML trained model alias tests")
