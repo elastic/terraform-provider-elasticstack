@@ -28,26 +28,26 @@
 
 ## 3. kibana/alertingrule
 
-- [ ] 3.1 Add `GetID()`, `GetResourceID()` (→ `RuleID`), `GetSpaceID()` (→ `SpaceID`), `GetKibanaConnection()` value-receiver methods to `alertingRuleModel`
-- [ ] 3.2 Add `GetVersionRequirements()` to `alertingRuleModel`, emitting the following requirements conditional on model state (preserve the existing error messages verbatim):
+- [x] 3.1 Add `GetID()`, `GetResourceID()` (→ `RuleID`), `GetSpaceID()` (→ `SpaceID`), `GetKibanaConnection()` value-receiver methods to `alertingRuleModel`
+- [x] 3.2 Add `GetVersionRequirements()` to `alertingRuleModel`, emitting the following requirements conditional on model state (preserve the existing error messages verbatim):
   - `8.6.0` (`frequencyMinSupportedVersion`) when any action has `Frequency` set
   - `8.6.0` when `NotifyWhen` is null or empty (notify_when is required below 8.6)
   - `8.9.0` (`alertsFilterMinSupportedVersion`) when any action has `AlertsFilter` set
   - `8.13.0` (`alertDelayMinSupportedVersion`) when `AlertDelay` is set
   - `8.16.0` (`flappingMinSupportedVersion`) when `Flapping` is set
   - `9.3.0` (`flappingEnabledMinSupportedVersion`) when `Flapping.Enabled` is set
-- [ ] 3.3 Delete `features.go` (the `alertingRuleFeatures` struct, `alertingRuleFeaturesFromVersion`, `alertingRuleFeaturesAllSupported`, `resolveAlertingRuleFeatures`)
-- [ ] 3.4 Update `toAPIModel` to drop the `features alertingRuleFeatures` parameter; remove all `if !features.Supports*` branches (now enforced by the envelope) — the function body retains the field-mapping logic but loses the version-gating conditionals
-- [ ] 3.5 Update `create.go`/`update.go` (during their extraction to callbacks) to call `toAPIModel(ctx)` without `features`
-- [ ] 3.6 Remove `kibana_connection` block from `schema.go` schema function
-- [ ] 3.7 Extract `Create` method body to `func createAlertingRule(ctx, *KibanaScopedClient, KibanaWriteRequest[alertingRuleModel]) (KibanaWriteResult[alertingRuleModel], diag.Diagnostics)`
-- [ ] 3.8 Extract `Read` method body to `func readAlertingRule(ctx, *KibanaScopedClient, resourceID, spaceID string, model alertingRuleModel) (alertingRuleModel, bool, diag.Diagnostics)`
-- [ ] 3.9 Extract `Update` method body to `func updateAlertingRule(ctx, *KibanaScopedClient, KibanaWriteRequest[alertingRuleModel]) (KibanaWriteResult[alertingRuleModel], diag.Diagnostics)`
-- [ ] 3.10 Extract `Delete` method body to `func deleteAlertingRule(ctx, *KibanaScopedClient, resourceID, spaceID string, model alertingRuleModel) diag.Diagnostics`
-- [ ] 3.11 Swap `*entitycore.ResourceBase` for `*entitycore.KibanaResource[alertingRuleModel]`; retain `ValidateConfig`, `UpgradeState`, and composite `ImportState` on the wrapper struct
-- [ ] 3.12 Remove `getRuleIDAndSpaceID()` helper from `models.go` (replaced by envelope's `resolveKibanaResourceIdentity`)
-- [ ] 3.13 Add `entitycore_contract_test.go` asserting the resource embeds `KibanaResource[alertingRuleModel]`
-- [ ] 3.14 Run `make build` and `go test ./internal/kibana/alertingrule/...`
+- [x] 3.3 Delete `features.go` (the `alertingRuleFeatures` struct, `alertingRuleFeaturesFromVersion`, `alertingRuleFeaturesAllSupported`, `resolveAlertingRuleFeatures`)
+- [x] 3.4 Update `toAPIModel` to drop the `features alertingRuleFeatures` parameter; remove all `if !features.Supports*` branches (now enforced by the envelope) — the function body retains the field-mapping logic but loses the version-gating conditionals
+- [x] 3.5 Update `create.go`/`update.go` (during their extraction to callbacks) to call `toAPIModel(ctx)` without `features`
+- [x] 3.6 Remove `kibana_connection` block from `schema.go` schema function
+- [x] 3.7 Extract `Create` method body to `func createAlertingRule(ctx, *KibanaScopedClient, KibanaWriteRequest[alertingRuleModel]) (KibanaWriteResult[alertingRuleModel], diag.Diagnostics)`
+- [x] 3.8 Extract `Read` method body to `func readAlertingRule(ctx, *KibanaScopedClient, resourceID, spaceID string, model alertingRuleModel) (alertingRuleModel, bool, diag.Diagnostics)`
+- [x] 3.9 Extract `Update` method body to `func updateAlertingRule(ctx, *KibanaScopedClient, KibanaWriteRequest[alertingRuleModel]) (KibanaWriteResult[alertingRuleModel], diag.Diagnostics)`
+- [x] 3.10 Extract `Delete` method body to `func deleteAlertingRule(ctx, *KibanaScopedClient, resourceID, spaceID string, model alertingRuleModel) diag.Diagnostics`
+- [x] 3.11 Swap `*entitycore.ResourceBase` for `*entitycore.KibanaResource[alertingRuleModel]`; retain `ValidateConfig`, `UpgradeState`, and composite `ImportState` on the wrapper struct
+- [x] 3.12 Remove `getRuleIDAndSpaceID()` helper from `models.go` (replaced by envelope's `resolveKibanaResourceIdentity`)
+- [x] 3.13 Add `entitycore_contract_test.go` asserting the resource embeds `KibanaResource[alertingRuleModel]`
+- [x] 3.14 Run `make build` and `go test ./internal/kibana/alertingrule/...`
 
 ## 4. Final validation
 
