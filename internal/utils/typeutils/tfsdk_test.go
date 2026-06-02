@@ -822,6 +822,76 @@ func TestTransformMapToSlice(t *testing.T) {
 	}
 }
 
+// JSON
+
+func TestMarshalToNormalized(t *testing.T) {
+	t.Parallel()
+
+	type testStruct struct {
+		Key string `json:"key"`
+	}
+
+	tests := []struct {
+		name      string
+		input     any
+		fieldDesc string
+		want      jsontypes.Normalized
+		wantErr   bool
+	}{
+		{
+			name:      "nil value returns null",
+			input:     nil,
+			fieldDesc: "field",
+			want:      jsontypes.NewNormalizedNull(),
+		},
+		{
+			name:      "typed nil pointer returns null",
+			input:     (*testStruct)(nil),
+			fieldDesc: "field",
+			want:      jsontypes.NewNormalizedNull(),
+		},
+		{
+			name:      "struct marshals to value",
+			input:     testStruct{Key: "val"},
+			fieldDesc: "field",
+			want:      jsontypes.NewNormalizedValue(`{"key":"val"}`),
+		},
+		{
+			name:      "non-nil pointer marshals to value",
+			input:     &testStruct{Key: "val"},
+			fieldDesc: "field",
+			want:      jsontypes.NewNormalizedValue(`{"key":"val"}`),
+		},
+		{
+			name:      "map marshals to value",
+			input:     map[string]any{"a": 1},
+			fieldDesc: "field",
+			want:      jsontypes.NewNormalizedValue(`{"a":1}`),
+		},
+		{
+			name:      "unmarshalable type adds error and returns null",
+			input:     make(chan int),
+			fieldDesc: "channel_field",
+			want:      jsontypes.NewNormalizedNull(),
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			var diags diag.Diagnostics
+			got := typeutils.MarshalToNormalized(tt.input, tt.fieldDesc, &diags)
+			require.Equal(t, tt.want, got)
+			if tt.wantErr {
+				require.True(t, diags.HasError())
+			} else {
+				require.Empty(t, diags)
+			}
+		})
+	}
+}
+
 // Sets
 
 func TestSetTypeAs(t *testing.T) {

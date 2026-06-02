@@ -18,7 +18,6 @@
 package trainedmodel
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -126,35 +125,15 @@ func mapTrainedModelConfig(ctx context.Context, model *estypes.TrainedModelConfi
 	}
 
 	// InferenceConfigJSON
-	if model.InferenceConfig != nil {
-		infBytes, err := json.Marshal(model.InferenceConfig)
-		if err != nil {
-			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling inference_config JSON: %s", err))
-			return diags
-		}
-		if !bytes.Equal(infBytes, []byte("null")) {
-			data.InferenceConfigJSON = jsontypes.NewNormalizedValue(string(infBytes))
-		} else {
-			data.InferenceConfigJSON = jsontypes.NewNormalizedNull()
-		}
-	} else {
-		data.InferenceConfigJSON = jsontypes.NewNormalizedNull()
+	data.InferenceConfigJSON = typeutils.MarshalToNormalized(model.InferenceConfig, "inference_config", &diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	// MetadataJSON
-	if model.Metadata != nil {
-		metaBytes, err := json.Marshal(model.Metadata)
-		if err != nil {
-			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling metadata JSON: %s", err))
-			return diags
-		}
-		if !bytes.Equal(metaBytes, []byte("null")) {
-			data.MetadataJSON = jsontypes.NewNormalizedValue(string(metaBytes))
-		} else {
-			data.MetadataJSON = jsontypes.NewNormalizedNull()
-		}
-	} else {
-		data.MetadataJSON = jsontypes.NewNormalizedNull()
+	data.MetadataJSON = typeutils.MarshalToNormalized(model.Metadata, "metadata", &diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	// DefaultFieldMap
