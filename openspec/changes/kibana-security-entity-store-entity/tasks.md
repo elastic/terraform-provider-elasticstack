@@ -1,9 +1,9 @@
 ## 1. Specs
 
 - [x] 1.1 Keep delta specs aligned with `proposal.md` and `design.md`; run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate kibana-security-entity-store-entity --type change` (or `make check-openspec`) before opening a PR.
-- [ ] 1.2 Resolve design open question OQ-1: confirm minimum Kibana version for individual entity CRUD endpoints; update delta specs and `EnforceMinVersion` call if the floor differs from `9.1.0`.
+- [x] 1.2 Resolve design open question OQ-1: confirm minimum Kibana version for individual entity CRUD endpoints; update delta specs and `EnforceMinVersion` call if the floor differs from `9.1.0`.
 - [ ] 1.3 Resolve design open question OQ-2: verify KQL filter expression `entity.id:"<id>"` works reliably for all valid entity ID formats; document escaping strategy in the resource read implementation.
-- [ ] 1.4 Resolve design open question OQ-4: add a plan-time validator that checks consistency between `entity_id` and `entity.id` inside the typed `entity` block (or `entity_json`).
+- [x] 1.4 Resolve design open question OQ-4: add a plan-time validator that checks consistency between `entity_id` and `entity.id` inside the typed `entity` block (or `entity_json`).
 - [ ] 1.5 On completion of implementation, sync or archive this change per project workflow.
 
 ## 2. Project structure
@@ -77,7 +77,7 @@
 - [ ] 7.6 Add acceptance test for single-entity lookup via the list data source `entity_id` filter: create entity via resource → read list data source with `entity_id` → assert `results_json` contains exactly one record with the expected `entity.id`.
 - [ ] 7.7 Add acceptance test for the list data source in page mode: verify `results_json` is non-empty when entities exist; verify plan error when page-mode and search-after parameters are combined.
 - [ ] 7.8 Add acceptance test for `entity_id` conflict validation: verify plan error when `entity_id` is combined with `filter` or `filter_query`.
-- [ ] 7.9 Add unit tests for composite ID construction and parsing (encode/decode of `<space_id>/<entity_id>`).
+- [x] 7.9 Add unit tests for composite ID construction and parsing (encode/decode of `<space_id>/<entity_id>`).
 - [x] 7.10 Add unit tests for canonical JSON normalization to guard against false diffs.
 - [x] 7.11 Add unit tests for the pagination-mode exclusivity validator and `entity_id` conflict validator.
 - [x] 7.12 Gate all acceptance tests with `SkipIfVersionConstraintNotMet("9.1.0")` (or project-equivalent helper) so they are skipped when the test Elastic Stack is below the minimum version.
