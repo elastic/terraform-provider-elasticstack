@@ -26,8 +26,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	entity "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store/entity"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	jsontypes "github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )

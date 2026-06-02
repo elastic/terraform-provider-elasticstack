@@ -291,6 +291,25 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_import(t *testing.T) {
 	})
 }
 
+func TestAccDataSourceKibanaSecurityEntityStoreEntities_basic(t *testing.T) {
+	skipIfUnsupportedEntity(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("list"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_entities.test", "id"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_entities.test", "results_json"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_entities.test", "items.#"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceKibanaSecurityEntityStoreEntity_entityJsonConflict(t *testing.T) {
 	skipIfUnsupportedEntity(t)
 

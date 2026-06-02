@@ -1263,7 +1263,7 @@ func ItemObjectType() attr.Type {
 		"event":         types.ObjectType{AttrTypes: EventBlockAttrTypes()},
 		"labels":        types.MapType{ElemType: types.StringType},
 		"tags":          types.SetType{ElemType: types.StringType},
-		"document_json":  jsontypes.NormalizedType{},
+		"document_json": jsontypes.NormalizedType{},
 	}}
 }
 
@@ -1288,7 +1288,7 @@ func APIBodyToItem(ctx context.Context, body map[string]any, diags *diag.Diagnos
 		"event":         item.Event,
 		"labels":        item.Labels,
 		"tags":          item.Tags,
-		"document_json":  item.DocumentJSON,
+		"document_json": item.DocumentJSON,
 	})
 	diags.Append(d...)
 	return obj
@@ -1311,6 +1311,6 @@ func ItemAttrTypes() map[string]attr.Type {
 		"event":         types.ObjectType{AttrTypes: EventBlockAttrTypes()},
 		"labels":        types.MapType{ElemType: types.StringType},
 		"tags":          types.SetType{ElemType: types.StringType},
-		"document_json":  jsontypes.NormalizedType{},
+		"document_json": jsontypes.NormalizedType{},
 	}
 }
