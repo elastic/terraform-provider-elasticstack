@@ -36,7 +36,7 @@ import (
 const mlTrainedModelAliasResourceAddress = "elasticstack_elasticsearch_ml_trained_model_alias.test"
 
 func TestAccResourceMLTrainedModelAlias_basic(t *testing.T) {
-	modelAlias := fmt.Sprintf("test-alias-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	modelAlias := fmt.Sprintf("test-alias-%s%s", sdkacctest.RandStringFromCharSet(9, sdkacctest.CharSetAlphaNum), sdkacctest.RandStringFromCharSet(1, sdkacctest.CharSetAlpha))
 
 	t.Cleanup(func() {
 		deleteMLTrainedModelAliasBestEffort(t.Context(), t, modelAlias)
@@ -77,7 +77,7 @@ func TestAccResourceMLTrainedModelAlias_basic(t *testing.T) {
 				ResourceName:             mlTrainedModelAliasResourceAddress,
 				ImportState:              true,
 				ImportStateVerify:        true,
-				ImportStateVerifyIgnore:  []string{"reassign"},
+				ImportStateVerifyIgnore:  []string{},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					rs := s.RootModule().Resources[mlTrainedModelAliasResourceAddress]
 					return rs.Primary.ID, nil
@@ -99,7 +99,7 @@ func TestAccResourceMLTrainedModelAlias_collisionWithReassignDisabled(t *testing
 }
 
 func TestAccResourceMLTrainedModelAlias_updateReassignFlag(t *testing.T) {
-	modelAlias := fmt.Sprintf("test-alias-reassign-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	modelAlias := fmt.Sprintf("test-alias-reassign-%s%s", sdkacctest.RandStringFromCharSet(9, sdkacctest.CharSetAlphaNum), sdkacctest.RandStringFromCharSet(1, sdkacctest.CharSetAlpha))
 
 	t.Cleanup(func() {
 		deleteMLTrainedModelAliasBestEffort(t.Context(), t, modelAlias)
