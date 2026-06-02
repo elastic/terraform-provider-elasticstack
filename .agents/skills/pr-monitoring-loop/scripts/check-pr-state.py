@@ -83,6 +83,12 @@ DEFAULT_INTERVAL_SECONDS = 60
 DEFAULT_MAX_DURATION_SECONDS = 1800
 SEEN_ID_CAP = 1000
 
+# Maximum age of lastPolledAt before we treat it as stale and reset
+# timestamp-based discrimination. This prevents a long-dead watcher from
+# missing updates because its cached lastPolledAt predates the actual
+# current state of the PR.
+STATE_LAST_POLLED_TTL_SECONDS = 30 * 60
+
 
 # ---------------------------------------------------------------------------
 # Subprocess wrappers (mockable seam for tests)
@@ -762,6 +768,25 @@ def compute_payload(
 
     head_sha = head_sha_override or pr.get("headRefOid") or ""
 
+    # --- stale-state invalidation -----------------------------------------
+    # If the PR head has changed since the last poll, the old lastPolledAt
+    # is no longer a valid baseline for "new since" discrimination.
+    # Reset it (but keep seen IDs so exact duplicates are still filtered).
+    last_head_sha_in_state = state.get("lastHeadSha")
+    if last_head_sha_in_state is not None and last_head_sha_in_state != head_sha:
+        state = {**state, "lastPolledAt": None}
+
+    # Also reset lastPolledAt if it is older than the TTL. This handles the
+    # case where a watcher was killed and restarted hours later — old
+    # timestamp discrimination would hide updates that happened in between.
+    since_str = since_override or state.get("lastPolledAt")
+    since_dt = parse_iso(since_str)
+    if since_dt is not None:
+        age_seconds = (datetime.now(timezone.utc) - since_dt).total_seconds()
+        if age_seconds > STATE_LAST_POLLED_TTL_SECONDS:
+            state = {**state, "lastPolledAt": None}
+            since_dt = None
+
     # --- normalize checks -------------------------------------------------
     raw_pr_checks = [normalize_check(c) for c in pr_check_data]
     pinned_check_runs = [normalize_check_run(r) for r in commit_check_run_data]
@@ -794,6 +819,12 @@ def compute_payload(
         return list(by_name.values())
 
     canonical_checks = deduplicate_checks(canonical_checks)
+
+    # Fallback: if deduplication left us with nothing (e.g. every check
+    # entry lacked a name), fall back to the raw pr-checks list so we
+    # never report null/empty counts when check data is available.
+    if not canonical_checks:
+        canonical_checks = raw_pr_checks
     failed_checks = [c for c in canonical_checks if c["derived"]["failed"]]
     pending_checks = [c for c in canonical_checks if c["derived"]["pending"]]
     passed_checks = [c for c in canonical_checks if c["derived"]["passed"]]
@@ -804,9 +835,6 @@ def compute_payload(
     seen_review_ids: set[Any] = set(state.get("seenReviewIds") or [])
     seen_thread_ids: set[Any] = set(state.get("seenReviewThreadIds") or [])
 
-    since_str = since_override or state.get("lastPolledAt")
-    since_dt = parse_iso(since_str)
-    last_head_sha_in_state = state.get("lastHeadSha")
     head_pushed_recently = (
         last_head_sha_in_state is not None and last_head_sha_in_state != head_sha
     )

@@ -37,7 +37,10 @@ func updateServerHost(ctx context.Context, client *clients.KibanaScopedClient, r
 		return entitycore.KibanaWriteResult[serverHostModel]{}, diags
 	}
 
-	spaceID := req.Prior.GetSpaceID().ValueString()
+	spaceID := req.SpaceID
+	if req.Prior != nil {
+		spaceID = req.Prior.GetSpaceID().ValueString()
+	}
 
 	host, d := fleet.UpdateFleetServerHost(ctx, fleetClient, hostID, spaceID, body)
 	diags.Append(d...)

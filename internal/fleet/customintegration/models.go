@@ -78,13 +78,13 @@ func (m customIntegrationModel) GetKibanaConnection() types.List {
 	return m.KibanaConnection
 }
 
+var customIntegrationVersionReqs = []entitycore.VersionRequirement{{
+	MinVersion:   *minVersionCustomPackageGet,
+	ErrorMessage: "elasticstack_fleet_custom_integration requires Kibana 8.2.0 or later.",
+}}
+
 func (m customIntegrationModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *minVersionCustomPackageGet,
-			ErrorMessage: "elasticstack_fleet_custom_integration requires Kibana 8.2.0 or later.",
-		},
-	}, nil
+	return customIntegrationVersionReqs, nil
 }
 
 func getPackageID(name string, version string) string {
