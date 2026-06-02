@@ -24,10 +24,11 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
-	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -90,22 +91,10 @@ func (r *trainedModelDeploymentResource) create(ctx context.Context, req resourc
 		threadsPerAllocation = &v
 	}
 
-	var priority *string
-	if !data.Priority.IsNull() {
-		v := data.Priority.ValueString()
-		priority = &v
-	}
-
 	var queueCapacity *int
 	if !data.QueueCapacity.IsNull() {
 		v := int(data.QueueCapacity.ValueInt64())
 		queueCapacity = &v
-	}
-
-	var waitFor *string
-	if !data.WaitFor.IsNull() {
-		v := data.WaitFor.ValueString()
-		waitFor = &v
 	}
 
 	var apiTimeout *string
@@ -118,9 +107,9 @@ func (r *trainedModelDeploymentResource) create(ctx context.Context, req resourc
 		DeploymentID:         &deploymentID,
 		NumberOfAllocations:  numberOfAllocations,
 		ThreadsPerAllocation: threadsPerAllocation,
-		Priority:             priority,
+		Priority:             typeutils.OptStringPtr(data.Priority),
 		QueueCapacity:        queueCapacity,
-		WaitFor:              waitFor,
+		WaitFor:              typeutils.OptStringPtr(data.WaitFor),
 		Timeout:              apiTimeout,
 		AdaptiveAllocations:  adaptiveAllocations,
 	}
@@ -137,20 +126,14 @@ func (r *trainedModelDeploymentResource) create(ctx context.Context, req resourc
 		return diags
 	}
 
-	if stats == nil || stats.DeploymentStats == nil {
-		diags.AddError("Deployment not found after start", fmt.Sprintf("Trained model deployment %s not found after starting", deploymentID))
-		return diags
-	}
-
-	// Set the composite ID
 	compID, idDiags := client.ID(ctx, deploymentID)
 	diags.Append(idDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	data.ID = fwtypes.StringValue(compID.String())
-	data.DeploymentID = fwtypes.StringValue(deploymentID)
+	data.ID = types.StringValue(compID.String())
+	data.DeploymentID = types.StringValue(deploymentID)
 	populateComputedFromStats(&data, stats, statsJSON)
 
 	tflog.Info(ctx, fmt.Sprintf("Trained model deployment %s started successfully", deploymentID))

@@ -24,7 +24,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -68,13 +67,6 @@ func readTrainedModelDeployment(
 	}
 
 	populateComputedFromStats(&state, stats, statsJSON)
-
-	if state.ForceStop.IsNull() {
-		state.ForceStop = types.BoolValue(false)
-	}
-	if state.WaitFor.IsNull() {
-		state.WaitFor = types.StringValue("fully_allocated")
-	}
 
 	return state, true, diags
 }

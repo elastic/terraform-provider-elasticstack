@@ -26,6 +26,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -64,7 +65,10 @@ func preCheckMLTrainedModelDeployment(t *testing.T) {
 		// Other errors (e.g. model already started) are fine.
 	}
 	// Clean up the probe deployment so the test can manage lifecycle.
-	_, _ = es.Ml.StopTrainedModelDeployment(acctest.AccTestTrainedModelID).Do(ctx)
+	stopDiags := elasticsearch.StopTrainedModelDeployment(ctx, client, acctest.AccTestTrainedModelID, false)
+	if stopDiags.HasError() {
+		t.Fatalf("failed to stop probe deployment: %v", stopDiags)
+	}
 }
 
 func testAccCheckMLTrainedModelDeploymentDestroy(s *terraform.State) error {
@@ -73,7 +77,6 @@ func testAccCheckMLTrainedModelDeploymentDestroy(s *terraform.State) error {
 	if err != nil {
 		return err
 	}
-	es := client.GetESClient()
 
 	rs, ok := s.RootModule().Resources[testResourceName]
 	if !ok {
@@ -86,15 +89,12 @@ func testAccCheckMLTrainedModelDeploymentDestroy(s *terraform.State) error {
 		deploymentID = modelID
 	}
 
-	statsRes, err := es.Ml.GetTrainedModelsStats().ModelId(modelID).Do(ctx)
-	if err != nil {
-		return nil
+	stats, diags := elasticsearch.GetTrainedModelStats(ctx, client, modelID, deploymentID)
+	if diags.HasError() {
+		return fmt.Errorf("error checking deployment destroy: %v", diags)
 	}
-
-	for _, stat := range statsRes.TrainedModelStats {
-		if stat.ModelId == modelID && stat.DeploymentStats != nil && stat.DeploymentStats.DeploymentId == deploymentID {
-			return fmt.Errorf("trained model deployment %s for model %s still exists", deploymentID, modelID)
-		}
+	if stats != nil {
+		return fmt.Errorf("trained model deployment %s for model %s still exists", deploymentID, modelID)
 	}
 
 	return nil

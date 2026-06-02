@@ -112,8 +112,8 @@ func StartTrainedModelDeployment(
 	return res, diags
 }
 
-// GetTrainedModelStats retrieves the stats for a specific trained model deployment.
-// It filters by deployment_id if the API returns stats for all deployments of the model.
+// GetTrainedModelStats retrieves the stats for a specific trained model deployment,
+// filtering the response to the deployment matching the given deployment_id.
 func GetTrainedModelStats(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, modelID string, deploymentID string) (*types.TrainedModelStats, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 
@@ -129,10 +129,8 @@ func GetTrainedModelStats(ctx context.Context, apiClient *clients.ElasticsearchS
 	}
 
 	for i := range res.TrainedModelStats {
-		if res.TrainedModelStats[i].ModelId == modelID {
-			if res.TrainedModelStats[i].DeploymentStats != nil && res.TrainedModelStats[i].DeploymentStats.DeploymentId == deploymentID {
-				return &res.TrainedModelStats[i], diags
-			}
+		if res.TrainedModelStats[i].DeploymentStats != nil && res.TrainedModelStats[i].DeploymentStats.DeploymentId == deploymentID {
+			return &res.TrainedModelStats[i], diags
 		}
 	}
 

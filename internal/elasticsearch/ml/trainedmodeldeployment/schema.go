@@ -64,6 +64,7 @@ func GetSchema(ctx context.Context) schema.Schema {
 			"number_of_allocations": schema.Int64Attribute{
 				MarkdownDescription: "The number of model allocations on each node where the model is deployed. Cannot be set when `adaptive_allocations` is configured.",
 				Optional:            true,
+				Computed:            true,
 				Validators: []validator.Int64{
 					int64validator.ConflictsWith(path.MatchRoot("adaptive_allocations")),
 				},

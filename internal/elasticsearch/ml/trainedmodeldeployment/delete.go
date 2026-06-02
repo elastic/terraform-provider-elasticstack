@@ -27,12 +27,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func deleteTrainedModelDeployment(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data TrainedModelDeploymentData) diag.Diagnostics {
+func deleteTrainedModelDeployment(ctx context.Context, client *clients.ElasticsearchScopedClient, deploymentID string, data TrainedModelDeploymentData) diag.Diagnostics {
 	forceStop := data.ForceStop.ValueBool()
-	deploymentID := data.DeploymentID.ValueString()
-	if deploymentID == "" {
-		deploymentID = resourceID
-	}
 
 	tflog.Info(ctx, fmt.Sprintf("Stopping trained model deployment %s (force=%t)", deploymentID, forceStop))
 

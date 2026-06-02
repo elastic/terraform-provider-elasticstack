@@ -38,7 +38,6 @@ func (r *trainedModelDeploymentResource) Update(ctx context.Context, req resourc
 		return
 	}
 
-	// Get update timeout
 	updateTimeout, fwDiags := data.Timeouts.Update(ctx, 5*time.Minute)
 	resp.Diagnostics.Append(fwDiags...)
 	if resp.Diagnostics.HasError() {
@@ -111,11 +110,6 @@ func (r *trainedModelDeploymentResource) update(ctx context.Context, req resourc
 	statsJSON, stats, readDiags := elasticsearch.GetTrainedModelStatsJSON(ctx, client, modelID, deploymentID)
 	diags.Append(readDiags...)
 	if diags.HasError() {
-		return diags
-	}
-
-	if stats == nil || stats.DeploymentStats == nil {
-		diags.AddError("Deployment not found after update", fmt.Sprintf("Trained model deployment %s not found after updating", deploymentID))
 		return diags
 	}
 
