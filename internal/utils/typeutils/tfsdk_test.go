@@ -848,6 +848,40 @@ func TestSetTypeAs(t *testing.T) {
 	}
 }
 
+func TestStringSetElements(t *testing.T) {
+	t.Parallel()
+
+	stringSetUnk := types.SetUnknown(types.StringType)
+	stringSetNil := types.SetNull(types.StringType)
+	stringSetEmpty := types.SetValueMust(types.StringType, []attr.Value{})
+	stringSetFull := types.SetValueMust(types.StringType, []attr.Value{
+		types.StringValue("v1"),
+		types.StringValue("v2"),
+		types.StringValue("v3"),
+	})
+
+	tests := []struct {
+		name      string
+		input     types.Set
+		want      []string
+		wantDiags bool
+	}{
+		{name: "returns nil for unknown set", input: stringSetUnk, want: nil},
+		{name: "returns nil for null set", input: stringSetNil, want: nil},
+		{name: "returns empty slice for empty set", input: stringSetEmpty, want: []string{}},
+		{name: "extracts string elements", input: stringSetFull, want: []string{"v1", "v2", "v3"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var diags diag.Diagnostics
+			got := typeutils.StringSetElements(tt.input, &diags)
+			require.ElementsMatch(t, tt.want, got)
+			require.Empty(t, diags)
+		})
+	}
+}
+
 func TestSetValueFrom(t *testing.T) {
 	t.Parallel()
 
