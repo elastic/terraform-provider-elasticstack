@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_alertingRuleModel_toAPIModel_flappingVersionGate(t *testing.T) {
+func Test_alertingRuleModel_toAPIModel_flappingIntegersAllowed(t *testing.T) {
 	ctx := context.Background()
 
 	flObj, diags := types.ObjectValueFrom(ctx, getFlappingAttrTypes(), flappingModel{
@@ -52,50 +52,7 @@ func Test_alertingRuleModel_toAPIModel_flappingVersionGate(t *testing.T) {
 		Flapping:   flObj,
 	}
 
-	features := alertingRuleFeatures{
-		SupportsFrequency:       true,
-		SupportsAlertsFilter:    true,
-		SupportsAlertDelay:      true,
-		SupportsFlapping:        false,
-		SupportsFlappingEnabled: false,
-	}
-	_, convDiags := m.toAPIModel(ctx, features)
-	require.True(t, convDiags.HasError())
-}
-
-func Test_alertingRuleModel_toAPIModel_flappingIntegersOnlyAllowedAt816(t *testing.T) {
-	ctx := context.Background()
-
-	flObj, diags := types.ObjectValueFrom(ctx, getFlappingAttrTypes(), flappingModel{
-		LookBackWindow:        types.Int64Value(5),
-		StatusChangeThreshold: types.Int64Value(2),
-		Enabled:               types.BoolNull(),
-	})
-	require.False(t, diags.HasError())
-
-	m := alertingRuleModel{
-		ID:         types.StringValue("default/r1"),
-		RuleID:     types.StringValue("r1"),
-		SpaceID:    types.StringValue("default"),
-		Name:       types.StringValue("n"),
-		Consumer:   types.StringValue("alerts"),
-		RuleTypeID: types.StringValue(".index-threshold"),
-		Interval:   kibanacustomtypes.NewAlertingDurationValue("1m"),
-		Params: jsontypes.NewNormalizedValue(
-			`{"index":["i"],"threshold":[1],"thresholdComparator":">","timeField":"@timestamp","timeWindowSize":1,"timeWindowUnit":"m"}`,
-		),
-		NotifyWhen: types.StringValue("onActionGroupChange"),
-		Flapping:   flObj,
-	}
-
-	features := alertingRuleFeatures{
-		SupportsFrequency:       true,
-		SupportsAlertsFilter:    true,
-		SupportsAlertDelay:      true,
-		SupportsFlapping:        true,
-		SupportsFlappingEnabled: false,
-	}
-	rule, convDiags := m.toAPIModel(ctx, features)
+	rule, convDiags := m.toAPIModel(ctx)
 	require.False(t, convDiags.HasError())
 	require.NotNil(t, rule.Flapping)
 	require.Equal(t, int64(5), rule.Flapping.LookBackWindow)
@@ -103,7 +60,7 @@ func Test_alertingRuleModel_toAPIModel_flappingIntegersOnlyAllowedAt816(t *testi
 	require.Nil(t, rule.Flapping.Enabled)
 }
 
-func Test_alertingRuleModel_toAPIModel_flappingEnabledRejectedBelow93(t *testing.T) {
+func Test_alertingRuleModel_toAPIModel_flappingEnabledAllowed(t *testing.T) {
 	ctx := context.Background()
 
 	flObj, diags := types.ObjectValueFrom(ctx, getFlappingAttrTypes(), flappingModel{
@@ -128,50 +85,7 @@ func Test_alertingRuleModel_toAPIModel_flappingEnabledRejectedBelow93(t *testing
 		Flapping:   flObj,
 	}
 
-	features := alertingRuleFeatures{
-		SupportsFrequency:       true,
-		SupportsAlertsFilter:    true,
-		SupportsAlertDelay:      true,
-		SupportsFlapping:        true,
-		SupportsFlappingEnabled: false,
-	}
-	_, convDiags := m.toAPIModel(ctx, features)
-	require.True(t, convDiags.HasError())
-}
-
-func Test_alertingRuleModel_toAPIModel_flappingEnabledAllowedAt93(t *testing.T) {
-	ctx := context.Background()
-
-	flObj, diags := types.ObjectValueFrom(ctx, getFlappingAttrTypes(), flappingModel{
-		LookBackWindow:        types.Int64Value(5),
-		StatusChangeThreshold: types.Int64Value(2),
-		Enabled:               types.BoolValue(true),
-	})
-	require.False(t, diags.HasError())
-
-	m := alertingRuleModel{
-		ID:         types.StringValue("default/r1"),
-		RuleID:     types.StringValue("r1"),
-		SpaceID:    types.StringValue("default"),
-		Name:       types.StringValue("n"),
-		Consumer:   types.StringValue("alerts"),
-		RuleTypeID: types.StringValue(".index-threshold"),
-		Interval:   kibanacustomtypes.NewAlertingDurationValue("1m"),
-		Params: jsontypes.NewNormalizedValue(
-			`{"index":["i"],"threshold":[1],"thresholdComparator":">","timeField":"@timestamp","timeWindowSize":1,"timeWindowUnit":"m"}`,
-		),
-		NotifyWhen: types.StringValue("onActionGroupChange"),
-		Flapping:   flObj,
-	}
-
-	features := alertingRuleFeatures{
-		SupportsFrequency:       true,
-		SupportsAlertsFilter:    true,
-		SupportsAlertDelay:      true,
-		SupportsFlapping:        true,
-		SupportsFlappingEnabled: true,
-	}
-	rule, convDiags := m.toAPIModel(ctx, features)
+	rule, convDiags := m.toAPIModel(ctx)
 	require.False(t, convDiags.HasError())
 	require.NotNil(t, rule.Flapping)
 	require.NotNil(t, rule.Flapping.Enabled)

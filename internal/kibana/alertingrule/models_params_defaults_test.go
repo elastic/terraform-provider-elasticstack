@@ -47,7 +47,7 @@ func TestToAPIModel_IndexThresholdBackfillsGroupByAllWhenOmitted(t *testing.T) {
 		}`),
 	}
 
-	apiRule, diags := m.toAPIModel(context.TODO(), alertingRuleFeatures{})
+	apiRule, diags := m.toAPIModel(context.TODO())
 	if diags.HasError() {
 		t.Fatalf("unexpected diagnostics: %v", diags)
 	}
@@ -73,7 +73,7 @@ func TestToAPIModel_IndexThresholdDoesNotOverrideExplicitGroupBy(t *testing.T) {
 		),
 	}
 
-	apiRule, diags := m.toAPIModel(context.TODO(), alertingRuleFeatures{})
+	apiRule, diags := m.toAPIModel(context.TODO())
 	if diags.HasError() {
 		t.Fatalf("unexpected diagnostics: %v", diags)
 	}
@@ -94,7 +94,7 @@ func TestToAPIModel_NonIndexThresholdDoesNotBackfillGroupBy(t *testing.T) {
 		Params:     jsontypes.NewNormalizedValue(`{"searchType":"esQuery","size":10,"esQuery":"{}"}`),
 	}
 
-	apiRule, diags := m.toAPIModel(context.TODO(), alertingRuleFeatures{})
+	apiRule, diags := m.toAPIModel(context.TODO())
 	if diags.HasError() {
 		t.Fatalf("unexpected diagnostics: %v", diags)
 	}
@@ -123,7 +123,7 @@ func TestToAPIModel_IndexThresholdBackfillsAggTypeCountWhenOmitted(t *testing.T)
 		}`),
 	}
 
-	apiRule, diags := m.toAPIModel(context.TODO(), alertingRuleFeatures{})
+	apiRule, diags := m.toAPIModel(context.TODO())
 	if diags.HasError() {
 		t.Fatalf("unexpected diagnostics: %v", diags)
 	}
@@ -159,7 +159,7 @@ func TestToAPIModel_IndexThresholdDoesNotOverrideExplicitAggType(t *testing.T) {
 		}`),
 	}
 
-	apiRule, diags := m.toAPIModel(context.TODO(), alertingRuleFeatures{})
+	apiRule, diags := m.toAPIModel(context.TODO())
 	if diags.HasError() {
 		t.Fatalf("unexpected diagnostics: %v", diags)
 	}
