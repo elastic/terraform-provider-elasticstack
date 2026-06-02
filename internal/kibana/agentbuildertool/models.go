@@ -34,132 +34,70 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type toolVersionGate struct{}
+// toolModel is the core model for the Agent Builder tool resource. It also
+// serves as the shared base for toolDataSourceModel, which embeds it. Defining
+// the version gate and the kibana_connection block (via KibanaConnectionField)
+// here means they are declared exactly once rather than duplicated across the
+// resource and data source models.
+type toolModel struct {
+	entitycore.KibanaConnectionField
+	ID            types.String         `tfsdk:"id"`
+	ToolID        types.String         `tfsdk:"tool_id"`
+	SpaceID       types.String         `tfsdk:"space_id"`
+	Type          types.String         `tfsdk:"type"`
+	Description   types.String         `tfsdk:"description"`
+	Tags          types.Set            `tfsdk:"tags"`
+	Configuration jsontypes.Normalized `tfsdk:"configuration"`
+}
 
-func (toolVersionGate) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (toolModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{{
 		MinVersion:   *minKibanaAgentBuilderAPIVersion,
 		ErrorMessage: fmt.Sprintf("Agent Builder tools require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
 	}}, nil
 }
 
-type toolModel struct {
-	toolVersionGate
-	ID               types.String         `tfsdk:"id"`
-	KibanaConnection types.List           `tfsdk:"kibana_connection"`
-	ToolID           types.String         `tfsdk:"tool_id"`
-	SpaceID          types.String         `tfsdk:"space_id"`
-	Type             types.String         `tfsdk:"type"`
-	Description      types.String         `tfsdk:"description"`
-	Tags             types.Set            `tfsdk:"tags"`
-	Configuration    jsontypes.Normalized `tfsdk:"configuration"`
-}
+func (model toolModel) GetID() types.String         { return model.ID }
+func (model toolModel) GetResourceID() types.String { return model.ToolID }
+func (model toolModel) GetSpaceID() types.String    { return model.SpaceID }
 
-var _ entitycore.WithVersionRequirements = toolDataSourceModel{}
+var _ entitycore.KibanaResourceModel = toolModel{}
+var _ entitycore.WithVersionRequirements = toolModel{}
 
+// toolDataSourceModel embeds toolModel to inherit the shared fields, the
+// kibana_connection block, and the version gate, adding only the attributes
+// that are unique to the data source.
 type toolDataSourceModel struct {
-	entitycore.KibanaConnectionField
-	toolVersionGate
-	ID                        types.String                    `tfsdk:"id"`
-	SpaceID                   types.String                    `tfsdk:"space_id"`
-	ToolID                    types.String                    `tfsdk:"tool_id"`
-	Type                      types.String                    `tfsdk:"type"`
-	Description               types.String                    `tfsdk:"description"`
-	Tags                      types.Set                       `tfsdk:"tags"`
+	toolModel
 	ReadOnly                  types.Bool                      `tfsdk:"readonly"`
-	Configuration             types.String                    `tfsdk:"configuration"`
 	IncludeWorkflow           types.Bool                      `tfsdk:"include_workflow"`
 	WorkflowID                types.String                    `tfsdk:"workflow_id"`
 	WorkflowConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"workflow_configuration_yaml"`
 }
 
-func (model toolModel) GetID() types.String             { return model.ID }
-func (model toolModel) GetResourceID() types.String     { return model.ToolID }
-func (model toolModel) GetSpaceID() types.String        { return model.SpaceID }
-func (model toolModel) GetKibanaConnection() types.List { return model.KibanaConnection }
-
-var _ entitycore.KibanaResourceModel = toolModel{}
-var _ entitycore.WithVersionRequirements = toolModel{}
-
-// toolBaseData holds fields shared between toolDataSourceModel and toolModel
-// populated from the API response.
-type toolBaseData struct {
-	ID          types.String
-	ToolID      types.String
-	SpaceID     types.String
-	Type        types.String
-	Description types.String
-	Tags        types.Set
-}
-
-// populateToolBaseFromAPI extracts the fields common to both toolDataSourceModel
-// and toolModel from an API response, eliminating duplicated population logic.
-func populateToolBaseFromAPI(ctx context.Context, data *models.Tool, spaceID string) (toolBaseData, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var d diag.Diagnostics
-
-	base := toolBaseData{
-		ID:      types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String()),
-		ToolID:  types.StringValue(data.ID),
-		SpaceID: types.StringValue(spaceID),
-		Type:    types.StringValue(data.Type),
-	}
-
-	base.Description = typeutils.NonEmptyStringOrNull(data.Description)
-
-	base.Tags, d = typeutils.StringSetOrNull(ctx, data.Tags)
-	diags.Append(d...)
-	return base, diags
-}
-
-func (model *toolDataSourceModel) populateFromAPI(ctx context.Context, data *models.Tool) diag.Diagnostics {
-	if data == nil {
-		return nil
-	}
-
-	spaceID := model.SpaceID.ValueString()
-	if spaceID == "" {
-		spaceID = defaultSpaceID
-	}
-
-	base, diags := populateToolBaseFromAPI(ctx, data, spaceID)
-	model.ID = base.ID
-	model.ToolID = base.ToolID
-	model.SpaceID = base.SpaceID
-	model.Type = base.Type
-	model.Description = base.Description
-	model.Tags = base.Tags
-
-	model.ReadOnly = types.BoolValue(data.ReadOnly)
-
-	jsonStr, ok, d := marshalToolConfigurationJSON(data.Configuration)
-	diags.Append(d...)
-	if ok {
-		model.Configuration = types.StringValue(jsonStr)
-	} else {
-		model.Configuration = types.StringNull()
-	}
-
-	return diags
-}
+var _ entitycore.WithVersionRequirements = toolDataSourceModel{}
 
 func (model *toolModel) populateFromAPI(ctx context.Context, data *models.Tool) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
 
+	var diags diag.Diagnostics
+	var d diag.Diagnostics
+
 	spaceID := model.SpaceID.ValueString()
 	if spaceID == "" {
 		spaceID = defaultSpaceID
 	}
 
-	base, diags := populateToolBaseFromAPI(ctx, data, spaceID)
-	model.ID = base.ID
-	model.ToolID = base.ToolID
-	model.SpaceID = base.SpaceID
-	model.Type = base.Type
-	model.Description = base.Description
-	model.Tags = base.Tags
+	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
+	model.ToolID = types.StringValue(data.ID)
+	model.SpaceID = types.StringValue(spaceID)
+	model.Type = types.StringValue(data.Type)
+	model.Description = typeutils.NonEmptyStringOrNull(data.Description)
+
+	model.Tags, d = typeutils.StringSetOrNull(ctx, data.Tags)
+	diags.Append(d...)
 
 	jsonStr, ok, d := marshalToolConfigurationJSON(data.Configuration)
 	diags.Append(d...)
@@ -169,6 +107,16 @@ func (model *toolModel) populateFromAPI(ctx context.Context, data *models.Tool) 
 		model.Configuration = jsontypes.NewNormalizedNull()
 	}
 
+	return diags
+}
+
+func (model *toolDataSourceModel) populateFromAPI(ctx context.Context, data *models.Tool) diag.Diagnostics {
+	if data == nil {
+		return nil
+	}
+
+	diags := model.toolModel.populateFromAPI(ctx, data)
+	model.ReadOnly = types.BoolValue(data.ReadOnly)
 	return diags
 }
 

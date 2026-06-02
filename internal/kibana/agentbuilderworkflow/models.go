@@ -30,46 +30,43 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type workflowVersionGate struct{}
+// workflowDataSourceModel is the core model shared between the workflow data
+// source and resource. The data source exposes exactly these fields, while the
+// resource model (workflowModel) embeds it and adds the computed attributes
+// derived from the YAML definition. Defining the version gate and the
+// kibana_connection block (via KibanaConnectionField) here means they are
+// declared exactly once rather than duplicated across both models.
+type workflowDataSourceModel struct {
+	entitycore.KibanaConnectionField
+	ID                types.String                    `tfsdk:"id"`
+	SpaceID           types.String                    `tfsdk:"space_id"`
+	WorkflowID        types.String                    `tfsdk:"workflow_id"`
+	ConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"configuration_yaml"`
+}
 
-func (workflowVersionGate) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (workflowDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{{
 		MinVersion:   *minKibanaAgentBuilderAPIVersion,
 		ErrorMessage: fmt.Sprintf("Agent Builder workflows require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
 	}}, nil
 }
 
-func (model workflowModel) GetID() types.String             { return model.ID }
-func (model workflowModel) GetResourceID() types.String     { return model.WorkflowID }
-func (model workflowModel) GetSpaceID() types.String        { return model.SpaceID }
-func (model workflowModel) GetKibanaConnection() types.List { return model.KibanaConnection }
+var _ entitycore.WithVersionRequirements = workflowDataSourceModel{}
+
+type workflowModel struct {
+	workflowDataSourceModel
+	Name        types.String `tfsdk:"name"`
+	Description types.String `tfsdk:"description"`
+	Enabled     types.Bool   `tfsdk:"enabled"`
+	Valid       types.Bool   `tfsdk:"valid"`
+}
+
+func (model workflowModel) GetID() types.String         { return model.ID }
+func (model workflowModel) GetResourceID() types.String { return model.WorkflowID }
+func (model workflowModel) GetSpaceID() types.String    { return model.SpaceID }
 
 var _ entitycore.KibanaResourceModel = workflowModel{}
 var _ entitycore.WithVersionRequirements = workflowModel{}
-
-var _ entitycore.WithVersionRequirements = workflowDataSourceModel{}
-
-type workflowDataSourceModel struct {
-	entitycore.KibanaConnectionField
-	workflowVersionGate
-	ID                types.String                    `tfsdk:"id"`
-	SpaceID           types.String                    `tfsdk:"space_id"`
-	WorkflowID        types.String                    `tfsdk:"workflow_id"`
-	ConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"configuration_yaml"`
-}
-
-type workflowModel struct {
-	workflowVersionGate
-	ID                types.String                    `tfsdk:"id"`
-	KibanaConnection  types.List                      `tfsdk:"kibana_connection"`
-	WorkflowID        types.String                    `tfsdk:"workflow_id"`
-	SpaceID           types.String                    `tfsdk:"space_id"`
-	ConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"configuration_yaml"`
-	Name              types.String                    `tfsdk:"name"`
-	Description       types.String                    `tfsdk:"description"`
-	Enabled           types.Bool                      `tfsdk:"enabled"`
-	Valid             types.Bool                      `tfsdk:"valid"`
-}
 
 func (model *workflowModel) populateFromAPI(data *models.Workflow) {
 	if data == nil {
