@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/noderole"
@@ -76,7 +77,28 @@ func findSuitableTrainedModel(t *testing.T) string {
 	for _, model := range res.TrainedModelConfigs {
 		// Only PyTorch models can be deployed
 		if model.ModelType != nil && *model.ModelType == trainedmodeltype.Pytorch {
-			return model.ModelId
+			modelID := model.ModelId
+
+			// Probe: attempt a transient start to verify capacity is available.
+			_, startErr := es.Ml.StartTrainedModelDeployment(modelID).Do(ctx)
+			if startErr != nil {
+				errStr := strings.ToLower(startErr.Error())
+				if strings.Contains(errStr, "429") ||
+					strings.Contains(errStr, "too_many_requests") ||
+					strings.Contains(errStr, "no ml nodes") ||
+					strings.Contains(errStr, "insufficient memory") ||
+					strings.Contains(errStr, "insufficient capacity") ||
+					strings.Contains(errStr, "status_exception") {
+					t.Skipf("skipping test: ML cluster reports capacity/node assignment error for model %s: %v", modelID, startErr)
+				}
+				// Some other error (e.g. model already started); still continue with this model ID
+				// because the actual test may handle it differently.
+				return modelID
+			}
+
+			// Probe succeeded; stop the deployment immediately so the test can manage it.
+			_, _ = es.Ml.StopTrainedModelDeployment(modelID).Do(ctx)
+			return modelID
 		}
 	}
 
