@@ -44,6 +44,26 @@ func readTrainedModelAlias(ctx context.Context, client *clients.ElasticsearchSco
 	if diags.HasError() {
 		return state, false, diags
 	}
+
+	// Fallback: if alias resolution fails but we have a model_id from state,
+	// verify the underlying model still exists. The GetTrainedModels API may
+	// not resolve aliases on all Elasticsearch versions/setups, but querying
+	// by the known model_id works.
+	if !found && !state.ModelID.IsNull() && !state.ModelID.IsUnknown() {
+		modelIDFromState := state.ModelID.ValueString()
+		_, modelFound, modelDiags := elasticsearch.GetMLTrainedModelAlias(ctx, client, modelIDFromState)
+		diags.Append(modelDiags...)
+		if diags.HasError() {
+			return state, false, diags
+		}
+		if modelFound {
+			out := state
+			out.ModelID = types.StringValue(modelIDFromState)
+			tflog.Debug(ctx, fmt.Sprintf("Alias lookup failed but model %s exists; treating alias as found", modelIDFromState))
+			return out, true, diags
+		}
+	}
+
 	if !found {
 		return state, false, nil
 	}
