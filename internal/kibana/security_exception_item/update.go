@@ -22,62 +22,34 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan ExceptionItemModel
-
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Parse composite ID to get space_id and resource_id
-	compID, compIDDiags := clients.CompositeIDFromStr(plan.ID.ValueString())
-	resp.Diagnostics.Append(compIDDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func updateExceptionItem(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[ExceptionItemModel]) (entitycore.KibanaWriteResult[ExceptionItemModel], diag.Diagnostics) {
+	m := req.Plan
+	var diags diag.Diagnostics
 
 	oapiClient := client.GetKibanaOapiClient()
 
 	// Build the update request body using model method
-	body, diags := plan.toUpdateRequest(ctx, compID.ResourceID, client)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	body, d := m.toUpdateRequest(ctx, req.WriteID)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[ExceptionItemModel]{}, diags
 	}
 
 	// Update the exception item
-	updateResp, diags := kibanaoapi.UpdateExceptionListItem(ctx, oapiClient, plan.SpaceID.ValueString(), *body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	updateResp, d := kibanaoapi.UpdateExceptionListItem(ctx, oapiClient, req.SpaceID, *body)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[ExceptionItemModel]{}, diags
 	}
 
 	if updateResp == nil {
-		resp.Diagnostics.AddError("Failed to update exception item", "API returned empty response")
-		return
+		diags.AddError("Failed to update exception item", "API returned empty response")
+		return entitycore.KibanaWriteResult[ExceptionItemModel]{}, diags
 	}
 
-	plan, remove, diags := refreshExceptionItemState(ctx, oapiClient, plan.SpaceID.ValueString(), plan, updateResp.Id)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if remove {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	diags = resp.State.Set(ctx, plan)
-	resp.Diagnostics.Append(diags...)
+	return entitycore.KibanaWriteResult[ExceptionItemModel]{Model: m}, diags
 }

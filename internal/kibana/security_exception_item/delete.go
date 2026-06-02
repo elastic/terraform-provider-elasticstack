@@ -23,39 +23,19 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *ExceptionItemResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state ExceptionItemModel
-
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Parse composite ID to get space_id and resource_id
-	compID, compIDDiags := clients.CompositeIDFromStr(state.ID.ValueString())
-	resp.Diagnostics.Append(compIDDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func deleteExceptionItem(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ ExceptionItemModel) diag.Diagnostics {
+	var diags diag.Diagnostics
 
 	oapiClient := client.GetKibanaOapiClient()
 
-	// Delete by ID
-	id := compID.ResourceID
+	id := resourceID
 	params := &kbapi.DeleteExceptionListItemParams{
 		Id: &id,
 	}
 
-	diags = kibanaoapi.DeleteExceptionListItem(ctx, oapiClient, compID.ClusterID, params)
-	resp.Diagnostics.Append(diags...)
+	paramsDiags := kibanaoapi.DeleteExceptionListItem(ctx, oapiClient, spaceID, params)
+	return append(diags, paramsDiags...)
 }
