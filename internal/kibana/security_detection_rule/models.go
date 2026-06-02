@@ -19,9 +19,11 @@ package securitydetectionrule
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/google/uuid"
@@ -591,6 +593,46 @@ func (d Data) setCommonUpdateProps(
 }
 
 // Helper function to initialize fields that should be set to default values for all rule types
+func (d Data) GetID() types.String             { return d.ID }
+func (d Data) GetResourceID() types.String     { return d.RuleID }
+func (d Data) GetSpaceID() types.String        { return d.SpaceID }
+func (d Data) GetKibanaConnection() types.List { return d.KibanaConnection }
+
+var _ entitycore.KibanaResourceModel = Data{}
+
+func (d Data) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var reqs []entitycore.VersionRequirement
+
+	if typeutils.IsKnown(d.ResponseActions) && len(d.ResponseActions.Elements()) > 0 {
+		reqs = append(reqs, entitycore.VersionRequirement{
+			MinVersion:   *MinVersionResponseActions,
+			ErrorMessage: fmt.Sprintf("Response actions require server version %s or higher", MinVersionResponseActions.String()),
+		})
+	}
+
+	if typeutils.IsKnown(d.Actions) && len(d.Actions.Elements()) > 0 {
+		var actions []ActionModel
+		diags.Append(d.Actions.ElementsAs(context.Background(), &actions, false)...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		for _, action := range actions {
+			if typeutils.IsKnown(action.AlertsFilter) {
+				reqs = append(reqs, entitycore.VersionRequirement{
+					MinVersion:   *MinVersionAlertsFilter,
+					ErrorMessage: "actions.alerts_filter is only supported for Kibana v8.9 or higher",
+				})
+				break
+			}
+		}
+	}
+
+	return reqs, diags
+}
+
+var _ entitycore.WithVersionRequirements = Data{}
+
 func (d *Data) initializeAllFieldsToDefaults() {
 
 	// Initialize fields that should be empty lists for all rule types initially
