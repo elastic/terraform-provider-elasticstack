@@ -21,8 +21,10 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/noderole"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/trainedmodeltype"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -52,6 +54,25 @@ func findSuitableTrainedModel(t *testing.T) string {
 		return ""
 	}
 
+	// Check that at least one node has the ml role; skip otherwise.
+	nodesRes, err := es.Nodes.Info().Do(ctx)
+	if err != nil {
+		t.Logf("failed to get nodes info: %v", err)
+		return ""
+	}
+	hasMLNode := false
+	for _, node := range nodesRes.Nodes {
+		if slices.Contains(node.Roles, noderole.Ml) {
+			hasMLNode = true
+		}
+		if hasMLNode {
+			break
+		}
+	}
+	if !hasMLNode {
+		t.Skip("skipping test: no ML nodes found in the cluster")
+	}
+
 	for _, model := range res.TrainedModelConfigs {
 		// Only PyTorch models can be deployed
 		if model.ModelType != nil && *model.ModelType == trainedmodeltype.Pytorch {
@@ -62,6 +83,40 @@ func findSuitableTrainedModel(t *testing.T) string {
 	return ""
 }
 
+func testAccCheckMLTrainedModelDeploymentDestroy(s *terraform.State) error {
+	ctx := context.Background()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		return err
+	}
+	es := client.GetESClient()
+
+	rs, ok := s.RootModule().Resources[testResourceName]
+	if !ok {
+		return fmt.Errorf("not found: %s", testResourceName)
+	}
+
+	modelID := rs.Primary.Attributes["model_id"]
+	deploymentID := rs.Primary.Attributes["deployment_id"]
+	if deploymentID == "" {
+		deploymentID = modelID
+	}
+
+	statsRes, err := es.Ml.GetTrainedModelsStats().ModelId(modelID).Do(ctx)
+	if err != nil {
+		// If the model itself is gone, the deployment is definitely gone.
+		return nil
+	}
+
+	for _, stat := range statsRes.TrainedModelStats {
+		if stat.ModelId == modelID && stat.DeploymentStats != nil && stat.DeploymentStats.DeploymentId == deploymentID {
+			return fmt.Errorf("trained model deployment %s for model %s still exists", deploymentID, modelID)
+		}
+	}
+
+	return nil
+}
+
 func TestAccResourceMLTrainedModelDeployment_basic(t *testing.T) {
 	modelID := findSuitableTrainedModel(t)
 	if modelID == "" {
@@ -69,7 +124,8 @@ func TestAccResourceMLTrainedModelDeployment_basic(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: testAccCheckMLTrainedModelDeploymentDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -182,7 +238,7 @@ func TestAccResourceMLTrainedModelDeployment_nonExistentModel(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"model_id": config.StringVariable(modelID),
 				},
-				ExpectError: regexp.MustCompile(".*"),
+				ExpectError: regexp.MustCompile(`(?s)Failed to start trained model deployment`),
 			},
 		},
 	})

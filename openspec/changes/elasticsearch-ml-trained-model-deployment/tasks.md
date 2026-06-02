@@ -20,7 +20,7 @@
 - [x] 3.5 Implement `create.go`: call `StartTrainedModelDeployment` with user-specified parameters; poll `GetTrainedModelStats` until allocation status matches `wait_for` (default `"fully_allocated"`) or `timeouts.create` elapses (reuse `internal/asyncutils/state_waiter.go` pattern); populate computed attributes (id, deployment_id, state, allocation_status, stats_json).
 - [x] 3.6 Implement `read.go`: call `GetTrainedModelStats`; populate `state`, `allocation_status`, `stats_json`; update `number_of_allocations` from API when `adaptive_allocations` is not configured.
 - [x] 3.7 Implement `update.go`: call `UpdateTrainedModelDeployment` with updated `number_of_allocations` and/or `adaptive_allocations`; re-read stats; update state.
-- [x] 3.8 Implement `delete.go`: call `StopTrainedModelDeployment` passing `force_stop` from state; treat 404 as success; log warning if already stopped.
+- [x] 3.8 Implement `delete.go`: call `StopTrainedModelDeployment` passing `force_stop` from state; treat 404 as success (idempotent delete).
 - [x] 3.9 Implement `descriptions.go` (or `resource-description.md`): user-facing Markdown descriptions for schema attributes and resource overview.
 
 ## 4. Provider Registration

@@ -166,12 +166,12 @@ Changes to `number_of_allocations` and `adaptive_allocations` SHALL call `POST _
 
 ### Requirement: Adaptive allocations (REQ-010)
 
-The schema SHALL enforce mutual exclusivity between `number_of_allocations` and `adaptive_allocations` via a `ConflictsWith` validator. Practitioners SHALL configure exactly one of fixed allocations (`number_of_allocations`) or adaptive allocations (`adaptive_allocations`). When `adaptive_allocations.enabled = true`, the Elasticsearch server controls the effective `number_of_allocations`.
+The schema SHALL enforce mutual exclusivity between `number_of_allocations` and `adaptive_allocations` via a `ConflictsWith` validator. Practitioners SHALL configure at most one of fixed allocations (`number_of_allocations`) or adaptive allocations (`adaptive_allocations`). When `adaptive_allocations.enabled = true`, the Elasticsearch server controls the effective `number_of_allocations`.
 
 #### Scenario: Configuring both number_of_allocations and adaptive_allocations fails validation
 
 - GIVEN a configuration with both `number_of_allocations = 1` and `adaptive_allocations.enabled = true`
- WHEN `terraform plan` runs
+- WHEN `terraform plan` runs
 - THEN Terraform SHALL emit a validation error because the attributes are mutually exclusive
 
 #### Scenario: Diff surfaces on number_of_allocations when fixed allocations used

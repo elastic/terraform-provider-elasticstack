@@ -33,7 +33,7 @@ func TestAccResourceMLTrainedModelDeployment_conflictsWithValidation(t *testing.
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("conflicts_with"),
 				PlanOnly:                 true,
-				ExpectError:              regexp.MustCompile(`(?s).*`),
+				ExpectError:              regexp.MustCompile(`(?s)Invalid Attribute Combination.*number_of_allocations.*adaptive_allocations`),
 			},
 		},
 	})

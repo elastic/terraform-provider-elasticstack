@@ -38,12 +38,10 @@ func readTrainedModelDeployment(
 
 	modelID := state.ModelID.ValueString()
 	if modelID == "" {
-		// During import, resourceID is the composite id <cluster_uuid>/<deployment_id>.
-		// We need to extract deployment_id and set model_id from it if possible.
-		// However, model_id is part of the resource ID... Actually, for import we
-		// need to handle this differently. The readFunc gets the prior state.
-		// After import, state will have id set but model_id will be empty.
-		// We need to use the deployment_id as the model_id fallback for import.
+		// During import, Terraform calls Read with only `id` set.
+		// The `resourceID` parameter already contains the deployment_id
+		// extracted from the composite `<cluster_uuid>/<deployment_id>`
+		// by entitycore. Use it as the model_id fallback.
 		modelID = resourceID
 	}
 
