@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -34,7 +33,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
-func GetSchema(ctx context.Context) schema.Schema {
+func GetSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: resourceDescription,
 		Attributes: map[string]schema.Attribute{
@@ -128,10 +127,6 @@ func GetSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "The raw JSON of the trained model stats for this deployment.",
 				Computed:            true,
 			},
-			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
-				Create: true,
-				Update: true,
-			}),
 			"adaptive_allocations": schema.SingleNestedAttribute{
 				MarkdownDescription: "Adaptive allocations configuration. When enabled, the number of allocations is set based on the current load. Cannot be set when `number_of_allocations` is configured.",
 				Optional:            true,

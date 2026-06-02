@@ -174,7 +174,6 @@ func TestAccResourceMLTrainedModelDeployment_basic(t *testing.T) {
 				ImportStateVerifyIgnore: []string{
 					"force_stop",
 					"wait_for",
-					"timeouts",
 				},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					rs, ok := s.RootModule().Resources[testResourceName]

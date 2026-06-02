@@ -21,7 +21,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -41,7 +40,6 @@ type TrainedModelDeploymentData struct {
 	APITimeout              customtypes.Duration     `tfsdk:"api_timeout"`
 	ForceStop               types.Bool               `tfsdk:"force_stop"`
 	AdaptiveAllocations     *AdaptiveAllocationsData `tfsdk:"adaptive_allocations"`
-	Timeouts                timeouts.Value           `tfsdk:"timeouts"`
 	State                   types.String             `tfsdk:"state"`
 	AllocationStatus        types.String             `tfsdk:"allocation_status"`
 	StatsJSON               types.String             `tfsdk:"stats_json"`
@@ -53,20 +51,21 @@ type AdaptiveAllocationsData struct {
 	MaxNumberOfAllocations types.Int64 `tfsdk:"max_number_of_allocations"`
 }
 
-func (d TrainedModelDeploymentData) GetID() types.String         { return d.ID }
-func (d TrainedModelDeploymentData) GetResourceID() types.String { return d.DeploymentID }
+func (d TrainedModelDeploymentData) GetID() types.String { return d.ID }
+func (d TrainedModelDeploymentData) GetResourceID() types.String {
+	if typeutils.IsKnown(d.DeploymentID) {
+		return d.DeploymentID
+	}
+	return d.ModelID
+}
 func (d TrainedModelDeploymentData) GetElasticsearchConnection() types.List {
 	return d.ElasticsearchConnection
 }
 
 var (
 	_ entitycore.ElasticsearchResourceModel = TrainedModelDeploymentData{}
-	_ entitycore.WithOptionalWriteIdentity  = TrainedModelDeploymentData{}
 	_ entitycore.WithReadResourceID         = TrainedModelDeploymentData{}
 )
-
-// AllowsEmptyWriteIdentityOnCreate satisfies [entitycore.WithOptionalWriteIdentity].
-func (TrainedModelDeploymentData) AllowsEmptyWriteIdentityOnCreate() bool { return true }
 
 // GetReadResourceID satisfies [entitycore.WithReadResourceID].
 func (d TrainedModelDeploymentData) GetReadResourceID() string {
