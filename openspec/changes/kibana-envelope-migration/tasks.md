@@ -1,16 +1,16 @@
 ## 1. kibana/security_exception_item
 
-- [ ] 1.1 Add `GetID()`, `GetResourceID()` (→ `ItemID`), `GetSpaceID()` (→ `SpaceID`), `GetKibanaConnection()` value-receiver methods to the exception item model struct
-- [ ] 1.2 Add `GetVersionRequirements()` to the model: emit `MinVersionExpireTime` (8.7.2) with the existing error message when `ExpireTime` is known and non-null
-- [ ] 1.3 Delete inline `EnforceMinVersion(ctx, MinVersionExpireTime)` checks inside `models.go`; drop the `client clients.MinVersionEnforceable` parameter from `toCreateRequest`/`toUpdateRequest` (and any other helper) once the inline check is removed
-- [ ] 1.4 Remove `kibana_connection` block from `schema.go` schema function
-- [ ] 1.5 Extract `Create` method body to `func createExceptionItem(ctx, *KibanaScopedClient, KibanaWriteRequest[ExceptionItemModel]) (KibanaWriteResult[ExceptionItemModel], diag.Diagnostics)`
-- [ ] 1.6 Extract `Read` method body to `func readExceptionItem(ctx, *KibanaScopedClient, resourceID, spaceID string, model ExceptionItemModel) (ExceptionItemModel, bool, diag.Diagnostics)`
-- [ ] 1.7 Extract `Update` method body to `func updateExceptionItem(ctx, *KibanaScopedClient, KibanaWriteRequest[ExceptionItemModel]) (KibanaWriteResult[ExceptionItemModel], diag.Diagnostics)`
-- [ ] 1.8 Extract `Delete` method body to `func deleteExceptionItem(ctx, *KibanaScopedClient, resourceID, spaceID string, model ExceptionItemModel) diag.Diagnostics`
-- [ ] 1.9 Swap `*entitycore.ResourceBase` for `*entitycore.KibanaResource[ExceptionItemModel]` in resource struct and constructor; retain `ValidateConfig` on the wrapper struct
-- [ ] 1.10 Add `entitycore_contract_test.go` asserting the resource embeds `KibanaResource[ExceptionItemModel]`
-- [ ] 1.11 Run `make build` and `go test ./internal/kibana/security_exception_item/...`
+- [x] 1.1 Add `GetID()`, `GetResourceID()` (→ `ItemID`), `GetSpaceID()` (→ `SpaceID`), `GetKibanaConnection()` value-receiver methods to the exception item model struct
+- [x] 1.2 Add `GetVersionRequirements()` to the model: emit `MinVersionExpireTime` (8.7.2) with the existing error message when `ExpireTime` is known and non-null
+- [x] 1.3 Delete inline `EnforceMinVersion(ctx, MinVersionExpireTime)` checks inside `models.go`; drop the `client clients.MinVersionEnforceable` parameter from `toCreateRequest`/`toUpdateRequest` (and any other helper) once the inline check is removed
+- [x] 1.4 Remove `kibana_connection` block from `schema.go` schema function
+- [x] 1.5 Extract `Create` method body to `func createExceptionItem(ctx, *KibanaScopedClient, KibanaWriteRequest[ExceptionItemModel]) (KibanaWriteResult[ExceptionItemModel], diag.Diagnostics)`
+- [x] 1.6 Extract `Read` method body to `func readExceptionItem(ctx, *KibanaScopedClient, resourceID, spaceID string, model ExceptionItemModel) (ExceptionItemModel, bool, diag.Diagnostics)`
+- [x] 1.7 Extract `Update` method body to `func updateExceptionItem(ctx, *KibanaScopedClient, KibanaWriteRequest[ExceptionItemModel]) (KibanaWriteResult[ExceptionItemModel], diag.Diagnostics)`
+- [x] 1.8 Extract `Delete` method body to `func deleteExceptionItem(ctx, *KibanaScopedClient, resourceID, spaceID string, model ExceptionItemModel) diag.Diagnostics`
+- [x] 1.9 Swap `*entitycore.ResourceBase` for `*entitycore.KibanaResource[ExceptionItemModel]` in resource struct and constructor; retain `ValidateConfig` on the wrapper struct
+- [x] 1.10 Add `entitycore_contract_test.go` asserting the resource embeds `KibanaResource[ExceptionItemModel]`
+- [x] 1.11 Run `make build` and `go test ./internal/kibana/security_exception_item/...`
 
 ## 2. kibana/security_detection_rule
 
