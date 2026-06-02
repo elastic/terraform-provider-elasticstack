@@ -43,7 +43,8 @@ func TestAccResourceMLTrainedModelAlias_basic(t *testing.T) {
 	})
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceMLTrainedModelAliasDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -76,6 +77,7 @@ func TestAccResourceMLTrainedModelAlias_basic(t *testing.T) {
 				ResourceName:             mlTrainedModelAliasResourceAddress,
 				ImportState:              true,
 				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"reassign"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					rs := s.RootModule().Resources[mlTrainedModelAliasResourceAddress]
 					return rs.Primary.ID, nil
@@ -104,7 +106,8 @@ func TestAccResourceMLTrainedModelAlias_updateReassignFlag(t *testing.T) {
 	})
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceMLTrainedModelAliasDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -132,6 +135,40 @@ func TestAccResourceMLTrainedModelAlias_updateReassignFlag(t *testing.T) {
 			},
 		},
 	})
+}
+
+func checkResourceMLTrainedModelAliasDestroy(s *terraform.State) error {
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		return err
+	}
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "elasticstack_elasticsearch_ml_trained_model_alias" {
+			continue
+		}
+
+		alias := rs.Primary.Attributes["model_alias"]
+		if alias == "" {
+			continue
+		}
+
+		res, err := client.GetESClient().Ml.GetTrainedModels().ModelId(alias).AllowNoMatch(true).Do(context.Background())
+		if err != nil {
+			var esErr *types.ElasticsearchError
+			if errors.As(err, &esErr) && esErr.Status == 404 {
+				continue
+			}
+			return err
+		}
+		if res == nil || len(res.TrainedModelConfigs) == 0 {
+			continue
+		}
+
+		return fmt.Errorf("ML trained model alias %q still exists", alias)
+	}
+
+	return nil
 }
 
 func deleteMLTrainedModelAliasBestEffort(ctx context.Context, t *testing.T, alias string) {

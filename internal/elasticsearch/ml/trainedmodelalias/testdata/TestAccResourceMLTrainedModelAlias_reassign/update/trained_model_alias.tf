@@ -3,6 +3,11 @@ variable "model_alias" {
   type        = string
 }
 
+variable "model_b" {
+  description = "Second trained model ID"
+  type        = string
+}
+
 provider "elasticstack" {
   elasticsearch {}
 }
