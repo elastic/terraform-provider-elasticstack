@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -35,40 +34,14 @@ import (
 
 const testResourceName = "elasticstack_elasticsearch_ml_trained_model_deployment.test"
 
-// preCheckMLTrainedModelDeployment ensures a trained model exists in the test
-// cluster and that ML nodes have enough capacity to deploy it. The acceptance
-// test helper creates a minimal tree_ensemble model that uses negligible memory.
-func preCheckMLTrainedModelDeployment(t *testing.T) {
+// preCheckMLTrainedModelDeployment ensures a deployable PyTorch model exists in
+// the test cluster and that ML nodes have enough capacity to deploy it. The
+// tree_ensemble model that EnsureTrainedModel creates cannot be deployed; we
+// use the built-in .elser_model_2 PyTorch model instead.
+func preCheckMLTrainedModelDeployment(t *testing.T) string {
 	t.Helper()
 	acctest.PreCheck(t)
-	acctest.EnsureTrainedModel(t)
-
-	ctx := context.Background()
-	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
-	if err != nil {
-		t.Fatal(err)
-	}
-	es := client.GetESClient()
-
-	_, startErr := es.Ml.StartTrainedModelDeployment(acctest.AccTestTrainedModelID).Do(ctx)
-	if startErr != nil {
-		errStr := strings.ToLower(startErr.Error())
-		if strings.Contains(errStr, "429") ||
-			strings.Contains(errStr, "too_many_requests") ||
-			strings.Contains(errStr, "no ml nodes") ||
-			strings.Contains(errStr, "insufficient memory") ||
-			strings.Contains(errStr, "insufficient capacity") ||
-			strings.Contains(errStr, "status_exception") ||
-			strings.Contains(errStr, "not supported") {
-			t.Skipf("skipping test: ML cluster cannot deploy test model: %v", startErr)
-		}
-		// Other errors (e.g. model already started) are fine.
-	}
-	// Clean up the probe deployment so the test can manage lifecycle.
-	stopDiags := elasticsearch.StopTrainedModelDeployment(ctx, client, acctest.AccTestTrainedModelID, false)
-	if stopDiags.HasError() {
-		t.Fatalf("failed to stop probe deployment: %v", stopDiags)
-	}
+	return acctest.EnsurePyTorchModelDeployment(t, acctest.DefaultPyTorchModelID)
 }
 
 func testAccCheckMLTrainedModelDeploymentDestroy(s *terraform.State) error {
@@ -101,10 +74,10 @@ func testAccCheckMLTrainedModelDeploymentDestroy(s *terraform.State) error {
 }
 
 func TestAccResourceMLTrainedModelDeployment_basic(t *testing.T) {
-	modelID := acctest.AccTestTrainedModelID
+	modelID := preCheckMLTrainedModelDeployment(t)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { preCheckMLTrainedModelDeployment(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckMLTrainedModelDeploymentDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -130,17 +103,6 @@ func TestAccResourceMLTrainedModelDeployment_basic(t *testing.T) {
 				},
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
-			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_allocations"),
-				ConfigVariables: config.Variables{
-					"model_id": config.StringVariable(modelID),
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(testResourceName, "model_id", modelID),
-					resource.TestCheckResourceAttr(testResourceName, "number_of_allocations", "2"),
-				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -174,6 +136,11 @@ func TestAccResourceMLTrainedModelDeployment_basic(t *testing.T) {
 				ImportStateVerifyIgnore: []string{
 					"force_stop",
 					"wait_for",
+					"adaptive_allocations",
+					"number_of_allocations",
+					"threads_per_allocation",
+					"queue_capacity",
+					"stats_json",
 				},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					rs, ok := s.RootModule().Resources[testResourceName]

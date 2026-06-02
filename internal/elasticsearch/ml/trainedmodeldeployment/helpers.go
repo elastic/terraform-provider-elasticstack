@@ -53,11 +53,9 @@ func populateComputedFromStats(data *TrainedModelDeploymentData, stats *types.Tr
 	}
 	data.StatsJSON = fwtypes.StringValue(statsJSON)
 
-	if data.AdaptiveAllocations == nil || data.AdaptiveAllocations.Enabled.IsNull() {
-		if stats.DeploymentStats.NumberOfAllocations != nil {
-			data.NumberOfAllocations = fwtypes.Int64Value(int64(*stats.DeploymentStats.NumberOfAllocations))
-		} else {
-			data.NumberOfAllocations = fwtypes.Int64Null()
-		}
+	if stats.DeploymentStats.NumberOfAllocations != nil {
+		data.NumberOfAllocations = fwtypes.Int64Value(int64(*stats.DeploymentStats.NumberOfAllocations))
+	} else {
+		data.NumberOfAllocations = fwtypes.Int64Null()
 	}
 }
