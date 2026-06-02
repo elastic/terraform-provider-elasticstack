@@ -956,6 +956,16 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceID str
 			commentsArray[i] = kbapi.SecurityExceptionsAPIUpdateExceptionListItemComment{
 				Comment: comment.Comment.ValueString(),
 			}
+			// Pass the existing comment id through so Kibana recognises this
+			// as an update of an existing comment instead of creating a new
+			// one. Without it, every Update call appends another copy of
+			// each comment that was returned by the prior Read, producing
+			// unbounded duplication.
+			if !comment.ID.IsNull() && !comment.ID.IsUnknown() {
+				if idStr := comment.ID.ValueString(); idStr != "" {
+					commentsArray[i].Id = &idStr
+				}
+			}
 		}
 		genericReq.Comments = &commentsArray
 	}
