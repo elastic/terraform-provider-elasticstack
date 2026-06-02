@@ -590,7 +590,7 @@ func (d Data) setCommonUpdateProps(
 }
 
 // Helper function to initialize fields that should be set to default values for all rule types
-func (d Data) GetID() types.String             { return d.ID }
+func (d Data) GetID() types.String { return d.ID }
 func (d Data) GetResourceID() types.String {
 	if compID, _ := clients.CompositeIDFromStr(d.ID.ValueString()); compID != nil {
 		return types.StringValue(compID.ResourceID)
