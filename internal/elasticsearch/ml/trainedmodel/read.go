@@ -18,9 +18,11 @@
 package trainedmodel
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
@@ -84,29 +86,14 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 func mapTrainedModelConfig(ctx context.Context, model *estypes.TrainedModelConfig, data *trainedModelData) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	// Description
-	if model.Description != nil && *model.Description != "" {
-		data.Description = types.StringValue(*model.Description)
-	} else {
-		data.Description = types.StringNull()
-	}
-
-	// ModelType
+	data.Description = typeutils.NonEmptyStringOrNull(model.Description)
 	if model.ModelType != nil {
 		data.ModelType = types.StringValue(model.ModelType.String())
 	} else {
 		data.ModelType = types.StringNull()
 	}
-
-	// ModelSizeBytes
 	data.ModelSizeBytes = byteSizeToInt64Value(model.ModelSizeBytes)
-
-	// FullyDefined
-	if model.FullyDefined != nil {
-		data.FullyDefined = types.BoolValue(*model.FullyDefined)
-	} else {
-		data.FullyDefined = types.BoolNull()
-	}
+	data.FullyDefined = typeutils.BoolPointerValue(model.FullyDefined)
 
 	// Tags
 	if model.Tags == nil {
@@ -120,36 +107,11 @@ func mapTrainedModelConfig(ctx context.Context, model *estypes.TrainedModelConfi
 		data.Tags = tagsSet
 	}
 
-	// CreateTime
 	data.CreateTime = dateTimeToStringValue(model.CreateTime)
-
-	// CreatedBy
-	if model.CreatedBy != nil && *model.CreatedBy != "" {
-		data.CreatedBy = types.StringValue(*model.CreatedBy)
-	} else {
-		data.CreatedBy = types.StringNull()
-	}
-
-	// Version
-	if model.Version != nil && *model.Version != "" {
-		data.Version = types.StringValue(*model.Version)
-	} else {
-		data.Version = types.StringNull()
-	}
-
-	// PlatformArchitecture
-	if model.PlatformArchitecture != nil && *model.PlatformArchitecture != "" {
-		data.PlatformArchitecture = types.StringValue(*model.PlatformArchitecture)
-	} else {
-		data.PlatformArchitecture = types.StringNull()
-	}
-
-	// LicenseLevel
-	if model.LicenseLevel != nil && *model.LicenseLevel != "" {
-		data.LicenseLevel = types.StringValue(*model.LicenseLevel)
-	} else {
-		data.LicenseLevel = types.StringNull()
-	}
+	data.CreatedBy = typeutils.NonEmptyStringOrNull(model.CreatedBy)
+	data.Version = typeutils.NonEmptyStringOrNull(model.Version)
+	data.PlatformArchitecture = typeutils.NonEmptyStringOrNull(model.PlatformArchitecture)
+	data.LicenseLevel = typeutils.NonEmptyStringOrNull(model.LicenseLevel)
 
 	// InputJSON
 	inputJSON, d := marshalInputToJSON(model.Input)
@@ -170,7 +132,7 @@ func mapTrainedModelConfig(ctx context.Context, model *estypes.TrainedModelConfi
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling inference_config JSON: %s", err))
 			return diags
 		}
-		if string(infBytes) != "null" {
+		if !bytes.Equal(infBytes, []byte("null")) {
 			data.InferenceConfigJSON = jsontypes.NewNormalizedValue(string(infBytes))
 		} else {
 			data.InferenceConfigJSON = jsontypes.NewNormalizedNull()
@@ -186,7 +148,7 @@ func mapTrainedModelConfig(ctx context.Context, model *estypes.TrainedModelConfi
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling metadata JSON: %s", err))
 			return diags
 		}
-		if string(metaBytes) != "null" {
+		if !bytes.Equal(metaBytes, []byte("null")) {
 			data.MetadataJSON = jsontypes.NewNormalizedValue(string(metaBytes))
 		} else {
 			data.MetadataJSON = jsontypes.NewNormalizedNull()
@@ -235,8 +197,7 @@ func byteSizeToInt64Value(b estypes.ByteSize) types.Int64 {
 			return types.Int64Null()
 		}
 		// Try to parse as int64
-		var i int64
-		_, err := fmt.Sscanf(v, "%d", &i)
+		i, err := strconv.ParseInt(v, 10, 64)
 		if err != nil {
 			return types.Int64Null()
 		}

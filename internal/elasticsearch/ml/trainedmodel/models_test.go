@@ -186,6 +186,7 @@ func TestByteSizeToInt64Value(t *testing.T) {
 		{"string zero", "0", types.Int64Null()},
 		{"string empty", "", types.Int64Null()},
 		{"string non-zero", "8192", types.Int64Value(8192)},
+		{"string invalid", "not-a-number", types.Int64Null()},
 		{"unknown type", true, types.Int64Null()},
 	}
 
