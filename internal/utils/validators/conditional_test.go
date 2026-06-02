@@ -62,7 +62,7 @@ func TestAllowedIfDependentPathOneOf(t *testing.T) {
 		{
 			name:           "valid - current set, dependent matches required value",
 			currentValue:   types.StringValue("plaintext"),
-			dependentValue: types.StringValue("none"),
+			dependentValue: types.StringValue(expandWildcardNone),
 			options:        defaultOptions,
 			expectedError:  false,
 		},
@@ -145,7 +145,7 @@ func TestAllowedIfDependentPathOneOf(t *testing.T) {
 			// Create validator
 			v := AllowedIfDependentPathOneOf(
 				path.Root("auth_type"),
-				[]string{"none"},
+				[]string{expandWildcardNone},
 				testCase.options,
 			)
 
@@ -208,7 +208,7 @@ func TestAllowedIfDependentPathOneOf_NullDependentErrorMessage(t *testing.T) {
 	config := tfsdk.Config{Raw: rawConfig, Schema: testSchema}
 	v := AllowedIfDependentPathOneOf(
 		path.Root("auth_type"),
-		[]string{"none"},
+		[]string{expandWildcardNone},
 		AllowedIfOptions{AllowNullDependent: false},
 	)
 
@@ -226,7 +226,7 @@ func TestAllowedIfDependentPathOneOf_NullDependentErrorMessage(t *testing.T) {
 func TestAllowedIfDependentPathOneOf_Description(t *testing.T) {
 	v := AllowedIfDependentPathOneOf(
 		path.Root("auth_type"),
-		[]string{"none"},
+		[]string{expandWildcardNone},
 		AllowedIfOptions{},
 	)
 
@@ -423,7 +423,7 @@ func TestRequiredIfDependentPathOneOf(t *testing.T) {
 		{
 			name:           "valid - current null, dependent doesn't match required value",
 			currentValue:   types.StringNull(),
-			dependentValue: types.StringValue("none"),
+			dependentValue: types.StringValue(expandWildcardNone),
 			expectedError:  false,
 		},
 		{
@@ -742,7 +742,7 @@ func TestAllowedIfDependentPathExpressionOneOf(t *testing.T) {
 		{
 			name:           "valid - current set, dependent matches required value",
 			currentValue:   types.StringValue("plaintext"),
-			dependentValue: types.StringValue("none"),
+			dependentValue: types.StringValue(expandWildcardNone),
 			options:        defaultOptions,
 			expectedError:  false,
 		},
@@ -821,7 +821,7 @@ func TestAllowedIfDependentPathExpressionOneOf(t *testing.T) {
 			// Create validator using path expression to reference sibling field
 			v := AllowedIfDependentPathExpressionOneOf(
 				path.MatchRelative().AtParent().AtName("auth_type"),
-				[]string{"none"},
+				[]string{expandWildcardNone},
 				testCase.options,
 			)
 
@@ -849,7 +849,7 @@ func TestAllowedIfDependentPathExpressionOneOf(t *testing.T) {
 func TestAllowedIfDependentPathExpressionOneOf_Description(t *testing.T) {
 	v := AllowedIfDependentPathExpressionOneOf(
 		path.MatchRelative().AtParent().AtName("auth_type"),
-		[]string{"none"},
+		[]string{expandWildcardNone},
 		AllowedIfOptions{},
 	)
 

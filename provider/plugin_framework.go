@@ -25,14 +25,9 @@ import (
 	sourcemap "github.com/elastic/terraform-provider-elasticstack/internal/apm/source_map"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster"
 	clusterinfo "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/info"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/script"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/settings"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/slm"
-	snapshot_create "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_create"
-	snapshot_repository "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_repository"
-	snapshot_restore "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_restore"
 	connectordatasource "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector/data_source"
 	connectorresource "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector/resource"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector/sync_job_create"
@@ -60,6 +55,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/jobstate"
 	mltrainedmodel "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/trainedmodel"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/trainedmodeldeployment"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/trainedmodelalias"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/queryrulesets"
 	apikeyephemeral "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey/ephemeral"
 	apikeyresource "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey/resource"
@@ -67,6 +63,10 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/rolemapping"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/systemuser"
 	securityuser "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/user"
+	snapshotcreate "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/snapshot/create"
+	snapshotlifecycle "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/snapshot/lifecycle"
+	snapshotrepo "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/snapshot/repository"
+	snapshotrestore "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/snapshot/restore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/synonyms"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/transform"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/watcher/watch"
@@ -184,8 +184,8 @@ func (p *Provider) Configure(ctx context.Context, req fwprovider.ConfigureReques
 
 func (p *Provider) Actions(_ context.Context) []func() action.Action {
 	return []func() action.Action{
-		snapshot_restore.NewRestoreAction,
-		snapshot_create.NewCreateAction,
+		snapshotrestore.NewRestoreAction,
+		snapshotcreate.NewCreateAction,
 		sync_job_create.NewAction,
 	}
 }
@@ -273,6 +273,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		calendar_event.NewCalendarEventResource,
 		calendar_job.NewCalendarJobResource,
 		filter.NewFilterResource,
+		trainedmodelalias.NewTrainedModelAliasResource,
 		security_detection_rule.NewSecurityDetectionRuleResource,
 		jobstate.NewMLJobStateResource,
 		trainedmodeldeployment.NewTrainedModelDeploymentResource,
@@ -288,8 +289,8 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		security_role.NewResource,
 		securityentitystore.NewResource,
 		spaces.NewResource,
-		slm.NewSlmResource,
-		snapshot_repository.NewSnapshotRepositoryResource,
+		snapshotlifecycle.NewSlmResource,
+		snapshotrepo.NewSnapshotRepositoryResource,
 		transform.NewTransformResource,
 	}
 }
@@ -302,7 +303,7 @@ func (p *Provider) experimentalResources(_ context.Context) []func() resource.Re
 
 func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		cluster.NewSnapshotRepositoryDataSource,
+		snapshotrepo.NewSnapshotRepositoryDataSource,
 		clusterinfo.NewDataSource,
 		indices.NewDataSource,
 		template.NewDataSource,

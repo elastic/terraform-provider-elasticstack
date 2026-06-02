@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"time"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -208,50 +207,7 @@ func byteSizeToInt64Value(b estypes.ByteSize) types.Int64 {
 }
 
 func dateTimeToStringValue(dt estypes.DateTime) types.String {
-	if dt == nil {
-		return types.StringNull()
-	}
-	ms, ok := dateTimeToMillis(dt)
-	if !ok || ms == 0 {
-		return types.StringNull()
-	}
-	return typeutils.TimeToStringValue(time.UnixMilli(ms).UTC())
-}
-
-func dateTimeToMillis(v any) (int64, bool) {
-	switch x := v.(type) {
-	case float64:
-		return int64(x), true
-	case int64:
-		return x, true
-	case int:
-		return int64(x), true
-	case uint64:
-		return int64(x), true
-	case json.Number:
-		i, err := x.Int64()
-		if err == nil {
-			return i, true
-		}
-		f, err := x.Float64()
-		if err != nil {
-			return 0, false
-		}
-		return int64(f), true
-	case string:
-		if x == "" {
-			return 0, false
-		}
-		t, err := time.Parse(time.RFC3339, x)
-		if err != nil {
-			return 0, false
-		}
-		return t.UnixMilli(), true
-	case estypes.DateTime:
-		return dateTimeToMillis(any(x))
-	default:
-		return 0, false
-	}
+	return typeutils.ElasticDateTimeToStringValue(dt)
 }
 
 func marshalInputToJSON(input estypes.TrainedModelConfigInput) (string, diag.Diagnostics) {

@@ -17,13 +17,13 @@ on:
     contents: read
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v6.0.2
       with:
         persist-credentials: false
         fetch-depth: 1
     - name: Verify trigger label
       id: verify_label
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -32,7 +32,7 @@ on:
     - name: Remove trigger label
       id: remove_trigger_label
       if: steps.verify_label.outputs.label_verified == 'true'
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -41,7 +41,7 @@ on:
     - name: Classify pull request and select active change
       id: classify_and_select
       if: steps.verify_label.outputs.label_verified == 'true'
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -52,7 +52,7 @@ on:
       if: >-
         steps.verify_label.outputs.label_verified == 'true' &&
         steps.classify_and_select.outputs.selection_status == 'ineligible'
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       env:
         SELECTION_REASON: ${{ steps.classify_and_select.outputs.selection_reason }}
       with:
