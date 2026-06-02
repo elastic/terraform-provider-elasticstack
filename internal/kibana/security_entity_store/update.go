@@ -73,7 +73,7 @@ func updateEntityStore(
 			ctx,
 			client.GetKibanaOapiClient(),
 			spaceID,
-			kbapi.PostSecurityEntityStoreUninstallJSONRequestBody{EntityTypes: uninstallTypes(removed)},
+			kbapi.PostSecurityEntityStoreUninstallJSONRequestBody{EntityTypes: stringSliceToAPITypes[kbapi.PostSecurityEntityStoreUninstallJSONBodyEntityTypes](removed)},
 		); d.HasError() {
 			return entitycore.KibanaWriteResult[tfModel]{}, d
 		}

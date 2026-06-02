@@ -21,12 +21,9 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"slices"
 	"strings"
 	"testing"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/noderole"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/trainedmodeltype"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -37,72 +34,37 @@ import (
 
 const testResourceName = "elasticstack_elasticsearch_ml_trained_model_deployment.test"
 
-// findSuitableTrainedModel queries the cluster for available trained models and
-// returns the first PyTorch model ID that can be deployed. Returns empty string
-// if no suitable model is found.
-func findSuitableTrainedModel(t *testing.T) string {
+// preCheckMLTrainedModelDeployment ensures a trained model exists in the test
+// cluster and that ML nodes have enough capacity to deploy it. The acceptance
+// test helper creates a minimal tree_ensemble model that uses negligible memory.
+func preCheckMLTrainedModelDeployment(t *testing.T) {
 	t.Helper()
+	acctest.PreCheck(t)
+	acctest.EnsureTrainedModel(t)
+
 	ctx := context.Background()
 	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
-		t.Fatalf("failed to create ES client: %v", err)
+		t.Fatal(err)
 	}
 	es := client.GetESClient()
 
-	res, err := es.Ml.GetTrainedModels().Do(ctx)
-	if err != nil {
-		t.Logf("failed to get trained models: %v", err)
-		return ""
-	}
-
-	// Check that at least one node has the ml role; skip otherwise.
-	nodesRes, err := es.Nodes.Info().Do(ctx)
-	if err != nil {
-		t.Logf("failed to get nodes info: %v", err)
-		return ""
-	}
-	hasMLNode := false
-	for _, node := range nodesRes.Nodes {
-		if slices.Contains(node.Roles, noderole.Ml) {
-			hasMLNode = true
+	_, startErr := es.Ml.StartTrainedModelDeployment(acctest.AccTestTrainedModelID).Do(ctx)
+	if startErr != nil {
+		errStr := strings.ToLower(startErr.Error())
+		if strings.Contains(errStr, "429") ||
+			strings.Contains(errStr, "too_many_requests") ||
+			strings.Contains(errStr, "no ml nodes") ||
+			strings.Contains(errStr, "insufficient memory") ||
+			strings.Contains(errStr, "insufficient capacity") ||
+			strings.Contains(errStr, "status_exception") ||
+			strings.Contains(errStr, "not supported") {
+			t.Skipf("skipping test: ML cluster cannot deploy test model: %v", startErr)
 		}
-		if hasMLNode {
-			break
-		}
+		// Other errors (e.g. model already started) are fine.
 	}
-	if !hasMLNode {
-		t.Skip("skipping test: no ML nodes found in the cluster")
-	}
-
-	for _, model := range res.TrainedModelConfigs {
-		// Only PyTorch models can be deployed
-		if model.ModelType != nil && *model.ModelType == trainedmodeltype.Pytorch {
-			modelID := model.ModelId
-
-			// Probe: attempt a transient start to verify capacity is available.
-			_, startErr := es.Ml.StartTrainedModelDeployment(modelID).Do(ctx)
-			if startErr != nil {
-				errStr := strings.ToLower(startErr.Error())
-				if strings.Contains(errStr, "429") ||
-					strings.Contains(errStr, "too_many_requests") ||
-					strings.Contains(errStr, "no ml nodes") ||
-					strings.Contains(errStr, "insufficient memory") ||
-					strings.Contains(errStr, "insufficient capacity") ||
-					strings.Contains(errStr, "status_exception") {
-					t.Skipf("skipping test: ML cluster reports capacity/node assignment error for model %s: %v", modelID, startErr)
-				}
-				// Some other error (e.g. model already started); still continue with this model ID
-				// because the actual test may handle it differently.
-				return modelID
-			}
-
-			// Probe succeeded; stop the deployment immediately so the test can manage it.
-			_, _ = es.Ml.StopTrainedModelDeployment(modelID).Do(ctx)
-			return modelID
-		}
-	}
-
-	return ""
+	// Clean up the probe deployment so the test can manage lifecycle.
+	_, _ = es.Ml.StopTrainedModelDeployment(acctest.AccTestTrainedModelID).Do(ctx)
 }
 
 func testAccCheckMLTrainedModelDeploymentDestroy(s *terraform.State) error {
@@ -126,7 +88,6 @@ func testAccCheckMLTrainedModelDeploymentDestroy(s *terraform.State) error {
 
 	statsRes, err := es.Ml.GetTrainedModelsStats().ModelId(modelID).Do(ctx)
 	if err != nil {
-		// If the model itself is gone, the deployment is definitely gone.
 		return nil
 	}
 
@@ -140,13 +101,10 @@ func testAccCheckMLTrainedModelDeploymentDestroy(s *terraform.State) error {
 }
 
 func TestAccResourceMLTrainedModelDeployment_basic(t *testing.T) {
-	modelID := findSuitableTrainedModel(t)
-	if modelID == "" {
-		t.Skip("skipping test: no suitable trained model found in the cluster")
-	}
+	modelID := acctest.AccTestTrainedModelID
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
+		PreCheck:     func() { preCheckMLTrainedModelDeployment(t) },
 		CheckDestroy: testAccCheckMLTrainedModelDeploymentDestroy,
 		Steps: []resource.TestStep{
 			{

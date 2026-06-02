@@ -23,6 +23,7 @@ resource "elasticstack_kibana_slo" "test_slo" {
     transaction_type = "request"
     transaction_name = "GET /sup/dawg"
     index            = "my-index-${var.name}"
+    filter           = "env: prod"
   }
 
   time_window {

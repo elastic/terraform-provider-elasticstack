@@ -21,7 +21,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -29,6 +28,7 @@ import (
 type ContentConnectorData struct {
 	entitycore.ElasticsearchConnectionField
 	connector.CoreConnectorFields
+	connector.VersionGate
 	ID                  fwtypes.String `tfsdk:"id"`
 	ConnectorID         fwtypes.String `tfsdk:"connector_id"`
 	ConfigurationValues fwtypes.Map    `tfsdk:"configuration_values"`
@@ -56,12 +56,4 @@ func (data ContentConnectorData) GetReadResourceID() string {
 		return data.ConnectorID.ValueString()
 	}
 	return ""
-}
-
-// GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
-func (data ContentConnectorData) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{{
-		MinVersion:   *connector.MinSupportedVersion,
-		ErrorMessage: "elasticstack_elasticsearch_connector requires Elasticsearch 8.16.0 or later (the connector request bodies the typed client sends are rejected on 8.12.x–8.15.x).",
-	}}, nil
 }
