@@ -117,7 +117,9 @@ func TestAccResourceMLTrainedModelAlias_basic(t *testing.T) {
 				ImportStateVerifyIgnore:  []string{"reassign"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					rs := s.RootModule().Resources[mlTrainedModelAliasResourceAddress]
-					return rs.Primary.ID, nil
+					// Pass model_id in the import ID so ImportState can populate it
+					// without relying on alias resolution via the ES API.
+					return rs.Primary.ID + "/" + rs.Primary.Attributes["model_id"], nil
 				},
 				ConfigVariables: map[string]config.Variable{
 					"model_alias": config.StringVariable(modelAlias),

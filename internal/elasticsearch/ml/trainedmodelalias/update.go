@@ -38,6 +38,14 @@ func updateTrainedModelAlias(ctx context.Context, client *clients.ElasticsearchS
 	modelID := plan.ModelID.ValueString()
 	reassign := plan.Reassign.ValueBool()
 
+	// Skip the API call if the model_id hasn't changed. The ES API rejects
+	// no-op updates with reassign=false when the alias already points to the
+	// same model, so we avoid the call entirely when there's nothing to do.
+	if req.Prior != nil && req.Prior.ModelID.ValueString() == modelID {
+		tflog.Debug(ctx, fmt.Sprintf("Model ID unchanged for alias %s; skipping API call", alias))
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
+	}
+
 	diags.Append(elasticsearch.PutMLTrainedModelAlias(ctx, client, modelID, alias, reassign)...)
 	if diags.HasError() {
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags

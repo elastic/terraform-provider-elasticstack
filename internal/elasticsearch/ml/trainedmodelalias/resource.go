@@ -19,8 +19,9 @@ package trainedmodelalias
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -53,12 +54,28 @@ func NewTrainedModelAliasResource() resource.Resource {
 }
 
 func (r *trainedModelAliasResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	compID, diags := clients.CompositeIDFromStr(req.ID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	// Support import IDs in the form <cluster>/<alias> or <cluster>/<alias>/<model_id>.
+	// The optional model_id helps when the ES GET API cannot resolve aliases.
+	parts := strings.Split(req.ID, "/")
+	if len(parts) < 2 {
+		resp.Diagnostics.AddError(
+			"Invalid import ID",
+			"Expected format: <cluster>/<alias> or <cluster>/<alias>/<model_id>",
+		)
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("model_alias"), compID.ResourceID)...)
+	clusterID := parts[0]
+	alias := parts[1]
+	modelID := ""
+	if len(parts) >= 3 {
+		modelID = strings.Join(parts[2:], "/")
+	}
+
+	compID := fmt.Sprintf("%s/%s", clusterID, alias)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), compID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("model_alias"), alias)...)
+	if modelID != "" {
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("model_id"), modelID)...)
+	}
 }
