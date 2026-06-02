@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -48,15 +47,15 @@ func (s SavedQueryRuleProcessor) HandlesRuleType(t string) bool {
 	return t == ruleTypeSavedQuery
 }
 
-func (s SavedQueryRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
-	return d.toSavedQueryRuleCreateProps(ctx, client)
+func (s SavedQueryRuleProcessor) ToCreateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+	return d.toSavedQueryRuleCreateProps(ctx)
 }
 
-func (s SavedQueryRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
-	return d.toSavedQueryRuleUpdateProps(ctx, client)
+func (s SavedQueryRuleProcessor) ToUpdateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+	return d.toSavedQueryRuleUpdateProps(ctx)
 }
 
-func (d Data) toSavedQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d Data) toSavedQueryRuleCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -104,7 +103,7 @@ func (d Data) toSavedQueryRuleCreateProps(ctx context.Context, client clients.Mi
 		Threat:                            &savedQueryRule.Threat,
 		TimelineID:                        &savedQueryRule.TimelineId,
 		TimelineTitle:                     &savedQueryRule.TimelineTitle,
-	}, &diags, client)
+	}, &diags)
 
 	// Set optional query for saved query rules
 	if typeutils.IsKnown(d.Query) {
@@ -126,7 +125,7 @@ func (d Data) toSavedQueryRuleCreateProps(ctx context.Context, client clients.Mi
 
 	return createProps, diags
 }
-func (d Data) toSavedQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d Data) toSavedQueryRuleUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -187,7 +186,7 @@ func (d Data) toSavedQueryRuleUpdateProps(ctx context.Context, client clients.Mi
 		Threat:                            &savedQueryRule.Threat,
 		TimelineID:                        &savedQueryRule.TimelineId,
 		TimelineTitle:                     &savedQueryRule.TimelineTitle,
-	}, &diags, client)
+	}, &diags)
 
 	// Set optional query for saved query rules
 	if typeutils.IsKnown(d.Query) {

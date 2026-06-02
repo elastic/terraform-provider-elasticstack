@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -52,21 +51,19 @@ func (m MachineLearningRuleProcessor) HandlesRuleType(t string) bool {
 
 func (m MachineLearningRuleProcessor) ToCreateProps(
 	ctx context.Context,
-	client clients.MinVersionEnforceable,
 	d Data,
 ) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
-	return d.toMachineLearningRuleCreateProps(ctx, client)
+	return d.toMachineLearningRuleCreateProps(ctx)
 }
 
 func (m MachineLearningRuleProcessor) ToUpdateProps(
 	ctx context.Context,
-	client clients.MinVersionEnforceable,
 	d Data,
 ) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
-	return d.toMachineLearningRuleUpdateProps(ctx, client)
+	return d.toMachineLearningRuleUpdateProps(ctx)
 }
 
-func (d Data) toMachineLearningRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d Data) toMachineLearningRuleCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -128,7 +125,7 @@ func (d Data) toMachineLearningRuleCreateProps(ctx context.Context, client clien
 		Threat:                            &mlRule.Threat,
 		TimelineID:                        &mlRule.TimelineId,
 		TimelineTitle:                     &mlRule.TimelineTitle,
-	}, &diags, client)
+	}, &diags)
 
 	// ML rules don't use index patterns or query
 
@@ -143,7 +140,7 @@ func (d Data) toMachineLearningRuleCreateProps(ctx context.Context, client clien
 
 	return createProps, diags
 }
-func (d Data) toMachineLearningRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d Data) toMachineLearningRuleUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -218,7 +215,7 @@ func (d Data) toMachineLearningRuleUpdateProps(ctx context.Context, client clien
 		Threat:                            &mlRule.Threat,
 		TimelineID:                        &mlRule.TimelineId,
 		TimelineTitle:                     &mlRule.TimelineTitle,
-	}, &diags, client)
+	}, &diags)
 
 	// ML rules don't use index patterns or query
 

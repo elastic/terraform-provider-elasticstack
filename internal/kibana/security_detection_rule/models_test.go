@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/google/uuid"

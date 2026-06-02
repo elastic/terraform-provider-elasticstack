@@ -43,7 +43,7 @@ func (r *securityDetectionRuleResource) Update(ctx context.Context, req resource
 	kbClient := client.GetKibanaOapiClient()
 
 	// Build the update request
-	updateProps, diags := data.toUpdateProps(ctx, client)
+	updateProps, diags := data.toUpdateProps(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
