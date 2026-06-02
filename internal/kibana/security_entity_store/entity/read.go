@@ -100,13 +100,3 @@ func readEntity(
 	apiBodyToModel(ctx, entityDoc, &model, &diags)
 	return model, true, diags
 }
-
-// entityTypeForID derives the entity_type from the ID prefix (e.g., "host:web-01" -> "host").
-func entityTypeForID(entityID string) string {
-	for i := 0; i < len(entityID); i++ {
-		if entityID[i] == ':' {
-			return entityID[:i]
-		}
-	}
-	return ""
-}

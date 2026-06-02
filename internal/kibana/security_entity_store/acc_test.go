@@ -216,108 +216,6 @@ func TestAccDataSourceKibanaSecurityEntityStoreStatus_basic(t *testing.T) {
 	})
 }
 
-const testHostEntityCreate = `
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_kibana_security_entity_store" "store" {
-  entity_types = ["generic"]
-}
-
-resource "elasticstack_kibana_security_entity_store_entity" "test" {
-  depends_on = [elasticstack_kibana_security_entity_store.store]
-
-  entity_type = "generic"
-  entity_id   = "generic:acc-test-entity"
-
-  entity = {
-    id   = "generic:acc-test-entity"
-    name = "acc-test-entity"
-    type = "generic"
-    source = ["terraform-acc-test"]
-  }
-}
-`
-
-const testHostEntityUpdate = `
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_kibana_security_entity_store" "store" {
-  entity_types = ["generic"]
-}
-
-resource "elasticstack_kibana_security_entity_store_entity" "test" {
-  depends_on = [elasticstack_kibana_security_entity_store.store]
-
-  entity_type = "generic"
-  entity_id   = "generic:acc-test-entity"
-
-  entity = {
-    id   = "generic:acc-test-entity"
-    name = "acc-test-entity"
-    type = "generic"
-    source = ["terraform-acc-test"]
-  }
-}
-`
-
-// testHostEntityJSON disabled: see TestAccResourceKibanaSecurityEntityStoreEntity_jsonFallback
-const testHostEntityJSON = `
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_kibana_security_entity_store" "store" {
-  entity_types = ["host"]
-}
-
-resource "elasticstack_kibana_security_entity_store_entity" "test" {
-  depends_on = [elasticstack_kibana_security_entity_store.store]
-
-  entity_type = "generic"
-  entity_id   = "generic:acc-test-entity"
-
-  entity_json = jsonencode({
-    id   = "generic:acc-test-entity"
-    name = "acc-test-entity"
-    type = "generic"
-    source = ["terraform-acc-test"]
-  })
-}
-`
-
-const testHostEntityConflict = `
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_kibana_security_entity_store" "store" {
-  entity_types = ["host"]
-}
-
-resource "elasticstack_kibana_security_entity_store_entity" "test" {
-  depends_on = [elasticstack_kibana_security_entity_store.store]
-
-  entity_type = "host"
-  entity_id   = "host:acc-test-host"
-
-  entity = {
-    id   = "host:acc-test-host"
-    name = "acc-test-host"
-    type = "host"
-  }
-
-  entity_json = jsonencode({
-    id   = "host:acc-test-host"
-    name = "acc-test-host"
-    type = "host"
-  })
-}
-`
-
 func TestAccResourceKibanaSecurityEntityStoreEntity_host(t *testing.T) {
 	skipIfUnsupportedEntity(t)
 
@@ -326,7 +224,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_host(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testHostEntityCreate,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_host"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_type", "generic"),
@@ -336,7 +234,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_host(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testHostEntityCreate,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_host"),
 				PlanOnly:                 true,
 			},
 		},
@@ -351,11 +249,11 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_updateHost(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testHostEntityCreate,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_host"),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testHostEntityUpdate,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_host"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_type", "generic"),
@@ -364,7 +262,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_updateHost(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testHostEntityUpdate,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_host"),
 				PlanOnly:                 true,
 			},
 		},
@@ -379,11 +277,11 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_import(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testHostEntityCreate,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_host"),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testHostEntityCreate,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_host"),
 				ResourceName:             "elasticstack_kibana_security_entity_store_entity.test",
 				ImportState:              true,
 				ImportStateVerify:        true,
@@ -393,7 +291,6 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_import(t *testing.T) {
 	})
 }
 
-
 func TestAccResourceKibanaSecurityEntityStoreEntity_entityJsonConflict(t *testing.T) {
 	skipIfUnsupportedEntity(t)
 
@@ -402,7 +299,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_entityJsonConflict(t *testin
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testHostEntityConflict,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("entity_json_conflict"),
 				ExpectError:              regexp.MustCompile("(?i)conflict|ConflictsWith|Invalid Attribute Combination"),
 			},
 		},

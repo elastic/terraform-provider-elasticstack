@@ -111,7 +111,7 @@ Optional:
 - `name` (String) Human-readable name of the entity.
 - `relationships` (Attributes) Connections between this entity and other entities. (see [below for nested schema](#nestedatt--entity--relationships))
 - `risk` (Attributes) Risk scoring information for the entity. (see [below for nested schema](#nestedatt--entity--risk))
-- `source` (String) The source that produced this entity record.
+- `source` (Set of String) The sources that produced this entity record.
 - `sub_type` (String) Optional sub-type classification for the entity.
 - `type` (String) The entity type.
 
