@@ -928,7 +928,6 @@ func GetSchema(_ context.Context) schema.Schema {
 				},
 			},
 		},
-
 	}
 }
 

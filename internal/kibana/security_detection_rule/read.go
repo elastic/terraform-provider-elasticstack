@@ -78,6 +78,9 @@ func readDetectionRule(ctx context.Context, apiClient *clients.KibanaScopedClien
 		return model, false, diags
 	}
 
+	// Reconcile empty lists from the reference model to preserve explicit [] configurations
+	reconcileEmptyListsFromPlan(ctx, &model, &data)
+
 	// Ensure space_id is set correctly
 	data.SpaceID = types.StringValue(spaceID)
 

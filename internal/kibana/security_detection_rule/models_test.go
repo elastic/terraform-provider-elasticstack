@@ -27,7 +27,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/google/uuid"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -36,44 +35,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/require"
 )
-
-type mockAPIClient struct {
-	serverVersion *version.Version
-	serverFlavor  string
-	enforceResult bool
-}
-
-func (m mockAPIClient) EnforceMinVersion(_ context.Context, minVersion *version.Version) (bool, diag.Diagnostics) {
-	supported := m.serverVersion.GreaterThanOrEqual(minVersion)
-	return supported, nil
-}
-
-// NewMockAPIClient creates a new mock API client with default values that support response actions
-// This can be used in tests where you need to pass a client to functions like toUpdateProps
-func NewMockAPIClient() *mockAPIClient {
-	// Use version 8.16.0 by default to support response actions
-	v, _ := version.NewVersion("8.16.0")
-
-	return &mockAPIClient{
-		serverVersion: v,
-		serverFlavor:  "default",
-		enforceResult: true,
-	}
-}
-
-// NewMockAPIClientWithVersion creates a mock API client with a specific version
-// Use this when you need to test specific version behavior
-func NewMockAPIClientWithVersion(versionStr string) *mockAPIClient {
-	v, err := version.NewVersion(versionStr)
-	if err != nil {
-		panic(fmt.Sprintf("Invalid version in test: %s", versionStr))
-	}
-	return &mockAPIClient{
-		serverVersion: v,
-		serverFlavor:  "default",
-		enforceResult: true,
-	}
-}
 func TestUpdateFromQueryRule(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
