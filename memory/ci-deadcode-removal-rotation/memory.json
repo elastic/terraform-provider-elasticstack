@@ -232,6 +232,12 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed",
       "attemptedAt": "2026-05-31T04:42:05.937627774Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed.GetIndicesOptionsAttrTypes",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed",
+      "attemptedAt": "2026-06-02T04:46:47.170936359Z",
+      "reason": "pr_created"
     }
   ]
 }
