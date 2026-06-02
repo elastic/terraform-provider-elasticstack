@@ -18,6 +18,7 @@
 package security_role
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -63,7 +64,7 @@ var _ entitycore.KibanaUnscopedSpace = resourceModel{}
 var _ entitycore.WithVersionRequirements = resourceModel{}
 
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
-func (m resourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m resourceModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	var reqs []entitycore.VersionRequirement
 	var diags diag.Diagnostics
 

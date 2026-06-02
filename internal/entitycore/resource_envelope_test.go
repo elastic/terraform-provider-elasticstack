@@ -1586,7 +1586,7 @@ type versionReqDiagModel struct {
 	testResourceModel
 }
 
-func (versionReqDiagModel) GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics) {
+func (versionReqDiagModel) GetVersionRequirements(ctx context.Context) ([]VersionRequirement, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	diags.AddError("version lookup failed", "boom")
 	return nil, diags

@@ -18,6 +18,7 @@
 package customintegration
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -83,7 +84,7 @@ var customIntegrationVersionReqs = []entitycore.VersionRequirement{{
 	ErrorMessage: "elasticstack_fleet_custom_integration requires Kibana 8.2.0 or later.",
 }}
 
-func (m customIntegrationModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m customIntegrationModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return customIntegrationVersionReqs, nil
 }
 

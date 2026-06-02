@@ -74,17 +74,15 @@ func (model outputModel) GetSpaceID() types.String {
 // IsUnscopedSpace implements entitycore.KibanaUnscopedSpace.
 func (model outputModel) IsUnscopedSpace() bool { return true }
 
-func (model outputModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (model outputModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	var reqs []entitycore.VersionRequirement
 
-	if !model.Ssl.IsNull() && !model.Ssl.IsUnknown() {
-		if vmAttr, ok := model.Ssl.Attributes()["verification_mode"]; ok {
-			if vmStr, ok := vmAttr.(types.String); ok && !vmStr.IsNull() && !vmStr.IsUnknown() {
-				reqs = append(reqs, entitycore.VersionRequirement{
-					MinVersion:   *MinVersionOutputSSLVerificationMode,
-					ErrorMessage: fmt.Sprintf("ssl.verification_mode requires server version %s or higher", MinVersionOutputSSLVerificationMode.String()),
-				})
-			}
+	if sslModel := typeutils.ObjectTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), nil); sslModel != nil {
+		if typeutils.IsKnown(sslModel.VerificationMode) {
+			reqs = append(reqs, entitycore.VersionRequirement{
+				MinVersion:   *MinVersionOutputSSLVerificationMode,
+				ErrorMessage: fmt.Sprintf("ssl.verification_mode requires server version %s or higher", MinVersionOutputSSLVerificationMode.String()),
+			})
 		}
 	}
 

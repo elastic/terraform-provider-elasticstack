@@ -226,7 +226,7 @@ func TestModel_GetVersionRequirements_ignoreMissing(t *testing.T) {
 		t.Fatal(diags)
 	}
 	plan := Model{IgnoreMissingComponentTemplates: ignoreList}
-	reqs, diags := plan.GetVersionRequirements()
+	reqs, diags := plan.GetVersionRequirements(context.Background())
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
@@ -234,7 +234,7 @@ func TestModel_GetVersionRequirements_ignoreMissing(t *testing.T) {
 		t.Fatalf("expected 1 requirement, got %d", len(reqs))
 	}
 	emptyPlan := Model{IgnoreMissingComponentTemplates: types.ListNull(types.StringType)}
-	reqs, diags = emptyPlan.GetVersionRequirements()
+	reqs, diags = emptyPlan.GetVersionRequirements(context.Background())
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
@@ -269,7 +269,7 @@ func TestModel_GetVersionRequirements_dataStreamOptions(t *testing.T) {
 		t.Fatal(diags)
 	}
 	model := Model{Template: tplObj}
-	reqs, diags := model.GetVersionRequirements()
+	reqs, diags := model.GetVersionRequirements(context.Background())
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
@@ -287,7 +287,7 @@ func TestModel_GetVersionRequirements_dataStreamOptions(t *testing.T) {
 		t.Fatal(diags)
 	}
 	modelNoDso := Model{Template: noDsoTpl}
-	reqs, diags = modelNoDso.GetVersionRequirements()
+	reqs, diags = modelNoDso.GetVersionRequirements(context.Background())
 	if diags.HasError() {
 		t.Fatal(diags)
 	}

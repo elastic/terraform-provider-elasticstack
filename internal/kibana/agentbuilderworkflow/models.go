@@ -18,6 +18,7 @@
 package agentbuilderworkflow
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -44,7 +45,7 @@ type workflowDataSourceModel struct {
 	ConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"configuration_yaml"`
 }
 
-func (workflowDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (workflowDataSourceModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{{
 		MinVersion:   *minKibanaAgentBuilderAPIVersion,
 		ErrorMessage: fmt.Sprintf("Agent Builder workflows require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),

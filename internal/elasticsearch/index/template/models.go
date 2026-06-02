@@ -18,6 +18,7 @@
 package template
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
@@ -57,7 +58,7 @@ func (m Model) GetResourceID() types.String { return m.Name }
 var _ entitycore.WithVersionRequirements = Model{}
 
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
-func (m Model) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m Model) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	var reqs []entitycore.VersionRequirement
 	var diags diag.Diagnostics
 

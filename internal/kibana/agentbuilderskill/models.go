@@ -39,7 +39,7 @@ var _ entitycore.KibanaResourceModel = skillModel{}
 var _ entitycore.KibanaDataSourceModel = skillModel{}
 var _ entitycore.WithVersionRequirements = skillModel{}
 
-func (model skillModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (model skillModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *minKibanaAgentBuilderSkillsAPIVersion,

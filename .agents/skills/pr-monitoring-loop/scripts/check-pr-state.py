@@ -229,9 +229,7 @@ def commit_check_runs(owner: str, repo: str, sha: str) -> list[dict[str, Any]]:
     return []
 
 
-def commit_combined_status(
-    owner: str, repo: str, sha: str
-) -> dict[str, Any]:
+def commit_combined_status(owner: str, repo: str, sha: str) -> dict[str, Any]:
     if not (owner and repo and sha):
         return {}
     return gh_json(
@@ -313,11 +311,16 @@ query($owner: String!, $repo: String!, $number: Int!, $cursor: String) {
     cursor = ""
     while True:
         api_args = [
-            "api", "graphql",
-            "-f", f"owner={owner}",
-            "-f", f"repo={repo}",
-            "-F", f"number={number}",
-            "-f", f"query={query}",
+            "api",
+            "graphql",
+            "-f",
+            f"owner={owner}",
+            "-f",
+            f"repo={repo}",
+            "-F",
+            f"number={number}",
+            "-f",
+            f"query={query}",
         ]
         if cursor:
             api_args.extend(["-f", f"cursor={cursor}"])
@@ -344,7 +347,9 @@ def fetch_pr_merge_refs(pr: dict[str, Any]) -> dict[str, str]:
     local_pr_ref = f"refs/remotes/origin/pr-{number}-head"
     run_git(
         [
-            "fetch", "--quiet", "origin",
+            "fetch",
+            "--quiet",
+            "origin",
             f"+refs/heads/{base_ref}:{local_base_ref}",
             f"+refs/pull/{number}/head:{local_pr_ref}",
         ],
@@ -371,9 +376,9 @@ def parse_merge_tree_conflicts(output: str) -> list[str]:
 
 
 def merge_conflicts(pr: dict[str, Any]) -> dict[str, Any]:
-    fallback_conflict = pr.get("mergeable") == "CONFLICTING" or pr.get(
-        "mergeStateStatus"
-    ) == "DIRTY"
+    fallback_conflict = (
+        pr.get("mergeable") == "CONFLICTING" or pr.get("mergeStateStatus") == "DIRTY"
+    )
     try:
         refs = fetch_pr_merge_refs(pr)
         if not refs.get("base") or not refs.get("head"):
@@ -382,7 +387,12 @@ def merge_conflicts(pr: dict[str, Any]) -> dict[str, Any]:
             ["merge-tree", "--write-tree", refs["base"], refs["head"]],
             allow_failure=True,
         )
-    except (KeyError, subprocess.CalledProcessError, FileNotFoundError, RuntimeError) as exc:
+    except (
+        KeyError,
+        subprocess.CalledProcessError,
+        FileNotFoundError,
+        RuntimeError,
+    ) as exc:
         return {
             "analysisAvailable": False,
             "hasConflicts": fallback_conflict,
@@ -586,19 +596,34 @@ def derive_verify_openspec(
             continue
         created = event.get("created_at")
         if ev_type == "labeled":
-            if not label_applied_at or (parse_iso(created) or datetime.min.replace(tzinfo=timezone.utc)) > (parse_iso(label_applied_at) or datetime.min.replace(tzinfo=timezone.utc)):
+            if not label_applied_at or (
+                parse_iso(created) or datetime.min.replace(tzinfo=timezone.utc)
+            ) > (
+                parse_iso(label_applied_at) or datetime.min.replace(tzinfo=timezone.utc)
+            ):
                 label_applied_at = created
         elif ev_type == "unlabeled":
-            if not label_removed_at or (parse_iso(created) or datetime.min.replace(tzinfo=timezone.utc)) > (parse_iso(label_removed_at) or datetime.min.replace(tzinfo=timezone.utc)):
+            if not label_removed_at or (
+                parse_iso(created) or datetime.min.replace(tzinfo=timezone.utc)
+            ) > (
+                parse_iso(label_removed_at) or datetime.min.replace(tzinfo=timezone.utc)
+            ):
                 label_removed_at = created
 
     verify_reviews = sorted(
         [r for r in review_data if is_verify_review(r)],
-        key=lambda r: parse_iso(r.get("submitted_at")) or datetime.min.replace(tzinfo=timezone.utc),
+        key=lambda r: (
+            parse_iso(r.get("submitted_at"))
+            or datetime.min.replace(tzinfo=timezone.utc)
+        ),
     )
 
     last_verify_review = verify_reviews[-1] if verify_reviews else None
-    last_verify_review_at = parse_iso(last_verify_review.get("submitted_at")) if last_verify_review else None
+    last_verify_review_at = (
+        parse_iso(last_verify_review.get("submitted_at"))
+        if last_verify_review
+        else None
+    )
 
     last_approval = None
     for r in reversed(verify_reviews):
@@ -611,9 +636,8 @@ def derive_verify_openspec(
 
     label_applied_dt = parse_iso(label_applied_at)
     label_removed_dt = parse_iso(label_removed_at)
-    label_active = (
-        label_applied_dt is not None
-        and (label_removed_dt is None or label_removed_dt < label_applied_dt)
+    label_active = label_applied_dt is not None and (
+        label_removed_dt is None or label_removed_dt < label_applied_dt
     )
     label_consumed = (
         label_applied_dt is not None
@@ -809,7 +833,9 @@ def compute_payload(
             if name is None:
                 continue
             existing = by_name.get(name)
-            existing_ts = parse_iso((existing or {}).get("started_at")) if existing else None
+            existing_ts = (
+                parse_iso((existing or {}).get("started_at")) if existing else None
+            )
             candidate_ts = parse_iso(c.get("started_at"))
             if existing is None or (
                 candidate_ts is not None
@@ -863,9 +889,7 @@ def compute_payload(
 
     # --- threads ----------------------------------------------------------
     unresolved_threads = [
-        t
-        for t in thread_data
-        if not t.get("isResolved") and not t.get("isOutdated")
+        t for t in thread_data if not t.get("isResolved") and not t.get("isOutdated")
     ]
     unresolved_new = []
     unresolved_updated_since_head = []
@@ -874,7 +898,11 @@ def compute_payload(
         if thread_id and thread_id not in seen_thread_ids:
             unresolved_new.append(thread)
         last_updated = thread_last_updated(thread)
-        if last_updated is not None and since_dt is not None and last_updated > since_dt:
+        if (
+            last_updated is not None
+            and since_dt is not None
+            and last_updated > since_dt
+        ):
             if thread not in unresolved_new:
                 unresolved_updated_since_head.append(thread)
 
@@ -911,7 +939,11 @@ def compute_payload(
         actionable.append("merge_conflicts")
     elif merge_state in {"BEHIND", "UNKNOWN", "UNSTABLE"}:
         actionable.append("merge_or_branch_state")
-    elif merge_state == "BLOCKED" and last_merge_state is not None and last_merge_state != "BLOCKED":
+    elif (
+        merge_state == "BLOCKED"
+        and last_merge_state is not None
+        and last_merge_state != "BLOCKED"
+    ):
         actionable.append("merge_or_branch_state")
 
     summary = {
@@ -944,7 +976,10 @@ def compute_payload(
             "pending": len(pending_checks),
             "passed": len(passed_checks),
             "failedChecks": [
-                {"name": c.get("name"), "url": c.get("html_url") or c.get("detailsUrl") or ""}
+                {
+                    "name": c.get("name"),
+                    "url": c.get("html_url") or c.get("detailsUrl") or "",
+                }
                 for c in failed_checks
             ],
             "failedNames": [c.get("name") for c in failed_checks],
@@ -964,7 +999,9 @@ def compute_payload(
             "unresolvedUpdatedSinceHead": len(unresolved_updated_since_head),
             "unresolvedThreadIds": [t.get("id") for t in unresolved_threads],
             "unresolvedNewThreadIds": [t.get("id") for t in unresolved_new],
-            "unresolvedUpdatedSinceHeadThreadIds": [t.get("id") for t in unresolved_updated_since_head],
+            "unresolvedUpdatedSinceHeadThreadIds": [
+                t.get("id") for t in unresolved_updated_since_head
+            ],
         },
         "reviews": {
             "total": len(review_data),
@@ -994,9 +1031,7 @@ def compute_payload(
                 if (r.get("state") or "").upper() == "CHANGES_REQUESTED"
             ),
             "approvedReviews": sum(
-                1
-                for r in review_data
-                if (r.get("state") or "").upper() == "APPROVED"
+                1 for r in review_data if (r.get("state") or "").upper() == "APPROVED"
             ),
         },
         "headPushedRecently": head_pushed_recently,
@@ -1017,7 +1052,8 @@ def compute_payload(
         "checks": {
             "prChecks": raw_pr_checks,
             "prChecksPinned": [
-                c for c in raw_pr_checks
+                c
+                for c in raw_pr_checks
                 # gh pr checks doesn't expose per-row commit; we emit the same
                 # list and rely on commit-pinned arrays below for canonical data
             ],
@@ -1041,16 +1077,20 @@ def compute_payload(
         "lastPolledAt": now_iso(),
         "lastHeadSha": head_sha,
         "seenIssueCommentIds": cap_seen_ids(
-            list(seen_issue_ids) + [c.get("id") for c in issue_comment_data if c.get("id") is not None]
+            list(seen_issue_ids)
+            + [c.get("id") for c in issue_comment_data if c.get("id") is not None]
         ),
         "seenReviewCommentIds": cap_seen_ids(
-            list(seen_review_comment_ids) + [c.get("id") for c in review_comment_data if c.get("id") is not None]
+            list(seen_review_comment_ids)
+            + [c.get("id") for c in review_comment_data if c.get("id") is not None]
         ),
         "seenReviewIds": cap_seen_ids(
-            list(seen_review_ids) + [r.get("id") for r in review_data if r.get("id") is not None]
+            list(seen_review_ids)
+            + [r.get("id") for r in review_data if r.get("id") is not None]
         ),
         "seenReviewThreadIds": cap_seen_ids(
-            list(seen_thread_ids) + [t.get("id") for t in thread_data if t.get("id") is not None]
+            list(seen_thread_ids)
+            + [t.get("id") for t in thread_data if t.get("id") is not None]
         ),
         "lastVerifyOpenspecLabelAppliedAt": verify_openspec.get("lastLabelAppliedAt"),
         "lastVerifyOpenspecLabelRemovedAt": verify_openspec.get("lastLabelRemovedAt"),
@@ -1109,11 +1149,13 @@ def format_focused(payload: dict[str, Any]) -> dict[str, Any]:
     new_issue_comments = []
     for c in payload.get("issue_comments", []):
         if c.get("id") in new_issue_comment_ids:
-            new_issue_comments.append({
-                "id": c.get("id"),
-                "author": (c.get("user") or {}).get("login"),
-                "body": c.get("body"),
-            })
+            new_issue_comments.append(
+                {
+                    "id": c.get("id"),
+                    "author": (c.get("user") or {}).get("login"),
+                    "body": c.get("body"),
+                }
+            )
 
     # Collect comment IDs that already appear in threadDetails so we don't
     # duplicate them in the standalone newReviewComments list.
@@ -1124,12 +1166,17 @@ def format_focused(payload: dict[str, Any]) -> dict[str, Any]:
 
     new_review_comments = []
     for c in payload.get("review_comments", []):
-        if c.get("id") in new_review_comment_ids and c.get("id") not in thread_detail_comment_ids:
-            new_review_comments.append({
-                "id": c.get("id"),
-                "author": (c.get("user") or {}).get("login"),
-                "body": c.get("body"),
-            })
+        if (
+            c.get("id") in new_review_comment_ids
+            and c.get("id") not in thread_detail_comment_ids
+        ):
+            new_review_comments.append(
+                {
+                    "id": c.get("id"),
+                    "author": (c.get("user") or {}).get("login"),
+                    "body": c.get("body"),
+                }
+            )
 
     focused_comments = {
         "totalIssueComments": comments_summary.get("issueComments"),
@@ -1162,11 +1209,13 @@ def format_focused(payload: dict[str, Any]) -> dict[str, Any]:
             continue
         comments = []
         for c in (thread.get("comments") or {}).get("nodes") or []:
-            comments.append({
-                "author": (c.get("author") or {}).get("login"),
-                "body": c.get("body"),
-                "databaseId": c.get("databaseId"),
-            })
+            comments.append(
+                {
+                    "author": (c.get("author") or {}).get("login"),
+                    "body": c.get("body"),
+                    "databaseId": c.get("databaseId"),
+                }
+            )
         thread_details[tid] = {
             "path": thread.get("path"),
             "line": thread.get("line"),
@@ -1203,7 +1252,9 @@ def format_focused(payload: dict[str, Any]) -> dict[str, Any]:
     verify_summary = reviews_summary.get("verifyOpenspec", {})
     focused_verify = {
         "runState": verify_summary.get("runState"),
-        "requiresOpenspecVerification": verify_summary.get("requiresOpenspecVerification", False),
+        "requiresOpenspecVerification": verify_summary.get(
+            "requiresOpenspecVerification", False
+        ),
     }
 
     # Merge
@@ -1260,8 +1311,12 @@ def fetch_all(pr_arg: str) -> dict[str, Any]:
         "repo": repo,
         "pr": pr,
         "pr_check_data": pr_checks(pr_arg),
-        "commit_check_run_data": commit_check_runs(repo["owner"], repo["name"], head_sha),
-        "commit_status_data": commit_combined_status(repo["owner"], repo["name"], head_sha),
+        "commit_check_run_data": commit_check_runs(
+            repo["owner"], repo["name"], head_sha
+        ),
+        "commit_status_data": commit_combined_status(
+            repo["owner"], repo["name"], head_sha
+        ),
         "issue_comment_data": issue_comments(repo["owner"], repo["name"], number),
         "review_comment_data": review_comments(repo["owner"], repo["name"], number),
         "review_data": reviews(repo["owner"], repo["name"], number),
@@ -1271,7 +1326,9 @@ def fetch_all(pr_arg: str) -> dict[str, Any]:
     }
 
 
-def run_once(args: argparse.Namespace, state_path: Optional[str]) -> tuple[dict[str, Any], dict[str, Any]]:
+def run_once(
+    args: argparse.Namespace, state_path: Optional[str]
+) -> tuple[dict[str, Any], dict[str, Any]]:
     raw = fetch_all(args.pr)
     state = load_state(state_path)
     payload, new_state = compute_payload(
@@ -1367,7 +1424,9 @@ def main(argv: list[str] | None = None) -> int:
     return _run_single(args, state_path)
 
 
-def _ensure_state_path(args: argparse.Namespace, state_path: Optional[str], pr_number: int) -> Optional[str]:
+def _ensure_state_path(
+    args: argparse.Namespace, state_path: Optional[str], pr_number: int
+) -> Optional[str]:
     if args.no_state:
         return None
     if state_path:
@@ -1404,7 +1463,9 @@ def _run_watch(args: argparse.Namespace, state_path: Optional[str]) -> int:
         tick += 1
         try:
             raw = fetch_all(args.pr)
-            state_path_resolved = _ensure_state_path(args, state_path, int(raw["pr"]["number"]))
+            state_path_resolved = _ensure_state_path(
+                args, state_path, int(raw["pr"]["number"])
+            )
             state = load_state(state_path_resolved)
             payload, new_state = compute_payload(
                 **raw,
@@ -1448,7 +1509,11 @@ def _run_watch(args: argparse.Namespace, state_path: Optional[str]) -> int:
             # On transient errors, sleep and try again until max-duration.
         elapsed = time.monotonic() - started
         if elapsed >= args.max_duration:
-            last_summary = format_focused(last_payload) if last_payload and not args.full_payload else last_payload
+            last_summary = (
+                format_focused(last_payload)
+                if last_payload and not args.full_payload
+                else last_payload
+            )
             print(
                 json.dumps(
                     {

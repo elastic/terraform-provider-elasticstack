@@ -18,6 +18,7 @@
 package componenttemplate
 
 import (
+	"context"
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -44,7 +45,7 @@ func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchCo
 var _ entitycore.WithVersionRequirements = Data{}
 
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
-func (d Data) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (d Data) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	if d.Template.IsNull() || d.Template.IsUnknown() {
 		return nil, nil
 	}

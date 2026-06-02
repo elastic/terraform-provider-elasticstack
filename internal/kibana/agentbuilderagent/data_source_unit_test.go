@@ -117,7 +117,7 @@ func TestNewDataSource_schemaAttributes(t *testing.T) {
 func TestAgentDataSourceModel_GetVersionRequirements(t *testing.T) {
 	t.Parallel()
 	var m agentDataSourceModel
-	reqs, diags := m.GetVersionRequirements()
+	reqs, diags := m.GetVersionRequirements(context.Background())
 	require.False(t, diags.HasError(), "GetVersionRequirements must not return error diagnostics")
 	require.Len(t, reqs, 1, "GetVersionRequirements must return exactly one requirement")
 	require.Equal(t, *minKibanaAgentBuilderAPIVersion, reqs[0].MinVersion,

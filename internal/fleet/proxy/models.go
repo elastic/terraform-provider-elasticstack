@@ -18,6 +18,7 @@
 package proxy
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -51,7 +52,7 @@ func (m proxyModel) GetResourceID() types.String     { return m.ProxyID }
 func (m proxyModel) GetSpaceID() types.String        { return m.SpaceID }
 func (m proxyModel) GetKibanaConnection() types.List { return m.KibanaConnection }
 
-func (m proxyModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m proxyModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *proxyMinVersion,

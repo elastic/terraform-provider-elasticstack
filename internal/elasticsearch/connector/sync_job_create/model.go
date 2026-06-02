@@ -18,6 +18,7 @@
 package sync_job_create
 
 import (
+	"context"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -40,7 +41,7 @@ type Model struct {
 var _ entitycore.WithVersionRequirements = Model{}
 
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
-func (Model) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (Model) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{{
 		MinVersion:   *connector.MinSupportedVersion,
 		ErrorMessage: "elasticstack_elasticsearch_connector_sync_job_create requires Elasticsearch 8.16.0 or later (connector sync job APIs).",

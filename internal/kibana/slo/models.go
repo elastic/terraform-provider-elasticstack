@@ -18,6 +18,7 @@
 package slo
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -77,7 +78,7 @@ type tfModel struct {
 var _ entitycore.WithVersionRequirements = tfModel{}
 
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
-func (m tfModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m tfModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var reqs []entitycore.VersionRequirement
 

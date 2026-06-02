@@ -18,6 +18,7 @@
 package security_entity_store
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -61,7 +62,7 @@ type engineComponentModel struct {
 
 var _ entitycore.WithVersionRequirements = (*dsModel)(nil)
 
-func (*dsModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (*dsModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{{
 		MinVersion:   *MinVersion,
 		ErrorMessage: fmt.Sprintf("elasticstack_kibana_security_entity_store_status is supported only for Kibana v%s and above", MinVersion.String()),

@@ -77,7 +77,7 @@ var maintenanceWindowMinVersion = version.Must(version.NewVersion("9.1.0"))
 // entitycore.WithVersionRequirements interface, allowing the
 // generic Kibana resource envelope to enforce the requirement before invoking
 // lifecycle callbacks.
-func (m Model) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m Model) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *maintenanceWindowMinVersion,
