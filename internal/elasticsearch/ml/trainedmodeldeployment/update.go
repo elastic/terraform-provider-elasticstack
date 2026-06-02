@@ -140,7 +140,11 @@ func (r *trainedModelDeploymentResource) update(ctx context.Context, req resourc
 	}
 
 	// Update state with current values
-	plan.State = fwtypes.StringValue(stats.DeploymentStats.State.String())
+	if stats.DeploymentStats.State != nil {
+		plan.State = fwtypes.StringValue(stats.DeploymentStats.State.String())
+	} else {
+		plan.State = fwtypes.StringNull()
+	}
 	if stats.DeploymentStats.AllocationStatus != nil {
 		plan.AllocationStatus = fwtypes.StringValue(stats.DeploymentStats.AllocationStatus.State.String())
 	} else {
