@@ -48,7 +48,7 @@ func readEntityLink(ctx context.Context, client *clients.KibanaScopedClient, res
 	// were removed out-of-band.
 	verifyConsistency := prior.ResolutionGroupJSON.IsUnknown() || prior.ResolutionGroupJSON.IsNull()
 
-	body, statusCode, d := readResolutionGroupWithRetry(ctx, client, targetID, spaceID, expectedEntityIDs, verifyConsistency)
+	body, payload, statusCode, d := readResolutionGroupWithRetry(ctx, client, targetID, spaceID, expectedEntityIDs, verifyConsistency)
 	diags.Append(d...)
 	if diags.HasError() {
 		return prior, false, diags
@@ -63,11 +63,12 @@ func readEntityLink(ctx context.Context, client *clients.KibanaScopedClient, res
 	}
 
 	result := prior
-	result.TargetID = prior.TargetID
-	if result.TargetID.IsNull() || result.TargetID.IsUnknown() {
+	if !prior.TargetID.IsNull() && !prior.TargetID.IsUnknown() {
+		result.TargetID = prior.TargetID
+	} else {
 		result.TargetID = types.StringValue(targetID)
 	}
-	diags.Append(result.populateFromAPI(ctx, spaceID, body, expectedEntityIDs)...)
+	diags.Append(result.populateFromAPI(ctx, spaceID, payload, expectedEntityIDs)...)
 	return result, true, diags
 }
 
@@ -77,7 +78,7 @@ func readResolutionGroupWithRetry(
 	targetID, spaceID string,
 	expectedEntityIDs []string,
 	verifyConsistency bool,
-) ([]byte, int, diag.Diagnostics) {
+) ([]byte, map[string]any, int, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	backoff := 100 * time.Millisecond
 	const maxDuration = 2 * time.Second
@@ -91,39 +92,45 @@ func readResolutionGroupWithRetry(
 		)
 		if err != nil {
 			diags.AddError("Failed to read resolution group", err.Error())
-			return nil, 0, diags
+			return nil, nil, 0, diags
 		}
 
 		statusCode := resp.StatusCode()
 		body := resp.Body
 
 		if statusCode == http.StatusNotFound {
-			return body, statusCode, diags
+			return body, nil, statusCode, diags
 		}
 		if statusCode != http.StatusOK {
-			return body, statusCode, diags
+			return body, nil, statusCode, diags
+		}
+
+		var payload map[string]any
+		if err := json.Unmarshal(body, &payload); err != nil {
+			diags.AddError("Failed to parse resolution group response", err.Error())
+			return nil, nil, 0, diags
 		}
 
 		// No expected IDs to validate against – accept the response immediately.
 		if len(expectedEntityIDs) == 0 {
-			return body, statusCode, diags
+			return body, payload, statusCode, diags
 		}
 
 		if verifyConsistency {
-			apiEntityIDs := extractEntityIDsFromBody(body, targetID)
+			apiEntityIDs := extractEntityIDsFromPayload(payload, targetID)
 			if containsAll(apiEntityIDs, expectedEntityIDs) {
-				return body, statusCode, diags
+				return body, payload, statusCode, diags
 			}
 		}
 
 		if !verifyConsistency || time.Since(start) >= maxDuration {
-			return body, statusCode, diags
+			return body, payload, statusCode, diags
 		}
 
 		select {
 		case <-ctx.Done():
 			diags.AddError("Context cancelled during read-with-retry", ctx.Err().Error())
-			return nil, 0, diags
+			return nil, nil, 0, diags
 		case <-time.After(backoff):
 		}
 		backoff *= 2
@@ -131,14 +138,6 @@ func readResolutionGroupWithRetry(
 			backoff = 500 * time.Millisecond
 		}
 	}
-}
-
-func extractEntityIDsFromBody(body []byte, targetID string) []string {
-	var payload map[string]any
-	if err := json.Unmarshal(body, &payload); err != nil {
-		return nil
-	}
-	return extractEntityIDsFromPayload(payload, targetID)
 }
 
 func containsAll(haystack, needles []string) bool {

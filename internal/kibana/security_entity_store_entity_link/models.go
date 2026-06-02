@@ -60,22 +60,17 @@ func (model entityLinkModel) GetVersionRequirements() ([]entitycore.VersionRequi
 	}, nil
 }
 
-// populateFromAPI parses the raw resolution group response body and updates the
-// model.  expectedEntityIDs is the set of IDs the resource manages; if any are
-// absent from the API response a warning diagnostic is emitted.
-func (model *entityLinkModel) populateFromAPI(ctx context.Context, spaceID string, body []byte, expectedEntityIDs []string) diag.Diagnostics {
+// populateFromAPI updates the model from a parsed resolution group response.
+// expectedEntityIDs is the set of IDs the resource manages; if any are absent
+// from the API response a warning diagnostic is emitted.
+func (model *entityLinkModel) populateFromAPI(ctx context.Context, spaceID string, payload map[string]any, expectedEntityIDs []string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: model.TargetID.ValueString()}).String())
 	model.SpaceID = types.StringValue(spaceID)
 
 	// Normalize/stabilise the raw JSON before storing it.
-	var rawPayload map[string]any
-	if err := json.Unmarshal(body, &rawPayload); err != nil {
-		diags.AddError("Failed to parse resolution group response", err.Error())
-		return diags
-	}
-	normalised, err := json.Marshal(rawPayload)
+	normalised, err := json.Marshal(payload)
 	if err != nil {
 		diags.AddError("Failed to normalise resolution group JSON", err.Error())
 		return diags
@@ -83,7 +78,7 @@ func (model *entityLinkModel) populateFromAPI(ctx context.Context, spaceID strin
 	model.ResolutionGroupJSON = jsontypes.NewNormalizedValue(string(normalised))
 
 	// Extract the entity identifiers present in the resolution group.
-	apiEntityIDs := extractEntityIDsFromPayload(rawPayload, model.TargetID.ValueString())
+	apiEntityIDs := extractEntityIDsFromPayload(payload, model.TargetID.ValueString())
 
 	entityIDsSet, setDiag := typeutils.StringSetOrNull(ctx, apiEntityIDs)
 	diags.Append(setDiag...)
