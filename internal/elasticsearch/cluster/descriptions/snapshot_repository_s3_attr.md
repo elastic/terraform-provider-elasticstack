@@ -1,1 +1,0 @@
-Support for using AWS S3 as a repository for Snapshot/Restore. See the [repository S3 plugin documentation](https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-s3-repository.html) for more details.

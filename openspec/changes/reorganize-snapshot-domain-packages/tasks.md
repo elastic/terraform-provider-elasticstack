@@ -1,10 +1,10 @@
 ## 1. Extract shared validator
 
-- [ ] 1.1 Move `ExpandWildcardsValidator` struct + methods from `internal/elasticsearch/cluster/snapshot_validators.go` to new file `internal/utils/validators/expand_wildcards.go`
-- [ ] 1.2 Move `snapshot_validators_test.go` test cases to `internal/utils/validators/expand_wildcards_test.go`
-- [ ] 1.3 Update `cluster/slm/schema.go` to import `utils/validators` instead of `cluster`
-- [ ] 1.4 Update `cluster/snapshot_create/schema.go` to import `utils/validators` instead of `cluster`
-- [ ] 1.5 Verify `make build` passes after validator move
+- [x] 1.1 Move `ExpandWildcardsValidator` struct + methods from `internal/elasticsearch/cluster/snapshot_validators.go` to new file `internal/utils/validators/expand_wildcards.go`
+- [x] 1.2 Move `snapshot_validators_test.go` test cases to `internal/utils/validators/expand_wildcards_test.go`
+- [x] 1.3 Update `cluster/slm/schema.go` to import `utils/validators` instead of `cluster`
+- [x] 1.4 Update `cluster/snapshot_create/schema.go` to import `utils/validators` instead of `cluster`
+- [x] 1.5 Verify `make build` passes after validator move
 
 ## 2. Create snapshot domain directory
 
