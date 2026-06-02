@@ -10,7 +10,7 @@ resource "elasticstack_kibana_security_entity_store_entity" "test" {
 
   entity = {
     id     = "generic:acc-test-entity"
-    name   = "acc-test-entity"
+    name   = "acc-test-entity-updated"
     type   = "generic"
     source = ["terraform-acc-test"]
   }

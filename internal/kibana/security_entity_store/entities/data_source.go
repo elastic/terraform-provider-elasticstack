@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 )
 
 var (
@@ -30,12 +29,12 @@ var (
 )
 
 type entitiesDataSource struct {
-	inner datasource.DataSource
+	datasource.DataSource
 }
 
 func NewDataSource() datasource.DataSource {
 	return &entitiesDataSource{
-		inner: entitycore.NewKibanaDataSource[dsModel](
+		DataSource: entitycore.NewKibanaDataSource[dsModel](
 			entitycore.ComponentKibana,
 			"security_entity_store_entities",
 			getDataSourceSchema,
@@ -44,20 +43,8 @@ func NewDataSource() datasource.DataSource {
 	}
 }
 
-func (d *entitiesDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	d.inner.Metadata(ctx, req, resp)
-}
-
-func (d *entitiesDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	d.inner.Schema(ctx, req, resp)
-}
-
-func (d *entitiesDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	d.inner.Read(ctx, req, resp)
-}
-
 func (d *entitiesDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	if c, ok := d.inner.(datasource.DataSourceWithConfigure); ok {
+	if c, ok := d.DataSource.(datasource.DataSourceWithConfigure); ok {
 		c.Configure(ctx, req, resp)
 	}
 }
@@ -69,31 +56,23 @@ func (d *entitiesDataSource) ValidateConfig(ctx context.Context, req datasource.
 		return
 	}
 
-	hasPageMode := !model.SortField.IsNull() || !model.SortOrder.IsNull() || !model.Page.IsNull() || !model.PerPage.IsNull() || !model.FilterQuery.IsNull()
+	// Check for mixed pagination modes (cannot use page-mode + cursor-mode together)
+	hasPageMode := !model.SortField.IsNull() && !model.SortField.IsUnknown() ||
+		!model.SortOrder.IsNull() && !model.SortOrder.IsUnknown() ||
+		!model.Page.IsNull() && !model.Page.IsUnknown() ||
+		!model.PerPage.IsNull() && !model.PerPage.IsUnknown() ||
+		!model.FilterQuery.IsNull() && !model.FilterQuery.IsUnknown()
 
-	hasCursorMode := !model.Filter.IsNull() || !model.Size.IsNull() || !model.SearchAfter.IsNull() || !model.Source.IsNull() || !model.Fields.IsNull()
+	hasCursorMode := !model.Filter.IsNull() && !model.Filter.IsUnknown() ||
+		!model.Size.IsNull() && !model.Size.IsUnknown() ||
+		!model.SearchAfter.IsNull() && !model.SearchAfter.IsUnknown() ||
+		!model.Source.IsNull() && !model.Source.IsUnknown() ||
+		!model.Fields.IsNull() && !model.Fields.IsUnknown()
 
 	if hasPageMode && hasCursorMode {
 		resp.Diagnostics.AddError(
 			"Mixed pagination modes",
 			"Page-mode parameters (sort_field, sort_order, page, per_page, filter_query) cannot be combined with cursor-mode parameters (filter, size, search_after, source, fields).",
 		)
-	}
-
-	if !model.EntityID.IsNull() && !model.EntityID.IsUnknown() {
-		if !model.Filter.IsNull() && !model.Filter.IsUnknown() {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("entity_id"),
-				"entity_id conflicts with filter",
-				"entity_id cannot be combined with filter.",
-			)
-		}
-		if !model.FilterQuery.IsNull() && !model.FilterQuery.IsUnknown() {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("entity_id"),
-				"entity_id conflicts with filter_query",
-				"entity_id cannot be combined with filter_query.",
-			)
-		}
 	}
 }

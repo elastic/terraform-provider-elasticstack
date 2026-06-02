@@ -23,9 +23,11 @@ import (
 	entity "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store/entity"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 )
 
@@ -34,7 +36,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 		Description: "Queries the Kibana Security Entity Store list/search endpoint.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description: "Stable identifier reflecting the query parameters.",
+				Description: "Stable identifier computed as <space_id>/entity_store_entities.",
 				Computed:    true,
 			},
 			"space_id": schema.StringAttribute{
@@ -45,6 +47,9 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 			"entity_id": schema.StringAttribute{
 				Description: "When set, the provider generates an implicit KQL filter for this entity id. Conflicts with filter and filter_query.",
 				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.MatchRoot("filter"), path.MatchRoot("filter_query")),
+				},
 			},
 			"filter": schema.StringAttribute{
 				Description: "A Kibana Query Language (KQL) filter for the search-after mode.",
@@ -95,6 +100,9 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 				Description: "Entity types to include in the results. Valid values are user, host, service, generic.",
 				Optional:    true,
 				ElementType: types.StringType,
+				Validators: []validator.Set{
+					setvalidator.ValueStringsAre(stringvalidator.OneOf("user", "host", "service", "generic")),
+				},
 			},
 			"results_json": schema.StringAttribute{
 				Description: "Normalized JSON (sorted keys) of the full API response body.",

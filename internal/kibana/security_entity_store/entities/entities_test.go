@@ -26,51 +26,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// hasMixedPaginationModes checks whether page-mode and cursor-mode parameters are both set.
-func hasMixedPaginationModes(model dsModel) bool {
-	hasPageMode := !model.SortField.IsNull() || !model.SortOrder.IsNull() || !model.Page.IsNull() || !model.PerPage.IsNull() || !model.FilterQuery.IsNull()
-	hasCursorMode := !model.Filter.IsNull() || !model.Size.IsNull() || !model.SearchAfter.IsNull() || !model.Source.IsNull() || !model.Fields.IsNull()
-	return hasPageMode && hasCursorMode
-}
-
-func TestHasMixedPaginationModes(t *testing.T) {
-	tests := []struct {
-		name  string
-		model dsModel
-		want  bool
-	}{
-		{
-			name:  "no params",
-			model: dsModel{SpaceID: types.StringValue("default")},
-			want:  false,
-		},
-		{
-			name:  "page mode only",
-			model: dsModel{SpaceID: types.StringValue("default"), Page: types.Int64Value(1)},
-			want:  false,
-		},
-		{
-			name:  "cursor mode only",
-			model: dsModel{SpaceID: types.StringValue("default"), Filter: types.StringValue("entity.type:host")},
-			want:  false,
-		},
-		{
-			name:  "mixed modes",
-			model: dsModel{SpaceID: types.StringValue("default"), Page: types.Int64Value(1), Filter: types.StringValue("entity.type:host")},
-			want:  true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := hasMixedPaginationModes(tt.model)
-			if got != tt.want {
-				t.Errorf("hasMixedPaginationModes() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestExpandStringList(t *testing.T) {
 	tests := []struct {
 		name  string

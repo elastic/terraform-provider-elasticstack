@@ -50,7 +50,7 @@ func readEntity(
 	// Note: entity_types cannot be combined with KQL filter — the API treats
 	// entity_types as a page-mode parameter. The filter is sufficient for
 	// single-entity lookup.
-	filter := fmt.Sprintf(`entity.id:"%s"`, entityID)
+	filter := fmt.Sprintf(`entity.id:%s`, QuoteKQLString(entityID))
 	params := &kbapi.GetSecurityEntityStoreEntitiesParams{
 		Filter: &filter,
 	}

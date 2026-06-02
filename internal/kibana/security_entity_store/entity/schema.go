@@ -163,7 +163,11 @@ func getSchema(_ context.Context) schema.Schema {
 			"labels_json": schema.StringAttribute{
 				Description: "JSON fallback for labels. Supports non-string values.",
 				Optional:    true,
+				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(path.MatchRoot("labels")),
 				},

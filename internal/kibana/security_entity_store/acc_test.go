@@ -216,7 +216,7 @@ func TestAccDataSourceKibanaSecurityEntityStoreStatus_basic(t *testing.T) {
 	})
 }
 
-func TestAccResourceKibanaSecurityEntityStoreEntity_host(t *testing.T) {
+func TestAccResourceKibanaSecurityEntityStoreEntity_generic(t *testing.T) {
 	skipIfUnsupportedEntity(t)
 
 	resource.Test(t, resource.TestCase{
@@ -258,6 +258,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_updateHost(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_type", "generic"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_id", "generic:acc-test-entity"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity.name", "acc-test-entity-updated"),
 				),
 			},
 			{
@@ -291,6 +292,21 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_import(t *testing.T) {
 	})
 }
 
+func TestAccResourceKibanaSecurityEntityStoreEntity_entityJsonConflict(t *testing.T) {
+	skipIfUnsupportedEntity(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("entity_json_conflict"),
+				ExpectError:              regexp.MustCompile("(?i)conflict|ConflictsWith|Invalid Attribute Combination"),
+			},
+		},
+	})
+}
+
 func TestAccDataSourceKibanaSecurityEntityStoreEntities_basic(t *testing.T) {
 	skipIfUnsupportedEntity(t)
 
@@ -305,21 +321,6 @@ func TestAccDataSourceKibanaSecurityEntityStoreEntities_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_entities.test", "results_json"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_entities.test", "items.#"),
 				),
-			},
-		},
-	})
-}
-
-func TestAccResourceKibanaSecurityEntityStoreEntity_entityJsonConflict(t *testing.T) {
-	skipIfUnsupportedEntity(t)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
-		Steps: []resource.TestStep{
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("entity_json_conflict"),
-				ExpectError:              regexp.MustCompile("(?i)conflict|ConflictsWith|Invalid Attribute Combination"),
 			},
 		},
 	})

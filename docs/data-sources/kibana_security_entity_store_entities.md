@@ -34,7 +34,7 @@ Queries the Kibana Security Entity Store list/search endpoint.
 
 ### Read-Only
 
-- `id` (String) Stable identifier reflecting the query parameters.
+- `id` (String) Stable identifier computed as <space_id>/entity_store_entities.
 - `items` (List of Object) List of entity records with typed attributes matching the resource schema. (see [below for nested schema](#nestedatt--items))
 - `results_json` (String) Normalized JSON (sorted keys) of the full API response body.
 

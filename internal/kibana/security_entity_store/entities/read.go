@@ -53,7 +53,7 @@ func readEntityStoreEntitiesDataSource(
 	params := &kbapi.GetSecurityEntityStoreEntitiesParams{}
 
 	if !model.EntityID.IsNull() && !model.EntityID.IsUnknown() && model.EntityID.ValueString() != "" {
-		filter := fmt.Sprintf(`entity.id:"%s"`, model.EntityID.ValueString())
+		filter := fmt.Sprintf(`entity.id:%s`, entity.QuoteKQLString(model.EntityID.ValueString()))
 		params.Filter = &filter
 	} else if !model.Filter.IsNull() && !model.Filter.IsUnknown() {
 		f := model.Filter.ValueString()
@@ -97,8 +97,8 @@ func readEntityStoreEntitiesDataSource(
 		params.FilterQuery = &fq
 	}
 	if !model.EntityTypes.IsNull() && !model.EntityTypes.IsUnknown() {
-		types := expandEntityTypesSet(model.EntityTypes)
-		params.EntityTypes = &types
+		entityTypes := expandEntityTypesSet(model.EntityTypes)
+		params.EntityTypes = &entityTypes
 	}
 
 	resp, diags := kibanaoapi.ListSecurityEntityStoreEntities(ctx, client.GetKibanaOapiClient(), spaceID, params)

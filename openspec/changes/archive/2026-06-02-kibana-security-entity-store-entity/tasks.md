@@ -1,7 +1,7 @@
 ## 1. Specs
 
 - [x] 1.1 Keep delta specs aligned with `proposal.md` and `design.md`; run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate kibana-security-entity-store-entity --type change` (or `make check-openspec`) before opening a PR.
-- [x] 1.2 Resolve design open question OQ-1: confirm minimum Kibana version for individual entity CRUD endpoints; update delta specs and `EnforceMinVersion` call if the floor differs from `9.1.0`.
+- [x] 1.2 Resolve design open question OQ-1: confirm minimum Kibana version for individual entity CRUD endpoints; update delta specs and `EnforceMinVersion` call if the floor differs from `9.4.0`.
 - [x] 1.3 Resolve design open question OQ-2: verify KQL filter expression `entity.id:"<id>"` works reliably for all valid entity ID formats; document escaping strategy in the resource read implementation.
 - [x] 1.4 Resolve design open question OQ-4: add a plan-time validator that checks consistency between `entity_id` and `entity.id` inside the typed `entity` block (or `entity_json`).
 - [x] 1.5 On completion of implementation, sync or archive this change per project workflow.
@@ -48,7 +48,7 @@
 - [x] 4.7 Implement `Delete` callback:
   - Call `DELETE /api/security/entity_store/entities/` with JSON body `{"entityId": "<entity_id>"}`.
 - [x] 4.8 Implement `ImportState` — split composite `<space_id>/<entity_id>` to populate `space_id` and `entity_id` in state; trigger read.
-- [x] 4.9 Add `EnforceMinVersion("9.1.0")` in the resource model's `GetVersionRequirements()` (or equivalent mechanism); adjust version per OQ-1 / task 1.2.
+- [x] 4.9 Add `EnforceMinVersion("9.4.0")` in the resource model's `GetVersionRequirements()` (or equivalent mechanism); adjust version per OQ-1 / task 1.2.
 
 ## 5. Data source: `elasticstack_kibana_security_entity_store_entities`
 
@@ -65,7 +65,7 @@
   - When `entity_id` is set, generate `filter = entity.id:"<entity_id>"` and do not allow a user-supplied `filter`/`filter_query`.
   - Call `GET /api/security/entity_store/entities`.
   - Serialize full response to normalized JSON and set `results_json`.
-- [x] 6.4 Add `EnforceMinVersion("9.1.0")` in the data source model's `GetVersionRequirements()`.
+- [x] 6.4 Add `EnforceMinVersion("9.4.0")` in the data source model's `GetVersionRequirements()`.
 
 ## 7. Testing
 
@@ -80,7 +80,7 @@
 - [x] 7.9 Add unit tests for composite ID construction and parsing (encode/decode of `<space_id>/<entity_id>`).
 - [x] 7.10 Add unit tests for canonical JSON normalization to guard against false diffs.
 - [x] 7.11 Add unit tests for the pagination-mode exclusivity validator and `entity_id` conflict validator.
-- [x] 7.12 Gate all acceptance tests with `SkipIfVersionConstraintNotMet("9.1.0")` (or project-equivalent helper) so they are skipped when the test Elastic Stack is below the minimum version.
+- [x] 7.12 Gate all acceptance tests with `SkipIfVersionConstraintNotMet("9.4.0")` (or project-equivalent helper) so they are skipped when the test Elastic Stack is below the minimum version.
 
 ## 8. Verify
 

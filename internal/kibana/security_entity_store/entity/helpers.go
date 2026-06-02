@@ -20,6 +20,7 @@ package entity
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	jsontypes "github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -960,7 +961,7 @@ func apiBodyToModel(ctx context.Context, body map[string]any, model *tfModel, di
 				break
 			}
 		}
-		if allStrings && len(labelsTyped) > 0 {
+		if allStrings {
 			lv, d := types.MapValue(types.StringType, labelsTyped)
 			diags.Append(d...)
 			model.Labels = lv
@@ -1336,4 +1337,10 @@ func ItemAttrTypes() map[string]attr.Type {
 		attrTags:         types.SetType{ElemType: types.StringType},
 		attrDocumentJSON: jsontypes.NormalizedType{},
 	}
+}
+
+// QuoteKQLString escapes and quotes a value for use as a KQL string literal.
+// This safely handles entity IDs that may contain quotes or backslashes.
+func QuoteKQLString(v string) string {
+	return strconv.Quote(v)
 }

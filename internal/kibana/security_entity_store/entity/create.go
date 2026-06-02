@@ -40,7 +40,7 @@ func createEntity(
 	entityType := plan.EntityType.ValueString()
 	entityID := plan.EntityID.ValueString()
 
-	if plan.Entity.IsNull() && plan.EntityJSON.IsNull() {
+	if (plan.Entity.IsNull() || plan.Entity.IsUnknown()) && (plan.EntityJSON.IsNull() || plan.EntityJSON.IsUnknown()) {
 		return entitycore.KibanaWriteResult[tfModel]{}, diag.Diagnostics{
 			diag.NewErrorDiagnostic("Missing entity data", "Either entity or entity_json must be provided"),
 		}

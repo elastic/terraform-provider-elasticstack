@@ -141,6 +141,12 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 	entityType := ""
 	if idx := strings.Index(entityID, ":"); idx > 0 {
 		entityType = entityID[:idx]
+	} else {
+		resp.Diagnostics.AddError(
+			"Invalid import ID",
+			fmt.Sprintf("Entity ID %q must contain a type prefix (e.g., \"host:web-01\").", entityID),
+		)
+		return
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("space_id"), spaceID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("entity_id"), entityID)...)
