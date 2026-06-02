@@ -44,7 +44,15 @@ type customIntegrationModel struct {
 }
 
 func (m customIntegrationModel) GetID() types.String {
-	return m.ID
+	// Return a composite ID so the envelope's resolveKibanaResourceIdentity
+	// does not misinterpret the raw package ID (name/version) as a space/resource
+	// pair. The format is "<space>/<package_id>".
+	rawID := m.ID.ValueString()
+	if rawID == "" {
+		return m.ID
+	}
+	spaceID := m.GetSpaceID().ValueString()
+	return types.StringValue(fmt.Sprintf("%s/%s", spaceID, rawID))
 }
 
 func (m customIntegrationModel) GetResourceID() types.String {
@@ -60,7 +68,7 @@ func (m customIntegrationModel) GetSpaceID() types.String {
 	// validateSpaceID accepts the plan. Fleet APIs treat "" and "default"
 	// identically (BuildSpaceAwarePath), so callbacks remain backward-
 	// compatible when they use model.SpaceID.ValueString().
-	if m.SpaceID.IsNull() || m.SpaceID.IsUnknown() {
+	if m.SpaceID.IsNull() || m.SpaceID.IsUnknown() || m.SpaceID.ValueString() == "" {
 		return types.StringValue("default")
 	}
 	return m.SpaceID
