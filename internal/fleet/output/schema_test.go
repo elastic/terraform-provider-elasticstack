@@ -32,7 +32,7 @@ import (
 func TestSchemaSSLVerificationModeValidator(t *testing.T) {
 	t.Parallel()
 
-	s := getSchema()
+	s := getSchema(context.Background())
 
 	sslAttr, ok := s.Attributes["ssl"].(schema.SingleNestedAttribute)
 	require.True(t, ok, "expected ssl to be a SingleNestedAttribute")
@@ -71,7 +71,7 @@ func TestSchemaSSLVerificationModeValidator(t *testing.T) {
 func TestSchemaIncludesRemoteElasticsearchTypeAndServiceToken(t *testing.T) {
 	t.Parallel()
 
-	s := getSchema()
+	s := getSchema(context.Background())
 
 	typeAttr, ok := s.Attributes["type"].(schema.StringAttribute)
 	require.True(t, ok)

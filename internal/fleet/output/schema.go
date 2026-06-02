@@ -20,7 +20,6 @@ package output
 import (
 	"context"
 
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -28,7 +27,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/float32planmodifier"
@@ -42,11 +40,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *outputResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = getSchema()
-}
-
-func getSchema() schema.Schema {
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Version:     1,
 		Description: "Creates a new Fleet Output.",
@@ -387,36 +381,33 @@ func getSchema() schema.Schema {
 				},
 			},
 		},
-
-		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
-		}}
+	}
 }
 
-func getSslAttrTypes() map[string]attr.Type {
-	return getSchema().Attributes["ssl"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getSslAttrTypes(ctx context.Context) map[string]attr.Type {
+	return getSchema(ctx).Attributes["ssl"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getHeadersAttrTypes() attr.Type {
-	return getSchema().Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["headers"].GetType().(attr.TypeWithElementType).ElementType()
+func getHeadersAttrTypes(ctx context.Context) attr.Type {
+	return getSchema(ctx).Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["headers"].GetType().(attr.TypeWithElementType).ElementType()
 }
 
-func getHashAttrTypes() map[string]attr.Type {
-	return getSchema().Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["hash"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getHashAttrTypes(ctx context.Context) map[string]attr.Type {
+	return getSchema(ctx).Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["hash"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getRandomAttrTypes() map[string]attr.Type {
-	return getSchema().Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["random"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getRandomAttrTypes(ctx context.Context) map[string]attr.Type {
+	return getSchema(ctx).Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["random"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getRoundRobinAttrTypes() map[string]attr.Type {
-	return getSchema().Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["round_robin"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getRoundRobinAttrTypes(ctx context.Context) map[string]attr.Type {
+	return getSchema(ctx).Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["round_robin"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getSaslAttrTypes() map[string]attr.Type {
-	return getSchema().Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["sasl"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getSaslAttrTypes(ctx context.Context) map[string]attr.Type {
+	return getSchema(ctx).Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["sasl"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getKafkaAttrTypes() map[string]attr.Type {
-	return getSchema().Attributes["kafka"].(schema.SingleNestedAttribute).GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getKafkaAttrTypes(ctx context.Context) map[string]attr.Type {
+	return getSchema(ctx).Attributes["kafka"].(schema.SingleNestedAttribute).GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
