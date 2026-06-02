@@ -25,6 +25,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -47,8 +48,8 @@ func calendarEventWireWindowRFC3339(w calendarEventWire) (start string, end stri
 	if err != nil {
 		return "", "", false
 	}
-	startMillis, ok1 := calendarEventAnyTimeToUnixMilli(startAny)
-	endMillis, ok2 := calendarEventAnyTimeToUnixMilli(endAny)
+	startMillis, ok1 := typeutils.ElasticDateTimeToMillis(startAny)
+	endMillis, ok2 := typeutils.ElasticDateTimeToMillis(endAny)
 	if !ok1 || !ok2 {
 		return "", "", false
 	}
