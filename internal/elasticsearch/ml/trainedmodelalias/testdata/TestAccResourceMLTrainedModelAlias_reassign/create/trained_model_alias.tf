@@ -8,11 +8,6 @@ variable "model_a" {
   type        = string
 }
 
-variable "model_id" {
-  description = "The trained model ID"
-  type        = string
-}
-
 provider "elasticstack" {
   elasticsearch {}
 }
