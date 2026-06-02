@@ -20,58 +20,37 @@ package output
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *outputResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var planModel outputModel
-
-	diags := req.Plan.Get(ctx, &planModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func updateOutput(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[outputModel]) (entitycore.KibanaWriteResult[outputModel], diag.Diagnostics) {
+	var diags diag.Diagnostics
+	planModel := req.Plan
 
 	fleetClient := client.GetFleetClient()
 
-	body, diags := planModel.toAPIUpdateModel(ctx, client)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	body, d := planModel.toAPIUpdateModel(ctx)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[outputModel]{}, diags
 	}
 
 	outputID := planModel.OutputID.ValueString()
+	spaceID := req.Prior.GetSpaceID().ValueString()
 
-	// Read the existing spaces from state to avoid updating in a space where it's not yet visible
-	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	output, d := fleet.UpdateOutput(ctx, fleetClient, outputID, spaceID, body)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[outputModel]{}, diags
 	}
 
-	// Update using the operational space from STATE
-	// The API will handle adding/removing output from spaces based on space_ids in body
-	output, diags := fleet.UpdateOutput(ctx, fleetClient, outputID, spaceID, body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(planModel.populateFromAPI(ctx, output)...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[outputModel]{}, diags
 	}
 
-	// fromAPICommonFields preserves a null config_yaml across the API echo (issue #1856).
-	diags = planModel.populateFromAPI(ctx, output)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = resp.State.Set(ctx, planModel)
-	resp.Diagnostics.Append(diags...)
+	return entitycore.KibanaWriteResult[outputModel]{Model: planModel}, diags
 }
