@@ -20,6 +20,7 @@ package trainedmodeldeployment
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -36,14 +37,13 @@ type trainedModelDeploymentResource struct {
 }
 
 func newTrainedModelDeploymentResource() *trainedModelDeploymentResource {
-	placeholder := entitycore.PlaceholderElasticsearchWriteCallback[TrainedModelDeploymentData]()
 	return &trainedModelDeploymentResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[TrainedModelDeploymentData]("ml_trained_model_deployment", entitycore.ElasticsearchResourceOptions[TrainedModelDeploymentData]{
 			Schema: GetSchema,
 			Read:   readTrainedModelDeployment,
 			Delete: deleteTrainedModelDeployment,
-			Create: placeholder,
-			Update: placeholder,
+			Create: createTrainedModelDeployment,
+			Update: updateTrainedModelDeployment,
 		}),
 	}
 }
@@ -53,5 +53,15 @@ func NewTrainedModelDeploymentResource() resource.Resource {
 }
 
 func (r *trainedModelDeploymentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	compID, diags := clients.CompositeIDFromStr(req.ID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	deploymentID := compID.ResourceID
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("deployment_id"), deploymentID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("model_id"), deploymentID)...)
 }

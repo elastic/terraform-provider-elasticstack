@@ -20,125 +20,69 @@ package trainedmodeldeployment
 import (
 	"context"
 	"fmt"
-	"time"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *trainedModelDeploymentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data TrainedModelDeploymentData
-	diags := req.Plan.Get(ctx, &data)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Get create timeout
-	createTimeout, fwDiags := data.Timeouts.Create(ctx, 5*time.Minute)
-	resp.Diagnostics.Append(fwDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, createTimeout)
-	defer cancel()
-
-	diags = r.create(ctx, req, &resp.State)
-	if diagutil.ContainsContextDeadlineExceeded(ctx, diags) {
-		diags.AddError("Operation timed out", fmt.Sprintf(createTimeoutErrorMessage, createTimeout))
-	}
-
-	resp.Diagnostics.Append(diags...)
-}
-
-func (r *trainedModelDeploymentResource) create(ctx context.Context, req resource.CreateRequest, state *tfsdk.State) diag.Diagnostics {
-	var data TrainedModelDeploymentData
-	diags := req.Plan.Get(ctx, &data)
-	if diags.HasError() {
-		return diags
-	}
-
-	client, fwDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	diags.Append(fwDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	modelID := data.ModelID.ValueString()
-	deploymentID := data.DeploymentID.ValueString()
+func createTrainedModelDeployment(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.WriteRequest[TrainedModelDeploymentData],
+) (entitycore.WriteResult[TrainedModelDeploymentData], diag.Diagnostics) {
+	var diags diag.Diagnostics
+	plan := req.Plan
+	modelID := plan.ModelID.ValueString()
+	deploymentID := req.WriteID
 	if deploymentID == "" {
 		deploymentID = modelID
 	}
 
-	adaptiveAllocations := toAdaptiveAllocationsSettings(data.AdaptiveAllocations)
+	tflog.Debug(ctx, fmt.Sprintf("Creating trained model deployment: model_id=%s deployment_id=%s", modelID, deploymentID))
 
-	var numberOfAllocations *int
-	if !data.NumberOfAllocations.IsNull() {
-		v := int(data.NumberOfAllocations.ValueInt64())
-		numberOfAllocations = &v
+	opts := elasticsearch.StartTrainedModelDeploymentOptions{
+		DeploymentID:        &deploymentID,
+		Priority:            typeutils.OptStringPtr(plan.Priority),
+		WaitFor:             typeutils.OptStringPtr(plan.WaitFor),
+		AdaptiveAllocations: toAdaptiveAllocationsSettings(plan.AdaptiveAllocations),
 	}
 
-	var threadsPerAllocation *int
-	if !data.ThreadsPerAllocation.IsNull() {
-		v := int(data.ThreadsPerAllocation.ValueInt64())
-		threadsPerAllocation = &v
+	if !plan.NumberOfAllocations.IsUnknown() && !plan.NumberOfAllocations.IsNull() {
+		v := int(plan.NumberOfAllocations.ValueInt64())
+		opts.NumberOfAllocations = &v
+	}
+	if !plan.ThreadsPerAllocation.IsUnknown() && !plan.ThreadsPerAllocation.IsNull() {
+		v := int(plan.ThreadsPerAllocation.ValueInt64())
+		opts.ThreadsPerAllocation = &v
+	}
+	if !plan.QueueCapacity.IsUnknown() && !plan.QueueCapacity.IsNull() {
+		v := int(plan.QueueCapacity.ValueInt64())
+		opts.QueueCapacity = &v
+	}
+	if !plan.APITimeout.IsUnknown() && !plan.APITimeout.IsNull() {
+		v := plan.APITimeout.ValueString()
+		opts.Timeout = &v
 	}
 
-	var queueCapacity *int
-	if !data.QueueCapacity.IsNull() {
-		v := int(data.QueueCapacity.ValueInt64())
-		queueCapacity = &v
-	}
-
-	var apiTimeout *string
-	if !data.APITimeout.IsNull() {
-		v := data.APITimeout.ValueString()
-		apiTimeout = &v
-	}
-
-	startOpts := elasticsearch.StartTrainedModelDeploymentOptions{
-		DeploymentID:         &deploymentID,
-		NumberOfAllocations:  numberOfAllocations,
-		ThreadsPerAllocation: threadsPerAllocation,
-		Priority:             typeutils.OptStringPtr(data.Priority),
-		QueueCapacity:        queueCapacity,
-		WaitFor:              typeutils.OptStringPtr(data.WaitFor),
-		Timeout:              apiTimeout,
-		AdaptiveAllocations:  adaptiveAllocations,
-	}
-
-	_, startDiags := elasticsearch.StartTrainedModelDeployment(ctx, client, modelID, startOpts)
+	_, startDiags := elasticsearch.StartTrainedModelDeployment(ctx, client, modelID, opts)
 	diags.Append(startDiags...)
 	if diags.HasError() {
-		return diags
-	}
-
-	statsJSON, stats, readDiags := elasticsearch.GetTrainedModelStatsJSON(ctx, client, modelID, deploymentID)
-	diags.Append(readDiags...)
-	if diags.HasError() {
-		return diags
+		return entitycore.WriteResult[TrainedModelDeploymentData]{Model: plan}, diags
 	}
 
 	compID, idDiags := client.ID(ctx, deploymentID)
 	diags.Append(idDiags...)
 	if diags.HasError() {
-		return diags
+		return entitycore.WriteResult[TrainedModelDeploymentData]{Model: plan}, diags
 	}
 
-	data.ID = types.StringValue(compID.String())
-	data.DeploymentID = types.StringValue(deploymentID)
-	populateComputedFromStats(&data, stats, statsJSON)
+	plan.ID = types.StringValue(compID.String())
+	plan.DeploymentID = types.StringValue(deploymentID)
 
-	tflog.Info(ctx, fmt.Sprintf("Trained model deployment %s started successfully", deploymentID))
-
-	persistDiags := state.Set(ctx, &data)
-	diags.Append(persistDiags...)
-	return diags
+	return entitycore.WriteResult[TrainedModelDeploymentData]{Model: plan}, diags
 }
