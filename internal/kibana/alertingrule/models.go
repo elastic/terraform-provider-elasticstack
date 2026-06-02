@@ -343,31 +343,6 @@ func (m alertingRuleModel) GetVersionRequirements() ([]entitycore.VersionRequire
 	var reqs []entitycore.VersionRequirement
 
 	// 8.6.0 when any action has Frequency set
-	if typeutils.IsKnown(m.Actions) && !m.Actions.IsNull() {
-		var actions []actionModel
-		diags.Append(m.Actions.ElementsAs(context.Background(), &actions, false)...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		for _, action := range actions {
-			if typeutils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
-				reqs = append(reqs, entitycore.VersionRequirement{
-					MinVersion:   *frequencyMinSupportedVersion,
-					ErrorMessage: "actions.frequency is only supported for Kibana v8.6 or higher",
-				})
-				break
-			}
-		}
-	}
-
-	// Note: the old toAPIModel checked notify_when here for < 8.6.0, but we
-	// cannot enforce that via GetVersionRequirements because the envelope also
-	// calls EnforceVersionRequirements during Read. On older servers the API
-	// may not return notify_when (especially during ImportState), causing a
-	// false "Unsupported server version" error. The API itself rejects a
-	// missing notify_when on < 8.6.0, so the user still gets an error at
-	// Create/Update time.
-
 	// 8.9.0 when any action has AlertsFilter set
 	if typeutils.IsKnown(m.Actions) && !m.Actions.IsNull() {
 		var actions []actionModel
@@ -375,12 +350,23 @@ func (m alertingRuleModel) GetVersionRequirements() ([]entitycore.VersionRequire
 		if diags.HasError() {
 			return nil, diags
 		}
+		var hasFrequency, hasAlertsFilter bool
 		for _, action := range actions {
-			if typeutils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
+			if !hasFrequency && typeutils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
+				reqs = append(reqs, entitycore.VersionRequirement{
+					MinVersion:   *frequencyMinSupportedVersion,
+					ErrorMessage: "actions.frequency is only supported for Kibana v8.6 or higher",
+				})
+				hasFrequency = true
+			}
+			if !hasAlertsFilter && typeutils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
 				reqs = append(reqs, entitycore.VersionRequirement{
 					MinVersion:   *alertsFilterMinSupportedVersion,
 					ErrorMessage: "actions.alerts_filter is only supported for Kibana v8.9 or higher",
 				})
+				hasAlertsFilter = true
+			}
+			if hasFrequency && hasAlertsFilter {
 				break
 			}
 		}

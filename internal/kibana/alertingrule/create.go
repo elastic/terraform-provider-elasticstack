@@ -24,6 +24,7 @@ import (
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func createAlertingRule(
@@ -49,11 +50,14 @@ func createAlertingRule(
 		return entitycore.KibanaWriteResult[alertingRuleModel]{}, diags
 	}
 
-	// Initialize plan with rule ID and space ID from created rule for re-reading
-	diags.Append(m.populateFromAPI(ctx, createdRule)...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[alertingRuleModel]{}, diags
-	}
+	// Set identity fields so the envelope can locate the resource for
+	// read-after-write. The envelope will re-read full state.
+	m.ID = types.StringValue((&clients.CompositeID{
+		ClusterID:  req.SpaceID,
+		ResourceID: createdRule.RuleID,
+	}).String())
+	m.RuleID = types.StringValue(createdRule.RuleID)
+	m.SpaceID = types.StringValue(req.SpaceID)
 
 	return entitycore.KibanaWriteResult[alertingRuleModel]{Model: m}, diags
 }
