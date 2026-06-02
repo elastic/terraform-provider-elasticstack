@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -62,6 +63,26 @@ type ExceptionItemModel struct {
 	UpdatedBy        types.String         `tfsdk:"updated_by"`
 	TieBreakerID     types.String         `tfsdk:"tie_breaker_id"`
 }
+
+func (m ExceptionItemModel) GetID() types.String             { return m.ID }
+func (m ExceptionItemModel) GetResourceID() types.String     { return m.ItemID }
+func (m ExceptionItemModel) GetSpaceID() types.String        { return m.SpaceID }
+func (m ExceptionItemModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+
+var _ entitycore.KibanaResourceModel = ExceptionItemModel{}
+
+func (m ExceptionItemModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if !typeutils.IsKnown(m.ExpireTime) {
+		return nil, diags
+	}
+	return []entitycore.VersionRequirement{{
+		MinVersion:   *MinVersionExpireTime,
+		ErrorMessage: fmt.Sprintf("expire_time requires server version %s or higher", MinVersionExpireTime.String()),
+	}}, diags
+}
+
+var _ entitycore.WithVersionRequirements = ExceptionItemModel{}
 
 type CommentModel struct {
 	ID      types.String `tfsdk:"id"`
@@ -739,7 +760,6 @@ func (m *ExceptionItemModel) setCommonProps(
 	ctx context.Context,
 	props *CommonExceptionItemProps,
 	diags *diag.Diagnostics,
-	client clients.MinVersionEnforceable,
 ) {
 	// Set optional namespace_type
 	if typeutils.IsKnown(m.NamespaceType) {
@@ -782,16 +802,6 @@ func (m *ExceptionItemModel) setCommonProps(
 
 	// Set optional expire_time
 	if typeutils.IsKnown(m.ExpireTime) {
-		// Check version support for expire_time
-		if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionExpireTime); versionDiags.HasError() {
-			diags.Append(versionDiags...)
-			return
-		} else if !supported {
-			diags.AddError("expire_time is unsupported",
-				fmt.Sprintf("expire_time requires server version %s or higher", MinVersionExpireTime.String()))
-			return
-		}
-
 		expireTime, d := m.ExpireTime.ValueRFC3339Time()
 		diags.Append(d...)
 		if diags.HasError() {
@@ -815,7 +825,7 @@ func (m *ExceptionItemModel) commentModels(ctx context.Context, diags *diag.Diag
 }
 
 // toCreateRequest converts the Terraform model to API create request
-func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients.MinVersionEnforceable) (*kbapi.CreateExceptionListItemJSONRequestBody, diag.Diagnostics) {
+func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.CreateExceptionListItemJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	entries, d := convertEntriesToAPI(ctx, m.Entries)
@@ -851,7 +861,7 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients
 		Tags:          &tags,
 		Meta:          &meta,
 		ExpireTime:    &expireTime,
-	}, &diags, client)
+	}, &diags)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -897,7 +907,7 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients
 }
 
 // toUpdateRequest converts the Terraform model to API update request
-func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceID string, client clients.MinVersionEnforceable) (*kbapi.UpdateExceptionListItemJSONRequestBody, diag.Diagnostics) {
+func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceID string) (*kbapi.UpdateExceptionListItemJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	entries, d := convertEntriesToAPI(ctx, m.Entries)
@@ -928,7 +938,7 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceID str
 		Tags:          &tags,
 		Meta:          &meta,
 		ExpireTime:    &expireTime,
-	}, &diags, client)
+	}, &diags)
 	if diags.HasError() {
 		return nil, diags
 	}
