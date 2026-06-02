@@ -28,20 +28,20 @@
 
 ## 3. fleet/customintegration
 
-- [ ] 3.1 Add `GetID()`, `GetResourceID()` (→ `getPackageID(PackageName, PackageVersion)` when known, else `ID`), `GetSpaceID()` (→ `SpaceID`), `GetKibanaConnection()` value-receiver methods to `customIntegrationModel`
-- [ ] 3.2 Add `GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics)` to `customIntegrationModel`: always emit `minVersionCustomPackageGet` (8.2.0) with the existing error message
-- [ ] 3.3 Delete inline `EnforceMinVersion(ctx, minVersionCustomPackageGet)` checks from `create.go`, `read.go`, and `update.go`
-- [ ] 3.4 Remove `kibana_connection` block from `schema.go` schema function
-- [ ] 3.5 Extract `Create` method body to `func createCustomIntegration(ctx, *KibanaScopedClient, KibanaWriteRequest[customIntegrationModel]) (KibanaWriteResult[customIntegrationModel], diag.Diagnostics)`
-- [ ] 3.6 Extract `Read` method body to `func readCustomIntegration(ctx, *KibanaScopedClient, resourceID, spaceID string, model customIntegrationModel) (customIntegrationModel, bool, diag.Diagnostics)` — read callback uses `model.PackageName`/`model.PackageVersion` directly, ignores `resourceID` parameter
-- [ ] 3.7 Extract `Update` method body to `func updateCustomIntegration(ctx, *KibanaScopedClient, KibanaWriteRequest[customIntegrationModel]) (KibanaWriteResult[customIntegrationModel], diag.Diagnostics)`
-- [ ] 3.8 Extract `Delete` method body to `func deleteCustomIntegration(ctx, *KibanaScopedClient, resourceID, spaceID string, model customIntegrationModel) diag.Diagnostics`
-- [ ] 3.9 Swap `*entitycore.ResourceBase` for `*entitycore.KibanaResource[customIntegrationModel]`; retain `ModifyPlan` on wrapper struct; no `SpaceImporter` (no ImportState support)
-- [ ] 3.10 Update existing `entitycore_contract_test.go` to assert `KibanaResource[customIntegrationModel]` embed (replacing current `ResourceBase` assertion)
-- [ ] 3.11 Run `make build` and `go test ./internal/fleet/customintegration/...`
+- [x] 3.1 Add `GetID()`, `GetResourceID()` (→ `getPackageID(PackageName, PackageVersion)` when known, else `ID`), `GetSpaceID()` (→ `SpaceID`), `GetKibanaConnection()` value-receiver methods to `customIntegrationModel`
+- [x] 3.2 Add `GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics)` to `customIntegrationModel`: always emit `minVersionCustomPackageGet` (8.2.0) with the existing error message
+- [x] 3.3 Delete inline `EnforceMinVersion(ctx, minVersionCustomPackageGet)` checks from `create.go`, `read.go`, and `update.go`
+- [x] 3.4 Remove `kibana_connection` block from `schema.go` schema function
+- [x] 3.5 Extract `Create` method body to `func createCustomIntegration(ctx, *KibanaScopedClient, KibanaWriteRequest[customIntegrationModel]) (KibanaWriteResult[customIntegrationModel], diag.Diagnostics)`
+- [x] 3.6 Extract `Read` method body to `func readCustomIntegration(ctx, *KibanaScopedClient, resourceID, spaceID string, model customIntegrationModel) (customIntegrationModel, bool, diag.Diagnostics)` — read callback uses `model.PackageName`/`model.PackageVersion` directly, ignores `resourceID` parameter
+- [x] 3.7 Extract `Update` method body to `func updateCustomIntegration(ctx, *KibanaScopedClient, KibanaWriteRequest[customIntegrationModel]) (KibanaWriteResult[customIntegrationModel], diag.Diagnostics)`
+- [x] 3.8 Extract `Delete` method body to `func deleteCustomIntegration(ctx, *KibanaScopedClient, resourceID, spaceID string, model customIntegrationModel) diag.Diagnostics`
+- [x] 3.9 Swap `*entitycore.ResourceBase` for `*entitycore.KibanaResource[customIntegrationModel]`; retain `ModifyPlan` on wrapper struct; no `SpaceImporter` (no ImportState support)
+- [x] 3.10 Update existing `entitycore_contract_test.go` to assert `KibanaResource[customIntegrationModel]` embed (replacing current `ResourceBase` assertion)
+- [x] 3.11 Run `make build` and `go test ./internal/fleet/customintegration/...`
 
 ## 4. Final validation
 
-- [ ] 4.1 Run `make build` across the full provider
-- [ ] 4.2 Run `make lint` (or `make check-lint`) and fix any issues
-- [ ] 4.3 Verify no schema changes: confirm `make docs` produces no diff for the three affected resources
+- [x] 4.1 Run `make build` across the full provider
+- [x] 4.2 Run `make lint` (or `make check-lint`) and fix any issues
+- [x] 4.3 Verify no schema changes: confirm `make docs` produces no diff for the three affected resources
