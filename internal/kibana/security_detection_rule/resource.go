@@ -33,12 +33,22 @@ var (
 )
 
 type securityDetectionRuleResource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[Data]
 }
 
 func newSecurityDetectionRuleResource() *securityDetectionRuleResource {
 	return &securityDetectionRuleResource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "security_detection_rule"),
+		KibanaResource: entitycore.NewKibanaResource[Data](
+			entitycore.ComponentKibana,
+			"security_detection_rule",
+			entitycore.KibanaResourceOptions[Data]{
+				Schema: GetSchema,
+				Read:   readDetectionRule,
+				Delete: deleteDetectionRule,
+				Create: createDetectionRule,
+				Update: updateDetectionRule,
+			},
+		),
 	}
 }
 
