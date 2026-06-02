@@ -77,7 +77,7 @@ func TestAccResourceMLTrainedModelAlias_basic(t *testing.T) {
 				ResourceName:             mlTrainedModelAliasResourceAddress,
 				ImportState:              true,
 				ImportStateVerify:        true,
-				ImportStateVerifyIgnore:  []string{},
+				ImportStateVerifyIgnore:  []string{"reassign"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					rs := s.RootModule().Resources[mlTrainedModelAliasResourceAddress]
 					return rs.Primary.ID, nil

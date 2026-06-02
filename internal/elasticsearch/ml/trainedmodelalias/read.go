@@ -50,7 +50,6 @@ func readTrainedModelAlias(ctx context.Context, client *clients.ElasticsearchSco
 
 	out := state
 	out.ModelID = types.StringValue(modelID)
-	out.Reassign = types.BoolValue(true)
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully read ML trained model alias: %s -> %s", alias, modelID))
 	return out, true, diags
