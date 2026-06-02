@@ -26,6 +26,24 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
+func TestVersionGate_GetVersionRequirements(t *testing.T) {
+	t.Parallel()
+
+	reqs, diags := VersionGate{}.GetVersionRequirements()
+	if diags.HasError() {
+		t.Fatalf("unexpected diagnostics: %v", diags)
+	}
+	if len(reqs) != 1 {
+		t.Fatalf("expected 1 requirement, got %d", len(reqs))
+	}
+	if reqs[0].MinVersion.String() != MinSupportedVersion.String() {
+		t.Errorf("MinVersion = %s, want %s", reqs[0].MinVersion.String(), MinSupportedVersion.String())
+	}
+	if reqs[0].ErrorMessage == "" {
+		t.Error("ErrorMessage must not be empty")
+	}
+}
+
 func TestNestedModelAttrTypes_objectRoundTrip(t *testing.T) {
 	t.Parallel()
 
