@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	kibanacustomtypes "github.com/elastic/terraform-provider-elasticstack/internal/kibana/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -330,93 +331,98 @@ var (
 	flappingEnabledMinSupportedVersion = version.Must(version.NewVersion("9.3.0"))
 )
 
-// toAPIModel converts the Terraform model to the API model.
-// It also validates version-specific requirements based on the resolved feature flags.
-func (m alertingRuleModel) toAPIModel(ctx context.Context, features alertingRuleFeatures) (models.AlertingRule, diag.Diagnostics) {
+func (m alertingRuleModel) GetID() types.String             { return m.ID }
+func (m alertingRuleModel) GetResourceID() types.String     { return m.RuleID }
+func (m alertingRuleModel) GetSpaceID() types.String        { return m.SpaceID }
+func (m alertingRuleModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+
+var _ entitycore.KibanaResourceModel = alertingRuleModel{}
+
+func (m alertingRuleModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	var reqs []entitycore.VersionRequirement
 
-	// Validate version-specific requirements
-	// notify_when is required until v8.6
-	if !typeutils.IsKnown(m.NotifyWhen) || m.NotifyWhen.ValueString() == "" {
-		if !features.SupportsFrequency {
-			diags.AddError(
-				"notify_when is required until v8.6",
-				"notify_when is required until v8.6",
-			)
-			return models.AlertingRule{}, diags
-		}
-	}
-
-	// alert_delay is only supported from v8.13+
-	if typeutils.IsKnown(m.AlertDelay) && !m.AlertDelay.IsNull() {
-		if !features.SupportsAlertDelay {
-			diags.AddError(
-				"alert_delay is only supported for Kibana v8.13 or higher",
-				"alert_delay is only supported for Kibana v8.13 or higher",
-			)
-			return models.AlertingRule{}, diags
-		}
-	}
-
-	// flapping is only supported from Kibana v8.16+
-	if typeutils.IsKnown(m.Flapping) && !m.Flapping.IsNull() {
-		if !features.SupportsFlapping {
-			diags.AddError(
-				"flapping is only supported for Kibana v8.16 or higher",
-				"flapping is only supported for Kibana v8.16 or higher",
-			)
-			return models.AlertingRule{}, diags
-		}
-
-		var fm flappingModel
-		diags.Append(m.Flapping.As(ctx, &fm, basetypes.ObjectAsOptions{})...)
-		if diags.HasError() {
-			return models.AlertingRule{}, diags
-		}
-		// flapping.enabled is only supported from Elastic Stack 9.3+
-		if typeutils.IsKnown(fm.Enabled) && !fm.Enabled.IsNull() {
-			if !features.SupportsFlappingEnabled {
-				diags.AddError(
-					"flapping.enabled is only supported for Elastic Stack 9.3 or higher",
-					"flapping.enabled is only supported for Elastic Stack 9.3 or higher",
-				)
-				return models.AlertingRule{}, diags
-			}
-		}
-	}
-
-	// Validate version-specific requirements for actions
+	// 8.6.0 when any action has Frequency set
 	if typeutils.IsKnown(m.Actions) && !m.Actions.IsNull() {
 		var actions []actionModel
-		diags.Append(m.Actions.ElementsAs(ctx, &actions, false)...)
+		diags.Append(m.Actions.ElementsAs(context.Background(), &actions, false)...)
 		if diags.HasError() {
-			return models.AlertingRule{}, diags
+			return nil, diags
 		}
-
 		for _, action := range actions {
-			// Check frequency version requirement
 			if typeutils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
-				if !features.SupportsFrequency {
-					diags.AddError(
-						"actions.frequency is only supported for Kibana v8.6 or higher",
-						"actions.frequency is only supported for Kibana v8.6 or higher",
-					)
-					return models.AlertingRule{}, diags
-				}
-			}
-
-			// Check alerts_filter version requirement
-			if typeutils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
-				if !features.SupportsAlertsFilter {
-					diags.AddError(
-						"actions.alerts_filter is only supported for Kibana v8.9 or higher",
-						"actions.alerts_filter is only supported for Kibana v8.9 or higher",
-					)
-					return models.AlertingRule{}, diags
-				}
+				reqs = append(reqs, entitycore.VersionRequirement{
+					MinVersion:   *frequencyMinSupportedVersion,
+					ErrorMessage: "actions.frequency is only supported for Kibana v8.6 or higher",
+				})
+				break
 			}
 		}
 	}
+
+	// 8.6.0 when NotifyWhen is null/empty
+	if !typeutils.IsKnown(m.NotifyWhen) || m.NotifyWhen.ValueString() == "" {
+		reqs = append(reqs, entitycore.VersionRequirement{
+			MinVersion:   *frequencyMinSupportedVersion,
+			ErrorMessage: "notify_when is required until v8.6",
+		})
+	}
+
+	// 8.9.0 when any action has AlertsFilter set
+	if typeutils.IsKnown(m.Actions) && !m.Actions.IsNull() {
+		var actions []actionModel
+		diags.Append(m.Actions.ElementsAs(context.Background(), &actions, false)...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		for _, action := range actions {
+			if typeutils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
+				reqs = append(reqs, entitycore.VersionRequirement{
+					MinVersion:   *alertsFilterMinSupportedVersion,
+					ErrorMessage: "actions.alerts_filter is only supported for Kibana v8.9 or higher",
+				})
+				break
+			}
+		}
+	}
+
+	// 8.13.0 when AlertDelay is set
+	if typeutils.IsKnown(m.AlertDelay) && !m.AlertDelay.IsNull() {
+		reqs = append(reqs, entitycore.VersionRequirement{
+			MinVersion:   *alertDelayMinSupportedVersion,
+			ErrorMessage: "alert_delay is only supported for Kibana v8.13 or higher",
+		})
+	}
+
+	// 8.16.0 when Flapping is set
+	if typeutils.IsKnown(m.Flapping) && !m.Flapping.IsNull() {
+		reqs = append(reqs, entitycore.VersionRequirement{
+			MinVersion:   *flappingMinSupportedVersion,
+			ErrorMessage: "flapping is only supported for Kibana v8.16 or higher",
+		})
+
+		var fm flappingModel
+		diags.Append(m.Flapping.As(context.Background(), &fm, basetypes.ObjectAsOptions{})...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		// 9.3.0 when Flapping.Enabled is set
+		if typeutils.IsKnown(fm.Enabled) && !fm.Enabled.IsNull() {
+			reqs = append(reqs, entitycore.VersionRequirement{
+				MinVersion:   *flappingEnabledMinSupportedVersion,
+				ErrorMessage: "flapping.enabled is only supported for Elastic Stack 9.3 or higher",
+			})
+		}
+	}
+
+	return reqs, diags
+}
+
+var _ entitycore.WithVersionRequirements = alertingRuleModel{}
+
+// toAPIModel converts the Terraform model to the API model.
+func (m alertingRuleModel) toAPIModel(ctx context.Context) (models.AlertingRule, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
 	rule := models.AlertingRule{
 		RuleID:     m.RuleID.ValueString(),
@@ -513,13 +519,6 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, features alertingRule
 	}
 
 	return rule, diags
-}
-
-// getRuleIDAndSpaceID extracts rule ID and space ID from the composite ID.
-// The state upgrade ensures the ID is always in composite format.
-func (m alertingRuleModel) getRuleIDAndSpaceID() (ruleID string, spaceID string) {
-	compositeID, _ := clients.CompositeIDFromStr(m.ID.ValueString())
-	return compositeID.ResourceID, compositeID.ClusterID
 }
 
 // convertActionsFromAPI converts API actions to Terraform list.
