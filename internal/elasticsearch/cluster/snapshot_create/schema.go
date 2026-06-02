@@ -20,7 +20,7 @@ package snapshot_create
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	actionschema "github.com/hashicorp/terraform-plugin-framework/action/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -72,7 +72,7 @@ func GetSchema(_ context.Context) actionschema.Schema {
 				MarkdownDescription: "Wildcard expansion for `indices`: `open`, `closed`, `hidden`, `none`, or `all`. Elasticsearch defaults to `open` when omitted.",
 				Optional:            true,
 				Validators: []validator.String{
-					cluster.ExpandWildcardsValidator{},
+					validators.ExpandWildcardsValidator{},
 				},
 			},
 			"metadata": actionschema.StringAttribute{
