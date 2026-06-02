@@ -137,7 +137,13 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 	if spaceID == "" {
 		spaceID = defaultSpaceID
 	}
+	// Derive entity_type from entity ID prefix (e.g., "host:web-01" -> "host")
+	entityType := ""
+	if idx := strings.Index(entityID, ":"); idx > 0 {
+		entityType = entityID[:idx]
+	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("space_id"), spaceID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("entity_id"), entityID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("entity_type"), entityType)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 }

@@ -170,7 +170,7 @@ func entityBlockAttrTypes() map[string]attr.Type {
 		attrName:        types.StringType,
 		attrType:        types.StringType,
 		"sub_type":      types.StringType,
-		"source":        types.StringType,
+		"source":        types.SetType{ElemType: types.StringType},
 		"attributes":    types.ObjectType{AttrTypes: entityAttributesBlockAttrTypes()},
 		"behaviors":     types.ObjectType{AttrTypes: entityBehaviorsBlockAttrTypes()},
 		"lifecycle":     types.ObjectType{AttrTypes: entityLifecycleBlockAttrTypes()},
@@ -502,7 +502,7 @@ func entityBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnos
 		m["sub_type"] = model.SubType.ValueString()
 	}
 	if !model.Source.IsNull() && !model.Source.IsUnknown() {
-		m["source"] = model.Source.ValueString()
+		appendStringSetToMap(m, "source", model.Source)
 	}
 	if !model.Attributes.IsNull() && !model.Attributes.IsUnknown() {
 		var attr entityAttributesBlockModel
@@ -1043,7 +1043,7 @@ func mapToEntityBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagno
 		Name:    getStringValue(m, attrName),
 		Type:    getStringValue(m, attrType),
 		SubType: getStringValue(m, "sub_type"),
-		Source:  getStringValue(m, "source"),
+		Source:  getStringSetValue(m, "source"),
 	}
 	if attrsRaw, ok := m["attributes"].(map[string]any); ok {
 		attr := entityAttributesBlockModel{

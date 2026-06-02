@@ -68,7 +68,7 @@ var _ entitycore.WithVersionRequirements = (*tfModel)(nil)
 func (model tfModel) GetID() types.String             { return model.ID }
 func (model tfModel) GetSpaceID() types.String        { return model.SpaceID }
 func (model tfModel) GetKibanaConnection() types.List { return model.KibanaConnection }
-func (model tfModel) GetResourceID() types.String     { return types.StringValue("") }
+func (model tfModel) GetResourceID() types.String     { return model.EntityID }
 
 func (*tfModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{{
@@ -83,7 +83,7 @@ type entityBlockModel struct {
 	Name          types.String `tfsdk:"name"`
 	Type          types.String `tfsdk:"type"`
 	SubType       types.String `tfsdk:"sub_type"`
-	Source        types.String `tfsdk:"source"`
+	Source        types.Set    `tfsdk:"source"`
 	Attributes    types.Object `tfsdk:"attributes"`
 	Behaviors     types.Object `tfsdk:"behaviors"`
 	Lifecycle     types.Object `tfsdk:"lifecycle"`

@@ -193,10 +193,11 @@ func getSchema(_ context.Context) schema.Schema {
 						Optional:    true,
 						Computed:    true,
 					},
-					"source": schema.StringAttribute{
-						Description: "The source that produced this entity record.",
+					"source": schema.SetAttribute{
+						Description: "The sources that produced this entity record.",
 						Optional:    true,
 						Computed:    true,
+						ElementType: types.StringType,
 					},
 					"attributes": schema.SingleNestedAttribute{
 						Description: "Boolean flags describing characteristics of the entity.",

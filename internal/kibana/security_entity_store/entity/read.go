@@ -47,10 +47,12 @@ func readEntity(
 	// the entire string (including colons and slashes) as a single literal,
 	// which is correct for all valid entity ID formats.
 	// See: https://www.elastic.co/guide/en/kibana/current/kuery-query.html
+	// Note: entity_types cannot be combined with KQL filter — the API treats
+	// entity_types as a page-mode parameter. The filter is sufficient for
+	// single-entity lookup.
 	filter := fmt.Sprintf(`entity.id:"%s"`, entityID)
 	params := &kbapi.GetSecurityEntityStoreEntitiesParams{
-		Filter:      &filter,
-		EntityTypes: &[]kbapi.GetSecurityEntityStoreEntitiesParamsEntityTypes{kbapi.GetSecurityEntityStoreEntitiesParamsEntityTypes(entityType)},
+		Filter: &filter,
 	}
 
 	resp, diags := kibanaoapi.ListSecurityEntityStoreEntities(ctx, client.GetKibanaOapiClient(), spaceID, params)
@@ -97,4 +99,14 @@ func readEntity(
 
 	apiBodyToModel(ctx, entityDoc, &model, &diags)
 	return model, true, diags
+}
+
+// entityTypeForID derives the entity_type from the ID prefix (e.g., "host:web-01" -> "host").
+func entityTypeForID(entityID string) string {
+	for i := 0; i < len(entityID); i++ {
+		if entityID[i] == ':' {
+			return entityID[:i]
+		}
+	}
+	return ""
 }
