@@ -18,14 +18,10 @@
 package trainedmodel_test
 
 import (
-	"context"
-	"fmt"
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -33,33 +29,14 @@ import (
 
 const dataSourceAddress = "data.elasticstack_elasticsearch_ml_trained_model.test"
 
-// skipIfNoTrainedModel checks whether a built-in trained model exists in the
-// acceptance cluster. Returns (true, nil) when the model is absent so the
-// test should be skipped.
-func skipIfNoTrainedModel(modelID string) func() (bool, error) {
-	return func() (bool, error) {
-		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
-		if err != nil {
-			return false, err
-		}
-
-		_, found, diags := esclient.GetTrainedModel(context.Background(), client, modelID)
-		if diags.HasError() {
-			return false, fmt.Errorf("error checking for trained model: %v", diags.Errors())
-		}
-
-		if !found {
-			return true, nil
-		}
-		return false, nil
-	}
-}
-
 func TestAccDataSourceMLTrainedModel_basic(t *testing.T) {
-	modelID := "lang_ident_model_current"
+	modelID := acctest.AccTestTrainedModelID
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.EnsureTrainedModel(t)
+		},
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -67,15 +44,13 @@ func TestAccDataSourceMLTrainedModel_basic(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"model_id": config.StringVariable(modelID),
 				},
-				SkipFunc: skipIfNoTrainedModel(modelID),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(dataSourceAddress, "model_id", modelID),
 					resource.TestCheckResourceAttrSet(dataSourceAddress, "id"),
 					resource.TestMatchResourceAttr(dataSourceAddress, "id",
 						regexp.MustCompile(`^[A-Za-z0-9_-]{22}/`+regexp.QuoteMeta(modelID)+`$`)),
-					resource.TestCheckResourceAttrSet(dataSourceAddress, "model_type"),
-					resource.TestCheckResourceAttrSet(dataSourceAddress, "version"),
-					resource.TestCheckResourceAttrSet(dataSourceAddress, "create_time"),
+					resource.TestCheckResourceAttr(dataSourceAddress, "model_type", "tree_ensemble"),
+					resource.TestCheckResourceAttr(dataSourceAddress, "description", "Terraform acceptance test trained model"),
 				),
 			},
 		},
