@@ -65,6 +65,9 @@ func EnsureTrainedModel(t *testing.T) {
 				Input: &estypes.Input{
 					FieldNames: []string{"foo"},
 				},
+				InferenceConfig: &estypes.InferenceConfigCreateContainer{
+					Regression: &estypes.RegressionInferenceOptions{},
+				},
 				Definition: &estypes.Definition{
 					TrainedModel: estypes.TrainedModel{
 						Ensemble: &estypes.Ensemble{
