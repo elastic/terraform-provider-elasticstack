@@ -48,7 +48,6 @@ func isTreemapNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsTreemapNoESQL)
 func treemapConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.TreemapConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.TreemapConfigModel,
 	api kbapi.KibanaHTTPAPIsTreemapNoESQL,
 ) diag.Diagnostics {
@@ -107,24 +106,16 @@ func treemapConfigFromAPINoESQL(
 		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
-	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(api.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
 	m.EsqlMetrics = nil
 	m.EsqlGroupBy = nil
 
 	return diags
 }
 
-func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel, resolver lenscommon.Resolver, prior *models.TreemapConfigModel, api kbapi.KibanaHTTPAPIsTreemapESQL) diag.Diagnostics {
+func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel, prior *models.TreemapConfigModel, api kbapi.KibanaHTTPAPIsTreemapESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// ES|QL charts don't have a query block. Clear it to avoid carrying over
@@ -222,22 +213,14 @@ func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel,
 		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
-	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(api.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func treemapConfigToAPI(m *models.TreemapConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func treemapConfigToAPI(m *models.TreemapConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 
@@ -246,7 +229,7 @@ func treemapConfigToAPI(m *models.TreemapConfigModel, resolver lenscommon.Resolv
 	}
 
 	if treemapConfigUsesESQL(m) {
-		esql, esqlDiags := treemapConfigToAPITreemapESQL(m, resolver)
+		esql, esqlDiags := treemapConfigToAPITreemapESQL(m)
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
 			return attrs, diags
@@ -257,7 +240,7 @@ func treemapConfigToAPI(m *models.TreemapConfigModel, resolver lenscommon.Resolv
 		return attrs, diags
 	}
 
-	noESQL, noESQLDiags := treemapConfigToAPINoESQL(m, resolver)
+	noESQL, noESQLDiags := treemapConfigToAPINoESQL(m)
 	diags.Append(noESQLDiags...)
 	if diags.HasError() {
 		return attrs, diags
@@ -269,7 +252,7 @@ func treemapConfigToAPI(m *models.TreemapConfigModel, resolver lenscommon.Resolv
 	return attrs, diags
 }
 
-func treemapConfigToAPITreemapESQL(m *models.TreemapConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsTreemapESQL, diag.Diagnostics) {
+func treemapConfigToAPITreemapESQL(m *models.TreemapConfigModel) (kbapi.KibanaHTTPAPIsTreemapESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.KibanaHTTPAPIsTreemapESQL
 	api.Type = kbapi.KibanaHTTPAPIsTreemapESQLTypeTreemap
@@ -389,29 +372,15 @@ func treemapConfigToAPITreemapESQL(m *models.TreemapConfigModel, resolver lensco
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
 	}
 
-	api.TimeRange = writes.TimeRange
-	if writes.HideTitle != nil {
-		api.HideTitle = writes.HideTitle
-	}
-	if writes.HideBorder != nil {
-		api.HideBorder = writes.HideBorder
-	}
-	if writes.References != nil {
-		api.References = writes.References
-	}
-	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsTreemapESQL_Drilldowns_Item](writes.DrilldownsRaw)
-		diags.Append(ddDiags...)
-		if !ddDiags.HasError() {
-			api.Drilldowns = &items
-		}
-	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTreemapESQL_Drilldowns_Item](
+		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+	)...)
 
 	return api, diags
 }
@@ -426,7 +395,7 @@ func treemapConfigUsesESQL(m *models.TreemapConfigModel) bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func treemapConfigToAPINoESQL(m *models.TreemapConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsTreemapNoESQL, diag.Diagnostics) {
+func treemapConfigToAPINoESQL(m *models.TreemapConfigModel) (kbapi.KibanaHTTPAPIsTreemapNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.KibanaHTTPAPIsTreemapNoESQL{
 		Type: kbapi.KibanaHTTPAPIsTreemapNoESQLTypeTreemap,
@@ -502,29 +471,15 @@ func treemapConfigToAPINoESQL(m *models.TreemapConfigModel, resolver lenscommon.
 		api.Styling = &kbapi.KibanaHTTPAPIsTreemapStyling{Values: lenscommon.PartitionValueDisplayToAPI(m.ValueDisplay)}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
 	}
 
-	api.TimeRange = writes.TimeRange
-	if writes.HideTitle != nil {
-		api.HideTitle = writes.HideTitle
-	}
-	if writes.HideBorder != nil {
-		api.HideBorder = writes.HideBorder
-	}
-	if writes.References != nil {
-		api.References = writes.References
-	}
-	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsTreemapNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
-		diags.Append(ddDiags...)
-		if !ddDiags.HasError() {
-			api.Drilldowns = &items
-		}
-	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTreemapNoESQL_Drilldowns_Item](
+		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+	)...)
 
 	return api, diags
 }

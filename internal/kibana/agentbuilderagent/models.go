@@ -26,70 +26,68 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (model agentModel) GetID() types.String             { return model.ID }
-func (model agentModel) GetResourceID() types.String     { return model.AgentID }
-func (model agentModel) GetSpaceID() types.String        { return model.SpaceID }
-func (model agentModel) GetKibanaConnection() types.List { return model.KibanaConnection }
+func (model agentModel) GetID() types.String         { return model.ID }
+func (model agentModel) GetResourceID() types.String { return model.AgentID }
+func (model agentModel) GetSpaceID() types.String    { return model.SpaceID }
 
 var _ entitycore.KibanaResourceModel = agentModel{}
 var _ entitycore.WithVersionRequirements = agentModel{}
+var _ entitycore.WithVersionRequirements = agentDataSourceModel{}
 
-func (model agentModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+// agentVersionGate is a zero-size embedded struct that satisfies
+// entitycore.WithVersionRequirements for both agentModel and agentDataSourceModel,
+// eliminating the duplicate method bodies.
+type agentVersionGate struct{}
+
+func (agentVersionGate) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *minKibanaAgentBuilderAPIVersion,
 			ErrorMessage: fmt.Sprintf("Agent Builder agents require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
 		},
 	}, nil
+}
+
+// agentBaseModel holds every field shared by the resource model (agentModel)
+// and the data source model (agentDataSourceModel). Both embed it so the common
+// schema fields, the kibana_connection block (via KibanaConnectionField), the
+// version gate, and the population logic are declared exactly once.
+//
+// The `tools` field is intentionally NOT part of this base: the resource
+// represents it as a set of tool IDs (types.Set) while the data source returns
+// rich, nested tool objects ([]toolModel). Both use the `tfsdk:"tools"` tag, so
+// declaring it in the base (or embedding one model into the other directly)
+// would trip the Plugin Framework's duplicate-tag detection.
+type agentBaseModel struct {
+	entitycore.KibanaConnectionField
+	agentVersionGate
+	ID           types.String `tfsdk:"id"`
+	AgentID      types.String `tfsdk:"agent_id"`
+	SpaceID      types.String `tfsdk:"space_id"`
+	Name         types.String `tfsdk:"name"`
+	Description  types.String `tfsdk:"description"`
+	AvatarColor  types.String `tfsdk:"avatar_color"`
+	AvatarSymbol types.String `tfsdk:"avatar_symbol"`
+	Labels       types.Set    `tfsdk:"labels"`    // []string
+	SkillIDs     types.Set    `tfsdk:"skill_ids"` // []string
+	Instructions types.String `tfsdk:"instructions"`
 }
 
 type agentModel struct {
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
-	AgentID          types.String `tfsdk:"agent_id"`
-	SpaceID          types.String `tfsdk:"space_id"`
-	Name             types.String `tfsdk:"name"`
-	Description      types.String `tfsdk:"description"`
-	AvatarColor      types.String `tfsdk:"avatar_color"`
-	AvatarSymbol     types.String `tfsdk:"avatar_symbol"`
-	Labels           types.Set    `tfsdk:"labels"`    // []string
-	Tools            types.Set    `tfsdk:"tools"`     // []string
-	SkillIDs         types.Set    `tfsdk:"skill_ids"` // []string
-	Instructions     types.String `tfsdk:"instructions"`
+	agentBaseModel
+	Tools types.Set `tfsdk:"tools"` // []string
 }
 
 type agentDataSourceModel struct {
-	entitycore.KibanaConnectionField
-	ID                  types.String `tfsdk:"id"`
-	AgentID             types.String `tfsdk:"agent_id"`
-	SpaceID             types.String `tfsdk:"space_id"`
-	IncludeDependencies types.Bool   `tfsdk:"include_dependencies"`
-	Name                types.String `tfsdk:"name"`
-	Description         types.String `tfsdk:"description"`
-	AvatarColor         types.String `tfsdk:"avatar_color"`
-	AvatarSymbol        types.String `tfsdk:"avatar_symbol"`
-	Labels              types.Set    `tfsdk:"labels"`
-	Tools               []toolModel  `tfsdk:"tools"`
-	SkillIDs            types.Set    `tfsdk:"skill_ids"`
-	Instructions        types.String `tfsdk:"instructions"`
-}
-
-// GetVersionRequirements returns the static minimum Kibana version requirements
-// for the Agent Builder agent data source. This satisfies the optional
-// entitycore.WithVersionRequirements interface, allowing the
-// generic Kibana data source envelope to enforce the requirement before invoking
-// the entity read callback.
-func (model agentDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *minKibanaAgentBuilderAPIVersion,
-			ErrorMessage: fmt.Sprintf("Agent Builder agents require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
-		},
-	}, nil
+	agentBaseModel
+	IncludeDependencies types.Bool  `tfsdk:"include_dependencies"`
+	Tools               []toolModel `tfsdk:"tools"`
 }
 
 type toolModel struct {
@@ -105,66 +103,36 @@ type toolModel struct {
 	WorkflowConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"workflow_configuration_yaml"`
 }
 
-// agentBaseData holds fields shared between agentDataSourceModel and agentModel
-// populated from the API response.
-type agentBaseData struct {
-	ID           types.String
-	AgentID      types.String
-	SpaceID      types.String
-	Name         types.String
-	Description  types.String
-	AvatarColor  types.String
-	AvatarSymbol types.String
-	Instructions types.String
-	Labels       types.Set
-}
-
-// populateAgentBaseFromAPI extracts the fields common to both agentDataSourceModel
-// and agentModel from an API response, eliminating duplicated population logic.
-func populateAgentBaseFromAPI(ctx context.Context, spaceID string, data *models.Agent) (agentBaseData, diag.Diagnostics) {
+// populateFromAPI maps the fields shared by the resource and data source models
+// from an API response. Entity-specific fields (the differing `tools`
+// representations and the data source's include_dependencies) are populated by
+// the callers.
+func (model *agentBaseModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Agent) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	base := agentBaseData{
-		ID:           types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String()),
-		AgentID:      types.StringValue(data.ID),
-		SpaceID:      types.StringValue(spaceID),
-		Name:         types.StringValue(data.Name),
-		AvatarColor:  types.StringPointerValue(data.AvatarColor),
-		AvatarSymbol: types.StringPointerValue(data.AvatarSymbol),
-	}
-
-	if data.Description != nil && *data.Description != "" {
-		base.Description = types.StringValue(*data.Description)
-	} else {
-		base.Description = types.StringNull()
-	}
-
-	cfg := data.Configuration
-	if cfg.Instructions != nil && *cfg.Instructions != "" {
-		base.Instructions = types.StringValue(*cfg.Instructions)
-	} else {
-		base.Instructions = types.StringNull()
-	}
-
-	diags.Append(populateSet(ctx, data.Labels, &base.Labels)...)
-	return base, diags
-}
-
-func (model *agentDataSourceModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Agent) diag.Diagnostics {
+	var d diag.Diagnostics
 	if data == nil {
-		return nil
+		return diags
 	}
-	base, diags := populateAgentBaseFromAPI(ctx, spaceID, data)
-	model.ID = base.ID
-	model.AgentID = base.AgentID
-	model.SpaceID = base.SpaceID
-	model.Name = base.Name
-	model.Description = base.Description
-	model.AvatarColor = base.AvatarColor
-	model.AvatarSymbol = base.AvatarSymbol
-	model.Instructions = base.Instructions
-	model.Labels = base.Labels
-	diags.Append(populateSet(ctx, data.Configuration.SkillIDs, &model.SkillIDs)...)
+
+	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
+	model.AgentID = types.StringValue(data.ID)
+	model.SpaceID = types.StringValue(spaceID)
+	model.Name = types.StringValue(data.Name)
+	model.AvatarColor = types.StringPointerValue(data.AvatarColor)
+	model.AvatarSymbol = types.StringPointerValue(data.AvatarSymbol)
+
+	model.Description = typeutils.NonEmptyStringOrNull(data.Description)
+
+	if cfg := data.Configuration; cfg.Instructions != nil && *cfg.Instructions != "" {
+		model.Instructions = types.StringValue(*cfg.Instructions)
+	} else {
+		model.Instructions = types.StringNull()
+	}
+
+	model.Labels, d = typeutils.StringSetOrNull(ctx, data.Labels)
+	diags.Append(d...)
+	model.SkillIDs, d = typeutils.StringSetOrNull(ctx, data.Configuration.SkillIDs)
+	diags.Append(d...)
 	return diags
 }
 
@@ -172,33 +140,15 @@ func (model *agentModel) populateFromAPI(ctx context.Context, spaceID string, da
 	if data == nil {
 		return nil
 	}
-	base, diags := populateAgentBaseFromAPI(ctx, spaceID, data)
-	model.ID = base.ID
-	model.AgentID = base.AgentID
-	model.SpaceID = base.SpaceID
-	model.Name = base.Name
-	model.Description = base.Description
-	model.AvatarColor = base.AvatarColor
-	model.AvatarSymbol = base.AvatarSymbol
-	model.Instructions = base.Instructions
-	model.Labels = base.Labels
+	diags := model.agentBaseModel.populateFromAPI(ctx, spaceID, data)
+	var d diag.Diagnostics
 	var toolIDs []string
 	if len(data.Configuration.Tools) > 0 {
 		toolIDs = data.Configuration.Tools[0].ToolIDs
 	}
-	diags.Append(populateSet(ctx, toolIDs, &model.Tools)...)
-	diags.Append(populateSet(ctx, data.Configuration.SkillIDs, &model.SkillIDs)...)
+	model.Tools, d = typeutils.StringSetOrNull(ctx, toolIDs)
+	diags.Append(d...)
 	return diags
-}
-
-func populateSet(ctx context.Context, src []string, dst *types.Set) diag.Diagnostics {
-	if len(src) > 0 {
-		v, d := types.SetValueFrom(ctx, types.StringType, src)
-		*dst = v
-		return d
-	}
-	*dst = types.SetNull(types.StringType)
-	return nil
 }
 
 func (model agentModel) toAPICreateModel(ctx context.Context, supportsSkillIDs bool) (kbapi.PostAgentBuilderAgentsJSONRequestBody, diag.Diagnostics) {
@@ -220,22 +170,22 @@ func (model agentModel) toAPICreateModel(ctx context.Context, supportsSkillIDs b
 		body.Configuration.Instructions = model.Instructions.ValueStringPointer()
 	}
 
-	toolIDs, d := setToStrings(ctx, model.Tools)
-	diags.Append(d...)
+	toolIDs := typeutils.SetTypeAs[string](ctx, model.Tools, path.Empty(), &diags)
+	if toolIDs == nil {
+		toolIDs = []string{}
+	}
 	body.Configuration.Tools = []struct {
 		ToolIds []string `json:"tool_ids"` //nolint:revive
 	}{{ToolIds: toolIDs}}
 
 	if supportsSkillIDs {
-		skillIDs, d := setToStrings(ctx, model.SkillIDs)
-		diags.Append(d...)
+		skillIDs := typeutils.SetTypeAs[string](ctx, model.SkillIDs, path.Empty(), &diags)
 		if len(skillIDs) > 0 {
 			body.Configuration.SkillIds = &skillIDs
 		}
 	}
 
-	labels, d := setToStrings(ctx, model.Labels)
-	diags.Append(d...)
+	labels := typeutils.SetTypeAs[string](ctx, model.Labels, path.Empty(), &diags)
 	if len(labels) > 0 {
 		body.Labels = &labels
 	}
@@ -261,8 +211,10 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 		body.AvatarSymbol = model.AvatarSymbol.ValueStringPointer()
 	}
 
-	toolIDs, d := setToStrings(ctx, model.Tools)
-	diags.Append(d...)
+	toolIDs := typeutils.SetTypeAs[string](ctx, model.Tools, path.Empty(), &diags)
+	if toolIDs == nil {
+		toolIDs = []string{}
+	}
 	tools := []struct {
 		ToolIds []string `json:"tool_ids"` //nolint:revive
 	}{{ToolIds: toolIDs}}
@@ -274,8 +226,7 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 	// clears the value on 9.4+.
 	var skillIDsPtr *[]string
 	if supportsSkillIDs {
-		skillIDs, d := setToStrings(ctx, model.SkillIDs)
-		diags.Append(d...)
+		skillIDs := typeutils.SetTypeAs[string](ctx, model.SkillIDs, path.Empty(), &diags)
 		if skillIDs == nil {
 			skillIDs = []string{}
 		}
@@ -303,20 +254,10 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 		SkillIds:     skillIDsPtr,
 	}
 
-	labels, d := setToStrings(ctx, model.Labels)
-	diags.Append(d...)
+	labels := typeutils.SetTypeAs[string](ctx, model.Labels, path.Empty(), &diags)
 	if len(labels) > 0 {
 		body.Labels = &labels
 	}
 
 	return body, diags
-}
-
-func setToStrings(ctx context.Context, set types.Set) ([]string, diag.Diagnostics) {
-	if set.IsNull() || set.IsUnknown() {
-		return []string{}, nil
-	}
-	var out []string
-	d := set.ElementsAs(ctx, &out, false)
-	return out, d
 }

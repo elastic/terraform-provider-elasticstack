@@ -241,13 +241,9 @@ func toolModelFromAPI(ctx context.Context, spaceID string, tool *models.Tool, wo
 		tm.Description = types.StringNull()
 	}
 
-	if len(tool.Tags) > 0 {
-		tags, tagDiags := types.SetValueFrom(ctx, types.StringType, tool.Tags)
-		diags.Append(tagDiags...)
-		tm.Tags = tags
-	} else {
-		tm.Tags = types.SetNull(types.StringType)
-	}
+	tags, d := typeutils.StringSetOrNull(ctx, tool.Tags)
+	diags.Append(d...)
+	tm.Tags = tags
 
 	tm.ReadOnly = types.BoolValue(tool.ReadOnly)
 

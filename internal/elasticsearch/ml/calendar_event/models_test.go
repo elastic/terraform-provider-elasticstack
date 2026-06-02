@@ -24,30 +24,9 @@ import (
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestCalendarEventTFModel_toAPIModel(t *testing.T) {
-	ctx := context.Background()
-
-	startTime := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
-	endTime := time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC)
-
-	model := &CalendarEventTFModel{
-		Description: types.StringValue("maintenance window"),
-		StartTime:   timetypes.NewRFC3339TimeValue(startTime),
-		EndTime:     timetypes.NewRFC3339TimeValue(endTime),
-	}
-
-	apiModel, diags := model.toAPIModel(ctx)
-	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
-
-	assert.Equal(t, "maintenance window", apiModel.Description)
-	assert.Equal(t, startTime.UnixMilli(), apiModel.StartTime)
-	assert.Equal(t, endTime.UnixMilli(), apiModel.EndTime)
-}
 
 func TestCalendarEventTFModel_fromAPIModel(t *testing.T) {
 	ctx := context.Background()

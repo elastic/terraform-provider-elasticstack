@@ -1,9 +1,29 @@
-## [Unreleased]
+## [0.16.1] - 2026-06-01
 
 ### Changes
 
-- Provider configured with only a `fleet { ... }` block can now serve Kibana resources: provider-level `kibana_oapi` config inherits `URL`, `Username`, `Password`, `APIKey`, `BearerToken`, `CACerts`, and `Insecure` field-by-field from the `fleet { ... }` block when the corresponding kibana-derived field is still unset, mirroring the existing Fleet → Kibana credential inheritance.
-- `ProviderClientFactory.GetElasticsearchClient` and `ProviderClientFactory.GetKibanaClient` now validate endpoint presence as a precondition of returning a scoped client. A provider with no Elasticsearch endpoint will fail at factory resolution with `elasticsearch client is not configured: ...`; a provider with neither a Kibana nor a Fleet endpoint will fail at factory resolution with `kibana/fleet client is not configured: ...`. This surfaces missing-endpoint errors earlier (at the `terraform plan` boundary) instead of mid-operation.
+- Fix 404 error on update and destroy of `elasticstack_fleet_server_host` when `host_id` is omitted from config by adding `UseStateForUnknown()` and `RequiresReplace()` plan modifiers to `host_id`. Changing `host_id` explicitly now triggers destroy-and-recreate instead of a broken update. Fixes [#864](https://github.com/elastic/terraform-provider-elasticstack/issues/864).
+- Add elasticstack_elasticsearch_connector resource and data source plus elasticstack_elasticsearch_connector_sync_job_create action for Elasticsearch content connectors. ([#3435](https://github.com/elastic/terraform-provider-elasticstack/pull/3435))
+- Preserve S3 endpoint and path_style_access in snapshot repository PUT bodies ([#3447](https://github.com/elastic/terraform-provider-elasticstack/pull/3447))
+- Fix inconsistent state when metadata is set to jsonencode({}) on elasticsearch_security_user ([#3448](https://github.com/elastic/terraform-provider-elasticstack/pull/3448))
+- Make Kibana dashboard panel-level time_range optional so panels can use the dashboard global time range ([#3436](https://github.com/elastic/terraform-provider-elasticstack/pull/3436))
+- Fix plan-time `Value Conversion Error` when the whole `analysis_config` block (or `analysis_config.per_partition_categorization`) is sourced from a Terraform variable or `for_each`. ([#3425](https://github.com/elastic/terraform-provider-elasticstack/pull/3425))
+- Allow ``elasticstack_kibana_space`` to manage the default Kibana space without errors and return an actionable import diagnostic on create 409. ([#3423](https://github.com/elastic/terraform-provider-elasticstack/pull/3423))
+- Fixed false-positive validation error for cluster_settings when persistent/transient blocks are populated via dynamic blocks driven by local values. ([#3411](https://github.com/elastic/terraform-provider-elasticstack/pull/3411))
+- Fix `Provider produced inconsistent result after apply` and plan drift on Kibana Lens dashboard panels caused by Kibana-injected server defaults (issue #3402 and related across every Lens panel type) ([#3404](https://github.com/elastic/terraform-provider-elasticstack/pull/3404))
+- Fix `elasticstack_kibana_dashboard` round-trip drift for Lens XY/gauge/heatmap/image panels, ES|QL controls, and empty `panels` lists; add getting-started, operations, and advanced Kibana dashboard guides with example configs and screenshots. ([#3391](https://github.com/elastic/terraform-provider-elasticstack/pull/3391))
+- Add elasticsearch_snapshot_create and elasticsearch_snapshot_restore provider-defined actions for on-demand snapshot creation and restore. ([#3376](https://github.com/elastic/terraform-provider-elasticstack/pull/3376))
+- Add `elasticstack_elasticsearch_query_ruleset` resource and data source for the Elasticsearch Query Rules API. ([#3365](https://github.com/elastic/terraform-provider-elasticstack/pull/3365))
+- improve security role documentation and add automated drift detection for Kibana feature privilege docs ([#3339](https://github.com/elastic/terraform-provider-elasticstack/pull/3339))
+- webhook connector with sensitive config no longer fails with "inconsistent values for sensitive attribute" when `method` is omitted ([#3358](https://github.com/elastic/terraform-provider-elasticstack/pull/3358))
+- Hydrate all `elasticstack_elasticsearch_index` settings fields on import so plans no longer show spurious drift. ([#3360](https://github.com/elastic/terraform-provider-elasticstack/pull/3360))
+- Surface Kibana Boom error message when import saved objects returns non-200/400 HTTP responses ([#3359](https://github.com/elastic/terraform-provider-elasticstack/pull/3359))
+- `elasticstack_kibana_security_exception_list` now accepts `type=rule_default`, allowing terraform to explicitly manage per-rule exception list containers that were previously expected to auto-create from a detection rule POST (which does not actually happen). ([#3348](https://github.com/elastic/terraform-provider-elasticstack/pull/3348))
+- Add `elasticstack_elasticsearch_synonym_set` resource and data source for full CRUD management of Elasticsearch synonym sets via the Synonyms API. ([#3335](https://github.com/elastic/terraform-provider-elasticstack/pull/3335))
+- Make Elasticsearch resources serverless-aware by routing all version- and flavor-gating through serverless-safe primitives. ([#3325](https://github.com/elastic/terraform-provider-elasticstack/pull/3325))
+- Prevent panic in `elasticstack_fleet_agent_policy` when a `global_data_tags` entry has neither string nor number value set. ([#3322](https://github.com/elastic/terraform-provider-elasticstack/pull/3322))
+- Add write-only `secrets_wo` and `secrets_wo_version` attributes to `elasticstack_kibana_action_connector` for ephemeral secret sources. ([#3323](https://github.com/elastic/terraform-provider-elasticstack/pull/3323))
+- Provider with only a fleet block can serve Kibana resources; missing-endpoint errors surface earlier at plan time. ([#3316](https://github.com/elastic/terraform-provider-elasticstack/pull/3316))
 
 ## [0.16.0] - 2026-05-25
 
@@ -953,7 +973,8 @@ resource "elasticstack_fleet_output" "output" {
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.1...HEAD
+[0.16.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.15.2...v0.16.0
 [0.15.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.15.1...v0.15.2
 [0.15.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.15.0...v0.15.1

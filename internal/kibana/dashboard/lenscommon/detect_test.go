@@ -22,8 +22,16 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestHasLensByReferenceShapeAtRoot_refIDOnly(t *testing.T) {
+	t.Parallel()
+	assert.True(t, HasLensByReferenceShapeAtRoot(map[string]any{"ref_id": "panel_0"}))
+	assert.False(t, HasLensByReferenceShapeAtRoot(map[string]any{"ref_id": ""}))
+	assert.False(t, HasLensByReferenceShapeAtRoot(map[string]any{"time_range": map[string]any{"from": "now-7d", "to": "now"}}))
+}
 
 func TestDetectVizType_chartKindsPerArm(t *testing.T) {
 	t.Parallel()

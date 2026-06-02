@@ -37,9 +37,7 @@ func createRole(ctx context.Context, client *clients.KibanaScopedClient, req ent
 	}
 	oapiClient := client.GetKibanaOapiClient()
 	createOnly := true
-	params := kbapi.PutSecurityRoleNameParams{
-		CreateOnly: &createOnly,
-	}
+	params := kbapi.PutSecurityRoleNameParams{CreateOnly: &createOnly}
 	diags.Append(kibanaoapi.PutSecurityRole(ctx, oapiClient, roleName, params, body)...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags

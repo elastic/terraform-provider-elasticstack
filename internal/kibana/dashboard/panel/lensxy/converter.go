@@ -47,7 +47,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("xy_chart_config", xyChartConfigSchemaAttrs(true))
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
 	var prior *models.XYChartConfigModel
 	if blocks != nil && blocks.XYChartConfig != nil {
 		cpy := *blocks.XYChartConfig
@@ -61,22 +61,22 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 	blocks.XYChartConfig = &models.XYChartConfigModel{}
 
 	if xyChart, err := attrs.AsKibanaHTTPAPIsXyChartNoESQL(); err == nil {
-		return xyChartConfigFromAPINoESQL(ctx, blocks.XYChartConfig, resolver, prior, xyChart)
+		return xyChartConfigFromAPINoESQL(ctx, blocks.XYChartConfig, prior, xyChart)
 	}
 	xyChart, err := attrs.AsKibanaHTTPAPIsXyChartESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return xyChartConfigFromAPIESQL(ctx, blocks.XYChartConfig, resolver, prior, xyChart)
+	return xyChartConfigFromAPIESQL(ctx, blocks.XYChartConfig, prior, xyChart)
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags
 	}
-	return xyChartConfigToAPI(blocks.XYChartConfig, resolver)
+	return xyChartConfigToAPI(blocks.XYChartConfig)
 }
 
 func (converter) AlignStateFromPlan(_ context.Context, plan, state *models.LensByValueChartBlocks) {

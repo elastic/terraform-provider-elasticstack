@@ -71,9 +71,31 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, ol *kbap
 		return
 	}
 
-	// If the existing state has no config block, preserve nil intent.
 	if existing == nil {
-		return
+		if tfPanel == nil || tfPanel.OptionsListControlConfig == nil {
+			return
+		}
+		pm.OptionsListControlConfig = &models.OptionsListControlConfigModel{
+			DataViewID:      types.StringValue(apiConfig.DataViewId),
+			FieldName:       types.StringValue(apiConfig.FieldName),
+			SelectedOptions: types.ListNull(types.StringType),
+		}
+		existing = pm.OptionsListControlConfig
+		if apiConfig.Title != nil {
+			existing.Title = types.StringValue(*apiConfig.Title)
+		}
+		if apiConfig.SingleSelect != nil {
+			existing.SingleSelect = types.BoolValue(*apiConfig.SingleSelect)
+		}
+		if apiConfig.SearchTechnique != nil {
+			existing.SearchTechnique = types.StringValue(string(*apiConfig.SearchTechnique))
+		}
+		if apiConfig.SelectedOptions != nil {
+			existing.SelectedOptions = selectedOptionsToList(*apiConfig.SelectedOptions)
+		}
+		if apiConfig.DisplaySettings != nil {
+			existing.DisplaySettings = displaySettingsFromAPI(apiConfig.DisplaySettings)
+		}
 	}
 
 	// Block exists in state — update required fields unconditionally, optional fields only when known.
@@ -133,6 +155,49 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, ol *kbap
 	if existing.Sort != nil && apiConfig.Sort != nil {
 		existing.Sort.By = types.StringValue(string(apiConfig.Sort.By))
 		existing.Sort.Direction = types.StringValue(string(apiConfig.Sort.Direction))
+	}
+
+	if tfPanel != nil && tfPanel.OptionsListControlConfig != nil {
+		optionsListPreserveNullIntentFromPrior(tfPanel.OptionsListControlConfig, existing)
+	}
+}
+
+func optionsListPreserveNullIntentFromPrior(prior, existing *models.OptionsListControlConfigModel) {
+	if prior == nil || existing == nil {
+		return
+	}
+	if !typeutils.IsKnown(prior.Title) {
+		existing.Title = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.UseGlobalFilters) {
+		existing.UseGlobalFilters = types.BoolNull()
+	}
+	if !typeutils.IsKnown(prior.IgnoreValidations) {
+		existing.IgnoreValidations = types.BoolNull()
+	}
+	if !typeutils.IsKnown(prior.SingleSelect) {
+		existing.SingleSelect = types.BoolNull()
+	}
+	if !typeutils.IsKnown(prior.Exclude) {
+		existing.Exclude = types.BoolNull()
+	}
+	if !typeutils.IsKnown(prior.ExistsSelected) {
+		existing.ExistsSelected = types.BoolNull()
+	}
+	if !typeutils.IsKnown(prior.RunPastTimeout) {
+		existing.RunPastTimeout = types.BoolNull()
+	}
+	if !typeutils.IsKnown(prior.SearchTechnique) {
+		existing.SearchTechnique = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.SelectedOptions) {
+		existing.SelectedOptions = types.ListNull(types.StringType)
+	}
+	if prior.DisplaySettings == nil {
+		existing.DisplaySettings = nil
+	}
+	if prior.Sort == nil {
+		existing.Sort = nil
 	}
 }
 

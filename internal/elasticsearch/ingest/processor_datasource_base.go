@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -124,10 +125,7 @@ func marshalAndHash(typeName string, body any) (jsonStr string, hash string, dia
 	return jsonStr, *hashPtr, diags
 }
 
-// IsKnown returns true if the value is not null and not unknown.
-func IsKnown[T interface {
-	IsNull() bool
-	IsUnknown() bool
-}](v T) bool {
-	return !v.IsNull() && !v.IsUnknown()
+// IsKnown reports whether a Plugin Framework attribute value is set (not null or unknown).
+func IsKnown(v attr.Value) bool {
+	return typeutils.IsKnown(v)
 }

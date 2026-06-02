@@ -86,7 +86,7 @@ func writeUser(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 	}
 	user.Roles = roles
 
-	if !plan.Metadata.IsNull() && !plan.Metadata.IsUnknown() {
+	if typeutils.IsKnown(plan.Metadata) {
 		var metadataMap map[string]any
 		err := json.Unmarshal([]byte(plan.Metadata.ValueString()), &metadataMap)
 		if err != nil {

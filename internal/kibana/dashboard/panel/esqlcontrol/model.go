@@ -19,6 +19,7 @@ package esqlcontrol
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -148,9 +149,38 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 		return
 	}
 
-	// If the existing state has no config block, preserve nil intent.
 	if existing == nil {
-		return
+		if tfPanel == nil || tfPanel.EsqlControlConfig == nil {
+			return
+		}
+		singleSelect := types.BoolNull()
+		if api.SingleSelect != nil {
+			singleSelect = types.BoolValue(*api.SingleSelect)
+		}
+		existing = &models.EsqlControlConfigModel{
+			SelectedOptions:  stringsToList(api.SelectedOptions),
+			VariableName:     types.StringValue(api.VariableName),
+			VariableType:     types.StringValue(api.VariableType),
+			EsqlQuery:        types.StringValue(api.EsqlQuery),
+			ControlType:      types.StringValue(api.ControlType),
+			Title:            types.StringPointerValue(api.Title),
+			SingleSelect:     singleSelect,
+			AvailableOptions: types.ListNull(types.StringType),
+		}
+		pm.EsqlControlConfig = existing
+		if len(api.AvailableOptions) > 0 {
+			existing.AvailableOptions = stringsToList(api.AvailableOptions)
+		}
+		if api.DisplaySettings != nil {
+			d := api.DisplaySettings
+			existing.DisplaySettings = &models.EsqlControlDisplaySettingsModel{
+				Placeholder:   types.StringPointerValue(d.Placeholder),
+				HideActionBar: types.BoolPointerValue(d.HideActionBar),
+				HideExclude:   types.BoolPointerValue(d.HideExclude),
+				HideExists:    types.BoolPointerValue(d.HideExists),
+				HideSort:      types.BoolPointerValue(d.HideSort),
+			}
+		}
 	}
 
 	prevQuery := existing.EsqlQuery
@@ -176,9 +206,9 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 	if typeutils.IsKnown(existing.AvailableOptions) && len(api.AvailableOptions) > 0 {
 		existing.AvailableOptions = stringsToList(api.AvailableOptions)
 	}
-	preserveKnownStringIfStateBlank(prevQuery, &existing.EsqlQuery)
-	preserveKnownStringIfStateBlank(prevTitle, &existing.Title)
-	preserveKnownListIfStateNull(prevAvailableOptions, &existing.AvailableOptions)
+	lenscommon.PreserveKnownStringIfStateBlank(prevQuery, &existing.EsqlQuery)
+	lenscommon.PreserveKnownStringIfStateBlank(prevTitle, &existing.Title)
+	lenscommon.PreserveKnownTfListIfStateNull(prevAvailableOptions, &existing.AvailableOptions)
 
 	// display_settings: if block is present in state, update from API; otherwise preserve nil.
 	if existing.DisplaySettings != nil && api.DisplaySettings != nil {
@@ -199,6 +229,28 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 		if typeutils.IsKnown(ds.HideSort) && apiDS.HideSort != nil {
 			ds.HideSort = types.BoolValue(*apiDS.HideSort)
 		}
+	}
+
+	if tfPanel != nil && tfPanel.EsqlControlConfig != nil {
+		esqlControlPreserveNullIntentFromPrior(tfPanel.EsqlControlConfig, existing)
+	}
+}
+
+func esqlControlPreserveNullIntentFromPrior(prior, existing *models.EsqlControlConfigModel) {
+	if prior == nil || existing == nil {
+		return
+	}
+	if !typeutils.IsKnown(prior.SingleSelect) {
+		existing.SingleSelect = types.BoolNull()
+	}
+	if !typeutils.IsKnown(prior.Title) {
+		existing.Title = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.AvailableOptions) {
+		existing.AvailableOptions = types.ListNull(types.StringType)
+	}
+	if prior.DisplaySettings == nil {
+		existing.DisplaySettings = nil
 	}
 }
 
@@ -281,21 +333,6 @@ func BuildConfig(pm models.PanelModel, esqlPanel *kbapi.KibanaHTTPAPIsKbnDashboa
 	return diags
 }
 
-func preserveKnownStringIfStateBlank(plan types.String, state *types.String) {
-	if !typeutils.IsKnown(plan) {
-		return
-	}
-	if state.IsNull() || state.IsUnknown() || state.ValueString() == "" {
-		*state = plan
-	}
-}
-
-func preserveKnownListIfStateNull(plan types.List, state *types.List) {
-	if typeutils.IsKnown(plan) && (state.IsNull() || state.IsUnknown()) {
-		*state = plan
-	}
-}
-
 // AlignEsqlPanels reapplies practitioner plan fields when Kibana echoes sparse reads (parity with dashboard.alignEsqlControlStateFromPlan).
 func AlignEsqlPanels(plan, state *models.PanelModel) {
 	if plan == nil || state == nil {
@@ -308,7 +345,7 @@ func alignEsql(plan, state *models.EsqlControlConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
-	preserveKnownStringIfStateBlank(plan.EsqlQuery, &state.EsqlQuery)
-	preserveKnownStringIfStateBlank(plan.Title, &state.Title)
-	preserveKnownListIfStateNull(plan.AvailableOptions, &state.AvailableOptions)
+	lenscommon.PreserveKnownStringIfStateBlank(plan.EsqlQuery, &state.EsqlQuery)
+	lenscommon.PreserveKnownStringIfStateBlank(plan.Title, &state.Title)
+	lenscommon.PreserveKnownTfListIfStateNull(plan.AvailableOptions, &state.AvailableOptions)
 }

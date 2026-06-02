@@ -80,6 +80,8 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	alignDashboardStateFromPlanPanels(planPanels, readModel.Panels)
+	suppressReadTopLevelPanelsWhenPlanEmpty(planPanels, readModel)
+	alignDashboardStateFromPlanSections(ctx, planModel.Sections, readModel.Sections)
 
 	planPinned := planModel.PinnedPanels
 	alignDashboardStateFromPlanPinnedPanels(ctx, planPinned, readModel.PinnedPanels)

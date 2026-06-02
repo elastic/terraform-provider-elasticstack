@@ -95,7 +95,6 @@ func pieChartConfigPopulateCommonFields(
 func pieChartConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.PieChartConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.PieChartConfigModel,
 	apiChart kbapi.KibanaHTTPAPIsPieNoESQL,
 ) diag.Diagnostics {
@@ -162,17 +161,12 @@ func pieChartConfigFromAPINoESQL(
 		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
-	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(apiChart.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
+	if !lenscommon.PopulateLensChartPresentation(
+		ctx, &m.LensChartPresentationTFModel, priorLens, apiChart.TimeRange,
+		apiChart.HideTitle, apiChart.HideBorder, apiChart.References, apiChart.Drilldowns, &diags,
+	) {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
@@ -180,7 +174,6 @@ func pieChartConfigFromAPINoESQL(
 func pieChartConfigFromAPIESQL(
 	ctx context.Context,
 	m *models.PieChartConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.PieChartConfigModel,
 	apiChart kbapi.KibanaHTTPAPIsPieESQL,
 ) diag.Diagnostics {
@@ -246,22 +239,17 @@ func pieChartConfigFromAPIESQL(
 		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
-	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(apiChart.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
+	if !lenscommon.PopulateLensChartPresentation(
+		ctx, &m.LensChartPresentationTFModel, priorLens, apiChart.TimeRange,
+		apiChart.HideTitle, apiChart.HideBorder, apiChart.References, apiChart.Drilldowns, &diags,
+	) {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func pieChartConfigToAPI(m *models.PieChartConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func pieChartConfigToAPI(m *models.PieChartConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs lenscommon.VisByValueConfig0
 	if m == nil {
@@ -349,29 +337,15 @@ func pieChartConfigToAPI(m *models.PieChartConfigModel, resolver lenscommon.Reso
 
 		chart.Type = kbapi.KibanaHTTPAPIsPieNoESQLTypePie
 
-		writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+		writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 		diags.Append(presDiags...)
 		if presDiags.HasError() {
 			return attrs, diags
 		}
 
-		chart.TimeRange = writes.TimeRange
-		if writes.HideTitle != nil {
-			chart.HideTitle = writes.HideTitle
-		}
-		if writes.HideBorder != nil {
-			chart.HideBorder = writes.HideBorder
-		}
-		if writes.References != nil {
-			chart.References = writes.References
-		}
-		if len(writes.DrilldownsRaw) > 0 {
-			items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsPieNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
-			diags.Append(ddDiags...)
-			if !ddDiags.HasError() {
-				chart.Drilldowns = &items
-			}
-		}
+		diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsPieNoESQL_Drilldowns_Item](
+			writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
+		)...)
 
 		if err := attrs.FromKibanaHTTPAPIsPieNoESQL(chart); err != nil {
 			diags.AddError("Failed to create PieNoESQL schema", err.Error())
@@ -472,29 +446,15 @@ func pieChartConfigToAPI(m *models.PieChartConfigModel, resolver lenscommon.Reso
 
 		chart.Type = kbapi.KibanaHTTPAPIsPieESQLTypePie
 
-		writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+		writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 		diags.Append(presDiags...)
 		if presDiags.HasError() {
 			return attrs, diags
 		}
 
-		chart.TimeRange = writes.TimeRange
-		if writes.HideTitle != nil {
-			chart.HideTitle = writes.HideTitle
-		}
-		if writes.HideBorder != nil {
-			chart.HideBorder = writes.HideBorder
-		}
-		if writes.References != nil {
-			chart.References = writes.References
-		}
-		if len(writes.DrilldownsRaw) > 0 {
-			items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsPieESQL_Drilldowns_Item](writes.DrilldownsRaw)
-			diags.Append(ddDiags...)
-			if !ddDiags.HasError() {
-				chart.Drilldowns = &items
-			}
-		}
+		diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsPieESQL_Drilldowns_Item](
+			writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
+		)...)
 
 		if err := attrs.FromKibanaHTTPAPIsPieESQL(chart); err != nil {
 			diags.AddError("Failed to create PieESQL schema", err.Error())

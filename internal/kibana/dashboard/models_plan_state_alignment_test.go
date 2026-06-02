@@ -244,6 +244,28 @@ func mustTagcloudJSON(v string) customtypes.JSONWithDefaultsValue[map[string]any
 	return customtypes.NewJSONWithDefaultsValue(v, lenscommon.PopulateTagcloudTagByDefaults)
 }
 
+func Test_alignDashboardStateFromPlanPinnedPanels_seedsNilControlConfigFromPlan(t *testing.T) {
+	t.Parallel()
+
+	planCfg := &models.OptionsListControlConfigModel{
+		DataViewID: types.StringValue("dv"),
+		FieldName:  types.StringValue("status"),
+	}
+	planPins := []models.PinnedPanelModel{{
+		Type:                     types.StringValue(panelTypeOptionsListControl),
+		OptionsListControlConfig: planCfg,
+	}}
+	statePins := []models.PinnedPanelModel{{
+		Type: types.StringValue(panelTypeOptionsListControl),
+	}}
+
+	alignDashboardStateFromPlanPinnedPanels(t.Context(), planPins, statePins)
+
+	require.NotNil(t, statePins[0].OptionsListControlConfig)
+	require.Equal(t, "status", statePins[0].OptionsListControlConfig.FieldName.ValueString())
+	require.Equal(t, "dv", statePins[0].OptionsListControlConfig.DataViewID.ValueString())
+}
+
 // Test_alignPanelStateFromPlan_pinnedPanel_xyChart_appliesAlignment verifies XY drift alignment runs through
 // alignPanelStateFromPlan (the same helper alignDashboardStateFromPlanPinnedPanels delegates to once pinned panels
 // expose Lens vis blocks on their synthetic PanelModel surface).
@@ -287,4 +309,94 @@ func Test_alignPanelStateFromPlan_pinnedPanel_xyChart_appliesAlignment(t *testin
 	require.False(t, got.Inside.IsNull())
 	require.False(t, got.Inside.ValueBool())
 	require.Equal(t, "right", got.Position.ValueString())
+}
+
+func Test_alignDashboardStateFromPlanSections_sectionImage_preservesImageConfig(t *testing.T) {
+	t.Parallel()
+
+	planSections := []models.SectionModel{{
+		Panels: []models.PanelModel{{
+			Type: types.StringValue("image"),
+			ImageConfig: &models.ImagePanelConfigModel{
+				AltText: types.StringValue("Elastic logo"),
+				Src: models.ImagePanelSrcModel{
+					URL: &models.ImagePanelSrcURLModel{
+						URL: types.StringValue("https://www.elastic.co/favicon.ico"),
+					},
+				},
+			},
+		}},
+	}}
+	stateSections := []models.SectionModel{{
+		Panels: []models.PanelModel{{
+			Type:        types.StringValue("image"),
+			ImageConfig: nil,
+		}},
+	}}
+
+	alignDashboardStateFromPlanSections(t.Context(), planSections, stateSections)
+
+	require.NotNil(t, stateSections[0].Panels[0].ImageConfig)
+	assert.Equal(t, "Elastic logo", stateSections[0].Panels[0].ImageConfig.AltText.ValueString())
+}
+
+func Test_alignDashboardStateFromPlanSections_sectionXYChart_preservesLegend(t *testing.T) {
+	t.Parallel()
+
+	planSections := []models.SectionModel{{
+		Panels: []models.PanelModel{{
+			VisConfig: &models.VisConfigModel{
+				ByValue: &models.VisByValueModel{
+					LensByValueChartBlocks: models.LensByValueChartBlocks{
+						XYChartConfig: &models.XYChartConfigModel{
+							Legend: &models.XYLegendModel{
+								Visibility: types.StringValue("visible"),
+								Inside:     types.BoolValue(false),
+								Position:   types.StringValue("right"),
+								Size:       types.StringValue("m"),
+							},
+						},
+					},
+				},
+			},
+		}},
+	}}
+	stateSections := []models.SectionModel{{
+		Panels: []models.PanelModel{{
+			VisConfig: &models.VisConfigModel{
+				ByValue: &models.VisByValueModel{
+					LensByValueChartBlocks: models.LensByValueChartBlocks{
+						XYChartConfig: &models.XYChartConfigModel{Legend: nil},
+					},
+				},
+			},
+		}},
+	}}
+
+	alignDashboardStateFromPlanSections(t.Context(), planSections, stateSections)
+
+	got := stateSections[0].Panels[0].VisConfig.ByValue.XYChartConfig.Legend
+	require.NotNil(t, got)
+	assert.Equal(t, "visible", got.Visibility.ValueString())
+	assert.Equal(t, "right", got.Position.ValueString())
+	assert.Equal(t, "m", got.Size.ValueString())
+}
+
+func Test_suppressReadTopLevelPanelsWhenPlanEmpty(t *testing.T) {
+	t.Parallel()
+
+	echoed := []models.PanelModel{{Type: types.StringValue("esql_control")}}
+
+	t.Run("nil plan panels leaves read state unchanged", func(t *testing.T) {
+		readModel := &models.DashboardModel{Panels: echoed}
+		suppressReadTopLevelPanelsWhenPlanEmpty(nil, readModel)
+		assert.Equal(t, echoed, readModel.Panels)
+	})
+
+	t.Run("explicit empty plan panels clears echoed read panels", func(t *testing.T) {
+		readModel := &models.DashboardModel{Panels: echoed}
+		suppressReadTopLevelPanelsWhenPlanEmpty([]models.PanelModel{}, readModel)
+		assert.Empty(t, readModel.Panels)
+		assert.NotNil(t, readModel.Panels)
+	})
 }

@@ -22,25 +22,9 @@ import (
 	"testing"
 	"time"
 
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestCalendarEventDateTimeToUnixMilli(t *testing.T) {
-	ms := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC).UnixMilli()
-
-	assert.Equal(t, int64(1000), mustMillis(t, estypes.DateTime(int64(1000))))
-	assert.Equal(t, int64(1000), mustMillis(t, estypes.DateTime(float64(1000))))
-	assert.Equal(t, ms, mustMillis(t, estypes.DateTime("2026-06-01T12:00:00Z")))
-}
-
-func mustMillis(t *testing.T, dt estypes.DateTime) int64 {
-	t.Helper()
-	v, ok := calendarEventDateTimeToUnixMilli(dt)
-	assert.True(t, ok)
-	return v
-}
 
 func TestCalendarEventMatchesPlanWire(t *testing.T) {
 	startMs := time.Date(2026, 1, 1, 10, 0, 0, 0, time.UTC).UnixMilli()

@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	edip "github.com/elastic/terraform-provider-elasticstack/internal/fleet/elastic_defend_integration_policy"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -225,7 +226,10 @@ func TestBuildBootstrapRequest(t *testing.T) {
 		Preset:             types.StringValue("NGAv1"),
 	}
 
-	req := edip.BuildBootstrapRequest(model)
+	req, diags := edip.BuildBootstrapRequest(context.Background(), model)
+	if diags.HasError() {
+		t.Fatalf("unexpected error: %v", diags)
+	}
 
 	if req.Package == nil || req.Package.Name != "endpoint" {
 		name := "<nil>"
@@ -330,7 +334,10 @@ func TestBuildBootstrapRequestNullPreset(t *testing.T) {
 		Preset:             types.StringNull(),
 	}
 
-	req := edip.BuildBootstrapRequest(model)
+	req, diags := edip.BuildBootstrapRequest(context.Background(), model)
+	if diags.HasError() {
+		t.Fatalf("unexpected error: %v", diags)
+	}
 
 	if req.Inputs == nil || len(*req.Inputs) != 1 {
 		count := 0
@@ -347,6 +354,114 @@ func TestBuildBootstrapRequestNullPreset(t *testing.T) {
 		if _, ok := (*input.Config)["_config"]; ok {
 			t.Error("expected _config to be absent from bootstrap input config when preset is null")
 		}
+	}
+}
+
+func TestBuildBootstrapRequestWithAgentPolicyIDs(t *testing.T) {
+	ctx := context.Background()
+	model := &edip.ElasticDefendIntegrationPolicyModel{
+		Name:               types.StringValue("my-endpoint"),
+		Namespace:          types.StringValue("default"),
+		AgentPolicyIDs:     types.ListValueMust(types.StringType, []attr.Value{types.StringValue("agent-123"), types.StringValue("agent-456")}),
+		IntegrationVersion: types.StringValue("8.15.0"),
+		Preset:             types.StringValue("NGAv1"),
+	}
+
+	req, diags := edip.BuildBootstrapRequest(ctx, model)
+	if diags.HasError() {
+		t.Fatalf("unexpected error: %v", diags)
+	}
+	if req.PolicyIds == nil || len(*req.PolicyIds) != 2 {
+		t.Fatalf("expected 2 policy IDs, got %#v", req.PolicyIds)
+	}
+	if (*req.PolicyIds)[0] != "agent-123" || (*req.PolicyIds)[1] != "agent-456" {
+		t.Fatalf("unexpected policy IDs: %#v", *req.PolicyIds)
+	}
+	if req.PolicyId == nil || *req.PolicyId != "agent-123" {
+		t.Fatalf("expected PolicyId compatibility value %q, got %#v", "agent-123", req.PolicyId)
+	}
+}
+
+func TestPopulateModelFromAPIUsesAgentPolicyIDsWhenOriginallyConfigured(t *testing.T) {
+	ctx := context.Background()
+	policyIDs := []string{"agent-123", "agent-456"}
+	inputs := kbapi.PackagePolicyTypedInputs{{Type: "endpoint", Enabled: true, Streams: []kbapi.PackagePolicyTypedInputStream{}}}
+	policy := buildTestPackagePolicy("policy-123", "my-endpoint-policy", "endpoint", "8.15.0", true, inputs)
+	policy.PolicyId = &policyIDs[0]
+	policy.PolicyIds = &policyIDs
+
+	model := &edip.ElasticDefendIntegrationPolicyModel{
+		AgentPolicyIDs: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("placeholder")}),
+	}
+	diags := edip.PopulateModelFromAPI(ctx, model, policy)
+	if diags.HasError() {
+		t.Fatalf("unexpected error: %v", diags)
+	}
+	if !model.AgentPolicyID.IsNull() && !model.AgentPolicyID.IsUnknown() {
+		t.Fatalf("expected agent_policy_id to remain unset, got %v", model.AgentPolicyID)
+	}
+	var actual []string
+	diags = model.AgentPolicyIDs.ElementsAs(ctx, &actual, false)
+	if diags.HasError() {
+		t.Fatalf("unexpected error reading agent_policy_ids: %v", diags)
+	}
+	if len(actual) != 2 || actual[0] != "agent-123" || actual[1] != "agent-456" {
+		t.Fatalf("unexpected agent_policy_ids: %#v", actual)
+	}
+}
+
+func TestPopulateModelFromAPIFallsBackToAgentPolicyIDsWhenMultiple(t *testing.T) {
+	ctx := context.Background()
+	policyIDs := []string{"agent-123", "agent-456"}
+	inputs := kbapi.PackagePolicyTypedInputs{{Type: "endpoint", Enabled: true, Streams: []kbapi.PackagePolicyTypedInputStream{}}}
+	policy := buildTestPackagePolicy("policy-123", "my-endpoint-policy", "endpoint", "8.15.0", true, inputs)
+	policy.PolicyId = &policyIDs[0]
+	policy.PolicyIds = &policyIDs
+
+	// Neither field configured — simulates import with a fresh model
+	model := &edip.ElasticDefendIntegrationPolicyModel{}
+	diags := edip.PopulateModelFromAPI(ctx, model, policy)
+	if diags.HasError() {
+		t.Fatalf("unexpected error: %v", diags)
+	}
+	if !model.AgentPolicyID.IsNull() && !model.AgentPolicyID.IsUnknown() {
+		t.Fatalf("expected agent_policy_id to remain unset when API has multiple policy IDs, got %v", model.AgentPolicyID)
+	}
+	if model.AgentPolicyIDs.IsNull() || model.AgentPolicyIDs.IsUnknown() {
+		t.Fatalf("expected agent_policy_ids to be populated when API has multiple policy IDs, got %v", model.AgentPolicyIDs)
+	}
+	var actual []string
+	diags = model.AgentPolicyIDs.ElementsAs(ctx, &actual, false)
+	if diags.HasError() {
+		t.Fatalf("unexpected error reading agent_policy_ids: %v", diags)
+	}
+	if len(actual) != 2 || actual[0] != "agent-123" || actual[1] != "agent-456" {
+		t.Fatalf("unexpected agent_policy_ids: %#v", actual)
+	}
+}
+
+func TestPopulateModelFromAPIFallsBackToAgentPolicyIDWhenSingle(t *testing.T) {
+	ctx := context.Background()
+	policyID := "agent-123"
+	inputs := kbapi.PackagePolicyTypedInputs{{Type: "endpoint", Enabled: true, Streams: []kbapi.PackagePolicyTypedInputStream{}}}
+	policy := buildTestPackagePolicy("policy-123", "my-endpoint-policy", "endpoint", "8.15.0", true, inputs)
+	policy.PolicyId = &policyID
+	policy.PolicyIds = &[]string{policyID}
+
+	// Neither field configured — simulates import with a fresh model
+	model := &edip.ElasticDefendIntegrationPolicyModel{}
+	diags := edip.PopulateModelFromAPI(ctx, model, policy)
+	if diags.HasError() {
+		t.Fatalf("unexpected error: %v", diags)
+	}
+	if model.AgentPolicyID.IsNull() || model.AgentPolicyID.IsUnknown() {
+		t.Fatalf("expected agent_policy_id to be populated when API has a single policy ID, got %v", model.AgentPolicyID)
+	}
+	if model.AgentPolicyID.ValueString() != policyID {
+		t.Fatalf("expected agent_policy_id %q, got %q", policyID, model.AgentPolicyID.ValueString())
+	}
+	if !model.AgentPolicyIDs.IsNull() && !model.AgentPolicyIDs.IsUnknown() {
+		t.Fatalf("expected agent_policy_ids to remain unset when API has a single policy ID, got %v", model.AgentPolicyIDs)
 	}
 }
 

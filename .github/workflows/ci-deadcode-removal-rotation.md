@@ -12,18 +12,18 @@ on:
     - cron: daily
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v6.0.2
       with:
         persist-credentials: false
         fetch-depth: 1
     - name: Setup Go
-      uses: actions/setup-go@v6
+      uses: actions/setup-go@v6.4.0
       with:
         go-version-file: go.mod
         cache: false
     # NOTE: This ref must match the repo-memory tool config branch-name below.
     - name: Checkout repo-memory branch
-      uses: actions/checkout@v6
+      uses: actions/checkout@v6.0.2
       with:
         ref: memory/ci-deadcode-removal-rotation
         path: gh-aw-repo-memory/ci-deadcode-removal-rotation

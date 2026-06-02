@@ -12,7 +12,6 @@ description: |-
 Creates and manages Machine Learning anomaly detection jobs.
 
 See the [ML Job API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-job.html) for more details.
-
 ## Example Usage
 
 ```terraform
@@ -20,7 +19,7 @@ terraform {
   required_providers {
     elasticstack = {
       source  = "elastic/elasticstack"
-      version = "~> 0.15"
+      version = "~> 0.16"
     }
   }
 }

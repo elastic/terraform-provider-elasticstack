@@ -35,7 +35,9 @@ const (
 // for the first create step (bootstrap). Kibana expects the create bootstrap to
 // use the special ENDPOINT_INTEGRATION_CONFIG input type with preset mapped
 // under config._config.value.endpointConfig.preset.
-func buildBootstrapRequest(model *elasticDefendIntegrationPolicyModel) kbapi.PackagePolicyRequestTypedInputs {
+func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationPolicyModel) (kbapi.PackagePolicyRequestTypedInputs, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
 	pkg := kbapi.PackagePolicyRequestPackage{
 		Name:    endpointPackageName,
 		Version: model.IntegrationVersion.ValueString(),
@@ -44,8 +46,11 @@ func buildBootstrapRequest(model *elasticDefendIntegrationPolicyModel) kbapi.Pac
 		Name:      &[]string{model.Name.ValueString()}[0],
 		Namespace: model.Namespace.ValueStringPointer(),
 		Package:   &pkg,
-		PolicyId:  model.AgentPolicyID.ValueStringPointer(),
 		Enabled:   model.Enabled.ValueBoolPointer(),
+	}
+	d := setAgentPoliciesOnRequest(ctx, model, &req)
+	if d.HasError() {
+		return req, d
 	}
 
 	if !model.Description.IsNull() && !model.Description.IsUnknown() {
@@ -80,7 +85,7 @@ func buildBootstrapRequest(model *elasticDefendIntegrationPolicyModel) kbapi.Pac
 	}
 	req.Inputs = &[]kbapi.PackagePolicyRequestTypedInput{input}
 
-	return req
+	return req, diags
 }
 
 // buildFinalizeRequest builds the Defend package policy update request used
@@ -98,8 +103,12 @@ func buildFinalizeRequest(ctx context.Context, model *elasticDefendIntegrationPo
 		Name:      &[]string{model.Name.ValueString()}[0],
 		Namespace: model.Namespace.ValueStringPointer(),
 		Package:   &pkg,
-		PolicyId:  model.AgentPolicyID.ValueStringPointer(),
 		Enabled:   model.Enabled.ValueBoolPointer(),
+	}
+	d := setAgentPoliciesOnRequest(ctx, model, &req)
+	if d.HasError() {
+		// Propagate errors from ElementsAs
+		return req, d
 	}
 
 	if !model.Description.IsNull() && !model.Description.IsUnknown() {
@@ -585,6 +594,26 @@ func setStringField(m map[string]any, key string, val types.String) {
 	if !val.IsNull() && !val.IsUnknown() {
 		m[key] = val.ValueString()
 	}
+}
+
+// setAgentPoliciesOnRequest populates PolicyIds / PolicyId on a request from the model.
+func setAgentPoliciesOnRequest(ctx context.Context, model *elasticDefendIntegrationPolicyModel, req *kbapi.PackagePolicyRequestTypedInputs) diag.Diagnostics {
+	var diags diag.Diagnostics
+	if !model.AgentPolicyIDs.IsNull() && !model.AgentPolicyIDs.IsUnknown() {
+		var ids []string
+		d := model.AgentPolicyIDs.ElementsAs(ctx, &ids, false)
+		if d.HasError() {
+			diags.Append(d...)
+			return diags
+		}
+		req.PolicyIds = &ids
+		if len(ids) > 0 {
+			req.PolicyId = &ids[0]
+		}
+	} else {
+		req.PolicyId = model.AgentPolicyID.ValueStringPointer()
+	}
+	return diags
 }
 
 // setPopupItem extracts a popup item from a Terraform object and adds it to the map.

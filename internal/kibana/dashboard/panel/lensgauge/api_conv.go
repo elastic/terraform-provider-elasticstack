@@ -48,7 +48,7 @@ func gaugeConfigUsesESQL(m *models.GaugeConfigModel) bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, resolver lenscommon.Resolver, prior *models.GaugeConfigModel, api kbapi.KibanaHTTPAPIsGaugeNoESQL) diag.Diagnostics {
+func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, prior *models.GaugeConfigModel, api kbapi.KibanaHTTPAPIsGaugeNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -99,22 +99,14 @@ func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, resolve
 		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
-	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(api.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, resolver lenscommon.Resolver, prior *models.GaugeConfigModel, api kbapi.KibanaHTTPAPIsGaugeESQL) diag.Diagnostics {
+func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, prior *models.GaugeConfigModel, api kbapi.KibanaHTTPAPIsGaugeESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)
@@ -242,22 +234,14 @@ func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, res
 		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
-	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(api.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func gaugeConfigToAPI(m *models.GaugeConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func gaugeConfigToAPI(m *models.GaugeConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 
@@ -266,7 +250,7 @@ func gaugeConfigToAPI(m *models.GaugeConfigModel, resolver lenscommon.Resolver) 
 	}
 
 	if gaugeConfigUsesESQL(m) {
-		esql, d := gaugeConfigToAPIESQL(m, resolver)
+		esql, d := gaugeConfigToAPIESQL(m)
 		diags.Append(d...)
 		if diags.HasError() {
 			return attrs, diags
@@ -277,7 +261,7 @@ func gaugeConfigToAPI(m *models.GaugeConfigModel, resolver lenscommon.Resolver) 
 		return attrs, diags
 	}
 
-	noESQL, d := gaugeConfigToAPINoESQL(m, resolver)
+	noESQL, d := gaugeConfigToAPINoESQL(m)
 	diags.Append(d...)
 	if diags.HasError() {
 		return attrs, diags
@@ -288,7 +272,7 @@ func gaugeConfigToAPI(m *models.GaugeConfigModel, resolver lenscommon.Resolver) 
 	return attrs, diags
 }
 
-func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsGaugeNoESQL, diag.Diagnostics) {
+func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGaugeNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.KibanaHTTPAPIsGaugeNoESQL
 
@@ -347,34 +331,20 @@ func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel, resolver lenscommon.Reso
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
 	}
 
-	api.TimeRange = writes.TimeRange
-	if writes.HideTitle != nil {
-		api.HideTitle = writes.HideTitle
-	}
-	if writes.HideBorder != nil {
-		api.HideBorder = writes.HideBorder
-	}
-	if writes.References != nil {
-		api.References = writes.References
-	}
-	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsGaugeNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
-		diags.Append(ddDiags...)
-		if !ddDiags.HasError() {
-			api.Drilldowns = &items
-		}
-	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsGaugeNoESQL_Drilldowns_Item](
+		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+	)...)
 
 	return api, diags
 }
 
-func gaugeConfigToAPIESQL(m *models.GaugeConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsGaugeESQL, diag.Diagnostics) {
+func gaugeConfigToAPIESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGaugeESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.KibanaHTTPAPIsGaugeESQL
 	api.Type = kbapi.KibanaHTTPAPIsGaugeESQLTypeGauge
@@ -500,29 +470,15 @@ func gaugeConfigToAPIESQL(m *models.GaugeConfigModel, resolver lenscommon.Resolv
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
 	}
 
-	api.TimeRange = writes.TimeRange
-	if writes.HideTitle != nil {
-		api.HideTitle = writes.HideTitle
-	}
-	if writes.HideBorder != nil {
-		api.HideBorder = writes.HideBorder
-	}
-	if writes.References != nil {
-		api.References = writes.References
-	}
-	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsGaugeESQL_Drilldowns_Item](writes.DrilldownsRaw)
-		diags.Append(ddDiags...)
-		if !ddDiags.HasError() {
-			api.Drilldowns = &items
-		}
-	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsGaugeESQL_Drilldowns_Item](
+		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+	)...)
 
 	return api, diags
 }

@@ -638,10 +638,10 @@ func xyFittingFromAPI(m *models.XYFittingModel, apiFitting *kbapi.KibanaHTTPAPIs
 		m.EndValue = types.StringNull()
 		return
 	}
-	m.Type = typeutils.StringishValue(apiFitting.Type)
+	m.Type = typeutils.NonEmptyStringishValue(apiFitting.Type)
 	m.Dotted = types.BoolPointerValue(apiFitting.Emphasize)
 	if apiFitting.Extend != nil {
-		m.EndValue = types.StringValue(string(*apiFitting.Extend))
+		m.EndValue = typeutils.NonEmptyStringishValue(*apiFitting.Extend)
 	} else {
 		m.EndValue = types.StringNull()
 	}
@@ -767,6 +767,51 @@ func xyLegendFromAPI(ctx context.Context, m *models.XYLegendModel, apiLegend *kb
 		return diags
 	}
 
+	return xyLegendFromAPIFlatFallback(ctx, m, apiLegend)
+}
+
+// xyLegendFromAPIFlatFallback handles dashboard API responses that return outside legend
+// fields at the top level without union discriminator tags.
+func xyLegendFromAPIFlatFallback(ctx context.Context, m *models.XYLegendModel, apiLegend *kbapi.KibanaHTTPAPIsXyLegend) diag.Diagnostics {
+	var diags diag.Diagnostics
+	if apiLegend == nil {
+		return diags
+	}
+
+	raw, err := json.Marshal(apiLegend)
+	if err != nil {
+		return diags
+	}
+
+	var flat struct {
+		Visibility *string `json:"visibility"`
+		Placement  *string `json:"placement"`
+		Size       *string `json:"size"`
+		Position   *string `json:"position"`
+		Layout     *struct {
+			Type     *string `json:"type"`
+			Truncate *struct {
+				MaxLines *float32 `json:"max_lines"`
+			} `json:"truncate"`
+		} `json:"layout"`
+	}
+	if err := json.Unmarshal(raw, &flat); err != nil {
+		return diags
+	}
+	if flat.Placement == nil || *flat.Placement != "outside" {
+		return diags
+	}
+
+	m.Inside = types.BoolValue(false)
+	m.Visibility = typeutils.StringishPointerValue(flat.Visibility)
+	m.Position = typeutils.StringishPointerValue(flat.Position)
+	if flat.Size != nil {
+		m.Size = types.StringValue(*flat.Size)
+	}
+	if flat.Layout != nil && flat.Layout.Truncate != nil && flat.Layout.Truncate.MaxLines != nil {
+		m.TruncateAfterLines = types.Int64Value(int64(*flat.Layout.Truncate.MaxLines))
+	}
+	_ = ctx
 	return diags
 }
 
@@ -997,7 +1042,7 @@ func xyChartConfigStylingToAPI(m *models.XYChartConfigModel) *kbapi.KibanaHTTPAP
 }
 
 // toAPINoESQL converts the XY chart config model to a non-ES|QL API payload.
-func XYChartConfigToAPINoESQL(m *models.XYChartConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsXyChartNoESQL, diag.Diagnostics) {
+func XYChartConfigToAPINoESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPIsXyChartNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	chart := kbapi.KibanaHTTPAPIsXyChartNoESQL{Type: kbapi.KibanaHTTPAPIsXyChartNoESQLTypeXy}
 
@@ -1044,35 +1089,21 @@ func XYChartConfigToAPINoESQL(m *models.XYChartConfigModel, resolver lenscommon.
 
 	chart.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return chart, diags
 	}
 
-	chart.TimeRange = writes.TimeRange
-	if writes.HideTitle != nil {
-		chart.HideTitle = writes.HideTitle
-	}
-	if writes.HideBorder != nil {
-		chart.HideBorder = writes.HideBorder
-	}
-	if writes.References != nil {
-		chart.References = writes.References
-	}
-	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsXyChartNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
-		diags.Append(ddDiags...)
-		if !ddDiags.HasError() {
-			chart.Drilldowns = &items
-		}
-	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsXyChartNoESQL_Drilldowns_Item](
+		writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
+	)...)
 
 	return chart, diags
 }
 
 // toAPIESQL converts the XY chart config model to an ES|QL API payload.
-func xyChartConfigToAPIESQL(m *models.XYChartConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsXyChartESQL, diag.Diagnostics) {
+func xyChartConfigToAPIESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPIsXyChartESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	chart := kbapi.KibanaHTTPAPIsXyChartESQL{Type: kbapi.KibanaHTTPAPIsXyChartESQLTypeXy}
 
@@ -1115,29 +1146,15 @@ func xyChartConfigToAPIESQL(m *models.XYChartConfigModel, resolver lenscommon.Re
 
 	chart.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return chart, diags
 	}
 
-	chart.TimeRange = writes.TimeRange
-	if writes.HideTitle != nil {
-		chart.HideTitle = writes.HideTitle
-	}
-	if writes.HideBorder != nil {
-		chart.HideBorder = writes.HideBorder
-	}
-	if writes.References != nil {
-		chart.References = writes.References
-	}
-	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsXyChartESQL_Drilldowns_Item](writes.DrilldownsRaw)
-		diags.Append(ddDiags...)
-		if !ddDiags.HasError() {
-			chart.Drilldowns = &items
-		}
-	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsXyChartESQL_Drilldowns_Item](
+		writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
+	)...)
 
 	return chart, diags
 }
@@ -1145,7 +1162,6 @@ func xyChartConfigToAPIESQL(m *models.XYChartConfigModel, resolver lenscommon.Re
 func xyChartConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.XYChartConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.XYChartConfigModel,
 	apiChart kbapi.KibanaHTTPAPIsXyChartNoESQL,
 ) diag.Diagnostics {
@@ -1185,9 +1201,13 @@ func xyChartConfigFromAPINoESQL(
 		xyFittingFromAPI(m.Fitting, apiChart.Styling.Fitting)
 	}
 
-	m.Legend = &models.XYLegendModel{}
-	legendDiags := xyLegendFromAPI(ctx, m.Legend, apiChart.Legend)
-	diags.Append(legendDiags...)
+	if apiChart.Legend == nil {
+		m.Legend = nil
+	} else {
+		m.Legend = &models.XYLegendModel{}
+		legendDiags := xyLegendFromAPI(ctx, m.Legend, apiChart.Legend)
+		diags.Append(legendDiags...)
+	}
 
 	// Preserve nil query when prior state omitted it (query is optional in schema).
 	if prior != nil && prior.Query == nil {
@@ -1204,17 +1224,12 @@ func xyChartConfigFromAPINoESQL(
 		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
-	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(apiChart.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
+	if !lenscommon.PopulateLensChartPresentation(
+		ctx, &m.LensChartPresentationTFModel, priorLens, apiChart.TimeRange,
+		apiChart.HideTitle, apiChart.HideBorder, apiChart.References, apiChart.Drilldowns, &diags,
+	) {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
@@ -1222,7 +1237,6 @@ func xyChartConfigFromAPINoESQL(
 func xyChartConfigFromAPIESQL(
 	ctx context.Context,
 	m *models.XYChartConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.XYChartConfigModel,
 	apiChart kbapi.KibanaHTTPAPIsXyChartESQL,
 ) diag.Diagnostics {
@@ -1262,9 +1276,13 @@ func xyChartConfigFromAPIESQL(
 		xyFittingFromAPI(m.Fitting, apiChart.Styling.Fitting)
 	}
 
-	m.Legend = &models.XYLegendModel{}
-	legendDiags := xyLegendFromAPI(ctx, m.Legend, apiChart.Legend)
-	diags.Append(legendDiags...)
+	if apiChart.Legend == nil {
+		m.Legend = nil
+	} else {
+		m.Legend = &models.XYLegendModel{}
+		legendDiags := xyLegendFromAPI(ctx, m.Legend, apiChart.Legend)
+		diags.Append(legendDiags...)
+	}
 
 	m.Query = nil
 
@@ -1275,22 +1293,17 @@ func xyChartConfigFromAPIESQL(
 		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
-	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(apiChart.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
+	if !lenscommon.PopulateLensChartPresentation(
+		ctx, &m.LensChartPresentationTFModel, priorLens, apiChart.TimeRange,
+		apiChart.HideTitle, apiChart.HideBorder, apiChart.References, apiChart.Drilldowns, &diags,
+	) {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func xyChartConfigToAPI(m *models.XYChartConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func xyChartConfigToAPI(m *models.XYChartConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs lenscommon.VisByValueConfig0
 	if m == nil {
@@ -1299,7 +1312,7 @@ func xyChartConfigToAPI(m *models.XYChartConfigModel, resolver lenscommon.Resolv
 	configModel := *m
 
 	if xyChartConfigXyUsesESQL(&configModel) {
-		chart, xyDiags := xyChartConfigToAPIESQL(&configModel, resolver)
+		chart, xyDiags := xyChartConfigToAPIESQL(&configModel)
 		diags.Append(xyDiags...)
 		if diags.HasError() {
 			return attrs, diags
@@ -1311,7 +1324,7 @@ func xyChartConfigToAPI(m *models.XYChartConfigModel, resolver lenscommon.Resolv
 		return attrs, diags
 	}
 
-	chart, xyDiags := XYChartConfigToAPINoESQL(&configModel, resolver)
+	chart, xyDiags := XYChartConfigToAPINoESQL(&configModel)
 	diags.Append(xyDiags...)
 	if diags.HasError() {
 		return attrs, diags

@@ -124,7 +124,6 @@ func metricChartConfigPopulateCommonFields(m *models.MetricChartConfigModel,
 func metricChartConfigFromAPIVariant0(
 	ctx context.Context,
 	m *models.MetricChartConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.MetricChartConfigModel,
 	apiChart kbapi.KibanaHTTPAPIsMetricNoESQL,
 ) diag.Diagnostics {
@@ -175,17 +174,12 @@ func metricChartConfigFromAPIVariant0(
 		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
-	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(apiChart.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
+	if !lenscommon.PopulateLensChartPresentation(
+		ctx, &m.LensChartPresentationTFModel, priorLens, apiChart.TimeRange,
+		apiChart.HideTitle, apiChart.HideBorder, apiChart.References, apiChart.Drilldowns, &diags,
+	) {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
@@ -193,7 +187,6 @@ func metricChartConfigFromAPIVariant0(
 func metricChartConfigFromAPIVariant1(
 	ctx context.Context,
 	m *models.MetricChartConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.MetricChartConfigModel,
 	apiChart kbapi.KibanaHTTPAPIsMetricESQL,
 ) diag.Diagnostics {
@@ -243,37 +236,36 @@ func metricChartConfigFromAPIVariant1(
 		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
-	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(apiChart.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
+	if !lenscommon.PopulateLensChartPresentation(
+		ctx, &m.LensChartPresentationTFModel, priorLens, apiChart.TimeRange,
+		apiChart.HideTitle, apiChart.HideBorder, apiChart.References, apiChart.Drilldowns, &diags,
+	) {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func metricChartConfigToAPI(m *models.MetricChartConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func metricChartConfigUsesESQL(m *models.MetricChartConfigModel) bool {
+	if m == nil || !typeutils.IsKnown(m.DataSourceJSON) {
+		return false
+	}
+	return lenscommon.LensDataSourceIsESQLOrTable([]byte(m.DataSourceJSON.ValueString()), nil)
+}
+
+func metricChartConfigToAPI(m *models.MetricChartConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 	if m == nil {
 		return attrs, diags
 	}
-	// Determine which variant to use based on whether we have a query
-	// Variant 0 (non-ESQL) requires a query
-	// Variant 1 (ESQL) doesn't require a query
-	if m.Query != nil {
-		return metricChartConfigToAPIVariant0(m, resolver)
+	if metricChartConfigUsesESQL(m) {
+		return metricChartConfigToAPIVariant1(m)
 	}
-	return metricChartConfigToAPIVariant1(m, resolver)
+	return metricChartConfigToAPIVariant0(m)
 }
 
-func metricChartConfigToAPIVariant0(m *models.MetricChartConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func metricChartConfigToAPIVariant0(m *models.MetricChartConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs lenscommon.VisByValueConfig0
 
@@ -342,36 +334,22 @@ func metricChartConfigToAPIVariant0(m *models.MetricChartConfigModel, resolver l
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return lenscommon.VisByValueConfig0{}, diags
 	}
 
-	variant0.TimeRange = writes.TimeRange
-	if writes.HideTitle != nil {
-		variant0.HideTitle = writes.HideTitle
-	}
-	if writes.HideBorder != nil {
-		variant0.HideBorder = writes.HideBorder
-	}
-	if writes.References != nil {
-		variant0.References = writes.References
-	}
-	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsMetricNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
-		diags.Append(ddDiags...)
-		if !ddDiags.HasError() {
-			variant0.Drilldowns = &items
-		}
-	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsMetricNoESQL_Drilldowns_Item](
+		writes, &variant0.TimeRange, &variant0.HideTitle, &variant0.HideBorder, &variant0.References, &variant0.Drilldowns,
+	)...)
 
 	attrs, attrsDiags := metricChartAttrsFromPayload(variant0)
 	diags.Append(attrsDiags...)
 	return attrs, diags
 }
 
-func metricChartConfigToAPIVariant1(m *models.MetricChartConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func metricChartConfigToAPIVariant1(m *models.MetricChartConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs lenscommon.VisByValueConfig0
 
@@ -449,29 +427,15 @@ func metricChartConfigToAPIVariant1(m *models.MetricChartConfigModel, resolver l
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return lenscommon.VisByValueConfig0{}, diags
 	}
 
-	variant1.TimeRange = writes.TimeRange
-	if writes.HideTitle != nil {
-		variant1.HideTitle = writes.HideTitle
-	}
-	if writes.HideBorder != nil {
-		variant1.HideBorder = writes.HideBorder
-	}
-	if writes.References != nil {
-		variant1.References = writes.References
-	}
-	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsMetricESQL_Drilldowns_Item](writes.DrilldownsRaw)
-		diags.Append(ddDiags...)
-		if !ddDiags.HasError() {
-			variant1.Drilldowns = &items
-		}
-	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsMetricESQL_Drilldowns_Item](
+		writes, &variant1.TimeRange, &variant1.HideTitle, &variant1.HideBorder, &variant1.References, &variant1.Drilldowns,
+	)...)
 
 	attrs, attrsDiags := metricChartAttrsFromPayload(variant1)
 	diags.Append(attrsDiags...)

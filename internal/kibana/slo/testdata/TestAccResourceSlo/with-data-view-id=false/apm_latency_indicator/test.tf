@@ -24,6 +24,7 @@ resource "elasticstack_kibana_slo" "test_slo" {
     transaction_name = "GET /sup/dawg"
     index            = "my-index-${var.name}"
     threshold        = 500
+    filter           = "env: prod"
   }
 
   time_window {

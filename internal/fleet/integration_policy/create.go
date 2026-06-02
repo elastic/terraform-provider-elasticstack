@@ -44,7 +44,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 
 	fleetClient := client.GetFleetClient()
 
-	feat, diags := r.buildFeatures(ctx, client)
+	feat, diags := resolveIntegrationPolicyFeatures(ctx, client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -86,8 +86,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	// Remember if the user configured input in the plan
-	planHadInput := typeutils.IsKnown(planModel.Inputs) && !planModel.Inputs.IsNull() && len(planModel.Inputs.Elements()) > 0
+	planHadInput := inputsConfigured(planModel.Inputs)
 
 	if policy.Package == nil {
 		resp.Diagnostics.AddError(

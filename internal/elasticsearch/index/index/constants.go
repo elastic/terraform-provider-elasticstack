@@ -60,6 +60,7 @@ const (
 // support. These names match the Elasticsearch index sort and alias APIs.
 const (
 	attrName    = "name"
+	attrFilter  = "filter"
 	attrSetting = "setting"
 	attrField   = "field"
 	attrOrder   = "order"
@@ -69,6 +70,10 @@ const (
 
 // Sort order and tie-breaker tokens used in index sort plan modifiers and
 // flattened state.
+// importHydrationPrivateStateKey is set during ImportState and consumed on the
+// following Read (hydrate all settings) and ModifyPlan (prune unconfigured fields).
+const importHydrationPrivateStateKey = "import_hydration"
+
 const (
 	sortOrderAsc    = "asc"
 	sortOrderDesc   = "desc"

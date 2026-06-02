@@ -33,14 +33,6 @@ type VisByValueConfig0 = kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVisConfig0
 // CMReferenceSchema is a Kibana content-management reference entry.
 type CMReferenceSchema = kbapi.KibanaHTTPAPIsKbnContentManagementUtilsReferenceSchema
 
-// Resolver abstracts dashboard-level dependencies so Lens converters do not import the dashboard package.
-type Resolver interface {
-	ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema
-	// DashboardLensComparableTimeRange returns the dashboard-level time range used when comparing
-	// chart-root API time_range for Terraform null-preservation. ok is false when no comparable range exists.
-	DashboardLensComparableTimeRange() (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, bool)
-}
-
 // VizConverter converts one Lens chart kind between Terraform models and kbapi vis config.
 type VizConverter interface {
 	VizType() string
@@ -55,8 +47,8 @@ type VizConverter interface {
 	// (drilldowns, presentation, JSON defaults preservation) sees the pre-existing values. After this
 	// method returns successfully, blocks.<Chart>Config points to the freshly populated model.
 	// Implementations may copy blocks.<Chart>Config into a local prior variable before reconstruction.
-	PopulateFromAttributes(ctx context.Context, resolver Resolver, blocks *models.LensByValueChartBlocks, attrs VisByValueConfig0) diag.Diagnostics
-	BuildAttributes(blocks *models.LensByValueChartBlocks, resolver Resolver) (VisByValueConfig0, diag.Diagnostics)
+	PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs VisByValueConfig0) diag.Diagnostics
+	BuildAttributes(blocks *models.LensByValueChartBlocks) (VisByValueConfig0, diag.Diagnostics)
 	AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks)
 	PopulateJSONDefaults(attrs map[string]any) map[string]any
 }

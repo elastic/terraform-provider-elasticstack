@@ -138,7 +138,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("tagcloud_config", attrs)
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
 	var prior *models.TagcloudConfigModel
 	if blocks != nil && blocks.TagcloudConfig != nil {
 		cpy := *blocks.TagcloudConfig
@@ -152,23 +152,23 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 	blocks.TagcloudConfig = &models.TagcloudConfigModel{}
 
 	if noESQL, err := attrs.AsKibanaHTTPAPIsTagcloudNoESQL(); err == nil && !isTagcloudNoESQLCandidateActuallyESQL(noESQL) {
-		return tagcloudConfigFromAPI(ctx, blocks.TagcloudConfig, resolver, prior, noESQL)
+		return tagcloudConfigFromAPI(ctx, blocks.TagcloudConfig, prior, noESQL)
 	}
 
 	esql, err := attrs.AsKibanaHTTPAPIsTagcloudESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return tagcloudConfigFromAPIESQL(ctx, blocks.TagcloudConfig, resolver, prior, esql)
+	return tagcloudConfigFromAPIESQL(ctx, blocks.TagcloudConfig, prior, esql)
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags
 	}
-	return tagcloudConfigToAPI(blocks.TagcloudConfig, resolver)
+	return tagcloudConfigToAPI(blocks.TagcloudConfig)
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {

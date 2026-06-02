@@ -80,18 +80,18 @@ func GetEsFWConnectionBlock() fwschema.Block {
 		NestedObject: fwschema.NestedBlockObject{
 			Attributes: map[string]fwschema.Attribute{
 				attrUsername: fwschema.StringAttribute{
-					MarkdownDescription: "Username to use for API authentication to Elasticsearch.",
+					MarkdownDescription: descUsername,
 					Optional:            true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(passwordPath)},
 				},
 				attrPassword: fwschema.StringAttribute{
-					MarkdownDescription: "Password to use for API authentication to Elasticsearch.",
+					MarkdownDescription: descPassword,
 					Optional:            true,
 					Sensitive:           true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
 				},
 				attrAPIKey: fwschema.StringAttribute{
-					MarkdownDescription: "API Key to use for authentication to Elasticsearch",
+					MarkdownDescription: descAPIKey,
 					Optional:            true,
 					Sensitive:           true,
 					Validators: []validator.String{
@@ -99,7 +99,7 @@ func GetEsFWConnectionBlock() fwschema.Block {
 					},
 				},
 				attrBearerToken: fwschema.StringAttribute{
-					MarkdownDescription: "Bearer Token to use for authentication to Elasticsearch",
+					MarkdownDescription: descBearerToken,
 					Optional:            true,
 					Sensitive:           true,
 					Validators: []validator.String{
@@ -107,7 +107,7 @@ func GetEsFWConnectionBlock() fwschema.Block {
 					},
 				},
 				attrESClientAuthentication: fwschema.StringAttribute{
-					MarkdownDescription: "ES Client Authentication field to be used with the JWT token",
+					MarkdownDescription: descESClientAuthentication,
 					Optional:            true,
 					Sensitive:           true,
 					Validators: []validator.String{
@@ -116,13 +116,13 @@ func GetEsFWConnectionBlock() fwschema.Block {
 					},
 				},
 				attrEndpoints: fwschema.ListAttribute{
-					MarkdownDescription: "A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
+					MarkdownDescription: descEndpoints,
 					Optional:            true,
 					Sensitive:           true,
 					ElementType:         types.StringType,
 				},
 				attrHeaders: fwschema.MapAttribute{
-					MarkdownDescription: "A list of headers to be sent with each request to Elasticsearch.",
+					MarkdownDescription: descHeaders,
 					Optional:            true,
 					Sensitive:           true,
 					ElementType:         types.StringType,
@@ -132,21 +132,21 @@ func GetEsFWConnectionBlock() fwschema.Block {
 					Optional:            true,
 				},
 				attrCAFile: fwschema.StringAttribute{
-					MarkdownDescription: "Path to a custom Certificate Authority certificate",
+					MarkdownDescription: descCAFile,
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(caDataPath),
 					},
 				},
 				attrCAData: fwschema.StringAttribute{
-					MarkdownDescription: "PEM-encoded custom Certificate Authority certificate",
+					MarkdownDescription: descCAData,
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.ConflictsWith(caFilePath),
 					},
 				},
 				attrCertFile: fwschema.StringAttribute{
-					MarkdownDescription: "Path to a file containing the PEM encoded certificate for client auth",
+					MarkdownDescription: descCertFile,
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.AlsoRequires(keyFilePath),
@@ -154,7 +154,7 @@ func GetEsFWConnectionBlock() fwschema.Block {
 					},
 				},
 				attrKeyFile: fwschema.StringAttribute{
-					MarkdownDescription: "Path to a file containing the PEM encoded private key for client auth",
+					MarkdownDescription: descKeyFile,
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.AlsoRequires(certFilePath),
@@ -162,7 +162,7 @@ func GetEsFWConnectionBlock() fwschema.Block {
 					},
 				},
 				attrCertData: fwschema.StringAttribute{
-					MarkdownDescription: "PEM encoded certificate for client auth",
+					MarkdownDescription: descCertData,
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.AlsoRequires(keyDataPath),
@@ -170,7 +170,7 @@ func GetEsFWConnectionBlock() fwschema.Block {
 					},
 				},
 				attrKeyData: fwschema.StringAttribute{
-					MarkdownDescription: "PEM encoded private key for client auth",
+					MarkdownDescription: descKeyData,
 					Optional:            true,
 					Sensitive:           true,
 					Validators: []validator.String{
@@ -193,11 +193,11 @@ func GetKbFWConnectionBlock() fwschema.Block {
 	bearerTokenPath := path.MatchRelative().AtParent().AtName(attrBearerToken)
 
 	return fwschema.ListNestedBlock{
-		MarkdownDescription: "Kibana connection configuration block.",
+		MarkdownDescription: descKbConnectionBlock,
 		NestedObject: fwschema.NestedBlockObject{
 			Attributes: map[string]fwschema.Attribute{
 				attrAPIKey: fwschema.StringAttribute{
-					MarkdownDescription: "API Key to use for authentication to Kibana",
+					MarkdownDescription: descKbAPIKey,
 					Optional:            true,
 					Sensitive:           true,
 					Validators: []validator.String{
@@ -205,7 +205,7 @@ func GetKbFWConnectionBlock() fwschema.Block {
 					},
 				},
 				attrBearerToken: fwschema.StringAttribute{
-					MarkdownDescription: "Bearer Token to use for authentication to Kibana",
+					MarkdownDescription: descKbBearerToken,
 					Optional:            true,
 					Sensitive:           true,
 					Validators: []validator.String{
@@ -213,24 +213,24 @@ func GetKbFWConnectionBlock() fwschema.Block {
 					},
 				},
 				attrUsername: fwschema.StringAttribute{
-					MarkdownDescription: "Username to use for API authentication to Kibana.",
+					MarkdownDescription: descKbUsername,
 					Optional:            true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(passwordPath)},
 				},
 				attrPassword: fwschema.StringAttribute{
-					MarkdownDescription: "Password to use for API authentication to Kibana.",
+					MarkdownDescription: descKbPassword,
 					Optional:            true,
 					Sensitive:           true,
 					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
 				},
 				attrEndpoints: fwschema.ListAttribute{
-					MarkdownDescription: "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.",
+					MarkdownDescription: descKbEndpoints,
 					Optional:            true,
 					Sensitive:           true,
 					ElementType:         types.StringType,
 				},
 				attrCACerts: fwschema.ListAttribute{
-					MarkdownDescription: "A list of paths to CA certificates to validate the certificate presented by the Kibana server.",
+					MarkdownDescription: descKbCACerts,
 					Optional:            true,
 					ElementType:         types.StringType,
 				},

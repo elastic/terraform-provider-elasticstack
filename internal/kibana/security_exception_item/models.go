@@ -171,13 +171,11 @@ func convertMatchAnyEntryToAPI(
 		return result, diags
 	}
 
-	apiValues := make([]kbapi.SecurityExceptionsAPINonEmptyString, len(values))
-	copy(apiValues, values)
 	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryMatchAny{
 		Type:     entryTypeMatchAny,
 		Field:    field,
 		Operator: operator,
-		Value:    apiValues,
+		Value:    values,
 	}
 	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryMatchAny(apiEntry); err != nil {
 		diags.AddError("Failed to create match_any entry", err.Error())
@@ -394,13 +392,11 @@ func convertNestedMatchAnyEntryToAPI(
 		return result, diags
 	}
 
-	apiValues := make([]kbapi.SecurityExceptionsAPINonEmptyString, len(values))
-	copy(apiValues, values)
 	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryMatchAny{
 		Type:     entryTypeMatchAny,
 		Field:    field,
 		Operator: operator,
-		Value:    apiValues,
+		Value:    values,
 	}
 	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryMatchAny(apiEntry); err != nil {
 		diags.AddError("Failed to create nested match_any entry", err.Error())
@@ -729,13 +725,6 @@ func getCommentAttrTypes() map[string]attr.Type {
 	}
 }
 
-// convertEntriesToAPIWithDiags converts entries and handles diagnostics
-func (m *ExceptionItemModel) convertEntriesToAPIWithDiags(ctx context.Context, diags *diag.Diagnostics) kbapi.SecurityExceptionsAPIExceptionListItemEntryArray {
-	entries, d := convertEntriesToAPI(ctx, m.Entries)
-	diags.Append(d...)
-	return entries
-}
-
 // CommonExceptionItemProps holds pointers to common fields across create/update requests
 type CommonExceptionItemProps struct {
 	NamespaceType *kbapi.SecurityExceptionsAPIExceptionNamespaceType
@@ -814,58 +803,23 @@ func (m *ExceptionItemModel) setCommonProps(
 	}
 }
 
-// commentsToCreateAPI converts comments to create API format
-func (m *ExceptionItemModel) commentsToCreateAPI(
-	ctx context.Context,
-	diags *diag.Diagnostics,
-) *kbapi.SecurityExceptionsAPICreateExceptionListItemCommentArray {
+func (m *ExceptionItemModel) commentModels(ctx context.Context, diags *diag.Diagnostics) []CommentModel {
 	if !typeutils.IsKnown(m.Comments) {
 		return nil
 	}
-
 	comments := typeutils.ListTypeAs[CommentModel](ctx, m.Comments, path.Empty(), diags)
 	if diags.HasError() || len(comments) == 0 {
 		return nil
 	}
-
-	commentsArray := make(kbapi.SecurityExceptionsAPICreateExceptionListItemCommentArray, len(comments))
-	for i, comment := range comments {
-		commentsArray[i] = kbapi.SecurityExceptionsAPICreateExceptionListItemComment{
-			Comment: comment.Comment.ValueString(),
-		}
-	}
-	return &commentsArray
-}
-
-// commentsToUpdateAPI converts comments to update API format
-func (m *ExceptionItemModel) commentsToUpdateAPI(
-	ctx context.Context,
-	diags *diag.Diagnostics,
-) *kbapi.SecurityExceptionsAPIUpdateExceptionListItemCommentArray {
-	if !typeutils.IsKnown(m.Comments) {
-		return nil
-	}
-
-	comments := typeutils.ListTypeAs[CommentModel](ctx, m.Comments, path.Empty(), diags)
-	if diags.HasError() || len(comments) == 0 {
-		return nil
-	}
-
-	commentsArray := make(kbapi.SecurityExceptionsAPIUpdateExceptionListItemCommentArray, len(comments))
-	for i, comment := range comments {
-		commentsArray[i] = kbapi.SecurityExceptionsAPIUpdateExceptionListItemComment{
-			Comment: comment.Comment.ValueString(),
-		}
-	}
-	return &commentsArray
+	return comments
 }
 
 // toCreateRequest converts the Terraform model to API create request
 func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients.MinVersionEnforceable) (*kbapi.CreateExceptionListItemJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	// Convert entries from Terraform model to API model
-	entries := m.convertEntriesToAPIWithDiags(ctx, &diags)
+	entries, d := convertEntriesToAPI(ctx, m.Entries)
+	diags.Append(d...)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -919,9 +873,14 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients
 		genericReq.ExpireTime = &expireTime
 	}
 
-	// Set optional comments
-	if comments := m.commentsToCreateAPI(ctx, &diags); comments != nil {
-		genericReq.Comments = comments
+	if comments := m.commentModels(ctx, &diags); comments != nil {
+		commentsArray := make(kbapi.SecurityExceptionsAPICreateExceptionListItemCommentArray, len(comments))
+		for i, comment := range comments {
+			commentsArray[i] = kbapi.SecurityExceptionsAPICreateExceptionListItemComment{
+				Comment: comment.Comment.ValueString(),
+			}
+		}
+		genericReq.Comments = &commentsArray
 	}
 	if diags.HasError() {
 		return nil, diags
@@ -941,8 +900,8 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients
 func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceID string, client clients.MinVersionEnforceable) (*kbapi.UpdateExceptionListItemJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	// Convert entries from Terraform model to API model
-	entries := m.convertEntriesToAPIWithDiags(ctx, &diags)
+	entries, d := convertEntriesToAPI(ctx, m.Entries)
+	diags.Append(d...)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -991,9 +950,14 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceID str
 		genericReq.ExpireTime = &expireTime
 	}
 
-	// Set optional comments
-	if comments := m.commentsToUpdateAPI(ctx, &diags); comments != nil {
-		genericReq.Comments = comments
+	if comments := m.commentModels(ctx, &diags); comments != nil {
+		commentsArray := make(kbapi.SecurityExceptionsAPIUpdateExceptionListItemCommentArray, len(comments))
+		for i, comment := range comments {
+			commentsArray[i] = kbapi.SecurityExceptionsAPIUpdateExceptionListItemComment{
+				Comment: comment.Comment.ValueString(),
+			}
+		}
+		genericReq.Comments = &commentsArray
 	}
 	if diags.HasError() {
 		return nil, diags

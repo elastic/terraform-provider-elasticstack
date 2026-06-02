@@ -95,7 +95,7 @@ func waffleConfigUsesESQL(m *models.WaffleConfigModel) bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel, resolver lenscommon.Resolver, prior *models.WaffleConfigModel, api kbapi.KibanaHTTPAPIsWaffleNoESQL) diag.Diagnostics {
+func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel, prior *models.WaffleConfigModel, api kbapi.KibanaHTTPAPIsWaffleNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -183,22 +183,14 @@ func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel,
 		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
-	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(api.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, resolver lenscommon.Resolver, prior *models.WaffleConfigModel, api kbapi.KibanaHTTPAPIsWaffleESQL) diag.Diagnostics {
+func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, prior *models.WaffleConfigModel, api kbapi.KibanaHTTPAPIsWaffleESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -318,17 +310,9 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, r
 		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
-	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(api.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
@@ -420,7 +404,7 @@ func waffleValueDisplayToAPI(m *models.WaffleValueDisplay) *kbapi.KibanaHTTPAPIs
 	return vd
 }
 
-func waffleConfigToAPI(m *models.WaffleConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func waffleConfigToAPI(m *models.WaffleConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 
@@ -428,17 +412,17 @@ func waffleConfigToAPI(m *models.WaffleConfigModel, resolver lenscommon.Resolver
 		return attrs, diags
 	}
 
-	diags.Append(waffleConfigModeValidateDiags(waffleConfigUsesESQL(m), waffleModeListStateFromSlice(len(m.Metrics)),
-		waffleModeListStateFromSlice(len(m.GroupBy)),
-		waffleModeListStateFromSlice(len(m.EsqlMetrics)),
-		waffleModeListStateFromSlice(len(m.EsqlGroupBy)),
+	diags.Append(WaffleConfigModeValidateDiags(waffleConfigUsesESQL(m), WaffleModeListStateFromSlice(len(m.Metrics)),
+		WaffleModeListStateFromSlice(len(m.GroupBy)),
+		WaffleModeListStateFromSlice(len(m.EsqlMetrics)),
+		WaffleModeListStateFromSlice(len(m.EsqlGroupBy)),
 	)...)
 	if diags.HasError() {
 		return attrs, diags
 	}
 
 	if waffleConfigUsesESQL(m) {
-		esql, d := waffleConfigToAPIESQL(m, resolver)
+		esql, d := waffleConfigToAPIESQL(m)
 		diags.Append(d...)
 		if diags.HasError() {
 			return attrs, diags
@@ -449,7 +433,7 @@ func waffleConfigToAPI(m *models.WaffleConfigModel, resolver lenscommon.Resolver
 		return attrs, diags
 	}
 
-	noESQL, d := waffleConfigToAPINoESQL(m, resolver)
+	noESQL, d := waffleConfigToAPINoESQL(m)
 	diags.Append(d...)
 	if diags.HasError() {
 		return attrs, diags
@@ -460,7 +444,7 @@ func waffleConfigToAPI(m *models.WaffleConfigModel, resolver lenscommon.Resolver
 	return attrs, diags
 }
 
-func waffleConfigToAPINoESQL(m *models.WaffleConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsWaffleNoESQL, diag.Diagnostics) {
+func waffleConfigToAPINoESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsWaffleNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.KibanaHTTPAPIsWaffleNoESQL{
 		Type: kbapi.KibanaHTTPAPIsWaffleNoESQLTypeWaffle,
@@ -532,34 +516,20 @@ func waffleConfigToAPINoESQL(m *models.WaffleConfigModel, resolver lenscommon.Re
 		api.GroupBy = &gb
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
 	}
 
-	api.TimeRange = writes.TimeRange
-	if writes.HideTitle != nil {
-		api.HideTitle = writes.HideTitle
-	}
-	if writes.HideBorder != nil {
-		api.HideBorder = writes.HideBorder
-	}
-	if writes.References != nil {
-		api.References = writes.References
-	}
-	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsWaffleNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
-		diags.Append(ddDiags...)
-		if !ddDiags.HasError() {
-			api.Drilldowns = &items
-		}
-	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsWaffleNoESQL_Drilldowns_Item](
+		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+	)...)
 
 	return api, diags
 }
 
-func waffleConfigToAPIESQL(m *models.WaffleConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsWaffleESQL, diag.Diagnostics) {
+func waffleConfigToAPIESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsWaffleESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.KibanaHTTPAPIsWaffleESQL{
 		Type: kbapi.KibanaHTTPAPIsWaffleESQLTypeWaffle,
@@ -677,29 +647,15 @@ func waffleConfigToAPIESQL(m *models.WaffleConfigModel, resolver lenscommon.Reso
 		api.GroupBy = &gb
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
 	}
 
-	api.TimeRange = writes.TimeRange
-	if writes.HideTitle != nil {
-		api.HideTitle = writes.HideTitle
-	}
-	if writes.HideBorder != nil {
-		api.HideBorder = writes.HideBorder
-	}
-	if writes.References != nil {
-		api.References = writes.References
-	}
-	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsWaffleESQL_Drilldowns_Item](writes.DrilldownsRaw)
-		diags.Append(ddDiags...)
-		if !ddDiags.HasError() {
-			api.Drilldowns = &items
-		}
-	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsWaffleESQL_Drilldowns_Item](
+		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+	)...)
 
 	return api, diags
 }

@@ -30,7 +30,6 @@ var (
 	_ resource.Resource                = (*calendarResource)(nil)
 	_ resource.ResourceWithConfigure   = (*calendarResource)(nil)
 	_ resource.ResourceWithImportState = (*calendarResource)(nil)
-	_ resource.ResourceWithModifyPlan  = (*calendarResource)(nil)
 )
 
 type calendarResource struct {

@@ -30,17 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type stubResolver struct{}
-
-func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	_ = chartLevel
-	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}
-}
-
-func (stubResolver) DashboardLensComparableTimeRange() (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, bool) {
-	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}, false
-}
-
 func minimalXYNoESQLChartForRoundTrip() *models.XYChartConfigModel {
 	return &models.XYChartConfigModel{
 		Title: types.StringValue("XY RT"),
@@ -89,19 +78,17 @@ func TestConverter_HandlesBlocks(t *testing.T) {
 func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	ctx := t.Context()
 	var c converter
-	resolver := stubResolver{}
-
 	cfg := minimalXYNoESQLChartForRoundTrip()
 	require.NotNil(t, cfg.Query)
 	wantTitle := cfg.Title.ValueString()
 	wantExpr := cfg.Query.Expression.ValueString()
 	in := &models.LensByValueChartBlocks{XYChartConfig: cfg}
 
-	attrs, diags := c.BuildAttributes(in, resolver)
+	attrs, diags := c.BuildAttributes(in)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	out := &models.LensByValueChartBlocks{}
-	diags = c.PopulateFromAttributes(ctx, resolver, out, attrs)
+	diags = c.PopulateFromAttributes(ctx, out, attrs)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.NotNil(t, out.XYChartConfig)
 
@@ -113,11 +100,21 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	require.Equal(t, wantExpr, out.XYChartConfig.Query.Expression.ValueString())
 }
 
+func TestConverter_BuildAttributes_omitsTimeRangeWhenUnset(t *testing.T) {
+	var c converter
+	in := minimalXYNoESQLChartForRoundTrip()
+
+	attrs, diags := c.BuildAttributes(&models.LensByValueChartBlocks{XYChartConfig: in})
+	require.False(t, diags.HasError(), "%v", diags)
+
+	out, err := attrs.AsKibanaHTTPAPIsXyChartNoESQL()
+	require.NoError(t, err)
+	assert.Nil(t, out.TimeRange)
+}
+
 func TestConverter_roundTrip_ESQL_xy(t *testing.T) {
 	ctx := t.Context()
 	var c converter
-	resolver := stubResolver{}
-
 	const xyESQLJSON = `{
 		"type": "xy",
 		"title": "XY ESQL RT",
@@ -148,13 +145,13 @@ func TestConverter_roundTrip_ESQL_xy(t *testing.T) {
 	require.NoError(t, attrs.FromKibanaHTTPAPIsXyChartESQL(chart))
 
 	blocks := &models.LensByValueChartBlocks{}
-	diags := c.PopulateFromAttributes(ctx, resolver, blocks, attrs)
+	diags := c.PopulateFromAttributes(ctx, blocks, attrs)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.NotNil(t, blocks.XYChartConfig)
 	require.Len(t, blocks.XYChartConfig.Layers, 1)
 	require.Contains(t, blocks.XYChartConfig.Layers[0].DataLayer.DataSourceJSON.ValueString(), "FROM logs-*")
 
-	attrs2, diags := c.BuildAttributes(blocks, resolver)
+	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	out, err := attrs2.AsKibanaHTTPAPIsXyChartESQL()

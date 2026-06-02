@@ -53,12 +53,25 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 	}
 
 	if existing == nil {
+		if tfPanel == nil || tfPanel.TimeSliderControlConfig == nil {
+			return
+		}
 		if apiConfig.StartPercentageOfTimeRange == nil &&
 			apiConfig.EndPercentageOfTimeRange == nil &&
 			apiConfig.IsAnchored == nil {
 			return
 		}
-		return
+		pm.TimeSliderControlConfig = &models.TimeSliderControlConfigModel{}
+		existing = pm.TimeSliderControlConfig
+		if apiConfig.StartPercentageOfTimeRange != nil {
+			existing.StartPercentageOfTimeRange = types.Float32Value(*apiConfig.StartPercentageOfTimeRange)
+		}
+		if apiConfig.EndPercentageOfTimeRange != nil {
+			existing.EndPercentageOfTimeRange = types.Float32Value(*apiConfig.EndPercentageOfTimeRange)
+		}
+		if apiConfig.IsAnchored != nil {
+			existing.IsAnchored = types.BoolValue(*apiConfig.IsAnchored)
+		}
 	}
 
 	if typeutils.IsKnown(existing.StartPercentageOfTimeRange) && apiConfig.StartPercentageOfTimeRange != nil {
@@ -69,6 +82,25 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 	}
 	if typeutils.IsKnown(existing.IsAnchored) && apiConfig.IsAnchored != nil {
 		existing.IsAnchored = types.BoolValue(*apiConfig.IsAnchored)
+	}
+
+	if tfPanel != nil && tfPanel.TimeSliderControlConfig != nil {
+		timeSliderPreserveNullIntentFromPrior(tfPanel.TimeSliderControlConfig, existing)
+	}
+}
+
+func timeSliderPreserveNullIntentFromPrior(prior, existing *models.TimeSliderControlConfigModel) {
+	if prior == nil || existing == nil {
+		return
+	}
+	if !typeutils.IsKnown(prior.StartPercentageOfTimeRange) {
+		existing.StartPercentageOfTimeRange = types.Float32Null()
+	}
+	if !typeutils.IsKnown(prior.EndPercentageOfTimeRange) {
+		existing.EndPercentageOfTimeRange = types.Float32Null()
+	}
+	if !typeutils.IsKnown(prior.IsAnchored) {
+		existing.IsAnchored = types.BoolNull()
 	}
 }
 

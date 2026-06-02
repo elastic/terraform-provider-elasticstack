@@ -24,7 +24,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -62,13 +61,9 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 func readWorkflowDataSource(ctx context.Context, client *clients.KibanaScopedClient, config workflowDataSourceModel) (workflowDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderAPIVersion, "workflows", &diags) {
-		return config, diags
-	}
-
 	oapiClient := client.GetKibanaOapiClient()
 
-	spaceID := "default"
+	spaceID := defaultSpaceID
 	if typeutils.IsKnown(config.SpaceID) {
 		spaceID = config.SpaceID.ValueString()
 	}

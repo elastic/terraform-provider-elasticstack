@@ -19,10 +19,8 @@ package calendar_event
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -79,69 +77,6 @@ type CalendarEventAPIModel struct {
 	ForceTimeShift  *string `json:"force_time_shift,omitempty"`
 }
 
-func calendarEventAnyTimeToUnixMilli(v any) (int64, bool) {
-	if v == nil {
-		return 0, false
-	}
-	switch x := v.(type) {
-	case float64:
-		return int64(x), true
-	case int64:
-		return x, true
-	case int:
-		return int64(x), true
-	case uint64:
-		return int64(x), true
-	case json.Number:
-		i, err := x.Int64()
-		if err == nil {
-			return i, true
-		}
-		f, err := x.Float64()
-		if err != nil {
-			return 0, false
-		}
-		return int64(f), true
-	case string:
-		t, err := time.Parse(time.RFC3339, x)
-		if err != nil {
-			return 0, false
-		}
-		return t.UnixMilli(), true
-	default:
-		return 0, false
-	}
-}
-
-func calendarEventDateTimeToUnixMilli(dt estypes.DateTime) (int64, bool) {
-	return calendarEventAnyTimeToUnixMilli(any(dt))
-}
-
-func (m *CalendarEventTFModel) toAPIModel(_ context.Context) (*CalendarEventAPIModel, fwdiags.Diagnostics) {
-	var diags fwdiags.Diagnostics
-
-	startTime, d := m.StartTime.ValueRFC3339Time()
-	diags.Append(d...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	endTime, d := m.EndTime.ValueRFC3339Time()
-	diags.Append(d...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	return &CalendarEventAPIModel{
-		Description:     m.Description.ValueString(),
-		StartTime:       startTime.UnixMilli(),
-		EndTime:         endTime.UnixMilli(),
-		SkipResult:      typeutils.OptBoolPtr(m.SkipResult),
-		SkipModelUpdate: typeutils.OptBoolPtr(m.SkipModelUpdate),
-		ForceTimeShift:  typeutils.OptStringPtr(m.ForceTimeShift),
-	}, diags
-}
-
 func (m *CalendarEventTFModel) fromAPIModel(_ context.Context, apiModel *CalendarEventAPIModel) fwdiags.Diagnostics {
 	var diags fwdiags.Diagnostics
 
@@ -149,7 +84,7 @@ func (m *CalendarEventTFModel) fromAPIModel(_ context.Context, apiModel *Calenda
 	m.CalendarID = types.StringValue(apiModel.CalendarID)
 	m.EventID = types.StringValue(apiModel.EventID)
 
-	startMillis, ok := calendarEventAnyTimeToUnixMilli(apiModel.StartTime)
+	startMillis, ok := typeutils.ElasticDateTimeToMillis(apiModel.StartTime)
 	if !ok {
 		diags.AddError(
 			"Invalid start_time format",
@@ -157,7 +92,7 @@ func (m *CalendarEventTFModel) fromAPIModel(_ context.Context, apiModel *Calenda
 		)
 		return diags
 	}
-	endMillis, ok := calendarEventAnyTimeToUnixMilli(apiModel.EndTime)
+	endMillis, ok := typeutils.ElasticDateTimeToMillis(apiModel.EndTime)
 	if !ok {
 		diags.AddError(
 			"Invalid end_time format",
@@ -167,12 +102,16 @@ func (m *CalendarEventTFModel) fromAPIModel(_ context.Context, apiModel *Calenda
 	}
 
 	startLoc := time.UTC
-	if t, d := m.StartTime.ValueRFC3339Time(); !d.HasError() && !m.StartTime.IsNull() && !m.StartTime.IsUnknown() {
-		startLoc = t.Location()
+	if typeutils.IsKnown(m.StartTime) {
+		if t, d := m.StartTime.ValueRFC3339Time(); !d.HasError() {
+			startLoc = t.Location()
+		}
 	}
 	endLoc := time.UTC
-	if t, d := m.EndTime.ValueRFC3339Time(); !d.HasError() && !m.EndTime.IsNull() && !m.EndTime.IsUnknown() {
-		endLoc = t.Location()
+	if typeutils.IsKnown(m.EndTime) {
+		if t, d := m.EndTime.ValueRFC3339Time(); !d.HasError() {
+			endLoc = t.Location()
+		}
 	}
 
 	startTime := time.UnixMilli(startMillis).In(startLoc)

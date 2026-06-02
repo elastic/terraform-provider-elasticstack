@@ -490,6 +490,12 @@ func getAnalysisConfigAttrTypes(ctx context.Context) map[string]attr.Type {
 	return getSchema(ctx).Attributes["analysis_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
+func getPerPartitionCategorizationAttrTypes(ctx context.Context) map[string]attr.Type {
+	analysisConfigAttrs := getAnalysisConfigAttrTypes(ctx)
+	perPartition := analysisConfigAttrs["per_partition_categorization"].(types.ObjectType)
+	return perPartition.AttrTypes
+}
+
 func getDetectorAttrTypes(ctx context.Context) map[string]attr.Type {
 	analysisConfigAttrs := getAnalysisConfigAttrTypes(ctx)
 	detectorsList := analysisConfigAttrs["detectors"].(types.ListType)

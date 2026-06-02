@@ -30,13 +30,13 @@ on:
     pull-requests: read
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v6.0.2
       with:
         persist-credentials: false
         fetch-depth: 1
     - name: Determine intake mode
       id: determine_intake_mode
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -46,7 +46,7 @@ on:
     - name: Qualify trigger event
       id: qualify_trigger
       if: steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       env:
         FACTORY_NAME: code-factory
       with:
@@ -57,7 +57,7 @@ on:
     - name: Capture issue context
       id: capture_issue_context
       if: steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -67,7 +67,7 @@ on:
     - name: Validate dispatch inputs
       id: validate_dispatch_inputs
       if: steps.determine_intake_mode.outputs.intake_mode == 'dispatch'
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -80,7 +80,7 @@ on:
         steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
       env:
         INPUT_ISSUE_NUMBER: ${{ steps.validate_dispatch_inputs.outputs.issue_number }}
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -101,7 +101,7 @@ on:
           ${{ steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
             && steps.capture_issue_context.outputs.issue_number
             || steps.validate_dispatch_inputs.outputs.issue_number }}
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -117,7 +117,7 @@ on:
           steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
           steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
         )
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       env:
         FACTORY_NAME: code-factory
       with:
@@ -131,7 +131,7 @@ on:
         steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
         steps.qualify_trigger.outputs.event_eligible == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       env:
         FACTORY_NAME: code-factory
       with:
@@ -155,7 +155,7 @@ on:
             && steps.capture_issue_context.outputs.issue_number
             || steps.validate_dispatch_inputs.outputs.issue_number }}
         PHASE_LABEL_NAME: phase-coding
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -229,7 +229,7 @@ on:
         FACTORY_NAME: code-factory
         ISSUE_BODY: ${{ steps.normalize_context.outputs.issue_body }}
         HUMAN_COMMENTS: ${{ steps.fetch_issue_comments.outputs.human_comments }}
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -240,7 +240,7 @@ on:
         steps.normalize_context.outputs.event_eligible == 'true' &&
         steps.normalize_context.outputs.actor_trusted == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7.0.1
       with:
         name: code-factory-issue-context
         path: /tmp/code-factory-context/
@@ -248,7 +248,7 @@ on:
     - name: Finalize gate reason
       id: finalize_gate
       if: always()
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       env:
         FACTORY_NAME: code-factory
         EVENT_ELIGIBLE: ${{ steps.normalize_context.outputs.event_eligible }}
@@ -270,7 +270,7 @@ if: >-
   needs.pre_activation.outputs.issue_number != ''
 steps:
   - name: Download issue context artifact
-    uses: actions/download-artifact@v4
+    uses: actions/download-artifact@v8.0.1
     with:
       name: code-factory-issue-context
       path: /tmp/code-factory-context/
@@ -401,7 +401,45 @@ The linked pull request must:
 - use branch `code-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`
 - be the only open `code-factory` pull request for this issue
 - include explicit issue linkage via `Closes #${{ needs.pre_activation.outputs.issue_number }}` in the PR body
+- include a valid `## Changelog` section (see **PR body** below) — the CI changelog check will block the PR if this is missing or malformed
 - stay focused on implementing the triggering issue only
+
+## PR body
+
+The pull request body must include all three of the following blocks, in order:
+
+### Changelog (required — CI validates this)
+
+Select `Customer impact` based on the nature of the change:
+- `fix` — user-visible bug fix
+- `enhancement` — new capability or attribute exposed to users
+- `breaking` — removes or incompatibly changes existing behaviour
+- `none` — internal only (refactoring, test coverage, CI, docs)
+
+Most code-factory issues fall into one of these categories:
+- Refactoring / deduplication / test-coverage gaps → `none`
+- User-visible bug fixes → `fix`
+- New resource attributes or resources → `enhancement`
+
+When in doubt, prefer `none` over inventing customer impact that isn't described in the issue.
+
+```
+## Changelog
+Customer impact: <none|fix|enhancement|breaking>
+Summary: <one-line description of user impact; omit if Customer impact is none>
+```
+
+For `breaking`, also add a `### Breaking changes` block with a prose description, terminated by `<!-- /breaking-changes -->`.
+
+### Issue linkage (required — prevents duplicate PRs on rerun)
+
+```
+Closes #${{ needs.pre_activation.outputs.issue_number }}
+```
+
+### Detailed changes (required)
+
+Describe intent, approach, notable design decisions, and follow-up work.
 
 ## Guardrails
 
@@ -412,4 +450,5 @@ The linked pull request must:
 - Do not change the branch naming convention.
 - Do not open issues in this workflow.
 - Do not use another issue, pull request, or external request as the source of truth over the triggering issue.
+- Do not omit or leave placeholder text in the `## Changelog` section — `Customer impact:` must be one of `none`, `fix`, `enhancement`, or `breaking`, and `Summary:` must be a real sentence unless `Customer impact: none`.
 - If you cannot make progress safely, use `noop` with a concise explanation instead of opening an extra pull request.

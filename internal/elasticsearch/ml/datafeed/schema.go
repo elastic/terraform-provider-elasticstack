@@ -29,7 +29,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
@@ -255,19 +254,4 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 		},
 	}
-}
-
-// GetChunkingConfigAttrTypes returns the attribute types for chunking_config
-func GetChunkingConfigAttrTypes() map[string]attr.Type {
-	return getSchema(context.Background()).Attributes["chunking_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
-}
-
-// GetDelayedDataCheckConfigAttrTypes returns the attribute types for delayed_data_check_config
-func GetDelayedDataCheckConfigAttrTypes() map[string]attr.Type {
-	return getSchema(context.Background()).Attributes["delayed_data_check_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
-}
-
-// GetIndicesOptionsAttrTypes returns the attribute types for indices_options
-func GetIndicesOptionsAttrTypes() map[string]attr.Type {
-	return getSchema(context.Background()).Attributes["indices_options"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }

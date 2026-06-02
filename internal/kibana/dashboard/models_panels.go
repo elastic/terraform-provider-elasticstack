@@ -138,15 +138,10 @@ func clearPanelConfigBlocks(pm *models.PanelModel) {
 }
 
 func dashboardMapPanelFromAPI(ctx context.Context, _ *models.DashboardModel, tfPanel *models.PanelModel, panelItem kbapi.DashboardPanelItem) (models.PanelModel, diag.Diagnostics) {
-	// Start from the existing TF model when available (plan or prior state).
-	//
-	// Kibana may omit optional attributes on reads even when they were provided on
-	// writes. Seeding from the existing model allows individual panel converters
-	// to preserve already-known values when the API response doesn't include them.
+	// Build state from the API response. Do not shallow-copy tfPanel into pm: nested
+	// pointers (e.g. vis_config.by_value) would be shared with the plan/prior model and
+	// FromAPI mutations would corrupt the plan used for post-read alignment.
 	var pm models.PanelModel
-	if tfPanel != nil {
-		pm = *tfPanel
-	}
 
 	discriminator, err := panelItem.Discriminator()
 	if err != nil {

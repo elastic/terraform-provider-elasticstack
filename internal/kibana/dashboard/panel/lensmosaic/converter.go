@@ -98,7 +98,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("mosaic_config", attrs)
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
 	var prior *models.MosaicConfigModel
 	if blocks != nil && blocks.MosaicConfig != nil {
 		cpy := *blocks.MosaicConfig
@@ -112,27 +112,27 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 	blocks.MosaicConfig = &models.MosaicConfigModel{}
 
 	if noESQL, err := attrs.AsKibanaHTTPAPIsMosaicNoESQL(); err == nil && !isMosaicNoESQLCandidateActuallyESQL(noESQL) {
-		return mosaicConfigFromAPINoESQL(ctx, blocks.MosaicConfig, resolver, prior, noESQL)
+		return mosaicConfigFromAPINoESQL(ctx, blocks.MosaicConfig, prior, noESQL)
 	}
 
 	esql, err := attrs.AsKibanaHTTPAPIsMosaicESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return mosaicConfigFromAPIESQL(ctx, blocks.MosaicConfig, resolver, prior, esql)
+	return mosaicConfigFromAPIESQL(ctx, blocks.MosaicConfig, prior, esql)
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags
 	}
-	return mosaicConfigToAPI(blocks.MosaicConfig, resolver)
+	return mosaicConfigToAPI(blocks.MosaicConfig)
 }
 
-func (converter) AlignStateFromPlan(_ context.Context, plan, state *models.LensByValueChartBlocks) {
-	alignMosaicStateFromPlan(plan, state)
+func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
+	alignMosaicStateFromPlan(ctx, plan, state)
 }
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {

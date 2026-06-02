@@ -30,154 +30,79 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// toolModel is the core model for the Agent Builder tool resource. It also
+// serves as the shared base for toolDataSourceModel, which embeds it. Defining
+// the version gate and the kibana_connection block (via KibanaConnectionField)
+// here means they are declared exactly once rather than duplicated across the
+// resource and data source models.
 type toolModel struct {
-	ID               types.String         `tfsdk:"id"`
-	KibanaConnection types.List           `tfsdk:"kibana_connection"`
-	ToolID           types.String         `tfsdk:"tool_id"`
-	SpaceID          types.String         `tfsdk:"space_id"`
-	Type             types.String         `tfsdk:"type"`
-	Description      types.String         `tfsdk:"description"`
-	Tags             types.Set            `tfsdk:"tags"`
-	Configuration    jsontypes.Normalized `tfsdk:"configuration"`
+	entitycore.KibanaConnectionField
+	ID            types.String         `tfsdk:"id"`
+	ToolID        types.String         `tfsdk:"tool_id"`
+	SpaceID       types.String         `tfsdk:"space_id"`
+	Type          types.String         `tfsdk:"type"`
+	Description   types.String         `tfsdk:"description"`
+	Tags          types.Set            `tfsdk:"tags"`
+	Configuration jsontypes.Normalized `tfsdk:"configuration"`
 }
 
+func (toolModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{{
+		MinVersion:   *minKibanaAgentBuilderAPIVersion,
+		ErrorMessage: fmt.Sprintf("Agent Builder tools require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
+	}}, nil
+}
+
+func (model toolModel) GetID() types.String         { return model.ID }
+func (model toolModel) GetResourceID() types.String { return model.ToolID }
+func (model toolModel) GetSpaceID() types.String    { return model.SpaceID }
+
+var _ entitycore.KibanaResourceModel = toolModel{}
+var _ entitycore.WithVersionRequirements = toolModel{}
+
+// toolDataSourceModel embeds toolModel to inherit the shared fields, the
+// kibana_connection block, and the version gate, adding only the attributes
+// that are unique to the data source.
 type toolDataSourceModel struct {
-	entitycore.KibanaConnectionField
-	ID                        types.String                    `tfsdk:"id"`
-	SpaceID                   types.String                    `tfsdk:"space_id"`
-	ToolID                    types.String                    `tfsdk:"tool_id"`
-	Type                      types.String                    `tfsdk:"type"`
-	Description               types.String                    `tfsdk:"description"`
-	Tags                      types.Set                       `tfsdk:"tags"`
+	toolModel
 	ReadOnly                  types.Bool                      `tfsdk:"readonly"`
-	Configuration             types.String                    `tfsdk:"configuration"`
 	IncludeWorkflow           types.Bool                      `tfsdk:"include_workflow"`
 	WorkflowID                types.String                    `tfsdk:"workflow_id"`
 	WorkflowConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"workflow_configuration_yaml"`
 }
 
-func (model toolModel) GetID() types.String             { return model.ID }
-func (model toolModel) GetResourceID() types.String     { return model.ToolID }
-func (model toolModel) GetSpaceID() types.String        { return model.SpaceID }
-func (model toolModel) GetKibanaConnection() types.List { return model.KibanaConnection }
-
-var _ entitycore.KibanaResourceModel = toolModel{}
-var _ entitycore.WithVersionRequirements = toolModel{}
-
-func (model toolModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *minKibanaAgentBuilderAPIVersion,
-			ErrorMessage: fmt.Sprintf("Agent Builder tools require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
-		},
-	}, nil
-}
-
-// toolBaseData holds fields shared between toolDataSourceModel and toolModel
-// populated from the API response.
-type toolBaseData struct {
-	ID          types.String
-	ToolID      types.String
-	SpaceID     types.String
-	Type        types.String
-	Description types.String
-	Tags        types.Set
-}
-
-// populateToolBaseFromAPI extracts the fields common to both toolDataSourceModel
-// and toolModel from an API response, eliminating duplicated population logic.
-func populateToolBaseFromAPI(ctx context.Context, data *models.Tool, spaceID string) (toolBaseData, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	base := toolBaseData{
-		ID:      types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String()),
-		ToolID:  types.StringValue(data.ID),
-		SpaceID: types.StringValue(spaceID),
-		Type:    types.StringValue(data.Type),
-	}
-
-	if data.Description != nil && *data.Description != "" {
-		base.Description = types.StringValue(*data.Description)
-	} else {
-		base.Description = types.StringNull()
-	}
-
-	diags.Append(populateSet(ctx, data.Tags, &base.Tags)...)
-	return base, diags
-}
-
-func populateSet(ctx context.Context, src []string, dst *types.Set) diag.Diagnostics {
-	if len(src) > 0 {
-		v, d := types.SetValueFrom(ctx, types.StringType, src)
-		*dst = v
-		return d
-	}
-	*dst = types.SetNull(types.StringType)
-	return nil
-}
-
-func (model *toolDataSourceModel) populateFromAPI(ctx context.Context, data *models.Tool) diag.Diagnostics {
-	if data == nil {
-		return nil
-	}
-
-	spaceID := model.SpaceID.ValueString()
-	if spaceID == "" {
-		spaceID = defaultSpaceID
-	}
-
-	base, diags := populateToolBaseFromAPI(ctx, data, spaceID)
-	model.ID = base.ID
-	model.ToolID = base.ToolID
-	model.SpaceID = base.SpaceID
-	model.Type = base.Type
-	model.Description = base.Description
-	model.Tags = base.Tags
-
-	model.ReadOnly = types.BoolValue(data.ReadOnly)
-
-	if data.Configuration != nil {
-		configJSON, err := json.Marshal(data.Configuration)
-		if err != nil {
-			diags.AddError("Configuration Error", "Failed to marshal configuration to JSON: "+err.Error())
-			return diags
-		}
-		model.Configuration = types.StringValue(string(configJSON))
-	} else {
-		model.Configuration = types.StringNull()
-	}
-
-	return diags
-}
+var _ entitycore.WithVersionRequirements = toolDataSourceModel{}
 
 func (model *toolModel) populateFromAPI(ctx context.Context, data *models.Tool) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
 
+	var diags diag.Diagnostics
+	var d diag.Diagnostics
+
 	spaceID := model.SpaceID.ValueString()
 	if spaceID == "" {
 		spaceID = defaultSpaceID
 	}
 
-	base, diags := populateToolBaseFromAPI(ctx, data, spaceID)
-	model.ID = base.ID
-	model.ToolID = base.ToolID
-	model.SpaceID = base.SpaceID
-	model.Type = base.Type
-	model.Description = base.Description
-	model.Tags = base.Tags
+	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
+	model.ToolID = types.StringValue(data.ID)
+	model.SpaceID = types.StringValue(spaceID)
+	model.Type = types.StringValue(data.Type)
+	model.Description = typeutils.NonEmptyStringOrNull(data.Description)
 
-	if data.Configuration != nil {
-		configJSON, err := json.Marshal(data.Configuration)
-		if err != nil {
-			diags.AddError("Configuration Error", "Failed to marshal configuration to JSON: "+err.Error())
-			return diags
-		}
-		model.Configuration = jsontypes.NewNormalizedValue(string(configJSON))
+	model.Tags, d = typeutils.StringSetOrNull(ctx, data.Tags)
+	diags.Append(d...)
+
+	jsonStr, ok, d := marshalToolConfigurationJSON(data.Configuration)
+	diags.Append(d...)
+	if ok {
+		model.Configuration = jsontypes.NewNormalizedValue(jsonStr)
 	} else {
 		model.Configuration = jsontypes.NewNormalizedNull()
 	}
@@ -185,16 +110,51 @@ func (model *toolModel) populateFromAPI(ctx context.Context, data *models.Tool) 
 	return diags
 }
 
+func (model *toolDataSourceModel) populateFromAPI(ctx context.Context, data *models.Tool) diag.Diagnostics {
+	if data == nil {
+		return nil
+	}
+
+	diags := model.toolModel.populateFromAPI(ctx, data)
+	model.ReadOnly = types.BoolValue(data.ReadOnly)
+	return diags
+}
+
+// marshalToolConfigurationJSON marshals a Tool's configuration map to a JSON
+// string. Returns ("", false, nil) when config is nil.
+func marshalToolConfigurationJSON(config any) (string, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if config == nil {
+		return "", false, diags
+	}
+	b, err := json.Marshal(config)
+	if err != nil {
+		diags.AddError("Configuration Error", "Failed to marshal configuration to JSON: "+err.Error())
+		return "", false, diags
+	}
+	return string(b), true, diags
+}
+
+func toolConfigurationFromModel(config jsontypes.Normalized) (map[string]any, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	configuration := make(map[string]any)
+	if config.IsNull() || config.ValueString() == "" {
+		return configuration, diags
+	}
+	if err := json.Unmarshal([]byte(config.ValueString()), &configuration); err != nil {
+		diags.AddError("Configuration Error", "Failed to parse configuration JSON: "+err.Error())
+		return nil, diags
+	}
+	return configuration, diags
+}
+
 func (model toolModel) toAPICreateModel(ctx context.Context) (kbapi.PostAgentBuilderToolsJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	configuration := make(map[string]any)
-
-	if !model.Configuration.IsNull() && model.Configuration.ValueString() != "" {
-		if err := json.Unmarshal([]byte(model.Configuration.ValueString()), &configuration); err != nil {
-			diags.AddError("Configuration Error", "Failed to parse configuration JSON: "+err.Error())
-			return kbapi.PostAgentBuilderToolsJSONRequestBody{}, diags
-		}
+	configuration, d := toolConfigurationFromModel(model.Configuration)
+	diags.Append(d...)
+	if diags.HasError() {
+		return kbapi.PostAgentBuilderToolsJSONRequestBody{}, diags
 	}
 
 	body := kbapi.PostAgentBuilderToolsJSONRequestBody{
@@ -208,13 +168,10 @@ func (model toolModel) toAPICreateModel(ctx context.Context) (kbapi.PostAgentBui
 		body.Description = &desc
 	}
 
-	if !model.Tags.IsNull() {
-		var tags []string
-		d := model.Tags.ElementsAs(ctx, &tags, false)
-		diags.Append(d...)
-		if len(tags) > 0 {
-			body.Tags = &tags
-		}
+	tags, d := optionalTagsFromSet(ctx, model.Tags)
+	diags.Append(d...)
+	if len(tags) > 0 {
+		body.Tags = &tags
 	}
 
 	return body, diags
@@ -223,13 +180,10 @@ func (model toolModel) toAPICreateModel(ctx context.Context) (kbapi.PostAgentBui
 func (model toolModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBuilderToolsToolidJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	configuration := make(map[string]any)
-
-	if !model.Configuration.IsNull() && model.Configuration.ValueString() != "" {
-		if err := json.Unmarshal([]byte(model.Configuration.ValueString()), &configuration); err != nil {
-			diags.AddError("Configuration Error", "Failed to parse configuration JSON: "+err.Error())
-			return kbapi.PutAgentBuilderToolsToolidJSONRequestBody{}, diags
-		}
+	configuration, d := toolConfigurationFromModel(model.Configuration)
+	diags.Append(d...)
+	if diags.HasError() {
+		return kbapi.PutAgentBuilderToolsToolidJSONRequestBody{}, diags
 	}
 
 	apiConfiguration := typeutils.PointerInterfaceMapFromAnyMap(configuration)
@@ -242,14 +196,20 @@ func (model toolModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBuil
 		body.Description = &desc
 	}
 
-	if !model.Tags.IsNull() {
-		var tags []string
-		d := model.Tags.ElementsAs(ctx, &tags, false)
-		diags.Append(d...)
-		if len(tags) > 0 {
-			body.Tags = &tags
-		}
+	tags, d := optionalTagsFromSet(ctx, model.Tags)
+	diags.Append(d...)
+	if len(tags) > 0 {
+		body.Tags = &tags
 	}
 
 	return body, diags
+}
+
+func optionalTagsFromSet(ctx context.Context, set types.Set) ([]string, diag.Diagnostics) {
+	if set.IsNull() || set.IsUnknown() {
+		return nil, nil
+	}
+	var diags diag.Diagnostics
+	tags := typeutils.SetTypeAs[string](ctx, set, path.Empty(), &diags)
+	return tags, diags
 }

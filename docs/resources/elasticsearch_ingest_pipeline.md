@@ -9,7 +9,6 @@ description: |-
 # elasticstack_elasticsearch_ingest_pipeline (Resource)
 
 Manages tasks and resources related to ingest pipelines and processors. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest-apis.html
-
 ## Example Usage
 
 ```terraform

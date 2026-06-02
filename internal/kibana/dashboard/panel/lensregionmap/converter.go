@@ -66,7 +66,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("region_map_config", attrs)
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
 	var prior *models.RegionMapConfigModel
 	if blocks != nil && blocks.RegionMapConfig != nil {
 		cpy := *blocks.RegionMapConfig
@@ -80,23 +80,23 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 	blocks.RegionMapConfig = &models.RegionMapConfigModel{}
 
 	if noESQL, err := attrs.AsKibanaHTTPAPIsRegionMapNoESQL(); err == nil && !isRegionMapNoESQLCandidateActuallyESQL(noESQL) {
-		return regionMapConfigFromAPINoESQL(ctx, blocks.RegionMapConfig, resolver, prior, noESQL)
+		return regionMapConfigFromAPINoESQL(ctx, blocks.RegionMapConfig, prior, noESQL)
 	}
 
 	regionMapESQL, err := attrs.AsKibanaHTTPAPIsRegionMapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return regionMapConfigFromAPIESQL(ctx, blocks.RegionMapConfig, resolver, prior, regionMapESQL)
+	return regionMapConfigFromAPIESQL(ctx, blocks.RegionMapConfig, prior, regionMapESQL)
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags
 	}
-	return regionMapConfigToAPI(blocks.RegionMapConfig, resolver)
+	return regionMapConfigToAPI(blocks.RegionMapConfig)
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {

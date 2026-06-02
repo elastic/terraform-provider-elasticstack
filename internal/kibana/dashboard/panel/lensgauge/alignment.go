@@ -40,7 +40,15 @@ func alignGaugeConfigStateFromPlan(ctx context.Context, plan, state *models.Gaug
 		return
 	}
 	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field")
 	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
+	if plan.Styling != nil && state.Styling != nil {
+		lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.Styling.ShapeJSON, &state.Styling.ShapeJSON, "orientation")
+		// Kibana materializes the default bullet shape with the horizontal
+		// orientation when the practitioner omits styling.shape_json. Preserve
+		// the null plan when state matches that default.
+		lenscommon.PreserveNullJSONIfStateMatchesDefault(plan.Styling.ShapeJSON, &state.Styling.ShapeJSON, `{"type":"bullet","orientation":"horizontal"}`)
+	}
 	if plan.EsqlMetric != nil && state.EsqlMetric != nil {
 		alignGaugeEsqlMetricStateFromPlan(plan.EsqlMetric, state.EsqlMetric)
 	}

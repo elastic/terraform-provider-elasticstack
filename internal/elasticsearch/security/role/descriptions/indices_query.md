@@ -1,0 +1,1 @@
+A search query that defines the documents the owners of the role have read access to.

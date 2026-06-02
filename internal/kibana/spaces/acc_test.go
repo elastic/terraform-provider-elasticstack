@@ -22,6 +22,7 @@ import (
 	_ "embed"
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -37,6 +38,19 @@ import (
 )
 
 var minSelfManagedVersionForSpaceSolution = version.Must(version.NewVersion("8.18.0"))
+
+func testCheckSolutionIfSupported(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		unsupported, err := versionutils.CheckIfVersionIsUnsupported(minSelfManagedVersionForSpaceSolution)()
+		if err != nil {
+			return err
+		}
+		if unsupported {
+			return nil
+		}
+		return resource.TestCheckResourceAttrSet(resourceName, "solution")(s)
+	}
+}
 
 func TestAccResourceSpace(t *testing.T) {
 	spaceID := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
@@ -67,11 +81,29 @@ func TestAccResourceSpace(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "space_id", spaceID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("Updated %s", spaceID)),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Updated space description"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "disabled_features.#", "2"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_space.test_space", "disabled_features.*", "ingestManager"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_space.test_space", "disabled_features.*", "enterpriseSearch"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "initials", "AB"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "color", "#FFFFFF"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_space.test_space", "image_url"),
+					resource.TestCheckResourceAttrWith("elasticstack_kibana_space.test_space", "image_url", func(v string) error {
+						if !strings.HasPrefix(v, "data:image/png;base64,") {
+							return fmt.Errorf("expected image_url to start with data:image/png;base64,, got %q", v)
+						}
+						return nil
+					}),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_single_initials"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "initials", "Z"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "disabled_features.#", "0"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_space.test_space", "image_url"),
 				),
 			},
 			{
@@ -90,6 +122,20 @@ func TestAccResourceSpace(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_solution_oblt"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSelfManagedVersionForSpaceSolution),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "space_id", spaceID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("Oblt %s", spaceID)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Test Space with Oblt Solution"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "solution", "oblt"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_id": config.StringVariable(spaceID),
@@ -99,6 +145,8 @@ func TestAccResourceSpace(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("Name %s", spaceID)),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Test Space"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "color", "#FFFFFF"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_space.test_space", "image_url"),
+					testCheckSolutionIfSupported("elasticstack_kibana_space.test_space"),
 				),
 			},
 		},
@@ -135,6 +183,34 @@ func TestAccResourceSpace_disabledFeaturesSolutionValidation(t *testing.T) {
 				PlanOnly:                 true,
 				ExpectError: regexp.MustCompile(
 					`Attribute disabled_features can only be set when solution equals "classic"`,
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSpace_DefaultSpace(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("default_space"),
+				ResourceName:             "elasticstack_kibana_space.default",
+				ImportState:              true,
+				ImportStatePersist:       true,
+				ImportStateId:            "default",
+				ImportStateVerify:        false,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.default", "space_id", "default"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("default_space"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.default", "space_id", "default"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.default", "name", "Default"),
 				),
 			},
 		},

@@ -106,6 +106,34 @@ func PreservePlanJSONIfStateAddsOptionalKeys(plan jsontypes.Normalized, state *j
 	}
 }
 
+// PreserveNullJSONIfStateMatchesDefault preserves a null plan value when the API read-back
+// returned the supplied default JSON payload. Use this for typed JSON attributes (e.g.
+// gauge `styling.shape_json`) that Kibana auto-populates with a fixed default object when the
+// practitioner omitted the field. The default is provided as a raw JSON string and is
+// compared against state using NormalizeXYPlanComparisonJSON so that key order and Lens
+// number-format defaults do not cause false negatives.
+func PreserveNullJSONIfStateMatchesDefault(plan jsontypes.Normalized, state *jsontypes.Normalized, defaultJSON string) {
+	if !plan.IsNull() || plan.IsUnknown() {
+		return
+	}
+	if !typeutils.IsKnown(*state) {
+		return
+	}
+
+	var defaultObj any
+	if err := json.Unmarshal([]byte(defaultJSON), &defaultObj); err != nil {
+		return
+	}
+	var stateObj any
+	if err := json.Unmarshal([]byte(state.ValueString()), &stateObj); err != nil {
+		return
+	}
+
+	if reflect.DeepEqual(NormalizeXYPlanComparisonJSON(defaultObj), NormalizeXYPlanComparisonJSON(stateObj)) {
+		*state = plan
+	}
+}
+
 // PreservePlanJSONIfStateOmitsOptionalKeys mirrors PreservePlanJSONIfStateAddsOptionalKeys when state drops optional keys.
 func PreservePlanJSONIfStateOmitsOptionalKeys(plan jsontypes.Normalized, state *jsontypes.Normalized, optionalKeys ...string) {
 	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {

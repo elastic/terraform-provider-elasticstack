@@ -81,7 +81,7 @@ func TestInactivityTimeoutVersionValidation(t *testing.T) {
 	}
 
 	// Create features with inactivity timeout NOT supported
-	feat := features{
+	feat := agentPolicyFeatures{
 		SupportsInactivityTimeout: false,
 	}
 
@@ -110,7 +110,7 @@ func TestInactivityTimeoutVersionValidation(t *testing.T) {
 	}
 
 	// Test case where inactivity_timeout IS supported (newer version)
-	featSupported := features{
+	featSupported := agentPolicyFeatures{
 		SupportsInactivityTimeout: true,
 	}
 
@@ -157,7 +157,7 @@ func TestUnenrollmentTimeoutVersionValidation(t *testing.T) {
 	}
 
 	// Create features with unenrollment timeout NOT supported
-	feat := features{
+	feat := agentPolicyFeatures{
 		SupportsUnenrollmentTimeout: false,
 	}
 
@@ -186,7 +186,7 @@ func TestUnenrollmentTimeoutVersionValidation(t *testing.T) {
 	}
 
 	// Test case where unenrollment_timeout IS supported (newer version)
-	featSupported := features{
+	featSupported := agentPolicyFeatures{
 		SupportsUnenrollmentTimeout: true,
 	}
 
@@ -263,7 +263,7 @@ func TestAdvancedMonitoringVersionValidation(t *testing.T) {
 	}
 
 	// Create features with advanced_monitoring NOT supported
-	feat := features{
+	feat := agentPolicyFeatures{
 		SupportsAdvancedMonitoring: false,
 	}
 
@@ -292,7 +292,7 @@ func TestAdvancedMonitoringVersionValidation(t *testing.T) {
 	}
 
 	// Test case where advanced_monitoring_options IS supported (newer version)
-	featSupported := features{
+	featSupported := agentPolicyFeatures{
 		SupportsAdvancedMonitoring: true,
 	}
 
@@ -353,7 +353,7 @@ func TestAdvancedSettingsVersionValidation(t *testing.T) {
 	}
 
 	// Create features with advanced_settings NOT supported
-	feat := features{
+	feat := agentPolicyFeatures{
 		SupportsAdvancedSettings: false,
 	}
 
@@ -382,7 +382,7 @@ func TestAdvancedSettingsVersionValidation(t *testing.T) {
 	}
 
 	// Test case where advanced_settings IS supported (newer version)
-	featSupported := features{
+	featSupported := agentPolicyFeatures{
 		SupportsAdvancedSettings: true,
 	}
 
@@ -451,7 +451,7 @@ func TestSpaceIDsVersionValidation(t *testing.T) {
 	}
 
 	// Create features with space_ids NOT supported
-	feat := features{
+	feat := agentPolicyFeatures{
 		SupportsSpaceIDs: false,
 	}
 
@@ -480,7 +480,7 @@ func TestSpaceIDsVersionValidation(t *testing.T) {
 	}
 
 	// Test case where space_ids IS supported (newer version)
-	featSupported := features{
+	featSupported := agentPolicyFeatures{
 		SupportsSpaceIDs: true,
 	}
 
@@ -548,7 +548,7 @@ func TestAgentFeaturesVersionValidation(t *testing.T) {
 	}
 
 	// Create features with agent_features NOT supported
-	feat := features{
+	feat := agentPolicyFeatures{
 		SupportsAgentFeatures: false,
 	}
 
@@ -596,7 +596,7 @@ func TestAgentFeaturesVersionValidation(t *testing.T) {
 	}
 
 	// Test case where agent_features IS supported (newer version)
-	featSupported := features{
+	featSupported := agentPolicyFeatures{
 		SupportsAgentFeatures: true,
 	}
 
@@ -659,7 +659,7 @@ func TestIsProtectedVersionValidation(t *testing.T) {
 		IsProtected: types.BoolValue(true),
 	}
 
-	feat := features{
+	feat := agentPolicyFeatures{
 		SupportsTamperProtection: false,
 	}
 
@@ -684,7 +684,7 @@ func TestIsProtectedVersionValidation(t *testing.T) {
 		t.Error("Expected error when is_protected=true on unsupported version in update, but got none")
 	}
 
-	featSupported := features{
+	featSupported := agentPolicyFeatures{
 		SupportsTamperProtection: true,
 	}
 

@@ -24,16 +24,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// stringEnumPtr converts a types.String to a typed enum pointer, returning nil for
-// null, unknown, or empty-string values.
-func stringEnumPtr[T ~string](v types.String) *T {
-	if v.IsNull() || v.IsUnknown() || v.ValueString() == "" {
-		return nil
-	}
-	value := T(v.ValueString())
-	return &value
-}
-
 func int64ToFloat32Ptr(v types.Int64) *float32 {
 	if v.IsNull() || v.IsUnknown() {
 		return nil

@@ -9,7 +9,6 @@ description: |-
 # elasticstack_elasticsearch_logstash_pipeline (Resource)
 
 Manage Logstash Pipelines via Centralized Pipeline Management. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/logstash-apis.html
-
 ## Example Usage
 
 ```terraform

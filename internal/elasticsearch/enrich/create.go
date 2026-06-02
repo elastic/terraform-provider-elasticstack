@@ -67,7 +67,7 @@ func upsertEnrichPolicy(
 		EnrichFields: enrichFields,
 	}
 
-	if !data.Query.IsNull() && !data.Query.IsUnknown() {
+	if typeutils.IsKnown(data.Query) {
 		policy.Query = data.Query.ValueString()
 	}
 
@@ -78,7 +78,7 @@ func upsertEnrichPolicy(
 
 	data.ID = types.StringValue(id.String())
 
-	if !data.Execute.IsNull() && !data.Execute.IsUnknown() && data.Execute.ValueBool() {
+	if typeutils.IsKnown(data.Execute) && data.Execute.ValueBool() {
 		if execDiags := elasticsearch.ExecuteEnrichPolicy(ctx, client, resourceID); execDiags.HasError() {
 			diags.Append(execDiags...)
 			return entitycore.WriteResult[PolicyDataWithExecute]{Model: data}, diags

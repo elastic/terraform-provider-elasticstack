@@ -1,0 +1,797 @@
+---
+subcategory: ""
+page_title: "Kibana dashboard operations guide"
+description: |-
+  Create an interactive eCommerce dashboard with pinned controls, KPI metrics, charts, and an embedded Discover session.
+---
+
+# Kibana dashboard operations guide
+
+This guide builds an **interactive eCommerce operations dashboard** with Terraform. You will wire a pinned **options list** control that filters every content panel at once, add a KPI row of Lens metrics, trend and breakdown charts, a Lens **Data Table**, and an embedded **Discover** session—all on the Kibana **sample eCommerce** dataset.
+
+If you have not used `elasticstack_kibana_dashboard` before, start with [**Getting started with Kibana dashboards**](/docs/guides/kibana-dashboard-getting-started), which covers the dashboard shell, and the 48-column grid.
+
+The runnable example lives at [`examples/guides/guide2-operations/main.tf`](https://github.com/elastic/terraform-provider-elasticstack/tree/main/examples/guides/guide2-operations/main.tf).
+
+## Prerequisites
+
+### Provider setup
+
+Configure the Elasticstack provider with a Kibana connection:
+
+```terraform
+terraform {
+  required_providers {
+    elasticstack = {
+      source = "elastic/elasticstack"
+    }
+  }
+}
+
+provider "elasticstack" {
+  kibana {}
+}
+```
+
+See the [provider documentation](/docs/index) for authentication options.
+
+### Kibana version
+
+These examples were tested against **Kibana 9.4+**. Re-export Lens or control configuration from the UI after upgrades if panels fail to render.
+
+### Install sample eCommerce data
+
+This dashboard uses **`kibana_sample_data_ecommerce`**:
+
+1. Open Kibana and go to the home page (or **Stack Management** → **Data** → **Sample Data**).
+2. Under **Sample data sets**, find **Sample eCommerce orders** and click **Add data**.
+3. Wait until Kibana reports the dataset as installed.
+
+The sample installer creates a data view whose ID is **`kibana_sample_data_ecommerce`**. Field names used in this guide include `order_date`, `category.keyword`, `taxful_total_price`, and `products.product_name`.
+
+### Data view ID for controls
+
+The **options list** control in this example references a stable Kibana data view UUID for the sample eCommerce index:
+
+```terraform
+locals {
+  ecom_data_view_id = "ff959d40-b880-11e8-a6d9-e546fe2bba5f"
+}
+```
+
+That ID is the one Kibana assigns to the sample **eCommerce** data view. For your own dashboards, substitute the real data view ID—for example from an [`elasticstack_kibana_data_view`](/docs/resources/kibana_data_view) resource or from **Stack Management** → **Data views**.
+
+Lens panels in this guide use a separate **`data_view_spec`** local (index pattern + time field) embedded in each visualization's `data_source_json`; controls use the UUID form in `data_view_id`.
+
+## What you will build
+
+The finished dashboard includes:
+
+- A **pinned controls** row with a **Category** options list filter
+- A **KPI row** — revenue (sum), order count, and average order value
+- A **stacked area** chart of orders by category over time
+- A **Data Table** of top categories with order count and revenue
+- A **donut** chart of revenue by category (included in the complete config below)
+- An embedded **Discover** session listing recent orders
+- Dashboard **options** for margins, color sync, and shared tooltips
+
+Apply each section incrementally, or use the [complete configuration](#complete-configuration) at the end.
+
+## Dashboard shell
+
+Start with the resource title, time range, and global query settings (same pattern as the getting-started guide):
+
+```terraform
+resource "elasticstack_kibana_dashboard" "operations" {
+  title       = "Operations: eCommerce monitoring"
+  description = "Interactive eCommerce operations dashboard with controls, KPIs, trends, and an embedded Discover session."
+
+  time_range = {
+    from = "now-7d"
+    to   = "now"
+  }
+
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+
+  query = {
+    language = "kql"
+    text     = ""
+  }
+
+  pinned_panels = []
+  panels        = []
+}
+```
+
+Reuse the eCommerce data source across Lens panels:
+
+```terraform
+locals {
+  ecom_data_source = jsonencode({
+    type          = "data_view_spec"
+    index_pattern = "kibana_sample_data_ecommerce"
+    time_field    = "order_date"
+  })
+}
+```
+
+## Pinned controls and options list
+
+Kibana separates **controls** from **content** panels:
+
+| Block | Role |
+| --- | --- |
+| **`pinned_panels`** | Interactive filters (options list, range slider, ES\|QL control, and so on). They stay pinned above the dashboard and apply to content panels below. |
+| **`panels`** | Visualizations and other content—metrics, charts, tables, Discover sessions. |
+
+When a user selects a value in an **options list** control, Kibana applies that filter to **every** panel in `panels` that does not set `ignore_global_filters = true`. That is how one category picker drives the whole dashboard.
+
+Add a single-select **Category** control on `category.keyword`:
+
+```terraform
+pinned_panels = [
+  {
+    type = "options_list_control"
+    options_list_control_config = {
+      data_view_id  = local.ecom_data_view_id
+      field_name    = "category.keyword"
+      title         = "Category"
+      single_select = true
+      display_settings = {
+        placeholder = "Select a category..."
+      }
+    }
+  },
+]
+```
+
+- **`data_view_id`** — Must match the UUID of the data view that owns `field_name`. Here we use the sample eCommerce ID `ff959d40-b880-11e8-a6d9-e546fe2bba5f`.
+- **`field_name`** — The field users filter on; use `.keyword` for terms-style category values.
+- **`single_select = true`** — One category at a time (multi-select is available when set to `false`).
+
+With only the control applied (and empty `panels`), open the dashboard in Kibana. The control appears in the pinned row; selecting a category does not change charts yet, but the filter is ready.
+
+![Dashboard with pinned Category control and no category selected](images/g2-01-full.png)
+
+After you add the KPI and chart panels below, select a category (for example **Men's Clothing**). Every metric and chart updates together—the same global filter the UI would apply if you filtered from the query bar.
+
+![Dashboard with Category filter active; all panels reflect the selection](images/g2-02-filtered.png)
+
+## KPI row (Lens Metric panels)
+
+Add three **Lens Metric** panels on one row using the 48-column grid: each panel is **16 columns** wide at `x = 0`, `x = 16`, and `x = 32`, with `y = 0` and `h = 10`.
+
+**Revenue** — sum of `taxful_total_price`:
+
+```terraform
+{
+  type = "vis"
+  grid = { x = 0, y = 0, w = 16, h = 10 }
+  vis_config = {
+    by_value = {
+      metric_chart_config = {
+        title                 = "Revenue"
+        data_source_json      = local.ecom_data_source
+        ignore_global_filters = false
+        sampling              = 1
+        query                 = { expression = "" }
+        metrics = [{
+          config_json = jsonencode({
+            type      = "primary"
+            operation = "sum"
+            field     = "taxful_total_price"
+            format    = { type = "number" }
+          })
+        }]
+      }
+    }
+  }
+},
+```
+
+**Orders** — document count:
+
+```terraform
+{
+  type = "vis"
+  grid = { x = 16, y = 0, w = 16, h = 10 }
+  vis_config = {
+    by_value = {
+      metric_chart_config = {
+        title                 = "Orders"
+        data_source_json      = local.ecom_data_source
+        ignore_global_filters = false
+        sampling              = 1
+        query                 = { expression = "" }
+        metrics = [{
+          config_json = jsonencode({
+            type      = "primary"
+            operation = "count"
+            format    = { type = "number" }
+          })
+        }]
+      }
+    }
+  }
+},
+```
+
+**Average order value (AOV)** — average of `taxful_total_price`:
+
+```terraform
+{
+  type = "vis"
+  grid = { x = 32, y = 0, w = 16, h = 10 }
+  vis_config = {
+    by_value = {
+      metric_chart_config = {
+        title                 = "Average order value"
+        data_source_json      = local.ecom_data_source
+        ignore_global_filters = false
+        sampling              = 1
+        query                 = { expression = "" }
+        metrics = [{
+          config_json = jsonencode({
+            type      = "primary"
+            operation = "average"
+            field     = "taxful_total_price"
+            format    = { type = "number" }
+          })
+        }]
+      }
+    }
+  }
+},
+```
+
+With `ignore_global_filters = false`, each KPI respects the pinned Category control and the dashboard time range. Select a category and watch all three numbers change together.
+
+## Lens Stacked Area chart
+
+Add a **stacked area** chart for order volume over time, broken down by category. Use `xy_chart_config` with a layer `type` of **`area_stacked`**.
+
+The X axis is a date histogram on `order_date`; the breakdown is a **terms** aggregation on `category.keyword` (top five categories by count); the Y metric is **count**.
+
+```terraform
+{
+  type = "vis"
+  grid = { x = 0, y = 10, w = 24, h = 14 }
+  vis_config = {
+    by_value = {
+      xy_chart_config = {
+        title = "Orders by category over time"
+        axis = {
+          y = {
+            domain_json = jsonencode({ type = "fit" })
+            title       = { value = "Orders", visible = true }
+          }
+          x = {
+            title = { value = "order_date", visible = true }
+          }
+        }
+        decorations = {}
+        fitting     = { type = "none" }
+        legend      = {}
+        query       = { expression = "" }
+        layers = [{
+          type = "area_stacked"
+          data_layer = {
+            data_source_json = local.ecom_data_source
+            x_json = jsonencode({
+              operation               = "date_histogram"
+              field                   = "order_date"
+              suggested_interval      = "auto"
+              use_original_time_range = false
+              include_empty_rows      = true
+              drop_partial_intervals  = false
+            })
+            breakdown_by_json = jsonencode({
+              operation = "terms"
+              fields    = ["category.keyword"]
+              limit     = 5
+              rank_by = {
+                type         = "metric"
+                metric_index = 0
+                direction    = "desc"
+              }
+              color = {
+                mode    = "categorical"
+                palette = "default"
+                mapping = []
+              }
+            })
+            y = [{
+              config_json = jsonencode({
+                operation     = "count"
+                empty_as_null = true
+              })
+            }]
+          }
+        }]
+      }
+    }
+  }
+},
+```
+
+**`breakdown_by_json`** is what Lens uses for split series (here, one stacked area per category). With **`sync_colors`** enabled on the dashboard (see [Dashboard options](#dashboard-options)), category colors stay consistent between this chart and the donut panel in the full config.
+
+## Lens Data Table
+
+Kibana's **Data Table** visualization maps to **`datatable_config`** in Terraform—not `data_table_chart_config`. The nested block for standard (non-ES|QL) tables is **`datatable_config.no_esql`**.
+
+This table lists the top 10 categories with **count** and **sum** of `taxful_total_price`:
+
+```terraform
+{
+  type = "vis"
+  grid = { x = 24, y = 10, w = 24, h = 14 }
+  vis_config = {
+    by_value = {
+      datatable_config = {
+        no_esql = {
+          title            = "Top categories"
+          data_source_json = local.ecom_data_source
+          query = {
+            language   = "kql"
+            expression = ""
+          }
+          styling = {
+            density = { mode = "default" }
+            paging  = 10
+          }
+          rows = [{
+            config_json = jsonencode({
+              operation = "terms"
+              fields    = ["category.keyword"]
+              limit     = 10
+              rank_by = {
+                type         = "metric"
+                metric_index = 0
+                direction    = "desc"
+              }
+            })
+          }]
+          metrics = [
+            {
+              config_json = jsonencode({
+                operation     = "count"
+                empty_as_null = false
+                format = {
+                  type     = "number"
+                  compact  = false
+                  decimals = 0
+                }
+              })
+            },
+            {
+              config_json = jsonencode({
+                operation     = "sum"
+                field         = "taxful_total_price"
+                empty_as_null = false
+                format = {
+                  type     = "number"
+                  compact  = false
+                  decimals = 2
+                }
+              })
+            },
+          ]
+          ignore_global_filters = false
+          sampling              = 1
+        }
+      }
+    }
+  }
+},
+```
+
+**`rows`** defines the table's split dimension (category terms); **`metrics`** defines the numeric columns. The UI label is "Data Table"; the provider schema name is **`datatable_config`**.
+
+![Data Table panel showing top categories with counts and revenue](images/g2-04-table.png)
+
+## Discover session panel
+
+Embed **Discover** on the dashboard with a panel `type` of **`discover_session`**. Configuration lives under **`discover_session_config.by_value.tab.dsl`**.
+
+```terraform
+{
+  type = "discover_session"
+  grid = { x = 24, y = 24, w = 24, h = 12 }
+  discover_session_config = {
+    title = "Recent orders"
+    by_value = {
+      tab = {
+        dsl = {
+          query = {
+            expression = ""
+            language   = "kql"
+          }
+          data_source_json = local.ecom_data_source
+          column_order = [
+            "order_date",
+            "products.product_name",
+            "taxful_total_price",
+            "category",
+          ]
+          view_mode = "documents"
+        }
+      }
+    }
+  }
+},
+```
+
+- **`data_source_json`** — The same inline **`data_view_spec`** local (`local.ecom_data_source`) that the Lens panels reuse. The polymorphic DSL data source also supports **`data_view_reference`** for linking by saved-object ID, but that variant requires a matching entry in the dashboard's saved-object `references` list; the resource doesn't auto-populate references, so prefer the inline spec for self-contained dashboards.
+- **`column_order`** — Field names shown as table columns, in left-to-right order.
+- **`view_mode`** — `"documents"` shows the document-oriented table (as opposed to a pure field statistics view). Use the value that matches how you saved the Discover session in Kibana when exporting config.
+
+The embedded session inherits dashboard time range and pinned filters, so choosing a category narrows the order list the same way it narrows the charts.
+
+![Embedded Discover session showing recent orders](images/g2-03-discover.png)
+
+## Dashboard options
+
+The top-level **`options`** block controls dashboard-wide behavior in the Kibana UI:
+
+```terraform
+options = {
+  use_margins        = true
+  sync_colors        = true
+  sync_tooltips      = true
+  sync_cursor        = true
+  auto_apply_filters = true
+  hide_panel_titles  = false
+  hide_panel_borders = false
+}
+```
+
+| Option | Effect |
+| --- | --- |
+| **`use_margins`** | Adds spacing between panel tiles so the layout breathes instead of flush edges. |
+| **`sync_colors`** | Keeps categorical colors aligned across charts (for example the same hue for **Men's Clothing** on the stacked area and donut). |
+| **`sync_tooltips`** | When you hover one chart, tooltip cursor state is shared across linked visualizations. |
+
+The example also sets **`sync_cursor`**, **`auto_apply_filters`**, **`hide_panel_titles`**, and **`hide_panel_borders`** explicitly so Terraform state matches Kibana defaults and you avoid drift on the next apply. Adjust these if your organization standardizes different dashboard chrome.
+
+## Complete configuration
+
+Apply the full dashboard—including the **Revenue by category** donut panel between the data table and Discover session:
+
+```terraform
+terraform {
+  required_providers {
+    elasticstack = {
+      source = "elastic/elasticstack"
+    }
+  }
+}
+
+provider "elasticstack" {
+  kibana {}
+}
+
+locals {
+  ecom_data_view_id = "ff959d40-b880-11e8-a6d9-e546fe2bba5f"
+
+  ecom_data_source = jsonencode({
+    type          = "data_view_spec"
+    index_pattern = "kibana_sample_data_ecommerce"
+    time_field    = "order_date"
+  })
+}
+
+resource "elasticstack_kibana_dashboard" "operations" {
+  title       = "Operations: eCommerce monitoring"
+  description = "Interactive eCommerce operations dashboard with controls, KPIs, trends, and an embedded Discover session."
+
+  time_range = {
+    from = "now-7d"
+    to   = "now"
+  }
+
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+
+  query = {
+    language = "kql"
+    text     = ""
+  }
+
+  options = {
+    use_margins        = true
+    sync_colors        = true
+    sync_tooltips      = true
+    sync_cursor        = true
+    auto_apply_filters = true
+    hide_panel_titles  = false
+    hide_panel_borders = false
+  }
+
+  pinned_panels = [
+    {
+      type = "options_list_control"
+      options_list_control_config = {
+        data_view_id  = local.ecom_data_view_id
+        field_name    = "category.keyword"
+        title         = "Category"
+        single_select = true
+        display_settings = {
+          placeholder = "Select a category..."
+        }
+      }
+    },
+  ]
+
+  panels = [
+    {
+      type = "vis"
+      grid = { x = 0, y = 0, w = 16, h = 10 }
+      vis_config = {
+        by_value = {
+          metric_chart_config = {
+            title                 = "Revenue"
+            data_source_json      = local.ecom_data_source
+            ignore_global_filters = false
+            sampling              = 1
+            query                 = { expression = "" }
+            metrics = [{
+              config_json = jsonencode({
+                type      = "primary"
+                operation = "sum"
+                field     = "taxful_total_price"
+                format    = { type = "number" }
+              })
+            }]
+          }
+        }
+      }
+    },
+    {
+      type = "vis"
+      grid = { x = 16, y = 0, w = 16, h = 10 }
+      vis_config = {
+        by_value = {
+          metric_chart_config = {
+            title                 = "Orders"
+            data_source_json      = local.ecom_data_source
+            ignore_global_filters = false
+            sampling              = 1
+            query                 = { expression = "" }
+            metrics = [{
+              config_json = jsonencode({
+                type      = "primary"
+                operation = "count"
+                format    = { type = "number" }
+              })
+            }]
+          }
+        }
+      }
+    },
+    {
+      type = "vis"
+      grid = { x = 32, y = 0, w = 16, h = 10 }
+      vis_config = {
+        by_value = {
+          metric_chart_config = {
+            title                 = "Average order value"
+            data_source_json      = local.ecom_data_source
+            ignore_global_filters = false
+            sampling              = 1
+            query                 = { expression = "" }
+            metrics = [{
+              config_json = jsonencode({
+                type      = "primary"
+                operation = "average"
+                field     = "taxful_total_price"
+                format    = { type = "number" }
+              })
+            }]
+          }
+        }
+      }
+    },
+    {
+      type = "vis"
+      grid = { x = 0, y = 10, w = 24, h = 14 }
+      vis_config = {
+        by_value = {
+          xy_chart_config = {
+            title = "Orders by category over time"
+            axis = {
+              y = {
+                domain_json = jsonencode({ type = "fit" })
+                title       = { value = "Orders", visible = true }
+              }
+              x = {
+                title = { value = "order_date", visible = true }
+              }
+            }
+            decorations = {}
+            fitting     = { type = "none" }
+            legend      = {}
+            query       = { expression = "" }
+            layers = [{
+              type = "area_stacked"
+              data_layer = {
+                data_source_json = local.ecom_data_source
+                x_json = jsonencode({
+                  operation               = "date_histogram"
+                  field                   = "order_date"
+                  suggested_interval      = "auto"
+                  use_original_time_range = false
+                  include_empty_rows      = true
+                  drop_partial_intervals  = false
+                })
+                breakdown_by_json = jsonencode({
+                  operation = "terms"
+                  fields    = ["category.keyword"]
+                  limit     = 5
+                  rank_by = {
+                    type         = "metric"
+                    metric_index = 0
+                    direction    = "desc"
+                  }
+                  color = {
+                    mode    = "categorical"
+                    palette = "default"
+                    mapping = []
+                  }
+                })
+                y = [{
+                  config_json = jsonencode({
+                    operation     = "count"
+                    empty_as_null = true
+                  })
+                }]
+              }
+            }]
+          }
+        }
+      }
+    },
+    {
+      type = "vis"
+      grid = { x = 24, y = 10, w = 24, h = 14 }
+      vis_config = {
+        by_value = {
+          datatable_config = {
+            no_esql = {
+              title            = "Top categories"
+              data_source_json = local.ecom_data_source
+              query = {
+                language   = "kql"
+                expression = ""
+              }
+              styling = {
+                density = { mode = "default" }
+                paging  = 10
+              }
+              rows = [{
+                config_json = jsonencode({
+                  operation = "terms"
+                  fields    = ["category.keyword"]
+                  limit     = 10
+                  rank_by = {
+                    type         = "metric"
+                    metric_index = 0
+                    direction    = "desc"
+                  }
+                })
+              }]
+              metrics = [
+                {
+                  config_json = jsonencode({
+                    operation     = "count"
+                    empty_as_null = false
+                    format = {
+                      type     = "number"
+                      compact  = false
+                      decimals = 0
+                    }
+                  })
+                },
+                {
+                  config_json = jsonencode({
+                    operation     = "sum"
+                    field         = "taxful_total_price"
+                    empty_as_null = false
+                    format = {
+                      type     = "number"
+                      compact  = false
+                      decimals = 2
+                    }
+                  })
+                },
+              ]
+              ignore_global_filters = false
+              sampling              = 1
+            }
+          }
+        }
+      }
+    },
+    {
+      type = "vis"
+      grid = { x = 0, y = 24, w = 24, h = 12 }
+      vis_config = {
+        by_value = {
+          pie_chart_config = {
+            title                 = "Revenue by category"
+            donut_hole            = "m"
+            label_position        = "outside"
+            data_source_json      = local.ecom_data_source
+            ignore_global_filters = false
+            sampling              = 1
+            query                 = { expression = "" }
+            metrics = [{
+              config_json = jsonencode({
+                operation = "sum"
+                field     = "taxful_total_price"
+                format    = { type = "number" }
+              })
+            }]
+            group_by = [{
+              config_json = jsonencode({
+                operation = "terms"
+                fields    = ["category.keyword"]
+                limit     = 10
+                rank_by = {
+                  type         = "metric"
+                  metric_index = 0
+                  direction    = "desc"
+                }
+                color = {
+                  mode    = "categorical"
+                  palette = "default"
+                  mapping = []
+                }
+              })
+            }]
+          }
+        }
+      }
+    },
+    {
+      type = "discover_session"
+      grid = { x = 24, y = 24, w = 24, h = 12 }
+      discover_session_config = {
+        title = "Recent orders"
+        by_value = {
+          tab = {
+            dsl = {
+              query = {
+                expression = ""
+                language   = "kql"
+              }
+              data_source_json = local.ecom_data_source
+              column_order = [
+                "order_date",
+                "products.product_name",
+                "taxful_total_price",
+                "category",
+              ]
+              view_mode = "documents"
+            }
+          }
+        }
+      }
+    },
+  ]
+}
+```
+
+## Next steps
+
+You now have an interactive eCommerce dashboard with pinned controls and an embedded Discover session. Continue the series:
+
+- [**Getting started with Kibana dashboards**](/docs/guides/kibana-dashboard-getting-started) — first-time walkthrough on sample web logs (markdown, metrics, line, bar, and donut panels).
+- [**Advanced dashboards**](/docs/guides/kibana-dashboard-advanced) — collapsible **sections**, **image** panels, gauge and heatmap charts, **ES|QL** controls, **access control**, and **tags**.
+
+For every attribute and panel type, see the [`elasticstack_kibana_dashboard` resource reference](/docs/resources/kibana_dashboard). Regenerate screenshots after UI or config changes with `node scripts/screenshots/guide2.mjs` (see [`scripts/screenshots/README.md`](https://github.com/elastic/terraform-provider-elasticstack/tree/main/scripts/screenshots/README.md)).

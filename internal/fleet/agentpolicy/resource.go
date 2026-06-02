@@ -18,13 +18,9 @@
 package agentpolicy
 
 import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -88,75 +84,4 @@ func newAgentPolicyResource() *agentPolicyResource {
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
 	return newAgentPolicyResource()
-}
-
-func (r *agentPolicyResource) buildFeatures(ctx context.Context, apiClient *clients.KibanaScopedClient) (features, diag.Diagnostics) {
-	supportsGDT, diags := apiClient.EnforceMinVersion(ctx, MinVersionGlobalDataTags)
-	if diags.HasError() {
-		return features{}, diags
-	}
-
-	supportsSupportsAgentless, diags := apiClient.EnforceMinVersion(ctx, MinSupportsAgentlessVersion)
-	if diags.HasError() {
-		return features{}, diags
-	}
-
-	supportsInactivityTimeout, diags := apiClient.EnforceMinVersion(ctx, MinVersionInactivityTimeout)
-	if diags.HasError() {
-		return features{}, diags
-	}
-
-	supportsUnenrollmentTimeout, diags := apiClient.EnforceMinVersion(ctx, MinVersionUnenrollmentTimeout)
-	if diags.HasError() {
-		return features{}, diags
-	}
-
-	supportsSpaceIDs, diags := apiClient.EnforceMinVersion(ctx, MinVersionSpaceIDs)
-	if diags.HasError() {
-		return features{}, diags
-	}
-
-	supportsRequiredVersions, diags := apiClient.EnforceMinVersion(ctx, MinVersionRequiredVersions)
-	if diags.HasError() {
-		return features{}, diags
-	}
-
-	supportsAgentFeatures, diags := apiClient.EnforceMinVersion(ctx, MinVersionAgentFeatures)
-	if diags.HasError() {
-		return features{}, diags
-	}
-
-	supportsAdvancedMonitoring, diags := apiClient.EnforceMinVersion(ctx, MinVersionAdvancedMonitoring)
-	if diags.HasError() {
-		return features{}, diags
-	}
-
-	supportsAdvancedSettings, diags := apiClient.EnforceMinVersion(ctx, MinVersionAdvancedSettings)
-	if diags.HasError() {
-		return features{}, diags
-	}
-
-	supportsTamperProtection, diags := apiClient.EnforceMinVersion(ctx, MinVersionTamperProtection)
-	if diags.HasError() {
-		return features{}, diags
-	}
-
-	supportsMonitoringRuntimeExperimental, diags := apiClient.EnforceVersionCheck(ctx, MonitoringRuntimeExperimentalSupported)
-	if diags.HasError() {
-		return features{}, diags
-	}
-
-	return features{
-		SupportsGlobalDataTags:                supportsGDT,
-		SupportsSupportsAgentless:             supportsSupportsAgentless,
-		SupportsInactivityTimeout:             supportsInactivityTimeout,
-		SupportsUnenrollmentTimeout:           supportsUnenrollmentTimeout,
-		SupportsSpaceIDs:                      supportsSpaceIDs,
-		SupportsRequiredVersions:              supportsRequiredVersions,
-		SupportsAgentFeatures:                 supportsAgentFeatures,
-		SupportsAdvancedMonitoring:            supportsAdvancedMonitoring,
-		SupportsAdvancedSettings:              supportsAdvancedSettings,
-		SupportsMonitoringRuntimeExperimental: supportsMonitoringRuntimeExperimental,
-		SupportsTamperProtection:              supportsTamperProtection,
-	}, nil
 }

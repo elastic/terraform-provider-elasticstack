@@ -18,6 +18,12 @@ Manages Kibana [dashboards](https://www.elastic.co/docs/api/doc/kibana). This fu
 - **`discover_session` `data_source_json`**: Must be JSON matching the Kibana Dashboard API tab payload — the polymorphic data source for DSL tabs (`data_view_reference`, `data_view_spec`, etc.) and the ES|QL branch for `tab.esql`. Follow the OpenAPI shapes published with the [Kibana REST API](https://www.elastic.co/docs/api/doc/kibana) (`kbn-dashboard-panel-type-discover_session`). For `data_view_reference`, use **`ref_id`** (not `id`) for the linked data view.
 - **Single Discover tab**: `discover_session_config.by_value.tab` is one object because the API currently allows a single tab entry; a future `tabs` list could be added without breaking existing configs if Kibana lifts the limit.
 
+## See also
+
+- [Getting started with Kibana dashboards](/docs/guides/kibana-dashboard-getting-started) — build your first dashboard step by step
+- [Kibana dashboard operations guide](/docs/guides/kibana-dashboard-operations) — pinned controls, KPIs, and Discover sessions
+- [Advanced Kibana dashboard patterns](/docs/guides/kibana-dashboard-advanced) — sections, ES|QL controls, and access control
+
 ## Example Usage
 
 ```terraform
@@ -293,7 +299,7 @@ Optional:
 - `synthetics_monitors_config` (Attributes) Configuration for a Synthetics monitors panel. Displays a table of Elastic Synthetics monitors and their current status. All fields are optional — omit the block entirely for a bare panel with no filtering. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--synthetics_monitors_config))
 - `synthetics_stats_overview_config` (Attributes) Configuration for a Synthetics stats overview panel. All fields are optional; an absent or empty block shows statistics for all monitors visible within the space. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--synthetics_stats_overview_config))
 - `time_slider_control_config` (Attributes) Configuration for a time slider control panel. Controls the visible time window within the dashboard's global time range. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--time_slider_control_config))
-- `vis_config` (Attributes) Configuration for a `vis` panel (`type = "vis"`). Typed alternative to panel-level `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. With `by_reference`, use structured `drilldowns` and required `time_range`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--vis_config))
+- `vis_config` (Attributes) Configuration for a `vis` panel (`type = "vis"`). Typed alternative to panel-level `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. With `by_reference`, use structured `drilldowns` and optional `time_range`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--vis_config))
 
 <a id="nestedatt--panels--grid"></a>
 ### Nested Schema for `panels.grid`
@@ -1106,7 +1112,7 @@ Optional:
 
 Optional:
 
-- `by_reference` (Attributes) By-reference `vis` configuration: structured `drilldowns`, `ref_id`, optional `references_json`, and required `time_range`. (see [below for nested schema](#nestedatt--panels--vis_config--by_reference))
+- `by_reference` (Attributes) By-reference `vis` configuration: structured `drilldowns`, `ref_id`, optional `references_json`, and optional `time_range`. (see [below for nested schema](#nestedatt--panels--vis_config--by_reference))
 - `by_value` (Attributes) Inline by-value Lens visualization configuration for `type = "vis"` panels (`vis_config`). Exactly one typed chart kind must be set (no raw JSON here — use panel-level `config_json` for that). (see [below for nested schema](#nestedatt--panels--vis_config--by_value))
 
 <a id="nestedatt--panels--vis_config--by_reference"></a>
@@ -1115,7 +1121,6 @@ Optional:
 Required:
 
 - `ref_id` (String) Reference name in the API `ref_id` field. When `references_json` is set, `ref_id` typically should match a `name` in that list so the link resolves as expected.
-- `time_range` (Attributes) Required time range for the by-reference panel config (`vis_config.by_reference`). (see [below for nested schema](#nestedatt--panels--vis_config--by_reference--time_range))
 
 Optional:
 
@@ -1124,20 +1129,8 @@ Optional:
 - `hide_border` (Boolean) When true, suppresses the panel border.
 - `hide_title` (Boolean) When true, suppresses the panel title.
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the API `references` list (for example wiring a `lens` saved object to `ref_id`).
+- `time_range` (Attributes) Optional time range for the by-reference panel config (`vis_config.by_reference`). Omitted from the API payload when unset. (see [below for nested schema](#nestedatt--panels--vis_config--by_reference--time_range))
 - `title` (String) Optional panel title.
-
-<a id="nestedatt--panels--vis_config--by_reference--time_range"></a>
-### Nested Schema for `panels.vis_config.by_reference.time_range`
-
-Required:
-
-- `from` (String) Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').
-- `to` (String) End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').
-
-Optional:
-
-- `mode` (String) Optional time range mode. When set, must be `absolute` or `relative`.
-
 
 <a id="nestedatt--panels--vis_config--by_reference--drilldowns"></a>
 ### Nested Schema for `panels.vis_config.by_reference.drilldowns`
@@ -1191,6 +1184,19 @@ Optional:
 
 
 
+<a id="nestedatt--panels--vis_config--by_reference--time_range"></a>
+### Nested Schema for `panels.vis_config.by_reference.time_range`
+
+Required:
+
+- `from` (String) Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').
+- `to` (String) End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').
+
+Optional:
+
+- `mode` (String) Optional time range mode. When set, must be `absolute` or `relative`.
+
+
 
 <a id="nestedatt--panels--vis_config--by_value"></a>
 ### Nested Schema for `panels.vis_config.by_value`
@@ -1239,7 +1245,7 @@ Optional:
 - `rows` (Attributes List) Array of row configurations as JSON. Each entry defines a row split operation. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--datatable_config--esql--rows))
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
 - `split_metrics_by` (Attributes List) Array of split-metrics configurations as JSON. Each entry defines a split operation for metric columns. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--datatable_config--esql--split_metrics_by))
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--datatable_config--esql--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--datatable_config--esql--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--panels--vis_config--by_value--datatable_config--esql--metrics"></a>
@@ -1419,7 +1425,7 @@ Optional:
 - `rows` (Attributes List) Array of row configurations as JSON. Each entry defines a row split operation. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--datatable_config--no_esql--rows))
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
 - `split_metrics_by` (Attributes List) Array of split-metrics configurations as JSON. Each entry defines a split operation for metric columns. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--datatable_config--no_esql--split_metrics_by))
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--datatable_config--no_esql--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--datatable_config--no_esql--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--panels--vis_config--by_value--datatable_config--no_esql--metrics"></a>
@@ -1611,7 +1617,7 @@ Optional:
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL gauges; omit for ES|QL mode. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--gauge_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--gauge_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--gauge_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--panels--vis_config--by_value--gauge_config--styling"></a>
@@ -1813,7 +1819,7 @@ Optional:
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL heatmaps. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--heatmap_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--heatmap_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--heatmap_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 - `y_axis_json` (String) Breakdown dimension configuration for the Y axis as JSON. When omitted, the heatmap renders without a Y breakdown.
 
@@ -2029,7 +2035,7 @@ Optional:
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL datasets. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--legacy_metric_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--legacy_metric_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--legacy_metric_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--panels--vis_config--by_value--legacy_metric_config--drilldowns"></a>
@@ -2146,7 +2152,7 @@ Optional:
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL datasets. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--metric_chart_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--metric_chart_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--metric_chart_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--panels--vis_config--by_value--metric_chart_config--metrics"></a>
@@ -2275,7 +2281,7 @@ Optional:
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL partition charts. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--mosaic_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--mosaic_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--mosaic_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 - `value_display` (Attributes) Configuration for displaying values in chart cells. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--mosaic_config--value_display))
 
@@ -2450,7 +2456,7 @@ Optional:
 - `query` (Attributes) Query configuration for filtering data. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--pie_chart_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--pie_chart_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--pie_chart_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--panels--vis_config--by_value--pie_chart_config--metrics"></a>
@@ -2597,7 +2603,7 @@ Optional:
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL region map configurations. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--region_map_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--region_map_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--region_map_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--panels--vis_config--by_value--region_map_config--drilldowns"></a>
@@ -2718,7 +2724,7 @@ Optional:
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
 - `tag_by_json` (String) Tag grouping configuration as JSON. Can be a date histogram, terms, histogram, range, or filters operation. This determines how tags are grouped and displayed. Required for non-ES|QL tagclouds; mutually exclusive with `esql_tag_by`.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--tagcloud_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--tagcloud_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--panels--vis_config--by_value--tagcloud_config--drilldowns"></a>
@@ -2874,7 +2880,7 @@ Optional:
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL partition charts. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--treemap_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--treemap_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--treemap_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 - `value_display` (Attributes) Configuration for displaying values in chart cells. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--treemap_config--value_display))
 
@@ -3059,7 +3065,7 @@ Optional:
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL partition charts. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--waffle_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--waffle_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--waffle_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 - `value_display` (Attributes) Configuration for displaying values in chart cells. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--waffle_config--value_display))
 
@@ -3257,7 +3263,7 @@ Optional:
 - `hide_title` (Boolean) When true, suppresses the chart title.
 - `query` (Attributes) Query configuration for filtering data. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--xy_chart_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--xy_chart_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--xy_chart_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--panels--vis_config--by_value--xy_chart_config--axis"></a>
@@ -3721,7 +3727,7 @@ Optional:
 - `synthetics_monitors_config` (Attributes) Configuration for a Synthetics monitors panel. Displays a table of Elastic Synthetics monitors and their current status. All fields are optional — omit the block entirely for a bare panel with no filtering. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--synthetics_monitors_config))
 - `synthetics_stats_overview_config` (Attributes) Configuration for a Synthetics stats overview panel. All fields are optional; an absent or empty block shows statistics for all monitors visible within the space. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--synthetics_stats_overview_config))
 - `time_slider_control_config` (Attributes) Configuration for a time slider control panel. Controls the visible time window within the dashboard's global time range. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--time_slider_control_config))
-- `vis_config` (Attributes) Configuration for a `vis` panel (`type = "vis"`). Typed alternative to panel-level `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. With `by_reference`, use structured `drilldowns` and required `time_range`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--vis_config))
+- `vis_config` (Attributes) Configuration for a `vis` panel (`type = "vis"`). Typed alternative to panel-level `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. With `by_reference`, use structured `drilldowns` and optional `time_range`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--vis_config))
 
 <a id="nestedatt--sections--panels--grid"></a>
 ### Nested Schema for `sections.panels.grid`
@@ -4534,7 +4540,7 @@ Optional:
 
 Optional:
 
-- `by_reference` (Attributes) By-reference `vis` configuration: structured `drilldowns`, `ref_id`, optional `references_json`, and required `time_range`. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_reference))
+- `by_reference` (Attributes) By-reference `vis` configuration: structured `drilldowns`, `ref_id`, optional `references_json`, and optional `time_range`. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_reference))
 - `by_value` (Attributes) Inline by-value Lens visualization configuration for `type = "vis"` panels (`vis_config`). Exactly one typed chart kind must be set (no raw JSON here — use panel-level `config_json` for that). (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value))
 
 <a id="nestedatt--sections--panels--vis_config--by_reference"></a>
@@ -4543,7 +4549,6 @@ Optional:
 Required:
 
 - `ref_id` (String) Reference name in the API `ref_id` field. When `references_json` is set, `ref_id` typically should match a `name` in that list so the link resolves as expected.
-- `time_range` (Attributes) Required time range for the by-reference panel config (`vis_config.by_reference`). (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_reference--time_range))
 
 Optional:
 
@@ -4552,20 +4557,8 @@ Optional:
 - `hide_border` (Boolean) When true, suppresses the panel border.
 - `hide_title` (Boolean) When true, suppresses the panel title.
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the API `references` list (for example wiring a `lens` saved object to `ref_id`).
+- `time_range` (Attributes) Optional time range for the by-reference panel config (`vis_config.by_reference`). Omitted from the API payload when unset. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_reference--time_range))
 - `title` (String) Optional panel title.
-
-<a id="nestedatt--sections--panels--vis_config--by_reference--time_range"></a>
-### Nested Schema for `sections.panels.vis_config.by_reference.time_range`
-
-Required:
-
-- `from` (String) Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').
-- `to` (String) End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').
-
-Optional:
-
-- `mode` (String) Optional time range mode. When set, must be `absolute` or `relative`.
-
 
 <a id="nestedatt--sections--panels--vis_config--by_reference--drilldowns"></a>
 ### Nested Schema for `sections.panels.vis_config.by_reference.drilldowns`
@@ -4619,6 +4612,19 @@ Optional:
 
 
 
+<a id="nestedatt--sections--panels--vis_config--by_reference--time_range"></a>
+### Nested Schema for `sections.panels.vis_config.by_reference.time_range`
+
+Required:
+
+- `from` (String) Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').
+- `to` (String) End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').
+
+Optional:
+
+- `mode` (String) Optional time range mode. When set, must be `absolute` or `relative`.
+
+
 
 <a id="nestedatt--sections--panels--vis_config--by_value"></a>
 ### Nested Schema for `sections.panels.vis_config.by_value`
@@ -4667,7 +4673,7 @@ Optional:
 - `rows` (Attributes List) Array of row configurations as JSON. Each entry defines a row split operation. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--datatable_config--esql--rows))
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
 - `split_metrics_by` (Attributes List) Array of split-metrics configurations as JSON. Each entry defines a split operation for metric columns. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--datatable_config--esql--split_metrics_by))
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--datatable_config--esql--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--datatable_config--esql--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--sections--panels--vis_config--by_value--datatable_config--esql--metrics"></a>
@@ -4847,7 +4853,7 @@ Optional:
 - `rows` (Attributes List) Array of row configurations as JSON. Each entry defines a row split operation. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--datatable_config--no_esql--rows))
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
 - `split_metrics_by` (Attributes List) Array of split-metrics configurations as JSON. Each entry defines a split operation for metric columns. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--datatable_config--no_esql--split_metrics_by))
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--datatable_config--no_esql--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--datatable_config--no_esql--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--sections--panels--vis_config--by_value--datatable_config--no_esql--metrics"></a>
@@ -5039,7 +5045,7 @@ Optional:
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL gauges; omit for ES|QL mode. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--gauge_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--gauge_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--gauge_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--sections--panels--vis_config--by_value--gauge_config--styling"></a>
@@ -5241,7 +5247,7 @@ Optional:
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL heatmaps. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--heatmap_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--heatmap_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--heatmap_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 - `y_axis_json` (String) Breakdown dimension configuration for the Y axis as JSON. When omitted, the heatmap renders without a Y breakdown.
 
@@ -5457,7 +5463,7 @@ Optional:
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL datasets. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--legacy_metric_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--legacy_metric_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--legacy_metric_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--sections--panels--vis_config--by_value--legacy_metric_config--drilldowns"></a>
@@ -5574,7 +5580,7 @@ Optional:
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL datasets. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--metric_chart_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--metric_chart_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--metric_chart_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--sections--panels--vis_config--by_value--metric_chart_config--metrics"></a>
@@ -5703,7 +5709,7 @@ Optional:
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL partition charts. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--mosaic_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--mosaic_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--mosaic_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 - `value_display` (Attributes) Configuration for displaying values in chart cells. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--mosaic_config--value_display))
 
@@ -5878,7 +5884,7 @@ Optional:
 - `query` (Attributes) Query configuration for filtering data. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--pie_chart_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--pie_chart_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--pie_chart_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--sections--panels--vis_config--by_value--pie_chart_config--metrics"></a>
@@ -6025,7 +6031,7 @@ Optional:
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL region map configurations. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--region_map_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--region_map_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--region_map_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--sections--panels--vis_config--by_value--region_map_config--drilldowns"></a>
@@ -6146,7 +6152,7 @@ Optional:
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
 - `tag_by_json` (String) Tag grouping configuration as JSON. Can be a date histogram, terms, histogram, range, or filters operation. This determines how tags are grouped and displayed. Required for non-ES|QL tagclouds; mutually exclusive with `esql_tag_by`.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--tagcloud_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--tagcloud_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--sections--panels--vis_config--by_value--tagcloud_config--drilldowns"></a>
@@ -6302,7 +6308,7 @@ Optional:
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL partition charts. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--treemap_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--treemap_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--treemap_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 - `value_display` (Attributes) Configuration for displaying values in chart cells. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--treemap_config--value_display))
 
@@ -6487,7 +6493,7 @@ Optional:
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL partition charts. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--waffle_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--waffle_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--waffle_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 - `value_display` (Attributes) Configuration for displaying values in chart cells. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--waffle_config--value_display))
 
@@ -6685,7 +6691,7 @@ Optional:
 - `hide_title` (Boolean) When true, suppresses the chart title.
 - `query` (Attributes) Query configuration for filtering data. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--xy_chart_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
-- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--xy_chart_config--time_range))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider omits `time_range` from the API payload on write and preserves null in state when the API returns no panel-level `time_range` on read. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--xy_chart_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--sections--panels--vis_config--by_value--xy_chart_config--axis"></a>

@@ -89,15 +89,18 @@ func heatmapConfigPopulateCommonFields(m *models.HeatmapConfigModel,
 	diags.Append(axisDiags...)
 	m.Styling = &models.HeatmapStylingModel{}
 	heatmapStylingFromAPI(m.Styling, styling)
-	m.Legend = &models.HeatmapLegendModel{}
-	heatmapLegendFromAPI(m.Legend, legend)
+	if legend == nil {
+		m.Legend = nil
+	} else {
+		m.Legend = &models.HeatmapLegendModel{}
+		heatmapLegendFromAPI(m.Legend, legend)
+	}
 	return !diags.HasError()
 }
 
 func heatmapConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.HeatmapConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.HeatmapConfigModel,
 	api kbapi.KibanaHTTPAPIsHeatmapNoESQL,
 ) diag.Diagnostics {
@@ -142,22 +145,14 @@ func heatmapConfigFromAPINoESQL(
 		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
-	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(api.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func heatmapConfigFromAPIESQL(ctx context.Context, m *models.HeatmapConfigModel, resolver lenscommon.Resolver, prior *models.HeatmapConfigModel, api kbapi.KibanaHTTPAPIsHeatmapESQL) diag.Diagnostics {
+func heatmapConfigFromAPIESQL(ctx context.Context, m *models.HeatmapConfigModel, prior *models.HeatmapConfigModel, api kbapi.KibanaHTTPAPIsHeatmapESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -196,22 +191,14 @@ func heatmapConfigFromAPIESQL(ctx context.Context, m *models.HeatmapConfigModel,
 		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
-	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(api.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func heatmapConfigToAPI(m *models.HeatmapConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func heatmapConfigToAPI(m *models.HeatmapConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs lenscommon.VisByValueConfig0
 
@@ -220,7 +207,7 @@ func heatmapConfigToAPI(m *models.HeatmapConfigModel, resolver lenscommon.Resolv
 	}
 
 	if heatmapConfigUsesESQL(m) {
-		esql, esqlDiags := heatmapConfigToAPIESQL(m, resolver)
+		esql, esqlDiags := heatmapConfigToAPIESQL(m)
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
 			return attrs, diags
@@ -231,7 +218,7 @@ func heatmapConfigToAPI(m *models.HeatmapConfigModel, resolver lenscommon.Resolv
 		return attrs, diags
 	}
 
-	noESQL, noESQLDiags := heatmapConfigToAPINoESQL(m, resolver)
+	noESQL, noESQLDiags := heatmapConfigToAPINoESQL(m)
 	diags.Append(noESQLDiags...)
 	if diags.HasError() {
 		return attrs, diags
@@ -253,7 +240,7 @@ func heatmapConfigUsesESQL(m *models.HeatmapConfigModel) bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsHeatmapNoESQL, diag.Diagnostics) {
+func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPIsHeatmapNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.KibanaHTTPAPIsHeatmapNoESQL{
 		Type: kbapi.KibanaHTTPAPIsHeatmapNoESQLTypeHeatmap,
@@ -341,34 +328,20 @@ func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel, resolver lenscommon.
 
 	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
 	}
 
-	api.TimeRange = writes.TimeRange
-	if writes.HideTitle != nil {
-		api.HideTitle = writes.HideTitle
-	}
-	if writes.HideBorder != nil {
-		api.HideBorder = writes.HideBorder
-	}
-	if writes.References != nil {
-		api.References = writes.References
-	}
-	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsHeatmapNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
-		diags.Append(ddDiags...)
-		if !ddDiags.HasError() {
-			api.Drilldowns = &items
-		}
-	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsHeatmapNoESQL_Drilldowns_Item](
+		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+	)...)
 
 	return api, diags
 }
 
-func heatmapConfigToAPIESQL(m *models.HeatmapConfigModel, resolver lenscommon.Resolver) (kbapi.KibanaHTTPAPIsHeatmapESQL, diag.Diagnostics) {
+func heatmapConfigToAPIESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPIsHeatmapESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.KibanaHTTPAPIsHeatmapESQL{
 		Type: kbapi.KibanaHTTPAPIsHeatmapESQLTypeHeatmap,
@@ -454,29 +427,15 @@ func heatmapConfigToAPIESQL(m *models.HeatmapConfigModel, resolver lenscommon.Re
 
 	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
 	}
 
-	api.TimeRange = writes.TimeRange
-	if writes.HideTitle != nil {
-		api.HideTitle = writes.HideTitle
-	}
-	if writes.HideBorder != nil {
-		api.HideBorder = writes.HideBorder
-	}
-	if writes.References != nil {
-		api.References = writes.References
-	}
-	if len(writes.DrilldownsRaw) > 0 {
-		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsHeatmapESQL_Drilldowns_Item](writes.DrilldownsRaw)
-		diags.Append(ddDiags...)
-		if !ddDiags.HasError() {
-			api.Drilldowns = &items
-		}
-	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsHeatmapESQL_Drilldowns_Item](
+		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+	)...)
 
 	return api, diags
 }

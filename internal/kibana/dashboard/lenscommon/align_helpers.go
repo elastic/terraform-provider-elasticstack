@@ -25,18 +25,42 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// PreserveKnownTfBoolIfStateNull copies plan into *state when plan is known and non-null but
+// PreserveKnownTfBoolIfStateNull copies plan into *state when plan is known but
 // state is null or unknown. Used to preserve practitioner intent across chart config round-trips.
 func PreserveKnownTfBoolIfStateNull(plan types.Bool, state *types.Bool) {
-	if typeutils.IsKnown(plan) && !plan.IsNull() && (!typeutils.IsKnown(*state) || state.IsNull()) {
+	if typeutils.IsKnown(plan) && !typeutils.IsKnown(*state) {
 		*state = plan
 	}
 }
 
-// PreserveKnownTfFloat64IfStateNull copies plan into *state when plan is known and non-null but
+// PreserveKnownTfFloat64IfStateNull copies plan into *state when plan is known but
 // state is null or unknown. Used to preserve practitioner intent across chart config round-trips.
 func PreserveKnownTfFloat64IfStateNull(plan types.Float64, state *types.Float64) {
-	if typeutils.IsKnown(plan) && !plan.IsNull() && (!typeutils.IsKnown(*state) || state.IsNull()) {
+	if typeutils.IsKnown(plan) && !typeutils.IsKnown(*state) {
+		*state = plan
+	}
+}
+
+// PreserveKnownTfStringIfStateNull copies plan into *state when plan is known but
+// state is null or unknown. Used to preserve practitioner intent across chart config round-trips.
+func PreserveKnownTfStringIfStateNull(plan types.String, state *types.String) {
+	if typeutils.IsKnown(plan) && !typeutils.IsKnown(*state) {
+		*state = plan
+	}
+}
+
+// PreserveKnownTfInt64IfStateNull copies plan into *state when plan is known but
+// state is null or unknown. Used to preserve practitioner intent across chart config round-trips.
+func PreserveKnownTfInt64IfStateNull(plan types.Int64, state *types.Int64) {
+	if typeutils.IsKnown(plan) && !typeutils.IsKnown(*state) {
+		*state = plan
+	}
+}
+
+// PreserveKnownTfListIfStateNull copies plan into *state when plan is known but
+// state is null or unknown. Used to preserve practitioner intent across chart config round-trips.
+func PreserveKnownTfListIfStateNull(plan types.List, state *types.List) {
+	if typeutils.IsKnown(plan) && (state.IsNull() || state.IsUnknown()) {
 		*state = plan
 	}
 }

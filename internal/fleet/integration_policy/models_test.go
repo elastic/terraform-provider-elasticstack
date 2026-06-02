@@ -69,7 +69,7 @@ func TestOutputIdHandling(t *testing.T) {
 			OutputID:           types.StringValue("test-output-id"),
 		}
 
-		feat := features{
+		feat := integrationPolicyFeatures{
 			SupportsPolicyIDs: true,
 			SupportsOutputID:  true,
 		}
@@ -90,7 +90,7 @@ func TestOutputIdHandling(t *testing.T) {
 			OutputID:           types.StringValue("test-output-id"),
 		}
 
-		feat := features{
+		feat := integrationPolicyFeatures{
 			SupportsPolicyIDs: true,
 			SupportsOutputID:  false, // Simulate unsupported version
 		}

@@ -15,8 +15,7 @@ Nothing runs until someone applies that label. The workflow is only meant for PR
 ## Where the details live
 
 - **Behavior and requirements** (what must be true, when the bot skips work, what “approve” implies):  
-  [`openspec/changes/aw-openspec-verification/specs/ci-aw-openspec-verification/spec.md`](../../openspec/changes/aw-openspec-verification/specs/ci-aw-openspec-verification/spec.md)  
-  (When that change is archived, the same capability will live under [`openspec/specs/`](../../openspec/specs/) per project process.)
+  [`openspec/specs/ci-aw-openspec-verification/spec.md`](../../openspec/specs/ci-aw-openspec-verification/spec.md)
 
 - **How it is implemented** (instructions for the automation, triggers, compilation):  
   - Source: [`.github/workflows/openspec-verify-label.md`](../../.github/workflows/openspec-verify-label.md)  
@@ -24,4 +23,4 @@ Nothing runs until someone applies that label. The workflow is only meant for PR
 
 Repository admins may need to adjust **GitHub Actions** settings so workflows can open or update pull requests and push to PR branches; exact needs depend on your org. If pushes from the bot do not trigger your usual CI, see [Triggering CI](https://github.github.io/gh-aw/reference/triggering-ci/) in the GitHub Agentic Workflows docs.
 
-For how OpenSpec changes and specs fit into everyday contribution work, see [`openspec-requirements.md`](./openspec-requirements.md).
+For how OpenSpec changes and specs fit into everyday contribution work, see [`openspec-requirements.md`](./openspec-requirements.md). For the prepare → implement → verify loop that `verify-openspec` sits inside, see [`openspec-workflows.md`](./openspec-workflows.md).

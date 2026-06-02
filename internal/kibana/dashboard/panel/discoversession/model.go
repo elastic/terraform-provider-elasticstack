@@ -29,16 +29,6 @@ const (
 	drilldownURLOpenInNewTabDefault = false
 )
 
-func drilldownBoolImportPreserving(api *bool, serverDefault bool) types.Bool {
-	if api == nil {
-		return types.BoolNull()
-	}
-	if *api == serverDefault {
-		return types.BoolNull()
-	}
-	return types.BoolValue(*api)
-}
-
 func columnSettingObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{

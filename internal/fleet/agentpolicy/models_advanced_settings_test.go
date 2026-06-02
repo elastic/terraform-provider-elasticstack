@@ -136,7 +136,7 @@ func TestConvertAdvancedSettingsToAPI(t *testing.T) {
 				AdvancedSettings: tt.advancedSettings,
 			}
 
-			got, diags := model.convertAdvancedSettingsToAPI(ctx, features{SupportsMonitoringRuntimeExperimental: true})
+			got, diags := model.convertAdvancedSettingsToAPI(ctx, agentPolicyFeatures{SupportsMonitoringRuntimeExperimental: true})
 			assert.False(t, diags.HasError())
 
 			if tt.wantNil {

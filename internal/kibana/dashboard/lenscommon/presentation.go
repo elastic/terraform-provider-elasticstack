@@ -41,12 +41,11 @@ type LensChartPresentationWrites struct {
 }
 
 // LensChartPresentationWritesFor builds API presentation fields from Terraform chart-root attributes.
-func LensChartPresentationWritesFor(resolver Resolver, in models.LensChartPresentationTFModel) (LensChartPresentationWrites, diag.Diagnostics) {
+func LensChartPresentationWritesFor(in models.LensChartPresentationTFModel) (LensChartPresentationWrites, diag.Diagnostics) {
 	var writes LensChartPresentationWrites
 	var diags diag.Diagnostics
 
-	tr := resolver.ResolveChartTimeRange(in.TimeRange)
-	writes.TimeRange = &tr
+	writes.TimeRange = ResolveChartTimeRange(in.TimeRange)
 	if typeutils.IsKnown(in.HideTitle) {
 		v := in.HideTitle.ValueBool()
 		writes.HideTitle = &v
@@ -90,6 +89,38 @@ func LensChartPresentationReferencesWrites(referencesJSON jsontypes.Normalized, 
 		return nil, diags
 	}
 	return &refs, diags
+}
+
+// ApplyLensChartPresentationWrites assigns presentation fields from writes to the API struct pointer fields.
+// Pass pointers to the target struct fields: &api.TimeRange, &api.HideTitle, etc.
+// The DrilldownItem type parameter must match the Drilldowns_Item type of the target API struct.
+func ApplyLensChartPresentationWrites[DrilldownItem any](
+	writes LensChartPresentationWrites,
+	timeRange **kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema,
+	hideTitle **bool,
+	hideBorder **bool,
+	references **[]CMReferenceSchema,
+	drilldowns **[]DrilldownItem,
+) diag.Diagnostics {
+	var diags diag.Diagnostics
+	*timeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		*hideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		*hideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		*references = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := DecodeLensDrilldownSlice[DrilldownItem](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			*drilldowns = &items
+		}
+	}
+	return diags
 }
 
 // DecodeLensDrilldownSlice unmarshals raw drilldown JSON produced by LensDrilldownsToRawJSON into generated union item types.
@@ -231,27 +262,12 @@ func lensTimeRangeModeString(mode *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRange
 	return string(*mode)
 }
 
-// LensTimeRangesAPILiteralEqual reports whether two API time range payloads match including mode.
-func LensTimeRangesAPILiteralEqual(a, b kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema) bool {
-	if a.From != b.From || a.To != b.To {
-		return false
-	}
-	return lensTimeRangeModeString(a.Mode) == lensTimeRangeModeString(b.Mode)
-}
-
-// chartTimeRangeFromAPI maps a chart-root API time range into Terraform state with REQ-038/REQ-009 null-preservation semantics.
-func chartTimeRangeFromAPI(resolver Resolver, apiTimeRange *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, priorState *models.TimeRangeModel) *models.TimeRangeModel {
+// chartTimeRangeFromAPI maps a chart-root API time range into Terraform state. It returns nil when the API omits the time range (REQ-040) and preserves null `mode` when the API omits mode (REQ-009).
+func chartTimeRangeFromAPI(apiTimeRange *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, priorState *models.TimeRangeModel) *models.TimeRangeModel {
 	if apiTimeRange == nil {
 		return nil
 	}
 	if apiTimeRange.From == "" && apiTimeRange.To == "" && (apiTimeRange.Mode == nil || lensTimeRangeModeString(apiTimeRange.Mode) == "") {
-		return nil
-	}
-
-	priorWasNil := priorState == nil
-
-	dashTR, dashOK := resolver.DashboardLensComparableTimeRange()
-	if priorWasNil && dashOK && LensTimeRangesAPILiteralEqual(*apiTimeRange, dashTR) {
 		return nil
 	}
 
@@ -456,10 +472,36 @@ func LensDrilldownItemFromAPIJSON(raw []byte, pathPrefix string) (models.LensDri
 	}
 }
 
+// PopulateLensChartPresentation consolidates the repeated drilldown-wire and presentation-read
+// block found across all Lens panel FromAPI functions. It writes the result into *out.
+// Returns false if any error occurs; the caller should immediately return diags.
+func PopulateLensChartPresentation[Item any](
+	ctx context.Context,
+	out *models.LensChartPresentationTFModel,
+	prior *models.LensChartPresentationTFModel,
+	apiTimeRange *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema,
+	hideTitle, hideBorder *bool,
+	refs *[]CMReferenceSchema,
+	drilldowns *[]Item,
+	diags *diag.Diagnostics,
+) bool {
+	ddWire, ddOmit, ddWireDiags := LensDrilldownsAPIToWire(drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return false
+	}
+	pres, presDiags := LensChartPresentationReadsFor(ctx, prior, apiTimeRange, hideTitle, hideBorder, refs, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return false
+	}
+	*out = pres
+	return true
+}
+
 // LensChartPresentationReadsFor maps optional chart-root presentation API fields into Terraform state with REQ-009-style null preservation.
 func LensChartPresentationReadsFor(
 	ctx context.Context,
-	resolver Resolver,
 	prior *models.LensChartPresentationTFModel,
 	apiTimeRange *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema,
 	hideTitle *bool,
@@ -489,7 +531,7 @@ func LensChartPresentationReadsFor(
 	}
 
 	var out models.LensChartPresentationTFModel
-	out.TimeRange = chartTimeRangeFromAPI(resolver, apiTimeRange, priorTime)
+	out.TimeRange = chartTimeRangeFromAPI(apiTimeRange, priorTime)
 	out.HideTitle = lensPresentationOptionalBoolRead(hideTitle, priorHideTitle)
 	out.HideBorder = lensPresentationOptionalBoolRead(hideBorder, priorHideBorder)
 

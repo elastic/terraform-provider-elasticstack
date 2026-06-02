@@ -30,13 +30,12 @@ const elasticsearchWatcherRedactedSecret = "::es_redacted::"
 // pre-redaction value was, for example, a stored-script reference object such
 // as `{"id": "<script-id>"}` or an inline-script object. All non-redacted
 // values come from the API document.
-func mergeActionsPreservingRedactedLeaves(apiActions map[string]any, priorActions any) map[string]any {
-	priorRoot, _ := priorActions.(map[string]any)
+func mergeActionsPreservingRedactedLeaves(apiActions map[string]any, priorActions map[string]any) map[string]any {
 	out := make(map[string]any, len(apiActions))
 	for k, v := range apiActions {
 		var priorChild any
-		if priorRoot != nil {
-			priorChild = priorRoot[k]
+		if priorActions != nil {
+			priorChild = priorActions[k]
 		}
 		out[k] = mergePreserveRedactedLeaves(v, priorChild)
 	}

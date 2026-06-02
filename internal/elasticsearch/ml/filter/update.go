@@ -65,13 +65,10 @@ func updateFilter(ctx context.Context, client *clients.ElasticsearchScopedClient
 		currentItemSet[item] = struct{}{}
 	}
 
-	var planItems []string
-	if !plan.Items.IsNull() && !plan.Items.IsUnknown() {
-		d := plan.Items.ElementsAs(ctx, &planItems, false)
-		diags.Append(d...)
-		if diags.HasError() {
-			return entitycore.WriteResult[TFModel]{Model: plan}, diags
-		}
+	planItems, itemDiags := itemsFromPlan(ctx, plan)
+	diags.Append(itemDiags...)
+	if diags.HasError() {
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
 	planItemSet := make(map[string]struct{})

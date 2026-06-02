@@ -31,17 +31,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type stubResolver struct{}
-
-func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	_ = chartLevel
-	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}
-}
-
-func (stubResolver) DashboardLensComparableTimeRange() (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, bool) {
-	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}, false
-}
-
 func TestConverter_VizType(t *testing.T) {
 	var c converter
 	require.Equal(t, string(kbapi.LegacyMetric), c.VizType())
@@ -101,8 +90,6 @@ func assertLegacyMetricRoundTripEqual(ctx context.Context, t *testing.T, a, b *m
 func TestConverter_BuildAttributes_PopulateFromAttributes_roundTrip_NoESQL(t *testing.T) {
 	ctx := t.Context()
 	var c converter
-	resolver := stubResolver{}
-
 	cfg := &models.LegacyMetricConfigModel{
 		Title:               types.StringValue("Hello Legacy"),
 		Description:         types.StringValue("desc"),
@@ -118,11 +105,11 @@ func TestConverter_BuildAttributes_PopulateFromAttributes_roundTrip_NoESQL(t *te
 
 	in := &models.LensByValueChartBlocks{LegacyMetricConfig: cfg}
 
-	attrs, diags := c.BuildAttributes(in, resolver)
+	attrs, diags := c.BuildAttributes(in)
 	require.False(t, diags.HasError())
 
 	out := &models.LensByValueChartBlocks{}
-	diags = c.PopulateFromAttributes(ctx, resolver, out, attrs)
+	diags = c.PopulateFromAttributes(ctx, out, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, out.LegacyMetricConfig)
 

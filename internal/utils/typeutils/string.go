@@ -45,3 +45,13 @@ func NonEmptyStringishPointerValue[T ~string](ptr *T) types.String {
 	}
 	return NonEmptyStringishValue(*ptr)
 }
+
+// StringishToPointer converts a types.String to a typed string-enum pointer,
+// returning nil for null, unknown, or empty-string values.
+func StringishToPointer[T ~string](v types.String) *T {
+	if v.IsNull() || v.IsUnknown() || v.ValueString() == "" {
+		return nil
+	}
+	value := T(v.ValueString())
+	return &value
+}

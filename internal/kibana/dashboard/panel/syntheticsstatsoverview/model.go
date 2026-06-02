@@ -149,8 +149,18 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 		return nil
 	}
 
-	existing := pm.SyntheticsStatsOverviewConfig
+	if pm.SyntheticsStatsOverviewConfig == nil && prior.SyntheticsStatsOverviewConfig != nil {
+		pm.SyntheticsStatsOverviewConfig = &models.SyntheticsStatsOverviewConfigModel{
+			Title:       types.StringPointerValue(cfg.Title),
+			Description: types.StringPointerValue(cfg.Description),
+			HideTitle:   types.BoolPointerValue(cfg.HideTitle),
+			HideBorder:  types.BoolPointerValue(cfg.HideBorder),
+			Drilldowns:  readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, nil),
+			Filters:     readSyntheticsStatsOverviewFiltersFromAPI(apiPanel, nil),
+		}
+	}
 
+	existing := pm.SyntheticsStatsOverviewConfig
 	if existing == nil {
 		return nil
 	}
@@ -166,7 +176,11 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, cfg.HideTitle)
 	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, cfg.HideBorder)
 
-	existing.Drilldowns = readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, existing.Drilldowns)
+	var priorDrilldowns []models.URLDrilldownModel
+	if prior.SyntheticsStatsOverviewConfig != nil {
+		priorDrilldowns = prior.SyntheticsStatsOverviewConfig.Drilldowns
+	}
+	existing.Drilldowns = readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, priorDrilldowns)
 	existing.Filters = readSyntheticsStatsOverviewFiltersFromAPI(apiPanel, existing.Filters)
 	return nil
 }

@@ -25,12 +25,12 @@ import (
 	sourcemap "github.com/elastic/terraform-provider-elasticstack/internal/apm/source_map"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster"
 	clusterinfo "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/info"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/script"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/settings"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/slm"
-	snapshot_repository "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_repository"
+	connectordatasource "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector/data_source"
+	connectorresource "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector/sync_job_create"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/alias"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/componenttemplate"
@@ -53,13 +53,19 @@ import (
 	datafeedstate "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed_state"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/filter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/jobstate"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
+	mltrainedmodel "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/trainedmodel"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/trainedmodelalias"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/queryrulesets"
 	apikeyephemeral "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey/ephemeral"
 	apikeyresource "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey/resource"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/rolemapping"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/systemuser"
 	securityuser "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/user"
+	snapshotcreate "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/snapshot/create"
+	snapshotlifecycle "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/snapshot/lifecycle"
+	snapshotrepo "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/snapshot/repository"
+	snapshotrestore "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/snapshot/restore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/synonyms"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/transform"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/watcher/watch"
@@ -90,6 +96,7 @@ import (
 	prebuilt_rules "github.com/elastic/terraform-provider-elasticstack/internal/kibana/prebuilt_rules"
 	security_detection_rule "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
 	securityenablerule "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_enable_rule"
+	securityentitystore "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store"
 	securityexceptionitem "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_exception_item"
 	securitylistdatastreams "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list_data_streams"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_role"
@@ -103,6 +110,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/parameter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/privatelocation"
 	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/hashicorp/terraform-plugin-framework/action"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
 	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
@@ -124,6 +132,7 @@ const (
 var (
 	_ fwprovider.Provider                       = &Provider{}
 	_ fwprovider.ProviderWithEphemeralResources = &Provider{}
+	_ fwprovider.ProviderWithActions            = &Provider{}
 )
 
 type Provider struct {
@@ -169,6 +178,15 @@ func (p *Provider) Configure(ctx context.Context, req fwprovider.ConfigureReques
 	res.DataSourceData = factory
 	res.ResourceData = factory
 	res.EphemeralResourceData = factory
+	res.ActionData = factory
+}
+
+func (p *Provider) Actions(_ context.Context) []func() action.Action {
+	return []func() action.Action{
+		snapshotrestore.NewRestoreAction,
+		snapshotcreate.NewCreateAction,
+		sync_job_create.NewAction,
+	}
 }
 
 func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSource {
@@ -241,6 +259,8 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		maintenancewindow.NewResource,
 		enrich.NewEnrichPolicyResource,
 		synonyms.NewSynonymSetResource,
+		connectorresource.NewContentConnectorResource,
+		queryrulesets.NewQueryRulesetResource,
 		ingest.NewIngestPipelineResource,
 		rolemapping.NewRoleMappingResource,
 		alias.NewAliasResource,
@@ -252,6 +272,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		calendar_event.NewCalendarEventResource,
 		calendar_job.NewCalendarJobResource,
 		filter.NewFilterResource,
+		trainedmodelalias.NewTrainedModelAliasResource,
 		security_detection_rule.NewSecurityDetectionRuleResource,
 		jobstate.NewMLJobStateResource,
 		datafeedstate.NewMLDatafeedStateResource,
@@ -264,9 +285,10 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		securityexceptionlist.NewResource,
 		securityexceptionitem.NewResource,
 		security_role.NewResource,
+		securityentitystore.NewResource,
 		spaces.NewResource,
-		slm.NewSlmResource,
-		snapshot_repository.NewSnapshotRepositoryResource,
+		snapshotlifecycle.NewSlmResource,
+		snapshotrepo.NewSnapshotRepositoryResource,
 		transform.NewTransformResource,
 	}
 }
@@ -279,12 +301,13 @@ func (p *Provider) experimentalResources(_ context.Context) []func() resource.Re
 
 func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		cluster.NewSnapshotRepositoryDataSource,
+		snapshotrepo.NewSnapshotRepositoryDataSource,
 		clusterinfo.NewDataSource,
 		indices.NewDataSource,
 		template.NewDataSource,
 		spaces.NewDataSource,
 		security_role.NewDataSource,
+		securityentitystore.NewDataSource,
 		connectors.NewDataSource,
 		agentbuilderagent.NewDataSource,
 		agentbuilderskill.NewDataSource,
@@ -295,9 +318,11 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		integrationds.NewDataSource,
 		enrich.NewEnrichPolicyDataSource,
 		synonyms.NewSynonymSetDataSource,
+		connectordatasource.NewContentConnectorDataSource,
+		queryrulesets.NewQueryRulesetDataSource,
 		rolemapping.NewRoleMappingDataSource,
-		security.NewRoleDataSource,
-		security.NewUserDataSource,
+		role.NewRoleDataSource,
+		securityuser.NewUserDataSource,
 		outputds.NewDataSource,
 		ingest.NewProcessorAppendDataSource,
 		ingest.NewProcessorBytesDataSource,
@@ -339,6 +364,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		ingest.NewProcessorURIPartsDataSource,
 		ingest.NewProcessorURLDecodeDataSource,
 		ingest.NewProcessorUserAgentDataSource,
+		mltrainedmodel.NewDataSource,
 	}
 }
 

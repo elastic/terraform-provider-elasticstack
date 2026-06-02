@@ -71,6 +71,7 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl{
 		Grid: grid,
 		Id:   id,
+		Type: kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControlTypeEsqlControl,
 	}
 	diags := BuildConfig(pm, &panel)
 	var panelItem kbapi.DashboardPanelItem

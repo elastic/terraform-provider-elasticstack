@@ -79,7 +79,7 @@ resource "elasticstack_kibana_dashboard" "example" {
     xy_chart_config = <optional, object({
       title       = <optional, string>
       description = <optional, string>
-      axis        = <required, object({ x = <optional, object({ domain_json = <optional, json string, normalized>, ... })>, y = <optional, object({ domain_json = <required, json string, normalized>, ... })>, secondary_y = <optional, object({ domain_json = <required, json string, normalized>, ... })> })>
+      axis        = <required, object({ x = <optional, object({ domain_json = <optional, json string, normalized>, ... })>, y = <optional, object({ domain_json = <required, json string, normalized>, ... })>, y2 = <optional, object({ domain_json = <required, json string, normalized>, ... })> })>
       decorations = <required, object(...)>
       fitting     = <required, object({ type = <required, string>, dotted = <optional, bool>, end_value = <optional, string> })>
       layers      = <required, list(object({ type = <required, string>, data_layer = <optional, object(...)>, reference_line_layer = <optional, object(...)> }))> # at least 1
@@ -262,7 +262,6 @@ resource "elasticstack_kibana_dashboard" "example" {
       sampling              = <optional, float64>
       ignore_global_filters = <optional, bool>
     })> # only with type = "vis"
-
 
     synthetics_stats_overview_config = <optional, object({
       title       = <optional, string>
@@ -565,11 +564,92 @@ On write, practitioner-authored panel-level `config_json` SHALL be supported onl
 
 The resource SHALL normalize `config_json` and typed `vis` panel data with default-aware semantic equality so Kibana-injected defaults do not cause unnecessary drift. This normalization SHALL include panel-type-specific defaults such as missing empty `filters` arrays and visualization metric/grouping defaults used by the implementation. For XY chart panels, when `axis.x.scale` was unset in configuration and Kibana returns the implicit default `ordinal`, the resource SHALL preserve the unset Terraform value instead of forcing `ordinal` into state.
 
+For XY chart `fitting` round-trips, the resource SHALL treat an empty string returned by Kibana for `fitting.type` (which Kibana emits for some layer kinds such as `bar_stacked`) as semantically null and SHALL restore the practitioner's configured `fitting.type` from the plan. The same null-empty-string treatment SHALL apply to `fitting.end_value`. This prevents "Provider produced inconsistent result after apply" diagnostics when bar-style XY layers are used with an explicit `fitting.type` such as `"none"`.
+
+For XY chart `decorations` round-trips on bar-style layers (e.g. `bar`, `bar_stacked`, `bar_horizontal`), Kibana injects server-side bar-styling defaults — `decorations.show_value_labels = false` and `decorations.minimum_bar_height = 1` — even when the practitioner omitted those fields. When the plan value for such a field is null and the API read-back returns the matching default, the resource SHALL preserve the null plan value in state instead of materializing the server default.
+
+For every Lens chart block that exposes `data_source_json` (legacy_metric, region_map, gauge, heatmap, tagcloud, pie, treemap, mosaic, waffle, datatable, and XY data/reference-line layers), Kibana injects `"time_field":"@timestamp"` into the read-back payload when the practitioner omits it. When the practitioner-authored `data_source_json` does not include `time_field`, the resource SHALL strip that injected key from state before semantic comparison and SHALL preserve the practitioner's original JSON payload.
+
+For each Lens chart panel listed below, Kibana materializes hard-coded server defaults for optional fields when the practitioner omits them. The resource SHALL preserve the practitioner's null/unset plan value in state when the API read-back matches the documented default. The known defaults are:
+- `gauge_config.styling.shape_json` defaults to `{"type":"bullet","orientation":"horizontal"}`.
+- `tagcloud_config.orientation` defaults to `"horizontal"`.
+- `tagcloud_config.font_size` defaults to `{min=18, max=72}` (whole block).
+- `heatmap_config.axis.{x,y}.labels.visible` default to `true`.
+- `heatmap_config.axis.{x,y}.title.visible` default to `false`.
+- `heatmap_config.styling.cells.labels.visible` defaults to `false`.
+- `heatmap_config.legend.visibility` defaults to `"visible"`.
+- `pie_chart_config.label_position` defaults to `"outside"`.
+- `treemap_config.legend.visible` and `mosaic_config.legend.visible` default to `"auto"`.
+- `treemap_config.value_display` and `mosaic_config.value_display` default to the block `{mode="percentage", percent_decimals=null}` (whole block).
+
+For Lens partition charts (pie `group_by[].config_json`, treemap `group_by_json`, mosaic `group_by_json`/`group_breakdown_by_json`) and Lens datatable (`metrics[].config_json`, `rows[].config_json`, `split_metrics_by[].config_json`), Kibana re-emits each `terms` dimension with the following injected default keys: `rank_by = {type="metric", metric_index=0, direction="desc"}` and `color = {mode="categorical", palette="default", mapping=[]}`. The resource SHALL populate these defaults during semantic-equality comparison so the practitioner's authored JSON round-trips without drift.
+
 #### Scenario: Unset XY X-axis scale
 
 - GIVEN an XY chart panel whose configuration left `axis.x.scale` unset
 - WHEN read-back from Kibana returns `axis.x.scale = "ordinal"`
 - THEN the provider SHALL keep the Terraform state value unset for that field
+
+#### Scenario: Bar-stacked XY layer with fitting.type = "none"
+
+- GIVEN an XY chart panel with a `bar_stacked` data layer and `fitting = { type = "none" }`
+- WHEN create runs and Kibana's read-back returns `fitting.type = ""` (empty string)
+- THEN the provider SHALL preserve `fitting.type = "none"` in state and the apply SHALL NOT report "Provider produced inconsistent result after apply"
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Bar-stacked XY layer omits decorations.show_value_labels and minimum_bar_height
+
+- GIVEN an XY chart panel with a `bar_stacked` data layer whose `decorations` block omits `show_value_labels` and `minimum_bar_height`
+- WHEN create runs and Kibana's read-back returns `decorations.show_value_labels = false` and `decorations.minimum_bar_height = 1`
+- THEN the provider SHALL keep both fields null in state and the apply SHALL NOT report "Provider produced inconsistent result after apply"
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: data_source_json without time_field round-trips on every Lens chart
+
+- GIVEN a Lens chart panel of any supported type whose `data_source_json` omits `time_field`
+- WHEN create runs and Kibana's read-back returns the same payload with `"time_field":"@timestamp"` injected
+- THEN the provider SHALL preserve the practitioner's JSON in state and the apply SHALL NOT report "Provider produced inconsistent result after apply"
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Minimal gauge panel preserves null styling.shape_json
+
+- GIVEN a gauge panel whose `gauge_config.styling` block omits `shape_json`
+- WHEN create runs and Kibana's read-back returns `styling.shape_json = {"type":"bullet","orientation":"horizontal"}`
+- THEN the provider SHALL keep `styling.shape_json` null in state and the apply SHALL NOT report "Provider produced inconsistent result after apply"
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Minimal tagcloud panel preserves null orientation and font_size
+
+- GIVEN a tagcloud panel whose `tagcloud_config` omits `orientation` and `font_size`
+- WHEN create runs and Kibana's read-back returns `orientation = "horizontal"` and `font_size = {min=18, max=72}`
+- THEN the provider SHALL keep both fields null/unset in state and a subsequent plan SHALL show no changes
+
+#### Scenario: Minimal heatmap panel preserves null axis, styling, and legend defaults
+
+- GIVEN a heatmap panel whose `axis.{x,y}.labels.visible`, `axis.{x,y}.title.visible`, `styling.cells.labels.visible`, and `legend.visibility` are unset
+- WHEN create runs and Kibana's read-back returns the documented defaults (`labels.visible=true`, `title.visible=false`, `cells.labels.visible=false`, `legend.visibility="visible"`)
+- THEN the provider SHALL keep each of those fields null in state and a subsequent plan SHALL show no changes
+
+#### Scenario: Minimal pie panel preserves null label_position and group_by JSON defaults
+
+- GIVEN a pie panel whose `pie_chart_config.label_position` is unset and whose `group_by[].config_json` for a `terms` operation omits `rank_by` and `color`
+- WHEN create runs and Kibana's read-back returns `label_position = "outside"` and injects the partition default keys into `group_by[].config_json`
+- THEN the provider SHALL keep `label_position` null in state and SHALL preserve the practitioner's `group_by[].config_json` payload
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Minimal treemap / mosaic panel preserves partition legend and value_display defaults
+
+- GIVEN a treemap or mosaic panel whose `legend.visible` is unset and whose `value_display` block is omitted
+- WHEN create runs and Kibana's read-back returns `legend.visible = "auto"` and a default `value_display = {mode="percentage", percent_decimals=null}` block
+- THEN the provider SHALL keep `legend.visible` null and SHALL drop the injected `value_display` block from state
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Datatable terms metrics preserve injected JSON defaults
+
+- GIVEN a datatable panel whose `metrics[].config_json` omits `color`, `empty_as_null`, and `format`
+- WHEN create runs and Kibana's read-back re-emits those keys with their documented defaults
+- THEN the provider SHALL preserve the practitioner's `metrics[].config_json` payload via semantic-equality comparison
+- AND a subsequent plan SHALL show no changes
 
 ### Requirement: Markdown panel behavior (REQ-012)
 
@@ -621,20 +701,22 @@ On write, the resource SHALL build either the `KbnDashboardPanelTypeMarkdownConf
 
 For **typed** `vis` panels (those built through the provider's typed `*_config` blocks and the shared typed visualization write path, not panels managed solely through raw `config_json`), the resource SHALL expose `time_range` as an optional flat sibling attribute on every typed Lens chart block (`xy_chart_config`, `metric_chart_config`, `legacy_metric_config`, `gauge_config`, `heatmap_config`, `tagcloud_config`, `region_map_config`, `datatable_config`, `pie_chart_config`, `mosaic_config`, `treemap_config`, `waffle_config`). The attribute SHALL match the dashboard-level `time_range` shape: required `from` (string), required `to` (string), and optional `mode` enum (`absolute` | `relative`).
 
-When the chart-level `time_range` is null in configuration and state, the provider SHALL inherit the dashboard-level `time_range` when assembling the visualization payload, copying the dashboard-level `from`, `to`, and `mode` into the API request. The hardcoded `lensPanelTimeRange()` window (`now-15m..now`) SHALL NOT be used; it is removed in favor of inheritance.
+When the chart-level `time_range` is null in configuration and state, the provider SHALL omit `time_range` from the API payload entirely. The provider SHALL NOT inherit the dashboard-level `time_range` and SHALL NOT use any hardcoded fallback window. Kibana will apply its own default (global dashboard time range) for panels with no panel-level override.
 
 When the chart-level `time_range` is set in configuration, the provider SHALL pass the configured values to the API verbatim, overriding the dashboard-level value for that panel only.
 
-For XY chart `vis` panels specifically, the resource SHALL require `axis`, `decorations`, `fitting`, `legend`, and at least one `layers` entry. The axis object SHALL use `x`, optional primary `y`, and optional `secondary_y`; `axis.x.domain_json` SHALL represent the X-axis domain, and each configured Y axis SHALL require `domain_json`. Each layer SHALL represent either a data layer or a reference-line layer, not both. **`query` SHALL be optional** on the XY chart schema so that ES|QL XY panels (which carry no `query` in the API) are valid without a dummy query block.
+The `vis_config.by_reference` block SHALL expose `time_range` as an **optional** attribute (same shape: required `from`, required `to`, optional `mode`). When `time_range` is null in `by_reference` configuration, the provider SHALL omit it from the API payload. When set, the provider SHALL send it verbatim.
+
+For XY chart `vis` panels specifically, the resource SHALL require `axis`, `decorations`, `fitting`, `legend`, and at least one `layers` entry. The axis object SHALL use `x`, optional primary `y`, and optional secondary `y2`; `axis.x.domain_json` SHALL represent the X-axis domain, and each configured Y axis SHALL require `domain_json`. Each layer SHALL represent either a data layer or a reference-line layer, not both. **`query` SHALL be optional** on the XY chart schema so that ES|QL XY panels (which carry no `query` in the API) are valid without a dummy query block.
 
 REQ-025 governs raw `config_json` `vis` panels; the typed-vs-raw distinction is unchanged.
 
-#### Scenario: Typed `vis` write inherits dashboard time_range when chart time_range is null
+#### Scenario: Typed `vis` write omits time_range when chart time_range is null
 
 - GIVEN a typed `vis` panel on create or update whose chart-level `time_range` is null in configuration
 - AND the dashboard-level `time_range` is `{ from = "now-7d", to = "now" }`
 - WHEN the provider builds the visualization payload through the typed converter path
-- THEN it SHALL set `time_range` on the API payload to `{ from = "now-7d", to = "now" }` copied from the dashboard-level value
+- THEN it SHALL NOT include `time_range` in the API payload for that panel
 
 #### Scenario: Typed `vis` write uses configured chart-level time_range when set
 
@@ -642,6 +724,25 @@ REQ-025 governs raw `config_json` `vis` panels; the typed-vs-raw distinction is 
 - AND the dashboard-level `time_range` is `{ from = "now-7d", to = "now" }`
 - WHEN the provider builds the visualization payload through the typed converter path
 - THEN it SHALL set `time_range` on the API payload to the chart-level value `{ from = "now-30d", to = "now-1d" }`
+
+#### Scenario: by_reference write omits time_range when not configured
+
+- GIVEN a `vis_config.by_reference` panel on create or update where `time_range` is null in configuration
+- WHEN the provider builds the API payload
+- THEN it SHALL NOT include `time_range` in the by-reference config payload
+
+#### Scenario: by_reference write sends time_range when configured
+
+- GIVEN a `vis_config.by_reference` panel on create or update where `time_range` is set to `{ from = "now-7d", to = "now" }`
+- WHEN the provider builds the API payload
+- THEN it SHALL include `time_range = { from = "now-7d", to = "now" }` in the by-reference config payload
+
+#### Scenario: Read preserves null time_range when API returns none
+
+- GIVEN a typed `vis` panel where `time_range` is null in Terraform state
+- AND the Kibana API returns no `time_range` field for that panel on read
+- WHEN the provider processes the read response
+- THEN it SHALL keep `time_range` as null in state (no drift)
 
 #### Scenario: XY panel requires layers
 
@@ -1695,29 +1796,20 @@ On read-back, the provider SHALL populate each attribute from the API response w
 - THEN the API payload SHALL include the parsed `references` array on the chart root
 - AND state SHALL show the normalized JSON form
 
-### Requirement: Chart-level `time_range` null-preservation and inheritance from dashboard (REQ-040)
+### Requirement: Chart-level `time_range` null-preservation (REQ-040)
 
 The resource SHALL preserve practitioner intent for the chart-level `time_range` block on every typed Lens chart reachable under `panels[].vis_config.by_value.<chart>_config` (for `type = "vis"`), using the same null-preservation pattern as REQ-009 for `time_range.mode`.
 
-When prior state has `time_range = null` on that chart block AND the API-returned chart-level `time_range` equals the dashboard-level `time_range` (compared by literal `from`, `to`, and `mode` string equality, treating both nulls as equal), the provider SHALL preserve null in state. Otherwise, the provider SHALL populate state with the API-returned chart-level `time_range`.
+When the Kibana API response omits chart-level `time_range` (or returns an empty/zero-valued time range struct), the provider SHALL leave state's chart-level `time_range` as null. When the API returns a populated chart-level `time_range`, the provider SHALL populate state from the API response (subject to the `time_range.mode` null-preservation rule below).
 
 The chart-level `time_range.mode` attribute SHALL follow the same null-preservation rule as the dashboard-level `time_range.mode` in REQ-009: when prior state has `mode = null` and the API response omits or returns no usable mode, state SHALL preserve null rather than overwriting with a default.
 
-#### Scenario: Chart time_range null-preserved when equal to dashboard
+#### Scenario: Chart time_range stays null when API omits it
 
 - GIVEN a `vis` panel with a typed Lens chart block under `vis_config.by_value` whose prior state has `time_range = null`
-- AND the dashboard-level `time_range` is `{ from = "now-7d", to = "now" }`
-- AND the Kibana API response returns `time_range = { from = "now-7d", to = "now" }` on that chart root
+- AND the Kibana API response omits `time_range` on that chart root
 - WHEN the provider reads the panel
 - THEN state SHALL preserve `time_range = null` on the chart panel
-
-#### Scenario: Chart time_range populated when not equal to dashboard
-
-- GIVEN a `vis` panel with a typed Lens chart block under `vis_config.by_value` whose prior state has `time_range = null`
-- AND the dashboard-level `time_range` is `{ from = "now-7d", to = "now" }`
-- AND the Kibana API response returns `time_range = { from = "now-30d", to = "now-1d" }` on that chart root
-- WHEN the provider reads the panel
-- THEN state SHALL populate `time_range = { from = "now-30d", to = "now-1d" }` on the chart panel
 
 #### Scenario: Chart time_range mode null-preservation
 
@@ -1795,7 +1887,7 @@ For `type = "vis"` panels, the resource SHALL accept a `vis_config` block with e
 
 - `ref_id` (required string) — saved-object reference name; maps to the API `config.ref_id` field.
 - `references_json` (optional normalized JSON string) — array of `{ id, name, type }` saved-object references; maps to the API `config.references` array. A saved Lens visualization reference SHALL typically have a reference whose `name` matches `ref_id`, whose `type` is `lens`, and whose `id` is the saved object ID.
-- `time_range` (required object with `from`, `to`, optional `mode` ∈ `absolute`/`relative`) — required even though the API marks it optional, for by-reference vis panels.
+- `time_range` (optional object with `from`, `to`, optional `mode` ∈ `absolute`/`relative`) — omitted from the API payload when null in configuration; sent verbatim when set.
 - `title`, `description` (optional strings).
 - `hide_title`, `hide_border` (optional booleans).
 - `drilldowns` (optional list of structured drilldown blocks per REQ-041).
@@ -1808,7 +1900,7 @@ For `vis_config.by_reference` panels, the resource SHALL set the API `config.ref
 
 **On read:**
 
-The resource SHALL classify the API `config` JSON object in this order: (1) **By-reference**: if the object omits the by-value chart discriminator (`type` at the top level of the chart config) and has non-empty `ref_id` and a `time_range` with non-empty `from` and `to`, the resource SHALL populate `by_reference` and leave `by_value` unset. (2) **By-value**: otherwise, if the object has a non-empty top-level chart `type`, the resource SHALL populate `by_value.<chart_block>` from the API read using the matching typed chart block. (3) When prior plan or state had `by_reference`, the resource SHALL preserve that prior `by_reference` block per REQ-009 and SHALL NOT silently mode-flip to `by_value`.
+The resource SHALL classify the API `config` JSON object in this order: (1) **By-reference**: if the object omits the by-value chart discriminator (`type` at the top level of the chart config) and has a non-empty `ref_id`, the resource SHALL populate `by_reference` and leave `by_value` unset. (2) **By-value**: otherwise, if the object has a non-empty top-level chart `type`, the resource SHALL populate `by_value.<chart_block>` from the API read using the matching typed chart block. (3) When prior plan or state had `by_reference`, the resource SHALL preserve that prior `by_reference` block per REQ-009 and SHALL NOT silently mode-flip to `by_value`.
 
 #### Scenario: Creation of a typed by-value `vis` panel via `vis_config`
 
@@ -1864,11 +1956,11 @@ The resource SHALL classify the API `config` JSON object in this order: (1) **By
 - WHEN Terraform validates the configuration
 - THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that `vis_config` and `config_json` are mutually exclusive
 
-#### Scenario: `time_range` required on `vis_config.by_reference`
+#### Scenario: `time_range` optional on `vis_config.by_reference`
 
-- GIVEN a `vis_config.by_reference` block without `time_range`
+- GIVEN a `vis_config.by_reference` block with `ref_id` set and `time_range` omitted
 - WHEN Terraform validates the configuration
-- THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that `time_range` is required
+- THEN the configuration SHALL be accepted without a `time_range` block
 
 #### Scenario: Read-back detects by-reference mode
 

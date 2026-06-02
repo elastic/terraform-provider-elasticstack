@@ -393,21 +393,10 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 				return diags
 			}
 
-			var queryVal jsontypes.Normalized
-			if index.Query != nil {
-				switch q := index.Query.(type) {
-				case string:
-					queryVal = jsontypes.NewNormalizedValue(q)
-				default:
-					b, err := json.Marshal(index.Query)
-					if err != nil {
-						diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling query: %s", err))
-						return diags
-					}
-					queryVal = jsontypes.NewNormalizedValue(string(b))
-				}
-			} else {
-				queryVal = jsontypes.NewNormalizedNull()
+			queryVal, d := marshalIndexQuery(index.Query)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
 			}
 
 			var allowRestrictedVal types.Bool
@@ -494,21 +483,10 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 				return diags
 			}
 
-			var queryVal jsontypes.Normalized
-			if remoteIndex.Query != nil {
-				switch q := remoteIndex.Query.(type) {
-				case string:
-					queryVal = jsontypes.NewNormalizedValue(q)
-				default:
-					b, err := json.Marshal(remoteIndex.Query)
-					if err != nil {
-						diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling query: %s", err))
-						return diags
-					}
-					queryVal = jsontypes.NewNormalizedValue(string(b))
-				}
-			} else {
-				queryVal = jsontypes.NewNormalizedNull()
+			queryVal, d := marshalIndexQuery(remoteIndex.Query)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
 			}
 
 			var fieldSecObj types.Object
@@ -525,7 +503,7 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 					return diags
 				}
 
-				fieldSecObj, d = types.ObjectValue(getRemoteFieldSecurityAttrTypes(), map[string]attr.Value{
+				fieldSecObj, d = types.ObjectValue(getFieldSecurityAttrTypes(), map[string]attr.Value{
 					attrGrant:  grantSet,
 					attrExcept: exceptSet,
 				})
@@ -534,7 +512,7 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 					return diags
 				}
 			} else {
-				fieldSecObj = types.ObjectNull(getRemoteFieldSecurityAttrTypes())
+				fieldSecObj = types.ObjectNull(getFieldSecurityAttrTypes())
 			}
 
 			remoteIndexObj, d := types.ObjectValue(getRemoteIndexPermsAttrTypes(), map[string]attr.Value{

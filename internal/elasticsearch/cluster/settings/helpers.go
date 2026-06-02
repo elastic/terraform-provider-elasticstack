@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -102,8 +103,8 @@ func expandSettings(ctx context.Context, block types.Object) (map[string]any, di
 	result := make(map[string]any, len(settingModels))
 	for _, s := range settingModels {
 		name := s.Name.ValueString()
-		hasValue := !s.Value.IsNull() && !s.Value.IsUnknown() && s.Value.ValueString() != ""
-		hasValueList := !s.ValueList.IsNull() && !s.ValueList.IsUnknown() && len(s.ValueList.Elements()) > 0
+		hasValue := typeutils.IsKnown(s.Value) && s.Value.ValueString() != ""
+		hasValueList := typeutils.IsKnown(s.ValueList) && len(s.ValueList.Elements()) > 0
 
 		if hasValue {
 			result[name] = s.Value.ValueString()

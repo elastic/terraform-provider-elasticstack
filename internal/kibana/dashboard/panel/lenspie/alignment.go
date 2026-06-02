@@ -18,21 +18,37 @@
 package lenspie
 
 import (
+	"context"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 )
 
 // alignPieStateFromPlan is the canonical pie alignment invoked via VizConverter.AlignStateFromPlan.
-func alignPieStateFromPlan(plan, state *models.LensByValueChartBlocks) {
+func alignPieStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
 	if plan == nil || state == nil {
 		return
 	}
-	alignPieConfigStateFromPlan(plan.PieChartConfig, state.PieChartConfig)
+	alignPieConfigStateFromPlan(ctx, plan.PieChartConfig, state.PieChartConfig)
 }
 
-func alignPieConfigStateFromPlan(plan, state *models.PieChartConfigModel) {
+func alignPieConfigStateFromPlan(ctx context.Context, plan, state *models.PieChartConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
 	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field")
+	// Kibana materializes label_position="outside" when the practitioner omits it.
+	lenscommon.PreserveNullStringIfStateEquals(plan.LabelPosition, &state.LabelPosition, "outside")
+	// Pie group_by/metrics config_json are re-emitted with default keys (color,
+	// rank_by, limit) added by Kibana. PreservePlanJSONWithDefaults handles the
+	// JSONWithDefaults type via semantic-equality.
+	m := min(len(plan.Metrics), len(state.Metrics))
+	for i := range m {
+		lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.Metrics[i].Config, &state.Metrics[i].Config)
+	}
+	g := min(len(plan.GroupBy), len(state.GroupBy))
+	for i := range g {
+		lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.GroupBy[i].Config, &state.GroupBy[i].Config)
+	}
 }

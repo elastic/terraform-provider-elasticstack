@@ -111,9 +111,25 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 		return nil
 	}
 
-	existing := pm.SloBurnRateConfig
+	if pm.SloBurnRateConfig == nil && prior.SloBurnRateConfig != nil {
+		cfg := &models.SloBurnRateConfigModel{
+			SloID:    types.StringValue(apiConfig.SloId),
+			Duration: types.StringValue(apiConfig.Duration),
+		}
+		if apiConfig.SloInstanceId != nil && *apiConfig.SloInstanceId != "*" {
+			cfg.SloInstanceID = types.StringValue(*apiConfig.SloInstanceId)
+		} else {
+			cfg.SloInstanceID = types.StringNull()
+		}
+		cfg.Title = types.StringPointerValue(apiConfig.Title)
+		cfg.Description = types.StringPointerValue(apiConfig.Description)
+		cfg.HideTitle = types.BoolPointerValue(apiConfig.HideTitle)
+		cfg.HideBorder = types.BoolPointerValue(apiConfig.HideBorder)
+		cfg.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, nil)
+		pm.SloBurnRateConfig = cfg
+	}
 
-	// If there was no config block in prior state, preserve nil intent.
+	existing := pm.SloBurnRateConfig
 	if existing == nil {
 		return nil
 	}
@@ -133,9 +149,41 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, apiConfig.HideTitle)
 	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, apiConfig.HideBorder)
 
-	existing.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, existing.Drilldowns)
+	var priorDrilldowns []models.URLDrilldownModel
+	if prior != nil && prior.SloBurnRateConfig != nil {
+		priorDrilldowns = prior.SloBurnRateConfig.Drilldowns
+	}
+	existing.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, priorDrilldowns)
+
+	if prior != nil && prior.SloBurnRateConfig != nil {
+		sloBurnRatePreserveNullIntentFromPrior(prior.SloBurnRateConfig, existing)
+	}
 
 	return nil
+}
+
+func sloBurnRatePreserveNullIntentFromPrior(prior, existing *models.SloBurnRateConfigModel) {
+	if prior == nil || existing == nil {
+		return
+	}
+	if !typeutils.IsKnown(prior.SloInstanceID) {
+		existing.SloInstanceID = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.Title) {
+		existing.Title = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.Description) {
+		existing.Description = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.HideTitle) {
+		existing.HideTitle = types.BoolNull()
+	}
+	if !typeutils.IsKnown(prior.HideBorder) {
+		existing.HideBorder = types.BoolNull()
+	}
+	if len(prior.Drilldowns) == 0 {
+		existing.Drilldowns = nil
+	}
 }
 
 func readSloBurnRateDrilldownsFromAPI(

@@ -65,7 +65,6 @@ func legacyMetricConfigPopulateCommonFields(
 func legacyMetricConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.LegacyMetricConfigModel,
-	resolver lenscommon.Resolver,
 	prior *models.LegacyMetricConfigModel,
 	api kbapi.KibanaHTTPAPIsLegacyMetricNoESQL,
 ) diag.Diagnostics {
@@ -90,22 +89,14 @@ func legacyMetricConfigFromAPINoESQL(
 		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
-	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(api.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
-	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel, resolver lenscommon.Resolver) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var result lenscommon.VisByValueConfig0
 
@@ -165,29 +156,15 @@ func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel, resolver lenscom
 			return result, diags
 		}
 
-		writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+		writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 		diags.Append(presDiags...)
 		if presDiags.HasError() {
 			return result, diags
 		}
 
-		api.TimeRange = writes.TimeRange
-		if writes.HideTitle != nil {
-			api.HideTitle = writes.HideTitle
-		}
-		if writes.HideBorder != nil {
-			api.HideBorder = writes.HideBorder
-		}
-		if writes.References != nil {
-			api.References = writes.References
-		}
-		if len(writes.DrilldownsRaw) > 0 {
-			items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.KibanaHTTPAPIsLegacyMetricNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
-			diags.Append(ddDiags...)
-			if !ddDiags.HasError() {
-				api.Drilldowns = &items
-			}
-		}
+		diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsLegacyMetricNoESQL_Drilldowns_Item](
+			writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+		)...)
 
 		if err := result.FromKibanaHTTPAPIsLegacyMetricNoESQL(api); err != nil {
 			diags.AddError("Failed to marshal legacy metric", err.Error())

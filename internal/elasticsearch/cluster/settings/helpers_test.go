@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/settings"
 	"github.com/google/go-cmp/cmp"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -62,6 +63,62 @@ func TestValidateConfigModel_TransientSet_OK(t *testing.T) {
 	)
 	if diags.HasError() {
 		t.Errorf("unexpected error: %v", diags)
+	}
+}
+
+func blockAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"setting": types.SetType{ElemType: types.ObjectType{AttrTypes: map[string]attr.Type{
+			"name":       types.StringType,
+			"value":      types.StringType,
+			"value_list": types.ListType{ElemType: types.StringType},
+		}}},
+	}
+}
+
+func TestValidateConfigModel_BothUnknown_OK(t *testing.T) {
+	diags := settings.ExportedValidateConfigModel(
+		types.ObjectUnknown(blockAttrTypes()),
+		types.ObjectUnknown(blockAttrTypes()),
+	)
+	if diags.HasError() {
+		t.Errorf("unexpected error when both blocks are unknown: %v", diags)
+	}
+}
+
+func TestValidateConfigModel_OneUnknown_OK(t *testing.T) {
+	diags := settings.ExportedValidateConfigModel(
+		settings.NullSettingsBlock(),
+		types.ObjectUnknown(blockAttrTypes()),
+	)
+	if diags.HasError() {
+		t.Errorf("unexpected error when one block is unknown: %v", diags)
+	}
+}
+
+func TestCategoryBlockEmpty_Unknown_NotEmpty(t *testing.T) {
+	if settings.ExportedCategoryBlockEmpty(types.ObjectUnknown(blockAttrTypes())) {
+		t.Error("expected unknown block to be treated as NOT empty")
+	}
+}
+
+func TestCategoryBlockEmpty_UnknownInnerSet_NotEmpty(t *testing.T) {
+	settingElemType := types.ObjectType{AttrTypes: map[string]attr.Type{
+		"name":       types.StringType,
+		"value":      types.StringType,
+		"value_list": types.ListType{ElemType: types.StringType},
+	}}
+	blockAttrTypes := map[string]attr.Type{
+		"setting": types.SetType{ElemType: settingElemType},
+	}
+	block, diags := types.ObjectValue(blockAttrTypes, map[string]attr.Value{
+		"setting": types.SetUnknown(settingElemType),
+	})
+	if diags.HasError() {
+		t.Fatalf("unexpected diagnostics constructing block with unknown inner set: %v", diags)
+	}
+	if settings.ExportedCategoryBlockEmpty(block) {
+		t.Error("expected block with unknown inner set to be treated as NOT empty")
 	}
 }
 

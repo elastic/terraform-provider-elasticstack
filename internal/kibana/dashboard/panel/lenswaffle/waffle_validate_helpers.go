@@ -21,18 +21,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// waffleModeListState describes list lengths during waffle mode validation at apply time.
-type waffleModeListState struct {
+// WaffleModeListState describes list lengths during waffle mode validation.
+type WaffleModeListState struct {
 	Count   int
 	Unknown bool
 }
 
-func waffleModeListStateFromSlice(n int) waffleModeListState {
-	return waffleModeListState{Count: n}
+// WaffleModeListStateFromSlice constructs a WaffleModeListState from a known slice length.
+func WaffleModeListStateFromSlice(n int) WaffleModeListState {
+	return WaffleModeListState{Count: n}
 }
 
-// waffleConfigModeValidateDiags returns ES|QL vs non-ES|QL waffle field consistency diagnostics.
-func waffleConfigModeValidateDiags(esqlMode bool, metrics, groupBy, esqlMetrics, esqlGroupBy waffleModeListState) diag.Diagnostics {
+// WaffleConfigModeValidateDiags returns ES|QL vs non-ES|QL waffle field consistency diagnostics.
+func WaffleConfigModeValidateDiags(esqlMode bool, metrics, groupBy, esqlMetrics, esqlGroupBy WaffleModeListState) diag.Diagnostics {
 	var diags diag.Diagnostics
 	add := func(summary, detail string) {
 		diags.AddError(summary, detail)

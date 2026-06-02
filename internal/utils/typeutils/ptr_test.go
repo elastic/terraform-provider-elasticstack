@@ -128,21 +128,6 @@ func TestDeref(t *testing.T) {
 	})
 }
 
-func TestDefaultIfNil(t *testing.T) {
-	t.Parallel()
-
-	t.Run("nil returns zero value", func(t *testing.T) {
-		t.Parallel()
-		require.Equal(t, 0, typeutils.DefaultIfNil[int](nil))
-	})
-
-	t.Run("non-nil returns value", func(t *testing.T) {
-		t.Parallel()
-		v := 7
-		require.Equal(t, 7, typeutils.DefaultIfNil(&v))
-	})
-}
-
 func TestNonNilSlice(t *testing.T) {
 	t.Parallel()
 

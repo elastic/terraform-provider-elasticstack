@@ -48,6 +48,18 @@ source .env
 TF_ACC=1 go test -v -run TestAccResourceName ./path/to/package
 ```
 
+### Provider-defined actions require Terraform 1.14+
+
+Acceptance tests for provider-defined actions (e.g. `elasticstack_elasticsearch_connector_sync_job_create`, `elasticstack_elasticsearch_snapshot_create`) require Terraform Core ≥1.14, which introduced provider-defined actions. The default Terraform used by `terraform-plugin-testing` is older and will SKIP these tests silently.
+
+Run action acceptance tests with an explicit Terraform version override:
+
+```bash
+TF_ACC=1 TF_ACC_TERRAFORM_VERSION=1.15.5 go test -v -run '^TestAccActionConnector' ./internal/elasticsearch/connector/sync_job_create/...
+```
+
+Or set `TF_ACC_TERRAFORM_PATH=/path/to/terraform` if you've installed Terraform 1.14+ system-wide.
+
 On `main` a `.env` may or may not already exist—if it does, you can `source` it like in a worktree. Otherwise, manually export the default variables before running tests:
 
 ```bash

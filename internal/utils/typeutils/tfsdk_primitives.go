@@ -29,16 +29,6 @@ func ValueStringPointer(value types.String) *string {
 	return value.ValueStringPointer()
 }
 
-// NonEmptyStringPointerValue returns nil if the value is null, unknown, or empty string,
-// otherwise returns a pointer to the string value.
-func NonEmptyStringPointerValue(value types.String) *string {
-	if value.IsNull() || value.IsUnknown() || value.ValueString() == "" {
-		return nil
-	}
-	s := value.ValueString()
-	return &s
-}
-
 // Float64PointerValue returns nil if unknown, otherwise the same as value.ValueFloat64Pointer().
 func Float64PointerValue(value types.Float64) *float64 {
 	if value.IsUnknown() {
@@ -55,10 +45,37 @@ func OptStringPtr(v types.String) *string {
 	return v.ValueStringPointer()
 }
 
-// OptBoolPtr returns nil if the value is null or unknown, otherwise returns a pointer to the bool value.
-func OptBoolPtr(v types.Bool) *bool {
-	if v.IsNull() || v.IsUnknown() {
+// OptionalBool returns a pointer to the bool value when set, or nil when null or unknown.
+func OptionalBool(value types.Bool) *bool {
+	if !IsKnown(value) {
 		return nil
 	}
-	return v.ValueBoolPointer()
+	v := value.ValueBool()
+	return &v
+}
+
+// OptionalString returns a pointer to the string value when set and non-empty, or nil otherwise.
+func OptionalString(value types.String) *string {
+	if !IsKnown(value) || value.ValueString() == "" {
+		return nil
+	}
+	v := value.ValueString()
+	return &v
+}
+
+// BoolPointerValue converts a *bool to a types.Bool, returning types.BoolNull() when the pointer is nil.
+func BoolPointerValue(v *bool) types.Bool {
+	if v == nil {
+		return types.BoolNull()
+	}
+	return types.BoolValue(*v)
+}
+
+// NonEmptyStringOrNull returns types.StringValue(*s) when s is non-nil and non-empty,
+// and types.StringNull() otherwise. Use for API fields that use an empty string to signal absence.
+func NonEmptyStringOrNull(s *string) types.String {
+	if s != nil && *s != "" {
+		return types.StringValue(*s)
+	}
+	return types.StringNull()
 }

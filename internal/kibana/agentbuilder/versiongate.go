@@ -24,22 +24,22 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/go-version"
-	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // EnforceVersion checks that the Kibana server meets minVersion for Agent Builder
 // entities. It appends any diagnostics to diags and returns false if the check
 // fails or the version is not met.
-func EnforceVersion(ctx context.Context, client *clients.KibanaScopedClient, minVersion *version.Version, entityName string, diags *fwdiags.Diagnostics) bool {
+func EnforceVersion(ctx context.Context, client *clients.KibanaScopedClient, minVersion *version.Version, entityName string, diags *diag.Diagnostics) bool {
 	supported, versionDiags := client.EnforceMinVersion(ctx, minVersion)
 	diags.Append(versionDiags...)
 	if diags.HasError() {
 		return false
 	}
-	if !supported {
-		diags.AddError("Unsupported server version",
-			fmt.Sprintf("Agent Builder %s require Elastic Stack v%s or later.", entityName, minVersion))
-		return false
+	if supported {
+		return true
 	}
-	return true
+	diags.AddError("Unsupported server version",
+		fmt.Sprintf("Agent Builder %s require Elastic Stack v%s or later.", entityName, minVersion))
+	return false
 }

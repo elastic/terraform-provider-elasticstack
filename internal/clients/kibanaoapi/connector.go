@@ -45,7 +45,7 @@ type ConnectorResponse struct {
 func CreateConnector(ctx context.Context, client *Client, connector models.KibanaActionConnector) (string, fwdiag.Diagnostics) {
 	body, err := createConnectorRequestBody(connector)
 	if err != nil {
-		return "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to create connector request body", err.Error())}
+		return "", diagutil.ErrDiag("Failed to create connector request body", err)
 	}
 
 	resp, err := client.API.PostActionsConnectorIdWithResponse(
@@ -62,7 +62,7 @@ func CreateConnector(ctx context.Context, client *Client, connector models.Kiban
 		},
 	)
 	if err != nil {
-		return "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("HTTP request failed", err.Error())}
+		return "", diagutil.ErrDiag("HTTP request failed", err)
 	}
 
 	switch resp.StatusCode() {
@@ -76,12 +76,12 @@ func CreateConnector(ctx context.Context, client *Client, connector models.Kiban
 func UpdateConnector(ctx context.Context, client *Client, connector models.KibanaActionConnector) (string, fwdiag.Diagnostics) {
 	body, err := updateConnectorRequestBody(connector)
 	if err != nil {
-		return "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to create update request body", err.Error())}
+		return "", diagutil.ErrDiag("Failed to create update request body", err)
 	}
 
 	resp, err := client.API.PutActionsConnectorIdWithResponse(ctx, connector.SpaceID, connector.ConnectorID, body)
 	if err != nil {
-		return "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Unable to update connector", err.Error())}
+		return "", diagutil.ErrDiag("Unable to update connector", err)
 	}
 
 	switch resp.StatusCode() {
@@ -95,7 +95,7 @@ func UpdateConnector(ctx context.Context, client *Client, connector models.Kiban
 func GetConnector(ctx context.Context, client *Client, connectorID, spaceID string) (*models.KibanaActionConnector, fwdiag.Diagnostics) {
 	resp, err := client.API.GetActionsConnectorIdWithResponse(ctx, spaceID, connectorID)
 	if err != nil {
-		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Unable to get connector", err.Error())}
+		return nil, diagutil.ErrDiag("Unable to get connector", err)
 	}
 
 	switch resp.StatusCode() {
@@ -120,9 +120,7 @@ func GetConnector(ctx context.Context, client *Client, connectorID, spaceID stri
 func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceID, connectorTypeID string) ([]*models.KibanaActionConnector, fwdiag.Diagnostics) {
 	resp, err := client.API.GetActionsConnectorsWithResponse(ctx, spaceID)
 	if err != nil {
-		return nil, fwdiag.Diagnostics{
-			fwdiag.NewErrorDiagnostic("Unable to get connectors", err.Error()),
-		}
+		return nil, diagutil.ErrDiag("Unable to get connectors", err)
 	}
 
 	if resp.StatusCode() != http.StatusOK {
@@ -179,7 +177,7 @@ func ConnectorResponseToModel(spaceID string, connector *ConnectorResponse) (*mo
 		var err error
 		configJSON, err = json.Marshal(configMap)
 		if err != nil {
-			return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Unable to marshal config", err.Error())}
+			return nil, diagutil.ErrDiag("Unable to marshal config", err)
 		}
 
 		// If we have a specific config type, marshal into and out of that to
@@ -188,7 +186,7 @@ func ConnectorResponseToModel(spaceID string, connector *ConnectorResponse) (*mo
 		if ok {
 			configJSONString, err := handler.remarshalConfig(string(configJSON))
 			if err != nil {
-				return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to remarshal config", err.Error())}
+				return nil, diagutil.ErrDiag("Failed to remarshal config", err)
 			}
 
 			configJSON = []byte(configJSONString)
@@ -215,7 +213,7 @@ func ConnectorResponseToModel(spaceID string, connector *ConnectorResponse) (*mo
 func DeleteConnector(ctx context.Context, client *Client, connectorID string, spaceID string) fwdiag.Diagnostics {
 	resp, err := client.API.DeleteActionsConnectorIdWithResponse(ctx, spaceID, connectorID)
 	if err != nil {
-		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Unable to delete connector", err.Error())}
+		return diagutil.ErrDiag("Unable to delete connector", err)
 	}
 
 	if resp.StatusCode() != http.StatusOK && resp.StatusCode() != http.StatusNoContent {

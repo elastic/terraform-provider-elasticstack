@@ -48,7 +48,6 @@ func (r *serverHostResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	// If space_ids is set, use space-aware CREATE request
 	spaceID, diags := fleetutils.SpaceIDFromSet(ctx, planModel.SpaceIDs)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

@@ -58,7 +58,12 @@ func readUser(ctx context.Context, client *clients.ElasticsearchScopedClient, re
 	}
 	state.Enabled = types.BoolValue(user.Enabled)
 
-	// Handle metadata
+	// Handle metadata. The Elasticsearch API treats "no metadata set" and an
+	// empty metadata object as equivalent, so when the API returns empty we
+	// preserve an incoming "{}" state value instead of overwriting it with
+	// null. Without this, configurations using `metadata = jsonencode({})`
+	// trip a "Provider produced inconsistent result after apply" error after
+	// the entitycore read-after-write step.
 	if len(user.Metadata) > 0 {
 		metadata, err := json.Marshal(user.Metadata)
 		if err != nil {
@@ -66,7 +71,7 @@ func readUser(ctx context.Context, client *clients.ElasticsearchScopedClient, re
 			return state, false, diags
 		}
 		state.Metadata = jsontypes.NewNormalizedValue(string(metadata))
-	} else {
+	} else if !isEmptyJSONObject(state.Metadata) {
 		state.Metadata = jsontypes.NewNormalizedNull()
 	}
 
@@ -79,4 +84,18 @@ func readUser(ctx context.Context, client *clients.ElasticsearchScopedClient, re
 	state.Roles = rolesSet
 
 	return state, true, diags
+}
+
+// isEmptyJSONObject reports whether v is a known JSON value equal to the empty
+// object "{}". Unknown and null values return false so they fall through to
+// the default null handling in the caller.
+func isEmptyJSONObject(v jsontypes.Normalized) bool {
+	if v.IsNull() || v.IsUnknown() {
+		return false
+	}
+	var m map[string]any
+	if err := json.Unmarshal([]byte(v.ValueString()), &m); err != nil {
+		return false
+	}
+	return m != nil && len(m) == 0
 }

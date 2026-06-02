@@ -29,7 +29,7 @@ type lensConfigClass int
 const (
 	// lensConfigClassByValueChart means the payload has a non-empty string at top-level "type" (Lens chart discriminator).
 	lensConfigClassByValueChart lensConfigClass = iota
-	// lensConfigClassByReference means ref_id plus time_range.from/to (by-reference saved-object linkage shape).
+	// lensConfigClassByReference means a non-empty ref_id (by-reference saved-object linkage shape).
 	lensConfigClassByReference
 	// lensConfigClassAmbiguous means neither a chart payload nor a complete by-reference shape.
 	lensConfigClassAmbiguous

@@ -91,12 +91,10 @@ func GetSecurityRole(ctx context.Context, client *Client, name string) (*Securit
 	params := &kbapi.GetSecurityRoleNameParams{}
 	resp, err := client.API.GetSecurityRoleNameWithResponse(ctx, name, params)
 	if err != nil {
-		return nil, fwdiag.Diagnostics{
-			fwdiag.NewErrorDiagnostic("Failed to read Kibana security role", err.Error()),
-		}
+		return nil, diagutil.ErrDiag("Failed to read Kibana security role", err)
 	}
 
-	return handleGetResponse[SecurityRole](resp.StatusCode(), resp.Body)
+	return HandleGetRawResponse[SecurityRole](resp.StatusCode(), resp.Body)
 }
 
 // PutSecurityRole creates or updates a Kibana security role using the supplied body.
@@ -105,16 +103,12 @@ func GetSecurityRole(ctx context.Context, client *Client, name string) (*Securit
 func PutSecurityRole(ctx context.Context, client *Client, name string, params kbapi.PutSecurityRoleNameParams, body SecurityRolePutBody) fwdiag.Diagnostics {
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		return fwdiag.Diagnostics{
-			fwdiag.NewErrorDiagnostic("Failed to serialize Kibana security role", err.Error()),
-		}
+		return diagutil.ErrDiag("Failed to serialize Kibana security role", err)
 	}
 
 	resp, err := client.API.PutSecurityRoleNameWithBodyWithResponse(ctx, name, &params, "application/json", bytes.NewReader(bodyBytes))
 	if err != nil {
-		return fwdiag.Diagnostics{
-			fwdiag.NewErrorDiagnostic("Failed to write Kibana security role", err.Error()),
-		}
+		return diagutil.ErrDiag("Failed to write Kibana security role", err)
 	}
 
 	switch resp.StatusCode() {
@@ -129,9 +123,7 @@ func PutSecurityRole(ctx context.Context, client *Client, name string, params kb
 func DeleteSecurityRole(ctx context.Context, client *Client, name string) fwdiag.Diagnostics {
 	resp, err := client.API.DeleteSecurityRoleNameWithResponse(ctx, name)
 	if err != nil {
-		return fwdiag.Diagnostics{
-			fwdiag.NewErrorDiagnostic("Failed to delete Kibana security role", err.Error()),
-		}
+		return diagutil.ErrDiag("Failed to delete Kibana security role", err)
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent, http.StatusNotFound)

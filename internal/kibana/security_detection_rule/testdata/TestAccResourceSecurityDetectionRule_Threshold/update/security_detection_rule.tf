@@ -55,6 +55,12 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   threshold = {
     value = 20
     field = ["user.name", "source.ip"]
+    cardinality = [
+      {
+        field = "host.name"
+        value = 5
+      }
+    ]
   }
 
   risk_score_mapping = [

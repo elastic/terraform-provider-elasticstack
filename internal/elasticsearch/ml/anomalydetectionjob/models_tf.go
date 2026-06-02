@@ -41,18 +41,18 @@ type TFModel struct {
 	Description             types.String `tfsdk:"description"`
 	Groups                  types.Set    `tfsdk:"groups"`
 	// AnalysisConfig is required in configuration, but can be null in state during import.
-	AnalysisConfig                       *AnalysisConfigTFModel `tfsdk:"analysis_config"`
-	AnalysisLimits                       types.Object           `tfsdk:"analysis_limits"`
-	DataDescription                      types.Object           `tfsdk:"data_description"`
-	ModelPlotConfig                      types.Object           `tfsdk:"model_plot_config"`
-	AllowLazyOpen                        types.Bool             `tfsdk:"allow_lazy_open"`
-	BackgroundPersistInterval            types.String           `tfsdk:"background_persist_interval"`
-	CustomSettings                       jsontypes.Normalized   `tfsdk:"custom_settings"`
-	DailyModelSnapshotRetentionAfterDays types.Int64            `tfsdk:"daily_model_snapshot_retention_after_days"`
-	ModelSnapshotRetentionDays           types.Int64            `tfsdk:"model_snapshot_retention_days"`
-	RenormalizationWindowDays            types.Int64            `tfsdk:"renormalization_window_days"`
-	ResultsIndexName                     types.String           `tfsdk:"results_index_name"`
-	ResultsRetentionDays                 types.Int64            `tfsdk:"results_retention_days"`
+	AnalysisConfig                       types.Object         `tfsdk:"analysis_config"`
+	AnalysisLimits                       types.Object         `tfsdk:"analysis_limits"`
+	DataDescription                      types.Object         `tfsdk:"data_description"`
+	ModelPlotConfig                      types.Object         `tfsdk:"model_plot_config"`
+	AllowLazyOpen                        types.Bool           `tfsdk:"allow_lazy_open"`
+	BackgroundPersistInterval            types.String         `tfsdk:"background_persist_interval"`
+	CustomSettings                       jsontypes.Normalized `tfsdk:"custom_settings"`
+	DailyModelSnapshotRetentionAfterDays types.Int64          `tfsdk:"daily_model_snapshot_retention_after_days"`
+	ModelSnapshotRetentionDays           types.Int64          `tfsdk:"model_snapshot_retention_days"`
+	RenormalizationWindowDays            types.Int64          `tfsdk:"renormalization_window_days"`
+	ResultsIndexName                     types.String         `tfsdk:"results_index_name"`
+	ResultsRetentionDays                 types.Int64          `tfsdk:"results_retention_days"`
 
 	// Read-only computed fields
 	CreateTime      types.String `tfsdk:"create_time"`
@@ -75,16 +75,16 @@ func (plan TFModel) GetElasticsearchConnection() types.List { return plan.Elasti
 
 // AnalysisConfigTFModel represents the analysis configuration
 type AnalysisConfigTFModel struct {
-	BucketSpan                 types.String                       `tfsdk:"bucket_span"`
-	CategorizationFieldName    types.String                       `tfsdk:"categorization_field_name"`
-	CategorizationFilters      types.List                         `tfsdk:"categorization_filters"`
-	Detectors                  types.List                         `tfsdk:"detectors"`
-	Influencers                types.List                         `tfsdk:"influencers"`
-	Latency                    types.String                       `tfsdk:"latency"`
-	ModelPruneWindow           types.String                       `tfsdk:"model_prune_window"`
-	MultivariateByFields       types.Bool                         `tfsdk:"multivariate_by_fields"`
-	PerPartitionCategorization *PerPartitionCategorizationTFModel `tfsdk:"per_partition_categorization"`
-	SummaryCountFieldName      types.String                       `tfsdk:"summary_count_field_name"`
+	BucketSpan                 types.String `tfsdk:"bucket_span"`
+	CategorizationFieldName    types.String `tfsdk:"categorization_field_name"`
+	CategorizationFilters      types.List   `tfsdk:"categorization_filters"`
+	Detectors                  types.List   `tfsdk:"detectors"`
+	Influencers                types.List   `tfsdk:"influencers"`
+	Latency                    types.String `tfsdk:"latency"`
+	ModelPruneWindow           types.String `tfsdk:"model_prune_window"`
+	MultivariateByFields       types.Bool   `tfsdk:"multivariate_by_fields"`
+	PerPartitionCategorization types.Object `tfsdk:"per_partition_categorization"`
+	SummaryCountFieldName      types.String `tfsdk:"summary_count_field_name"`
 }
 
 // DetectorTFModel represents a detector configuration
@@ -162,11 +162,16 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 		apiModel.Groups = groups
 	}
 
-	if plan.AnalysisConfig == nil {
+	if !typeutils.IsKnown(plan.AnalysisConfig) {
 		diags.AddError("Missing analysis_config", "analysis_config is required")
 		return nil, diags
 	}
-	analysisConfig := plan.AnalysisConfig
+	var analysisConfig AnalysisConfigTFModel
+	d := plan.AnalysisConfig.As(ctx, &analysisConfig, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
+	if diags.HasError() {
+		return nil, diags
+	}
 
 	// Convert detectors
 	var detectorsTF []DetectorTFModel
@@ -280,12 +285,18 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 	}
 
 	// Convert per_partition_categorization
-	if analysisConfig.PerPartitionCategorization != nil {
-		apiModel.AnalysisConfig.PerPartitionCategorization = &PerPartitionCategorizationAPIModel{
-			Enabled: analysisConfig.PerPartitionCategorization.Enabled.ValueBool(),
+	if typeutils.IsKnown(analysisConfig.PerPartitionCategorization) {
+		var perPartition PerPartitionCategorizationTFModel
+		d := analysisConfig.PerPartitionCategorization.As(ctx, &perPartition, basetypes.ObjectAsOptions{})
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
 		}
-		if typeutils.IsKnown(analysisConfig.PerPartitionCategorization.StopOnWarn) {
-			apiModel.AnalysisConfig.PerPartitionCategorization.StopOnWarn = new(analysisConfig.PerPartitionCategorization.StopOnWarn.ValueBool())
+		apiModel.AnalysisConfig.PerPartitionCategorization = &PerPartitionCategorizationAPIModel{
+			Enabled: perPartition.Enabled.ValueBool(),
+		}
+		if typeutils.IsKnown(perPartition.StopOnWarn) {
+			apiModel.AnalysisConfig.PerPartitionCategorization.StopOnWarn = perPartition.StopOnWarn.ValueBoolPointer()
 		}
 	}
 
@@ -304,7 +315,7 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 
 	// Convert data_description
 	var dataDescription DataDescriptionTFModel
-	d := plan.DataDescription.As(ctx, &dataDescription, basetypes.ObjectAsOptions{})
+	d = plan.DataDescription.As(ctx, &dataDescription, basetypes.ObjectAsOptions{})
 	diags.Append(d...)
 	apiModel.DataDescription = DataDescriptionAPIModel{
 		TimeField:  dataDescription.TimeField.ValueString(),
@@ -429,25 +440,24 @@ func (plan *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) diag.
 	// Convert model_plot_config
 	plan.ModelPlotConfig = plan.convertModelPlotConfigFromAPI(ctx, apiModel.ModelPlotConfig, &diags)
 
-	// Convert analysis_limits
-	plan.AnalysisLimits = plan.convertAnalysisLimitsFromAPI(ctx, apiModel.AnalysisLimits, &diags)
-
-	// Convert model_plot_config
-	plan.ModelPlotConfig = plan.convertModelPlotConfigFromAPI(ctx, apiModel.ModelPlotConfig, &diags)
-
 	return diags
 }
 
 // Helper functions for schema attribute types
 // Conversion helper methods
-func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig *AnalysisConfigAPIModel, diags *diag.Diagnostics) *AnalysisConfigTFModel {
+func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig *AnalysisConfigAPIModel, diags *diag.Diagnostics) types.Object {
+	analysisConfigAttrTypes := getAnalysisConfigAttrTypes(ctx)
+
 	if apiConfig == nil || apiConfig.BucketSpan == "" {
-		return nil
+		return types.ObjectNull(analysisConfigAttrTypes)
 	}
 
 	var analysisConfigTF AnalysisConfigTFModel
-	if plan.AnalysisConfig != nil {
-		analysisConfigTF = *plan.AnalysisConfig
+	if typeutils.IsKnown(plan.AnalysisConfig) {
+		diags.Append(plan.AnalysisConfig.As(ctx, &analysisConfigTF, basetypes.ObjectAsOptions{})...)
+		if diags.HasError() {
+			return types.ObjectNull(analysisConfigAttrTypes)
+		}
 	}
 	analysisConfigTF.BucketSpan = types.StringValue(apiConfig.BucketSpan)
 
@@ -615,24 +625,43 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 	// Convert per_partition_categorization. ES may return defaults (enabled=false)
 	// even when the user didn't configure it. Only populate if user configured it
 	// or if ES has it enabled.
-	if apiConfig.PerPartitionCategorization != nil {
-		if analysisConfigTF.PerPartitionCategorization != nil || apiConfig.PerPartitionCategorization.Enabled {
-			perPartitionCategorizationTF := PerPartitionCategorizationTFModel{
-				Enabled: types.BoolValue(apiConfig.PerPartitionCategorization.Enabled),
-			}
-			switch {
-			case apiConfig.PerPartitionCategorization.StopOnWarn != nil:
-				perPartitionCategorizationTF.StopOnWarn = types.BoolValue(*apiConfig.PerPartitionCategorization.StopOnWarn)
-			case analysisConfigTF.PerPartitionCategorization != nil:
-				perPartitionCategorizationTF.StopOnWarn = analysisConfigTF.PerPartitionCategorization.StopOnWarn
-			default:
-				perPartitionCategorizationTF.StopOnWarn = types.BoolNull()
-			}
-			analysisConfigTF.PerPartitionCategorization = &perPartitionCategorizationTF
+	perPartitionAttrTypes := getPerPartitionCategorizationAttrTypes(ctx)
+	var hadPriorPerPartition bool
+	var priorPerPartition PerPartitionCategorizationTFModel
+	if typeutils.IsKnown(analysisConfigTF.PerPartitionCategorization) {
+		hadPriorPerPartition = true
+		diags.Append(analysisConfigTF.PerPartitionCategorization.As(ctx, &priorPerPartition, basetypes.ObjectAsOptions{})...)
+		if diags.HasError() {
+			return types.ObjectNull(analysisConfigAttrTypes)
 		}
 	}
+	switch {
+	case apiConfig.PerPartitionCategorization == nil:
+		if !hadPriorPerPartition {
+			analysisConfigTF.PerPartitionCategorization = types.ObjectNull(perPartitionAttrTypes)
+		}
+	case !hadPriorPerPartition && !apiConfig.PerPartitionCategorization.Enabled:
+		analysisConfigTF.PerPartitionCategorization = types.ObjectNull(perPartitionAttrTypes)
+	default:
+		perPartitionTF := PerPartitionCategorizationTFModel{
+			Enabled: types.BoolValue(apiConfig.PerPartitionCategorization.Enabled),
+		}
+		switch {
+		case apiConfig.PerPartitionCategorization.StopOnWarn != nil:
+			perPartitionTF.StopOnWarn = types.BoolValue(*apiConfig.PerPartitionCategorization.StopOnWarn)
+		case hadPriorPerPartition:
+			perPartitionTF.StopOnWarn = priorPerPartition.StopOnWarn
+		default:
+			perPartitionTF.StopOnWarn = types.BoolNull()
+		}
+		perPartitionObj, d := types.ObjectValueFrom(ctx, perPartitionAttrTypes, perPartitionTF)
+		diags.Append(d...)
+		analysisConfigTF.PerPartitionCategorization = perPartitionObj
+	}
 
-	return &analysisConfigTF
+	analysisConfigObj, d := types.ObjectValueFrom(ctx, analysisConfigAttrTypes, analysisConfigTF)
+	diags.Append(d...)
+	return analysisConfigObj
 }
 
 func (plan *TFModel) convertDataDescriptionFromAPI(ctx context.Context, apiDataDescription *DataDescriptionAPIModel, diags *diag.Diagnostics) types.Object {

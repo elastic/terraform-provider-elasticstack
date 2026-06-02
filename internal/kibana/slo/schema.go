@@ -510,7 +510,7 @@ func kqlWithFiltersObjectSchema(parallelStringAttr string) schema.SingleNestedAt
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						attrQuery: schema.StringAttribute{
-							Description: "Filter query as a JSON object.",
+							Description: "Filter query as a JSON-encoded ES Query DSL object. Accepts any valid ES Query DSL (regexp, wildcard, bool, range, etc.). Use jsonencode({...}) to construct the value.",
 							Optional:    true,
 							Computed:    true,
 							CustomType:  jsontypes.NormalizedType{},

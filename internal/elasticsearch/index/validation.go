@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
@@ -41,7 +42,7 @@ func (s StringIsJSONObject) MarkdownDescription(ctx context.Context) string {
 }
 
 func (s StringIsJSONObject) ValidateString(_ context.Context, req validator.StringRequest, resp *validator.StringResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+	if !typeutils.IsKnown(req.ConfigValue) {
 		return
 	}
 

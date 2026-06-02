@@ -24,9 +24,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -69,6 +69,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 			"configuration": dsschema.StringAttribute{
 				Description: "The tool configuration in JSON format.",
 				Computed:    true,
+				CustomType:  jsontypes.NormalizedType{},
 			},
 			"include_workflow": dsschema.BoolAttribute{
 				Description: "When true, the workflow referenced by this tool will also be included. Only valid when the tool type is `workflow`. Requires Kibana 9.4.0 or above. Defaults to false.",
@@ -89,10 +90,6 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 
 func readToolDataSource(ctx context.Context, client *clients.KibanaScopedClient, config toolDataSourceModel) (toolDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-
-	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderAPIVersion, "tools", &diags) {
-		return config, diags
-	}
 
 	oapiClient := client.GetKibanaOapiClient()
 

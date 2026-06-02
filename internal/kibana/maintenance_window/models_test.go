@@ -81,38 +81,57 @@ func TestMaintenanceWindowFromAPI(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
 
+	tz := "America/Martinique"
+	every := "21d"
+	end := "2029-05-17T05:05:00.000Z"
+	onWeekDay := []string{"MO", "-2FR", "+4SA"}
+	onMonth := []float32{6}
+	onMonthDay := []float32{1, 2, 3}
+	duration := "13d"
+	start := "1993-01-01T05:00:00.200Z"
+	kql := "_id: '1234'"
+	var occurrences float32 = 42
+
 	tests := []struct {
 		name          string
-		response      ResponseJSON
+		response      kbapi.KibanaHTTPAPIsMaintenanceWindowResponse
 		existingModel Model
 		expectedModel Model
 	}{
 		{
 			name:          "all fields",
 			existingModel: Model{},
-			response: ResponseJSON{
-				ID:        "existing-space-id/id",
+			response: kbapi.KibanaHTTPAPIsMaintenanceWindowResponse{
+				Id:        "existing-space-id/id",
 				CreatedAt: "created_at",
 				Enabled:   true,
 				Title:     "test response",
-				Schedule: ResponseJSONSchedule{
-					Custom: ResponseJSONCustomSchedule{
-						Start:    "1993-01-01T05:00:00.200Z",
-						Duration: "13d",
-						Timezone: new("America/Martinique"),
-						Recurring: &ResponseJSONRecurring{
-							Every:      new("21d"),
-							End:        new("2029-05-17T05:05:00.000Z"),
-							OnWeekDay:  new([]string{"MO", "-2FR", "+4SA"}),
-							OnMonth:    new([]float32{6}),
-							OnMonthDay: new([]float32{1, 2, 3}),
+				Schedule: struct {
+					Custom kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleResponse `json:"custom"`
+				}{
+					Custom: kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleResponse{
+						Start:    start,
+						Duration: duration,
+						Timezone: &tz,
+						Recurring: &kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRecurringResponse{
+							Every:      &every,
+							End:        &end,
+							OnWeekDay:  &onWeekDay,
+							OnMonth:    &onMonth,
+							OnMonthDay: &onMonthDay,
 						},
 					},
 				},
-				Scope: &ResponseJSONScope{
-					Alerting: ResponseJSONAlerting{
-						Query: ResponseJSONAlertingQuery{
-							Kql: "_id: '1234'",
+				Scope: &kbapi.KibanaHTTPAPIsMaintenanceWindowScope{
+					Alerting: struct {
+						Query struct {
+							Kql string `json:"kql"`
+						} `json:"query"`
+					}{
+						Query: struct {
+							Kql string `json:"kql"`
+						}{
+							Kql: kql,
 						},
 					},
 				},
@@ -122,22 +141,23 @@ func TestMaintenanceWindowFromAPI(t *testing.T) {
 		{
 			name:          "occurrences and no scope",
 			existingModel: Model{},
-			response: ResponseJSON{
-				ID:        "existing-space-id/id",
+			response: kbapi.KibanaHTTPAPIsMaintenanceWindowResponse{
+				Id:        "existing-space-id/id",
 				CreatedAt: "created_at",
 				Enabled:   true,
 				Title:     "test response",
-				Schedule: ResponseJSONSchedule{
-					Custom: ResponseJSONCustomSchedule{
-						Start:    "1993-01-01T05:00:00.200Z",
-						Duration: "13d",
-						Recurring: &ResponseJSONRecurring{
-							Every:       new("21d"),
-							Occurrences: new(float32(42)),
+				Schedule: struct {
+					Custom kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleResponse `json:"custom"`
+				}{
+					Custom: kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleResponse{
+						Start:    start,
+						Duration: duration,
+						Recurring: &kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRecurringResponse{
+							Every:       &every,
+							Occurrences: &occurrences,
 						},
 					},
 				},
-				Scope: nil,
 			},
 			expectedModel: modelOccurrencesNoScope,
 		},
@@ -150,372 +170,6 @@ func TestMaintenanceWindowFromAPI(t *testing.T) {
 			diags := tt.existingModel._fromAPIResponse(ctx, tt.response)
 
 			require.Equal(t, tt.expectedModel, tt.existingModel)
-			require.Empty(t, diags)
-		})
-	}
-}
-
-func TestMaintenanceWindowToAPICreateRequest(t *testing.T) {
-	ctx := context.Background()
-	var diags diag.Diagnostics
-
-	tests := []struct {
-		name            string
-		model           Model
-		expectedRequest kbapi.PostMaintenanceWindowJSONRequestBody
-	}{
-		{
-			name:  "all fields",
-			model: modelWithAllFields,
-			expectedRequest: kbapi.PostMaintenanceWindowJSONRequestBody{
-				Enabled: new(true),
-				Title:   "test response",
-				Schedule: struct {
-					Custom struct {
-						Duration  string `json:"duration"`
-						Recurring *struct {
-							End         *string    `json:"end,omitempty"`
-							Every       *string    `json:"every,omitempty"`
-							Occurrences *float32   `json:"occurrences,omitempty"`
-							OnMonth     *[]float32 `json:"onMonth,omitempty"`
-							OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-							OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-						} `json:"recurring,omitempty"`
-						Start    string  `json:"start"`
-						Timezone *string `json:"timezone,omitempty"`
-					} `json:"custom"`
-				}{
-					Custom: struct {
-						Duration  string `json:"duration"`
-						Recurring *struct {
-							End         *string    `json:"end,omitempty"`
-							Every       *string    `json:"every,omitempty"`
-							Occurrences *float32   `json:"occurrences,omitempty"`
-							OnMonth     *[]float32 `json:"onMonth,omitempty"`
-							OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-							OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-						} `json:"recurring,omitempty"`
-						Start    string  `json:"start"`
-						Timezone *string `json:"timezone,omitempty"`
-					}{
-						Start:    "1993-01-01T05:00:00.200Z",
-						Duration: "13d",
-						Timezone: new("America/Martinique"),
-						Recurring: new(struct {
-							End         *string    `json:"end,omitempty"`
-							Every       *string    `json:"every,omitempty"`
-							Occurrences *float32   `json:"occurrences,omitempty"`
-							OnMonth     *[]float32 `json:"onMonth,omitempty"`
-							OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-							OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-						}{
-							Every:      new("21d"),
-							End:        new("2029-05-17T05:05:00.000Z"),
-							OnWeekDay:  new([]string{"MO", "-2FR", "+4SA"}),
-							OnMonth:    new([]float32{6}),
-							OnMonthDay: new([]float32{1, 2, 3}),
-						}),
-					},
-				},
-				Scope: new(struct {
-					Alerting struct {
-						Query struct {
-							Kql string `json:"kql"`
-						} `json:"query"`
-					} `json:"alerting"`
-				}{
-					Alerting: struct {
-						Query struct {
-							Kql string `json:"kql"`
-						} `json:"query"`
-					}{
-						Query: struct {
-							Kql string `json:"kql"`
-						}{
-							Kql: "_id: '1234'",
-						},
-					},
-				},
-				),
-			},
-		},
-		{
-			name:  "occurrences and no scope",
-			model: modelOccurrencesNoScope,
-			expectedRequest: kbapi.PostMaintenanceWindowJSONRequestBody{
-				Enabled: new(true),
-				Title:   "test response",
-				Schedule: struct {
-					Custom struct {
-						Duration  string `json:"duration"`
-						Recurring *struct {
-							End         *string    `json:"end,omitempty"`
-							Every       *string    `json:"every,omitempty"`
-							Occurrences *float32   `json:"occurrences,omitempty"`
-							OnMonth     *[]float32 `json:"onMonth,omitempty"`
-							OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-							OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-						} `json:"recurring,omitempty"`
-						Start    string  `json:"start"`
-						Timezone *string `json:"timezone,omitempty"`
-					} `json:"custom"`
-				}{
-					Custom: struct {
-						Duration  string `json:"duration"`
-						Recurring *struct {
-							End         *string    `json:"end,omitempty"`
-							Every       *string    `json:"every,omitempty"`
-							Occurrences *float32   `json:"occurrences,omitempty"`
-							OnMonth     *[]float32 `json:"onMonth,omitempty"`
-							OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-							OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-						} `json:"recurring,omitempty"`
-						Start    string  `json:"start"`
-						Timezone *string `json:"timezone,omitempty"`
-					}{
-						Start:    "1993-01-01T05:00:00.200Z",
-						Duration: "13d",
-
-						Recurring: new(struct {
-							End         *string    `json:"end,omitempty"`
-							Every       *string    `json:"every,omitempty"`
-							Occurrences *float32   `json:"occurrences,omitempty"`
-							OnMonth     *[]float32 `json:"onMonth,omitempty"`
-							OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-							OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-						}{
-							Every:       new("21d"),
-							Occurrences: new(float32(42)),
-						}),
-					},
-				},
-			},
-		},
-	}
-
-	require.Empty(t, diags)
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			request, diags := tt.model.toAPICreateRequest(ctx)
-			require.Equal(t, tt.expectedRequest, request)
-			require.Empty(t, diags)
-		})
-	}
-}
-
-func TestMaintenanceWindowToAPIUpdateRequest(t *testing.T) {
-	ctx := context.Background()
-	var diags diag.Diagnostics
-
-	tests := []struct {
-		name            string
-		model           Model
-		expectedRequest kbapi.PatchMaintenanceWindowIdJSONRequestBody
-	}{
-		{
-			name:  "all fields",
-			model: modelWithAllFields,
-			expectedRequest: kbapi.PatchMaintenanceWindowIdJSONRequestBody{
-				Enabled: new(true),
-				Title:   new("test response"),
-				Schedule: new(struct {
-					Custom struct {
-						Duration  string `json:"duration"`
-						Recurring *struct {
-							End         *string    `json:"end,omitempty"`
-							Every       *string    `json:"every,omitempty"`
-							Occurrences *float32   `json:"occurrences,omitempty"`
-							OnMonth     *[]float32 `json:"onMonth,omitempty"`
-							OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-							OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-						} `json:"recurring,omitempty"`
-						Start    string  `json:"start"`
-						Timezone *string `json:"timezone,omitempty"`
-					} `json:"custom"`
-				}{
-					Custom: struct {
-						Duration  string `json:"duration"`
-						Recurring *struct {
-							End         *string    `json:"end,omitempty"`
-							Every       *string    `json:"every,omitempty"`
-							Occurrences *float32   `json:"occurrences,omitempty"`
-							OnMonth     *[]float32 `json:"onMonth,omitempty"`
-							OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-							OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-						} `json:"recurring,omitempty"`
-						Start    string  `json:"start"`
-						Timezone *string `json:"timezone,omitempty"`
-					}{
-						Start:    "1993-01-01T05:00:00.200Z",
-						Duration: "13d",
-						Timezone: new("America/Martinique"),
-						Recurring: new(struct {
-							End         *string    `json:"end,omitempty"`
-							Every       *string    `json:"every,omitempty"`
-							Occurrences *float32   `json:"occurrences,omitempty"`
-							OnMonth     *[]float32 `json:"onMonth,omitempty"`
-							OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-							OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-						}{
-							Every:      new("21d"),
-							End:        new("2029-05-17T05:05:00.000Z"),
-							OnWeekDay:  new([]string{"MO", "-2FR", "+4SA"}),
-							OnMonth:    new([]float32{6}),
-							OnMonthDay: new([]float32{1, 2, 3}),
-						}),
-					},
-				}),
-				Scope: new(struct {
-					Alerting struct {
-						Query struct {
-							Kql string `json:"kql"`
-						} `json:"query"`
-					} `json:"alerting"`
-				}{
-					Alerting: struct {
-						Query struct {
-							Kql string `json:"kql"`
-						} `json:"query"`
-					}{
-						Query: struct {
-							Kql string `json:"kql"`
-						}{
-							Kql: "_id: '1234'",
-						},
-					},
-				},
-				),
-			},
-		},
-		{
-			name: "just title, enabled and schedule",
-			model: Model{
-				ID:      types.StringValue("/existing-space-id/id"),
-				Title:   types.StringValue("test response"),
-				Enabled: types.BoolValue(true),
-				CustomSchedule: Schedule{
-					Start:    types.StringValue("1993-01-01T05:00:00.200Z"),
-					Duration: kibanacustomtypes.NewAlertingDurationValue("13d"),
-				},
-			},
-			expectedRequest: kbapi.PatchMaintenanceWindowIdJSONRequestBody{
-				Enabled: new(true),
-				Title:   new("test response"),
-				Schedule: new(struct {
-					Custom struct {
-						Duration  string `json:"duration"`
-						Recurring *struct {
-							End         *string    `json:"end,omitempty"`
-							Every       *string    `json:"every,omitempty"`
-							Occurrences *float32   `json:"occurrences,omitempty"`
-							OnMonth     *[]float32 `json:"onMonth,omitempty"`
-							OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-							OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-						} `json:"recurring,omitempty"`
-						Start    string  `json:"start"`
-						Timezone *string `json:"timezone,omitempty"`
-					} `json:"custom"`
-				}{
-					Custom: struct {
-						Duration  string `json:"duration"`
-						Recurring *struct {
-							End         *string    `json:"end,omitempty"`
-							Every       *string    `json:"every,omitempty"`
-							Occurrences *float32   `json:"occurrences,omitempty"`
-							OnMonth     *[]float32 `json:"onMonth,omitempty"`
-							OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-							OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-						} `json:"recurring,omitempty"`
-						Start    string  `json:"start"`
-						Timezone *string `json:"timezone,omitempty"`
-					}{
-						Start:    "1993-01-01T05:00:00.200Z",
-						Duration: "13d",
-					},
-				}),
-			},
-		},
-		{
-			name: "just the scope and schedule",
-			model: Model{
-				ID: types.StringValue("/existing-space-id/id"),
-
-				CustomSchedule: Schedule{
-					Start:    types.StringValue("1993-01-01T05:00:00.200Z"),
-					Duration: kibanacustomtypes.NewAlertingDurationValue("13d"),
-				},
-
-				Scope: &Scope{
-					Alerting: AlertingScope{
-						Kql: types.StringValue("_id: '1234'"),
-					},
-				},
-			},
-			expectedRequest: kbapi.PatchMaintenanceWindowIdJSONRequestBody{
-				Schedule: new(struct {
-					Custom struct {
-						Duration  string `json:"duration"`
-						Recurring *struct {
-							End         *string    `json:"end,omitempty"`
-							Every       *string    `json:"every,omitempty"`
-							Occurrences *float32   `json:"occurrences,omitempty"`
-							OnMonth     *[]float32 `json:"onMonth,omitempty"`
-							OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-							OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-						} `json:"recurring,omitempty"`
-						Start    string  `json:"start"`
-						Timezone *string `json:"timezone,omitempty"`
-					} `json:"custom"`
-				}{
-					Custom: struct {
-						Duration  string `json:"duration"`
-						Recurring *struct {
-							End         *string    `json:"end,omitempty"`
-							Every       *string    `json:"every,omitempty"`
-							Occurrences *float32   `json:"occurrences,omitempty"`
-							OnMonth     *[]float32 `json:"onMonth,omitempty"`
-							OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
-							OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
-						} `json:"recurring,omitempty"`
-						Start    string  `json:"start"`
-						Timezone *string `json:"timezone,omitempty"`
-					}{
-						Start:    "1993-01-01T05:00:00.200Z",
-						Duration: "13d",
-					},
-				}),
-
-				Scope: new(struct {
-					Alerting struct {
-						Query struct {
-							Kql string `json:"kql"`
-						} `json:"query"`
-					} `json:"alerting"`
-				}{
-					Alerting: struct {
-						Query struct {
-							Kql string `json:"kql"`
-						} `json:"query"`
-					}{
-						Query: struct {
-							Kql string `json:"kql"`
-						}{
-							Kql: "_id: '1234'",
-						},
-					},
-				},
-				),
-			},
-		},
-	}
-
-	require.Empty(t, diags)
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			request, diags := tt.model.toAPIUpdateRequest(ctx)
-			require.Equal(t, tt.expectedRequest, request)
 			require.Empty(t, diags)
 		})
 	}

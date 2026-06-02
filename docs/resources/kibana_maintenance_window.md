@@ -9,7 +9,6 @@ description: |-
 # elasticstack_kibana_maintenance_window (Resource)
 
 Creates and manages Kibana [maintenance windows](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-maintenance-window)
-
 ## Example Usage
 
 ```terraform

@@ -28,17 +28,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type stubResolver struct{}
-
-func (stubResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
-	_ = chartLevel
-	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}
-}
-
-func (stubResolver) DashboardLensComparableTimeRange() (kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, bool) {
-	return kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{}, false
-}
-
 func TestConverter_VizType(t *testing.T) {
 	var c converter
 	require.Equal(t, string(kbapi.KibanaHTTPAPIsMetricNoESQLTypeMetric), c.VizType())
@@ -56,8 +45,6 @@ func TestConverter_HandlesBlocks(t *testing.T) {
 func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	ctx := t.Context()
 	var c converter
-	resolver := stubResolver{}
-
 	query := kbapi.KibanaHTTPAPIsFilterSimple{
 		Language:   new(kbapi.KibanaHTTPAPIsFilterSimpleLanguage("kql")),
 		Expression: "*",
@@ -80,11 +67,11 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	require.NoError(t, attrs.FromKibanaHTTPAPIsMetricNoESQL(apiChart))
 
 	blocks := &models.LensByValueChartBlocks{}
-	diags := c.PopulateFromAttributes(ctx, resolver, blocks, attrs)
+	diags := c.PopulateFromAttributes(ctx, blocks, attrs)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.NotNil(t, blocks.MetricChartConfig)
 
-	attrs2, diags := c.BuildAttributes(blocks, resolver)
+	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	variant0, err := attrs2.AsKibanaHTTPAPIsMetricNoESQL()
@@ -96,8 +83,6 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 func TestConverter_roundTrip_ESQL_metric(t *testing.T) {
 	ctx := t.Context()
 	var c converter
-	resolver := stubResolver{}
-
 	var metricItem kbapi.KibanaHTTPAPIsMetricESQL_Metrics_Item
 	require.NoError(t, json.Unmarshal([]byte(`{
 		"type": "primary",
@@ -119,14 +104,14 @@ func TestConverter_roundTrip_ESQL_metric(t *testing.T) {
 	require.NoError(t, attrs.FromKibanaHTTPAPIsMetricESQL(apiChart))
 
 	blocks := &models.LensByValueChartBlocks{}
-	diags := c.PopulateFromAttributes(ctx, resolver, blocks, attrs)
+	diags := c.PopulateFromAttributes(ctx, blocks, attrs)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.NotNil(t, blocks.MetricChartConfig)
 	require.Nil(t, blocks.MetricChartConfig.Query)
 	assert.Contains(t, blocks.MetricChartConfig.DataSourceJSON.ValueString(), "FROM logs-*")
 	require.Len(t, blocks.MetricChartConfig.Metrics, 1)
 
-	attrs2, diags := c.BuildAttributes(blocks, resolver)
+	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	out, err := attrs2.AsKibanaHTTPAPIsMetricESQL()

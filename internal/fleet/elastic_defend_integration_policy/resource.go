@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -30,6 +31,10 @@ var (
 	_ resource.Resource                = newElasticDefendIntegrationPolicyResource()
 	_ resource.ResourceWithConfigure   = newElasticDefendIntegrationPolicyResource()
 	_ resource.ResourceWithImportState = newElasticDefendIntegrationPolicyResource()
+)
+
+var (
+	MinVersionPolicyIDs = version.Must(version.NewVersion("8.15.0"))
 )
 
 type elasticDefendIntegrationPolicyResource struct {

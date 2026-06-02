@@ -30,16 +30,6 @@ const (
 	drilldownURLOpenInNewTabDefault = false
 )
 
-func drilldownBoolImportPreserving(api *bool, serverDefault bool) types.Bool {
-	if api == nil {
-		return types.BoolNull()
-	}
-	if *api == serverDefault {
-		return types.BoolNull()
-	}
-	return types.BoolValue(*api)
-}
-
 // BuildConfig fills panel.Config from Terraform state.
 func BuildConfig(pm *models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts) {
 	cfg := pm.SloAlertsConfig
@@ -105,8 +95,11 @@ func BuildConfig(pm *models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardP
 func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts) {
 	apiCfg := apiPanel.Config
 
-	if tfPanel == nil {
+	if pm.SloAlertsConfig == nil {
 		pm.SloAlertsConfig = sloAlertsPanelConfigFromAPIImport(apiCfg)
+	}
+
+	if tfPanel == nil {
 		return
 	}
 
@@ -126,7 +119,11 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel
 	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, apiCfg.HideTitle)
 	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, apiCfg.HideBorder)
 
-	existing.Drilldowns = readDrilldownsFromAPI(apiCfg.Drilldowns, existing.Drilldowns)
+	var priorDrilldowns []models.URLDrilldownModel
+	if tfPanel.SloAlertsConfig != nil {
+		priorDrilldowns = tfPanel.SloAlertsConfig.Drilldowns
+	}
+	existing.Drilldowns = readDrilldownsFromAPI(apiCfg.Drilldowns, priorDrilldowns)
 }
 
 func sloAlertsPanelConfigFromAPIImport(apiCfg kbapi.KibanaHTTPAPIsSloAlertsEmbeddable) *models.SloAlertsPanelConfigModel {
@@ -201,8 +198,8 @@ func readDrilldownsFromAPI(
 		}
 
 		if prior == nil {
-			out[i].EncodeURL = drilldownBoolImportPreserving(d.EncodeUrl, drilldownURLEncodeURLDefault)
-			out[i].OpenInNewTab = drilldownBoolImportPreserving(d.OpenInNewTab, drilldownURLOpenInNewTabDefault)
+			out[i].EncodeURL = panelkit.DrilldownBoolImportPreserving(d.EncodeUrl, drilldownURLEncodeURLDefault)
+			out[i].OpenInNewTab = panelkit.DrilldownBoolImportPreserving(d.OpenInNewTab, drilldownURLOpenInNewTabDefault)
 			continue
 		}
 

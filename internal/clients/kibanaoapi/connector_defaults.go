@@ -89,6 +89,7 @@ var connectorConfigHandlers = map[string]connectorConfigHandler{
 		remarshalConfig: remarshalConfig[kbapi.TinesConfig],
 	},
 	".webhook": {
+		defaults:        connectorConfigWithDefaultsWebhook,
 		remarshalConfig: remarshalConfig[kbapi.WebhookConfig],
 	},
 	".xmatters": {
@@ -299,6 +300,14 @@ func connectorConfigWithDefaultsSwimlane(plan string) (string, error) {
 					Name      string "json:\"name\""
 				} "json:\"severityConfig,omitempty\""
 			}{}
+		}
+	})
+}
+
+func connectorConfigWithDefaultsWebhook(plan string) (string, error) {
+	return connectorConfigWithDefaults(plan, func(c *kbapi.WebhookConfig) {
+		if c.Method == nil {
+			c.Method = new(kbapi.WebhookConfigMethodPost)
 		}
 	})
 }

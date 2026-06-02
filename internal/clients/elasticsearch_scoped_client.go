@@ -130,16 +130,9 @@ func (e *ElasticsearchScopedClient) EnforceMinVersion(ctx context.Context, minVe
 		return false, diags
 	}
 
-	if info.Version.BuildFlavor == ServerlessFlavor {
-		return true, nil
-	}
-
-	serverVersion, err := version.NewVersion(info.Version.Int)
-	if err != nil {
-		return false, diagutil.FrameworkDiagFromError(err)
-	}
-
-	return serverVersion.GreaterThanOrEqual(minVersion), nil
+	return applyVersionConstraint(info.Version.BuildFlavor, info.Version.Int, func(sv *version.Version) bool {
+		return sv.GreaterThanOrEqual(minVersion)
+	})
 }
 
 // IsServerless returns true when the connected Elasticsearch cluster is running
@@ -160,16 +153,7 @@ func (e *ElasticsearchScopedClient) EnforceVersionCheck(ctx context.Context, che
 		return false, diags
 	}
 
-	if info.Version.BuildFlavor == ServerlessFlavor {
-		return true, nil
-	}
-
-	serverVersion, err := version.NewVersion(info.Version.Int)
-	if err != nil {
-		return false, diagutil.FrameworkDiagFromError(err)
-	}
-
-	return check(serverVersion), nil
+	return applyVersionConstraint(info.Version.BuildFlavor, info.Version.Int, check)
 }
 
 // elasticsearchScopedClientFromAPIClient constructs an ElasticsearchScopedClient
