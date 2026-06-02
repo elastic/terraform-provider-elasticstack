@@ -37,40 +37,11 @@ import (
 
 const mlTrainedModelAliasResourceAddress = "elasticstack_elasticsearch_ml_trained_model_alias.test"
 
-func getAvailableTrainedModelID(t *testing.T) string {
-	t.Helper()
-
-	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
-	if err != nil {
-		t.Skipf("Cannot connect to Elasticsearch: %v", err)
-	}
-
-	ctx := context.Background()
-	typed := client.GetESClient()
-
-	// Try the well-known built-in model first.
-	res, err := typed.Ml.GetTrainedModels().ModelId("lang_ident_model_1").AllowNoMatch(true).Do(ctx)
-	if err == nil && res != nil && len(res.TrainedModelConfigs) > 0 {
-		return res.TrainedModelConfigs[0].ModelId
-	}
-
-	// Fall back to any available trained model.
-	res, err = typed.Ml.GetTrainedModels().AllowNoMatch(true).Do(ctx)
-	if err == nil && res != nil && len(res.TrainedModelConfigs) > 0 {
-		return res.TrainedModelConfigs[0].ModelId
-	}
-
-	return ""
-}
-
 func TestAccResourceMLTrainedModelAlias_basic(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, version.Must(version.NewVersion("8.8.0")), versionutils.FlavorAny)
+	acctest.EnsureTrainedModel(t)
 
-	modelID := getAvailableTrainedModelID(t)
-	if modelID == "" {
-		t.Skip("No trained models available in the cluster; skipping ML trained model alias tests")
-	}
-
+	modelID := acctest.AccTestTrainedModelID
 	modelAlias := fmt.Sprintf("test-alias-%s%s", sdkacctest.RandStringFromCharSet(9, sdkacctest.CharSetAlphaNum), sdkacctest.RandStringFromCharSet(1, sdkacctest.CharSetAlpha))
 
 	t.Cleanup(func() {
@@ -117,8 +88,8 @@ func TestAccResourceMLTrainedModelAlias_basic(t *testing.T) {
 				ImportStateVerifyIgnore:  []string{"reassign"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					rs := s.RootModule().Resources[mlTrainedModelAliasResourceAddress]
-					// Pass model_id in the import ID so ImportState can populate it
-					// without relying on alias resolution via the ES API.
+					// Include model_id in import ID so ImportState can populate it
+					// without relying solely on ES alias resolution.
 					return rs.Primary.ID + "/" + rs.Primary.Attributes["model_id"], nil
 				},
 				ConfigVariables: map[string]config.Variable{
@@ -131,22 +102,25 @@ func TestAccResourceMLTrainedModelAlias_basic(t *testing.T) {
 }
 
 func TestAccResourceMLTrainedModelAlias_reassign(t *testing.T) {
-	t.Skip("TODO: requires a second trained model to be available in the cluster; skipping until test harness can ensure two models exist")
+	// TODO: requires a second trained model to verify in-place reassignment.
+	// acctest.EnsureTrainedModel only provisions one model; skipping until
+	// the harness guarantees two distinct models exist.
+	t.Skip("TODO: requires a second trained model to verify in-place reassignment")
 }
 
 func TestAccResourceMLTrainedModelAlias_collisionWithReassignDisabled(t *testing.T) {
-	t.Skip("TODO: requires a second trained model to set up out-of-band collision; skipping until test harness can ensure two models exist")
+	// TODO: requires a second trained model to set up a genuine collision
+	// (pre-create alias on model A, then attempt to create it on model B
+	// with reassign=false, which should fail).
+	t.Skip("TODO: requires a second trained model to set up out-of-band collision")
 }
 
 func TestAccResourceMLTrainedModelAlias_updateReassignFlag(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, version.Must(version.NewVersion("8.8.0")), versionutils.FlavorAny)
+	acctest.EnsureTrainedModel(t)
 
-	modelID := getAvailableTrainedModelID(t)
-	if modelID == "" {
-		t.Skip("No trained models available in the cluster; skipping ML trained model alias tests")
-	}
-
-	modelAlias := fmt.Sprintf("test-alias-reassign-%s%s", sdkacctest.RandStringFromCharSet(9, sdkacctest.CharSetAlphaNum), sdkacctest.RandStringFromCharSet(1, sdkacctest.CharSetAlpha))
+	modelID := acctest.AccTestTrainedModelID
+	modelAlias := fmt.Sprintf("test-alias-flag-%s%s", sdkacctest.RandStringFromCharSet(9, sdkacctest.CharSetAlphaNum), sdkacctest.RandStringFromCharSet(1, sdkacctest.CharSetAlpha))
 
 	t.Cleanup(func() {
 		deleteMLTrainedModelAliasBestEffort(t.Context(), t, modelAlias)

@@ -58,6 +58,7 @@ import (
 	datafeedstate "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed_state"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/filter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/jobstate"
+	mltrainedmodel "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/trainedmodel"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/trainedmodelalias"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/queryrulesets"
 	apikeyephemeral "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey/ephemeral"
@@ -364,6 +365,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		ingest.NewProcessorURIPartsDataSource,
 		ingest.NewProcessorURLDecodeDataSource,
 		ingest.NewProcessorUserAgentDataSource,
+		mltrainedmodel.NewDataSource,
 	}
 }
 
