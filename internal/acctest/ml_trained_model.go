@@ -29,24 +29,30 @@ import (
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 )
 
-// AccTestTrainedModelID is the stable ID for the acceptance-test bootstrap trained model.
+// AccTestTrainedModelID is the stable ID for the first acceptance-test bootstrap trained model.
 const AccTestTrainedModelID = "terraform-acc-test-model"
 
-var ensureTrainedModelOnce sync.Once
+// AccTestTrainedModelID2 is the stable ID for the second acceptance-test bootstrap trained model.
+const AccTestTrainedModelID2 = "terraform-acc-test-model-2"
 
-// EnsureTrainedModel creates a minimal trained model in the acceptance-test cluster
-// if it does not already exist. The model is a tiny single-leaf tree_ensemble that
-// uses negligible memory and requires no deployment step.
-func EnsureTrainedModel(t *testing.T) {
+var ensureTrainedModelOnces sync.Map // key: modelID, value: *sync.Once
+
+// EnsureTrainedModelByID creates a minimal trained model with the given ID in the
+// acceptance-test cluster if it does not already exist. The model is a tiny
+// single-leaf tree_ensemble that uses negligible memory and requires no deployment.
+// Creation is executed once per model ID across the test process.
+func EnsureTrainedModelByID(t *testing.T, modelID string) {
 	t.Helper()
-	ensureTrainedModelOnce.Do(func() {
+
+	once, _ := ensureTrainedModelOnces.LoadOrStore(modelID, &sync.Once{})
+	once.(*sync.Once).Do(func() {
 		ctx := context.Background()
 		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		_, found, _ := esclient.GetTrainedModel(ctx, client, AccTestTrainedModelID)
+		_, found, _ := esclient.GetTrainedModel(ctx, client, modelID)
 		if found {
 			return
 		}
@@ -58,7 +64,7 @@ func EnsureTrainedModel(t *testing.T) {
 		description := "Terraform acceptance test trained model"
 		modelType := trainedmodeltype.Treeensemble
 
-		_, err = typedClient.Ml.PutTrainedModel(AccTestTrainedModelID).
+		_, err = typedClient.Ml.PutTrainedModel(modelID).
 			Request(&puttrainedmodel.Request{
 				Description: &description,
 				ModelType:   &modelType,
@@ -92,7 +98,14 @@ func EnsureTrainedModel(t *testing.T) {
 			}).
 			Do(ctx)
 		if err != nil {
-			t.Fatalf("failed to create acceptance test trained model: %v", err)
+			t.Fatalf("failed to create acceptance test trained model %q: %v", modelID, err)
 		}
 	})
+}
+
+// EnsureTrainedModel creates the first acceptance-test trained model if it does not exist.
+// This is a convenience wrapper around EnsureTrainedModelByID.
+func EnsureTrainedModel(t *testing.T) {
+	t.Helper()
+	EnsureTrainedModelByID(t, AccTestTrainedModelID)
 }
