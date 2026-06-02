@@ -20,6 +20,7 @@ package entities
 import (
 	"context"
 
+	entity "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store/entity"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -99,6 +100,11 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 				Description: "Normalized JSON (sorted keys) of the full API response body.",
 				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
+			},
+			"items": schema.ListAttribute{
+				Description: "List of entity records with typed attributes matching the resource schema.",
+				Computed:    true,
+				ElementType: entity.ItemObjectType(),
 			},
 		},
 	}

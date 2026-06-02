@@ -25,6 +25,8 @@ import (
 	kbapi "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	entity "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store/entity"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	jsontypes "github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -121,6 +123,35 @@ func readEntityStoreEntitiesDataSource(
 	model.ID = types.StringValue(spaceID + "/entity_store_entities")
 	model.SpaceID = types.StringValue(spaceID)
 	model.ResultsJSON = jsontypes.NewNormalizedValue(string(normalizedBytes))
+
+	// Build typed items list from the API response
+	rawMap, ok := raw.(map[string]any)
+	if !ok {
+		return model, diag.Diagnostics{
+			diag.NewErrorDiagnostic("Failed to parse response", "expected object"),
+		}
+	}
+	var entities []any
+	if rawEntities, ok := rawMap["entities"].([]any); ok {
+		entities = rawEntities
+	} else if rawRecords, ok := rawMap["records"].([]any); ok {
+		entities = rawRecords
+	}
+
+	items := make([]attr.Value, 0, len(entities))
+	for _, e := range entities {
+		if doc, ok := e.(map[string]any); ok {
+			item := entity.APIBodyToItem(ctx, doc, &diags)
+			if diags.HasError() {
+				return model, diags
+			}
+			items = append(items, item)
+		}
+	}
+	itemsList, d := types.ListValue(entity.ItemObjectType(), items)
+	diags.Append(d...)
+	model.Items = itemsList
+
 	return model, nil
 }
 

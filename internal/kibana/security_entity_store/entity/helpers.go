@@ -164,22 +164,22 @@ func appendStringSetToMap(m map[string]any, key string, set types.Set) {
 // Attribute type helpers
 // ---------------------------------------------------------------------------
 
-func entityBlockAttrTypes() map[string]attr.Type {
+func EntityBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"id":            types.StringType,
 		attrName:        types.StringType,
 		attrType:        types.StringType,
 		"sub_type":      types.StringType,
 		"source":        types.SetType{ElemType: types.StringType},
-		"attributes":    types.ObjectType{AttrTypes: entityAttributesBlockAttrTypes()},
-		"behaviors":     types.ObjectType{AttrTypes: entityBehaviorsBlockAttrTypes()},
-		"lifecycle":     types.ObjectType{AttrTypes: entityLifecycleBlockAttrTypes()},
-		attrRisk:        types.ObjectType{AttrTypes: entityRiskBlockAttrTypes()},
-		"relationships": types.ObjectType{AttrTypes: entityRelationshipsBlockAttrTypes()},
+		"attributes":    types.ObjectType{AttrTypes: EntityAttributesBlockAttrTypes()},
+		"behaviors":     types.ObjectType{AttrTypes: EntityBehaviorsBlockAttrTypes()},
+		"lifecycle":     types.ObjectType{AttrTypes: EntityLifecycleBlockAttrTypes()},
+		attrRisk:        types.ObjectType{AttrTypes: EntityRiskBlockAttrTypes()},
+		"relationships": types.ObjectType{AttrTypes: EntityRelationshipsBlockAttrTypes()},
 	}
 }
 
-func entityAttributesBlockAttrTypes() map[string]attr.Type {
+func EntityAttributesBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		attrAsset:     types.BoolType,
 		"managed":     types.BoolType,
@@ -188,7 +188,7 @@ func entityAttributesBlockAttrTypes() map[string]attr.Type {
 	}
 }
 
-func entityBehaviorsBlockAttrTypes() map[string]attr.Type {
+func EntityBehaviorsBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"brute_force_victim": types.BoolType,
 		"new_country_login":  types.BoolType,
@@ -196,7 +196,7 @@ func entityBehaviorsBlockAttrTypes() map[string]attr.Type {
 	}
 }
 
-func entityLifecycleBlockAttrTypes() map[string]attr.Type {
+func EntityLifecycleBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"first_seen":    types.StringType,
 		"last_seen":     types.StringType,
@@ -204,7 +204,7 @@ func entityLifecycleBlockAttrTypes() map[string]attr.Type {
 	}
 }
 
-func entityRiskBlockAttrTypes() map[string]attr.Type {
+func EntityRiskBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		attrCalculatedLevel:     types.StringType,
 		attrCalculatedScore:     types.Float64Type,
@@ -212,7 +212,7 @@ func entityRiskBlockAttrTypes() map[string]attr.Type {
 	}
 }
 
-func entityRelationshipsBlockAttrTypes() map[string]attr.Type {
+func EntityRelationshipsBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"owned_by":               types.SetType{ElemType: types.StringType},
 		"owns":                   types.SetType{ElemType: types.StringType},
@@ -227,7 +227,7 @@ func entityRelationshipsBlockAttrTypes() map[string]attr.Type {
 	}
 }
 
-func hostBlockAttrTypes() map[string]attr.Type {
+func HostBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		attrName:       types.StringType,
 		attrDomain:     types.SetType{ElemType: types.StringType},
@@ -237,12 +237,12 @@ func hostBlockAttrTypes() map[string]attr.Type {
 		"mac":          types.SetType{ElemType: types.StringType},
 		attrType:       types.SetType{ElemType: types.StringType},
 		"architecture": types.SetType{ElemType: types.StringType},
-		"os":           types.ObjectType{AttrTypes: hostOsBlockAttrTypes()},
-		attrRisk:       types.ObjectType{AttrTypes: entityRiskBlockAttrTypes()},
+		"os":           types.ObjectType{AttrTypes: HostOsBlockAttrTypes()},
+		attrRisk:       types.ObjectType{AttrTypes: EntityRiskBlockAttrTypes()},
 	}
 }
 
-func hostOsBlockAttrTypes() map[string]attr.Type {
+func HostOsBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"family":   types.StringType,
 		"full":     types.StringType,
@@ -254,7 +254,7 @@ func hostOsBlockAttrTypes() map[string]attr.Type {
 	}
 }
 
-func userBlockAttrTypes() map[string]attr.Type {
+func UserBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		attrName:    types.StringType,
 		attrDomain:  types.SetType{ElemType: types.StringType},
@@ -263,18 +263,18 @@ func userBlockAttrTypes() map[string]attr.Type {
 		"hash":      types.SetType{ElemType: types.StringType},
 		"id":        types.SetType{ElemType: types.StringType},
 		"roles":     types.SetType{ElemType: types.StringType},
-		attrRisk:    types.ObjectType{AttrTypes: entityRiskBlockAttrTypes()},
+		attrRisk:    types.ObjectType{AttrTypes: EntityRiskBlockAttrTypes()},
 	}
 }
 
-func serviceBlockAttrTypes() map[string]attr.Type {
+func ServiceBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		attrName: types.StringType,
-		attrRisk: types.ObjectType{AttrTypes: entityRiskBlockAttrTypes()},
+		attrRisk: types.ObjectType{AttrTypes: EntityRiskBlockAttrTypes()},
 	}
 }
 
-func orchestratorBlockAttrTypes() map[string]attr.Type {
+func OrchestratorBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		attrName:          types.StringType,
 		attrType:          types.StringType,
@@ -288,7 +288,7 @@ func orchestratorBlockAttrTypes() map[string]attr.Type {
 	}
 }
 
-func cloudBlockAttrTypes() map[string]attr.Type {
+func CloudBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		attrProvider:   types.StringType,
 		"region":       types.StringType,
@@ -300,7 +300,7 @@ func cloudBlockAttrTypes() map[string]attr.Type {
 	}
 }
 
-func eventBlockAttrTypes() map[string]attr.Type {
+func EventBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"category":   types.StringType,
 		attrType:     types.StringType,
@@ -319,23 +319,23 @@ func eventBlockAttrTypes() map[string]attr.Type {
 	}
 }
 
-func assetBlockAttrTypes() map[string]attr.Type {
+func AssetBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"criticality":          types.StringType,
-		"criticality_feedback": types.ObjectType{AttrTypes: assetCriticalityFeedbackBlockAttrTypes()},
-		"owner":                types.ObjectType{AttrTypes: assetOwnerBlockAttrTypes()},
+		"criticality_feedback": types.ObjectType{AttrTypes: AssetCriticalityFeedbackBlockAttrTypes()},
+		"owner":                types.ObjectType{AttrTypes: AssetOwnerBlockAttrTypes()},
 		"value":                types.Float64Type,
 	}
 }
 
-func assetCriticalityFeedbackBlockAttrTypes() map[string]attr.Type {
+func AssetCriticalityFeedbackBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"notes":    types.StringType,
 		attrReason: types.StringType,
 	}
 }
 
-func assetOwnerBlockAttrTypes() map[string]attr.Type {
+func AssetOwnerBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		attrName:     types.StringType,
 		"department": types.StringType,
@@ -966,74 +966,74 @@ func apiBodyToModel(ctx context.Context, body map[string]any, model *tfModel, di
 
 	if entityRaw, ok := body["entity"].(map[string]any); ok {
 		em := mapToEntityBlockModel(ctx, entityRaw, diags)
-		ev, d := types.ObjectValueFrom(ctx, entityBlockAttrTypes(), em)
+		ev, d := types.ObjectValueFrom(ctx, EntityBlockAttrTypes(), em)
 		diags.Append(d...)
 		model.Entity = ev
 	} else {
-		model.Entity = types.ObjectNull(entityBlockAttrTypes())
+		model.Entity = types.ObjectNull(EntityBlockAttrTypes())
 	}
 
 	if hostRaw, ok := body["host"].(map[string]any); ok {
 		hm := mapToHostBlockModel(ctx, hostRaw, diags)
-		hv, d := types.ObjectValueFrom(ctx, hostBlockAttrTypes(), hm)
+		hv, d := types.ObjectValueFrom(ctx, HostBlockAttrTypes(), hm)
 		diags.Append(d...)
 		model.Host = hv
 	} else {
-		model.Host = types.ObjectNull(hostBlockAttrTypes())
+		model.Host = types.ObjectNull(HostBlockAttrTypes())
 	}
 
 	if userRaw, ok := body["user"].(map[string]any); ok {
 		um := mapToUserBlockModel(ctx, userRaw, diags)
-		uv, d := types.ObjectValueFrom(ctx, userBlockAttrTypes(), um)
+		uv, d := types.ObjectValueFrom(ctx, UserBlockAttrTypes(), um)
 		diags.Append(d...)
 		model.User = uv
 	} else {
-		model.User = types.ObjectNull(userBlockAttrTypes())
+		model.User = types.ObjectNull(UserBlockAttrTypes())
 	}
 
 	if serviceRaw, ok := body["service"].(map[string]any); ok {
 		sm := mapToServiceBlockModel(ctx, serviceRaw, diags)
-		sv, d := types.ObjectValueFrom(ctx, serviceBlockAttrTypes(), sm)
+		sv, d := types.ObjectValueFrom(ctx, ServiceBlockAttrTypes(), sm)
 		diags.Append(d...)
 		model.Service = sv
 	} else {
-		model.Service = types.ObjectNull(serviceBlockAttrTypes())
+		model.Service = types.ObjectNull(ServiceBlockAttrTypes())
 	}
 
 	if orchRaw, ok := body["orchestrator"].(map[string]any); ok {
 		om := mapToOrchestratorBlockModel(ctx, orchRaw)
-		ov, d := types.ObjectValueFrom(ctx, orchestratorBlockAttrTypes(), om)
+		ov, d := types.ObjectValueFrom(ctx, OrchestratorBlockAttrTypes(), om)
 		diags.Append(d...)
 		model.Orchestrator = ov
 	} else {
-		model.Orchestrator = types.ObjectNull(orchestratorBlockAttrTypes())
+		model.Orchestrator = types.ObjectNull(OrchestratorBlockAttrTypes())
 	}
 
 	if cloudRaw, ok := body["cloud"].(map[string]any); ok {
 		cm := mapToCloudBlockModel(ctx, cloudRaw)
-		cv, d := types.ObjectValueFrom(ctx, cloudBlockAttrTypes(), cm)
+		cv, d := types.ObjectValueFrom(ctx, CloudBlockAttrTypes(), cm)
 		diags.Append(d...)
 		model.Cloud = cv
 	} else {
-		model.Cloud = types.ObjectNull(cloudBlockAttrTypes())
+		model.Cloud = types.ObjectNull(CloudBlockAttrTypes())
 	}
 
 	if eventRaw, ok := body["event"].(map[string]any); ok {
 		em := mapToEventBlockModel(ctx, eventRaw)
-		ev, d := types.ObjectValueFrom(ctx, eventBlockAttrTypes(), em)
+		ev, d := types.ObjectValueFrom(ctx, EventBlockAttrTypes(), em)
 		diags.Append(d...)
 		model.Event = ev
 	} else {
-		model.Event = types.ObjectNull(eventBlockAttrTypes())
+		model.Event = types.ObjectNull(EventBlockAttrTypes())
 	}
 
 	if assetRaw, ok := body[attrAsset].(map[string]any); ok {
 		am := mapToAssetBlockModel(ctx, assetRaw, diags)
-		av, d := types.ObjectValueFrom(ctx, assetBlockAttrTypes(), am)
+		av, d := types.ObjectValueFrom(ctx, AssetBlockAttrTypes(), am)
 		diags.Append(d...)
 		model.Asset = av
 	} else {
-		model.Asset = types.ObjectNull(assetBlockAttrTypes())
+		model.Asset = types.ObjectNull(AssetBlockAttrTypes())
 	}
 }
 
@@ -1052,9 +1052,9 @@ func mapToEntityBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagno
 			Privileged: getBoolValue(attrsRaw, "privileged"),
 			MfaEnabled: getBoolValue(attrsRaw, "mfa_enabled"),
 		}
-		model.Attributes, _ = types.ObjectValueFrom(ctx, entityAttributesBlockAttrTypes(), attr)
+		model.Attributes, _ = types.ObjectValueFrom(ctx, EntityAttributesBlockAttrTypes(), attr)
 	} else {
-		model.Attributes = types.ObjectNull(entityAttributesBlockAttrTypes())
+		model.Attributes = types.ObjectNull(EntityAttributesBlockAttrTypes())
 	}
 	if behRaw, ok := m["behaviors"].(map[string]any); ok {
 		beh := entityBehaviorsBlockModel{
@@ -1062,9 +1062,9 @@ func mapToEntityBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagno
 			NewCountryLogin:  getBoolValue(behRaw, "new_country_login"),
 			UsedUsbDevice:    getBoolValue(behRaw, "used_usb_device"),
 		}
-		model.Behaviors, _ = types.ObjectValueFrom(ctx, entityBehaviorsBlockAttrTypes(), beh)
+		model.Behaviors, _ = types.ObjectValueFrom(ctx, EntityBehaviorsBlockAttrTypes(), beh)
 	} else {
-		model.Behaviors = types.ObjectNull(entityBehaviorsBlockAttrTypes())
+		model.Behaviors = types.ObjectNull(EntityBehaviorsBlockAttrTypes())
 	}
 	if lcRaw, ok := m["lifecycle"].(map[string]any); ok {
 		lc := entityLifecycleBlockModel{
@@ -1072,14 +1072,14 @@ func mapToEntityBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagno
 			LastSeen:     getStringValue(lcRaw, "last_seen"),
 			LastActivity: getStringValue(lcRaw, "last_activity"),
 		}
-		model.Lifecycle, _ = types.ObjectValueFrom(ctx, entityLifecycleBlockAttrTypes(), lc)
+		model.Lifecycle, _ = types.ObjectValueFrom(ctx, EntityLifecycleBlockAttrTypes(), lc)
 	} else {
-		model.Lifecycle = types.ObjectNull(entityLifecycleBlockAttrTypes())
+		model.Lifecycle = types.ObjectNull(EntityLifecycleBlockAttrTypes())
 	}
 	if riskRaw, ok := m[attrRisk].(map[string]any); ok {
 		model.Risk = mapToRiskBlockModel(ctx, riskRaw)
 	} else {
-		model.Risk = types.ObjectNull(entityRiskBlockAttrTypes())
+		model.Risk = types.ObjectNull(EntityRiskBlockAttrTypes())
 	}
 	if relRaw, ok := m["relationships"].(map[string]any); ok {
 		rel := entityRelationshipsBlockModel{
@@ -1094,9 +1094,9 @@ func mapToEntityBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagno
 			AccessedFrequentlyBy: getStringSetValue(relRaw, "accessed_frequently_by"),
 			AccessesInfrequently: getStringSetValue(relRaw, "accesses_infrequently"),
 		}
-		model.Relationships, _ = types.ObjectValueFrom(ctx, entityRelationshipsBlockAttrTypes(), rel)
+		model.Relationships, _ = types.ObjectValueFrom(ctx, EntityRelationshipsBlockAttrTypes(), rel)
 	} else {
-		model.Relationships = types.ObjectNull(entityRelationshipsBlockAttrTypes())
+		model.Relationships = types.ObjectNull(EntityRelationshipsBlockAttrTypes())
 	}
 	return model
 }
@@ -1107,7 +1107,7 @@ func mapToRiskBlockModel(ctx context.Context, m map[string]any) types.Object {
 		CalculatedScore:     getFloat64Value(m, attrCalculatedScore),
 		CalculatedScoreNorm: getFloat64Value(m, attrCalculatedScoreNorm),
 	}
-	obj, _ := types.ObjectValueFrom(ctx, entityRiskBlockAttrTypes(), model)
+	obj, _ := types.ObjectValueFrom(ctx, EntityRiskBlockAttrTypes(), model)
 	return obj
 }
 
@@ -1132,14 +1132,14 @@ func mapToHostBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnost
 			Type:     getStringValue(osRaw, attrType),
 			Version:  getStringValue(osRaw, "version"),
 		}
-		model.Os, _ = types.ObjectValueFrom(ctx, hostOsBlockAttrTypes(), osModel)
+		model.Os, _ = types.ObjectValueFrom(ctx, HostOsBlockAttrTypes(), osModel)
 	} else {
-		model.Os = types.ObjectNull(hostOsBlockAttrTypes())
+		model.Os = types.ObjectNull(HostOsBlockAttrTypes())
 	}
 	if riskRaw, ok := m[attrRisk].(map[string]any); ok {
 		model.Risk = mapToRiskBlockModel(ctx, riskRaw)
 	} else {
-		model.Risk = types.ObjectNull(entityRiskBlockAttrTypes())
+		model.Risk = types.ObjectNull(EntityRiskBlockAttrTypes())
 	}
 	return model
 }
@@ -1157,7 +1157,7 @@ func mapToUserBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnost
 	if riskRaw, ok := m[attrRisk].(map[string]any); ok {
 		model.Risk = mapToRiskBlockModel(ctx, riskRaw)
 	} else {
-		model.Risk = types.ObjectNull(entityRiskBlockAttrTypes())
+		model.Risk = types.ObjectNull(EntityRiskBlockAttrTypes())
 	}
 	return model
 }
@@ -1169,7 +1169,7 @@ func mapToServiceBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagn
 	if riskRaw, ok := m[attrRisk].(map[string]any); ok {
 		model.Risk = mapToRiskBlockModel(ctx, riskRaw)
 	} else {
-		model.Risk = types.ObjectNull(entityRiskBlockAttrTypes())
+		model.Risk = types.ObjectNull(EntityRiskBlockAttrTypes())
 	}
 	return model
 }
@@ -1230,9 +1230,9 @@ func mapToAssetBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnos
 			Notes:  getStringValue(fbRaw, "notes"),
 			Reason: getStringValue(fbRaw, attrReason),
 		}
-		model.CriticalityFeedback, _ = types.ObjectValueFrom(ctx, assetCriticalityFeedbackBlockAttrTypes(), fb)
+		model.CriticalityFeedback, _ = types.ObjectValueFrom(ctx, AssetCriticalityFeedbackBlockAttrTypes(), fb)
 	} else {
-		model.CriticalityFeedback = types.ObjectNull(assetCriticalityFeedbackBlockAttrTypes())
+		model.CriticalityFeedback = types.ObjectNull(AssetCriticalityFeedbackBlockAttrTypes())
 	}
 	if ownerRaw, ok := m["owner"].(map[string]any); ok {
 		owner := assetOwnerBlockModel{
@@ -1241,9 +1241,76 @@ func mapToAssetBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnos
 			Email:      getStringValue(ownerRaw, attrEmail),
 			Ext:        getStringValue(ownerRaw, "ext"),
 		}
-		model.Owner, _ = types.ObjectValueFrom(ctx, assetOwnerBlockAttrTypes(), owner)
+		model.Owner, _ = types.ObjectValueFrom(ctx, AssetOwnerBlockAttrTypes(), owner)
 	} else {
-		model.Owner = types.ObjectNull(assetOwnerBlockAttrTypes())
+		model.Owner = types.ObjectNull(AssetOwnerBlockAttrTypes())
 	}
 	return model
+}
+
+// ItemObjectType returns the object type for items in the list data source.
+// It covers the fields that apiBodyToModel populates from an API response.
+func ItemObjectType() attr.Type {
+	return types.ObjectType{AttrTypes: map[string]attr.Type{
+		"@timestamp":    types.StringType,
+		"entity":        types.ObjectType{AttrTypes: EntityBlockAttrTypes()},
+		"host":          types.ObjectType{AttrTypes: HostBlockAttrTypes()},
+		"user":          types.ObjectType{AttrTypes: UserBlockAttrTypes()},
+		"service":       types.ObjectType{AttrTypes: ServiceBlockAttrTypes()},
+		"cloud":         types.ObjectType{AttrTypes: CloudBlockAttrTypes()},
+		"asset":         types.ObjectType{AttrTypes: AssetBlockAttrTypes()},
+		"orchestrator":  types.ObjectType{AttrTypes: OrchestratorBlockAttrTypes()},
+		"event":         types.ObjectType{AttrTypes: EventBlockAttrTypes()},
+		"labels":        types.MapType{ElemType: types.StringType},
+		"tags":          types.SetType{ElemType: types.StringType},
+		"document_json":  jsontypes.NormalizedType{},
+	}}
+}
+
+// APIBodyToItem converts a raw entity document from the API list response
+// into a types.Object suitable for the items list. It fills the same typed
+// attributes that the resource model would have after a read.
+func APIBodyToItem(ctx context.Context, body map[string]any, diags *diag.Diagnostics) types.Object {
+	var item tfModel
+	apiBodyToModel(ctx, body, &item, diags)
+	if diags.HasError() {
+		return types.ObjectNull(ItemObjectType().(types.ObjectType).AttrTypes)
+	}
+	obj, d := types.ObjectValueFrom(ctx, ItemObjectType().(types.ObjectType).AttrTypes, map[string]attr.Value{
+		"@timestamp":    item.Timestamp,
+		"entity":        item.Entity,
+		"host":          item.Host,
+		"user":          item.User,
+		"service":       item.Service,
+		"cloud":         item.Cloud,
+		"asset":         item.Asset,
+		"orchestrator":  item.Orchestrator,
+		"event":         item.Event,
+		"labels":        item.Labels,
+		"tags":          item.Tags,
+		"document_json":  item.DocumentJSON,
+	})
+	diags.Append(d...)
+	return obj
+}
+
+// ItemModel is the struct used by the data source items list.
+type ItemModel = map[string]attr.Value
+
+// ItemAttrTypes returns the attribute types for items in the list data source.
+func ItemAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"@timestamp":    types.StringType,
+		"entity":        types.ObjectType{AttrTypes: EntityBlockAttrTypes()},
+		"host":          types.ObjectType{AttrTypes: HostBlockAttrTypes()},
+		"user":          types.ObjectType{AttrTypes: UserBlockAttrTypes()},
+		"service":       types.ObjectType{AttrTypes: ServiceBlockAttrTypes()},
+		"cloud":         types.ObjectType{AttrTypes: CloudBlockAttrTypes()},
+		"asset":         types.ObjectType{AttrTypes: AssetBlockAttrTypes()},
+		"orchestrator":  types.ObjectType{AttrTypes: OrchestratorBlockAttrTypes()},
+		"event":         types.ObjectType{AttrTypes: EventBlockAttrTypes()},
+		"labels":        types.MapType{ElemType: types.StringType},
+		"tags":          types.SetType{ElemType: types.StringType},
+		"document_json":  jsontypes.NormalizedType{},
+	}
 }

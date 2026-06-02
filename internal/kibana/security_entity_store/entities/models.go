@@ -48,6 +48,7 @@ type dsModel struct {
 	FilterQuery types.String         `tfsdk:"filter_query"`
 	EntityTypes types.Set            `tfsdk:"entity_types"`
 	ResultsJSON jsontypes.Normalized `tfsdk:"results_json"`
+	Items       types.List            `tfsdk:"items"`
 }
 
 var _ entitycore.WithVersionRequirements = (*dsModel)(nil)
