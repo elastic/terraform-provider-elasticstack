@@ -58,6 +58,7 @@ import (
 	datafeedstate "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed_state"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/filter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/jobstate"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/trainedmodelalias"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/queryrulesets"
 	apikeyephemeral "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey/ephemeral"
 	apikeyresource "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey/resource"
@@ -271,6 +272,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		calendar_event.NewCalendarEventResource,
 		calendar_job.NewCalendarJobResource,
 		filter.NewFilterResource,
+		trainedmodelalias.NewTrainedModelAliasResource,
 		security_detection_rule.NewSecurityDetectionRuleResource,
 		jobstate.NewMLJobStateResource,
 		datafeedstate.NewMLDatafeedStateResource,
