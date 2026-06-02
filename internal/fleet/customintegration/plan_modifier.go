@@ -91,17 +91,12 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 
 	// If the checksum has changed (or was never recorded), invalidate the
 	// computed fields so Terraform knows a real update will happen.
-	// Keep the prior ID in the plan so the envelope's identity resolution
-	// (which reads from the plan model, not prior state) still works.
 	priorChecksum := state.Checksum.ValueString()
 	if priorChecksum == "" || newChecksum != priorChecksum {
 		plan.Checksum = types.StringUnknown()
 		plan.PackageName = types.StringUnknown()
 		plan.PackageVersion = types.StringUnknown()
-		// Do NOT reset plan.ID — the envelope resolves resource identity from
-		// GetID()/GetResourceID() on the plan model during Update. An unknown
-		// ID would cause resolveKibanaResourceIdentity to return an empty
-		// writeID and fail validation.
+		plan.ID = types.StringUnknown()
 		resp.Diagnostics.Append(resp.Plan.Set(ctx, &plan)...)
 	}
 }

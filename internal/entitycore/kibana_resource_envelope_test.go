@@ -1209,15 +1209,21 @@ func TestNewKibanaResource_Update_shortCircuitStateGetError(t *testing.T) {
 	require.False(t, updateCalled, "update callback should not run when state.Get fails")
 }
 
-func TestNewKibanaResource_Update_shortCircuitEmptyResourceID(t *testing.T) {
+func TestNewKibanaResource_Update_fallbackToPriorStateWhenPlanIdentityEmpty(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
 	updateCalled := false
+	var receivedWriteID, receivedSpaceID string
 	opts := defaultTestKibanaResourceOptions()
-	opts.Update = func(_ context.Context, _ *clients.KibanaScopedClient, _ KibanaWriteRequest[testKibanaResourceModel]) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+	opts.Update = func(_ context.Context, _ *clients.KibanaScopedClient, req KibanaWriteRequest[testKibanaResourceModel]) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
 		updateCalled = true
-		return KibanaWriteResult[testKibanaResourceModel]{}, nil
+		receivedWriteID = req.WriteID
+		receivedSpaceID = req.SpaceID
+		model := req.Plan
+		model.ID = types.StringValue(req.SpaceID + "/" + req.WriteID)
+		model.Name = types.StringValue(req.WriteID)
+		return KibanaWriteResult[testKibanaResourceModel]{Model: model}, nil
 	}
 	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
 	r.client = factory
@@ -1236,9 +1242,10 @@ func TestNewKibanaResource_Update_shortCircuitEmptyResourceID(t *testing.T) {
 
 	r.Update(ctx, req, &resp)
 
-	require.True(t, resp.Diagnostics.HasError())
-	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Invalid resource identifier")
-	require.False(t, updateCalled, "update callback should not run when resourceID is empty")
+	require.False(t, resp.Diagnostics.HasError())
+	require.True(t, updateCalled, "update callback should be called when prior state has a valid identity")
+	require.Equal(t, "old-resource", receivedWriteID, "update WriteID should fall back to prior state identity")
+	require.Equal(t, "default", receivedSpaceID, "update SpaceID should fall back to prior state identity")
 }
 
 func TestNewKibanaResource_Update_shortCircuitClientError(t *testing.T) {
