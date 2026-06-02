@@ -34,7 +34,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type toolVersionGate struct{}
+
+func (toolVersionGate) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{{
+		MinVersion:   *minKibanaAgentBuilderAPIVersion,
+		ErrorMessage: fmt.Sprintf("Agent Builder tools require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
+	}}, nil
+}
+
 type toolModel struct {
+	toolVersionGate
 	ID               types.String         `tfsdk:"id"`
 	KibanaConnection types.List           `tfsdk:"kibana_connection"`
 	ToolID           types.String         `tfsdk:"tool_id"`
@@ -49,6 +59,7 @@ var _ entitycore.WithVersionRequirements = toolDataSourceModel{}
 
 type toolDataSourceModel struct {
 	entitycore.KibanaConnectionField
+	toolVersionGate
 	ID                        types.String                    `tfsdk:"id"`
 	SpaceID                   types.String                    `tfsdk:"space_id"`
 	ToolID                    types.String                    `tfsdk:"tool_id"`
@@ -69,23 +80,6 @@ func (model toolModel) GetKibanaConnection() types.List { return model.KibanaCon
 
 var _ entitycore.KibanaResourceModel = toolModel{}
 var _ entitycore.WithVersionRequirements = toolModel{}
-
-func (model toolModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return toolVersionRequirements(), nil
-}
-
-func (model toolDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return toolVersionRequirements(), nil
-}
-
-func toolVersionRequirements() []entitycore.VersionRequirement {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *minKibanaAgentBuilderAPIVersion,
-			ErrorMessage: fmt.Sprintf("Agent Builder tools require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
-		},
-	}
-}
 
 // toolBaseData holds fields shared between toolDataSourceModel and toolModel
 // populated from the API response.
