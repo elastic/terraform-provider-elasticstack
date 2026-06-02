@@ -40,7 +40,7 @@ type TrainedModelDeploymentData struct {
 	WaitFor                 types.String            `tfsdk:"wait_for"`
 	APITimeout              customtypes.Duration    `tfsdk:"api_timeout"`
 	ForceStop               types.Bool              `tfsdk:"force_stop"`
-	AdaptiveAllocations     AdaptiveAllocationsData `tfsdk:"adaptive_allocations"`
+	AdaptiveAllocations     *AdaptiveAllocationsData `tfsdk:"adaptive_allocations"`
 	Timeouts                timeouts.Value          `tfsdk:"timeouts"`
 	State                   types.String            `tfsdk:"state"`
 	AllocationStatus        types.String            `tfsdk:"allocation_status"`

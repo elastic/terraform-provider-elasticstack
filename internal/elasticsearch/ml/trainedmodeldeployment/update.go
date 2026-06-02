@@ -95,7 +95,7 @@ func (r *trainedModelDeploymentResource) update(ctx context.Context, req resourc
 
 	// Build update options
 	var adaptiveAllocations *types.AdaptiveAllocationsSettings
-	if !plan.AdaptiveAllocations.Enabled.IsNull() {
+	if plan.AdaptiveAllocations != nil && !plan.AdaptiveAllocations.Enabled.IsNull() {
 		aa := plan.AdaptiveAllocations
 		adaptiveAllocations = &types.AdaptiveAllocationsSettings{
 			Enabled: aa.Enabled.ValueBool(),
@@ -153,7 +153,7 @@ func (r *trainedModelDeploymentResource) update(ctx context.Context, req resourc
 	plan.StatsJSON = fwtypes.StringValue(statsJSON)
 
 	// Update number_of_allocations from API only when adaptive_allocations is NOT configured
-	if plan.AdaptiveAllocations.Enabled.IsNull() {
+	if plan.AdaptiveAllocations == nil || plan.AdaptiveAllocations.Enabled.IsNull() {
 		if stats.DeploymentStats.NumberOfAllocations != nil {
 			plan.NumberOfAllocations = fwtypes.Int64Value(int64(*stats.DeploymentStats.NumberOfAllocations))
 		} else {
