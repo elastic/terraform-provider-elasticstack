@@ -23,22 +23,33 @@ import (
 )
 
 var (
-	_ resource.Resource               = newCustomIntegrationResource()
-	_ resource.ResourceWithConfigure  = newCustomIntegrationResource()
-	_ resource.ResourceWithModifyPlan = newCustomIntegrationResource()
+	_ resource.Resource               = newResource()
+	_ resource.ResourceWithConfigure  = newResource()
+	_ resource.ResourceWithModifyPlan = newResource()
 )
 
-type customIntegrationResource struct {
-	*entitycore.ResourceBase
+// Resource implements the Fleet Custom Integration resource.
+type Resource struct {
+	*entitycore.KibanaResource[customIntegrationModel]
 }
 
-func newCustomIntegrationResource() *customIntegrationResource {
-	return &customIntegrationResource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentFleet, "custom_integration"),
+func newResource() *Resource {
+	return &Resource{
+		KibanaResource: entitycore.NewKibanaResource[customIntegrationModel](
+			entitycore.ComponentFleet,
+			"custom_integration",
+			entitycore.KibanaResourceOptions[customIntegrationModel]{
+				Schema: getSchema,
+				Read:   readCustomIntegration,
+				Delete: deleteCustomIntegration,
+				Create: createCustomIntegration,
+				Update: updateCustomIntegration,
+			},
+		),
 	}
 }
 
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
-	return newCustomIntegrationResource()
+	return newResource()
 }

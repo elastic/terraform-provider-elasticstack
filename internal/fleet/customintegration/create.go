@@ -26,77 +26,59 @@ import (
 	"strings"
 	"time"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *customIntegrationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan customIntegrationModel
-
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func createCustomIntegration(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[customIntegrationModel],
+) (entitycore.KibanaWriteResult[customIntegrationModel], diag.Diagnostics) {
+	var diags diag.Diagnostics
+	plan := req.Plan
 
 	createTimeout, fwDiags := plan.Timeouts.Create(ctx, 20*time.Minute)
-	resp.Diagnostics.Append(fwDiags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(fwDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[customIntegrationModel]{}, diags
 	}
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	apiClient, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	fleetClient := apiClient.GetFleetClient()
-
-	meetsMinVersion, verDiags := apiClient.EnforceMinVersion(ctx, minVersionCustomPackageGet)
-	resp.Diagnostics.Append(verDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !meetsMinVersion {
-		resp.Diagnostics.AddError(
-			"Kibana version not supported",
-			"elasticstack_fleet_custom_integration requires Kibana 8.2.0 or later.",
-		)
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
 	filePath := plan.PackagePath.ValueString()
 	contentType := detectContentType(filePath)
 
-	result, diags := fleet.UploadPackage(ctx, fleetClient, fleet.UploadPackageOptions{
+	result, uploadDiags := fleet.UploadPackage(ctx, fleetClient, fleet.UploadPackageOptions{
 		PackagePath:               filePath,
 		ContentType:               contentType,
 		IgnoreMappingUpdateErrors: plan.IgnoreMappingUpdateErrors.ValueBool(),
 		SkipDataStreamRollover:    plan.SkipDataStreamRollover.ValueBool(),
 		SpaceID:                   plan.SpaceID.ValueString(),
 	})
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(uploadDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[customIntegrationModel]{}, diags
 	}
 
 	if result.PackageName == "" || result.PackageVersion == "" {
-		resp.Diagnostics.AddError(
+		diags.AddError(
 			"Package name or version could not be determined",
 			"Fleet returned an empty package name or version. Ensure the archive contains "+
 				"a valid manifest.yml with non-empty name and version fields.",
 		)
-		return
+		return entitycore.KibanaWriteResult[customIntegrationModel]{}, diags
 	}
 
 	checksum, err := computeSHA256(filePath)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to compute checksum", err.Error())
-		return
+		diags.AddError("Failed to compute checksum", err.Error())
+		return entitycore.KibanaWriteResult[customIntegrationModel]{}, diags
 	}
 
 	plan.PackageName = types.StringValue(result.PackageName)
@@ -108,8 +90,7 @@ func (r *customIntegrationResource) Create(ctx context.Context, req resource.Cre
 		plan.SpaceID = types.StringNull()
 	}
 
-	diags = resp.State.Set(ctx, plan)
-	resp.Diagnostics.Append(diags...)
+	return entitycore.KibanaWriteResult[customIntegrationModel]{Model: plan}, diags
 }
 
 // detectContentType returns the MIME content type for the given file path

@@ -20,52 +20,41 @@ package customintegration
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *customIntegrationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state customIntegrationModel
+func deleteCustomIntegration(ctx context.Context, client *clients.KibanaScopedClient, _, spaceID string, model customIntegrationModel) diag.Diagnostics {
+	var diags diag.Diagnostics
 
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if state.SkipDestroy.ValueBool() {
+	if model.SkipDestroy.ValueBool() {
 		tflog.Debug(ctx, "Skipping uninstall of custom integration package", map[string]any{
-			"name":    state.PackageName.ValueString(),
-			"version": state.PackageVersion.ValueString(),
+			"name":    model.PackageName.ValueString(),
+			"version": model.PackageVersion.ValueString(),
 		})
-		return
+		return diags
 	}
 
-	apiClient, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
-	fleetClient := apiClient.GetFleetClient()
-
-	if state.PackageName.IsNull() || state.PackageName.IsUnknown() || state.PackageName.ValueString() == "" {
-		resp.Diagnostics.AddError(
+	if model.PackageName.IsNull() || model.PackageName.IsUnknown() || model.PackageName.ValueString() == "" {
+		diags.AddError(
 			"Cannot uninstall custom integration package",
 			"skip_destroy is false, but package_name is not set in state. The provider cannot determine which Fleet package to uninstall.",
 		)
-		return
+		return diags
 	}
 
-	if state.PackageVersion.IsNull() || state.PackageVersion.IsUnknown() || state.PackageVersion.ValueString() == "" {
-		resp.Diagnostics.AddError(
+	if model.PackageVersion.IsNull() || model.PackageVersion.IsUnknown() || model.PackageVersion.ValueString() == "" {
+		diags.AddError(
 			"Cannot uninstall custom integration package",
 			"skip_destroy is false, but package_version is not set in state. The provider cannot determine which Fleet package version to uninstall.",
 		)
-		return
+		return diags
 	}
 
-	diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
-	resp.Diagnostics.Append(diags...)
+	diags = fleet.Uninstall(ctx, fleetClient, model.PackageName.ValueString(), model.PackageVersion.ValueString(), spaceID, false)
+	return diags
 }

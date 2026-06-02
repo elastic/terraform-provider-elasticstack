@@ -77,10 +77,16 @@ func (model outputModel) IsUnscopedSpace() bool { return true }
 func (model outputModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	var reqs []entitycore.VersionRequirement
 
-	reqs = append(reqs, entitycore.VersionRequirement{
-		MinVersion:   *MinVersionOutputSSLVerificationMode,
-		ErrorMessage: fmt.Sprintf("ssl.verification_mode requires server version %s or higher", MinVersionOutputSSLVerificationMode.String()),
-	})
+	if !model.Ssl.IsNull() && !model.Ssl.IsUnknown() {
+		if vmAttr, ok := model.Ssl.Attributes()["verification_mode"]; ok {
+			if vmStr, ok := vmAttr.(types.String); ok && !vmStr.IsNull() && !vmStr.IsUnknown() {
+				reqs = append(reqs, entitycore.VersionRequirement{
+					MinVersion:   *MinVersionOutputSSLVerificationMode,
+					ErrorMessage: fmt.Sprintf("ssl.verification_mode requires server version %s or higher", MinVersionOutputSSLVerificationMode.String()),
+				})
+			}
+		}
+	}
 
 	if model.Type.ValueString() == outputTypeKafka {
 		reqs = append(reqs, entitycore.VersionRequirement{

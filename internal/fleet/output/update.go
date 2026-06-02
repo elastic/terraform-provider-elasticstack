@@ -39,9 +39,8 @@ func updateOutput(ctx context.Context, client *clients.KibanaScopedClient, req e
 	}
 
 	outputID := planModel.OutputID.ValueString()
-	spaceID := req.Prior.GetSpaceID().ValueString()
 
-	output, d := fleet.UpdateOutput(ctx, fleetClient, outputID, spaceID, body)
+	output, d := fleet.UpdateOutput(ctx, fleetClient, outputID, req.SpaceID, body)
 	diags.Append(d...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[outputModel]{}, diags
