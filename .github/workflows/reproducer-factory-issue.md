@@ -29,13 +29,13 @@ on:
     pull-requests: read
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v6.0.2
       with:
         persist-credentials: false
         fetch-depth: 1
     - name: Determine intake mode
       id: determine_intake_mode
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -45,7 +45,7 @@ on:
     - name: Qualify trigger event
       id: qualify_trigger
       if: steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       env:
         FACTORY_NAME: reproducer-factory
       with:
@@ -56,7 +56,7 @@ on:
     - name: Capture issue context
       id: capture_issue_context
       if: steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -66,7 +66,7 @@ on:
     - name: Validate dispatch inputs
       id: validate_dispatch_inputs
       if: steps.determine_intake_mode.outputs.intake_mode == 'dispatch'
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -79,7 +79,7 @@ on:
         steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
       env:
         INPUT_ISSUE_NUMBER: ${{ steps.validate_dispatch_inputs.outputs.issue_number }}
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -100,7 +100,7 @@ on:
           ${{ steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
             && steps.capture_issue_context.outputs.issue_number
             || steps.validate_dispatch_inputs.outputs.issue_number }}
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -121,7 +121,7 @@ on:
           ${{ steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
             && steps.capture_issue_context.outputs.issue_number
             || steps.validate_dispatch_inputs.outputs.issue_number }}
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -137,7 +137,7 @@ on:
           steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
           steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
         )
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       env:
         FACTORY_NAME: reproducer-factory
       with:
@@ -151,7 +151,7 @@ on:
         steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
         steps.qualify_trigger.outputs.event_eligible == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       env:
         FACTORY_NAME: reproducer-factory
       with:
@@ -175,7 +175,7 @@ on:
             && steps.capture_issue_context.outputs.issue_number
             || steps.validate_dispatch_inputs.outputs.issue_number }}
         PHASE_LABEL_NAME: phase-reproduction
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -265,7 +265,7 @@ on:
         ISSUE_BODY: ${{ steps.normalize_context.outputs.issue_body }}
         ISSUE_COMMENTS: ${{ steps.normalize_context.outputs.issue_comments }}
         PRIOR_FACTORY_COMMENT: ${{ steps.normalize_context.outputs.prior_reproducer_comment }}
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -277,7 +277,7 @@ on:
         steps.normalize_context.outputs.actor_trusted == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true' &&
         steps.normalize_context.outputs.issue_number != ''
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7.0.1
       with:
         name: reproducer-factory-issue-context
         path: /tmp/reproducer-factory-context/
@@ -285,7 +285,7 @@ on:
     - name: Finalize gate reason
       id: finalize_gate
       if: always()
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       env:
         FACTORY_NAME: reproducer-factory
         EVENT_ELIGIBLE: ${{ steps.normalize_context.outputs.event_eligible }}
@@ -312,7 +312,7 @@ if: >-
   needs.pre_activation.outputs.issue_number != ''
 steps:
   - name: Download issue context artifact
-    uses: actions/download-artifact@v4
+    uses: actions/download-artifact@v8.0.1
     with:
       name: reproducer-factory-issue-context
       path: /tmp/reproducer-factory-context/
@@ -375,12 +375,12 @@ safe-outputs:
           type: string
       steps:
         - name: Checkout repository
-          uses: actions/checkout@v6
+          uses: actions/checkout@v6.0.2
           with:
             persist-credentials: false
             fetch-depth: 1
         - name: Create or update reproducer comment
-          uses: actions/github-script@v9
+          uses: actions/github-script@v9.0.0
           env:
             REPRODUCER_FACTORY_ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
           with:

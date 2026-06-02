@@ -8,13 +8,13 @@ on:
     - cron: daily
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v6.0.2
       with:
         persist-credentials: false
         fetch-depth: 1
     - name: Compute issue slots
       id: compute_issue_slots
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       env:
         ISSUE_SLOTS_LABEL: duplicate-code
         ISSUE_SLOTS_CAP: "3"

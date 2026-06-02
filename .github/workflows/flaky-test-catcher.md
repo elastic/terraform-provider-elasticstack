@@ -8,13 +8,13 @@ on:
     - cron: daily
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v6.0.2
       with:
         persist-credentials: false
         fetch-depth: 1
     - name: Check CI failures
       id: check_ci_failures
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |

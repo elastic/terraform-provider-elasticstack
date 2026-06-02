@@ -8,7 +8,7 @@ on:
   - cron: daily
   steps:
   - name: Checkout repository
-    uses: actions/checkout@v6
+    uses: actions/checkout@v6.0.2
     with:
       fetch-depth: 1
       persist-credentials: false
@@ -17,7 +17,7 @@ on:
       ISSUE_SLOTS_LABEL: semantic-refactor
     id: compute_issue_slots
     name: Compute issue slots
-    uses: actions/github-script@v9
+    uses: actions/github-script@v9.0.0
     with:
       github-token: ${{ secrets.GITHUB_TOKEN }}
       script: |

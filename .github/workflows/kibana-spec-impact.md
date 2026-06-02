@@ -16,17 +16,17 @@ on:
       - 'internal/clients/kibanaoapi/**'
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6.0.2
       with:
         fetch-depth: 0
     - name: Setup Go
-      uses: actions/setup-go@v6
+      uses: actions/setup-go@v6.4.0
       with:
         go-version-file: go.mod
         cache: false
     # NOTE: This ref must match the repo-memory tool config branch-name below.
     - name: Checkout repo-memory branch
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6.0.2
       with:
         ref: memory/kibana-spec-impact
         path: gh-aw-repo-memory/kibana-spec-impact
@@ -46,7 +46,7 @@ on:
           --report-path /tmp/gh-aw/agent/kibana-spec-impact-report.json
     - name: Upload kibana spec impact report
       if: success()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7.0.1
       with:
         name: kibana-spec-impact-report
         path: /tmp/gh-aw/agent/kibana-spec-impact-report.json
@@ -92,7 +92,7 @@ if: >-
   needs.pre_activation.outputs.run_agent == 'true'
 steps:
   - name: Download kibana spec impact report
-    uses: actions/download-artifact@v4
+    uses: actions/download-artifact@v8.0.1
     with:
       name: kibana-spec-impact-report
       path: /tmp/gh-aw/agent

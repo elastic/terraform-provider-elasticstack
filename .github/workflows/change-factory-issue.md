@@ -19,13 +19,13 @@ on:
     pull-requests: read
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v6.0.2
       with:
         persist-credentials: false
         fetch-depth: 1
     - name: Qualify trigger event
       id: qualify_trigger
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       env:
         FACTORY_NAME: change-factory
       with:
@@ -36,7 +36,7 @@ on:
     - name: Capture command text
       id: capture_command_text
       if: steps.qualify_trigger.outputs.event_eligible == 'true'
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -44,7 +44,7 @@ on:
           await fn({ github, context, core });
     - name: Capture issue context
       id: capture_issue_context
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -54,7 +54,7 @@ on:
       id: fetch_issue_comments
       if: >-
         steps.qualify_trigger.outputs.event_eligible == 'true'
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -66,7 +66,7 @@ on:
         steps.qualify_trigger.outputs.event_eligible == 'true'
       env:
         INPUT_COMMENTS_JSON: ${{ steps.fetch_issue_comments.outputs.issue_comments_json }}
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -78,7 +78,7 @@ on:
         steps.qualify_trigger.outputs.event_eligible == 'true'
       env:
         FACTORY_NAME: change-factory
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -89,7 +89,7 @@ on:
       if: >-
         steps.qualify_trigger.outputs.event_eligible == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found == 'true'
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       env:
         DUPLICATE_PR_URL: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
         ISSUE_NUMBER: ${{ github.event.issue.number }}
@@ -107,7 +107,7 @@ on:
         FACTORY_NAME: change-factory
         ISSUE_BODY: ${{ steps.capture_issue_context.outputs.issue_body }}
         HUMAN_COMMENTS: ${{ steps.extract_research_comment.outputs.human_comments }}
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -117,7 +117,7 @@ on:
       if: >-
         steps.qualify_trigger.outputs.event_eligible == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7.0.1
       with:
         name: change-factory-issue-context
         path: /tmp/change-factory-context/
@@ -127,7 +127,7 @@ on:
       if: >-
         steps.qualify_trigger.outputs.event_eligible == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       env:
         FACTORY_NAME: change-factory
       with:
@@ -143,7 +143,7 @@ on:
       env:
         INPUT_ISSUE_NUMBER: ${{ github.event.issue.number }}
         PHASE_LABEL_NAME: phase-specification
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -152,7 +152,7 @@ on:
     - name: Finalize gate reason
       id: finalize_gate
       if: always()
-      uses: actions/github-script@v9
+      uses: actions/github-script@v9.0.0
       env:
         FACTORY_NAME: change-factory
         EVENT_ELIGIBLE: ${{ steps.qualify_trigger.outputs.event_eligible }}
@@ -171,7 +171,7 @@ if: >-
   needs.pre_activation.outputs.duplicate_pr_found != 'true'
 steps:
   - name: Download issue context artifact
-    uses: actions/download-artifact@v4
+    uses: actions/download-artifact@v8.0.1
     with:
       name: change-factory-issue-context
       path: /tmp/change-factory-context/
