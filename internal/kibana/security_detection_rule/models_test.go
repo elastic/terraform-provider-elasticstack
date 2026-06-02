@@ -35,6 +35,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/require"
 )
+
 func TestUpdateFromQueryRule(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
