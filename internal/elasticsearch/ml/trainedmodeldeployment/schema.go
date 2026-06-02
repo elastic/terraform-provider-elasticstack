@@ -65,7 +65,7 @@ func GetSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "The number of model allocations on each node where the model is deployed. Cannot be set when `adaptive_allocations` is configured.",
 				Optional:            true,
 				Validators: []validator.Int64{
-					int64validator.ConflictsWith(pathExpressions("adaptive_allocations")...),
+					int64validator.ConflictsWith(path.MatchRoot("adaptive_allocations")),
 				},
 			},
 			"threads_per_allocation": schema.Int64Attribute{
@@ -151,12 +151,4 @@ func GetSchema(ctx context.Context) schema.Schema {
 			},
 		},
 	}
-}
-
-func pathExpressions(names ...string) []path.Expression {
-	exprs := make([]path.Expression, len(names))
-	for i, name := range names {
-		exprs[i] = path.MatchRoot(name)
-	}
-	return exprs
 }

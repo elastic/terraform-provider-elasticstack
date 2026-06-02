@@ -105,7 +105,7 @@ func StartTrainedModelDeployment(
 
 	res, err := req.Do(ctx)
 	if err != nil {
-		diags.AddError("Failed to start trained model deployment", fmt.Sprintf("Unable to start trained model deployment for model %s: %s", modelID, err.Error()))
+		diags.AddError("Failed to start trained model deployment", fmt.Sprintf("Unable to start trained model deployment: %s — %s", modelID, err.Error()))
 		return nil, diags
 	}
 
@@ -124,7 +124,7 @@ func GetTrainedModelStats(ctx context.Context, apiClient *clients.ElasticsearchS
 		if IsNotFoundElasticsearchError(err) {
 			return nil, diags
 		}
-		diags.AddError("Failed to get trained model stats", fmt.Sprintf("Unable to get trained model stats for model %s: %s", modelID, err.Error()))
+		diags.AddError("Failed to get trained model stats", fmt.Sprintf("Unable to get trained model stats: %s — %s", modelID, err.Error()))
 		return nil, diags
 	}
 
@@ -162,7 +162,7 @@ func UpdateTrainedModelDeployment(ctx context.Context, apiClient *clients.Elasti
 
 	_, err := req.Request(updateReq).Do(ctx)
 	if err != nil {
-		diags.AddError("Failed to update trained model deployment", fmt.Sprintf("Unable to update trained model deployment %s: %s", deploymentID, err.Error()))
+		diags.AddError("Failed to update trained model deployment", fmt.Sprintf("Unable to update trained model deployment: %s — %s", deploymentID, err.Error()))
 		return diags
 	}
 
@@ -184,7 +184,7 @@ func StopTrainedModelDeployment(ctx context.Context, apiClient *clients.Elastics
 		if IsNotFoundElasticsearchError(err) {
 			return diags
 		}
-		diags.AddError("Failed to stop trained model deployment", fmt.Sprintf("Unable to stop trained model deployment %s: %s", deploymentID, err.Error()))
+		diags.AddError("Failed to stop trained model deployment", fmt.Sprintf("Unable to stop trained model deployment: %s — %s", deploymentID, err.Error()))
 		return diags
 	}
 
@@ -193,31 +193,16 @@ func StopTrainedModelDeployment(ctx context.Context, apiClient *clients.Elastics
 
 // GetTrainedModelStatsJSON retrieves the raw JSON stats for a specific trained model deployment.
 func GetTrainedModelStatsJSON(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, modelID string, deploymentID string) (string, *types.TrainedModelStats, fwdiag.Diagnostics) {
-	var diags fwdiag.Diagnostics
-
-	typedClient := apiClient.GetESClient()
-
-	res, err := typedClient.Ml.GetTrainedModelsStats().ModelId(modelID).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return "", nil, diags
-		}
-		diags.AddError("Failed to get trained model stats", fmt.Sprintf("Unable to get trained model stats for model %s: %s", modelID, err.Error()))
-		return "", nil, diags
+	stats, diags := GetTrainedModelStats(ctx, apiClient, modelID, deploymentID)
+	if diags.HasError() || stats == nil {
+		return "", stats, diags
 	}
 
-	for i := range res.TrainedModelStats {
-		if res.TrainedModelStats[i].ModelId == modelID {
-			if res.TrainedModelStats[i].DeploymentStats != nil && res.TrainedModelStats[i].DeploymentStats.DeploymentId == deploymentID {
-				statsJSON, marshalErr := json.Marshal(res.TrainedModelStats[i])
-				if marshalErr != nil {
-					diags.AddError("Failed to marshal trained model stats", marshalErr.Error())
-					return "", nil, diags
-				}
-				return string(statsJSON), &res.TrainedModelStats[i], diags
-			}
-		}
+	statsJSON, marshalErr := json.Marshal(stats)
+	if marshalErr != nil {
+		diags.AddError("Failed to marshal trained model stats", marshalErr.Error())
+		return "", stats, diags
 	}
 
-	return "", nil, diags
+	return string(statsJSON), stats, diags
 }

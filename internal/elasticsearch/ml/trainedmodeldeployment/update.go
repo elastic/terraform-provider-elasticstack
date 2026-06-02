@@ -22,17 +22,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
-	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
-
-const updateTimeoutErrorMessage = "Timed out while waiting for trained model deployment update. Timeout: %s"
 
 func (r *trainedModelDeploymentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data TrainedModelDeploymentData
@@ -93,22 +89,7 @@ func (r *trainedModelDeploymentResource) update(ctx context.Context, req resourc
 		modelID = plan.ModelID.ValueString()
 	}
 
-	// Build update options
-	var adaptiveAllocations *types.AdaptiveAllocationsSettings
-	if plan.AdaptiveAllocations != nil && !plan.AdaptiveAllocations.Enabled.IsNull() {
-		aa := plan.AdaptiveAllocations
-		adaptiveAllocations = &types.AdaptiveAllocationsSettings{
-			Enabled: aa.Enabled.ValueBool(),
-		}
-		if !aa.MinNumberOfAllocations.IsNull() {
-			v := int(aa.MinNumberOfAllocations.ValueInt64())
-			adaptiveAllocations.MinNumberOfAllocations = &v
-		}
-		if !aa.MaxNumberOfAllocations.IsNull() {
-			v := int(aa.MaxNumberOfAllocations.ValueInt64())
-			adaptiveAllocations.MaxNumberOfAllocations = &v
-		}
-	}
+	adaptiveAllocations := toAdaptiveAllocationsSettings(plan.AdaptiveAllocations)
 
 	var numberOfAllocations *int
 	if !plan.NumberOfAllocations.IsNull() {
@@ -127,7 +108,6 @@ func (r *trainedModelDeploymentResource) update(ctx context.Context, req resourc
 		return diags
 	}
 
-	// Re-read stats to update state
 	statsJSON, stats, readDiags := elasticsearch.GetTrainedModelStatsJSON(ctx, client, modelID, deploymentID)
 	diags.Append(readDiags...)
 	if diags.HasError() {
@@ -139,27 +119,7 @@ func (r *trainedModelDeploymentResource) update(ctx context.Context, req resourc
 		return diags
 	}
 
-	// Update state with current values
-	if stats.DeploymentStats.State != nil {
-		plan.State = fwtypes.StringValue(stats.DeploymentStats.State.String())
-	} else {
-		plan.State = fwtypes.StringNull()
-	}
-	if stats.DeploymentStats.AllocationStatus != nil {
-		plan.AllocationStatus = fwtypes.StringValue(stats.DeploymentStats.AllocationStatus.State.String())
-	} else {
-		plan.AllocationStatus = fwtypes.StringNull()
-	}
-	plan.StatsJSON = fwtypes.StringValue(statsJSON)
-
-	// Update number_of_allocations from API only when adaptive_allocations is NOT configured
-	if plan.AdaptiveAllocations == nil || plan.AdaptiveAllocations.Enabled.IsNull() {
-		if stats.DeploymentStats.NumberOfAllocations != nil {
-			plan.NumberOfAllocations = fwtypes.Int64Value(int64(*stats.DeploymentStats.NumberOfAllocations))
-		} else {
-			plan.NumberOfAllocations = fwtypes.Int64Null()
-		}
-	}
+	populateComputedFromStats(&plan, stats, statsJSON)
 
 	tflog.Info(ctx, fmt.Sprintf("Trained model deployment %s updated successfully", deploymentID))
 

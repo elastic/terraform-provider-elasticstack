@@ -67,31 +67,8 @@ func readTrainedModelDeployment(
 		return state, false, diags
 	}
 
-	// Populate computed attributes
-	state.ModelID = types.StringValue(stats.ModelId)
-	state.DeploymentID = types.StringValue(stats.DeploymentStats.DeploymentId)
-	if stats.DeploymentStats.State != nil {
-		state.State = types.StringValue(stats.DeploymentStats.State.String())
-	} else {
-		state.State = types.StringNull()
-	}
-	if stats.DeploymentStats.AllocationStatus != nil {
-		state.AllocationStatus = types.StringValue(stats.DeploymentStats.AllocationStatus.State.String())
-	} else {
-		state.AllocationStatus = types.StringNull()
-	}
-	state.StatsJSON = types.StringValue(statsJSON)
+	populateComputedFromStats(&state, stats, statsJSON)
 
-	// Update number_of_allocations from API only when adaptive_allocations is NOT configured
-	if state.AdaptiveAllocations == nil || state.AdaptiveAllocations.Enabled.IsNull() {
-		if stats.DeploymentStats.NumberOfAllocations != nil {
-			state.NumberOfAllocations = types.Int64Value(int64(*stats.DeploymentStats.NumberOfAllocations))
-		} else {
-			state.NumberOfAllocations = types.Int64Null()
-		}
-	}
-
-	// Set defaults for computed attributes if not already set (e.g. during import)
 	if state.ForceStop.IsNull() {
 		state.ForceStop = types.BoolValue(false)
 	}
