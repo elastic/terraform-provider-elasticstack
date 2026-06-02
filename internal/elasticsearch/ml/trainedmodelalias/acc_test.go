@@ -88,8 +88,6 @@ func TestAccResourceMLTrainedModelAlias_basic(t *testing.T) {
 				ImportStateVerifyIgnore:  []string{"reassign"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					rs := s.RootModule().Resources[mlTrainedModelAliasResourceAddress]
-					// Include model_id in import ID so ImportState can populate it
-					// without relying solely on ES alias resolution.
 					return rs.Primary.ID + "/" + rs.Primary.Attributes["model_id"], nil
 				},
 				ConfigVariables: map[string]config.Variable{
@@ -102,17 +100,85 @@ func TestAccResourceMLTrainedModelAlias_basic(t *testing.T) {
 }
 
 func TestAccResourceMLTrainedModelAlias_reassign(t *testing.T) {
-	// TODO: requires a second trained model to verify in-place reassignment.
-	// acctest.EnsureTrainedModel only provisions one model; skipping until
-	// the harness guarantees two distinct models exist.
-	t.Skip("TODO: requires a second trained model to verify in-place reassignment")
+	versionutils.SkipIfUnsupported(t, version.Must(version.NewVersion("8.8.0")), versionutils.FlavorAny)
+	acctest.EnsureTrainedModelByID(t, acctest.AccTestTrainedModelID)
+	acctest.EnsureTrainedModelByID(t, acctest.AccTestTrainedModelID2)
+
+	modelAlias := fmt.Sprintf("test-alias-reassign-%s%s", sdkacctest.RandStringFromCharSet(9, sdkacctest.CharSetAlphaNum), sdkacctest.RandStringFromCharSet(1, sdkacctest.CharSetAlpha))
+
+	t.Cleanup(func() {
+		deleteMLTrainedModelAliasBestEffort(t.Context(), t, modelAlias)
+	})
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceMLTrainedModelAliasDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: map[string]config.Variable{
+					"model_alias": config.StringVariable(modelAlias),
+					"model_a":     config.StringVariable(acctest.AccTestTrainedModelID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_alias", modelAlias),
+					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_id", acctest.AccTestTrainedModelID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: map[string]config.Variable{
+					"model_alias": config.StringVariable(modelAlias),
+					"model_b":     config.StringVariable(acctest.AccTestTrainedModelID2),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_alias", modelAlias),
+					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_id", acctest.AccTestTrainedModelID2),
+				),
+			},
+		},
+	})
 }
 
 func TestAccResourceMLTrainedModelAlias_collisionWithReassignDisabled(t *testing.T) {
-	// TODO: requires a second trained model to set up a genuine collision
-	// (pre-create alias on model A, then attempt to create it on model B
-	// with reassign=false, which should fail).
-	t.Skip("TODO: requires a second trained model to set up out-of-band collision")
+	versionutils.SkipIfUnsupported(t, version.Must(version.NewVersion("8.8.0")), versionutils.FlavorAny)
+	acctest.EnsureTrainedModelByID(t, acctest.AccTestTrainedModelID)
+	acctest.EnsureTrainedModelByID(t, acctest.AccTestTrainedModelID2)
+
+	modelAlias := fmt.Sprintf("test-alias-collision-%s%s", sdkacctest.RandStringFromCharSet(9, sdkacctest.CharSetAlphaNum), sdkacctest.RandStringFromCharSet(1, sdkacctest.CharSetAlpha))
+
+	// Pre-create the alias on model A.
+	ctx := context.Background()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Skipf("Cannot connect to Elasticsearch: %v", err)
+	}
+	_, err = client.GetESClient().Ml.PutTrainedModelAlias(acctest.AccTestTrainedModelID, modelAlias).Reassign(true).Do(ctx)
+	if err != nil {
+		t.Fatalf("failed to pre-create alias for collision test: %v", err)
+	}
+
+	t.Cleanup(func() {
+		deleteMLTrainedModelAliasBestEffort(t.Context(), t, modelAlias)
+	})
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceMLTrainedModelAliasDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: map[string]config.Variable{
+					"model_alias": config.StringVariable(modelAlias),
+					"model_id":    config.StringVariable(acctest.AccTestTrainedModelID2),
+				},
+				ExpectError: regexp.MustCompile(`.*`),
+			},
+		},
+	})
 }
 
 func TestAccResourceMLTrainedModelAlias_updateReassignFlag(t *testing.T) {
