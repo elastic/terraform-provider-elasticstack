@@ -1009,7 +1009,8 @@ func TestAccResourceSloCalendarAligned(t *testing.T) {
 }
 
 func TestAccResourceSloArtifacts(t *testing.T) {
-	slo8_9Constraints, err := version.NewConstraint(">=8.9.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
+	// The artifacts field is only supported server-side from 9.2.0 onwards.
+	slo9_2Constraints, err := version.NewConstraint(">=9.2.0")
 	require.NoError(t, err)
 
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
@@ -1019,7 +1020,7 @@ func TestAccResourceSloArtifacts(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(slo9_2Constraints),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
