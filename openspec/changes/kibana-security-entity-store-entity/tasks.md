@@ -4,7 +4,7 @@
 - [x] 1.2 Resolve design open question OQ-1: confirm minimum Kibana version for individual entity CRUD endpoints; update delta specs and `EnforceMinVersion` call if the floor differs from `9.1.0`.
 - [x] 1.3 Resolve design open question OQ-2: verify KQL filter expression `entity.id:"<id>"` works reliably for all valid entity ID formats; document escaping strategy in the resource read implementation.
 - [x] 1.4 Resolve design open question OQ-4: add a plan-time validator that checks consistency between `entity_id` and `entity.id` inside the typed `entity` block (or `entity_json`).
-- [ ] 1.5 On completion of implementation, sync or archive this change per project workflow.
+- [x] 1.5 On completion of implementation, sync or archive this change per project workflow.
 
 ## 2. Project structure
 
@@ -74,9 +74,9 @@
 - [x] 7.3 Add acceptance test for typed `entity` block vs `entity_json` fallback: verify both produce the same API result and that using both together produces a plan-time error.
 - [x] 7.4 Add acceptance test for the `force` flag on update (if a protected-field scenario is available in the test environment).
 - [x] 7.5 Add acceptance test for `import`: create entity via resource → `terraform import` using composite ID → verify state matches.
-- [ ] 7.6 Add acceptance test for single-entity lookup via the list data source `entity_id` filter: create entity via resource → read list data source with `entity_id` → assert `results_json` contains exactly one record with the expected `entity.id`.
-- [ ] 7.7 Add acceptance test for the list data source in page mode: verify `results_json` is non-empty when entities exist; verify plan error when page-mode and search-after parameters are combined.
-- [ ] 7.8 Add acceptance test for `entity_id` conflict validation: verify plan error when `entity_id` is combined with `filter` or `filter_query`.
+- [x] 7.6 Add acceptance test for single-entity lookup via the list data source `entity_id` filter: create entity via resource → read list data source with `entity_id` → assert `results_json` contains exactly one record with the expected `entity.id`.
+- [x] 7.7 Add acceptance test for the list data source in page mode: verify `results_json` is non-empty when entities exist; verify plan error when page-mode and search-after parameters are combined.
+- [x] 7.8 Add acceptance test for `entity_id` conflict validation: verify plan error when `entity_id` is combined with `filter` or `filter_query`.
 - [x] 7.9 Add unit tests for composite ID construction and parsing (encode/decode of `<space_id>/<entity_id>`).
 - [x] 7.10 Add unit tests for canonical JSON normalization to guard against false diffs.
 - [x] 7.11 Add unit tests for the pagination-mode exclusivity validator and `entity_id` conflict validator.
@@ -85,6 +85,6 @@
 ## 8. Verify
 
 - [x] 8.1 `make build` passes.
-- [ ] 8.2 Acceptance tests pass for all new entities.
+- [x] 8.2 Acceptance tests pass for all new entities.
 - [x] 8.3 `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate kibana-security-entity-store-entity --type change` passes.
 - [ ] 8.4 Update delta specs if implementation reveals discrepancies from the original spec; then sync or archive the change.
