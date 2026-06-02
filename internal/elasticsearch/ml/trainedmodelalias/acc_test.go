@@ -35,7 +35,38 @@ import (
 
 const mlTrainedModelAliasResourceAddress = "elasticstack_elasticsearch_ml_trained_model_alias.test"
 
+func getAvailableTrainedModelID(t *testing.T) string {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Skipf("Cannot connect to Elasticsearch: %v", err)
+	}
+
+	ctx := context.Background()
+	typed := client.GetESClient()
+
+	// Try the well-known built-in model first.
+	res, err := typed.Ml.GetTrainedModels().ModelId("lang_ident_model_1").AllowNoMatch(true).Do(ctx)
+	if err == nil && res != nil && len(res.TrainedModelConfigs) > 0 {
+		return res.TrainedModelConfigs[0].ModelId
+	}
+
+	// Fall back to any available trained model.
+	res, err = typed.Ml.GetTrainedModels().AllowNoMatch(true).Do(ctx)
+	if err == nil && res != nil && len(res.TrainedModelConfigs) > 0 {
+		return res.TrainedModelConfigs[0].ModelId
+	}
+
+	return ""
+}
+
 func TestAccResourceMLTrainedModelAlias_basic(t *testing.T) {
+	modelID := getAvailableTrainedModelID(t)
+	if modelID == "" {
+		t.Skip("No trained models available in the cluster; skipping ML trained model alias tests")
+	}
+
 	modelAlias := fmt.Sprintf("test-alias-%s%s", sdkacctest.RandStringFromCharSet(9, sdkacctest.CharSetAlphaNum), sdkacctest.RandStringFromCharSet(1, sdkacctest.CharSetAlpha))
 
 	t.Cleanup(func() {
@@ -51,10 +82,11 @@ func TestAccResourceMLTrainedModelAlias_basic(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: map[string]config.Variable{
 					"model_alias": config.StringVariable(modelAlias),
+					"model_id":    config.StringVariable(modelID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_alias", modelAlias),
-					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_id", "lang_ident_model_1"),
+					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_id", modelID),
 					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "reassign", "true"),
 					resource.TestMatchResourceAttr(mlTrainedModelAliasResourceAddress, "id",
 						regexp.MustCompile(`^[A-Za-z0-9_-]{22}/`+regexp.QuoteMeta(modelAlias)+`$`)),
@@ -65,10 +97,11 @@ func TestAccResourceMLTrainedModelAlias_basic(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: map[string]config.Variable{
 					"model_alias": config.StringVariable(modelAlias),
+					"model_id":    config.StringVariable(modelID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_alias", modelAlias),
-					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_id", "lang_ident_model_1"),
+					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_id", modelID),
 				),
 			},
 			{
@@ -84,6 +117,7 @@ func TestAccResourceMLTrainedModelAlias_basic(t *testing.T) {
 				},
 				ConfigVariables: map[string]config.Variable{
 					"model_alias": config.StringVariable(modelAlias),
+					"model_id":    config.StringVariable(modelID),
 				},
 			},
 		},
@@ -99,6 +133,11 @@ func TestAccResourceMLTrainedModelAlias_collisionWithReassignDisabled(t *testing
 }
 
 func TestAccResourceMLTrainedModelAlias_updateReassignFlag(t *testing.T) {
+	modelID := getAvailableTrainedModelID(t)
+	if modelID == "" {
+		t.Skip("No trained models available in the cluster; skipping ML trained model alias tests")
+	}
+
 	modelAlias := fmt.Sprintf("test-alias-reassign-%s%s", sdkacctest.RandStringFromCharSet(9, sdkacctest.CharSetAlphaNum), sdkacctest.RandStringFromCharSet(1, sdkacctest.CharSetAlpha))
 
 	t.Cleanup(func() {
@@ -114,10 +153,11 @@ func TestAccResourceMLTrainedModelAlias_updateReassignFlag(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: map[string]config.Variable{
 					"model_alias": config.StringVariable(modelAlias),
+					"model_id":    config.StringVariable(modelID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_alias", modelAlias),
-					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_id", "lang_ident_model_1"),
+					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_id", modelID),
 					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "reassign", "true"),
 				),
 			},
@@ -126,10 +166,11 @@ func TestAccResourceMLTrainedModelAlias_updateReassignFlag(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: map[string]config.Variable{
 					"model_alias": config.StringVariable(modelAlias),
+					"model_id":    config.StringVariable(modelID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_alias", modelAlias),
-					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_id", "lang_ident_model_1"),
+					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_id", modelID),
 					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "reassign", "false"),
 				),
 			},

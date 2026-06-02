@@ -3,12 +3,17 @@ variable "model_alias" {
   type        = string
 }
 
+variable "model_id" {
+  description = "The trained model ID"
+  type        = string
+}
+
 provider "elasticstack" {
   elasticsearch {}
 }
 
 resource "elasticstack_elasticsearch_ml_trained_model_alias" "test" {
   model_alias = var.model_alias
-  model_id    = "lang_ident_model_1"
+  model_id    = var.model_id
   reassign    = true
 }

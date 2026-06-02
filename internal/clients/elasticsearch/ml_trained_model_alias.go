@@ -20,7 +20,9 @@ package elasticsearch
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/gettrainedmodels"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -43,23 +45,37 @@ func PutMLTrainedModelAlias(ctx context.Context, client *clients.ElasticsearchSc
 // GetMLTrainedModelAlias resolves an alias to its current model ID.
 // It calls GetTrainedModels with the alias as the model_id parameter.
 // Returns not-found when the result is empty or the API returns 404.
+// Retries a few times to handle brief eventual-consistency windows.
 func GetMLTrainedModelAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, alias string) (modelID string, found bool, diags diag.Diagnostics) {
 	typedClient := client.GetESClient()
 
-	res, err := typedClient.Ml.GetTrainedModels().ModelId(alias).AllowNoMatch(true).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
+	var res *gettrainedmodels.Response
+	var err error
+
+	for attempt := range 3 {
+		if attempt > 0 {
+			select {
+			case <-ctx.Done():
+				return "", false, diags
+			case <-time.After(500 * time.Millisecond):
+			}
+		}
+
+		res, err = typedClient.Ml.GetTrainedModels().ModelId(alias).AllowNoMatch(true).Do(ctx)
+		if err != nil {
+			if IsNotFoundElasticsearchError(err) {
+				return "", false, diags
+			}
+			diags.AddError("Failed to get ML trained model alias", fmt.Sprintf("Unable to get ML trained model alias: %s — %s", alias, err.Error()))
 			return "", false, diags
 		}
-		diags.AddError("Failed to get ML trained model alias", fmt.Sprintf("Unable to get ML trained model alias: %s — %s", alias, err.Error()))
-		return "", false, diags
+
+		if res != nil && len(res.TrainedModelConfigs) > 0 {
+			return res.TrainedModelConfigs[0].ModelId, true, diags
+		}
 	}
 
-	if res == nil || len(res.TrainedModelConfigs) == 0 {
-		return "", false, diags
-	}
-
-	return res.TrainedModelConfigs[0].ModelId, true, diags
+	return "", false, diags
 }
 
 // DeleteMLTrainedModelAlias deletes an ML trained model alias.
