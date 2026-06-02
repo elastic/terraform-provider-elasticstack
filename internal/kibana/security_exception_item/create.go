@@ -28,7 +28,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func createExceptionItem(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[ExceptionItemModel]) (entitycore.KibanaWriteResult[ExceptionItemModel], diag.Diagnostics) {
+func createExceptionItem(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[ExceptionItemModel],
+) (entitycore.KibanaWriteResult[ExceptionItemModel], diag.Diagnostics) {
 	m := req.Plan
 	var diags diag.Diagnostics
 

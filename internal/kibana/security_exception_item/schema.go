@@ -270,6 +270,5 @@ func getSchema(_ context.Context) schema.Schema {
 				Computed:            true,
 			},
 		},
-
 	}
 }
