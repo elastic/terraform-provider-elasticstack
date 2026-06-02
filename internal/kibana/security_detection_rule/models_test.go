@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/google/uuid"
@@ -49,11 +50,11 @@ func (m mockAPIClient) EnforceMinVersion(_ context.Context, minVersion *version.
 
 // NewMockAPIClient creates a new mock API client with default values that support response actions
 // This can be used in tests where you need to pass a client to functions like toUpdateProps
-func NewMockAPIClient() clients.MinVersionEnforceable {
+func NewMockAPIClient() *mockAPIClient {
 	// Use version 8.16.0 by default to support response actions
 	v, _ := version.NewVersion("8.16.0")
 
-	return mockAPIClient{
+	return &mockAPIClient{
 		serverVersion: v,
 		serverFlavor:  "default",
 		enforceResult: true,
@@ -288,7 +289,7 @@ func TestToQueryRuleCreateProps(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			createProps, createDiags := toQueryRuleCreateProps(ctx, NewMockAPIClient(), tt.data)
+			createProps, createDiags := toQueryRuleCreateProps(ctx, tt.data)
 
 			if tt.shouldError {
 				require.NotEmpty(t, createDiags)
@@ -339,7 +340,7 @@ func TestToEqlRuleCreateProps(t *testing.T) {
 		TiebreakerField: types.StringValue("@timestamp"),
 	}
 
-	createProps, createDiags := toEqlRuleCreateProps(ctx, NewMockAPIClient(), data)
+	createProps, createDiags := toEqlRuleCreateProps(ctx, data)
 	require.Empty(t, createDiags)
 
 	eqlRule, err := createProps.AsSecurityDetectionsAPIEqlRuleCreateProps()
@@ -403,7 +404,7 @@ func TestToMachineLearningRuleCreateProps(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			createProps, createDiags := tt.data.toMachineLearningRuleCreateProps(ctx, NewMockAPIClient())
+			createProps, createDiags := tt.data.toMachineLearningRuleCreateProps(ctx)
 			require.Empty(t, createDiags)
 
 			mlRule, err := createProps.AsSecurityDetectionsAPIMachineLearningRuleCreateProps()
@@ -449,7 +450,7 @@ func TestToEsqlRuleCreateProps(t *testing.T) {
 
 	require.Empty(t, diags)
 
-	createProps, createDiags := data.toEsqlRuleCreateProps(ctx, NewMockAPIClient())
+	createProps, createDiags := data.toEsqlRuleCreateProps(ctx)
 	require.Empty(t, createDiags)
 
 	esqlRule, err := createProps.AsSecurityDetectionsAPIEsqlRuleCreateProps()
@@ -487,7 +488,7 @@ func TestToNewTermsRuleCreateProps(t *testing.T) {
 
 	require.Empty(t, diags)
 
-	createProps, createDiags := data.toNewTermsRuleCreateProps(ctx, NewMockAPIClient())
+	createProps, createDiags := data.toNewTermsRuleCreateProps(ctx)
 	require.Empty(t, createDiags)
 
 	newTermsRule, err := createProps.AsSecurityDetectionsAPINewTermsRuleCreateProps()
@@ -527,7 +528,7 @@ func TestToSavedQueryRuleCreateProps(t *testing.T) {
 
 	require.Empty(t, diags)
 
-	createProps, createDiags := data.toSavedQueryRuleCreateProps(ctx, NewMockAPIClient())
+	createProps, createDiags := data.toSavedQueryRuleCreateProps(ctx)
 	require.Empty(t, createDiags)
 
 	savedQueryRule, err := createProps.AsSecurityDetectionsAPISavedQueryRuleCreateProps()
@@ -574,7 +575,7 @@ func TestToThreatMatchRuleCreateProps(t *testing.T) {
 
 	require.Empty(t, diags)
 
-	createProps, createDiags := data.toThreatMatchRuleCreateProps(ctx, NewMockAPIClient())
+	createProps, createDiags := data.toThreatMatchRuleCreateProps(ctx)
 	require.Empty(t, createDiags)
 
 	threatMatchRule, err := createProps.AsSecurityDetectionsAPIThreatMatchRuleCreateProps()
@@ -617,7 +618,7 @@ func TestToThresholdRuleCreateProps(t *testing.T) {
 
 	require.Empty(t, diags)
 
-	createProps, createDiags := data.toThresholdRuleCreateProps(ctx, NewMockAPIClient())
+	createProps, createDiags := data.toThresholdRuleCreateProps(ctx)
 	require.Empty(t, createDiags)
 
 	thresholdRule, err := createProps.AsSecurityDetectionsAPIThresholdRuleCreateProps()
@@ -836,7 +837,7 @@ func TestActionsToAPI(t *testing.T) {
 
 	require.Empty(t, diags)
 
-	actions, actionsDiags := data.actionsToAPI(ctx, NewMockAPIClient())
+	actions, actionsDiags := data.actionsToAPI(ctx)
 	require.Empty(t, actionsDiags)
 	require.Len(t, actions, 1)
 
@@ -1040,7 +1041,7 @@ func TestSlackSubActionParamsRoundTrip(t *testing.T) {
 	}
 	require.Empty(t, diags)
 
-	apiResult, actionsDiags := data.actionsToAPI(ctx, NewMockAPIClient())
+	apiResult, actionsDiags := data.actionsToAPI(ctx)
 	require.Empty(t, actionsDiags)
 	require.Len(t, apiResult, 1)
 
@@ -1565,7 +1566,7 @@ func TestResponseActionsToAPI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			responseActions, responseActionsDiags := tt.data.responseActionsToAPI(ctx, NewMockAPIClient())
+			responseActions, responseActionsDiags := tt.data.responseActionsToAPI(ctx)
 
 			if tt.shouldError {
 				require.NotEmpty(t, responseActionsDiags)
@@ -1608,7 +1609,7 @@ func TestResponseActionsToAPIVersionCheck(t *testing.T) {
 
 	require.Empty(t, diags)
 
-	responseActions, responseActionsDiags := data.responseActionsToAPI(ctx, NewMockAPIClient())
+	responseActions, responseActionsDiags := data.responseActionsToAPI(ctx)
 
 	// Should work with the test client and return response actions
 	require.Empty(t, responseActionsDiags)
@@ -1938,7 +1939,7 @@ func TestToCreateProps(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			data := tt.setupData()
 
-			createProps, createDiags := data.toCreateProps(ctx, NewMockAPIClient())
+			createProps, createDiags := data.toCreateProps(ctx)
 
 			if tt.shouldError {
 				require.True(t, createDiags.HasError())
@@ -2228,7 +2229,7 @@ func TestToUpdateProps(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			data := tt.setupData()
 
-			updateProps, updateDiags := data.toUpdateProps(ctx, NewMockAPIClient())
+			updateProps, updateDiags := data.toUpdateProps(ctx)
 
 			if tt.shouldError {
 				require.True(t, updateDiags.HasError())

@@ -14,17 +14,17 @@
 
 ## 2. kibana/security_detection_rule
 
-- [ ] 2.1 Add `GetID()`, `GetResourceID()` (→ `RuleID`), `GetSpaceID()` (→ `SpaceID`), `GetKibanaConnection()` value-receiver methods to the `Data` model struct
-- [ ] 2.2 Add `GetVersionRequirements()` to `Data`: emit `MinVersionResponseActions` (8.16.0) when the rule configures response actions; emit `MinVersionAlertsFilter` (8.9.0) when alerts_filter is configured (mirror the existing conditions inside `models.go`/processor `ToCreateProps`/`ToUpdateProps`)
-- [ ] 2.3 Delete inline `EnforceMinVersion` calls within model conversion paths; drop `clients.MinVersionEnforceable` parameters from `ToCreateProps`/`ToUpdateProps` on each rule-type processor (`models_eql.go`, `models_esql.go`, `models_query.go`, `models_saved_query.go`, `models_machine_learning.go`, `models_new_terms.go`, `models_threat_match.go`, `models_threshold.go`) and from any shared helpers in `models.go`/`models_to_api_type_utils.go`/`rule_processor.go`
-- [ ] 2.4 Remove `kibana_connection` block from `schema.go` schema function
-- [ ] 2.5 Promote the private `read` helper to a package-level `readDetectionRule(ctx, *KibanaScopedClient, resourceID, spaceID string, model Data) (Data, bool, diag.Diagnostics)` callback function
-- [ ] 2.6 Extract `Create` method body to `func createDetectionRule(ctx, *KibanaScopedClient, KibanaWriteRequest[Data]) (KibanaWriteResult[Data], diag.Diagnostics)` — remove the manual read-after-write call (envelope handles it via `readDetectionRule`)
-- [ ] 2.7 Extract `Update` method body to `func updateDetectionRule(ctx, *KibanaScopedClient, KibanaWriteRequest[Data]) (KibanaWriteResult[Data], diag.Diagnostics)`
-- [ ] 2.8 Extract `Delete` method body to `func deleteDetectionRule(ctx, *KibanaScopedClient, resourceID, spaceID string, model Data) diag.Diagnostics`
-- [ ] 2.9 Swap `*entitycore.ResourceBase` for `*entitycore.KibanaResource[Data]`; retain `UpgradeState` and passthrough `ImportState` on the wrapper struct
-- [ ] 2.10 Add `entitycore_contract_test.go` asserting the resource embeds `KibanaResource[Data]`
-- [ ] 2.11 Run `make build` and `go test ./internal/kibana/security_detection_rule/...`
+- [x] 2.1 Add `GetID()`, `GetResourceID()` (→ `RuleID`), `GetSpaceID()` (→ `SpaceID`), `GetKibanaConnection()` value-receiver methods to the `Data` model struct
+- [x] 2.2 Add `GetVersionRequirements()` to `Data`: emit `MinVersionResponseActions` (8.16.0) when the rule configures response actions; emit `MinVersionAlertsFilter` (8.9.0) when alerts_filter is configured (mirror the existing conditions inside `models.go`/processor `ToCreateProps`/`ToUpdateProps`)
+- [x] 2.3 Delete inline `EnforceMinVersion` calls within model conversion paths; drop `clients.MinVersionEnforceable` parameters from `ToCreateProps`/`ToUpdateProps` on each rule-type processor (`models_eql.go`, `models_esql.go`, `models_query.go`, `models_saved_query.go`, `models_machine_learning.go`, `models_new_terms.go`, `models_threat_match.go`, `models_threshold.go`) and from any shared helpers in `models.go`/`models_to_api_type_utils.go`/`rule_processor.go`
+- [x] 2.4 Remove `kibana_connection` block from `schema.go` schema function
+- [x] 2.5 Promote the private `read` helper to a package-level `readDetectionRule(ctx, *KibanaScopedClient, resourceID, spaceID string, model Data) (Data, bool, diag.Diagnostics)` callback function
+- [x] 2.6 Extract `Create` method body to `func createDetectionRule(ctx, *KibanaScopedClient, KibanaWriteRequest[Data]) (KibanaWriteResult[Data], diag.Diagnostics)` — remove the manual read-after-write call (envelope handles it via `readDetectionRule`)
+- [x] 2.7 Extract `Update` method body to `func updateDetectionRule(ctx, *KibanaScopedClient, KibanaWriteRequest[Data]) (KibanaWriteResult[Data], diag.Diagnostics)`
+- [x] 2.8 Extract `Delete` method body to `func deleteDetectionRule(ctx, *KibanaScopedClient, resourceID, spaceID string, model Data) diag.Diagnostics`
+- [x] 2.9 Swap `*entitycore.ResourceBase` for `*entitycore.KibanaResource[Data]`; retain `UpgradeState` and passthrough `ImportState` on the wrapper struct
+- [x] 2.10 Add `entitycore_contract_test.go` asserting the resource embeds `KibanaResource[Data]`
+- [x] 2.11 Run `make build` and `go test ./internal/kibana/security_detection_rule/...`
 
 ## 3. kibana/alertingrule
 
