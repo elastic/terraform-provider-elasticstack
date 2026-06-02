@@ -65,7 +65,7 @@ func (model tfModel) GetSpaceID() types.String        { return model.SpaceID }
 func (model tfModel) GetKibanaConnection() types.List { return model.KibanaConnection }
 func (model tfModel) GetResourceID() types.String     { return types.StringValue(resourceID) }
 
-func (*tfModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (*tfModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{{
 		MinVersion:   *MinVersion,
 		ErrorMessage: fmt.Sprintf("elasticstack_kibana_security_entity_store is supported only for Kibana v%s and above", MinVersion.String()),

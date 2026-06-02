@@ -56,7 +56,7 @@ func (m Model) GetID() types.String         { return m.ID }
 func (m Model) GetResourceID() types.String { return m.ID }
 func (m Model) GetSpaceID() types.String    { return m.SpaceID }
 
-func (m Model) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m Model) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	effectiveSpace := versionGateSpaceID(m)
 	if !requiresSpaceIDMinVersion(effectiveSpace) {
 		return nil, nil

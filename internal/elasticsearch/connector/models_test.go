@@ -28,8 +28,9 @@ import (
 
 func TestVersionGate_GetVersionRequirements(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 
-	reqs, diags := VersionGate{}.GetVersionRequirements(context.Background())
+	reqs, diags := VersionGate{}.GetVersionRequirements(ctx)
 	if diags.HasError() {
 		t.Fatalf("unexpected diagnostics: %v", diags)
 	}

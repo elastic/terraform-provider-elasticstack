@@ -47,7 +47,7 @@ var _ entitycore.KibanaResourceModel = prebuiltRuleModel{}
 
 var minSupportedVersion = version.Must(version.NewVersion("8.0.0"))
 
-func (m prebuiltRuleModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m prebuiltRuleModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *minSupportedVersion,

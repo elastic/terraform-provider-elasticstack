@@ -62,7 +62,7 @@ type engineComponentModel struct {
 
 var _ entitycore.WithVersionRequirements = (*dsModel)(nil)
 
-func (*dsModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (*dsModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{{
 		MinVersion:   *MinVersion,
 		ErrorMessage: fmt.Sprintf("elasticstack_kibana_security_entity_store_status is supported only for Kibana v%s and above", MinVersion.String()),

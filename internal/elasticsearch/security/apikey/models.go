@@ -108,7 +108,7 @@ var _ entitycore.WithVersionRequirements = TfModel{}
 // requirements implied by the planned model: cross-cluster API keys require
 // MinVersionWithCrossCluster, and any role descriptor carrying a `restriction`
 // block requires MinVersionWithRestriction.
-func (model TfModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (model TfModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var reqs []entitycore.VersionRequirement
 

@@ -38,7 +38,7 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 			Template:                        types.ObjectNull(TemplateAttrTypes()),
 			IgnoreMissingComponentTemplates: types.ListNull(types.StringType),
 		}
-		reqs, diags := m.GetVersionRequirements(context.Background())
+		reqs, diags := m.GetVersionRequirements(ctx)
 		if diags.HasError() {
 			t.Fatal(diags)
 		}
@@ -73,7 +73,7 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 			t.Fatal(diags)
 		}
 		m := Model{Template: tplObj}
-		reqs, diags := m.GetVersionRequirements(context.Background())
+		reqs, diags := m.GetVersionRequirements(ctx)
 		if diags.HasError() {
 			t.Fatal(diags)
 		}
@@ -92,7 +92,7 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 			t.Fatal(diags)
 		}
 		m := Model{IgnoreMissingComponentTemplates: ignoreList}
-		reqs, diags := m.GetVersionRequirements(context.Background())
+		reqs, diags := m.GetVersionRequirements(ctx)
 		if diags.HasError() {
 			t.Fatal(diags)
 		}
@@ -137,7 +137,7 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 			Template:                        tplObj,
 			IgnoreMissingComponentTemplates: ignoreList,
 		}
-		reqs, diags := m.GetVersionRequirements(context.Background())
+		reqs, diags := m.GetVersionRequirements(ctx)
 		if diags.HasError() {
 			t.Fatal(diags)
 		}
@@ -153,7 +153,7 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 			t.Fatal(diags)
 		}
 		m := Model{IgnoreMissingComponentTemplates: ignoreList}
-		reqs, diags := m.GetVersionRequirements(context.Background())
+		reqs, diags := m.GetVersionRequirements(ctx)
 		if diags.HasError() {
 			t.Fatal(diags)
 		}
