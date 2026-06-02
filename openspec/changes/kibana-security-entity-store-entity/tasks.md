@@ -2,7 +2,7 @@
 
 - [x] 1.1 Keep delta specs aligned with `proposal.md` and `design.md`; run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate kibana-security-entity-store-entity --type change` (or `make check-openspec`) before opening a PR.
 - [x] 1.2 Resolve design open question OQ-1: confirm minimum Kibana version for individual entity CRUD endpoints; update delta specs and `EnforceMinVersion` call if the floor differs from `9.1.0`.
-- [ ] 1.3 Resolve design open question OQ-2: verify KQL filter expression `entity.id:"<id>"` works reliably for all valid entity ID formats; document escaping strategy in the resource read implementation.
+- [x] 1.3 Resolve design open question OQ-2: verify KQL filter expression `entity.id:"<id>"` works reliably for all valid entity ID formats; document escaping strategy in the resource read implementation.
 - [x] 1.4 Resolve design open question OQ-4: add a plan-time validator that checks consistency between `entity_id` and `entity.id` inside the typed `entity` block (or `entity_json`).
 - [ ] 1.5 On completion of implementation, sync or archive this change per project workflow.
 

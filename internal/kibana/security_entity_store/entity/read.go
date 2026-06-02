@@ -41,6 +41,12 @@ func readEntity(
 	entityID := model.EntityID.ValueString()
 	entityType := model.EntityType.ValueString()
 
+	// KQL filter strategy: entity.id:"<entityID>"
+	// Kibana Query Language (KQL) uses double quotes for exact value matching.
+	// The entity.id field supports free-text tokens but the quoted form treats
+	// the entire string (including colons and slashes) as a single literal,
+	// which is correct for all valid entity ID formats.
+	// See: https://www.elastic.co/guide/en/kibana/current/kuery-query.html
 	filter := fmt.Sprintf(`entity.id:"%s"`, entityID)
 	params := &kbapi.GetSecurityEntityStoreEntitiesParams{
 		Filter:      &filter,
