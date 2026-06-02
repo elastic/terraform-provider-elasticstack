@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 )
 
 func TestNormalizeAliasFilterMap_nil(t *testing.T) {
@@ -160,5 +161,57 @@ func TestNormalizeAliasFilterFromAny_expandedForm(t *testing.T) {
 	got := result.ValueString()
 	if got != `{"term":{"field":"x"}}` {
 		t.Fatalf("expected compact form, got %q", got)
+	}
+}
+
+func TestAliasAttrsFromModelWithRouting_noPreservation(t *testing.T) {
+	t.Parallel()
+	a := models.IndexAlias{Routing: "r1"}
+	attrs, diags := aliasutil.AliasAttrsFromModelWithRouting("myalias", a, map[string]string{"myalias": "preserved"})
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	// API returned a non-empty routing value: preserved routing must be ignored.
+	if v, ok := attrs["routing"]; !ok || v.String() != `"r1"` {
+		t.Fatalf("expected routing=r1, got %v", attrs["routing"])
+	}
+}
+
+func TestAliasAttrsFromModelWithRouting_restoresWhenAPIOmits(t *testing.T) {
+	t.Parallel()
+	a := models.IndexAlias{Routing: ""}
+	attrs, diags := aliasutil.AliasAttrsFromModelWithRouting("myalias", a, map[string]string{"myalias": "preserved"})
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	// API omitted routing (empty string): preserved value must be restored.
+	if v, ok := attrs["routing"]; !ok || v.String() != `"preserved"` {
+		t.Fatalf("expected routing=preserved, got %v", attrs["routing"])
+	}
+}
+
+func TestAliasAttrsFromModelWithRouting_noPreservationEntryForAlias(t *testing.T) {
+	t.Parallel()
+	a := models.IndexAlias{Routing: ""}
+	attrs, diags := aliasutil.AliasAttrsFromModelWithRouting("myalias", a, map[string]string{"otheralias": "preserved"})
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	// No preserved routing for this alias name: routing stays empty string.
+	if v, ok := attrs["routing"]; !ok || v.String() != `""` {
+		t.Fatalf("expected routing empty string, got %v", attrs["routing"])
+	}
+}
+
+func TestAliasAttrsFromModelWithRouting_nilPreservedRouting(t *testing.T) {
+	t.Parallel()
+	a := models.IndexAlias{Routing: ""}
+	attrs, diags := aliasutil.AliasAttrsFromModelWithRouting("myalias", a, nil)
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	// Nil preservedRouting map: routing stays empty string.
+	if v, ok := attrs["routing"]; !ok || v.String() != `""` {
+		t.Fatalf("expected routing empty string, got %v", attrs["routing"])
 	}
 }
