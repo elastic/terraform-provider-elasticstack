@@ -118,7 +118,7 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 
 	if rule.NotifyWhen != nil && *rule.NotifyWhen != "" {
 		m.NotifyWhen = types.StringValue(*rule.NotifyWhen)
-	} else {
+	} else if m.NotifyWhen.IsUnknown() {
 		m.NotifyWhen = types.StringNull()
 	}
 
@@ -360,13 +360,13 @@ func (m alertingRuleModel) GetVersionRequirements() ([]entitycore.VersionRequire
 		}
 	}
 
-	// 8.6.0 when NotifyWhen is null/empty
-	if !typeutils.IsKnown(m.NotifyWhen) || m.NotifyWhen.ValueString() == "" {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *frequencyMinSupportedVersion,
-			ErrorMessage: "notify_when is required until v8.6",
-		})
-	}
+	// Note: the old toAPIModel checked notify_when here for < 8.6.0, but we
+	// cannot enforce that via GetVersionRequirements because the envelope also
+	// calls EnforceVersionRequirements during Read. On older servers the API
+	// may not return notify_when (especially during ImportState), causing a
+	// false "Unsupported server version" error. The API itself rejects a
+	// missing notify_when on < 8.6.0, so the user still gets an error at
+	// Create/Update time.
 
 	// 8.9.0 when any action has AlertsFilter set
 	if typeutils.IsKnown(m.Actions) && !m.Actions.IsNull() {
