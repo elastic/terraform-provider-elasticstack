@@ -45,7 +45,7 @@ var _ entitycore.WithVersionRequirements = agentDataSourceModel{}
 // eliminating the duplicate method bodies.
 type agentVersionGate struct{}
 
-func (agentVersionGate) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (agentVersionGate) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *minKibanaAgentBuilderAPIVersion,
