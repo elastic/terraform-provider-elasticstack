@@ -35,6 +35,7 @@ Queries the Kibana Security Entity Store list/search endpoint.
 ### Read-Only
 
 - `id` (String) Stable identifier reflecting the query parameters.
+- `items` (List of Object) List of entity records with typed attributes matching the resource schema. (see [below for nested schema](#nestedatt--items))
 - `results_json` (String) Normalized JSON (sorted keys) of the full API response body.
 
 <a id="nestedblock--kibana_connection"></a>
@@ -49,3 +50,262 @@ Optional:
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.
+
+
+<a id="nestedatt--items"></a>
+### Nested Schema for `items`
+
+Read-Only:
+
+- `@timestamp` (String)
+- `asset` (Object) (see [below for nested schema](#nestedobjatt--items--asset))
+- `cloud` (Object) (see [below for nested schema](#nestedobjatt--items--cloud))
+- `document_json` (String)
+- `entity` (Object) (see [below for nested schema](#nestedobjatt--items--entity))
+- `event` (Object) (see [below for nested schema](#nestedobjatt--items--event))
+- `host` (Object) (see [below for nested schema](#nestedobjatt--items--host))
+- `labels` (Map of String)
+- `orchestrator` (Object) (see [below for nested schema](#nestedobjatt--items--orchestrator))
+- `service` (Object) (see [below for nested schema](#nestedobjatt--items--service))
+- `tags` (Set of String)
+- `user` (Object) (see [below for nested schema](#nestedobjatt--items--user))
+
+<a id="nestedobjatt--items--asset"></a>
+### Nested Schema for `items.asset`
+
+Read-Only:
+
+- `criticality` (String)
+- `criticality_feedback` (Object) (see [below for nested schema](#nestedobjatt--items--asset--criticality_feedback))
+- `owner` (Object) (see [below for nested schema](#nestedobjatt--items--asset--owner))
+- `value` (Number)
+
+<a id="nestedobjatt--items--asset--criticality_feedback"></a>
+### Nested Schema for `items.asset.criticality_feedback`
+
+Read-Only:
+
+- `notes` (String)
+- `reason` (String)
+
+
+<a id="nestedobjatt--items--asset--owner"></a>
+### Nested Schema for `items.asset.owner`
+
+Read-Only:
+
+- `department` (String)
+- `email` (String)
+- `ext` (String)
+- `name` (String)
+
+
+
+<a id="nestedobjatt--items--cloud"></a>
+### Nested Schema for `items.cloud`
+
+Read-Only:
+
+- `account_id` (String)
+- `account_name` (String)
+- `project_id` (String)
+- `project_name` (String)
+- `provider` (String)
+- `region` (String)
+- `service_name` (String)
+
+
+<a id="nestedobjatt--items--entity"></a>
+### Nested Schema for `items.entity`
+
+Read-Only:
+
+- `attributes` (Object) (see [below for nested schema](#nestedobjatt--items--entity--attributes))
+- `behaviors` (Object) (see [below for nested schema](#nestedobjatt--items--entity--behaviors))
+- `id` (String)
+- `lifecycle` (Object) (see [below for nested schema](#nestedobjatt--items--entity--lifecycle))
+- `name` (String)
+- `relationships` (Object) (see [below for nested schema](#nestedobjatt--items--entity--relationships))
+- `risk` (Object) (see [below for nested schema](#nestedobjatt--items--entity--risk))
+- `source` (Set of String)
+- `sub_type` (String)
+- `type` (String)
+
+<a id="nestedobjatt--items--entity--attributes"></a>
+### Nested Schema for `items.entity.attributes`
+
+Read-Only:
+
+- `asset` (Boolean)
+- `managed` (Boolean)
+- `mfa_enabled` (Boolean)
+- `privileged` (Boolean)
+
+
+<a id="nestedobjatt--items--entity--behaviors"></a>
+### Nested Schema for `items.entity.behaviors`
+
+Read-Only:
+
+- `brute_force_victim` (Boolean)
+- `new_country_login` (Boolean)
+- `used_usb_device` (Boolean)
+
+
+<a id="nestedobjatt--items--entity--lifecycle"></a>
+### Nested Schema for `items.entity.lifecycle`
+
+Read-Only:
+
+- `first_seen` (String)
+- `last_activity` (String)
+- `last_seen` (String)
+
+
+<a id="nestedobjatt--items--entity--relationships"></a>
+### Nested Schema for `items.entity.relationships`
+
+Read-Only:
+
+- `accessed_frequently_by` (Set of String)
+- `accesses_frequently` (Set of String)
+- `accesses_infrequently` (Set of String)
+- `communicates_with` (Set of String)
+- `dependent_of` (Set of String)
+- `depends_on` (Set of String)
+- `owned_by` (Set of String)
+- `owns` (Set of String)
+- `supervised_by` (Set of String)
+- `supervises` (Set of String)
+
+
+<a id="nestedobjatt--items--entity--risk"></a>
+### Nested Schema for `items.entity.risk`
+
+Read-Only:
+
+- `calculated_level` (String)
+- `calculated_score` (Number)
+- `calculated_score_norm` (Number)
+
+
+
+<a id="nestedobjatt--items--event"></a>
+### Nested Schema for `items.event`
+
+Read-Only:
+
+- `action` (String)
+- `category` (String)
+- `code` (String)
+- `dataset` (String)
+- `ingested` (String)
+- `kind` (String)
+- `outcome` (String)
+- `provider` (String)
+- `reason` (String)
+- `reference` (String)
+- `severity` (String)
+- `timezone` (String)
+- `type` (String)
+- `url` (String)
+
+
+<a id="nestedobjatt--items--host"></a>
+### Nested Schema for `items.host`
+
+Read-Only:
+
+- `architecture` (Set of String)
+- `domain` (Set of String)
+- `hostname` (Set of String)
+- `id` (Set of String)
+- `ip` (Set of String)
+- `mac` (Set of String)
+- `name` (String)
+- `os` (Object) (see [below for nested schema](#nestedobjatt--items--host--os))
+- `risk` (Object) (see [below for nested schema](#nestedobjatt--items--host--risk))
+- `type` (Set of String)
+
+<a id="nestedobjatt--items--host--os"></a>
+### Nested Schema for `items.host.os`
+
+Read-Only:
+
+- `family` (String)
+- `full` (String)
+- `kernel` (String)
+- `name` (String)
+- `platform` (String)
+- `type` (String)
+- `version` (String)
+
+
+<a id="nestedobjatt--items--host--risk"></a>
+### Nested Schema for `items.host.risk`
+
+Read-Only:
+
+- `calculated_level` (String)
+- `calculated_score` (Number)
+- `calculated_score_norm` (Number)
+
+
+
+<a id="nestedobjatt--items--orchestrator"></a>
+### Nested Schema for `items.orchestrator`
+
+Read-Only:
+
+- `cluster_id` (String)
+- `cluster_name` (String)
+- `cluster_version` (String)
+- `name` (String)
+- `namespace` (String)
+- `resource_id` (String)
+- `resource_name` (String)
+- `resource_type` (String)
+- `type` (String)
+
+
+<a id="nestedobjatt--items--service"></a>
+### Nested Schema for `items.service`
+
+Read-Only:
+
+- `name` (String)
+- `risk` (Object) (see [below for nested schema](#nestedobjatt--items--service--risk))
+
+<a id="nestedobjatt--items--service--risk"></a>
+### Nested Schema for `items.service.risk`
+
+Read-Only:
+
+- `calculated_level` (String)
+- `calculated_score` (Number)
+- `calculated_score_norm` (Number)
+
+
+
+<a id="nestedobjatt--items--user"></a>
+### Nested Schema for `items.user`
+
+Read-Only:
+
+- `domain` (Set of String)
+- `email` (Set of String)
+- `full_name` (Set of String)
+- `hash` (Set of String)
+- `id` (Set of String)
+- `name` (String)
+- `risk` (Object) (see [below for nested schema](#nestedobjatt--items--user--risk))
+- `roles` (Set of String)
+
+<a id="nestedobjatt--items--user--risk"></a>
+### Nested Schema for `items.user.risk`
+
+Read-Only:
+
+- `calculated_level` (String)
+- `calculated_score` (Number)
+- `calculated_score_norm` (Number)
