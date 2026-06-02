@@ -22,73 +22,45 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *securityDetectionRuleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var data Data
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, data.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func updateDetectionRule(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[Data],
+) (entitycore.KibanaWriteResult[Data], diag.Diagnostics) {
+	data := req.Plan
+	var diags diag.Diagnostics
 
 	// Get the rule using kbapi client
 	kbClient := client.GetKibanaOapiClient()
 
 	// Build the update request
-	updateProps, diags := data.toUpdateProps(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	updateProps, d := data.toUpdateProps(ctx)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[Data]{}, diags
 	}
 
 	// Update the rule
 	response, err := kbClient.API.UpdateRuleWithResponse(ctx, data.SpaceID.ValueString(), updateProps)
 	if err != nil {
-		resp.Diagnostics.AddError(
+		diags.AddError(
 			"Error updating security detection rule",
 			"Could not update security detection rule: "+err.Error(),
 		)
-		return
+		return entitycore.KibanaWriteResult[Data]{}, diags
 	}
 
 	if response.StatusCode() != 200 {
-		resp.Diagnostics.AddError(
+		diags.AddError(
 			"Error updating security detection rule",
 			fmt.Sprintf("API returned status %d: %s", response.StatusCode(), string(response.Body)),
 		)
-		return
+		return entitycore.KibanaWriteResult[Data]{}, diags
 	}
 
-	// Parse ID to get space_id and rule_id
-	compID, resourceIDDiags := clients.CompositeIDFromStr(data.ID.ValueString())
-	resp.Diagnostics.Append(resourceIDDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	readData, diags := r.read(ctx, client, compID.ResourceID, compID.ClusterID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if readData == nil {
-		resp.Diagnostics.AddError(
-			"Error reading updated security detection rule",
-			"Could not read security detection rule after update",
-		)
-		return
-	}
-
-	reconcileEmptyListsFromPlan(ctx, &data, readData)
-	readData.KibanaConnection = data.KibanaConnection
-	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
+	return entitycore.KibanaWriteResult[Data]{Model: data}, diags
 }

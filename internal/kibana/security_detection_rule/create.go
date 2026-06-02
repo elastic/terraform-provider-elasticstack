@@ -22,57 +22,52 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data Data
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, data.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func createDetectionRule(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[Data],
+) (entitycore.KibanaWriteResult[Data], diag.Diagnostics) {
+	data := req.Plan
+	var diags diag.Diagnostics
 
 	// Create the rule using kbapi client
 	kbClient := client.GetKibanaOapiClient()
 
 	// Build the create request
-	createProps, diags := data.toCreateProps(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	createProps, d := data.toCreateProps(ctx)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[Data]{}, diags
 	}
 
 	// Create the rule
 	response, err := kbClient.API.CreateRuleWithResponse(ctx, data.SpaceID.ValueString(), createProps)
 	if err != nil {
-		resp.Diagnostics.AddError(
+		diags.AddError(
 			"Error creating security detection rule",
 			"Could not create security detection rule: "+err.Error(),
 		)
-		return
+		return entitycore.KibanaWriteResult[Data]{}, diags
 	}
 
 	if response.StatusCode() != 200 {
-		resp.Diagnostics.AddError(
+		diags.AddError(
 			"Error creating security detection rule",
 			fmt.Sprintf("API returned status %d: %s", response.StatusCode(), string(response.Body)),
 		)
-		return
+		return entitycore.KibanaWriteResult[Data]{}, diags
 	}
 
 	// Set the ID based on the created rule
-	id, diags := extractID(response.JSON200)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	id, d := extractID(response.JSON200)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[Data]{}, diags
 	}
 
 	compID := clients.CompositeID{
@@ -80,21 +75,6 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 		ResourceID: id,
 	}
 	data.ID = types.StringValue(compID.String())
-	readData, diags := r.read(ctx, client, id, data.SpaceID.ValueString())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 
-	if readData == nil {
-		resp.Diagnostics.AddError(
-			"Error reading created security detection rule",
-			"Could not read security detection rule after creation",
-		)
-		return
-	}
-
-	reconcileEmptyListsFromPlan(ctx, &data, readData)
-	readData.KibanaConnection = data.KibanaConnection
-	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
+	return entitycore.KibanaWriteResult[Data]{Model: data}, diags
 }
