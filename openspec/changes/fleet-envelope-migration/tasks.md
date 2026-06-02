@@ -13,18 +13,18 @@
 
 ## 2. fleet/output
 
-- [ ] 2.1 Add `GetID()`, `GetResourceID()` (→ `OutputID`), `GetSpaceID()` (→ first of `SpaceIDs` or `""`), `GetKibanaConnection()` value-receiver methods to `outputModel`
-- [ ] 2.2 Add `IsUnscopedSpace() bool` returning `true` to `outputModel`
-- [ ] 2.3 Add `GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics)` to `outputModel`: emit `MinVersionOutputKafka` (8.13.0) when `Type == "kafka"`; emit `MinVersionOutputSSLVerificationMode` (8.10.0) when `Ssl` is known and `ssl.verification_mode` is set
-- [ ] 2.4 Delete `assertKafkaSupport` and `assertSSLVerificationModeSupport` helpers from `models.go`; remove their call sites inside `toAPICreateModel`/`toAPIUpdateModel`/`buildCommonNewOutput`/`buildCommonUpdateOutput`; drop `*clients.KibanaScopedClient` parameters from these helpers if no other version-gated logic remains
-- [ ] 2.5 Remove `kibana_connection` block from `schema.go` schema function
-- [ ] 2.6 Extract `Create` method body to `func createOutput(ctx, *KibanaScopedClient, KibanaWriteRequest[outputModel]) (KibanaWriteResult[outputModel], diag.Diagnostics)`
-- [ ] 2.7 Extract `Read` method body to `func readOutput(ctx, *KibanaScopedClient, resourceID, spaceID string, model outputModel) (outputModel, bool, diag.Diagnostics)`
-- [ ] 2.8 Extract `Update` method body to `func updateOutput(ctx, *KibanaScopedClient, KibanaWriteRequest[outputModel]) (KibanaWriteResult[outputModel], diag.Diagnostics)` — use `req.Prior.GetSpaceID()` as operational space
-- [ ] 2.9 Extract `Delete` method body to `func deleteOutput(ctx, *KibanaScopedClient, resourceID, spaceID string, model outputModel) diag.Diagnostics`
-- [ ] 2.10 Swap `*entitycore.ResourceBase` for `*entitycore.KibanaResource[outputModel]`; retain `*fleet.SpaceImporter` and `UpgradeState` on wrapper struct
-- [ ] 2.11 Add `entitycore_contract_test.go`
-- [ ] 2.12 Run `make build` and `go test ./internal/fleet/output/...`
+- [x] 2.1 Add `GetID()`, `GetResourceID()` (→ `OutputID`), `GetSpaceID()` (→ first of `SpaceIDs` or `""`), `GetKibanaConnection()` value-receiver methods to `outputModel`
+- [x] 2.2 Add `IsUnscopedSpace() bool` returning `true` to `outputModel`
+- [x] 2.3 Add `GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics)` to `outputModel`: emit `MinVersionOutputKafka` (8.13.0) when `Type == "kafka"`; emit `MinVersionOutputSSLVerificationMode` (8.10.0) when `Ssl` is known and `ssl.verification_mode` is set
+- [x] 2.4 Delete `assertKafkaSupport` and `assertSSLVerificationModeSupport` helpers from `models.go`; remove their call sites inside `toAPICreateModel`/`toAPIUpdateModel`/`buildCommonNewOutput`/`buildCommonUpdateOutput`; drop `*clients.KibanaScopedClient` parameters from these helpers if no other version-gated logic remains
+- [x] 2.5 Remove `kibana_connection` block from `schema.go` schema function
+- [x] 2.6 Extract `Create` method body to `func createOutput(ctx, *KibanaScopedClient, KibanaWriteRequest[outputModel]) (KibanaWriteResult[outputModel], diag.Diagnostics)`
+- [x] 2.7 Extract `Read` method body to `func readOutput(ctx, *KibanaScopedClient, resourceID, spaceID string, model outputModel) (outputModel, bool, diag.Diagnostics)`
+- [x] 2.8 Extract `Update` method body to `func updateOutput(ctx, *KibanaScopedClient, KibanaWriteRequest[outputModel]) (KibanaWriteResult[outputModel], diag.Diagnostics)` — use `req.Prior.GetSpaceID()` as operational space
+- [x] 2.9 Extract `Delete` method body to `func deleteOutput(ctx, *KibanaScopedClient, resourceID, spaceID string, model outputModel) diag.Diagnostics`
+- [x] 2.10 Swap `*entitycore.ResourceBase` for `*entitycore.KibanaResource[outputModel]`; retain `*fleet.SpaceImporter` and `UpgradeState` on wrapper struct
+- [x] 2.11 Add `entitycore_contract_test.go`
+- [x] 2.12 Run `make build` and `go test ./internal/fleet/output/...`
 
 ## 3. fleet/customintegration
 
