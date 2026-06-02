@@ -19,7 +19,6 @@ package calendar_event
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -78,40 +77,6 @@ type CalendarEventAPIModel struct {
 	ForceTimeShift  *string `json:"force_time_shift,omitempty"`
 }
 
-func calendarEventAnyTimeToUnixMilli(v any) (int64, bool) {
-	if v == nil {
-		return 0, false
-	}
-	switch x := v.(type) {
-	case float64:
-		return int64(x), true
-	case int64:
-		return x, true
-	case int:
-		return int64(x), true
-	case uint64:
-		return int64(x), true
-	case json.Number:
-		i, err := x.Int64()
-		if err == nil {
-			return i, true
-		}
-		f, err := x.Float64()
-		if err != nil {
-			return 0, false
-		}
-		return int64(f), true
-	case string:
-		t, err := time.Parse(time.RFC3339, x)
-		if err != nil {
-			return 0, false
-		}
-		return t.UnixMilli(), true
-	default:
-		return 0, false
-	}
-}
-
 func (m *CalendarEventTFModel) fromAPIModel(_ context.Context, apiModel *CalendarEventAPIModel) fwdiags.Diagnostics {
 	var diags fwdiags.Diagnostics
 
@@ -119,7 +84,7 @@ func (m *CalendarEventTFModel) fromAPIModel(_ context.Context, apiModel *Calenda
 	m.CalendarID = types.StringValue(apiModel.CalendarID)
 	m.EventID = types.StringValue(apiModel.EventID)
 
-	startMillis, ok := calendarEventAnyTimeToUnixMilli(apiModel.StartTime)
+	startMillis, ok := typeutils.ElasticDateTimeToMillis(apiModel.StartTime)
 	if !ok {
 		diags.AddError(
 			"Invalid start_time format",
@@ -127,7 +92,7 @@ func (m *CalendarEventTFModel) fromAPIModel(_ context.Context, apiModel *Calenda
 		)
 		return diags
 	}
-	endMillis, ok := calendarEventAnyTimeToUnixMilli(apiModel.EndTime)
+	endMillis, ok := typeutils.ElasticDateTimeToMillis(apiModel.EndTime)
 	if !ok {
 		diags.AddError(
 			"Invalid end_time format",

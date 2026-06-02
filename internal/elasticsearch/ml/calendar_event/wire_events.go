@@ -240,8 +240,8 @@ func calendarEventWireTimesMillis(w *calendarEventWire) (startMs, endMs int64, o
 	if err != nil {
 		return 0, 0, false
 	}
-	sm, ok1 := calendarEventAnyTimeToUnixMilli(startAny)
-	em, ok2 := calendarEventAnyTimeToUnixMilli(endAny)
+	sm, ok1 := typeutils.ElasticDateTimeToMillis(startAny)
+	em, ok2 := typeutils.ElasticDateTimeToMillis(endAny)
 	return sm, em, ok1 && ok2
 }
 
