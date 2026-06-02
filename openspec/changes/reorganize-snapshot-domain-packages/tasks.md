@@ -17,8 +17,8 @@
 - [ ] 3.2 Move `internal/elasticsearch/cluster/snapshot_repository_data_source.go` → `internal/elasticsearch/snapshot/repository/data_source.go`
 - [ ] 3.3 Move `internal/elasticsearch/cluster/snapshot_repository_data_source_test.go` → `internal/elasticsearch/snapshot/repository/data_source_test.go`
 - [ ] 3.4 Move `internal/elasticsearch/cluster/snapshot_repository_data_source_internal_test.go` → `internal/elasticsearch/snapshot/repository/data_source_internal_test.go`
-- [ ] 3.5 Update package declaration in moved datasource files: `cluster` → `repository`
-- [ ] 3.6 Remove `snapshot_repository.` prefix from all local references within moved datasource files
+- [ ] 3.5 Update package declarations in moved snapshot repository files: `snapshot_repository` → `repository`; and in moved datasource files: `cluster` → `repository`
+- [ ] 3.6 Remove `snapshot_repository.` prefix from all local references within moved datasource files (now in the same `repository` package)
 - [ ] 3.7 Remove `github.com/elastic/.../internal/elasticsearch/cluster/snapshot_repository` import from moved datasource files
 - [ ] 3.8 Move `internal/elasticsearch/cluster/descriptions/snapshot_repository_location_mode.md` → `internal/elasticsearch/snapshot/repository/descriptions/`
 - [ ] 3.9 Update `cluster/descriptions.go` to remove the embed/import for `snapshot_repository_location_mode.md`
