@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -32,20 +31,12 @@ var minVersionEntityStoreResolution = version.Must(version.NewVersion("9.4.0"))
 func TestAccResourceSecurityEntityStoreEntityLink(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionEntityStoreResolution, versionutils.FlavorAny)
 
-	// Skipping until entity store fixture data can be created in CI.
-	// The resolution APIs require pre-existing entities with enterprise license.
-	t.Skip("Skipping: requires entity store with pre-existing entities and enterprise license")
-
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{
-					"target_id":  config.StringVariable("user:target@example.com"),
-					"entity_ids": config.ListVariable(config.StringVariable("user:alias1@example.com"), config.StringVariable("user:alias2@example.com")),
-				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "target_id", "user:target@example.com"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "space_id", "default"),
@@ -58,10 +49,6 @@ func TestAccResourceSecurityEntityStoreEntityLink(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
-				ConfigVariables: config.Variables{
-					"target_id":  config.StringVariable("user:target@example.com"),
-					"entity_ids": config.ListVariable(config.StringVariable("user:alias1@example.com"), config.StringVariable("user:alias3@example.com")),
-				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "target_id", "user:target@example.com"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.*", "user:alias1@example.com"),
@@ -71,13 +58,9 @@ func TestAccResourceSecurityEntityStoreEntityLink(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{
-					"target_id":  config.StringVariable("user:target@example.com"),
-					"entity_ids": config.ListVariable(config.StringVariable("user:alias1@example.com"), config.StringVariable("user:alias2@example.com")),
-				},
-				ResourceName:      "elasticstack_kibana_security_entity_store_entity_link.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:             "elasticstack_kibana_security_entity_store_entity_link.test",
+				ImportState:              true,
+				ImportStateVerify:        true,
 			},
 		},
 	})

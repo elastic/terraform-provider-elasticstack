@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -32,19 +31,12 @@ var minVersionEntityStoreResolution = version.Must(version.NewVersion("9.4.0"))
 func TestAccDataSourceSecurityEntityStoreResolutionGroup(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionEntityStoreResolution, versionutils.FlavorAny)
 
-	// Skipping until entity store fixture data can be created in CI.
-	// The resolution APIs require pre-existing entities with enterprise license.
-	t.Skip("Skipping: requires entity store with pre-existing entities and enterprise license")
-
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
-				ConfigVariables: config.Variables{
-					"entity_id": config.StringVariable("user:target@example.com"),
-				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_resolution_group.test", "entity_id", "user:target@example.com"),
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_resolution_group.test", "space_id", "default"),
