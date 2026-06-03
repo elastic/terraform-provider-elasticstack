@@ -238,6 +238,16 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed",
       "attemptedAt": "2026-06-02T04:46:47.170936359Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed.NewExpandWildcardsUnknown",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed",
+      "attemptedAt": "2026-06-03T04:40:47.725276211Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
