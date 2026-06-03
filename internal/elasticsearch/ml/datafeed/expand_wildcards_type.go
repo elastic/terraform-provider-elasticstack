@@ -183,13 +183,6 @@ func NewExpandWildcardsNull() ExpandWildcardsValue {
 	}
 }
 
-// NewExpandWildcardsUnknown returns an ExpandWildcardsValue with an unknown value.
-func NewExpandWildcardsUnknown() ExpandWildcardsValue {
-	return ExpandWildcardsValue{
-		SetValue: basetypes.NewSetUnknown(types.StringType),
-	}
-}
-
 // NewExpandWildcardsValue returns an ExpandWildcardsValue with a known value
 // constructed from the given string elements.
 func NewExpandWildcardsValue(elements []attr.Value) (ExpandWildcardsValue, diag.Diagnostics) {

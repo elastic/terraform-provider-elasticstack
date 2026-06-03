@@ -114,17 +114,6 @@ func TestExpandWildcardsSemanticEquals_NullEqualsNull(t *testing.T) {
 	assert.True(t, eq, `null should equal null`)
 }
 
-func TestExpandWildcardsSemanticEquals_UnknownEqualsUnknown(t *testing.T) {
-	ctx := context.Background()
-
-	unknown1 := datafeed.NewExpandWildcardsUnknown()
-	unknown2 := datafeed.NewExpandWildcardsUnknown()
-
-	eq, diags := unknown1.SetSemanticEquals(ctx, unknown2)
-	require.False(t, diags.HasError())
-	assert.True(t, eq, `unknown should equal unknown`)
-}
-
 func TestExpandWildcardsSemanticEquals_NullNotEqualNonNull(t *testing.T) {
 	ctx := context.Background()
 
@@ -140,21 +129,4 @@ func TestExpandWildcardsSemanticEquals_NullNotEqualNonNull(t *testing.T) {
 	eq, diags = known.SetSemanticEquals(ctx, null)
 	require.False(t, diags.HasError())
 	assert.False(t, eq, `a known value should NOT equal null`)
-}
-
-func TestExpandWildcardsSemanticEquals_UnknownNotEqualKnown(t *testing.T) {
-	ctx := context.Background()
-
-	unknown := datafeed.NewExpandWildcardsUnknown()
-	known := makeExpandWildcardsValue(t, "open")
-
-	// unknown != known
-	eq, diags := unknown.SetSemanticEquals(ctx, known)
-	require.False(t, diags.HasError())
-	assert.False(t, eq, `unknown should NOT equal a known value`)
-
-	// known != unknown
-	eq, diags = known.SetSemanticEquals(ctx, unknown)
-	require.False(t, diags.HasError())
-	assert.False(t, eq, `a known value should NOT equal unknown`)
 }
