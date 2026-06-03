@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -68,7 +69,7 @@ func compareStaticSettings(ctx context.Context, plan *tfModel, existing models.I
 			continue
 		}
 
-		tfAttr := convertSettingsKeyToTFFieldKey(key)
+		tfAttr := typeutils.ConvertSettingsKeyToTFFieldKey(key)
 		actualRaw, found := lookupExistingSetting(settings, key)
 		if !found {
 			mismatches = append(mismatches, staticSettingMismatch{

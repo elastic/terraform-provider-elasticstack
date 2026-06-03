@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strings"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -433,7 +432,7 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]any, diag.
 			continue
 		}
 
-		tfFieldKey := convertSettingsKeyToTFFieldKey(key)
+		tfFieldKey := typeutils.ConvertSettingsKeyToTFFieldKey(key)
 		value, ok := model.getFieldValueByTagValue(tfFieldKey, modelType)
 		if !ok {
 			return map[string]any{}, diag.Diagnostics{
@@ -557,10 +556,6 @@ func (model tfModel) getFieldValueByTagValue(tagName string, t reflect.Type) (at
 	}
 
 	return nil, false
-}
-
-func convertSettingsKeyToTFFieldKey(settingKey string) string {
-	return strings.ReplaceAll(settingKey, ".", "_")
 }
 
 // analysisNormalizedFields returns index.analysis sub-keys mapped to model fields.
