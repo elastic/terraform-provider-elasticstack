@@ -46,7 +46,7 @@ const FixturePyTorchModelID = "terraform-acc-test-pytorch-fixture"
 
 // fixtureEnsureOnce ensures the fixture is created at most once per test run.
 var fixtureEnsureOnce sync.Once
-var fixtureEnsureErr error
+var errFixtureEnsure error
 
 // EnsureFixturePyTorchModel creates a TorchScript model fixture using only raw
 // Elasticsearch ML APIs (no Eland, no Python).
@@ -54,10 +54,10 @@ var fixtureEnsureErr error
 func EnsureFixturePyTorchModel(t *testing.T) string {
 	t.Helper()
 	fixtureEnsureOnce.Do(func() {
-		fixtureEnsureErr = ensureFixturePyTorchModel(t)
+		errFixtureEnsure = ensureFixturePyTorchModel(t)
 	})
-	if fixtureEnsureErr != nil {
-		t.Fatal(fixtureEnsureErr)
+	if errFixtureEnsure != nil {
+		t.Fatal(errFixtureEnsure)
 	}
 	return FixturePyTorchModelID
 }
@@ -124,16 +124,13 @@ func ensureFixturePyTorchModel(t *testing.T) error {
 	totalParts := (len(ptData) + chunkSize - 1) / chunkSize
 	group, groupCtx := errgroup.WithContext(ctx)
 	group.SetLimit(4)
-	for i := 0; i < totalParts; i++ {
-		i := i
-		start := i * chunkSize
-		end := start + chunkSize
-		if end > len(ptData) {
-			end = len(ptData)
-		}
+	for i := range totalParts {
+		partIndex := i
+		start := partIndex * chunkSize
+		end := min(start+chunkSize, len(ptData))
 		definition := base64.StdEncoding.EncodeToString(ptData[start:end])
 		group.Go(func() error {
-			_, err := es.Ml.PutTrainedModelDefinitionPart(FixturePyTorchModelID, strconv.Itoa(i)).
+			_, err := es.Ml.PutTrainedModelDefinitionPart(FixturePyTorchModelID, strconv.Itoa(partIndex)).
 				Request(&puttrainedmodeldefinitionpart.Request{
 					Definition:            definition,
 					TotalDefinitionLength: int64(len(ptData)),
@@ -141,7 +138,7 @@ func ensureFixturePyTorchModel(t *testing.T) error {
 				}).
 				Do(groupCtx)
 			if err != nil {
-				return fmt.Errorf("uploading definition part %d: %w", i, err)
+				return fmt.Errorf("uploading definition part %d: %w", partIndex, err)
 			}
 			return nil
 		})
