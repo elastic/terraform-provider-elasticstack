@@ -26,6 +26,7 @@ import (
 )
 
 func TestAccResourceMLTrainedModelDeployment_conflictsWithValidation(t *testing.T) {
+	skipMLTrainedModelDeploymentIfUnsupported(t)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{

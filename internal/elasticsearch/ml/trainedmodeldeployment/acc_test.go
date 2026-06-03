@@ -37,9 +37,14 @@ import (
 const testResourceName = "elasticstack_elasticsearch_ml_trained_model_deployment.test"
 
 var minAdaptiveAllocationsVersion = version.Must(version.NewVersion("8.16.0"))
+var minMLTrainedModelDeploymentVersion = version.Must(version.NewVersion("8.10.0"))
 
 func skipAdaptiveAllocationsIfUnsupported() func() (bool, error) {
 	return versionutils.CheckIfVersionIsUnsupported(minAdaptiveAllocationsVersion)
+}
+
+func skipMLTrainedModelDeploymentIfUnsupported(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minMLTrainedModelDeploymentVersion, versionutils.FlavorAny)
 }
 
 // preCheckMLTrainedModelDeployment ensures a deployable PyTorch model exists in
@@ -83,6 +88,7 @@ func testAccCheckMLTrainedModelDeploymentDestroy(s *terraform.State) error {
 }
 
 func TestAccResourceMLTrainedModelDeployment_basic(t *testing.T) {
+	skipMLTrainedModelDeploymentIfUnsupported(t)
 	modelID := preCheckMLTrainedModelDeployment(t)
 
 	resource.Test(t, resource.TestCase{
@@ -186,6 +192,7 @@ func TestAccResourceMLTrainedModelDeployment_basic(t *testing.T) {
 }
 
 func TestAccResourceMLTrainedModelDeployment_nonExistentModel(t *testing.T) {
+	skipMLTrainedModelDeploymentIfUnsupported(t)
 	modelID := fmt.Sprintf("non-existent-model-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
