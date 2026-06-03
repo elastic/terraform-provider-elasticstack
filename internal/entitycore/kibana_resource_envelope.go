@@ -347,6 +347,13 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 
 	if inv.isUpdate {
 		writeID, spaceID = resolveKibanaResourceIdentity(planModel)
+		// When the plan identity is empty (for example because computed fields
+		// were marked unknown in ModifyPlan), fall back to the prior state's
+		// identity. This handles resources whose computed identifiers change
+		// during Update.
+		if writeID == "" && priorPtr != nil {
+			writeID, spaceID = resolveKibanaResourceIdentity(*priorPtr)
+		}
 		if writeID == "" {
 			diags.AddError(
 				"Invalid resource identifier",

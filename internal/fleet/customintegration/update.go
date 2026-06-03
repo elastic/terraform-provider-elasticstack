@@ -24,56 +24,31 @@ import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *customIntegrationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan customIntegrationModel
-	var state customIntegrationModel
-
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func updateCustomIntegration(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[customIntegrationModel],
+) (entitycore.KibanaWriteResult[customIntegrationModel], diag.Diagnostics) {
+	var diags diag.Diagnostics
+	plan := req.Plan
+	state := *req.Prior
 
 	updateTimeout, fwDiags := plan.Timeouts.Update(ctx, 20*time.Minute)
-	resp.Diagnostics.Append(fwDiags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(fwDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[customIntegrationModel]{}, diags
 	}
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
-	apiClient, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	fleetClient := apiClient.GetFleetClient()
-
-	meetsMinVersion, verDiags := apiClient.EnforceMinVersion(ctx, minVersionCustomPackageGet)
-	resp.Diagnostics.Append(verDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !meetsMinVersion {
-		resp.Diagnostics.AddError(
-			"Kibana version not supported",
-			"elasticstack_fleet_custom_integration requires Kibana 8.2.0 or later.",
-		)
-		return
-	}
+	fleetClient := client.GetFleetClient()
 
 	// Determine whether we need to re-upload. Re-upload is required if:
 	//   - The checksum is unknown (file content changed, signalled by ModifyPlan), or
@@ -91,37 +66,37 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 			ContentType:               contentType,
 			IgnoreMappingUpdateErrors: plan.IgnoreMappingUpdateErrors.ValueBool(),
 			SkipDataStreamRollover:    plan.SkipDataStreamRollover.ValueBool(),
-			SpaceID:                   plan.SpaceID.ValueString(),
+			SpaceID:                   state.SpaceID.ValueString(),
 		}
 
 		var result *fleet.UploadPackageResult
 
-		result, diags = fleet.UploadPackage(ctx, fleetClient, uploadOpts)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
+		result, uploadDiags := fleet.UploadPackage(ctx, fleetClient, uploadOpts)
+		diags.Append(uploadDiags...)
+		if diags.HasError() {
+			return entitycore.KibanaWriteResult[customIntegrationModel]{}, diags
 		}
 
 		// If the package name or version changed, uninstall the old package from the
 		// same space now that the new one is successfully installed.
 		if (result.PackageName != state.PackageName.ValueString() || result.PackageVersion != state.PackageVersion.ValueString()) && state.PackageName.ValueString() != "" {
-			diags = fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
-			resp.Diagnostics.Append(diags...)
-			if resp.Diagnostics.HasError() {
-				return
+			uninstallDiags := fleet.Uninstall(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString(), false)
+			diags.Append(uninstallDiags...)
+			if diags.HasError() {
+				return entitycore.KibanaWriteResult[customIntegrationModel]{}, diags
 			}
 
-			diags = waitForInstalledCustomIntegration(ctx, fleetClient, result.PackageName, result.PackageVersion, plan.SpaceID.ValueString())
-			resp.Diagnostics.Append(diags...)
-			if resp.Diagnostics.HasError() {
-				return
+			waitDiags := waitForInstalledCustomIntegration(ctx, fleetClient, result.PackageName, result.PackageVersion, state.SpaceID.ValueString())
+			diags.Append(waitDiags...)
+			if diags.HasError() {
+				return entitycore.KibanaWriteResult[customIntegrationModel]{}, diags
 			}
 		}
 
 		checksum, err := computeSHA256(filePath)
 		if err != nil {
-			resp.Diagnostics.AddError("Failed to compute checksum", err.Error())
-			return
+			diags.AddError("Failed to compute checksum", err.Error())
+			return entitycore.KibanaWriteResult[customIntegrationModel]{}, diags
 		}
 
 		plan.PackageName = types.StringValue(result.PackageName)
@@ -140,8 +115,7 @@ func (r *customIntegrationResource) Update(ctx context.Context, req resource.Upd
 		plan.SpaceID = types.StringNull()
 	}
 
-	diags = resp.State.Set(ctx, plan)
-	resp.Diagnostics.Append(diags...)
+	return entitycore.KibanaWriteResult[customIntegrationModel]{Model: plan}, diags
 }
 
 func waitForInstalledCustomIntegration(ctx context.Context, fleetClient *fleet.Client, packageName, packageVersion, spaceID string) diag.Diagnostics {

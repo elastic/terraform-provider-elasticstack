@@ -18,6 +18,7 @@
 package privatelocation
 
 import (
+	"context"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -74,7 +75,7 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			reqs, diags := tt.model.GetVersionRequirements()
+			reqs, diags := tt.model.GetVersionRequirements(context.Background())
 			require.False(t, diags.HasError())
 			require.Len(t, reqs, tt.wantReqs)
 

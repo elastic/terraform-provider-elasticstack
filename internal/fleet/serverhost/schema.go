@@ -20,9 +20,7 @@ package serverhost
 import (
 	"context"
 
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -31,48 +29,47 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *serverHostResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema.Description = "Creates a new Fleet Server Host."
-	resp.Schema.Attributes = map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: "The ID of this resource.",
-			Computed:    true,
-		},
-		"host_id": schema.StringAttribute{
-			Description: "Unique identifier of the Fleet server host.",
-			Computed:    true,
-			Optional:    true,
-			PlanModifiers: []planmodifier.String{
-				stringplanmodifier.UseStateForUnknown(),
-				stringplanmodifier.RequiresReplace(),
+func getSchema(_ context.Context) schema.Schema {
+	return schema.Schema{
+		Description: "Creates a new Fleet Server Host.",
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Description: "The ID of this resource.",
+				Computed:    true,
+			},
+			"host_id": schema.StringAttribute{
+				Description: "Unique identifier of the Fleet server host.",
+				Computed:    true,
+				Optional:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"name": schema.StringAttribute{
+				Description: "The name of the Fleet server host.",
+				Required:    true,
+			},
+			"hosts": schema.ListAttribute{
+				Description: "A list of hosts.",
+				Required:    true,
+				ElementType: types.StringType,
+				Validators: []validator.List{
+					listvalidator.SizeAtLeast(1),
+				},
+			},
+			"default": schema.BoolAttribute{
+				Description: "Set as default.",
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
+			},
+			"space_ids": schema.SetAttribute{
+				Description: spaceIDsDescription,
+				ElementType: types.StringType,
+				Optional:    true,
+				Computed:    true,
 			},
 		},
-		"name": schema.StringAttribute{
-			Description: "The name of the Fleet server host.",
-			Required:    true,
-		},
-		"hosts": schema.ListAttribute{
-			Description: "A list of hosts.",
-			Required:    true,
-			ElementType: types.StringType,
-			Validators: []validator.List{
-				listvalidator.SizeAtLeast(1),
-			},
-		},
-		"default": schema.BoolAttribute{
-			Description: "Set as default.",
-			Optional:    true,
-			Computed:    true,
-			Default:     booldefault.StaticBool(false),
-		},
-		"space_ids": schema.SetAttribute{
-			Description: spaceIDsDescription,
-			ElementType: types.StringType,
-			Optional:    true,
-			Computed:    true,
-		},
-	}
-	resp.Schema.Blocks = map[string]schema.Block{
-		"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 	}
 }

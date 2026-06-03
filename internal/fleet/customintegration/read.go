@@ -21,77 +21,41 @@ import (
 	"context"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	goversion "github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// minVersionCustomPackageGet is the minimum Kibana version at which
-// GET /api/fleet/epm/packages/{name}/{version} reliably supports
-// custom-uploaded packages.
-var minVersionCustomPackageGet = goversion.Must(goversion.NewVersion("8.2.0"))
+func readCustomIntegration(ctx context.Context, client *clients.KibanaScopedClient, _, spaceID string, model customIntegrationModel) (customIntegrationModel, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	fleetClient := client.GetFleetClient()
 
-func (r *customIntegrationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state customIntegrationModel
-
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	apiClient, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	fleetClient := apiClient.GetFleetClient()
-
-	meetsMinVersion, verDiags := apiClient.EnforceMinVersion(ctx, minVersionCustomPackageGet)
-	resp.Diagnostics.Append(verDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !meetsMinVersion {
-		resp.Diagnostics.AddError(
-			"Kibana version not supported",
-			"elasticstack_fleet_custom_integration requires Kibana 8.2.0 or later.",
-		)
-		return
-	}
-
-	pkg, pkgDiags := fleet.GetPackage(ctx, fleetClient, state.PackageName.ValueString(), state.PackageVersion.ValueString(), state.SpaceID.ValueString())
+	pkg, pkgDiags := fleet.GetPackage(ctx, fleetClient, model.PackageName.ValueString(), model.PackageVersion.ValueString(), spaceID)
 	if pkgDiags.HasError() {
-		resp.Diagnostics.Append(pkgDiags...)
-		return
+		diags.Append(pkgDiags...)
+		return model, false, diags
 	}
 
 	if pkg == nil {
-		packages, listDiags := fleet.GetPackages(ctx, fleetClient, true, state.SpaceID.ValueString())
+		packages, listDiags := fleet.GetPackages(ctx, fleetClient, true, spaceID)
 		if listDiags.HasError() {
-			resp.Diagnostics.Append(listDiags...)
-			return
+			diags.Append(listDiags...)
+			return model, false, diags
 		}
 		for _, candidate := range packages {
-			if candidate.Name != state.PackageName.ValueString() || candidate.Version != state.PackageVersion.ValueString() {
+			if candidate.Name != model.PackageName.ValueString() || candidate.Version != model.PackageVersion.ValueString() {
 				continue
 			}
 			if candidate.Status != nil && strings.EqualFold(*candidate.Status, "installed") {
-				diags = resp.State.Set(ctx, state)
-				resp.Diagnostics.Append(diags...)
-				return
+				return model, true, nil
 			}
 		}
-		resp.State.RemoveResource(ctx)
-		return
+		return model, false, nil
 	}
 
 	if pkg.Status == nil || *pkg.Status != "installed" {
-		resp.State.RemoveResource(ctx)
-		return
+		return model, false, nil
 	}
 
-	diags = resp.State.Set(ctx, state)
-	resp.Diagnostics.Append(diags...)
+	return model, true, nil
 }

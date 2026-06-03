@@ -18,6 +18,7 @@
 package securityenablerule
 
 import (
+	"context"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -43,7 +44,7 @@ var _ entitycore.KibanaResourceModel = enableRuleModel{}
 
 var minSupportedVersion = version.Must(version.NewVersion("8.11.0"))
 
-func (m enableRuleModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m enableRuleModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *minSupportedVersion,

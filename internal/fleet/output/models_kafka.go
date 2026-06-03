@@ -589,11 +589,11 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 				Value: types.StringValue(header.Value),
 			}
 		}
-		list, nd := types.ListValueFrom(ctx, getHeadersAttrTypes(), headerModels)
+		list, nd := types.ListValueFrom(ctx, getHeadersAttrTypes(ctx), headerModels)
 		diags.Append(nd...)
 		kafkaModel.Headers = list
 	} else {
-		kafkaModel.Headers = types.ListNull(getHeadersAttrTypes())
+		kafkaModel.Headers = types.ListNull(getHeadersAttrTypes(ctx))
 	}
 
 	// Handle hash
@@ -602,11 +602,11 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 			Hash:   types.StringPointerValue(data.Hash.Hash),
 			Random: types.BoolPointerValue(data.Hash.Random),
 		}
-		obj, nd := types.ObjectValueFrom(ctx, getHashAttrTypes(), hashModel)
+		obj, nd := types.ObjectValueFrom(ctx, getHashAttrTypes(ctx), hashModel)
 		diags.Append(nd...)
 		kafkaModel.Hash = obj
 	} else {
-		kafkaModel.Hash = types.ObjectNull(getHashAttrTypes())
+		kafkaModel.Hash = types.ObjectNull(getHashAttrTypes(ctx))
 	}
 
 	// Handle random
@@ -619,11 +619,11 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 				return types.Float64Null()
 			}(),
 		}
-		obj, nd := types.ObjectValueFrom(ctx, getRandomAttrTypes(), randomModel)
+		obj, nd := types.ObjectValueFrom(ctx, getRandomAttrTypes(ctx), randomModel)
 		diags.Append(nd...)
 		kafkaModel.Random = obj
 	} else {
-		kafkaModel.Random = types.ObjectNull(getRandomAttrTypes())
+		kafkaModel.Random = types.ObjectNull(getRandomAttrTypes(ctx))
 	}
 
 	// Handle round_robin
@@ -636,11 +636,11 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 				return types.Float64Null()
 			}(),
 		}
-		obj, nd := types.ObjectValueFrom(ctx, getRoundRobinAttrTypes(), roundRobinModel)
+		obj, nd := types.ObjectValueFrom(ctx, getRoundRobinAttrTypes(ctx), roundRobinModel)
 		diags.Append(nd...)
 		kafkaModel.RoundRobin = obj
 	} else {
-		kafkaModel.RoundRobin = types.ObjectNull(getRoundRobinAttrTypes())
+		kafkaModel.RoundRobin = types.ObjectNull(getRoundRobinAttrTypes(ctx))
 	}
 
 	// Handle sasl
@@ -653,15 +653,15 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 				return types.StringNull()
 			}(),
 		}
-		obj, nd := types.ObjectValueFrom(ctx, getSaslAttrTypes(), saslModel)
+		obj, nd := types.ObjectValueFrom(ctx, getSaslAttrTypes(ctx), saslModel)
 		diags.Append(nd...)
 		kafkaModel.Sasl = obj
 	} else {
-		kafkaModel.Sasl = types.ObjectNull(getSaslAttrTypes())
+		kafkaModel.Sasl = types.ObjectNull(getSaslAttrTypes(ctx))
 	}
 
 	// Set the kafka nested object on the main model
-	kafkaObj, nd := types.ObjectValueFrom(ctx, getKafkaAttrTypes(), kafkaModel)
+	kafkaObj, nd := types.ObjectValueFrom(ctx, getKafkaAttrTypes(ctx), kafkaModel)
 	diags.Append(nd...)
 	model.Kafka = kafkaObj
 

@@ -50,7 +50,7 @@ type toolModel struct {
 	Configuration jsontypes.Normalized `tfsdk:"configuration"`
 }
 
-func (toolModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (toolModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{{
 		MinVersion:   *minKibanaAgentBuilderAPIVersion,
 		ErrorMessage: fmt.Sprintf("Agent Builder tools require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),

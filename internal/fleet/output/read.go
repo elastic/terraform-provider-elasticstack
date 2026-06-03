@@ -20,56 +20,30 @@ package output
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *outputResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var stateModel outputModel
-
-	diags := req.State.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func readOutput(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model outputModel) (outputModel, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
 	fleetClient := client.GetFleetClient()
 
-	outputID := stateModel.OutputID.ValueString()
-
-	// Read the existing spaces from state to determine where to query
-	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Query using the operational space from STATE
-	output, diags := fleet.GetOutput(ctx, fleetClient, outputID, spaceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		resp.State.RemoveResource(ctx)
-		return
+	output, d := fleet.GetOutput(ctx, fleetClient, resourceID, spaceID)
+	diags.Append(d...)
+	if diags.HasError() {
+		return model, false, diags
 	}
 
 	if output == nil {
-		resp.State.RemoveResource(ctx)
-		return
+		return model, false, nil
 	}
 
-	diags = stateModel.populateFromAPI(ctx, output)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(model.populateFromAPI(ctx, output)...)
+	if diags.HasError() {
+		return model, true, diags
 	}
 
-	diags = resp.State.Set(ctx, stateModel)
-	resp.Diagnostics.Append(diags...)
+	return model, true, diags
 }

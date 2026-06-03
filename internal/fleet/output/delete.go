@@ -20,40 +20,13 @@ package output
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *outputResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var stateModel outputModel
-
-	diags := req.State.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
+func deleteOutput(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ outputModel) diag.Diagnostics {
 	fleetClient := client.GetFleetClient()
 
-	outputID := stateModel.OutputID.ValueString()
-
-	// Read the existing spaces from state to determine where to delete
-	// NOTE: DELETE removes the output from ALL spaces (global delete)
-	// To remove from specific spaces only, UPDATE space_ids instead
-	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Delete using the operational space from STATE
-	diags = fleet.DeleteOutput(ctx, fleetClient, outputID, spaceID)
-	resp.Diagnostics.Append(diags...)
+	return fleet.DeleteOutput(ctx, fleetClient, resourceID, spaceID)
 }
