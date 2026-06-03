@@ -36,7 +36,7 @@ func createEntity(
 	req entitycore.KibanaWriteRequest[tfModel],
 ) (entitycore.KibanaWriteResult[tfModel], diag.Diagnostics) {
 	plan := req.Plan
-	spaceID := normalizeSpaceID(plan.SpaceID)
+	spaceID := NormalizeSpaceID(plan.SpaceID)
 	entityType := plan.EntityType.ValueString()
 	entityID := plan.EntityID.ValueString()
 

@@ -32,23 +32,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-const (
-	defaultSpaceID = "default"
-)
-
-func normalizeSpaceID(v types.String) string {
-	if v.IsNull() || v.IsUnknown() || v.ValueString() == "" {
-		return defaultSpaceID
-	}
-	return v.ValueString()
-}
-
 func readEntityStoreEntitiesDataSource(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
 	model dsModel,
 ) (dsModel, diag.Diagnostics) {
-	spaceID := normalizeSpaceID(model.SpaceID)
+	spaceID := entity.NormalizeSpaceID(model.SpaceID)
 
 	params := &kbapi.GetSecurityEntityStoreEntitiesParams{}
 
