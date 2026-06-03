@@ -23,61 +23,23 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-// readRuleFromAPI reads the alerting rule from the API and populates the model.
-// Returns (exists, diagnostics).
-func (r *Resource) readRuleFromAPI(ctx context.Context, apiClient *clients.KibanaScopedClient, model *alertingRuleModel) (bool, diag.Diagnostics) {
+func readAlertingRule(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model alertingRuleModel) (alertingRuleModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	ruleID, spaceID := model.getRuleIDAndSpaceID()
+	oapiClient := client.GetKibanaOapiClient()
 
-	oapiClient := apiClient.GetKibanaOapiClient()
-
-	rule, readDiags := kibanaoapi.GetAlertingRule(ctx, oapiClient, spaceID, ruleID)
+	rule, readDiags := kibanaoapi.GetAlertingRule(ctx, oapiClient, spaceID, resourceID)
 	diags.Append(readDiags...)
 	if diags.HasError() {
-		return false, diags
+		return model, false, diags
 	}
 
 	if rule == nil {
-		return false, diags
+		return model, false, diags
 	}
 
 	diags.Append(model.populateFromAPI(ctx, rule)...)
-	return true, diags
-}
-
-func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state alertingRuleModel
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if r.Client() == nil {
-		resp.Diagnostics.AddError("Provider not configured", "Expected configured API client")
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	exists, diags := r.readRuleFromAPI(ctx, client, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if !exists {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	return model, true, diags
 }

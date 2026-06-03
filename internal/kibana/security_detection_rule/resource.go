@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
 var (
@@ -33,12 +34,22 @@ var (
 )
 
 type securityDetectionRuleResource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[Data]
 }
 
 func newSecurityDetectionRuleResource() *securityDetectionRuleResource {
 	return &securityDetectionRuleResource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "security_detection_rule"),
+		KibanaResource: entitycore.NewKibanaResource[Data](
+			entitycore.ComponentKibana,
+			"security_detection_rule",
+			entitycore.KibanaResourceOptions[Data]{
+				Schema: func(_ context.Context) schema.Schema { return GetSchema() },
+				Read:   readDetectionRule,
+				Delete: deleteDetectionRule,
+				Create: createDetectionRule,
+				Update: updateDetectionRule,
+			},
+		),
 	}
 }
 

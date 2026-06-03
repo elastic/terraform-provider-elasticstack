@@ -20,68 +20,45 @@ package alertingrule
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan alertingRuleModel
+func createAlertingRule(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[alertingRuleModel],
+) (entitycore.KibanaWriteResult[alertingRuleModel], diag.Diagnostics) {
+	m := req.Plan
+	var diags diag.Diagnostics
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if r.Client() == nil {
-		resp.Diagnostics.AddError("Provider not configured", "Expected configured API client")
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	features, featureDiags := resolveAlertingRuleFeatures(ctx, client)
-	if featureDiags.HasError() {
-		resp.Diagnostics.Append(featureDiags...)
-		return
-	}
-
-	// Convert to API model (includes version-specific validation)
-	rule, diags := plan.toAPIModel(ctx, features)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	// Convert to API model
+	rule, d := m.toAPIModel(ctx)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[alertingRuleModel]{}, diags
 	}
 
 	oapiClient := client.GetKibanaOapiClient()
 
-	createdRule, createDiags := kibanaoapi.CreateAlertingRule(ctx, oapiClient, rule.SpaceID, rule)
-	resp.Diagnostics.Append(createDiags...)
-	if resp.Diagnostics.HasError() {
-		return
+	createdRule, createDiags := kibanaoapi.CreateAlertingRule(ctx, oapiClient, req.SpaceID, rule)
+	diags.Append(createDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[alertingRuleModel]{}, diags
 	}
 
-	// Initialize plan with rule ID and space ID from created rule for re-reading
-	resp.Diagnostics.Append(plan.populateFromAPI(ctx, createdRule)...)
-	if resp.Diagnostics.HasError() {
-		return
+	// Set identity fields so the envelope can locate the resource for
+	// read-after-write. The envelope will re-read full state.
+	compID := clients.CompositeID{
+		ClusterID:  req.SpaceID,
+		ResourceID: createdRule.RuleID,
 	}
+	m.ID = types.StringValue(compID.String())
+	m.RuleID = types.StringValue(createdRule.RuleID)
+	m.SpaceID = types.StringValue(req.SpaceID)
 
-	// Re-read rule from API to get the authoritative state
-	// (sometimes create response differs from what's actually stored)
-	exists, readDiags := r.readRuleFromAPI(ctx, client, &plan)
-	resp.Diagnostics.Append(readDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if !exists {
-		resp.Diagnostics.AddError("Rule not found after creation", "The alerting rule was created but could not be read back from the API")
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	return entitycore.KibanaWriteResult[alertingRuleModel]{Model: m}, diags
 }

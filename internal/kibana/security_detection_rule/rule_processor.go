@@ -22,15 +22,14 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 type ruleProcessor interface {
 	HandlesRuleType(t string) bool
 	HandlesAPIRuleResponse(rule any) bool
-	ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics)
-	ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics)
+	ToCreateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics)
+	ToUpdateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics)
 	UpdateFromResponse(ctx context.Context, rule any, d *Data) diag.Diagnostics
 	ExtractID(response any) (string, diag.Diagnostics)
 }
@@ -83,7 +82,7 @@ func getProcessorForResponse(resp *kbapi.SecurityDetectionsAPIRuleResponse) (rul
 	return nil, nil, diags
 }
 
-func (d Data) toCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d Data) toCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -95,10 +94,10 @@ func (d Data) toCreateProps(ctx context.Context, client clients.MinVersionEnforc
 		)
 		return createProps, diags
 	}
-	return processorForType.ToCreateProps(ctx, client, d)
+	return processorForType.ToCreateProps(ctx, d)
 }
 
-func (d Data) toUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d Data) toUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -110,7 +109,7 @@ func (d Data) toUpdateProps(ctx context.Context, client clients.MinVersionEnforc
 		)
 		return updateProps, diags
 	}
-	return processorForType.ToUpdateProps(ctx, client, d)
+	return processorForType.ToUpdateProps(ctx, d)
 }
 
 func (d *Data) updateFromRule(ctx context.Context, response *kbapi.SecurityDetectionsAPIRuleResponse) diag.Diagnostics {

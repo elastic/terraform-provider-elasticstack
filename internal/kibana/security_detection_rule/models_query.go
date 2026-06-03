@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -46,15 +45,15 @@ func (q QueryRuleProcessor) HandlesRuleType(t string) bool {
 	return t == ruleTypeQuery
 }
 
-func (q QueryRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
-	return toQueryRuleCreateProps(ctx, client, d)
+func (q QueryRuleProcessor) ToCreateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+	return toQueryRuleCreateProps(ctx, d)
 }
 
-func (q QueryRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
-	return toQueryRuleUpdateProps(ctx, client, d)
+func (q QueryRuleProcessor) ToUpdateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+	return toQueryRuleUpdateProps(ctx, d)
 }
 
-func toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func toQueryRuleCreateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -103,7 +102,7 @@ func toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforc
 		Threat:                            &queryRule.Threat,
 		TimelineID:                        &queryRule.TimelineId,
 		TimelineTitle:                     &queryRule.TimelineTitle,
-	}, &diags, client)
+	}, &diags)
 
 	// Set query-specific fields
 	queryRule.Language = d.getKQLQueryLanguage()
@@ -125,7 +124,7 @@ func toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforc
 	return createProps, diags
 }
 
-func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func toQueryRuleUpdateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -188,7 +187,7 @@ func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforc
 		Threat:                            &queryRule.Threat,
 		TimelineID:                        &queryRule.TimelineId,
 		TimelineTitle:                     &queryRule.TimelineTitle,
-	}, &diags, client)
+	}, &diags)
 
 	// Set query-specific fields
 	queryRule.Language = d.getKQLQueryLanguage()

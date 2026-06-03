@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -48,15 +47,15 @@ func (e EsqlRuleProcessor) HandlesRuleType(t string) bool {
 	return t == ruleTypeESQL
 }
 
-func (e EsqlRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
-	return d.toEsqlRuleCreateProps(ctx, client)
+func (e EsqlRuleProcessor) ToCreateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+	return d.toEsqlRuleCreateProps(ctx)
 }
 
-func (e EsqlRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
-	return d.toEsqlRuleUpdateProps(ctx, client)
+func (e EsqlRuleProcessor) ToUpdateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+	return d.toEsqlRuleUpdateProps(ctx)
 }
 
-func (d Data) toEsqlRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d Data) toEsqlRuleCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -105,7 +104,7 @@ func (d Data) toEsqlRuleCreateProps(ctx context.Context, client clients.MinVersi
 		Threat:                            &esqlRule.Threat,
 		TimelineID:                        &esqlRule.TimelineId,
 		TimelineTitle:                     &esqlRule.TimelineTitle,
-	}, &diags, client)
+	}, &diags)
 
 	// ESQL rules don't use index patterns as they use FROM clause in the query
 
@@ -121,7 +120,7 @@ func (d Data) toEsqlRuleCreateProps(ctx context.Context, client clients.MinVersi
 	return createProps, diags
 }
 
-func (d Data) toEsqlRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d Data) toEsqlRuleUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -183,7 +182,7 @@ func (d Data) toEsqlRuleUpdateProps(ctx context.Context, client clients.MinVersi
 		Threat:                            &esqlRule.Threat,
 		TimelineID:                        &esqlRule.TimelineId,
 		TimelineTitle:                     &esqlRule.TimelineTitle,
-	}, &diags, client)
+	}, &diags)
 
 	// ESQL rules don't use index patterns as they use FROM clause in the query
 

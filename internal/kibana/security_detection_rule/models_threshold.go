@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -48,15 +47,15 @@ func (th ThresholdRuleProcessor) HandlesRuleType(t string) bool {
 	return t == ruleTypeThreshold
 }
 
-func (th ThresholdRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
-	return d.toThresholdRuleCreateProps(ctx, client)
+func (th ThresholdRuleProcessor) ToCreateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+	return d.toThresholdRuleCreateProps(ctx)
 }
 
-func (th ThresholdRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
-	return d.toThresholdRuleUpdateProps(ctx, client)
+func (th ThresholdRuleProcessor) ToUpdateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+	return d.toThresholdRuleUpdateProps(ctx)
 }
 
-func (d Data) toThresholdRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d Data) toThresholdRuleCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -110,7 +109,7 @@ func (d Data) toThresholdRuleCreateProps(ctx context.Context, client clients.Min
 		AlertSuppression:                  nil, // Handle specially for threshold rule
 		TimelineID:                        &thresholdRule.TimelineId,
 		TimelineTitle:                     &thresholdRule.TimelineTitle,
-	}, &diags, client)
+	}, &diags)
 
 	// Handle threshold-specific alert suppression
 	if typeutils.IsKnown(d.AlertSuppression) {
@@ -139,7 +138,7 @@ func (d Data) toThresholdRuleCreateProps(ctx context.Context, client clients.Min
 
 	return createProps, diags
 }
-func (d Data) toThresholdRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d Data) toThresholdRuleUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -206,7 +205,7 @@ func (d Data) toThresholdRuleUpdateProps(ctx context.Context, client clients.Min
 		AlertSuppression:                  nil, // Handle specially for threshold rule
 		TimelineID:                        &thresholdRule.TimelineId,
 		TimelineTitle:                     &thresholdRule.TimelineTitle,
-	}, &diags, client)
+	}, &diags)
 
 	// Handle threshold-specific alert suppression
 	if typeutils.IsKnown(d.AlertSuppression) {
