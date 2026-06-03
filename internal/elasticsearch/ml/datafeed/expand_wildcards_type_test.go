@@ -138,6 +138,7 @@ func TestExpandWildcardsSemanticEquals_UnknownHandling(t *testing.T) {
 	require.True(t, ok)
 	unknown, ok := expandWildcardsType.ValueType(ctx).(datafeed.ExpandWildcardsValue)
 	require.True(t, ok)
+	assert.True(t, unknown.IsUnknown())
 	known := makeExpandWildcardsValue(t, "open")
 
 	eq, diags := unknown.SetSemanticEquals(ctx, unknown)
@@ -147,4 +148,8 @@ func TestExpandWildcardsSemanticEquals_UnknownHandling(t *testing.T) {
 	eq, diags = unknown.SetSemanticEquals(ctx, known)
 	require.False(t, diags.HasError())
 	assert.False(t, eq, `unknown should NOT equal a known value`)
+
+	eq, diags = known.SetSemanticEquals(ctx, unknown)
+	require.False(t, diags.HasError())
+	assert.False(t, eq, `a known value should NOT equal unknown`)
 }
