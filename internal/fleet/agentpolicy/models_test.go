@@ -334,10 +334,11 @@ func TestPopulateFromAPI_SpaceIDs_Null_vs_EmptyList(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name     string
-		initial  types.Set // the pre-populate plan/state value for SpaceIDs
-		apiValue []string  // data.SpaceIds as returned by Fleet (nil = omitted)
-		wantNull bool
+		name         string
+		initial      types.Set // the pre-populate plan/state value for SpaceIDs
+		apiValue     []string  // data.SpaceIds as returned by Fleet (nil = omitted)
+		wantNull     bool
+		wantElements []string // expected elements for non-null cases (nil = skip check)
 	}{
 		{
 			name:     "null in plan and nil from API stays null",
@@ -346,16 +347,25 @@ func TestPopulateFromAPI_SpaceIDs_Null_vs_EmptyList(t *testing.T) {
 			wantNull: true,
 		},
 		{
-			name:     "value in plan and nil from API preserves value",
-			initial:  types.SetValueMust(types.StringType, []attr.Value{types.StringValue("default")}),
-			apiValue: nil,
-			wantNull: false,
+			name:         "value in plan and nil from API preserves value",
+			initial:      types.SetValueMust(types.StringType, []attr.Value{types.StringValue("default")}),
+			apiValue:     nil,
+			wantNull:     false,
+			wantElements: []string{"default"},
 		},
 		{
-			name:     "value in plan and matching value from API stays set",
-			initial:  types.SetValueMust(types.StringType, []attr.Value{types.StringValue("default")}),
-			apiValue: []string{"default"},
-			wantNull: false,
+			name:         "value in plan and matching value from API stays set",
+			initial:      types.SetValueMust(types.StringType, []attr.Value{types.StringValue("default")}),
+			apiValue:     []string{"default"},
+			wantNull:     false,
+			wantElements: []string{"default"},
+		},
+		{
+			name:         "empty set in plan and nil from API preserves empty set",
+			initial:      types.SetValueMust(types.StringType, []attr.Value{}),
+			apiValue:     nil,
+			wantNull:     false,
+			wantElements: []string{},
 		},
 		{
 			name:     "null in plan and value from API adopts value",
@@ -385,6 +395,12 @@ func TestPopulateFromAPI_SpaceIDs_Null_vs_EmptyList(t *testing.T) {
 				assert.True(t, model.SpaceIDs.IsNull(), "expected SpaceIDs to be null, got %v", model.SpaceIDs)
 			} else {
 				assert.False(t, model.SpaceIDs.IsNull(), "expected SpaceIDs to be set, got null")
+				if tc.wantElements != nil {
+					var elements []string
+					diags := model.SpaceIDs.ElementsAs(ctx, &elements, false)
+					assert.Nil(t, diags, "ElementsAs should not error")
+					assert.ElementsMatch(t, tc.wantElements, elements, "expected SpaceIDs elements to match")
+				}
 			}
 		})
 	}
