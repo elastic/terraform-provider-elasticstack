@@ -1,0 +1,75 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package serverhost
+
+import (
+	"context"
+	"reflect"
+	"testing"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/providerfwtest"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/require"
+)
+
+func TestResource_embedsKibanaResource(t *testing.T) {
+	t.Parallel()
+	rt := reflect.TypeFor[Resource]()
+	field, ok := rt.FieldByName("KibanaResource")
+	require.True(t, ok)
+	require.True(t, field.Anonymous)
+	require.Equal(t, reflect.TypeFor[*entitycore.KibanaResource[serverHostModel]](), field.Type)
+}
+
+// Import splits "<space>/<host_id>" into structured attributes instead of
+// preserving the raw import string on id (passthrough shape).
+func TestResource_importState_customCompositeID(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	r, ok := any(newResource()).(resource.ResourceWithImportState)
+	require.True(t, ok)
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	r.ImportState(ctx, resource.ImportStateRequest{ID: "myspace/the-host-id"}, resp)
+	require.False(t, resp.Diagnostics.HasError())
+
+	var hostID types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("host_id"), &hostID)...)
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, "the-host-id", hostID.ValueString())
+
+	var id types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("id"), &id)...)
+	require.False(t, resp.Diagnostics.HasError())
+	require.True(t, id.IsNull() || id.IsUnknown())
+
+	var spaceIDs types.Set
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("space_ids"), &spaceIDs)...)
+	require.False(t, resp.Diagnostics.HasError())
+
+	var elems []types.String
+	resp.Diagnostics.Append(spaceIDs.ElementsAs(ctx, &elems, false)...)
+	require.False(t, resp.Diagnostics.HasError())
+	require.Len(t, elems, 1)
+	require.Equal(t, "myspace", elems[0].ValueString())
+}

@@ -22,7 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -49,6 +49,51 @@ type outputModel struct {
 	SyncIntegrations            types.Bool                      `tfsdk:"sync_integrations"`
 	SyncUninstalledIntegrations types.Bool                      `tfsdk:"sync_uninstalled_integrations"`
 	WriteToLogsStreams          types.Bool                      `tfsdk:"write_to_logs_streams"`
+}
+
+func (model outputModel) GetID() types.String             { return model.ID }
+func (model outputModel) GetResourceID() types.String     { return model.OutputID }
+func (model outputModel) GetKibanaConnection() types.List { return model.KibanaConnection }
+
+func (model outputModel) GetSpaceID() types.String {
+	if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
+		return types.StringValue("")
+	}
+	for _, elem := range model.SpaceIDs.Elements() {
+		s, ok := elem.(types.String)
+		if !ok || s.IsNull() || s.IsUnknown() {
+			continue
+		}
+		if v := s.ValueString(); v != "" {
+			return s
+		}
+	}
+	return types.StringValue("")
+}
+
+// IsUnscopedSpace implements entitycore.KibanaUnscopedSpace.
+func (model outputModel) IsUnscopedSpace() bool { return true }
+
+func (model outputModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	var reqs []entitycore.VersionRequirement
+
+	if sslModel := typeutils.ObjectTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), nil); sslModel != nil {
+		if typeutils.IsKnown(sslModel.VerificationMode) {
+			reqs = append(reqs, entitycore.VersionRequirement{
+				MinVersion:   *MinVersionOutputSSLVerificationMode,
+				ErrorMessage: fmt.Sprintf("ssl.verification_mode requires server version %s or higher", MinVersionOutputSSLVerificationMode.String()),
+			})
+		}
+	}
+
+	if model.Type.ValueString() == outputTypeKafka {
+		reqs = append(reqs, entitycore.VersionRequirement{
+			MinVersion:   *MinVersionOutputKafka,
+			ErrorMessage: fmt.Sprintf("Kafka output type requires server version %s or higher", MinVersionOutputKafka.String()),
+		})
+	}
+
+	return reqs, nil
 }
 
 func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) (diags diag.Diagnostics) {
@@ -80,12 +125,8 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 	return
 }
 
-func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.KibanaScopedClient) (kbapi.NewOutputUnion, diag.Diagnostics) {
+func (model outputModel) toAPICreateModel(ctx context.Context) (kbapi.NewOutputUnion, diag.Diagnostics) {
 	outputType := model.Type.ValueString()
-
-	if diags := assertSSLVerificationModeSupport(ctx, client, model.Ssl); diags.HasError() {
-		return kbapi.NewOutputUnion{}, diags
-	}
 
 	switch outputType {
 	case outputTypeElasticsearch:
@@ -93,10 +134,6 @@ func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.K
 	case outputTypeLogstash:
 		return model.toAPICreateLogstashModel(ctx)
 	case outputTypeKafka:
-		if diags := assertKafkaSupport(ctx, client); diags.HasError() {
-			return kbapi.NewOutputUnion{}, diags
-		}
-
 		return model.toAPICreateKafkaModel(ctx)
 	case outputTypeRemoteElasticsearch:
 		return model.toAPICreateRemoteElasticsearchModel(ctx)
@@ -107,13 +144,8 @@ func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.K
 	}
 }
 
-func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.KibanaScopedClient) (union kbapi.UpdateOutputUnion, diags diag.Diagnostics) {
+func (model outputModel) toAPIUpdateModel(ctx context.Context) (union kbapi.UpdateOutputUnion, diags diag.Diagnostics) {
 	outputType := model.Type.ValueString()
-
-	if d := assertSSLVerificationModeSupport(ctx, client, model.Ssl); d.HasError() {
-		diags.Append(d...)
-		return
-	}
 
 	switch outputType {
 	case outputTypeElasticsearch:
@@ -121,10 +153,6 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.K
 	case outputTypeLogstash:
 		return model.toAPIUpdateLogstashModel(ctx)
 	case outputTypeKafka:
-		if diags := assertKafkaSupport(ctx, client); diags.HasError() {
-			return kbapi.UpdateOutputUnion{}, diags
-		}
-
 		return model.toAPIUpdateKafkaModel(ctx)
 	case outputTypeRemoteElasticsearch:
 		return model.toAPIUpdateRemoteElasticsearchModel(ctx)
@@ -249,35 +277,6 @@ func (model outputModel) buildCommonUpdateOutput(ctx context.Context, diags *dia
 	}
 }
 
-func assertSSLVerificationModeSupport(ctx context.Context, client *clients.KibanaScopedClient, ssl types.Object) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	if !typeutils.IsKnown(ssl) {
-		return nil
-	}
-
-	sslModel := typeutils.ObjectTypeAs[outputSslModel](ctx, ssl, path.Root("ssl"), &diags)
-	if diags.HasError() || sslModel == nil {
-		return diags
-	}
-
-	if !typeutils.IsKnown(sslModel.VerificationMode) {
-		return nil
-	}
-
-	if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionOutputSSLVerificationMode); versionDiags.HasError() {
-		diags.Append(versionDiags...)
-		return diags
-	} else if !supported {
-		diags.AddAttributeError(path.Root("ssl").AtName("verification_mode"),
-			"Unsupported version for ssl.verification_mode",
-			fmt.Sprintf("ssl.verification_mode requires server version %s or higher", MinVersionOutputSSLVerificationMode.String()))
-		return diags
-	}
-
-	return nil
-}
-
 // configYamlFromAPI normalizes the Fleet API representation of config_yaml
 // into the resource's NormalizedYamlValue state attribute. Fleet treats an
 // omitted config_yaml as "no change" on update and serializes an unset value
@@ -288,20 +287,4 @@ func configYamlFromAPI(value *string) customtypes.NormalizedYamlValue {
 		return customtypes.NewNormalizedYamlNull()
 	}
 	return customtypes.NewNormalizedYamlValue(*value)
-}
-
-func assertKafkaSupport(ctx context.Context, client *clients.KibanaScopedClient) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	// Check minimum version requirement for Kafka output type
-	if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionOutputKafka); versionDiags.HasError() {
-		diags.Append(versionDiags...)
-		return diags
-	} else if !supported {
-		diags.AddError("Unsupported version for Kafka output",
-			fmt.Sprintf("Kafka output type requires server version %s or higher", MinVersionOutputKafka.String()))
-		return diags
-	}
-
-	return nil
 }

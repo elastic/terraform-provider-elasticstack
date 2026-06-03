@@ -100,7 +100,7 @@ func sslToObjectValue(
 	verificationMode *kbapi.KibanaHTTPAPIsOutputSslVerificationMode,
 ) (types.Object, diag.Diagnostics) {
 	if certificate == nil && certificateAuthorities == nil && key == nil && verificationMode == nil {
-		return types.ObjectNull(getSslAttrTypes()), nil
+		return types.ObjectNull(getSslAttrTypes(ctx)), nil
 	}
 
 	var diags diag.Diagnostics
@@ -117,10 +117,10 @@ func sslToObjectValue(
 	}
 
 	if sslModel.CertificateAuthorities.IsNull() && sslModel.Certificate.IsNull() && sslModel.Key.IsNull() && sslModel.VerificationMode.IsNull() {
-		return types.ObjectNull(getSslAttrTypes()), nil
+		return types.ObjectNull(getSslAttrTypes(ctx)), nil
 	}
 
-	obj, diagTemp := types.ObjectValueFrom(ctx, getSslAttrTypes(), sslModel)
+	obj, diagTemp := types.ObjectValueFrom(ctx, getSslAttrTypes(ctx), sslModel)
 	diags.Append(diagTemp...)
 	return obj, diags
 }

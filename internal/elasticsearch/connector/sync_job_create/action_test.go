@@ -328,8 +328,9 @@ func TestTimeoutDiagnostic(t *testing.T) {
 
 func TestModel_GetVersionRequirements(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 
-	reqs, diags := Model{}.GetVersionRequirements()
+	reqs, diags := Model{}.GetVersionRequirements(ctx)
 	require.False(t, diags.HasError())
 	require.Len(t, reqs, 1)
 	assert.Equal(t, "8.16.0", reqs[0].MinVersion.String())

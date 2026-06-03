@@ -20,55 +20,27 @@ package serverhost
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *serverHostResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var stateModel serverHostModel
-
-	diags := req.State.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
+func readServerHost(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model serverHostModel) (serverHostModel, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 	fleetClient := client.GetFleetClient()
 
-	hostID := stateModel.HostID.ValueString()
-
-	// Read the existing spaces from state to determine where to query
-	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Query using the operational space from STATE
-	host, diags := fleet.GetFleetServerHost(ctx, fleetClient, hostID, spaceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	host, d := fleet.GetFleetServerHost(ctx, fleetClient, resourceID, spaceID)
+	diags.Append(d...)
+	if diags.HasError() {
+		return model, false, diags
 	}
 
 	if host == nil {
-		resp.State.RemoveResource(ctx)
-		return
+		return model, false, nil
 	}
 
-	diags = stateModel.populateFromAPI(ctx, host)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	d = model.populateFromAPI(ctx, host)
+	diags.Append(d...)
 
-	diags = resp.State.Set(ctx, stateModel)
-	resp.Diagnostics.Append(diags...)
+	return model, true, diags
 }

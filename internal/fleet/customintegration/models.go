@@ -18,11 +18,17 @@
 package customintegration
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	goversion "github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+var minVersionCustomPackageGet = goversion.Must(goversion.NewVersion("8.2.0"))
 
 type customIntegrationModel struct {
 	ID                        types.String   `tfsdk:"id"`
@@ -36,6 +42,50 @@ type customIntegrationModel struct {
 	SkipDestroy               types.Bool     `tfsdk:"skip_destroy"`
 	SpaceID                   types.String   `tfsdk:"space_id"`
 	Timeouts                  timeouts.Value `tfsdk:"timeouts"`
+}
+
+func (m customIntegrationModel) GetID() types.String {
+	// Return a composite ID so the envelope's resolveKibanaResourceIdentity
+	// does not misinterpret the raw package ID (name/version) as a space/resource
+	// pair. The format is "<space>/<package_id>".
+	rawID := m.ID.ValueString()
+	if rawID == "" {
+		return m.ID
+	}
+	spaceID := m.GetSpaceID().ValueString()
+	return types.StringValue(fmt.Sprintf("%s/%s", spaceID, rawID))
+}
+
+func (m customIntegrationModel) GetResourceID() types.String {
+	if !m.PackageName.IsNull() && !m.PackageName.IsUnknown() &&
+		!m.PackageVersion.IsNull() && !m.PackageVersion.IsUnknown() {
+		return types.StringValue(getPackageID(m.PackageName.ValueString(), m.PackageVersion.ValueString()))
+	}
+	return m.ID
+}
+
+func (m customIntegrationModel) GetSpaceID() types.String {
+	// Return "default" when space_id is unset so the envelope's
+	// validateSpaceID accepts the plan. Fleet APIs treat "" and "default"
+	// identically (BuildSpaceAwarePath), so callbacks remain backward-
+	// compatible when they use model.SpaceID.ValueString().
+	if m.SpaceID.IsNull() || m.SpaceID.IsUnknown() || m.SpaceID.ValueString() == "" {
+		return types.StringValue("default")
+	}
+	return m.SpaceID
+}
+
+func (m customIntegrationModel) GetKibanaConnection() types.List {
+	return m.KibanaConnection
+}
+
+var customIntegrationVersionReqs = []entitycore.VersionRequirement{{
+	MinVersion:   *minVersionCustomPackageGet,
+	ErrorMessage: "elasticstack_fleet_custom_integration requires Kibana 8.2.0 or later.",
+}}
+
+func (m customIntegrationModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return customIntegrationVersionReqs, nil
 }
 
 func getPackageID(name string, version string) string {

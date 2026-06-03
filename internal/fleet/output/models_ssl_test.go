@@ -40,14 +40,14 @@ func Test_objectValueToSSL(t *testing.T) {
 		{
 			name: "returns nil when object is unknown",
 			args: args{
-				obj: types.ObjectUnknown(getSslAttrTypes()),
+				obj: types.ObjectUnknown(getSslAttrTypes(context.Background())),
 			},
 		},
 		{
 			name: "returns an ssl object when populated without verification mode",
 			args: args{
 				obj: types.ObjectValueMust(
-					getSslAttrTypes(),
+					getSslAttrTypes(context.Background()),
 					map[string]attr.Value{
 						"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 						"certificate":             types.StringValue("cert"),
@@ -67,7 +67,7 @@ func Test_objectValueToSSL(t *testing.T) {
 			name: "returns verification mode when populated",
 			args: args{
 				obj: types.ObjectValueMust(
-					getSslAttrTypes(),
+					getSslAttrTypes(context.Background()),
 					map[string]attr.Value{
 						"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 						"certificate":             types.StringValue("cert"),
@@ -109,14 +109,14 @@ func Test_objectValueToSSLUpdate(t *testing.T) {
 		{
 			name: "returns nil when object is unknown",
 			args: args{
-				obj: types.ObjectUnknown(getSslAttrTypes()),
+				obj: types.ObjectUnknown(getSslAttrTypes(context.Background())),
 			},
 		},
 		{
 			name: "returns an ssl object when populated with verification mode",
 			args: args{
 				obj: types.ObjectValueMust(
-					getSslAttrTypes(),
+					getSslAttrTypes(context.Background()),
 					map[string]attr.Value{
 						"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 						"certificate":             types.StringValue("cert"),
@@ -166,7 +166,7 @@ func Test_sslToObjectValue(t *testing.T) {
 				key:                    nil,
 				verificationMode:       nil,
 			},
-			want: types.ObjectNull(getSslAttrTypes()),
+			want: types.ObjectNull(getSslAttrTypes(context.Background())),
 		},
 		{
 			name: "returns null object when ssl has all empty fields",
@@ -176,7 +176,7 @@ func Test_sslToObjectValue(t *testing.T) {
 				key:                    nil,
 				verificationMode:       nil,
 			},
-			want: types.ObjectNull(getSslAttrTypes()),
+			want: types.ObjectNull(getSslAttrTypes(context.Background())),
 		},
 		{
 			name: "returns null object when ssl has empty string pointers and empty slice",
@@ -186,7 +186,7 @@ func Test_sslToObjectValue(t *testing.T) {
 				key:                    new(""),
 				verificationMode:       nil,
 			},
-			want: types.ObjectNull(getSslAttrTypes()),
+			want: types.ObjectNull(getSslAttrTypes(context.Background())),
 		},
 		{
 			name: "returns an object when populated with nil verification mode",
@@ -197,7 +197,7 @@ func Test_sslToObjectValue(t *testing.T) {
 				verificationMode:       nil,
 			},
 			want: types.ObjectValueMust(
-				getSslAttrTypes(),
+				getSslAttrTypes(context.Background()),
 				map[string]attr.Value{
 					"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 					"certificate":             types.StringValue("cert"),
@@ -215,7 +215,7 @@ func Test_sslToObjectValue(t *testing.T) {
 				verificationMode:       new(kbapi.KibanaHTTPAPIsOutputSslVerificationModeNone),
 			},
 			want: types.ObjectValueMust(
-				getSslAttrTypes(),
+				getSslAttrTypes(context.Background()),
 				map[string]attr.Value{
 					"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 					"certificate":             types.StringValue("cert"),
@@ -233,7 +233,7 @@ func Test_sslToObjectValue(t *testing.T) {
 				verificationMode:       new(kbapi.KibanaHTTPAPIsOutputSslVerificationModeNone),
 			},
 			want: types.ObjectValueMust(
-				getSslAttrTypes(),
+				getSslAttrTypes(context.Background()),
 				map[string]attr.Value{
 					"certificate_authorities": types.ListNull(types.StringType),
 					"certificate":             types.StringNull(),
