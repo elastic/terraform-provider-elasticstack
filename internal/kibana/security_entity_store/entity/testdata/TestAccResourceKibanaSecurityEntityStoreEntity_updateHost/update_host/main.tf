@@ -7,6 +7,7 @@ resource "elasticstack_kibana_security_entity_store_entity" "test" {
 
   entity_type = "generic"
   entity_id   = "generic:acc-test-entity"
+  force       = true
 
   entity = {
     id     = "generic:acc-test-entity"
