@@ -26,6 +26,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -33,6 +35,12 @@ import (
 )
 
 const testResourceName = "elasticstack_elasticsearch_ml_trained_model_deployment.test"
+
+var minAdaptiveAllocationsVersion = version.Must(version.NewVersion("8.16.0"))
+
+func skipAdaptiveAllocationsIfUnsupported() func() (bool, error) {
+	return versionutils.CheckIfVersionIsUnsupported(minAdaptiveAllocationsVersion)
+}
 
 // preCheckMLTrainedModelDeployment ensures a deployable PyTorch model exists in
 // the test cluster and that ML nodes have enough capacity to deploy it. The
@@ -111,6 +119,7 @@ func TestAccResourceMLTrainedModelDeployment_basic(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"model_id": config.StringVariable(modelID),
 				},
+				SkipFunc: skipAdaptiveAllocationsIfUnsupported(),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(testResourceName, "model_id", modelID),
 					resource.TestCheckResourceAttr(testResourceName, "adaptive_allocations.enabled", "true"),
@@ -122,6 +131,7 @@ func TestAccResourceMLTrainedModelDeployment_basic(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"model_id": config.StringVariable(modelID),
 				},
+				SkipFunc:           skipAdaptiveAllocationsIfUnsupported(),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
 			},
