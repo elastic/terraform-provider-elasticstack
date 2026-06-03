@@ -7,10 +7,11 @@ successful `terraform apply`, Terraform raises:
 > Provider produced inconsistent result after apply: .space_ids: was
 > cty.SetVal([]cty.Value{cty.StringVal("example_id")}), but now null.
 
-The root cause is in `populateFromAPI` (`internal/fleet/agentpolicy/models.go`). The
-generated kbapi struct tags `SpaceIds` with `omitempty`, so the Fleet GET response body
-always omits the field. The current code interprets the absent field as "space_ids is null"
-and overwrites the model with `types.SetNull`, contradicting the planned value and
+The root cause is in `populateFromAPI` (`internal/fleet/agentpolicy/models.go`). The Fleet API may omit
+`space_ids` from its response body; when the field is absent, `kbapi.AgentPolicy.SpaceIds` is
+unmarshaled as `nil`. The current code interprets the absent field as "space_ids is null"
+and overwrites the model with `types.SetNull`, contradicting the planned value and triggering
+the consistency error.
 triggering the consistency error.
 
 The existing comment at `create.go:76` already acknowledges that "space_ids can be null in

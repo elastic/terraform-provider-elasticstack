@@ -8,8 +8,7 @@ Delta spec for capability `elasticstack-fleet-agent-policy`
 The `space_ids` attribute of `elasticstack_fleet_agent_policy` MUST retain its
 configured, non-null value in state after every successful `terraform apply` — including the
 initial Create and any subsequent Update — even when the Fleet API response body omits
-`space_ids` (because the kbapi struct field is tagged `json:"space_ids,omitempty"` and the
-API does not echo it back).
+`space_ids` (i.e., the field is absent and `kbapi.AgentPolicy.SpaceIds` is unmarshaled as `nil`).
 
 The `populateFromAPI` function MUST NOT overwrite a non-null, non-unknown `SpaceIDs` model
 value with `types.SetNull` when the API returns `nil` for `SpaceIds`.
@@ -46,7 +45,7 @@ The fix MUST apply to all callers of `populateFromAPI`: Create, Read, and Update
 #### Scenario: API omits space_ids and model value is null — remains null
 
 - GIVEN an `elasticstack_fleet_agent_policy` resource configured WITHOUT `space_ids`
-  (i.e., `space_ids` is null in the plan)
+  (i.e., `space_ids` is unknown in the plan because the attribute is Optional+Computed)
 - WHEN `populateFromAPI` is called and the API returns `nil` for `SpaceIds`
 - THEN the model `SpaceIDs` MUST be set to `types.SetNull` (unchanged behaviour)
 - AND no inconsistency error MUST occur

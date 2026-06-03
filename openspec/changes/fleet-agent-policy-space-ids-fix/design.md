@@ -1,10 +1,9 @@
 ## Context
 
 `elasticstack_fleet_agent_policy` exposes a `space_ids` attribute backed by the Kibana
-Fleet `AgentPolicy.SpaceIds *[]string` field. The generated kbapi struct tags this field
-`json:"space_ids,omitempty"`, meaning the Fleet API response body omits it when the value
-is the default (the default-space policy, or in many Fleet versions, always). The provider
-code at `internal/fleet/agentpolicy/models.go:211–219` currently treats the omitted field
+Fleet `AgentPolicy.SpaceIds *[]string` field. The Fleet API may omit `space_ids` from its
+response body; when the field is absent, `kbapi.AgentPolicy.SpaceIds` is unmarshaled as
+`nil`. The provider code at `internal/fleet/agentpolicy/models.go:211–219` currently treats the omitted field
 as "space_ids is null" and writes `types.SetNull` into the model, overwriting the planned
 value and producing:
 
@@ -78,8 +77,7 @@ stack. Alternatively, update an existing unit test if one exercises `populateFro
 
 | Risk | Mitigation |
 |---|---|
-| **API silently ignores an invalid space ID** | The API returns 200 with omitted space_ids; the provider retains the user's value. The user may not realise the space was ignored. A validator is a follow-on. |
-| **Fleet GET behaviour varies by version** | The omitempty is in the generated struct; field omission is consistent across Fleet versions ≥ 9.1. |
+| **Fleet GET behaviour varies by version** | The API may include or omit `space_ids` depending on version/context; the provider mapping must tolerate both (omitted field → preserve prior configured state when set). |
 
 ## Open Questions
 
