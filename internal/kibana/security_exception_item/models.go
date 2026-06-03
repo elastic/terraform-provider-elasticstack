@@ -778,9 +778,7 @@ func (m *ExceptionItemModel) setCommonProps(
 		if diags.HasError() {
 			return
 		}
-		if len(osTypes) > 0 {
-			*props.OsTypes = osTypes
-		}
+		*props.OsTypes = osTypes
 	}
 
 	// Set optional tags
@@ -789,9 +787,7 @@ func (m *ExceptionItemModel) setCommonProps(
 		if diags.HasError() {
 			return
 		}
-		if len(tags) > 0 {
-			*props.Tags = tags
-		}
+		*props.Tags = tags
 	}
 
 	// Set optional meta
@@ -875,10 +871,10 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 	if typeutils.IsKnown(m.NamespaceType) {
 		genericReq.NamespaceType = &nsType
 	}
-	if typeutils.IsKnown(m.OsTypes) && len(osTypes) > 0 {
+	if typeutils.IsKnown(m.OsTypes) {
 		genericReq.OsTypes = &osTypes
 	}
-	if typeutils.IsKnown(m.Tags) && len(tags) > 0 {
+	if typeutils.IsKnown(m.Tags) {
 		genericReq.Tags = &tags
 	}
 	if typeutils.IsKnown(m.Meta) {
@@ -952,10 +948,10 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceID str
 	if typeutils.IsKnown(m.NamespaceType) {
 		genericReq.NamespaceType = &nsType
 	}
-	if typeutils.IsKnown(m.OsTypes) && len(osTypes) > 0 {
+	if typeutils.IsKnown(m.OsTypes) {
 		genericReq.OsTypes = &osTypes
 	}
-	if typeutils.IsKnown(m.Tags) && len(tags) > 0 {
+	if typeutils.IsKnown(m.Tags) {
 		genericReq.Tags = &tags
 	}
 	if typeutils.IsKnown(m.Meta) {
