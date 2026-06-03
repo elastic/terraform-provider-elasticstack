@@ -19,89 +19,171 @@ package acctest
 
 import (
 	"context"
-	"strings"
-	"testing"
-	"time"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strconv"
+	"sync"
 
+	"golang.org/x/sync/errgroup"
+	"testing"
+
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/puttrainedmodel"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/puttrainedmodeldefinitionpart"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/puttrainedmodelvocabulary"
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/trainedmodeltype"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-// DefaultPyTorchModelID is a built-in PyTorch model available in 9.x stacks.
-const DefaultPyTorchModelID = ".elser_model_2"
+// FixturePyTorchModelID is the stable model ID for the fixture PyTorch model.
+const FixturePyTorchModelID = "terraform-acc-test-pytorch-fixture"
 
-// EnsurePyTorchModelDeployment ensures the given PyTorch model can be deployed
-// and starts a transient deployment to verify cluster capacity.
-// It returns the model ID. If the model is not available or cannot be deployed
-// the test is skipped.
-// This helper does NOT leave a deployment running; it cleans up immediately.
-func EnsurePyTorchModelDeployment(t *testing.T, modelID string) string {
+// fixtureEnsureOnce ensures the fixture is created at most once per test run.
+var fixtureEnsureOnce sync.Once
+var fixtureEnsureErr error
+
+// EnsureFixturePyTorchModel creates a TorchScript model fixture using only raw
+// Elasticsearch ML APIs (no Eland, no Python).
+// It returns the model ID. On capacity failure it calls t.Skip.
+func EnsureFixturePyTorchModel(t *testing.T) string {
+	t.Helper()
+	fixtureEnsureOnce.Do(func() {
+		fixtureEnsureErr = ensureFixturePyTorchModel(t)
+	})
+	if fixtureEnsureErr != nil {
+		t.Fatal(fixtureEnsureErr)
+	}
+	return FixturePyTorchModelID
+}
+
+func ensureFixturePyTorchModel(t *testing.T) error {
 	t.Helper()
 
 	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
-		t.Fatalf("failed to create elasticsearch client: %v", err)
+		return fmt.Errorf("failed to create elasticsearch client: %w", err)
 	}
-
 	es := client.GetESClient()
 	ctx := context.Background()
 
-	// Verify the model exists and is fully defined.
-	modelRes, err := es.Ml.GetTrainedModels().ModelId(modelID).Do(ctx)
+	// Check if the model already exists from a previous run.
+	_, found, _ := esclient.GetTrainedModel(ctx, client, FixturePyTorchModelID)
+	if found {
+		return nil
+	}
+
+	fixtureDir := testDataFixtureDir()
+
+	configData, err := os.ReadFile(filepath.Join(fixtureDir, "model_config.json"))
 	if err != nil {
-		t.Skipf("skipping test: model %q is not available: %v", modelID, err)
+		return fmt.Errorf("reading model_config.json: %w", err)
 	}
-	if len(modelRes.TrainedModelConfigs) == 0 {
-		t.Skipf("skipping test: model %q not found", modelID)
+	var cfg struct {
+		Description     string          `json:"description"`
+		Input           json.RawMessage `json:"input"`
+		InferenceConfig json.RawMessage `json:"inference_config"`
 	}
-	modelType := modelRes.TrainedModelConfigs[0].ModelType
-	if modelType == nil || *modelType != trainedmodeltype.Pytorch {
-		t.Skipf("skipping test: model %q is not a PyTorch model", modelID)
+	if err := json.Unmarshal(configData, &cfg); err != nil {
+		return fmt.Errorf("parsing model_config.json: %w", err)
+	}
+	desc := cfg.Description
+	input := &estypes.Input{}
+	if err := json.Unmarshal(cfg.Input, input); err != nil {
+		return fmt.Errorf("parsing input: %w", err)
+	}
+	inferenceConfig := &estypes.InferenceConfigCreateContainer{}
+	if err := json.Unmarshal(cfg.InferenceConfig, inferenceConfig); err != nil {
+		return fmt.Errorf("parsing inference_config: %w", err)
+	}
+	modelType := trainedmodeltype.Pytorch
+
+	putReq := &puttrainedmodel.Request{
+		Description:     &desc,
+		ModelType:       &modelType,
+		Input:           input,
+		InferenceConfig: inferenceConfig,
 	}
 
-	// Stop any stale deployment from a previous interrupted test.
-	_, _ = es.Ml.StopTrainedModelDeployment(modelID).Do(ctx)
-	// Allow the stop to take effect.
-	time.Sleep(2 * time.Second)
+	_, err = es.Ml.PutTrainedModel(FixturePyTorchModelID).Request(putReq).Do(ctx)
+	if err != nil {
+		return fmt.Errorf("creating model config for %q: %w", FixturePyTorchModelID, err)
+	}
 
-	// Attempt a transient start to verify capacity.
-	_, startErr := es.Ml.StartTrainedModelDeployment(modelID).
-		Timeout("30s").
+	ptData, err := os.ReadFile(filepath.Join(fixtureDir, "traced_pytorch_model.pt"))
+	if err != nil {
+		return fmt.Errorf("reading traced_pytorch_model.pt: %w", err)
+	}
+
+	const chunkSize = 1024 * 1024
+	totalParts := (len(ptData) + chunkSize - 1) / chunkSize
+	group, groupCtx := errgroup.WithContext(ctx)
+	group.SetLimit(4)
+	for i := 0; i < totalParts; i++ {
+		i := i
+		start := i * chunkSize
+		end := start + chunkSize
+		if end > len(ptData) {
+			end = len(ptData)
+		}
+		definition := base64.StdEncoding.EncodeToString(ptData[start:end])
+		group.Go(func() error {
+			_, err := es.Ml.PutTrainedModelDefinitionPart(FixturePyTorchModelID, strconv.Itoa(i)).
+				Request(&puttrainedmodeldefinitionpart.Request{
+					Definition:            definition,
+					TotalDefinitionLength: int64(len(ptData)),
+					TotalParts:            totalParts,
+				}).
+				Do(groupCtx)
+			if err != nil {
+				return fmt.Errorf("uploading definition part %d: %w", i, err)
+			}
+			return nil
+		})
+	}
+	if err := group.Wait(); err != nil {
+		return err
+	}
+
+	vocabData, err := os.ReadFile(filepath.Join(fixtureDir, "vocabulary.json"))
+	if err != nil {
+		return fmt.Errorf("reading vocabulary.json: %w", err)
+	}
+	var vocabReq struct {
+		Vocabulary []string `json:"vocabulary"`
+	}
+	if err := json.Unmarshal(vocabData, &vocabReq); err != nil {
+		return fmt.Errorf("parsing vocabulary.json: %w", err)
+	}
+	_, err = es.Ml.PutTrainedModelVocabulary(FixturePyTorchModelID).
+		Request(&puttrainedmodelvocabulary.Request{
+			Vocabulary: vocabReq.Vocabulary,
+		}).
 		Do(ctx)
-	if startErr != nil {
-		errStr := strings.ToLower(startErr.Error())
-		if strings.Contains(errStr, "already exist") {
-			// Deployment was not stopped in time; still means it's deployable.
-			_, _ = es.Ml.StopTrainedModelDeployment(modelID).Do(ctx)
-			return modelID
-		}
-		if strings.Contains(errStr, "429") ||
-			strings.Contains(errStr, "too_many_requests") ||
-			strings.Contains(errStr, "no ml nodes") ||
-			strings.Contains(errStr, "insufficient memory") ||
-			strings.Contains(errStr, "insufficient capacity") ||
-			strings.Contains(errStr, "status_exception") {
-			t.Skipf("skipping test: ML cluster cannot deploy model %q: %v", modelID, startErr)
-		}
-		t.Fatalf("failed to start deployment for model %q: %v", modelID, startErr)
+	if err != nil {
+		return fmt.Errorf("uploading vocabulary: %w", err)
 	}
 
-	// Immediately stop the transient deployment so the real Terraform test
-	// can manage the deployment lifecycle.
-	_, stopErr := es.Ml.StopTrainedModelDeployment(modelID).Do(ctx)
-	if stopErr != nil {
-		tflog.Warn(ctx, "failed to stop transient PyTorch model deployment", map[string]any{
-			"model_id": modelID,
-			"error":    stopErr.Error(),
-		})
-	} else {
-		tflog.Info(ctx, "stopped transient PyTorch model deployment", map[string]any{
-			"model_id": modelID,
-		})
-	}
-	// Wait briefly for the stop to fully take effect.
-	time.Sleep(2 * time.Second)
+	t.Cleanup(func() {
+		_, stopErr := es.Ml.StopTrainedModelDeployment(FixturePyTorchModelID).Force(true).Do(ctx)
+		if stopErr != nil {
+			tflog.Warn(ctx, "failed to stop fixture model deployment during cleanup", map[string]any{
+				"model_id": FixturePyTorchModelID,
+				"error":    stopErr.Error(),
+			})
+		}
+	})
 
-	return modelID
+	return nil
+}
+
+// testDataFixtureDir resolves the path to the model fixture directory.
+func testDataFixtureDir() string {
+	_, srcFile, _, _ := runtime.Caller(0)
+	return filepath.Join(filepath.Dir(srcFile), "testdata", "model-fixture")
 }

@@ -36,12 +36,13 @@ const testResourceName = "elasticstack_elasticsearch_ml_trained_model_deployment
 
 // preCheckMLTrainedModelDeployment ensures a deployable PyTorch model exists in
 // the test cluster and that ML nodes have enough capacity to deploy it. The
-// tree_ensemble model that EnsureTrainedModel creates cannot be deployed; we
-// use the built-in .elser_model_2 PyTorch model instead.
+// tree_ensemble model that EnsureTrainedModel creates cannot be deployed;
+// instead we upload a tiny TorchScript model using raw ES APIs via
+// EnsureFixturePyTorchModel.
 func preCheckMLTrainedModelDeployment(t *testing.T) string {
 	t.Helper()
 	acctest.PreCheck(t)
-	return acctest.EnsurePyTorchModelDeployment(t, acctest.DefaultPyTorchModelID)
+	return acctest.EnsureFixturePyTorchModel(t)
 }
 
 func testAccCheckMLTrainedModelDeploymentDestroy(s *terraform.State) error {
@@ -136,6 +137,8 @@ func TestAccResourceMLTrainedModelDeployment_basic(t *testing.T) {
 				ImportStateVerifyIgnore: []string{
 					"force_stop",
 					"wait_for",
+					"state",
+					"allocation_status",
 					"adaptive_allocations",
 					"number_of_allocations",
 					"threads_per_allocation",

@@ -1,1 +1,2 @@
 .github/workflows/*.lock.yml linguist-generated=true merge=ours
+internal/acctest/testdata/model-fixture/*.pt filter=lfs diff=lfs merge=lfs -text
