@@ -51,6 +51,19 @@ func TestAccDataSourceMLTrainedModel_basic(t *testing.T) {
 						regexp.MustCompile(`^[A-Za-z0-9_-]{22}/`+regexp.QuoteMeta(modelID)+`$`)),
 					resource.TestCheckResourceAttr(dataSourceAddress, "model_type", "tree_ensemble"),
 					resource.TestCheckResourceAttr(dataSourceAddress, "description", "Terraform acceptance test trained model"),
+					// Computed size/timestamps/author attributes
+					resource.TestCheckResourceAttrSet(dataSourceAddress, "model_size_bytes"),
+					resource.TestCheckResourceAttrSet(dataSourceAddress, "create_time"),
+					resource.TestCheckResourceAttrSet(dataSourceAddress, "created_by"),
+					resource.TestCheckResourceAttrSet(dataSourceAddress, "version"),
+					resource.TestCheckResourceAttrSet(dataSourceAddress, "license_level"),
+					// The test model has no tags
+					resource.TestCheckResourceAttr(dataSourceAddress, "tags.#", "0"),
+					// The test model's input field list contains "foo"
+					resource.TestMatchResourceAttr(dataSourceAddress, "input_json",
+						regexp.MustCompile(`"field_names".*"foo"`)),
+					// Inference config is present (regression model)
+					resource.TestCheckResourceAttrSet(dataSourceAddress, "inference_config_json"),
 				),
 			},
 		},
