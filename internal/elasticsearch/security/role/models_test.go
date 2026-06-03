@@ -37,6 +37,7 @@ func TestData_satisfiesElasticsearchResourceModelContract(t *testing.T) {
 
 func TestModel_GetVersionRequirements(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 
 	remoteIndicesSet := func(t *testing.T, count int) types.Set {
 		t.Helper()
@@ -68,7 +69,7 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 			Description:   types.StringNull(),
 			RemoteIndices: types.SetNull(types.ObjectType{AttrTypes: getRemoteIndexPermsAttrTypes()}),
 		}
-		reqs, diags := data.GetVersionRequirements()
+		reqs, diags := data.GetVersionRequirements(ctx)
 		require.False(t, diags.HasError())
 		require.Empty(t, reqs)
 	})
@@ -78,7 +79,7 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 		data := Data{
 			Description: types.StringValue(""),
 		}
-		reqs, diags := data.GetVersionRequirements()
+		reqs, diags := data.GetVersionRequirements(ctx)
 		require.False(t, diags.HasError())
 		require.Len(t, reqs, 1)
 		require.True(t, reqs[0].MinVersion.Equal(MinSupportedDescriptionVersion))
@@ -92,7 +93,7 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 			Description:   types.StringValue("role description"),
 			RemoteIndices: remoteIndicesSet(t, 0),
 		}
-		reqs, diags := data.GetVersionRequirements()
+		reqs, diags := data.GetVersionRequirements(ctx)
 		require.False(t, diags.HasError())
 		require.Len(t, reqs, 1)
 		require.True(t, reqs[0].MinVersion.Equal(MinSupportedDescriptionVersion))
@@ -105,7 +106,7 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 			Description:   types.StringNull(),
 			RemoteIndices: remoteIndicesSet(t, 0),
 		}
-		reqs, diags := data.GetVersionRequirements()
+		reqs, diags := data.GetVersionRequirements(ctx)
 		require.False(t, diags.HasError())
 		require.Empty(t, reqs)
 	})
@@ -116,7 +117,7 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 			Description:   types.StringNull(),
 			RemoteIndices: remoteIndicesSet(t, 1),
 		}
-		reqs, diags := data.GetVersionRequirements()
+		reqs, diags := data.GetVersionRequirements(ctx)
 		require.False(t, diags.HasError())
 		require.Len(t, reqs, 1)
 		require.True(t, reqs[0].MinVersion.Equal(MinSupportedRemoteIndicesVersion))
@@ -129,7 +130,7 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 			Description:   types.StringValue("role description"),
 			RemoteIndices: remoteIndicesSet(t, 1),
 		}
-		reqs, diags := data.GetVersionRequirements()
+		reqs, diags := data.GetVersionRequirements(ctx)
 		require.False(t, diags.HasError())
 		require.Len(t, reqs, 2)
 		require.True(t, reqs[0].MinVersion.Equal(MinSupportedDescriptionVersion))

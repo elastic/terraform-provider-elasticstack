@@ -31,25 +31,35 @@ import (
 )
 
 var (
+	MinVersionOutputKafka               = version.Must(version.NewVersion("8.13.0"))
+	MinVersionOutputSSLVerificationMode = version.Must(version.NewVersion("8.10.0"))
+)
+
+var (
 	_ resource.Resource                 = newOutputResource()
 	_ resource.ResourceWithConfigure    = newOutputResource()
 	_ resource.ResourceWithImportState  = newOutputResource()
 	_ resource.ResourceWithUpgradeState = newOutputResource()
 )
 
-var (
-	MinVersionOutputKafka               = version.Must(version.NewVersion("8.13.0"))
-	MinVersionOutputSSLVerificationMode = version.Must(version.NewVersion("8.10.0"))
-)
-
 type outputResource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[outputModel]
 	*fleet.SpaceImporter
 }
 
 func newOutputResource() *outputResource {
 	return &outputResource{
-		ResourceBase:  entitycore.NewResourceBase(entitycore.ComponentFleet, "output"),
+		KibanaResource: entitycore.NewKibanaResource[outputModel](
+			entitycore.ComponentFleet,
+			"output",
+			entitycore.KibanaResourceOptions[outputModel]{
+				Schema: getSchema,
+				Read:   readOutput,
+				Delete: deleteOutput,
+				Create: createOutput,
+				Update: updateOutput,
+			},
+		),
 		SpaceImporter: fleet.NewSpaceImporter(path.Root("output_id")),
 	}
 }

@@ -33,12 +33,22 @@ var (
 )
 
 type ExceptionItemResource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[ExceptionItemModel]
 }
 
 func newExceptionItemResource() *ExceptionItemResource {
 	return &ExceptionItemResource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "security_exception_item"),
+		KibanaResource: entitycore.NewKibanaResource[ExceptionItemModel](
+			entitycore.ComponentKibana,
+			"security_exception_item",
+			entitycore.KibanaResourceOptions[ExceptionItemModel]{
+				Schema: getSchema,
+				Read:   readExceptionItem,
+				Delete: deleteExceptionItem,
+				Create: createExceptionItem,
+				Update: updateExceptionItem,
+			},
+		),
 	}
 }
 

@@ -40,12 +40,22 @@ var (
 var resourceDescription string
 
 type Resource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[alertingRuleModel]
 }
 
 func newResource() *Resource {
 	return &Resource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "alerting_rule"),
+		KibanaResource: entitycore.NewKibanaResource[alertingRuleModel](
+			entitycore.ComponentKibana,
+			"alerting_rule",
+			entitycore.KibanaResourceOptions[alertingRuleModel]{
+				Schema: getSchema,
+				Read:   readAlertingRule,
+				Delete: deleteAlertingRule,
+				Create: createAlertingRule,
+				Update: updateAlertingRule,
+			},
+		),
 	}
 }
 

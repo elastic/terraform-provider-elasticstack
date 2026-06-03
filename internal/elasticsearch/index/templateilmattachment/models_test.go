@@ -18,6 +18,7 @@
 package templateilmattachment
 
 import (
+	"context"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -32,7 +33,7 @@ func TestTfModel_GetVersionRequirements(t *testing.T) {
 	var _ entitycore.WithVersionRequirements = tfModel{}
 
 	m := tfModel{}
-	reqs, diags := m.GetVersionRequirements()
+	reqs, diags := m.GetVersionRequirements(context.Background())
 	assert.False(t, diags.HasError())
 	assert.Len(t, reqs, 1)
 	assert.True(t, reqs[0].MinVersion.Equal(MinVersion), "expected min version %s, got %s", MinVersion.String(), reqs[0].MinVersion.String())

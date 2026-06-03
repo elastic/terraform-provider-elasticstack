@@ -23,7 +23,7 @@ import (
 	"sync"
 
 	kibanavalidators "github.com/elastic/terraform-provider-elasticstack/internal/kibana/validators"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
@@ -45,10 +45,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-func (r *securityDetectionRuleResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = GetSchema()
-}
 
 func GetSchema() schema.Schema {
 	return schema.Schema{
@@ -932,10 +928,7 @@ func GetSchema() schema.Schema {
 				},
 			},
 		},
-
-		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
-		}}
+	}
 }
 
 var (

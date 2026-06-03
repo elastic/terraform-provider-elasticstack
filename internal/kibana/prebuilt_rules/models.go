@@ -18,6 +18,7 @@
 package prebuiltrules
 
 import (
+	"context"
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
@@ -46,7 +47,7 @@ var _ entitycore.KibanaResourceModel = prebuiltRuleModel{}
 
 var minSupportedVersion = version.Must(version.NewVersion("8.0.0"))
 
-func (m prebuiltRuleModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m prebuiltRuleModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *minSupportedVersion,

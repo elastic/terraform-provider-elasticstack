@@ -20,53 +20,34 @@ package output
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *outputResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var planModel outputModel
-
-	diags := req.Plan.Get(ctx, &planModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func createOutput(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[outputModel]) (entitycore.KibanaWriteResult[outputModel], diag.Diagnostics) {
+	var diags diag.Diagnostics
+	planModel := req.Plan
 
 	fleetClient := client.GetFleetClient()
 
-	body, diags := planModel.toAPICreateModel(ctx, client)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	body, d := planModel.toAPICreateModel(ctx)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[outputModel]{}, diags
 	}
 
-	// If space_ids is set, use space-aware CREATE request
-	spaceID, diags := fleetutils.SpaceIDFromSet(ctx, planModel.SpaceIDs)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	output, d := fleet.CreateOutput(ctx, fleetClient, req.SpaceID, body)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[outputModel]{}, diags
 	}
 
-	output, diags := fleet.CreateOutput(ctx, fleetClient, spaceID, body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(planModel.populateFromAPI(ctx, output)...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[outputModel]{}, diags
 	}
 
-	diags = planModel.populateFromAPI(ctx, output)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = resp.State.Set(ctx, planModel)
-	resp.Diagnostics.Append(diags...)
+	return entitycore.KibanaWriteResult[outputModel]{Model: planModel}, diags
 }

@@ -89,8 +89,7 @@ func NormalizeAliasFilterFromAny(v any) (jsontypes.Normalized, diag.Diagnostics)
 
 // AliasAttrsFromModel builds the shared attribute map for a single alias from its models.IndexAlias
 // representation. The returned map contains name, index_routing, routing, search_routing, is_hidden,
-// is_write_index, and filter. Callers may override individual entries (e.g. routing for the
-// componenttemplate preservedRouting fallback) before constructing the final ObjectValue.
+// is_write_index, and filter. Callers may override individual entries before constructing the final ObjectValue.
 func AliasAttrsFromModel(name string, a models.IndexAlias) (map[string]attr.Value, diag.Diagnostics) {
 	attrs := map[string]attr.Value{
 		"name":           types.StringValue(name),
@@ -106,6 +105,23 @@ func AliasAttrsFromModel(name string, a models.IndexAlias) (map[string]attr.Valu
 	}
 	attrs["filter"] = filter
 	return attrs, nil
+}
+
+// AliasAttrsFromModelWithRouting is like AliasAttrsFromModel but also applies routing preservation:
+// when the API omits the routing field (empty string) and preservedRouting contains a user-configured
+// value for this alias name, that value is restored in the returned attribute map. This handles the
+// Elasticsearch round-trip behavior where user-configured routing is not echoed back by the GET response.
+func AliasAttrsFromModelWithRouting(name string, a models.IndexAlias, preservedRouting map[string]string) (map[string]attr.Value, diag.Diagnostics) {
+	attrs, diags := AliasAttrsFromModel(name, a)
+	if diags.HasError() {
+		return nil, diags
+	}
+	if a.Routing == "" {
+		if pr, ok := preservedRouting[name]; ok {
+			attrs["routing"] = types.StringValue(pr)
+		}
+	}
+	return attrs, diags
 }
 
 // NewAliasModelFromAPI constructs an AliasModel from an API Alias response.

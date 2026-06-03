@@ -18,6 +18,7 @@
 package securityenablerule
 
 import (
+	"context"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -32,7 +33,7 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 	t.Run("empty model", func(t *testing.T) {
 		t.Parallel()
 		var m enableRuleModel
-		reqs, diags := m.GetVersionRequirements()
+		reqs, diags := m.GetVersionRequirements(context.Background())
 		require.False(t, diags.HasError())
 		require.Len(t, reqs, 1)
 		require.Equal(t, *minSupportedVersion, reqs[0].MinVersion)
@@ -49,7 +50,7 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 			DisableOnDestroy: types.BoolValue(true),
 			AllRulesEnabled:  types.BoolValue(true),
 		}
-		reqs, diags := m.GetVersionRequirements()
+		reqs, diags := m.GetVersionRequirements(context.Background())
 		require.False(t, diags.HasError())
 		require.Len(t, reqs, 1)
 		require.Equal(t, *minSupportedVersion, reqs[0].MinVersion)

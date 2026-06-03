@@ -9,8 +9,8 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": [
-        "^generated/kbapi/Makefile$"
+      "managerFilePatterns": [
+        "/^generated/kbapi/Makefile$/"
       ],
       "matchStrings": [
         "github_ref \\?= (?<currentDigest>.*?)\\n"
@@ -22,8 +22,8 @@
     },
     {
       "customType": "regex",
-      "fileMatch": [
-        "^\\.custom-gcl\\.yml$"
+      "managerFilePatterns": [
+        "/^\\.custom-gcl\\.yml$/"
       ],
       "matchStrings": [
         "^version: (?<currentValue>v?\\d+\\.\\d+\\.\\d+)$"

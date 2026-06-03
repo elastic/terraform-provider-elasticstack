@@ -18,6 +18,7 @@
 package spaces
 
 import (
+	"context"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -64,7 +65,7 @@ var spaceSolutionMinVersion = version.Must(version.NewVersion("8.16.0"))
 
 const spaceSolutionVersionErrorMessage = "solution field is not supported in this version of the Elastic Stack. Solution field requires 8.16.0 or higher"
 
-func (m resourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m resourceModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	if m.Solution.IsNull() || m.Solution.IsUnknown() || m.Solution.ValueString() == "" {
 		return nil, nil
 	}

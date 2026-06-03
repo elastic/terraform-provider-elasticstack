@@ -19,9 +19,11 @@ package securitydetectionrule
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/google/uuid"
@@ -356,7 +358,6 @@ func (d Data) applyCommonRuleProps(
 	ctx context.Context,
 	props *CommonRuleProps,
 	diags *diag.Diagnostics,
-	client clients.MinVersionEnforceable,
 	forCreate bool,
 ) {
 	if forCreate && props.RuleID != nil && typeutils.IsKnown(d.RuleID) {
@@ -445,7 +446,7 @@ func (d Data) applyCommonRuleProps(
 	}
 
 	if props.Actions != nil && typeutils.IsKnown(d.Actions) {
-		actions, actionDiags := d.actionsToAPI(ctx, client)
+		actions, actionDiags := d.actionsToAPI(ctx)
 		diags.Append(actionDiags...)
 		if !actionDiags.HasError() && len(actions) > 0 {
 			*props.Actions = &actions
@@ -531,7 +532,7 @@ func (d Data) applyCommonRuleProps(
 	}
 
 	if props.ResponseActions != nil && typeutils.IsKnown(d.ResponseActions) {
-		responseActions, responseActionsDiags := d.responseActionsToAPI(ctx, client)
+		responseActions, responseActionsDiags := d.responseActionsToAPI(ctx)
 		diags.Append(responseActionsDiags...)
 		if !responseActionsDiags.HasError() && len(responseActions) > 0 {
 			*props.ResponseActions = &responseActions
@@ -576,21 +577,64 @@ func (d Data) setCommonCreateProps(
 	ctx context.Context,
 	props *CommonCreateProps,
 	diags *diag.Diagnostics,
-	client clients.MinVersionEnforceable,
 ) {
-	d.applyCommonRuleProps(ctx, props, diags, client, true)
+	d.applyCommonRuleProps(ctx, props, diags, true)
 }
 
 func (d Data) setCommonUpdateProps(
 	ctx context.Context,
 	props *CommonUpdateProps,
 	diags *diag.Diagnostics,
-	client clients.MinVersionEnforceable,
 ) {
-	d.applyCommonRuleProps(ctx, props, diags, client, false)
+	d.applyCommonRuleProps(ctx, props, diags, false)
 }
 
 // Helper function to initialize fields that should be set to default values for all rule types
+func (d Data) GetID() types.String { return d.ID }
+func (d Data) GetResourceID() types.String {
+	if compID, _ := clients.CompositeIDFromStr(d.ID.ValueString()); compID != nil {
+		return types.StringValue(compID.ResourceID)
+	}
+	return d.RuleID
+}
+func (d Data) GetSpaceID() types.String        { return d.SpaceID }
+func (d Data) GetKibanaConnection() types.List { return d.KibanaConnection }
+
+var _ entitycore.KibanaResourceModel = Data{}
+
+func (d Data) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var reqs []entitycore.VersionRequirement
+
+	if typeutils.IsKnown(d.ResponseActions) && len(d.ResponseActions.Elements()) > 0 {
+		reqs = append(reqs, entitycore.VersionRequirement{
+			MinVersion:   *MinVersionResponseActions,
+			ErrorMessage: fmt.Sprintf("Response actions require server version %s or higher", MinVersionResponseActions.String()),
+		})
+	}
+
+	if typeutils.IsKnown(d.Actions) && len(d.Actions.Elements()) > 0 {
+		var actions []ActionModel
+		diags.Append(d.Actions.ElementsAs(ctx, &actions, false)...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		for _, action := range actions {
+			if typeutils.IsKnown(action.AlertsFilter) {
+				reqs = append(reqs, entitycore.VersionRequirement{
+					MinVersion:   *MinVersionAlertsFilter,
+					ErrorMessage: "actions.alerts_filter is only supported for Kibana v8.9 or higher",
+				})
+				break
+			}
+		}
+	}
+
+	return reqs, diags
+}
+
+var _ entitycore.WithVersionRequirements = Data{}
+
 func (d *Data) initializeAllFieldsToDefaults() {
 
 	// Initialize fields that should be empty lists for all rule types initially
