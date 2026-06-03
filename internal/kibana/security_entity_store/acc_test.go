@@ -36,7 +36,13 @@ func TestAccResourceKibanaSecurityEntityStore_basic(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
-				Check:                    resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store.test", "id"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "space_id", "default"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "allow_entity_type_shrink", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "started", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store.test", "status_json"),
+				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -82,6 +88,8 @@ func TestAccResourceKibanaSecurityEntityStore_updateLogExtraction(t *testing.T) 
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "log_extraction.delay", "5m"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "log_extraction.frequency", "10m"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store.test", "log_extraction.field_history_length"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "log_extraction.lookback_period", "24h"),
 				),
 			},
 			{
@@ -172,6 +180,26 @@ func TestAccResourceKibanaSecurityEntityStore_startedFalse(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("started_false"),
+				PlanOnly:                 true,
+			},
+		},
+	})
+}
+
+func TestAccResourceKibanaSecurityEntityStore_historySnapshot(t *testing.T) {
+	skipIfUnsupported(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("history_snapshot"),
+				Check:                    resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store.test", "id"),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("history_snapshot"),
 				PlanOnly:                 true,
 			},
 		},
