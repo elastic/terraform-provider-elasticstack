@@ -84,13 +84,11 @@ func (m *ExceptionListModel) optionalExceptionListFields(ctx context.Context) (e
 		if diags.HasError() {
 			return out, diags
 		}
-		if len(osTypes) > 0 {
-			osTypesArray := make(kbapi.SecurityExceptionsAPIExceptionListOsTypeArray, len(osTypes))
-			for i, osType := range osTypes {
-				osTypesArray[i] = kbapi.SecurityExceptionsAPIExceptionListOsType(osType)
-			}
-			out.osTypes = &osTypesArray
+		osTypesArray := make(kbapi.SecurityExceptionsAPIExceptionListOsTypeArray, len(osTypes))
+		for i, osType := range osTypes {
+			osTypesArray[i] = kbapi.SecurityExceptionsAPIExceptionListOsType(osType)
 		}
+		out.osTypes = &osTypesArray
 	}
 
 	if typeutils.IsKnown(m.Tags) {
@@ -98,9 +96,7 @@ func (m *ExceptionListModel) optionalExceptionListFields(ctx context.Context) (e
 		if diags.HasError() {
 			return out, diags
 		}
-		if len(tags) > 0 {
-			out.tags = &tags
-		}
+		out.tags = &tags
 	}
 
 	if typeutils.IsKnown(m.Meta) {
