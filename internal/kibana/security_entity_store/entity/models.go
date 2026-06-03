@@ -18,6 +18,7 @@
 package entity
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -70,7 +71,7 @@ func (model tfModel) GetSpaceID() types.String        { return model.SpaceID }
 func (model tfModel) GetKibanaConnection() types.List { return model.KibanaConnection }
 func (model tfModel) GetResourceID() types.String     { return model.EntityID }
 
-func (*tfModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (*tfModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{{
 		MinVersion:   *MinVersion,
 		ErrorMessage: fmt.Sprintf("elasticstack_kibana_security_entity_store_entity is supported only for Kibana v%s and above", MinVersion.String()),
