@@ -115,9 +115,10 @@ tools:
       max-patch-size: 102400
 safe-outputs:
   create-pull-request:
-    labels: [deadcode-cleanup, automated-cleanup]
+    labels: [deadcode-cleanup, automated-cleanup, no-changelog]
     max: 1
     patch-format: am
+    draft: false
   noop:
     max: 1
     report-as-issue: false
