@@ -24,7 +24,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -89,102 +88,10 @@ func schemaFactory(_ context.Context) schema.Schema {
 				MarkdownDescription: "ID of the connector secret holding the API key (Elastic-managed connectors only).",
 				Optional:            true,
 			},
-			"pipeline":             pipelineSingleNestedAttribute(),
-			"scheduling":           schedulingSingleNestedAttribute(),
-			"features":             featuresSingleNestedAttribute(),
+			"pipeline":             connector.PipelineAttrForResource(),
+			"scheduling":           connector.SchedulingAttrForResource(),
+			"features":             connector.FeaturesAttrForResource(),
 			"configuration_values": configurationValuesMapNestedAttribute(),
-		},
-	}
-}
-
-// leafAttrsToResource converts shared LeafAttr definitions into resource schema attributes.
-// All leaf attributes are marked Required.
-func leafAttrsToResource(leaves []connector.LeafAttr) map[string]schema.Attribute {
-	result := make(map[string]schema.Attribute, len(leaves))
-	for _, a := range leaves {
-		if a.IsString {
-			result[a.Name] = schema.StringAttribute{
-				MarkdownDescription: a.Description,
-				Required:            true,
-			}
-		} else {
-			result[a.Name] = schema.BoolAttribute{
-				MarkdownDescription: a.Description,
-				Required:            true,
-			}
-		}
-	}
-	return result
-}
-
-func pipelineSingleNestedAttribute() schema.SingleNestedAttribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: connector.PipelineNestedDesc + " Changes trigger `PUT /_connector/{id}/_pipeline`.",
-		Optional:            true,
-		Computed:            true,
-		PlanModifiers: []planmodifier.Object{
-			objectplanmodifier.UseStateForUnknown(),
-		},
-		Attributes: leafAttrsToResource(connector.PipelineLeafAttrs()),
-	}
-}
-
-func schedulingSingleNestedAttribute() schema.SingleNestedAttribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: connector.SchedulingNestedDesc + " Changes trigger `PUT /_connector/{id}/_scheduling`.",
-		Optional:            true,
-		Computed:            true,
-		PlanModifiers: []planmodifier.Object{
-			objectplanmodifier.UseStateForUnknown(),
-		},
-		Attributes: map[string]schema.Attribute{
-			connector.FullScheduleAttr:          scheduleEntrySingleNestedAttribute(connector.FullScheduleAttr),
-			connector.IncrementalScheduleAttr:   scheduleEntrySingleNestedAttribute(connector.IncrementalScheduleAttr),
-			connector.AccessControlScheduleAttr: scheduleEntrySingleNestedAttribute(connector.AccessControlScheduleAttr),
-		},
-	}
-}
-
-func scheduleEntrySingleNestedAttribute(jobKind string) schema.SingleNestedAttribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: "Schedule for the `" + jobKind + "` sync job type.",
-		Optional:            true,
-		Attributes:          leafAttrsToResource(connector.ScheduleEntryLeafAttrs()),
-	}
-}
-
-func featuresSingleNestedAttribute() schema.SingleNestedAttribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: connector.FeaturesNestedDesc + " Changes trigger `PUT /_connector/{id}/_features`.",
-		Optional:            true,
-		Computed:            true,
-		PlanModifiers: []planmodifier.Object{
-			objectplanmodifier.UseStateForUnknown(),
-		},
-		Attributes: map[string]schema.Attribute{
-			connector.DocumentLevelSecurityAttr:  featureFlagSingleNestedAttribute(connector.DocumentLevelSecurityAttr),
-			connector.IncrementalSyncAttr:        featureFlagSingleNestedAttribute(connector.IncrementalSyncAttr),
-			connector.NativeConnectorAPIKeysAttr: featureFlagSingleNestedAttribute(connector.NativeConnectorAPIKeysAttr),
-			connector.SyncRulesAttr:              syncRulesSingleNestedAttribute(),
-		},
-	}
-}
-
-func featureFlagSingleNestedAttribute(featureName string) schema.SingleNestedAttribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: "Feature flag for `" + featureName + "`.",
-		Optional:            true,
-		Attributes:          leafAttrsToResource(connector.FeatureFlagLeafAttrs()),
-	}
-}
-
-func syncRulesSingleNestedAttribute() schema.SingleNestedAttribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: connector.SyncRulesNestedDesc,
-		Optional:            true,
-		Attributes: map[string]schema.Attribute{
-			connector.BasicSyncRulesAttr:    featureFlagSingleNestedAttribute(connector.BasicSyncRulesAttr),
-			connector.AdvancedSyncRulesAttr: featureFlagSingleNestedAttribute(connector.AdvancedSyncRulesAttr),
 		},
 	}
 }
