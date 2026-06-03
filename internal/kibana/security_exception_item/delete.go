@@ -27,8 +27,6 @@ import (
 )
 
 func deleteExceptionItem(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ ExceptionItemModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-
 	oapiClient := client.GetKibanaOapiClient()
 
 	id := resourceID
@@ -37,5 +35,5 @@ func deleteExceptionItem(ctx context.Context, client *clients.KibanaScopedClient
 	}
 
 	paramsDiags := kibanaoapi.DeleteExceptionListItem(ctx, oapiClient, spaceID, params)
-	return append(diags, paramsDiags...)
+	return paramsDiags
 }

@@ -58,10 +58,11 @@ func createExceptionItem(
 	}
 
 	m.ItemID = typeutils.StringishValue(createResp.ItemId)
-	m.ID = types.StringValue((&clients.CompositeID{
+	compID := clients.CompositeID{
 		ClusterID:  req.SpaceID,
 		ResourceID: createResp.Id,
-	}).String())
+	}
+	m.ID = types.StringValue(compID.String())
 
 	return entitycore.KibanaWriteResult[ExceptionItemModel]{Model: m}, diags
 }

@@ -52,10 +52,11 @@ func createAlertingRule(
 
 	// Set identity fields so the envelope can locate the resource for
 	// read-after-write. The envelope will re-read full state.
-	m.ID = types.StringValue((&clients.CompositeID{
+	compID := clients.CompositeID{
 		ClusterID:  req.SpaceID,
 		ResourceID: createdRule.RuleID,
-	}).String())
+	}
+	m.ID = types.StringValue(compID.String())
 	m.RuleID = types.StringValue(createdRule.RuleID)
 	m.SpaceID = types.StringValue(req.SpaceID)
 

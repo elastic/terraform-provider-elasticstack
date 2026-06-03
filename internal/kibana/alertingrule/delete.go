@@ -26,9 +26,7 @@ import (
 )
 
 func deleteAlertingRule(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ alertingRuleModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-
 	oapiClient := client.GetKibanaOapiClient()
 	deleteDiags := kibanaoapi.DeleteAlertingRule(ctx, oapiClient, spaceID, resourceID)
-	return append(diags, deleteDiags...)
+	return deleteDiags
 }
