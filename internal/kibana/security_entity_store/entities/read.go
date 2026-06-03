@@ -131,12 +131,7 @@ func readEntityStoreEntitiesDataSource(
 			diag.NewErrorDiagnostic("Failed to parse response", "expected object"),
 		}
 	}
-	var entities []any
-	if rawEntities, ok := rawMap["entities"].([]any); ok {
-		entities = rawEntities
-	} else if rawRecords, ok := rawMap["records"].([]any); ok {
-		entities = rawRecords
-	}
+	entities := entity.ExtractEntitiesFromResponse(rawMap)
 
 	items := make([]attr.Value, 0, len(entities))
 	for _, e := range entities {
