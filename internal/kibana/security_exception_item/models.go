@@ -76,7 +76,7 @@ func (m ExceptionItemModel) GetKibanaConnection() types.List { return m.KibanaCo
 
 var _ entitycore.KibanaResourceModel = ExceptionItemModel{}
 
-func (m ExceptionItemModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m ExceptionItemModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if !typeutils.IsKnown(m.ExpireTime) {
 		return nil, diags

@@ -338,7 +338,7 @@ func (m alertingRuleModel) GetKibanaConnection() types.List { return m.KibanaCon
 
 var _ entitycore.KibanaResourceModel = alertingRuleModel{}
 
-func (m alertingRuleModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m alertingRuleModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var reqs []entitycore.VersionRequirement
 
@@ -346,7 +346,7 @@ func (m alertingRuleModel) GetVersionRequirements() ([]entitycore.VersionRequire
 	// 8.9.0 when any action has AlertsFilter set
 	if typeutils.IsKnown(m.Actions) && !m.Actions.IsNull() {
 		var actions []actionModel
-		diags.Append(m.Actions.ElementsAs(context.Background(), &actions, false)...)
+		diags.Append(m.Actions.ElementsAs(ctx, &actions, false)...)
 		if diags.HasError() {
 			return nil, diags
 		}
@@ -388,7 +388,7 @@ func (m alertingRuleModel) GetVersionRequirements() ([]entitycore.VersionRequire
 		})
 
 		var fm flappingModel
-		diags.Append(m.Flapping.As(context.Background(), &fm, basetypes.ObjectAsOptions{})...)
+		diags.Append(m.Flapping.As(ctx, &fm, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
 			return nil, diags
 		}

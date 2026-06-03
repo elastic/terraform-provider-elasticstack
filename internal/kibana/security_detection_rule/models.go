@@ -602,7 +602,7 @@ func (d Data) GetKibanaConnection() types.List { return d.KibanaConnection }
 
 var _ entitycore.KibanaResourceModel = Data{}
 
-func (d Data) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (d Data) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var reqs []entitycore.VersionRequirement
 
@@ -615,7 +615,7 @@ func (d Data) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Di
 
 	if typeutils.IsKnown(d.Actions) && len(d.Actions.Elements()) > 0 {
 		var actions []ActionModel
-		diags.Append(d.Actions.ElementsAs(context.Background(), &actions, false)...)
+		diags.Append(d.Actions.ElementsAs(ctx, &actions, false)...)
 		if diags.HasError() {
 			return nil, diags
 		}
