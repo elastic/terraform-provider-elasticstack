@@ -171,7 +171,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20250513223454-5ece0c5aa76c // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/elastic/terraform-provider-elasticstack/analysis/acctestconfigdirlintplugin v0.0.0
+	github.com/elastic/terraform-provider-elasticstack/analysis/acctestconfigdirlintplugin v0.16.1
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.36.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.3.0 // indirect
@@ -399,7 +399,7 @@ require (
 	golang.org/x/exp v0.0.0-20251209150349-8475f28825e9 // indirect
 	golang.org/x/mod v0.36.0 // indirect
 	golang.org/x/net v0.54.0 // indirect
-	golang.org/x/sync v0.20.0 // indirect
+	golang.org/x/sync v0.20.0
 	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/term v0.43.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
