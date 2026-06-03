@@ -18,15 +18,19 @@
 package entities
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
 	kbapi "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func TestExpandStringList(t *testing.T) {
+func TestListTypeToSliceString(t *testing.T) {
 	tests := []struct {
 		name  string
 		input types.List
@@ -51,9 +55,13 @@ func TestExpandStringList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := expandStringList(tt.input)
+			var d diag.Diagnostics
+			got := typeutils.ListTypeToSliceString(context.Background(), tt.input, path.Root("source"), &d)
+			if d.HasError() {
+				t.Fatalf("unexpected diagnostics: %v", d)
+			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("expandStringList() = %v, want %v", got, tt.want)
+				t.Errorf("ListTypeToSliceString() = %v, want %v", got, tt.want)
 			}
 		})
 	}
