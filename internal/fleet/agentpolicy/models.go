@@ -214,7 +214,7 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 			return d
 		}
 		model.SpaceIDs = spaceIDs
-	} else {
+	} else if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
 		model.SpaceIDs = types.SetNull(types.StringType)
 	}
 

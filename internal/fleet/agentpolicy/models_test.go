@@ -324,3 +324,84 @@ func TestPopulateFromAPI_Description_Null_vs_EmptyString(t *testing.T) {
 		})
 	}
 }
+
+// TestPopulateFromAPI_SpaceIDs_Null_vs_EmptyList asserts the null-preserving
+// behavior for the `space_ids` attribute. When the Fleet API omits space_ids
+// from its response (data.SpaceIds is nil), the model value must be preserved
+// if it was previously configured, preventing the "Provider produced inconsistent
+// result after apply" error.
+func TestPopulateFromAPI_SpaceIDs_Null_vs_EmptyList(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name         string
+		initial      types.Set // the pre-populate plan/state value for SpaceIDs
+		apiValue     []string  // data.SpaceIds as returned by Fleet (nil = omitted)
+		wantNull     bool
+		wantElements []string // expected elements for non-null cases (nil = skip check)
+	}{
+		{
+			name:     "null in plan and nil from API stays null",
+			initial:  types.SetNull(types.StringType),
+			apiValue: nil,
+			wantNull: true,
+		},
+		{
+			name:         "value in plan and nil from API preserves value",
+			initial:      types.SetValueMust(types.StringType, []attr.Value{types.StringValue("default")}),
+			apiValue:     nil,
+			wantNull:     false,
+			wantElements: []string{"default"},
+		},
+		{
+			name:         "value in plan and matching value from API stays set",
+			initial:      types.SetValueMust(types.StringType, []attr.Value{types.StringValue("default")}),
+			apiValue:     []string{"default"},
+			wantNull:     false,
+			wantElements: []string{"default"},
+		},
+		{
+			name:         "empty set in plan and nil from API preserves empty set",
+			initial:      types.SetValueMust(types.StringType, []attr.Value{}),
+			apiValue:     nil,
+			wantNull:     false,
+			wantElements: []string{},
+		},
+		{
+			name:     "null in plan and value from API adopts value",
+			initial:  types.SetNull(types.StringType),
+			apiValue: []string{"test-space"},
+			wantNull: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			model := &agentPolicyModel{
+				SpaceIDs: tc.initial,
+			}
+			var apiSpaceIDs *[]string
+			if tc.apiValue != nil {
+				apiSpaceIDs = &tc.apiValue
+			}
+			data := &kbapi.AgentPolicy{
+				Id:       "policy-id",
+				SpaceIds: apiSpaceIDs,
+			}
+			diags := model.populateFromAPI(ctx, data)
+			assert.False(t, diags.HasError(), "populateFromAPI produced unexpected error diags: %v", diags)
+
+			if tc.wantNull {
+				assert.True(t, model.SpaceIDs.IsNull(), "expected SpaceIDs to be null, got %v", model.SpaceIDs)
+			} else {
+				assert.False(t, model.SpaceIDs.IsNull(), "expected SpaceIDs to be set, got null")
+				if tc.wantElements != nil {
+					var elements []string
+					diags := model.SpaceIDs.ElementsAs(ctx, &elements, false)
+					assert.Nil(t, diags, "ElementsAs should not error")
+					assert.ElementsMatch(t, tc.wantElements, elements, "expected SpaceIDs elements to match")
+				}
+			}
+		})
+	}
+}

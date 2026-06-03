@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 Delta spec for capability `elasticstack-fleet-agent-policy`
 (canonical spec: `openspec/specs/elasticstack-fleet-agent-policy/spec.md`).
