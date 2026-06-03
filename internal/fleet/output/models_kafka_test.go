@@ -43,14 +43,14 @@ func Test_outputKafkaModel_toAPIHash(t *testing.T) {
 		{
 			name: "returns nil when hash is unknown",
 			fields: fields{
-				Hash: types.ObjectUnknown(getHashAttrTypes()),
+				Hash: types.ObjectUnknown(getHashAttrTypes(context.Background())),
 			},
 		},
 		{
 			name: "returns a hash object when all fields are set",
 			fields: fields{
 				Hash: types.ObjectValueMust(
-					getHashAttrTypes(),
+					getHashAttrTypes(context.Background()),
 					map[string]attr.Value{
 						"hash":   types.StringValue("field"),
 						"random": types.BoolValue(true),
@@ -97,20 +97,20 @@ func Test_outputKafkaModel_toAPIHeaders(t *testing.T) {
 		{
 			name: "returns nil when headers are unknown",
 			fields: fields{
-				Headers: types.ListUnknown(getHeadersAttrTypes()),
+				Headers: types.ListUnknown(getHeadersAttrTypes(context.Background())),
 			},
 		},
 		{
 			name: "returns headers when populated",
 			fields: fields{
 				Headers: types.ListValueMust(
-					getHeadersAttrTypes(),
+					getHeadersAttrTypes(context.Background()),
 					[]attr.Value{
-						types.ObjectValueMust(getHeadersAttrTypes().(types.ObjectType).AttrTypes, map[string]attr.Value{
+						types.ObjectValueMust(getHeadersAttrTypes(context.Background()).(types.ObjectType).AttrTypes, map[string]attr.Value{
 							"key":   types.StringValue("key-1"),
 							"value": types.StringValue("value-1"),
 						}),
-						types.ObjectValueMust(getHeadersAttrTypes().(types.ObjectType).AttrTypes, map[string]attr.Value{
+						types.ObjectValueMust(getHeadersAttrTypes(context.Background()).(types.ObjectType).AttrTypes, map[string]attr.Value{
 							"key":   types.StringValue("key-2"),
 							"value": types.StringValue("value-2"),
 						}),
@@ -156,14 +156,14 @@ func Test_outputKafkaModel_toAPIRandom(t *testing.T) {
 		{
 			name: "returns nil when random is unknown",
 			fields: fields{
-				Random: types.ObjectUnknown(getRandomAttrTypes()),
+				Random: types.ObjectUnknown(getRandomAttrTypes(context.Background())),
 			},
 		},
 		{
 			name: "returns a random object when populated",
 			fields: fields{
 				Random: types.ObjectValueMust(
-					getRandomAttrTypes(),
+					getRandomAttrTypes(context.Background()),
 					map[string]attr.Value{
 						"group_events": types.Float64Value(1),
 					},
@@ -206,14 +206,14 @@ func Test_outputKafkaModel_toAPIRoundRobin(t *testing.T) {
 		{
 			name: "returns nil when round_robin is unknown",
 			fields: fields{
-				RoundRobin: types.ObjectUnknown(getRoundRobinAttrTypes()),
+				RoundRobin: types.ObjectUnknown(getRoundRobinAttrTypes(context.Background())),
 			},
 		},
 		{
 			name: "returns a round_robin object when populated",
 			fields: fields{
 				RoundRobin: types.ObjectValueMust(
-					getRoundRobinAttrTypes(),
+					getRoundRobinAttrTypes(context.Background()),
 					map[string]attr.Value{
 						"group_events": types.Float64Value(1),
 					},
@@ -256,14 +256,14 @@ func Test_outputKafkaModel_toAPISasl(t *testing.T) {
 		{
 			name: "returns nil when sasl is unknown",
 			fields: fields{
-				Sasl: types.ObjectUnknown(getSaslAttrTypes()),
+				Sasl: types.ObjectUnknown(getSaslAttrTypes(context.Background())),
 			},
 		},
 		{
 			name: "returns a sasl object when populated",
 			fields: fields{
 				Sasl: types.ObjectValueMust(
-					getSaslAttrTypes(),
+					getSaslAttrTypes(context.Background()),
 					map[string]attr.Value{
 						"mechanism": types.StringValue("plain"),
 					},
@@ -306,14 +306,14 @@ func Test_outputKafkaModel_toUpdateAPISasl(t *testing.T) {
 		{
 			name: "returns nil when sasl is unknown",
 			fields: fields{
-				Sasl: types.ObjectUnknown(getSaslAttrTypes()),
+				Sasl: types.ObjectUnknown(getSaslAttrTypes(context.Background())),
 			},
 		},
 		{
 			name: "returns a sasl object when populated",
 			fields: fields{
 				Sasl: types.ObjectValueMust(
-					getSaslAttrTypes(),
+					getSaslAttrTypes(context.Background()),
 					map[string]attr.Value{
 						"mechanism": types.StringValue("plain"),
 					},

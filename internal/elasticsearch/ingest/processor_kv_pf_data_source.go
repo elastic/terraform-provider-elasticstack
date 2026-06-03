@@ -20,6 +20,7 @@ package ingest
 import (
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -41,26 +42,6 @@ type processorKVModel struct {
 
 func (m *processorKVModel) TypeName() string { return "kv" }
 
-func stringSetValue(set types.Set, diags *diag.Diagnostics) []string {
-	if !IsKnown(set) {
-		return nil
-	}
-	elems := make([]string, 0, len(set.Elements()))
-	for _, elem := range set.Elements() {
-		str, ok := elem.(types.String)
-		if !ok || !IsKnown(str) {
-			if !ok {
-				diags.AddError("Invalid set element type", "expected types.String")
-			} else {
-				diags.AddError("Unknown set element", "set elements cannot be unknown")
-			}
-			continue
-		}
-		elems = append(elems, str.ValueString())
-	}
-	return elems
-}
-
 func (m *processorKVModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorKVBody{}
@@ -77,8 +58,8 @@ func (m *processorKVModel) MarshalBody() (any, diag.Diagnostics) {
 	if IsKnown(m.ValueSplit) {
 		body.ValueSplit = m.ValueSplit.ValueString()
 	}
-	body.IncludeKeys = stringSetValue(m.IncludeKeys, &diags)
-	body.ExcludeKeys = stringSetValue(m.ExcludeKeys, &diags)
+	body.IncludeKeys = typeutils.StringSetElements(m.IncludeKeys, &diags)
+	body.ExcludeKeys = typeutils.StringSetElements(m.ExcludeKeys, &diags)
 	if IsKnown(m.Prefix) {
 		body.Prefix = m.Prefix.ValueString()
 	}

@@ -20,56 +20,49 @@ package securityexceptionitem
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *ExceptionItemResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan ExceptionItemModel
-
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func createExceptionItem(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[ExceptionItemModel],
+) (entitycore.KibanaWriteResult[ExceptionItemModel], diag.Diagnostics) {
+	m := req.Plan
+	var diags diag.Diagnostics
 
 	oapiClient := client.GetKibanaOapiClient()
 
 	// Build the request body using model method
-	body, diags := plan.toCreateRequest(ctx, client)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	body, d := m.toCreateRequest(ctx)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[ExceptionItemModel]{}, diags
 	}
 
 	// Create the exception item
-	createResp, diags := kibanaoapi.CreateExceptionListItem(ctx, oapiClient, plan.SpaceID.ValueString(), *body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	createResp, d := kibanaoapi.CreateExceptionListItem(ctx, oapiClient, req.SpaceID, *body)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[ExceptionItemModel]{}, diags
 	}
 
 	if createResp == nil {
-		resp.Diagnostics.AddError("Failed to create exception item", "API returned empty response")
-		return
+		diags.AddError("Failed to create exception item", "API returned empty response")
+		return entitycore.KibanaWriteResult[ExceptionItemModel]{}, diags
 	}
 
-	plan, remove, diags := refreshExceptionItemState(ctx, oapiClient, plan.SpaceID.ValueString(), plan, createResp.Id)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	m.ItemID = typeutils.StringishValue(createResp.ItemId)
+	compID := clients.CompositeID{
+		ClusterID:  req.SpaceID,
+		ResourceID: createResp.Id,
 	}
-	if remove {
-		resp.State.RemoveResource(ctx)
-		return
-	}
+	m.ID = types.StringValue(compID.String())
 
-	diags = resp.State.Set(ctx, plan)
-	resp.Diagnostics.Append(diags...)
+	return entitycore.KibanaWriteResult[ExceptionItemModel]{Model: m}, diags
 }

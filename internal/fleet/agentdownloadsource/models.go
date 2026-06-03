@@ -61,7 +61,7 @@ func (m model) GetSpaceID() types.String {
 	return types.StringValue(defaultSpaceID)
 }
 
-func (m model) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m model) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *agentDownloadSourceMinVersion,

@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"time"
 
 	getconnector "github.com/elastic/go-elasticsearch/v8/typedapi/connector/get"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
@@ -42,6 +41,7 @@ import (
 type ContentConnectorDataSourceModel struct {
 	entitycore.ElasticsearchConnectionField
 	connector.CoreConnectorFields
+	connector.VersionGate
 	ID                               fwtypes.String       `tfsdk:"id"`
 	ConnectorID                      fwtypes.String       `tfsdk:"connector_id"`
 	Status                           fwtypes.String       `tfsdk:"status"`
@@ -65,14 +65,6 @@ type ContentConnectorDataSourceModel struct {
 }
 
 var _ entitycore.WithVersionRequirements = ContentConnectorDataSourceModel{}
-
-// GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
-func (ContentConnectorDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{{
-		MinVersion:   *connector.MinSupportedVersion,
-		ErrorMessage: "elasticstack_elasticsearch_connector requires Elasticsearch 8.16.0 or later (the connector request bodies the typed client sends are rejected on 8.12.x–8.15.x).",
-	}}, nil
-}
 
 func readContentConnectorDataSource(
 	ctx context.Context,
@@ -167,50 +159,7 @@ func connectorInt64PtrToValue(v *int64) fwtypes.Int64 {
 }
 
 func connectorDateTimeToString(dt estypes.DateTime) fwtypes.String {
-	if dt == nil {
-		return fwtypes.StringNull()
-	}
-	ms, ok := connectorDateTimeToMillis(dt)
-	if !ok || ms == 0 {
-		return fwtypes.StringNull()
-	}
-	return typeutils.TimeToStringValue(time.UnixMilli(ms).UTC())
-}
-
-func connectorDateTimeToMillis(v any) (int64, bool) {
-	switch x := v.(type) {
-	case float64:
-		return int64(x), true
-	case int64:
-		return x, true
-	case int:
-		return int64(x), true
-	case uint64:
-		return int64(x), true
-	case json.Number:
-		i, err := x.Int64()
-		if err == nil {
-			return i, true
-		}
-		f, err := x.Float64()
-		if err != nil {
-			return 0, false
-		}
-		return int64(f), true
-	case string:
-		if x == "" {
-			return 0, false
-		}
-		t, err := time.Parse(time.RFC3339, x)
-		if err != nil {
-			return 0, false
-		}
-		return t.UnixMilli(), true
-	case estypes.DateTime:
-		return connectorDateTimeToMillis(any(x))
-	default:
-		return 0, false
-	}
+	return typeutils.ElasticDateTimeToStringValue(dt)
 }
 
 func isNilValue(v any) bool {

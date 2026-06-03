@@ -18,6 +18,7 @@
 package templateilmattachment
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -69,7 +70,7 @@ func (m tfModel) GetElasticsearchConnection() types.List { return m.Elasticsearc
 
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements] and enforces
 // the ES >= 8.2.0 minimum required by the Put Component Template API used by this resource.
-func (m tfModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m tfModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{{
 		MinVersion: *MinVersion,
 		ErrorMessage: fmt.Sprintf(

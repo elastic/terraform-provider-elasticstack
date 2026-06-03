@@ -19,9 +19,10 @@ package kibanaoapi
 
 import (
 	"context"
+	"io"
 	"net/http"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	kbapi "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -70,6 +71,83 @@ func StopSecurityEntityStore(ctx context.Context, client *Client, spaceID string
 		return diagutil.FrameworkDiagFromError(err)
 	}
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
+}
+
+// CreateSecurityEntityStoreEntity creates a single entity record.
+func CreateSecurityEntityStoreEntity(ctx context.Context, client *Client, spaceID string, entityType string, body io.Reader) diag.Diagnostics {
+	resp, err := client.API.PostSecurityEntityStoreEntitiesEntitytypeWithBodyWithResponse(
+		ctx,
+		kbapi.PostSecurityEntityStoreEntitiesEntitytypeParamsEntityType(entityType),
+		"application/json",
+		body,
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
+	)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
+}
+
+// UpdateSecurityEntityStoreEntity updates a single entity record.
+func UpdateSecurityEntityStoreEntity(ctx context.Context, client *Client, spaceID string, entityType string, body io.Reader, force bool) diag.Diagnostics {
+	var editors []kbapi.RequestEditorFn
+	editors = append(editors, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	if force {
+		editors = append(editors, func(_ context.Context, req *http.Request) error {
+			q := req.URL.Query()
+			q.Set("force", "true")
+			req.URL.RawQuery = q.Encode()
+			return nil
+		})
+	}
+
+	resp, err := client.API.PutSecurityEntityStoreEntitiesEntitytypeWithBodyWithResponse(
+		ctx,
+		kbapi.PutSecurityEntityStoreEntitiesEntitytypeParamsEntityType(entityType),
+		nil, // params – force is handled via request editor
+		"application/json",
+		body,
+		editors...,
+	)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
+}
+
+// DeleteSecurityEntityStoreEntity deletes a single entity record.
+func DeleteSecurityEntityStoreEntity(ctx context.Context, client *Client, spaceID string, body io.Reader) diag.Diagnostics {
+	resp, err := client.API.DeleteSecurityEntityStoreEntitiesWithBodyWithResponse(
+		ctx,
+		"application/json",
+		body,
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
+	)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
+}
+
+// ListSecurityEntityStoreEntities lists/search entity records.
+func ListSecurityEntityStoreEntities(
+	ctx context.Context,
+	client *Client,
+	spaceID string,
+	params *kbapi.GetSecurityEntityStoreEntitiesParams,
+) (*kbapi.GetSecurityEntityStoreEntitiesResponse, diag.Diagnostics) {
+	resp, err := client.API.GetSecurityEntityStoreEntitiesWithResponse(
+		ctx,
+		params,
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
+	)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	if d := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); d.HasError() {
+		return nil, d
+	}
+	return resp, nil
 }
 
 // GetSecurityEntityStoreStatus reads the entity store status. The caller is responsible for unmarshaling the response body.

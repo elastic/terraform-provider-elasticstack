@@ -18,6 +18,7 @@
 package security_entity_store_resolution_group
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -43,7 +44,7 @@ type resolutionGroupModel struct {
 	ResolutionGroupJSON jsontypes.Normalized `tfsdk:"resolution_group_json"`
 }
 
-func (model resolutionGroupModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (model resolutionGroupModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *minKibanaEntityStoreResolutionVersion,

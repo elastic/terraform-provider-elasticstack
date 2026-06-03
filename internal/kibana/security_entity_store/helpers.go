@@ -133,7 +133,7 @@ func buildInstallBody(ctx context.Context, model tfModel) (kbapi.PostSecurityEnt
 		return body, diags
 	}
 	if len(entityTypes) > 0 {
-		body.EntityTypes = installTypes(entityTypes)
+		body.EntityTypes = stringSliceToAPITypes[kbapi.PostSecurityEntityStoreInstallJSONBodyEntityTypes](entityTypes)
 	}
 	if !model.HistorySnapshot.IsNull() && !model.HistorySnapshot.IsUnknown() {
 		var hs historySnapshotModel
@@ -179,41 +179,35 @@ func expandEntityTypes(ctx context.Context, set types.Set) ([]string, diag.Diagn
 	return values, set.ElementsAs(ctx, &values, false)
 }
 
-func installTypes(values []string) *[]kbapi.PostSecurityEntityStoreInstallJSONBodyEntityTypes {
+// stringSliceToAPITypes converts a []string to a pointer to a slice of a ~string
+// type alias, covering the pattern used by generated kbapi enum slices.
+func stringSliceToAPITypes[T ~string](values []string) *[]T {
 	if len(values) == 0 {
 		return nil
 	}
-	out := make([]kbapi.PostSecurityEntityStoreInstallJSONBodyEntityTypes, 0, len(values))
+	out := make([]T, 0, len(values))
 	for _, v := range values {
-		out = append(out, kbapi.PostSecurityEntityStoreInstallJSONBodyEntityTypes(v))
+		out = append(out, T(v))
 	}
 	return &out
 }
 
-func uninstallTypes(values []string) *[]kbapi.PostSecurityEntityStoreUninstallJSONBodyEntityTypes {
-	if len(values) == 0 {
-		return nil
-	}
-	out := make([]kbapi.PostSecurityEntityStoreUninstallJSONBodyEntityTypes, 0, len(values))
-	for _, v := range values {
-		out = append(out, kbapi.PostSecurityEntityStoreUninstallJSONBodyEntityTypes(v))
-	}
-	return &out
+// apiLogExtraction matches the generated Kibana API log extraction body shape.
+type apiLogExtraction[T ~string] = struct {
+	AdditionalIndexPatterns     *[]string `json:"additionalIndexPatterns,omitempty"`
+	Delay                       *string   `json:"delay,omitempty"`
+	DocsLimit                   *int      `json:"docsLimit,omitempty"`
+	ExcludedIndexPatterns       *[]string `json:"excludedIndexPatterns,omitempty"`
+	FieldHistoryLength          *int      `json:"fieldHistoryLength,omitempty"`
+	Frequency                   *string   `json:"frequency,omitempty"`
+	LookbackPeriod              *string   `json:"lookbackPeriod,omitempty"`
+	MaxLogsPerPage              *int      `json:"maxLogsPerPage,omitempty"`
+	MaxLogsPerWindow            *int      `json:"maxLogsPerWindow,omitempty"`
+	MaxLogsPerWindowCapBehavior *T        `json:"maxLogsPerWindowCapBehavior,omitempty"`
+	MaxTimeWindowSize           *string   `json:"maxTimeWindowSize,omitempty"`
 }
 
-func expandInstallLogExtraction(ctx context.Context, obj types.Object) (*struct {
-	AdditionalIndexPatterns     *[]string                                                                             `json:"additionalIndexPatterns,omitempty"`
-	Delay                       *string                                                                               `json:"delay,omitempty"`
-	DocsLimit                   *int                                                                                  `json:"docsLimit,omitempty"`
-	ExcludedIndexPatterns       *[]string                                                                             `json:"excludedIndexPatterns,omitempty"`
-	FieldHistoryLength          *int                                                                                  `json:"fieldHistoryLength,omitempty"`
-	Frequency                   *string                                                                               `json:"frequency,omitempty"`
-	LookbackPeriod              *string                                                                               `json:"lookbackPeriod,omitempty"`
-	MaxLogsPerPage              *int                                                                                  `json:"maxLogsPerPage,omitempty"`
-	MaxLogsPerWindow            *int                                                                                  `json:"maxLogsPerWindow,omitempty"`
-	MaxLogsPerWindowCapBehavior *kbapi.PostSecurityEntityStoreInstallJSONBodyLogExtractionMaxLogsPerWindowCapBehavior `json:"maxLogsPerWindowCapBehavior,omitempty"`
-	MaxTimeWindowSize           *string                                                                               `json:"maxTimeWindowSize,omitempty"`
-}, diag.Diagnostics) {
+func expandLogExtractionCommon[T ~string](ctx context.Context, obj types.Object) (*apiLogExtraction[T], diag.Diagnostics) {
 	var model logExtractionModel
 	var diags diag.Diagnostics
 	diags.Append(obj.As(ctx, &model, basetypes.ObjectAsOptions{})...)
@@ -227,19 +221,7 @@ func expandInstallLogExtraction(ctx context.Context, obj types.Object) (*struct 
 	if diags.HasError() {
 		return nil, diags
 	}
-	result := &struct {
-		AdditionalIndexPatterns     *[]string                                                                             `json:"additionalIndexPatterns,omitempty"`
-		Delay                       *string                                                                               `json:"delay,omitempty"`
-		DocsLimit                   *int                                                                                  `json:"docsLimit,omitempty"`
-		ExcludedIndexPatterns       *[]string                                                                             `json:"excludedIndexPatterns,omitempty"`
-		FieldHistoryLength          *int                                                                                  `json:"fieldHistoryLength,omitempty"`
-		Frequency                   *string                                                                               `json:"frequency,omitempty"`
-		LookbackPeriod              *string                                                                               `json:"lookbackPeriod,omitempty"`
-		MaxLogsPerPage              *int                                                                                  `json:"maxLogsPerPage,omitempty"`
-		MaxLogsPerWindow            *int                                                                                  `json:"maxLogsPerWindow,omitempty"`
-		MaxLogsPerWindowCapBehavior *kbapi.PostSecurityEntityStoreInstallJSONBodyLogExtractionMaxLogsPerWindowCapBehavior `json:"maxLogsPerWindowCapBehavior,omitempty"`
-		MaxTimeWindowSize           *string                                                                               `json:"maxTimeWindowSize,omitempty"`
-	}{
+	c := &apiLogExtraction[T]{
 		AdditionalIndexPatterns: add,
 		Delay:                   typeutils.OptionalString(model.Delay),
 		DocsLimit:               intPtr(model.DocsLimit),
@@ -252,67 +234,18 @@ func expandInstallLogExtraction(ctx context.Context, obj types.Object) (*struct 
 		MaxTimeWindowSize:       typeutils.OptionalString(model.MaxTimeWindowSize),
 	}
 	if !model.MaxLogsPerWindowCapBehavior.IsNull() && !model.MaxLogsPerWindowCapBehavior.IsUnknown() {
-		behavior := kbapi.PostSecurityEntityStoreInstallJSONBodyLogExtractionMaxLogsPerWindowCapBehavior(model.MaxLogsPerWindowCapBehavior.ValueString())
-		result.MaxLogsPerWindowCapBehavior = &behavior
+		behavior := T(model.MaxLogsPerWindowCapBehavior.ValueString())
+		c.MaxLogsPerWindowCapBehavior = &behavior
 	}
-	return result, diags
+	return c, diags
 }
 
-func expandUpdateLogExtraction(ctx context.Context, obj types.Object) (*struct {
-	AdditionalIndexPatterns     *[]string                                                                     `json:"additionalIndexPatterns,omitempty"`
-	Delay                       *string                                                                       `json:"delay,omitempty"`
-	DocsLimit                   *int                                                                          `json:"docsLimit,omitempty"`
-	ExcludedIndexPatterns       *[]string                                                                     `json:"excludedIndexPatterns,omitempty"`
-	FieldHistoryLength          *int                                                                          `json:"fieldHistoryLength,omitempty"`
-	Frequency                   *string                                                                       `json:"frequency,omitempty"`
-	LookbackPeriod              *string                                                                       `json:"lookbackPeriod,omitempty"`
-	MaxLogsPerPage              *int                                                                          `json:"maxLogsPerPage,omitempty"`
-	MaxLogsPerWindow            *int                                                                          `json:"maxLogsPerWindow,omitempty"`
-	MaxLogsPerWindowCapBehavior *kbapi.PutSecurityEntityStoreJSONBodyLogExtractionMaxLogsPerWindowCapBehavior `json:"maxLogsPerWindowCapBehavior,omitempty"`
-	MaxTimeWindowSize           *string                                                                       `json:"maxTimeWindowSize,omitempty"`
-}, diag.Diagnostics) {
-	var model logExtractionModel
-	var diags diag.Diagnostics
-	diags.Append(obj.As(ctx, &model, basetypes.ObjectAsOptions{})...)
-	if diags.HasError() {
-		return nil, diags
-	}
-	add, d := stringListPtr(ctx, model.AdditionalIndexPatterns)
-	diags.Append(d...)
-	excl, d := stringListPtr(ctx, model.ExcludedIndexPatterns)
-	diags.Append(d...)
-	if diags.HasError() {
-		return nil, diags
-	}
-	result := &struct {
-		AdditionalIndexPatterns     *[]string                                                                     `json:"additionalIndexPatterns,omitempty"`
-		Delay                       *string                                                                       `json:"delay,omitempty"`
-		DocsLimit                   *int                                                                          `json:"docsLimit,omitempty"`
-		ExcludedIndexPatterns       *[]string                                                                     `json:"excludedIndexPatterns,omitempty"`
-		FieldHistoryLength          *int                                                                          `json:"fieldHistoryLength,omitempty"`
-		Frequency                   *string                                                                       `json:"frequency,omitempty"`
-		LookbackPeriod              *string                                                                       `json:"lookbackPeriod,omitempty"`
-		MaxLogsPerPage              *int                                                                          `json:"maxLogsPerPage,omitempty"`
-		MaxLogsPerWindow            *int                                                                          `json:"maxLogsPerWindow,omitempty"`
-		MaxLogsPerWindowCapBehavior *kbapi.PutSecurityEntityStoreJSONBodyLogExtractionMaxLogsPerWindowCapBehavior `json:"maxLogsPerWindowCapBehavior,omitempty"`
-		MaxTimeWindowSize           *string                                                                       `json:"maxTimeWindowSize,omitempty"`
-	}{
-		AdditionalIndexPatterns: add,
-		Delay:                   typeutils.OptionalString(model.Delay),
-		DocsLimit:               intPtr(model.DocsLimit),
-		ExcludedIndexPatterns:   excl,
-		FieldHistoryLength:      intPtr(model.FieldHistoryLength),
-		Frequency:               typeutils.OptionalString(model.Frequency),
-		LookbackPeriod:          typeutils.OptionalString(model.LookbackPeriod),
-		MaxLogsPerPage:          intPtr(model.MaxLogsPerPage),
-		MaxLogsPerWindow:        intPtr(model.MaxLogsPerWindow),
-		MaxTimeWindowSize:       typeutils.OptionalString(model.MaxTimeWindowSize),
-	}
-	if !model.MaxLogsPerWindowCapBehavior.IsNull() && !model.MaxLogsPerWindowCapBehavior.IsUnknown() {
-		behavior := kbapi.PutSecurityEntityStoreJSONBodyLogExtractionMaxLogsPerWindowCapBehavior(model.MaxLogsPerWindowCapBehavior.ValueString())
-		result.MaxLogsPerWindowCapBehavior = &behavior
-	}
-	return result, diags
+func expandInstallLogExtraction(ctx context.Context, obj types.Object) (*apiLogExtraction[kbapi.PostSecurityEntityStoreInstallJSONBodyLogExtractionMaxLogsPerWindowCapBehavior], diag.Diagnostics) {
+	return expandLogExtractionCommon[kbapi.PostSecurityEntityStoreInstallJSONBodyLogExtractionMaxLogsPerWindowCapBehavior](ctx, obj)
+}
+
+func expandUpdateLogExtraction(ctx context.Context, obj types.Object) (*apiLogExtraction[kbapi.PutSecurityEntityStoreJSONBodyLogExtractionMaxLogsPerWindowCapBehavior], diag.Diagnostics) {
+	return expandLogExtractionCommon[kbapi.PutSecurityEntityStoreJSONBodyLogExtractionMaxLogsPerWindowCapBehavior](ctx, obj)
 }
 
 func diffEntityTypes(ctx context.Context, prior, plan types.Set) (added, removed []string, diags diag.Diagnostics) {

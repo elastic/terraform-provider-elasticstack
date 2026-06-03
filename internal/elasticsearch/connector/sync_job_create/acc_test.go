@@ -27,7 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector/sync_job_create"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -43,7 +43,7 @@ func actionTerraformVersionChecks() []tfversion.TerraformVersionCheck {
 }
 
 func skipConnectorUnsupported() func() (bool, error) {
-	return versionutils.CheckIfVersionIsUnsupported(sync_job_create.MinSupportedVersion)
+	return versionutils.CheckIfVersionIsUnsupported(connector.MinSupportedVersion)
 }
 
 func syncJobConfigVariables(connectorID string, waitForCompletion bool) config.Variables {

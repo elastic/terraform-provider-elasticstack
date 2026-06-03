@@ -84,13 +84,11 @@ func (m *ExceptionListModel) optionalExceptionListFields(ctx context.Context) (e
 		if diags.HasError() {
 			return out, diags
 		}
-		if len(osTypes) > 0 {
-			osTypesArray := make(kbapi.SecurityExceptionsAPIExceptionListOsTypeArray, len(osTypes))
-			for i, osType := range osTypes {
-				osTypesArray[i] = kbapi.SecurityExceptionsAPIExceptionListOsType(osType)
-			}
-			out.osTypes = &osTypesArray
+		osTypesArray := make(kbapi.SecurityExceptionsAPIExceptionListOsTypeArray, len(osTypes))
+		for i, osType := range osTypes {
+			osTypesArray[i] = kbapi.SecurityExceptionsAPIExceptionListOsType(osType)
 		}
+		out.osTypes = &osTypesArray
 	}
 
 	if typeutils.IsKnown(m.Tags) {
@@ -98,9 +96,7 @@ func (m *ExceptionListModel) optionalExceptionListFields(ctx context.Context) (e
 		if diags.HasError() {
 			return out, diags
 		}
-		if len(tags) > 0 {
-			out.tags = &tags
-		}
+		out.tags = &tags
 	}
 
 	if typeutils.IsKnown(m.Meta) {
@@ -205,7 +201,11 @@ func (m *ExceptionListModel) fromAPI(ctx context.Context, apiList *kbapi.Securit
 		set, d := types.SetValueFrom(ctx, types.StringType, *apiList.Tags)
 		diags.Append(d...)
 		m.Tags = set
-	} else {
+	} else if m.Tags.IsUnknown() {
+		// Same as os_types above (fixed in #1740): only collapse to null when
+		// the plan value was Unknown. Preserving a Known-empty Set avoids
+		// "produced inconsistent result after apply: .tags: was null, but now
+		// ..." when config sets `tags = []`.
 		m.Tags = types.SetNull(types.StringType)
 	}
 

@@ -30,7 +30,7 @@ import (
 // requirements after scoped client resolution and before invoking the concrete
 // lifecycle callback.
 type WithVersionRequirements interface {
-	GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics)
+	GetVersionRequirements(ctx context.Context) ([]VersionRequirement, diag.Diagnostics)
 }
 
 // MinVersionClient is implemented by scoped API clients used by entity envelopes
@@ -51,7 +51,7 @@ func EnforceVersionRequirements(ctx context.Context, client MinVersionClient, mo
 		return diags
 	}
 
-	reqs, vDiags := versionModel.GetVersionRequirements()
+	reqs, vDiags := versionModel.GetVersionRequirements(ctx)
 	diags.Append(vDiags...)
 	if diags.HasError() {
 		return diags

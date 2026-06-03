@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -50,15 +49,15 @@ func (t ThreatMatchRuleProcessor) HandlesRuleType(ruleType string) bool {
 	return ruleType == ruleTypeThreatMatch
 }
 
-func (t ThreatMatchRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
-	return d.toThreatMatchRuleCreateProps(ctx, client)
+func (t ThreatMatchRuleProcessor) ToCreateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+	return d.toThreatMatchRuleCreateProps(ctx)
 }
 
-func (t ThreatMatchRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
-	return d.toThreatMatchRuleUpdateProps(ctx, client)
+func (t ThreatMatchRuleProcessor) ToUpdateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+	return d.toThreatMatchRuleUpdateProps(ctx)
 }
 
-func (d Data) toThreatMatchRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d Data) toThreatMatchRuleCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -128,7 +127,7 @@ func (d Data) toThreatMatchRuleCreateProps(ctx context.Context, client clients.M
 		Threat:                            &threatMatchRule.Threat,
 		TimelineID:                        &threatMatchRule.TimelineId,
 		TimelineTitle:                     &threatMatchRule.TimelineTitle,
-	}, &diags, client)
+	}, &diags)
 
 	// Set threat-specific fields
 	if typeutils.IsKnown(d.ThreatQuery) {
@@ -169,7 +168,7 @@ func (d Data) toThreatMatchRuleCreateProps(ctx context.Context, client clients.M
 
 	return createProps, diags
 }
-func (d Data) toThreatMatchRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d Data) toThreatMatchRuleUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -252,7 +251,7 @@ func (d Data) toThreatMatchRuleUpdateProps(ctx context.Context, client clients.M
 		Threat:                            &threatMatchRule.Threat,
 		TimelineID:                        &threatMatchRule.TimelineId,
 		TimelineTitle:                     &threatMatchRule.TimelineTitle,
-	}, &diags, client)
+	}, &diags)
 
 	// Set threat-specific fields
 	if typeutils.IsKnown(d.ThreatQuery) {

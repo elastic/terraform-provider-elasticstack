@@ -20,56 +20,39 @@ package serverhost
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *serverHostResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var planModel serverHostModel
-
-	diags := req.Plan.Get(ctx, &planModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
+func updateServerHost(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[serverHostModel]) (entitycore.KibanaWriteResult[serverHostModel], diag.Diagnostics) {
+	var diags diag.Diagnostics
 	fleetClient := client.GetFleetClient()
 
-	hostID := planModel.HostID.ValueString()
-	body, diags := planModel.toAPIUpdateModel(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	hostID := req.Plan.HostID.ValueString()
+	body, d := req.Plan.toAPIUpdateModel(ctx)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[serverHostModel]{}, diags
 	}
 
-	// Read the existing spaces from state to avoid updating in a space where it's not yet visible
-	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	spaceID := req.SpaceID
+	if req.Prior != nil {
+		spaceID = req.Prior.GetSpaceID().ValueString()
 	}
 
-	// Update using the operational space from STATE
-	// API handles adding/removing server host from spaces based on space_ids in body
-	host, diags := fleet.UpdateFleetServerHost(ctx, fleetClient, hostID, spaceID, body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	host, d := fleet.UpdateFleetServerHost(ctx, fleetClient, hostID, spaceID, body)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[serverHostModel]{}, diags
 	}
 
-	diags = planModel.populateFromAPI(ctx, host)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	d = req.Plan.populateFromAPI(ctx, host)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[serverHostModel]{}, diags
 	}
 
-	diags = resp.State.Set(ctx, planModel)
-	resp.Diagnostics.Append(diags...)
+	return entitycore.KibanaWriteResult[serverHostModel]{Model: req.Plan}, diags
 }

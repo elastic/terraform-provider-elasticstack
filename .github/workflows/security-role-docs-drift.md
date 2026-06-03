@@ -45,12 +45,12 @@ checkout:
   fetch-depth: 0
 steps:
   - name: Checkout repository
-    uses: actions/checkout@v4
+    uses: actions/checkout@v6.0.2
     with:
       fetch-depth: 0
       persist-credentials: false
   - name: Setup Go
-    uses: actions/setup-go@v6
+    uses: actions/setup-go@v6.4.0
     with:
       go-version-file: go.mod
       cache: false

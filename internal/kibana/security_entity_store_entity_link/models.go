@@ -51,7 +51,7 @@ func (model entityLinkModel) GetID() types.String         { return model.ID }
 func (model entityLinkModel) GetResourceID() types.String { return model.TargetID }
 func (model entityLinkModel) GetSpaceID() types.String    { return model.SpaceID }
 
-func (model entityLinkModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (model entityLinkModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *minKibanaEntityStoreResolutionVersion,

@@ -18,6 +18,7 @@
 package agentbuilderworkflow
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -30,20 +31,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (model workflowModel) GetID() types.String             { return model.ID }
-func (model workflowModel) GetResourceID() types.String     { return model.WorkflowID }
-func (model workflowModel) GetSpaceID() types.String        { return model.SpaceID }
-func (model workflowModel) GetKibanaConnection() types.List { return model.KibanaConnection }
-
-var _ entitycore.KibanaResourceModel = workflowModel{}
-var _ entitycore.WithVersionRequirements = workflowModel{}
-
-func (model workflowModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return workflowVersionRequirements(), nil
-}
-
-var _ entitycore.WithVersionRequirements = workflowDataSourceModel{}
-
+// workflowDataSourceModel is the core model shared between the workflow data
+// source and resource. The data source exposes exactly these fields, while the
+// resource model (workflowModel) embeds it and adds the computed attributes
+// derived from the YAML definition. Defining the version gate and the
+// kibana_connection block (via KibanaConnectionField) here means they are
+// declared exactly once rather than duplicated across both models.
 type workflowDataSourceModel struct {
 	entitycore.KibanaConnectionField
 	ID                types.String                    `tfsdk:"id"`
@@ -52,30 +45,29 @@ type workflowDataSourceModel struct {
 	ConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"configuration_yaml"`
 }
 
-func (model workflowDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return workflowVersionRequirements(), nil
+func (workflowDataSourceModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{{
+		MinVersion:   *minKibanaAgentBuilderAPIVersion,
+		ErrorMessage: fmt.Sprintf("Agent Builder workflows require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
+	}}, nil
 }
 
-func workflowVersionRequirements() []entitycore.VersionRequirement {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *minKibanaAgentBuilderAPIVersion,
-			ErrorMessage: fmt.Sprintf("Agent Builder workflows require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
-		},
-	}
-}
+var _ entitycore.WithVersionRequirements = workflowDataSourceModel{}
 
 type workflowModel struct {
-	ID                types.String                    `tfsdk:"id"`
-	KibanaConnection  types.List                      `tfsdk:"kibana_connection"`
-	WorkflowID        types.String                    `tfsdk:"workflow_id"`
-	SpaceID           types.String                    `tfsdk:"space_id"`
-	ConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"configuration_yaml"`
-	Name              types.String                    `tfsdk:"name"`
-	Description       types.String                    `tfsdk:"description"`
-	Enabled           types.Bool                      `tfsdk:"enabled"`
-	Valid             types.Bool                      `tfsdk:"valid"`
+	workflowDataSourceModel
+	Name        types.String `tfsdk:"name"`
+	Description types.String `tfsdk:"description"`
+	Enabled     types.Bool   `tfsdk:"enabled"`
+	Valid       types.Bool   `tfsdk:"valid"`
 }
+
+func (model workflowModel) GetID() types.String         { return model.ID }
+func (model workflowModel) GetResourceID() types.String { return model.WorkflowID }
+func (model workflowModel) GetSpaceID() types.String    { return model.SpaceID }
+
+var _ entitycore.KibanaResourceModel = workflowModel{}
+var _ entitycore.WithVersionRequirements = workflowModel{}
 
 func (model *workflowModel) populateFromAPI(data *models.Workflow) {
 	if data == nil {

@@ -10,14 +10,14 @@ safe-outputs:
       runs-on: ubuntu-latest
       steps:
         - name: Checkout repository
-          uses: actions/checkout@v6
+          uses: actions/checkout@v6.0.2
           with:
             persist-credentials: false
             sparse-checkout: .github/scripts/workflows/lib
             sparse-checkout-cone-mode: true
             fetch-depth: 1
         - name: Download safe-outputs artifact
-          uses: actions/download-artifact@v8
+          uses: actions/download-artifact@v8.0.1
           with:
             name: safe-outputs-items
             path: /tmp/gh-aw/safe-outputs

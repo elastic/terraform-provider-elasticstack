@@ -20,14 +20,11 @@ package template
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 
-	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -141,44 +138,26 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 	if obj.IsNull() || obj.IsUnknown() {
 		return nil, diags
 	}
-	attrs := obj.Attributes()
-	t := &models.Template{}
 
-	if v, ok := attrs[attrAlias]; ok && !v.IsNull() && !v.IsUnknown() {
-		setV, ok := v.(types.Set)
-		if !ok {
-			diags.AddError("Internal error", fmt.Sprintf("expected Set for template.alias, got %T", v))
-			return nil, diags
-		}
-		t.Aliases = make(map[string]models.IndexAlias, len(setV.Elements()))
-		for _, el := range setV.Elements() {
-			aliasVal, ok := el.(AliasObjectValue)
-			if !ok {
-				diags.AddError("Internal error", fmt.Sprintf("expected AliasObjectValue, got %T", el))
-				return nil, diags
-			}
-			var am aliasutil.AliasModel
-			diags.Append(aliasVal.As(ctx, &am, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
-			if diags.HasError() {
-				return nil, diags
-			}
-			name := am.Name.ValueString()
-			ia, d := aliasutil.ExpandAliasElement(am)
-			diags.Append(d...)
-			if diags.HasError() {
-				return nil, diags
-			}
-			t.Aliases[name] = ia
-		}
+	var tm TemplateBlockModel
+	diags.Append(obj.As(ctx, &tm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
+	if diags.HasError() {
+		return nil, diags
 	}
 
-	if v, ok := attrs[attrMappings]; ok && !v.IsNull() && !v.IsUnknown() {
-		norm, ok := v.(esindex.MappingsValue)
-		if !ok {
-			diags.AddError("Internal error", fmt.Sprintf("expected index.MappingsValue for mappings, got %T", v))
+	t := &models.Template{}
+
+	if !tm.Alias.IsNull() && !tm.Alias.IsUnknown() {
+		aliases, d := aliasutil.ExpandAliasSet(ctx, tm.Alias)
+		diags.Append(d...)
+		if diags.HasError() {
 			return nil, diags
 		}
-		s := strings.TrimSpace(norm.ValueString())
+		t.Aliases = aliases
+	}
+
+	if !tm.Mappings.IsNull() && !tm.Mappings.IsUnknown() {
+		s := strings.TrimSpace(tm.Mappings.ValueString())
 		if s != "" {
 			maps := make(map[string]any)
 			if err := json.Unmarshal([]byte(s), &maps); err != nil {
@@ -189,13 +168,8 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 		}
 	}
 
-	if v, ok := attrs[attrSettings]; ok && !v.IsNull() && !v.IsUnknown() {
-		is, ok := v.(customtypes.IndexSettingsValue)
-		if !ok {
-			diags.AddError("Internal error", fmt.Sprintf("expected IndexSettingsValue for settings, got %T", v))
-			return nil, diags
-		}
-		s := strings.TrimSpace(is.ValueString())
+	if !tm.Settings.IsNull() && !tm.Settings.IsUnknown() {
+		s := strings.TrimSpace(tm.Settings.ValueString())
 		if s != "" {
 			sets := make(map[string]any)
 			if err := json.Unmarshal([]byte(s), &sets); err != nil {
@@ -206,22 +180,12 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 		}
 	}
 
-	if v, ok := attrs[attrLifecycle]; ok && !v.IsNull() && !v.IsUnknown() {
-		lcObj, ok := v.(types.Object)
-		if !ok {
-			diags.AddError("Internal error", fmt.Sprintf("expected Object for lifecycle, got %T", v))
-			return nil, diags
-		}
-		t.Lifecycle = expandTemplateLifecycle(lcObj)
+	if !tm.Lifecycle.IsNull() && !tm.Lifecycle.IsUnknown() {
+		t.Lifecycle = expandTemplateLifecycle(tm.Lifecycle)
 	}
 
-	if v, ok := attrs[attrDataStreamOptions]; ok && !v.IsNull() && !v.IsUnknown() {
-		dsoObj, ok := v.(types.Object)
-		if !ok {
-			diags.AddError("Internal error", fmt.Sprintf("expected Object for data_stream_options, got %T", v))
-			return nil, diags
-		}
-		dso, d := datastreamoptions.Expand(dsoObj)
+	if !tm.DataStreamOptions.IsNull() && !tm.DataStreamOptions.IsUnknown() {
+		dso, d := datastreamoptions.Expand(tm.DataStreamOptions)
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags

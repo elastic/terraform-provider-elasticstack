@@ -40,7 +40,7 @@ func deleteEntityStore(
 
 	body := kbapi.PostSecurityEntityStoreUninstallJSONRequestBody{}
 	if len(entityTypes) > 0 {
-		body.EntityTypes = uninstallTypes(entityTypes)
+		body.EntityTypes = stringSliceToAPITypes[kbapi.PostSecurityEntityStoreUninstallJSONBodyEntityTypes](entityTypes)
 	}
 
 	return kibanaoapi.UninstallSecurityEntityStore(ctx, client.GetKibanaOapiClient(), spaceID, body)

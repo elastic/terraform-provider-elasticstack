@@ -67,7 +67,7 @@ func TestOutputModelRemoteElasticsearchModelMapsSSLCertificateAuthoritiesAndClie
 	t.Parallel()
 
 	sslObj := types.ObjectValueMust(
-		getSslAttrTypes(),
+		getSslAttrTypes(context.Background()),
 		map[string]attr.Value{
 			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{
 				types.StringValue("ca-1"),

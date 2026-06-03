@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -46,15 +45,15 @@ func (e EqlRuleProcessor) HandlesRuleType(t string) bool {
 	return t == ruleTypeEQL
 }
 
-func (e EqlRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
-	return toEqlRuleCreateProps(ctx, client, d)
+func (e EqlRuleProcessor) ToCreateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+	return toEqlRuleCreateProps(ctx, d)
 }
 
-func (e EqlRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
-	return toEqlRuleUpdateProps(ctx, client, d)
+func (e EqlRuleProcessor) ToUpdateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+	return toEqlRuleUpdateProps(ctx, d)
 }
 
-func toEqlRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func toEqlRuleCreateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -103,7 +102,7 @@ func toEqlRuleCreateProps(ctx context.Context, client clients.MinVersionEnforcea
 		Threat:                            &eqlRule.Threat,
 		TimelineID:                        &eqlRule.TimelineId,
 		TimelineTitle:                     &eqlRule.TimelineTitle,
-	}, &diags, client)
+	}, &diags)
 
 	// Set EQL-specific fields
 	if typeutils.IsKnown(d.TiebreakerField) {
@@ -122,7 +121,7 @@ func toEqlRuleCreateProps(ctx context.Context, client clients.MinVersionEnforcea
 
 	return createProps, diags
 }
-func toEqlRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func toEqlRuleUpdateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -184,7 +183,7 @@ func toEqlRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforcea
 		Threat:                            &eqlRule.Threat,
 		TimelineID:                        &eqlRule.TimelineId,
 		TimelineTitle:                     &eqlRule.TimelineTitle,
-	}, &diags, client)
+	}, &diags)
 
 	// Set EQL-specific fields
 	if typeutils.IsKnown(d.TiebreakerField) {

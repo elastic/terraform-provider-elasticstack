@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -62,6 +63,31 @@ type ExceptionItemModel struct {
 	UpdatedBy        types.String         `tfsdk:"updated_by"`
 	TieBreakerID     types.String         `tfsdk:"tie_breaker_id"`
 }
+
+func (m ExceptionItemModel) GetID() types.String { return m.ID }
+func (m ExceptionItemModel) GetResourceID() types.String {
+	if compID, _ := clients.CompositeIDFromStr(m.ID.ValueString()); compID != nil {
+		return types.StringValue(compID.ResourceID)
+	}
+	return m.ItemID
+}
+func (m ExceptionItemModel) GetSpaceID() types.String        { return m.SpaceID }
+func (m ExceptionItemModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+
+var _ entitycore.KibanaResourceModel = ExceptionItemModel{}
+
+func (m ExceptionItemModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if !typeutils.IsKnown(m.ExpireTime) {
+		return nil, diags
+	}
+	return []entitycore.VersionRequirement{{
+		MinVersion:   *MinVersionExpireTime,
+		ErrorMessage: fmt.Sprintf("expire_time requires server version %s or higher", MinVersionExpireTime.String()),
+	}}, diags
+}
+
+var _ entitycore.WithVersionRequirements = ExceptionItemModel{}
 
 type CommentModel struct {
 	ID      types.String `tfsdk:"id"`
@@ -739,7 +765,6 @@ func (m *ExceptionItemModel) setCommonProps(
 	ctx context.Context,
 	props *CommonExceptionItemProps,
 	diags *diag.Diagnostics,
-	client clients.MinVersionEnforceable,
 ) {
 	// Set optional namespace_type
 	if typeutils.IsKnown(m.NamespaceType) {
@@ -753,9 +778,7 @@ func (m *ExceptionItemModel) setCommonProps(
 		if diags.HasError() {
 			return
 		}
-		if len(osTypes) > 0 {
-			*props.OsTypes = osTypes
-		}
+		*props.OsTypes = osTypes
 	}
 
 	// Set optional tags
@@ -764,9 +787,7 @@ func (m *ExceptionItemModel) setCommonProps(
 		if diags.HasError() {
 			return
 		}
-		if len(tags) > 0 {
-			*props.Tags = tags
-		}
+		*props.Tags = tags
 	}
 
 	// Set optional meta
@@ -782,16 +803,6 @@ func (m *ExceptionItemModel) setCommonProps(
 
 	// Set optional expire_time
 	if typeutils.IsKnown(m.ExpireTime) {
-		// Check version support for expire_time
-		if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionExpireTime); versionDiags.HasError() {
-			diags.Append(versionDiags...)
-			return
-		} else if !supported {
-			diags.AddError("expire_time is unsupported",
-				fmt.Sprintf("expire_time requires server version %s or higher", MinVersionExpireTime.String()))
-			return
-		}
-
 		expireTime, d := m.ExpireTime.ValueRFC3339Time()
 		diags.Append(d...)
 		if diags.HasError() {
@@ -815,7 +826,7 @@ func (m *ExceptionItemModel) commentModels(ctx context.Context, diags *diag.Diag
 }
 
 // toCreateRequest converts the Terraform model to API create request
-func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients.MinVersionEnforceable) (*kbapi.CreateExceptionListItemJSONRequestBody, diag.Diagnostics) {
+func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.CreateExceptionListItemJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	entries, d := convertEntriesToAPI(ctx, m.Entries)
@@ -851,7 +862,7 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients
 		Tags:          &tags,
 		Meta:          &meta,
 		ExpireTime:    &expireTime,
-	}, &diags, client)
+	}, &diags)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -860,10 +871,10 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients
 	if typeutils.IsKnown(m.NamespaceType) {
 		genericReq.NamespaceType = &nsType
 	}
-	if typeutils.IsKnown(m.OsTypes) && len(osTypes) > 0 {
+	if typeutils.IsKnown(m.OsTypes) {
 		genericReq.OsTypes = &osTypes
 	}
-	if typeutils.IsKnown(m.Tags) && len(tags) > 0 {
+	if typeutils.IsKnown(m.Tags) {
 		genericReq.Tags = &tags
 	}
 	if typeutils.IsKnown(m.Meta) {
@@ -897,7 +908,7 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients
 }
 
 // toUpdateRequest converts the Terraform model to API update request
-func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceID string, client clients.MinVersionEnforceable) (*kbapi.UpdateExceptionListItemJSONRequestBody, diag.Diagnostics) {
+func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceID string) (*kbapi.UpdateExceptionListItemJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	entries, d := convertEntriesToAPI(ctx, m.Entries)
@@ -928,7 +939,7 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceID str
 		Tags:          &tags,
 		Meta:          &meta,
 		ExpireTime:    &expireTime,
-	}, &diags, client)
+	}, &diags)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -937,10 +948,10 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceID str
 	if typeutils.IsKnown(m.NamespaceType) {
 		genericReq.NamespaceType = &nsType
 	}
-	if typeutils.IsKnown(m.OsTypes) && len(osTypes) > 0 {
+	if typeutils.IsKnown(m.OsTypes) {
 		genericReq.OsTypes = &osTypes
 	}
-	if typeutils.IsKnown(m.Tags) && len(tags) > 0 {
+	if typeutils.IsKnown(m.Tags) {
 		genericReq.Tags = &tags
 	}
 	if typeutils.IsKnown(m.Meta) {
@@ -1014,7 +1025,13 @@ func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.Securit
 		set, d := types.SetValueFrom(ctx, types.StringType, *apiResp.OsTypes)
 		diags.Append(d...)
 		m.OsTypes = set
-	} else {
+	} else if m.OsTypes.IsUnknown() {
+		// Kibana returns nil/[] interchangeably for an empty set; only collapse
+		// to null when the plan value itself was Unknown. Preserving a Known
+		// empty set (e.g. `os_types = []` from config) avoids "produced an
+		// unexpected new value: .os_types: was cty.SetValEmpty, but now null"
+		// on read-after-apply. Mirrors the pattern fixed in #1740 on the
+		// sibling securityexceptionlist resource.
 		m.OsTypes = types.SetNull(types.StringType)
 	}
 
@@ -1023,7 +1040,9 @@ func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.Securit
 		set, d := types.SetValueFrom(ctx, types.StringType, *apiResp.Tags)
 		diags.Append(d...)
 		m.Tags = set
-	} else {
+	} else if m.Tags.IsUnknown() {
+		// Same reasoning as os_types above: preserve a Known empty set so
+		// `tags = []` from config round-trips without an after-apply diff.
 		m.Tags = types.SetNull(types.StringType)
 	}
 

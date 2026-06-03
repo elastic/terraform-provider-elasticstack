@@ -18,6 +18,7 @@
 package componenttemplate
 
 import (
+	"context"
 	"testing"
 
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
@@ -33,7 +34,7 @@ func TestData_GetVersionRequirements(t *testing.T) {
 	t.Run("null template", func(t *testing.T) {
 		t.Parallel()
 		d := Data{Template: types.ObjectNull(templateAttrTypes())}
-		reqs, diags := d.GetVersionRequirements()
+		reqs, diags := d.GetVersionRequirements(context.Background())
 		if diags.HasError() {
 			t.Fatal(diags)
 		}
@@ -54,7 +55,7 @@ func TestData_GetVersionRequirements(t *testing.T) {
 			t.Fatal(diags)
 		}
 		d := Data{Template: tplObj}
-		reqs, diags := d.GetVersionRequirements()
+		reqs, diags := d.GetVersionRequirements(context.Background())
 		if diags.HasError() {
 			t.Fatal(diags)
 		}
@@ -88,7 +89,7 @@ func TestData_GetVersionRequirements(t *testing.T) {
 			t.Fatal(diags)
 		}
 		d := Data{Template: tplObj}
-		reqs, diags := d.GetVersionRequirements()
+		reqs, diags := d.GetVersionRequirements(context.Background())
 		if diags.HasError() {
 			t.Fatal(diags)
 		}

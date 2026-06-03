@@ -23,7 +23,6 @@ import (
 
 	kibanacustomtypes "github.com/elastic/terraform-provider-elasticstack/internal/kibana/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/validators"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -31,7 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
@@ -52,11 +50,7 @@ var (
 	cachedFlappingTypes  map[string]attr.Type
 )
 
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = getSchema()
-}
-
-func getSchema() schema.Schema {
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Version:             1,
 		MarkdownDescription: resourceDescription,
@@ -214,7 +208,6 @@ func getSchema() schema.Schema {
 			},
 		},
 		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 			"actions": schema.ListNestedBlock{
 				Description: "An action that runs under defined conditions.",
 				NestedObject: schema.NestedBlockObject{
@@ -325,7 +318,7 @@ func getSchema() schema.Schema {
 // initAttrTypes initializes and caches all attribute types from the schema.
 // This is called once via sync.Once to avoid repeatedly parsing the schema.
 func initAttrTypes() {
-	s := getSchema()
+	s := getSchema(context.Background())
 
 	actionsBlock := s.Blocks["actions"].(schema.ListNestedBlock)
 	cachedActionsTypes = actionsBlock.NestedObject.Type().(attr.TypeWithAttributeTypes).AttributeTypes()

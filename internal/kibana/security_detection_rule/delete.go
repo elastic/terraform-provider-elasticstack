@@ -24,40 +24,20 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *securityDetectionRuleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data Data
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, data.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Parse ID to get space_id and rule_id
-	compID, diags := clients.CompositeIDFromStr(data.ID.ValueString())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	spaceID := compID.ClusterID
+func deleteDetectionRule(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ Data) diag.Diagnostics {
+	var diags diag.Diagnostics
 
 	// Get the rule using kbapi client
 	kbClient := client.GetKibanaOapiClient()
 
 	// Delete the rule
-	uid, err := uuid.Parse(compID.ResourceID)
+	uid, err := uuid.Parse(resourceID)
 	if err != nil {
-		resp.Diagnostics.AddError("ID was not a valid UUID", err.Error())
-		return
+		diags.AddError("ID was not a valid UUID", err.Error())
+		return diags
 	}
 	params := &kbapi.DeleteRuleParams{
 		Id: &uid,
@@ -65,23 +45,25 @@ func (r *securityDetectionRuleResource) Delete(ctx context.Context, req resource
 
 	response, err := kbClient.API.DeleteRuleWithResponse(ctx, spaceID, params)
 	if err != nil {
-		resp.Diagnostics.AddError(
+		diags.AddError(
 			"Error deleting security detection rule",
 			"Could not delete security detection rule: "+err.Error(),
 		)
-		return
+		return diags
 	}
 
 	if response.StatusCode() == 404 {
 		// Rule was already deleted, which is fine
-		return
+		return diags
 	}
 
 	if response.StatusCode() != 200 {
-		resp.Diagnostics.AddError(
+		diags.AddError(
 			"Error deleting security detection rule",
 			fmt.Sprintf("API returned status %d: %s", response.StatusCode(), string(response.Body)),
 		)
-		return
+		return diags
 	}
+
+	return diags
 }

@@ -21,54 +21,32 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *serverHostResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var stateModel serverHostModel
-
-	diags := req.State.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
+func deleteServerHost(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model serverHostModel) diag.Diagnostics {
+	var diags diag.Diagnostics
 	fleetClient := client.GetFleetClient()
-
-	hostID := stateModel.HostID.ValueString()
-
-	// Read the existing spaces from state to determine where to delete
-	// NOTE: DELETE removes the server host from ALL spaces (global delete)
-	// To remove from specific spaces only, UPDATE space_ids instead
-	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 
 	// Kibana refuses to delete a Fleet server host that is currently marked
 	// as default ("Default Fleet Server hosts <id> cannot be deleted"). When
 	// state has default=true, clear the flag via update before deleting so
 	// that `terraform destroy` succeeds without manual intervention.
-	if stateModel.Default.ValueBool() {
+	if model.Default.ValueBool() {
 		isDefault := false
-		_, updateDiags := fleet.UpdateFleetServerHost(ctx, fleetClient, hostID, spaceID, kbapi.PutFleetFleetServerHostsItemidJSONRequestBody{
+		_, d := fleet.UpdateFleetServerHost(ctx, fleetClient, resourceID, spaceID, kbapi.PutFleetFleetServerHostsItemidJSONRequestBody{
 			IsDefault: &isDefault,
 		})
-		resp.Diagnostics.Append(updateDiags...)
-		if resp.Diagnostics.HasError() {
-			return
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
 		}
 	}
 
-	diags = fleet.DeleteFleetServerHost(ctx, fleetClient, hostID, spaceID)
-	resp.Diagnostics.Append(diags...)
+	d := fleet.DeleteFleetServerHost(ctx, fleetClient, resourceID, spaceID)
+	diags.Append(d...)
+
+	return diags
 }

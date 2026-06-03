@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -50,15 +49,15 @@ func (n NewTermsRuleProcessor) HandlesRuleType(t string) bool {
 	return t == ruleTypeNewTerms
 }
 
-func (n NewTermsRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
-	return d.toNewTermsRuleCreateProps(ctx, client)
+func (n NewTermsRuleProcessor) ToCreateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+	return d.toNewTermsRuleCreateProps(ctx)
 }
 
-func (n NewTermsRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
-	return d.toNewTermsRuleUpdateProps(ctx, client)
+func (n NewTermsRuleProcessor) ToUpdateProps(ctx context.Context, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+	return d.toNewTermsRuleUpdateProps(ctx)
 }
 
-func (d Data) toNewTermsRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d Data) toNewTermsRuleCreateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -115,7 +114,7 @@ func (d Data) toNewTermsRuleCreateProps(ctx context.Context, client clients.MinV
 		Threat:                            &newTermsRule.Threat,
 		TimelineID:                        &newTermsRule.TimelineId,
 		TimelineTitle:                     &newTermsRule.TimelineTitle,
-	}, &diags, client)
+	}, &diags)
 
 	// Set query language
 	newTermsRule.Language = d.getKQLQueryLanguage()
@@ -131,7 +130,7 @@ func (d Data) toNewTermsRuleCreateProps(ctx context.Context, client clients.MinV
 
 	return createProps, diags
 }
-func (d Data) toNewTermsRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d Data) toNewTermsRuleUpdateProps(ctx context.Context) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -201,7 +200,7 @@ func (d Data) toNewTermsRuleUpdateProps(ctx context.Context, client clients.MinV
 		Threat:                            &newTermsRule.Threat,
 		TimelineID:                        &newTermsRule.TimelineId,
 		TimelineTitle:                     &newTermsRule.TimelineTitle,
-	}, &diags, client)
+	}, &diags)
 
 	// Set query language
 	newTermsRule.Language = d.getKQLQueryLanguage()

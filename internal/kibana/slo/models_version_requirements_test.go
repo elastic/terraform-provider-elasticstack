@@ -18,6 +18,7 @@
 package slo
 
 import (
+	"context"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -66,7 +67,7 @@ func TestTfModel_GetVersionRequirements(t *testing.T) {
 
 	t.Run("neither condition set", func(t *testing.T) {
 		t.Parallel()
-		reqs, diags := (tfModel{}).GetVersionRequirements()
+		reqs, diags := (tfModel{}).GetVersionRequirements(context.Background())
 		require.False(t, diags.HasError())
 		assertRequirements(t, reqs, 0)
 	})
@@ -74,7 +75,7 @@ func TestTfModel_GetVersionRequirements(t *testing.T) {
 	t.Run("only prevent_initial_backfill", func(t *testing.T) {
 		t.Parallel()
 		m := tfModel{Settings: settingsWithPreventInitialBackfill(t, true)}
-		reqs, diags := m.GetVersionRequirements()
+		reqs, diags := m.GetVersionRequirements(context.Background())
 		require.False(t, diags.HasError())
 		require.Len(t, reqs, 1)
 		require.Equal(t, *SLOSupportsPreventInitialBackfillMinVersion, reqs[0].MinVersion)
@@ -84,7 +85,7 @@ func TestTfModel_GetVersionRequirements(t *testing.T) {
 	t.Run("prevent_initial_backfill known false", func(t *testing.T) {
 		t.Parallel()
 		m := tfModel{Settings: settingsWithPreventInitialBackfill(t, false)}
-		reqs, diags := m.GetVersionRequirements()
+		reqs, diags := m.GetVersionRequirements(context.Background())
 		require.False(t, diags.HasError())
 		require.Len(t, reqs, 1)
 		require.True(t, reqs[0].MinVersion.Equal(SLOSupportsPreventInitialBackfillMinVersion))
@@ -93,7 +94,7 @@ func TestTfModel_GetVersionRequirements(t *testing.T) {
 
 	t.Run("only data_view_id", func(t *testing.T) {
 		t.Parallel()
-		reqs, diags := modelWithDataViewID.GetVersionRequirements()
+		reqs, diags := modelWithDataViewID.GetVersionRequirements(context.Background())
 		require.False(t, diags.HasError())
 		require.Len(t, reqs, 1)
 		require.Equal(t, *SLOSupportsDataViewIDMinVersion, reqs[0].MinVersion)
@@ -104,7 +105,7 @@ func TestTfModel_GetVersionRequirements(t *testing.T) {
 		t.Parallel()
 		m := modelWithDataViewID
 		m.Settings = settingsWithPreventInitialBackfill(t, true)
-		reqs, diags := m.GetVersionRequirements()
+		reqs, diags := m.GetVersionRequirements(context.Background())
 		require.False(t, diags.HasError())
 		assertRequirements(t, reqs, 2, preventInitialBackfillMessage, dataViewIDMessage)
 

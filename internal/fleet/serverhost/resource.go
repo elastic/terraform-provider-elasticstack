@@ -25,24 +25,35 @@ import (
 )
 
 var (
-	_ resource.Resource                = newServerHostResource()
-	_ resource.ResourceWithConfigure   = newServerHostResource()
-	_ resource.ResourceWithImportState = newServerHostResource()
+	_ resource.Resource                = newResource()
+	_ resource.ResourceWithConfigure   = newResource()
+	_ resource.ResourceWithImportState = newResource()
 )
 
-type serverHostResource struct {
-	*entitycore.ResourceBase
+// Resource implements the Fleet Server Host resource.
+type Resource struct {
+	*entitycore.KibanaResource[serverHostModel]
 	*fleet.SpaceImporter
 }
 
-func newServerHostResource() *serverHostResource {
-	return &serverHostResource{
-		ResourceBase:  entitycore.NewResourceBase(entitycore.ComponentFleet, "server_host"),
+func newResource() *Resource {
+	return &Resource{
+		KibanaResource: entitycore.NewKibanaResource[serverHostModel](
+			entitycore.ComponentFleet,
+			"server_host",
+			entitycore.KibanaResourceOptions[serverHostModel]{
+				Schema: getSchema,
+				Read:   readServerHost,
+				Delete: deleteServerHost,
+				Create: createServerHost,
+				Update: updateServerHost,
+			},
+		),
 		SpaceImporter: fleet.NewSpaceImporter(path.Root("host_id")),
 	}
 }
 
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
-	return newServerHostResource()
+	return newResource()
 }

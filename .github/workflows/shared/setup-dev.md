@@ -6,12 +6,12 @@ network:
     - terraform
 steps:
   - name: Setup Go
-    uses: actions/setup-go@v6
+    uses: actions/setup-go@v6.4.0
     with:
       go-version-file: go.mod
       cache: false
   - name: Setup Terraform CLI
-    uses: hashicorp/setup-terraform@v4
+    uses: hashicorp/setup-terraform@v4.0.1
     with:
       terraform_wrapper: false
   - name: Export Go and Terraform paths for AWF chroot mode
@@ -28,7 +28,7 @@ steps:
       echo "TERRAFORM_BIN=$GITHUB_WORKSPACE/bin/terraform" >> "$GITHUB_ENV"
       echo "PATH=$GITHUB_WORKSPACE/bin:$PATH" >> "$GITHUB_ENV"
   - name: Setup Node.js
-    uses: actions/setup-node@v6
+    uses: actions/setup-node@v6.4.0
     with:
       node-version-file: package.json
   - name: Setup repository dependencies

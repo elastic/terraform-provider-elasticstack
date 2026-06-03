@@ -316,6 +316,62 @@ func TestAccResourceExceptionListEndpointType(t *testing.T) {
 	})
 }
 
+func TestAccResourceExceptionList_EmptyTags(t *testing.T) {
+	listID := fmt.Sprintf("test-exception-list-empty-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionListDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_tags"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable(listID),
+					"name":           config.StringVariable("Test Exception List Empty Tags"),
+					"description":    config.StringVariable("Test exception list with empty tags"),
+					"type":           config.StringVariable("detection"),
+					"namespace_type": config.StringVariable("single"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "list_id", listID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "tags.#", "0"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("populated_tags"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable(listID),
+					"name":           config.StringVariable("Test Exception List Empty Tags"),
+					"description":    config.StringVariable("Test exception list with empty tags"),
+					"type":           config.StringVariable("detection"),
+					"namespace_type": config.StringVariable("single"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "tags.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_list.test", "tags.*", "test"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_list.test", "tags.*", "populated"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_tags"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable(listID),
+					"name":           config.StringVariable("Test Exception List Empty Tags"),
+					"description":    config.StringVariable("Test exception list with empty tags"),
+					"type":           config.StringVariable("detection"),
+					"namespace_type": config.StringVariable("single"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "tags.#", "0"),
+				),
+			},
+		},
+	})
+}
+
 func checkResourceExceptionListDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {
