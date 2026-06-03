@@ -1029,7 +1029,13 @@ func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.Securit
 		set, d := types.SetValueFrom(ctx, types.StringType, *apiResp.OsTypes)
 		diags.Append(d...)
 		m.OsTypes = set
-	} else {
+	} else if m.OsTypes.IsUnknown() {
+		// Kibana returns nil/[] interchangeably for an empty set; only collapse
+		// to null when the plan value itself was Unknown. Preserving a Known
+		// empty set (e.g. `os_types = []` from config) avoids "produced an
+		// unexpected new value: .os_types: was cty.SetValEmpty, but now null"
+		// on read-after-apply. Mirrors the pattern fixed in #1740 on the
+		// sibling securityexceptionlist resource.
 		m.OsTypes = types.SetNull(types.StringType)
 	}
 
@@ -1038,7 +1044,9 @@ func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.Securit
 		set, d := types.SetValueFrom(ctx, types.StringType, *apiResp.Tags)
 		diags.Append(d...)
 		m.Tags = set
-	} else {
+	} else if m.Tags.IsUnknown() {
+		// Same reasoning as os_types above: preserve a Known empty set so
+		// `tags = []` from config round-trips without an after-apply diff.
 		m.Tags = types.SetNull(types.StringType)
 	}
 
