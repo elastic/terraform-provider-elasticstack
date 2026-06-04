@@ -158,7 +158,7 @@ func flattenTemplateBody(ctx context.Context, t *models.Template) (types.Object,
 		vals := make([]attr.Value, 0, len(names))
 		for _, name := range names {
 			alias := t.Aliases[name]
-			av, d := flattenAliasElement(name, alias)
+			av, d := aliasutil.FlattenAliasElement(name, alias, nil, AliasAttributeTypes())
 			diags.Append(d...)
 			if diags.HasError() {
 				return types.ObjectUnknown(TemplateAttrTypes()), diags
@@ -238,14 +238,4 @@ func flattenTemplateBody(ctx context.Context, t *models.Template) (types.Object,
 	obj, d := types.ObjectValue(TemplateAttrTypes(), tplAttrs)
 	diags.Append(d...)
 	return obj, diags
-}
-
-func flattenAliasElement(name string, a models.IndexAlias) (attr.Value, diag.Diagnostics) {
-	attrs, diags := aliasutil.AliasAttrsFromModel(name, a)
-	if diags.HasError() {
-		return nil, diags
-	}
-	aliasObj, d := NewAliasObjectValue(attrs)
-	diags.Append(d...)
-	return aliasObj, diags
 }

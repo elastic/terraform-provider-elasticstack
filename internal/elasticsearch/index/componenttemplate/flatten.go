@@ -157,7 +157,7 @@ func flattenAliasSet(ctx context.Context, aliases map[string]models.IndexAlias, 
 
 	vals := make([]attr.Value, 0, len(aliases))
 	for name, alias := range aliases {
-		av, d := flattenAliasElement(name, alias, preservedRouting)
+		av, d := aliasutil.FlattenAliasElement(name, alias, preservedRouting, aliasAttrTypes())
 		diags.Append(d...)
 		if diags.HasError() {
 			return types.SetUnknown(aliasElemType), diags
@@ -168,17 +168,6 @@ func flattenAliasSet(ctx context.Context, aliases map[string]models.IndexAlias, 
 	sv, d := types.SetValueFrom(ctx, aliasElemType, vals)
 	diags.Append(d...)
 	return sv, diags
-}
-
-// flattenAliasElement maps a single Elasticsearch alias API response to a types.Object.
-func flattenAliasElement(name string, a models.IndexAlias, preservedRouting map[string]string) (attr.Value, diag.Diagnostics) {
-	attrs, diags := aliasutil.AliasAttrsFromModelWithRouting(name, a, preservedRouting)
-	if diags.HasError() {
-		return nil, diags
-	}
-	obj, d := types.ObjectValue(aliasAttrTypes(), attrs)
-	diags.Append(d...)
-	return obj, diags
 }
 
 // flattenMappings maps the API mappings response onto a MappingsValue, applying
