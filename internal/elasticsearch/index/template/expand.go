@@ -22,8 +22,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -145,52 +144,14 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 		return nil, diags
 	}
 
-	t := &models.Template{}
-
-	if !tm.Alias.IsNull() && !tm.Alias.IsUnknown() {
-		aliases, d := aliasutil.ExpandAliasSet(ctx, tm.Alias)
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		t.Aliases = aliases
-	}
-
-	if !tm.Mappings.IsNull() && !tm.Mappings.IsUnknown() {
-		s := strings.TrimSpace(tm.Mappings.ValueString())
-		if s != "" {
-			maps := make(map[string]any)
-			if err := json.Unmarshal([]byte(s), &maps); err != nil {
-				diags.AddError("Invalid template.mappings JSON", err.Error())
-				return nil, diags
-			}
-			t.Mappings = maps
-		}
-	}
-
-	if !tm.Settings.IsNull() && !tm.Settings.IsUnknown() {
-		s := strings.TrimSpace(tm.Settings.ValueString())
-		if s != "" {
-			sets := make(map[string]any)
-			if err := json.Unmarshal([]byte(s), &sets); err != nil {
-				diags.AddError("Invalid template.settings JSON", err.Error())
-				return nil, diags
-			}
-			t.Settings = sets
-		}
+	t, d := templateutil.ExpandTemplateCore(ctx, tm.Alias, tm.Mappings, tm.Settings, tm.DataStreamOptions)
+	diags.Append(d...)
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	if !tm.Lifecycle.IsNull() && !tm.Lifecycle.IsUnknown() {
 		t.Lifecycle = expandTemplateLifecycle(tm.Lifecycle)
-	}
-
-	if !tm.DataStreamOptions.IsNull() && !tm.DataStreamOptions.IsUnknown() {
-		dso, d := datastreamoptions.Expand(tm.DataStreamOptions)
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		t.DataStreamOptions = dso
 	}
 
 	return t, diags
