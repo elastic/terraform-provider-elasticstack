@@ -18,24 +18,11 @@
 package monitor
 
 import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func deleteMonitor(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	resourceID string,
-	spaceID string,
-	_ tfModelV0,
-) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	diags = kibanaoapi.DeleteMonitor(ctx, oapiClient, spaceID, resourceID)
-	return diags
-}
+var (
+	_ resource.Resource              = (*entitycore.KibanaResource[tfModelV0])(nil)
+	_ resource.ResourceWithConfigure = (*entitycore.KibanaResource[tfModelV0])(nil)
+)

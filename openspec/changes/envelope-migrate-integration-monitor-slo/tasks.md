@@ -14,18 +14,18 @@
 
 ## 2. kibana/synthetics/monitor migration
 
-- [ ] 2.1 Add `KibanaResourceModel` interface methods to `tfModelV0` (`GetID` returning composite, `GetResourceID` parsing composite to return monitorID, `GetSpaceID`, `GetKibanaConnection`)
-- [ ] 2.2 Remove `_ synthetics.ESAPIClient = newResource()` compile-time assertion from `resource.go`
-- [ ] 2.3 Remove `GetClient()` method from the concrete `Resource` type
-- [ ] 2.4 Delete `synthetics.ESAPIClient` interface and `synthetics.GetKibanaOAPIClient(ESAPIClient, dg)` from `synthetics/api_client.go`
-- [ ] 2.5 Replace `*entitycore.ResourceBase` embed with `*entitycore.KibanaResource[tfModelV0]` in `resource.go`
-- [ ] 2.6 Rewrite `create.go` as a `KibanaWriteFunc[tfModelV0]` (call `CreateMonitor`, populate model via `toModelV0`, return `KibanaWriteResult[T]`)
-- [ ] 2.7 Rewrite `update.go` as a `KibanaWriteFunc[tfModelV0]` (call `UpdateMonitor`, populate model via `toModelV0`, return `KibanaWriteResult[T]`)
-- [ ] 2.8 Rewrite `read.go` as a `readMonitor(ctx, client, resourceID, spaceID, model) (tfModelV0, bool, diag.Diagnostics)` callback (receives separate resourceID and spaceID; no composite parsing needed)
-- [ ] 2.9 Rewrite `delete.go` as a `deleteMonitor(ctx, client, resourceID, spaceID, model) diag.Diagnostics` callback
-- [ ] 2.10 Wire all callbacks into `entitycore.NewKibanaResource[tfModelV0]` in `resource.go`
-- [ ] 2.11 Add `entitycore_contract_test.go` asserting `*entitycore.KibanaResource[tfModelV0]` embedding
-- [ ] 2.12 Verify `make build` passes; run synthetics/monitor acceptance tests
+- [x] 2.1 Add `KibanaResourceModel` interface methods to `tfModelV0` (`GetID` returning composite, `GetResourceID` parsing composite to return monitorID, `GetSpaceID`, `GetKibanaConnection`)
+- [x] 2.2 Remove `_ synthetics.ESAPIClient = newResource()` compile-time assertion from `resource.go`
+- [x] 2.3 Remove `GetClient()` method from the concrete `Resource` type
+- [x] 2.4 Delete `synthetics.ESAPIClient` interface and `synthetics.GetKibanaOAPIClient(ESAPIClient, dg)` from `synthetics/api_client.go`
+- [x] 2.5 Replace `*entitycore.ResourceBase` embed with `*entitycore.KibanaResource[tfModelV0]` in `resource.go`
+- [x] 2.6 Rewrite `create.go` as a `KibanaWriteFunc[tfModelV0]` (call `CreateMonitor`, populate model via `toModelV0`, return `KibanaWriteResult[T]`)
+- [x] 2.7 Rewrite `update.go` as a `KibanaWriteFunc[tfModelV0]` (call `UpdateMonitor`, populate model via `toModelV0`, return `KibanaWriteResult[T]`)
+- [x] 2.8 Rewrite `read.go` as a `readMonitor(ctx, client, resourceID, spaceID, model) (tfModelV0, bool, diag.Diagnostics)` callback (receives separate resourceID and spaceID; no composite parsing needed)
+- [x] 2.9 Rewrite `delete.go` as a `deleteMonitor(ctx, client, resourceID, spaceID, model) diag.Diagnostics` callback
+- [x] 2.10 Wire all callbacks into `entitycore.NewKibanaResource[tfModelV0]` in `resource.go`
+- [x] 2.11 Add `entitycore_contract_test.go` asserting `*entitycore.KibanaResource[tfModelV0]` embedding
+- [x] 2.12 Verify `make build` passes; run synthetics/monitor acceptance tests
 
 ## 3. kibana/slo migration
 
