@@ -1301,7 +1301,7 @@ func APIBodyToItem(ctx context.Context, body map[string]any, diags *diag.Diagnos
 	if diags.HasError() {
 		return types.ObjectNull(ItemObjectType().(types.ObjectType).AttrTypes)
 	}
-	obj, d := types.ObjectValueFrom(ctx, ItemObjectType().(types.ObjectType).AttrTypes, map[string]attr.Value{
+	obj, d := types.ObjectValue(ItemObjectType().(types.ObjectType).AttrTypes, map[string]attr.Value{
 		"@timestamp":     item.Timestamp,
 		attrEntity:       item.Entity,
 		"host":           item.Host,
