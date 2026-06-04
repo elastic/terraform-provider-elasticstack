@@ -18,6 +18,7 @@
 package entitycore
 
 import (
+	"reflect"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -60,4 +61,25 @@ type ResourceTimeouts struct {
 	Read   time.Duration
 	Update time.Duration
 	Delete time.Duration
+}
+
+// preserveModelTimeouts copies the envelope-owned timeouts value onto a callback-
+// returned model before State.Set so conversion succeeds when callbacks reconstruct
+// the struct without ResourceTimeoutsField (zero timeouts.Value{} / Object[]).
+func preserveModelTimeouts(model any, value timeouts.Value) {
+	if model == nil {
+		return
+	}
+	v := reflect.ValueOf(model)
+	if v.Kind() != reflect.Pointer || v.IsNil() {
+		return
+	}
+	el := v.Elem()
+	if f := el.FieldByName("ResourceTimeoutsField"); f.IsValid() && f.CanSet() {
+		f.Set(reflect.ValueOf(ResourceTimeoutsField{Timeouts: value}))
+		return
+	}
+	if f := el.FieldByName("Timeouts"); f.IsValid() && f.CanSet() {
+		f.Set(reflect.ValueOf(value))
+	}
 }

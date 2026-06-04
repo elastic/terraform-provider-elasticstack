@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -308,7 +309,12 @@ func (r *KibanaResource[T]) Read(ctx context.Context, req resource.ReadRequest, 
 	}
 
 	if found {
+		preserveModelTimeouts(&resultModel, model.GetTimeouts())
 		resp.Diagnostics.Append(resp.State.Set(ctx, &resultModel)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(attrTimeouts), model.GetTimeouts())...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
@@ -496,7 +502,13 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 		return diags
 	}
 
+	preserveModelTimeouts(&stateModel, planModel.GetTimeouts())
 	diags.Append(inv.outState.Set(ctx, &stateModel)...)
+	if diags.HasError() {
+		return diags
+	}
+
+	diags.Append(inv.outState.SetAttribute(ctx, path.Root(attrTimeouts), planModel.GetTimeouts())...)
 	if diags.HasError() {
 		return diags
 	}
