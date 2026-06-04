@@ -428,16 +428,12 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWri
 	if inv.isUpdate {
 		writeFn = r.updateFunc
 	}
-	var private PrivateStateStorage
-	if ps, ok := inv.privateState.(PrivateStateStorage); ok {
-		private = ps
-	}
 	written, callDiags := writeFn(ctx, client, WriteRequest[T]{
 		Plan:    planModel,
 		Prior:   priorPtr,
 		Config:  configModel,
 		WriteID: writeKey,
-		Private: private,
+		Private: inv.privateState,
 	})
 	diags.Append(callDiags...)
 	if diags.HasError() {
@@ -479,7 +475,7 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWri
 			Client:  client,
 			Prior:   priorModel,
 			State:   stateModel,
-			Private: private,
+			Private: inv.privateState,
 		})
 		diags.Append(prDiags...)
 		if diags.HasError() {

@@ -452,17 +452,13 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 
 	priorModel := planModel
 
-	var private PrivateStateStorage
-	if ps, ok := inv.privateState.(PrivateStateStorage); ok {
-		private = ps
-	}
 	if r.postReadFunc != nil {
 		var prDiags diag.Diagnostics
 		stateModel, prDiags = r.postReadFunc(ctx, KibanaPostReadRequest[T]{
 			Client:  client,
 			Prior:   priorModel,
 			State:   stateModel,
-			Private: private,
+			Private: inv.privateState,
 		})
 		diags.Append(prDiags...)
 		if diags.HasError() {
