@@ -27,6 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -94,9 +95,9 @@ func (m *Model) fromAPIModel(ctx context.Context, name string, in *models.IndexT
 		m.Metadata = jsontypes.NewNormalizedNull()
 	}
 
-	m.Priority = int64FromInt64Ptr(in.Priority)
-	m.Version = int64FromInt64Ptr(in.Version)
-	m.AllowAutoCreate = boolFromBoolPtr(in.AllowAutoCreate)
+	m.Priority = typeutils.Int64PointerValue(in.Priority)
+	m.Version = typeutils.Int64PointerValue(in.Version)
+	m.AllowAutoCreate = typeutils.BoolPointerValue(in.AllowAutoCreate)
 
 	var d diag.Diagnostics
 	m.DataStream, d = flattenDataStream(in.DataStream)
@@ -114,20 +115,6 @@ func stringSliceToAttrValues(elems []string) []attr.Value {
 		vals[i] = types.StringValue(s)
 	}
 	return vals
-}
-
-func int64FromInt64Ptr(p *int64) types.Int64 {
-	if p == nil {
-		return types.Int64Null()
-	}
-	return types.Int64Value(*p)
-}
-
-func boolFromBoolPtr(p *bool) types.Bool {
-	if p == nil {
-		return types.BoolNull()
-	}
-	return types.BoolValue(*p)
 }
 
 func flattenDataStream(ds *models.DataStreamSettings) (types.Object, diag.Diagnostics) {

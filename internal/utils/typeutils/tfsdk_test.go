@@ -230,6 +230,32 @@ func TestBoolPointerValue(t *testing.T) {
 	}
 }
 
+func TestInt64PointerValue(t *testing.T) {
+	t.Parallel()
+
+	pos := int64(42)
+	neg := int64(-7)
+	zero := int64(0)
+
+	tests := []struct {
+		name  string
+		input *int64
+		want  types.Int64
+	}{
+		{name: "converts nil", input: nil, want: types.Int64Null()},
+		{name: "converts positive", input: &pos, want: types.Int64Value(42)},
+		{name: "converts negative", input: &neg, want: types.Int64Value(-7)},
+		{name: "converts zero", input: &zero, want: types.Int64Value(0)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := typeutils.Int64PointerValue(tt.input)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestFloat64PointerValue(t *testing.T) {
 	t.Parallel()
 
