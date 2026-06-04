@@ -76,8 +76,6 @@ type tfModel struct {
 	TimesliceMetricIndicator []tfTimesliceMetricIndicator `tfsdk:"timeslice_metric_indicator"`
 }
 
-var _ entitycore.WithVersionRequirements = tfModel{}
-
 func (m tfModel) GetID() types.String {
 	return m.ID
 }
