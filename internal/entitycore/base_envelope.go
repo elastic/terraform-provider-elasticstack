@@ -26,22 +26,24 @@ import (
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
-// baseResourceEnvelope holds common wiring shared by KibanaResource and
-// ElasticsearchResource: the provider client base, schema factory, and the
-// connection block that each envelope injects. hasReadFunc records whether a
-// read callback was supplied so requireReadFunc can return a diagnostic instead
-// of panicking.
-type baseResourceEnvelope struct {
+// baseResourceEnvelope holds common wiring shared by [ElasticsearchResource]
+// and [KibanaResource]: the provider client base, schema factory, connection
+// block, and the standard Read / Delete lifecycle implementation.
+type baseResourceEnvelope[T any, C MinVersionClient] struct {
 	*ResourceBase
 	schemaFactory   func(context.Context) rschema.Schema
 	connectionKey   string
 	connectionBlock rschema.Block
-	hasReadFunc     bool
+	resolveID       func(T) (string, diag.Diagnostics)
+	getClient       func(context.Context, T) (C, diag.Diagnostics)
+	read            func(context.Context, C, string, T) (T, bool, diag.Diagnostics)
+	delete          func(context.Context, C, string, T) diag.Diagnostics
+	postRead        func(context.Context, C, T, T, PrivateStateStorage) (T, diag.Diagnostics)
 }
 
 // Schema implements [resource.Resource], injecting the connection block into
 // the schema returned by the concrete schema factory.
-func (b *baseResourceEnvelope) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (b *baseResourceEnvelope[T, C]) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	schema := b.schemaFactory(ctx)
 	blocks := make(map[string]rschema.Block, len(schema.Blocks)+1)
 	maps.Copy(blocks, schema.Blocks)
@@ -50,36 +52,99 @@ func (b *baseResourceEnvelope) Schema(ctx context.Context, _ resource.SchemaRequ
 	resp.Schema = schema
 }
 
-// requireReadFunc returns an error diagnostic when no read callback was
-// supplied at construction time.
-func (b *baseResourceEnvelope) requireReadFunc() diag.Diagnostics {
-	if !b.hasReadFunc {
-		return requireReadFuncDiag(b.component)
+// Read implements [resource.Resource] with the standard prelude: check read
+// callback is non-nil, deserialize prior state into the generic model T,
+// resolve read identity, resolve the scoped client, enforce optional version
+// requirements, then delegate to the concrete readFunc.
+func (b *baseResourceEnvelope[T, C]) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	if b.read == nil {
+		resp.Diagnostics.Append(requireReadFuncDiag(b.component)...)
+		return
 	}
-	return nil
-}
 
-// applyReadFoundResult handles the terminal branch of a Read call: when the
-// resource is found, postRead (if non-nil) is invoked and the result is
-// persisted; when not found the resource is removed from state.
-func applyReadFoundResult[T any](
-	ctx context.Context,
-	resp *resource.ReadResponse,
-	found bool,
-	result T,
-	postRead func(T) (T, diag.Diagnostics),
-) {
+	var model T
+	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resourceID, idDiags := b.resolveID(model)
+	resp.Diagnostics.Append(idDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if resourceID == "" {
+		resp.Diagnostics.AddError(
+			"Invalid resource identifier",
+			"The resolved read identity is empty; cannot read.",
+		)
+		return
+	}
+
+	client, diags := b.getClient(ctx, model)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if vDiags := EnforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
+		resp.Diagnostics.Append(vDiags...)
+		return
+	}
+
+	resultModel, found, callDiags := b.read(ctx, client, resourceID, model)
+	resp.Diagnostics.Append(callDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	if found {
-		if postRead != nil {
+		if b.postRead != nil {
 			var prDiags diag.Diagnostics
-			result, prDiags = postRead(result)
+			resultModel, prDiags = b.postRead(ctx, client, model, resultModel, resp.Private)
 			resp.Diagnostics.Append(prDiags...)
 			if resp.Diagnostics.HasError() {
 				return
 			}
 		}
-		resp.Diagnostics.Append(resp.State.Set(ctx, &result)...)
+		resp.Diagnostics.Append(resp.State.Set(ctx, &resultModel)...)
 	} else {
 		resp.State.RemoveResource(ctx)
 	}
+}
+
+// Delete implements [resource.Resource] with the standard prelude, then
+// delegates to the concrete deleteFunc.
+func (b *baseResourceEnvelope[T, C]) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	if b.delete == nil {
+		resp.Diagnostics.Append(requireDeleteFuncDiag(b.component)...)
+		return
+	}
+
+	var model T
+	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resourceID, idDiags := b.resolveID(model)
+	resp.Diagnostics.Append(idDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if resourceID == "" {
+		resp.Diagnostics.AddError(
+			"Invalid resource identifier",
+			"The resolved delete identity is empty; cannot delete.",
+		)
+		return
+	}
+
+	client, diags := b.getClient(ctx, model)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(b.delete(ctx, client, resourceID, model)...)
 }
