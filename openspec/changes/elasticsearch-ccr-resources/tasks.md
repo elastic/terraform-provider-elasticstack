@@ -19,30 +19,30 @@
 
 ## 2. `elasticstack_elasticsearch_ccr_follower_index` resource
 
-- [ ] 2.1 Create directory `internal/elasticsearch/ccr/followerindex/`
-- [ ] 2.2 Create `models.go` with `Model` struct embedding `entitycore.ElasticsearchConnectionField` and all Terraform-mapped attributes:
+- [x] 2.1 Create directory `internal/elasticsearch/ccr/followerindex/`
+- [x] 2.2 Create `models.go` with `Model` struct embedding `entitycore.ElasticsearchConnectionField` and all Terraform-mapped attributes:
   - Required/ForceNew: `Name`, `RemoteCluster`, `LeaderIndex` (string)
   - Optional/ForceNew: `DataStreamName` (string, nullable) — write-only; not readable from the info API
   - Optional: `SettingsRaw` (string, nullable) — write-only; not readable from the info API
   - Optional tuning attrs (all int64 for count types, all string for duration/byte-size types, all nullable): `MaxOutstandingReadRequests`, `MaxOutstandingWriteRequests`, `MaxReadRequestOperationCount`, `MaxReadRequestSize`, `MaxRetryDelay`, `MaxWriteBufferCount`, `MaxWriteBufferSize`, `MaxWriteRequestOperationCount`, `MaxWriteRequestSize`, `ReadPollTimeout`
   - Optional: `DeleteIndexOnDestroy` (bool, default `false`)
   - Optional: `Status` (string, default `"active"`) — valid values: `"active"`, `"paused"`
-- [ ] 2.3 Create `schema.go` returning the `schema.Schema` with all attributes documented using descriptions from the API spec:
+- [x] 2.3 Create `schema.go` returning the `schema.Schema` with all attributes documented using descriptions from the API spec:
   - Mark ForceNew attributes with `PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}`
   - `Status` uses `stringdefault.StaticString("active")` and a string validator restricting values to `["active", "paused"]`
-- [ ] 2.4 Create `create.go` implementing the Create callback:
+- [x] 2.4 Create `create.go` implementing the Create callback:
   - Build `follow.Request` from plan model; narrow int64 tuning values to int for `MaxOutstandingWriteRequests`, `MaxReadRequestOperationCount`, `MaxWriteBufferCount`, `MaxWriteRequestOperationCount`
   - If `settings_raw` is set, normalise flat dotted keys to nested form (e.g. `"index.refresh_interval"` → `{"index":{"refresh_interval":…}}`), then unmarshal into `*types.IndexSettings` and set `req.Settings`; this normalisation is only required here — `follow.Request.Settings` is `*types.IndexSettings` which expects nested format
   - Call `ccr.CreateFollowerIndex`
   - If plan `status == "paused"`, call `ccr.PauseFollowerIndex`
   - Store plan `status` in state
-- [ ] 2.5 Create `read.go` implementing the Read callback:
+- [x] 2.5 Create `read.go` implementing the Read callback:
   - Call `ccr.GetFollowerIndex`; if nil, call `resp.State.RemoveResource` and return
   - Map `types.FollowerIndex` fields to model: `status` (as string), `remote_cluster`, `leader_index`
   - If `Parameters != nil`, map all ten tuning fields back to state, widening `*int` fields to `int64`
   - If `Parameters == nil` (follower is paused), preserve prior-state tuning param values unchanged — do not zero them out
   - Do not attempt to read `settings_raw` or `data_stream_name` from the response (write-only)
-- [ ] 2.6 Create `update.go` implementing the Update callback using the following state machine (prior state = `state.Status`, desired = `plan.Status`):
+- [x] 2.6 Create `update.go` implementing the Update callback using the following state machine (prior state = `state.Status`, desired = `plan.Status`):
   - NOTE: `resumefollow.Request` exposes only the ten tuning parameters — it has no `Settings` field and no identity fields. Do not attempt to set `remote_cluster`, `leader_index`, or `settings` on it.
   - `active → active` and tuning params and/or `settings_raw` changed:
     1. Call `ccr.PauseFollowerIndex`
@@ -51,14 +51,14 @@
   - `active → paused`: call `ccr.PauseFollowerIndex` only; if `settings_raw` also changed, call `elasticsearch.UpdateIndexSettings` before resuming would be skipped — store updated `settings_raw` in state for application on next resume transition
   - `paused → active`: if `settings_raw` changed, call `elasticsearch.UpdateIndexSettings` first; then build `resumefollow.Request` with plan tuning params and call `ccr.ResumeFollowerIndex`
   - `paused → paused`: no API calls; store updated tuning and `settings_raw` in state
-- [ ] 2.7 Create `delete.go` implementing the Delete callback:
+- [x] 2.7 Create `delete.go` implementing the Delete callback:
   - If prior state `status == "active"`, call `ccr.PauseFollowerIndex` (skip if already paused)
   - Call `ccr.CloseIndex`
   - Call `ccr.UnfollowIndex`
   - If `delete_index_on_destroy == true`: call `ccr.DeleteIndex`
   - If `delete_index_on_destroy == false`: call `ccr.OpenIndex` to promote the index to a usable regular index
-- [ ] 2.8 Create `resource.go` wiring the resource via `entitycore.NewElasticsearchResource[Model]` with appropriate `ElasticsearchResourceOptions`
-- [ ] 2.9 Write unit tests in `followerindex_test.go` covering:
+- [x] 2.8 Create `resource.go` wiring the resource via `entitycore.NewElasticsearchResource[Model]` with appropriate `ElasticsearchResourceOptions`
+- [x] 2.9 Write unit tests in `followerindex_test.go` covering:
   - Schema validation (valid/invalid `status` values)
   - All four branches of the Update state machine
   - Delete sequence with `status = "active"` vs `status = "paused"` prior state
