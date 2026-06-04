@@ -36,9 +36,54 @@ var (
 	_ datasource.DataSourceWithConfigure = NewDataSource().(datasource.DataSourceWithConfigure)
 )
 
+// skillDataSourceModel mirrors skillModel without entitycore.ResourceTimeoutsField:
+// data sources do not expose a timeouts attribute, so reusing the resource model
+// (which embeds it) would fail decoding against the timeouts-free data source schema.
+type skillDataSourceModel struct {
+	entitycore.KibanaConnectionField
+	ID                types.String                 `tfsdk:"id"`
+	SkillID           types.String                 `tfsdk:"skill_id"`
+	SpaceID           types.String                 `tfsdk:"space_id"`
+	Name              types.String                 `tfsdk:"name"`
+	Description       types.String                 `tfsdk:"description"`
+	Content           types.String                 `tfsdk:"content"`
+	ToolIDs           types.Set                    `tfsdk:"tool_ids"`
+	ReferencedContent []skillReferencedContentItem `tfsdk:"referenced_content"`
+}
+
+func (m skillDataSourceModel) GetSpaceID() types.String { return m.SpaceID }
+
+func (m skillDataSourceModel) toSkillModel() skillModel {
+	return skillModel{
+		KibanaConnectionField: m.KibanaConnectionField,
+		ID:                    m.ID,
+		SkillID:               m.SkillID,
+		SpaceID:               m.SpaceID,
+		Name:                  m.Name,
+		Description:           m.Description,
+		Content:               m.Content,
+		ToolIDs:               m.ToolIDs,
+		ReferencedContent:     m.ReferencedContent,
+	}
+}
+
+func skillDataSourceModelFromSkillModel(m skillModel) skillDataSourceModel {
+	return skillDataSourceModel{
+		KibanaConnectionField: m.KibanaConnectionField,
+		ID:                    m.ID,
+		SkillID:               m.SkillID,
+		SpaceID:               m.SpaceID,
+		Name:                  m.Name,
+		Description:           m.Description,
+		Content:               m.Content,
+		ToolIDs:               m.ToolIDs,
+		ReferencedContent:     m.ReferencedContent,
+	}
+}
+
 // NewDataSource is a helper function to simplify the provider implementation.
 func NewDataSource() datasource.DataSource {
-	return entitycore.NewKibanaDataSource[skillModel](
+	return entitycore.NewKibanaDataSource[skillDataSourceModel](
 		entitycore.ComponentKibana,
 		"agentbuilder_skill",
 		getDataSourceSchema,
@@ -112,7 +157,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 // The envelope owns config decode, GetKibanaClient, static version enforcement
 // via GetVersionRequirements, and resp.State.Set. This function only contains
 // entity-specific logic.
-func readSkillDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config skillModel) (skillModel, diag.Diagnostics) {
+func readSkillDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config skillDataSourceModel) (skillDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if !typeutils.IsKnown(config.SkillID) || config.SkillID.ValueString() == "" {
@@ -146,7 +191,8 @@ func readSkillDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 		return config, diags
 	}
 
-	populateDiags := (&config).populateFromAPI(ctx, spaceID, skill)
+	sm := config.toSkillModel()
+	populateDiags := (&sm).populateFromAPI(ctx, spaceID, skill)
 	diags.Append(populateDiags...)
 	if diags.HasError() {
 		return config, diags
@@ -154,7 +200,7 @@ func readSkillDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 
 	// Ensure SkillID is normalized back to just the resource id (in case input
 	// was composite).
-	config.SkillID = types.StringValue(skill.ID)
+	sm.SkillID = types.StringValue(skill.ID)
 
-	return config, diags
+	return skillDataSourceModelFromSkillModel(sm), diags
 }
