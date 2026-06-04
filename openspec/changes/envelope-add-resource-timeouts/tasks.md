@@ -1,6 +1,6 @@
 ## 1. Shared timeouts plumbing
 
-- [ ] 1.1 Create `internal/entitycore/resource_timeouts.go` defining `ResourceTimeoutsField` (embeddable struct holding `Timeouts timeouts.Value `tfsdk:"timeouts"``, using `github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts`), `GetTimeouts()` value-receiver method, and `WithResourceTimeouts` interface
+- [ ] 1.1 Create `internal/entitycore/resource_timeouts.go` defining `ResourceTimeoutsField` (embeddable struct holding field `Timeouts timeouts.Value` tagged `tfsdk:"timeouts"`, using `github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts`), `GetTimeouts()` value-receiver method, and `WithResourceTimeouts` interface
 - [ ] 1.2 Add `ResourceTimeouts` struct with `Create, Read, Update, Delete time.Duration` fields and package-level constants `DefaultResourceCreateTimeout = 20*time.Minute`, `DefaultResourceReadTimeout = 5*time.Minute`, `DefaultResourceUpdateTimeout = 20*time.Minute`, `DefaultResourceDeleteTimeout = 20*time.Minute`
 - [ ] 1.3 Document the zero-value fallback semantics in godoc on `ResourceTimeouts`: each field that is zero falls back to the matching `DefaultResource<Op>Timeout` constant. The envelope reads `opts.Timeouts.<Op>` directly at call sites — no helper function or accessor methods are added (kept inline for grep-ability and to match the action-envelope precedent)
 - [ ] 1.4 Define a package-level `attrTimeouts = "timeouts"` constant alongside `blockElasticsearchConnection` / `blockKibanaConnection`
@@ -31,7 +31,7 @@
 - [ ] 4.1 Update every test model in `internal/entitycore/resource_envelope_test.go` to embed `entitycore.ResourceTimeoutsField`
 - [ ] 4.2 Add `resource_envelope_test.go` scenarios. Use an `httptest.Server` for the Elasticsearch backend so the test fully controls latency and response timing — the server stands in for the Stack info endpoint that `EnforceVersionRequirements` queries plus any per-op API calls:
   - schema includes a `timeouts` attribute with `create`, `read`, `update`, `delete` sub-attributes
-  - configured `Options.Timeouts.Create` overrides the framework default (assert deadline propagated to the callback)
+  - configured `Options.Timeouts.Create` overrides `DefaultResourceCreateTimeout` (assert deadline propagated to the callback)
   - explicit `timeouts.create` in the plan overrides `Options.Timeouts.Create` (assert deadline matches the plan value)
   - silent overwrite: factory returns a schema whose `Attributes["timeouts"]` is a sentinel attribute; envelope's `timeouts.AttributesAll` shape wins, no panic, no diagnostic
   - ctx-wrap fires for each of the four ops (assert `ctx.Deadline()` is set inside the callback)
@@ -53,7 +53,7 @@
 
 ## 6. Migration: `internal/fleet/customintegration`
 
-- [ ] 6.1 In `models.go`, replace `Timeouts timeouts.Value `tfsdk:"timeouts"`` with `entitycore.ResourceTimeoutsField` embed; remove the now-unused `terraform-plugin-framework-timeouts/resource/timeouts` import
+- [ ] 6.1 In `models.go`, replace the bespoke timeouts field (`Timeouts timeouts.Value` tagged `tfsdk:"timeouts"`) with `entitycore.ResourceTimeoutsField` embed; remove the now-unused `terraform-plugin-framework-timeouts/resource/timeouts` import
 - [ ] 6.2 In `schema.go`, delete the `"timeouts": timeouts.Attributes(ctx, timeouts.Opts{...})` entry; remove the now-unused import
 - [ ] 6.3 In `create.go`, delete the `plan.Timeouts.Create(ctx, 20*time.Minute)` → `context.WithTimeout` → `defer cancel()` block
 - [ ] 6.4 In `update.go`, delete the equivalent block

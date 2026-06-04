@@ -134,7 +134,7 @@ type ElasticsearchResourceOptions[T ElasticsearchResourceModel] struct {
 }
 ```
 
-Any zero-valued field falls back to the corresponding `DefaultResource<Op>Timeout` constant. A resource that wants 5 minutes for Create writes `Timeouts: entitycore.ResourceTimeouts{Create: 5*time.Minute}` and inherits framework defaults for the other three.
+Any zero-valued field falls back to the corresponding `DefaultResource<Op>Timeout` constant. A resource that wants 5 minutes for Create writes `Timeouts: entitycore.ResourceTimeouts{Create: 5*time.Minute}` and inherits the envelope defaults for the other three.
 
 ### Ctx-wrap inside the envelope, per op
 
@@ -222,10 +222,10 @@ Defaults are preserved from each resource's existing hard-coded durations:
 
 | Resource | Create | Read | Update | Delete |
 |----------|--------|------|--------|--------|
-| `fleet/customintegration` | 20m | (framework default 5m) | 20m | (framework default 20m) |
-| `ml/jobstate` | 5m | (framework default 5m) | 5m | (framework default 20m) |
-| `ml/datafeed_state` | 5m | (framework default 5m) | 5m | (framework default 20m) |
-| `ml/anomalydetectionjob` | (framework default 20m) | (framework default 5m) | (framework default 20m) | 20m |
+| `fleet/customintegration` | 20m | (`DefaultResourceReadTimeout` = 5m) | 20m | (`DefaultResourceDeleteTimeout` = 20m) |
+| `ml/jobstate` | 5m | (`DefaultResourceReadTimeout` = 5m) | 5m | (`DefaultResourceDeleteTimeout` = 20m) |
+| `ml/datafeed_state` | 5m | (`DefaultResourceReadTimeout` = 5m) | 5m | (`DefaultResourceDeleteTimeout` = 20m) |
+| `ml/anomalydetectionjob` | (`DefaultResourceCreateTimeout` = 20m) | (`DefaultResourceReadTimeout` = 5m) | (`DefaultResourceUpdateTimeout` = 20m) | 20m |
 
 ## Risks / Trade-offs
 

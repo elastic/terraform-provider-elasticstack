@@ -40,14 +40,14 @@ The system SHALL define `ResourceTimeouts` as a struct with fields `Create, Read
 - **THEN** `model.GetTimeouts().<Op>(ctx, default)` SHALL return the envelope-supplied default with no diagnostics
 - **AND** the operation SHALL proceed under that default-bound context
 
-#### Scenario: Configured per-op default overrides framework default
+#### Scenario: Configured per-op default overrides the envelope default
 - **WHEN** `ElasticsearchResourceOptions.Timeouts.Create` is set to a non-zero duration
 - **AND** the practitioner did not specify `timeouts.create` in configuration
 - **THEN** the envelope SHALL use the configured per-op default in place of `DefaultResourceCreateTimeout`
 
 #### Scenario: Practitioner-supplied timeout overrides per-op default
 - **WHEN** the practitioner specifies `timeouts = { create = "30m" }` in configuration
-- **THEN** the envelope SHALL wrap Create with `30m` regardless of `Options.Timeouts.Create` or the framework default
+- **THEN** the envelope SHALL wrap Create with `30m` regardless of `Options.Timeouts.Create` or `DefaultResourceCreateTimeout`
 
 #### Scenario: Timeouts diagnostic prevents callback invocation
 - **WHEN** `model.GetTimeouts().Create(ctx, default)` returns diagnostics containing at least one error
