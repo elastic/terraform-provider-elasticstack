@@ -92,15 +92,22 @@ type KibanaWriteFunc[T KibanaResourceModel] func(
 	KibanaWriteRequest[T],
 ) (KibanaWriteResult[T], diag.Diagnostics)
 
-// KibanaPostReadFunc runs after a successful read that persisted state, including
-// read-after-write refresh. It is optional. The privateState argument is the
-// framework response Private field (typically *internal/privatestate.ProviderData).
+// KibanaPostReadRequest is passed to [KibanaPostReadFunc]. Prior is the model
+// before the read (plan on write path, prior state on plain Read path). State is
+// the freshly-read model returned by the read callback.
+type KibanaPostReadRequest[T KibanaResourceModel] struct {
+	Client  *clients.KibanaScopedClient
+	Prior   T
+	State   T
+	Private PrivateStateStorage
+}
+
+// KibanaPostReadFunc runs after a successful read and before state is persisted,
+// including read-after-write refresh. It is optional.
 type KibanaPostReadFunc[T KibanaResourceModel] func(
 	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	model T,
-	privateState any,
-) diag.Diagnostics
+	req KibanaPostReadRequest[T],
+) (T, diag.Diagnostics)
 
 // KibanaResourceOptions configures [NewKibanaResource]. PostRead is optional;
 // Schema, Read, Delete, Create, and Update must be non-nil or the envelope
@@ -309,6 +316,19 @@ func (r *KibanaResource[T]) Read(ctx context.Context, req resource.ReadRequest, 
 	}
 
 	if found {
+		if r.postReadFunc != nil {
+			var prDiags diag.Diagnostics
+			resultModel, prDiags = r.postReadFunc(ctx, KibanaPostReadRequest[T]{
+				Client:  client,
+				Prior:   model,
+				State:   resultModel,
+				Private: resp.Private,
+			})
+			resp.Diagnostics.Append(prDiags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+		}
 		preserveModelTimeouts(&resultModel, model.GetTimeouts())
 		resp.Diagnostics.Append(resp.State.Set(ctx, &resultModel)...)
 		if resp.Diagnostics.HasError() {
@@ -317,9 +337,6 @@ func (r *KibanaResource[T]) Read(ctx context.Context, req resource.ReadRequest, 
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(attrTimeouts), model.GetTimeouts())...)
 		if resp.Diagnostics.HasError() {
 			return
-		}
-		if r.postReadFunc != nil {
-			resp.Diagnostics.Append(r.postReadFunc(ctx, client, resultModel, resp.Private)...)
 		}
 	} else {
 		resp.State.RemoveResource(ctx)
@@ -502,6 +519,22 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 		return diags
 	}
 
+	priorModel := planModel
+
+	if r.postReadFunc != nil {
+		var prDiags diag.Diagnostics
+		stateModel, prDiags = r.postReadFunc(ctx, KibanaPostReadRequest[T]{
+			Client:  client,
+			Prior:   priorModel,
+			State:   stateModel,
+			Private: inv.privateState,
+		})
+		diags.Append(prDiags...)
+		if diags.HasError() {
+			return diags
+		}
+	}
+
 	preserveModelTimeouts(&stateModel, planModel.GetTimeouts())
 	diags.Append(inv.outState.Set(ctx, &stateModel)...)
 	if diags.HasError() {
@@ -511,10 +544,6 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 	diags.Append(inv.outState.SetAttribute(ctx, path.Root(attrTimeouts), planModel.GetTimeouts())...)
 	if diags.HasError() {
 		return diags
-	}
-
-	if r.postReadFunc != nil {
-		diags.Append(r.postReadFunc(ctx, client, stateModel, inv.privateState)...)
 	}
 
 	return diags

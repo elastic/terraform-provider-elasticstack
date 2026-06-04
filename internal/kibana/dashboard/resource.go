@@ -21,8 +21,10 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
 var (
@@ -32,12 +34,27 @@ var (
 )
 
 type Resource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[models.DashboardModel]
+}
+
+func schemaFactory(_ context.Context) rschema.Schema {
+	return getSchema()
 }
 
 func newResource() *Resource {
 	return &Resource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "dashboard"),
+		KibanaResource: entitycore.NewKibanaResource[models.DashboardModel](
+			entitycore.ComponentKibana,
+			"dashboard",
+			entitycore.KibanaResourceOptions[models.DashboardModel]{
+				Schema:   schemaFactory,
+				Read:     readDashboard,
+				Delete:   deleteDashboard,
+				Create:   createDashboard,
+				Update:   updateDashboard,
+				PostRead: postReadDashboard,
+			},
+		),
 	}
 }
 

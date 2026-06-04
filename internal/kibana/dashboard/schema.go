@@ -18,7 +18,6 @@
 package dashboard
 
 import (
-	"context"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
@@ -28,7 +27,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -62,10 +60,6 @@ const (
 func panelConfigNames() []string {
 	return panelkit.TypedSiblingPanelConfigBlockNames()
 }
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = getSchema()
-}
-
 func getSchema() schema.Schema {
 	dashboardNotes := "### Notes\n\n" +
 		"- **Image `file_id`**: `image_config.src.file.file_id` is an opaque Kibana file asset id. " +

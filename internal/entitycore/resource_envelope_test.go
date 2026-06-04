@@ -1729,14 +1729,14 @@ func TestNewElasticsearchResource_Create_shortCircuitsWhenVersionRequirementsDia
 	require.False(t, createCalled)
 }
 
-func TestNewElasticsearchResource_Read_invokesPostReadAfterSuccessfulStateSet(t *testing.T) {
+func TestNewElasticsearchResource_Read_invokesPostReadBeforeStateSet(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
 	postCalled := false
-	postRead := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ testResourceModel, _ any) diag.Diagnostics {
+	postRead := func(_ context.Context, req ElasticsearchPostReadRequest[testResourceModel]) (testResourceModel, diag.Diagnostics) {
 		postCalled = true
-		return nil
+		return req.State, nil
 	}
 	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
 		Schema:   getTestResourceSchema,
@@ -1763,9 +1763,9 @@ func TestNewElasticsearchResource_Read_skipsPostReadWhenNotFound(t *testing.T) {
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
 	postCalled := false
-	postRead := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ testResourceModel, _ any) diag.Diagnostics {
+	postRead := func(_ context.Context, req ElasticsearchPostReadRequest[testResourceModel]) (testResourceModel, diag.Diagnostics) {
 		postCalled = true
-		return nil
+		return req.State, nil
 	}
 	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
 		Schema: getTestResourceSchema,
@@ -1976,9 +1976,9 @@ func TestNewElasticsearchResource_Read_skipsPostReadWhenReadFuncError(t *testing
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
 	postCalled := false
-	postRead := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ testResourceModel, _ any) diag.Diagnostics {
+	postRead := func(_ context.Context, req ElasticsearchPostReadRequest[testResourceModel]) (testResourceModel, diag.Diagnostics) {
 		postCalled = true
-		return nil
+		return req.State, nil
 	}
 	readFn := func(
 		_ context.Context,
@@ -2010,14 +2010,14 @@ func TestNewElasticsearchResource_Read_skipsPostReadWhenReadFuncError(t *testing
 	require.False(t, postCalled)
 }
 
-func TestNewElasticsearchResource_Read_skipsPostReadWhenStateSetFails(t *testing.T) {
+func TestNewElasticsearchResource_Read_postReadRunsBeforeStateSet(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
 	postCalled := false
-	postRead := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ testResourceModel, _ any) diag.Diagnostics {
+	postRead := func(_ context.Context, req ElasticsearchPostReadRequest[testResourceModel]) (testResourceModel, diag.Diagnostics) {
 		postCalled = true
-		return nil
+		return req.State, nil
 	}
 	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
 		Schema:   getTestResourceSchema,
@@ -2040,7 +2040,7 @@ func TestNewElasticsearchResource_Read_skipsPostReadWhenStateSetFails(t *testing
 	r.Read(ctx, req, &resp)
 
 	require.True(t, resp.Diagnostics.HasError())
-	require.False(t, postCalled)
+	require.True(t, postCalled, "PostRead should run before state set and be called even when state set fails")
 }
 
 func TestNewElasticsearchResource_Read_postReadReceivesFrameworkPrivateHandle(t *testing.T) {
@@ -2049,9 +2049,9 @@ func TestNewElasticsearchResource_Read_postReadReceivesFrameworkPrivateHandle(t 
 	factory := newTestConfiguredFactory(ctx, t)
 
 	var captured any
-	postRead := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ testResourceModel, priv any) diag.Diagnostics {
-		captured = priv
-		return nil
+	postRead := func(_ context.Context, req ElasticsearchPostReadRequest[testResourceModel]) (testResourceModel, diag.Diagnostics) {
+		captured = req.Private
+		return req.State, nil
 	}
 	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
 		Schema:   getTestResourceSchema,
@@ -2078,9 +2078,9 @@ func TestNewElasticsearchResource_Create_invokesPostReadAfterReadAfterWrite(t *t
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
 	postCalls := 0
-	postRead := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ testResourceModel, _ any) diag.Diagnostics {
+	postRead := func(_ context.Context, req ElasticsearchPostReadRequest[testResourceModel]) (testResourceModel, diag.Diagnostics) {
 		postCalls++
-		return nil
+		return req.State, nil
 	}
 	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
 		Schema:   getTestResourceSchema,
@@ -2108,9 +2108,9 @@ func TestNewElasticsearchResource_Update_invokesPostReadAfterReadAfterWrite(t *t
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
 	postCalls := 0
-	postRead := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ testResourceModel, _ any) diag.Diagnostics {
+	postRead := func(_ context.Context, req ElasticsearchPostReadRequest[testResourceModel]) (testResourceModel, diag.Diagnostics) {
 		postCalls++
-		return nil
+		return req.State, nil
 	}
 	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
 		Schema:   getTestResourceSchema,
@@ -2131,6 +2131,172 @@ func TestNewElasticsearchResource_Update_invokesPostReadAfterReadAfterWrite(t *t
 
 	require.False(t, resp.Diagnostics.HasError())
 	require.Equal(t, 1, postCalls)
+}
+
+func TestNewElasticsearchResource_Read_postReadReceivesPriorStateAsPrior(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	var capturedPrior string
+	postRead := func(_ context.Context, req ElasticsearchPostReadRequest[testResourceModel]) (testResourceModel, diag.Diagnostics) {
+		capturedPrior = req.Prior.Name.ValueString()
+		return req.State, nil
+	}
+	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
+		Schema:   getTestResourceSchema,
+		Read:     testReadFuncFound,
+		Delete:   testDeleteFunc,
+		Create:   testWriteFuncFoundCreate,
+		Update:   testWriteFuncFoundUpdate,
+		PostRead: postRead,
+	})
+	r.client = factory
+
+	state := makeTestResourceState(ctx, t, "cluster/user1")
+	req := resource.ReadRequest{State: state}
+	resp := resource.ReadResponse{State: state}
+
+	r.Read(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, "user1", capturedPrior, "Prior should be the prior state name on Read path")
+}
+
+func TestNewElasticsearchResource_Create_postReadPriorIsPlan(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	var capturedPrior string
+	postRead := func(_ context.Context, req ElasticsearchPostReadRequest[testResourceModel]) (testResourceModel, diag.Diagnostics) {
+		capturedPrior = req.Prior.Name.ValueString()
+		return req.State, nil
+	}
+	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
+		Schema:   getTestResourceSchema,
+		Read:     testReadFuncDistinguishing,
+		Delete:   testDeleteFunc,
+		Create:   testWriteFuncFoundCreate,
+		Update:   testWriteFuncFoundUpdate,
+		PostRead: postRead,
+	})
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
+	objType := testResourceObjectType()
+	respState := tfsdk.State{
+		Raw:    tftypes.NewValue(objType, nil),
+		Schema: testResourceSchemaWithConnectionBlock(ctx),
+	}
+	req := resource.CreateRequest{Plan: plan, Config: tfsdk.Config(plan)}
+	resp := resource.CreateResponse{State: respState}
+
+	r.Create(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, "user1", capturedPrior, "Prior should be the plan name on Create (write) path")
+}
+
+func TestNewElasticsearchResource_Create_postReadStateSetFromReturnedModel(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	postRead := func(_ context.Context, req ElasticsearchPostReadRequest[testResourceModel]) (testResourceModel, diag.Diagnostics) {
+		returnModel := req.State
+		returnModel.Name = types.StringValue("postread-modified")
+		return returnModel, nil
+	}
+	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
+		Schema:   getTestResourceSchema,
+		Read:     testReadFuncDistinguishing,
+		Delete:   testDeleteFunc,
+		Create:   testWriteFuncFoundCreate,
+		Update:   testWriteFuncFoundUpdate,
+		PostRead: postRead,
+	})
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
+	objType := testResourceObjectType()
+	respState := tfsdk.State{
+		Raw:    tftypes.NewValue(objType, nil),
+		Schema: testResourceSchemaWithConnectionBlock(ctx),
+	}
+	req := resource.CreateRequest{Plan: plan, Config: tfsdk.Config(plan)}
+	resp := resource.CreateResponse{State: respState}
+
+	r.Create(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	var result testResourceModel
+	diags := resp.State.Get(ctx, &result)
+	require.False(t, diags.HasError())
+	require.Equal(t, "postread-modified", result.Name.ValueString(), "State should be set from PostRead's returned model")
+}
+
+func TestNewElasticsearchResource_Create_skipsStateSetWhenPostReadError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	postRead := func(_ context.Context, req ElasticsearchPostReadRequest[testResourceModel]) (testResourceModel, diag.Diagnostics) {
+		var d diag.Diagnostics
+		d.AddError("postread error", "intentional")
+		return req.State, d
+	}
+	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
+		Schema:   getTestResourceSchema,
+		Read:     testReadFuncDistinguishing,
+		Delete:   testDeleteFunc,
+		Create:   testWriteFuncFoundCreate,
+		Update:   testWriteFuncFoundUpdate,
+		PostRead: postRead,
+	})
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
+	objType := testResourceObjectType()
+	respState := tfsdk.State{
+		Raw:    tftypes.NewValue(objType, nil),
+		Schema: testResourceSchemaWithConnectionBlock(ctx),
+	}
+	req := resource.CreateRequest{Plan: plan, Config: tfsdk.Config(plan)}
+	resp := resource.CreateResponse{State: respState}
+
+	r.Create(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.True(t, resp.State.Raw.IsNull(), "State should remain unset when PostRead returns error")
+}
+
+func TestNewElasticsearchResource_Read_postReadStateSetFromReturnedModel(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	postRead := func(_ context.Context, req ElasticsearchPostReadRequest[testResourceModel]) (testResourceModel, diag.Diagnostics) {
+		returnModel := req.State
+		returnModel.Name = types.StringValue("read-modified")
+		return returnModel, nil
+	}
+	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
+		Schema:   getTestResourceSchema,
+		Read:     testReadFuncFound,
+		Delete:   testDeleteFunc,
+		Create:   testWriteFuncFoundCreate,
+		Update:   testWriteFuncFoundUpdate,
+		PostRead: postRead,
+	})
+	r.client = factory
+
+	state := makeTestResourceState(ctx, t, "cluster/user1")
+	req := resource.ReadRequest{State: state}
+	resp := resource.ReadResponse{State: state}
+
+	r.Read(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	var result testResourceModel
+	diags := resp.State.Get(ctx, &result)
+	require.False(t, diags.HasError())
+	require.Equal(t, "read-modified", result.Name.ValueString(), "State should be set from PostRead's returned model")
 }
 
 func TestNewElasticsearchResource_Read_nilReadCallbackConfigurationError(t *testing.T) {

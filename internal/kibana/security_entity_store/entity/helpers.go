@@ -44,6 +44,7 @@ const (
 	attrEmail               = "email"
 	attrProvider            = "provider"
 	attrReason              = "reason"
+	attrValue               = "value"
 
 	descCalculatedLevel     = "The calculated risk level."
 	descCalculatedScore     = "The raw numeric value of the given entity's risk score."
@@ -348,7 +349,7 @@ func AssetBlockAttrTypes() map[string]attr.Type {
 		"criticality":          types.StringType,
 		"criticality_feedback": types.ObjectType{AttrTypes: AssetCriticalityFeedbackBlockAttrTypes()},
 		"owner":                types.ObjectType{AttrTypes: AssetOwnerBlockAttrTypes()},
-		"value":                types.Float64Type,
+		attrValue:              types.Float64Type,
 	}
 }
 
@@ -892,7 +893,7 @@ func assetBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnost
 		m["criticality"] = model.Criticality.ValueString()
 	}
 	if !model.Value.IsNull() {
-		m["value"] = model.Value.ValueFloat64()
+		m[attrValue] = model.Value.ValueFloat64()
 	}
 	if !model.CriticalityFeedback.IsNull() && !model.CriticalityFeedback.IsUnknown() {
 		var fb assetCriticalityFeedbackBlockModel
@@ -1247,7 +1248,7 @@ func mapToEventBlockModel(_ context.Context, m map[string]any) eventBlockModel {
 func mapToAssetBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnostics) assetBlockModel {
 	model := assetBlockModel{
 		Criticality: getStringValue(m, "criticality"),
-		Value:       getFloat64Value(m, "value"),
+		Value:       getFloat64Value(m, attrValue),
 	}
 	if fbRaw, ok := m["criticality_feedback"].(map[string]any); ok {
 		fb := assetCriticalityFeedbackBlockModel{
@@ -1300,9 +1301,9 @@ func APIBodyToItem(ctx context.Context, body map[string]any, diags *diag.Diagnos
 	if diags.HasError() {
 		return types.ObjectNull(ItemObjectType().(types.ObjectType).AttrTypes)
 	}
-	obj, d := types.ObjectValueFrom(ctx, ItemObjectType().(types.ObjectType).AttrTypes, map[string]attr.Value{
+	obj, d := types.ObjectValue(ItemObjectType().(types.ObjectType).AttrTypes, map[string]attr.Value{
 		"@timestamp":     item.Timestamp,
-		"entity":         item.Entity,
+		attrEntity:       item.Entity,
 		"host":           item.Host,
 		"user":           item.User,
 		"service":        item.Service,
@@ -1343,6 +1344,24 @@ func ItemAttrTypes() map[string]attr.Type {
 // This safely handles entity IDs that may contain quotes or backslashes.
 func QuoteKQLString(v string) string {
 	return strconv.Quote(v)
+}
+
+// injectEntityIDAndMarshal sets entity.id in bodyMap and marshals it to JSON.
+func injectEntityIDAndMarshal(bodyMap map[string]any, entityID string) ([]byte, diag.Diagnostics) {
+	if entityMap, ok := bodyMap["entity"].(map[string]any); ok {
+		entityMap["id"] = entityID
+		bodyMap["entity"] = entityMap
+	} else {
+		bodyMap["entity"] = map[string]any{"id": entityID}
+	}
+
+	bodyBytes, err := json.Marshal(bodyMap)
+	if err != nil {
+		return nil, diag.Diagnostics{
+			diag.NewErrorDiagnostic("JSON marshal error", err.Error()),
+		}
+	}
+	return bodyBytes, nil
 }
 
 // ExtractEntitiesFromResponse extracts the entity list from an API response map,

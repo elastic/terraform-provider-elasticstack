@@ -1,25 +1,3 @@
-## [Unreleased]
-
-### Breaking changes
-
-- `elasticstack_elasticsearch_ml_anomaly_detection_job`: `timeouts` is now an attribute instead of a block. Replace block syntax with attribute syntax:
-
-  ```hcl
-  # Before
-  timeouts {
-    delete = "20m"
-  }
-
-  # After
-  timeouts = {
-    delete = "20m"
-  }
-  ```
-
-### Changes
-
-- Add uniform `timeouts` support to all Elasticsearch and Kibana envelope-backed resources via auto-injected `timeouts` attributes and per-operation context deadlines.
-
 ## [0.16.1] - 2026-06-01
 
 ### Changes

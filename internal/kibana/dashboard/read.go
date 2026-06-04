@@ -23,80 +23,47 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var stateModel models.DashboardModel
-
-	diags := req.State.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	prevPanels := stateModel.Panels
-	prevPinned := stateModel.PinnedPanels
-	readModel, diags := r.read(ctx, client, stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if readModel == nil {
-		// Dashboard not found, remove from state
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	alignDashboardStateFromPlanPanels(prevPanels, readModel.Panels)
-	suppressReadTopLevelPanelsWhenPlanEmpty(prevPanels, readModel)
-	alignDashboardStateFromPlanSections(ctx, stateModel.Sections, readModel.Sections)
-
-	alignDashboardStateFromPlanPinnedPanels(ctx, prevPinned, readModel.PinnedPanels)
-
-	// Set state
-	resp.Diagnostics.Append(resp.State.Set(ctx, *readModel)...)
-}
-
-func (r *Resource) read(ctx context.Context, apiClient *clients.KibanaScopedClient, stateModel models.DashboardModel) (*models.DashboardModel, diag.Diagnostics) {
-	// Parse composite ID
-	composite, diags := clients.CompositeIDFromStr(stateModel.ID.ValueString())
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	dashboardID := composite.ResourceID
-	spaceID := composite.ClusterID
-
-	// Get the Kibana client
-	kibanaClient := apiClient.GetKibanaOapiClient()
-
-	// Get the dashboard
-	getResp, getDiags := kibanaoapi.GetDashboard(ctx, kibanaClient, spaceID, dashboardID)
+func readDashboard(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	resourceID string,
+	spaceID string,
+	model models.DashboardModel,
+) (models.DashboardModel, bool, diag.Diagnostics) {
+	kibanaClient := client.GetKibanaOapiClient()
+	getResp, getDiags := kibanaoapi.GetDashboard(ctx, kibanaClient, spaceID, resourceID)
+	var diags diag.Diagnostics
 	diags.Append(getDiags...)
 	if diags.HasError() {
-		return nil, diags
+		return model, false, diags
 	}
 
 	if getResp == nil {
-		return nil, diags
+		return model, false, diags
 	}
 
 	_, unwrapDiags := diagutil.UnwrapJSON200(getResp.JSON200, "dashboard")
 	diags.Append(unwrapDiags...)
 	if diags.HasError() {
-		return nil, diags
+		return model, false, diags
 	}
 
-	diags.Append(dashboardPopulateFromAPI(ctx, &stateModel, getResp, dashboardID, spaceID)...)
-	return &stateModel, diags
+	diags.Append(dashboardPopulateFromAPI(ctx, &model, getResp, resourceID, spaceID)...)
+	return model, true, diags
+}
+
+func postReadDashboard(
+	ctx context.Context,
+	req entitycore.KibanaPostReadRequest[models.DashboardModel],
+) (models.DashboardModel, diag.Diagnostics) {
+	alignDashboardStateFromPlanPanels(req.Prior.Panels, req.State.Panels)
+	suppressReadTopLevelPanelsWhenPlanEmpty(req.Prior.Panels, &req.State)
+	alignDashboardStateFromPlanSections(ctx, req.Prior.Sections, req.State.Sections)
+	alignDashboardStateFromPlanPinnedPanels(ctx, req.Prior.PinnedPanels, req.State.PinnedPanels)
+	return req.State, nil
 }

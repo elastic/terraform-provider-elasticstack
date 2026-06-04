@@ -76,6 +76,104 @@ func TestAccDataSourceKibanaSecurityEntityStoreEntities_entityIdFilterConflict(t
 	})
 }
 
+func TestAccDataSourceKibanaSecurityEntityStoreEntities_filter(t *testing.T) {
+	skipIfUnsupported(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("filter"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_entities.test", "id"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_entities.test", "items.#"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_entities.test", "space_id", "default"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceKibanaSecurityEntityStoreEntities_pageMode(t *testing.T) {
+	skipIfUnsupported(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("page_mode"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_entities.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_entities.test", "page", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_entities.test", "per_page", "10"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_entities.test", "sort_field", "entity.id"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_entities.test", "sort_order", "asc"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_entities.test", "items.#"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceKibanaSecurityEntityStoreEntities_spaceId(t *testing.T) {
+	skipIfUnsupported(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("space_id"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_entities.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_entities.test", "space_id", "default"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_entities.test", "items.#"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceKibanaSecurityEntityStoreEntities_entityId(t *testing.T) {
+	skipIfUnsupported(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("entity_id"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_entities.test", "id"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_entities.test", "items.#"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceKibanaSecurityEntityStoreEntities_filterQuery(t *testing.T) {
+	skipIfUnsupported(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("filter_query"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_entities.test", "id"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_entities.test", "results_json"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_entities.test", "per_page", "5"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_entities.test", "page", "1"),
+				),
+			},
+		},
+	})
+}
+
 func skipIfUnsupported(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, securityentitystore.MinVersion, versionutils.FlavorAny)
 }

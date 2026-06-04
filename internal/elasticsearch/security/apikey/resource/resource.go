@@ -104,20 +104,19 @@ func saveAPIKeyCapabilities(ctx context.Context, client *clients.ElasticsearchSc
 
 func postReadPersistAPIKeyCapabilities(
 	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	_ apikey.TfModel,
-	privateState any,
-) diag.Diagnostics {
-	priv, ok := privateState.(privateData)
+	req entitycore.ElasticsearchPostReadRequest[apikey.TfModel],
+) (apikey.TfModel, diag.Diagnostics) {
+	priv, ok := req.Private.(privateData)
 	if !ok {
 		var diags diag.Diagnostics
 		diags.AddError(
 			"Elasticsearch envelope configuration error",
 			"security_api_key PostRead requires private state implementing GetKey and SetKey.",
 		)
-		return diags
+		return req.State, diags
 	}
-	return saveAPIKeyCapabilities(ctx, client, priv)
+	diags := saveAPIKeyCapabilities(ctx, req.Client, priv)
+	return req.State, diags
 }
 
 func privateDataHasCapabilityKeys(keys map[string]json.RawMessage) bool {

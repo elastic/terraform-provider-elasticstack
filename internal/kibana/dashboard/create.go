@@ -22,47 +22,39 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var planModel models.DashboardModel
+func createDashboard(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[models.DashboardModel],
+) (entitycore.KibanaWriteResult[models.DashboardModel], diag.Diagnostics) {
+	var diags diag.Diagnostics
+	planModel := req.Plan
 
-	diags := req.Plan.Get(ctx, &planModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Get the Kibana client
 	kibanaClient := client.GetKibanaOapiClient()
-
 	spaceID := planModel.SpaceID.ValueString()
 
-	// Convert the plan to an API request.
-	apiReq := dashboardToAPICreateRequest(ctx, &planModel, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
+	apiReq := dashboardToAPICreateRequest(ctx, &planModel, &diags)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
 	}
 
-	createResp, diags := kibanaoapi.CreateDashboard(ctx, kibanaClient, spaceID, apiReq)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	createResp, createDiags := kibanaoapi.CreateDashboard(ctx, kibanaClient, spaceID, apiReq)
+	diags.Append(createDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
 	}
 
 	if createResp.JSON201 == nil {
-		resp.Diagnostics.AddError("Dashboard create returned no body", "expected 201 response with dashboard id")
-		return
+		diags.AddError("Dashboard create returned no body", "expected 201 response with dashboard id")
+		return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
 	}
+
 	compID := clients.CompositeID{
 		ClusterID:  spaceID,
 		ResourceID: createResp.JSON201.Id,
@@ -70,26 +62,5 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	planModel.ID = types.StringValue(compID.String())
 	planModel.DashboardID = types.StringValue(createResp.JSON201.Id)
 
-	planPanels := planModel.Panels
-	readModel, diags := r.read(ctx, client, planModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if readModel == nil {
-		resp.Diagnostics.AddError("Error reading dashboard after creation", "The dashboard was created but could not be read.")
-		return
-	}
-
-	alignDashboardStateFromPlanPanels(planPanels, readModel.Panels)
-	suppressReadTopLevelPanelsWhenPlanEmpty(planPanels, readModel)
-	alignDashboardStateFromPlanSections(ctx, planModel.Sections, readModel.Sections)
-
-	planPinned := planModel.PinnedPanels
-	alignDashboardStateFromPlanPinnedPanels(ctx, planPinned, readModel.PinnedPanels)
-
-	// Set state
-	diags = resp.State.Set(ctx, *readModel)
-	resp.Diagnostics.Append(diags...)
+	return entitycore.KibanaWriteResult[models.DashboardModel]{Model: planModel}, diags
 }
