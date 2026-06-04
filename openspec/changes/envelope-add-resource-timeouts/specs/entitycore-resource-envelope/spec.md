@@ -54,6 +54,14 @@ The system SHALL define `ResourceTimeouts` as a struct with fields `Create, Read
 - **THEN** the envelope SHALL append those diagnostics
 - **AND** the envelope SHALL NOT invoke the Create callback
 
+#### Scenario: Envelope persists `timeouts` to state independent of callback-returned model
+- **WHEN** a Read operation completes and the resource `readFunc` returns a model whose `timeouts` field is a zero value (for example because the callback reconstructed the model without copying `ResourceTimeoutsField`)
+- **THEN** the envelope SHALL write the prior-state `timeouts` value back into `resp.State` after `resp.State.Set`
+- **AND** the operation SHALL succeed without a `timeouts` value-conversion diagnostic
+- **WHEN** a Create or Update operation completes and read-after-write returns a model whose `timeouts` field is a zero value
+- **THEN** the envelope SHALL write the plan model's `timeouts` value into `outState` after `outState.Set`
+- **AND** the operation SHALL succeed without a `timeouts` value-conversion diagnostic
+
 ### Requirement: Resource models embed `WithResourceTimeouts`
 The system SHALL define `WithResourceTimeouts` as an interface with a single method `GetTimeouts() timeouts.Value`. The system SHALL define `ResourceTimeoutsField` as an embeddable struct with field `Timeouts timeouts.Value `tfsdk:"timeouts"`` and a value-receiver `GetTimeouts()` method that returns the field. The system SHALL require `ElasticsearchResourceModel` to embed `WithResourceTimeouts`. Concrete resource models satisfy the constraint by embedding `ResourceTimeoutsField` (or by declaring an equivalent field plus method).
 
