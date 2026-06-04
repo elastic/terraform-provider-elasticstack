@@ -5,6 +5,18 @@ subcategory: "Ml"
 description: |-
   Creates and manages Machine Learning anomaly detection jobs.
   See the ML Job API documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-job.html for more details.
+  Migration note: timeouts syntax
+  Provider versions before this change exposed timeouts as a block (timeouts { delete = "20m" }). The resource envelope now injects timeouts as an attribute with the same sub-fields. Update existing configuration:
+  
+  # Before (block)
+  timeouts {
+    delete = "20m"
+  }
+  
+  # After (attribute)
+  timeouts = {
+    delete = "20m"
+  }
 ---
 
 # elasticstack_elasticsearch_ml_anomaly_detection_job (Resource)
@@ -12,6 +24,22 @@ description: |-
 Creates and manages Machine Learning anomaly detection jobs.
 
 See the [ML Job API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-job.html) for more details.
+
+## Migration note: `timeouts` syntax
+
+Provider versions before this change exposed `timeouts` as a **block** (`timeouts { delete = "20m" }`). The resource envelope now injects `timeouts` as an **attribute** with the same sub-fields. Update existing configuration:
+
+```hcl
+# Before (block)
+timeouts {
+  delete = "20m"
+}
+
+# After (attribute)
+timeouts = {
+  delete = "20m"
+}
+```
 ## Example Usage
 
 ```terraform
@@ -94,7 +122,7 @@ This identifier can contain lowercase alphanumeric characters (a-z and 0-9), hyp
 - `renormalization_window_days` (Number) Advanced configuration option. The period over which adjustments to the score are applied, as new data is seen.
 - `results_index_name` (String) A text string that affects the name of the machine learning results index. Do not start the value with `custom-`; Elasticsearch automatically adds this prefix.
 - `results_retention_days` (Number) Advanced configuration option. The period of time (in days) that results are retained.
-- `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
 
@@ -243,9 +271,12 @@ Optional:
 - `terms` (String) Limits data collection to this comma separated list of partition or by field values. If terms are not specified or it is an empty string, no filtering is applied.
 
 
-<a id="nestedblock--timeouts"></a>
+<a id="nestedatt--timeouts"></a>
 ### Nested Schema for `timeouts`
 
 Optional:
 
+- `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 - `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
+- `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
+- `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).

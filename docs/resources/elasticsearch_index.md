@@ -132,6 +132,7 @@ If specified, this mapping can include: field names, [field data types](https://
 - `sort_field` (Set of String, Deprecated) Deprecated: The field to sort documents within each shard segment by.
 - `sort_order` (List of String, Deprecated) Deprecated: The direction to sort documents within each shard segment. Accepts `asc`, `desc`.
 - `timeout` (String) Period to wait for a response. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 - `unassigned_node_left_delayed_timeout` (String) Time to delay the allocation of replica shards which become unassigned because a node has left, in time units, e.g. `10s`
 - `use_existing` (Boolean) Opt-in flag for **create-time** adoption of an index that already exists when Terraform runs create (for example after a replacement race or when managing an index created out-of-band).
 
@@ -219,6 +220,17 @@ Optional:
 - `missing` (String) How to treat documents missing the sort field. Valid values: _last, _first.
 - `mode` (String) Which value to use when the sort field has multiple values. Valid values: min, max.
 - `order` (String) The sort direction. Valid values: asc, desc.
+
+
+<a id="nestedatt--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+- `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
+- `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
+- `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 
 ## Import
 

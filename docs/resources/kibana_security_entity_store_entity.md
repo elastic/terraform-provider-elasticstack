@@ -41,6 +41,7 @@ Manages a single entity record in the Kibana Security Entity Store.
 - `service_json` (String) JSON fallback for the service block.
 - `space_id` (String) An identifier for the Kibana space. If omitted, the default space is used.
 - `tags` (Set of String) Tags associated with the entity.
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 - `timestamp` (String) The time the entity record was last updated. Maps to @timestamp in the API body.
 - `user` (Attributes) ECS user fields collected on the entity. (see [below for nested schema](#nestedatt--user))
 - `user_json` (String) JSON fallback for the user block.
@@ -289,6 +290,17 @@ Optional:
 - `calculated_score` (Number) The raw numeric value of the given entity's risk score.
 - `calculated_score_norm` (Number) The normalized numeric value of the given entity's risk score.
 
+
+
+<a id="nestedatt--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+- `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
+- `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
+- `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 
 
 <a id="nestedatt--user"></a>

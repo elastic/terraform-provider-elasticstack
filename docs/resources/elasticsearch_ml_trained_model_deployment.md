@@ -34,6 +34,7 @@ On Terraform destroy the resource stops (undeploys) the model deployment.
 - `priority` (String) The deployment priority. Valid values are `low` and `normal`.
 - `queue_capacity` (Number) Specifies the number of inference requests that are allowed in the queue.
 - `threads_per_allocation` (Number) Sets the number of threads used by each model allocation during inference.
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 - `wait_for` (String) Specifies the allocation status to wait for before returning. Valid values are `starting`, `started`, and `fully_allocated`. Defaults to `fully_allocated`.
 
 ### Read-Only
@@ -75,3 +76,14 @@ Optional:
 - `key_file` (String) Path to a file containing the PEM encoded private key for client auth
 - `password` (String, Sensitive) Password to use for API authentication to Elasticsearch.
 - `username` (String) Username to use for API authentication to Elasticsearch.
+
+
+<a id="nestedatt--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+- `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
+- `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
+- `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).

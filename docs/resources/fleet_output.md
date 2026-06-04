@@ -278,6 +278,7 @@ resource "elasticstack_fleet_output" "logstash" {
 - `ssl` (Attributes) SSL configuration. (see [below for nested schema](#nestedatt--ssl))
 - `sync_integrations` (Boolean) When type is remote_elasticsearch, whether Fleet synchronizes integration assets to the remote cluster. Subscription and version requirements apply per Elastic documentation.
 - `sync_uninstalled_integrations` (Boolean) When type is remote_elasticsearch, whether to sync uninstalled integrations. Only meaningful when sync_integrations is enabled.
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 - `write_to_logs_streams` (Boolean) When type is remote_elasticsearch, whether agents using this output send data to wired logs streams (preview in newer stacks).
 
 ### Read-Only
@@ -375,6 +376,17 @@ Optional:
 - `certificate_authorities` (List of String) Server SSL certificate authorities.
 - `key` (String, Sensitive) Client SSL certificate key.
 - `verification_mode` (String) The SSL verification mode. One of `certificate`, `full`, `none`, `strict`.
+
+
+<a id="nestedatt--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+- `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
+- `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
+- `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 
 ## Import
 

@@ -50,6 +50,7 @@ resource "elasticstack_elasticsearch_snapshot_repository" "my_fs_repo" {
 - `gcs` (Block, Optional) Google Cloud Storage repository. Stores snapshots in a Google Cloud Storage bucket. (see [below for nested schema](#nestedblock--gcs))
 - `hdfs` (Block, Optional) HDFS repository. Stores snapshots in Hadoop Distributed File System. (see [below for nested schema](#nestedblock--hdfs))
 - `s3` (Block, Optional) S3 repository. Stores snapshots in an Amazon S3 bucket. (see [below for nested schema](#nestedblock--s3))
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 - `url` (Block, Optional) URL repository. Provides read-only access to a shared filesystem repository. (see [below for nested schema](#nestedblock--url))
 - `verify` (Boolean) If true, the request verifies the repository is functional on all master and data nodes in the cluster.
 
@@ -157,6 +158,17 @@ Optional:
 - `readonly` (Boolean) If true, the repository is read-only.
 - `server_side_encryption` (Boolean) When true, files are encrypted server-side using AES-256 algorithm.
 - `storage_class` (String) Sets the S3 storage class for objects stored in the snapshot repository.
+
+
+<a id="nestedatt--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+- `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
+- `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
+- `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 
 
 <a id="nestedblock--url"></a>
