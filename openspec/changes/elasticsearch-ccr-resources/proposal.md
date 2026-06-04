@@ -52,7 +52,7 @@ Manages a CCR auto-follow pattern. Key attributes:
 
 **Lifecycle:**
 - **Create**: `PUT /_ccr/auto_follow/{name}`; if `active = false`, immediately calls `POST /_ccr/auto_follow/{name}/pause`
-- **Read**: `GET /_ccr/auto_follow/{name}`; maps `active`, `remote_cluster`, `leader_index_patterns`, `leader_index_exclusion_patterns`, `follow_index_pattern`, and all 10 tuning parameters
+- **Read**: `GET /_ccr/auto_follow/{name}`; maps `active`, `remote_cluster`, `leader_index_patterns`, `leader_index_exclusion_patterns`, `follow_index_pattern`, and `max_outstanding_read_requests` (preserving prior-state values for the other nine tuning parameters not returned by the API)
 - **Update**: `PUT /_ccr/auto_follow/{name}` (idempotent upsert); then if `active` changed, call pause or resume as needed
 - **Destroy**: `DELETE /_ccr/auto_follow/{name}` — no state machine required
 

@@ -14,7 +14,7 @@ The go-elasticsearch v8 typed client at v8.19.6 exposes the full CCR surface:
 - `typedapi/ccr/resumefollow/` — `POST /{index}/_ccr/resume_follow`
 - `typedapi/ccr/unfollow/` — `POST /{index}/_ccr/unfollow`
 - `typedapi/ccr/putautofollowpattern/` — `PUT /_ccr/auto_follow/{name}`
-- `typedapi/ccr/getautofollowpattern/` — `GET /_ccr/auto_follow/{name}` (returns `[]types.AutoFollowPattern`)
+- `typedapi/ccr/getautofollowpattern/` — `GET /_ccr/auto_follow/{name}` (returns the `patterns` list)
 - `typedapi/ccr/pauseautofollowpattern/` — `POST /_ccr/auto_follow/{name}/pause`
 - `typedapi/ccr/resumeautofollowpattern/` — `POST /_ccr/auto_follow/{name}/resume`
 - `typedapi/ccr/deleteautofollowpattern/` — `DELETE /_ccr/auto_follow/{name}`

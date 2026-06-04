@@ -81,9 +81,7 @@ All ten attributes are `Optional` only (not `Optional/Computed`). During Read th
 `max_outstanding_read_requests` from the API and preserves prior-state values for the other nine
 unchanged. This prevents perpetual diffs while allowing normal plan/apply management of all params.
 
-Where the go-elasticsearch typed client uses `*int` for count fields (all except
-`max_outstanding_read_requests`), the provider SHALL narrow int64 schema values to int when building
-API requests and widen int to int64 when reading back.
+Where the go-elasticsearch typed client uses `*int` for count fields, the provider SHALL narrow int64 schema values to int when building API requests and widen int to int64 when reading back.
 
 #### Scenario: Tuning params included in create request
 
@@ -219,10 +217,7 @@ created by the pattern.
 
 ### Requirement: Import support (REQ-CCR-AFP-009)
 
-The resource SHALL support import by pattern name. After import, `active`, `remote_cluster`,
-`leader_index_patterns`, `leader_index_exclusion_patterns`, `follow_index_pattern`, and all tuning
-parameters SHALL be populated from the API response. `settings_raw` is write-only and will be empty
-in state after import; practitioners MUST add it to their configuration manually if required.
+The resource SHALL support import by pattern name. After import, `active`, `remote_cluster`, `leader_index_patterns`, `leader_index_exclusion_patterns`, `follow_index_pattern`, and `max_outstanding_read_requests` SHALL be populated from the API response. The remaining nine tuning parameters are not returned by `GET /_ccr/auto_follow/{name}` and SHALL remain null in state after import unless the practitioner configures them. `settings_raw` is write-only and will be empty in state after import; practitioners MUST add it to their configuration manually if required.
 
 #### Scenario: Import by pattern name
 
