@@ -18,8 +18,12 @@
 package entity
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
+
+	jsontypes "github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func TestCanonicalJSON(t *testing.T) {
@@ -204,4 +208,93 @@ func TestCanonicalMapJSON(t *testing.T) {
 			}
 		})
 	}
+}
+
+func newNullPlan(spaceID types.String, entityType, entityID string) tfModel {
+	return tfModel{
+		SpaceID:          spaceID,
+		EntityType:       types.StringValue(entityType),
+		EntityID:         types.StringValue(entityID),
+		Entity:           types.ObjectNull(BlockAttrTypes()),
+		Host:             types.ObjectNull(HostBlockAttrTypes()),
+		User:             types.ObjectNull(UserBlockAttrTypes()),
+		Service:          types.ObjectNull(ServiceBlockAttrTypes()),
+		Cloud:            types.ObjectNull(CloudBlockAttrTypes()),
+		Asset:            types.ObjectNull(AssetBlockAttrTypes()),
+		Orchestrator:     types.ObjectNull(OrchestratorBlockAttrTypes()),
+		Event:            types.ObjectNull(EventBlockAttrTypes()),
+		Labels:           types.MapNull(types.StringType),
+		Tags:             types.SetNull(types.StringType),
+		EntityJSON:       jsontypes.NewNormalizedNull(),
+		HostJSON:         jsontypes.NewNormalizedNull(),
+		UserJSON:         jsontypes.NewNormalizedNull(),
+		ServiceJSON:      jsontypes.NewNormalizedNull(),
+		CloudJSON:        jsontypes.NewNormalizedNull(),
+		AssetJSON:        jsontypes.NewNormalizedNull(),
+		OrchestratorJSON: jsontypes.NewNormalizedNull(),
+		EventJSON:        jsontypes.NewNormalizedNull(),
+		LabelsJSON:       jsontypes.NewNormalizedNull(),
+	}
+}
+
+func TestBuildEntityWriteBody(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("resolves spaceID and entityType from plan", func(t *testing.T) {
+		plan := newNullPlan(types.StringValue("my-space"), "host", "host-1")
+
+		spaceID, entityType, bodyBytes, diags := buildEntityWriteBody(ctx, plan)
+		if diags.HasError() {
+			t.Fatalf("unexpected diags: %v", diags)
+		}
+		if spaceID != "my-space" {
+			t.Errorf("spaceID = %q, want %q", spaceID, "my-space")
+		}
+		if entityType != "host" {
+			t.Errorf("entityType = %q, want %q", entityType, "host")
+		}
+		var result map[string]any
+		if err := json.Unmarshal(bodyBytes, &result); err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		entityMap, ok := result["entity"].(map[string]any)
+		if !ok {
+			t.Fatalf("entity key missing or wrong type: %T", result["entity"])
+		}
+		if got := entityMap["id"]; got != "host-1" {
+			t.Errorf("entity.id = %v, want %q", got, "host-1")
+		}
+	})
+
+	t.Run("null space_id normalizes to default", func(t *testing.T) {
+		plan := newNullPlan(types.StringNull(), "user", "u-1")
+
+		spaceID, _, _, diags := buildEntityWriteBody(ctx, plan)
+		if diags.HasError() {
+			t.Fatalf("unexpected diags: %v", diags)
+		}
+		if spaceID != "default" {
+			t.Errorf("spaceID = %q, want %q", spaceID, "default")
+		}
+	})
+
+	t.Run("entity id is injected into body bytes", func(t *testing.T) {
+		plan := newNullPlan(types.StringValue("default"), "service", "svc-42")
+
+		_, _, bodyBytes, diags := buildEntityWriteBody(ctx, plan)
+		if diags.HasError() {
+			t.Fatalf("unexpected diags: %v", diags)
+		}
+		var result map[string]any
+		if err := json.Unmarshal(bodyBytes, &result); err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		entityMap, ok := result["entity"].(map[string]any)
+		if !ok {
+			t.Fatalf("entity key missing or wrong type")
+		}
+		if got := entityMap["id"]; got != "svc-42" {
+			t.Errorf("entity.id = %v, want %q", got, "svc-42")
+		}
+	})
 }

@@ -33,16 +33,8 @@ func updateEntity(
 	req entitycore.KibanaWriteRequest[tfModel],
 ) (entitycore.KibanaWriteResult[tfModel], diag.Diagnostics) {
 	plan := req.Plan
-	spaceID := NormalizeSpaceID(plan.SpaceID)
-	entityType := plan.EntityType.ValueString()
-	entityID := plan.EntityID.ValueString()
 
-	bodyMap, diags := modelToAPIBody(ctx, plan)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[tfModel]{}, diags
-	}
-
-	bodyBytes, diags := injectEntityIDAndMarshal(bodyMap, entityID)
+	spaceID, entityType, bodyBytes, diags := buildEntityWriteBody(ctx, plan)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}

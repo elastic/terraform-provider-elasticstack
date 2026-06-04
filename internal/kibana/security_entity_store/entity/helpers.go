@@ -1346,6 +1346,30 @@ func QuoteKQLString(v string) string {
 	return strconv.Quote(v)
 }
 
+// buildEntityWriteBody extracts and builds the common preamble shared by
+// createEntity and updateEntity: it resolves the spaceID/entityType/entityID
+// from plan, converts the plan to an API body map, then injects the entity ID
+// and marshals the result. Callers diverge only at the API call itself.
+func buildEntityWriteBody(ctx context.Context, plan tfModel) (spaceID, entityType string, bodyBytes []byte, diags diag.Diagnostics) {
+	spaceID = NormalizeSpaceID(plan.SpaceID)
+	entityType = plan.EntityType.ValueString()
+	entityID := plan.EntityID.ValueString()
+
+	bodyMap, d := modelToAPIBody(ctx, plan)
+	diags.Append(d...)
+	if diags.HasError() {
+		return "", "", nil, diags
+	}
+
+	bodyBytes, d = injectEntityIDAndMarshal(bodyMap, entityID)
+	diags.Append(d...)
+	if diags.HasError() {
+		return "", "", nil, diags
+	}
+
+	return spaceID, entityType, bodyBytes, diags
+}
+
 // injectEntityIDAndMarshal sets entity.id in bodyMap and marshals it to JSON.
 func injectEntityIDAndMarshal(bodyMap map[string]any, entityID string) ([]byte, diag.Diagnostics) {
 	if entityMap, ok := bodyMap["entity"].(map[string]any); ok {

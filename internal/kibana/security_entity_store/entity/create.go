@@ -33,9 +33,6 @@ func createEntity(
 	req entitycore.KibanaWriteRequest[tfModel],
 ) (entitycore.KibanaWriteResult[tfModel], diag.Diagnostics) {
 	plan := req.Plan
-	spaceID := NormalizeSpaceID(plan.SpaceID)
-	entityType := plan.EntityType.ValueString()
-	entityID := plan.EntityID.ValueString()
 
 	if (plan.Entity.IsNull() || plan.Entity.IsUnknown()) && (plan.EntityJSON.IsNull() || plan.EntityJSON.IsUnknown()) {
 		return entitycore.KibanaWriteResult[tfModel]{}, diag.Diagnostics{
@@ -43,12 +40,7 @@ func createEntity(
 		}
 	}
 
-	bodyMap, diags := modelToAPIBody(ctx, plan)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[tfModel]{}, diags
-	}
-
-	bodyBytes, diags := injectEntityIDAndMarshal(bodyMap, entityID)
+	spaceID, entityType, bodyBytes, diags := buildEntityWriteBody(ctx, plan)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}
