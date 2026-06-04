@@ -22,37 +22,16 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) {
-	var state tfModel
-
-	response.Diagnostics.Append(request.State.Get(ctx, &state)...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	if r.Client() == nil {
-		response.Diagnostics.AddError("Provider not configured", "Expected configured provider client factory")
-		return
-	}
-
-	apiClient, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	compID, diags := clients.CompositeIDFromStr(state.ID.ValueString())
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	oapi := apiClient.GetKibanaOapiClient()
-
-	// CompositeID stores spaceID as ClusterID and sloID as ResourceID (see create.go).
-	// DeleteSlo signature: (ctx, client, spaceID, sloID).
-	response.Diagnostics.Append(kibanaoapi.DeleteSlo(ctx, oapi, compID.ClusterID, compID.ResourceID)...)
+func deleteSlo(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	resourceID string,
+	spaceID string,
+	_ tfModel,
+) diag.Diagnostics {
+	oapi := client.GetKibanaOapiClient()
+	return kibanaoapi.DeleteSlo(ctx, oapi, spaceID, resourceID)
 }

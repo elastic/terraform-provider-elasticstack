@@ -27,7 +27,7 @@ import (
 
 func integrationSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
-		Version:     1,
+		Version: 1,
 		Description: `Installs or uninstalls a Fleet integration package. The Kibana Fleet UI can be
 used to view available packages. Additional information for managing integration
 packages can be found [here](https://www.elastic.co/guide/en/fleet/current/install-uninstall-integration-assets.html).

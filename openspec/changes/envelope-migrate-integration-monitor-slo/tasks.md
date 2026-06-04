@@ -29,20 +29,20 @@
 
 ## 3. kibana/slo migration
 
-- [ ] 3.1 Add `KibanaResourceModel` interface methods to `tfModel` (`GetID`, `GetResourceID` parsing composite, `GetSpaceID`, `GetKibanaConnection`)
-- [ ] 3.2 Promote `readSloFromAPI` from a `*Resource` method to a package-level function; update its signature to `readSloFromAPI(ctx, apiClient, resourceID, spaceID string, model *tfModel) (bool, diag.Diagnostics)` — removing composite-ID parsing from inside the function since the read callback receives `resourceID`/`spaceID` from the envelope directly
-- [ ] 3.3 Promote `readAndPopulate` from a `*Resource` method to a package-level function `readSloAndPopulate(ctx, apiClient, model *tfModel, diags *diag.Diagnostics)`; update it to call the promoted `readSloFromAPI`, reconstructing `resourceID`/`spaceID` from `model.ID`
-- [ ] 3.4 Replace `*entitycore.ResourceBase` embed with `*entitycore.KibanaResource[tfModel]` in `resource.go`; retain `ConfigValidators` and `UpgradeState` on the concrete type; remove explicit `kibana_connection` schema block (envelope injects it)
-- [ ] 3.5 Rewrite `create.go` as a `KibanaWriteFunc[tfModel]`: convert `req.Plan` → `apiModel` → call `resolveGroupBySupport(ctx, client, &apiModel, &diags)` (note: `EnforceVersionRequirements` is handled by the envelope since `tfModel` implements `WithVersionRequirements`) → call `CreateSlo` → set `model.ID` (composite) → call `readSloAndPopulate` (intermediate read: create response only returns `id`, not `enabled`) → if `planEnabled != serverEnabled`: call Enable/Disable API → call `readSloFromAPI` → return `KibanaWriteResult[T]{Model: model}`
-- [ ] 3.6 Rewrite `update.go` as a `KibanaWriteFunc[tfModel]`: convert `req.Plan` → `apiModel` → call `resolveGroupBySupport(ctx, client, &apiModel, &diags)` → call `UpdateSlo` → call `readSloAndPopulate` → reconcile enabled if needed → return `KibanaWriteResult[T]{Model: model}`
-- [ ] 3.7 Rewrite `read.go` as a `readSlo(ctx, client, resourceID, spaceID, model) (tfModel, bool, diag.Diagnostics)` callback; reconstruct composite ID from envelope-provided `resourceID`/`spaceID`, then call promoted `readSloFromAPI`
-- [ ] 3.8 Rewrite `delete.go` as a `deleteSlo(ctx, client, resourceID, spaceID, model) diag.Diagnostics` callback
-- [ ] 3.9 Wire all callbacks into `entitycore.NewKibanaResource[tfModel]` in `resource.go`
-- [ ] 3.10 Remove now-dead `*Resource` methods: `reconcileSloEnabledAfterWrite` (logic moved into write callbacks), `readAndPopulate`, and `readSloFromAPI` (both promoted to package-level); also remove the now-redundant explicit `entitycore.EnforceVersionRequirements` calls from the old create/update (envelope handles these)
-- [ ] 3.11 Add `entitycore_contract_test.go` asserting `*entitycore.KibanaResource[tfModel]` embedding
-- [ ] 3.12 Verify `make build` passes; run slo acceptance tests
+- [x] 3.1 Add `KibanaResourceModel` interface methods to `tfModel` (`GetID`, `GetResourceID` parsing composite, `GetSpaceID`, `GetKibanaConnection`)
+- [x] 3.2 Promote `readSloFromAPI` from a `*Resource` method to a package-level function; update its signature to `readSloFromAPI(ctx, apiClient, resourceID, spaceID string, model *tfModel) (bool, diag.Diagnostics)` — removing composite-ID parsing from inside the function since the read callback receives `resourceID`/`spaceID` from the envelope directly
+- [x] 3.3 Promote `readAndPopulate` from a `*Resource` method to a package-level function `readSloAndPopulate(ctx, apiClient, model *tfModel, diags *diag.Diagnostics)`; update it to call the promoted `readSloFromAPI`, reconstructing `resourceID`/`spaceID` from `model.ID`
+- [x] 3.4 Replace `*entitycore.ResourceBase` embed with `*entitycore.KibanaResource[tfModel]` in `resource.go`; retain `ConfigValidators` and `UpgradeState` on the concrete type; remove explicit `kibana_connection` schema block (envelope injects it)
+- [x] 3.5 Rewrite `create.go` as a `KibanaWriteFunc[tfModel]`: convert `req.Plan` → `apiModel` → call `resolveGroupBySupport(ctx, client, &apiModel, &diags)` (note: `EnforceVersionRequirements` is handled by the envelope since `tfModel` implements `WithVersionRequirements`) → call `CreateSlo` → set `model.ID` (composite) → call `readSloAndPopulate` (intermediate read: create response only returns `id`, not `enabled`) → if `planEnabled != serverEnabled`: call Enable/Disable API → call `readSloFromAPI` → return `KibanaWriteResult[T]{Model: model}`
+- [x] 3.6 Rewrite `update.go` as a `KibanaWriteFunc[tfModel]`: convert `req.Plan` → `apiModel` → call `resolveGroupBySupport(ctx, client, &apiModel, &diags)` → call `UpdateSlo` → call `readSloAndPopulate` → reconcile enabled if needed → return `KibanaWriteResult[T]{Model: model}`
+- [x] 3.7 Rewrite `read.go` as a `readSlo(ctx, client, resourceID, spaceID, model) (tfModel, bool, diag.Diagnostics)` callback; reconstruct composite ID from envelope-provided `resourceID`/`spaceID`, then call promoted `readSloFromAPI`
+- [x] 3.8 Rewrite `delete.go` as a `deleteSlo(ctx, client, resourceID, spaceID, model) diag.Diagnostics` callback
+- [x] 3.9 Wire all callbacks into `entitycore.NewKibanaResource[tfModel]` in `resource.go`
+- [x] 3.10 Remove now-dead `*Resource` methods: `reconcileSloEnabledAfterWrite` (logic moved into write callbacks), `readAndPopulate`, and `readSloFromAPI` (both promoted to package-level); also remove the now-redundant explicit `entitycore.EnforceVersionRequirements` calls from the old create/update (envelope handles these)
+- [x] 3.11 Add `entitycore_contract_test.go` asserting `*entitycore.KibanaResource[tfModel]` embedding
+- [x] 3.12 Verify `make build` passes; run slo acceptance tests
 
 ## 4. Final validation
 
-- [ ] 4.1 Run `make build` across the full provider (all three resources in one build)
-- [ ] 4.2 Confirm no remaining `ResourceBase`-only resources exist in `internal/kibana/` or `internal/fleet/` trees
+- [x] 4.1 Run `make build` across the full provider (all three resources in one build)
+- [x] 4.2 Confirm no remaining `ResourceBase`-only resources exist in `internal/kibana/` or `internal/fleet/` trees (within the scope of this change: `fleet/agentpolicy`, `fleet/elastic_defend_integration_policy`, `fleet/integration_policy`, and `kibana/import_saved_objects` remain as explicit non-goals or out-of-scope)

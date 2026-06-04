@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package monitor
+package slo
 
 import (
 	"reflect"
@@ -26,24 +26,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTfModelV0_satisfiesKibanaResourceModel(t *testing.T) {
+func TestTfModel_satisfiesKibanaResourceModel(t *testing.T) {
 	t.Parallel()
-	var _ entitycore.KibanaResourceModel = tfModelV0{}
+	var _ entitycore.KibanaResourceModel = tfModel{}
 }
 
 func TestResource_embedsEntityCoreKibanaResource(t *testing.T) {
 	t.Parallel()
 	rt := reflect.TypeFor[Resource]()
 	field, ok := rt.FieldByName("KibanaResource")
-	require.True(t, ok, "Resource should embed *entitycore.KibanaResource[tfModelV0] as field KibanaResource")
+	require.True(t, ok, "Resource should embed *entitycore.KibanaResource[tfModel] as field KibanaResource")
 	require.True(t, field.Anonymous)
-	require.Equal(t, reflect.TypeFor[*entitycore.KibanaResource[tfModelV0]](), field.Type)
+	require.Equal(t, reflect.TypeFor[*entitycore.KibanaResource[tfModel]](), field.Type)
 }
 
 func TestNewResource_satisfiesFrameworkInterfaces(t *testing.T) {
 	t.Parallel()
 	var _ resource.Resource = newResource()
 	var _ resource.ResourceWithConfigure = newResource()
-	var _ resource.ResourceWithConfigValidators = newResource()
 	var _ resource.ResourceWithImportState = newResource()
+	var _ resource.ResourceWithConfigValidators = newResource()
+	var _ resource.ResourceWithUpgradeState = newResource()
 }

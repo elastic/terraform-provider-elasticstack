@@ -30,7 +30,7 @@ import (
 func readIntegration(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
-	resourceID string,
+	_ string,
 	spaceID string,
 	model integrationModel,
 ) (integrationModel, bool, diag.Diagnostics) {
