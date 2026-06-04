@@ -34,7 +34,7 @@ func deleteEntity(
 	_ string,
 	model tfModel,
 ) diag.Diagnostics {
-	spaceID := normalizeSpaceID(model.SpaceID)
+	spaceID := NormalizeSpaceID(model.SpaceID)
 	entityID := model.EntityID.ValueString()
 
 	body := map[string]any{"entityId": entityID}

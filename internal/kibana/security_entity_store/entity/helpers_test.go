@@ -70,6 +70,60 @@ func TestCanonicalJSON(t *testing.T) {
 	}
 }
 
+func TestExtractEntitiesFromResponse(t *testing.T) {
+	tests := []struct {
+		name   string
+		result map[string]any
+		want   []any
+	}{
+		{
+			name:   "entities key present",
+			result: map[string]any{"entities": []any{"a", "b"}},
+			want:   []any{"a", "b"},
+		},
+		{
+			name:   "records key fallback",
+			result: map[string]any{"records": []any{"c", "d"}},
+			want:   []any{"c", "d"},
+		},
+		{
+			name:   "entities takes precedence over records",
+			result: map[string]any{"entities": []any{"x"}, "records": []any{"y"}},
+			want:   []any{"x"},
+		},
+		{
+			name:   "neither key present returns nil",
+			result: map[string]any{"other": []any{"z"}},
+			want:   nil,
+		},
+		{
+			name:   "empty map returns nil",
+			result: map[string]any{},
+			want:   nil,
+		},
+		{
+			name:   "entities key wrong type falls back to records",
+			result: map[string]any{"entities": "not-a-slice", "records": []any{"r"}},
+			want:   []any{"r"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ExtractEntitiesFromResponse(tt.result)
+			if len(got) != len(tt.want) {
+				t.Errorf("ExtractEntitiesFromResponse() len = %d, want %d", len(got), len(tt.want))
+				return
+			}
+			for i := range tt.want {
+				if got[i] != tt.want[i] {
+					t.Errorf("ExtractEntitiesFromResponse()[%d] = %v, want %v", i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}
+
 func TestCanonicalMapJSON(t *testing.T) {
 	tests := []struct {
 		name  string

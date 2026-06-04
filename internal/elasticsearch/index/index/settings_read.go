@@ -42,7 +42,7 @@ func init() {
 		if sortKeysExpandedFromNestedBlock[key] {
 			continue
 		}
-		importHydrationPrunableFieldKeys = append(importHydrationPrunableFieldKeys, convertSettingsKeyToTFFieldKey(key))
+		importHydrationPrunableFieldKeys = append(importHydrationPrunableFieldKeys, typeutils.ConvertSettingsKeyToTFFieldKey(key))
 	}
 	importHydrationPrunableFieldKeys = append(importHydrationPrunableFieldKeys,
 		"analysis_analyzer",
@@ -87,7 +87,7 @@ func hydrateAllSettingsFromRaw(ctx context.Context, model *tfModel) diag.Diagnos
 			continue
 		}
 
-		tfFieldKey := convertSettingsKeyToTFFieldKey(key)
+		tfFieldKey := typeutils.ConvertSettingsKeyToTFFieldKey(key)
 		setFlatSettingOnModel(ctx, model, tfFieldKey, raw, modelType)
 	}
 

@@ -90,9 +90,9 @@ func TestNormalizeSpaceID(t *testing.T) {
 			if tt.isNull {
 				v = types.StringNull()
 			}
-			got := normalizeSpaceID(v)
+			got := NormalizeSpaceID(v)
 			if got != tt.want {
-				t.Errorf("normalizeSpaceID(%v) = %q, want %q", tt.input, got, tt.want)
+				t.Errorf("NormalizeSpaceID(%v) = %q, want %q", tt.input, got, tt.want)
 			}
 		})
 	}
