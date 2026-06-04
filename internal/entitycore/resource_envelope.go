@@ -117,7 +117,7 @@ type ElasticsearchPostReadRequest[T ElasticsearchResourceModel] struct {
 	Client  *clients.ElasticsearchScopedClient
 	Prior   T
 	State   T
-	Private any
+	Private PrivateStateStorage
 }
 
 // PostReadFunc runs after a successful read and before state is persisted,
@@ -479,7 +479,7 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWri
 			Client:  client,
 			Prior:   priorModel,
 			State:   stateModel,
-			Private: inv.privateState,
+			Private: private,
 		})
 		diags.Append(prDiags...)
 		if diags.HasError() {

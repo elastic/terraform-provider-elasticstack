@@ -94,7 +94,7 @@ type KibanaPostReadRequest[T KibanaResourceModel] struct {
 	Client  *clients.KibanaScopedClient
 	Prior   T
 	State   T
-	Private any
+	Private PrivateStateStorage
 }
 
 // KibanaPostReadFunc runs after a successful read and before state is persisted,
@@ -452,13 +452,17 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 
 	priorModel := planModel
 
+	var private PrivateStateStorage
+	if ps, ok := inv.privateState.(PrivateStateStorage); ok {
+		private = ps
+	}
 	if r.postReadFunc != nil {
 		var prDiags diag.Diagnostics
 		stateModel, prDiags = r.postReadFunc(ctx, KibanaPostReadRequest[T]{
 			Client:  client,
 			Prior:   priorModel,
 			State:   stateModel,
-			Private: inv.privateState,
+			Private: private,
 		})
 		diags.Append(prDiags...)
 		if diags.HasError() {
