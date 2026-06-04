@@ -416,3 +416,33 @@ func TestElasticsearchResource_operations_setContextDeadline(t *testing.T) {
 		})
 	}
 }
+
+func TestElasticsearchResource_Create_invalidTimeoutPreventsCallback(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	createCalled := false
+	opts := defaultTestElasticsearchResourceOptions()
+	opts.Create = func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ WriteRequest[testResourceModel]) (WriteResult[testResourceModel], diag.Diagnostics) {
+		createCalled = true
+		t.Fatal("create callback must not run when timeouts.create is invalid")
+		return WriteResult[testResourceModel]{}, nil
+	}
+	r := NewElasticsearchResource[testResourceModel]("test_entity", opts)
+	r.client = factory
+
+	objType := testResourceObjectTypeWithTimeouts()
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                       tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"name":                     tftypes.NewValue(tftypes.String, "user1"),
+		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+		"timeouts":                 resourceTimeoutsWithCreate("not-a-duration"),
+	})
+	var schemaResp resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+	plan := tfsdk.Plan{Raw: objValue, Schema: schemaResp.Schema}
+	resp := resource.CreateResponse{State: tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: schemaResp.Schema}}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: tfsdk.Config(plan)}, &resp)
+	require.True(t, resp.Diagnostics.HasError())
+	require.False(t, createCalled)
+}

@@ -410,3 +410,34 @@ func TestKibanaResource_operations_setContextDeadline(t *testing.T) {
 		})
 	}
 }
+
+func TestKibanaResource_Create_invalidTimeoutPreventsCallback(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	createCalled := false
+	opts := defaultTestKibanaResourceOptions()
+	opts.Create = func(_ context.Context, _ *clients.KibanaScopedClient, _ KibanaWriteRequest[testKibanaResourceModel]) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+		createCalled = true
+		t.Fatal("create callback must not run when timeouts.create is invalid")
+		return KibanaWriteResult[testKibanaResourceModel]{}, nil
+	}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	objType := testKibanaResourceObjectTypeWithTimeouts()
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"name":              tftypes.NewValue(tftypes.String, "my-resource"),
+		"space_id":          tftypes.NewValue(tftypes.String, "default"),
+		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		"timeouts":          resourceTimeoutsWithCreate("not-a-duration"),
+	})
+	var schemaResp resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+	plan := tfsdk.Plan{Raw: objValue, Schema: schemaResp.Schema}
+	var resp resource.CreateResponse
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: tfsdk.Config(plan)}, &resp)
+	require.True(t, resp.Diagnostics.HasError())
+	require.False(t, createCalled)
+}
