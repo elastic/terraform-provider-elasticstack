@@ -53,6 +53,11 @@ type OptionsModel struct {
 	HidePanelBorders types.Bool `tfsdk:"hide_panel_borders"`
 }
 
+func (m DashboardModel) GetID() types.String             { return m.ID }
+func (m DashboardModel) GetResourceID() types.String     { return m.DashboardID }
+func (m DashboardModel) GetSpaceID() types.String        { return m.SpaceID }
+func (m DashboardModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+
 type DashboardModel struct {
 	ID               types.String          `tfsdk:"id"`
 	KibanaConnection types.List            `tfsdk:"kibana_connection"`

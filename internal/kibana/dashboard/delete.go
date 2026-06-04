@@ -23,38 +23,16 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var stateModel models.DashboardModel
-
-	diags := req.State.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Parse composite ID
-	composite, diags := clients.CompositeIDFromStr(stateModel.ID.ValueString())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	dashboardID := composite.ResourceID
-	spaceID := composite.ClusterID
-
-	// Get the Kibana client
+func deleteDashboard(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	resourceID string,
+	spaceID string,
+	_ models.DashboardModel,
+) diag.Diagnostics {
 	kibanaClient := client.GetKibanaOapiClient()
-
-	// Delete the dashboard
-	diags = kibanaoapi.DeleteDashboard(ctx, kibanaClient, spaceID, dashboardID)
-	resp.Diagnostics.Append(diags...)
+	return kibanaoapi.DeleteDashboard(ctx, kibanaClient, spaceID, resourceID)
 }

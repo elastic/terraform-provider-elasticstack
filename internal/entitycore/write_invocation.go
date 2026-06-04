@@ -33,7 +33,7 @@ type resourceWriteInvocation struct {
 	priorState   *tfsdk.State
 	config       tfsdk.Config
 	outState     *tfsdk.State
-	privateState any
+	privateState PrivateStateStorage
 	isUpdate     bool
 }
 

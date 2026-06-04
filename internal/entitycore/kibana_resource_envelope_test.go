@@ -2129,14 +2129,14 @@ func TestNewKibanaResource_SingleWriteFuncServesCreateAndUpdate(t *testing.T) {
 	require.True(t, sawUpdate)
 }
 
-func TestNewKibanaResource_Read_invokesPostReadAfterSuccessfulStateSet(t *testing.T) {
+func TestNewKibanaResource_Read_invokesPostReadBeforeStateSet(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
 	postCalled := false
-	postRead := func(_ context.Context, _ *clients.KibanaScopedClient, _ testKibanaResourceModel, _ any) diag.Diagnostics {
+	postRead := func(_ context.Context, req KibanaPostReadRequest[testKibanaResourceModel]) (testKibanaResourceModel, diag.Diagnostics) {
 		postCalled = true
-		return nil
+		return req.State, nil
 	}
 	opts := defaultTestKibanaResourceOptions()
 	opts.PostRead = postRead
@@ -2157,9 +2157,9 @@ func TestNewKibanaResource_Read_skipsPostReadWhenNotFound(t *testing.T) {
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
 	postCalled := false
-	postRead := func(_ context.Context, _ *clients.KibanaScopedClient, _ testKibanaResourceModel, _ any) diag.Diagnostics {
+	postRead := func(_ context.Context, req KibanaPostReadRequest[testKibanaResourceModel]) (testKibanaResourceModel, diag.Diagnostics) {
 		postCalled = true
-		return nil
+		return req.State, nil
 	}
 	opts := defaultTestKibanaResourceOptions()
 	opts.Read = func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
@@ -2183,9 +2183,9 @@ func TestNewKibanaResource_Read_skipsPostReadWhenReadFuncError(t *testing.T) {
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
 	postCalled := false
-	postRead := func(_ context.Context, _ *clients.KibanaScopedClient, _ testKibanaResourceModel, _ any) diag.Diagnostics {
+	postRead := func(_ context.Context, req KibanaPostReadRequest[testKibanaResourceModel]) (testKibanaResourceModel, diag.Diagnostics) {
 		postCalled = true
-		return nil
+		return req.State, nil
 	}
 	readFn := func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
 		var d diag.Diagnostics
@@ -2207,14 +2207,14 @@ func TestNewKibanaResource_Read_skipsPostReadWhenReadFuncError(t *testing.T) {
 	require.False(t, postCalled)
 }
 
-func TestNewKibanaResource_Read_skipsPostReadWhenStateSetFails(t *testing.T) {
+func TestNewKibanaResource_Read_postReadRunsBeforeStateSet(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
 	postCalled := false
-	postRead := func(_ context.Context, _ *clients.KibanaScopedClient, _ testKibanaResourceModel, _ any) diag.Diagnostics {
+	postRead := func(_ context.Context, req KibanaPostReadRequest[testKibanaResourceModel]) (testKibanaResourceModel, diag.Diagnostics) {
 		postCalled = true
-		return nil
+		return req.State, nil
 	}
 	opts := defaultTestKibanaResourceOptions()
 	opts.PostRead = postRead
@@ -2231,7 +2231,7 @@ func TestNewKibanaResource_Read_skipsPostReadWhenStateSetFails(t *testing.T) {
 	r.Read(ctx, req, &resp)
 
 	require.True(t, resp.Diagnostics.HasError())
-	require.False(t, postCalled)
+	require.True(t, postCalled, "PostRead should run before state set and be called even when state set fails")
 }
 
 func TestNewKibanaResource_Read_postReadReceivesFrameworkPrivateHandle(t *testing.T) {
@@ -2239,9 +2239,9 @@ func TestNewKibanaResource_Read_postReadReceivesFrameworkPrivateHandle(t *testin
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
 	var captured any
-	postRead := func(_ context.Context, _ *clients.KibanaScopedClient, _ testKibanaResourceModel, priv any) diag.Diagnostics {
-		captured = priv
-		return nil
+	postRead := func(_ context.Context, req KibanaPostReadRequest[testKibanaResourceModel]) (testKibanaResourceModel, diag.Diagnostics) {
+		captured = req.Private
+		return req.State, nil
 	}
 	opts := defaultTestKibanaResourceOptions()
 	opts.PostRead = postRead
@@ -2262,9 +2262,9 @@ func TestNewKibanaResource_Create_invokesPostReadAfterReadAfterWrite(t *testing.
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
 	postCalls := 0
-	postRead := func(_ context.Context, _ *clients.KibanaScopedClient, _ testKibanaResourceModel, _ any) diag.Diagnostics {
+	postRead := func(_ context.Context, req KibanaPostReadRequest[testKibanaResourceModel]) (testKibanaResourceModel, diag.Diagnostics) {
 		postCalls++
-		return nil
+		return req.State, nil
 	}
 	opts := defaultTestKibanaResourceOptions()
 	opts.Read = testKibanaReadFuncDistinguishing
@@ -2287,9 +2287,9 @@ func TestNewKibanaResource_Update_invokesPostReadAfterReadAfterWrite(t *testing.
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
 	postCalls := 0
-	postRead := func(_ context.Context, _ *clients.KibanaScopedClient, _ testKibanaResourceModel, _ any) diag.Diagnostics {
+	postRead := func(_ context.Context, req KibanaPostReadRequest[testKibanaResourceModel]) (testKibanaResourceModel, diag.Diagnostics) {
 		postCalls++
-		return nil
+		return req.State, nil
 	}
 	opts := defaultTestKibanaResourceOptions()
 	opts.Read = testKibanaReadFuncDistinguishing
@@ -2447,6 +2447,133 @@ func TestKibanaResource_Read_versionReqDiagsStopRead(t *testing.T) {
 	}
 	require.Contains(t, summaries, "version requirements error",
 		"diagnostic from GetVersionRequirements must be appended; got: %v", summaries)
+}
+
+func TestNewKibanaResource_Read_postReadReceivesPriorStateAsPrior(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	var capturedPrior string
+	postRead := func(_ context.Context, req KibanaPostReadRequest[testKibanaResourceModel]) (testKibanaResourceModel, diag.Diagnostics) {
+		capturedPrior = req.Prior.Name.ValueString()
+		return req.State, nil
+	}
+	opts := defaultTestKibanaResourceOptions()
+	opts.PostRead = postRead
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	state := makeTestKibanaResourceState(ctx, t, "default/my-stream")
+	req := resource.ReadRequest{State: state}
+	resp := resource.ReadResponse{State: state}
+	r.Read(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, "my-stream", capturedPrior, "Prior should be the prior state name on Read path")
+}
+
+func TestNewKibanaResource_Create_postReadPriorIsPlan(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	var capturedPrior string
+	postRead := func(_ context.Context, req KibanaPostReadRequest[testKibanaResourceModel]) (testKibanaResourceModel, diag.Diagnostics) {
+		capturedPrior = req.Prior.Name.ValueString()
+		return req.State, nil
+	}
+	opts := defaultTestKibanaResourceOptions()
+	opts.Read = testKibanaReadFuncDistinguishing
+	opts.PostRead = postRead
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	objType := testKibanaResourceObjectType()
+	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
+	resp := resource.CreateResponse{State: respState}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, "my-resource", capturedPrior, "Prior should be the plan name on Create (write) path")
+}
+
+func TestNewKibanaResource_Create_postReadStateSetFromReturnedModel(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	postRead := func(_ context.Context, req KibanaPostReadRequest[testKibanaResourceModel]) (testKibanaResourceModel, diag.Diagnostics) {
+		returnModel := req.State
+		returnModel.Name = types.StringValue("postread-modified")
+		return returnModel, nil
+	}
+	opts := defaultTestKibanaResourceOptions()
+	opts.Read = testKibanaReadFuncDistinguishing
+	opts.PostRead = postRead
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	objType := testKibanaResourceObjectType()
+	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
+	resp := resource.CreateResponse{State: respState}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	var result testKibanaResourceModel
+	diags := resp.State.Get(ctx, &result)
+	require.False(t, diags.HasError())
+	require.Equal(t, "postread-modified", result.Name.ValueString(), "State should be set from PostRead's returned model")
+}
+
+func TestNewKibanaResource_Create_skipsStateSetWhenPostReadError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	postRead := func(_ context.Context, req KibanaPostReadRequest[testKibanaResourceModel]) (testKibanaResourceModel, diag.Diagnostics) {
+		var d diag.Diagnostics
+		d.AddError("postread error", "intentional")
+		return req.State, d
+	}
+	opts := defaultTestKibanaResourceOptions()
+	opts.Read = testKibanaReadFuncDistinguishing
+	opts.PostRead = postRead
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	objType := testKibanaResourceObjectType()
+	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
+	resp := resource.CreateResponse{State: respState}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.True(t, resp.State.Raw.IsNull(), "State should remain unset when PostRead returns error")
+}
+
+func TestNewKibanaResource_Read_postReadStateSetFromReturnedModel(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	postRead := func(_ context.Context, req KibanaPostReadRequest[testKibanaResourceModel]) (testKibanaResourceModel, diag.Diagnostics) {
+		returnModel := req.State
+		returnModel.Name = types.StringValue("read-modified")
+		return returnModel, nil
+	}
+	opts := defaultTestKibanaResourceOptions()
+	opts.PostRead = postRead
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	state := makeTestKibanaResourceState(ctx, t, "default/my-stream")
+	req := resource.ReadRequest{State: state}
+	resp := resource.ReadResponse{State: state}
+	r.Read(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	var result testKibanaResourceModel
+	diags := resp.State.Get(ctx, &result)
+	require.False(t, diags.HasError())
+	require.Equal(t, "read-modified", result.Name.ValueString(), "State should be set from PostRead's returned model")
 }
 
 func TestKibanaResource_Update_versionReqDiagsStopUpdate(t *testing.T) {
