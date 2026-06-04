@@ -29,6 +29,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -409,6 +410,99 @@ func TestKibanaResource_operations_setContextDeadline(t *testing.T) {
 			require.True(t, sawDeadline, "callback must observe context deadline for %s", tc.name)
 		})
 	}
+}
+
+func kibanaReadFuncDropsTimeouts(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, prior testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
+	return testKibanaResourceModel{
+		ID:               prior.ID,
+		Name:             prior.Name,
+		SpaceID:          prior.SpaceID,
+		KibanaConnection: prior.KibanaConnection,
+	}, true, nil
+}
+
+func TestKibanaResource_Read_preservesTimeoutsWhenCallbackDropsField(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", KibanaResourceOptions[testKibanaResourceModel]{
+		Schema: getTestKibanaResourceSchema,
+		Read:   kibanaReadFuncDropsTimeouts,
+		Delete: testKibanaDeleteFunc,
+		Create: testKibanaWriteFuncFound,
+		Update: testKibanaWriteFuncFound,
+	})
+	r.client = factory
+
+	objType := testKibanaResourceObjectTypeWithTimeouts()
+	stateValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                tftypes.NewValue(tftypes.String, "default/my-resource"),
+		"name":              tftypes.NewValue(tftypes.String, "my-resource"),
+		"space_id":          tftypes.NewValue(tftypes.String, "default"),
+		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		"timeouts":          resourceTimeoutsWithCreate("10m"),
+	})
+	var schemaResp resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+	state := tfsdk.State{Raw: stateValue, Schema: schemaResp.Schema}
+
+	var priorModel testKibanaResourceModel
+	require.False(t, state.Get(ctx, &priorModel).HasError())
+	wantTimeouts := priorModel.GetTimeouts()
+
+	var resp resource.ReadResponse
+	resp.State = state
+	r.Read(ctx, resource.ReadRequest{State: state}, &resp)
+	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+
+	var gotTimeouts timeouts.Value
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root(attrTimeouts), &gotTimeouts)...)
+	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+	require.Equal(t, wantTimeouts, gotTimeouts)
+}
+
+func TestKibanaResource_Create_preservesTimeoutsWhenCallbackDropsField(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	opts := defaultTestKibanaResourceOptions()
+	opts.Create = func(_ context.Context, _ *clients.KibanaScopedClient, req KibanaWriteRequest[testKibanaResourceModel]) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+		return KibanaWriteResult[testKibanaResourceModel]{Model: testKibanaResourceModel{
+			ID:               types.StringValue(req.SpaceID + "/" + req.WriteID),
+			Name:             req.Plan.Name,
+			SpaceID:          req.Plan.SpaceID,
+			KibanaConnection: req.Plan.KibanaConnection,
+		}}, nil
+	}
+	opts.Read = kibanaReadFuncDropsTimeouts
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	objType := testKibanaResourceObjectTypeWithTimeouts()
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"name":              tftypes.NewValue(tftypes.String, "my-resource"),
+		"space_id":          tftypes.NewValue(tftypes.String, "default"),
+		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		"timeouts":          resourceTimeoutsWithCreate("10m"),
+	})
+	var schemaResp resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+	plan := tfsdk.Plan{Raw: objValue, Schema: schemaResp.Schema}
+
+	var planModel testKibanaResourceModel
+	require.False(t, plan.Get(ctx, &planModel).HasError())
+	wantTimeouts := planModel.GetTimeouts()
+
+	var resp resource.CreateResponse
+	resp.State = tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: schemaResp.Schema}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: tfsdk.Config(plan)}, &resp)
+	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+
+	var gotTimeouts timeouts.Value
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root(attrTimeouts), &gotTimeouts)...)
+	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+	require.Equal(t, wantTimeouts, gotTimeouts)
 }
 
 func TestKibanaResource_Create_invalidTimeoutPreventsCallback(t *testing.T) {

@@ -29,6 +29,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -415,6 +416,96 @@ func TestElasticsearchResource_operations_setContextDeadline(t *testing.T) {
 			require.True(t, sawDeadline, "callback must observe context deadline for %s", tc.name)
 		})
 	}
+}
+
+// readFuncDropsTimeouts reconstructs the model like mapSpaceResponseToResourceModel-style
+// callbacks that omit ResourceTimeoutsField, yielding a zero timeouts.Value{}.
+func readFuncDropsTimeouts(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, prior testResourceModel) (testResourceModel, bool, diag.Diagnostics) {
+	return testResourceModel{
+		ID:                      prior.ID,
+		Name:                    prior.Name,
+		ElasticsearchConnection: prior.ElasticsearchConnection,
+	}, true, nil
+}
+
+func TestElasticsearchResource_Read_preservesTimeoutsWhenCallbackDropsField(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
+		Schema: getTestResourceSchema,
+		Read:   readFuncDropsTimeouts,
+		Delete: testDeleteFunc,
+		Create: testWriteFuncFoundCreate,
+		Update: testWriteFuncFoundUpdate,
+	})
+	r.client = factory
+
+	objType := testResourceObjectTypeWithTimeouts()
+	stateValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                       tftypes.NewValue(tftypes.String, "cluster/user1"),
+		"name":                     tftypes.NewValue(tftypes.String, "user1"),
+		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+		"timeouts":                 resourceTimeoutsWithCreate("10m"),
+	})
+	var schemaResp resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+	state := tfsdk.State{Raw: stateValue, Schema: schemaResp.Schema}
+
+	var priorModel testResourceModel
+	require.False(t, state.Get(ctx, &priorModel).HasError())
+	wantTimeouts := priorModel.GetTimeouts()
+
+	var resp resource.ReadResponse
+	resp.State = state
+	r.Read(ctx, resource.ReadRequest{State: state}, &resp)
+	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+
+	var gotTimeouts timeouts.Value
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root(attrTimeouts), &gotTimeouts)...)
+	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+	require.Equal(t, wantTimeouts, gotTimeouts)
+}
+
+func TestElasticsearchResource_Create_preservesTimeoutsWhenCallbackDropsField(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	opts := defaultTestElasticsearchResourceOptions()
+	opts.Create = func(_ context.Context, _ *clients.ElasticsearchScopedClient, req WriteRequest[testResourceModel]) (WriteResult[testResourceModel], diag.Diagnostics) {
+		return WriteResult[testResourceModel]{Model: testResourceModel{
+			ID:                      types.StringValue("cluster/" + req.WriteID),
+			Name:                    req.Plan.Name,
+			ElasticsearchConnection: req.Plan.ElasticsearchConnection,
+		}}, nil
+	}
+	opts.Read = readFuncDropsTimeouts
+	r := NewElasticsearchResource[testResourceModel]("test_entity", opts)
+	r.client = factory
+
+	objType := testResourceObjectTypeWithTimeouts()
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                       tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"name":                     tftypes.NewValue(tftypes.String, "user1"),
+		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+		"timeouts":                 resourceTimeoutsWithCreate("10m"),
+	})
+	var schemaResp resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+	plan := tfsdk.Plan{Raw: objValue, Schema: schemaResp.Schema}
+
+	var planModel testResourceModel
+	require.False(t, plan.Get(ctx, &planModel).HasError())
+	wantTimeouts := planModel.GetTimeouts()
+
+	resp := resource.CreateResponse{State: tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: schemaResp.Schema}}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: tfsdk.Config(plan)}, &resp)
+	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+
+	var gotTimeouts timeouts.Value
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root(attrTimeouts), &gotTimeouts)...)
+	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+	require.Equal(t, wantTimeouts, gotTimeouts)
 }
 
 func TestElasticsearchResource_Create_invalidTimeoutPreventsCallback(t *testing.T) {
