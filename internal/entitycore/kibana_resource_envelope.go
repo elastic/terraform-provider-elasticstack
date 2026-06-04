@@ -20,7 +20,6 @@ package entitycore
 import (
 	"context"
 	"fmt"
-	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
@@ -117,21 +116,20 @@ type KibanaResourceOptions[T KibanaResourceModel] struct {
 }
 
 // KibanaResource implements [resource.Resource] and related interfaces
-// for Kibana-backed resources. It embeds [*ResourceBase] to reuse
-// Configure, Metadata, and Client.
+// for Kibana-backed resources. It embeds [baseResourceEnvelope] to reuse
+// Configure, Metadata, Client, Schema, and requireReadFunc.
 //
 // The envelope owns Schema (with kibana_connection block injection),
 // Create, Read, Update, and Delete. Concrete resources may override Create or
 // Update when their lifecycle does not fit the callback contract, and may
 // choose to implement ImportState.
 type KibanaResource[T KibanaResourceModel] struct {
-	*ResourceBase
-	schemaFactory func(context.Context) rschema.Schema
-	readFunc      kibanaReadFunc[T]
-	deleteFunc    kibanaDeleteFunc[T]
-	createFunc    KibanaWriteFunc[T]
-	updateFunc    KibanaWriteFunc[T]
-	postReadFunc  KibanaPostReadFunc[T]
+	baseResourceEnvelope
+	readFunc     kibanaReadFunc[T]
+	deleteFunc   kibanaDeleteFunc[T]
+	createFunc   KibanaWriteFunc[T]
+	updateFunc   KibanaWriteFunc[T]
+	postReadFunc KibanaPostReadFunc[T]
 }
 
 const (
@@ -166,25 +164,19 @@ func NewKibanaResource[T KibanaResourceModel](
 	opts KibanaResourceOptions[T],
 ) *KibanaResource[T] {
 	return &KibanaResource[T]{
-		ResourceBase:  NewResourceBase(component, name),
-		schemaFactory: opts.Schema,
-		readFunc:      opts.Read,
-		deleteFunc:    opts.Delete,
-		createFunc:    opts.Create,
-		updateFunc:    opts.Update,
-		postReadFunc:  opts.PostRead,
+		baseResourceEnvelope: baseResourceEnvelope{
+			ResourceBase:    NewResourceBase(component, name),
+			schemaFactory:   opts.Schema,
+			connectionKey:   blockKibanaConnection,
+			connectionBlock: providerschema.GetKbFWConnectionBlock(),
+			hasReadFunc:     opts.Read != nil,
+		},
+		readFunc:     opts.Read,
+		deleteFunc:   opts.Delete,
+		createFunc:   opts.Create,
+		updateFunc:   opts.Update,
+		postReadFunc: opts.PostRead,
 	}
-}
-
-// Schema implements [resource.Resource], injecting the kibana_connection
-// block into the schema returned by the concrete schema factory.
-func (r *KibanaResource[T]) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	schema := r.schemaFactory(ctx)
-	blocks := make(map[string]rschema.Block, len(schema.Blocks)+1)
-	maps.Copy(blocks, schema.Blocks)
-	blocks[blockKibanaConnection] = providerschema.GetKbFWConnectionBlock()
-	schema.Blocks = blocks
-	resp.Schema = schema
 }
 
 // resolveKibanaResourceIdentity uses the composite-ID-or-fallback rule to
@@ -280,24 +272,18 @@ func (r *KibanaResource[T]) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	if found {
-		if r.postReadFunc != nil {
-			var prDiags diag.Diagnostics
-			resultModel, prDiags = r.postReadFunc(ctx, KibanaPostReadRequest[T]{
+	var postRead func(T) (T, diag.Diagnostics)
+	if r.postReadFunc != nil {
+		postRead = func(result T) (T, diag.Diagnostics) {
+			return r.postReadFunc(ctx, KibanaPostReadRequest[T]{
 				Client:  client,
 				Prior:   model,
-				State:   resultModel,
+				State:   result,
 				Private: resp.Private,
 			})
-			resp.Diagnostics.Append(prDiags...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
 		}
-		resp.Diagnostics.Append(resp.State.Set(ctx, &resultModel)...)
-	} else {
-		resp.State.RemoveResource(ctx)
 	}
+	applyReadFoundResult(ctx, resp, found, resultModel, postRead)
 }
 
 // Update implements [resource.Resource]: decode plan, prior state, and config,
@@ -312,13 +298,6 @@ func (r *KibanaResource[T]) Update(ctx context.Context, req resource.UpdateReque
 		privateState: resp.Private,
 		isUpdate:     true,
 	})...)
-}
-
-func (r *KibanaResource[T]) requireReadFunc() diag.Diagnostics {
-	if r.readFunc == nil {
-		return requireReadFuncDiag(r.component)
-	}
-	return nil
 }
 
 func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWriteInvocation) diag.Diagnostics {

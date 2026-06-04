@@ -20,7 +20,6 @@ package entitycore
 import (
 	"context"
 	"fmt"
-	"maps"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -142,21 +141,20 @@ type ElasticsearchResourceOptions[T ElasticsearchResourceModel] struct {
 }
 
 // ElasticsearchResource implements [resource.Resource] and related interfaces
-// for Elasticsearch-backed resources. It embeds [*ResourceBase] to reuse
-// Configure, Metadata, and Client.
+// for Elasticsearch-backed resources. It embeds [baseResourceEnvelope] to reuse
+// Configure, Metadata, Client, Schema, and requireReadFunc.
 //
 // The envelope owns Schema (with elasticsearch_connection block injection),
 // Create, Read, Update, and Delete. Concrete resources may override Create or
 // Update when their lifecycle does not fit the callback contract, and may
 // choose to implement ImportState.
 type ElasticsearchResource[T ElasticsearchResourceModel] struct {
-	*ResourceBase
-	schemaFactory func(context.Context) rschema.Schema
-	readFunc      elasticsearchReadFunc[T]
-	deleteFunc    elasticsearchDeleteFunc[T]
-	createFunc    WriteFunc[T]
-	updateFunc    WriteFunc[T]
-	postReadFunc  PostReadFunc[T]
+	baseResourceEnvelope
+	readFunc     elasticsearchReadFunc[T]
+	deleteFunc   elasticsearchDeleteFunc[T]
+	createFunc   WriteFunc[T]
+	updateFunc   WriteFunc[T]
+	postReadFunc PostReadFunc[T]
 }
 
 // PlaceholderElasticsearchWriteCallback returns a write callback that fails if
@@ -200,13 +198,18 @@ func UpdateNotSupportedWriteCallback[T ElasticsearchResourceModel]() WriteFunc[T
 // diagnostics instead of invoking nil callbacks.
 func NewElasticsearchResource[T ElasticsearchResourceModel](name string, opts ElasticsearchResourceOptions[T]) *ElasticsearchResource[T] {
 	return &ElasticsearchResource[T]{
-		ResourceBase:  NewResourceBase(ComponentElasticsearch, name),
-		schemaFactory: opts.Schema,
-		readFunc:      opts.Read,
-		deleteFunc:    opts.Delete,
-		createFunc:    opts.Create,
-		updateFunc:    opts.Update,
-		postReadFunc:  opts.PostRead,
+		baseResourceEnvelope: baseResourceEnvelope{
+			ResourceBase:    NewResourceBase(ComponentElasticsearch, name),
+			schemaFactory:   opts.Schema,
+			connectionKey:   blockElasticsearchConnection,
+			connectionBlock: providerschema.GetEsFWConnectionBlock(),
+			hasReadFunc:     opts.Read != nil,
+		},
+		readFunc:     opts.Read,
+		deleteFunc:   opts.Delete,
+		createFunc:   opts.Create,
+		updateFunc:   opts.Update,
+		postReadFunc: opts.PostRead,
 	}
 }
 
@@ -241,17 +244,6 @@ func resolveElasticsearchReadResourceID(model ElasticsearchResourceModel, writeF
 	return compID.ResourceID, diags
 }
 
-// Schema implements [resource.Resource], injecting the elasticsearch_connection
-// block into the schema returned by the concrete schema factory.
-func (r *ElasticsearchResource[T]) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	schema := r.schemaFactory(ctx)
-	blocks := make(map[string]rschema.Block, len(schema.Blocks)+1)
-	maps.Copy(blocks, schema.Blocks)
-	blocks[blockElasticsearchConnection] = providerschema.GetEsFWConnectionBlock()
-	schema.Blocks = blocks
-	resp.Schema = schema
-}
-
 // Create implements [resource.Resource]: decode plan, resolve client, invoke
 // the create callback, read-after-write, then persist state from readFunc.
 func (r *ElasticsearchResource[T]) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -264,13 +256,17 @@ func (r *ElasticsearchResource[T]) Create(ctx context.Context, req resource.Crea
 	})...)
 }
 
-// Read implements [resource.Resource] with the standard prelude: deserialize
-// prior state into the generic model T, resolve read identity from the model
-// and/or composite ID, resolve the scoped Elasticsearch client, enforce optional
-// version requirements when the model reports requirement diagnostics with an
-// error severity (matching Kibana envelope semantics), then delegate to the
-// concrete readFunc.
+// Read implements [resource.Resource] with the standard prelude: check read
+// callback is non-nil, deserialize prior state into the generic model T,
+// resolve read identity from the model and/or composite ID, resolve the scoped
+// Elasticsearch client, enforce optional version requirements, then delegate
+// to the concrete readFunc.
 func (r *ElasticsearchResource[T]) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	if d := r.requireReadFunc(); d.HasError() {
+		resp.Diagnostics.Append(d...)
+		return
+	}
+
 	var model T
 	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
@@ -301,35 +297,24 @@ func (r *ElasticsearchResource[T]) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	if d := r.requireReadFunc(); d.HasError() {
-		resp.Diagnostics.Append(d...)
-		return
-	}
-
 	resultModel, found, callDiags := r.readFunc(ctx, client, resourceID, model)
 	resp.Diagnostics.Append(callDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if found {
-		if r.postReadFunc != nil {
-			var prDiags diag.Diagnostics
-			resultModel, prDiags = r.postReadFunc(ctx, ElasticsearchPostReadRequest[T]{
+	var postRead func(T) (T, diag.Diagnostics)
+	if r.postReadFunc != nil {
+		postRead = func(result T) (T, diag.Diagnostics) {
+			return r.postReadFunc(ctx, ElasticsearchPostReadRequest[T]{
 				Client:  client,
 				Prior:   model,
-				State:   resultModel,
+				State:   result,
 				Private: resp.Private,
 			})
-			resp.Diagnostics.Append(prDiags...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
 		}
-		resp.Diagnostics.Append(resp.State.Set(ctx, &resultModel)...)
-	} else {
-		resp.State.RemoveResource(ctx)
 	}
+	applyReadFoundResult(ctx, resp, found, resultModel, postRead)
 }
 
 // Update implements [resource.Resource] with the same prelude as Create,
@@ -343,13 +328,6 @@ func (r *ElasticsearchResource[T]) Update(ctx context.Context, req resource.Upda
 		privateState: resp.Private,
 		isUpdate:     true,
 	})...)
-}
-
-func (r *ElasticsearchResource[T]) requireReadFunc() diag.Diagnostics {
-	if r.readFunc == nil {
-		return requireReadFuncDiag(r.component)
-	}
-	return nil
 }
 
 func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWriteInvocation) diag.Diagnostics {
