@@ -21,10 +21,12 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -33,7 +35,8 @@ import (
 
 // KibanaResourceModel is the type constraint for models passed to
 // [NewKibanaResource]. Concrete types must provide value-receiver methods
-// GetID, GetResourceID, GetSpaceID, and GetKibanaConnection.
+// GetID, GetResourceID, GetSpaceID, GetKibanaConnection, and
+// [WithResourceTimeouts] (typically by embedding [ResourceTimeoutsField]).
 type KibanaResourceModel interface {
 	GetID() types.String
 	// GetResourceID returns the plan-safe write identity (for example name or
@@ -42,6 +45,7 @@ type KibanaResourceModel interface {
 	GetResourceID() types.String
 	GetSpaceID() types.String
 	GetKibanaConnection() types.List
+	WithResourceTimeouts
 }
 
 type kibanaReadFunc[T KibanaResourceModel] func(
@@ -100,6 +104,13 @@ type KibanaPostReadFunc[T KibanaResourceModel] func(
 // KibanaResourceOptions configures [NewKibanaResource]. PostRead is optional;
 // Schema, Read, Delete, Create, and Update must be non-nil or the envelope
 // surfaces configuration diagnostics instead of invoking nil callbacks.
+//
+// Timeouts supplies per-operation default durations when configuration omits
+// `timeouts.<op>`; zero fields fall back to [DefaultResourceCreateTimeout],
+// [DefaultResourceReadTimeout], [DefaultResourceUpdateTimeout], and
+// [DefaultResourceDeleteTimeout]. Concrete schema factories MUST NOT include
+// a `timeouts` attribute; the envelope injects it and silently overwrites any
+// factory-supplied attribute with the same key.
 type KibanaResourceOptions[T KibanaResourceModel] struct {
 	Schema   func(context.Context) rschema.Schema
 	Read     kibanaReadFunc[T]
@@ -107,16 +118,17 @@ type KibanaResourceOptions[T KibanaResourceModel] struct {
 	Create   KibanaWriteFunc[T]
 	Update   KibanaWriteFunc[T]
 	PostRead KibanaPostReadFunc[T]
+	Timeouts ResourceTimeouts
 }
 
 // KibanaResource implements [resource.Resource] and related interfaces
 // for Kibana-backed resources. It embeds [*ResourceBase] to reuse
 // Configure, Metadata, and Client.
 //
-// The envelope owns Schema (with kibana_connection block injection),
-// Create, Read, Update, and Delete. Concrete resources may override Create or
-// Update when their lifecycle does not fit the callback contract, and may
-// choose to implement ImportState.
+// The envelope owns Schema (with kibana_connection block and timeouts attribute
+// injection), Create, Read, Update, and Delete. Concrete resources may override
+// Create or Update when their lifecycle does not fit the callback contract, and
+// may choose to implement ImportState.
 type KibanaResource[T KibanaResourceModel] struct {
 	*ResourceBase
 	schemaFactory func(context.Context) rschema.Schema
@@ -125,6 +137,7 @@ type KibanaResource[T KibanaResourceModel] struct {
 	createFunc    KibanaWriteFunc[T]
 	updateFunc    KibanaWriteFunc[T]
 	postReadFunc  KibanaPostReadFunc[T]
+	timeouts      ResourceTimeouts
 }
 
 const (
@@ -166,17 +179,26 @@ func NewKibanaResource[T KibanaResourceModel](
 		createFunc:    opts.Create,
 		updateFunc:    opts.Update,
 		postReadFunc:  opts.PostRead,
+		timeouts:      opts.Timeouts,
 	}
 }
 
 // Schema implements [resource.Resource], injecting the kibana_connection
-// block into the schema returned by the concrete schema factory.
+// block and the `timeouts` attribute into the schema returned by the concrete
+// schema factory. A pre-existing `timeouts` attribute in the factory output is
+// silently replaced.
 func (r *KibanaResource[T]) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	schema := r.schemaFactory(ctx)
 	blocks := make(map[string]rschema.Block, len(schema.Blocks)+1)
 	maps.Copy(blocks, schema.Blocks)
 	blocks[blockKibanaConnection] = providerschema.GetKbFWConnectionBlock()
 	schema.Blocks = blocks
+
+	attrs := make(map[string]rschema.Attribute, len(schema.Attributes)+1)
+	maps.Copy(attrs, schema.Attributes)
+	attrs[attrTimeouts] = timeouts.AttributesAll(ctx)
+	schema.Attributes = attrs
+
 	resp.Schema = schema
 }
 
@@ -247,6 +269,18 @@ func (r *KibanaResource[T]) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
+	defaultTimeout := r.timeouts.Read
+	if defaultTimeout <= 0 {
+		defaultTimeout = DefaultResourceReadTimeout
+	}
+	readTimeout, timeoutDiags := model.GetTimeouts().Read(ctx, defaultTimeout)
+	resp.Diagnostics.Append(timeoutDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
 	resourceID, spaceID := resolveKibanaResourceIdentity(model)
 	if resourceID == "" {
 		resp.Diagnostics.AddError(
@@ -310,9 +344,9 @@ func (r *KibanaResource[T]) requireReadFunc() diag.Diagnostics {
 func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWriteInvocation) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if (inv.isUpdate && r.updateFunc == nil) || (!inv.isUpdate && r.createFunc == nil) {
-		op := "create"
+		op := envelopeWriteOpCreate
 		if inv.isUpdate {
-			op = "update"
+			op = envelopeWriteOpUpdate
 		}
 		diags.AddError(
 			"Kibana envelope configuration error",
@@ -326,6 +360,32 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 	if diags.HasError() {
 		return diags
 	}
+
+	var defaultTimeout time.Duration
+	if inv.isUpdate {
+		defaultTimeout = r.timeouts.Update
+		if defaultTimeout <= 0 {
+			defaultTimeout = DefaultResourceUpdateTimeout
+		}
+	} else {
+		defaultTimeout = r.timeouts.Create
+		if defaultTimeout <= 0 {
+			defaultTimeout = DefaultResourceCreateTimeout
+		}
+	}
+	var opTimeout time.Duration
+	var timeoutDiags diag.Diagnostics
+	if inv.isUpdate {
+		opTimeout, timeoutDiags = planModel.GetTimeouts().Update(ctx, defaultTimeout)
+	} else {
+		opTimeout, timeoutDiags = planModel.GetTimeouts().Create(ctx, defaultTimeout)
+	}
+	diags.Append(timeoutDiags...)
+	if diags.HasError() {
+		return diags
+	}
+	ctx, cancel := context.WithTimeout(ctx, opTimeout)
+	defer cancel()
 
 	var priorPtr *T
 	if inv.isUpdate && inv.priorState != nil {
@@ -464,6 +524,18 @@ func (r *KibanaResource[T]) Delete(ctx context.Context, req resource.DeleteReque
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	defaultTimeout := r.timeouts.Delete
+	if defaultTimeout <= 0 {
+		defaultTimeout = DefaultResourceDeleteTimeout
+	}
+	deleteTimeout, timeoutDiags := model.GetTimeouts().Delete(ctx, defaultTimeout)
+	resp.Diagnostics.Append(timeoutDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
 
 	resourceID, spaceID := resolveKibanaResourceIdentity(model)
 	if resourceID == "" {

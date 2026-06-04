@@ -22,10 +22,12 @@ import (
 	"fmt"
 	"maps"
 	"strings"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -34,7 +36,8 @@ import (
 
 // ElasticsearchResourceModel is the type constraint for models passed to
 // [NewElasticsearchResource]. Concrete types must provide value-receiver
-// methods GetID, GetResourceID, and GetElasticsearchConnection.
+// methods GetID, GetResourceID, GetElasticsearchConnection, and
+// [WithResourceTimeouts] (typically by embedding [ResourceTimeoutsField]).
 type ElasticsearchResourceModel interface {
 	GetID() types.String
 	// GetResourceID returns the plan-safe write identity (for example name or
@@ -42,6 +45,7 @@ type ElasticsearchResourceModel interface {
 	// id values may be unknown in create plans.
 	GetResourceID() types.String
 	GetElasticsearchConnection() types.List
+	WithResourceTimeouts
 }
 
 // WithReadResourceID is an optional interface for models that need a stable read
@@ -125,6 +129,13 @@ type PostReadFunc[T ElasticsearchResourceModel] func(
 // envelope surfaces configuration diagnostics instead of invoking nil callbacks.
 // Create and Update share the [WriteFunc] type so callers may pass the same
 // function for both when the logic is identical.
+//
+// Timeouts supplies per-operation default durations when configuration omits
+// `timeouts.<op>`; zero fields fall back to [DefaultResourceCreateTimeout],
+// [DefaultResourceReadTimeout], [DefaultResourceUpdateTimeout], and
+// [DefaultResourceDeleteTimeout]. Concrete schema factories MUST NOT include
+// a `timeouts` attribute; the envelope injects it and silently overwrites any
+// factory-supplied attribute with the same key.
 type ElasticsearchResourceOptions[T ElasticsearchResourceModel] struct {
 	Schema   func(context.Context) rschema.Schema
 	Read     elasticsearchReadFunc[T]
@@ -132,16 +143,17 @@ type ElasticsearchResourceOptions[T ElasticsearchResourceModel] struct {
 	Create   WriteFunc[T]
 	Update   WriteFunc[T]
 	PostRead PostReadFunc[T]
+	Timeouts ResourceTimeouts
 }
 
 // ElasticsearchResource implements [resource.Resource] and related interfaces
 // for Elasticsearch-backed resources. It embeds [*ResourceBase] to reuse
 // Configure, Metadata, and Client.
 //
-// The envelope owns Schema (with elasticsearch_connection block injection),
-// Create, Read, Update, and Delete. Concrete resources may override Create or
-// Update when their lifecycle does not fit the callback contract, and may
-// choose to implement ImportState.
+// The envelope owns Schema (with elasticsearch_connection block and timeouts
+// attribute injection), Create, Read, Update, and Delete. Concrete resources may
+// override Create or Update when their lifecycle does not fit the callback
+// contract, and may choose to implement ImportState.
 type ElasticsearchResource[T ElasticsearchResourceModel] struct {
 	*ResourceBase
 	schemaFactory func(context.Context) rschema.Schema
@@ -150,6 +162,7 @@ type ElasticsearchResource[T ElasticsearchResourceModel] struct {
 	createFunc    WriteFunc[T]
 	updateFunc    WriteFunc[T]
 	postReadFunc  PostReadFunc[T]
+	timeouts      ResourceTimeouts
 }
 
 // PlaceholderElasticsearchWriteCallback returns a write callback that fails if
@@ -200,6 +213,7 @@ func NewElasticsearchResource[T ElasticsearchResourceModel](name string, opts El
 		createFunc:    opts.Create,
 		updateFunc:    opts.Update,
 		postReadFunc:  opts.PostRead,
+		timeouts:      opts.Timeouts,
 	}
 }
 
@@ -235,13 +249,21 @@ func resolveElasticsearchReadResourceID(model ElasticsearchResourceModel, writeF
 }
 
 // Schema implements [resource.Resource], injecting the elasticsearch_connection
-// block into the schema returned by the concrete schema factory.
+// block and the `timeouts` attribute into the schema returned by the concrete
+// schema factory. A pre-existing `timeouts` attribute in the factory output is
+// silently replaced.
 func (r *ElasticsearchResource[T]) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	schema := r.schemaFactory(ctx)
 	blocks := make(map[string]rschema.Block, len(schema.Blocks)+1)
 	maps.Copy(blocks, schema.Blocks)
 	blocks[blockElasticsearchConnection] = providerschema.GetEsFWConnectionBlock()
 	schema.Blocks = blocks
+
+	attrs := make(map[string]rschema.Attribute, len(schema.Attributes)+1)
+	maps.Copy(attrs, schema.Attributes)
+	attrs[attrTimeouts] = timeouts.AttributesAll(ctx)
+	schema.Attributes = attrs
+
 	resp.Schema = schema
 }
 
@@ -269,6 +291,18 @@ func (r *ElasticsearchResource[T]) Read(ctx context.Context, req resource.ReadRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	defaultTimeout := r.timeouts.Read
+	if defaultTimeout <= 0 {
+		defaultTimeout = DefaultResourceReadTimeout
+	}
+	readTimeout, timeoutDiags := model.GetTimeouts().Read(ctx, defaultTimeout)
+	resp.Diagnostics.Append(timeoutDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
 
 	resourceID, idDiags := resolveElasticsearchReadResourceID(model, "")
 	resp.Diagnostics.Append(idDiags...)
@@ -341,9 +375,9 @@ func (r *ElasticsearchResource[T]) requireReadFunc() diag.Diagnostics {
 func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWriteInvocation) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if (inv.isUpdate && r.updateFunc == nil) || (!inv.isUpdate && r.createFunc == nil) {
-		op := "create"
+		op := envelopeWriteOpCreate
 		if inv.isUpdate {
-			op = "update"
+			op = envelopeWriteOpUpdate
 		}
 		diags.AddError(
 			"Elasticsearch envelope configuration error",
@@ -357,6 +391,32 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWri
 	if diags.HasError() {
 		return diags
 	}
+
+	var defaultTimeout time.Duration
+	if inv.isUpdate {
+		defaultTimeout = r.timeouts.Update
+		if defaultTimeout <= 0 {
+			defaultTimeout = DefaultResourceUpdateTimeout
+		}
+	} else {
+		defaultTimeout = r.timeouts.Create
+		if defaultTimeout <= 0 {
+			defaultTimeout = DefaultResourceCreateTimeout
+		}
+	}
+	var opTimeout time.Duration
+	var timeoutDiags diag.Diagnostics
+	if inv.isUpdate {
+		opTimeout, timeoutDiags = planModel.GetTimeouts().Update(ctx, defaultTimeout)
+	} else {
+		opTimeout, timeoutDiags = planModel.GetTimeouts().Create(ctx, defaultTimeout)
+	}
+	diags.Append(timeoutDiags...)
+	if diags.HasError() {
+		return diags
+	}
+	ctx, cancel := context.WithTimeout(ctx, opTimeout)
+	defer cancel()
 
 	var priorPtr *T
 	if inv.isUpdate && inv.priorState != nil {
@@ -485,6 +545,18 @@ func (r *ElasticsearchResource[T]) Delete(ctx context.Context, req resource.Dele
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	defaultTimeout := r.timeouts.Delete
+	if defaultTimeout <= 0 {
+		defaultTimeout = DefaultResourceDeleteTimeout
+	}
+	deleteTimeout, timeoutDiags := model.GetTimeouts().Delete(ctx, defaultTimeout)
+	resp.Diagnostics.Append(timeoutDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
 
 	resourceID, idDiags := resolveElasticsearchReadResourceID(model, "")
 	resp.Diagnostics.Append(idDiags...)

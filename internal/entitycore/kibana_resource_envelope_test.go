@@ -19,10 +19,12 @@ package entitycore
 
 import (
 	"context"
+	"maps"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -35,6 +37,7 @@ import (
 // testKibanaResourceModel satisfies KibanaResourceModel for envelope tests.
 // It is a user-ID variant: GetResourceID returns the user-specified name.
 type testKibanaResourceModel struct {
+	ResourceTimeoutsField
 	ID               types.String `tfsdk:"id"`
 	Name             types.String `tfsdk:"name"`
 	SpaceID          types.String `tfsdk:"space_id"`
@@ -138,6 +141,7 @@ func testKibanaResourceObjectType() tftypes.Type {
 			"name":              tftypes.String,
 			"space_id":          tftypes.String,
 			"kibana_connection": kibanaConnectionBlockType(),
+			"timeouts":          resourceTimeoutsObjectType(),
 		},
 	}
 }
@@ -147,6 +151,10 @@ func testKibanaResourceSchemaWithConnectionBlock(ctx context.Context) rschema.Sc
 	s.Blocks = map[string]rschema.Block{
 		"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 	}
+	attrs := make(map[string]rschema.Attribute, len(s.Attributes)+1)
+	maps.Copy(attrs, s.Attributes)
+	attrs[attrTimeouts] = timeouts.AttributesAll(ctx)
+	s.Attributes = attrs
 	return s
 }
 
@@ -163,6 +171,7 @@ func makeTestKibanaResourceCreatePlan(ctx context.Context, t *testing.T, idValue
 		"name":              tftypes.NewValue(tftypes.String, resourceName),
 		"space_id":          spaceIDValue,
 		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		"timeouts":          resourceTimeoutsNullValue(),
 	})
 	return tfsdk.Plan{
 		Raw:    objValue,
@@ -179,6 +188,7 @@ func makeTestKibanaResourceState(ctx context.Context, t *testing.T, id string) t
 			"name":              tftypes.String,
 			"space_id":          tftypes.String,
 			"kibana_connection": connBlockType,
+			"timeouts":          resourceTimeoutsObjectType(),
 		},
 	}
 	name := id
@@ -191,6 +201,7 @@ func makeTestKibanaResourceState(ctx context.Context, t *testing.T, id string) t
 		"name":              tftypes.NewValue(tftypes.String, name),
 		"space_id":          tftypes.NewValue(tftypes.String, "default"),
 		"kibana_connection": tftypes.NewValue(connBlockType, nil),
+		"timeouts":          resourceTimeoutsNullValue(),
 	})
 
 	return tfsdk.State{
@@ -414,6 +425,7 @@ func TestNewKibanaResource_Create_shortCircuitSpaceIDEmpty(t *testing.T) {
 		"name":              tftypes.NewValue(tftypes.String, "my-resource"),
 		"space_id":          tftypes.NewValue(tftypes.String, ""),
 		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		"timeouts":          resourceTimeoutsNullValue(),
 	})
 	plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
 	respState := tfsdk.State{
@@ -454,6 +466,7 @@ func TestNewKibanaResource_Create_allowsEmptySpaceWhenUnscoped(t *testing.T) {
 		"name":              tftypes.NewValue(tftypes.String, "my-resource"),
 		"space_id":          tftypes.NewValue(tftypes.String, ""),
 		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		"timeouts":          resourceTimeoutsNullValue(),
 	})
 	plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
 	respState := tfsdk.State{
@@ -550,6 +563,7 @@ func TestNewKibanaResource_Create_shortCircuitPlanGetError(t *testing.T) {
 		"name":              tftypes.NewValue(tftypes.String, "my-resource"),
 		"space_id":          tftypes.NewValue(tftypes.String, "default"),
 		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		"timeouts":          resourceTimeoutsNullValue(),
 	})
 	badSchema := getTestKibanaResourceSchema(context.Background())
 	plan := tfsdk.Plan{Raw: objValue, Schema: badSchema}
@@ -665,6 +679,7 @@ func TestNewKibanaResource_Create_nilCallbackPrecedesOtherPreludeErrors(t *testi
 			"name":              tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
 			"space_id":          tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
 			"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+			"timeouts":          resourceTimeoutsNullValue(),
 		})
 		plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
 		respState := tfsdk.State{
@@ -764,6 +779,7 @@ func TestNewKibanaResource_Read_multiSlashIDFallback(t *testing.T) {
 			"name":              tftypes.String,
 			"space_id":          tftypes.String,
 			"kibana_connection": connBlockType,
+			"timeouts":          resourceTimeoutsObjectType(),
 		},
 	}
 	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
@@ -771,6 +787,7 @@ func TestNewKibanaResource_Read_multiSlashIDFallback(t *testing.T) {
 		"name":              tftypes.NewValue(tftypes.String, "fallback-name"),
 		"space_id":          tftypes.NewValue(tftypes.String, "fallback-space"),
 		"kibana_connection": tftypes.NewValue(connBlockType, nil),
+		"timeouts":          resourceTimeoutsNullValue(),
 	})
 	state := tfsdk.State{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
 
@@ -814,6 +831,7 @@ func TestNewKibanaResource_Read_compositeIDWinsOverDifferentResourceID(t *testin
 			"name":              tftypes.String,
 			"space_id":          tftypes.String,
 			"kibana_connection": connBlockType,
+			"timeouts":          resourceTimeoutsObjectType(),
 		},
 	}
 	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
@@ -821,6 +839,7 @@ func TestNewKibanaResource_Read_compositeIDWinsOverDifferentResourceID(t *testin
 		"name":              tftypes.NewValue(tftypes.String, "different-name"),
 		"space_id":          tftypes.NewValue(tftypes.String, "different-space"),
 		"kibana_connection": tftypes.NewValue(connBlockType, nil),
+		"timeouts":          resourceTimeoutsNullValue(),
 	})
 	state := tfsdk.State{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
 
@@ -858,6 +877,7 @@ func TestNewKibanaResource_Update_writeIDFromResolvedIdentity(t *testing.T) {
 			"name":              tftypes.String,
 			"space_id":          tftypes.String,
 			"kibana_connection": connBlockType,
+			"timeouts":          resourceTimeoutsObjectType(),
 		},
 	}
 	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
@@ -865,6 +885,7 @@ func TestNewKibanaResource_Update_writeIDFromResolvedIdentity(t *testing.T) {
 		"name":              tftypes.NewValue(tftypes.String, "different-name"),
 		"space_id":          tftypes.NewValue(tftypes.String, "different-space"),
 		"kibana_connection": tftypes.NewValue(connBlockType, nil),
+		"timeouts":          resourceTimeoutsNullValue(),
 	})
 	plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
 	prior := makeTestKibanaResourceState(ctx, t, "foo/bar")
@@ -927,6 +948,7 @@ func TestNewKibanaResource_Read_shortCircuitStateGetError(t *testing.T) {
 			"name":              tftypes.String,
 			"space_id":          tftypes.String,
 			"kibana_connection": kibanaConnectionBlockType(),
+			"timeouts":          resourceTimeoutsObjectType(),
 		},
 	}
 	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
@@ -934,6 +956,7 @@ func TestNewKibanaResource_Read_shortCircuitStateGetError(t *testing.T) {
 		"name":              tftypes.NewValue(tftypes.String, "my-stream"),
 		"space_id":          tftypes.NewValue(tftypes.String, "default"),
 		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		"timeouts":          resourceTimeoutsNullValue(),
 	})
 	badSchema := getTestKibanaResourceSchema(context.Background())
 	state := tfsdk.State{Raw: objValue, Schema: badSchema}
@@ -968,6 +991,7 @@ func TestNewKibanaResource_Read_shortCircuitEmptyResourceID(t *testing.T) {
 			"name":              tftypes.String,
 			"space_id":          tftypes.String,
 			"kibana_connection": connBlockType,
+			"timeouts":          resourceTimeoutsObjectType(),
 		},
 	}
 	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
@@ -975,6 +999,7 @@ func TestNewKibanaResource_Read_shortCircuitEmptyResourceID(t *testing.T) {
 		"name":              tftypes.NewValue(tftypes.String, ""),
 		"space_id":          tftypes.NewValue(tftypes.String, "default"),
 		"kibana_connection": tftypes.NewValue(connBlockType, nil),
+		"timeouts":          resourceTimeoutsNullValue(),
 	})
 	state := tfsdk.State{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
 
@@ -1164,6 +1189,7 @@ func TestNewKibanaResource_Update_shortCircuitPlanGetError(t *testing.T) {
 		"name":              tftypes.NewValue(tftypes.String, "my-resource"),
 		"space_id":          tftypes.NewValue(tftypes.String, "default"),
 		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		"timeouts":          resourceTimeoutsNullValue(),
 	})
 	badSchema := getTestKibanaResourceSchema(context.Background())
 	plan := tfsdk.Plan{Raw: objValue, Schema: badSchema}
@@ -1197,6 +1223,7 @@ func TestNewKibanaResource_Update_shortCircuitStateGetError(t *testing.T) {
 		"name":              tftypes.NewValue(tftypes.String, "my-resource"),
 		"space_id":          tftypes.NewValue(tftypes.String, "default"),
 		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		"timeouts":          resourceTimeoutsNullValue(),
 	})
 	badSchema := getTestKibanaResourceSchema(context.Background())
 	prior := tfsdk.State{Raw: objValue, Schema: badSchema}
@@ -1234,6 +1261,7 @@ func TestNewKibanaResource_Update_fallbackToPriorStateWhenPlanIdentityEmpty(t *t
 		"name":              tftypes.NewValue(tftypes.String, ""),
 		"space_id":          tftypes.NewValue(tftypes.String, "default"),
 		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		"timeouts":          resourceTimeoutsNullValue(),
 	})
 	plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
 	prior := makeTestKibanaResourceState(ctx, t, "default/old-resource")
@@ -1388,6 +1416,7 @@ func TestNewKibanaResource_Update_nilCallbackPrecedesOtherPreludeErrors(t *testi
 			"name":              tftypes.NewValue(tftypes.String, ""),
 			"space_id":          tftypes.NewValue(tftypes.String, "default"),
 			"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+			"timeouts":          resourceTimeoutsNullValue(),
 		})
 		plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
 		prior := makeTestKibanaResourceState(ctx, t, "default/old-resource")
@@ -1483,6 +1512,7 @@ func TestNewKibanaResource_Delete_shortCircuitStateGetError(t *testing.T) {
 			"name":              tftypes.String,
 			"space_id":          tftypes.String,
 			"kibana_connection": kibanaConnectionBlockType(),
+			"timeouts":          resourceTimeoutsObjectType(),
 		},
 	}
 	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
@@ -1490,6 +1520,7 @@ func TestNewKibanaResource_Delete_shortCircuitStateGetError(t *testing.T) {
 		"name":              tftypes.NewValue(tftypes.String, "my-stream"),
 		"space_id":          tftypes.NewValue(tftypes.String, "default"),
 		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		"timeouts":          resourceTimeoutsNullValue(),
 	})
 	badSchema := getTestKibanaResourceSchema(context.Background())
 	state := tfsdk.State{Raw: objValue, Schema: badSchema}
@@ -1523,6 +1554,7 @@ func TestNewKibanaResource_Delete_shortCircuitEmptyResourceID(t *testing.T) {
 			"name":              tftypes.String,
 			"space_id":          tftypes.String,
 			"kibana_connection": connBlockType,
+			"timeouts":          resourceTimeoutsObjectType(),
 		},
 	}
 	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
@@ -1530,6 +1562,7 @@ func TestNewKibanaResource_Delete_shortCircuitEmptyResourceID(t *testing.T) {
 		"name":              tftypes.NewValue(tftypes.String, ""),
 		"space_id":          tftypes.NewValue(tftypes.String, "default"),
 		"kibana_connection": tftypes.NewValue(connBlockType, nil),
+		"timeouts":          resourceTimeoutsNullValue(),
 	})
 	state := tfsdk.State{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
 
@@ -1955,6 +1988,7 @@ func TestNewKibanaResource_Create_emptyReadSpaceIDAfterWriteUnscopedResource(t *
 		"name":              tftypes.NewValue(tftypes.String, "my-resource"),
 		"space_id":          tftypes.NewValue(tftypes.String, ""),
 		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		"timeouts":          resourceTimeoutsNullValue(),
 	})
 	plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
 	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
@@ -2313,6 +2347,7 @@ func TestNewKibanaResource_Update_invokesPostReadAfterReadAfterWrite(t *testing.
 // testKibanaResourceModelWithVersionReqs implements WithVersionRequirements
 // and always returns error diagnostics from GetVersionRequirements.
 type testKibanaResourceModelWithVersionReqs struct {
+	ResourceTimeoutsField
 	ID               types.String `tfsdk:"id"`
 	Name             types.String `tfsdk:"name"`
 	SpaceID          types.String `tfsdk:"space_id"`
@@ -2393,6 +2428,7 @@ func TestKibanaResource_Create_versionReqDiagsStopCreate(t *testing.T) {
 			"name":              tftypes.NewValue(tftypes.String, "my-resource"),
 			"space_id":          tftypes.NewValue(tftypes.String, "default"),
 			"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+			"timeouts":          resourceTimeoutsNullValue(),
 		}),
 		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 	}
@@ -2431,6 +2467,7 @@ func TestKibanaResource_Read_versionReqDiagsStopRead(t *testing.T) {
 			"name":              tftypes.NewValue(tftypes.String, "my-resource"),
 			"space_id":          tftypes.NewValue(tftypes.String, "default"),
 			"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+			"timeouts":          resourceTimeoutsNullValue(),
 		}),
 		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 	}
@@ -2464,6 +2501,7 @@ func TestKibanaResource_Update_versionReqDiagsStopUpdate(t *testing.T) {
 			"name":              tftypes.NewValue(tftypes.String, "my-resource"),
 			"space_id":          tftypes.NewValue(tftypes.String, "default"),
 			"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+			"timeouts":          resourceTimeoutsNullValue(),
 		}),
 		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 	}
@@ -2473,6 +2511,7 @@ func TestKibanaResource_Update_versionReqDiagsStopUpdate(t *testing.T) {
 			"name":              tftypes.NewValue(tftypes.String, "my-resource"),
 			"space_id":          tftypes.NewValue(tftypes.String, "default"),
 			"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+			"timeouts":          resourceTimeoutsNullValue(),
 		}),
 		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
 	}
