@@ -68,8 +68,8 @@
 
 ## 3. `elasticstack_elasticsearch_ccr_auto_follow_pattern` resource
 
-- [ ] 3.1 Create directory `internal/elasticsearch/ccr/autofollow/`
-- [ ] 3.2 Create `models.go` with `Model` struct embedding `entitycore.ElasticsearchConnectionField`:
+- [x] 3.1 Create directory `internal/elasticsearch/ccr/autofollow/`
+- [x] 3.2 Create `models.go` with `Model` struct embedding `entitycore.ElasticsearchConnectionField`:
   - Required/ForceNew: `Name` (string)
   - Required: `RemoteCluster` (string)
   - Required: `LeaderIndexPatterns` (list of string)
@@ -78,28 +78,28 @@
   - Optional: `SettingsRaw` (string, nullable) — write-only; not readable from the API
   - Optional tuning attrs (all int64 for count types, all string for duration/byte-size types, all nullable): `MaxOutstandingReadRequests`, `MaxOutstandingWriteRequests`, `MaxReadRequestOperationCount`, `MaxReadRequestSize`, `MaxRetryDelay`, `MaxWriteBufferCount`, `MaxWriteBufferSize`, `MaxWriteRequestOperationCount`, `MaxWriteRequestSize`, `ReadPollTimeout`
   - Optional: `Active` (bool, default `true`)
-- [ ] 3.3 Create `schema.go` returning the `schema.Schema` with all attributes documented:
+- [x] 3.3 Create `schema.go` returning the `schema.Schema` with all attributes documented:
   - `LeaderIndexPatterns` uses `listvalidator.SizeAtLeast(1)` to enforce at least one entry
   - `Active` uses `booldefault.StaticBool(true)`
-- [ ] 3.4 Create `create.go` implementing the Create callback:
+- [x] 3.4 Create `create.go` implementing the Create callback:
   - Build `putautofollowpattern.Request` from plan; narrow int64 tuning values to int where required
   - If `settings_raw` is set, unmarshal into `map[string]json.RawMessage` and set `req.Settings`
   - Call `ccr.PutAutoFollowPattern`
   - If plan `active == false`, call `ccr.PauseAutoFollowPattern`
   - Store plan `active` in state
-- [ ] 3.5 Create `read.go` implementing the Read callback:
+- [x] 3.5 Create `read.go` implementing the Read callback:
   - Call `ccr.GetAutoFollowPattern`; if nil, call `resp.State.RemoveResource` and return
   - Map readable `AutoFollowPatternSummary` fields to model: `active`, `remote_cluster`, `leader_index_patterns`, `leader_index_exclusion_patterns`, `follow_index_pattern`, and `max_outstanding_read_requests` (widen `int` to `int64`)
   - For the nine tuning params not returned by the API (`max_outstanding_write_requests`, `max_read_request_operation_count`, `max_read_request_size`, `max_retry_delay`, `max_write_buffer_count`, `max_write_buffer_size`, `max_write_request_operation_count`, `max_write_request_size`, `read_poll_timeout`): copy prior-state values unchanged — do not zero them out
   - Do not attempt to read `settings_raw` from the response (write-only)
-- [ ] 3.6 Create `update.go`:
+- [x] 3.6 Create `update.go`:
   - Build `putautofollowpattern.Request` from plan and call `ccr.PutAutoFollowPattern` (idempotent upsert)
   - If prior state `active == true` and plan `active == false`: call `ccr.PauseAutoFollowPattern`
   - If prior state `active == false` and plan `active == true`: call `ccr.ResumeAutoFollowPattern`
-- [ ] 3.7 Create `delete.go`:
+- [x] 3.7 Create `delete.go`:
   - Call `ccr.DeleteAutoFollowPattern`
-- [ ] 3.8 Create `resource.go` wiring via `entitycore.NewElasticsearchResource[Model]`
-- [ ] 3.9 Write unit tests in `autofollow_test.go` covering:
+- [x] 3.8 Create `resource.go` wiring via `entitycore.NewElasticsearchResource[Model]`
+- [x] 3.9 Write unit tests in `autofollow_test.go` covering:
   - Schema validation (`leader_index_patterns` empty list rejected)
   - Create with `active = false` calls pause after PUT
   - All three branches of the Update active state machine
