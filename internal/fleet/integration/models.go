@@ -43,6 +43,26 @@ type integrationModel struct {
 	SpaceID                   types.String `tfsdk:"space_id"`
 }
 
+func (m integrationModel) GetID() types.String {
+	return m.ID
+}
+
+func (m integrationModel) GetResourceID() types.String {
+	return types.StringValue(getPackageID(m.Name.ValueString(), m.Version.ValueString()))
+}
+
+func (m integrationModel) GetSpaceID() types.String {
+	return m.SpaceID
+}
+
+func (m integrationModel) GetKibanaConnection() types.List {
+	return m.KibanaConnection
+}
+
+func (m integrationModel) IsUnscopedSpace() bool {
+	return m.SpaceID.IsNull() || m.SpaceID.IsUnknown()
+}
+
 func getPackageID(name string, version string) string {
 	hash, _ := typeutils.StringToHash(name + version)
 	return *hash
