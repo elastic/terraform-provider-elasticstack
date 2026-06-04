@@ -67,7 +67,6 @@ func (model *entityLinkModel) populateFromAPI(ctx context.Context, spaceID strin
 	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: model.TargetID.ValueString()}).String())
 	model.SpaceID = types.StringValue(spaceID)
 
-	// Normalize/stabilise the raw JSON before storing it.
 	normalised, err := json.Marshal(payload)
 	if err != nil {
 		diags.AddError("Failed to normalise resolution group JSON", err.Error())
