@@ -1344,3 +1344,15 @@ func ItemAttrTypes() map[string]attr.Type {
 func QuoteKQLString(v string) string {
 	return strconv.Quote(v)
 }
+
+// ExtractEntitiesFromResponse extracts the entity list from an API response map,
+// trying "entities" first and falling back to "records" for older API versions.
+func ExtractEntitiesFromResponse(result map[string]any) []any {
+	if rawEntities, ok := result["entities"].([]any); ok {
+		return rawEntities
+	}
+	if rawRecords, ok := result["records"].([]any); ok {
+		return rawRecords
+	}
+	return nil
+}
