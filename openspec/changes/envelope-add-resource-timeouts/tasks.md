@@ -88,6 +88,6 @@
 - [x] 10.1 Run `make docs-generate` (or the equivalent target) to regenerate provider docs; verify the `timeouts` attribute appears on all 66 entitycore-envelope resource pages (37 Elasticsearch + 29 Kibana)
 - [x] 10.2 Run `make build`
 - [x] 10.3 Run `make check-lint`
-- [ ] 10.4 Run `go test ./...` (unit + envelope tests)
+- [x] 10.4 Run `go test ./...` (unit + envelope tests)
 - [ ] 10.5 Run targeted acceptance tests for the 4 migrated resources to confirm behavior is unchanged (stack-dependent; see `dev-docs/high-level/testing.md`)
 - [x] 10.6 Run `make check-openspec`
