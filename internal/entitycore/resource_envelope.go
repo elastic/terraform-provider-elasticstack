@@ -120,8 +120,8 @@ type ElasticsearchPostReadRequest[T ElasticsearchResourceModel] struct {
 	Private any
 }
 
-// PostReadFunc runs after a successful read that persisted state, including
-// read-after-write refresh. It is optional.
+// PostReadFunc runs after a successful read and before state is persisted,
+// including read-after-write refresh. It is optional.
 type PostReadFunc[T ElasticsearchResourceModel] func(
 	ctx context.Context,
 	req ElasticsearchPostReadRequest[T],

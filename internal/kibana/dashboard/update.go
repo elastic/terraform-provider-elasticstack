@@ -37,15 +37,8 @@ func updateDashboard(
 
 	kibanaClient := client.GetKibanaOapiClient()
 
-	// Resolve identity from plan (composite ID)
-	composite, compositeDiags := clients.CompositeIDFromStr(planModel.ID.ValueString())
-	diags.Append(compositeDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
-	}
-
-	dashboardID := composite.ResourceID
-	spaceID := composite.ClusterID
+	dashboardID := req.WriteID
+	spaceID := req.SpaceID
 
 	apiReq := dashboardToAPIUpdateRequest(ctx, &planModel, &diags)
 	if diags.HasError() {

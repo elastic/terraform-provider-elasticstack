@@ -97,8 +97,8 @@ type KibanaPostReadRequest[T KibanaResourceModel] struct {
 	Private any
 }
 
-// KibanaPostReadFunc runs after a successful read that persisted state, including
-// read-after-write refresh. It is optional.
+// KibanaPostReadFunc runs after a successful read and before state is persisted,
+// including read-after-write refresh. It is optional.
 type KibanaPostReadFunc[T KibanaResourceModel] func(
 	ctx context.Context,
 	req KibanaPostReadRequest[T],
