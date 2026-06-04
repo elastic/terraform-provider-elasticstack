@@ -248,6 +248,16 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/rolemapping.NewNormalizedRulesNull",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/rolemapping",
+      "attemptedAt": "2026-06-04T04:49:28.504675595Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
