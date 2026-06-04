@@ -26,9 +26,11 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	entity "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store/entity"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	jsontypes "github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -40,6 +42,7 @@ func readEntityStoreEntitiesDataSource(
 	spaceID := entity.NormalizeSpaceID(model.SpaceID)
 
 	params := &kbapi.GetSecurityEntityStoreEntitiesParams{}
+	var diags diag.Diagnostics
 
 	if !model.EntityID.IsNull() && !model.EntityID.IsUnknown() && model.EntityID.ValueString() != "" {
 		filter := fmt.Sprintf(`entity.id:%s`, entity.QuoteKQLString(model.EntityID.ValueString()))
@@ -58,11 +61,17 @@ func readEntityStoreEntitiesDataSource(
 		params.SearchAfter = &sa
 	}
 	if !model.Source.IsNull() && !model.Source.IsUnknown() {
-		src := expandStringList(model.Source)
+		src := typeutils.ListTypeToSliceString(ctx, model.Source, path.Root("source"), &diags)
+		if diags.HasError() {
+			return model, diags
+		}
 		params.Source = &src
 	}
 	if !model.Fields.IsNull() && !model.Fields.IsUnknown() {
-		f := expandStringList(model.Fields)
+		f := typeutils.ListTypeToSliceString(ctx, model.Fields, path.Root("fields"), &diags)
+		if diags.HasError() {
+			return model, diags
+		}
 		params.Fields = &f
 	}
 	if !model.SortField.IsNull() && !model.SortField.IsUnknown() {
@@ -90,7 +99,8 @@ func readEntityStoreEntitiesDataSource(
 		params.EntityTypes = &entityTypes
 	}
 
-	resp, diags := kibanaoapi.ListSecurityEntityStoreEntities(ctx, client.GetKibanaOapiClient(), spaceID, params)
+	var resp *kbapi.GetSecurityEntityStoreEntitiesResponse
+	resp, diags = kibanaoapi.ListSecurityEntityStoreEntities(ctx, client.GetKibanaOapiClient(), spaceID, params)
 	if diags.HasError() {
 		return model, diags
 	}
