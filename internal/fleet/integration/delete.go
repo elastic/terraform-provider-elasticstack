@@ -21,66 +21,59 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var stateModel integrationModel
-
-	diags := req.State.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func deleteIntegration(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	resourceID string,
+	spaceID string,
+	model integrationModel,
+) diag.Diagnostics {
+	var diags diag.Diagnostics
 
 	fleetClient := client.GetFleetClient()
 
-	name := stateModel.Name.ValueString()
-	version := stateModel.Version.ValueString()
-	force := stateModel.Force.ValueBool()
-	skipDestroy := stateModel.SkipDestroy.ValueBool()
-	if skipDestroy {
+	name := model.Name.ValueString()
+	version := model.Version.ValueString()
+	force := model.Force.ValueBool()
+	if model.SkipDestroy.ValueBool() {
 		tflog.Debug(ctx, "Skipping uninstall of integration package", map[string]any{attrName: name, attrVersion: version})
-		return
+		return diags
 	}
 
-	var spaceID string
 	spaceAware := false
-	if typeutils.IsKnown(stateModel.SpaceID) {
-		spaceID = stateModel.SpaceID.ValueString()
+	if typeutils.IsKnown(model.SpaceID) {
 		supported, versionDiags := supportsSpaceAwareIntegration(ctx, client, spaceID)
-		resp.Diagnostics.Append(versionDiags...)
-		if resp.Diagnostics.HasError() {
-			return
+		diags.Append(versionDiags...)
+		if diags.HasError() {
+			return diags
 		}
 		spaceAware = supported
 	}
 
 	if spaceAware {
 		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)
-		resp.Diagnostics.Append(getDiags...)
-		if resp.Diagnostics.HasError() {
-			return
+		diags.Append(getDiags...)
+		if diags.HasError() {
+			return diags
 		}
 
 		if isInstalledInMultipleSpaces(pkg, spaceID) {
 			deleteDiags := fleet.DeleteKibanaAssets(ctx, fleetClient, name, version, spaceID, force)
-			resp.Diagnostics.Append(deleteDiags...)
-			return
+			diags.Append(deleteDiags...)
+			return diags
 		}
 	}
 
 	uninstallDiags := fleet.Uninstall(ctx, fleetClient, name, version, spaceID, force)
-	resp.Diagnostics.Append(uninstallDiags...)
+	diags.Append(uninstallDiags...)
+	return diags
 }
 
 func isInstalledInMultipleSpaces(pkg *kbapi.PackageInfo, spaceID string) bool {
