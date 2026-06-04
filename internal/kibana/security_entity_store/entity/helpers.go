@@ -20,11 +20,8 @@ package entity
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strconv"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	jsontypes "github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -1366,34 +1363,4 @@ func injectEntityIDAndMarshal(bodyMap map[string]any, entityID string) ([]byte, 
 	return bodyBytes, nil
 }
 
-// readAfterWrite performs an authoritative read after a create or update, then
-// re-populates the identity fields on the returned model. operation is used in
-// the not-found error message ("create" or "update").
-func readAfterWrite(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	spaceID, entityType, entityID string,
-	plan tfModel,
-	operation string,
-) (entitycore.KibanaWriteResult[tfModel], diag.Diagnostics) {
-	readModel, found, readDiags := readEntity(ctx, client, buildID(spaceID, entityID), spaceID, plan)
-	if readDiags.HasError() {
-		return entitycore.KibanaWriteResult[tfModel]{}, readDiags
-	}
-	if !found {
-		return entitycore.KibanaWriteResult[tfModel]{}, diag.Diagnostics{
-			diag.NewErrorDiagnostic(
-				fmt.Sprintf("Entity not found after %s", operation),
-				fmt.Sprintf("Entity %s was not found after %s", entityID, operation),
-			),
-		}
-	}
 
-	readModel.ID = types.StringValue(buildID(spaceID, entityID))
-	readModel.SpaceID = types.StringValue(spaceID)
-	readModel.EntityType = types.StringValue(entityType)
-	readModel.EntityID = types.StringValue(entityID)
-	readModel.Force = plan.Force
-
-	return entitycore.KibanaWriteResult[tfModel]{Model: readModel}, nil
-}

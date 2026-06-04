@@ -56,5 +56,5 @@ func updateEntity(
 		return entitycore.KibanaWriteResult[tfModel]{}, d
 	}
 
-	return readAfterWrite(ctx, client, spaceID, entityType, entityID, plan, "update")
+	return entitycore.KibanaWriteResult[tfModel]{Model: plan}, nil
 }

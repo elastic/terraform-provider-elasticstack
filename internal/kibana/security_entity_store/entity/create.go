@@ -57,5 +57,5 @@ func createEntity(
 		return entitycore.KibanaWriteResult[tfModel]{}, d
 	}
 
-	return readAfterWrite(ctx, client, spaceID, entityType, entityID, plan, "create")
+	return entitycore.KibanaWriteResult[tfModel]{Model: plan}, nil
 }
