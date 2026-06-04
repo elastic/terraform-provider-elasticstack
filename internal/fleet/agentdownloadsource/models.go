@@ -29,6 +29,7 @@ import (
 )
 
 type model struct {
+	entitycore.ResourceTimeoutsField
 	ID               types.String `tfsdk:"id"`
 	SourceID         types.String `tfsdk:"source_id"`
 	Name             types.String `tfsdk:"name"`

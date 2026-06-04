@@ -40,6 +40,7 @@ import (
 // here means they are declared exactly once rather than duplicated across the
 // resource and data source models.
 type toolModel struct {
+	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
 	ID            types.String         `tfsdk:"id"`
 	ToolID        types.String         `tfsdk:"tool_id"`

@@ -58,6 +58,7 @@ type AccessModel struct {
 }
 
 type TfModel struct {
+	entitycore.ResourceTimeoutsField
 	ID                      types.String                                                              `tfsdk:"id"`
 	ElasticsearchConnection types.List                                                                `tfsdk:"elasticsearch_connection"`
 	KeyID                   types.String                                                              `tfsdk:"key_id"`

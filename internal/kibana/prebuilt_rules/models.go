@@ -27,6 +27,7 @@ import (
 )
 
 type prebuiltRuleModel struct {
+	entitycore.ResourceTimeoutsField
 	ID                    types.String `tfsdk:"id"`
 	SpaceID               types.String `tfsdk:"space_id"`
 	KibanaConnection      types.List   `tfsdk:"kibana_connection"`

@@ -38,6 +38,7 @@ func (m Model) GetKibanaConnection() types.List { return m.KibanaConnection }
 var _ entitycore.KibanaResourceModel = Model{}
 
 type Model struct {
+	entitycore.ResourceTimeoutsField
 	ID               types.String         `tfsdk:"id"`
 	KibanaConnection types.List           `tfsdk:"kibana_connection"`
 	ListItemID       types.String         `tfsdk:"list_item_id"`

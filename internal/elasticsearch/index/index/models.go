@@ -27,6 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -122,6 +123,7 @@ func init() {
 }
 
 type tfModel struct {
+	entitycore.ResourceTimeoutsField
 	ID                                 types.String         `tfsdk:"id"`
 	ElasticsearchConnection            types.List           `tfsdk:"elasticsearch_connection"`
 	Name                               types.String         `tfsdk:"name"`

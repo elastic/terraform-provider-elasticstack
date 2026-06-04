@@ -23,6 +23,7 @@ import (
 )
 
 type defaultDataViewModel struct {
+	entitycore.ResourceTimeoutsField
 	ID               types.String `tfsdk:"id"`
 	KibanaConnection types.List   `tfsdk:"kibana_connection"`
 	DataViewID       types.String `tfsdk:"data_view_id"`

@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -32,6 +33,7 @@ import (
 
 // Data is the Terraform state/plan model for the watch resource.
 type Data struct {
+	entitycore.ResourceTimeoutsField
 	ID                      types.String         `tfsdk:"id"`
 	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
 	WatchID                 types.String         `tfsdk:"watch_id"`

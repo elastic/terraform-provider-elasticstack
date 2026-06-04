@@ -108,6 +108,7 @@ func queryRuleModelAttrTypes() map[string]attr.Type {
 // QueryRulesetData is the Terraform state model for the query ruleset resource and data source.
 type QueryRulesetData struct {
 	entitycore.ElasticsearchConnectionField
+	entitycore.ResourceTimeoutsField
 	ID        fwtypes.String `tfsdk:"id"`
 	RulesetID fwtypes.String `tfsdk:"ruleset_id"`
 	Rules     fwtypes.List   `tfsdk:"rules"`

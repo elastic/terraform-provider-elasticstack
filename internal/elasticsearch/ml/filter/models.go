@@ -21,12 +21,14 @@ import (
 	"context"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type TFModel struct {
+	entitycore.ResourceTimeoutsField
 	ID                      types.String `tfsdk:"id"`
 	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
 	FilterID                types.String `tfsdk:"filter_id"`

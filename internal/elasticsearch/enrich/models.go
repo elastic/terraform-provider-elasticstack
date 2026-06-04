@@ -41,6 +41,7 @@ type PolicyData struct {
 }
 
 type PolicyDataWithExecute struct {
+	entitycore.ResourceTimeoutsField
 	PolicyData
 	Execute types.Bool `tfsdk:"execute"`
 }

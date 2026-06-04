@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -30,6 +31,7 @@ import (
 )
 
 type Data struct {
+	entitycore.ResourceTimeoutsField
 	ID                      types.String                                      `tfsdk:"id"`
 	ElasticsearchConnection types.List                                        `tfsdk:"elasticsearch_connection"`
 	InferenceID             types.String                                      `tfsdk:"inference_id"`

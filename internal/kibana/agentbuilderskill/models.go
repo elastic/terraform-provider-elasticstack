@@ -49,6 +49,7 @@ func (model skillModel) GetVersionRequirements(_ context.Context) ([]entitycore.
 }
 
 type skillModel struct {
+	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
 	ID                types.String                 `tfsdk:"id"`
 	SkillID           types.String                 `tfsdk:"skill_id"`

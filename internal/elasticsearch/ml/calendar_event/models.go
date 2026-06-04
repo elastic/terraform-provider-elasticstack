@@ -21,6 +21,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -28,6 +29,7 @@ import (
 )
 
 type CalendarEventTFModel struct {
+	entitycore.ResourceTimeoutsField
 	ID                      types.String      `tfsdk:"id"`
 	ElasticsearchConnection types.List        `tfsdk:"elasticsearch_connection"`
 	CalendarID              types.String      `tfsdk:"calendar_id"`

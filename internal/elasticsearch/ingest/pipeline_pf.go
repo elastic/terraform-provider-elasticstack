@@ -46,6 +46,7 @@ var (
 )
 
 type Data struct {
+	entitycore.ResourceTimeoutsField
 	entitycore.ElasticsearchConnectionField
 	ID          types.String         `tfsdk:"id"`
 	Name        types.String         `tfsdk:"name"`

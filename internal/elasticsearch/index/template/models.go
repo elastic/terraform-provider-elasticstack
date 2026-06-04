@@ -34,6 +34,7 @@ import (
 
 // Model is the Terraform plan/state shape for the index template resource and data source.
 type Model struct {
+	entitycore.ResourceTimeoutsField
 	entitycore.ElasticsearchConnectionField
 	ID                              types.String         `tfsdk:"id"`
 	Name                            types.String         `tfsdk:"name"`

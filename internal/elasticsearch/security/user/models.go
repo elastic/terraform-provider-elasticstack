@@ -18,11 +18,13 @@
 package securityuser
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type Data struct {
+	entitycore.ResourceTimeoutsField
 	ID                      types.String         `tfsdk:"id"`
 	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
 	Username                types.String         `tfsdk:"username"`

@@ -18,6 +18,7 @@
 package settings
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -28,6 +29,7 @@ const resourceID = "cluster-settings"
 
 // tfModel is the top-level Terraform model for elasticstack_elasticsearch_cluster_settings.
 type tfModel struct {
+	entitycore.ResourceTimeoutsField
 	ID                      types.String `tfsdk:"id"`
 	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
 	Persistent              types.Object `tfsdk:"persistent"`

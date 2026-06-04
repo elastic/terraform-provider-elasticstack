@@ -31,6 +31,7 @@ import (
 )
 
 type outputModel struct {
+	entitycore.ResourceTimeoutsField
 	ID                          types.String                    `tfsdk:"id"`
 	KibanaConnection            types.List                      `tfsdk:"kibana_connection"`
 	OutputID                    types.String                    `tfsdk:"output_id"`
