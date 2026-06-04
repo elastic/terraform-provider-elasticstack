@@ -5,12 +5,12 @@ Both `KibanaPostReadFunc[T]` and `PostReadFunc[T]` (the Elasticsearch envelope e
 ## What Changes
 
 - **`internal/entitycore/kibana_resource_envelope.go`**: Replace the current `KibanaPostReadFunc[T]` with a struct-based callback:
-  - Introduce `KibanaPostReadRequest[T]` with fields `Client *KibanaScopedClient`, `Prior T`, `State T`, `Private any`
+  - Introduce `KibanaPostReadRequest[T]` with fields `Client *clients.KibanaScopedClient`, `Prior T`, `State T`, `Private any`
   - `Prior` carries the write-request plan on Create/Update paths; on plain Read it carries the state model before this refresh
   - Change `KibanaPostReadFunc[T]` to `func(ctx context.Context, req KibanaPostReadRequest[T]) (T, diag.Diagnostics)` — returns the (possibly modified) model; envelope sets state after PostRead returns
   - Update `runKibanaRead` and `runKibanaWrite` to populate `Prior`, pass the struct, and apply the returned model before setting state
 - **`internal/entitycore/resource_envelope.go`**: Apply the same treatment to `PostReadFunc[T]`:
-  - Introduce `ElasticsearchPostReadRequest[T]` with the same four fields, `Client *ElasticsearchScopedClient`
+  - Introduce `ElasticsearchPostReadRequest[T]` with the same four fields, `Client *clients.ElasticsearchScopedClient`
   - Change `PostReadFunc[T]` to `func(ctx context.Context, req ElasticsearchPostReadRequest[T]) (T, diag.Diagnostics)`
   - Update `runElasticsearchRead` and `runElasticsearchWrite` accordingly
 - **`internal/elasticsearch/security/apikey/resource/resource.go`**: Update `postReadPersistAPIKeyCapabilities` to the new `PostReadFunc[T]` signature; function ignores the model, so it returns `(req.State, diags)` unchanged

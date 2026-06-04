@@ -13,11 +13,13 @@ Three Kibana/Fleet resources — `fleet_integration`, `kibana_synthetics_monitor
 
 ### New Capabilities
 
-None — this change does not alter external behaviour.
+None — externally visible resource behaviour, schema attributes, and API contracts are unchanged.
 
 ### Modified Capabilities
 
-None — existing specs for `fleet-integration`, `kibana-synthetics-monitor`, and `kibana-slo` are unchanged. The `entitycore-kibana-resource-envelope` spec is also unchanged.
+`entitycore-kibana-resource-envelope` — three new ADDED requirements documenting that `fleet/integration`, `kibana/synthetics/monitor`, and `kibana/slo` each migrate to embed `*entitycore.KibanaResource[T]`. These mirror the existing entries for `streams` and `maintenance_window` and record the migration as an internal contract, not an external behaviour change.
+
+Existing canonical specs for `fleet-integration`, `kibana-synthetics-monitor`, and `kibana-slo` remain authoritative and unmodified.
 
 ## Impact
 
