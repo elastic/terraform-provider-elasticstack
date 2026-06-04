@@ -18,54 +18,13 @@
 package entities
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
 	kbapi "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-func TestListTypeToSliceString(t *testing.T) {
-	tests := []struct {
-		name  string
-		input types.List
-		want  []string
-	}{
-		{
-			name:  "null list",
-			input: types.ListNull(types.StringType),
-			want:  nil,
-		},
-		{
-			name:  "empty list",
-			input: types.ListValueMust(types.StringType, []attr.Value{}),
-			want:  []string{},
-		},
-		{
-			name:  "non-empty list",
-			input: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("a"), types.StringValue("b")}),
-			want:  []string{"a", "b"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var d diag.Diagnostics
-			got := typeutils.ListTypeToSliceString(context.Background(), tt.input, path.Root("source"), &d)
-			if d.HasError() {
-				t.Fatalf("unexpected diagnostics: %v", d)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ListTypeToSliceString() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestExpandEntityTypesSet(t *testing.T) {
 	tests := []struct {
