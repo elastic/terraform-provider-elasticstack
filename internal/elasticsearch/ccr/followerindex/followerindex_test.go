@@ -266,6 +266,38 @@ func TestBuildFollowRequest_byteSizeAndDuration(t *testing.T) {
 	assert.Equal(t, 8, *req.MaxOutstandingWriteRequests)
 }
 
+func TestBuildResumeFollowRequest_typeMapping(t *testing.T) {
+	t.Parallel()
+
+	model := Model{
+		MaxOutstandingReadRequests:    types.Int64Value(12),
+		MaxOutstandingWriteRequests:   types.Int64Value(8),
+		MaxReadRequestOperationCount:  types.Int64Value(4),
+		MaxReadRequestSize:            types.StringValue("100mb"),
+		MaxRetryDelay:                 types.StringValue("10s"),
+		MaxWriteBufferCount:           types.Int64Value(16),
+		MaxWriteBufferSize:            types.StringValue("200mb"),
+		MaxWriteRequestOperationCount: types.Int64Value(32),
+		MaxWriteRequestSize:           types.StringValue("64mb"),
+		ReadPollTimeout:               types.StringValue("10m"),
+	}
+
+	req := buildResumeFollowRequest(model)
+	require.NotNil(t, req)
+
+	// resumefollow represents all counts as *int64 and byte sizes as *string.
+	require.NotNil(t, req.MaxOutstandingReadRequests)
+	assert.Equal(t, int64(12), *req.MaxOutstandingReadRequests)
+	require.NotNil(t, req.MaxOutstandingWriteRequests)
+	assert.Equal(t, int64(8), *req.MaxOutstandingWriteRequests)
+	require.NotNil(t, req.MaxReadRequestSize)
+	assert.Equal(t, "100mb", *req.MaxReadRequestSize)
+	require.NotNil(t, req.MaxWriteRequestSize)
+	assert.Equal(t, "64mb", *req.MaxWriteRequestSize)
+	assert.Equal(t, estypes.Duration("10s"), req.MaxRetryDelay)
+	assert.Equal(t, estypes.Duration("10m"), req.ReadPollTimeout)
+}
+
 func TestNarrowInt64ToInt_overflow(t *testing.T) {
 	t.Parallel()
 

@@ -74,11 +74,7 @@ func executeUpdateOperations(
 			}
 			diags.Append(elasticsearch.UpdateIndexSettings(ctx, client, indexName, settings)...)
 		case opResume:
-			resumeReq, resumeDiags := buildResumeFollowRequest(plan)
-			diags.Append(resumeDiags...)
-			if diags.HasError() {
-				return diags
-			}
+			resumeReq := buildResumeFollowRequest(plan)
 			diags.Append(elasticsearch.ResumeFollowerIndex(ctx, client, indexName, resumeReq)...)
 		default:
 			diags.AddError("Internal error", "Unexpected update operation: "+op.String())

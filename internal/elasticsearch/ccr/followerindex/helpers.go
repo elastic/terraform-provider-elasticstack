@@ -20,6 +20,7 @@ package followerindex
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"math"
 	"sort"
 	"strconv"
@@ -304,9 +305,7 @@ func mergeSettingsMaps(base, overlay map[string]any) map[string]any {
 		return base
 	}
 	out := make(map[string]any, len(base)+len(overlay))
-	for k, v := range base {
-		out[k] = v
-	}
+	maps.Copy(out, base)
 	for k, v := range overlay {
 		existing, ok := out[k]
 		if !ok {
@@ -420,7 +419,7 @@ func buildFollowRequest(model Model) (*follow.Request, diag.Diagnostics) {
 	return req, diags
 }
 
-func buildResumeFollowRequest(model Model) (*resumefollow.Request, diag.Diagnostics) {
+func buildResumeFollowRequest(model Model) *resumefollow.Request {
 	req := &resumefollow.Request{}
 
 	if v := optInt64Ptr(model.MaxOutstandingReadRequests); v != nil {
@@ -454,7 +453,7 @@ func buildResumeFollowRequest(model Model) (*resumefollow.Request, diag.Diagnost
 		req.ReadPollTimeout = v
 	}
 
-	return req, nil
+	return req
 }
 
 func mapParametersToModel(params *estypes.FollowerIndexParameters, model Model) Model {
@@ -479,6 +478,13 @@ func mapFollowerIndexToModel(follower *estypes.FollowerIndex, prior Model) Model
 
 	if follower.Parameters != nil {
 		model = mapParametersToModel(follower.Parameters, model)
+	}
+
+	// delete_index_on_destroy is a local-only attribute that is never returned
+	// by the API. On import the baseline carries no value, so default it to
+	// false to satisfy the documented post-import state.
+	if !typeutils.IsKnown(model.DeleteIndexOnDestroy) {
+		model.DeleteIndexOnDestroy = types.BoolValue(false)
 	}
 
 	return model
