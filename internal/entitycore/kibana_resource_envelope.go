@@ -87,15 +87,22 @@ type KibanaWriteFunc[T KibanaResourceModel] func(
 	KibanaWriteRequest[T],
 ) (KibanaWriteResult[T], diag.Diagnostics)
 
+// KibanaPostReadRequest is passed to [KibanaPostReadFunc]. Prior is the model
+// before the read (plan on write path, prior state on plain Read path). State is
+// the freshly-read model returned by the read callback.
+type KibanaPostReadRequest[T KibanaResourceModel] struct {
+	Client  *clients.KibanaScopedClient
+	Prior   T
+	State   T
+	Private any
+}
+
 // KibanaPostReadFunc runs after a successful read that persisted state, including
-// read-after-write refresh. It is optional. The privateState argument is the
-// framework response Private field (typically *internal/privatestate.ProviderData).
+// read-after-write refresh. It is optional.
 type KibanaPostReadFunc[T KibanaResourceModel] func(
 	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	model T,
-	privateState any,
-) diag.Diagnostics
+	req KibanaPostReadRequest[T],
+) (T, diag.Diagnostics)
 
 // KibanaResourceOptions configures [NewKibanaResource]. PostRead is optional;
 // Schema, Read, Delete, Create, and Update must be non-nil or the envelope
@@ -274,13 +281,20 @@ func (r *KibanaResource[T]) Read(ctx context.Context, req resource.ReadRequest, 
 	}
 
 	if found {
-		resp.Diagnostics.Append(resp.State.Set(ctx, &resultModel)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
 		if r.postReadFunc != nil {
-			resp.Diagnostics.Append(r.postReadFunc(ctx, client, resultModel, resp.Private)...)
+			var prDiags diag.Diagnostics
+			resultModel, prDiags = r.postReadFunc(ctx, KibanaPostReadRequest[T]{
+				Client:  client,
+				Prior:   model,
+				State:   resultModel,
+				Private: resp.Private,
+			})
+			resp.Diagnostics.Append(prDiags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 		}
+		resp.Diagnostics.Append(resp.State.Set(ctx, &resultModel)...)
 	} else {
 		resp.State.RemoveResource(ctx)
 	}
@@ -436,14 +450,23 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 		return diags
 	}
 
-	diags.Append(inv.outState.Set(ctx, &stateModel)...)
-	if diags.HasError() {
-		return diags
-	}
+	priorModel := planModel
 
 	if r.postReadFunc != nil {
-		diags.Append(r.postReadFunc(ctx, client, stateModel, inv.privateState)...)
+		var prDiags diag.Diagnostics
+		stateModel, prDiags = r.postReadFunc(ctx, KibanaPostReadRequest[T]{
+			Client:  client,
+			Prior:   priorModel,
+			State:   stateModel,
+			Private: inv.privateState,
+		})
+		diags.Append(prDiags...)
+		if diags.HasError() {
+			return diags
+		}
 	}
+
+	diags.Append(inv.outState.Set(ctx, &stateModel)...)
 
 	return diags
 }
