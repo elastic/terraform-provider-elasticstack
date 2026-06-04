@@ -60,7 +60,7 @@ func NewResource() resource.Resource {
 	return newResource()
 }
 
-func normalizeSpaceID(v types.String) string {
+func NormalizeSpaceID(v types.String) string {
 	if v.IsNull() || v.IsUnknown() || v.ValueString() == "" {
 		return defaultSpaceID
 	}

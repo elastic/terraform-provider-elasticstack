@@ -26,39 +26,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func TestExpandStringList(t *testing.T) {
-	tests := []struct {
-		name  string
-		input types.List
-		want  []string
-	}{
-		{
-			name:  "null list",
-			input: types.ListNull(types.StringType),
-			want:  nil,
-		},
-		{
-			name:  "empty list",
-			input: types.ListValueMust(types.StringType, []attr.Value{}),
-			want:  []string{},
-		},
-		{
-			name:  "non-empty list",
-			input: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("a"), types.StringValue("b")}),
-			want:  []string{"a", "b"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := expandStringList(tt.input)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("expandStringList() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestExpandEntityTypesSet(t *testing.T) {
 	tests := []struct {
 		name  string

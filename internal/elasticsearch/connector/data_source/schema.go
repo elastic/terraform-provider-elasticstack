@@ -71,9 +71,9 @@ func dataSourceSchemaFactory(_ context.Context) dschema.Schema {
 				MarkdownDescription: "ID of the connector secret holding the API key (Elastic-managed connectors only).",
 				Computed:            true,
 			},
-			"pipeline":         dataSourcePipelineSingleNestedAttribute(),
-			"scheduling":       dataSourceSchedulingSingleNestedAttribute(),
-			"features":         dataSourceFeaturesSingleNestedAttribute(),
+			"pipeline":         connector.PipelineAttrForDataSource(),
+			"scheduling":       connector.SchedulingAttrForDataSource(),
+			"features":         connector.FeaturesAttrForDataSource(),
 			"status":           dataSourceStatusAttribute(),
 			"last_seen":        dataSourceLastSeenAttribute(),
 			"last_synced":      dataSourceLastSyncedAttribute(),
@@ -127,86 +127,6 @@ func dataSourceSchemaFactory(_ context.Context) dschema.Schema {
 				MarkdownDescription: "Whether a sync job is queued to run immediately.",
 				Computed:            true,
 			},
-		},
-	}
-}
-
-// leafAttrsToDataSource converts shared LeafAttr definitions into data source schema attributes.
-// All leaf attributes are marked Computed.
-func leafAttrsToDataSource(leaves []connector.LeafAttr) map[string]dschema.Attribute {
-	result := make(map[string]dschema.Attribute, len(leaves))
-	for _, a := range leaves {
-		if a.IsString {
-			result[a.Name] = dschema.StringAttribute{
-				MarkdownDescription: a.Description,
-				Computed:            true,
-			}
-		} else {
-			result[a.Name] = dschema.BoolAttribute{
-				MarkdownDescription: a.Description,
-				Computed:            true,
-			}
-		}
-	}
-	return result
-}
-
-func dataSourcePipelineSingleNestedAttribute() dschema.SingleNestedAttribute {
-	return dschema.SingleNestedAttribute{
-		MarkdownDescription: connector.PipelineNestedDesc,
-		Computed:            true,
-		Attributes:          leafAttrsToDataSource(connector.PipelineLeafAttrs()),
-	}
-}
-
-func dataSourceSchedulingSingleNestedAttribute() dschema.SingleNestedAttribute {
-	return dschema.SingleNestedAttribute{
-		MarkdownDescription: connector.SchedulingNestedDesc,
-		Computed:            true,
-		Attributes: map[string]dschema.Attribute{
-			connector.FullScheduleAttr:          dataSourceScheduleEntrySingleNestedAttribute(connector.FullScheduleAttr),
-			connector.IncrementalScheduleAttr:   dataSourceScheduleEntrySingleNestedAttribute(connector.IncrementalScheduleAttr),
-			connector.AccessControlScheduleAttr: dataSourceScheduleEntrySingleNestedAttribute(connector.AccessControlScheduleAttr),
-		},
-	}
-}
-
-func dataSourceScheduleEntrySingleNestedAttribute(jobKind string) dschema.SingleNestedAttribute {
-	return dschema.SingleNestedAttribute{
-		MarkdownDescription: "Schedule for the `" + jobKind + "` sync job type.",
-		Computed:            true,
-		Attributes:          leafAttrsToDataSource(connector.ScheduleEntryLeafAttrs()),
-	}
-}
-
-func dataSourceFeaturesSingleNestedAttribute() dschema.SingleNestedAttribute {
-	return dschema.SingleNestedAttribute{
-		MarkdownDescription: connector.FeaturesNestedDesc,
-		Computed:            true,
-		Attributes: map[string]dschema.Attribute{
-			connector.DocumentLevelSecurityAttr:  dataSourceFeatureFlagSingleNestedAttribute(connector.DocumentLevelSecurityAttr),
-			connector.IncrementalSyncAttr:        dataSourceFeatureFlagSingleNestedAttribute(connector.IncrementalSyncAttr),
-			connector.NativeConnectorAPIKeysAttr: dataSourceFeatureFlagSingleNestedAttribute(connector.NativeConnectorAPIKeysAttr),
-			connector.SyncRulesAttr:              dataSourceSyncRulesSingleNestedAttribute(),
-		},
-	}
-}
-
-func dataSourceFeatureFlagSingleNestedAttribute(featureName string) dschema.SingleNestedAttribute {
-	return dschema.SingleNestedAttribute{
-		MarkdownDescription: "Feature flag for `" + featureName + "`.",
-		Computed:            true,
-		Attributes:          leafAttrsToDataSource(connector.FeatureFlagLeafAttrs()),
-	}
-}
-
-func dataSourceSyncRulesSingleNestedAttribute() dschema.SingleNestedAttribute {
-	return dschema.SingleNestedAttribute{
-		MarkdownDescription: connector.SyncRulesNestedDesc,
-		Computed:            true,
-		Attributes: map[string]dschema.Attribute{
-			connector.BasicSyncRulesAttr:    dataSourceFeatureFlagSingleNestedAttribute(connector.BasicSyncRulesAttr),
-			connector.AdvancedSyncRulesAttr: dataSourceFeatureFlagSingleNestedAttribute(connector.AdvancedSyncRulesAttr),
 		},
 	}
 }

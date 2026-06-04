@@ -117,17 +117,3 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 		},
 	}
 }
-
-// expandStringList converts a types.List to a []string.
-func expandStringList(l types.List) []string {
-	if l.IsNull() || l.IsUnknown() {
-		return nil
-	}
-	result := make([]string, 0, len(l.Elements()))
-	for _, v := range l.Elements() {
-		if s, ok := v.(types.String); ok {
-			result = append(result, s.ValueString())
-		}
-	}
-	return result
-}
