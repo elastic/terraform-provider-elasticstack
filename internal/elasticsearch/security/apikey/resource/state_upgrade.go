@@ -30,7 +30,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-func schemaWithConnection(version int64) schema.Schema {
+func schemaWithConnection(ctx context.Context, version int64) schema.Schema {
 	s := getSchema(version)
 	blocks := make(map[string]schema.Block, len(s.Blocks)+1)
 	maps.Copy(blocks, s.Blocks)
@@ -45,15 +45,15 @@ func schemaWithConnection(version int64) schema.Schema {
 	// timeouts in the raw prior state decodes to null.
 	attrs := make(map[string]schema.Attribute, len(s.Attributes)+1)
 	maps.Copy(attrs, s.Attributes)
-	attrs["timeouts"] = timeouts.AttributesAll(context.Background())
+	attrs["timeouts"] = timeouts.AttributesAll(ctx)
 	s.Attributes = attrs
 
 	return s
 }
 
-func (r *Resource) UpgradeState(context.Context) map[int64]fwresource.StateUpgrader {
-	schema0 := schemaWithConnection(0)
-	schema1 := schemaWithConnection(1)
+func (r *Resource) UpgradeState(ctx context.Context) map[int64]fwresource.StateUpgrader {
+	schema0 := schemaWithConnection(ctx, 0)
+	schema1 := schemaWithConnection(ctx, 1)
 	return map[int64]fwresource.StateUpgrader{
 		0: {
 			PriorSchema: &schema0,
