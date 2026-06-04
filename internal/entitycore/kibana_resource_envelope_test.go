@@ -2129,7 +2129,7 @@ func TestNewKibanaResource_SingleWriteFuncServesCreateAndUpdate(t *testing.T) {
 	require.True(t, sawUpdate)
 }
 
-func TestNewKibanaResource_Read_invokesPostReadAfterSuccessfulStateSet(t *testing.T) {
+func TestNewKibanaResource_Read_invokesPostReadBeforeStateSet(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)

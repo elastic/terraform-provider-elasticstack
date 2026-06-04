@@ -1667,7 +1667,7 @@ func TestNewElasticsearchResource_Create_shortCircuitsWhenVersionRequirementsDia
 	require.False(t, createCalled)
 }
 
-func TestNewElasticsearchResource_Read_invokesPostReadAfterSuccessfulStateSet(t *testing.T) {
+func TestNewElasticsearchResource_Read_invokesPostReadBeforeStateSet(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
