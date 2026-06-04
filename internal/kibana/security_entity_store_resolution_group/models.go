@@ -1,0 +1,65 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package security_entity_store_resolution_group
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+var (
+	_ entitycore.KibanaDataSourceModel   = resolutionGroupModel{}
+	_ entitycore.WithVersionRequirements = resolutionGroupModel{}
+)
+
+var minKibanaEntityStoreResolutionVersion = version.Must(version.NewVersion("9.1.0"))
+
+type resolutionGroupModel struct {
+	entitycore.KibanaConnectionField
+	ID                  types.String         `tfsdk:"id"`
+	SpaceID             types.String         `tfsdk:"space_id"`
+	EntityID            types.String         `tfsdk:"entity_id"`
+	ResolutionGroupJSON jsontypes.Normalized `tfsdk:"resolution_group_json"`
+}
+
+func (model resolutionGroupModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{
+		{
+			MinVersion:   *minKibanaEntityStoreResolutionVersion,
+			ErrorMessage: fmt.Sprintf("Security Entity Store resolution groups require Elastic Stack v%s or later.", minKibanaEntityStoreResolutionVersion),
+		},
+	}, nil
+}
+
+//nolint:unparam // kept for consistency with other populateFromAPI signatures
+func (model *resolutionGroupModel) populateFromAPI(spaceID string, body []byte) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: model.EntityID.ValueString()}).String())
+	model.SpaceID = types.StringValue(spaceID)
+	model.ResolutionGroupJSON = jsontypes.NewNormalizedValue(string(body))
+
+	return diags
+}

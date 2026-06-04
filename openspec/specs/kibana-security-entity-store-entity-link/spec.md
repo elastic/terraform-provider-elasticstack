@@ -1,13 +1,8 @@
-# `elasticstack_kibana_security_entity_store_entity_link` — Requirements
-
-Resource implementation: `internal/kibana/security_entity_store_entity_link`
+# kibana-security-entity-store-entity-link Specification
 
 ## Purpose
-
-Manage entity resolution links in the Kibana Entity Store. A resolution link associates one or more alias entity identifiers with a single target ("golden") entity, forming a resolution group. All linked entities resolve to the target when queried. Requires an enterprise license and `securitySolution` + `securitySolution-entity-analytics` route privileges.
-
-## ADDED Requirements
-
+TBD - created by archiving change kibana-security-entity-store-resolution-link. Update Purpose after archive.
+## Requirements
 ### Requirement: Schema — identity (REQ-ESL-001)
 
 The resource SHALL expose the following identity attributes:
@@ -116,10 +111,11 @@ On create, the provider SHALL:
 
 On read, the provider SHALL:
 1. Call `GET /api/security/entity_store/resolution/group?entity_id=<target_id>`, applying `kibanautil.SpaceAwarePathRequestEditor(spaceID)`.
-2. On a 404, call `resp.State.RemoveResource(ctx)` to remove the resource from state (out-of-band deletion).
-3. On a non-2xx non-404 response, return an error diagnostic.
-4. On success, store the raw response body (normalized) in `resolution_group_json`.
-5. Emit a warning diagnostic if any managed `entity_ids` from state are absent from the API response (indicating out-of-band removal), without removing the resource from state.
+2. When the read is executed immediately after a successful link or unlink operation to populate final state, retry the GET with exponential back-off until the expected changes are visible or a bounded timeout of approximately 2 seconds is reached.
+3. On a 404, call `resp.State.RemoveResource(ctx)` to remove the resource from state (out-of-band deletion).
+4. On a non-2xx non-404 response, return an error diagnostic.
+5. On success, store the raw response body (normalized) in `resolution_group_json`.
+6. Emit a warning diagnostic if any managed `entity_ids` from state are absent from the API response (indicating out-of-band removal), without removing the resource from state.
 
 #### Scenario: Read removes resource on 404
 
@@ -132,6 +128,13 @@ On read, the provider SHALL:
 - GIVEN one of the managed `entity_ids` was removed from the resolution group out-of-band
 - WHEN read runs
 - THEN the provider SHALL emit a warning diagnostic and retain the resource in state with the API-returned `resolution_group_json`
+
+#### Scenario: Read retries after link or unlink before final state is available
+
+- GIVEN a link or unlink operation has just completed successfully
+- AND the Entity Store change is not yet visible because the next index refresh has not completed
+- WHEN the provider reads the resolution group to populate final state
+- THEN the provider SHALL retry the GET with exponential back-off until the expected changes are reflected or a bounded timeout of approximately 2 seconds is reached
 
 ### Requirement: Update (REQ-ESL-008)
 
@@ -200,3 +203,4 @@ All API calls (link, unlink, get resolution group) SHALL apply `kibanautil.Space
 - GIVEN `space_id = "default"` (or absent)
 - WHEN link is called
 - THEN the HTTP request path SHALL be `/api/security/entity_store/resolution/link`
+
