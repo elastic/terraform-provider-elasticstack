@@ -191,3 +191,222 @@ func TestKibanaResource_Schema_silentlyOverwritesFactoryTimeouts(t *testing.T) {
 	})
 	require.Equal(t, fmt.Sprintf("%T", timeouts.AttributesAll(ctx)), fmt.Sprintf("%T", resp.Schema.Attributes[attrTimeouts]))
 }
+
+func TestKibanaResource_Create_appliesOptionsTimeout(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	var receivedDeadline time.Time
+	opts := defaultTestKibanaResourceOptions()
+	opts.Create = func(ctx context.Context, _ *clients.KibanaScopedClient, req KibanaWriteRequest[testKibanaResourceModel]) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+		deadline, ok := ctx.Deadline()
+		require.True(t, ok)
+		receivedDeadline = deadline
+		m := req.Plan
+		m.ID = types.StringValue(req.SpaceID + "/" + req.WriteID)
+		return KibanaWriteResult[testKibanaResourceModel]{Model: m}, nil
+	}
+	opts.Timeouts = ResourceTimeouts{Create: 7 * time.Second}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	before := time.Now()
+	var resp resource.CreateResponse
+	resp.State = tfsdk.State{Raw: tftypes.NewValue(testKibanaResourceObjectType(), nil), Schema: plan.Schema}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: tfsdk.Config(plan)}, &resp)
+	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+	require.WithinDuration(t, before.Add(7*time.Second), receivedDeadline, 2*time.Second)
+}
+
+func TestKibanaResource_Create_planTimeoutOverridesOptions(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	var receivedDeadline time.Time
+	opts := defaultTestKibanaResourceOptions()
+	opts.Create = func(ctx context.Context, _ *clients.KibanaScopedClient, req KibanaWriteRequest[testKibanaResourceModel]) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+		deadline, ok := ctx.Deadline()
+		require.True(t, ok)
+		receivedDeadline = deadline
+		m := req.Plan
+		m.ID = types.StringValue(req.SpaceID + "/" + req.WriteID)
+		return KibanaWriteResult[testKibanaResourceModel]{Model: m}, nil
+	}
+	opts.Timeouts = ResourceTimeouts{Create: 7 * time.Second}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	objType := testKibanaResourceObjectTypeWithTimeouts()
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"name":              tftypes.NewValue(tftypes.String, "my-resource"),
+		"space_id":          tftypes.NewValue(tftypes.String, "default"),
+		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		"timeouts":          resourceTimeoutsWithCreate("30m"),
+	})
+	var schemaResp resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+	plan := tfsdk.Plan{Raw: objValue, Schema: schemaResp.Schema}
+	before := time.Now()
+	var resp resource.CreateResponse
+	resp.State = tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: schemaResp.Schema}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: tfsdk.Config(plan)}, &resp)
+	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+	require.WithinDuration(t, before.Add(30*time.Minute), receivedDeadline, 2*time.Second)
+}
+
+func TestKibanaResource_Create_fallsBackToPackageDefaultTimeout(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	var receivedDeadline time.Time
+	opts := defaultTestKibanaResourceOptions()
+	opts.Create = func(ctx context.Context, _ *clients.KibanaScopedClient, req KibanaWriteRequest[testKibanaResourceModel]) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+		deadline, ok := ctx.Deadline()
+		require.True(t, ok)
+		receivedDeadline = deadline
+		m := req.Plan
+		m.ID = types.StringValue(req.SpaceID + "/" + req.WriteID)
+		return KibanaWriteResult[testKibanaResourceModel]{Model: m}, nil
+	}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	before := time.Now()
+	var resp resource.CreateResponse
+	resp.State = tfsdk.State{Raw: tftypes.NewValue(testKibanaResourceObjectType(), nil), Schema: plan.Schema}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: tfsdk.Config(plan)}, &resp)
+	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+	require.WithinDuration(t, before.Add(DefaultResourceCreateTimeout), receivedDeadline, time.Second)
+}
+
+func TestKibanaResource_Read_nullStoredTimeoutsUsesDefault(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	var receivedDeadline time.Time
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", KibanaResourceOptions[testKibanaResourceModel]{
+		Schema: getTestKibanaResourceSchema,
+		Read: func(ctx context.Context, _ *clients.KibanaScopedClient, _ string, _ string, model testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
+			deadline, ok := ctx.Deadline()
+			require.True(t, ok)
+			receivedDeadline = deadline
+			return model, true, nil
+		},
+		Delete: testKibanaDeleteFunc,
+		Create: testKibanaWriteFuncFound,
+		Update: testKibanaWriteFuncFound,
+	})
+	r.client = factory
+
+	objType := testKibanaResourceObjectTypeWithTimeouts()
+	stateValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                tftypes.NewValue(tftypes.String, "default/my-resource"),
+		"name":              tftypes.NewValue(tftypes.String, "my-resource"),
+		"space_id":          tftypes.NewValue(tftypes.String, "default"),
+		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		"timeouts":          resourceTimeoutsNullValue(),
+	})
+	var schemaResp resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+	state := tfsdk.State{Raw: stateValue, Schema: schemaResp.Schema}
+	before := time.Now()
+	var resp resource.ReadResponse
+	resp.State = state
+	r.Read(ctx, resource.ReadRequest{State: state}, &resp)
+	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+	require.WithinDuration(t, before.Add(DefaultResourceReadTimeout), receivedDeadline, time.Second)
+}
+
+func TestKibanaResource_operations_setContextDeadline(t *testing.T) {
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+
+	type opCase struct {
+		name string
+		run  func(t *testing.T, r *KibanaResource[testKibanaResourceModel], schema rschema.Schema)
+	}
+	cases := []opCase{
+		{
+			name: "read",
+			run: func(t *testing.T, r *KibanaResource[testKibanaResourceModel], schema rschema.Schema) {
+				state := makeTestKibanaResourceState(ctx, t, "default/my-resource")
+				state.Schema = schema
+				var resp resource.ReadResponse
+				resp.State = state
+				r.Read(ctx, resource.ReadRequest{State: state}, &resp)
+				require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+			},
+		},
+		{
+			name: "delete",
+			run: func(t *testing.T, r *KibanaResource[testKibanaResourceModel], schema rschema.Schema) {
+				state := makeTestKibanaResourceState(ctx, t, "default/my-resource")
+				state.Schema = schema
+				var resp resource.DeleteResponse
+				resp.State = state
+				r.Delete(ctx, resource.DeleteRequest{State: state}, &resp)
+				require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+			},
+		},
+		{
+			name: "create",
+			run: func(t *testing.T, r *KibanaResource[testKibanaResourceModel], schema rschema.Schema) {
+				plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+				plan.Schema = schema
+				objType := testKibanaResourceObjectType()
+				var resp resource.CreateResponse
+				resp.State = tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: schema}
+				r.Create(ctx, resource.CreateRequest{Plan: plan, Config: tfsdk.Config(plan)}, &resp)
+				require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+			},
+		},
+		{
+			name: "update",
+			run: func(t *testing.T, r *KibanaResource[testKibanaResourceModel], schema rschema.Schema) {
+				plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
+				plan.Schema = schema
+				state := makeTestKibanaResourceState(ctx, t, "default/my-resource")
+				state.Schema = schema
+				var resp resource.UpdateResponse
+				resp.State = state
+				r.Update(ctx, resource.UpdateRequest{Plan: plan, State: state, Config: tfsdk.Config(plan)}, &resp)
+				require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var sawDeadline bool
+			opts := defaultTestKibanaResourceOptions()
+			opts.Read = func(ctx context.Context, _ *clients.KibanaScopedClient, _ string, _ string, model testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
+				_, sawDeadline = ctx.Deadline()
+				return model, true, nil
+			}
+			opts.Delete = func(ctx context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) diag.Diagnostics {
+				_, sawDeadline = ctx.Deadline()
+				return nil
+			}
+			opts.Create = func(ctx context.Context, _ *clients.KibanaScopedClient, req KibanaWriteRequest[testKibanaResourceModel]) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+				_, sawDeadline = ctx.Deadline()
+				m := req.Plan
+				m.ID = types.StringValue(req.SpaceID + "/" + req.WriteID)
+				return KibanaWriteResult[testKibanaResourceModel]{Model: m}, nil
+			}
+			opts.Update = func(ctx context.Context, _ *clients.KibanaScopedClient, req KibanaWriteRequest[testKibanaResourceModel]) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+				_, sawDeadline = ctx.Deadline()
+				m := req.Plan
+				m.ID = types.StringValue(req.SpaceID + "/" + req.WriteID)
+				return KibanaWriteResult[testKibanaResourceModel]{Model: m}, nil
+			}
+			r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+			r.client = factory
+			var schemaResp resource.SchemaResponse
+			r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+			tc.run(t, r, schemaResp.Schema)
+			require.True(t, sawDeadline, "callback must observe context deadline for %s", tc.name)
+		})
+	}
+}
