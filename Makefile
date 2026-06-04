@@ -291,7 +291,7 @@ fmt: ## Format code
 .PHONY:check-fmt
 check-fmt: fmt ## Check if code is formatted
 	@if [ "`git status --porcelain `" ]; then \
-	  echo "Unformatted files were detected. Please run 'make fmt' to format code, and commit the changes" && echo `git status --porcelain docs/` && exit 1; \
+	  echo "Unformatted files were detected. Please run 'make fmt' to format code, and commit the changes" && echo "" && echo "Changed files:" && git status --porcelain && exit 1; \
 	fi
 
 .PHONY: check-docs
