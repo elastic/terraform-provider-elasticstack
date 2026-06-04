@@ -18,6 +18,7 @@
 package security_entity_store_resolution_group_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -42,6 +43,7 @@ func TestAccDataSourceSecurityEntityStoreResolutionGroup(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_resolution_group.test", "space_id", "default"),
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_resolution_group.test", "id", "default/generic:acc-test-target"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_resolution_group.test", "resolution_group_json"),
+					resource.TestMatchResourceAttr("data.elasticstack_kibana_security_entity_store_resolution_group.test", "resolution_group_json", regexp.MustCompile(`generic:acc-test-target`)),
 				),
 			},
 		},

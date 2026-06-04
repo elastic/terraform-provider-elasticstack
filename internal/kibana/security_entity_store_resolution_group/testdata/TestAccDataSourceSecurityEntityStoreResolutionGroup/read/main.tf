@@ -24,4 +24,5 @@ data "elasticstack_kibana_security_entity_store_resolution_group" "test" {
   depends_on = [elasticstack_kibana_security_entity_store_entity.target]
 
   entity_id = "generic:acc-test-target"
+  space_id  = "default"
 }
