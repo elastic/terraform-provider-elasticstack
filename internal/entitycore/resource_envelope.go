@@ -110,15 +110,22 @@ type WriteFunc[T ElasticsearchResourceModel] func(
 	WriteRequest[T],
 ) (WriteResult[T], diag.Diagnostics)
 
+// ElasticsearchPostReadRequest is passed to [PostReadFunc]. Prior is the model
+// before the read (plan on write path, prior state on plain Read path). State is
+// the freshly-read model returned by the read callback.
+type ElasticsearchPostReadRequest[T ElasticsearchResourceModel] struct {
+	Client  *clients.ElasticsearchScopedClient
+	Prior   T
+	State   T
+	Private any
+}
+
 // PostReadFunc runs after a successful read that persisted state, including
-// read-after-write refresh. It is optional. The privateState argument is the
-// framework response Private field (typically *internal/privatestate.ProviderData).
+// read-after-write refresh. It is optional.
 type PostReadFunc[T ElasticsearchResourceModel] func(
 	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	model T,
-	privateState any,
-) diag.Diagnostics
+	req ElasticsearchPostReadRequest[T],
+) (T, diag.Diagnostics)
 
 // ElasticsearchResourceOptions configures [NewElasticsearchResource]. PostRead
 // is optional; Schema, Read, Delete, Create, and Update must be non-nil or the
@@ -306,13 +313,20 @@ func (r *ElasticsearchResource[T]) Read(ctx context.Context, req resource.ReadRe
 	}
 
 	if found {
-		resp.Diagnostics.Append(resp.State.Set(ctx, &resultModel)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
 		if r.postReadFunc != nil {
-			resp.Diagnostics.Append(r.postReadFunc(ctx, client, resultModel, resp.Private)...)
+			var prDiags diag.Diagnostics
+			resultModel, prDiags = r.postReadFunc(ctx, ElasticsearchPostReadRequest[T]{
+				Client:  client,
+				Prior:   model,
+				State:   resultModel,
+				Private: resp.Private,
+			})
+			resp.Diagnostics.Append(prDiags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 		}
+		resp.Diagnostics.Append(resp.State.Set(ctx, &resultModel)...)
 	} else {
 		resp.State.RemoveResource(ctx)
 	}
@@ -457,14 +471,23 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWri
 		return diags
 	}
 
-	diags.Append(inv.outState.Set(ctx, &stateModel)...)
-	if diags.HasError() {
-		return diags
-	}
+	priorModel := planModel
 
 	if r.postReadFunc != nil {
-		diags.Append(r.postReadFunc(ctx, client, stateModel, inv.privateState)...)
+		var prDiags diag.Diagnostics
+		stateModel, prDiags = r.postReadFunc(ctx, ElasticsearchPostReadRequest[T]{
+			Client:  client,
+			Prior:   priorModel,
+			State:   stateModel,
+			Private: inv.privateState,
+		})
+		diags.Append(prDiags...)
+		if diags.HasError() {
+			return diags
+		}
 	}
+
+	diags.Append(inv.outState.Set(ctx, &stateModel)...)
 
 	return diags
 }

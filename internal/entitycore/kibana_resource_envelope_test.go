@@ -2207,7 +2207,7 @@ func TestNewKibanaResource_Read_skipsPostReadWhenReadFuncError(t *testing.T) {
 	require.False(t, postCalled)
 }
 
-func TestNewKibanaResource_Read_skipsPostReadWhenStateSetFails(t *testing.T) {
+func TestNewKibanaResource_Read_postReadRunsBeforeStateSet(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
@@ -2231,7 +2231,7 @@ func TestNewKibanaResource_Read_skipsPostReadWhenStateSetFails(t *testing.T) {
 	r.Read(ctx, req, &resp)
 
 	require.True(t, resp.Diagnostics.HasError())
-	require.False(t, postCalled)
+	require.True(t, postCalled, "PostRead should run before state set and be called even when state set fails")
 }
 
 func TestNewKibanaResource_Read_postReadReceivesFrameworkPrivateHandle(t *testing.T) {
