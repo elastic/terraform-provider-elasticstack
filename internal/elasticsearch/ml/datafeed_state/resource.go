@@ -48,6 +48,7 @@ func newMLDatafeedStateResource() *mlDatafeedStateResource {
 				Create: 5 * time.Minute,
 				Update: 5 * time.Minute,
 			},
+			SkipReadAfterWrite: true,
 		}),
 	}
 }
