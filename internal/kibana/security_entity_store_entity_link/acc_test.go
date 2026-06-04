@@ -38,21 +38,21 @@ func TestAccResourceSecurityEntityStoreEntityLink(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "target_id", "user:target@example.com"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "target_id", "generic:acc-test-target"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "space_id", "default"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "id", "default/user:target@example.com"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "id", "default/generic:acc-test-target"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity_link.test", "resolution_group_json"),
-					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.*", "user:alias1@example.com"),
-					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.*", "user:alias2@example.com"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.*", "generic:acc-test-alias1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.*", "generic:acc-test-alias2"),
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "target_id", "user:target@example.com"),
-					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.*", "user:alias1@example.com"),
-					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.*", "user:alias3@example.com"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "target_id", "generic:acc-test-target"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.*", "generic:acc-test-alias1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.*", "generic:acc-test-alias3"),
 				),
 			},
 			{

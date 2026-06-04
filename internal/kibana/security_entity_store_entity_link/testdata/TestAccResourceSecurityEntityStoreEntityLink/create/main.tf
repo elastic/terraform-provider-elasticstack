@@ -3,19 +3,19 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_security_entity_store" "store" {
-  entity_types = ["user"]
+  entity_types = ["generic"]
 }
 
 resource "elasticstack_kibana_security_entity_store_entity" "target" {
   depends_on = [elasticstack_kibana_security_entity_store.store]
 
-  entity_type = "user"
-  entity_id   = "user:target@example.com"
+  entity_type = "generic"
+  entity_id   = "generic:acc-test-target"
 
   entity = {
-    id     = "user:target@example.com"
-    name   = "target"
-    type   = "user"
+    id     = "generic:acc-test-target"
+    name   = "acc-test-target"
+    type   = "generic"
     source = ["terraform-acc-test"]
   }
 }
@@ -23,13 +23,13 @@ resource "elasticstack_kibana_security_entity_store_entity" "target" {
 resource "elasticstack_kibana_security_entity_store_entity" "alias1" {
   depends_on = [elasticstack_kibana_security_entity_store.store]
 
-  entity_type = "user"
-  entity_id   = "user:alias1@example.com"
+  entity_type = "generic"
+  entity_id   = "generic:acc-test-alias1"
 
   entity = {
-    id     = "user:alias1@example.com"
-    name   = "alias1"
-    type   = "user"
+    id     = "generic:acc-test-alias1"
+    name   = "acc-test-alias1"
+    type   = "generic"
     source = ["terraform-acc-test"]
   }
 }
@@ -37,13 +37,13 @@ resource "elasticstack_kibana_security_entity_store_entity" "alias1" {
 resource "elasticstack_kibana_security_entity_store_entity" "alias2" {
   depends_on = [elasticstack_kibana_security_entity_store.store]
 
-  entity_type = "user"
-  entity_id   = "user:alias2@example.com"
+  entity_type = "generic"
+  entity_id   = "generic:acc-test-alias2"
 
   entity = {
-    id     = "user:alias2@example.com"
-    name   = "alias2"
-    type   = "user"
+    id     = "generic:acc-test-alias2"
+    name   = "acc-test-alias2"
+    type   = "generic"
     source = ["terraform-acc-test"]
   }
 }
@@ -55,6 +55,6 @@ resource "elasticstack_kibana_security_entity_store_entity_link" "test" {
     elasticstack_kibana_security_entity_store_entity.alias2,
   ]
 
-  target_id  = "user:target@example.com"
-  entity_ids = ["user:alias1@example.com", "user:alias2@example.com"]
+  target_id  = "generic:acc-test-target"
+  entity_ids = ["generic:acc-test-alias1", "generic:acc-test-alias2"]
 }

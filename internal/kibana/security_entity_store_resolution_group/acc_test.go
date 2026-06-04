@@ -38,9 +38,9 @@ func TestAccDataSourceSecurityEntityStoreResolutionGroup(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_resolution_group.test", "entity_id", "user:target@example.com"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_resolution_group.test", "entity_id", "generic:acc-test-target"),
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_resolution_group.test", "space_id", "default"),
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_resolution_group.test", "id", "default/user:target@example.com"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_resolution_group.test", "id", "default/generic:acc-test-target"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_resolution_group.test", "resolution_group_json"),
 				),
 			},

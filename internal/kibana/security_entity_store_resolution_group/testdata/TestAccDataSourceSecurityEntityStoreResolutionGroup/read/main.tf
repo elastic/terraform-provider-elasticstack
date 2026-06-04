@@ -3,19 +3,19 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_security_entity_store" "store" {
-  entity_types = ["user"]
+  entity_types = ["generic"]
 }
 
 resource "elasticstack_kibana_security_entity_store_entity" "target" {
   depends_on = [elasticstack_kibana_security_entity_store.store]
 
-  entity_type = "user"
-  entity_id   = "user:target@example.com"
+  entity_type = "generic"
+  entity_id   = "generic:acc-test-target"
 
   entity = {
-    id     = "user:target@example.com"
-    name   = "target"
-    type   = "user"
+    id     = "generic:acc-test-target"
+    name   = "acc-test-target"
+    type   = "generic"
     source = ["terraform-acc-test"]
   }
 }
@@ -23,5 +23,5 @@ resource "elasticstack_kibana_security_entity_store_entity" "target" {
 data "elasticstack_kibana_security_entity_store_resolution_group" "test" {
   depends_on = [elasticstack_kibana_security_entity_store_entity.target]
 
-  entity_id = "user:target@example.com"
+  entity_id = "generic:acc-test-target"
 }

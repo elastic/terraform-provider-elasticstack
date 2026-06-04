@@ -40,7 +40,7 @@ func TestAccResourceSecurityEntityStoreEntityLink_Validation(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
-				ExpectError:              regexp.MustCompile(`size must be at least`),
+				ExpectError:              regexp.MustCompile(`must contain at least`),
 			},
 		},
 	})

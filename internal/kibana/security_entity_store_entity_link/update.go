@@ -73,7 +73,7 @@ func updateEntityLink(ctx context.Context, client *clients.KibanaScopedClient, r
 			diags.AddError("Failed to unlink entities", err.Error())
 			return entitycore.KibanaWriteResult[entityLinkModel]{}, diags
 		}
-		if resp.StatusCode() != http.StatusOK {
+		if resp.StatusCode() != http.StatusOK && resp.StatusCode() != http.StatusNotFound {
 			diags.Append(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)...)
 			return entitycore.KibanaWriteResult[entityLinkModel]{}, diags
 		}
