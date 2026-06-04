@@ -775,6 +775,43 @@ func (r *overridingEnvelopeTestResource) Update(context.Context, resource.Update
 	r.updateCalled = true
 }
 
+func TestNewElasticsearchResource_Create_skipReadAfterWriteUsesWriteResult(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	readAfterWriteCalled := false
+	readFunc := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, model testResourceModel) (testResourceModel, bool, diag.Diagnostics) {
+		readAfterWriteCalled = true
+		model.Name = types.StringValue(model.Name.ValueString() + "-read")
+		return model, true, nil
+	}
+	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
+		Schema:             getTestResourceSchema,
+		Read:               readFunc,
+		Delete:             testDeleteFunc,
+		Create:             testWriteFuncFoundCreate,
+		Update:             testWriteFuncFoundUpdate,
+		SkipReadAfterWrite: true,
+	})
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
+	objType := testResourceObjectType()
+	respState := tfsdk.State{
+		Raw:    tftypes.NewValue(objType, nil),
+		Schema: testResourceSchemaWithConnectionBlock(ctx),
+	}
+	resp := resource.CreateResponse{State: respState}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: tfsdk.Config(plan)}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.False(t, readAfterWriteCalled, "read callback must not run during Create when SkipReadAfterWrite is set")
+	var result testResourceModel
+	require.False(t, resp.State.Get(ctx, &result).HasError())
+	require.Equal(t, "cluster/user1", result.ID.ValueString())
+	require.Equal(t, "user1", result.Name.ValueString(), "state must reflect write result, not read-after-write")
+}
+
 func TestNewElasticsearchResource_Create_happyPath(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

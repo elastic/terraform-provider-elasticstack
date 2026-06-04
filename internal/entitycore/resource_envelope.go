@@ -145,6 +145,13 @@ type ElasticsearchResourceOptions[T ElasticsearchResourceModel] struct {
 	Update   WriteFunc[T]
 	PostRead PostReadFunc[T]
 	Timeouts ResourceTimeouts
+	// SkipReadAfterWrite, when true, persists the write callback's WriteResult.Model
+	// to state directly instead of re-reading via the read callback after Create/Update.
+	// Use for resources whose write already returns the authoritative post-write state
+	// and where a generic re-read would lose information (e.g. a transient state that the
+	// write path detected but a subsequent read cannot reconstruct). The read callback is
+	// still used for Read/refresh.
+	SkipReadAfterWrite bool
 }
 
 // ElasticsearchResource implements [resource.Resource] and related interfaces
@@ -157,13 +164,14 @@ type ElasticsearchResourceOptions[T ElasticsearchResourceModel] struct {
 // contract, and may choose to implement ImportState.
 type ElasticsearchResource[T ElasticsearchResourceModel] struct {
 	*ResourceBase
-	schemaFactory func(context.Context) rschema.Schema
-	readFunc      elasticsearchReadFunc[T]
-	deleteFunc    elasticsearchDeleteFunc[T]
-	createFunc    WriteFunc[T]
-	updateFunc    WriteFunc[T]
-	postReadFunc  PostReadFunc[T]
-	timeouts      ResourceTimeouts
+	schemaFactory      func(context.Context) rschema.Schema
+	readFunc           elasticsearchReadFunc[T]
+	deleteFunc         elasticsearchDeleteFunc[T]
+	createFunc         WriteFunc[T]
+	updateFunc         WriteFunc[T]
+	postReadFunc       PostReadFunc[T]
+	timeouts           ResourceTimeouts
+	skipReadAfterWrite bool
 }
 
 // PlaceholderElasticsearchWriteCallback returns a write callback that fails if
@@ -207,14 +215,15 @@ func UpdateNotSupportedWriteCallback[T ElasticsearchResourceModel]() WriteFunc[T
 // diagnostics instead of invoking nil callbacks.
 func NewElasticsearchResource[T ElasticsearchResourceModel](name string, opts ElasticsearchResourceOptions[T]) *ElasticsearchResource[T] {
 	return &ElasticsearchResource[T]{
-		ResourceBase:  NewResourceBase(ComponentElasticsearch, name),
-		schemaFactory: opts.Schema,
-		readFunc:      opts.Read,
-		deleteFunc:    opts.Delete,
-		createFunc:    opts.Create,
-		updateFunc:    opts.Update,
-		postReadFunc:  opts.PostRead,
-		timeouts:      opts.Timeouts,
+		ResourceBase:       NewResourceBase(ComponentElasticsearch, name),
+		schemaFactory:      opts.Schema,
+		readFunc:           opts.Read,
+		deleteFunc:         opts.Delete,
+		createFunc:         opts.Create,
+		updateFunc:         opts.Update,
+		postReadFunc:       opts.PostRead,
+		timeouts:           opts.Timeouts,
+		skipReadAfterWrite: opts.SkipReadAfterWrite,
 	}
 }
 
@@ -496,31 +505,38 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWri
 		return diags
 	}
 
-	readResourceID, idDiags := resolveElasticsearchReadResourceID(written.Model, writeKey)
-	diags.Append(idDiags...)
-	if diags.HasError() {
-		return diags
-	}
-	if readResourceID == "" {
-		diags.AddError(
-			"Invalid resource identifier",
-			"The resolved read identity is empty after write; cannot refresh.",
-		)
-		return diags
-	}
+	var stateModel T
+	if r.skipReadAfterWrite {
+		stateModel = written.Model
+	} else {
+		readResourceID, idDiags := resolveElasticsearchReadResourceID(written.Model, writeKey)
+		diags.Append(idDiags...)
+		if diags.HasError() {
+			return diags
+		}
+		if readResourceID == "" {
+			diags.AddError(
+				"Invalid resource identifier",
+				"The resolved read identity is empty after write; cannot refresh.",
+			)
+			return diags
+		}
 
-	stateModel, found, readDiags := r.readFunc(ctx, client, readResourceID, written.Model)
-	diags.Append(readDiags...)
-	if diags.HasError() {
-		return diags
-	}
+		var found bool
+		var readDiags diag.Diagnostics
+		stateModel, found, readDiags = r.readFunc(ctx, client, readResourceID, written.Model)
+		diags.Append(readDiags...)
+		if diags.HasError() {
+			return diags
+		}
 
-	if !found {
-		diags.AddError(
-			"Resource not found",
-			fmt.Sprintf("%s_%s %q was not found after write", r.component, r.resourceName, writeKey),
-		)
-		return diags
+		if !found {
+			diags.AddError(
+				"Resource not found",
+				fmt.Sprintf("%s_%s %q was not found after write", r.component, r.resourceName, writeKey),
+			)
+			return diags
+		}
 	}
 
 	preserveModelTimeouts(&stateModel, planModel.GetTimeouts())
