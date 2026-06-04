@@ -18,7 +18,6 @@
 package entitycore
 
 import (
-	"reflect"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -44,6 +43,13 @@ func (f ResourceTimeoutsField) GetTimeouts() timeouts.Value {
 	return f.Timeouts
 }
 
+// SetTimeouts stores the envelope-owned timeouts value. It is promoted to the
+// pointer of any model embedding ResourceTimeoutsField, letting the envelope
+// restore the value on callback-returned models without reflection.
+func (f *ResourceTimeoutsField) SetTimeouts(value timeouts.Value) {
+	f.Timeouts = value
+}
+
 // WithResourceTimeouts is the timeouts portion of the resource model contract.
 // Concrete resource models satisfy it by embedding [ResourceTimeoutsField] (or
 // by declaring an equivalent field plus method).
@@ -67,19 +73,7 @@ type ResourceTimeouts struct {
 // returned model before State.Set so conversion succeeds when callbacks reconstruct
 // the struct without ResourceTimeoutsField (zero timeouts.Value{} / Object[]).
 func preserveModelTimeouts(model any, value timeouts.Value) {
-	if model == nil {
-		return
-	}
-	v := reflect.ValueOf(model)
-	if v.Kind() != reflect.Pointer || v.IsNil() {
-		return
-	}
-	el := v.Elem()
-	if f := el.FieldByName("ResourceTimeoutsField"); f.IsValid() && f.CanSet() {
-		f.Set(reflect.ValueOf(ResourceTimeoutsField{Timeouts: value}))
-		return
-	}
-	if f := el.FieldByName("Timeouts"); f.IsValid() && f.CanSet() {
-		f.Set(reflect.ValueOf(value))
+	if setter, ok := model.(interface{ SetTimeouts(value timeouts.Value) }); ok {
+		setter.SetTimeouts(value)
 	}
 }
