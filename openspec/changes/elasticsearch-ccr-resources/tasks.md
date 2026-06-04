@@ -1,6 +1,6 @@
 ## 1. API client layer
 
-- [ ] 1.1 Create `internal/clients/elasticsearch/ccr.go` with the following exported functions (all accept `ctx context.Context` and `apiClient *clients.ElasticsearchScopedClient`):
+- [x] 1.1 Create `internal/clients/elasticsearch/ccr.go` with the following exported functions (all accept `ctx context.Context` and `apiClient *clients.ElasticsearchScopedClient`):
   - `CreateFollowerIndex(ctx, apiClient, indexName string, req *follow.Request) fwdiags.Diagnostics`
   - `GetFollowerIndex(ctx, apiClient, indexName string) (*types.FollowerIndex, fwdiags.Diagnostics)` — returns `nil, nil` when not found (404)
   - `PauseFollowerIndex(ctx, apiClient, indexName string) fwdiags.Diagnostics`
@@ -14,8 +14,8 @@
   - `PauseAutoFollowPattern(ctx, apiClient, name string) fwdiags.Diagnostics`
   - `ResumeAutoFollowPattern(ctx, apiClient, name string) fwdiags.Diagnostics`
   - `DeleteAutoFollowPattern(ctx, apiClient, name string) fwdiags.Diagnostics`
-- [ ] 1.2 Use `typedClient.Ccr.*` from the go-elasticsearch v8 typed client in all functions (mirroring `ilm.go` which uses `typedClient.Ilm.*`)
-- [ ] 1.3 Wrap errors with `diagutil.FrameworkDiagFromError`; handle 404 (not found) using the existing `IsNotFoundElasticsearchError` helper from `internal/clients/elasticsearch/`
+- [x] 1.2 Use `typedClient.Ccr.*` from the go-elasticsearch v8 typed client in all functions (mirroring `ilm.go` which uses `typedClient.Ilm.*`)
+- [x] 1.3 Wrap errors with `diagutil.FrameworkDiagFromError`; handle 404 (not found) using the existing `IsNotFoundElasticsearchError` helper from `internal/clients/elasticsearch/`
 
 ## 2. `elasticstack_elasticsearch_ccr_follower_index` resource
 
