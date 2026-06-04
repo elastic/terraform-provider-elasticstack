@@ -101,7 +101,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
 				Validators: []validator.String{
-					stringvalidator.ConflictsWith(path.MatchRoot("entity")),
+					stringvalidator.ConflictsWith(path.MatchRoot(attrEntity)),
 				},
 			},
 			"host_json": schema.StringAttribute{
@@ -173,7 +173,7 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			// Typed blocks
-			"entity": schema.SingleNestedAttribute{
+			attrEntity: schema.SingleNestedAttribute{
 				Description: "Core entity fields shared across all entity types.",
 				Optional:    true,
 				Computed:    true,
@@ -830,7 +830,7 @@ func getSchema(_ context.Context) schema.Schema {
 							},
 						},
 					},
-					"value": schema.Float64Attribute{
+					attrValue: schema.Float64Attribute{
 						Description: "Asset value.",
 						Optional:    true,
 						Computed:    true,

@@ -20,14 +20,11 @@ package entity
 import (
 	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func updateEntity(
@@ -45,18 +42,9 @@ func updateEntity(
 		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}
 
-	if entityMap, ok := bodyMap["entity"].(map[string]any); ok {
-		entityMap["id"] = entityID
-		bodyMap["entity"] = entityMap
-	} else {
-		bodyMap["entity"] = map[string]any{"id": entityID}
-	}
-
-	bodyBytes, err := json.Marshal(bodyMap)
-	if err != nil {
-		return entitycore.KibanaWriteResult[tfModel]{}, diag.Diagnostics{
-			diag.NewErrorDiagnostic("JSON marshal error", err.Error()),
-		}
+	bodyBytes, diags := injectEntityIDAndMarshal(bodyMap, entityID)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}
 
 	force := false
@@ -68,21 +56,5 @@ func updateEntity(
 		return entitycore.KibanaWriteResult[tfModel]{}, d
 	}
 
-	readModel, found, readDiags := readEntity(ctx, client, buildID(spaceID, entityID), spaceID, plan)
-	if readDiags.HasError() {
-		return entitycore.KibanaWriteResult[tfModel]{}, readDiags
-	}
-	if !found {
-		return entitycore.KibanaWriteResult[tfModel]{}, diag.Diagnostics{
-			diag.NewErrorDiagnostic("Entity not found after update", fmt.Sprintf("Entity %s was not found after update", entityID)),
-		}
-	}
-
-	readModel.ID = types.StringValue(buildID(spaceID, entityID))
-	readModel.SpaceID = types.StringValue(spaceID)
-	readModel.EntityType = types.StringValue(entityType)
-	readModel.EntityID = types.StringValue(entityID)
-	readModel.Force = plan.Force
-
-	return entitycore.KibanaWriteResult[tfModel]{Model: readModel}, nil
+	return entitycore.KibanaWriteResult[tfModel]{Model: plan}, nil
 }
