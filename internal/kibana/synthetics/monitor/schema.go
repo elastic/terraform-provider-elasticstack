@@ -1265,6 +1265,13 @@ func (v tfModelV0) GetResourceID() types.String {
 	return v.ID // fallback for legacy plain IDs
 }
 
-func (v tfModelV0) GetSpaceID() types.String { return v.SpaceID }
+func (v tfModelV0) GetSpaceID() types.String {
+	if v.SpaceID.IsNull() || v.SpaceID.IsUnknown() {
+		return types.StringValue("")
+	}
+	return v.SpaceID
+}
+
+func (v tfModelV0) IsUnscopedSpace() bool { return true }
 
 func (v tfModelV0) GetKibanaConnection() types.List { return v.KibanaConnection }

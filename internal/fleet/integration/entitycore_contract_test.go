@@ -29,6 +29,7 @@ import (
 func TestIntegrationModel_satisfiesKibanaResourceModel(t *testing.T) {
 	t.Parallel()
 	var _ entitycore.KibanaResourceModel = integrationModel{}
+	var _ entitycore.KibanaUnscopedSpace = integrationModel{}
 }
 
 func TestIntegrationResource_embedsEntityCoreKibanaResource(t *testing.T) {

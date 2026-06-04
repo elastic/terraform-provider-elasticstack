@@ -52,6 +52,9 @@ func (m integrationModel) GetResourceID() types.String {
 }
 
 func (m integrationModel) GetSpaceID() types.String {
+	if m.SpaceID.IsNull() || m.SpaceID.IsUnknown() {
+		return types.StringValue("")
+	}
 	return m.SpaceID
 }
 
@@ -60,7 +63,7 @@ func (m integrationModel) GetKibanaConnection() types.List {
 }
 
 func (m integrationModel) IsUnscopedSpace() bool {
-	return m.SpaceID.IsNull() || m.SpaceID.IsUnknown()
+	return true
 }
 
 func getPackageID(name string, version string) string {

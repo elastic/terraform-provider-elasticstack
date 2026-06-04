@@ -29,6 +29,7 @@ import (
 func TestTfModelV0_satisfiesKibanaResourceModel(t *testing.T) {
 	t.Parallel()
 	var _ entitycore.KibanaResourceModel = tfModelV0{}
+	var _ entitycore.KibanaUnscopedSpace = tfModelV0{}
 }
 
 func TestResource_embedsEntityCoreKibanaResource(t *testing.T) {
