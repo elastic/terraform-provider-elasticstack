@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	goversion "github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -31,17 +30,17 @@ import (
 var minVersionCustomPackageGet = goversion.Must(goversion.NewVersion("8.2.0"))
 
 type customIntegrationModel struct {
-	ID                        types.String   `tfsdk:"id"`
-	KibanaConnection          types.List     `tfsdk:"kibana_connection"`
-	PackagePath               types.String   `tfsdk:"package_path"`
-	PackageName               types.String   `tfsdk:"package_name"`
-	PackageVersion            types.String   `tfsdk:"package_version"`
-	Checksum                  types.String   `tfsdk:"checksum"`
-	IgnoreMappingUpdateErrors types.Bool     `tfsdk:"ignore_mapping_update_errors"`
-	SkipDataStreamRollover    types.Bool     `tfsdk:"skip_data_stream_rollover"`
-	SkipDestroy               types.Bool     `tfsdk:"skip_destroy"`
-	SpaceID                   types.String   `tfsdk:"space_id"`
-	Timeouts                  timeouts.Value `tfsdk:"timeouts"`
+	entitycore.KibanaConnectionField
+	entitycore.ResourceTimeoutsField
+	ID                        types.String `tfsdk:"id"`
+	PackagePath               types.String `tfsdk:"package_path"`
+	PackageName               types.String `tfsdk:"package_name"`
+	PackageVersion            types.String `tfsdk:"package_version"`
+	Checksum                  types.String `tfsdk:"checksum"`
+	IgnoreMappingUpdateErrors types.Bool   `tfsdk:"ignore_mapping_update_errors"`
+	SkipDataStreamRollover    types.Bool   `tfsdk:"skip_data_stream_rollover"`
+	SkipDestroy               types.Bool   `tfsdk:"skip_destroy"`
+	SpaceID                   types.String `tfsdk:"space_id"`
 }
 
 func (m customIntegrationModel) GetID() types.String {
@@ -73,10 +72,6 @@ func (m customIntegrationModel) GetSpaceID() types.String {
 		return types.StringValue("default")
 	}
 	return m.SpaceID
-}
-
-func (m customIntegrationModel) GetKibanaConnection() types.List {
-	return m.KibanaConnection
 }
 
 var customIntegrationVersionReqs = []entitycore.VersionRequirement{{

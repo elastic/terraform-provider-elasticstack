@@ -19,6 +19,7 @@ package datafeedstate
 
 import (
 	"context"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -36,14 +37,17 @@ type mlDatafeedStateResource struct {
 }
 
 func newMLDatafeedStateResource() *mlDatafeedStateResource {
-	placeholder := entitycore.PlaceholderElasticsearchWriteCallback[MLDatafeedStateData]()
 	return &mlDatafeedStateResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[MLDatafeedStateData]("ml_datafeed_state", entitycore.ElasticsearchResourceOptions[MLDatafeedStateData]{
 			Schema: GetSchema,
 			Read:   readMLDatafeedState,
 			Delete: deleteMLDatafeedState,
-			Create: placeholder,
-			Update: placeholder,
+			Create: writeMLDatafeedState,
+			Update: writeMLDatafeedState,
+			Timeouts: entitycore.ResourceTimeouts{
+				Create: 5 * time.Minute,
+				Update: 5 * time.Minute,
+			},
 		}),
 	}
 }

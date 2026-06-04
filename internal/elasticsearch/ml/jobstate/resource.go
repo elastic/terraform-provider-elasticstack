@@ -19,6 +19,7 @@ package jobstate
 
 import (
 	"context"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -36,14 +37,17 @@ type mlJobStateResource struct {
 }
 
 func newMLJobStateResource() *mlJobStateResource {
-	placeholder := entitycore.PlaceholderElasticsearchWriteCallback[MLJobStateData]()
 	return &mlJobStateResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[MLJobStateData]("ml_job_state", entitycore.ElasticsearchResourceOptions[MLJobStateData]{
 			Schema: GetSchema,
 			Read:   readMLJobState,
 			Delete: deleteMLJobState,
-			Create: placeholder,
-			Update: placeholder,
+			Create: writeMLJobState,
+			Update: writeMLJobState,
+			Timeouts: entitycore.ResourceTimeouts{
+				Create: 5 * time.Minute,
+				Update: 5 * time.Minute,
+			},
 		}),
 	}
 }
