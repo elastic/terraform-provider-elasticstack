@@ -1,16 +1,16 @@
 ## 1. fleet/integration migration
 
-- [ ] 1.1 Add `KibanaResourceModel` interface methods to `integrationModel` (`GetID`, `GetResourceID`, `GetSpaceID`, `GetKibanaConnection`)
-- [ ] 1.2 Add `IsUnscopedSpace()` to `integrationModel` returning true when SpaceID is null or unknown
-- [ ] 1.3 Replace `*entitycore.ResourceBase` embed with `*entitycore.KibanaResource[integrationModel]` in `resource.go`
-- [ ] 1.4 Remove explicit `kibana_connection` schema block from `schema.go` (envelope injects it)
-- [ ] 1.5 Rewrite `create.go` as a `KibanaWriteFunc[integrationModel]` (install logic + set ID/SpaceID, return `KibanaWriteResult[T]`)
-- [ ] 1.6 Rewrite `update.go` as a `KibanaWriteFunc[integrationModel]` (delegate to same install logic as create)
-- [ ] 1.7 Rewrite `read.go` as a `readIntegration(ctx, client, resourceID, spaceID, model) (integrationModel, bool, diag.Diagnostics)` callback
-- [ ] 1.8 Rewrite `delete.go` as a `deleteIntegration(ctx, client, resourceID, spaceID, model) diag.Diagnostics` callback
-- [ ] 1.9 Wire all callbacks into `entitycore.NewKibanaResource[integrationModel]` in `resource.go`
-- [ ] 1.10 Add `entitycore_contract_test.go` asserting `*entitycore.KibanaResource[integrationModel]` embedding
-- [ ] 1.11 Verify `make build` passes; run fleet/integration acceptance tests
+- [x] 1.1 Add `KibanaResourceModel` interface methods to `integrationModel` (`GetID`, `GetResourceID`, `GetSpaceID`, `GetKibanaConnection`)
+- [x] 1.2 Add `IsUnscopedSpace()` to `integrationModel` returning true when SpaceID is null or unknown
+- [x] 1.3 Replace `*entitycore.ResourceBase` embed with `*entitycore.KibanaResource[integrationModel]` in `resource.go`
+- [x] 1.4 Remove explicit `kibana_connection` schema block from `schema.go` (envelope injects it)
+- [x] 1.5 Rewrite `create.go` as a `KibanaWriteFunc[integrationModel]` (install logic + set ID/SpaceID, return `KibanaWriteResult[T]`)
+- [x] 1.6 Rewrite `update.go` as a `KibanaWriteFunc[integrationModel]` (delegate to same install logic as create)
+- [x] 1.7 Rewrite `read.go` as a `readIntegration(ctx, client, resourceID, spaceID, model) (integrationModel, bool, diag.Diagnostics)` callback
+- [x] 1.8 Rewrite `delete.go` as a `deleteIntegration(ctx, client, resourceID, spaceID, model) diag.Diagnostics` callback
+- [x] 1.9 Wire all callbacks into `entitycore.NewKibanaResource[integrationModel]` in `resource.go`
+- [x] 1.10 Add `entitycore_contract_test.go` asserting `*entitycore.KibanaResource[integrationModel]` embedding
+- [x] 1.11 Verify `make build` passes; run fleet/integration acceptance tests
 
 ## 2. kibana/synthetics/monitor migration
 
