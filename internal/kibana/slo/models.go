@@ -110,7 +110,7 @@ func (m tfModel) GetVersionRequirements(_ context.Context) ([]entitycore.Version
 		if diags.HasError() {
 			return nil, diags
 		}
-		if typeutils.IsKnown(settingsModel.PreventInitialBackfill) {
+		if typeutils.IsKnown(settingsModel.PreventInitialBackfill) && settingsModel.PreventInitialBackfill.ValueBool() {
 			reqs = append(reqs, entitycore.VersionRequirement{
 				MinVersion: *SLOSupportsPreventInitialBackfillMinVersion,
 				ErrorMessage: "The 'prevent_initial_backfill' setting requires Elastic Stack version " +
