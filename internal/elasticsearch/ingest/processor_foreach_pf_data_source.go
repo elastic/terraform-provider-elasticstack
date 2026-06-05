@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -46,11 +47,11 @@ func (m *processorForeachModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	if IsKnown(m.Field) {
+	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
 
-	if IsKnown(m.Processor) {
+	if typeutils.IsKnown(m.Processor) {
 		proc := make(map[string]any)
 		if err := json.Unmarshal([]byte(m.Processor.ValueString()), &proc); err != nil {
 			diags.AddError("Failed to parse processor JSON", err.Error())

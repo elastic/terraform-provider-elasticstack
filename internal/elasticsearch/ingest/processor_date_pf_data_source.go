@@ -20,6 +20,7 @@ package ingest
 import (
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -49,7 +50,7 @@ func (m *processorDateModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	if IsKnown(m.Field) {
+	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
 	if m.TargetField.IsNull() || m.TargetField.IsUnknown() {
@@ -58,11 +59,11 @@ func (m *processorDateModel) MarshalBody() (any, diag.Diagnostics) {
 	} else {
 		body.TargetField = m.TargetField.ValueString()
 	}
-	if IsKnown(m.Formats) {
+	if typeutils.IsKnown(m.Formats) {
 		elems := make([]string, 0, len(m.Formats.Elements()))
 		for _, elem := range m.Formats.Elements() {
 			str, ok := elem.(types.String)
-			if !ok || !IsKnown(str) {
+			if !ok || !typeutils.IsKnown(str) {
 				if !ok {
 					diags.AddError("Invalid formats element type", "expected types.String")
 				} else {

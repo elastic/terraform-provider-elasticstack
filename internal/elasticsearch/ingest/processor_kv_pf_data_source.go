@@ -52,21 +52,21 @@ func (m *processorKVModel) MarshalBody() (any, diag.Diagnostics) {
 	}
 	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
 
-	if IsKnown(m.FieldSplit) {
+	if typeutils.IsKnown(m.FieldSplit) {
 		body.FieldSplit = m.FieldSplit.ValueString()
 	}
-	if IsKnown(m.ValueSplit) {
+	if typeutils.IsKnown(m.ValueSplit) {
 		body.ValueSplit = m.ValueSplit.ValueString()
 	}
 	body.IncludeKeys = typeutils.StringSetElements(m.IncludeKeys, &diags)
 	body.ExcludeKeys = typeutils.StringSetElements(m.ExcludeKeys, &diags)
-	if IsKnown(m.Prefix) {
+	if typeutils.IsKnown(m.Prefix) {
 		body.Prefix = m.Prefix.ValueString()
 	}
-	if IsKnown(m.TrimKey) {
+	if typeutils.IsKnown(m.TrimKey) {
 		body.TrimKey = m.TrimKey.ValueString()
 	}
-	if IsKnown(m.TrimValue) {
+	if typeutils.IsKnown(m.TrimValue) {
 		body.TrimValue = m.TrimValue.ValueString()
 	}
 	if m.StripBrackets.IsNull() || m.StripBrackets.IsUnknown() {

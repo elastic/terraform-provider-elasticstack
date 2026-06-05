@@ -20,6 +20,7 @@ package ingest
 import (
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -43,14 +44,14 @@ func (m *processorSetSecurityUserModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	if IsKnown(m.Field) {
+	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	if IsKnown(m.Properties) {
+	if typeutils.IsKnown(m.Properties) {
 		elems := make([]string, 0, len(m.Properties.Elements()))
 		for _, elem := range m.Properties.Elements() {
 			str, ok := elem.(types.String)
-			if !ok || !IsKnown(str) {
+			if !ok || !typeutils.IsKnown(str) {
 				if !ok {
 					diags.AddError("Invalid properties element type", "expected types.String")
 				} else {

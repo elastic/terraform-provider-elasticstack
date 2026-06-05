@@ -20,6 +20,7 @@ package ingest
 import (
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -45,30 +46,30 @@ func (m *processorInferenceModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	if IsKnown(m.ModelID) {
+	if typeutils.IsKnown(m.ModelID) {
 		body.ModelID = m.ModelID.ValueString()
 	}
 
-	if IsKnown(m.InputOutput) {
+	if typeutils.IsKnown(m.InputOutput) {
 		io := &processorInferenceInputOutputBody{}
 		if v, ok := m.InputOutput.Attributes()["input_field"]; ok {
-			if s, ok := v.(types.String); ok && IsKnown(s) {
+			if s, ok := v.(types.String); ok && typeutils.IsKnown(s) {
 				io.InputField = s.ValueString()
 			}
 		}
 		if v, ok := m.InputOutput.Attributes()["output_field"]; ok {
-			if s, ok := v.(types.String); ok && IsKnown(s) {
+			if s, ok := v.(types.String); ok && typeutils.IsKnown(s) {
 				io.OutputField = s.ValueString()
 			}
 		}
 		body.InputOutput = io
 	}
 
-	if IsKnown(m.FieldMap) {
+	if typeutils.IsKnown(m.FieldMap) {
 		fm := make(map[string]string, len(m.FieldMap.Elements()))
 		for k, v := range m.FieldMap.Elements() {
 			str, ok := v.(types.String)
-			if !ok || !IsKnown(str) {
+			if !ok || !typeutils.IsKnown(str) {
 				if !ok {
 					diags.AddError("Invalid field_map element type", "expected types.String")
 				} else {
@@ -81,7 +82,7 @@ func (m *processorInferenceModel) MarshalBody() (any, diag.Diagnostics) {
 		body.FieldMap = fm
 	}
 
-	if IsKnown(m.TargetField) {
+	if typeutils.IsKnown(m.TargetField) {
 		body.TargetField = m.TargetField.ValueString()
 	}
 

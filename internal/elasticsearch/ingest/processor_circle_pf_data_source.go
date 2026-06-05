@@ -20,6 +20,7 @@ package ingest
 import (
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -47,10 +48,10 @@ func (m *processorCircleModel) MarshalBody() (any, diag.Diagnostics) {
 	}
 	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
 
-	if IsKnown(m.ErrorDistance) {
+	if typeutils.IsKnown(m.ErrorDistance) {
 		body.ErrorDistance = m.ErrorDistance.ValueFloat64()
 	}
-	if IsKnown(m.ShapeType) {
+	if typeutils.IsKnown(m.ShapeType) {
 		body.ShapeType = m.ShapeType.ValueString()
 	}
 

@@ -20,6 +20,7 @@ package ingest
 import (
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -44,13 +45,13 @@ func (m *processorJoinModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	if IsKnown(m.Field) {
+	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	if IsKnown(m.Separator) {
+	if typeutils.IsKnown(m.Separator) {
 		body.Separator = m.Separator.ValueString()
 	}
-	if IsKnown(m.TargetField) {
+	if typeutils.IsKnown(m.TargetField) {
 		body.TargetField = m.TargetField.ValueString()
 	}
 

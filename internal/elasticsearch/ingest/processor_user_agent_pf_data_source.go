@@ -20,6 +20,7 @@ package ingest
 import (
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -46,14 +47,14 @@ func (m *processorUserAgentModel) MarshalBody() (any, diag.Diagnostics) {
 	}
 	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
 
-	if IsKnown(m.RegexFile) {
+	if typeutils.IsKnown(m.RegexFile) {
 		body.RegexFile = m.RegexFile.ValueString()
 	}
-	if IsKnown(m.Properties) {
+	if typeutils.IsKnown(m.Properties) {
 		elems := make([]string, 0, len(m.Properties.Elements()))
 		for _, elem := range m.Properties.Elements() {
 			str, ok := elem.(types.String)
-			if !ok || !IsKnown(str) {
+			if !ok || !typeutils.IsKnown(str) {
 				if !ok {
 					diags.AddError("Invalid properties element type", "expected types.String")
 				} else {
@@ -65,7 +66,7 @@ func (m *processorUserAgentModel) MarshalBody() (any, diag.Diagnostics) {
 		}
 		body.Properties = elems
 	}
-	if IsKnown(m.ExtractDeviceType) {
+	if typeutils.IsKnown(m.ExtractDeviceType) {
 		v := m.ExtractDeviceType.ValueBool()
 		body.ExtractDeviceType = &v
 	}
