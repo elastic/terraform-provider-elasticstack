@@ -23,6 +23,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -76,51 +77,81 @@ func getSchema(_ context.Context) schema.Schema {
 				MarkdownDescription: descMaxOutstandingReadRequests,
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 			"max_outstanding_write_requests": schema.Int64Attribute{
 				MarkdownDescription: descMaxOutstandingWriteRequests,
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 			"max_read_request_operation_count": schema.Int64Attribute{
 				MarkdownDescription: descMaxReadRequestOperationCount,
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 			"max_read_request_size": schema.StringAttribute{
 				MarkdownDescription: descMaxReadRequestSize,
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"max_retry_delay": schema.StringAttribute{
 				MarkdownDescription: descMaxRetryDelay,
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"max_write_buffer_count": schema.Int64Attribute{
 				MarkdownDescription: descMaxWriteBufferCount,
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 			"max_write_buffer_size": schema.StringAttribute{
 				MarkdownDescription: descMaxWriteBufferSize,
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"max_write_request_operation_count": schema.Int64Attribute{
 				MarkdownDescription: descMaxWriteRequestOperationCount,
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 			"max_write_request_size": schema.StringAttribute{
 				MarkdownDescription: descMaxWriteRequestSize,
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"read_poll_timeout": schema.StringAttribute{
 				MarkdownDescription: descReadPollTimeout,
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"delete_index_on_destroy": schema.BoolAttribute{
 				MarkdownDescription: descDeleteIndexOnDestroy,

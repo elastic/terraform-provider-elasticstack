@@ -5,6 +5,7 @@ services:
       - dev-elasticsearch:/usr/share/elasticsearch/data
     ports:
       - ${ELASTICSEARCH_BIND:-127.0.0.1}:${ELASTICSEARCH_PORT}:9200
+      - ${ELASTICSEARCH_BIND:-127.0.0.1}:${ELASTICSEARCH_TRANSPORT_PORT:-9300}:9300
     environment:
       discovery.type: single-node
       ELASTIC_PASSWORD: ${ELASTICSEARCH_PASSWORD}

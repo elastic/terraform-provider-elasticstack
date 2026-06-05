@@ -6,6 +6,10 @@ variable "remote_proxy_address" {
   type = string
 }
 
+variable "leader_data_stream_name" {
+  type = string
+}
+
 variable "data_stream_name" {
   type = string
 }
@@ -31,34 +35,15 @@ resource "elasticstack_elasticsearch_cluster_settings" "ccr_remote" {
   }
 }
 
-resource "elasticstack_elasticsearch_index_lifecycle" "leader_ilm" {
-  name = var.data_stream_name
-
-  hot {
-    min_age = "1h"
-    set_priority {
-      priority = 10
-    }
-    rollover {
-      max_age = "1d"
-    }
-    readonly {}
-  }
-
-  delete {
-    min_age = "2d"
-    delete {}
-  }
-}
-
 resource "elasticstack_elasticsearch_index_template" "leader_ds_template" {
-  name = var.data_stream_name
-
-  index_patterns = ["${var.data_stream_name}*"]
+  name           = var.leader_data_stream_name
+  index_patterns = ["${var.leader_data_stream_name}*"]
 
   template {
-    settings = jsonencode({
-      "lifecycle.name" = elasticstack_elasticsearch_index_lifecycle.leader_ilm.name
+    mappings = jsonencode({
+      properties = {
+        "@timestamp" = { type = "date" }
+      }
     })
   }
 
@@ -66,7 +51,7 @@ resource "elasticstack_elasticsearch_index_template" "leader_ds_template" {
 }
 
 resource "elasticstack_elasticsearch_data_stream" "leader" {
-  name = var.data_stream_name
+  name = var.leader_data_stream_name
 
   depends_on = [
     elasticstack_elasticsearch_cluster_settings.ccr_remote,
@@ -74,10 +59,15 @@ resource "elasticstack_elasticsearch_data_stream" "leader" {
   ]
 }
 
+# A follower index that replicates a backing index of a remote data stream and
+# attaches the result to a locally named data stream via data_stream_name. The
+# leader data stream and local data stream names differ because the leader and
+# follower share a cluster in the self-remote acceptance environment.
 resource "elasticstack_elasticsearch_ccr_follower_index" "test" {
-  name           = var.follower_index_name
-  remote_cluster = var.remote_cluster_alias
-  leader_index   = var.data_stream_name
+  name             = var.follower_index_name
+  remote_cluster   = var.remote_cluster_alias
+  leader_index     = elasticstack_elasticsearch_data_stream.leader.indices[0].index_name
+  data_stream_name = var.data_stream_name
 
   depends_on = [
     elasticstack_elasticsearch_cluster_settings.ccr_remote,

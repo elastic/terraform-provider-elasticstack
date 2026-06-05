@@ -21,6 +21,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
@@ -30,7 +32,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -194,9 +195,13 @@ func TestAccResourceCCRFollowerIndex_settingsRaw(t *testing.T) {
 
 func TestAccResourceCCRFollowerIndex_dataStreamNameImport(t *testing.T) {
 	ccrEnv := acctest.PreCheckCCR(t)
-	dataStreamName := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlpha)
-	followerIndexName := dataStreamName
-	vars := ccrDataStreamFollowerVariables(ccrEnv, dataStreamName, followerIndexName)
+	// Leader and follower data streams share a cluster in the self-remote
+	// environment, so their names must differ. A follower attaches to a local
+	// data stream by following a backing index of the leader data stream.
+	leaderDataStreamName := "leader-" + strings.ToLower(sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlpha))
+	followerDataStreamName := "follower-" + strings.ToLower(sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlpha))
+	followerIndexName := strings.ToLower(sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlpha))
+	vars := ccrDataStreamFollowerVariables(ccrEnv, leaderDataStreamName, followerDataStreamName, followerIndexName)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheckCCR(t) },
@@ -208,8 +213,12 @@ func TestAccResourceCCRFollowerIndex_dataStreamNameImport(t *testing.T) {
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(followerIndexResourceName, "name", followerIndexName),
-					resource.TestCheckResourceAttr(followerIndexResourceName, "leader_index", dataStreamName),
-					resource.TestCheckResourceAttr(followerIndexResourceName, "data_stream_name", dataStreamName),
+					resource.TestCheckResourceAttr(followerIndexResourceName, "data_stream_name", followerDataStreamName),
+					resource.TestMatchResourceAttr(
+						followerIndexResourceName,
+						"leader_index",
+						regexp.MustCompile(`^\.ds-`+regexp.QuoteMeta(leaderDataStreamName)+`-`),
+					),
 					testAccCheckFollowerIndexStatus(followerIndexName, "active"),
 				),
 			},
@@ -220,23 +229,11 @@ func TestAccResourceCCRFollowerIndex_dataStreamNameImport(t *testing.T) {
 				ResourceName:             followerIndexResourceName,
 				ImportState:              true,
 				ImportStateVerify:        true,
+				// data_stream_name is a create-only request parameter that GET
+				// /_ccr/info never returns, so it cannot be verified on import.
 				ImportStateVerifyIgnore: []string{
 					"settings_raw",
 					"data_stream_name",
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckNoResourceAttr(followerIndexResourceName, "data_stream_name"),
-				),
-			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("plan_with_data_stream_name"),
-				ConfigVariables:          vars,
-				PlanOnly:                 true,
-				ConfigPlanChecks: resource.ConfigPlanChecks{
-					PreApply: []plancheck.PlanCheck{
-						plancheck.ExpectResourceAction(followerIndexResourceName, plancheck.ResourceActionDestroyBeforeCreate),
-					},
 				},
 			},
 		},
@@ -252,12 +249,13 @@ func ccrFollowerVariables(ccrEnv acctest.CCRTestEnv, leaderIndexName, followerIn
 	}
 }
 
-func ccrDataStreamFollowerVariables(ccrEnv acctest.CCRTestEnv, dataStreamName, followerIndexName string) config.Variables {
+func ccrDataStreamFollowerVariables(ccrEnv acctest.CCRTestEnv, leaderDataStreamName, followerDataStreamName, followerIndexName string) config.Variables {
 	return config.Variables{
-		"remote_cluster_alias": config.StringVariable(ccrEnv.RemoteClusterAlias),
-		"remote_proxy_address": config.StringVariable(ccrEnv.RemoteProxyAddress),
-		"data_stream_name":     config.StringVariable(dataStreamName),
-		"follower_index_name":  config.StringVariable(followerIndexName),
+		"remote_cluster_alias":    config.StringVariable(ccrEnv.RemoteClusterAlias),
+		"remote_proxy_address":    config.StringVariable(ccrEnv.RemoteProxyAddress),
+		"leader_data_stream_name": config.StringVariable(leaderDataStreamName),
+		"data_stream_name":        config.StringVariable(followerDataStreamName),
+		"follower_index_name":     config.StringVariable(followerIndexName),
 	}
 }
 

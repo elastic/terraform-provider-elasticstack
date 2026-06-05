@@ -224,3 +224,44 @@ the info API) — see the Write-only attributes decision above.
 - **CI acceptance tests**: Confirm which CI job runs licensed-feature tests and whether trial mode
   on the existing stack is sufficient or a separate cluster is needed. The acceptance tests should
   carry an appropriate skip annotation if a licensed cluster is not available.
+
+## Resolution notes (post-archive, from local acceptance verification)
+
+### Self-remote CCR acceptance test setup
+
+CCR acceptance tests register a self-remote cluster in proxy mode. Proxy-mode remotes open raw
+transport (TCP) connections, so `proxy_address` must be `host:transport_port` (default `9300`), not
+the HTTP port from `ELASTICSEARCH_ENDPOINTS`. In CI the acceptance-test container uses
+`http://elasticsearch:9200`, so the harness derives `elasticsearch:9300` for the self-remote.
+`PreCheckCCR` registers that remote via cluster settings and polls `GET /_remote/info` until
+`connected == true`; if the transport endpoint is unreachable, tests skip with a clear message
+instead of failing at `PUT /_ccr/follow`. `docker-compose.yml` publishes the transport port.
+
+### Create waits for following to start
+
+`PUT /{index}/_ccr/follow` returns before shard follow tasks start
+(`index_following_started: false`). During that window `GET /{index}/_ccr/info` reports a transient
+`status: "paused"` and omits `parameters`. Create therefore polls `GET /_ccr/info` until the
+follower is active with readable parameters before mapping Computed tuning attributes, and the
+pause decision is driven by the desired (planned) status rather than the transient read. Without
+this, an active follower was erroneously paused (`no shard follow tasks`) and Computed attributes
+were left unknown after apply.
+
+### Computed tuning attributes use prior state on update
+
+The Computed tuning attributes carry `UseStateForUnknown` plan modifiers. A paused follower omits
+`parameters`, so on an active→paused update the planned/returned values must come from prior state
+to avoid "unknown value after apply".
+
+### Data stream follower follows a backing index
+
+`_ccr/follow` rejects following a data stream by name (`cannot follow [...] because it is a
+DATA_STREAM`). The `data_stream_name` acceptance test follows a backing index of a leader data
+stream and attaches the follower to a separately named local data stream (the leader and follower
+share a cluster in the self-remote environment).
+
+### Per-process remote alias
+
+The self-remote cluster alias is unique per test process (`acc-ccr-remote-<pid>`) because gotestsum
+runs package binaries concurrently; a shared alias caused cross-package interference on the shared
+persistent remote-cluster setting.
