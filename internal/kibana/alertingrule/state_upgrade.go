@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
@@ -65,7 +66,7 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 		// Check if ID is already in composite format
 		if !strings.Contains(id, "/") {
 			// Not composite - construct from space_id and rule_id
-			spaceID := defaultSpaceID
+			spaceID := clients.DefaultSpaceID
 			if sid, ok := stateMap["space_id"].(string); ok && sid != "" {
 				spaceID = sid
 			}

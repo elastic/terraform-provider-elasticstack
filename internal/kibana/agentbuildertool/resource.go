@@ -32,8 +32,6 @@ var (
 	_                                       resource.ResourceWithImportState = newToolResource()
 	minKibanaAgentBuilderAPIVersion                                          = version.Must(version.NewVersion("9.3.0"))
 	minKibanaAgentBuilderWorkflowAPIVersion                                  = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
-
-	defaultSpaceID = "default"
 )
 
 type ToolResource struct {

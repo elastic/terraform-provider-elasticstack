@@ -15,16 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package connectors
+package clients
 
-// Terraform schema attribute keys shared by the action connector resource and
-// data source.
-const (
-	attrName             = "name"
-	attrConnectorTypeID  = "connector_type_id"
-	attrConfig           = "config"
-	attrSecrets          = "secrets"
-	attrIsDeprecated     = "is_deprecated"
-	attrIsMissingSecrets = "is_missing_secrets"
-	attrIsPreconfigured  = "is_preconfigured"
-)
+// DefaultSpaceID is the Kibana default space identifier used when the resource
+// does not target a specific space.
+const DefaultSpaceID = "default"

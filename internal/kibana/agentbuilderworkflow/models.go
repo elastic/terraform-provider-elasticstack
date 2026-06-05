@@ -77,7 +77,7 @@ func (model *workflowModel) populateFromAPI(data *models.Workflow) {
 
 	spaceID := model.SpaceID.ValueString()
 	if spaceID == "" {
-		spaceID = defaultSpaceID
+		spaceID = clients.DefaultSpaceID
 	}
 
 	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())

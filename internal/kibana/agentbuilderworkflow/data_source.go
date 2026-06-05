@@ -63,7 +63,7 @@ func readWorkflowDataSource(ctx context.Context, client *clients.KibanaScopedCli
 
 	oapiClient := client.GetKibanaOapiClient()
 
-	spaceID := defaultSpaceID
+	spaceID := clients.DefaultSpaceID
 	if typeutils.IsKnown(config.SpaceID) {
 		spaceID = config.SpaceID.ValueString()
 	}

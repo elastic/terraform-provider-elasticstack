@@ -97,7 +97,7 @@ func (model *toolBaseModel) populateFromAPI(ctx context.Context, data *models.To
 
 	spaceID := model.SpaceID.ValueString()
 	if spaceID == "" {
-		spaceID = defaultSpaceID
+		spaceID = clients.DefaultSpaceID
 	}
 
 	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())

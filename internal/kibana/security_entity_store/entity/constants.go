@@ -16,7 +16,3 @@
 // under the License.
 
 package entity
-
-const (
-	defaultSpaceID = "default"
-)

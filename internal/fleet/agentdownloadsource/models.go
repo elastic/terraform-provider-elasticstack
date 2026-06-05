@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -48,7 +49,7 @@ func (m model) GetKibanaConnection() types.List { return m.KibanaConnection }
 
 func (m model) GetSpaceID() types.String {
 	if m.SpaceIDs.IsNull() || m.SpaceIDs.IsUnknown() {
-		return types.StringValue(defaultSpaceID)
+		return types.StringValue(clients.DefaultSpaceID)
 	}
 	for _, elem := range m.SpaceIDs.Elements() {
 		s, ok := elem.(types.String)
@@ -59,7 +60,7 @@ func (m model) GetSpaceID() types.String {
 			return s
 		}
 	}
-	return types.StringValue(defaultSpaceID)
+	return types.StringValue(clients.DefaultSpaceID)
 }
 
 func (m model) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {

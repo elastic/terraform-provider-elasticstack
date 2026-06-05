@@ -20,6 +20,7 @@ package entity
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	jsontypes "github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -46,7 +47,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Description:   "An identifier for the Kibana space. If omitted, the default space is used.",
 				Optional:      true,
 				Computed:      true,
-				Default:       stringdefault.StaticString(defaultSpaceID),
+				Default:       stringdefault.StaticString(clients.DefaultSpaceID),
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
 			"entity_type": schema.StringAttribute{

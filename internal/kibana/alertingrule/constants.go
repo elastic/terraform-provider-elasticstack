@@ -26,9 +26,6 @@ const (
 	ruleTypeUptimeMonitorStatus     = "xpack.uptime.alerts.monitorStatus"
 )
 
-// Default Kibana space identifier when none is provided.
-const defaultSpaceID = "default"
-
 // Terraform schema attribute keys.
 const (
 	attrTags   = "tags"
