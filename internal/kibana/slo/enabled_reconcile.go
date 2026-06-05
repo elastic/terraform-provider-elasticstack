@@ -48,6 +48,17 @@ func reconcileSloEnabled(
 	m *tfModel,
 	diags *diag.Diagnostics,
 ) {
+	updatedModel, exists, readDiags := readSlo(ctx, apiClient, sloID, spaceID, *m)
+	diags.Append(readDiags...)
+	if diags.HasError() {
+		return
+	}
+	if !exists {
+		diags.AddError("SLO not found", "SLO was created/updated but could not be found afterwards")
+		return
+	}
+	*m = updatedModel
+
 	if !sloPlannedEnabledExplicitlySet(planEnabled) {
 		return
 	}
@@ -65,12 +76,14 @@ func reconcileSloEnabled(
 	if diags.HasError() {
 		return
 	}
-	exists, readDiags := readSloFromAPI(ctx, apiClient, sloID, spaceID, m)
+	updatedModel, exists, readDiags = readSlo(ctx, apiClient, sloID, spaceID, *m)
 	diags.Append(readDiags...)
 	if diags.HasError() {
 		return
 	}
 	if !exists {
 		diags.AddError("SLO not found", "SLO could not be read after changing enabled state")
+		return
 	}
+	*m = updatedModel
 }

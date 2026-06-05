@@ -58,18 +58,10 @@ func writeIntegration(
 		IgnoreConstraints: planModel.IgnoreConstraints.ValueBool(),
 	}
 
-	diags.Append(enforceMinVersionForKnownBool(ctx, client, planModel.IgnoreMappingUpdateErrors, MinVersionIgnoreMappingUpdateErrors, "ignore_mapping_update_errors")...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[integrationModel]{}, diags
-	}
 	if typeutils.IsKnown(planModel.IgnoreMappingUpdateErrors) {
 		installOptions.IgnoreMappingUpdateErrors = planModel.IgnoreMappingUpdateErrors.ValueBoolPointer()
 	}
 
-	diags.Append(enforceMinVersionForKnownBool(ctx, client, planModel.SkipDataStreamRollover, MinVersionSkipDataStreamRollover, "skip_data_stream_rollover")...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[integrationModel]{}, diags
-	}
 	if typeutils.IsKnown(planModel.SkipDataStreamRollover) {
 		installOptions.SkipDataStreamRollover = planModel.SkipDataStreamRollover.ValueBoolPointer()
 	}

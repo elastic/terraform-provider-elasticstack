@@ -18,7 +18,11 @@
 package integration
 
 import (
+	"context"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -64,6 +68,29 @@ func (m integrationModel) GetKibanaConnection() types.List {
 
 func (m integrationModel) IsUnscopedSpace() bool {
 	return true
+}
+
+var _ entitycore.WithVersionRequirements = integrationModel{}
+
+// GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
+func (m integrationModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	var reqs []entitycore.VersionRequirement
+
+	if typeutils.IsKnown(m.IgnoreMappingUpdateErrors) && m.IgnoreMappingUpdateErrors.ValueBool() {
+		reqs = append(reqs, entitycore.VersionRequirement{
+			MinVersion:   *MinVersionIgnoreMappingUpdateErrors,
+			ErrorMessage: "The 'ignore_mapping_update_errors' parameter requires server version " + MinVersionIgnoreMappingUpdateErrors.String() + " or higher.",
+		})
+	}
+
+	if typeutils.IsKnown(m.SkipDataStreamRollover) && m.SkipDataStreamRollover.ValueBool() {
+		reqs = append(reqs, entitycore.VersionRequirement{
+			MinVersion:   *MinVersionSkipDataStreamRollover,
+			ErrorMessage: "The 'skip_data_stream_rollover' parameter requires server version " + MinVersionSkipDataStreamRollover.String() + " or higher.",
+		})
+	}
+
+	return reqs, nil
 }
 
 func getPackageID(name string, version string) string {

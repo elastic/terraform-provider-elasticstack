@@ -85,12 +85,6 @@ func createSlo(
 
 	planModel.ID = types.StringValue((&clients.CompositeID{ClusterID: req.SpaceID, ResourceID: res.Id}).String())
 
-	// Read back to populate computed fields.
-	readSloAndPopulate(ctx, client, &planModel, &diags)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[tfModel]{}, diags
-	}
-
 	reconcileSloEnabled(ctx, client, oapi, req.SpaceID, res.Id, desiredEnabled, &planModel, &diags)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[tfModel]{}, diags

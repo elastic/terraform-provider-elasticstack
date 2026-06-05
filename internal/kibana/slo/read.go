@@ -26,59 +26,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func readSloFromAPI(
-	ctx context.Context,
-	apiClient *clients.KibanaScopedClient,
-	resourceID string,
-	spaceID string,
-	model *tfModel,
-) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	oapi := apiClient.GetKibanaOapiClient()
-
-	res, fwDiags := kibanaoapi.GetSlo(ctx, oapi, spaceID, resourceID)
-	diags.Append(fwDiags...)
-	if diags.HasError() {
-		return false, diags
-	}
-	if res == nil {
-		return false, diags
-	}
-
-	apiModel := kibanaoapi.SloResponseToModel(spaceID, res)
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: apiModel.SloID}).String())
-	diags.Append(model.populateFromAPI(apiModel)...)
-	if diags.HasError() {
-		return true, diags
-	}
-
-	return true, diags
-}
-
-func readSloAndPopulate(
-	ctx context.Context,
-	apiClient *clients.KibanaScopedClient,
-	model *tfModel,
-	diags *diag.Diagnostics,
-) {
-	compID, idDiags := clients.CompositeIDFromStr(model.ID.ValueString())
-	diags.Append(idDiags...)
-	if diags.HasError() {
-		return
-	}
-
-	exists, readDiags := readSloFromAPI(ctx, apiClient, compID.ResourceID, compID.ClusterID, model)
-	diags.Append(readDiags...)
-	if diags.HasError() {
-		return
-	}
-	if !exists {
-		diags.AddError("SLO not found", "SLO was created/updated but could not be found afterwards")
-		return
-	}
-}
-
 func readSlo(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
@@ -86,6 +33,25 @@ func readSlo(
 	spaceID string,
 	model tfModel,
 ) (tfModel, bool, diag.Diagnostics) {
-	found, diags := readSloFromAPI(ctx, client, resourceID, spaceID, &model)
-	return model, found, diags
+	var diags diag.Diagnostics
+
+	oapi := client.GetKibanaOapiClient()
+
+	res, fwDiags := kibanaoapi.GetSlo(ctx, oapi, spaceID, resourceID)
+	diags.Append(fwDiags...)
+	if diags.HasError() {
+		return model, false, diags
+	}
+	if res == nil {
+		return model, false, diags
+	}
+
+	apiModel := kibanaoapi.SloResponseToModel(spaceID, res)
+	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: apiModel.SloID}).String())
+	diags.Append(model.populateFromAPI(apiModel)...)
+	if diags.HasError() {
+		return model, true, diags
+	}
+
+	return model, true, diags
 }
