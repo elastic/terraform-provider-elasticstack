@@ -22,6 +22,9 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func TestNormalizeAliasFilterMap_nil(t *testing.T) {
@@ -213,5 +216,74 @@ func TestAliasAttrsFromModelWithRouting_nilPreservedRouting(t *testing.T) {
 	// Nil preservedRouting map: routing stays empty string.
 	if v, ok := attrs["routing"]; !ok || v.String() != `""` {
 		t.Fatalf("expected routing empty string, got %v", attrs["routing"])
+	}
+}
+
+func testAliasAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"name":           types.StringType,
+		"filter":         jsontypes.NormalizedType{},
+		"index_routing":  types.StringType,
+		"routing":        types.StringType,
+		"search_routing": types.StringType,
+		"is_hidden":      types.BoolType,
+		"is_write_index": types.BoolType,
+	}
+}
+
+func TestFlattenAliasElement_basicFields(t *testing.T) {
+	t.Parallel()
+	a := models.IndexAlias{
+		Routing:       "r1",
+		IndexRouting:  "ir1",
+		SearchRouting: "sr1",
+		IsHidden:      true,
+		IsWriteIndex:  false,
+	}
+	val, diags := aliasutil.FlattenAliasElement("myalias", a, nil, testAliasAttrTypes())
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	obj, ok := val.(types.Object)
+	if !ok {
+		t.Fatalf("expected types.Object, got %T", val)
+	}
+	attrs := obj.Attributes()
+	if v := attrs["name"].(types.String).ValueString(); v != "myalias" {
+		t.Errorf("name: got %q, want %q", v, "myalias")
+	}
+	if v := attrs["routing"].(types.String).ValueString(); v != "r1" {
+		t.Errorf("routing: got %q, want %q", v, "r1")
+	}
+	if v := attrs["is_hidden"].(types.Bool).ValueBool(); !v {
+		t.Errorf("is_hidden: got false, want true")
+	}
+}
+
+func TestFlattenAliasElement_preservedRoutingRestored(t *testing.T) {
+	t.Parallel()
+	a := models.IndexAlias{Routing: ""}
+	val, diags := aliasutil.FlattenAliasElement("myalias", a, map[string]string{"myalias": "preserved"}, testAliasAttrTypes())
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	obj := val.(types.Object)
+	attrs := obj.Attributes()
+	if v := attrs["routing"].(types.String).ValueString(); v != "preserved" {
+		t.Errorf("routing: got %q, want %q", v, "preserved")
+	}
+}
+
+func TestFlattenAliasElement_preservedRoutingIgnoredWhenAPIReturnsValue(t *testing.T) {
+	t.Parallel()
+	a := models.IndexAlias{Routing: "api_routing"}
+	val, diags := aliasutil.FlattenAliasElement("myalias", a, map[string]string{"myalias": "preserved"}, testAliasAttrTypes())
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	obj := val.(types.Object)
+	attrs := obj.Attributes()
+	if v := attrs["routing"].(types.String).ValueString(); v != "api_routing" {
+		t.Errorf("routing: got %q, want %q", v, "api_routing")
 	}
 }

@@ -39,12 +39,22 @@ var (
 var sloResourceDescription string
 
 type Resource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[tfModel]
 }
 
 func newResource() *Resource {
 	return &Resource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "slo"),
+		KibanaResource: entitycore.NewKibanaResource[tfModel](
+			entitycore.ComponentKibana,
+			"slo",
+			entitycore.KibanaResourceOptions[tfModel]{
+				Schema: sloSchema,
+				Read:   readSlo,
+				Delete: deleteSlo,
+				Create: createSlo,
+				Update: updateSlo,
+			},
+		),
 	}
 }
 

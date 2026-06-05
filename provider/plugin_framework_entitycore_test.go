@@ -84,6 +84,13 @@ func typeEmbedsResourceBasePtr(rt reflect.Type, resourceBasePtr reflect.Type) bo
 				return true
 			}
 		}
+		// Allow transitive embedding via anonymous value fields
+		// (e.g. baseResourceEnvelope is embedded by value and itself embeds *ResourceBase).
+		if f.Anonymous && f.Type.Kind() == reflect.Struct {
+			if typeEmbedsResourceBasePtr(f.Type, resourceBasePtr) {
+				return true
+			}
+		}
 	}
 	return false
 }

@@ -23,7 +23,6 @@ import (
 	"regexp"
 	"strings"
 
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
@@ -31,7 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
@@ -43,11 +41,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = getSchema()
-}
-
-func getSchema() schema.Schema {
+func sloSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Version:             2,
 		MarkdownDescription: sloResourceDescription,
@@ -147,7 +141,6 @@ func getSchema() schema.Schema {
 			},
 		},
 		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 			"settings": schema.SingleNestedBlock{
 				Description: "The default settings should be sufficient for most users, but if needed, these properties can be overwritten.",
 				PlanModifiers: []planmodifier.Object{

@@ -25,7 +25,6 @@ import (
 
 var (
 	_ resource.Resource                 = newIntegrationResource()
-	_ resource.ResourceWithConfigure    = newIntegrationResource()
 	_ resource.ResourceWithUpgradeState = newIntegrationResource()
 
 	// MinVersionIgnoreMappingUpdateErrors is the minimum version that supports the ignore_mapping_update_errors parameter
@@ -37,12 +36,22 @@ var (
 )
 
 type integrationResource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[integrationModel]
 }
 
 func newIntegrationResource() *integrationResource {
 	return &integrationResource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentFleet, "integration"),
+		KibanaResource: entitycore.NewKibanaResource[integrationModel](
+			entitycore.ComponentFleet,
+			"integration",
+			entitycore.KibanaResourceOptions[integrationModel]{
+				Schema: integrationSchema,
+				Read:   readIntegration,
+				Delete: deleteIntegration,
+				Create: createIntegration,
+				Update: updateIntegration,
+			},
+		),
 	}
 }
 

@@ -21,65 +21,57 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 var MinLabelsVersion = version.Must(version.NewVersion("8.16.0"))
 
-func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
-	plan := new(tfModelV0)
-	diags := request.Plan.Get(ctx, plan)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
+func createMonitor(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[tfModelV0],
+) (entitycore.KibanaWriteResult[tfModelV0], diag.Diagnostics) {
+	planModel := req.Plan
+	var diags diag.Diagnostics
+
+	diags.Append(planModel.enforceVersionConstraints(ctx, client)...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[tfModelV0]{}, diags
 	}
 
-	apiClient, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
+	input, apiDiags := planModel.toKibanaAPIRequest(ctx)
+	diags.Append(apiDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[tfModelV0]{}, diags
 	}
 
-	oapiClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, &response.Diagnostics)
-	if oapiClient == nil {
-		return
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
-	response.Diagnostics.Append(plan.enforceVersionConstraints(ctx, apiClient)...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	input, diags := plan.toKibanaAPIRequest(ctx)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	spaceID := plan.SpaceID.ValueString()
-	result, diags := kibanaoapi.CreateMonitor(ctx, oapiClient, spaceID, *input)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
+	spaceID := req.SpaceID
+	result, createDiags := kibanaoapi.CreateMonitor(ctx, oapiClient, spaceID, *input)
+	diags.Append(createDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[tfModelV0]{}, diags
 	}
 
 	if result == nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to create Kibana monitor `%s`, space %s", plan.Name.ValueString(), spaceID), "empty response from API")
-		return
+		diags.AddError(
+			fmt.Sprintf("Failed to create Kibana monitor `%s`, space %s", planModel.Name.ValueString(), spaceID),
+			"empty response from API",
+		)
+		return entitycore.KibanaWriteResult[tfModelV0]{}, diags
 	}
 
-	plan, diags = plan.toModelV0(ctx, result, spaceID)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
+	updatedPlan, modelDiags := planModel.toModelV0(ctx, result, spaceID)
+	diags.Append(modelDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[tfModelV0]{}, diags
 	}
+	planModel = *updatedPlan
 
-	diags = response.State.Set(ctx, plan)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
+	return entitycore.KibanaWriteResult[tfModelV0]{Model: planModel}, diags
 }

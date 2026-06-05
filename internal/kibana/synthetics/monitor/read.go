@@ -20,60 +20,38 @@ package monitor
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
-	state := new(tfModelV0)
-	diags := request.State.Get(ctx, state)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
+func readMonitor(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	resourceID string,
+	spaceID string,
+	model tfModelV0,
+) (tfModelV0, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	apiClient, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
-	oapiClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, &response.Diagnostics)
-	if oapiClient == nil {
-		return
-	}
-
-	compositeID, dg := synthetics.GetCompositeID(state.ID.ValueString())
-	response.Diagnostics.Append(dg...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	spaceID := compositeID.ClusterID
-	monitorID := compositeID.ResourceID
-	result, diags := kibanaoapi.GetMonitor(ctx, oapiClient, spaceID, monitorID)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
+	result, readDiags := kibanaoapi.GetMonitor(ctx, oapiClient, spaceID, resourceID)
+	diags.Append(readDiags...)
+	if diags.HasError() {
+		return model, false, diags
 	}
 
 	if result == nil {
 		// 404 — monitor no longer exists
-		response.State.RemoveResource(ctx)
-		return
+		return model, false, diags
 	}
 
-	state, diags = state.toModelV0(ctx, result, spaceID)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
+	updatedModel, modelDiags := model.toModelV0(ctx, result, spaceID)
+	diags.Append(modelDiags...)
+	if diags.HasError() {
+		return model, false, diags
 	}
 
-	// Set refreshed state
-	diags = response.State.Set(ctx, state)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
+	return *updatedModel, true, diags
 }

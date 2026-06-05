@@ -300,21 +300,26 @@ func TestModel_GetVersionRequirements_dataStreamOptions(t *testing.T) {
 func TestFlattenAliasElement_emptyFilterMapIsNull(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	av, diags := flattenAliasElement("a", models.IndexAlias{
+	av, diags := aliasutil.FlattenAliasElement("a", models.IndexAlias{
 		Filter:        map[string]any{},
 		IndexRouting:  "ir",
 		Routing:       "r",
 		SearchRouting: "sr",
-	})
+	}, nil, AliasAttributeTypes())
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
-	alias, ok := av.(AliasObjectValue)
+	objVal, ok := av.(basetypes.ObjectValue)
 	if !ok {
 		t.Fatalf("got %T", av)
 	}
+	alias, d := NewAliasObjectType().ValueFromObject(ctx, objVal)
+	diags.Append(d...)
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
 	var am aliasutil.AliasModel
-	diags = alias.As(ctx, &am, basetypes.ObjectAsOptions{})
+	diags = alias.(AliasObjectValue).As(ctx, &am, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
