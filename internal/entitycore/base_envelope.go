@@ -52,10 +52,9 @@ func (b *baseResourceEnvelope[T, C]) Schema(ctx context.Context, _ resource.Sche
 	resp.Schema = schema
 }
 
-// Read implements [resource.Resource] with the standard prelude: check read
-// callback is non-nil, deserialize prior state into the generic model T,
-// resolve read identity, resolve the scoped client, enforce optional version
-// requirements, then delegate to the concrete readFunc.
+// Read implements [resource.Resource]. Nil read callbacks surface a
+// configuration diagnostic; this guard prevents nil-dereference panics when a
+// resource type intentionally omits Read (e.g. import-only resources).
 func (b *baseResourceEnvelope[T, C]) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	if b.read == nil {
 		resp.Diagnostics.Append(requireReadFuncDiag(b.component)...)
@@ -113,8 +112,7 @@ func (b *baseResourceEnvelope[T, C]) Read(ctx context.Context, req resource.Read
 	}
 }
 
-// Delete implements [resource.Resource] with the standard prelude, then
-// delegates to the concrete deleteFunc.
+// Delete implements [resource.Resource].
 func (b *baseResourceEnvelope[T, C]) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	if b.delete == nil {
 		resp.Diagnostics.Append(requireDeleteFuncDiag(b.component)...)

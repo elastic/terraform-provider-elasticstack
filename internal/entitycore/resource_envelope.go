@@ -150,11 +150,8 @@ type ElasticsearchResourceOptions[T ElasticsearchResourceModel] struct {
 // choose to implement ImportState.
 type ElasticsearchResource[T ElasticsearchResourceModel] struct {
 	baseResourceEnvelope[T, *clients.ElasticsearchScopedClient]
-	readFunc     elasticsearchReadFunc[T]
-	deleteFunc   elasticsearchDeleteFunc[T]
-	createFunc   WriteFunc[T]
-	updateFunc   WriteFunc[T]
-	postReadFunc PostReadFunc[T]
+	createFunc WriteFunc[T]
+	updateFunc WriteFunc[T]
 }
 
 // PlaceholderElasticsearchWriteCallback returns a write callback that fails if
@@ -198,8 +195,9 @@ func UpdateNotSupportedWriteCallback[T ElasticsearchResourceModel]() WriteFunc[T
 // diagnostics instead of invoking nil callbacks.
 func NewElasticsearchResource[T ElasticsearchResourceModel](name string, opts ElasticsearchResourceOptions[T]) *ElasticsearchResource[T] {
 	r := &ElasticsearchResource[T]{}
+	rb := NewResourceBase(ComponentElasticsearch, name)
 	r.baseResourceEnvelope = baseResourceEnvelope[T, *clients.ElasticsearchScopedClient]{
-		ResourceBase:    NewResourceBase(ComponentElasticsearch, name),
+		ResourceBase:    rb,
 		schemaFactory:   opts.Schema,
 		connectionKey:   blockElasticsearchConnection,
 		connectionBlock: providerschema.GetEsFWConnectionBlock(),
@@ -207,7 +205,7 @@ func NewElasticsearchResource[T ElasticsearchResourceModel](name string, opts El
 			return resolveElasticsearchReadResourceID(m, "")
 		},
 		getClient: func(ctx context.Context, m T) (*clients.ElasticsearchScopedClient, diag.Diagnostics) {
-			return r.Client().GetElasticsearchClient(ctx, m.GetElasticsearchConnection())
+			return rb.Client().GetElasticsearchClient(ctx, m.GetElasticsearchConnection())
 		},
 		postRead: func(ctx context.Context, client *clients.ElasticsearchScopedClient, prior, state T, private PrivateStateStorage) (T, diag.Diagnostics) {
 			if opts.PostRead == nil {
@@ -231,15 +229,11 @@ func NewElasticsearchResource[T ElasticsearchResourceModel](name string, opts El
 			return opts.Delete(ctx, client, id, m)
 		}
 	}
-	r.readFunc = opts.Read
-	r.deleteFunc = opts.Delete
 	r.createFunc = opts.Create
 	r.updateFunc = opts.Update
-	r.postReadFunc = opts.PostRead
 	return r
 }
 
-//nolint:unparam // diag.Diagnostics is always nil in current paths but is part of the public signature used by callers.
 func resolveElasticsearchReadResourceID(model ElasticsearchResourceModel, writeFallback string) (string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if m, ok := any(model).(WithReadResourceID); ok {
@@ -302,11 +296,7 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWri
 		if inv.isUpdate {
 			op = "update"
 		}
-		diags.AddError(
-			"Elasticsearch envelope configuration error",
-			fmt.Sprintf("The %s callback passed via ElasticsearchResourceOptions must not be nil.", op),
-		)
-		return diags
+		return requireCallbackDiag(r.component, op)
 	}
 
 	var planModel T
@@ -357,8 +347,8 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWri
 		return diags
 	}
 
-	if r.readFunc == nil {
-		return requireReadFuncDiag(ComponentElasticsearch)
+	if r.read == nil {
+		return requireReadFuncDiag(r.component)
 	}
 
 	var configModel T
@@ -396,7 +386,7 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWri
 		return diags
 	}
 
-	stateModel, found, readDiags := r.readFunc(ctx, client, readResourceID, written.Model)
+	stateModel, found, readDiags := r.read(ctx, client, readResourceID, written.Model)
 	diags.Append(readDiags...)
 	if diags.HasError() {
 		return diags
@@ -412,14 +402,9 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWri
 
 	priorModel := planModel
 
-	if r.postReadFunc != nil {
+	if r.postRead != nil {
 		var prDiags diag.Diagnostics
-		stateModel, prDiags = r.postReadFunc(ctx, ElasticsearchPostReadRequest[T]{
-			Client:  client,
-			Prior:   priorModel,
-			State:   stateModel,
-			Private: inv.privateState,
-		})
+		stateModel, prDiags = r.postRead(ctx, client, priorModel, stateModel, inv.privateState)
 		diags.Append(prDiags...)
 		if diags.HasError() {
 			return diags

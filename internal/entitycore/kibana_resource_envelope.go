@@ -125,11 +125,9 @@ type KibanaResourceOptions[T KibanaResourceModel] struct {
 // choose to implement ImportState.
 type KibanaResource[T KibanaResourceModel] struct {
 	baseResourceEnvelope[T, *clients.KibanaScopedClient]
-	readFunc     kibanaReadFunc[T]
-	deleteFunc   kibanaDeleteFunc[T]
-	createFunc   KibanaWriteFunc[T]
-	updateFunc   KibanaWriteFunc[T]
-	postReadFunc KibanaPostReadFunc[T]
+	readFunc   kibanaReadFunc[T]
+	createFunc KibanaWriteFunc[T]
+	updateFunc KibanaWriteFunc[T]
 }
 
 const (
@@ -164,8 +162,9 @@ func NewKibanaResource[T KibanaResourceModel](
 	opts KibanaResourceOptions[T],
 ) *KibanaResource[T] {
 	r := &KibanaResource[T]{}
+	rb := NewResourceBase(component, name)
 	r.baseResourceEnvelope = baseResourceEnvelope[T, *clients.KibanaScopedClient]{
-		ResourceBase:    NewResourceBase(component, name),
+		ResourceBase:    rb,
 		schemaFactory:   opts.Schema,
 		connectionKey:   blockKibanaConnection,
 		connectionBlock: providerschema.GetKbFWConnectionBlock(),
@@ -174,7 +173,7 @@ func NewKibanaResource[T KibanaResourceModel](
 			return resourceID, nil
 		},
 		getClient: func(ctx context.Context, m T) (*clients.KibanaScopedClient, diag.Diagnostics) {
-			return r.Client().GetKibanaClient(ctx, m.GetKibanaConnection())
+			return rb.Client().GetKibanaClient(ctx, m.GetKibanaConnection())
 		},
 		postRead: func(ctx context.Context, client *clients.KibanaScopedClient, prior, state T, private PrivateStateStorage) (T, diag.Diagnostics) {
 			if opts.PostRead == nil {
@@ -201,10 +200,8 @@ func NewKibanaResource[T KibanaResourceModel](
 		}
 	}
 	r.readFunc = opts.Read
-	r.deleteFunc = opts.Delete
 	r.createFunc = opts.Create
 	r.updateFunc = opts.Update
-	r.postReadFunc = opts.PostRead
 	return r
 }
 
@@ -279,11 +276,7 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 		if inv.isUpdate {
 			op = "update"
 		}
-		diags.AddError(
-			"Kibana envelope configuration error",
-			fmt.Sprintf("The %s callback passed via KibanaResourceOptions must not be nil.", op),
-		)
-		return diags
+		return requireCallbackDiag(r.component, op)
 	}
 
 	var planModel T
@@ -340,7 +333,7 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 	}
 
 	if r.readFunc == nil {
-		return requireReadFuncDiag(ComponentKibana)
+		return requireReadFuncDiag(r.component)
 	}
 
 	var configModel T
@@ -403,14 +396,9 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 
 	priorModel := planModel
 
-	if r.postReadFunc != nil {
+	if r.postRead != nil {
 		var prDiags diag.Diagnostics
-		stateModel, prDiags = r.postReadFunc(ctx, KibanaPostReadRequest[T]{
-			Client:  client,
-			Prior:   priorModel,
-			State:   stateModel,
-			Private: inv.privateState,
-		})
+		stateModel, prDiags = r.postRead(ctx, client, priorModel, stateModel, inv.privateState)
 		diags.Append(prDiags...)
 		if diags.HasError() {
 			return diags
