@@ -146,6 +146,14 @@ func TestPlanUpdateOperations_allBranches(t *testing.T) {
 		assert.Equal(t, []apiOperation{opPause, opResume}, ops)
 		assert.NotContains(t, ops, opUpdateSettings)
 	})
+
+	t.Run("active to active settings removal does not pause", func(t *testing.T) {
+		t.Parallel()
+		prior := basePrior
+		plan := basePrior
+		plan.SettingsRaw = types.StringNull()
+		assert.Empty(t, planUpdateOperations(prior, plan))
+	})
 }
 
 func TestPlanDeleteOperations(t *testing.T) {

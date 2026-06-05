@@ -135,8 +135,11 @@ func planDeleteOperations(prior Model) []apiOperation {
 }
 
 func settingsRawChanged(prior, plan Model) bool {
-	if !typeutils.IsKnown(prior.SettingsRaw) && !typeutils.IsKnown(plan.SettingsRaw) {
+	if !typeutils.IsKnown(plan.SettingsRaw) {
 		return false
+	}
+	if !typeutils.IsKnown(prior.SettingsRaw) {
+		return true
 	}
 	return !prior.SettingsRaw.Equal(plan.SettingsRaw)
 }

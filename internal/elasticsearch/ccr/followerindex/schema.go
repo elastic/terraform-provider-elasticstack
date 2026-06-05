@@ -75,42 +75,52 @@ func getSchema(_ context.Context) schema.Schema {
 			"max_outstanding_read_requests": schema.Int64Attribute{
 				MarkdownDescription: descMaxOutstandingReadRequests,
 				Optional:            true,
+				Computed:            true,
 			},
 			"max_outstanding_write_requests": schema.Int64Attribute{
 				MarkdownDescription: descMaxOutstandingWriteRequests,
 				Optional:            true,
+				Computed:            true,
 			},
 			"max_read_request_operation_count": schema.Int64Attribute{
 				MarkdownDescription: descMaxReadRequestOperationCount,
 				Optional:            true,
+				Computed:            true,
 			},
 			"max_read_request_size": schema.StringAttribute{
 				MarkdownDescription: descMaxReadRequestSize,
 				Optional:            true,
+				Computed:            true,
 			},
 			"max_retry_delay": schema.StringAttribute{
 				MarkdownDescription: descMaxRetryDelay,
 				Optional:            true,
+				Computed:            true,
 			},
 			"max_write_buffer_count": schema.Int64Attribute{
 				MarkdownDescription: descMaxWriteBufferCount,
 				Optional:            true,
+				Computed:            true,
 			},
 			"max_write_buffer_size": schema.StringAttribute{
 				MarkdownDescription: descMaxWriteBufferSize,
 				Optional:            true,
+				Computed:            true,
 			},
 			"max_write_request_operation_count": schema.Int64Attribute{
 				MarkdownDescription: descMaxWriteRequestOperationCount,
 				Optional:            true,
+				Computed:            true,
 			},
 			"max_write_request_size": schema.StringAttribute{
 				MarkdownDescription: descMaxWriteRequestSize,
 				Optional:            true,
+				Computed:            true,
 			},
 			"read_poll_timeout": schema.StringAttribute{
 				MarkdownDescription: descReadPollTimeout,
 				Optional:            true,
+				Computed:            true,
 			},
 			"delete_index_on_destroy": schema.BoolAttribute{
 				MarkdownDescription: descDeleteIndexOnDestroy,

@@ -59,6 +59,9 @@ func PauseFollowerIndex(ctx context.Context, apiClient *clients.ElasticsearchSco
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Ccr.PauseFollow(indexName).Do(ctx)
 	if err != nil {
+		if IsNotFoundElasticsearchError(err) {
+			return nil
+		}
 		return diagutil.FrameworkDiagFromError(err)
 	}
 	return nil
@@ -77,6 +80,9 @@ func CloseIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Indices.Close(indexName).Do(ctx)
 	if err != nil {
+		if IsNotFoundElasticsearchError(err) {
+			return nil
+		}
 		return diagutil.FrameworkDiagFromError(err)
 	}
 	return nil
@@ -86,6 +92,9 @@ func UnfollowIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Ccr.Unfollow(indexName).Do(ctx)
 	if err != nil {
+		if IsNotFoundElasticsearchError(err) {
+			return nil
+		}
 		return diagutil.FrameworkDiagFromError(err)
 	}
 	return nil
@@ -95,6 +104,9 @@ func OpenIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Indices.Open(indexName).Do(ctx)
 	if err != nil {
+		if IsNotFoundElasticsearchError(err) {
+			return nil
+		}
 		return diagutil.FrameworkDiagFromError(err)
 	}
 	return nil

@@ -68,14 +68,20 @@ state, then apply a config with `data_stream_name` set and confirm a replacement
 
 ### Auto-follow pattern tuning parameters — API read limitation
 
-`GET /_ccr/auto_follow/{name}` returns only one tuning parameter: `max_outstanding_read_requests`.
-The other nine (`max_outstanding_write_requests`, `max_read_request_operation_count`,
-`max_read_request_size`, `max_retry_delay`, `max_write_buffer_count`, `max_write_buffer_size`,
+`GET /_ccr/auto_follow/{name}` returns `max_outstanding_read_requests` and
+`leader_index_exclusion_patterns` from the tuning/pattern set. The other nine tuning parameters
+(`max_outstanding_write_requests`, `max_read_request_operation_count`, `max_read_request_size`,
+`max_retry_delay`, `max_write_buffer_count`, `max_write_buffer_size`,
 `max_write_request_operation_count`, `max_write_request_size`, `read_poll_timeout`) are accepted by
-the PUT API but never returned by the GET API. All ten are exposed in the schema as `Optional` only.
-During Read, the provider updates `max_outstanding_read_requests` from the API response and preserves
-the prior-state values for the remaining nine unchanged. This prevents perpetual diffs while still
-allowing practitioners to set, update, or remove any tuning parameter via the normal plan/apply cycle.
+the PUT API but never returned by the GET API.
+
+Attributes whose values are returned by the GET API (`max_outstanding_read_requests` and
+`leader_index_exclusion_patterns`) are `Optional + Computed` so Elasticsearch-managed defaults do not
+produce "Provider produced inconsistent result after apply" when the practitioner omits them. The nine
+params never returned by GET remain `Optional` only and are preserved from prior state during Read.
+This prevents perpetual diffs while still allowing practitioners to set, update, or remove any tuning
+parameter via the normal plan/apply cycle. `follow_index_pattern` remains `Optional` only (the API
+returns null when unset).
 
 ### ForceNew scope
 
@@ -106,7 +112,9 @@ configured desired value, and Apply calls the appropriate pause or resume API.
 | `paused` | `paused` | any | no API call; tuning changes stored in state for next resume |
 
 Create always starts active (the CCR API has no create-as-paused option). If `status = "paused"` is
-configured at creation time, the provider creates the index then immediately pauses it.
+configured at creation time, the provider creates the index, performs a `GET /{index}/_ccr/info` to
+capture tuning parameters while the follower is still active (paused followers omit `Parameters`),
+then immediately pauses it.
 
 Delete always requires the index to be paused before closing and unfollowing. The provider checks
 prior state: if `status == "active"`, it calls `pause_follow`; if already `"paused"`, it skips the
@@ -124,10 +132,15 @@ Create always starts active. If `active = false` is configured at creation time,
 
 ### Paused state and tuning parameter read-back
 
-`GET /{index}/_ccr/info` omits `Parameters` when the follower index is paused (`types.FollowerIndex`
-documents this: "If the follower index's status is paused, this object is omitted"). When Read
-encounters a paused index, it MUST preserve the prior-state tuning parameter values rather than
-zeroing them out, to avoid spurious diffs on attributes the practitioner has not changed.
+`GET /{index}/_ccr/info` returns all ten tuning parameters in `Parameters` when the follower index
+is active (Elasticsearch populates effective defaults). All ten tuning attributes are therefore
+`Optional + Computed` so ES-managed defaults do not produce "Provider produced inconsistent result
+after apply" when the practitioner omits them. When Read encounters a paused index, the API omits
+`Parameters` (`types.FollowerIndex` documents this: "If the follower index's status is paused, this
+object is omitted"); the provider MUST preserve the prior-state tuning parameter values rather than
+zeroing them out, to avoid spurious diffs on attributes the practitioner has not changed. On create
+with `status = "paused"`, the provider captures parameters via GET before pausing so the post-apply
+state carries concrete tuning values.
 
 ### `delete_index_on_destroy`
 

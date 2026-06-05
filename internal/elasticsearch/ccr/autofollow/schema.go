@@ -62,6 +62,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"leader_index_exclusion_patterns": schema.ListAttribute{
 				MarkdownDescription: descLeaderIndexExclusionPatterns,
 				Optional:            true,
+				Computed:            true,
 				ElementType:         types.StringType,
 			},
 			"follow_index_pattern": schema.StringAttribute{
@@ -75,6 +76,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"max_outstanding_read_requests": schema.Int64Attribute{
 				MarkdownDescription: descMaxOutstandingReadRequests,
 				Optional:            true,
+				Computed:            true,
 			},
 			"max_outstanding_write_requests": schema.Int64Attribute{
 				MarkdownDescription: descMaxOutstandingWriteRequests,

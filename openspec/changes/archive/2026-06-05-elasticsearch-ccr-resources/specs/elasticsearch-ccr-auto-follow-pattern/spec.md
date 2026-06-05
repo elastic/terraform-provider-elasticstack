@@ -75,11 +75,13 @@ Attributes: `max_outstanding_read_requests` (int64), `max_outstanding_write_requ
 `max_write_buffer_size` (string, byte format), `max_write_request_operation_count` (int64),
 `max_write_request_size` (string, byte format), `read_poll_timeout` (string, time format).
 
-**API read limitation**: `GET /_ccr/auto_follow/{name}` returns only `max_outstanding_read_requests`
-from this set. The remaining nine are accepted by the PUT API but never returned by the GET API.
-All ten attributes are `Optional` only (not `Optional/Computed`). During Read the provider updates
-`max_outstanding_read_requests` from the API and preserves prior-state values for the other nine
-unchanged. This prevents perpetual diffs while allowing normal plan/apply management of all params.
+**API read limitation**: `GET /_ccr/auto_follow/{name}` returns `max_outstanding_read_requests`
+and `leader_index_exclusion_patterns`. The remaining nine tuning parameters are accepted by the PUT
+API but never returned by the GET API. `max_outstanding_read_requests` and
+`leader_index_exclusion_patterns` are `Optional + Computed` so ES-managed defaults do not produce
+"inconsistent result after apply" when omitted. The nine params never returned by GET are `Optional`
+only; during Read the provider preserves prior-state values for those nine unchanged. This prevents
+perpetual diffs while allowing normal plan/apply management of all params.
 
 Where the go-elasticsearch typed client uses `*int` for count fields, the provider SHALL narrow int64 schema values to int when building API requests and widen int to int64 when reading back.
 

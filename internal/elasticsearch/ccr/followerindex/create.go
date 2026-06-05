@@ -47,6 +47,17 @@ func createFollowerIndex(
 		return entitycore.WriteResult[Model]{Model: plan}, diags
 	}
 
+	// Capture tuning parameters while the follower is still active. Paused followers
+	// omit Parameters from GET /_ccr/info, which would leave Computed attrs unknown.
+	follower, getDiags := elasticsearch.GetFollowerIndex(ctx, client, indexName)
+	diags.Append(getDiags...)
+	if diags.HasError() {
+		return entitycore.WriteResult[Model]{Model: plan}, diags
+	}
+	if follower != nil {
+		plan = mapFollowerIndexToModel(follower, plan)
+	}
+
 	if plan.Status.ValueString() == statusPaused {
 		diags.Append(elasticsearch.PauseFollowerIndex(ctx, client, indexName)...)
 		if diags.HasError() {
