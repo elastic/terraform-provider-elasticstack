@@ -22,12 +22,10 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // expandFromData builds a models.ComponentTemplate from a Data plan/state value.
@@ -68,60 +66,10 @@ func expandFromData(ctx context.Context, d Data) (models.ComponentTemplate, diag
 
 // expandTemplateBlock expands the template block object to *models.Template.
 func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Template, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if obj.IsNull() || obj.IsUnknown() {
-		return nil, diags
-	}
-
 	var tm TemplateModel
-	diags.Append(obj.As(ctx, &tm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
-	if diags.HasError() {
-		return nil, diags
+	if d := templateutil.DecodeTemplateObject(ctx, obj, &tm); d.HasError() {
+		return nil, d
 	}
 
-	t := &models.Template{}
-
-	if !tm.Mappings.IsNull() && !tm.Mappings.IsUnknown() {
-		s := strings.TrimSpace(tm.Mappings.ValueString())
-		if s != "" {
-			maps := make(map[string]any)
-			if err := json.Unmarshal([]byte(s), &maps); err != nil {
-				diags.AddError("Invalid template.mappings JSON", err.Error())
-				return nil, diags
-			}
-			t.Mappings = maps
-		}
-	}
-
-	if !tm.Settings.IsNull() && !tm.Settings.IsUnknown() {
-		s := strings.TrimSpace(tm.Settings.ValueString())
-		if s != "" {
-			sets := make(map[string]any)
-			if err := json.Unmarshal([]byte(s), &sets); err != nil {
-				diags.AddError("Invalid template.settings JSON", err.Error())
-				return nil, diags
-			}
-			t.Settings = sets
-		}
-	}
-
-	if !tm.Alias.IsNull() && !tm.Alias.IsUnknown() {
-		aliases, d2 := aliasutil.ExpandAliasSet(ctx, tm.Alias)
-		diags.Append(d2...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		t.Aliases = aliases
-	}
-
-	if !tm.DataStreamOptions.IsNull() && !tm.DataStreamOptions.IsUnknown() {
-		dso, d2 := datastreamoptions.Expand(tm.DataStreamOptions)
-		diags.Append(d2...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		t.DataStreamOptions = dso
-	}
-
-	return t, diags
+	return templateutil.ExpandTemplateCore(ctx, tm.Alias, tm.Mappings, tm.Settings, tm.DataStreamOptions)
 }
