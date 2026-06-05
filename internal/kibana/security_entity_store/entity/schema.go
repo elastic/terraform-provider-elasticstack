@@ -368,7 +368,7 @@ func getSchema(_ context.Context) schema.Schema {
 					objectvalidator.ConflictsWith(path.MatchRoot("entity_json")),
 				},
 			},
-			"host": schema.SingleNestedAttribute{
+			attrHost: schema.SingleNestedAttribute{
 				Description: "ECS host fields collected on the entity.",
 				Optional:    true,
 				Computed:    true,
