@@ -18,12 +18,16 @@
 package security_entity_store_entity_link_test
 
 import (
+	"encoding/json"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 var minVersionEntityStoreResolution = version.Must(version.NewVersion("9.4.0"))
@@ -42,8 +46,13 @@ func TestAccResourceSecurityEntityStoreEntityLink(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "space_id", "default"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "id", "default/generic:acc-test-target"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity_link.test", "resolution_group_json"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.#", "2"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.*", "generic:acc-test-alias1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.*", "generic:acc-test-alias2"),
+					resource.TestCheckResourceAttrWith("elasticstack_kibana_security_entity_store_entity_link.test", "resolution_group_json", checkResolutionGroupJSON(
+						"generic:acc-test-target",
+						[]string{"generic:acc-test-alias1", "generic:acc-test-alias2"},
+					)),
 				),
 			},
 			{
@@ -51,8 +60,13 @@ func TestAccResourceSecurityEntityStoreEntityLink(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "target_id", "generic:acc-test-target"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "space_id", "default"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "id", "default/generic:acc-test-target"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity_link.test", "resolution_group_json"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.#", "2"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.*", "generic:acc-test-alias1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.*", "generic:acc-test-alias3"),
+					checkSetElemAbsent("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids", "generic:acc-test-alias2"),
 				),
 			},
 			{
@@ -64,4 +78,76 @@ func TestAccResourceSecurityEntityStoreEntityLink(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccResourceSecurityEntityStoreEntityLink_SingleElement(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionEntityStoreResolution, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("single_element"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "target_id", "generic:acc-test-target"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "space_id", "default"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.*", "generic:acc-test-alias1"),
+				),
+			},
+		},
+	})
+}
+
+// checkResolutionGroupJSON returns a check function that parses the JSON value
+// and asserts that the alias IDs appear within the payload's aliases list.
+func checkResolutionGroupJSON(_ string, aliasIDs []string) func(string) error {
+	return func(v string) error {
+		var payload map[string]any
+		if err := json.Unmarshal([]byte(v), &payload); err != nil {
+			return fmt.Errorf("resolution_group_json is not valid JSON: %w", err)
+		}
+
+		aliases, _ := payload["aliases"].([]any)
+		seen := make(map[string]bool)
+		for _, a := range aliases {
+			aliasMap, ok := a.(map[string]any)
+			if !ok {
+				continue
+			}
+			entityMap, _ := aliasMap["entity"].(map[string]any)
+			if id, ok := entityMap["id"].(string); ok {
+				seen[id] = true
+			}
+		}
+
+		for _, id := range aliasIDs {
+			if !seen[id] {
+				return fmt.Errorf("resolution_group_json: alias %q not found in aliases list", id)
+			}
+		}
+
+		return nil
+	}
+}
+
+// checkSetElemAbsent asserts that value is not present in the set attribute of
+// the named resource.
+func checkSetElemAbsent(name, attr, value string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[name]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", name)
+		}
+
+		prefix := attr + "."
+		for k, v := range rs.Primary.Attributes {
+			if strings.HasPrefix(k, prefix) && v == value {
+				return fmt.Errorf("expected %q to be absent from %s but found it (key %s)", value, attr, k)
+			}
+		}
+
+		return nil
+	}
 }
