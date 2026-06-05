@@ -25,7 +25,6 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 const (
@@ -80,11 +79,4 @@ func buildID(spaceID string) string {
 		spaceID = defaultSpaceID
 	}
 	return spaceID + "/" + resourceID
-}
-
-func normalizeSpaceID(v types.String) string {
-	if v.IsNull() || v.IsUnknown() || v.ValueString() == "" {
-		return defaultSpaceID
-	}
-	return v.ValueString()
 }
