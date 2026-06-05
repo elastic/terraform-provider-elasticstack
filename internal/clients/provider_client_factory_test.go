@@ -282,25 +282,6 @@ func TestKibanaScopedClient_EnforceMinVersion_ViaFactory_ServerlessShortCircuit(
 	assert.True(t, ok, "serverless must always satisfy any version gate")
 }
 
-// --- NewKibanaScopedClientFromFactory ---
-
-func TestNewKibanaScopedClientFromFactory_NilFactory(t *testing.T) {
-	t.Parallel()
-	scoped, diags := NewKibanaScopedClientFromFactory(nil)
-	assert.Nil(t, scoped)
-	assert.False(t, diags.HasError())
-}
-
-func TestNewKibanaScopedClientFromFactory_Valid(t *testing.T) {
-	t.Parallel()
-	f := newTestFactory(t)
-	scoped, diags := NewKibanaScopedClientFromFactory(f)
-	require.False(t, diags.HasError())
-	require.NotNil(t, scoped)
-	require.NotNil(t, scoped.GetKibanaOapiClient())
-	require.NotNil(t, scoped.GetFleetClient())
-}
-
 func TestGetElasticsearchClient_ProviderDefaultEndpointsWithoutTypedClient(t *testing.T) {
 	ctx := context.Background()
 	factory := NewProviderClientFactory(&apiClient{
@@ -356,15 +337,6 @@ func TestGetKibanaClient_ProviderDefaultFleetEndpointWithoutInnerClient(t *testi
 	require.True(t, diags.HasError(), "factory must fail when Fleet endpoint is set but Fleet client is nil")
 	assert.Nil(t, scoped)
 	assert.Equal(t, "Fleet client not found", diags[0].Summary())
-}
-
-func TestNewKibanaScopedClientFromFactory_MissingEndpoint(t *testing.T) {
-	t.Parallel()
-	factory := NewProviderClientFactory(&apiClient{version: "unit-testing"})
-	scoped, diags := NewKibanaScopedClientFromFactory(factory)
-	require.True(t, diags.HasError(), "factory helper must fail when neither Kibana nor Fleet endpoint is configured")
-	assert.Nil(t, scoped)
-	assert.Equal(t, kibanaFleetClientNotConfiguredError, diags[0].Detail())
 }
 
 // --- Resource-level path regression tests (Tasks 2.3 / 2.4) ---
