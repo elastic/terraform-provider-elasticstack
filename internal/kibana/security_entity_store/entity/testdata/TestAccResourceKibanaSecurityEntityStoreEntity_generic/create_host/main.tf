@@ -8,6 +8,12 @@ resource "elasticstack_kibana_security_entity_store_entity" "test" {
   entity_type = "generic"
   entity_id   = "generic:acc-test-entity"
 
+  labels = {
+    env = "acc-test"
+  }
+
+  tags = ["terraform"]
+
   entity = {
     id     = "generic:acc-test-entity"
     name   = "acc-test-entity"

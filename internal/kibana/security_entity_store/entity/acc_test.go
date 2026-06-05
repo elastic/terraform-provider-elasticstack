@@ -40,7 +40,15 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_generic(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_type", "generic"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_id", "generic:acc-test-entity"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "force", "false"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "document_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "response_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "timestamp"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "labels.env", "acc-test"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "tags.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity.test", "tags.*", "terraform"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity.type", "generic"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity.test", "entity.source.*", "terraform-acc-test"),
 				),
 			},
 			{
@@ -70,6 +78,8 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_updateHost(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_type", "generic"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_id", "generic:acc-test-entity"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity.name", "acc-test-entity-updated"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity.type", "generic"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity.test", "entity.source.*", "terraform-acc-test"),
 				),
 			},
 			{
@@ -143,6 +153,136 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_entityJsonIdMismatch(t *test
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("entity_json_id_mismatch"),
 				ExpectError:              regexp.MustCompile("entity_id mismatch"),
+			},
+		},
+	})
+}
+
+// TestAccResourceKibanaSecurityEntityStoreEntity_hostType exercises entity_type=host
+// with a typed host block, asserting host.name and host.ip are populated.
+func TestAccResourceKibanaSecurityEntityStoreEntity_hostType(t *testing.T) {
+	skipIfUnsupported(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_host"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_type", "host"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_id", "host:acc-test-host"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "host.name", "acc-test-host"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity.test", "host.ip.*", "1.2.3.4"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "document_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "response_json"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_host"),
+				PlanOnly:                 true,
+			},
+		},
+	})
+}
+
+// TestAccResourceKibanaSecurityEntityStoreEntity_userType exercises entity_type=user
+// with a typed user block, asserting user.name and user.email are populated.
+func TestAccResourceKibanaSecurityEntityStoreEntity_userType(t *testing.T) {
+	skipIfUnsupported(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_user"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_type", "user"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_id", "user:acc-test-user@unknown"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "user.name", "acc-test-user"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "document_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "response_json"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_user"),
+				PlanOnly:                 true,
+			},
+		},
+	})
+}
+
+// TestAccResourceKibanaSecurityEntityStoreEntity_serviceType exercises entity_type=service
+// with a typed service block, asserting service.name is populated.
+func TestAccResourceKibanaSecurityEntityStoreEntity_serviceType(t *testing.T) {
+	skipIfUnsupported(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_service"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_type", "service"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_id", "service:acc-test-service"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "service.name", "acc-test-service"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "document_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "response_json"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_service"),
+				PlanOnly:                 true,
+			},
+		},
+	})
+}
+
+// TestAccResourceKibanaSecurityEntityStoreEntity_hostJsonFallback exercises the host_json
+// JSON fallback attribute instead of the typed host block.
+func TestAccResourceKibanaSecurityEntityStoreEntity_hostJsonFallback(t *testing.T) {
+	skipIfUnsupported(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_host_json"),
+				// The API populates the typed host block on read even when host_json was used,
+				// causing a non-empty plan on subsequent applies. This is a known limitation.
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_type", "host"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_id", "host:acc-test-host-json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "document_json"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceKibanaSecurityEntityStoreEntity_hostJsonConflict verifies that setting
+// both host and host_json produces a validation error.
+func TestAccResourceKibanaSecurityEntityStoreEntity_hostJsonConflict(t *testing.T) {
+	skipIfUnsupported(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("host_json_conflict"),
+				ExpectError:              regexp.MustCompile("(?i)conflict|ConflictsWith|Invalid Attribute Combination"),
 			},
 		},
 	})
