@@ -29,6 +29,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // ExpandTemplateCore builds a *models.Template from the shared template block
@@ -87,4 +88,17 @@ func ExpandTemplateCore(
 	}
 
 	return t, diags
+}
+
+// DecodeTemplateObject unmarshals a Terraform types.Object into the provided
+// model pointer when the object is known. It returns empty diagnostics for
+// null or unknown objects. This helper removes the IsNull/IsUnknown and
+// ObjectAs boilerplate duplicated in template block expand functions.
+func DecodeTemplateObject(ctx context.Context, obj types.Object, model any) diag.Diagnostics {
+	var diags diag.Diagnostics
+	if obj.IsNull() || obj.IsUnknown() {
+		return diags
+	}
+	diags.Append(obj.As(ctx, model, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
+	return diags
 }

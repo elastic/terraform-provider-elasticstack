@@ -27,7 +27,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // toAPIModel converts the Terraform model into an API index template body.
@@ -134,12 +133,8 @@ func expandDataStreamBlock(obj types.Object) *models.DataStreamSettings {
 
 func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Template, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	if obj.IsNull() || obj.IsUnknown() {
-		return nil, diags
-	}
-
 	var tm TemplateBlockModel
-	diags.Append(obj.As(ctx, &tm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
+	diags.Append(templateutil.DecodeTemplateObject(ctx, obj, &tm)...)
 	if diags.HasError() {
 		return nil, diags
 	}
