@@ -127,6 +127,7 @@ type KibanaResource[T KibanaResourceModel] struct {
 	baseResourceEnvelope[T, *clients.KibanaScopedClient]
 	createFunc KibanaWriteFunc[T]
 	updateFunc KibanaWriteFunc[T]
+	readFunc   kibanaReadFunc[T]
 }
 
 const (
@@ -186,6 +187,7 @@ func NewKibanaResource[T KibanaResourceModel](
 			})
 		},
 	}
+	r.readFunc = opts.Read
 	if opts.Read != nil {
 		r.read = func(ctx context.Context, client *clients.KibanaScopedClient, id string, m T) (T, bool, diag.Diagnostics) {
 			_, spaceID := resolveKibanaResourceIdentity(m)
@@ -330,7 +332,7 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 		return diags
 	}
 
-	if r.read == nil {
+	if r.readFunc == nil {
 		return requireReadFuncDiag(r.component)
 	}
 
@@ -374,7 +376,7 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 		return diags
 	}
 
-	stateModel, found, readDiags := r.read(ctx, client, readResourceID, written.Model)
+	stateModel, found, readDiags := r.readFunc(ctx, client, readResourceID, readSpaceID, written.Model)
 	diags.Append(readDiags...)
 	if diags.HasError() {
 		return diags
