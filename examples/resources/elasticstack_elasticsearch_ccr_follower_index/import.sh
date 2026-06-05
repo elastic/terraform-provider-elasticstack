@@ -1,0 +1,1 @@
+terraform import elasticstack_elasticsearch_ccr_follower_index.my_follower <cluster_uuid>/<index_name>
