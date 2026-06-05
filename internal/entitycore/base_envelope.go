@@ -21,23 +21,31 @@ import (
 	"context"
 	"maps"
 
-	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
+// injectResourceConnectionBlock returns a copy of the schema produced by
+// schemaFactory with blockKey injected as an extra block. It allocates a new
+// Blocks map so each call is independent and safe to reuse the same factory.
+func injectResourceConnectionBlock(ctx context.Context, schemaFactory func(context.Context) rschema.Schema, blockKey string, block rschema.Block) rschema.Schema {
+	schema := schemaFactory(ctx)
+	blocks := make(map[string]rschema.Block, len(schema.Blocks)+1)
+	maps.Copy(blocks, schema.Blocks)
+	blocks[blockKey] = block
+	schema.Blocks = blocks
+	return schema
+}
+
 // baseResourceEnvelope holds common wiring shared by [ElasticsearchResource]
 // and [KibanaResource]: the provider client base, schema factory, connection
-// block, the standard Read / Delete lifecycle implementation, and the
-// per-operation timeouts (attribute injection plus context deadlines).
+// block, and the standard Read / Delete lifecycle implementation.
 type baseResourceEnvelope[T any, C MinVersionClient] struct {
 	*ResourceBase
 	schemaFactory   func(context.Context) rschema.Schema
 	connectionKey   string
 	connectionBlock rschema.Block
-	timeouts        ResourceTimeouts
 	resolveID       func(T) (string, diag.Diagnostics)
 	getClient       func(context.Context, T) (C, diag.Diagnostics)
 	read            func(context.Context, C, string, T) (T, bool, diag.Diagnostics)
@@ -45,22 +53,10 @@ type baseResourceEnvelope[T any, C MinVersionClient] struct {
 	postRead        func(context.Context, C, T, T, PrivateStateStorage) (T, diag.Diagnostics)
 }
 
-// Schema implements [resource.Resource], injecting the connection block and the
-// `timeouts` attribute into the schema returned by the concrete schema factory.
-// A pre-existing `timeouts` attribute in the factory output is silently replaced.
+// Schema implements [resource.Resource], injecting the connection block into
+// the schema returned by the concrete schema factory.
 func (b *baseResourceEnvelope[T, C]) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	schema := b.schemaFactory(ctx)
-	blocks := make(map[string]rschema.Block, len(schema.Blocks)+1)
-	maps.Copy(blocks, schema.Blocks)
-	blocks[b.connectionKey] = b.connectionBlock
-	schema.Blocks = blocks
-
-	attrs := make(map[string]rschema.Attribute, len(schema.Attributes)+1)
-	maps.Copy(attrs, schema.Attributes)
-	attrs[attrTimeouts] = timeouts.AttributesAll(ctx)
-	schema.Attributes = attrs
-
-	resp.Schema = schema
+	resp.Schema = injectResourceConnectionBlock(ctx, b.schemaFactory, b.connectionKey, b.connectionBlock)
 }
 
 // Read implements [resource.Resource]. Nil read callbacks surface a
@@ -77,14 +73,6 @@ func (b *baseResourceEnvelope[T, C]) Read(ctx context.Context, req resource.Read
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	readTimeout, timeoutDiags := modelTimeouts(model).Read(ctx, b.timeouts.ReadOrDefault())
-	resp.Diagnostics.Append(timeoutDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	ctx, cancel := context.WithTimeout(ctx, readTimeout)
-	defer cancel()
 
 	resourceID, idDiags := b.resolveID(model)
 	resp.Diagnostics.Append(idDiags...)
@@ -125,12 +113,7 @@ func (b *baseResourceEnvelope[T, C]) Read(ctx context.Context, req resource.Read
 				return
 			}
 		}
-		preserveModelTimeouts(&resultModel, modelTimeouts(model))
 		resp.Diagnostics.Append(resp.State.Set(ctx, &resultModel)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(attrTimeouts), modelTimeouts(model))...)
 	} else {
 		resp.State.RemoveResource(ctx)
 	}
@@ -148,14 +131,6 @@ func (b *baseResourceEnvelope[T, C]) Delete(ctx context.Context, req resource.De
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	deleteTimeout, timeoutDiags := modelTimeouts(model).Delete(ctx, b.timeouts.DeleteOrDefault())
-	resp.Diagnostics.Append(timeoutDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
-	defer cancel()
 
 	resourceID, idDiags := b.resolveID(model)
 	resp.Diagnostics.Append(idDiags...)

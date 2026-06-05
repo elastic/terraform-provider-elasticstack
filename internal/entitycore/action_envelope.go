@@ -192,19 +192,27 @@ type genericAction[T WithActionTimeouts, Client MinVersionClient] struct {
 	adapter        actionAdapter[T, Client]
 }
 
+// injectActionBlocks returns a copy of the schema produced by schemaFactory
+// with the timeouts block (at timeoutsKey) and connection block (at connKey,
+// built by connBlockFactory) injected. It allocates a new Blocks map so each
+// call is independent and safe to reuse the same factory.
+func injectActionBlocks(ctx context.Context, schemaFactory func(context.Context) actionschema.Schema, timeoutsKey string, connKey string, connBlockFactory func() actionschema.Block) actionschema.Schema {
+	schema := schemaFactory(ctx)
+	blocks := make(map[string]actionschema.Block, len(schema.Blocks)+2)
+	maps.Copy(blocks, schema.Blocks)
+	blocks[timeoutsKey] = actiontimeouts.Block(ctx)
+	blocks[connKey] = connBlockFactory()
+	schema.Blocks = blocks
+	return schema
+}
+
 // Schema implements [action.Action], injecting the `timeouts` block (always)
 // and the connection block (`elasticsearch_connection` or `kibana_connection`)
 // into the schema returned by the concrete schema factory. Concrete actions
 // SHOULD NOT include either block in their factory output; the envelope owns
 // them so every action gets identical behavior.
 func (a *genericAction[T, Client]) Schema(ctx context.Context, _ action.SchemaRequest, resp *action.SchemaResponse) {
-	schema := a.schemaFactory(ctx)
-	blocks := make(map[string]actionschema.Block, len(schema.Blocks)+2)
-	maps.Copy(blocks, schema.Blocks)
-	blocks[blockTimeouts] = actiontimeouts.Block(ctx)
-	blocks[a.adapter.schemaBlockKey] = a.adapter.schemaBlockFactory()
-	schema.Blocks = blocks
-	resp.Schema = schema
+	resp.Schema = injectActionBlocks(ctx, a.schemaFactory, blockTimeouts, a.adapter.schemaBlockKey, a.adapter.schemaBlockFactory)
 }
 
 // Invoke implements [action.Action] with a fixed prelude:
