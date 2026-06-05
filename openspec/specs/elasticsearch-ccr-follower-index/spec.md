@@ -12,6 +12,11 @@ data stream name when following a data stream; write-only, not returned by `GET 
 and the standard Elasticsearch connection block. All ForceNew attributes force resource replacement
 when changed.
 
+The `data_stream_name` parameter is only accepted by the CCR follow API on Elasticsearch 8.4.0 and
+later. When `data_stream_name` is set against an older cluster, the provider SHALL return a clear
+error diagnostic naming the minimum required version rather than surfacing the raw Elasticsearch
+parse error. The check is bypassed for serverless Elasticsearch.
+
 #### Scenario: All required attributes specified
 
 - GIVEN a configuration with `name`, `remote_cluster`, and `leader_index` all set to non-empty strings
@@ -23,6 +28,14 @@ when changed.
 - GIVEN a configuration with `leader_index` omitted
 - WHEN Terraform validates the configuration
 - THEN the provider SHALL return an error diagnostic for the missing required attribute
+
+#### Scenario: data_stream_name on an unsupported Elasticsearch version
+
+- GIVEN a configuration with `data_stream_name` set to a non-empty string
+- AND the target Elasticsearch cluster is older than 8.4.0
+- WHEN the provider attempts to create the follower index
+- THEN the provider SHALL return an error diagnostic stating that `data_stream_name` requires Elasticsearch 8.4.0 or later
+- AND it SHALL NOT issue the `PUT /{index}/_ccr/follow` request
 
 ### Requirement: Schema — index settings override (REQ-CCR-FI-002)
 

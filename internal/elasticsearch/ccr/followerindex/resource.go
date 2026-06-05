@@ -22,9 +22,14 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
+
+// MinVersionDataStreamName is the minimum Elasticsearch version that accepts the
+// data_stream_name parameter on the CCR follow API (added in 8.4.0).
+var MinVersionDataStreamName = version.Must(version.NewVersion("8.4.0"))
 
 var (
 	_ resource.Resource                = newFollowerIndexResource()

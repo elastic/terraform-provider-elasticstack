@@ -24,7 +24,7 @@ const (
 	descName                          = "Name of the follower index."
 	descRemoteCluster                 = "Remote cluster alias containing the leader index."
 	descLeaderIndex                   = "Name of the leader index on the remote cluster."
-	descDataStreamName                = "Local data stream name when following a data stream leader. Write-only; not returned by the CCR info API."
+	descDataStreamName                = "Local data stream name when following a data stream leader. Requires Elasticsearch 8.4.0 or later. Write-only; not returned by the CCR info API."
 	descSettingsRaw                   = "JSON-encoded index settings to override from the leader index. Write-only; not returned by the CCR info API."
 	descMaxOutstandingReadRequests    = "Maximum number of outstanding read requests from the remote cluster."
 	descMaxOutstandingWriteRequests   = "Maximum number of outstanding write requests on the follower."

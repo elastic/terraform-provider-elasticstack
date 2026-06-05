@@ -29,6 +29,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ccr/followerindex"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -194,6 +197,9 @@ func TestAccResourceCCRFollowerIndex_settingsRaw(t *testing.T) {
 }
 
 func TestAccResourceCCRFollowerIndex_dataStreamNameImport(t *testing.T) {
+	// data_stream_name on the CCR follow API requires Elasticsearch 8.4.0+.
+	versionutils.SkipIfUnsupported(t, followerindex.MinVersionDataStreamName, versionutils.FlavorStateful)
+
 	ccrEnv := acctest.PreCheckCCR(t)
 	// Leader and follower data streams share a cluster in the self-remote
 	// environment, so their names must differ. A follower attaches to a local
@@ -235,6 +241,43 @@ func TestAccResourceCCRFollowerIndex_dataStreamNameImport(t *testing.T) {
 					"settings_raw",
 					"data_stream_name",
 				},
+			},
+		},
+	})
+}
+
+// TestAccResourceCCRFollowerIndex_dataStreamNameVersionGate verifies that
+// setting data_stream_name on a cluster older than 8.4.0 fails fast with a
+// clear version-requirement error instead of the raw Elasticsearch parse error.
+// It only runs on clusters below 8.4.0.
+func TestAccResourceCCRFollowerIndex_dataStreamNameVersionGate(t *testing.T) {
+	constraints, err := version.NewConstraint("< " + followerindex.MinVersionDataStreamName.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	versionutils.SkipIfUnsupportedConstraints(t, constraints, versionutils.FlavorStateful)
+
+	ccrEnv := acctest.PreCheckCCR(t)
+	leaderIndexName := strings.ToLower(sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlpha))
+	followerIndexName := strings.ToLower(sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlpha))
+	dataStreamName := "follower-" + strings.ToLower(sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlpha))
+
+	vars := config.Variables{
+		"remote_cluster_alias": config.StringVariable(ccrEnv.RemoteClusterAlias),
+		"remote_proxy_address": config.StringVariable(ccrEnv.RemoteProxyAddress),
+		"leader_index_name":    config.StringVariable(leaderIndexName),
+		"follower_index_name":  config.StringVariable(followerIndexName),
+		"data_stream_name":     config.StringVariable(dataStreamName),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheckCCR(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				ExpectError:              regexp.MustCompile(`data_stream_name attribute is only supported on Elasticsearch 8\.4\.0`),
 			},
 		},
 	})

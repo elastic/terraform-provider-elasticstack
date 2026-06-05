@@ -26,7 +26,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -47,6 +49,14 @@ func createFollowerIndex(
 	var diags diag.Diagnostics
 	plan := req.Plan
 	indexName := req.WriteID
+
+	// data_stream_name is only accepted by the CCR follow API on Elasticsearch
+	// 8.4.0+. Reject it early on older clusters with a clear message instead of
+	// surfacing the raw "unknown field [data_stream_name]" parse error.
+	diags.Append(enforceDataStreamNameSupported(ctx, client, plan)...)
+	if diags.HasError() {
+		return entitycore.WriteResult[Model]{Model: plan}, diags
+	}
 
 	// Preserve the configured/desired status. GET /_ccr/info reports a transient
 	// "paused" status immediately after creation, so the pause decision must be
@@ -93,6 +103,36 @@ func createFollowerIndex(
 	plan.ID = types.StringValue(id.String())
 
 	return entitycore.WriteResult[Model]{Model: plan}, diags
+}
+
+// enforceDataStreamNameSupported rejects data_stream_name on Elasticsearch
+// versions that predate its support on the CCR follow API (added in 8.4.0).
+func enforceDataStreamNameSupported(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	plan Model,
+) diag.Diagnostics {
+	var diags diag.Diagnostics
+	if !typeutils.IsKnown(plan.DataStreamName) || plan.DataStreamName.ValueString() == "" {
+		return diags
+	}
+
+	supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionDataStreamName)
+	diags.Append(versionDiags...)
+	if diags.HasError() {
+		return diags
+	}
+	if !supported {
+		diags.AddAttributeError(
+			path.Root("data_stream_name"),
+			"data_stream_name requires a newer Elasticsearch version",
+			fmt.Sprintf(
+				"The data_stream_name attribute is only supported on Elasticsearch %s and later. Remove data_stream_name or upgrade the cluster.",
+				MinVersionDataStreamName,
+			),
+		)
+	}
+	return diags
 }
 
 // waitForFollowerActive polls GET /_ccr/info until the follower reports an active

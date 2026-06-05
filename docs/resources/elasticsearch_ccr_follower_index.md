@@ -41,7 +41,7 @@ resource "elasticstack_elasticsearch_ccr_follower_index" "my_follower" {
 
 ### Optional
 
-- `data_stream_name` (String) Local data stream name when following a data stream leader. Write-only; not returned by the CCR info API.
+- `data_stream_name` (String) Local data stream name when following a data stream leader. Requires Elasticsearch 8.4.0 or later. Write-only; not returned by the CCR info API.
 - `delete_index_on_destroy` (Boolean) When true, destroy deletes the underlying index after unfollowing. When false (default), the index is opened as a regular index.
 - `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `max_outstanding_read_requests` (Number) Maximum number of outstanding read requests from the remote cluster.
