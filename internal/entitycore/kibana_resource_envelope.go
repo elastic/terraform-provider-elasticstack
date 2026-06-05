@@ -20,13 +20,11 @@ package entitycore
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,8 +32,7 @@ import (
 
 // KibanaResourceModel is the type constraint for models passed to
 // [NewKibanaResource]. Concrete types must provide value-receiver methods
-// GetID, GetResourceID, GetSpaceID, GetKibanaConnection, and
-// [WithResourceTimeouts] (typically by embedding [ResourceTimeoutsField]).
+// GetID, GetResourceID, GetSpaceID, and GetKibanaConnection.
 type KibanaResourceModel interface {
 	GetID() types.String
 	// GetResourceID returns the plan-safe write identity (for example name or
@@ -44,7 +41,6 @@ type KibanaResourceModel interface {
 	GetResourceID() types.String
 	GetSpaceID() types.String
 	GetKibanaConnection() types.List
-	WithResourceTimeouts
 }
 
 type kibanaReadFunc[T KibanaResourceModel] func(
@@ -110,13 +106,6 @@ type KibanaPostReadFunc[T KibanaResourceModel] func(
 // KibanaResourceOptions configures [NewKibanaResource]. PostRead is optional;
 // Schema, Read, Delete, Create, and Update must be non-nil or the envelope
 // surfaces configuration diagnostics instead of invoking nil callbacks.
-//
-// Timeouts supplies per-operation default durations when configuration omits
-// `timeouts.<op>`; zero fields fall back to [DefaultResourceCreateTimeout],
-// [DefaultResourceReadTimeout], [DefaultResourceUpdateTimeout], and
-// [DefaultResourceDeleteTimeout]. Concrete schema factories MUST NOT include
-// a `timeouts` attribute; the envelope injects it and silently overwrites any
-// factory-supplied attribute with the same key.
 type KibanaResourceOptions[T KibanaResourceModel] struct {
 	Schema   func(context.Context) rschema.Schema
 	Read     kibanaReadFunc[T]
@@ -124,17 +113,16 @@ type KibanaResourceOptions[T KibanaResourceModel] struct {
 	Create   KibanaWriteFunc[T]
 	Update   KibanaWriteFunc[T]
 	PostRead KibanaPostReadFunc[T]
-	Timeouts ResourceTimeouts
 }
 
 // KibanaResource implements [resource.Resource] and related interfaces
 // for Kibana-backed resources. It embeds [baseResourceEnvelope] to reuse
 // Configure, Metadata, Client, Schema, Read, and Delete.
 //
-// The envelope owns Schema (with kibana_connection block and timeouts attribute
-// injection), Create, Read, Update, and Delete. Concrete resources may override
-// Create or Update when their lifecycle does not fit the callback contract, and
-// may choose to implement ImportState.
+// The envelope owns Schema (with kibana_connection block injection),
+// Create, Read, Update, and Delete. Concrete resources may override Create or
+// Update when their lifecycle does not fit the callback contract, and may
+// choose to implement ImportState.
 type KibanaResource[T KibanaResourceModel] struct {
 	baseResourceEnvelope[T, *clients.KibanaScopedClient]
 	createFunc KibanaWriteFunc[T]
@@ -180,7 +168,6 @@ func NewKibanaResource[T KibanaResourceModel](
 		schemaFactory:   opts.Schema,
 		connectionKey:   blockKibanaConnection,
 		connectionBlock: providerschema.GetKbFWConnectionBlock(),
-		timeouts:        opts.Timeouts,
 		resolveID: func(m T) (string, diag.Diagnostics) {
 			resourceID, _ := resolveKibanaResourceIdentity(m)
 			return resourceID, nil
@@ -283,167 +270,102 @@ func (r *KibanaResource[T]) Update(ctx context.Context, req resource.UpdateReque
 }
 
 func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWriteInvocation) diag.Diagnostics {
-	var diags diag.Diagnostics
-	if (inv.isUpdate && r.updateFunc == nil) || (!inv.isUpdate && r.createFunc == nil) {
-		op := envelopeWriteOpCreate
-		if inv.isUpdate {
-			op = envelopeWriteOpUpdate
-		}
-		return requireCallbackDiag(r.component, op)
-	}
+	// resolvedSpaceID and readSpaceID are captured across adapter callbacks via
+	// closure: validateIdentity sets resolvedSpaceID; resolveReadIdentity sets
+	// readSpaceID; invokeWrite, doRead, and notFoundDetail consume them.
+	var resolvedSpaceID string
+	var readSpaceID string
 
-	var planModel T
-	diags.Append(inv.plan.Get(ctx, &planModel)...)
-	if diags.HasError() {
-		return diags
-	}
+	adapter := writeCommonAdapter[T, *clients.KibanaScopedClient]{
+		validateIdentity: func(planModel T, priorPtr *T, isUpdate bool) (string, diag.Diagnostics) {
+			if diags := r.validateSpaceID(planModel); diags.HasError() {
+				return "", diags
+			}
 
-	var opTimeout time.Duration
-	var timeoutDiags diag.Diagnostics
-	if inv.isUpdate {
-		opTimeout, timeoutDiags = planModel.GetTimeouts().Update(ctx, r.timeouts.UpdateOrDefault())
-	} else {
-		opTimeout, timeoutDiags = planModel.GetTimeouts().Create(ctx, r.timeouts.CreateOrDefault())
-	}
-	diags.Append(timeoutDiags...)
-	if diags.HasError() {
-		return diags
-	}
-	ctx, cancel := context.WithTimeout(ctx, opTimeout)
-	defer cancel()
+			writeID := planModel.GetResourceID().ValueString()
+			spaceID := planModel.GetSpaceID().ValueString()
 
-	var priorPtr *T
-	if inv.isUpdate && inv.priorState != nil {
-		var priorModel T
-		diags.Append(inv.priorState.Get(ctx, &priorModel)...)
-		if diags.HasError() {
-			return diags
-		}
-		priorPtr = &priorModel
+			if isUpdate {
+				writeID, spaceID = resolveKibanaResourceIdentity(planModel)
+				// When the plan identity is empty (for example because computed
+				// fields were marked unknown in ModifyPlan), fall back to the
+				// prior state's identity. This handles resources whose computed
+				// identifiers change during Update.
+				if writeID == "" && priorPtr != nil {
+					writeID, spaceID = resolveKibanaResourceIdentity(*priorPtr)
+				}
+				if writeID == "" {
+					var diags diag.Diagnostics
+					diags.AddError(
+						"Invalid resource identifier",
+						"The resource identifier is empty; cannot update.",
+					)
+					return "", diags
+				}
+			}
+			resolvedSpaceID = spaceID
+			return writeID, nil
+		},
+		getClient: func(ctx context.Context, planModel T) (*clients.KibanaScopedClient, diag.Diagnostics) {
+			return r.Client().GetKibanaClient(ctx, planModel.GetKibanaConnection())
+		},
+		checkReadFunc: func() diag.Diagnostics {
+			if r.readFunc == nil {
+				return requireReadFuncDiag(r.component)
+			}
+			return nil
+		},
+		invokeWrite: func(ctx context.Context, client *clients.KibanaScopedClient, planModel T, priorPtr *T, configModel T, writeID string, isUpdate bool, _ PrivateStateStorage) (T, diag.Diagnostics) {
+			writeFn := r.createFunc
+			if isUpdate {
+				writeFn = r.updateFunc
+			}
+			written, d := writeFn(ctx, client, KibanaWriteRequest[T]{
+				Plan:    planModel,
+				Prior:   priorPtr,
+				Config:  configModel,
+				WriteID: writeID,
+				SpaceID: resolvedSpaceID,
+			})
+			return written.Model, d
+		},
+		resolveReadIdentity: func(writtenModel T, _ string) (string, diag.Diagnostics) {
+			var diags diag.Diagnostics
+			readID := writtenModel.GetResourceID().ValueString()
+			readSpaceID = writtenModel.GetSpaceID().ValueString()
+			if readID == "" {
+				diags.AddError(
+					"Invalid resource identifier",
+					"The resolved read identity is empty after write; cannot refresh.",
+				)
+				return "", diags
+			}
+			if !isKibanaUnscoped(writtenModel) && readSpaceID == "" {
+				diags.AddError(
+					"Invalid space identifier",
+					"The resolved read space is empty after write; cannot refresh.",
+				)
+				return "", diags
+			}
+			return readID, diags
+		},
+		doRead: func(ctx context.Context, client *clients.KibanaScopedClient, readID string, writtenModel T) (T, bool, diag.Diagnostics) {
+			return r.readFunc(ctx, client, readID, readSpaceID, writtenModel)
+		},
+		notFoundDetail: func(_, readID string) string {
+			if readSpaceID != "" {
+				return fmt.Sprintf("%s_%s %q in space %q was not found after write", r.component, r.resourceName, readID, readSpaceID)
+			}
+			return fmt.Sprintf("%s_%s %q was not found after write", r.component, r.resourceName, readID)
+		},
+		doPostRead: func(ctx context.Context, client *clients.KibanaScopedClient, priorModel, stateModel T, private PrivateStateStorage) (T, diag.Diagnostics) {
+			if r.postRead == nil {
+				return stateModel, nil
+			}
+			return r.postRead(ctx, client, priorModel, stateModel, private)
+		},
 	}
-
-	diags.Append(r.validateSpaceID(planModel)...)
-	if diags.HasError() {
-		return diags
-	}
-
-	writeID := planModel.GetResourceID().ValueString()
-	spaceID := planModel.GetSpaceID().ValueString()
-
-	if inv.isUpdate {
-		writeID, spaceID = resolveKibanaResourceIdentity(planModel)
-		// When the plan identity is empty (for example because computed fields
-		// were marked unknown in ModifyPlan), fall back to the prior state's
-		// identity. This handles resources whose computed identifiers change
-		// during Update.
-		if writeID == "" && priorPtr != nil {
-			writeID, spaceID = resolveKibanaResourceIdentity(*priorPtr)
-		}
-		if writeID == "" {
-			diags.AddError(
-				"Invalid resource identifier",
-				"The resource identifier is empty; cannot update.",
-			)
-			return diags
-		}
-	}
-
-	client, connDiags := r.Client().GetKibanaClient(ctx, planModel.GetKibanaConnection())
-	diags.Append(connDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	if vDiags := EnforceVersionRequirements(ctx, client, &planModel); vDiags.HasError() {
-		diags.Append(vDiags...)
-		return diags
-	}
-
-	if r.readFunc == nil {
-		return requireReadFuncDiag(r.component)
-	}
-
-	var configModel T
-	diags.Append(inv.config.Get(ctx, &configModel)...)
-	if diags.HasError() {
-		return diags
-	}
-
-	writeFn := r.createFunc
-	if inv.isUpdate {
-		writeFn = r.updateFunc
-	}
-	written, callDiags := writeFn(ctx, client, KibanaWriteRequest[T]{
-		Plan:    planModel,
-		Prior:   priorPtr,
-		Config:  configModel,
-		WriteID: writeID,
-		SpaceID: spaceID,
-	})
-	diags.Append(callDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	readResourceID := written.Model.GetResourceID().ValueString()
-	readSpaceID := written.Model.GetSpaceID().ValueString()
-	if readResourceID == "" {
-		diags.AddError(
-			"Invalid resource identifier",
-			"The resolved read identity is empty after write; cannot refresh.",
-		)
-		return diags
-	}
-
-	if !isKibanaUnscoped(written.Model) && readSpaceID == "" {
-		diags.AddError(
-			"Invalid space identifier",
-			"The resolved read space is empty after write; cannot refresh.",
-		)
-		return diags
-	}
-
-	stateModel, found, readDiags := r.readFunc(ctx, client, readResourceID, readSpaceID, written.Model)
-	diags.Append(readDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	if !found {
-		notFoundDetail := fmt.Sprintf("%s_%s %q was not found after write", r.component, r.resourceName, readResourceID)
-		if readSpaceID != "" {
-			notFoundDetail = fmt.Sprintf("%s_%s %q in space %q was not found after write", r.component, r.resourceName, readResourceID, readSpaceID)
-		}
-		diags.AddError(
-			"Resource not found",
-			notFoundDetail,
-		)
-		return diags
-	}
-
-	priorModel := planModel
-
-	if r.postRead != nil {
-		var prDiags diag.Diagnostics
-		stateModel, prDiags = r.postRead(ctx, client, priorModel, stateModel, inv.privateState)
-		diags.Append(prDiags...)
-		if diags.HasError() {
-			return diags
-		}
-	}
-
-	preserveModelTimeouts(&stateModel, planModel.GetTimeouts())
-	diags.Append(inv.outState.Set(ctx, &stateModel)...)
-	if diags.HasError() {
-		return diags
-	}
-
-	diags.Append(inv.outState.SetAttribute(ctx, path.Root(attrTimeouts), planModel.GetTimeouts())...)
-	if diags.HasError() {
-		return diags
-	}
-
-	return diags
+	return runWriteCommon(ctx, inv, r.component, r.createFunc == nil, r.updateFunc == nil, adapter)
 }
 
 var (

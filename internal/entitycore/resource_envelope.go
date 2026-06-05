@@ -21,13 +21,11 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -35,8 +33,7 @@ import (
 
 // ElasticsearchResourceModel is the type constraint for models passed to
 // [NewElasticsearchResource]. Concrete types must provide value-receiver
-// methods GetID, GetResourceID, GetElasticsearchConnection, and
-// [WithResourceTimeouts] (typically by embedding [ResourceTimeoutsField]).
+// methods GetID, GetResourceID, and GetElasticsearchConnection.
 type ElasticsearchResourceModel interface {
 	GetID() types.String
 	// GetResourceID returns the plan-safe write identity (for example name or
@@ -44,7 +41,6 @@ type ElasticsearchResourceModel interface {
 	// id values may be unknown in create plans.
 	GetResourceID() types.String
 	GetElasticsearchConnection() types.List
-	WithResourceTimeouts
 }
 
 // WithReadResourceID is an optional interface for models that need a stable read
@@ -135,13 +131,6 @@ type PostReadFunc[T ElasticsearchResourceModel] func(
 // envelope surfaces configuration diagnostics instead of invoking nil callbacks.
 // Create and Update share the [WriteFunc] type so callers may pass the same
 // function for both when the logic is identical.
-//
-// Timeouts supplies per-operation default durations when configuration omits
-// `timeouts.<op>`; zero fields fall back to [DefaultResourceCreateTimeout],
-// [DefaultResourceReadTimeout], [DefaultResourceUpdateTimeout], and
-// [DefaultResourceDeleteTimeout]. Concrete schema factories MUST NOT include
-// a `timeouts` attribute; the envelope injects it and silently overwrites any
-// factory-supplied attribute with the same key.
 type ElasticsearchResourceOptions[T ElasticsearchResourceModel] struct {
 	Schema   func(context.Context) rschema.Schema
 	Read     elasticsearchReadFunc[T]
@@ -149,31 +138,20 @@ type ElasticsearchResourceOptions[T ElasticsearchResourceModel] struct {
 	Create   WriteFunc[T]
 	Update   WriteFunc[T]
 	PostRead PostReadFunc[T]
-	Timeouts ResourceTimeouts
-	// SkipReadAfterWrite, when true, persists the write callback's WriteResult.Model
-	// to state directly instead of re-reading via the read callback after Create/Update.
-	// Use for resources whose write already returns the authoritative post-write state
-	// and where a generic re-read would lose information (e.g. a transient state that the
-	// write path detected but a subsequent read cannot reconstruct). The read callback is
-	// still used for Read/refresh.
-	SkipReadAfterWrite bool
 }
 
 // ElasticsearchResource implements [resource.Resource] and related interfaces
 // for Elasticsearch-backed resources. It embeds [baseResourceEnvelope] to reuse
 // Configure, Metadata, Client, Schema, Read, and Delete.
 //
-// The envelope owns Schema (with elasticsearch_connection block and timeouts
-// attribute injection), Create, Read, Update, and Delete. Concrete resources may
-// override Create or Update when their lifecycle does not fit the callback
-// contract, and may choose to implement ImportState.
+// The envelope owns Schema (with elasticsearch_connection block injection),
+// Create, Read, Update, and Delete. Concrete resources may override Create or
+// Update when their lifecycle does not fit the callback contract, and may
+// choose to implement ImportState.
 type ElasticsearchResource[T ElasticsearchResourceModel] struct {
 	baseResourceEnvelope[T, *clients.ElasticsearchScopedClient]
 	createFunc WriteFunc[T]
 	updateFunc WriteFunc[T]
-	// skipReadAfterWrite, when true, persists the write callback's WriteResult.Model
-	// to state directly instead of re-reading via the read callback after Create/Update.
-	skipReadAfterWrite bool
 }
 
 // PlaceholderElasticsearchWriteCallback returns a write callback that fails if
@@ -223,7 +201,6 @@ func NewElasticsearchResource[T ElasticsearchResourceModel](name string, opts El
 		schemaFactory:   opts.Schema,
 		connectionKey:   blockElasticsearchConnection,
 		connectionBlock: providerschema.GetEsFWConnectionBlock(),
-		timeouts:        opts.Timeouts,
 		resolveID: func(m T) (string, diag.Diagnostics) {
 			return resolveElasticsearchReadResourceID(m, "")
 		},
@@ -242,7 +219,6 @@ func NewElasticsearchResource[T ElasticsearchResourceModel](name string, opts El
 			})
 		},
 	}
-	r.skipReadAfterWrite = opts.SkipReadAfterWrite
 	if opts.Read != nil {
 		r.read = func(ctx context.Context, client *clients.ElasticsearchScopedClient, id string, m T) (T, bool, diag.Diagnostics) {
 			return opts.Read(ctx, client, id, m)
@@ -314,160 +290,84 @@ func (r *ElasticsearchResource[T]) Update(ctx context.Context, req resource.Upda
 }
 
 func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWriteInvocation) diag.Diagnostics {
-	var diags diag.Diagnostics
-	if (inv.isUpdate && r.updateFunc == nil) || (!inv.isUpdate && r.createFunc == nil) {
-		op := envelopeWriteOpCreate
-		if inv.isUpdate {
-			op = envelopeWriteOpUpdate
-		}
-		return requireCallbackDiag(r.component, op)
+	adapter := writeCommonAdapter[T, *clients.ElasticsearchScopedClient]{
+		validateIdentity: func(planModel T, _ *T, isUpdate bool) (string, diag.Diagnostics) {
+			var diags diag.Diagnostics
+			writeID := planModel.GetResourceID()
+			if !typeutils.IsKnown(writeID) {
+				diags.AddError(
+					"Invalid resource identifier",
+					"The resource write identity from configuration is unknown; cannot create or update.",
+				)
+				return "", diags
+			}
+			allowEmptyCreate := false
+			if opt, ok := any(planModel).(WithOptionalWriteIdentity); ok {
+				allowEmptyCreate = opt.AllowsEmptyWriteIdentityOnCreate()
+			}
+			writeKey := writeID.ValueString()
+			if writeKey == "" && (isUpdate || !allowEmptyCreate) {
+				diags.AddError(
+					"Invalid resource identifier",
+					"The resource write identity from configuration is empty; cannot create or update.",
+				)
+				return "", diags
+			}
+			return writeKey, diags
+		},
+		getClient: func(ctx context.Context, planModel T) (*clients.ElasticsearchScopedClient, diag.Diagnostics) {
+			return r.Client().GetElasticsearchClient(ctx, planModel.GetElasticsearchConnection())
+		},
+		checkReadFunc: func() diag.Diagnostics {
+			if r.read == nil {
+				return requireReadFuncDiag(r.component)
+			}
+			return nil
+		},
+		invokeWrite: func(ctx context.Context, client *clients.ElasticsearchScopedClient, planModel T, priorPtr *T, configModel T, writeID string, isUpdate bool, private PrivateStateStorage) (T, diag.Diagnostics) {
+			writeFn := r.createFunc
+			if isUpdate {
+				writeFn = r.updateFunc
+			}
+			written, d := writeFn(ctx, client, WriteRequest[T]{
+				Plan:    planModel,
+				Prior:   priorPtr,
+				Config:  configModel,
+				WriteID: writeID,
+				Private: private,
+			})
+			return written.Model, d
+		},
+		resolveReadIdentity: func(writtenModel T, writeID string) (string, diag.Diagnostics) {
+			var diags diag.Diagnostics
+			readID, idDiags := resolveElasticsearchReadResourceID(writtenModel, writeID)
+			diags.Append(idDiags...)
+			if diags.HasError() {
+				return "", diags
+			}
+			if readID == "" {
+				diags.AddError(
+					"Invalid resource identifier",
+					"The resolved read identity is empty after write; cannot refresh.",
+				)
+				return "", diags
+			}
+			return readID, diags
+		},
+		doRead: func(ctx context.Context, client *clients.ElasticsearchScopedClient, readID string, writtenModel T) (T, bool, diag.Diagnostics) {
+			return r.read(ctx, client, readID, writtenModel)
+		},
+		notFoundDetail: func(writeID, _ string) string {
+			return fmt.Sprintf("%s_%s %q was not found after write", r.component, r.resourceName, writeID)
+		},
+		doPostRead: func(ctx context.Context, client *clients.ElasticsearchScopedClient, priorModel, stateModel T, private PrivateStateStorage) (T, diag.Diagnostics) {
+			if r.postRead == nil {
+				return stateModel, nil
+			}
+			return r.postRead(ctx, client, priorModel, stateModel, private)
+		},
 	}
-
-	var planModel T
-	diags.Append(inv.plan.Get(ctx, &planModel)...)
-	if diags.HasError() {
-		return diags
-	}
-
-	var opTimeout time.Duration
-	var timeoutDiags diag.Diagnostics
-	if inv.isUpdate {
-		opTimeout, timeoutDiags = planModel.GetTimeouts().Update(ctx, r.timeouts.UpdateOrDefault())
-	} else {
-		opTimeout, timeoutDiags = planModel.GetTimeouts().Create(ctx, r.timeouts.CreateOrDefault())
-	}
-	diags.Append(timeoutDiags...)
-	if diags.HasError() {
-		return diags
-	}
-	ctx, cancel := context.WithTimeout(ctx, opTimeout)
-	defer cancel()
-
-	var priorPtr *T
-	if inv.isUpdate && inv.priorState != nil {
-		var priorModel T
-		diags.Append(inv.priorState.Get(ctx, &priorModel)...)
-		if diags.HasError() {
-			return diags
-		}
-		priorPtr = &priorModel
-	}
-
-	writeID := planModel.GetResourceID()
-	if !typeutils.IsKnown(writeID) {
-		diags.AddError(
-			"Invalid resource identifier",
-			"The resource write identity from configuration is unknown; cannot create or update.",
-		)
-		return diags
-	}
-	allowEmptyCreate := false
-	if opt, ok := any(planModel).(WithOptionalWriteIdentity); ok {
-		allowEmptyCreate = opt.AllowsEmptyWriteIdentityOnCreate()
-	}
-	writeKey := writeID.ValueString()
-	if writeKey == "" && (inv.isUpdate || !allowEmptyCreate) {
-		diags.AddError(
-			"Invalid resource identifier",
-			"The resource write identity from configuration is empty; cannot create or update.",
-		)
-		return diags
-	}
-
-	client, connDiags := r.Client().GetElasticsearchClient(ctx, planModel.GetElasticsearchConnection())
-	diags.Append(connDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	if vDiags := EnforceVersionRequirements(ctx, client, &planModel); vDiags.HasError() {
-		diags.Append(vDiags...)
-		return diags
-	}
-
-	if r.read == nil {
-		return requireReadFuncDiag(r.component)
-	}
-
-	var configModel T
-	diags.Append(inv.config.Get(ctx, &configModel)...)
-	if diags.HasError() {
-		return diags
-	}
-
-	writeFn := r.createFunc
-	if inv.isUpdate {
-		writeFn = r.updateFunc
-	}
-	written, callDiags := writeFn(ctx, client, WriteRequest[T]{
-		Plan:    planModel,
-		Prior:   priorPtr,
-		Config:  configModel,
-		WriteID: writeKey,
-		Private: inv.privateState,
-	})
-	diags.Append(callDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	var stateModel T
-	if r.skipReadAfterWrite {
-		stateModel = written.Model
-	} else {
-		readResourceID, idDiags := resolveElasticsearchReadResourceID(written.Model, writeKey)
-		diags.Append(idDiags...)
-		if diags.HasError() {
-			return diags
-		}
-		if readResourceID == "" {
-			diags.AddError(
-				"Invalid resource identifier",
-				"The resolved read identity is empty after write; cannot refresh.",
-			)
-			return diags
-		}
-
-		var found bool
-		var readDiags diag.Diagnostics
-		stateModel, found, readDiags = r.read(ctx, client, readResourceID, written.Model)
-		diags.Append(readDiags...)
-		if diags.HasError() {
-			return diags
-		}
-
-		if !found {
-			diags.AddError(
-				"Resource not found",
-				fmt.Sprintf("%s_%s %q was not found after write", r.component, r.resourceName, writeKey),
-			)
-			return diags
-		}
-	}
-
-	priorModel := planModel
-
-	if r.postRead != nil {
-		var prDiags diag.Diagnostics
-		stateModel, prDiags = r.postRead(ctx, client, priorModel, stateModel, inv.privateState)
-		diags.Append(prDiags...)
-		if diags.HasError() {
-			return diags
-		}
-	}
-
-	preserveModelTimeouts(&stateModel, planModel.GetTimeouts())
-	diags.Append(inv.outState.Set(ctx, &stateModel)...)
-	if diags.HasError() {
-		return diags
-	}
-
-	diags.Append(inv.outState.SetAttribute(ctx, path.Root(attrTimeouts), planModel.GetTimeouts())...)
-	if diags.HasError() {
-		return diags
-	}
-
-	return diags
+	return runWriteCommon(ctx, inv, r.component, r.createFunc == nil, r.updateFunc == nil, adapter)
 }
 
 var (
