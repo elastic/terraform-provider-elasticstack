@@ -19,8 +19,6 @@ package template
 
 import (
 	"context"
-	"encoding/json"
-	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -72,16 +70,9 @@ func (m Model) toAPIModel(ctx context.Context) (*models.IndexTemplate, diag.Diag
 	}
 	out.IndexPatterns = patterns
 
-	if typeutils.IsKnown(m.Metadata) {
-		s := strings.TrimSpace(m.Metadata.ValueString())
-		if s != "" {
-			meta := make(map[string]any)
-			if err := json.Unmarshal([]byte(s), &meta); err != nil {
-				diags.AddError("Invalid metadata JSON", err.Error())
-				return nil, diags
-			}
-			out.Meta = meta
-		}
+	out.Meta = templateutil.ExpandMetadataJSON(m.Metadata, &diags)
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	if typeutils.IsKnown(m.Priority) {
