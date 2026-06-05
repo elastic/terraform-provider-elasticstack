@@ -309,11 +309,7 @@ func (r *ElasticsearchResource[T]) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	defaultTimeout := r.timeouts.Read
-	if defaultTimeout <= 0 {
-		defaultTimeout = DefaultResourceReadTimeout
-	}
-	readTimeout, timeoutDiags := model.GetTimeouts().Read(ctx, defaultTimeout)
+	readTimeout, timeoutDiags := model.GetTimeouts().Read(ctx, r.timeouts.ReadOrDefault())
 	resp.Diagnostics.Append(timeoutDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -424,24 +420,12 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWri
 		return diags
 	}
 
-	var defaultTimeout time.Duration
-	if inv.isUpdate {
-		defaultTimeout = r.timeouts.Update
-		if defaultTimeout <= 0 {
-			defaultTimeout = DefaultResourceUpdateTimeout
-		}
-	} else {
-		defaultTimeout = r.timeouts.Create
-		if defaultTimeout <= 0 {
-			defaultTimeout = DefaultResourceCreateTimeout
-		}
-	}
 	var opTimeout time.Duration
 	var timeoutDiags diag.Diagnostics
 	if inv.isUpdate {
-		opTimeout, timeoutDiags = planModel.GetTimeouts().Update(ctx, defaultTimeout)
+		opTimeout, timeoutDiags = planModel.GetTimeouts().Update(ctx, r.timeouts.UpdateOrDefault())
 	} else {
-		opTimeout, timeoutDiags = planModel.GetTimeouts().Create(ctx, defaultTimeout)
+		opTimeout, timeoutDiags = planModel.GetTimeouts().Create(ctx, r.timeouts.CreateOrDefault())
 	}
 	diags.Append(timeoutDiags...)
 	if diags.HasError() {
@@ -599,11 +583,7 @@ func (r *ElasticsearchResource[T]) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 
-	defaultTimeout := r.timeouts.Delete
-	if defaultTimeout <= 0 {
-		defaultTimeout = DefaultResourceDeleteTimeout
-	}
-	deleteTimeout, timeoutDiags := model.GetTimeouts().Delete(ctx, defaultTimeout)
+	deleteTimeout, timeoutDiags := model.GetTimeouts().Delete(ctx, r.timeouts.DeleteOrDefault())
 	resp.Diagnostics.Append(timeoutDiags...)
 	if resp.Diagnostics.HasError() {
 		return

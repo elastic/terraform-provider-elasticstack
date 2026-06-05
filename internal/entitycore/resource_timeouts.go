@@ -69,6 +69,32 @@ type ResourceTimeouts struct {
 	Delete time.Duration
 }
 
+// CreateOrDefault returns the configured create timeout, or the package default
+// when it is unset (zero). The Read/Update/Delete variants behave identically
+// for their respective operations.
+func (rt ResourceTimeouts) CreateOrDefault() time.Duration {
+	return orDefault(rt.Create, DefaultResourceCreateTimeout)
+}
+
+func (rt ResourceTimeouts) ReadOrDefault() time.Duration {
+	return orDefault(rt.Read, DefaultResourceReadTimeout)
+}
+
+func (rt ResourceTimeouts) UpdateOrDefault() time.Duration {
+	return orDefault(rt.Update, DefaultResourceUpdateTimeout)
+}
+
+func (rt ResourceTimeouts) DeleteOrDefault() time.Duration {
+	return orDefault(rt.Delete, DefaultResourceDeleteTimeout)
+}
+
+func orDefault(configured, fallback time.Duration) time.Duration {
+	if configured <= 0 {
+		return fallback
+	}
+	return configured
+}
+
 // preserveModelTimeouts copies the envelope-owned timeouts value onto a callback-
 // returned model before State.Set so conversion succeeds when callbacks reconstruct
 // the struct without ResourceTimeoutsField (zero timeouts.Value{} / Object[]).

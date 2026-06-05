@@ -32,7 +32,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Model is the Terraform plan/state shape for the index template resource and data source.
+// Model is the Terraform plan/state shape for the index template resource. The
+// data source uses templateDataSourceModel and maps through this type for its
+// shared read logic.
 type Model struct {
 	entitycore.ResourceTimeoutsField
 	entitycore.ElasticsearchConnectionField
