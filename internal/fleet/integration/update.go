@@ -20,9 +20,15 @@ package integration
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *integrationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	r.create(ctx, req.Plan, &resp.State, &resp.Diagnostics)
+func updateIntegration(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[integrationModel],
+) (entitycore.KibanaWriteResult[integrationModel], diag.Diagnostics) {
+	return writeIntegration(ctx, client, req)
 }

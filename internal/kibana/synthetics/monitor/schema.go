@@ -31,7 +31,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -178,7 +177,7 @@ func locationValidators() []validator.List {
 	}
 }
 
-func monitorConfigSchema() schema.Schema {
+func monitorSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: monitorDescription,
 		Attributes: map[string]schema.Attribute{
@@ -277,10 +276,7 @@ func monitorConfigSchema() schema.Schema {
 				MarkdownDescription: retestOnFailureDescription,
 			},
 		},
-
-		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
-		}}
+	}
 }
 
 func browserMonitorFieldsSchema() schema.Attribute {
@@ -1255,3 +1251,27 @@ func (v tfModelV0) enforceVersionConstraints(ctx context.Context, client *client
 
 	return nil
 }
+
+func (v tfModelV0) GetID() types.String { return v.ID }
+
+func (v tfModelV0) GetResourceID() types.String {
+	if v.ID.IsNull() || v.ID.IsUnknown() {
+		return types.StringNull()
+	}
+	compID, _ := synthetics.TryReadCompositeID(v.ID.ValueString())
+	if compID != nil {
+		return types.StringValue(compID.ResourceID)
+	}
+	return v.ID // fallback for legacy plain IDs
+}
+
+func (v tfModelV0) GetSpaceID() types.String {
+	if v.SpaceID.IsNull() || v.SpaceID.IsUnknown() {
+		return types.StringValue("")
+	}
+	return v.SpaceID
+}
+
+func (v tfModelV0) IsUnscopedSpace() bool { return true }
+
+func (v tfModelV0) GetKibanaConnection() types.List { return v.KibanaConnection }

@@ -26,33 +26,29 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *integrationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	r.create(ctx, req.Plan, &resp.State, &resp.Diagnostics)
+func createIntegration(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[integrationModel],
+) (entitycore.KibanaWriteResult[integrationModel], diag.Diagnostics) {
+	return writeIntegration(ctx, client, req)
 }
 
-func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State, respDiags *diag.Diagnostics) {
-	var planModel integrationModel
+func writeIntegration(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[integrationModel],
+) (entitycore.KibanaWriteResult[integrationModel], diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	diags := plan.Get(ctx, &planModel)
-	respDiags.Append(diags...)
-	if respDiags.HasError() {
-		return
-	}
-
-	apiClient, apiClientDiags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
-	respDiags.Append(apiClientDiags...)
-	if respDiags.HasError() {
-		return
-	}
-
-	fleetClient := apiClient.GetFleetClient()
+	planModel := req.Plan
+	fleetClient := client.GetFleetClient()
 
 	name := planModel.Name.ValueString()
 	version := planModel.Version.ValueString()
@@ -62,18 +58,10 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		IgnoreConstraints: planModel.IgnoreConstraints.ValueBool(),
 	}
 
-	respDiags.Append(enforceMinVersionForKnownBool(ctx, apiClient, planModel.IgnoreMappingUpdateErrors, MinVersionIgnoreMappingUpdateErrors, "ignore_mapping_update_errors")...)
-	if respDiags.HasError() {
-		return
-	}
 	if typeutils.IsKnown(planModel.IgnoreMappingUpdateErrors) {
 		installOptions.IgnoreMappingUpdateErrors = planModel.IgnoreMappingUpdateErrors.ValueBoolPointer()
 	}
 
-	respDiags.Append(enforceMinVersionForKnownBool(ctx, apiClient, planModel.SkipDataStreamRollover, MinVersionSkipDataStreamRollover, "skip_data_stream_rollover")...)
-	if respDiags.HasError() {
-		return
-	}
 	if typeutils.IsKnown(planModel.SkipDataStreamRollover) {
 		installOptions.SkipDataStreamRollover = planModel.SkipDataStreamRollover.ValueBoolPointer()
 	}
@@ -83,26 +71,26 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		installOptions.SpaceID = planModel.SpaceID.ValueString()
 	}
 
-	diags = fleet.InstallPackage(ctx, fleetClient, name, version, installOptions)
-	respDiags.Append(diags...)
-	if respDiags.HasError() {
-		return
+	installDiags := fleet.InstallPackage(ctx, fleetClient, name, version, installOptions)
+	diags.Append(installDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[integrationModel]{}, diags
 	}
 
 	waitErr := waitForFleetIntegrationInstalled(ctx, fleetClient, name, version, "", false)
 	if waitErr != nil {
-		respDiags.AddError(
+		diags.AddError(
 			"Failed to install Fleet integration package",
 			fmt.Sprintf("Package %s/%s did not reach an installed state: %s", name, version, waitErr.Error()),
 		)
-		return
+		return entitycore.KibanaWriteResult[integrationModel]{}, diags
 	}
 
 	spaceID := installOptions.SpaceID
 	pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)
-	respDiags.Append(getDiags...)
-	if respDiags.HasError() {
-		return
+	diags.Append(getDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[integrationModel]{}, diags
 	}
 
 	globallyInstalled := fleetPackageInstalled(pkg, "", false)
@@ -110,10 +98,10 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 	installedElsewhere := globallyInstalled && spaceID != "" && !installedInTargetSpace
 
 	if installedElsewhere {
-		diags = installInSpace(ctx, apiClient, fleetClient, name, version, spaceID, planModel.Force.ValueBool())
-		respDiags.Append(diags...)
-		if respDiags.HasError() {
-			return
+		spaceDiags := installInSpace(ctx, client, fleetClient, name, version, spaceID, planModel.Force.ValueBool())
+		diags.Append(spaceDiags...)
+		if diags.HasError() {
+			return entitycore.KibanaWriteResult[integrationModel]{}, diags
 		}
 	}
 
@@ -123,8 +111,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		planModel.SpaceID = installedKibanaSpaceID(pkg)
 	}
 
-	diags = state.Set(ctx, planModel)
-	respDiags.Append(diags...)
+	return entitycore.KibanaWriteResult[integrationModel]{Model: planModel}, diags
 }
 
 func installedKibanaSpaceID(pkg *kbapi.PackageInfo) types.String {

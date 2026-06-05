@@ -20,38 +20,22 @@ package monitor
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) {
-	var plan tfModelV0
-	diags := request.State.Get(ctx, &plan)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
+func deleteMonitor(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	resourceID string,
+	spaceID string,
+	_ tfModelV0,
+) diag.Diagnostics {
+	var diags diag.Diagnostics
 
-	apiClient, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
+	oapiClient := client.GetKibanaOapiClient()
 
-	oapiClient := synthetics.GetKibanaOAPIClientFromScopedClient(apiClient, &response.Diagnostics)
-	if oapiClient == nil {
-		return
-	}
-
-	compositeID, dg := synthetics.GetCompositeID(plan.ID.ValueString())
-	response.Diagnostics.Append(dg...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	spaceID := plan.SpaceID.ValueString()
-	monitorID := compositeID.ResourceID
-	diags = kibanaoapi.DeleteMonitor(ctx, oapiClient, spaceID, monitorID)
-	response.Diagnostics.Append(diags...)
+	diags = kibanaoapi.DeleteMonitor(ctx, oapiClient, spaceID, resourceID)
+	return diags
 }

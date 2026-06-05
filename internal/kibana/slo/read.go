@@ -23,82 +23,35 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
-	var state tfModel
-
-	response.Diagnostics.Append(request.State.Get(ctx, &state)...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	if r.Client() == nil {
-		response.Diagnostics.AddError("Provider not configured", "Expected configured provider client factory")
-		return
-	}
-
-	apiClient, diags := r.Client().GetKibanaClient(ctx, state.KibanaConnection)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	exists, diags := r.readSloFromAPI(ctx, apiClient, &state)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	if !exists {
-		response.State.RemoveResource(ctx)
-		return
-	}
-
-	response.Diagnostics.Append(response.State.Set(ctx, state)...)
-}
-
-func (r *Resource) readSloFromAPI(ctx context.Context, apiClient *clients.KibanaScopedClient, state *tfModel) (bool, diag.Diagnostics) {
+func readSlo(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	resourceID string,
+	spaceID string,
+	model tfModel,
+) (tfModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	compID, idDiags := clients.CompositeIDFromStr(state.ID.ValueString())
-	diags.Append(idDiags...)
-	if diags.HasError() {
-		return false, diags
-	}
+	oapi := client.GetKibanaOapiClient()
 
-	oapi := apiClient.GetKibanaOapiClient()
-
-	// CompositeID stores spaceID as ClusterID and sloID as ResourceID (see create.go).
-	res, fwDiags := kibanaoapi.GetSlo(ctx, oapi, compID.ClusterID, compID.ResourceID)
+	res, fwDiags := kibanaoapi.GetSlo(ctx, oapi, spaceID, resourceID)
 	diags.Append(fwDiags...)
 	if diags.HasError() {
-		return false, diags
+		return model, false, diags
 	}
 	if res == nil {
-		return false, diags
+		return model, false, diags
 	}
 
-	apiModel := kibanaoapi.SloResponseToModel(compID.ClusterID, res)
-	state.ID = types.StringValue((&clients.CompositeID{ClusterID: apiModel.SpaceID, ResourceID: apiModel.SloID}).String())
-	diags.Append(state.populateFromAPI(apiModel)...)
+	apiModel := kibanaoapi.SloResponseToModel(spaceID, res)
+	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: apiModel.SloID}).String())
+	diags.Append(model.populateFromAPI(apiModel)...)
 	if diags.HasError() {
-		return true, diags
+		return model, true, diags
 	}
 
-	return true, diags
-}
-
-func (r *Resource) readAndPopulate(ctx context.Context, apiClient *clients.KibanaScopedClient, plan *tfModel, diags *diag.Diagnostics) {
-	exists, readDiags := r.readSloFromAPI(ctx, apiClient, plan)
-	diags.Append(readDiags...)
-	if diags.HasError() {
-		return
-	}
-	if !exists {
-		diags.AddError("SLO not found", "SLO was created/updated but could not be found afterwards")
-		return
-	}
+	return model, true, diags
 }
