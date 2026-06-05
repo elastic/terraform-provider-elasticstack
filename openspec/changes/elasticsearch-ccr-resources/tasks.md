@@ -114,22 +114,22 @@
 
 ## 5. Acceptance tests
 
-- [ ] 5.1 Create `internal/elasticsearch/ccr/followerindex/acctest/` with at least:
+- [x] 5.1 Create `internal/elasticsearch/ccr/followerindex/acc_test.go` (repo convention; not a separate `acctest/` directory) with at least:
   - Happy path: create follower index, verify `status == "active"`, update tuning params, verify, destroy with `delete_index_on_destroy = false` (verify index exists and is open as a regular index)
   - Destroy with `delete_index_on_destroy = true` verifies the index is gone
   - Status management: create with `status = "paused"`, verify paused; update to `status = "active"`, verify resumed
-  - `data_stream_name` import path: create a data stream follower with `data_stream_name` set, import the resource, verify `data_stream_name` is null in state, then apply a config with `data_stream_name` set and verify a replacement plan (ForceNew) is produced — confirm that adding `data_stream_name` to config post-import triggers recreation
+  - `data_stream_name` import path: create a data stream follower with `data_stream_name` set, import the resource, verify `data_stream_name` is null in state, then apply a config with `data_stream_name` set and verify a replacement plan (ForceNew) is produced — confirm that adding `data_stream_name` to config post-import triggers recreation (implemented fully in `TestAccResourceCCRFollowerIndex_dataStreamNameImport`)
   - Add license/feature skip annotation if the test cluster does not support CCR (check CI policy)
-- [ ] 5.2 Create `internal/elasticsearch/ccr/autofollow/acctest/` with at least:
+- [x] 5.2 Create `internal/elasticsearch/ccr/autofollow/acc_test.go` (repo convention; not a separate `acctest/` directory) with at least:
   - Happy path: create auto-follow pattern, verify `active == true`, update exclusion patterns, verify, destroy
   - Active management: create with `active = false`, verify paused; update to `active = true`, verify resumed
   - Add license/feature skip annotation
 
 ## 6. Documentation
 
-- [ ] 6.1 Create documentation template `templates/resources/elasticsearch_ccr_follower_index.md.tmpl` with description, example HCL, and import instructions (noting that `settings_raw` and `data_stream_name` must be added manually after import)
-- [ ] 6.2 Create documentation template `templates/resources/elasticsearch_ccr_auto_follow_pattern.md.tmpl` with description, example HCL, and import instructions (noting that `settings_raw` must be added manually after import)
-- [ ] 6.3 Run `make docs-generate` (or equivalent) to generate rendered docs pages under `docs/resources/`
+- [x] 6.1 Create documentation template `templates/resources/elasticsearch_ccr_follower_index.md.tmpl` with description, example HCL, and import instructions (noting that `settings_raw` and `data_stream_name` must be added manually after import)
+- [x] 6.2 Create documentation template `templates/resources/elasticsearch_ccr_auto_follow_pattern.md.tmpl` with description, example HCL, and import instructions (noting that `settings_raw` must be added manually after import)
+- [x] 6.3 Run `make docs-generate` (or equivalent) to generate rendered docs pages under `docs/resources/`
 
 ## 7. Validation
 
