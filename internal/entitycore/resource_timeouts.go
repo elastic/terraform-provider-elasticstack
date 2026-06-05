@@ -103,3 +103,14 @@ func preserveModelTimeouts(model any, value timeouts.Value) {
 		setter.SetTimeouts(value)
 	}
 }
+
+// modelTimeouts returns the timeouts attribute value for a model that carries it
+// (every envelope model embeds [ResourceTimeoutsField]), or a zero Value
+// otherwise. A zero Value yields the supplied default at the call site, so the
+// generic base envelope can read timeouts from any model T without a constraint.
+func modelTimeouts(model any) timeouts.Value {
+	if t, ok := model.(WithResourceTimeouts); ok {
+		return t.GetTimeouts()
+	}
+	return timeouts.Value{}
+}

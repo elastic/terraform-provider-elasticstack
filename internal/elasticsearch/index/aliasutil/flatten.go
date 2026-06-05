@@ -124,6 +124,19 @@ func AliasAttrsFromModelWithRouting(name string, a models.IndexAlias, preservedR
 	return attrs, diags
 }
 
+// FlattenAliasElement builds a types.Object for a single alias from its models.IndexAlias
+// representation. preservedRouting carries user-configured routing values (may be nil) to restore
+// when the API omits them. attrTypes specifies the attribute type map for the resulting object value.
+func FlattenAliasElement(name string, a models.IndexAlias, preservedRouting map[string]string, attrTypes map[string]attr.Type) (attr.Value, diag.Diagnostics) {
+	attrs, diags := AliasAttrsFromModelWithRouting(name, a, preservedRouting)
+	if diags.HasError() {
+		return nil, diags
+	}
+	obj, d := types.ObjectValue(attrTypes, attrs)
+	diags.Append(d...)
+	return obj, diags
+}
+
 // NewAliasModelFromAPI constructs an AliasModel from an API Alias response.
 func NewAliasModelFromAPI(name string, apiModel estypes.Alias) (AliasModel, diag.Diagnostics) {
 	tfAlias := AliasModel{
