@@ -21,53 +21,38 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) {
-	var plan tfModel
+func updateSlo(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[tfModel],
+) (entitycore.KibanaWriteResult[tfModel], diag.Diagnostics) {
+	planModel := req.Plan
+	var diags diag.Diagnostics
 
-	response.Diagnostics.Append(request.Plan.Get(ctx, &plan)...)
-	if response.Diagnostics.HasError() {
-		return
+	apiModel, apiDiags := planModel.toAPIModel()
+	diags.Append(apiDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}
 
-	if r.Client() == nil {
-		response.Diagnostics.AddError("Provider not configured", "Expected configured provider client factory")
-		return
+	supportsMultipleGroupBy := resolveGroupBySupport(ctx, client, &apiModel, &diags)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}
 
-	apiClient, diags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	apiModel, diags := plan.toAPIModel()
-	response.Diagnostics.Append(diags...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	response.Diagnostics.Append(entitycore.EnforceVersionRequirements(ctx, apiClient, &plan)...)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	supportsMultipleGroupBy := resolveGroupBySupport(ctx, apiClient, &apiModel, &response.Diagnostics)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	oapi := apiClient.GetKibanaOapiClient()
+	oapi := client.GetKibanaOapiClient()
 
 	indicator, convErr := kibanaoapi.ResponseIndicatorToUpdateIndicator(apiModel.Indicator)
 	if convErr != nil {
-		response.Diagnostics.AddError("Failed to convert indicator", convErr.Error())
-		return
+		diags.AddError("Failed to convert indicator", convErr.Error())
+		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}
 
 	groupBy := kibanaoapi.TransformGroupBy(apiModel.GroupBy, supportsMultipleGroupBy)
@@ -84,23 +69,18 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		Artifacts:       apiModel.Artifacts,
 	}
 
-	desiredEnabled := plan.Enabled
+	desiredEnabled := planModel.Enabled
 
-	fwDiags := kibanaoapi.UpdateSlo(ctx, oapi, apiModel.SpaceID, apiModel.SloID, reqModel)
-	response.Diagnostics.Append(fwDiags...)
-	if response.Diagnostics.HasError() {
-		return
+	fwDiags := kibanaoapi.UpdateSlo(ctx, oapi, req.SpaceID, apiModel.SloID, reqModel)
+	diags.Append(fwDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}
 
-	r.readAndPopulate(ctx, apiClient, &plan, &response.Diagnostics)
-	if response.Diagnostics.HasError() {
-		return
+	reconcileSloEnabled(ctx, client, oapi, req.SpaceID, apiModel.SloID, desiredEnabled, &planModel, &diags)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}
 
-	r.reconcileSloEnabledAfterWrite(ctx, apiClient, oapi, apiModel.SpaceID, apiModel.SloID, desiredEnabled, &plan, &response.Diagnostics)
-	if response.Diagnostics.HasError() {
-		return
-	}
-
-	response.Diagnostics.Append(response.State.Set(ctx, plan)...)
+	return entitycore.KibanaWriteResult[tfModel]{Model: planModel}, diags
 }

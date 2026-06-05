@@ -75,7 +75,7 @@ type KibanaWriteRequest[T KibanaResourceModel] struct {
 }
 
 // KibanaWriteResult is returned by write callbacks; the envelope read-after-write
-// flow uses Model when resolving refresh identity and calling readFunc.
+// flow uses Model when resolving refresh identity and calling read.
 type KibanaWriteResult[T KibanaResourceModel] struct {
 	Model T
 }
@@ -137,7 +137,6 @@ type KibanaResourceOptions[T KibanaResourceModel] struct {
 // may choose to implement ImportState.
 type KibanaResource[T KibanaResourceModel] struct {
 	baseResourceEnvelope[T, *clients.KibanaScopedClient]
-	readFunc   kibanaReadFunc[T]
 	createFunc KibanaWriteFunc[T]
 	updateFunc KibanaWriteFunc[T]
 }
@@ -212,7 +211,6 @@ func NewKibanaResource[T KibanaResourceModel](
 			return opts.Delete(ctx, client, id, spaceID, m)
 		}
 	}
-	r.readFunc = opts.Read
 	r.createFunc = opts.Create
 	r.updateFunc = opts.Update
 	return r
@@ -359,7 +357,7 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 		return diags
 	}
 
-	if r.readFunc == nil {
+	if r.read == nil {
 		return requireReadFuncDiag(r.component)
 	}
 
@@ -403,7 +401,7 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 		return diags
 	}
 
-	stateModel, found, readDiags := r.readFunc(ctx, client, readResourceID, readSpaceID, written.Model)
+	stateModel, found, readDiags := r.read(ctx, client, readResourceID, written.Model)
 	diags.Append(readDiags...)
 	if diags.HasError() {
 		return diags

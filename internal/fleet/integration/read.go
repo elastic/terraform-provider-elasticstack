@@ -20,51 +20,44 @@ package integration
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var stateModel integrationModel
-
-	diags := req.State.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func readIntegration(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	_ string,
+	spaceID string,
+	model integrationModel,
+) (integrationModel, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
 	fleetClient := client.GetFleetClient()
 
-	name := stateModel.Name.ValueString()
-	version := stateModel.Version.ValueString()
-	spaceID := stateModel.SpaceID.ValueString()
+	name := model.Name.ValueString()
+	version := model.Version.ValueString()
 
 	spaceAware := false
-	if typeutils.IsKnown(stateModel.SpaceID) {
+	if typeutils.IsKnown(model.SpaceID) {
 		supported, versionDiags := supportsSpaceAwareIntegration(ctx, client, spaceID)
-		resp.Diagnostics.Append(versionDiags...)
-		if resp.Diagnostics.HasError() {
-			return
+		diags.Append(versionDiags...)
+		if diags.HasError() {
+			return model, false, diags
 		}
 		spaceAware = supported
 	}
 
-	pkg, diags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)
+	diags.Append(getDiags...)
+	if diags.HasError() {
+		return model, false, diags
 	}
 	if pkg == nil || !fleetPackageInstalled(pkg, spaceID, spaceAware) {
-		resp.State.RemoveResource(ctx)
-		return
+		return model, false, diags
 	}
 
 	// Fleet's GET /epm/packages/{name}/{version} reports status "installed"
@@ -76,12 +69,11 @@ func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest
 	if pkg.InstallationInfo != nil && pkg.InstallationInfo.Version != "" {
 		installedVersion = pkg.InstallationInfo.Version
 	}
-	stateModel.Version = types.StringValue(installedVersion)
-	stateModel.ID = types.StringValue(getPackageID(name, installedVersion))
-	if stateModel.SpaceID.IsNull() {
-		stateModel.SpaceID = installedKibanaSpaceID(pkg)
+	model.Version = types.StringValue(installedVersion)
+	model.ID = types.StringValue(getPackageID(name, installedVersion))
+	if model.SpaceID.IsNull() {
+		model.SpaceID = installedKibanaSpaceID(pkg)
 	}
 
-	diags = resp.State.Set(ctx, stateModel)
-	resp.Diagnostics.Append(diags...)
+	return model, true, diags
 }
