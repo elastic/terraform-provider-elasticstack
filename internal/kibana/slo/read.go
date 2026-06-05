@@ -86,7 +86,6 @@ func readSlo(
 	spaceID string,
 	model tfModel,
 ) (tfModel, bool, diag.Diagnostics) {
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: resourceID}).String())
 	found, diags := readSloFromAPI(ctx, client, resourceID, spaceID, &model)
 	return model, found, diags
 }
