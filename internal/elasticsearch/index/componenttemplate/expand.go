@@ -19,8 +19,6 @@ package componenttemplate
 
 import (
 	"context"
-	"encoding/json"
-	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -35,16 +33,9 @@ func expandFromData(ctx context.Context, d Data) (models.ComponentTemplate, diag
 		Name: d.Name.ValueString(),
 	}
 
-	if !d.Metadata.IsNull() && !d.Metadata.IsUnknown() {
-		s := strings.TrimSpace(d.Metadata.ValueString())
-		if s != "" {
-			meta := make(map[string]any)
-			if err := json.Unmarshal([]byte(s), &meta); err != nil {
-				diags.AddError("Invalid metadata JSON", err.Error())
-				return out, diags
-			}
-			out.Meta = meta
-		}
+	out.Meta = templateutil.ExpandMetadataJSON(d.Metadata, &diags)
+	if diags.HasError() {
+		return out, diags
 	}
 
 	if !d.Template.IsNull() && !d.Template.IsUnknown() {

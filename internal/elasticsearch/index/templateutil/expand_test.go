@@ -27,6 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -244,6 +245,61 @@ func TestDecodeTemplateObject(t *testing.T) {
 		diags := DecodeTemplateObject(ctx, obj, &m)
 		require.False(t, diags.HasError())
 		assert.Equal(t, "hello", m.Field.ValueString())
+	})
+}
+
+func TestExpandMetadataJSON(t *testing.T) {
+	t.Run("null value returns nil", func(t *testing.T) {
+		var diags diag.Diagnostics
+		result := ExpandMetadataJSON(jsontypes.NewNormalizedNull(), &diags)
+		require.False(t, diags.HasError())
+		assert.Nil(t, result)
+	})
+
+	t.Run("unknown value returns nil", func(t *testing.T) {
+		var diags diag.Diagnostics
+		result := ExpandMetadataJSON(jsontypes.NewNormalizedUnknown(), &diags)
+		require.False(t, diags.HasError())
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty string returns nil", func(t *testing.T) {
+		var diags diag.Diagnostics
+		result := ExpandMetadataJSON(jsontypes.NewNormalizedValue(""), &diags)
+		require.False(t, diags.HasError())
+		assert.Nil(t, result)
+	})
+
+	t.Run("whitespace-only string returns nil", func(t *testing.T) {
+		var diags diag.Diagnostics
+		result := ExpandMetadataJSON(jsontypes.NewNormalizedValue("   "), &diags)
+		require.False(t, diags.HasError())
+		assert.Nil(t, result)
+	})
+
+	t.Run("valid JSON returns parsed map", func(t *testing.T) {
+		var diags diag.Diagnostics
+		result := ExpandMetadataJSON(jsontypes.NewNormalizedValue(`{"key":"value","num":42}`), &diags)
+		require.False(t, diags.HasError())
+		require.NotNil(t, result)
+		assert.Equal(t, "value", result["key"])
+		assert.InDelta(t, float64(42), result["num"], 0)
+	})
+
+	t.Run("whitespace-padded valid JSON is accepted", func(t *testing.T) {
+		var diags diag.Diagnostics
+		result := ExpandMetadataJSON(jsontypes.NewNormalizedValue(`  {"key":"value"}  `), &diags)
+		require.False(t, diags.HasError())
+		require.NotNil(t, result)
+		assert.Equal(t, "value", result["key"])
+	})
+
+	t.Run("invalid JSON adds error diagnostic", func(t *testing.T) {
+		var diags diag.Diagnostics
+		result := ExpandMetadataJSON(jsontypes.NewNormalizedValue(`{invalid`), &diags)
+		require.True(t, diags.HasError())
+		assert.Nil(t, result)
+		assert.Equal(t, "Invalid metadata JSON", diags.Errors()[0].Summary())
 	})
 }
 
