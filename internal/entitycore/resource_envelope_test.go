@@ -19,6 +19,7 @@ package entitycore
 
 import (
 	"context"
+	"maps"
 	"strings"
 	"testing"
 
@@ -26,6 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -38,6 +40,7 @@ import (
 
 // testResourceModel satisfies ElasticsearchResourceModel for envelope tests.
 type testResourceModel struct {
+	ResourceTimeoutsField
 	ID                      types.String `tfsdk:"id"`
 	Name                    types.String `tfsdk:"name"`
 	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
@@ -117,6 +120,7 @@ func testResourceObjectType() tftypes.Type {
 			"id":                       tftypes.String,
 			"name":                     tftypes.String,
 			"elasticsearch_connection": elasticsearchConnectionBlockType(),
+			"timeouts":                 resourceTimeoutsObjectType(),
 		},
 	}
 }
@@ -134,6 +138,10 @@ func testResourceSchemaWithConnectionBlock(ctx context.Context) rschema.Schema {
 	s.Blocks = map[string]rschema.Block{
 		"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
 	}
+	attrs := make(map[string]rschema.Attribute, len(s.Attributes)+1)
+	maps.Copy(attrs, s.Attributes)
+	attrs[attrTimeouts] = timeouts.AttributesAll(ctx)
+	s.Attributes = attrs
 	return s
 }
 
@@ -145,6 +153,7 @@ func makeTestResourceCreatePlan(ctx context.Context, t *testing.T, idValue tftyp
 		"id":                       idValue,
 		"name":                     tftypes.NewValue(tftypes.String, resourceName),
 		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+		"timeouts":                 resourceTimeoutsNullValue(),
 	})
 	return tfsdk.Plan{
 		Raw:    objValue,
@@ -223,12 +232,14 @@ func makeTestResourceState(ctx context.Context, t *testing.T, id string) tfsdk.S
 			"id":                       tftypes.String,
 			"name":                     tftypes.String,
 			"elasticsearch_connection": connBlockType,
+			"timeouts":                 resourceTimeoutsObjectType(),
 		},
 	}
 	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
 		"id":                       tftypes.NewValue(tftypes.String, id),
 		"name":                     tftypes.NewValue(tftypes.String, testResourceNameFromCompositeID(id)),
 		"elasticsearch_connection": tftypes.NewValue(connBlockType, nil),
+		"timeouts":                 resourceTimeoutsNullValue(),
 	})
 
 	return tfsdk.State{
@@ -394,12 +405,14 @@ func TestNewElasticsearchResource_Read_shortCircuitStateGetError(t *testing.T) {
 			"id":                       tftypes.String,
 			"name":                     tftypes.String,
 			"elasticsearch_connection": elasticsearchConnectionBlockType(),
+			"timeouts":                 resourceTimeoutsObjectType(),
 		},
 	}
 	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
 		"id":                       tftypes.NewValue(tftypes.String, "cluster/user1"),
 		"name":                     tftypes.NewValue(tftypes.String, "user1"),
 		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+		"timeouts":                 resourceTimeoutsNullValue(),
 	})
 	badSchema := getTestResourceSchema(context.Background()) // no elasticsearch_connection block
 	state := tfsdk.State{Raw: objValue, Schema: badSchema}
@@ -442,12 +455,14 @@ func TestNewElasticsearchResource_Read_happyPath_fallback(t *testing.T) {
 			"id":                       tftypes.String,
 			"name":                     tftypes.String,
 			"elasticsearch_connection": elasticsearchConnectionBlockType(),
+			"timeouts":                 resourceTimeoutsObjectType(),
 		},
 	}
 	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
 		"id":                       tftypes.NewValue(tftypes.String, "my-plain-id"),
 		"name":                     tftypes.NewValue(tftypes.String, "my-fallback-name"),
 		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+		"timeouts":                 resourceTimeoutsNullValue(),
 	})
 	state := tfsdk.State{Raw: objValue, Schema: testResourceSchemaWithConnectionBlock(ctx)}
 
@@ -489,12 +504,14 @@ func TestNewElasticsearchResource_Read_happyPath_fallbackRawID(t *testing.T) {
 			"id":                       tftypes.String,
 			"name":                     tftypes.String,
 			"elasticsearch_connection": elasticsearchConnectionBlockType(),
+			"timeouts":                 resourceTimeoutsObjectType(),
 		},
 	}
 	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
 		"id":                       tftypes.NewValue(tftypes.String, "my-plain-id"),
 		"name":                     tftypes.NewValue(tftypes.String, ""),
 		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+		"timeouts":                 resourceTimeoutsNullValue(),
 	})
 	state := tfsdk.State{Raw: objValue, Schema: testResourceSchemaWithConnectionBlock(ctx)}
 
@@ -618,12 +635,14 @@ func TestNewElasticsearchResource_Delete_shortCircuitStateGetError(t *testing.T)
 			"id":                       tftypes.String,
 			"name":                     tftypes.String,
 			"elasticsearch_connection": elasticsearchConnectionBlockType(),
+			"timeouts":                 resourceTimeoutsObjectType(),
 		},
 	}
 	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
 		"id":                       tftypes.NewValue(tftypes.String, "cluster/user1"),
 		"name":                     tftypes.NewValue(tftypes.String, "user1"),
 		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+		"timeouts":                 resourceTimeoutsNullValue(),
 	})
 	badSchema := getTestResourceSchema(context.Background())
 	state := tfsdk.State{Raw: objValue, Schema: badSchema}
@@ -664,12 +683,14 @@ func TestNewElasticsearchResource_Delete_happyPath_fallback(t *testing.T) {
 			"id":                       tftypes.String,
 			"name":                     tftypes.String,
 			"elasticsearch_connection": elasticsearchConnectionBlockType(),
+			"timeouts":                 resourceTimeoutsObjectType(),
 		},
 	}
 	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
 		"id":                       tftypes.NewValue(tftypes.String, "my-plain-id"),
 		"name":                     tftypes.NewValue(tftypes.String, "my-fallback-name"),
 		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+		"timeouts":                 resourceTimeoutsNullValue(),
 	})
 	state := tfsdk.State{Raw: objValue, Schema: testResourceSchemaWithConnectionBlock(ctx)}
 
@@ -752,6 +773,43 @@ func (r *overridingEnvelopeTestResource) Create(context.Context, resource.Create
 
 func (r *overridingEnvelopeTestResource) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
 	r.updateCalled = true
+}
+
+func TestNewElasticsearchResource_Create_skipReadAfterWriteUsesWriteResult(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	readAfterWriteCalled := false
+	readFunc := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, model testResourceModel) (testResourceModel, bool, diag.Diagnostics) {
+		readAfterWriteCalled = true
+		model.Name = types.StringValue(model.Name.ValueString() + "-read")
+		return model, true, nil
+	}
+	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
+		Schema:             getTestResourceSchema,
+		Read:               readFunc,
+		Delete:             testDeleteFunc,
+		Create:             testWriteFuncFoundCreate,
+		Update:             testWriteFuncFoundUpdate,
+		SkipReadAfterWrite: true,
+	})
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
+	objType := testResourceObjectType()
+	respState := tfsdk.State{
+		Raw:    tftypes.NewValue(objType, nil),
+		Schema: testResourceSchemaWithConnectionBlock(ctx),
+	}
+	resp := resource.CreateResponse{State: respState}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: tfsdk.Config(plan)}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.False(t, readAfterWriteCalled, "read callback must not run during Create when SkipReadAfterWrite is set")
+	var result testResourceModel
+	require.False(t, resp.State.Get(ctx, &result).HasError())
+	require.Equal(t, "cluster/user1", result.ID.ValueString())
+	require.Equal(t, "user1", result.Name.ValueString(), "state must reflect write result, not read-after-write")
 }
 
 func TestNewElasticsearchResource_Create_happyPath(t *testing.T) {
@@ -860,6 +918,7 @@ func TestNewElasticsearchResource_write_nilCallbackPrecedesOtherWritePreludeErro
 			"id":                       tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
 			"name":                     tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
 			"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+			"timeouts":                 resourceTimeoutsNullValue(),
 		})
 		plan := tfsdk.Plan{Raw: objValue, Schema: testResourceSchemaWithConnectionBlock(ctx)}
 		resp := resource.CreateResponse{State: tfsdk.State{
@@ -949,6 +1008,7 @@ func TestNewElasticsearchResource_Create_shortCircuitUnknownWriteID(t *testing.T
 		"id":                       tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
 		"name":                     tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
 		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+		"timeouts":                 resourceTimeoutsNullValue(),
 	})
 	plan := tfsdk.Plan{Raw: objValue, Schema: testResourceSchemaWithConnectionBlock(ctx)}
 	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testResourceSchemaWithConnectionBlock(ctx)}
@@ -1226,6 +1286,7 @@ func TestNewElasticsearchResource_Write_shortCircuitEmptyWriteID(t *testing.T) {
 		"id":                       tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
 		"name":                     tftypes.NewValue(tftypes.String, ""),
 		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+		"timeouts":                 resourceTimeoutsNullValue(),
 	})
 	plan := tfsdk.Plan{Raw: objValue, Schema: testResourceSchemaWithConnectionBlock(ctx)}
 
@@ -1273,6 +1334,7 @@ func TestNewElasticsearchResource_Update_shortCircuitUnknownWriteID(t *testing.T
 		"id":                       tftypes.NewValue(tftypes.String, "cluster/user1"),
 		"name":                     tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
 		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+		"timeouts":                 resourceTimeoutsNullValue(),
 	})
 	plan := tfsdk.Plan{Raw: objValue, Schema: testResourceSchemaWithConnectionBlock(ctx)}
 	prior := makeTestResourceState(ctx, t, "cluster/user1")
@@ -2294,6 +2356,7 @@ func TestNewElasticsearchResource_Delete_nilDeleteCallbackConfigurationError(t *
 // --- write-only Config vs Plan (dedicated model; not shared with default test schema)
 
 type writeOnlyTestResourceModel struct {
+	ResourceTimeoutsField
 	ID                      types.String `tfsdk:"id"`
 	Name                    types.String `tfsdk:"name"`
 	TokenWo                 types.String `tfsdk:"token_wo"`
@@ -2330,6 +2393,10 @@ func writeOnlyTestResourceSchemaWithConnection(ctx context.Context) rschema.Sche
 	s.Blocks = map[string]rschema.Block{
 		"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
 	}
+	attrs := make(map[string]rschema.Attribute, len(s.Attributes)+1)
+	maps.Copy(attrs, s.Attributes)
+	attrs[attrTimeouts] = timeouts.AttributesAll(ctx)
+	s.Attributes = attrs
 	return s
 }
 
@@ -2340,6 +2407,7 @@ func writeOnlyTestResourceObjectType() tftypes.Type {
 			"name":                     tftypes.String,
 			"token_wo":                 tftypes.String,
 			"elasticsearch_connection": elasticsearchConnectionBlockType(),
+			"timeouts":                 resourceTimeoutsObjectType(),
 		},
 	}
 }
@@ -2404,12 +2472,14 @@ func TestNewElasticsearchResource_Create_writeOnlyInConfigNotInPlan(t *testing.T
 		"name":                     tftypes.NewValue(tftypes.String, "user1"),
 		"token_wo":                 tftypes.NewValue(tftypes.String, nil),
 		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+		"timeouts":                 resourceTimeoutsNullValue(),
 	})
 	configRaw := tftypes.NewValue(ot, map[string]tftypes.Value{
 		"id":                       tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
 		"name":                     tftypes.NewValue(tftypes.String, "user1"),
 		"token_wo":                 tftypes.NewValue(tftypes.String, "practitioner-secret"),
 		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+		"timeouts":                 resourceTimeoutsNullValue(),
 	})
 	plan := tfsdk.Plan{Raw: planRaw, Schema: schema}
 	config := tfsdk.Config{Raw: configRaw, Schema: schema}
@@ -2446,6 +2516,7 @@ func TestNewElasticsearchResource_Create_shortCircuitConfigGetError(t *testing.T
 		"id":                       tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
 		"name":                     tftypes.NewValue(tftypes.String, "user1"),
 		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+		"timeouts":                 resourceTimeoutsNullValue(),
 	})
 	badSchema := getTestResourceSchema(ctx)
 	badConfig := tfsdk.Config{Raw: objValue, Schema: badSchema}
@@ -2484,6 +2555,7 @@ func TestNewElasticsearchResource_Update_shortCircuitConfigGetError(t *testing.T
 		"id":                       tftypes.NewValue(tftypes.String, "cluster/user1"),
 		"name":                     tftypes.NewValue(tftypes.String, "user1"),
 		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+		"timeouts":                 resourceTimeoutsNullValue(),
 	})
 	badSchema := getTestResourceSchema(ctx)
 	badConfig := tfsdk.Config{Raw: objValue, Schema: badSchema}
@@ -2497,6 +2569,7 @@ func TestNewElasticsearchResource_Update_shortCircuitConfigGetError(t *testing.T
 
 // optionalWriteIdentityModel allows an empty GetResourceID on Create (POST-style identity).
 type optionalWriteIdentityModel struct {
+	ResourceTimeoutsField
 	ID                      types.String `tfsdk:"id"`
 	Name                    types.String `tfsdk:"name"`
 	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
@@ -2518,6 +2591,7 @@ func optionalWriteIdentityObjectType() tftypes.Type {
 			"id":                       tftypes.String,
 			"name":                     tftypes.String,
 			"elasticsearch_connection": elasticsearchConnectionBlockType(),
+			"timeouts":                 resourceTimeoutsObjectType(),
 		},
 	}
 }
@@ -2527,6 +2601,10 @@ func optionalWriteIdentitySchemaWithConnection(ctx context.Context) rschema.Sche
 	s.Blocks = map[string]rschema.Block{
 		"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
 	}
+	attrs := make(map[string]rschema.Attribute, len(s.Attributes)+1)
+	maps.Copy(attrs, s.Attributes)
+	attrs[attrTimeouts] = timeouts.AttributesAll(ctx)
+	s.Attributes = attrs
 	return s
 }
 
@@ -2572,6 +2650,7 @@ func TestNewElasticsearchResource_Create_optionalWriteIdentityAllowsEmptyWriteID
 		"id":                       tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
 		"name":                     tftypes.NewValue(tftypes.String, ""),
 		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+		"timeouts":                 resourceTimeoutsNullValue(),
 	})
 	plan := tfsdk.Plan{Raw: planRaw, Schema: schema}
 	resp := resource.CreateResponse{State: tfsdk.State{
@@ -2608,6 +2687,7 @@ func TestNewElasticsearchResource_Create_nonOptionalModelStillRejectsEmptyWriteI
 		"id":                       tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
 		"name":                     tftypes.NewValue(tftypes.String, ""),
 		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+		"timeouts":                 resourceTimeoutsNullValue(),
 	})
 	plan := tfsdk.Plan{Raw: planRaw, Schema: schema}
 	resp := resource.CreateResponse{State: tfsdk.State{

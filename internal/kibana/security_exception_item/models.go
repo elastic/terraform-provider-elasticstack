@@ -42,6 +42,7 @@ import (
 var MinVersionExpireTime = version.Must(version.NewVersion("8.7.2"))
 
 type ExceptionItemModel struct {
+	entitycore.ResourceTimeoutsField
 	ID               types.String         `tfsdk:"id"`
 	KibanaConnection types.List           `tfsdk:"kibana_connection"`
 	SpaceID          types.String         `tfsdk:"space_id"`

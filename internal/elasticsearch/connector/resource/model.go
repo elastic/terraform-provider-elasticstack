@@ -26,6 +26,7 @@ import (
 
 // ContentConnectorData is the Terraform state model for the content connector resource.
 type ContentConnectorData struct {
+	entitycore.ResourceTimeoutsField
 	entitycore.ElasticsearchConnectionField
 	connector.CoreConnectorFields
 	connector.VersionGate

@@ -24,7 +24,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -38,7 +37,7 @@ import (
 //go:embed resource-description.md
 var description string
 
-func GetSchema(ctx context.Context) schema.Schema {
+func GetSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: description,
 		Attributes: map[string]schema.Attribute{
@@ -111,10 +110,6 @@ func GetSchema(ctx context.Context) schema.Schema {
 				Default:             stringdefault.StaticString("30s"),
 				CustomType:          customtypes.DurationType{},
 			},
-			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
-				Create: true,
-				Update: true,
-			}),
 		},
 	}
 }

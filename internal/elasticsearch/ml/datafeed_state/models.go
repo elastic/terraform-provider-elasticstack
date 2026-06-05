@@ -22,33 +22,30 @@ import (
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type MLDatafeedStateData struct {
-	ID                      types.String         `tfsdk:"id"`
-	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
-	DatafeedID              types.String         `tfsdk:"datafeed_id"`
-	State                   types.String         `tfsdk:"state"`
-	Force                   types.Bool           `tfsdk:"force"`
-	Timeout                 customtypes.Duration `tfsdk:"datafeed_timeout"`
-	Start                   timetypes.RFC3339    `tfsdk:"start"`
-	End                     timetypes.RFC3339    `tfsdk:"end"`
-	EffectiveSearchStart    timetypes.RFC3339    `tfsdk:"effective_search_start"`
-	EffectiveSearchEnd      timetypes.RFC3339    `tfsdk:"effective_search_end"`
-	Timeouts                timeouts.Value       `tfsdk:"timeouts"`
+	entitycore.ElasticsearchConnectionField
+	entitycore.ResourceTimeoutsField
+	ID                   types.String         `tfsdk:"id"`
+	DatafeedID           types.String         `tfsdk:"datafeed_id"`
+	State                types.String         `tfsdk:"state"`
+	Force                types.Bool           `tfsdk:"force"`
+	Timeout              customtypes.Duration `tfsdk:"datafeed_timeout"`
+	Start                timetypes.RFC3339    `tfsdk:"start"`
+	End                  timetypes.RFC3339    `tfsdk:"end"`
+	EffectiveSearchStart timetypes.RFC3339    `tfsdk:"effective_search_start"`
+	EffectiveSearchEnd   timetypes.RFC3339    `tfsdk:"effective_search_end"`
 }
 
 func (d MLDatafeedStateData) GetID() types.String         { return d.ID }
 func (d MLDatafeedStateData) GetResourceID() types.String { return d.DatafeedID }
-func (d MLDatafeedStateData) GetElasticsearchConnection() types.List {
-	return d.ElasticsearchConnection
-}
 
 func timeInSameLocation(ms int64, source timetypes.RFC3339) (time.Time, diag.Diagnostics) {
 	t := time.UnixMilli(ms)

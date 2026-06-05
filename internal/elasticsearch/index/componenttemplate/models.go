@@ -30,6 +30,7 @@ import (
 
 // Data is the Terraform plan/state shape for the component template resource.
 type Data struct {
+	entitycore.ResourceTimeoutsField
 	ID                      types.String         `tfsdk:"id"`
 	Name                    types.String         `tfsdk:"name"`
 	Metadata                jsontypes.Normalized `tfsdk:"metadata"`

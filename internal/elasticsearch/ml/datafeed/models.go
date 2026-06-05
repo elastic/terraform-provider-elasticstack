@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -34,6 +35,7 @@ import (
 
 // Datafeed represents the Terraform resource model for ML datafeeds
 type Datafeed struct {
+	entitycore.ResourceTimeoutsField
 	ID                      types.String                                      `tfsdk:"id"`
 	ElasticsearchConnection types.List                                        `tfsdk:"elasticsearch_connection"`
 	DatafeedID              types.String                                      `tfsdk:"datafeed_id"`

@@ -36,6 +36,7 @@ import (
 
 // alertingRuleModel is the Terraform model for an alerting rule.
 type alertingRuleModel struct {
+	entitycore.ResourceTimeoutsField
 	ID                  types.String                       `tfsdk:"id"`
 	KibanaConnection    types.List                         `tfsdk:"kibana_connection"`
 	RuleID              types.String                       `tfsdk:"rule_id"`

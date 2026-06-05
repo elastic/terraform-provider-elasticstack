@@ -18,24 +18,23 @@
 package jobstate
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type MLJobStateData struct {
-	ID                      types.String         `tfsdk:"id"`
-	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
-	JobID                   types.String         `tfsdk:"job_id"`
-	State                   types.String         `tfsdk:"state"`
-	Force                   types.Bool           `tfsdk:"force"`
-	Timeout                 customtypes.Duration `tfsdk:"job_timeout"`
-	Timeouts                timeouts.Value       `tfsdk:"timeouts"`
+	entitycore.ElasticsearchConnectionField
+	entitycore.ResourceTimeoutsField
+	ID      types.String         `tfsdk:"id"`
+	JobID   types.String         `tfsdk:"job_id"`
+	State   types.String         `tfsdk:"state"`
+	Force   types.Bool           `tfsdk:"force"`
+	Timeout customtypes.Duration `tfsdk:"job_timeout"`
 }
 
-func (d MLJobStateData) GetID() types.String                    { return d.ID }
-func (d MLJobStateData) GetResourceID() types.String            { return d.JobID }
-func (d MLJobStateData) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
+func (d MLJobStateData) GetID() types.String         { return d.ID }
+func (d MLJobStateData) GetResourceID() types.String { return d.JobID }
 
 // MLJobStats represents the statistics structure for an ML job
 type MLJobStats struct {

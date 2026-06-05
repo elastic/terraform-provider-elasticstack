@@ -479,14 +479,14 @@ func TestAccResourceMLJobState_timeouts(t *testing.T) {
 					"job_id":     config.StringVariable(jobID),
 					"index_name": config.StringVariable(indexName),
 				},
-				ExpectError: regexp.MustCompile("Operation timed out"),
+				ExpectError: regexp.MustCompile("context deadline exceeded"),
 			},
 		},
 	})
 }
 
 // TestAccResourceMLJobState_update_timeout verifies that a short timeouts.update causes
-// the update path to fail with "Operation timed out". Step 1 creates the resource in
+// the update path to fail with context deadline exceeded. Step 1 creates the resource in
 // closed state (succeeds quickly since the job starts closed). Step 2 attempts to update
 // to opened with a 10 s timeout; because allow_lazy_open is set and the job requires 2 GB
 // of model memory, waitForJobState times out before the job reaches "opened".
@@ -514,7 +514,7 @@ func TestAccResourceMLJobState_update_timeout(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"job_id": config.StringVariable(jobID),
 				},
-				ExpectError: regexp.MustCompile("Operation timed out"),
+				ExpectError: regexp.MustCompile("context deadline exceeded"),
 			},
 		},
 	})

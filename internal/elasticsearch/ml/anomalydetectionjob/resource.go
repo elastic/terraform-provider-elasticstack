@@ -19,6 +19,7 @@ package anomalydetectionjob
 
 import (
 	"context"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -45,6 +46,9 @@ func newAnomalyDetectionJobResource() *anomalyDetectionJobResource {
 			Delete: deleteAnomalyDetectionJob,
 			Create: createAnomalyDetectionJob,
 			Update: updateAnomalyDetectionJob,
+			Timeouts: entitycore.ResourceTimeouts{
+				Delete: 20 * time.Minute,
+			},
 		}),
 	}
 }

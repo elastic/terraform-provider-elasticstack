@@ -18,6 +18,7 @@
 package transform
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -25,6 +26,7 @@ import (
 
 // tfModel is the Plugin Framework model for the transform resource.
 type tfModel struct {
+	entitycore.ResourceTimeoutsField
 	ID                      types.String         `tfsdk:"id"`
 	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
 	Name                    types.String         `tfsdk:"name"`

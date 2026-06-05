@@ -20,10 +20,12 @@ package calendar
 import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/putcalendar"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type TFModel struct {
+	entitycore.ResourceTimeoutsField
 	ID                      fwtypes.String `tfsdk:"id"`
 	ElasticsearchConnection fwtypes.List   `tfsdk:"elasticsearch_connection"`
 	CalendarID              fwtypes.String `tfsdk:"calendar_id"`

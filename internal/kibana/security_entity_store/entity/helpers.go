@@ -1304,7 +1304,7 @@ func APIBodyToItem(ctx context.Context, body map[string]any, diags *diag.Diagnos
 	obj, d := types.ObjectValue(ItemObjectType().(types.ObjectType).AttrTypes, map[string]attr.Value{
 		"@timestamp":     item.Timestamp,
 		attrEntity:       item.Entity,
-		"host":           item.Host,
+		attrHost:         item.Host,
 		"user":           item.User,
 		"service":        item.Service,
 		"cloud":          item.Cloud,
@@ -1344,24 +1344,6 @@ func ItemAttrTypes() map[string]attr.Type {
 // This safely handles entity IDs that may contain quotes or backslashes.
 func QuoteKQLString(v string) string {
 	return strconv.Quote(v)
-}
-
-// injectEntityIDAndMarshal sets entity.id in bodyMap and marshals it to JSON.
-func injectEntityIDAndMarshal(bodyMap map[string]any, entityID string) ([]byte, diag.Diagnostics) {
-	if entityMap, ok := bodyMap["entity"].(map[string]any); ok {
-		entityMap["id"] = entityID
-		bodyMap["entity"] = entityMap
-	} else {
-		bodyMap["entity"] = map[string]any{"id": entityID}
-	}
-
-	bodyBytes, err := json.Marshal(bodyMap)
-	if err != nil {
-		return nil, diag.Diagnostics{
-			diag.NewErrorDiagnostic("JSON marshal error", err.Error()),
-		}
-	}
-	return bodyBytes, nil
 }
 
 // ExtractEntitiesFromResponse extracts the entity list from an API response map,

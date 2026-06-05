@@ -18,7 +18,6 @@
 package entity
 
 import (
-	"encoding/json"
 	"testing"
 )
 
@@ -66,54 +65,6 @@ func TestCanonicalJSON(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("canonicalJSON(%v) = %q, want %q", tt.input, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestInjectEntityIDAndMarshal(t *testing.T) {
-	tests := []struct {
-		name     string
-		bodyMap  map[string]any
-		entityID string
-		wantID   string
-	}{
-		{
-			name:     "injects id when entity key absent",
-			bodyMap:  map[string]any{"other": "value"},
-			entityID: "abc",
-			wantID:   "abc",
-		},
-		{
-			name:     "merges id into existing entity map",
-			bodyMap:  map[string]any{"entity": map[string]any{"name": "test"}},
-			entityID: "xyz",
-			wantID:   "xyz",
-		},
-		{
-			name:     "overwrites existing id in entity map",
-			bodyMap:  map[string]any{"entity": map[string]any{"id": "old", "name": "test"}},
-			entityID: "new",
-			wantID:   "new",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			b, diags := injectEntityIDAndMarshal(tt.bodyMap, tt.entityID)
-			if diags.HasError() {
-				t.Fatalf("unexpected error: %v", diags)
-			}
-			var result map[string]any
-			if err := json.Unmarshal(b, &result); err != nil {
-				t.Fatalf("unmarshal: %v", err)
-			}
-			entityMap, ok := result["entity"].(map[string]any)
-			if !ok {
-				t.Fatalf("entity key not a map: %T", result["entity"])
-			}
-			if got := entityMap["id"]; got != tt.wantID {
-				t.Errorf("entity.id = %v, want %v", got, tt.wantID)
 			}
 		})
 	}

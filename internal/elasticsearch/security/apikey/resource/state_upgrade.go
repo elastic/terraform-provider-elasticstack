@@ -24,23 +24,36 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-func schemaWithConnection(version int64) schema.Schema {
+func schemaWithConnection(ctx context.Context, version int64) schema.Schema {
 	s := getSchema(version)
 	blocks := make(map[string]schema.Block, len(s.Blocks)+1)
 	maps.Copy(blocks, s.Blocks)
 	blocks["elasticsearch_connection"] = providerschema.GetEsFWConnectionBlock()
 	s.Blocks = blocks
+
+	// The current TfModel embeds entitycore.ResourceTimeoutsField (the envelope
+	// injects a "timeouts" attribute into the live schema). Prior-version state
+	// written before timeouts existed has no such attribute, so the prior schema
+	// must declare it for UpgradeState to decode prior state into TfModel without
+	// a "Struct defines fields not found in object: timeouts" error. Missing
+	// timeouts in the raw prior state decodes to null.
+	attrs := make(map[string]schema.Attribute, len(s.Attributes)+1)
+	maps.Copy(attrs, s.Attributes)
+	attrs["timeouts"] = timeouts.AttributesAll(ctx)
+	s.Attributes = attrs
+
 	return s
 }
 
-func (r *Resource) UpgradeState(context.Context) map[int64]fwresource.StateUpgrader {
-	schema0 := schemaWithConnection(0)
-	schema1 := schemaWithConnection(1)
+func (r *Resource) UpgradeState(ctx context.Context) map[int64]fwresource.StateUpgrader {
+	schema0 := schemaWithConnection(ctx, 0)
+	schema1 := schemaWithConnection(ctx, 1)
 	return map[int64]fwresource.StateUpgrader{
 		0: {
 			PriorSchema: &schema0,

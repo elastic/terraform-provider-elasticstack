@@ -340,6 +340,7 @@ resource "elasticstack_kibana_slo" "timeslice_metric" {
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `tags` (List of String) The tags for the SLO.
 - `time_window` (Block List) Currently supports `calendarAligned` and `rolling` time windows. For `type = "rolling"`, duration must be one of `7d` (7 days), `30d` (30 days), or `90d` (90 days). For `type = "calendarAligned"`, duration must be either `1w` (weekly) or `1M` (monthly). Rolling time window SLOs only consider SLI data from the last duration period as a moving window. Calendar aligned time windows align to calendar boundaries. (see [below for nested schema](#nestedblock--time_window))
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 - `timeslice_metric_indicator` (Block List) Defines a timeslice metric indicator for SLO. (see [below for nested schema](#nestedblock--timeslice_metric_indicator))
 
 ### Read-Only
@@ -624,6 +625,17 @@ Required:
 
 - `duration` (String)
 - `type` (String)
+
+
+<a id="nestedatt--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+- `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
+- `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
+- `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 
 
 <a id="nestedblock--timeslice_metric_indicator"></a>

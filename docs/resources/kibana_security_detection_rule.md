@@ -223,6 +223,7 @@ resource "elasticstack_kibana_security_detection_rule" "with_connector_action" {
 - `tiebreaker_field` (String) Sets the tiebreaker field. Required for EQL rules when event.dataset is not provided.
 - `timeline_id` (String) Timeline template ID for the rule.
 - `timeline_title` (String) Timeline template title for the rule.
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 - `timestamp_override` (String) Field name to use for timestamp override. Available for all rule types.
 - `timestamp_override_fallback_disabled` (Boolean) Disables timestamp override fallback. Available for all rule types.
 - `to` (String) Time to which data is analyzed each time the rule runs, using a date math range.
@@ -519,6 +520,18 @@ Required:
 
 - `field` (String) The field on which to calculate and compare the cardinality.
 - `value` (Number) The threshold cardinality value.
+
+
+
+<a id="nestedatt--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+- `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
+- `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
+- `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 
 ## Import
 

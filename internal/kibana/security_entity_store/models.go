@@ -46,6 +46,7 @@ type logExtractionModel struct {
 }
 
 type tfModel struct {
+	entitycore.ResourceTimeoutsField
 	ID                    types.String         `tfsdk:"id"`
 	KibanaConnection      types.List           `tfsdk:"kibana_connection"`
 	SpaceID               types.String         `tfsdk:"space_id"`

@@ -39,6 +39,7 @@ var (
 var minKibanaEntityStoreResolutionVersion = version.Must(version.NewVersion("9.1.0"))
 
 type entityLinkModel struct {
+	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
 	ID                  types.String         `tfsdk:"id"`
 	SpaceID             types.String         `tfsdk:"space_id"`

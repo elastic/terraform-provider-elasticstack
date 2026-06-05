@@ -28,6 +28,7 @@ import (
 //
 //nolint:revive // consistent naming with other ML resources
 type TrainedModelDeploymentData struct {
+	entitycore.ResourceTimeoutsField
 	ID                      types.String             `tfsdk:"id"`
 	ElasticsearchConnection types.List               `tfsdk:"elasticsearch_connection"`
 	ModelID                 types.String             `tfsdk:"model_id"`

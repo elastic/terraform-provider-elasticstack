@@ -107,6 +107,7 @@ resource "elasticstack_elasticsearch_transform" "transform_with_pivot" {
 - `retention_policy` (Block, Single) Defines a retention policy for the transform. (see [below for nested schema](#nestedblock--retention_policy))
 - `sync` (Block, Single) Defines the properties transforms require to run continuously. (see [below for nested schema](#nestedblock--sync))
 - `timeout` (String) Period to wait for a response from Elasticsearch when performing any management operation. If no response is received before the timeout expires, the operation fails and returns an error. Defaults to `30s`.
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 - `unattended` (Boolean) In unattended mode, the transform retries indefinitely in case of an error which means the transform never fails.
 
 ### Read-Only
@@ -206,6 +207,16 @@ Required:
 Optional:
 
 - `delay` (String) The time delay between the current time and the latest input data time. The default value is 60s.
+
+<a id="nestedatt--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+- `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
+- `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
+- `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 
 ## Import
 

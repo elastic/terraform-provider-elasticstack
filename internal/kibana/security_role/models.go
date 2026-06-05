@@ -35,6 +35,7 @@ var (
 )
 
 type resourceModel struct {
+	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
 	ID            types.String         `tfsdk:"id"`
 	Name          types.String         `tfsdk:"name"`

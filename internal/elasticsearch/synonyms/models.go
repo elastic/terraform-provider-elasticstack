@@ -52,6 +52,7 @@ func synonymRuleModelAttrTypes() map[string]attr.Type {
 // SynonymSetData is the Terraform state model for the elasticstack_elasticsearch_synonym_set resource.
 // It implements entitycore.ElasticsearchResourceModel.
 type SynonymSetData struct {
+	entitycore.ResourceTimeoutsField
 	entitycore.ElasticsearchConnectionField
 	ID           fwtypes.String `tfsdk:"id"`
 	SynonymSetID fwtypes.String `tfsdk:"synonym_set_id"`

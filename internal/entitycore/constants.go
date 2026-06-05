@@ -22,4 +22,8 @@ package entitycore
 const (
 	blockElasticsearchConnection = "elasticsearch_connection"
 	blockKibanaConnection        = "kibana_connection"
+	attrTimeouts                 = "timeouts"
+
+	envelopeWriteOpCreate = "create"
+	envelopeWriteOpUpdate = "update"
 )

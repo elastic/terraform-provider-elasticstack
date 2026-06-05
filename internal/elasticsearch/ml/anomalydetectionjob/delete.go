@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -32,7 +31,7 @@ import (
 
 // deleteAnomalyDetectionJob closes and deletes the ML job. It satisfies the
 // entitycore elasticsearchDeleteFunc[TFModel] signature.
-func deleteAnomalyDetectionJob(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state TFModel) fwdiags.Diagnostics {
+func deleteAnomalyDetectionJob(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ TFModel) fwdiags.Diagnostics {
 	var diags fwdiags.Diagnostics
 
 	jobID := resourceID
@@ -42,15 +41,6 @@ func deleteAnomalyDetectionJob(ctx context.Context, client *clients.Elasticsearc
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Deleting ML anomaly detection job: %s", jobID))
-
-	deleteTimeout, fwDiags := state.Timeouts.Delete(ctx, 20*time.Minute)
-	diags.Append(fwDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
-	defer cancel()
 
 	typedClient := client.GetESClient()
 

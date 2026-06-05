@@ -18,10 +18,12 @@
 package trainedmodelalias
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type TFModel struct {
+	entitycore.ResourceTimeoutsField
 	ID                      types.String `tfsdk:"id"`
 	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
 	ModelAlias              types.String `tfsdk:"model_alias"`
