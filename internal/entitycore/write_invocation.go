@@ -18,9 +18,12 @@
 package entitycore
 
 import (
+	"context"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 )
 
@@ -60,5 +63,90 @@ func requireCallbackDiag(component Component, callback string) diag.Diagnostics 
 		name+" envelope configuration error",
 		"The "+callback+" callback passed via "+name+"ResourceOptions must not be nil.",
 	)
+	return diags
+}
+
+// runWriteCommon executes the shared Create/Update orchestration flow that is
+// identical between [ElasticsearchResource.runWrite] and
+// [KibanaResource.runKibanaWrite]:
+//
+//  1. Verify the appropriate write callback (create or update) is non-nil.
+//  2. Decode the plan model.
+//  3. Resolve and apply the operation timeout to ctx.
+//  4. Decode prior state (Update only).
+//  5. Decode the config model.
+//  6. Invoke body, which handles client-specific work: identity resolution,
+//     client creation, version enforcement, write dispatch, read-after-write,
+//     and postRead.
+//  7. Preserve timeouts on the returned state model and persist it to outState.
+//
+// body receives the deadline-constrained ctx, the decoded plan model, a pointer
+// to the decoded prior model (nil on Create), and the decoded config model.
+// It returns the fully-resolved state model and any diagnostics.
+func runWriteCommon[T WithResourceTimeouts](
+	ctx context.Context,
+	component Component,
+	ts ResourceTimeouts,
+	inv resourceWriteInvocation,
+	hasCreateFunc, hasUpdateFunc bool,
+	body func(ctx context.Context, planModel T, priorPtr *T, configModel T) (T, diag.Diagnostics),
+) diag.Diagnostics {
+	var diags diag.Diagnostics
+	if (inv.isUpdate && !hasUpdateFunc) || (!inv.isUpdate && !hasCreateFunc) {
+		op := envelopeWriteOpCreate
+		if inv.isUpdate {
+			op = envelopeWriteOpUpdate
+		}
+		return requireCallbackDiag(component, op)
+	}
+
+	var planModel T
+	diags.Append(inv.plan.Get(ctx, &planModel)...)
+	if diags.HasError() {
+		return diags
+	}
+
+	var opTimeout time.Duration
+	var timeoutDiags diag.Diagnostics
+	if inv.isUpdate {
+		opTimeout, timeoutDiags = planModel.GetTimeouts().Update(ctx, ts.UpdateOrDefault())
+	} else {
+		opTimeout, timeoutDiags = planModel.GetTimeouts().Create(ctx, ts.CreateOrDefault())
+	}
+	diags.Append(timeoutDiags...)
+	if diags.HasError() {
+		return diags
+	}
+	ctx, cancel := context.WithTimeout(ctx, opTimeout)
+	defer cancel()
+
+	var priorPtr *T
+	if inv.isUpdate && inv.priorState != nil {
+		var priorModel T
+		diags.Append(inv.priorState.Get(ctx, &priorModel)...)
+		if diags.HasError() {
+			return diags
+		}
+		priorPtr = &priorModel
+	}
+
+	var configModel T
+	diags.Append(inv.config.Get(ctx, &configModel)...)
+	if diags.HasError() {
+		return diags
+	}
+
+	stateModel, bodyDiags := body(ctx, planModel, priorPtr, configModel)
+	diags.Append(bodyDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	preserveModelTimeouts(&stateModel, planModel.GetTimeouts())
+	diags.Append(inv.outState.Set(ctx, &stateModel)...)
+	if diags.HasError() {
+		return diags
+	}
+	diags.Append(inv.outState.SetAttribute(ctx, path.Root(attrTimeouts), planModel.GetTimeouts())...)
 	return diags
 }

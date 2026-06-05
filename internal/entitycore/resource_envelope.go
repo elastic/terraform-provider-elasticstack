@@ -21,13 +21,11 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -314,160 +312,109 @@ func (r *ElasticsearchResource[T]) Update(ctx context.Context, req resource.Upda
 }
 
 func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWriteInvocation) diag.Diagnostics {
-	var diags diag.Diagnostics
-	if (inv.isUpdate && r.updateFunc == nil) || (!inv.isUpdate && r.createFunc == nil) {
-		op := envelopeWriteOpCreate
-		if inv.isUpdate {
-			op = envelopeWriteOpUpdate
-		}
-		return requireCallbackDiag(r.component, op)
-	}
+	return runWriteCommon[T](ctx, r.component, r.timeouts, inv, r.createFunc != nil, r.updateFunc != nil,
+		func(ctx context.Context, planModel T, priorPtr *T, configModel T) (T, diag.Diagnostics) {
+			var diags diag.Diagnostics
+			var zero T
 
-	var planModel T
-	diags.Append(inv.plan.Get(ctx, &planModel)...)
-	if diags.HasError() {
-		return diags
-	}
+			writeID := planModel.GetResourceID()
+			if !typeutils.IsKnown(writeID) {
+				diags.AddError(
+					"Invalid resource identifier",
+					"The resource write identity from configuration is unknown; cannot create or update.",
+				)
+				return zero, diags
+			}
+			allowEmptyCreate := false
+			if opt, ok := any(planModel).(WithOptionalWriteIdentity); ok {
+				allowEmptyCreate = opt.AllowsEmptyWriteIdentityOnCreate()
+			}
+			writeKey := writeID.ValueString()
+			if writeKey == "" && (inv.isUpdate || !allowEmptyCreate) {
+				diags.AddError(
+					"Invalid resource identifier",
+					"The resource write identity from configuration is empty; cannot create or update.",
+				)
+				return zero, diags
+			}
 
-	var opTimeout time.Duration
-	var timeoutDiags diag.Diagnostics
-	if inv.isUpdate {
-		opTimeout, timeoutDiags = planModel.GetTimeouts().Update(ctx, r.timeouts.UpdateOrDefault())
-	} else {
-		opTimeout, timeoutDiags = planModel.GetTimeouts().Create(ctx, r.timeouts.CreateOrDefault())
-	}
-	diags.Append(timeoutDiags...)
-	if diags.HasError() {
-		return diags
-	}
-	ctx, cancel := context.WithTimeout(ctx, opTimeout)
-	defer cancel()
+			client, connDiags := r.Client().GetElasticsearchClient(ctx, planModel.GetElasticsearchConnection())
+			diags.Append(connDiags...)
+			if diags.HasError() {
+				return zero, diags
+			}
 
-	var priorPtr *T
-	if inv.isUpdate && inv.priorState != nil {
-		var priorModel T
-		diags.Append(inv.priorState.Get(ctx, &priorModel)...)
-		if diags.HasError() {
-			return diags
-		}
-		priorPtr = &priorModel
-	}
+			if vDiags := EnforceVersionRequirements(ctx, client, &planModel); vDiags.HasError() {
+				diags.Append(vDiags...)
+				return zero, diags
+			}
 
-	writeID := planModel.GetResourceID()
-	if !typeutils.IsKnown(writeID) {
-		diags.AddError(
-			"Invalid resource identifier",
-			"The resource write identity from configuration is unknown; cannot create or update.",
-		)
-		return diags
-	}
-	allowEmptyCreate := false
-	if opt, ok := any(planModel).(WithOptionalWriteIdentity); ok {
-		allowEmptyCreate = opt.AllowsEmptyWriteIdentityOnCreate()
-	}
-	writeKey := writeID.ValueString()
-	if writeKey == "" && (inv.isUpdate || !allowEmptyCreate) {
-		diags.AddError(
-			"Invalid resource identifier",
-			"The resource write identity from configuration is empty; cannot create or update.",
-		)
-		return diags
-	}
+			if r.read == nil {
+				return zero, requireReadFuncDiag(r.component)
+			}
 
-	client, connDiags := r.Client().GetElasticsearchClient(ctx, planModel.GetElasticsearchConnection())
-	diags.Append(connDiags...)
-	if diags.HasError() {
-		return diags
-	}
+			writeFn := r.createFunc
+			if inv.isUpdate {
+				writeFn = r.updateFunc
+			}
+			written, callDiags := writeFn(ctx, client, WriteRequest[T]{
+				Plan:    planModel,
+				Prior:   priorPtr,
+				Config:  configModel,
+				WriteID: writeKey,
+				Private: inv.privateState,
+			})
+			diags.Append(callDiags...)
+			if diags.HasError() {
+				return zero, diags
+			}
 
-	if vDiags := EnforceVersionRequirements(ctx, client, &planModel); vDiags.HasError() {
-		diags.Append(vDiags...)
-		return diags
-	}
+			var stateModel T
+			if r.skipReadAfterWrite {
+				stateModel = written.Model
+			} else {
+				readResourceID, idDiags := resolveElasticsearchReadResourceID(written.Model, writeKey)
+				diags.Append(idDiags...)
+				if diags.HasError() {
+					return zero, diags
+				}
+				if readResourceID == "" {
+					diags.AddError(
+						"Invalid resource identifier",
+						"The resolved read identity is empty after write; cannot refresh.",
+					)
+					return zero, diags
+				}
 
-	if r.read == nil {
-		return requireReadFuncDiag(r.component)
-	}
+				var found bool
+				var readDiags diag.Diagnostics
+				stateModel, found, readDiags = r.read(ctx, client, readResourceID, written.Model)
+				diags.Append(readDiags...)
+				if diags.HasError() {
+					return zero, diags
+				}
 
-	var configModel T
-	diags.Append(inv.config.Get(ctx, &configModel)...)
-	if diags.HasError() {
-		return diags
-	}
+				if !found {
+					diags.AddError(
+						"Resource not found",
+						fmt.Sprintf("%s_%s %q was not found after write", r.component, r.resourceName, writeKey),
+					)
+					return zero, diags
+				}
+			}
 
-	writeFn := r.createFunc
-	if inv.isUpdate {
-		writeFn = r.updateFunc
-	}
-	written, callDiags := writeFn(ctx, client, WriteRequest[T]{
-		Plan:    planModel,
-		Prior:   priorPtr,
-		Config:  configModel,
-		WriteID: writeKey,
-		Private: inv.privateState,
-	})
-	diags.Append(callDiags...)
-	if diags.HasError() {
-		return diags
-	}
+			if r.postRead != nil {
+				var prDiags diag.Diagnostics
+				stateModel, prDiags = r.postRead(ctx, client, planModel, stateModel, inv.privateState)
+				diags.Append(prDiags...)
+				if diags.HasError() {
+					return stateModel, diags
+				}
+			}
 
-	var stateModel T
-	if r.skipReadAfterWrite {
-		stateModel = written.Model
-	} else {
-		readResourceID, idDiags := resolveElasticsearchReadResourceID(written.Model, writeKey)
-		diags.Append(idDiags...)
-		if diags.HasError() {
-			return diags
-		}
-		if readResourceID == "" {
-			diags.AddError(
-				"Invalid resource identifier",
-				"The resolved read identity is empty after write; cannot refresh.",
-			)
-			return diags
-		}
-
-		var found bool
-		var readDiags diag.Diagnostics
-		stateModel, found, readDiags = r.read(ctx, client, readResourceID, written.Model)
-		diags.Append(readDiags...)
-		if diags.HasError() {
-			return diags
-		}
-
-		if !found {
-			diags.AddError(
-				"Resource not found",
-				fmt.Sprintf("%s_%s %q was not found after write", r.component, r.resourceName, writeKey),
-			)
-			return diags
-		}
-	}
-
-	priorModel := planModel
-
-	if r.postRead != nil {
-		var prDiags diag.Diagnostics
-		stateModel, prDiags = r.postRead(ctx, client, priorModel, stateModel, inv.privateState)
-		diags.Append(prDiags...)
-		if diags.HasError() {
-			return diags
-		}
-	}
-
-	preserveModelTimeouts(&stateModel, planModel.GetTimeouts())
-	diags.Append(inv.outState.Set(ctx, &stateModel)...)
-	if diags.HasError() {
-		return diags
-	}
-
-	diags.Append(inv.outState.SetAttribute(ctx, path.Root(attrTimeouts), planModel.GetTimeouts())...)
-	if diags.HasError() {
-		return diags
-	}
-
-	return diags
+			return stateModel, diags
+		},
+	)
 }
 
 var (
