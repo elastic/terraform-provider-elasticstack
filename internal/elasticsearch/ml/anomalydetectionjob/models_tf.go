@@ -23,10 +23,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	timeouts "github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -35,11 +35,12 @@ import (
 
 // TFModel represents the Terraform resource model for ML anomaly detection jobs
 type TFModel struct {
-	ID                      types.String `tfsdk:"id"`
-	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
-	JobID                   types.String `tfsdk:"job_id"`
-	Description             types.String `tfsdk:"description"`
-	Groups                  types.Set    `tfsdk:"groups"`
+	entitycore.ElasticsearchConnectionField
+	entitycore.ResourceTimeoutsField
+	ID          types.String `tfsdk:"id"`
+	JobID       types.String `tfsdk:"job_id"`
+	Description types.String `tfsdk:"description"`
+	Groups      types.Set    `tfsdk:"groups"`
 	// AnalysisConfig is required in configuration, but can be null in state during import.
 	AnalysisConfig                       types.Object         `tfsdk:"analysis_config"`
 	AnalysisLimits                       types.Object         `tfsdk:"analysis_limits"`
@@ -59,8 +60,6 @@ type TFModel struct {
 	JobType         types.String `tfsdk:"job_type"`
 	JobVersion      types.String `tfsdk:"job_version"`
 	ModelSnapshotID types.String `tfsdk:"model_snapshot_id"`
-
-	Timeouts timeouts.Value `tfsdk:"timeouts"`
 }
 
 // GetID implements entitycore.ElasticsearchResourceModel.
@@ -69,9 +68,6 @@ func (plan TFModel) GetID() types.String { return plan.ID }
 // GetResourceID implements entitycore.ElasticsearchResourceModel.
 // Returns the plan-safe write identity (job_id).
 func (plan TFModel) GetResourceID() types.String { return plan.JobID }
-
-// GetElasticsearchConnection implements entitycore.ElasticsearchResourceModel.
-func (plan TFModel) GetElasticsearchConnection() types.List { return plan.ElasticsearchConnection }
 
 // AnalysisConfigTFModel represents the analysis configuration
 type AnalysisConfigTFModel struct {

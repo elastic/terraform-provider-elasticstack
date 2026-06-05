@@ -19,10 +19,12 @@ package indexmappings
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type tfModel struct {
+	entitycore.ResourceTimeoutsField
 	ID                      types.String        `tfsdk:"id"`
 	Index                   types.String        `tfsdk:"index"`
 	Mappings                index.MappingsValue `tfsdk:"mappings"`

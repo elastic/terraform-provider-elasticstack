@@ -45,6 +45,7 @@ type SpaceModel struct {
 }
 
 type resourceModel struct {
+	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
 	ID               types.String `tfsdk:"id"`
 	SpaceID          types.String `tfsdk:"space_id"`

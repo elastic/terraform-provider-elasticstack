@@ -30,8 +30,48 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// roleMappingDataSourceModel mirrors Data without entitycore.ResourceTimeoutsField:
+// data sources do not expose a timeouts attribute, so reusing the resource model
+// (which embeds it) would fail decoding against the timeouts-free data source schema.
+type roleMappingDataSourceModel struct {
+	entitycore.ElasticsearchConnectionField
+	ID            types.String         `tfsdk:"id"`
+	Name          types.String         `tfsdk:"name"`
+	Enabled       types.Bool           `tfsdk:"enabled"`
+	Rules         NormalizedRulesValue `tfsdk:"rules"`
+	Roles         types.Set            `tfsdk:"roles"`
+	RoleTemplates jsontypes.Normalized `tfsdk:"role_templates"`
+	Metadata      jsontypes.Normalized `tfsdk:"metadata"`
+}
+
+func (m roleMappingDataSourceModel) toData() Data {
+	return Data{
+		ElasticsearchConnectionField: m.ElasticsearchConnectionField,
+		ID:                           m.ID,
+		Name:                         m.Name,
+		Enabled:                      m.Enabled,
+		Rules:                        m.Rules,
+		Roles:                        m.Roles,
+		RoleTemplates:                m.RoleTemplates,
+		Metadata:                     m.Metadata,
+	}
+}
+
+func roleMappingDataSourceModelFromData(d Data) roleMappingDataSourceModel {
+	return roleMappingDataSourceModel{
+		ElasticsearchConnectionField: d.ElasticsearchConnectionField,
+		ID:                           d.ID,
+		Name:                         d.Name,
+		Enabled:                      d.Enabled,
+		Rules:                        d.Rules,
+		Roles:                        d.Roles,
+		RoleTemplates:                d.RoleTemplates,
+		Metadata:                     d.Metadata,
+	}
+}
+
 func NewRoleMappingDataSource() datasource.DataSource {
-	return entitycore.NewElasticsearchDataSource[Data](
+	return entitycore.NewElasticsearchDataSource[roleMappingDataSourceModel](
 		entitycore.ComponentElasticsearch,
 		"security_role_mapping",
 		getDataSourceSchema,
@@ -79,18 +119,20 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 	}
 }
 
-func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config Data) (Data, diag.Diagnostics) {
+func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config roleMappingDataSourceModel) (roleMappingDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	roleMappingName := config.Name.ValueString()
+
+	stateData := config.toData()
 
 	id, idDiags := esClient.ID(ctx, roleMappingName)
 	diags.Append(idDiags...)
 	if diags.HasError() {
 		return config, diags
 	}
-	config.ID = types.StringValue(id.String())
+	stateData.ID = types.StringValue(id.String())
 
-	readData, readDiags := readRoleMapping(ctx, config, roleMappingName, esClient)
+	readData, readDiags := readRoleMapping(ctx, stateData, roleMappingName, esClient)
 	diags.Append(readDiags...)
 	if diags.HasError() {
 		return config, diags
@@ -104,5 +146,5 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 		return config, diags
 	}
 
-	return *readData, diags
+	return roleMappingDataSourceModelFromData(*readData), diags
 }

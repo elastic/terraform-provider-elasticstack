@@ -36,6 +36,7 @@ import (
 )
 
 type Data struct {
+	entitycore.ResourceTimeoutsField
 	ID                      types.String                                      `tfsdk:"id"`
 	ElasticsearchConnection types.List                                        `tfsdk:"elasticsearch_connection"`
 	Name                    types.String                                      `tfsdk:"name"`

@@ -18,12 +18,14 @@
 package calendar_job
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // TFModel is the Terraform state for a single calendar–job (or calendar–group) assignment.
 type TFModel struct {
+	entitycore.ResourceTimeoutsField
 	ID                      types.String `tfsdk:"id"`
 	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
 	CalendarID              types.String `tfsdk:"calendar_id"`

@@ -24,6 +24,7 @@ import (
 
 // Data is the Plugin Framework model for the elasticstack_elasticsearch_data_stream resource.
 type Data struct {
+	entitycore.ResourceTimeoutsField
 	entitycore.ElasticsearchConnectionField
 	ID             types.String `tfsdk:"id"`
 	Name           types.String `tfsdk:"name"`

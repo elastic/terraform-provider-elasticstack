@@ -28,6 +28,7 @@ import (
 )
 
 type Model struct {
+	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
 	ID                types.String   `tfsdk:"id"`
 	Key               types.String   `tfsdk:"key"`

@@ -40,14 +40,6 @@ func updateCustomIntegration(
 	plan := req.Plan
 	state := *req.Prior
 
-	updateTimeout, fwDiags := plan.Timeouts.Update(ctx, 20*time.Minute)
-	diags.Append(fwDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[customIntegrationModel]{}, diags
-	}
-	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
-	defer cancel()
-
 	fleetClient := client.GetFleetClient()
 
 	// Determine whether we need to re-upload. Re-upload is required if:

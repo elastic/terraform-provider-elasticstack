@@ -18,6 +18,8 @@
 package customintegration
 
 import (
+	"time"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -44,6 +46,10 @@ func newResource() *Resource {
 				Delete: deleteCustomIntegration,
 				Create: createCustomIntegration,
 				Update: updateCustomIntegration,
+				Timeouts: entitycore.ResourceTimeouts{
+					Create: 20 * time.Minute,
+					Update: 20 * time.Minute,
+				},
 			},
 		),
 	}

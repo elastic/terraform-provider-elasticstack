@@ -39,6 +39,7 @@ const (
 
 // streamModel is the top-level Terraform model for elasticstack_kibana_stream.
 type streamModel struct {
+	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
 	ID            types.String        `tfsdk:"id"`
 	SpaceID       types.String        `tfsdk:"space_id"`

@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -32,19 +33,20 @@ import (
 )
 
 type integrationModelV0 struct {
-	ID                        types.String `tfsdk:"id"`
-	Name                      types.String `tfsdk:"name"`
-	Version                   types.String `tfsdk:"version"`
-	Force                     types.Bool   `tfsdk:"force"`
-	Prerelease                types.Bool   `tfsdk:"prerelease"`
-	IgnoreMappingUpdateErrors types.Bool   `tfsdk:"ignore_mapping_update_errors"`
-	SkipDataStreamRollover    types.Bool   `tfsdk:"skip_data_stream_rollover"`
-	IgnoreConstraints         types.Bool   `tfsdk:"ignore_constraints"`
-	SkipDestroy               types.Bool   `tfsdk:"skip_destroy"`
-	SpaceIDs                  types.Set    `tfsdk:"space_ids"`
+	ID                        types.String   `tfsdk:"id"`
+	Name                      types.String   `tfsdk:"name"`
+	Version                   types.String   `tfsdk:"version"`
+	Force                     types.Bool     `tfsdk:"force"`
+	Prerelease                types.Bool     `tfsdk:"prerelease"`
+	IgnoreMappingUpdateErrors types.Bool     `tfsdk:"ignore_mapping_update_errors"`
+	SkipDataStreamRollover    types.Bool     `tfsdk:"skip_data_stream_rollover"`
+	IgnoreConstraints         types.Bool     `tfsdk:"ignore_constraints"`
+	SkipDestroy               types.Bool     `tfsdk:"skip_destroy"`
+	SpaceIDs                  types.Set      `tfsdk:"space_ids"`
+	Timeouts                  timeouts.Value `tfsdk:"timeouts"`
 }
 
-func getSchemaV0() *schema.Schema {
+func getSchemaV0(ctx context.Context) *schema.Schema {
 	return &schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -85,14 +87,18 @@ func getSchemaV0() *schema.Schema {
 					setplanmodifier.RequiresReplace(),
 				},
 			},
+			// The current model embeds entitycore.ResourceTimeoutsField, so the
+			// prior schema must declare "timeouts" for UpgradeState to decode
+			// prior state (which lacks it) into a schema-typed null value.
+			"timeouts": timeouts.AttributesAll(ctx),
 		},
 	}
 }
 
-func (r *integrationResource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
+func (r *integrationResource) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{
 		0: {
-			PriorSchema: getSchemaV0(),
+			PriorSchema: getSchemaV0(ctx),
 			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 				var priorState integrationModelV0
 
@@ -114,6 +120,7 @@ func (r *integrationResource) UpgradeState(context.Context) map[int64]resource.S
 					SkipDestroy:               priorState.SkipDestroy,
 					SpaceID:                   types.StringNull(),
 				}
+				upgradedState.Timeouts = priorState.Timeouts
 
 				if !priorState.SpaceIDs.IsNull() && !priorState.SpaceIDs.IsUnknown() {
 					var spaceIDs []string

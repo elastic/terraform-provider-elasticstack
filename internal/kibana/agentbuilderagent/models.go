@@ -80,6 +80,7 @@ type agentBaseModel struct {
 }
 
 type agentModel struct {
+	entitycore.ResourceTimeoutsField
 	agentBaseModel
 	Tools types.Set `tfsdk:"tools"` // []string
 }

@@ -87,6 +87,12 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
+	// This resource shadows the envelope's Create, so it must carry the
+	// envelope-owned timeouts value from the plan; the hydrated read state
+	// leaves it as a zero timeouts.Value{} (untyped Object[]) which fails
+	// State.Set conversion against the schema's typed timeouts attribute.
+	readState.Timeouts = plan.Timeouts
+
 	diags = resp.State.Set(ctx, readState)
 	resp.Diagnostics.Append(diags...)
 }

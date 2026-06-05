@@ -32,6 +32,7 @@ import (
 )
 
 type proxyModel struct {
+	entitycore.ResourceTimeoutsField
 	ID                     types.String `tfsdk:"id"`
 	KibanaConnection       types.List   `tfsdk:"kibana_connection"`
 	ProxyID                types.String `tfsdk:"proxy_id"`

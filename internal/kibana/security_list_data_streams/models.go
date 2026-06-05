@@ -47,6 +47,7 @@ var _ entitycore.KibanaResourceModel = Model{}
 // kibana_security_list_data_streams resource. This resource manages the creation of
 // .lists and .items data streams required for security lists and exceptions.
 type Model struct {
+	entitycore.ResourceTimeoutsField
 	ID               types.String `tfsdk:"id"`
 	KibanaConnection types.List   `tfsdk:"kibana_connection"`
 	SpaceID          types.String `tfsdk:"space_id"`

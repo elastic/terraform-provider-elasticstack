@@ -20,14 +20,13 @@ package customintegration
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
 
-func getSchema(ctx context.Context) schema.Schema {
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Description: `Uploads and installs a custom (locally packaged) Fleet integration. The package must be a zip or tar.gz archive conforming to the Elastic package specification.
 
@@ -92,10 +91,6 @@ To prevent the package from being uninstalled when the resource is destroyed, se
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
-				Create: true,
-				Update: true,
-			}),
 		},
 	}
 }

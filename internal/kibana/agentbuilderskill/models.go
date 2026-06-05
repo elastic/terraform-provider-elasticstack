@@ -36,7 +36,6 @@ func (model skillModel) GetResourceID() types.String { return model.SkillID }
 func (model skillModel) GetSpaceID() types.String    { return model.SpaceID }
 
 var _ entitycore.KibanaResourceModel = skillModel{}
-var _ entitycore.KibanaDataSourceModel = skillModel{}
 var _ entitycore.WithVersionRequirements = skillModel{}
 
 func (model skillModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
@@ -49,6 +48,7 @@ func (model skillModel) GetVersionRequirements(_ context.Context) ([]entitycore.
 }
 
 type skillModel struct {
+	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
 	ID                types.String                 `tfsdk:"id"`
 	SkillID           types.String                 `tfsdk:"skill_id"`

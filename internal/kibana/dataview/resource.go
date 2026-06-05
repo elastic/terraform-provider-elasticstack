@@ -23,6 +23,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -65,12 +67,23 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 		return
 	}
 
+	// The envelope injects a "timeouts" attribute (Object[create/delete/read/update]).
+	// Read the schema-typed null from the freshly initialized import state so the
+	// constructed model carries a correctly typed timeouts value; a zero
+	// timeouts.Value{} would be an untyped Object[] and fail State.Set conversion.
+	var timeoutsValue timeouts.Value
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("timeouts"), &timeoutsValue)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	stateModel := dataViewModel{
-		ID:               types.StringValue(req.ID),
-		SpaceID:          types.StringValue(composite.ClusterID),
-		Override:         types.BoolValue(false),
-		DataView:         types.ObjectUnknown(getDataViewAttrTypes(ctx)),
-		KibanaConnection: providerschema.KibanaConnectionNullList(),
+		ResourceTimeoutsField: entitycore.ResourceTimeoutsField{Timeouts: timeoutsValue},
+		ID:                    types.StringValue(req.ID),
+		SpaceID:               types.StringValue(composite.ClusterID),
+		Override:              types.BoolValue(false),
+		DataView:              types.ObjectUnknown(getDataViewAttrTypes(ctx)),
+		KibanaConnection:      providerschema.KibanaConnectionNullList(),
 	}
 
 	diags = resp.State.Set(ctx, stateModel)

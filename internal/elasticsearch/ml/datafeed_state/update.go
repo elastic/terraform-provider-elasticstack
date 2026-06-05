@@ -20,134 +20,24 @@ package datafeedstate
 import (
 	"context"
 	"fmt"
-	"time"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *mlDatafeedStateResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var data MLDatafeedStateData
-	diags := req.Plan.Get(ctx, &data)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Get update timeout
-	updateTimeout, fwDiags := data.Timeouts.Update(ctx, 5*time.Minute) // Default 5 minutes
-	resp.Diagnostics.Append(fwDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = r.update(ctx, req.Plan, &resp.State, updateTimeout)
-	if diagutil.ContainsContextDeadlineExceeded(ctx, diags) {
-		diags.AddError("Operation timed out", fmt.Sprintf(updateTimeoutErrorMessage, updateTimeout))
-	}
-
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-}
-
-func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State, operationTimeout time.Duration) diag.Diagnostics {
-	var data MLDatafeedStateData
-	diags := plan.Get(ctx, &data)
-	if diags.HasError() {
-		return diags
-	}
-
-	client, fwDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	diags.Append(fwDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	datafeedID := data.DatafeedID.ValueString()
-	desiredState := data.State.ValueString()
-
-	// Create context with timeout
-	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
-	defer cancel()
-
-	// First, get the current datafeed stats to check if the datafeed exists and its current state
-	datafeedStats, fwDiags := elasticsearch.GetDatafeedStats(ctx, client, datafeedID)
-	diags.Append(fwDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	if datafeedStats == nil {
-		diags.AddError(
-			"ML Datafeed not found",
-			fmt.Sprintf("ML datafeed %s does not exist", datafeedID),
-		)
-		return diags
-	}
-
-	// Perform state transition if needed
-	inDesiredState, fwDiags := r.performStateTransition(ctx, data, datafeed.State(datafeedStats.State.String()))
-	diags.Append(fwDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	compID, idDiags := client.ID(ctx, datafeedID)
-	diags.Append(idDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	data.ID = types.StringValue(compID.String())
-
-	var finalData *MLDatafeedStateData
-	if inDesiredState {
-		result, found, getDiags := readMLDatafeedState(ctx, client, datafeedID, data)
-		diags.Append(getDiags...)
-		if diags.HasError() {
-			return diags
-		}
-		if found {
-			finalData = &result
-		}
-	} else {
-		var updateDiags diag.Diagnostics
-		finalData, updateDiags = r.updateAfterMissedTransition(ctx, data, datafeedStats)
-		diags.Append(updateDiags...)
-		if diags.HasError() {
-			return diags
-		}
-	}
-
-	if finalData == nil {
-		diags.AddError("Failed to read datafeed stats after update", fmt.Sprintf("The datafeed was successfully transitioned to the %s state, but could not be read after this change", desiredState))
-		return diags
-	}
-
-	diags.Append(state.Set(ctx, finalData)...)
-	return diags
-}
-
-func (r *mlDatafeedStateResource) updateAfterMissedTransition(
+func updateAfterMissedTransition(
 	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
 	data MLDatafeedStateData,
 	datafeedStats *estypes.DatafeedStats,
 ) (*MLDatafeedStateData, diag.Diagnostics) {
 	datafeedID := data.DatafeedID.ValueString()
-	client, diags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	if diags.HasError() {
-		return nil, diags
-	}
+	var diags diag.Diagnostics
 
 	statsAfterUpdate, getDiags := elasticsearch.GetDatafeedStats(ctx, client, datafeedID)
 	diags.Append(getDiags...)
@@ -163,9 +53,6 @@ func (r *mlDatafeedStateResource) updateAfterMissedTransition(
 		return nil, diags
 	}
 
-	// It's possible that the datafeed starts, and then immediately stops if there is no (or very little) data to process.
-	// In this case, the state transition may occur too quickly to be detected by the wait function.
-	// To handle this, we check if the search count has increased to determine if the datafeed actually started since the update.
 	if statsAfterUpdate.TimingStats == nil || datafeedStats.TimingStats == nil {
 		diags.AddWarning("Expected Datafeed to contain timing stats",
 			fmt.Sprintf("Stats for datafeed %s did not contain timing stats either before or after the update. Before %v - After %v", datafeedID, datafeedStats, statsAfterUpdate))
@@ -183,29 +70,21 @@ func (r *mlDatafeedStateResource) updateAfterMissedTransition(
 	return &data, diags
 }
 
-// performStateTransition handles the ML datafeed state transition process
-func (r *mlDatafeedStateResource) performStateTransition(ctx context.Context, data MLDatafeedStateData, currentState datafeed.State) (bool, diag.Diagnostics) {
+func performStateTransition(ctx context.Context, client *clients.ElasticsearchScopedClient, data MLDatafeedStateData, currentState datafeed.State) (bool, diag.Diagnostics) {
 	datafeedID := data.DatafeedID.ValueString()
 	desiredState := datafeed.State(data.State.ValueString())
 	force := data.Force.ValueBool()
-	client, diags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	if diags.HasError() {
-		return false, diags
-	}
 
-	// Parse timeout duration
 	timeout, parseErrs := data.Timeout.Parse()
 	if parseErrs.HasError() {
 		return false, parseErrs
 	}
 
-	// Return early if no state change is needed
 	if currentState == desiredState {
 		tflog.Debug(ctx, fmt.Sprintf("ML datafeed %s is already in desired state %s", datafeedID, desiredState))
 		return true, nil
 	}
 
-	// Initiate the state change
 	switch desiredState {
 	case datafeed.StateStarted:
 		start := data.Start.ValueString()
@@ -228,7 +107,6 @@ func (r *mlDatafeedStateResource) performStateTransition(ctx context.Context, da
 		}
 	}
 
-	// Wait for state transition to complete
 	inDesiredState, diags := datafeed.WaitForDatafeedState(ctx, client, datafeedID, desiredState)
 	if diags.HasError() {
 		return false, diags

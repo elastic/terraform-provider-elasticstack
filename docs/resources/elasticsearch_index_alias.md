@@ -22,6 +22,7 @@ Manages an Elasticsearch alias. See the [alias documentation](https://www.elasti
 
 - `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `read_indices` (Attributes Set) Set of read indices for the alias. (see [below for nested schema](#nestedatt--read_indices))
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 - `write_index` (Attributes) The write index for the alias. Only one write index is allowed per alias. (see [below for nested schema](#nestedatt--write_index))
 
 ### Read-Only
@@ -63,6 +64,17 @@ Optional:
 - `is_hidden` (Boolean) If true, the alias is hidden.
 - `routing` (String) Value used to route indexing and search operations to a specific shard.
 - `search_routing` (String) Value used to route search operations to a specific shard.
+
+
+<a id="nestedatt--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+- `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
+- `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
+- `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 
 
 <a id="nestedatt--write_index"></a>

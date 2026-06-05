@@ -54,6 +54,27 @@ The system SHALL define `ResourceTimeouts` as a struct with fields `Create, Read
 - **THEN** the envelope SHALL append those diagnostics
 - **AND** the envelope SHALL NOT invoke the Create callback
 
+#### Scenario: Envelope persists `timeouts` to state independent of callback-returned model
+- **WHEN** a Read operation completes and the resource `readFunc` returns a model whose `timeouts` field is a zero value (for example because the callback reconstructed the model without copying `ResourceTimeoutsField`)
+- **THEN** the envelope SHALL write the prior-state `timeouts` value back into `resp.State` after `resp.State.Set`
+- **AND** the operation SHALL succeed without a `timeouts` value-conversion diagnostic
+- **WHEN** a Create or Update operation completes and read-after-write returns a model whose `timeouts` field is a zero value
+- **THEN** the envelope SHALL write the plan model's `timeouts` value into `outState` after `outState.Set`
+- **AND** the operation SHALL succeed without a `timeouts` value-conversion diagnostic
+
+### Requirement: Envelope may skip read-after-write when write result is authoritative
+The system SHALL accept `SkipReadAfterWrite` on `ElasticsearchResourceOptions`. When `SkipReadAfterWrite` is true, after a successful Create or Update write callback the envelope SHALL persist `WriteResult.Model` to state directly without invoking the read callback. When `SkipReadAfterWrite` is false or unset, the envelope SHALL retain the existing read-after-write behavior. The read callback SHALL still be used for Read operations regardless of this option.
+
+#### Scenario: SkipReadAfterWrite persists write callback model without re-read
+- **WHEN** `ElasticsearchResourceOptions.SkipReadAfterWrite` is true
+- **AND** the envelope completes a Create or Update write callback successfully
+- **THEN** the envelope SHALL set state from `WriteResult.Model` without calling the read callback
+- **AND** the read callback SHALL still be available for Read/refresh operations
+
+#### Scenario: Default Create/Update still read-after-write
+- **WHEN** `SkipReadAfterWrite` is false or unset
+- **THEN** the envelope SHALL invoke the read callback after Create/Update to refresh state before persisting
+
 ### Requirement: Resource models embed `WithResourceTimeouts`
 The system SHALL define `WithResourceTimeouts` as an interface with a single method `GetTimeouts() timeouts.Value`. The system SHALL define `ResourceTimeoutsField` as an embeddable struct with field `Timeouts timeouts.Value `tfsdk:"timeouts"`` and a value-receiver `GetTimeouts()` method that returns the field. The system SHALL require `ElasticsearchResourceModel` to embed `WithResourceTimeouts`. Concrete resource models satisfy the constraint by embedding `ResourceTimeoutsField` (or by declaring an equivalent field plus method).
 

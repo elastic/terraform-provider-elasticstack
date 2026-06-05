@@ -18,6 +18,7 @@
 package models
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -59,6 +60,7 @@ func (m DashboardModel) GetSpaceID() types.String        { return m.SpaceID }
 func (m DashboardModel) GetKibanaConnection() types.List { return m.KibanaConnection }
 
 type DashboardModel struct {
+	entitycore.ResourceTimeoutsField
 	ID               types.String          `tfsdk:"id"`
 	KibanaConnection types.List            `tfsdk:"kibana_connection"`
 	SpaceID          types.String          `tfsdk:"space_id"`

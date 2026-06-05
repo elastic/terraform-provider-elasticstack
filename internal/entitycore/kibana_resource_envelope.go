@@ -20,11 +20,13 @@ package entitycore
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -32,7 +34,8 @@ import (
 
 // KibanaResourceModel is the type constraint for models passed to
 // [NewKibanaResource]. Concrete types must provide value-receiver methods
-// GetID, GetResourceID, GetSpaceID, and GetKibanaConnection.
+// GetID, GetResourceID, GetSpaceID, GetKibanaConnection, and
+// [WithResourceTimeouts] (typically by embedding [ResourceTimeoutsField]).
 type KibanaResourceModel interface {
 	GetID() types.String
 	// GetResourceID returns the plan-safe write identity (for example name or
@@ -41,6 +44,7 @@ type KibanaResourceModel interface {
 	GetResourceID() types.String
 	GetSpaceID() types.String
 	GetKibanaConnection() types.List
+	WithResourceTimeouts
 }
 
 type kibanaReadFunc[T KibanaResourceModel] func(
@@ -106,6 +110,13 @@ type KibanaPostReadFunc[T KibanaResourceModel] func(
 // KibanaResourceOptions configures [NewKibanaResource]. PostRead is optional;
 // Schema, Read, Delete, Create, and Update must be non-nil or the envelope
 // surfaces configuration diagnostics instead of invoking nil callbacks.
+//
+// Timeouts supplies per-operation default durations when configuration omits
+// `timeouts.<op>`; zero fields fall back to [DefaultResourceCreateTimeout],
+// [DefaultResourceReadTimeout], [DefaultResourceUpdateTimeout], and
+// [DefaultResourceDeleteTimeout]. Concrete schema factories MUST NOT include
+// a `timeouts` attribute; the envelope injects it and silently overwrites any
+// factory-supplied attribute with the same key.
 type KibanaResourceOptions[T KibanaResourceModel] struct {
 	Schema   func(context.Context) rschema.Schema
 	Read     kibanaReadFunc[T]
@@ -113,16 +124,17 @@ type KibanaResourceOptions[T KibanaResourceModel] struct {
 	Create   KibanaWriteFunc[T]
 	Update   KibanaWriteFunc[T]
 	PostRead KibanaPostReadFunc[T]
+	Timeouts ResourceTimeouts
 }
 
 // KibanaResource implements [resource.Resource] and related interfaces
 // for Kibana-backed resources. It embeds [baseResourceEnvelope] to reuse
 // Configure, Metadata, Client, Schema, Read, and Delete.
 //
-// The envelope owns Schema (with kibana_connection block injection),
-// Create, Read, Update, and Delete. Concrete resources may override Create or
-// Update when their lifecycle does not fit the callback contract, and may
-// choose to implement ImportState.
+// The envelope owns Schema (with kibana_connection block and timeouts attribute
+// injection), Create, Read, Update, and Delete. Concrete resources may override
+// Create or Update when their lifecycle does not fit the callback contract, and
+// may choose to implement ImportState.
 type KibanaResource[T KibanaResourceModel] struct {
 	baseResourceEnvelope[T, *clients.KibanaScopedClient]
 	createFunc KibanaWriteFunc[T]
@@ -168,6 +180,7 @@ func NewKibanaResource[T KibanaResourceModel](
 		schemaFactory:   opts.Schema,
 		connectionKey:   blockKibanaConnection,
 		connectionBlock: providerschema.GetKbFWConnectionBlock(),
+		timeouts:        opts.Timeouts,
 		resolveID: func(m T) (string, diag.Diagnostics) {
 			resourceID, _ := resolveKibanaResourceIdentity(m)
 			return resourceID, nil
@@ -272,9 +285,9 @@ func (r *KibanaResource[T]) Update(ctx context.Context, req resource.UpdateReque
 func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWriteInvocation) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if (inv.isUpdate && r.updateFunc == nil) || (!inv.isUpdate && r.createFunc == nil) {
-		op := "create"
+		op := envelopeWriteOpCreate
 		if inv.isUpdate {
-			op = "update"
+			op = envelopeWriteOpUpdate
 		}
 		return requireCallbackDiag(r.component, op)
 	}
@@ -284,6 +297,20 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 	if diags.HasError() {
 		return diags
 	}
+
+	var opTimeout time.Duration
+	var timeoutDiags diag.Diagnostics
+	if inv.isUpdate {
+		opTimeout, timeoutDiags = planModel.GetTimeouts().Update(ctx, r.timeouts.UpdateOrDefault())
+	} else {
+		opTimeout, timeoutDiags = planModel.GetTimeouts().Create(ctx, r.timeouts.CreateOrDefault())
+	}
+	diags.Append(timeoutDiags...)
+	if diags.HasError() {
+		return diags
+	}
+	ctx, cancel := context.WithTimeout(ctx, opTimeout)
+	defer cancel()
 
 	var priorPtr *T
 	if inv.isUpdate && inv.priorState != nil {
@@ -405,7 +432,16 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 		}
 	}
 
+	preserveModelTimeouts(&stateModel, planModel.GetTimeouts())
 	diags.Append(inv.outState.Set(ctx, &stateModel)...)
+	if diags.HasError() {
+		return diags
+	}
+
+	diags.Append(inv.outState.SetAttribute(ctx, path.Root(attrTimeouts), planModel.GetTimeouts())...)
+	if diags.HasError() {
+		return diags
+	}
 
 	return diags
 }

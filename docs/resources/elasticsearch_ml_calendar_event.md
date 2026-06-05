@@ -27,6 +27,7 @@ Manages scheduled events for a Machine Learning calendar. See the [ML post calen
 - `force_time_shift` (String) When set, changes the duration of the event to the specified value in seconds (decimal digits as a string; the API uses a JSON number). Requires Elasticsearch **8.16** or newer. Maps to `force_time_shift` in the Elasticsearch API.
 - `skip_model_update` (Boolean) If true, model updates are not generated for buckets that fall inside the event period. When omitted, the request does not send this field and Elasticsearch applies its default behavior. Explicit values require Elasticsearch **8.16** or newer. Maps to `skip_model_update` in the Elasticsearch API.
 - `skip_result` (Boolean) If true, results are not generated for buckets that fall inside the event period. When omitted, the request does not send this field and Elasticsearch applies its default behavior. Explicit values require Elasticsearch **8.16** or newer. Maps to `skip_result` in the Elasticsearch API.
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
 
@@ -52,3 +53,14 @@ Optional:
 - `key_file` (String) Path to a file containing the PEM encoded private key for client auth
 - `password` (String, Sensitive) Password to use for API authentication to Elasticsearch.
 - `username` (String) Username to use for API authentication to Elasticsearch.
+
+
+<a id="nestedatt--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+- `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
+- `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
+- `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).

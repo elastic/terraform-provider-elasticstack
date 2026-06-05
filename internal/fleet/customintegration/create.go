@@ -24,7 +24,6 @@ import (
 	"io"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
@@ -40,14 +39,6 @@ func createCustomIntegration(
 ) (entitycore.KibanaWriteResult[customIntegrationModel], diag.Diagnostics) {
 	var diags diag.Diagnostics
 	plan := req.Plan
-
-	createTimeout, fwDiags := plan.Timeouts.Create(ctx, 20*time.Minute)
-	diags.Append(fwDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[customIntegrationModel]{}, diags
-	}
-	ctx, cancel := context.WithTimeout(ctx, createTimeout)
-	defer cancel()
 
 	fleetClient := client.GetFleetClient()
 

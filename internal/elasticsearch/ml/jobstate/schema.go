@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -36,7 +35,7 @@ import (
 //go:embed resource-description.md
 var mlJobStateResourceDescription string
 
-func GetSchema(ctx context.Context) schema.Schema {
+func GetSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: mlJobStateResourceDescription,
 		Attributes: map[string]schema.Attribute{
@@ -75,10 +74,6 @@ func GetSchema(ctx context.Context) schema.Schema {
 				Default:             stringdefault.StaticString("30s"),
 				CustomType:          customtypes.DurationType{},
 			},
-			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
-				Create: true,
-				Update: true,
-			}),
 		},
 	}
 }

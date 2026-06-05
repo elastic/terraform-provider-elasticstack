@@ -55,6 +55,7 @@ func (workflowDataSourceModel) GetVersionRequirements(_ context.Context) ([]enti
 var _ entitycore.WithVersionRequirements = workflowDataSourceModel{}
 
 type workflowModel struct {
+	entitycore.ResourceTimeoutsField
 	workflowDataSourceModel
 	Name        types.String `tfsdk:"name"`
 	Description types.String `tfsdk:"description"`

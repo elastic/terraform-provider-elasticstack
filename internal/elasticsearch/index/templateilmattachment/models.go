@@ -43,6 +43,7 @@ const nameKey = "name"
 
 // tfModel represents the Terraform state model for this resource.
 type tfModel struct {
+	entitycore.ResourceTimeoutsField
 	ID                      types.String `tfsdk:"id"`
 	IndexTemplate           types.String `tfsdk:"index_template"`
 	LifecycleName           types.String `tfsdk:"lifecycle_name"`

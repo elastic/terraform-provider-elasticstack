@@ -72,6 +72,7 @@ resource "elasticstack_kibana_agentbuilder_skill" "incident_playbook" {
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `referenced_content` (Attributes List) Ordered list of referenced-content entries. Up to 100 entries; order is preserved. (see [below for nested schema](#nestedatt--referenced_content))
 - `space_id` (String) An identifier for the Kibana space. If not provided, the default space is used.
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 - `tool_ids` (Set of String) Set of tool IDs from the tool registry that this skill references.
 
 ### Read-Only
@@ -100,3 +101,14 @@ Required:
 - `content` (String) Content of the reference.
 - `name` (String) Name of the referenced content.
 - `relative_path` (String) Relative path of the referenced content. Must start with `./` (e.g., `./runbooks/standard.md`). Sent to and received from the API as `relativePath`.
+
+
+<a id="nestedatt--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+- `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
+- `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
+- `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
