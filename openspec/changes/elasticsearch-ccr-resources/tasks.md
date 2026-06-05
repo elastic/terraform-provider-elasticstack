@@ -107,10 +107,10 @@
 
 ## 4. Provider registration
 
-- [ ] 4.1 Add both new resources to the provider's resource list in `provider/plugin_framework.go`:
+- [x] 4.1 Add both new resources to the provider's resource list in `provider/plugin_framework.go`:
   - `elasticstack_elasticsearch_ccr_follower_index`
   - `elasticstack_elasticsearch_ccr_auto_follow_pattern`
-- [ ] 4.2 Add imports for the two new packages
+- [x] 4.2 Add imports for the two new packages
 
 ## 5. Acceptance tests
 

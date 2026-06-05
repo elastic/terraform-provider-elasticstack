@@ -25,6 +25,8 @@ import (
 	sourcemap "github.com/elastic/terraform-provider-elasticstack/internal/apm/source_map"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ccr/autofollow"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ccr/followerindex"
 	clusterinfo "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/info"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/script"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/settings"
@@ -298,6 +300,8 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		snapshotlifecycle.NewSlmResource,
 		snapshotrepo.NewSnapshotRepositoryResource,
 		transform.NewTransformResource,
+		followerindex.NewFollowerIndexResource,
+		autofollow.NewAutoFollowPatternResource,
 	}
 }
 
