@@ -21,13 +21,14 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	entity "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store/entity"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func readEntityStoreDataSource(ctx context.Context, client *clients.KibanaScopedClient, model dsModel) (dsModel, diag.Diagnostics) {
-	spaceID := normalizeSpaceID(model.SpaceID)
+	spaceID := entity.NormalizeSpaceID(model.SpaceID)
 	includeComponents := !model.IncludeComponents.IsNull() && !model.IncludeComponents.IsUnknown() && model.IncludeComponents.ValueBool()
 	status, rawBody, diags := getEntityStoreStatus(ctx, client, spaceID, includeComponents)
 	if diags.HasError() {
