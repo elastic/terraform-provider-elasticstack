@@ -2824,3 +2824,39 @@ func TestRunWrite_propagatesPrivateStateToUpdateCallback(t *testing.T) {
 	require.False(t, getDiags.HasError())
 	require.Equal(t, []byte("updated"), stored)
 }
+
+func TestInjectResourceBlockIntoSchema_injectsBlock(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	factory := func(_ context.Context) rschema.Schema {
+		return rschema.Schema{
+			Attributes: map[string]rschema.Attribute{
+				"id": rschema.StringAttribute{Computed: true},
+			},
+		}
+	}
+	block := providerschema.GetEsFWConnectionBlock()
+
+	result := injectResourceBlockIntoSchema(ctx, factory, "elasticsearch_connection", block)
+
+	require.Contains(t, result.Blocks, "elasticsearch_connection")
+	require.Contains(t, result.Attributes, "id")
+}
+
+func TestInjectResourceBlockIntoSchema_defensiveClone(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	original := rschema.Schema{
+		Attributes: map[string]rschema.Attribute{
+			"id": rschema.StringAttribute{Computed: true},
+		},
+	}
+	factory := func(_ context.Context) rschema.Schema { return original }
+	block := providerschema.GetEsFWConnectionBlock()
+
+	injectResourceBlockIntoSchema(ctx, factory, "elasticsearch_connection", block)
+
+	require.Nil(t, original.Blocks, "factory schema must not be mutated")
+}

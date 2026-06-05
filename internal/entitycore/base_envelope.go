@@ -45,15 +45,23 @@ type baseResourceEnvelope[T any, C MinVersionClient] struct {
 	postRead        func(context.Context, C, T, T, PrivateStateStorage) (T, diag.Diagnostics)
 }
 
+// injectResourceBlockIntoSchema returns a copy of the schema produced by
+// schemaFactory with blockKey injected as an extra block. It allocates a new
+// Blocks map so each call is independent and safe to reuse the same factory.
+func injectResourceBlockIntoSchema(ctx context.Context, schemaFactory func(context.Context) rschema.Schema, blockKey string, block rschema.Block) rschema.Schema {
+	schema := schemaFactory(ctx)
+	blocks := make(map[string]rschema.Block, len(schema.Blocks)+1)
+	maps.Copy(blocks, schema.Blocks)
+	blocks[blockKey] = block
+	schema.Blocks = blocks
+	return schema
+}
+
 // Schema implements [resource.Resource], injecting the connection block and the
 // `timeouts` attribute into the schema returned by the concrete schema factory.
 // A pre-existing `timeouts` attribute in the factory output is silently replaced.
 func (b *baseResourceEnvelope[T, C]) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	schema := b.schemaFactory(ctx)
-	blocks := make(map[string]rschema.Block, len(schema.Blocks)+1)
-	maps.Copy(blocks, schema.Blocks)
-	blocks[b.connectionKey] = b.connectionBlock
-	schema.Blocks = blocks
+	schema := injectResourceBlockIntoSchema(ctx, b.schemaFactory, b.connectionKey, b.connectionBlock)
 
 	attrs := make(map[string]rschema.Attribute, len(schema.Attributes)+1)
 	maps.Copy(attrs, schema.Attributes)

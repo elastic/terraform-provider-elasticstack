@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/action"
 	actionschema "github.com/hashicorp/terraform-plugin-framework/action/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -366,4 +367,41 @@ func TestElasticsearchAction_InvokeFallsBackToPackageDefaultTimeout(t *testing.T
 	expected := before.Add(DefaultActionInvokeTimeout)
 	require.WithinDuration(t, expected, receivedDeadline, 5*time.Second,
 		"deadline should fall back to DefaultActionInvokeTimeout")
+}
+
+func TestInjectActionBlocksIntoSchema_injectsBlocks(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	factory := func(_ context.Context) actionschema.Schema {
+		return actionschema.Schema{
+			Attributes: map[string]actionschema.Attribute{
+				"value": actionschema.StringAttribute{Optional: true},
+			},
+		}
+	}
+	blockFactory := providerschema.GetEsActionConnectionBlock
+
+	result := injectActionBlocksIntoSchema(ctx, factory, blockTimeouts, "elasticsearch_connection", blockFactory)
+
+	require.Contains(t, result.Blocks, blockTimeouts, "timeouts block must be injected")
+	require.Contains(t, result.Blocks, "elasticsearch_connection", "connection block must be injected")
+	require.Contains(t, result.Attributes, "value", "concrete attributes must be preserved")
+}
+
+func TestInjectActionBlocksIntoSchema_defensiveClone(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	original := actionschema.Schema{
+		Attributes: map[string]actionschema.Attribute{
+			"value": actionschema.StringAttribute{Optional: true},
+		},
+	}
+	factory := func(_ context.Context) actionschema.Schema { return original }
+	blockFactory := providerschema.GetEsActionConnectionBlock
+
+	injectActionBlocksIntoSchema(ctx, factory, blockTimeouts, "elasticsearch_connection", blockFactory)
+
+	require.Nil(t, original.Blocks, "factory schema must not be mutated")
 }
