@@ -14,8 +14,8 @@ variable "pattern_name" {
   type = string
 }
 
-variable "leader_index_pattern" {
-  type = string
+variable "leader_index_patterns" {
+  type = list(string)
 }
 
 provider "elasticstack" {
@@ -51,7 +51,7 @@ resource "elasticstack_elasticsearch_index" "leader" {
 resource "elasticstack_elasticsearch_ccr_auto_follow_pattern" "test" {
   name                  = var.pattern_name
   remote_cluster        = var.remote_cluster_alias
-  leader_index_patterns = [var.leader_index_pattern]
+  leader_index_patterns = var.leader_index_patterns
   active                = true
 
   depends_on = [

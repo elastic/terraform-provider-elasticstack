@@ -19,9 +19,11 @@ package followerindex_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -38,7 +40,7 @@ func TestAccResourceCCRFollowerIndex_basic(t *testing.T) {
 	ccrEnv := acctest.PreCheckCCR(t)
 	leaderIndexName := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
 	followerIndexName := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
-	vars := ccrFollowerVariables(ccrEnv, leaderIndexName, followerIndexName, "")
+	vars := ccrFollowerVariables(ccrEnv, leaderIndexName, followerIndexName)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheckCCR(t) },
@@ -83,7 +85,7 @@ func TestAccResourceCCRFollowerIndex_deleteIndexOnDestroy(t *testing.T) {
 	ccrEnv := acctest.PreCheckCCR(t)
 	leaderIndexName := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
 	followerIndexName := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
-	vars := ccrFollowerVariables(ccrEnv, leaderIndexName, followerIndexName, "")
+	vars := ccrFollowerVariables(ccrEnv, leaderIndexName, followerIndexName)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheckCCR(t) },
@@ -106,7 +108,7 @@ func TestAccResourceCCRFollowerIndex_status(t *testing.T) {
 	ccrEnv := acctest.PreCheckCCR(t)
 	leaderIndexName := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
 	followerIndexName := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
-	vars := ccrFollowerVariables(ccrEnv, leaderIndexName, followerIndexName, "")
+	vars := ccrFollowerVariables(ccrEnv, leaderIndexName, followerIndexName)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheckCCR(t) },
@@ -129,6 +131,62 @@ func TestAccResourceCCRFollowerIndex_status(t *testing.T) {
 					resource.TestCheckResourceAttr(followerIndexResourceName, "status", "active"),
 					testAccCheckFollowerIndexStatus(followerIndexName, "active"),
 				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_paused"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(followerIndexResourceName, "status", "paused"),
+					testAccCheckFollowerIndexStatus(followerIndexName, "paused"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceCCRFollowerIndex_settingsRaw(t *testing.T) {
+	ccrEnv := acctest.PreCheckCCR(t)
+	leaderIndexName := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
+	followerIndexName := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
+	vars := ccrFollowerVariables(ccrEnv, leaderIndexName, followerIndexName)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheckCCR(t) },
+		CheckDestroy: checkFollowerIndexPromotedToRegular(followerIndexName),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(
+						followerIndexResourceName,
+						"settings_raw",
+						`{"index.refresh_interval":"30s"}`,
+					),
+					testAccCheckFollowerIndexRefreshInterval(followerIndexName, "30s"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(
+						followerIndexResourceName,
+						"settings_raw",
+						`{"index.refresh_interval":"60s"}`,
+					),
+					testAccCheckFollowerIndexRefreshInterval(followerIndexName, "60s"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
 			},
 		},
 	})
@@ -185,17 +243,13 @@ func TestAccResourceCCRFollowerIndex_dataStreamNameImport(t *testing.T) {
 	})
 }
 
-func ccrFollowerVariables(ccrEnv acctest.CCRTestEnv, leaderIndexName, followerIndexName, dataStreamName string) config.Variables {
-	vars := config.Variables{
+func ccrFollowerVariables(ccrEnv acctest.CCRTestEnv, leaderIndexName, followerIndexName string) config.Variables {
+	return config.Variables{
 		"remote_cluster_alias": config.StringVariable(ccrEnv.RemoteClusterAlias),
 		"remote_proxy_address": config.StringVariable(ccrEnv.RemoteProxyAddress),
 		"leader_index_name":    config.StringVariable(leaderIndexName),
 		"follower_index_name":  config.StringVariable(followerIndexName),
 	}
-	if dataStreamName != "" {
-		vars["data_stream_name"] = config.StringVariable(dataStreamName)
-	}
-	return vars
 }
 
 func ccrDataStreamFollowerVariables(ccrEnv acctest.CCRTestEnv, dataStreamName, followerIndexName string) config.Variables {
@@ -208,7 +262,7 @@ func ccrDataStreamFollowerVariables(ccrEnv acctest.CCRTestEnv, dataStreamName, f
 }
 
 func testAccCheckFollowerIndexStatus(indexName, wantStatus string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
+	return func(_ *terraform.State) error {
 		ctx := context.Background()
 		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 		if err != nil {
@@ -230,7 +284,7 @@ func testAccCheckFollowerIndexStatus(indexName, wantStatus string) resource.Test
 }
 
 func testAccCheckFollowerIndexMaxOutstandingReadRequests(indexName string, want int64) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
+	return func(_ *terraform.State) error {
 		ctx := context.Background()
 		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 		if err != nil {
@@ -256,8 +310,74 @@ func testAccCheckFollowerIndexMaxOutstandingReadRequests(indexName string, want 
 	}
 }
 
+func testAccCheckFollowerIndexRefreshInterval(indexName, want string) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		ctx := context.Background()
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		if err != nil {
+			return err
+		}
+
+		index, diags := esclient.GetIndex(ctx, client, indexName)
+		if diags.HasError() {
+			return fmt.Errorf("get index %q: %v", indexName, diags)
+		}
+		got, ok := indexRefreshIntervalFromState(index)
+		if !ok {
+			return fmt.Errorf("index %q has no readable refresh_interval setting", indexName)
+		}
+		if got != want {
+			return fmt.Errorf("index %q refresh_interval %q, want %q", indexName, got, want)
+		}
+		return nil
+	}
+}
+
+func indexRefreshIntervalFromState(index *types.IndexState) (string, bool) {
+	if index == nil || index.Settings == nil {
+		return "", false
+	}
+
+	settings := index.Settings
+	if settings.Index != nil {
+		if value, ok := durationString(settings.Index.RefreshInterval); ok {
+			return value, true
+		}
+	}
+	if value, ok := durationString(settings.RefreshInterval); ok {
+		return value, true
+	}
+	if raw, ok := settings.IndexSettings["index.refresh_interval"]; ok {
+		var value string
+		if err := json.Unmarshal(raw, &value); err == nil && value != "" {
+			return value, true
+		}
+	}
+
+	return "", false
+}
+
+func durationString(value types.Duration) (string, bool) {
+	if value == nil {
+		return "", false
+	}
+	switch v := value.(type) {
+	case string:
+		if v == "" {
+			return "", false
+		}
+		return v, true
+	default:
+		rendered := fmt.Sprintf("%v", value)
+		if rendered == "" || rendered == "<nil>" {
+			return "", false
+		}
+		return rendered, true
+	}
+}
+
 func checkFollowerIndexPromotedToRegular(indexName string) func(*terraform.State) error {
-	return func(s *terraform.State) error {
+	return func(_ *terraform.State) error {
 		ctx := context.Background()
 		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 		if err != nil {
@@ -285,7 +405,7 @@ func checkFollowerIndexPromotedToRegular(indexName string) func(*terraform.State
 }
 
 func checkFollowerIndexDeleted(indexName string) func(*terraform.State) error {
-	return func(s *terraform.State) error {
+	return func(_ *terraform.State) error {
 		ctx := context.Background()
 		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 		if err != nil {

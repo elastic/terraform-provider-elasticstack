@@ -14,13 +14,23 @@ variable "pattern_name" {
   type = string
 }
 
-variable "leader_index_pattern" {
-  type = string
+variable "leader_index_patterns" {
+  type = list(string)
 }
 
 variable "leader_index_exclusion_patterns" {
   type    = list(string)
   default = []
+}
+
+variable "follow_index_pattern" {
+  type    = string
+  default = null
+}
+
+variable "max_outstanding_read_requests" {
+  type    = number
+  default = null
 }
 
 provider "elasticstack" {
@@ -54,9 +64,11 @@ resource "elasticstack_elasticsearch_index" "leader" {
 }
 
 resource "elasticstack_elasticsearch_ccr_auto_follow_pattern" "test" {
-  name                  = var.pattern_name
-  remote_cluster        = var.remote_cluster_alias
-  leader_index_patterns = [var.leader_index_pattern]
+  name                          = var.pattern_name
+  remote_cluster                = var.remote_cluster_alias
+  leader_index_patterns         = var.leader_index_patterns
+  follow_index_pattern          = var.follow_index_pattern
+  max_outstanding_read_requests = var.max_outstanding_read_requests
 
   depends_on = [
     elasticstack_elasticsearch_cluster_settings.ccr_remote,

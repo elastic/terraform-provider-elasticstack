@@ -45,10 +45,10 @@ resource "elasticstack_elasticsearch_index" "leader" {
 }
 
 resource "elasticstack_elasticsearch_ccr_follower_index" "test" {
-  name                    = var.follower_index_name
-  remote_cluster          = var.remote_cluster_alias
-  leader_index            = var.leader_index_name
-  delete_index_on_destroy = true
+  name           = var.follower_index_name
+  remote_cluster = var.remote_cluster_alias
+  leader_index   = var.leader_index_name
+  settings_raw   = jsonencode({ "index.refresh_interval" = "30s" })
 
   depends_on = [
     elasticstack_elasticsearch_cluster_settings.ccr_remote,

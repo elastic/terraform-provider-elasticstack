@@ -10,11 +10,7 @@ variable "leader_index_name" {
   type = string
 }
 
-variable "pattern_name" {
-  type = string
-}
-
-variable "leader_index_pattern" {
+variable "follower_index_name" {
   type = string
 }
 
@@ -48,11 +44,11 @@ resource "elasticstack_elasticsearch_index" "leader" {
   depends_on = [elasticstack_elasticsearch_cluster_settings.ccr_remote]
 }
 
-resource "elasticstack_elasticsearch_ccr_auto_follow_pattern" "test" {
-  name                  = var.pattern_name
-  remote_cluster        = var.remote_cluster_alias
-  leader_index_patterns = [var.leader_index_pattern]
-  active                = false
+resource "elasticstack_elasticsearch_ccr_follower_index" "test" {
+  name           = var.follower_index_name
+  remote_cluster = var.remote_cluster_alias
+  leader_index   = var.leader_index_name
+  status         = "paused"
 
   depends_on = [
     elasticstack_elasticsearch_cluster_settings.ccr_remote,
