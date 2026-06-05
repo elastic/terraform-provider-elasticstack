@@ -47,9 +47,9 @@ func newResource() *Resource {
 			"security_entity_store_entity",
 			entitycore.KibanaResourceOptions[tfModel]{
 				Schema: getSchema,
-				Create: createEntity,
+Create: writeEntity,
 				Read:   readEntity,
-				Update: updateEntity,
+				Update: writeEntity,
 				Delete: deleteEntity,
 			},
 		),

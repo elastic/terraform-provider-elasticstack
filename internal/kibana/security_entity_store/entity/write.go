@@ -22,21 +22,23 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func createEntity(
+func writeEntity(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
 	req entitycore.KibanaWriteRequest[tfModel],
 ) (entitycore.KibanaWriteResult[tfModel], diag.Diagnostics) {
 	plan := req.Plan
 
-	if (plan.Entity.IsNull() || plan.Entity.IsUnknown()) && (plan.EntityJSON.IsNull() || plan.EntityJSON.IsUnknown()) {
-		return entitycore.KibanaWriteResult[tfModel]{}, diag.Diagnostics{
-			diag.NewErrorDiagnostic("Missing entity data", "Either entity or entity_json must be provided"),
+	if req.Prior == nil {
+		if (plan.Entity.IsNull() || plan.Entity.IsUnknown()) && (plan.EntityJSON.IsNull() || plan.EntityJSON.IsUnknown()) {
+			return entitycore.KibanaWriteResult[tfModel]{}, diag.Diagnostics{
+				diag.NewErrorDiagnostic("Missing entity data", "Either entity or entity_json must be provided"),
+			}
 		}
 	}
 
@@ -45,8 +47,19 @@ func createEntity(
 		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}
 
-	if d := kibanaoapi.CreateSecurityEntityStoreEntity(ctx, client.GetKibanaOapiClient(), spaceID, entityType, bytes.NewReader(bodyBytes)); d.HasError() {
-		return entitycore.KibanaWriteResult[tfModel]{}, d
+	if req.Prior == nil {
+		if d := kibanaoapi.CreateSecurityEntityStoreEntity(ctx, client.GetKibanaOapiClient(), spaceID, entityType, bytes.NewReader(bodyBytes)); d.HasError() {
+			return entitycore.KibanaWriteResult[tfModel]{}, d
+		}
+	} else {
+		force := false
+		if !plan.Force.IsNull() && !plan.Force.IsUnknown() {
+			force = plan.Force.ValueBool()
+		}
+
+		if d := kibanaoapi.UpdateSecurityEntityStoreEntity(ctx, client.GetKibanaOapiClient(), spaceID, entityType, bytes.NewReader(bodyBytes), force); d.HasError() {
+			return entitycore.KibanaWriteResult[tfModel]{}, d
+		}
 	}
 
 	return entitycore.KibanaWriteResult[tfModel]{Model: plan}, nil
