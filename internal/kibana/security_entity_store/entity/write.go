@@ -20,6 +20,7 @@ package entity
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
@@ -42,7 +43,19 @@ func writeEntity(
 		}
 	}
 
-	spaceID, entityType, bodyBytes, diags := buildEntityWriteBody(ctx, plan)
+	spaceID := NormalizeSpaceID(plan.SpaceID)
+	entityType := plan.EntityType.ValueString()
+	entityID := plan.EntityID.ValueString()
+
+	bodyMap, bodyDiags := modelToAPIBody(ctx, plan)
+	var diags diag.Diagnostics
+	diags.Append(bodyDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[tfModel]{}, diags
+	}
+
+	bodyBytes, marshalDiags := injectEntityIDAndMarshal(bodyMap, entityID)
+	diags.Append(marshalDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}
@@ -63,4 +76,22 @@ func writeEntity(
 	}
 
 	return entitycore.KibanaWriteResult[tfModel]{Model: plan}, nil
+}
+
+// injectEntityIDAndMarshal sets entity.id in bodyMap and marshals it to JSON.
+func injectEntityIDAndMarshal(bodyMap map[string]any, entityID string) ([]byte, diag.Diagnostics) {
+	if entityMap, ok := bodyMap["entity"].(map[string]any); ok {
+		entityMap["id"] = entityID
+		bodyMap["entity"] = entityMap
+	} else {
+		bodyMap["entity"] = map[string]any{"id": entityID}
+	}
+
+	bodyBytes, err := json.Marshal(bodyMap)
+	if err != nil {
+		return nil, diag.Diagnostics{
+			diag.NewErrorDiagnostic("JSON marshal error", err.Error()),
+		}
+	}
+	return bodyBytes, nil
 }
