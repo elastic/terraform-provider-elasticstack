@@ -133,8 +133,8 @@
 
 ## 7. Validation
 
-- [ ] 7.1 Run `make build` — verifies compilation of new packages and provider registration
-- [ ] 7.2 Run `go test ./internal/elasticsearch/ccr/...` and `go test ./internal/clients/elasticsearch/...` (unit tests only)
-- [ ] 7.3 Run `make check-lint`
-- [ ] 7.4 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate elasticsearch-ccr-resources --type change`
-- [ ] 7.5 Run targeted acceptance tests for both new resources against a licensed trial cluster (requires `TF_ACC=1` and two configured Elasticsearch clusters with remote cluster connectivity)
+- [x] 7.1 Run `make build` — verifies compilation of new packages and provider registration
+- [x] 7.2 Run `go test ./internal/elasticsearch/ccr/...` and `go test ./internal/clients/elasticsearch/...` (unit tests only)
+- [x] 7.3 Run `make check-lint`
+- [x] 7.4 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate elasticsearch-ccr-resources --type change`
+- [ ] 7.5 Run targeted acceptance tests for both new resources against a licensed trial cluster (requires `TF_ACC=1` and two configured Elasticsearch clusters with remote cluster connectivity) — deferred to CI; no local licensed two-cluster CCR environment available
