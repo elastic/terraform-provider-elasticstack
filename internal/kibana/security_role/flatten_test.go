@@ -23,8 +23,10 @@ import (
 	"testing"
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -150,10 +152,11 @@ func TestUnitExpandElasticsearchOmitsEmptyClusterAndRunAs(t *testing.T) {
 
 func TestUnitMetadataJSONRoundTrip(t *testing.T) {
 	meta := jsontypes.NewNormalizedValue(`{"team":"ops","env":"prod"}`)
-	ptr, diags := expandMetadata(meta)
+	var diags diag.Diagnostics
+	m := typeutils.ExpandNormalizedJSONObject(meta, &diags)
 	require.False(t, diags.HasError())
-	require.NotNil(t, ptr)
-	role := kibanaoapi.SecurityRole{Metadata: ptr}
+	require.NotNil(t, m)
+	role := kibanaoapi.SecurityRole{Metadata: &m}
 	norm, d2 := metadataFromAPI(&role)
 	require.False(t, d2.HasError())
 	assert.JSONEq(t, meta.ValueString(), norm.ValueString())

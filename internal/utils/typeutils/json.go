@@ -20,6 +20,10 @@ package typeutils
 import (
 	"encoding/json"
 	"reflect"
+	"strings"
+
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // NormalizeJSONScalar recursively walks a decoded JSON value and converts
@@ -53,6 +57,25 @@ func NormalizeJSONScalar(v any) any {
 	default:
 		return v
 	}
+}
+
+// ExpandNormalizedJSONObject parses a jsontypes.Normalized attribute as a JSON
+// object, trimming whitespace. Returns nil when the value is null, unknown, or
+// empty. Adds a diagnostic on parse failure.
+func ExpandNormalizedJSONObject(meta jsontypes.Normalized, diags *diag.Diagnostics) map[string]any {
+	if meta.IsNull() || meta.IsUnknown() {
+		return nil
+	}
+	s := strings.TrimSpace(meta.ValueString())
+	if s == "" {
+		return nil
+	}
+	m := make(map[string]any)
+	if err := json.Unmarshal([]byte(s), &m); err != nil {
+		diags.AddError("Invalid metadata JSON", err.Error())
+		return nil
+	}
+	return m
 }
 
 // JSONBytesEqual reports whether the JSON in two byte slices is semantically equivalent.
