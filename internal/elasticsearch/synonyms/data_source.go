@@ -30,9 +30,37 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// synonymSetDataSourceModel mirrors SynonymSetData without entitycore.ResourceTimeoutsField:
+// data sources do not expose a timeouts attribute, so reusing the resource model
+// (which embeds it) would fail decoding against the timeouts-free data source schema.
+type synonymSetDataSourceModel struct {
+	entitycore.ElasticsearchConnectionField
+	ID           types.String `tfsdk:"id"`
+	SynonymSetID types.String `tfsdk:"synonym_set_id"`
+	SynonymsSet  types.List   `tfsdk:"synonyms_set"`
+}
+
+func (m synonymSetDataSourceModel) toData() SynonymSetData {
+	return SynonymSetData{
+		ElasticsearchConnectionField: m.ElasticsearchConnectionField,
+		ID:                           m.ID,
+		SynonymSetID:                 m.SynonymSetID,
+		SynonymsSet:                  m.SynonymsSet,
+	}
+}
+
+func synonymSetDataSourceModelFromData(d SynonymSetData) synonymSetDataSourceModel {
+	return synonymSetDataSourceModel{
+		ElasticsearchConnectionField: d.ElasticsearchConnectionField,
+		ID:                           d.ID,
+		SynonymSetID:                 d.SynonymSetID,
+		SynonymsSet:                  d.SynonymsSet,
+	}
+}
+
 // NewSynonymSetDataSource returns a new synonym set data source for registration with the provider.
 func NewSynonymSetDataSource() datasource.DataSource {
-	return entitycore.NewElasticsearchDataSource(
+	return entitycore.NewElasticsearchDataSource[synonymSetDataSourceModel](
 		entitycore.ComponentElasticsearch,
 		"synonym_set",
 		dataSourceSchemaFactory,
@@ -74,29 +102,30 @@ func dataSourceSchemaFactory(_ context.Context) schema.Schema {
 	}
 }
 
-func readSynonymSetDataSource(ctx context.Context, client *clients.ElasticsearchScopedClient, data SynonymSetData) (SynonymSetData, diag.Diagnostics) {
+func readSynonymSetDataSource(ctx context.Context, client *clients.ElasticsearchScopedClient, config synonymSetDataSourceModel) (synonymSetDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	data := config.toData()
 	synonymSetID := data.SynonymSetID.ValueString()
 
 	id, idDiags := client.ID(ctx, synonymSetID)
 	diags.Append(idDiags...)
 	if diags.HasError() {
-		return data, diags
+		return config, diags
 	}
 	data.ID = types.StringValue(id.String())
 
 	rules, getDiags := elasticsearch.GetSynonymSet(ctx, client, synonymSetID)
 	diags.Append(getDiags...)
 	if diags.HasError() {
-		return data, diags
+		return config, diags
 	}
 
 	if rules == nil {
 		diags.AddError("Synonym set not found", fmt.Sprintf("Synonym set '%s' not found", synonymSetID))
-		return data, diags
+		return config, diags
 	}
 
 	data.populateFromAPI(ctx, rules, &diags)
-	return data, diags
+	return synonymSetDataSourceModelFromData(data), diags
 }

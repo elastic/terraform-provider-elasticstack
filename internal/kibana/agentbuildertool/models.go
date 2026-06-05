@@ -34,13 +34,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// toolModel is the core model for the Agent Builder tool resource. It also
-// serves as the shared base for toolDataSourceModel, which embeds it. Defining
-// the version gate and the kibana_connection block (via KibanaConnectionField)
-// here means they are declared exactly once rather than duplicated across the
-// resource and data source models.
-type toolModel struct {
-	entitycore.ResourceTimeoutsField
+// toolBaseModel holds the fields, kibana_connection block, and version gate
+// shared by the Agent Builder tool resource and data source models. Declaring
+// them once here keeps the two models in sync. It intentionally does NOT embed
+// entitycore.ResourceTimeoutsField: only the resource exposes a timeouts
+// attribute, so the data source model (which embeds this base) must not carry
+// the timeouts field or config decode would fail against the timeouts-free
+// data source schema.
+type toolBaseModel struct {
 	entitycore.KibanaConnectionField
 	ID            types.String         `tfsdk:"id"`
 	ToolID        types.String         `tfsdk:"tool_id"`
@@ -51,25 +52,33 @@ type toolModel struct {
 	Configuration jsontypes.Normalized `tfsdk:"configuration"`
 }
 
-func (toolModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (toolBaseModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{{
 		MinVersion:   *minKibanaAgentBuilderAPIVersion,
 		ErrorMessage: fmt.Sprintf("Agent Builder tools require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
 	}}, nil
 }
 
-func (model toolModel) GetID() types.String         { return model.ID }
-func (model toolModel) GetResourceID() types.String { return model.ToolID }
-func (model toolModel) GetSpaceID() types.String    { return model.SpaceID }
+func (model toolBaseModel) GetID() types.String         { return model.ID }
+func (model toolBaseModel) GetResourceID() types.String { return model.ToolID }
+func (model toolBaseModel) GetSpaceID() types.String    { return model.SpaceID }
+
+// toolModel is the model for the Agent Builder tool resource. It embeds the
+// shared base plus the timeouts attribute that only the resource exposes.
+type toolModel struct {
+	entitycore.ResourceTimeoutsField
+	toolBaseModel
+}
 
 var _ entitycore.KibanaResourceModel = toolModel{}
 var _ entitycore.WithVersionRequirements = toolModel{}
 
-// toolDataSourceModel embeds toolModel to inherit the shared fields, the
+// toolDataSourceModel embeds toolBaseModel to inherit the shared fields, the
 // kibana_connection block, and the version gate, adding only the attributes
-// that are unique to the data source.
+// that are unique to the data source. It deliberately does not embed toolModel
+// so it does not inherit the resource-only timeouts attribute.
 type toolDataSourceModel struct {
-	toolModel
+	toolBaseModel
 	ReadOnly                  types.Bool                      `tfsdk:"readonly"`
 	IncludeWorkflow           types.Bool                      `tfsdk:"include_workflow"`
 	WorkflowID                types.String                    `tfsdk:"workflow_id"`
@@ -78,7 +87,7 @@ type toolDataSourceModel struct {
 
 var _ entitycore.WithVersionRequirements = toolDataSourceModel{}
 
-func (model *toolModel) populateFromAPI(ctx context.Context, data *models.Tool) diag.Diagnostics {
+func (model *toolBaseModel) populateFromAPI(ctx context.Context, data *models.Tool) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
@@ -116,7 +125,7 @@ func (model *toolDataSourceModel) populateFromAPI(ctx context.Context, data *mod
 		return nil
 	}
 
-	diags := model.toolModel.populateFromAPI(ctx, data)
+	diags := model.toolBaseModel.populateFromAPI(ctx, data)
 	model.ReadOnly = types.BoolValue(data.ReadOnly)
 	return diags
 }
