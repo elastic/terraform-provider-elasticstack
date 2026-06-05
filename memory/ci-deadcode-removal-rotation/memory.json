@@ -258,6 +258,16 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.NewKibanaScopedClientFromFactory",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-06-05T04:42:48.296121334Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
