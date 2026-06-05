@@ -33,13 +33,13 @@ func sloPlannedEnabledExplicitlySet(plan types.Bool) bool {
 	return !plan.IsNull() && typeutils.IsKnown(plan)
 }
 
-// reconcileSloEnabledAfterWrite reconciles the SLO enabled flag using dedicated
+// reconcileSloEnabled reconciles the SLO enabled flag using dedicated
 // Kibana enable/disable APIs when `enabled` is set in the Terraform
 // configuration and differs from the value returned by the most recent read.
 // When `enabled` is omitted (null in plan) or the planned value is still unknown
 // (e.g. mid-plan for a new dependency), the function is a no-op and does not
 // call the enable or disable APIs.
-func (r *Resource) reconcileSloEnabledAfterWrite(
+func reconcileSloEnabled(
 	ctx context.Context,
 	apiClient *clients.KibanaScopedClient,
 	oapi *kibanaoapi.Client,
@@ -48,6 +48,17 @@ func (r *Resource) reconcileSloEnabledAfterWrite(
 	m *tfModel,
 	diags *diag.Diagnostics,
 ) {
+	updatedModel, exists, readDiags := readSlo(ctx, apiClient, sloID, spaceID, *m)
+	diags.Append(readDiags...)
+	if diags.HasError() {
+		return
+	}
+	if !exists {
+		diags.AddError("SLO not found", "SLO was created/updated but could not be found afterwards")
+		return
+	}
+	*m = updatedModel
+
 	if !sloPlannedEnabledExplicitlySet(planEnabled) {
 		return
 	}
@@ -65,12 +76,14 @@ func (r *Resource) reconcileSloEnabledAfterWrite(
 	if diags.HasError() {
 		return
 	}
-	exists, readDiags := r.readSloFromAPI(ctx, apiClient, m)
+	updatedModel, exists, readDiags = readSlo(ctx, apiClient, sloID, spaceID, *m)
 	diags.Append(readDiags...)
 	if diags.HasError() {
 		return
 	}
 	if !exists {
 		diags.AddError("SLO not found", "SLO could not be read after changing enabled state")
+		return
 	}
+	*m = updatedModel
 }

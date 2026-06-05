@@ -19,37 +19,12 @@ package integration
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-// enforceMinVersionForKnownBool validates that a known optional bool attribute is supported by the connected stack.
-func enforceMinVersionForKnownBool(ctx context.Context, client clients.MinVersionEnforceable, value types.Bool, minVersion *version.Version, paramName string) diag.Diagnostics {
-	if !typeutils.IsKnown(value) {
-		return nil
-	}
-
-	var diags diag.Diagnostics
-	supported, versionDiags := client.EnforceMinVersion(ctx, minVersion)
-	diags.Append(versionDiags...)
-	if diags.HasError() {
-		return diags
-	}
-	if !supported {
-		diags.AddError(
-			"Unsupported parameter for server version",
-			fmt.Sprintf("The '%s' parameter requires server version %s or higher.", paramName, minVersion.String()),
-		)
-	}
-	return diags
-}
 
 func supportsSpaceAwareIntegration(ctx context.Context, client clients.MinVersionEnforceable, spaceID string) (bool, diag.Diagnostics) {
 	if spaceID == "" {

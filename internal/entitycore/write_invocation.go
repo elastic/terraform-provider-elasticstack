@@ -41,6 +41,16 @@ type resourceWriteInvocation struct {
 // envelope is nil. component ("elasticsearch", "kibana", …) is capitalized to
 // form the human-readable envelope name used in both the summary and detail.
 func requireReadFuncDiag(component Component) diag.Diagnostics {
+	return requireCallbackDiag(component, "read")
+}
+
+// requireDeleteFuncDiag returns an error diagnostic when the delete callback
+// for an envelope is nil.
+func requireDeleteFuncDiag(component Component) diag.Diagnostics {
+	return requireCallbackDiag(component, "delete")
+}
+
+func requireCallbackDiag(component Component, callback string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	name := string(component)
 	if len(name) > 0 {
@@ -48,7 +58,7 @@ func requireReadFuncDiag(component Component) diag.Diagnostics {
 	}
 	diags.AddError(
 		name+" envelope configuration error",
-		"The read callback passed via "+name+"ResourceOptions must not be nil.",
+		"The "+callback+" callback passed via "+name+"ResourceOptions must not be nil.",
 	)
 	return diags
 }

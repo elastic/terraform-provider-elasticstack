@@ -20,7 +20,6 @@ package entitycore
 import (
 	"context"
 	"fmt"
-	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
@@ -72,7 +71,7 @@ type KibanaWriteRequest[T KibanaResourceModel] struct {
 }
 
 // KibanaWriteResult is returned by write callbacks; the envelope read-after-write
-// flow uses Model when resolving refresh identity and calling readFunc.
+// flow uses Model when resolving refresh identity and calling read.
 type KibanaWriteResult[T KibanaResourceModel] struct {
 	Model T
 }
@@ -117,21 +116,18 @@ type KibanaResourceOptions[T KibanaResourceModel] struct {
 }
 
 // KibanaResource implements [resource.Resource] and related interfaces
-// for Kibana-backed resources. It embeds [*ResourceBase] to reuse
-// Configure, Metadata, and Client.
+// for Kibana-backed resources. It embeds [baseResourceEnvelope] to reuse
+// Configure, Metadata, Client, Schema, Read, and Delete.
 //
 // The envelope owns Schema (with kibana_connection block injection),
 // Create, Read, Update, and Delete. Concrete resources may override Create or
 // Update when their lifecycle does not fit the callback contract, and may
 // choose to implement ImportState.
 type KibanaResource[T KibanaResourceModel] struct {
-	*ResourceBase
-	schemaFactory func(context.Context) rschema.Schema
-	readFunc      kibanaReadFunc[T]
-	deleteFunc    kibanaDeleteFunc[T]
-	createFunc    KibanaWriteFunc[T]
-	updateFunc    KibanaWriteFunc[T]
-	postReadFunc  KibanaPostReadFunc[T]
+	baseResourceEnvelope[T, *clients.KibanaScopedClient]
+	createFunc KibanaWriteFunc[T]
+	updateFunc KibanaWriteFunc[T]
+	readFunc   kibanaReadFunc[T]
 }
 
 const (
@@ -165,26 +161,48 @@ func NewKibanaResource[T KibanaResourceModel](
 	name string,
 	opts KibanaResourceOptions[T],
 ) *KibanaResource[T] {
-	return &KibanaResource[T]{
-		ResourceBase:  NewResourceBase(component, name),
-		schemaFactory: opts.Schema,
-		readFunc:      opts.Read,
-		deleteFunc:    opts.Delete,
-		createFunc:    opts.Create,
-		updateFunc:    opts.Update,
-		postReadFunc:  opts.PostRead,
+	r := &KibanaResource[T]{}
+	rb := NewResourceBase(component, name)
+	r.baseResourceEnvelope = baseResourceEnvelope[T, *clients.KibanaScopedClient]{
+		ResourceBase:    rb,
+		schemaFactory:   opts.Schema,
+		connectionKey:   blockKibanaConnection,
+		connectionBlock: providerschema.GetKbFWConnectionBlock(),
+		resolveID: func(m T) (string, diag.Diagnostics) {
+			resourceID, _ := resolveKibanaResourceIdentity(m)
+			return resourceID, nil
+		},
+		getClient: func(ctx context.Context, m T) (*clients.KibanaScopedClient, diag.Diagnostics) {
+			return rb.Client().GetKibanaClient(ctx, m.GetKibanaConnection())
+		},
+		postRead: func(ctx context.Context, client *clients.KibanaScopedClient, prior, state T, private PrivateStateStorage) (T, diag.Diagnostics) {
+			if opts.PostRead == nil {
+				return state, nil
+			}
+			return opts.PostRead(ctx, KibanaPostReadRequest[T]{
+				Client:  client,
+				Prior:   prior,
+				State:   state,
+				Private: private,
+			})
+		},
 	}
-}
-
-// Schema implements [resource.Resource], injecting the kibana_connection
-// block into the schema returned by the concrete schema factory.
-func (r *KibanaResource[T]) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	schema := r.schemaFactory(ctx)
-	blocks := make(map[string]rschema.Block, len(schema.Blocks)+1)
-	maps.Copy(blocks, schema.Blocks)
-	blocks[blockKibanaConnection] = providerschema.GetKbFWConnectionBlock()
-	schema.Blocks = blocks
-	resp.Schema = schema
+	r.readFunc = opts.Read
+	if opts.Read != nil {
+		r.read = func(ctx context.Context, client *clients.KibanaScopedClient, id string, m T) (T, bool, diag.Diagnostics) {
+			_, spaceID := resolveKibanaResourceIdentity(m)
+			return opts.Read(ctx, client, id, spaceID, m)
+		}
+	}
+	if opts.Delete != nil {
+		r.delete = func(ctx context.Context, client *clients.KibanaScopedClient, id string, m T) diag.Diagnostics {
+			_, spaceID := resolveKibanaResourceIdentity(m)
+			return opts.Delete(ctx, client, id, spaceID, m)
+		}
+	}
+	r.createFunc = opts.Create
+	r.updateFunc = opts.Update
+	return r
 }
 
 // resolveKibanaResourceIdentity uses the composite-ID-or-fallback rule to
@@ -237,69 +255,6 @@ func (r *KibanaResource[T]) Create(ctx context.Context, req resource.CreateReque
 	})...)
 }
 
-// Read implements [resource.Resource] with the standard prelude: decode state,
-// resolve identity via composite-ID-or-fallback, validate resourceID, resolve
-// scoped Kibana client, then delegate to the concrete readFunc. When readFunc
-// reports found==true, the returned model is persisted via resp.State.Set;
-// when found==false, the resource is removed from state.
-func (r *KibanaResource[T]) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	if d := r.requireReadFunc(); d.HasError() {
-		resp.Diagnostics.Append(d...)
-		return
-	}
-
-	var model T
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resourceID, spaceID := resolveKibanaResourceIdentity(model)
-	if resourceID == "" {
-		resp.Diagnostics.AddError(
-			"Invalid resource identifier",
-			"The resource identifier is empty; cannot read.",
-		)
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, model.GetKibanaConnection())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if vDiags := EnforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
-		resp.Diagnostics.Append(vDiags...)
-		return
-	}
-
-	resultModel, found, callDiags := r.readFunc(ctx, client, resourceID, spaceID, model)
-	resp.Diagnostics.Append(callDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if found {
-		if r.postReadFunc != nil {
-			var prDiags diag.Diagnostics
-			resultModel, prDiags = r.postReadFunc(ctx, KibanaPostReadRequest[T]{
-				Client:  client,
-				Prior:   model,
-				State:   resultModel,
-				Private: resp.Private,
-			})
-			resp.Diagnostics.Append(prDiags...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-		}
-		resp.Diagnostics.Append(resp.State.Set(ctx, &resultModel)...)
-	} else {
-		resp.State.RemoveResource(ctx)
-	}
-}
-
 // Update implements [resource.Resource]: decode plan, prior state, and config,
 // validate identity and spaceID, resolve client, invoke the update callback,
 // read-after-write, then persist state.
@@ -314,13 +269,6 @@ func (r *KibanaResource[T]) Update(ctx context.Context, req resource.UpdateReque
 	})...)
 }
 
-func (r *KibanaResource[T]) requireReadFunc() diag.Diagnostics {
-	if r.readFunc == nil {
-		return requireReadFuncDiag(r.component)
-	}
-	return nil
-}
-
 func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWriteInvocation) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if (inv.isUpdate && r.updateFunc == nil) || (!inv.isUpdate && r.createFunc == nil) {
@@ -328,11 +276,7 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 		if inv.isUpdate {
 			op = "update"
 		}
-		diags.AddError(
-			"Kibana envelope configuration error",
-			fmt.Sprintf("The %s callback passed via KibanaResourceOptions must not be nil.", op),
-		)
-		return diags
+		return requireCallbackDiag(r.component, op)
 	}
 
 	var planModel T
@@ -388,8 +332,8 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 		return diags
 	}
 
-	if d := r.requireReadFunc(); d.HasError() {
-		return d
+	if r.readFunc == nil {
+		return requireReadFuncDiag(r.component)
 	}
 
 	var configModel T
@@ -452,14 +396,9 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 
 	priorModel := planModel
 
-	if r.postReadFunc != nil {
+	if r.postRead != nil {
 		var prDiags diag.Diagnostics
-		stateModel, prDiags = r.postReadFunc(ctx, KibanaPostReadRequest[T]{
-			Client:  client,
-			Prior:   priorModel,
-			State:   stateModel,
-			Private: inv.privateState,
-		})
+		stateModel, prDiags = r.postRead(ctx, client, priorModel, stateModel, inv.privateState)
 		diags.Append(prDiags...)
 		if diags.HasError() {
 			return diags
@@ -469,41 +408,6 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 	diags.Append(inv.outState.Set(ctx, &stateModel)...)
 
 	return diags
-}
-
-// Delete implements [resource.Resource] with the standard prelude, then
-// delegates to the concrete deleteFunc.
-func (r *KibanaResource[T]) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	if r.deleteFunc == nil {
-		resp.Diagnostics.AddError(
-			"Kibana envelope configuration error",
-			"The delete callback passed via KibanaResourceOptions must not be nil.",
-		)
-		return
-	}
-
-	var model T
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resourceID, spaceID := resolveKibanaResourceIdentity(model)
-	if resourceID == "" {
-		resp.Diagnostics.AddError(
-			"Invalid resource identifier",
-			"The resource identifier is empty; cannot delete.",
-		)
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, model.GetKibanaConnection())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(r.deleteFunc(ctx, client, resourceID, spaceID, model)...)
 }
 
 var (

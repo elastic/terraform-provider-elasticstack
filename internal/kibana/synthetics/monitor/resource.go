@@ -20,23 +20,30 @@ package monitor
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 // Resource represents a synthetics monitor resource
 type Resource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[tfModelV0]
 }
 
 func newResource() *Resource {
 	return &Resource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "synthetics_monitor"),
+		KibanaResource: entitycore.NewKibanaResource[tfModelV0](
+			entitycore.ComponentKibana,
+			"synthetics_monitor",
+			entitycore.KibanaResourceOptions[tfModelV0]{
+				Schema: monitorSchema,
+				Read:   readMonitor,
+				Delete: deleteMonitor,
+				Create: createMonitor,
+				Update: updateMonitor,
+			},
+		),
 	}
 }
 
@@ -46,29 +53,11 @@ var (
 	_ resource.ResourceWithConfigure        = newResource()
 	_ resource.ResourceWithImportState      = newResource()
 	_ resource.ResourceWithConfigValidators = newResource()
-	_ synthetics.ESAPIClient                = newResource()
 )
 
 // NewResource creates a new synthetics monitor resource
 func NewResource() resource.Resource {
 	return newResource()
-}
-
-func (r *Resource) GetClient(dg *diag.Diagnostics) *clients.KibanaScopedClient {
-	if r.Client() == nil {
-		dg.AddError(
-			"Unconfigured Client",
-			"Expected configured client. Please report this issue to the provider developers.",
-		)
-		return nil
-	}
-
-	scoped, diags := clients.NewKibanaScopedClientFromFactory(r.Client())
-	dg.Append(diags...)
-	if dg.HasError() {
-		return nil
-	}
-	return scoped
 }
 
 func (r *Resource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
@@ -88,8 +77,4 @@ func (r *Resource) ConfigValidators(_ context.Context) []resource.ConfigValidato
 
 func (r *Resource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), request, response)
-}
-
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, response *resource.SchemaResponse) {
-	response.Schema = monitorConfigSchema()
 }

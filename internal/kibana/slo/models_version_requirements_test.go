@@ -87,9 +87,7 @@ func TestTfModel_GetVersionRequirements(t *testing.T) {
 		m := tfModel{Settings: settingsWithPreventInitialBackfill(t, false)}
 		reqs, diags := m.GetVersionRequirements(context.Background())
 		require.False(t, diags.HasError())
-		require.Len(t, reqs, 1)
-		require.True(t, reqs[0].MinVersion.Equal(SLOSupportsPreventInitialBackfillMinVersion))
-		require.Equal(t, preventInitialBackfillMessage, reqs[0].ErrorMessage)
+		assertRequirements(t, reqs, 0)
 	})
 
 	t.Run("only data_view_id", func(t *testing.T) {

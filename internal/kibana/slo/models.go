@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -75,7 +76,28 @@ type tfModel struct {
 	TimesliceMetricIndicator []tfTimesliceMetricIndicator `tfsdk:"timeslice_metric_indicator"`
 }
 
-var _ entitycore.WithVersionRequirements = tfModel{}
+func (m tfModel) GetID() types.String {
+	return m.ID
+}
+
+func (m tfModel) GetResourceID() types.String {
+	if m.ID.IsNull() || m.ID.IsUnknown() {
+		return types.StringNull()
+	}
+	compID, _ := clients.CompositeIDFromStr(m.ID.ValueString())
+	if compID != nil {
+		return types.StringValue(compID.ResourceID)
+	}
+	return m.ID // fallback
+}
+
+func (m tfModel) GetSpaceID() types.String {
+	return m.SpaceID
+}
+
+func (m tfModel) GetKibanaConnection() types.List {
+	return m.KibanaConnection
+}
 
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
 func (m tfModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
@@ -88,7 +110,7 @@ func (m tfModel) GetVersionRequirements(_ context.Context) ([]entitycore.Version
 		if diags.HasError() {
 			return nil, diags
 		}
-		if typeutils.IsKnown(settingsModel.PreventInitialBackfill) {
+		if typeutils.IsKnown(settingsModel.PreventInitialBackfill) && settingsModel.PreventInitialBackfill.ValueBool() {
 			reqs = append(reqs, entitycore.VersionRequirement{
 				MinVersion: *SLOSupportsPreventInitialBackfillMinVersion,
 				ErrorMessage: "The 'prevent_initial_backfill' setting requires Elastic Stack version " +
