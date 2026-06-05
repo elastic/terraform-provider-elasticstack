@@ -30,6 +30,7 @@ const (
 // Model is the Terraform state model for elasticstack_elasticsearch_ccr_follower_index.
 type Model struct {
 	entitycore.ElasticsearchConnectionField
+	entitycore.ResourceTimeoutsField
 	ID                            types.String `tfsdk:"id"`
 	Name                          types.String `tfsdk:"name"`
 	RemoteCluster                 types.String `tfsdk:"remote_cluster"`
