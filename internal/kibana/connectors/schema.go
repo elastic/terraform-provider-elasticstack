@@ -29,6 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 )
@@ -61,7 +62,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
 				Optional:    true,
 				Computed:    true,
-				Default:     stringdefault.StaticString(defaultSpaceID),
+				Default:     stringdefault.StaticString(clients.DefaultSpaceID),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},

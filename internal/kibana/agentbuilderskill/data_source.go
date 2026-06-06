@@ -167,7 +167,7 @@ func readSkillDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 
 	oapiClient := kbClient.GetKibanaOapiClient()
 
-	spaceID := defaultSpaceID
+	spaceID := clients.DefaultSpaceID
 	spaceExplicit := typeutils.IsKnown(config.SpaceID) && config.SpaceID.ValueString() != ""
 	if spaceExplicit {
 		spaceID = config.SpaceID.ValueString()

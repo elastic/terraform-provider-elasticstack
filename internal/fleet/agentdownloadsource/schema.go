@@ -30,12 +30,6 @@ import (
 
 const (
 	attrDefault = "default"
-
-	// defaultSpaceID is the Kibana default space identifier used when the
-	// resource does not target a specific space. It happens to share the
-	// "default" literal with attrDefault but is semantically unrelated to
-	// the boolean schema attribute key.
-	defaultSpaceID = "default"
 )
 
 func getSchema(_ context.Context) schema.Schema {
