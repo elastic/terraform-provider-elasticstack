@@ -197,6 +197,8 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 					resource.TestCheckResourceAttr(httpMonitorID, "http.ipv4", "true"),
 					resource.TestCheckResourceAttr(httpMonitorID, "http.ipv6", "false"),
 					resource.TestCheckResourceAttr(httpMonitorID, "http.proxy_url", ""),
+					resource.TestCheckNoResourceAttr(httpMonitorID, "http.username"),
+					resource.TestCheckNoResourceAttr(httpMonitorID, "http.password"),
 				),
 			},
 			// ImportState testing
@@ -257,6 +259,21 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 					resource.TestCheckResourceAttr(httpMonitorID, "http.response", `{"include_body":"never","include_body_max_bytes":"1024"}`),
 					resource.TestCheckResourceAttr(httpMonitorID, "params", `{"param-name":"param-value-updated"}`),
 					resource.TestCheckResourceAttr(httpMonitorID, "retest_on_failure", "false"),
+				),
+			},
+			// Clear http sensitive fields and Read
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ResourceName:             httpMonitorID,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("http_clear"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(httpMonitorID, "id"),
+					resource.TestCheckNoResourceAttr(httpMonitorID, "http.username"),
+					resource.TestCheckNoResourceAttr(httpMonitorID, "http.password"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -365,6 +382,8 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.ssl_supported_protocols.2", "TLSv1.3"),
 					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.proxy_url", ""),
 					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.proxy_use_local_resolver", "true"),
+					resource.TestCheckNoResourceAttr(tcpMonitorID, "tcp.check_send"),
+					resource.TestCheckNoResourceAttr(tcpMonitorID, "tcp.check_receive"),
 				),
 			},
 			// ImportState testing
@@ -417,6 +436,21 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 					// check for merge attributes
 					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.check_send", "Hello Updated"),
 					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.check_receive", "World Updated"),
+				),
+			},
+			// Clear tcp check fields and Read
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ResourceName:             tcpMonitorID,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("tcp_clear"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(tcpMonitorID, "id"),
+					resource.TestCheckNoResourceAttr(tcpMonitorID, "tcp.check_send"),
+					resource.TestCheckNoResourceAttr(tcpMonitorID, "tcp.check_receive"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -479,6 +513,7 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 					resource.TestCheckResourceAttr(icmpMonitorID, "service_name", "test apm service"),
 					resource.TestCheckResourceAttr(icmpMonitorID, "timeout", "30"),
 					resource.TestCheckResourceAttr(icmpMonitorID, "icmp.host", "localhost"),
+					resource.TestCheckResourceAttrSet(icmpMonitorID, "icmp.wait"),
 				),
 			},
 			// ImportState testing
@@ -634,6 +669,34 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 					resource.TestCheckNoResourceAttr(browserMonitorID, "http"),
 					resource.TestCheckNoResourceAttr(browserMonitorID, "icmp"),
 					resource.TestCheckNoResourceAttr(browserMonitorID, "tcp"),
+				),
+			},
+			// Test screenshots = "on"
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ResourceName:             browserMonitorID,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("browser_screenshots_on"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(browserMonitorID, "id"),
+					resource.TestCheckResourceAttr(browserMonitorID, "browser.screenshots", "on"),
+				),
+			},
+			// Test screenshots = "only-on-failure"
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ResourceName:             browserMonitorID,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("browser_screenshots_only_on_failure"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(browserMonitorID, "id"),
+					resource.TestCheckResourceAttr(browserMonitorID, "browser.screenshots", "only-on-failure"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
