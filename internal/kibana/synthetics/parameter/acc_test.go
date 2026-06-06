@@ -18,12 +18,14 @@
 package parameter_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 var (
@@ -50,13 +52,24 @@ func TestSyntheticParameterResource(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceID, "tags.1", "b"),
 				),
 			},
-			// ImportState testing
+			// ImportState testing — also verifies value round-trips correctly from the API.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ResourceName:             resourceID,
 				ImportState:              true,
 				ImportStateVerify:        true,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
+			},
+			// Defaults: omit description and tags to verify empty defaults are applied.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("defaults"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "key", "test-key"),
+					resource.TestCheckResourceAttr(resourceID, "value", "test-value"),
+					resource.TestCheckResourceAttr(resourceID, "description", ""),
+					resource.TestCheckResourceAttr(resourceID, "tags.#", "0"),
+				),
 			},
 			// Update and Read testing
 			{
@@ -73,6 +86,54 @@ func TestSyntheticParameterResource(t *testing.T) {
 				),
 			},
 			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
+func TestSyntheticParameterResource_SharedAcrossSpaces(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaParameterAPIVersion, versionutils.FlavorAny)
+
+	resourceID := "elasticstack_kibana_synthetics_parameter.test"
+	var firstID string
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// Create with share_across_spaces = true and assert the attribute.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("shared"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "key", "test-key-shared"),
+					resource.TestCheckResourceAttr(resourceID, "value", "test-value-shared"),
+					resource.TestCheckResourceAttr(resourceID, "share_across_spaces", "true"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[resourceID]
+						if !ok {
+							return fmt.Errorf("resource not found: %s", resourceID)
+						}
+						firstID = rs.Primary.ID
+						return nil
+					},
+				),
+			},
+			// Change share_across_spaces to false — triggers RequiresReplace; new resource should have a different ID.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("not_shared"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "share_across_spaces", "false"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[resourceID]
+						if !ok {
+							return fmt.Errorf("resource not found: %s", resourceID)
+						}
+						if rs.Primary.ID == firstID {
+							return fmt.Errorf("expected new resource id after share_across_spaces change (RequiresReplace), got same id: %s", firstID)
+						}
+						return nil
+					},
+				),
+			},
 		},
 	})
 }
