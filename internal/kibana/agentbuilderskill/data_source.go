@@ -167,19 +167,7 @@ func readSkillDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 
 	oapiClient := kbClient.GetKibanaOapiClient()
 
-	spaceID := clients.DefaultSpaceID
-	spaceExplicit := typeutils.IsKnown(config.SpaceID) && config.SpaceID.ValueString() != ""
-	if spaceExplicit {
-		spaceID = config.SpaceID.ValueString()
-	}
-
-	skillID := config.SkillID.ValueString()
-	if compID, idDiags := clients.CompositeIDFromStr(skillID); !idDiags.HasError() {
-		skillID = compID.ResourceID
-		if !spaceExplicit {
-			spaceID = compID.ClusterID
-		}
-	}
+	spaceID, skillID := clients.ResolveCompositeSpaceAndID(config.SpaceID, config.SkillID.ValueString())
 
 	skill, skillDiags := kibanaoapi.GetSkill(ctx, oapiClient, spaceID, skillID)
 	diags.Append(skillDiags...)
