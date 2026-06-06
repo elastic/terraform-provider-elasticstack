@@ -268,6 +268,12 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/diagutil.ContainsContextDeadlineExceeded",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/diagutil",
+      "attemptedAt": "2026-06-06T04:42:33.972807374Z",
+      "reason": "pr_created"
     }
   ]
 }
