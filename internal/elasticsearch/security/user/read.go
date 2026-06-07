@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -71,7 +72,7 @@ func readUser(ctx context.Context, client *clients.ElasticsearchScopedClient, re
 			return state, false, diags
 		}
 		state.Metadata = jsontypes.NewNormalizedValue(string(metadata))
-	} else if !isEmptyJSONObject(state.Metadata) {
+	} else if state.Metadata.IsNull() || state.Metadata.IsUnknown() || !typeutils.IsEmptyJSONObject(state.Metadata.ValueString()) {
 		state.Metadata = jsontypes.NewNormalizedNull()
 	}
 
@@ -84,18 +85,4 @@ func readUser(ctx context.Context, client *clients.ElasticsearchScopedClient, re
 	state.Roles = rolesSet
 
 	return state, true, diags
-}
-
-// isEmptyJSONObject reports whether v is a known JSON value equal to the empty
-// object "{}". Unknown and null values return false so they fall through to
-// the default null handling in the caller.
-func isEmptyJSONObject(v jsontypes.Normalized) bool {
-	if v.IsNull() || v.IsUnknown() {
-		return false
-	}
-	var m map[string]any
-	if err := json.Unmarshal([]byte(v.ValueString()), &m); err != nil {
-		return false
-	}
-	return m != nil && len(m) == 0
 }
