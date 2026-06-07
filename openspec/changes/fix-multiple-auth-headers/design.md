@@ -124,12 +124,14 @@ Priority order: `BearerToken > APIKey > BasicAuth`. This preserves the existing 
 
 ### Decision 3: Diagnostic warnings
 
-After the final config is assembled, emit a `diag.AddWarning` when more than one auth method group is set. This surfaces the previously-silent precedence decision.
+After the final config is assembled, emit a `diag.AddWarning` when more than one auth method group is set. This surfaces env-level auth conflicts that cannot be caught by schema validation.
+
+**Scope note**: Schema validation already prevents same-level conflicts within a single provider block (e.g. setting both `api_key` and `username` in the same `kibana {}` block is a schema error). With method-scoped clearing correctly applied at every priority boundary, the only way multiple auth methods survive to the final resolved config is if conflicting env vars are set simultaneously (e.g. both `KIBANA_API_KEY` and `KIBANA_USERNAME`). The post-resolution warning is therefore specifically an env-level conflict signal.
 
 ```go
 func authMethodCount(c kibanaOapiConfig) int {
     count := 0
-    if c.Username != "" || c.Password != "" { count++ }
+    if c.Username != "" { count++ }   // BasicAuth: only Username gates the header; Password alone sends nothing
     if c.APIKey != "" { count++ }
     if c.BearerToken != "" { count++ }
     return count
@@ -140,20 +142,46 @@ if authMethodCount(config) > 1 {
         "Multiple Kibana authentication methods configured",
         "More than one of username/password, api_key, or bearer_token is set "+
             "in the resolved Kibana configuration. Only one will be used. "+
-            "Check your provider configuration and environment variables for "+
-            "conflicting auth settings.",
+            "Check your environment variables for conflicting auth settings.",
     )
 }
 ```
 
+`authMethodCount` counts BasicAuth only when `Username != ""` to match the transport's own trigger: `transport.RoundTrip` only calls `req.SetBasicAuth` when `Username != ""`, so a `Password`-only config sends zero auth headers. Counting `Password` alone as a method would suppress the warning in cases where no header is sent at all.
+
+The Fleet equivalent must use the same logic applied to `fleetConfig` fields. Since `kibanaOapiConfig` and `fleetConfig` share an identical field layout (both are type aliases for their respective client `Config` structs with the same auth fields), a single shared helper should be used for both rather than duplicating the logic.
+
 All relevant functions (`newProviderKibanaOapiConfigFromFramework`, `newKibanaOapiConfigFromFramework`, `newFleetConfigFromFramework`) already return `fwdiags.Diagnostics`, so no signature changes are required.
 
-### Decision 4: `withFleetBlockFallback` is already correct
+### Decision 4: `withFleetBlockFallback` requires a method-level auth guard
 
-`withFleetBlockFallback` (`kibana_oapi.go:101`) uses "only fill if empty" guards (`if k.Username == ""`), so it cannot re-introduce a cleared auth method. No changes are needed there.
+`withFleetBlockFallback` (`kibana_oapi.go:101`) uses "only fill if empty" field-level guards (`if k.Username == ""`). This is insufficient. After the Kibana clearing logic runs, auth fields like `APIKey` may be `""` not because no auth is configured, but because they were actively cleared by a higher-priority Kibana source. Filling them from Fleet would re-introduce a conflicting auth method.
+
+The fix: before filling any auth field from the Fleet block, check whether any auth method is already set in the Kibana config. If any of `Username`, `Password`, `APIKey`, or `BearerToken` is non-empty, skip all auth fallback from Fleet entirely. URL, CA certs, and TLS settings are not auth-method-sensitive and continue to be filled using the existing field-level guards.
+
+```go
+kibanaHasAuth := k.Username != "" || k.Password != "" || k.APIKey != "" || k.BearerToken != ""
+if !kibanaHasAuth {
+    if k.Username == "" && fleetCfg.Username.ValueString() != "" {
+        k.Username = fleetCfg.Username.ValueString()
+    }
+    if k.Password == "" && fleetCfg.Password.ValueString() != "" {
+        k.Password = fleetCfg.Password.ValueString()
+    }
+    if k.APIKey == "" && fleetCfg.APIKey.ValueString() != "" {
+        k.APIKey = fleetCfg.APIKey.ValueString()
+    }
+    if k.BearerToken == "" && fleetCfg.BearerToken.ValueString() != "" {
+        k.BearerToken = fleetCfg.BearerToken.ValueString()
+    }
+}
+// URL, CACerts, Insecure continue to use existing field-level guards below
+```
+
+**Why all-or-nothing for auth vs. field-by-field for URL/CA/Insecure:** Auth fields within a method group have cross-field dependencies — `Username` and `Password` only make sense together. Merging auth fields across method groups is worse than either: a `Username` from one source and an `APIKey` from another would produce a config that sends credentials from two unrelated accounts. URL, CA certs, and `Insecure` have no such cross-field dependencies and are correctly filled field-by-field. Using an all-or-nothing guard for auth and field-level guards for everything else reflects this structural difference.
+
+**Why this approach:** The priority model for Kibana resources is `ENV > RESOURCE > PROVIDER` with Fleet (env and provider block) as the lowest-priority source for auth. Once any auth has been established by a higher-priority Kibana source, Fleet auth must not participate.
 
 ## Open questions
 
-- **Same-level method conflict**: If two conflicting auth methods are set within the same priority level — e.g. both `KIBANA_API_KEY` and `KIBANA_USERNAME` set in env, or both `api_key` and `username` in the provider Kibana block — which wins? The transport switch implements `BearerToken > APIKey > BasicAuth` as the tie-breaker. Should this be the documented tie-breaker, or should it produce an error rather than silently dropping one method?
 - **`TF_ELASTICSTACK_PREFER_CONFIGURED_KIBANA_ENDPOINT` for auth**: This flag currently only governs URL priority (`RESOURCE > ENV` for URL when set). Should its semantics be extended to auth fields in a follow-up, or should a separate flag cover this?
-- **Fleet-level multi-auth warning**: `newFleetConfigFromFramework` already returns `fwdiags.Diagnostics`. Should it also emit a warning when Fleet config ends up with multiple auth methods, or is a warning at the Kibana layer sufficient since Fleet derives from Kibana?

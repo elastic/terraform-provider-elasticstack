@@ -18,26 +18,43 @@ The provider MUST inherit ES authentication credentials into the Kibana config (
 - **AND** `APIKey` SHALL NOT be present in the Kibana config
 - **AND** Kibana requests SHALL carry exactly one `Authorization` header
 
-### Requirement: `withFleetBlockFallback` does not re-introduce cleared auth methods
+### Requirement: `withFleetBlockFallback` does not fill auth when any Kibana auth method is already set
 
-`withFleetBlockFallback` uses "fill if empty" guards (`if k.Username == ""`) and MUST NOT overwrite an already-populated auth field. This ensures that a cleared auth method from the ES base cannot be re-introduced through the Fleet block fallback path.
+Fleet (provider block and env) is the lowest-priority auth source for Kibana resources. `withFleetBlockFallback` MUST check whether any auth method is already set in the Kibana config before filling any auth field. If any of `Username`, `Password`, `APIKey`, or `BearerToken` is non-empty, all auth field filling from the Fleet block MUST be skipped. URL, CA certs, and TLS settings are not subject to this restriction and continue to use field-level guards.
 
-#### Scenario: Kibana BasicAuth set, Fleet block has APIKey → Fleet fallback does not overwrite
-- **GIVEN** the Kibana config has `Username` and `Password` set from the Kibana provider block
+This prevents a cleared auth method from being re-introduced. For example: if the Kibana block sets BasicAuth (causing inherited ES `APIKey` to be cleared), `withFleetBlockFallback` must not refill `APIKey` from the Fleet block simply because the field is now empty.
+
+#### Scenario: Kibana BasicAuth set, Fleet block has APIKey → Fleet auth not used
+- **GIVEN** the Kibana config has `Username` and `Password` set (from the Kibana provider block, after method-scoped clearing)
 - **AND** the Fleet block has `api_key` set
 - **WHEN** `withFleetBlockFallback` is applied to the Kibana config
 - **THEN** the Kibana config SHALL retain `Username` and `Password`
-- **AND** `APIKey` SHALL NOT be set (Fleet APIKey applies only to the Fleet client config, not the Kibana config)
+- **AND** `APIKey` SHALL NOT be set
+
+#### Scenario: Kibana APIKey set (inherited from ES), Fleet block has BasicAuth → Fleet auth not used
+- **GIVEN** the Kibana config has `APIKey` set (inherited from the ES base, no Kibana auth block)
+- **AND** the Fleet block has `username` and `password` set
+- **WHEN** `withFleetBlockFallback` is applied to the Kibana config
+- **THEN** the Kibana config SHALL retain `APIKey`
+- **AND** `Username` and `Password` SHALL NOT be set
 
 #### Scenario: Empty Kibana auth, Fleet block fills it via fallback
-- **GIVEN** the Kibana config has no auth fields set
+- **GIVEN** the Kibana config has no auth fields set (no ES credentials, no Kibana block auth)
 - **AND** the Fleet block has `username` and `password` set
 - **WHEN** `withFleetBlockFallback` is applied
 - **THEN** `Username` and `Password` SHALL be copied from the Fleet block into the Kibana config
 
-### Requirement: Source priority ENV > RESOURCE > PROVIDER is enforced at every config layer
+### Requirement: Source priority is enforced at every config layer for Kibana resources
 
-The provider configuration MUST implement `ENV > RESOURCE > PROVIDER` source priority for authentication fields at every config resolution layer (Kibana schema, Kibana env, Fleet schema, Fleet env). A higher-priority source that introduces an auth method MUST clear conflicting auth method fields from lower-priority sources at each layer. The final resolved config MAY NOT carry credentials from two different auth methods, except in the case of same-method partial composition across sources (e.g. `username` from schema + `KIBANA_PASSWORD` from env).
+For Kibana-facing requests the full auth source priority (highest to lowest) is:
+
+1. `KIBANA_*` environment variables
+2. Resource-level `kibana_connection` block
+3. Provider-level `kibana` block
+4. `FLEET_*` environment variables
+5. Provider-level `fleet` block
+
+A higher-priority source that introduces an auth method MUST clear conflicting auth method fields from lower-priority sources at each layer. The final resolved config MAY NOT carry credentials from two different auth methods, except in the case of same-method partial composition across adjacent sources (e.g. `username` from provider schema + `KIBANA_PASSWORD` from env). Fleet (env and provider block) is the lowest-priority fallback and is skipped entirely if any auth method is already set by a higher-priority source.
 
 #### Scenario: ENV overrides PROVIDER — Kibana env APIKey overrides provider BasicAuth
 - **GIVEN** the Kibana provider block has `username` and `password`

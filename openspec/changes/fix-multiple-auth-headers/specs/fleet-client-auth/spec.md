@@ -58,12 +58,13 @@ Clearing rules when Fleet auth env vars are set:
 
 ### Requirement: Warning emitted when resolved Fleet config carries multiple auth methods
 
-After the full Fleet config is assembled in `newFleetConfigFromFramework`, if more than one auth method group is populated, a `diag.AddWarning` MUST be emitted with a message that names the conflict and directs the user to check their Fleet provider block and Fleet environment variables.
+After the full Fleet config is assembled in `newFleetConfigFromFramework`, if more than one auth method group is populated, a `diag.AddWarning` MUST be emitted with a message that names the conflict and directs the user to check Fleet environment variables. The same `authMethodCount` helper used for the Kibana warning MUST be reused here, counting BasicAuth only when `Username != ""`.
 
-#### Scenario: Resolved fleet config has both APIKey and Username → warning emitted
-- **GIVEN** the Fleet config resolution results in both `APIKey` and `Username` being set
+#### Scenario: Env-level conflict (FLEET_API_KEY and FLEET_USERNAME both set) → warning emitted
+- **GIVEN** the environment has both `FLEET_API_KEY=envkey` and `FLEET_USERNAME=admin` set simultaneously
 - **WHEN** `newFleetConfigFromFramework` finishes
-- **THEN** a warning diagnostic SHALL be returned with a title indicating multiple Fleet authentication methods are configured
+- **THEN** a warning diagnostic SHALL be returned with title "Multiple Fleet authentication methods configured"
+- **AND** the body SHALL direct the user to check Fleet environment variables for conflicting auth settings
 
 #### Scenario: Resolved fleet config has exactly one auth method → no warning
 - **GIVEN** the Fleet config resolution results in exactly one auth method group being set

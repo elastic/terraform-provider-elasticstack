@@ -84,12 +84,17 @@ Clearing rules when Kibana auth env vars are set:
 
 ### Requirement: Warning emitted when resolved Kibana config carries multiple auth methods
 
-After the full Kibana config is assembled (in `newProviderKibanaOapiConfigFromFramework` and `newKibanaOapiConfigFromFramework`), if more than one auth method group is populated, a `diag.AddWarning` MUST be emitted with a message that names the conflict and directs the user to check provider configuration and environment variables.
+After the full Kibana config is assembled (in `newProviderKibanaOapiConfigFromFramework` and `newKibanaOapiConfigFromFramework`), if more than one auth method group is populated, a `diag.AddWarning` MUST be emitted with a message that names the conflict and directs the user to check environment variables.
 
-#### Scenario: Resolved config has both APIKey and Username → warning emitted
-- **GIVEN** the Kibana config resolution results in both `APIKey` and `Username` being set (e.g. same-level conflict: both `api_key` and `username` in the Kibana provider block)
+Schema validation prevents same-level conflicts within a single provider block (e.g. setting both `api_key` and `username` in the same `kibana {}` block is a schema error). With method-scoped clearing applied at every priority boundary, the only way multiple auth methods survive to the final resolved config is if conflicting environment variables are set simultaneously. The warning is therefore specifically an env-level conflict signal.
+
+`authMethodCount` MUST count BasicAuth only when `Username != ""`. A `Password`-only config sends no `Authorization` header and MUST NOT be counted as an active auth method.
+
+#### Scenario: Env-level conflict (KIBANA_API_KEY and KIBANA_USERNAME both set) → warning emitted
+- **GIVEN** the environment has both `KIBANA_API_KEY=mykey` and `KIBANA_USERNAME=elastic` set simultaneously
 - **WHEN** `newProviderKibanaOapiConfigFromFramework` finishes
 - **THEN** a warning diagnostic SHALL be returned with title "Multiple Kibana authentication methods configured"
+- **AND** the body SHALL direct the user to check environment variables for conflicting auth settings
 
 #### Scenario: Resolved config has exactly one auth method → no warning
 - **GIVEN** the Kibana config resolution results in exactly one auth method group being set
