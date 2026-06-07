@@ -46,7 +46,7 @@ This prevents a cleared auth method from being re-introduced. For example: if th
 
 ### Requirement: Source priority is enforced at every config layer for Kibana resources
 
-For Kibana-facing requests the full auth source priority (highest to lowest) is:
+The provider MUST enforce the following auth source priority for Kibana-facing requests (highest to lowest):
 
 1. `KIBANA_*` environment variables
 2. Resource-level `kibana_connection` block
@@ -54,7 +54,7 @@ For Kibana-facing requests the full auth source priority (highest to lowest) is:
 4. `FLEET_*` environment variables
 5. Provider-level `fleet` block
 
-A higher-priority source that introduces an auth method MUST clear conflicting auth method fields from lower-priority sources at each layer. The final resolved config MAY NOT carry credentials from two different auth methods, except in the case of same-method partial composition across adjacent sources (e.g. `username` from provider schema + `KIBANA_PASSWORD` from env). Fleet (env and provider block) is the lowest-priority fallback and is skipped entirely if any auth method is already set by a higher-priority source.
+A higher-priority source that introduces an auth method MUST clear conflicting auth method fields from lower-priority sources at each layer. The final resolved config MAY NOT carry credentials from two different auth methods, except in the case of same-method partial composition across adjacent sources (e.g. `username` from provider schema + `KIBANA_PASSWORD` from env). Fleet (env and provider block) is the lowest-priority fallback and MUST be skipped entirely for auth if any auth method is already set by a higher-priority source.
 
 #### Scenario: ENV overrides PROVIDER — Kibana env APIKey overrides provider BasicAuth
 - **GIVEN** the Kibana provider block has `username` and `password`
