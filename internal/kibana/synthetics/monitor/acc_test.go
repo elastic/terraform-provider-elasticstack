@@ -272,8 +272,8 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(httpMonitorID, "id"),
-					resource.TestCheckNoResourceAttr(httpMonitorID, "http.username"),
-					resource.TestCheckNoResourceAttr(httpMonitorID, "http.password"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.username", "testupdated"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.password", "testpassword-updated"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -449,8 +449,8 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(tcpMonitorID, "id"),
-					resource.TestCheckNoResourceAttr(tcpMonitorID, "tcp.check_send"),
-					resource.TestCheckNoResourceAttr(tcpMonitorID, "tcp.check_receive"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.check_send", "Hello Updated"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.check_receive", "World Updated"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
