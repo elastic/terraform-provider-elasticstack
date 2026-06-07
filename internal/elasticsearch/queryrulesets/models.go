@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/queryrulecriteriatype"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/queryruletype"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -313,8 +314,7 @@ func (model QueryRuleModel) toAPIRule(ctx context.Context, diagnostics *diag.Dia
 	}
 
 	if !model.Priority.IsNull() && !model.Priority.IsUnknown() {
-		priority := int(model.Priority.ValueInt64())
-		rule.Priority = &priority
+		rule.Priority = typeutils.OptionalInt(model.Priority)
 	}
 
 	return rule

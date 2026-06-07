@@ -178,8 +178,8 @@ func toAPIModel(ctx context.Context, client *clients.ElasticsearchScopedClient, 
 		{name: "dates_as_epoch_millis", set: typeutils.IsKnown(model.DatesAsEpochMillis), write: func() { v := model.DatesAsEpochMillis.ValueBool(); settings.DatesAsEpochMillis = &v }},
 		{name: settingDeduceMappings, set: typeutils.IsKnown(model.DeduceMappings), write: func() { v := model.DeduceMappings.ValueBool(); settings.DeduceMappings = &v }},
 		{name: "docs_per_second", set: typeutils.IsKnown(model.DocsPerSecond), write: func() { v := model.DocsPerSecond.ValueFloat64(); settings.DocsPerSecond = &v }},
-		{name: "max_page_search_size", set: typeutils.IsKnown(model.MaxPageSearchSize), write: func() { v := int(model.MaxPageSearchSize.ValueInt64()); settings.MaxPageSearchSize = &v }},
-		{name: settingNumFailureRetries, set: typeutils.IsKnown(model.NumFailureRetries), write: func() { v := int(model.NumFailureRetries.ValueInt64()); settings.NumFailureRetries = &v }},
+		{name: "max_page_search_size", set: typeutils.IsKnown(model.MaxPageSearchSize), write: func() { settings.MaxPageSearchSize = typeutils.OptionalInt(model.MaxPageSearchSize) }},
+		{name: settingNumFailureRetries, set: typeutils.IsKnown(model.NumFailureRetries), write: func() { settings.NumFailureRetries = typeutils.OptionalInt(model.NumFailureRetries) }},
 		{name: settingUnattended, set: typeutils.IsKnown(model.Unattended), write: func() { v := model.Unattended.ValueBool(); settings.Unattended = &v }},
 	}
 

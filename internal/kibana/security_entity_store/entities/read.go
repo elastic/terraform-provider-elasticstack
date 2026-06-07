@@ -53,8 +53,7 @@ func readEntityStoreEntitiesDataSource(
 	}
 
 	if !model.Size.IsNull() && !model.Size.IsUnknown() {
-		s := int(model.Size.ValueInt64())
-		params.Size = &s
+		params.Size = typeutils.OptionalInt(model.Size)
 	}
 	if !model.SearchAfter.IsNull() && !model.SearchAfter.IsUnknown() {
 		sa := model.SearchAfter.ValueString()
@@ -83,12 +82,10 @@ func readEntityStoreEntitiesDataSource(
 		params.SortOrder = &so
 	}
 	if !model.Page.IsNull() && !model.Page.IsUnknown() {
-		p := int(model.Page.ValueInt64())
-		params.Page = &p
+		params.Page = typeutils.OptionalInt(model.Page)
 	}
 	if !model.PerPage.IsNull() && !model.PerPage.IsUnknown() {
-		pp := int(model.PerPage.ValueInt64())
-		params.PerPage = &pp
+		params.PerPage = typeutils.OptionalInt(model.PerPage)
 	}
 	if !model.FilterQuery.IsNull() && !model.FilterQuery.IsUnknown() {
 		fq := model.FilterQuery.ValueString()

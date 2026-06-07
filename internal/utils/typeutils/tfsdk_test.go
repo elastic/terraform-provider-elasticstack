@@ -256,6 +256,33 @@ func TestInt64PointerValue(t *testing.T) {
 	}
 }
 
+func TestOptionalInt(t *testing.T) {
+	t.Parallel()
+
+	pos := 42
+	neg := -7
+	zero := 0
+
+	tests := []struct {
+		name  string
+		input types.Int64
+		want  *int
+	}{
+		{name: "converts unknown", input: types.Int64Unknown(), want: nil},
+		{name: "converts null", input: types.Int64Null(), want: nil},
+		{name: "converts positive", input: types.Int64Value(42), want: &pos},
+		{name: "converts negative", input: types.Int64Value(-7), want: &neg},
+		{name: "converts zero", input: types.Int64Value(0), want: &zero},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := typeutils.OptionalInt(tt.input)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestFloat64PointerValue(t *testing.T) {
 	t.Parallel()
 

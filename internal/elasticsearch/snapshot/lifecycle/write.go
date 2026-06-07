@@ -58,13 +58,11 @@ func writeSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, 
 		hasRetention = true
 	}
 	if typeutils.IsKnown(data.MaxCount) {
-		v := int(data.MaxCount.ValueInt64())
-		retention.MaxCount = &v
+		retention.MaxCount = typeutils.OptionalInt(data.MaxCount)
 		hasRetention = true
 	}
 	if typeutils.IsKnown(data.MinCount) {
-		v := int(data.MinCount.ValueInt64())
-		retention.MinCount = &v
+		retention.MinCount = typeutils.OptionalInt(data.MinCount)
 		hasRetention = true
 	}
 	if hasRetention {
