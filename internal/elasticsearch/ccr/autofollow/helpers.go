@@ -21,10 +21,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/putautofollowpattern"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ccr"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -92,43 +92,6 @@ func planUpdateOperations(prior, plan Model) []apiOperation {
 	return ops
 }
 
-func narrowInt64ToInt(field string, v int64) (int, diag.Diagnostics) {
-	if v > math.MaxInt || v < math.MinInt {
-		return 0, diag.Diagnostics{
-			diag.NewErrorDiagnostic(
-				"Integer overflow",
-				fmt.Sprintf("%s value %d exceeds the range of a signed int", field, v),
-			),
-		}
-	}
-	return int(v), nil
-}
-
-func optIntFromInt64(field string, v types.Int64) (*int, diag.Diagnostics) {
-	if !typeutils.IsKnown(v) {
-		return nil, nil
-	}
-	narrowed, diags := narrowInt64ToInt(field, v.ValueInt64())
-	if diags.HasError() {
-		return nil, diags
-	}
-	return &narrowed, nil
-}
-
-func byteSizeFromString(v types.String) estypes.ByteSize {
-	if !typeutils.IsKnown(v) {
-		return nil
-	}
-	return estypes.ByteSize(v.ValueString())
-}
-
-func durationFromString(v types.String) estypes.Duration {
-	if !typeutils.IsKnown(v) {
-		return nil
-	}
-	return estypes.Duration(v.ValueString())
-}
-
 func parseSettingsRaw(settingsRaw string) (map[string]json.RawMessage, diag.Diagnostics) {
 	var settings map[string]json.RawMessage
 	if err := json.Unmarshal([]byte(settingsRaw), &settings); err != nil {
@@ -174,44 +137,44 @@ func buildPutAutoFollowPatternRequest(ctx context.Context, model Model) (*putaut
 		req.Settings = settings
 	}
 
-	if v, d := optIntFromInt64("max_outstanding_read_requests", model.MaxOutstandingReadRequests); d.HasError() {
+	if v, d := ccr.OptIntFromInt64("max_outstanding_read_requests", model.MaxOutstandingReadRequests); d.HasError() {
 		diags.Append(d...)
 	} else if v != nil {
 		req.MaxOutstandingReadRequests = v
 	}
-	if v, d := optIntFromInt64("max_outstanding_write_requests", model.MaxOutstandingWriteRequests); d.HasError() {
+	if v, d := ccr.OptIntFromInt64("max_outstanding_write_requests", model.MaxOutstandingWriteRequests); d.HasError() {
 		diags.Append(d...)
 	} else if v != nil {
 		req.MaxOutstandingWriteRequests = v
 	}
-	if v, d := optIntFromInt64("max_read_request_operation_count", model.MaxReadRequestOperationCount); d.HasError() {
+	if v, d := ccr.OptIntFromInt64("max_read_request_operation_count", model.MaxReadRequestOperationCount); d.HasError() {
 		diags.Append(d...)
 	} else if v != nil {
 		req.MaxReadRequestOperationCount = v
 	}
-	if v := byteSizeFromString(model.MaxReadRequestSize); v != nil {
+	if v := ccr.ByteSizeFromString(model.MaxReadRequestSize); v != nil {
 		req.MaxReadRequestSize = v
 	}
-	if v := durationFromString(model.MaxRetryDelay); v != nil {
+	if v := ccr.DurationFromString(model.MaxRetryDelay); v != nil {
 		req.MaxRetryDelay = v
 	}
-	if v, d := optIntFromInt64("max_write_buffer_count", model.MaxWriteBufferCount); d.HasError() {
+	if v, d := ccr.OptIntFromInt64("max_write_buffer_count", model.MaxWriteBufferCount); d.HasError() {
 		diags.Append(d...)
 	} else if v != nil {
 		req.MaxWriteBufferCount = v
 	}
-	if v := byteSizeFromString(model.MaxWriteBufferSize); v != nil {
+	if v := ccr.ByteSizeFromString(model.MaxWriteBufferSize); v != nil {
 		req.MaxWriteBufferSize = v
 	}
-	if v, d := optIntFromInt64("max_write_request_operation_count", model.MaxWriteRequestOperationCount); d.HasError() {
+	if v, d := ccr.OptIntFromInt64("max_write_request_operation_count", model.MaxWriteRequestOperationCount); d.HasError() {
 		diags.Append(d...)
 	} else if v != nil {
 		req.MaxWriteRequestOperationCount = v
 	}
-	if v := byteSizeFromString(model.MaxWriteRequestSize); v != nil {
+	if v := ccr.ByteSizeFromString(model.MaxWriteRequestSize); v != nil {
 		req.MaxWriteRequestSize = v
 	}
-	if v := durationFromString(model.ReadPollTimeout); v != nil {
+	if v := ccr.DurationFromString(model.ReadPollTimeout); v != nil {
 		req.ReadPollTimeout = v
 	}
 

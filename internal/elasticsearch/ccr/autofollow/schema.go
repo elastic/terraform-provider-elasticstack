@@ -23,6 +23,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -64,6 +66,9 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				ElementType:         types.StringType,
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"follow_index_pattern": schema.StringAttribute{
 				MarkdownDescription: descFollowIndexPattern,
@@ -77,6 +82,9 @@ func getSchema(_ context.Context) schema.Schema {
 				MarkdownDescription: descMaxOutstandingReadRequests,
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 			"max_outstanding_write_requests": schema.Int64Attribute{
 				MarkdownDescription: descMaxOutstandingWriteRequests,

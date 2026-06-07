@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ccr"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -189,7 +190,7 @@ func TestNarrowInt64ToInt_overflow(t *testing.T) {
 		t.Skip("int is 64-bit; overflow against MaxInt is not practical on this platform")
 	}
 
-	_, diags := narrowInt64ToInt("max_outstanding_read_requests", math.MaxInt64)
+	_, diags := ccr.NarrowInt64ToInt("max_outstanding_read_requests", math.MaxInt64)
 	require.True(t, diags.HasError())
 }
 

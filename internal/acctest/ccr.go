@@ -131,21 +131,12 @@ func preCheckCCRRemote(t *testing.T, proxyAddress string) {
 }
 
 func registerCCRRemoteCluster(ctx context.Context, client *clients.ElasticsearchScopedClient, alias, proxyAddress string) error {
-	mode, err := json.Marshal("proxy")
-	if err != nil {
-		return err
-	}
-	address, err := json.Marshal(proxyAddress)
-	if err != nil {
-		return err
-	}
-
 	settings := map[string]json.RawMessage{
-		fmt.Sprintf("cluster.remote.%s.mode", alias):          mode,
-		fmt.Sprintf("cluster.remote.%s.proxy_address", alias): address,
+		fmt.Sprintf("cluster.remote.%s.mode", alias):          json.RawMessage("\"proxy\""),
+		fmt.Sprintf("cluster.remote.%s.proxy_address", alias): json.RawMessage(fmt.Sprintf("%q", proxyAddress)),
 	}
 
-	_, err = client.GetESClient().Cluster.PutSettings().Persistent(settings).Do(ctx)
+	_, err := client.GetESClient().Cluster.PutSettings().Persistent(settings).Do(ctx)
 	return err
 }
 

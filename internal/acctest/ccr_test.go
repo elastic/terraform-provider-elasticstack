@@ -34,17 +34,17 @@ func TestElasticsearchProxyAddressFromEnv(t *testing.T) {
 		{
 			name:      "derives transport port from http endpoint host",
 			endpoints: "http://localhost:9200",
-			want:      "localhost:9300",
+			want:      "localhost:" + defaultElasticsearchTransportPort,
 		},
 		{
 			name:      "preserves hostname without http port",
 			endpoints: "http://elasticsearch",
-			want:      "elasticsearch:9300",
+			want:      "elasticsearch:" + defaultElasticsearchTransportPort,
 		},
 		{
 			name:      "replaces http port with transport port",
 			endpoints: "http://localhost:12345",
-			want:      "localhost:9300",
+			want:      "localhost:" + defaultElasticsearchTransportPort,
 		},
 		{
 			name:      "honors transport port override",
@@ -61,7 +61,7 @@ func TestElasticsearchProxyAddressFromEnv(t *testing.T) {
 		{
 			name:      "supports ipv6 host with brackets",
 			endpoints: "http://[::1]:9200",
-			want:      "[::1]:9300",
+			want:      "[::1]:" + defaultElasticsearchTransportPort,
 		},
 		{
 			name:    "missing endpoints",
@@ -113,7 +113,7 @@ func TestElasticsearchProxyAddressFromEnvUsesFirstEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if got != "first:9300" {
-		t.Fatalf("got %q, want %q", got, "first:9300")
+	if got != "first:"+defaultElasticsearchTransportPort {
+		t.Fatalf("got %q, want %q", got, "first:"+defaultElasticsearchTransportPort)
 	}
 }

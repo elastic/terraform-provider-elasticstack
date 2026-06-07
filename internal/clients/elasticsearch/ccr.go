@@ -47,10 +47,8 @@ func GetFollowerIndex(ctx context.Context, apiClient *clients.ElasticsearchScope
 		}
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	for i := range res.FollowerIndices {
-		if res.FollowerIndices[i].FollowerIndex == indexName {
-			return &res.FollowerIndices[i], nil
-		}
+	if len(res.FollowerIndices) > 0 {
+		return &res.FollowerIndices[0], nil
 	}
 	return nil, nil
 }
@@ -130,10 +128,8 @@ func GetAutoFollowPattern(ctx context.Context, apiClient *clients.ElasticsearchS
 		}
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	for i := range res.Patterns {
-		if res.Patterns[i].Name == name {
-			return &res.Patterns[i].Pattern, nil
-		}
+	if len(res.Patterns) > 0 {
+		return &res.Patterns[0].Pattern, nil
 	}
 	return nil, nil
 }

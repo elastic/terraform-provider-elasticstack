@@ -25,6 +25,7 @@ import (
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/followerindexstatus"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ccr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -201,7 +202,7 @@ func TestNormalizeFlatSettingsKeys(t *testing.T) {
 	t.Run("flat dotted keys", func(t *testing.T) {
 		t.Parallel()
 		in := map[string]any{"index.refresh_interval": "30s"}
-		out := normalizeFlatSettingsKeys(in)
+		out, _ := normalizeFlatSettingsKeys(in)
 		assert.Equal(t, map[string]any{
 			"index": map[string]any{"refresh_interval": "30s"},
 		}, out)
@@ -210,7 +211,7 @@ func TestNormalizeFlatSettingsKeys(t *testing.T) {
 	t.Run("nested keys unchanged", func(t *testing.T) {
 		t.Parallel()
 		in := map[string]any{"index": map[string]any{"refresh_interval": "30s"}}
-		out := normalizeFlatSettingsKeys(in)
+		out, _ := normalizeFlatSettingsKeys(in)
 		assert.Equal(t, in, out)
 	})
 }
@@ -313,7 +314,7 @@ func TestNarrowInt64ToInt_overflow(t *testing.T) {
 		t.Skip("int is 64-bit; overflow against MaxInt is not practical on this platform")
 	}
 
-	_, diags := narrowInt64ToInt("max_outstanding_write_requests", math.MaxInt64)
+	_, diags := ccr.NarrowInt64ToInt("max_outstanding_write_requests", math.MaxInt64)
 	require.True(t, diags.HasError())
 }
 

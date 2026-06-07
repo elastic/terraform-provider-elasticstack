@@ -21,14 +21,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
-	"math"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/follow"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/resumefollow"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ccr"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -157,89 +156,10 @@ func tuningParamsChanged(prior, plan Model) bool {
 		!prior.ReadPollTimeout.Equal(plan.ReadPollTimeout)
 }
 
-func narrowInt64ToInt(field string, v int64) (int, diag.Diagnostics) {
-	if v > math.MaxInt || v < math.MinInt {
-		return 0, diag.Diagnostics{
-			diag.NewErrorDiagnostic(
-				"Integer overflow",
-				fmt.Sprintf("%s value %d exceeds the range of a signed int", field, v),
-			),
-		}
-	}
-	return int(v), nil
-}
-
-func optInt64Ptr(v types.Int64) *int64 {
-	if !typeutils.IsKnown(v) {
-		return nil
-	}
-	val := v.ValueInt64()
-	return &val
-}
-
-func optIntFromInt64(field string, v types.Int64) (*int, diag.Diagnostics) {
-	if !typeutils.IsKnown(v) {
-		return nil, nil
-	}
-	narrowed, diags := narrowInt64ToInt(field, v.ValueInt64())
-	if diags.HasError() {
-		return nil, diags
-	}
-	return &narrowed, nil
-}
-
-func byteSizeFromString(v types.String) estypes.ByteSize {
-	if !typeutils.IsKnown(v) {
-		return nil
-	}
-	return estypes.ByteSize(v.ValueString())
-}
-
-func durationFromString(v types.String) estypes.Duration {
-	if !typeutils.IsKnown(v) {
-		return nil
-	}
-	return estypes.Duration(v.ValueString())
-}
-
-func byteSizeToString(v estypes.ByteSize) types.String {
-	if v == nil {
-		return types.StringNull()
-	}
-	switch x := v.(type) {
-	case string:
-		return types.StringValue(x)
-	case int64:
-		return types.StringValue(strconv.FormatInt(x, 10))
-	case int:
-		return types.StringValue(strconv.Itoa(x))
-	case float64:
-		return types.StringValue(strconv.FormatInt(int64(x), 10))
-	default:
-		return types.StringValue(fmt.Sprint(v))
-	}
-}
-
-func durationToString(v estypes.Duration) types.String {
-	if v == nil {
-		return types.StringNull()
-	}
-	if s, ok := v.(string); ok {
-		return types.StringValue(s)
-	}
-	return types.StringValue(fmt.Sprint(v))
-}
-
-func intPointerToInt64(v *int) types.Int64 {
-	if v == nil {
-		return types.Int64Null()
-	}
-	return types.Int64Value(int64(*v))
-}
-
 // normalizeFlatSettingsKeys converts flat dotted keys (e.g. index.refresh_interval)
 // into nested maps for unmarshalling into types.IndexSettings.
-func normalizeFlatSettingsKeys(m map[string]any) map[string]any {
+// The bool return indicates whether any normalization was performed.
+func normalizeFlatSettingsKeys(m map[string]any) (map[string]any, bool) {
 	hasDotted := false
 	for k := range m {
 		if strings.Contains(k, ".") {
@@ -248,7 +168,7 @@ func normalizeFlatSettingsKeys(m map[string]any) map[string]any {
 		}
 	}
 	if !hasDotted {
-		return m
+		return m, false
 	}
 
 	flat := make(map[string]any)
@@ -262,7 +182,7 @@ func normalizeFlatSettingsKeys(m map[string]any) map[string]any {
 	}
 
 	unflattened := unflattenDottedMap(flat)
-	return mergeSettingsMaps(root, unflattened)
+	return mergeSettingsMaps(root, unflattened), true
 }
 
 func unflattenDottedMap(flat map[string]any) map[string]any {
@@ -334,7 +254,17 @@ func parseSettingsRawForCreate(settingsRaw string) (*estypes.IndexSettings, diag
 		}
 	}
 
-	normalized := normalizeFlatSettingsKeys(raw)
+	normalized, changed := normalizeFlatSettingsKeys(raw)
+	if !changed {
+		var settings estypes.IndexSettings
+		if err := json.Unmarshal([]byte(settingsRaw), &settings); err != nil {
+			return nil, diag.Diagnostics{
+				diag.NewErrorDiagnostic("Failed to parse settings_raw into index settings", err.Error()),
+			}
+		}
+		return &settings, nil
+	}
+
 	settingsBytes, err := json.Marshal(normalized)
 	if err != nil {
 		return nil, diag.Diagnostics{
@@ -380,42 +310,42 @@ func buildFollowRequest(model Model) (*follow.Request, diag.Diagnostics) {
 		req.Settings = settings
 	}
 
-	if v := optInt64Ptr(model.MaxOutstandingReadRequests); v != nil {
+	if v := ccr.OptInt64Ptr(model.MaxOutstandingReadRequests); v != nil {
 		req.MaxOutstandingReadRequests = v
 	}
-	if v, d := optIntFromInt64("max_outstanding_write_requests", model.MaxOutstandingWriteRequests); d.HasError() {
+	if v, d := ccr.OptIntFromInt64("max_outstanding_write_requests", model.MaxOutstandingWriteRequests); d.HasError() {
 		diags.Append(d...)
 	} else if v != nil {
 		req.MaxOutstandingWriteRequests = v
 	}
-	if v, d := optIntFromInt64("max_read_request_operation_count", model.MaxReadRequestOperationCount); d.HasError() {
+	if v, d := ccr.OptIntFromInt64("max_read_request_operation_count", model.MaxReadRequestOperationCount); d.HasError() {
 		diags.Append(d...)
 	} else if v != nil {
 		req.MaxReadRequestOperationCount = v
 	}
-	if v := byteSizeFromString(model.MaxReadRequestSize); v != nil {
+	if v := ccr.ByteSizeFromString(model.MaxReadRequestSize); v != nil {
 		req.MaxReadRequestSize = v
 	}
-	if v := durationFromString(model.MaxRetryDelay); v != nil {
+	if v := ccr.DurationFromString(model.MaxRetryDelay); v != nil {
 		req.MaxRetryDelay = v
 	}
-	if v, d := optIntFromInt64("max_write_buffer_count", model.MaxWriteBufferCount); d.HasError() {
+	if v, d := ccr.OptIntFromInt64("max_write_buffer_count", model.MaxWriteBufferCount); d.HasError() {
 		diags.Append(d...)
 	} else if v != nil {
 		req.MaxWriteBufferCount = v
 	}
-	if v := byteSizeFromString(model.MaxWriteBufferSize); v != nil {
+	if v := ccr.ByteSizeFromString(model.MaxWriteBufferSize); v != nil {
 		req.MaxWriteBufferSize = v
 	}
-	if v, d := optIntFromInt64("max_write_request_operation_count", model.MaxWriteRequestOperationCount); d.HasError() {
+	if v, d := ccr.OptIntFromInt64("max_write_request_operation_count", model.MaxWriteRequestOperationCount); d.HasError() {
 		diags.Append(d...)
 	} else if v != nil {
 		req.MaxWriteRequestOperationCount = v
 	}
-	if v := byteSizeFromString(model.MaxWriteRequestSize); v != nil {
+	if v := ccr.ByteSizeFromString(model.MaxWriteRequestSize); v != nil {
 		req.MaxWriteRequestSize = v
 	}
-	if v := durationFromString(model.ReadPollTimeout); v != nil {
+	if v := ccr.DurationFromString(model.ReadPollTimeout); v != nil {
 		req.ReadPollTimeout = v
 	}
 
@@ -425,51 +355,58 @@ func buildFollowRequest(model Model) (*follow.Request, diag.Diagnostics) {
 func buildResumeFollowRequest(model Model) *resumefollow.Request {
 	req := &resumefollow.Request{}
 
-	if v := optInt64Ptr(model.MaxOutstandingReadRequests); v != nil {
+	if v := ccr.OptInt64Ptr(model.MaxOutstandingReadRequests); v != nil {
 		req.MaxOutstandingReadRequests = v
 	}
-	if v := optInt64Ptr(model.MaxOutstandingWriteRequests); v != nil {
+	if v := ccr.OptInt64Ptr(model.MaxOutstandingWriteRequests); v != nil {
 		req.MaxOutstandingWriteRequests = v
 	}
-	if v := optInt64Ptr(model.MaxReadRequestOperationCount); v != nil {
+	if v := ccr.OptInt64Ptr(model.MaxReadRequestOperationCount); v != nil {
 		req.MaxReadRequestOperationCount = v
 	}
 	if v := typeutils.OptStringPtr(model.MaxReadRequestSize); v != nil {
 		req.MaxReadRequestSize = v
 	}
-	if v := durationFromString(model.MaxRetryDelay); v != nil {
+	if v := ccr.DurationFromString(model.MaxRetryDelay); v != nil {
 		req.MaxRetryDelay = v
 	}
-	if v := optInt64Ptr(model.MaxWriteBufferCount); v != nil {
+	if v := ccr.OptInt64Ptr(model.MaxWriteBufferCount); v != nil {
 		req.MaxWriteBufferCount = v
 	}
 	if v := typeutils.OptStringPtr(model.MaxWriteBufferSize); v != nil {
 		req.MaxWriteBufferSize = v
 	}
-	if v := optInt64Ptr(model.MaxWriteRequestOperationCount); v != nil {
+	if v := ccr.OptInt64Ptr(model.MaxWriteRequestOperationCount); v != nil {
 		req.MaxWriteRequestOperationCount = v
 	}
 	if v := typeutils.OptStringPtr(model.MaxWriteRequestSize); v != nil {
 		req.MaxWriteRequestSize = v
 	}
-	if v := durationFromString(model.ReadPollTimeout); v != nil {
+	if v := ccr.DurationFromString(model.ReadPollTimeout); v != nil {
 		req.ReadPollTimeout = v
 	}
 
 	return req
 }
 
+func intPointerToInt64(v *int) types.Int64 {
+	if v == nil {
+		return types.Int64Null()
+	}
+	return types.Int64Value(int64(*v))
+}
+
 func mapParametersToModel(params *estypes.FollowerIndexParameters, model Model) Model {
 	model.MaxOutstandingReadRequests = typeutils.Int64PointerValue(params.MaxOutstandingReadRequests)
 	model.MaxOutstandingWriteRequests = intPointerToInt64(params.MaxOutstandingWriteRequests)
 	model.MaxReadRequestOperationCount = intPointerToInt64(params.MaxReadRequestOperationCount)
-	model.MaxReadRequestSize = byteSizeToString(params.MaxReadRequestSize)
-	model.MaxRetryDelay = durationToString(params.MaxRetryDelay)
+	model.MaxReadRequestSize = ccr.ByteSizeToString(params.MaxReadRequestSize)
+	model.MaxRetryDelay = ccr.DurationToString(params.MaxRetryDelay)
 	model.MaxWriteBufferCount = intPointerToInt64(params.MaxWriteBufferCount)
-	model.MaxWriteBufferSize = byteSizeToString(params.MaxWriteBufferSize)
+	model.MaxWriteBufferSize = ccr.ByteSizeToString(params.MaxWriteBufferSize)
 	model.MaxWriteRequestOperationCount = intPointerToInt64(params.MaxWriteRequestOperationCount)
-	model.MaxWriteRequestSize = byteSizeToString(params.MaxWriteRequestSize)
-	model.ReadPollTimeout = durationToString(params.ReadPollTimeout)
+	model.MaxWriteRequestSize = ccr.ByteSizeToString(params.MaxWriteRequestSize)
+	model.ReadPollTimeout = ccr.DurationToString(params.ReadPollTimeout)
 	return model
 }
 
