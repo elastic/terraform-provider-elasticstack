@@ -53,16 +53,13 @@ func createTrainedModelDeployment(
 	}
 
 	if !plan.NumberOfAllocations.IsUnknown() && !plan.NumberOfAllocations.IsNull() {
-		v := int(plan.NumberOfAllocations.ValueInt64())
-		opts.NumberOfAllocations = &v
+		opts.NumberOfAllocations = typeutils.OptionalInt(plan.NumberOfAllocations)
 	}
 	if !plan.ThreadsPerAllocation.IsUnknown() && !plan.ThreadsPerAllocation.IsNull() {
-		v := int(plan.ThreadsPerAllocation.ValueInt64())
-		opts.ThreadsPerAllocation = &v
+		opts.ThreadsPerAllocation = typeutils.OptionalInt(plan.ThreadsPerAllocation)
 	}
 	if !plan.QueueCapacity.IsUnknown() && !plan.QueueCapacity.IsNull() {
-		v := int(plan.QueueCapacity.ValueInt64())
-		opts.QueueCapacity = &v
+		opts.QueueCapacity = typeutils.OptionalInt(plan.QueueCapacity)
 	}
 	if !plan.APITimeout.IsUnknown() && !plan.APITimeout.IsNull() {
 		v := plan.APITimeout.ValueString()

@@ -19,6 +19,7 @@ package trainedmodeldeployment
 
 import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -30,12 +31,10 @@ func toAdaptiveAllocationsSettings(aa *AdaptiveAllocationsData) *types.AdaptiveA
 		Enabled: aa.Enabled.ValueBool(),
 	}
 	if !aa.MinNumberOfAllocations.IsNull() {
-		v := int(aa.MinNumberOfAllocations.ValueInt64())
-		settings.MinNumberOfAllocations = &v
+		settings.MinNumberOfAllocations = typeutils.OptionalInt(aa.MinNumberOfAllocations)
 	}
 	if !aa.MaxNumberOfAllocations.IsNull() {
-		v := int(aa.MaxNumberOfAllocations.ValueInt64())
-		settings.MaxNumberOfAllocations = &v
+		settings.MaxNumberOfAllocations = typeutils.OptionalInt(aa.MaxNumberOfAllocations)
 	}
 	return settings
 }

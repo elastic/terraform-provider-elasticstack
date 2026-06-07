@@ -59,22 +59,22 @@ func (m *processorCommunityIDModel) MarshalBody() (any, diag.Diagnostics) {
 		body.SourceIP = m.SourceIP.ValueString()
 	}
 	if typeutils.IsKnown(m.SourcePort) {
-		body.SourcePort = new(int(m.SourcePort.ValueInt64()))
+		body.SourcePort = typeutils.OptionalInt(m.SourcePort)
 	}
 	if typeutils.IsKnown(m.DestinationIP) {
 		body.DestinationIP = m.DestinationIP.ValueString()
 	}
 	if typeutils.IsKnown(m.DestinationPort) {
-		body.DestinationPort = new(int(m.DestinationPort.ValueInt64()))
+		body.DestinationPort = typeutils.OptionalInt(m.DestinationPort)
 	}
 	if typeutils.IsKnown(m.IanaNumber) {
-		body.IanaNumber = new(int(m.IanaNumber.ValueInt64()))
+		body.IanaNumber = typeutils.OptionalInt(m.IanaNumber)
 	}
 	if typeutils.IsKnown(m.IcmpType) {
-		body.IcmpType = new(int(m.IcmpType.ValueInt64()))
+		body.IcmpType = typeutils.OptionalInt(m.IcmpType)
 	}
 	if typeutils.IsKnown(m.IcmpCode) {
-		body.IcmpCode = new(int(m.IcmpCode.ValueInt64()))
+		body.IcmpCode = typeutils.OptionalInt(m.IcmpCode)
 	}
 	if typeutils.IsKnown(m.Transport) {
 		body.Transport = m.Transport.ValueString()
@@ -86,7 +86,7 @@ func (m *processorCommunityIDModel) MarshalBody() (any, diag.Diagnostics) {
 		m.Seed = types.Int64Value(0)
 		body.Seed = new(0)
 	} else {
-		body.Seed = new(int(m.Seed.ValueInt64()))
+		body.Seed = typeutils.OptionalInt(m.Seed)
 	}
 	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
 		m.IgnoreMissing = types.BoolValue(false)

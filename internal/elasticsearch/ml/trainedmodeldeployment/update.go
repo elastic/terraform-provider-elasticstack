@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -42,14 +43,8 @@ func updateTrainedModelDeployment(
 
 	adaptiveAllocations := toAdaptiveAllocationsSettings(plan.AdaptiveAllocations)
 
-	var numberOfAllocations *int
-	if !plan.NumberOfAllocations.IsUnknown() && !plan.NumberOfAllocations.IsNull() {
-		v := int(plan.NumberOfAllocations.ValueInt64())
-		numberOfAllocations = &v
-	}
-
 	updateOpts := elasticsearch.UpdateTrainedModelDeploymentOptions{
-		NumberOfAllocations: numberOfAllocations,
+		NumberOfAllocations: typeutils.OptionalInt(plan.NumberOfAllocations),
 		AdaptiveAllocations: adaptiveAllocations,
 	}
 
