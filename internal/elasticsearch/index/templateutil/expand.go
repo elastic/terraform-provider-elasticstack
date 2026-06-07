@@ -93,10 +93,14 @@ func ExpandTemplateCore(
 	return t, diags
 }
 
-// ExpandMetadataJSON parses a jsontypes.Normalized attribute as a JSON object.
-// Returns nil when the value is null or unknown. Adds a diagnostic on parse failure.
+// ExpandMetadataJSON parses a jsontypes.Normalized attribute as a JSON object,
+// trimming whitespace. Returns nil when the value is null, unknown, or empty.
+// Adds a diagnostic on parse failure.
 func ExpandMetadataJSON(meta jsontypes.Normalized, diags *diag.Diagnostics) map[string]any {
 	if !typeutils.IsKnown(meta) {
+		return nil
+	}
+	if strings.TrimSpace(meta.ValueString()) == "" {
 		return nil
 	}
 	return typeutils.NormalizedTypeToMap[any](meta, path.Empty(), diags)

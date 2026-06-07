@@ -87,7 +87,11 @@ func writeUser(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 	}
 	user.Roles = roles
 
-	if metadataMap := typeutils.NormalizedTypeToMap[any](plan.Metadata, path.Root("metadata"), &diags); metadataMap != nil {
+	metadataMap := typeutils.NormalizedTypeToMap[any](plan.Metadata, path.Root("metadata"), &diags)
+	if diags.HasError() {
+		return entitycore.WriteResult[Data]{Model: plan}, diags
+	}
+	if metadataMap != nil {
 		metadata := make(estypes.Metadata, len(metadataMap))
 		for k, v := range metadataMap {
 			b, err := json.Marshal(v)

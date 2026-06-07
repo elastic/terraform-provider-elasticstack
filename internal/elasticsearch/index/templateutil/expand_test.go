@@ -263,6 +263,20 @@ func TestExpandMetadataJSON(t *testing.T) {
 		assert.Nil(t, result)
 	})
 
+	t.Run("empty string returns nil", func(t *testing.T) {
+		var diags diag.Diagnostics
+		result := ExpandMetadataJSON(jsontypes.NewNormalizedValue(""), &diags)
+		require.False(t, diags.HasError())
+		assert.Nil(t, result)
+	})
+
+	t.Run("whitespace-only string returns nil", func(t *testing.T) {
+		var diags diag.Diagnostics
+		result := ExpandMetadataJSON(jsontypes.NewNormalizedValue("   "), &diags)
+		require.False(t, diags.HasError())
+		assert.Nil(t, result)
+	})
+
 	t.Run("valid JSON returns parsed map", func(t *testing.T) {
 		var diags diag.Diagnostics
 		result := ExpandMetadataJSON(jsontypes.NewNormalizedValue(`{"key":"value","num":42}`), &diags)
