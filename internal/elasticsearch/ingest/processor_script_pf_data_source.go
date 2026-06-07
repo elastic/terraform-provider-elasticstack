@@ -18,9 +18,9 @@
 package ingest
 
 import (
-	"encoding/json"
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -59,12 +59,7 @@ func (m *processorScriptModel) MarshalBody() (any, diag.Diagnostics) {
 	if IsKnown(m.Source) {
 		body.Source = m.Source.ValueString()
 	}
-	if IsKnown(m.Params) {
-		params := make(map[string]any)
-		if err := json.Unmarshal([]byte(m.Params.ValueString()), &params); err != nil {
-			diags.AddError("Failed to parse params JSON", err.Error())
-			return nil, diags
-		}
+	if params := typeutils.NormalizedTypeToMap[any](m.Params, path.Root("params"), &diags); params != nil {
 		body.Params = params
 	}
 

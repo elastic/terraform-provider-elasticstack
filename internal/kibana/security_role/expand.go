@@ -26,6 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -346,7 +347,7 @@ func expandResourceModel(ctx context.Context, m resourceModel) (string, kibanaoa
 		body.Kibana = kib
 	}
 
-	if meta := typeutils.ExpandNormalizedJSONObject(m.Metadata, &diags); diags.HasError() {
+	if meta := typeutils.NormalizedTypeToMap[any](m.Metadata, path.Root("metadata"), &diags); diags.HasError() {
 		return roleName, body, diags
 	} else if meta != nil {
 		body.Metadata = &meta

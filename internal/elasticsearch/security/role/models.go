@@ -31,6 +31,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -194,12 +195,7 @@ func (data *Data) toAPIModel(ctx context.Context) (*estypes.Role, diag.Diagnosti
 	}
 
 	// Metadata
-	if typeutils.IsKnown(data.Metadata) {
-		var metadata map[string]any
-		if err := json.Unmarshal([]byte(data.Metadata.ValueString()), &metadata); err != nil {
-			diags.AddError("Invalid JSON", fmt.Sprintf("Error parsing metadata JSON: %s", err))
-			return nil, diags
-		}
+	if metadata := typeutils.NormalizedTypeToMap[any](data.Metadata, path.Root("metadata"), &diags); metadata != nil {
 		role.Metadata = make(estypes.Metadata, len(metadata))
 		for k, v := range metadata {
 			raw, err := json.Marshal(v)

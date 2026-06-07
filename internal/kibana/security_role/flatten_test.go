@@ -23,10 +23,7 @@ import (
 	"testing"
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -150,16 +147,21 @@ func TestUnitExpandElasticsearchOmitsEmptyClusterAndRunAs(t *testing.T) {
 	require.NotNil(t, out.Indices)
 }
 
-func TestUnitMetadataJSONRoundTrip(t *testing.T) {
-	meta := jsontypes.NewNormalizedValue(`{"team":"ops","env":"prod"}`)
-	var diags diag.Diagnostics
-	m := typeutils.ExpandNormalizedJSONObject(meta, &diags)
-	require.False(t, diags.HasError())
-	require.NotNil(t, m)
-	role := kibanaoapi.SecurityRole{Metadata: &m}
-	norm, d2 := metadataFromAPI(&role)
-	require.False(t, d2.HasError())
-	assert.JSONEq(t, meta.ValueString(), norm.ValueString())
+func TestUnitMetadataFromAPI(t *testing.T) {
+	t.Run("nil metadata returns null", func(t *testing.T) {
+		role := kibanaoapi.SecurityRole{}
+		norm, diags := metadataFromAPI(&role)
+		require.False(t, diags.HasError())
+		assert.True(t, norm.IsNull())
+	})
+
+	t.Run("valid metadata returns normalized JSON", func(t *testing.T) {
+		m := map[string]any{"team": "ops", "env": "prod"}
+		role := kibanaoapi.SecurityRole{Metadata: &m}
+		norm, diags := metadataFromAPI(&role)
+		require.False(t, diags.HasError())
+		assert.JSONEq(t, `{"team":"ops","env":"prod"}`, norm.ValueString())
+	})
 }
 
 func TestUnitFlattenKibanaInvalidBaseReturnsError(t *testing.T) {

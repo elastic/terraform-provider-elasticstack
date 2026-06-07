@@ -240,12 +240,7 @@ func buildPipelineBody(ctx context.Context, data Data) (map[string]any, diag.Dia
 		body[attrOnFailure] = onFailure
 	}
 
-	if typeutils.IsKnown(data.Metadata) {
-		metadata := map[string]any{}
-		if err := json.Unmarshal([]byte(data.Metadata.ValueString()), &metadata); err != nil {
-			diags.AddError("Failed to decode metadata JSON", err.Error())
-			return nil, diags
-		}
+	if metadata := typeutils.NormalizedTypeToMap[any](data.Metadata, path.Root("metadata"), &diags); metadata != nil {
 		body["_meta"] = metadata
 	}
 

@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -92,11 +93,13 @@ func ExpandTemplateCore(
 	return t, diags
 }
 
-// ExpandMetadataJSON parses a jsontypes.Normalized attribute as a JSON object,
-// trimming whitespace. Returns nil when the value is null, unknown, or empty.
-// Adds a diagnostic on parse failure.
+// ExpandMetadataJSON parses a jsontypes.Normalized attribute as a JSON object.
+// Returns nil when the value is null or unknown. Adds a diagnostic on parse failure.
 func ExpandMetadataJSON(meta jsontypes.Normalized, diags *diag.Diagnostics) map[string]any {
-	return typeutils.ExpandNormalizedJSONObject(meta, diags)
+	if !typeutils.IsKnown(meta) {
+		return nil
+	}
+	return typeutils.NormalizedTypeToMap[any](meta, path.Empty(), diags)
 }
 
 // DecodeTemplateObject unmarshals a Terraform types.Object into the provided

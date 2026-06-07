@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -136,12 +137,7 @@ func toAPIModel(ctx context.Context, client *clients.ElasticsearchScopedClient, 
 	}
 
 	// Metadata
-	if typeutils.IsKnown(model.Metadata) && model.Metadata.ValueString() != "" {
-		var meta map[string]any
-		if err := json.Unmarshal([]byte(model.Metadata.ValueString()), &meta); err != nil {
-			diags.AddError("Error parsing metadata", err.Error())
-			return nil, diags
-		}
+	if meta := typeutils.NormalizedTypeToMap[any](model.Metadata, path.Root("metadata"), &diags); meta != nil {
 		transform.Meta = meta
 	}
 
