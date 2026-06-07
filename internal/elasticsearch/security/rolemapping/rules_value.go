@@ -131,11 +131,6 @@ func NewNormalizedRulesValue(v string) NormalizedRulesValue {
 	return NormalizedRulesValue{Normalized: jsontypes.NewNormalizedValue(v)}
 }
 
-// NewNormalizedRulesUnknown creates a NormalizedRulesValue with an unknown value.
-func NewNormalizedRulesUnknown() NormalizedRulesValue {
-	return NormalizedRulesValue{Normalized: jsontypes.NewNormalizedUnknown()}
-}
-
 // normalizeRulesJSONString parses a JSON string and collapses single-element
 // arrays inside "field" objects to plain string values.
 func normalizeRulesJSONString(raw string) (string, error) {
