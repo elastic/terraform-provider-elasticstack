@@ -47,8 +47,8 @@ func createTrainedModelDeployment(
 
 	opts := elasticsearch.StartTrainedModelDeploymentOptions{
 		DeploymentID:        &deploymentID,
-		Priority:            typeutils.OptStringPtr(plan.Priority),
-		WaitFor:             typeutils.OptStringPtr(plan.WaitFor),
+		Priority:            typeutils.OptionalString(plan.Priority),
+		WaitFor:             typeutils.OptionalString(plan.WaitFor),
 		AdaptiveAllocations: toAdaptiveAllocationsSettings(plan.AdaptiveAllocations),
 	}
 
