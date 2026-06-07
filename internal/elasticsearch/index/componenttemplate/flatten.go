@@ -24,9 +24,9 @@ import (
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -182,7 +182,7 @@ func flattenMappings(apiMappings map[string]any, prior esindex.MappingsValue) (e
 		}
 		return esindex.NewMappingsValue(string(b)), diags
 	}
-	if isKnownSemanticallyEmptyMappings(prior) {
+	if templateutil.IsKnownSemanticallyEmptyMappings(prior) {
 		return prior, diags
 	}
 	return esindex.NewMappingsNull(), diags
@@ -200,31 +200,10 @@ func flattenSettings(apiSettings map[string]any, prior customtypes.IndexSettings
 		}
 		return customtypes.NewIndexSettingsValue(string(b)), diags
 	}
-	if isKnownSemanticallyEmptySettings(prior) {
+	if templateutil.IsKnownSemanticallyEmptySettings(prior) {
 		return prior, diags
 	}
 	return customtypes.NewIndexSettingsNull(), diags
-}
-
-// isKnownSemanticallyEmptyMappings reports whether a prior MappingsValue is a
-// known, non-empty string that nevertheless decodes to a zero-length JSON
-// object (for example `{}` or whitespace-padded variants). The flatten layer
-// uses this signal to preserve a practitioner-authored empty-object value in
-// state when the Elasticsearch GET response omits the mappings field entirely.
-func isKnownSemanticallyEmptyMappings(v esindex.MappingsValue) bool {
-	if v.IsNull() || v.IsUnknown() {
-		return false
-	}
-	return typeutils.IsEmptyJSONObject(v.ValueString())
-}
-
-// isKnownSemanticallyEmptySettings is the IndexSettingsValue counterpart to
-// isKnownSemanticallyEmptyMappings.
-func isKnownSemanticallyEmptySettings(v customtypes.IndexSettingsValue) bool {
-	if v.IsNull() || v.IsUnknown() {
-		return false
-	}
-	return typeutils.IsEmptyJSONObject(v.ValueString())
 }
 
 // extractEmptyObjectOverridesFromData pulls the prior mappings and settings
