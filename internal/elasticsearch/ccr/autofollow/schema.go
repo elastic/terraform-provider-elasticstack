@@ -20,6 +20,8 @@ package autofollow
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -77,6 +79,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"settings_raw": schema.StringAttribute{
 				MarkdownDescription: descSettingsRaw,
 				Optional:            true,
+				CustomType:          jsontypes.NormalizedType{},
 			},
 			"max_outstanding_read_requests": schema.Int64Attribute{
 				MarkdownDescription: descMaxOutstandingReadRequests,
@@ -101,6 +104,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"max_retry_delay": schema.StringAttribute{
 				MarkdownDescription: descMaxRetryDelay,
 				Optional:            true,
+				CustomType:          customtypes.DurationType{},
 			},
 			"max_write_buffer_count": schema.Int64Attribute{
 				MarkdownDescription: descMaxWriteBufferCount,
@@ -121,6 +125,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"read_poll_timeout": schema.StringAttribute{
 				MarkdownDescription: descReadPollTimeout,
 				Optional:            true,
+				CustomType:          customtypes.DurationType{},
 			},
 			"active": schema.BoolAttribute{
 				MarkdownDescription: descActive,

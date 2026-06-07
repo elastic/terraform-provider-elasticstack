@@ -20,6 +20,7 @@ package followerindex
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -72,6 +73,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"settings_raw": schema.StringAttribute{
 				MarkdownDescription: descSettingsRaw,
 				Optional:            true,
+				CustomType:          jsontypes.NormalizedType{},
 			},
 			"max_outstanding_read_requests": schema.Int64Attribute{
 				MarkdownDescription: descMaxOutstandingReadRequests,
