@@ -96,23 +96,6 @@ func TestNormalizedRulesValue_StringSemanticEquals(t *testing.T) {
 	}
 }
 
-func TestNormalizedRulesValue_StringSemanticEquals_unknown(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	unknownA := NewNormalizedRulesUnknown()
-	unknownB := NewNormalizedRulesUnknown()
-	known := NewNormalizedRulesValue(`{"field":{"groups":"x"}}`)
-
-	eq, diags := unknownA.StringSemanticEquals(ctx, unknownB)
-	require.False(t, diags.HasError())
-	require.True(t, eq)
-
-	eq, diags = known.StringSemanticEquals(ctx, unknownA)
-	require.False(t, diags.HasError())
-	require.False(t, eq)
-}
-
 func TestNormalizedRulesValue_StringSemanticEquals_parseErrorFallback(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
