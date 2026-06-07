@@ -448,13 +448,24 @@ func httpMonitorFieldsSchema() schema.Attribute {
 			},
 			"username": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				MarkdownDescription: "The username for authenticating with the server. The credentials are passed with the request.",
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"password": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				MarkdownDescription: "The password for authenticating with the server. The credentials are passed with the request.",
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+				Sensitive:           true,
 			},
-			"proxy_header": jsonObjectSchema("Additional headers to send to proxies during CONNECT requests."),
+			"proxy_header": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "Additional headers to send to proxies during CONNECT requests. Raw JSON object, use `jsonencode` function to represent JSON",
+				CustomType:          jsontypes.NormalizedType{},
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
 			"proxy_url": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "The URL of the proxy to use for this monitor.",
@@ -517,11 +528,15 @@ func tcpMonitorFieldsSchema() schema.Attribute {
 			},
 			"check_send": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				MarkdownDescription: "An optional payload string to send to the remote host.",
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"check_receive": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				MarkdownDescription: "The expected answer. ",
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"proxy_url": schema.StringAttribute{
 				Optional:            true,
@@ -548,7 +563,7 @@ func toNormalizedValue(jsObj map[string]any) (jsontypes.Normalized, error) {
 }
 
 func toJSONObject(v jsontypes.Normalized) (map[string]any, diag.Diagnostics) {
-	if v.IsNull() {
+	if v.IsNull() || v.IsUnknown() {
 		return nil, diag.Diagnostics{}
 	}
 	var res map[string]any
@@ -736,10 +751,14 @@ func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(ctx context.Context, dg di
 	checkSend := v.CheckSend
 	if api.CheckSend != nil {
 		checkSend = types.StringPointerValue(api.CheckSend)
+	} else if checkSend.IsUnknown() {
+		checkSend = types.StringNull()
 	}
 	checkReceive := v.CheckReceive
 	if api.CheckReceive != nil {
 		checkReceive = types.StringPointerValue(api.CheckReceive)
+	} else if checkReceive.IsUnknown() {
+		checkReceive = types.StringNull()
 	}
 	proxyURL := types.StringValue("")
 	if !v.ProxyURL.IsNull() && !v.ProxyURL.IsUnknown() {
@@ -818,15 +837,21 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg 
 			dg.AddError("Failed to parse proxy_headers", err.Error())
 			return nil
 		}
+	} else if proxyHeaders.IsUnknown() {
+		proxyHeaders = jsontypes.NewNormalizedNull()
 	}
 
 	username := v.Username
 	if api.Username != nil {
 		username = types.StringPointerValue(api.Username)
+	} else if username.IsUnknown() {
+		username = types.StringNull()
 	}
 	password := v.Password
 	if api.Password != nil {
 		password = types.StringPointerValue(api.Password)
+	} else if password.IsUnknown() {
+		password = types.StringNull()
 	}
 	proxyURL := types.StringValue("")
 	if !v.ProxyURL.IsNull() && !v.ProxyURL.IsUnknown() {

@@ -153,8 +153,8 @@ Optional:
 - `ipv6` (Boolean) Whether to ping using the ipv6 protocol.
 - `max_redirects` (Number) The maximum number of redirects to follow. Default: `0`
 - `mode` (String) The mode of the monitor. Can be "all" or "any". If you're using a DNS-load balancer and want to ping every IP address for the specified hostname, you should use all.
-- `password` (String) The password for authenticating with the server. The credentials are passed with the request.
-- `proxy_header` (String) Additional headers to send to proxies during CONNECT requests.. Raw JSON object, use `jsonencode` function to represent JSON
+- `password` (String, Sensitive) The password for authenticating with the server. The credentials are passed with the request.
+- `proxy_header` (String) Additional headers to send to proxies during CONNECT requests. Raw JSON object, use `jsonencode` function to represent JSON
 - `proxy_url` (String) The URL of the proxy to use for this monitor.
 - `response` (String) Controls the indexing of the HTTP response body contents to the `http.response.body.contents` field.. Raw JSON object, use `jsonencode` function to represent JSON
 - `ssl_certificate` (String) Certificate.
