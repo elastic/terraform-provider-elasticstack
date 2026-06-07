@@ -174,11 +174,11 @@ func ImageDrilldownSchema(opts ImageDrilldownOptions) schema.NestedAttributeObje
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					attrDashboardID: schema.StringAttribute{
-						MarkdownDescription: nz(dd.DashboardID, "Target dashboard saved object id."),
+						MarkdownDescription: NzString(dd.DashboardID, "Target dashboard saved object id."),
 						Required:            true,
 					},
 					attrLabel: schema.StringAttribute{
-						MarkdownDescription: nz(dd.Label, "Label shown for this drilldown."),
+						MarkdownDescription: NzString(dd.Label, "Label shown for this drilldown."),
 						Required:            true,
 					},
 					attrTrigger: schema.StringAttribute{
@@ -189,15 +189,15 @@ func ImageDrilldownSchema(opts ImageDrilldownOptions) schema.NestedAttributeObje
 						},
 					},
 					"use_filters": schema.BoolAttribute{
-						MarkdownDescription: nz(dd.UseFilters, "When true, passes the current dashboard filters to the opened dashboard. Omit for API default (typically `false`)."),
+						MarkdownDescription: NzString(dd.UseFilters, "When true, passes the current dashboard filters to the opened dashboard. Omit for API default (typically `false`)."),
 						Optional:            true,
 					},
 					"use_time_range": schema.BoolAttribute{
-						MarkdownDescription: nz(dd.UseTimeRange, "When true, passes the current time range to the opened dashboard. Omit for API default (typically `false`)."),
+						MarkdownDescription: NzString(dd.UseTimeRange, "When true, passes the current time range to the opened dashboard. Omit for API default (typically `false`)."),
 						Optional:            true,
 					},
 					attrOpenInNewTab: schema.BoolAttribute{
-						MarkdownDescription: nz(dd.OpenInNewTab, "When true, opens the target dashboard in a new browser tab. Omit for API default (typically `false`)."),
+						MarkdownDescription: NzString(dd.OpenInNewTab, "When true, opens the target dashboard in a new browser tab. Omit for API default (typically `false`)."),
 						Optional:            true,
 					},
 				},
@@ -336,7 +336,7 @@ func StructuredDrilldownsAttribute() schema.Attribute {
 	}
 }
 
-func nz(s, def string) string {
+func NzString(s, def string) string {
 	if s != "" {
 		return s
 	}
