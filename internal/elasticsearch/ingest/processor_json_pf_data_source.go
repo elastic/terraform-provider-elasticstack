@@ -20,6 +20,7 @@ package ingest
 import (
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -48,20 +49,20 @@ func (m *processorJSONModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	if IsKnown(m.Field) {
+	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	if IsKnown(m.TargetField) {
+	if typeutils.IsKnown(m.TargetField) {
 		body.TargetField = m.TargetField.ValueString()
 	}
-	if IsKnown(m.AddToRoot) {
+	if typeutils.IsKnown(m.AddToRoot) {
 		v := m.AddToRoot.ValueBool()
 		body.AddToRoot = &v
 	}
-	if IsKnown(m.AddToRootConflictStrategy) {
+	if typeutils.IsKnown(m.AddToRootConflictStrategy) {
 		body.AddToRootConflictStrategy = m.AddToRootConflictStrategy.ValueString()
 	}
-	if IsKnown(m.AllowDuplicateKeys) {
+	if typeutils.IsKnown(m.AllowDuplicateKeys) {
 		v := m.AllowDuplicateKeys.ValueBool()
 		body.AllowDuplicateKeys = &v
 	}

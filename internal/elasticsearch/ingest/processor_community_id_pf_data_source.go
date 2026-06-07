@@ -20,6 +20,7 @@ package ingest
 import (
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -54,31 +55,31 @@ func (m *processorCommunityIDModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	if IsKnown(m.SourceIP) {
+	if typeutils.IsKnown(m.SourceIP) {
 		body.SourceIP = m.SourceIP.ValueString()
 	}
-	if IsKnown(m.SourcePort) {
+	if typeutils.IsKnown(m.SourcePort) {
 		body.SourcePort = new(int(m.SourcePort.ValueInt64()))
 	}
-	if IsKnown(m.DestinationIP) {
+	if typeutils.IsKnown(m.DestinationIP) {
 		body.DestinationIP = m.DestinationIP.ValueString()
 	}
-	if IsKnown(m.DestinationPort) {
+	if typeutils.IsKnown(m.DestinationPort) {
 		body.DestinationPort = new(int(m.DestinationPort.ValueInt64()))
 	}
-	if IsKnown(m.IanaNumber) {
+	if typeutils.IsKnown(m.IanaNumber) {
 		body.IanaNumber = new(int(m.IanaNumber.ValueInt64()))
 	}
-	if IsKnown(m.IcmpType) {
+	if typeutils.IsKnown(m.IcmpType) {
 		body.IcmpType = new(int(m.IcmpType.ValueInt64()))
 	}
-	if IsKnown(m.IcmpCode) {
+	if typeutils.IsKnown(m.IcmpCode) {
 		body.IcmpCode = new(int(m.IcmpCode.ValueInt64()))
 	}
-	if IsKnown(m.Transport) {
+	if typeutils.IsKnown(m.Transport) {
 		body.Transport = m.Transport.ValueString()
 	}
-	if IsKnown(m.TargetField) {
+	if typeutils.IsKnown(m.TargetField) {
 		body.TargetField = m.TargetField.ValueString()
 	}
 	if m.Seed.IsNull() || m.Seed.IsUnknown() {

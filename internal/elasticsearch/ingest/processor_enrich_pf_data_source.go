@@ -20,6 +20,7 @@ package ingest
 import (
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -47,7 +48,7 @@ func (m *processorEnrichModel) MarshalBody() (any, diag.Diagnostics) {
 	}
 	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
 
-	if IsKnown(m.PolicyName) {
+	if typeutils.IsKnown(m.PolicyName) {
 		body.PolicyName = m.PolicyName.ValueString()
 	}
 	if m.Override.IsNull() || m.Override.IsUnknown() {
@@ -62,7 +63,7 @@ func (m *processorEnrichModel) MarshalBody() (any, diag.Diagnostics) {
 	} else {
 		body.MaxMatches = int(m.MaxMatches.ValueInt64())
 	}
-	if IsKnown(m.ShapeRelation) {
+	if typeutils.IsKnown(m.ShapeRelation) {
 		body.ShapeRelation = m.ShapeRelation.ValueString()
 	}
 

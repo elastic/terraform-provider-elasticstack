@@ -18,6 +18,7 @@
 package ingest
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -50,10 +51,10 @@ type WithTargetField struct {
 func (m WithTargetField) toTargetFieldBody() WithTargetFieldBody {
 	var body WithTargetFieldBody
 
-	if IsKnown(m.Field) {
+	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	if IsKnown(m.TargetField) {
+	if typeutils.IsKnown(m.TargetField) {
 		body.TargetField = m.TargetField.ValueString()
 	}
 

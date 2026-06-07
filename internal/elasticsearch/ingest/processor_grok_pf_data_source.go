@@ -20,6 +20,7 @@ package ingest
 import (
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -50,14 +51,14 @@ func (m *processorGrokModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	if IsKnown(m.Field) {
+	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	if IsKnown(m.Patterns) {
+	if typeutils.IsKnown(m.Patterns) {
 		elems := make([]string, 0, len(m.Patterns.Elements()))
 		for _, elem := range m.Patterns.Elements() {
 			str, ok := elem.(types.String)
-			if !ok || !IsKnown(str) {
+			if !ok || !typeutils.IsKnown(str) {
 				if !ok {
 					diags.AddError("Invalid patterns element type", "expected types.String")
 				} else {
@@ -69,11 +70,11 @@ func (m *processorGrokModel) MarshalBody() (any, diag.Diagnostics) {
 		}
 		body.Patterns = elems
 	}
-	if IsKnown(m.PatternDefinitions) {
+	if typeutils.IsKnown(m.PatternDefinitions) {
 		defs := make(map[string]string, len(m.PatternDefinitions.Elements()))
 		for k, v := range m.PatternDefinitions.Elements() {
 			str, ok := v.(types.String)
-			if !ok || !IsKnown(str) {
+			if !ok || !typeutils.IsKnown(str) {
 				if !ok {
 					diags.AddError("Invalid pattern_definitions element type", "expected types.String")
 				} else {
@@ -85,7 +86,7 @@ func (m *processorGrokModel) MarshalBody() (any, diag.Diagnostics) {
 		}
 		body.PatternDefinitions = defs
 	}
-	if IsKnown(m.EcsCompatibility) {
+	if typeutils.IsKnown(m.EcsCompatibility) {
 		body.EcsCompatibility = m.EcsCompatibility.ValueString()
 	}
 	if m.TraceMatch.IsNull() || m.TraceMatch.IsUnknown() {
