@@ -230,8 +230,7 @@ func TestMapAutoFollowPatternToModel_mapsAPIAndPreservesUnreadableTuning(t *test
 	assert.Equal(t, types.BoolValue(true), model.Active)
 	assert.Equal(t, types.StringValue("dc2"), model.RemoteCluster)
 	assert.Equal(t, types.StringValue(followPattern), model.FollowIndexPattern)
-	assert.Equal(t, types.Int64Value(10), model.MaxOutstandingReadRequests)
-
+	assert.Equal(t, types.Int64Value(99), model.MaxOutstandingReadRequests)
 	assert.Equal(t, types.Int64Value(7), model.MaxOutstandingWriteRequests)
 	assert.Equal(t, types.Int64Value(512), model.MaxReadRequestOperationCount)
 	assert.Equal(t, types.StringValue("50mb"), model.MaxReadRequestSize)

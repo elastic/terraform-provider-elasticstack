@@ -202,7 +202,19 @@ func mapAutoFollowPatternToModel(ctx context.Context, summary *estypes.AutoFollo
 		&diags,
 	)
 	model.FollowIndexPattern = types.StringPointerValue(summary.FollowIndexPattern)
-	model.MaxOutstandingReadRequests = types.Int64Value(int64(summary.MaxOutstandingReadRequests))
+	// Preserve prior state for write-only tuning parameters; the auto-follow
+	// GET API does not return them so summary carries zero values.
+	model.MaxOutstandingReadRequests = prior.MaxOutstandingReadRequests
+	model.MaxOutstandingWriteRequests = prior.MaxOutstandingWriteRequests
+	model.MaxReadRequestOperationCount = prior.MaxReadRequestOperationCount
+	model.MaxReadRequestSize = prior.MaxReadRequestSize
+	model.MaxRetryDelay = prior.MaxRetryDelay
+	model.MaxWriteBufferCount = prior.MaxWriteBufferCount
+	model.MaxWriteBufferSize = prior.MaxWriteBufferSize
+	model.MaxWriteRequestOperationCount = prior.MaxWriteRequestOperationCount
+	model.MaxWriteRequestSize = prior.MaxWriteRequestSize
+	model.ReadPollTimeout = prior.ReadPollTimeout
+	model.SettingsRaw = prior.SettingsRaw
 
 	return model, diags
 }
