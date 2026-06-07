@@ -19,12 +19,12 @@ package entity
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -104,14 +104,9 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 		}
 	}
 
-	if !model.EntityJSON.IsNull() && !model.EntityJSON.IsUnknown() {
-		var parsed map[string]any
-		if err := json.Unmarshal([]byte(model.EntityJSON.ValueString()), &parsed); err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("entity_json"),
-				"Invalid entity_json",
-				err.Error(),
-			)
+	if typeutils.IsKnown(model.EntityJSON) {
+		parsed := typeutils.NormalizedTypeToMap[any](model.EntityJSON, path.Root("entity_json"), &resp.Diagnostics)
+		if resp.Diagnostics.HasError() {
 			return
 		}
 		if id, ok := parsed["id"].(string); ok && id != entityID {

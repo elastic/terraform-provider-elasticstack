@@ -27,6 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -86,13 +87,11 @@ func writeUser(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 	}
 	user.Roles = roles
 
-	if typeutils.IsKnown(plan.Metadata) {
-		var metadataMap map[string]any
-		err := json.Unmarshal([]byte(plan.Metadata.ValueString()), &metadataMap)
-		if err != nil {
-			diags.AddError("Failed to decode metadata", err.Error())
-			return entitycore.WriteResult[Data]{Model: plan}, diags
-		}
+	metadataMap := typeutils.NormalizedTypeToMap[any](plan.Metadata, path.Root("metadata"), &diags)
+	if diags.HasError() {
+		return entitycore.WriteResult[Data]{Model: plan}, diags
+	}
+	if metadataMap != nil {
 		metadata := make(estypes.Metadata, len(metadataMap))
 		for k, v := range metadataMap {
 			b, err := json.Marshal(v)

@@ -121,13 +121,8 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 		return
 	}
 
-	var params map[string]any
-	if err := json.Unmarshal([]byte(data.Params.ValueString()), &params); err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("params"),
-			"Invalid params JSON",
-			err.Error(),
-		)
+	params := typeutils.NormalizedTypeToMap[any](data.Params, path.Root("params"), &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

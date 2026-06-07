@@ -299,7 +299,7 @@ func TestExpandMetadataJSON(t *testing.T) {
 		result := ExpandMetadataJSON(jsontypes.NewNormalizedValue(`{invalid`), &diags)
 		require.True(t, diags.HasError())
 		assert.Nil(t, result)
-		assert.Equal(t, "Invalid metadata JSON", diags.Errors()[0].Summary())
+		assert.Equal(t, "Normalized JSON Unmarshal Error", diags.Errors()[0].Summary())
 	})
 }
 

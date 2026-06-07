@@ -18,7 +18,6 @@
 package ingest
 
 import (
-	"encoding/json"
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -60,12 +59,7 @@ func (m *processorScriptModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.Source) {
 		body.Source = m.Source.ValueString()
 	}
-	if typeutils.IsKnown(m.Params) {
-		params := make(map[string]any)
-		if err := json.Unmarshal([]byte(m.Params.ValueString()), &params); err != nil {
-			diags.AddError("Failed to parse params JSON", err.Error())
-			return nil, diags
-		}
+	if params := typeutils.NormalizedTypeToMap[any](m.Params, path.Root("params"), &diags); params != nil {
 		body.Params = params
 	}
 
