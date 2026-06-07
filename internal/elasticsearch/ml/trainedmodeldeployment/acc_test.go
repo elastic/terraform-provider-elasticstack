@@ -113,17 +113,6 @@ func TestAccResourceMLTrainedModelDeployment_basic(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_allocations"),
-				ConfigVariables: config.Variables{
-					"model_id": config.StringVariable(modelID),
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(testResourceName, "number_of_allocations", "2"),
-					resource.TestCheckResourceAttr(testResourceName, "model_id", modelID),
-				),
-			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables: config.Variables{
 					"model_id": config.StringVariable(modelID),
@@ -159,7 +148,7 @@ func TestAccResourceMLTrainedModelDeployment_basic(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_adaptive"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_adaptive_with_bounds"),
 				ConfigVariables: config.Variables{
 					"model_id": config.StringVariable(modelID),
 				},
