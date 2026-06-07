@@ -50,13 +50,13 @@ func (m *processorScriptModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	if IsKnown(m.Lang) {
+	if typeutils.IsKnown(m.Lang) {
 		body.Lang = m.Lang.ValueString()
 	}
-	if IsKnown(m.ScriptID) {
+	if typeutils.IsKnown(m.ScriptID) {
 		body.ScriptID = m.ScriptID.ValueString()
 	}
-	if IsKnown(m.Source) {
+	if typeutils.IsKnown(m.Source) {
 		body.Source = m.Source.ValueString()
 	}
 	if params := typeutils.NormalizedTypeToMap[any](m.Params, path.Root("params"), &diags); params != nil {

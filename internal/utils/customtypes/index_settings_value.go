@@ -369,27 +369,13 @@ func unflattenDottedMap(flat map[string]any) map[string]any {
 // so that settings values retain the exact JSON type returned by Elasticsearch
 // (see issue #3124).
 func normalizeSettingsScalars(v any) any {
-	switch val := v.(type) {
-	case map[string]any:
-		out := make(map[string]any, len(val))
-		for k, vv := range val {
-			out[k] = normalizeSettingsScalars(vv)
-		}
-		return out
-	case []any:
-		out := make([]any, len(val))
-		for i, vv := range val {
-			out[i] = normalizeSettingsScalars(vv)
-		}
-		return out
-	case string:
-		if val == "null" {
+	return typeutils.WalkJSON(v, func(leaf any) any {
+		s, ok := leaf.(string)
+		if ok && s == "null" {
 			return nil
 		}
-		return val
-	default:
-		return v
-	}
+		return leaf
+	})
 }
 
 // NewIndexSettingsNull creates an IndexSettingsValue with a null value.

@@ -21,6 +21,7 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -55,7 +56,7 @@ func getResourceSchema(_ context.Context) schema.Schema {
 			"space_id": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
-				Default:             stringdefault.StaticString(defaultSpaceID),
+				Default:             stringdefault.StaticString(clients.DefaultSpaceID),
 				MarkdownDescription: "An identifier for the Kibana space. If not provided, the default space is used.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),

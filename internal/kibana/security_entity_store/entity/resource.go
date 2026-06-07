@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -62,14 +63,14 @@ func NewResource() resource.Resource {
 
 func NormalizeSpaceID(v types.String) string {
 	if v.IsNull() || v.IsUnknown() || v.ValueString() == "" {
-		return defaultSpaceID
+		return clients.DefaultSpaceID
 	}
 	return v.ValueString()
 }
 
 func buildID(spaceID, entityID string) string {
 	if spaceID == "" {
-		spaceID = defaultSpaceID
+		spaceID = clients.DefaultSpaceID
 	}
 	return fmt.Sprintf("%s/%s", spaceID, entityID)
 }
@@ -130,7 +131,7 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 	spaceID := parts[0]
 	entityID := parts[1]
 	if spaceID == "" {
-		spaceID = defaultSpaceID
+		spaceID = clients.DefaultSpaceID
 	}
 	// Derive entity_type from entity ID prefix (e.g., "host:web-01" -> "host")
 	entityType := ""

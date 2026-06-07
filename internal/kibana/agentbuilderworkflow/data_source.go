@@ -25,7 +25,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -63,18 +62,7 @@ func readWorkflowDataSource(ctx context.Context, client *clients.KibanaScopedCli
 
 	oapiClient := client.GetKibanaOapiClient()
 
-	spaceID := defaultSpaceID
-	if typeutils.IsKnown(config.SpaceID) {
-		spaceID = config.SpaceID.ValueString()
-	}
-
-	workflowID := config.ID.ValueString()
-	if compID, d := clients.CompositeIDFromStr(workflowID); !d.HasError() {
-		workflowID = compID.ResourceID
-		if !typeutils.IsKnown(config.SpaceID) {
-			spaceID = compID.ClusterID
-		}
-	}
+	spaceID, workflowID := clients.ResolveCompositeSpaceAndID(config.SpaceID, config.ID.ValueString())
 
 	workflow, d := kibanaoapi.GetWorkflow(ctx, oapiClient, spaceID, workflowID)
 	diags.Append(d...)

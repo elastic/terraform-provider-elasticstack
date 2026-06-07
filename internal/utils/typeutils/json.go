@@ -22,26 +22,42 @@ import (
 	"reflect"
 )
 
-// NormalizeJSONScalar recursively walks a decoded JSON value and converts
-// string-encoded JSON booleans and null back to their native Go types.
-// "true" → bool(true), "false" → bool(false), "null" → nil.
-// All other values are returned unchanged.
-func NormalizeJSONScalar(v any) any {
+// WalkJSON recursively walks a decoded JSON value tree, applying leaf to every
+// non-container node. Container nodes (map[string]any and []any) are always
+// traversed. If leaf is nil, non-container values are returned unchanged.
+func WalkJSON(v any, leaf func(any) any) any {
 	switch val := v.(type) {
 	case map[string]any:
 		out := make(map[string]any, len(val))
 		for k, vv := range val {
-			out[k] = NormalizeJSONScalar(vv)
+			out[k] = WalkJSON(vv, leaf)
 		}
 		return out
 	case []any:
 		out := make([]any, len(val))
 		for i, vv := range val {
-			out[i] = NormalizeJSONScalar(vv)
+			out[i] = WalkJSON(vv, leaf)
 		}
 		return out
-	case string:
-		switch val {
+	default:
+		if leaf != nil {
+			return leaf(val)
+		}
+		return val
+	}
+}
+
+// NormalizeJSONScalar recursively walks a decoded JSON value and converts
+// string-encoded JSON booleans and null back to their native Go types.
+// "true" → bool(true), "false" → bool(false), "null" → nil.
+// All other values are returned unchanged.
+func NormalizeJSONScalar(v any) any {
+	return WalkJSON(v, func(leaf any) any {
+		s, ok := leaf.(string)
+		if !ok {
+			return leaf
+		}
+		switch s {
 		case "true":
 			return true
 		case "false":
@@ -49,10 +65,8 @@ func NormalizeJSONScalar(v any) any {
 		case "null":
 			return nil
 		}
-		return val
-	default:
-		return v
-	}
+		return s
+	})
 }
 
 // JSONBytesEqual reports whether the JSON in two byte slices is semantically equivalent.

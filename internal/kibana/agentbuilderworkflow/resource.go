@@ -26,8 +26,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-const defaultSpaceID = "default"
-
 var (
 	_ resource.Resource                = newWorkflowResource()
 	_ resource.ResourceWithConfigure   = newWorkflowResource()

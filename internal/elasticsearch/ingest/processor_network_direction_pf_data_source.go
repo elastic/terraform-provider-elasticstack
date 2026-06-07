@@ -20,6 +20,7 @@ package ingest
 import (
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -47,20 +48,20 @@ func (m *processorNetworkDirectionModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	if IsKnown(m.SourceIP) {
+	if typeutils.IsKnown(m.SourceIP) {
 		body.SourceIP = m.SourceIP.ValueString()
 	}
-	if IsKnown(m.DestinationIP) {
+	if typeutils.IsKnown(m.DestinationIP) {
 		body.DestinationIP = m.DestinationIP.ValueString()
 	}
-	if IsKnown(m.TargetField) {
+	if typeutils.IsKnown(m.TargetField) {
 		body.TargetField = m.TargetField.ValueString()
 	}
-	if IsKnown(m.InternalNetworks) {
+	if typeutils.IsKnown(m.InternalNetworks) {
 		elems := make([]string, 0, len(m.InternalNetworks.Elements()))
 		for _, elem := range m.InternalNetworks.Elements() {
 			str, ok := elem.(types.String)
-			if !ok || !IsKnown(str) {
+			if !ok || !typeutils.IsKnown(str) {
 				if !ok {
 					diags.AddError("Invalid internal_networks element type", "expected types.String")
 				} else {
@@ -72,7 +73,7 @@ func (m *processorNetworkDirectionModel) MarshalBody() (any, diag.Diagnostics) {
 		}
 		body.InternalNetworks = elems
 	}
-	if IsKnown(m.InternalNetworksField) {
+	if typeutils.IsKnown(m.InternalNetworksField) {
 		body.InternalNetworksField = m.InternalNetworksField.ValueString()
 	}
 	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {

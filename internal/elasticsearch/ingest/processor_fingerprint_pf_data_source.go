@@ -20,6 +20,7 @@ package ingest
 import (
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -49,11 +50,11 @@ func (m *processorFingerprintModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	if IsKnown(m.Fields) {
+	if typeutils.IsKnown(m.Fields) {
 		elems := make([]string, 0, len(m.Fields.Elements()))
 		for _, elem := range m.Fields.Elements() {
 			str, ok := elem.(types.String)
-			if !ok || !IsKnown(str) {
+			if !ok || !typeutils.IsKnown(str) {
 				if !ok {
 					diags.AddError("Invalid fields element type", "expected types.String")
 				} else {
@@ -77,7 +78,7 @@ func (m *processorFingerprintModel) MarshalBody() (any, diag.Diagnostics) {
 	} else {
 		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
 	}
-	if IsKnown(m.Salt) {
+	if typeutils.IsKnown(m.Salt) {
 		body.Salt = m.Salt.ValueString()
 	}
 	if m.Method.IsNull() || m.Method.IsUnknown() {

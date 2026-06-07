@@ -26,8 +26,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-const defaultSpaceID = "default"
-
 var (
 	_                                     resource.Resource                = newSkillResource()
 	_                                     resource.ResourceWithConfigure   = newSkillResource()
