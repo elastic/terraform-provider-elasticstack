@@ -20,6 +20,7 @@ package typeutils
 import (
 	"encoding/json"
 	"reflect"
+	"strings"
 )
 
 // WalkJSON recursively walks a decoded JSON value tree, applying leaf to every
@@ -67,6 +68,25 @@ func NormalizeJSONScalar(v any) any {
 		}
 		return s
 	})
+}
+
+// IsEmptyJSONObject reports whether s is a semantically-empty JSON object —
+// either whitespace-only, the literal `{}`, or any JSON object that unmarshals
+// to a zero-length, non-nil map. It returns false for non-empty objects,
+// arrays, scalars, the JSON literal `null`, and invalid JSON.
+func IsEmptyJSONObject(s string) bool {
+	trimmed := strings.TrimSpace(s)
+	if trimmed == "" {
+		return true
+	}
+	var m map[string]any
+	if err := json.Unmarshal([]byte(trimmed), &m); err != nil {
+		return false
+	}
+	if m == nil {
+		return false
+	}
+	return len(m) == 0
 }
 
 // JSONBytesEqual reports whether the JSON in two byte slices is semantically equivalent.

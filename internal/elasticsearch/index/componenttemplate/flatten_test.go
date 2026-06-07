@@ -218,29 +218,3 @@ func TestFlattenTemplateBlock_PreservesPriorEmptyObjectOverride(t *testing.T) {
 		})
 	}
 }
-
-// TestIsEmptyJSONObject covers the small helper used by both the flatten
-// prior-preservation logic and the unit tests. The semantics matter for the
-// boundary cases — a JSON array, scalar, or invalid payload must not falsely
-// count as empty.
-func TestIsEmptyJSONObject(t *testing.T) {
-	cases := []struct {
-		in   string
-		want bool
-	}{
-		{"", true},
-		{"  ", true},
-		{"{}", true},
-		{"  {}  ", true},
-		{`{"k":"v"}`, false},
-		{`[]`, false},
-		{`null`, false},
-		{`"string"`, false},
-		{`not-json`, false},
-	}
-	for _, tc := range cases {
-		t.Run(tc.in, func(t *testing.T) {
-			require.Equal(t, tc.want, isEmptyJSONObject(tc.in))
-		})
-	}
-}

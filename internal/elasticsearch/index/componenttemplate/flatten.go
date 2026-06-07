@@ -20,13 +20,13 @@ package componenttemplate
 import (
 	"context"
 	"encoding/json"
-	"strings"
 
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -215,7 +215,7 @@ func isKnownSemanticallyEmptyMappings(v esindex.MappingsValue) bool {
 	if v.IsNull() || v.IsUnknown() {
 		return false
 	}
-	return isEmptyJSONObject(v.ValueString())
+	return typeutils.IsEmptyJSONObject(v.ValueString())
 }
 
 // isKnownSemanticallyEmptySettings is the IndexSettingsValue counterpart to
@@ -224,29 +224,7 @@ func isKnownSemanticallyEmptySettings(v customtypes.IndexSettingsValue) bool {
 	if v.IsNull() || v.IsUnknown() {
 		return false
 	}
-	return isEmptyJSONObject(v.ValueString())
-}
-
-// isEmptyJSONObject reports whether s is a semantically-empty JSON object —
-// either whitespace-only, the literal `{}`, or any JSON object that unmarshals
-// to a zero-length, non-nil map. It returns false when the value is non-empty,
-// an array, a scalar, the JSON literal `null`, or invalid JSON, so a malformed
-// or non-object payload never falsely counts as empty.
-func isEmptyJSONObject(s string) bool {
-	trimmed := strings.TrimSpace(s)
-	if trimmed == "" {
-		return true
-	}
-	var m map[string]any
-	if err := json.Unmarshal([]byte(trimmed), &m); err != nil {
-		return false
-	}
-	// JSON `null` unmarshals to a nil map; reject it explicitly so the
-	// practitioner-empty-object check only fires for actual `{}` payloads.
-	if m == nil {
-		return false
-	}
-	return len(m) == 0
+	return typeutils.IsEmptyJSONObject(v.ValueString())
 }
 
 // extractEmptyObjectOverridesFromData pulls the prior mappings and settings
