@@ -23,6 +23,7 @@ import (
 	"strconv"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -108,4 +109,23 @@ func DurationToString(v estypes.Duration) types.String {
 		return types.StringValue(s)
 	}
 	return types.StringValue(fmt.Sprint(v))
+}
+
+// DurationFromCustomType converts a known customtypes.Duration to an estypes.Duration.
+func DurationFromCustomType(v customtypes.Duration) estypes.Duration {
+	if v.IsNull() || v.IsUnknown() {
+		return nil
+	}
+	return estypes.Duration(v.ValueString())
+}
+
+// DurationToCustomType converts an estypes.Duration to a customtypes.Duration.
+func DurationToCustomType(v estypes.Duration) customtypes.Duration {
+	if v == nil {
+		return customtypes.NewDurationNull()
+	}
+	if s, ok := v.(string); ok {
+		return customtypes.NewDurationValue(s)
+	}
+	return customtypes.NewDurationValue(fmt.Sprint(v))
 }

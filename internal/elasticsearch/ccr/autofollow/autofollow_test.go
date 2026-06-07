@@ -25,7 +25,9 @@ import (
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ccr"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -136,8 +138,8 @@ func TestBuildPutAutoFollowPatternRequest_byteSizeAndDuration(t *testing.T) {
 		RemoteCluster:               types.StringValue("dc2"),
 		LeaderIndexPatterns:         types.ListValueMust(types.StringType, []attr.Value{types.StringValue("logs-*")}),
 		MaxReadRequestSize:          types.StringValue("100mb"),
-		MaxRetryDelay:               types.StringValue("10s"),
-		ReadPollTimeout:             types.StringValue("10m"),
+		MaxRetryDelay:               customtypes.NewDurationValue("10s"),
+		ReadPollTimeout:             customtypes.NewDurationValue("10m"),
 		MaxOutstandingReadRequests:  types.Int64Value(12),
 		MaxOutstandingWriteRequests: types.Int64Value(8),
 	}
@@ -162,7 +164,7 @@ func TestBuildPutAutoFollowPatternRequest_settingsRaw(t *testing.T) {
 	model := Model{
 		RemoteCluster:       types.StringValue("dc2"),
 		LeaderIndexPatterns: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("logs-*")}),
-		SettingsRaw:         types.StringValue(`{"index.refresh_interval":"30s"}`),
+		SettingsRaw:         jsontypes.NewNormalizedValue(`{"index.refresh_interval":"30s"}`),
 	}
 
 	req, diags := buildPutAutoFollowPatternRequest(ctx, model)
@@ -203,13 +205,13 @@ func TestMapAutoFollowPatternToModel_mapsAPIAndPreservesUnreadableTuning(t *test
 		MaxOutstandingWriteRequests:   types.Int64Value(7),
 		MaxReadRequestOperationCount:  types.Int64Value(512),
 		MaxReadRequestSize:            types.StringValue("50mb"),
-		MaxRetryDelay:                 types.StringValue("30s"),
+		MaxRetryDelay:                 customtypes.NewDurationValue("30s"),
 		MaxWriteBufferCount:           types.Int64Value(100),
 		MaxWriteBufferSize:            types.StringValue("200mb"),
 		MaxWriteRequestOperationCount: types.Int64Value(256),
 		MaxWriteRequestSize:           types.StringValue("150mb"),
-		ReadPollTimeout:               types.StringValue("5m"),
-		SettingsRaw:                   types.StringValue(`{"index.refresh_interval":"30s"}`),
+		ReadPollTimeout:               customtypes.NewDurationValue("5m"),
+		SettingsRaw:                   jsontypes.NewNormalizedValue(`{"index.refresh_interval":"30s"}`),
 	}
 
 	followPattern := "logs-{{leader_index}}-replica"
@@ -233,13 +235,13 @@ func TestMapAutoFollowPatternToModel_mapsAPIAndPreservesUnreadableTuning(t *test
 	assert.Equal(t, types.Int64Value(7), model.MaxOutstandingWriteRequests)
 	assert.Equal(t, types.Int64Value(512), model.MaxReadRequestOperationCount)
 	assert.Equal(t, types.StringValue("50mb"), model.MaxReadRequestSize)
-	assert.Equal(t, types.StringValue("30s"), model.MaxRetryDelay)
+	assert.Equal(t, customtypes.NewDurationValue("30s"), model.MaxRetryDelay)
 	assert.Equal(t, types.Int64Value(100), model.MaxWriteBufferCount)
 	assert.Equal(t, types.StringValue("200mb"), model.MaxWriteBufferSize)
 	assert.Equal(t, types.Int64Value(256), model.MaxWriteRequestOperationCount)
 	assert.Equal(t, types.StringValue("150mb"), model.MaxWriteRequestSize)
-	assert.Equal(t, types.StringValue("5m"), model.ReadPollTimeout)
-	assert.Equal(t, types.StringValue(`{"index.refresh_interval":"30s"}`), model.SettingsRaw)
+	assert.Equal(t, customtypes.NewDurationValue("5m"), model.ReadPollTimeout)
+	assert.Equal(t, jsontypes.NewNormalizedValue(`{"index.refresh_interval":"30s"}`), model.SettingsRaw)
 
 	var listDiags diag.Diagnostics
 	patterns := typeutils.ListTypeToSliceString(ctx, model.LeaderIndexPatterns, path.Root("leader_index_patterns"), &listDiags)

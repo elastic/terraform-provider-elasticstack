@@ -19,6 +19,8 @@ package autofollow
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -26,24 +28,24 @@ import (
 type Model struct {
 	entitycore.ElasticsearchConnectionField
 	entitycore.ResourceTimeoutsField
-	ID                            types.String `tfsdk:"id"`
-	Name                          types.String `tfsdk:"name"`
-	RemoteCluster                 types.String `tfsdk:"remote_cluster"`
-	LeaderIndexPatterns           types.List   `tfsdk:"leader_index_patterns"`
-	LeaderIndexExclusionPatterns  types.List   `tfsdk:"leader_index_exclusion_patterns"`
-	FollowIndexPattern            types.String `tfsdk:"follow_index_pattern"`
-	SettingsRaw                   types.String `tfsdk:"settings_raw"`
-	MaxOutstandingReadRequests    types.Int64  `tfsdk:"max_outstanding_read_requests"`
-	MaxOutstandingWriteRequests   types.Int64  `tfsdk:"max_outstanding_write_requests"`
-	MaxReadRequestOperationCount  types.Int64  `tfsdk:"max_read_request_operation_count"`
-	MaxReadRequestSize            types.String `tfsdk:"max_read_request_size"`
-	MaxRetryDelay                 types.String `tfsdk:"max_retry_delay"`
-	MaxWriteBufferCount           types.Int64  `tfsdk:"max_write_buffer_count"`
-	MaxWriteBufferSize            types.String `tfsdk:"max_write_buffer_size"`
-	MaxWriteRequestOperationCount types.Int64  `tfsdk:"max_write_request_operation_count"`
-	MaxWriteRequestSize           types.String `tfsdk:"max_write_request_size"`
-	ReadPollTimeout               types.String `tfsdk:"read_poll_timeout"`
-	Active                        types.Bool   `tfsdk:"active"`
+	ID                            types.String         `tfsdk:"id"`
+	Name                          types.String         `tfsdk:"name"`
+	RemoteCluster                 types.String         `tfsdk:"remote_cluster"`
+	LeaderIndexPatterns           types.List           `tfsdk:"leader_index_patterns"`
+	LeaderIndexExclusionPatterns  types.List           `tfsdk:"leader_index_exclusion_patterns"`
+	FollowIndexPattern            types.String         `tfsdk:"follow_index_pattern"`
+	SettingsRaw                   jsontypes.Normalized `tfsdk:"settings_raw"`
+	MaxOutstandingReadRequests    types.Int64          `tfsdk:"max_outstanding_read_requests"`
+	MaxOutstandingWriteRequests   types.Int64          `tfsdk:"max_outstanding_write_requests"`
+	MaxReadRequestOperationCount  types.Int64          `tfsdk:"max_read_request_operation_count"`
+	MaxReadRequestSize            types.String         `tfsdk:"max_read_request_size"`
+	MaxRetryDelay                 customtypes.Duration `tfsdk:"max_retry_delay"`
+	MaxWriteBufferCount           types.Int64          `tfsdk:"max_write_buffer_count"`
+	MaxWriteBufferSize            types.String         `tfsdk:"max_write_buffer_size"`
+	MaxWriteRequestOperationCount types.Int64          `tfsdk:"max_write_request_operation_count"`
+	MaxWriteRequestSize           types.String         `tfsdk:"max_write_request_size"`
+	ReadPollTimeout               customtypes.Duration `tfsdk:"read_poll_timeout"`
+	Active                        types.Bool           `tfsdk:"active"`
 }
 
 func (m Model) GetID() types.String { return m.ID }

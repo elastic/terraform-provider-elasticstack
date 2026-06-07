@@ -26,6 +26,7 @@ import (
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/followerindexstatus"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ccr"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -74,7 +75,7 @@ func TestPlanUpdateOperations_allBranches(t *testing.T) {
 	basePrior := Model{
 		Status:                     types.StringValue(statusActive),
 		MaxOutstandingReadRequests: types.Int64Value(12),
-		SettingsRaw:                types.StringValue(`{"index.refresh_interval":"30s"}`),
+		SettingsRaw:                jsontypes.NewNormalizedValue(`{"index.refresh_interval":"30s"}`),
 	}
 	basePlan := basePrior
 
@@ -90,7 +91,7 @@ func TestPlanUpdateOperations_allBranches(t *testing.T) {
 		t.Parallel()
 		prior := basePrior
 		plan := basePrior
-		plan.SettingsRaw = types.StringValue(`{"index.refresh_interval":"60s"}`)
+		plan.SettingsRaw = jsontypes.NewNormalizedValue(`{"index.refresh_interval":"60s"}`)
 		assert.Equal(t, []apiOperation{opPause, opUpdateSettings, opResume}, planUpdateOperations(prior, plan))
 	})
 
@@ -125,7 +126,7 @@ func TestPlanUpdateOperations_allBranches(t *testing.T) {
 		prior.Status = types.StringValue(statusPaused)
 		plan := prior
 		plan.Status = types.StringValue(statusActive)
-		plan.SettingsRaw = types.StringValue(`{"index.refresh_interval":"60s"}`)
+		plan.SettingsRaw = jsontypes.NewNormalizedValue(`{"index.refresh_interval":"60s"}`)
 		assert.Equal(t, []apiOperation{opUpdateSettings, opResume}, planUpdateOperations(prior, plan))
 	})
 
@@ -152,7 +153,7 @@ func TestPlanUpdateOperations_allBranches(t *testing.T) {
 		t.Parallel()
 		prior := basePrior
 		plan := basePrior
-		plan.SettingsRaw = types.StringNull()
+		plan.SettingsRaw = jsontypes.NewNormalizedNull()
 		assert.Empty(t, planUpdateOperations(prior, plan))
 	})
 }
@@ -324,7 +325,7 @@ func TestMapFollowerIndexToModel_preservesTuningWhenPaused(t *testing.T) {
 	prior := Model{
 		MaxOutstandingReadRequests: types.Int64Value(12),
 		MaxReadRequestSize:         types.StringValue("100mb"),
-		SettingsRaw:                types.StringValue(`{"index.refresh_interval":"30s"}`),
+		SettingsRaw:                jsontypes.NewNormalizedValue(`{"index.refresh_interval":"30s"}`),
 		DataStreamName:             types.StringValue("logs"),
 	}
 
@@ -339,7 +340,7 @@ func TestMapFollowerIndexToModel_preservesTuningWhenPaused(t *testing.T) {
 	model := mapFollowerIndexToModel(follower, prior)
 	assert.Equal(t, types.Int64Value(12), model.MaxOutstandingReadRequests)
 	assert.Equal(t, types.StringValue("100mb"), model.MaxReadRequestSize)
-	assert.Equal(t, types.StringValue(`{"index.refresh_interval":"30s"}`), model.SettingsRaw)
+	assert.Equal(t, jsontypes.NewNormalizedValue(`{"index.refresh_interval":"30s"}`), model.SettingsRaw)
 	assert.Equal(t, types.StringValue("logs"), model.DataStreamName)
 	assert.Equal(t, types.StringValue(statusPaused), model.Status)
 }

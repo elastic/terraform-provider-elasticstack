@@ -155,7 +155,7 @@ func buildPutAutoFollowPatternRequest(ctx context.Context, model Model) (*putaut
 	if v := ccr.ByteSizeFromString(model.MaxReadRequestSize); v != nil {
 		req.MaxReadRequestSize = v
 	}
-	if v := ccr.DurationFromString(model.MaxRetryDelay); v != nil {
+	if v := ccr.DurationFromCustomType(model.MaxRetryDelay); v != nil {
 		req.MaxRetryDelay = v
 	}
 	if v, d := ccr.OptIntFromInt64("max_write_buffer_count", model.MaxWriteBufferCount); d.HasError() {
@@ -174,7 +174,7 @@ func buildPutAutoFollowPatternRequest(ctx context.Context, model Model) (*putaut
 	if v := ccr.ByteSizeFromString(model.MaxWriteRequestSize); v != nil {
 		req.MaxWriteRequestSize = v
 	}
-	if v := ccr.DurationFromString(model.ReadPollTimeout); v != nil {
+	if v := ccr.DurationFromCustomType(model.ReadPollTimeout); v != nil {
 		req.ReadPollTimeout = v
 	}
 
