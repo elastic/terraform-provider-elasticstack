@@ -75,7 +75,7 @@
     "elasticstack_kibana_space": "2026-05-30T06:55:50Z",
     "elasticstack_kibana_synthetics_monitor": "2026-06-06T06:53:15Z",
     "elasticstack_kibana_synthetics_parameter": "2026-06-06T06:53:15Z",
-    "elasticstack_kibana_synthetics_private_location": null
+    "elasticstack_kibana_synthetics_private_location": "2026-06-07T07:18:51Z"
   },
   "data-sources": {
     "elasticstack_elasticsearch_connector": "2026-05-31T07:16:07Z",
@@ -84,7 +84,7 @@
     "elasticstack_elasticsearch_indices": "2026-04-07T10:44:00Z",
     "elasticstack_elasticsearch_info": "2026-04-07T10:44:00Z",
     "elasticstack_elasticsearch_ingest_processor_append": "2026-03-31T10:21:19Z",
-    "elasticstack_elasticsearch_ingest_processor_bytes": "2026-03-15T02:30:08Z",
+    "elasticstack_elasticsearch_ingest_processor_bytes": "2026-06-07T07:18:51Z",
     "elasticstack_elasticsearch_ingest_processor_circle": "2026-03-15T02:30:08Z",
     "elasticstack_elasticsearch_ingest_processor_community_id": "2026-03-31T10:38:09Z",
     "elasticstack_elasticsearch_ingest_processor_convert": "2026-04-02T10:38:47Z",
