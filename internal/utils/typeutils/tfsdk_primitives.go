@@ -89,6 +89,11 @@ func Int64PointerValue(v *int64) types.Int64 {
 	return types.Int64Value(*v)
 }
 
+// IntPointerToInt64Value converts a *int to a types.Int64, returning types.Int64Null() when the pointer is nil.
+func IntPointerToInt64Value(v *int) types.Int64 {
+	return Int64PointerValue(Itol(v))
+}
+
 // NonEmptyStringOrNull returns types.StringValue(*s) when s is non-nil and non-empty,
 // and types.StringNull() otherwise. Use for API fields that use an empty string to signal absence.
 func NonEmptyStringOrNull(s *string) types.String {
