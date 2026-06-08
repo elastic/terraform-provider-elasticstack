@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -422,13 +423,5 @@ func flattenKibana(ctx context.Context, configs []kibanaoapi.SecurityRoleKibana,
 
 func metadataFromAPI(role *kibanaoapi.SecurityRole) (jsontypes.Normalized, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	if role.Metadata == nil {
-		return jsontypes.NewNormalizedNull(), diags
-	}
-	b, err := json.Marshal(*role.Metadata)
-	if err != nil {
-		diags.AddError("Failed to marshal role metadata", err.Error())
-		return jsontypes.NewNormalizedNull(), diags
-	}
-	return jsontypes.NewNormalizedValue(string(b)), diags
+	return typeutils.MarshalJSONToNormalized(role.Metadata, &diags), diags
 }

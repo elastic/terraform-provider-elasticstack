@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/stretchr/testify/require"
 )
 
@@ -145,4 +146,33 @@ func TestJSONBytesEqual(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMarshalJSONToNormalized(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil input returns NormalizedNull with no diags", func(t *testing.T) {
+		t.Parallel()
+		var d diag.Diagnostics
+		got := typeutils.MarshalJSONToNormalized(nil, &d)
+		require.False(t, d.HasError())
+		require.True(t, got.IsNull())
+	})
+
+	t.Run("non-nil map returns NormalizedValue with JSON", func(t *testing.T) {
+		t.Parallel()
+		var d diag.Diagnostics
+		got := typeutils.MarshalJSONToNormalized(map[string]any{"key": "val"}, &d)
+		require.False(t, d.HasError())
+		require.False(t, got.IsNull())
+		require.JSONEq(t, `{"key":"val"}`, got.ValueString())
+	})
+
+	t.Run("unmarshalable input appends error and returns NormalizedNull", func(t *testing.T) {
+		t.Parallel()
+		var d diag.Diagnostics
+		got := typeutils.MarshalJSONToNormalized(make(chan int), &d)
+		require.True(t, d.HasError())
+		require.True(t, got.IsNull())
+	})
 }

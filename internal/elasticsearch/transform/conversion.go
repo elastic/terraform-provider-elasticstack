@@ -364,15 +364,9 @@ func fromAPIModel(ctx context.Context, transform *models.Transform, stats *types
 	}
 
 	// Metadata
-	if transform.Meta != nil {
-		metaBytes, err := json.Marshal(transform.Meta)
-		if err != nil {
-			diags.AddError("Error marshaling metadata", err.Error())
-			return model, diags
-		}
-		model.Metadata = jsontypes.NewNormalizedValue(string(metaBytes))
-	} else {
-		model.Metadata = jsontypes.NewNormalizedNull()
+	model.Metadata = typeutils.MarshalJSONToNormalized(transform.Meta, &diags)
+	if diags.HasError() {
+		return model, diags
 	}
 
 	// Enabled: derived from transform stats
