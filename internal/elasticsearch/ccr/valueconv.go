@@ -118,14 +118,3 @@ func DurationFromCustomType(v customtypes.Duration) estypes.Duration {
 	}
 	return estypes.Duration(v.ValueString())
 }
-
-// DurationToCustomType converts an estypes.Duration to a customtypes.Duration.
-func DurationToCustomType(v estypes.Duration) customtypes.Duration {
-	if v == nil {
-		return customtypes.NewDurationNull()
-	}
-	if s, ok := v.(string); ok {
-		return customtypes.NewDurationValue(s)
-	}
-	return customtypes.NewDurationValue(fmt.Sprint(v))
-}

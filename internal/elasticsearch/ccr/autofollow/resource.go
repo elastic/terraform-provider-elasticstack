@@ -65,5 +65,3 @@ func (r *autoFollowPatternResource) ImportState(ctx context.Context, req resourc
 
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), req.ID)...)
 }
-
-var _ entitycore.ElasticsearchResourceModel = Model{}

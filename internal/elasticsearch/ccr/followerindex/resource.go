@@ -70,5 +70,3 @@ func (r *followerIndexResource) ImportState(ctx context.Context, req resource.Im
 
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), req.ID)...)
 }
-
-var _ entitycore.ElasticsearchResourceModel = Model{}

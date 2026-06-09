@@ -20,6 +20,7 @@ package followerindex
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ccr"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -76,7 +77,7 @@ func getSchema(_ context.Context) schema.Schema {
 				CustomType:          jsontypes.NormalizedType{},
 			},
 			"max_outstanding_read_requests": schema.Int64Attribute{
-				MarkdownDescription: descMaxOutstandingReadRequests,
+				MarkdownDescription: ccr.DescMaxOutstandingReadRequests,
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.Int64{
@@ -84,7 +85,7 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"max_outstanding_write_requests": schema.Int64Attribute{
-				MarkdownDescription: descMaxOutstandingWriteRequests,
+				MarkdownDescription: ccr.DescMaxOutstandingWriteRequests,
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.Int64{
@@ -92,7 +93,7 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"max_read_request_operation_count": schema.Int64Attribute{
-				MarkdownDescription: descMaxReadRequestOperationCount,
+				MarkdownDescription: ccr.DescMaxReadRequestOperationCount,
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.Int64{
@@ -100,7 +101,7 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"max_read_request_size": schema.StringAttribute{
-				MarkdownDescription: descMaxReadRequestSize,
+				MarkdownDescription: ccr.DescMaxReadRequestSize,
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
@@ -108,7 +109,7 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"max_retry_delay": schema.StringAttribute{
-				MarkdownDescription: descMaxRetryDelay,
+				MarkdownDescription: ccr.DescMaxRetryDelay,
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
@@ -116,7 +117,7 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"max_write_buffer_count": schema.Int64Attribute{
-				MarkdownDescription: descMaxWriteBufferCount,
+				MarkdownDescription: ccr.DescMaxWriteBufferCount,
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.Int64{
@@ -124,7 +125,7 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"max_write_buffer_size": schema.StringAttribute{
-				MarkdownDescription: descMaxWriteBufferSize,
+				MarkdownDescription: ccr.DescMaxWriteBufferSize,
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
@@ -132,7 +133,7 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"max_write_request_operation_count": schema.Int64Attribute{
-				MarkdownDescription: descMaxWriteRequestOperationCount,
+				MarkdownDescription: ccr.DescMaxWriteRequestOperationCount,
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.Int64{
@@ -140,7 +141,7 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"max_write_request_size": schema.StringAttribute{
-				MarkdownDescription: descMaxWriteRequestSize,
+				MarkdownDescription: ccr.DescMaxWriteRequestSize,
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
@@ -148,7 +149,7 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"read_poll_timeout": schema.StringAttribute{
-				MarkdownDescription: descReadPollTimeout,
+				MarkdownDescription: ccr.DescReadPollTimeout,
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{

@@ -21,13 +21,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
-	"sort"
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/follow"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/resumefollow"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ccr"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -181,43 +181,8 @@ func normalizeFlatSettingsKeys(m map[string]any) (map[string]any, bool) {
 		}
 	}
 
-	unflattened := unflattenDottedMap(flat)
+	unflattened := customtypes.UnflattenDottedMap(flat)
 	return mergeSettingsMaps(root, unflattened), true
-}
-
-func unflattenDottedMap(flat map[string]any) map[string]any {
-	root := make(map[string]any)
-	keys := make([]string, 0, len(flat))
-	for k := range flat {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, k := range keys {
-		v := flat[k]
-		parts := strings.Split(k, ".")
-		cur := root
-		for i := range parts {
-			p := parts[i]
-			if i == len(parts)-1 {
-				cur[p] = v
-				break
-			}
-			existing, ok := cur[p]
-			if !ok {
-				nm := make(map[string]any)
-				cur[p] = nm
-				cur = nm
-				continue
-			}
-			nm, ok := existing.(map[string]any)
-			if !ok {
-				nm = make(map[string]any)
-				cur[p] = nm
-			}
-			cur = nm
-		}
-	}
-	return root
 }
 
 func mergeSettingsMaps(base, overlay map[string]any) map[string]any {
@@ -389,22 +354,15 @@ func buildResumeFollowRequest(model Model) *resumefollow.Request {
 	return req
 }
 
-func intPointerToInt64(v *int) types.Int64 {
-	if v == nil {
-		return types.Int64Null()
-	}
-	return types.Int64Value(int64(*v))
-}
-
 func mapParametersToModel(params *estypes.FollowerIndexParameters, model Model) Model {
 	model.MaxOutstandingReadRequests = typeutils.Int64PointerValue(params.MaxOutstandingReadRequests)
-	model.MaxOutstandingWriteRequests = intPointerToInt64(params.MaxOutstandingWriteRequests)
-	model.MaxReadRequestOperationCount = intPointerToInt64(params.MaxReadRequestOperationCount)
+	model.MaxOutstandingWriteRequests = typeutils.IntPointerToInt64Value(params.MaxOutstandingWriteRequests)
+	model.MaxReadRequestOperationCount = typeutils.IntPointerToInt64Value(params.MaxReadRequestOperationCount)
 	model.MaxReadRequestSize = ccr.ByteSizeToString(params.MaxReadRequestSize)
 	model.MaxRetryDelay = ccr.DurationToString(params.MaxRetryDelay)
-	model.MaxWriteBufferCount = intPointerToInt64(params.MaxWriteBufferCount)
+	model.MaxWriteBufferCount = typeutils.IntPointerToInt64Value(params.MaxWriteBufferCount)
 	model.MaxWriteBufferSize = ccr.ByteSizeToString(params.MaxWriteBufferSize)
-	model.MaxWriteRequestOperationCount = intPointerToInt64(params.MaxWriteRequestOperationCount)
+	model.MaxWriteRequestOperationCount = typeutils.IntPointerToInt64Value(params.MaxWriteRequestOperationCount)
 	model.MaxWriteRequestSize = ccr.ByteSizeToString(params.MaxWriteRequestSize)
 	model.ReadPollTimeout = ccr.DurationToString(params.ReadPollTimeout)
 	return model

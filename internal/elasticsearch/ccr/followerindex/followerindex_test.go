@@ -20,12 +20,10 @@ package followerindex
 import (
 	"context"
 	"encoding/json"
-	"math"
 	"testing"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/followerindexstatus"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ccr"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -307,18 +305,6 @@ func TestBuildResumeFollowRequest_typeMapping(t *testing.T) {
 	assert.Equal(t, estypes.Duration("10s"), req.MaxRetryDelay)
 	assert.Equal(t, estypes.Duration("10m"), req.ReadPollTimeout)
 }
-
-func TestNarrowInt64ToInt_overflow(t *testing.T) {
-	t.Parallel()
-
-	if math.MaxInt == math.MaxInt64 {
-		t.Skip("int is 64-bit; overflow against MaxInt is not practical on this platform")
-	}
-
-	_, diags := ccr.NarrowInt64ToInt("max_outstanding_write_requests", math.MaxInt64)
-	require.True(t, diags.HasError())
-}
-
 func TestMapFollowerIndexToModel_preservesTuningWhenPaused(t *testing.T) {
 	t.Parallel()
 

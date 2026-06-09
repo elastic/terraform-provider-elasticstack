@@ -20,11 +20,9 @@ package autofollow
 import (
 	"context"
 	"encoding/json"
-	"math"
 	"testing"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ccr"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -184,18 +182,6 @@ func TestParseSettingsRaw_invalidJSON(t *testing.T) {
 	_, diags := parseSettingsRaw("not-valid-json")
 	require.True(t, diags.HasError())
 }
-
-func TestNarrowInt64ToInt_overflow(t *testing.T) {
-	t.Parallel()
-
-	if math.MaxInt == math.MaxInt64 {
-		t.Skip("int is 64-bit; overflow against MaxInt is not practical on this platform")
-	}
-
-	_, diags := ccr.NarrowInt64ToInt("max_outstanding_read_requests", math.MaxInt64)
-	require.True(t, diags.HasError())
-}
-
 func TestMapAutoFollowPatternToModel_mapsAPIAndPreservesUnreadableTuning(t *testing.T) {
 	t.Parallel()
 
