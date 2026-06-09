@@ -113,7 +113,7 @@ func buildPutAutoFollowPatternRequest(ctx context.Context, model Model) (*putaut
 	req := &putautofollowpattern.Request{
 		RemoteCluster:       model.RemoteCluster.ValueString(),
 		LeaderIndexPatterns: leaderPatterns,
-		FollowIndexPattern:  typeutils.OptStringPtr(model.FollowIndexPattern),
+		FollowIndexPattern:  typeutils.OptionalString(model.FollowIndexPattern),
 	}
 
 	if typeutils.IsKnown(model.LeaderIndexExclusionPatterns) {

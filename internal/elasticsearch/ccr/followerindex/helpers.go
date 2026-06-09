@@ -296,7 +296,7 @@ func buildFollowRequest(model Model) (*follow.Request, diag.Diagnostics) {
 	req := &follow.Request{
 		LeaderIndex:    model.LeaderIndex.ValueString(),
 		RemoteCluster:  model.RemoteCluster.ValueString(),
-		DataStreamName: typeutils.OptStringPtr(model.DataStreamName),
+		DataStreamName: typeutils.OptionalString(model.DataStreamName),
 	}
 
 	var diags diag.Diagnostics
@@ -364,7 +364,7 @@ func buildResumeFollowRequest(model Model) *resumefollow.Request {
 	if v := ccr.OptInt64Ptr(model.MaxReadRequestOperationCount); v != nil {
 		req.MaxReadRequestOperationCount = v
 	}
-	if v := typeutils.OptStringPtr(model.MaxReadRequestSize); v != nil {
+	if v := typeutils.OptionalString(model.MaxReadRequestSize); v != nil {
 		req.MaxReadRequestSize = v
 	}
 	if v := ccr.DurationFromString(model.MaxRetryDelay); v != nil {
@@ -373,13 +373,13 @@ func buildResumeFollowRequest(model Model) *resumefollow.Request {
 	if v := ccr.OptInt64Ptr(model.MaxWriteBufferCount); v != nil {
 		req.MaxWriteBufferCount = v
 	}
-	if v := typeutils.OptStringPtr(model.MaxWriteBufferSize); v != nil {
+	if v := typeutils.OptionalString(model.MaxWriteBufferSize); v != nil {
 		req.MaxWriteBufferSize = v
 	}
 	if v := ccr.OptInt64Ptr(model.MaxWriteRequestOperationCount); v != nil {
 		req.MaxWriteRequestOperationCount = v
 	}
-	if v := typeutils.OptStringPtr(model.MaxWriteRequestSize); v != nil {
+	if v := typeutils.OptionalString(model.MaxWriteRequestSize); v != nil {
 		req.MaxWriteRequestSize = v
 	}
 	if v := ccr.DurationFromString(model.ReadPollTimeout); v != nil {
