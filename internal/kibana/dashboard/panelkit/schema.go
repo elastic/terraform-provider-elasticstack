@@ -21,6 +21,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 )
 
 // StructuredDrilldownURLTriggerEnum lists allowed values for url.trigger on structured
@@ -73,22 +75,10 @@ type URLDrilldownOptions struct {
 
 // URLDrilldownSchema returns the NestedAttributeObject used inside a ListNestedAttribute `drilldowns`.
 func URLDrilldownSchema(opts URLDrilldownOptions) schema.NestedAttributeObject {
-	urlDesc := opts.URLMarkdownDescription
-	if urlDesc == "" {
-		urlDesc = urlDrilldownDefaultURLDescription
-	}
-	labelDesc := opts.LabelMarkdownDescription
-	if labelDesc == "" {
-		labelDesc = urlDrilldownDefaultLabelDescription
-	}
-	encodeDesc := opts.EncodeURLMarkdownDescription
-	if encodeDesc == "" {
-		encodeDesc = urlDrilldownDefaultEncodeURLDescription
-	}
-	openDesc := opts.OpenInNewTabMarkdownDescription
-	if openDesc == "" {
-		openDesc = urlDrilldownDefaultOpenInNewTabDescription
-	}
+	urlDesc := typeutils.NonZero(opts.URLMarkdownDescription, urlDrilldownDefaultURLDescription)
+	labelDesc := typeutils.NonZero(opts.LabelMarkdownDescription, urlDrilldownDefaultLabelDescription)
+	encodeDesc := typeutils.NonZero(opts.EncodeURLMarkdownDescription, urlDrilldownDefaultEncodeURLDescription)
+	openDesc := typeutils.NonZero(opts.OpenInNewTabMarkdownDescription, urlDrilldownDefaultOpenInNewTabDescription)
 	return schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
 			attrURL: schema.StringAttribute{
@@ -141,31 +131,13 @@ const (
 func ImageDrilldownSchema(opts ImageDrilldownOptions) schema.NestedAttributeObject {
 	dd := opts.DashboardMarkdownDescriptions
 	urlOpts := opts.URLDrilldownMarkdown
-	urlDesc := urlOpts.URLMarkdownDescription
-	if urlDesc == "" {
-		urlDesc = urlDrilldownDefaultURLDescription
-	}
-	labelDescURL := urlOpts.LabelMarkdownDescription
-	if labelDescURL == "" {
-		labelDescURL = urlDrilldownDefaultLabelDescription
-	}
-	triggerDesc := urlOpts.TriggerMarkdownDescription
-	if triggerDesc == "" {
-		triggerDesc = defaultImageURLDrilldownTriggerDescription
-	}
-	encodeDescURL := urlOpts.EncodeURLMarkdownDescription
-	if encodeDescURL == "" {
-		encodeDescURL = urlDrilldownDefaultEncodeURLDescription
-	}
-	openDescURL := urlOpts.OpenInNewTabMarkdownDescription
-	if openDescURL == "" {
-		openDescURL = urlDrilldownDefaultOpenInNewTabDescription
-	}
+	urlDesc := typeutils.NonZero(urlOpts.URLMarkdownDescription, urlDrilldownDefaultURLDescription)
+	labelDescURL := typeutils.NonZero(urlOpts.LabelMarkdownDescription, urlDrilldownDefaultLabelDescription)
+	triggerDesc := typeutils.NonZero(urlOpts.TriggerMarkdownDescription, defaultImageURLDrilldownTriggerDescription)
+	encodeDescURL := typeutils.NonZero(urlOpts.EncodeURLMarkdownDescription, urlDrilldownDefaultEncodeURLDescription)
+	openDescURL := typeutils.NonZero(urlOpts.OpenInNewTabMarkdownDescription, urlDrilldownDefaultOpenInNewTabDescription)
 
-	dashboardTriggerDesc := dd.Trigger
-	if dashboardTriggerDesc == "" {
-		dashboardTriggerDesc = "Dashboard drilldowns on image panels only support `on_click_image` (see Kibana `kbn-dashboard-panel-type-image` drilldown schema)."
-	}
+	dashboardTriggerDesc := typeutils.NonZero(dd.Trigger, "Dashboard drilldowns on image panels only support `on_click_image` (see Kibana `kbn-dashboard-panel-type-image` drilldown schema).")
 
 	return schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
@@ -174,11 +146,11 @@ func ImageDrilldownSchema(opts ImageDrilldownOptions) schema.NestedAttributeObje
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					attrDashboardID: schema.StringAttribute{
-						MarkdownDescription: nz(dd.DashboardID, "Target dashboard saved object id."),
+						MarkdownDescription: typeutils.NonZero(dd.DashboardID, "Target dashboard saved object id."),
 						Required:            true,
 					},
 					attrLabel: schema.StringAttribute{
-						MarkdownDescription: nz(dd.Label, "Label shown for this drilldown."),
+						MarkdownDescription: typeutils.NonZero(dd.Label, "Label shown for this drilldown."),
 						Required:            true,
 					},
 					attrTrigger: schema.StringAttribute{
@@ -189,15 +161,15 @@ func ImageDrilldownSchema(opts ImageDrilldownOptions) schema.NestedAttributeObje
 						},
 					},
 					"use_filters": schema.BoolAttribute{
-						MarkdownDescription: nz(dd.UseFilters, "When true, passes the current dashboard filters to the opened dashboard. Omit for API default (typically `false`)."),
+						MarkdownDescription: typeutils.NonZero(dd.UseFilters, "When true, passes the current dashboard filters to the opened dashboard. Omit for API default (typically `false`)."),
 						Optional:            true,
 					},
 					"use_time_range": schema.BoolAttribute{
-						MarkdownDescription: nz(dd.UseTimeRange, "When true, passes the current time range to the opened dashboard. Omit for API default (typically `false`)."),
+						MarkdownDescription: typeutils.NonZero(dd.UseTimeRange, "When true, passes the current time range to the opened dashboard. Omit for API default (typically `false`)."),
 						Optional:            true,
 					},
 					attrOpenInNewTab: schema.BoolAttribute{
-						MarkdownDescription: nz(dd.OpenInNewTab, "When true, opens the target dashboard in a new browser tab. Omit for API default (typically `false`)."),
+						MarkdownDescription: typeutils.NonZero(dd.OpenInNewTab, "When true, opens the target dashboard in a new browser tab. Omit for API default (typically `false`)."),
 						Optional:            true,
 					},
 				},
@@ -336,13 +308,6 @@ func StructuredDrilldownsAttribute() schema.Attribute {
 	}
 }
 
-func nz(s, def string) string {
-	if s != "" {
-		return s
-	}
-	return def
-}
-
 // TimeRangeAttributes returns inner schema attributes for panel/dashboard `time_range` objects:
 // required `from` and `to`, optional `mode` (`absolute` | `relative`).
 func TimeRangeAttributes() map[string]schema.Attribute {
@@ -367,9 +332,7 @@ func TimeRangeAttributes() map[string]schema.Attribute {
 
 // TimeRangeSchema returns an optional SingleNestedAttribute for panel-level time ranges, using TimeRangeAttributes.
 func TimeRangeSchema(markdownDescription string) schema.SingleNestedAttribute {
-	if markdownDescription == "" {
-		markdownDescription = "Optional panel time range (`from`, `to`, and optional `mode`)."
-	}
+	markdownDescription = typeutils.NonZero(markdownDescription, "Optional panel time range (`from`, `to`, and optional `mode`).")
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: markdownDescription,
 		Optional:            true,

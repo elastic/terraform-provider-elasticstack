@@ -301,8 +301,8 @@ func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPI
 	}
 	axis, axisDiags := heatmapAxesToAPI(m.Axis)
 	diags.Append(axisDiags...)
-	if axis != nil && axis.X != nil && axis.X.Scale == "" {
-		axis.X.Scale = inferHeatmapXAxisScale(m.XAxisJSON.ValueString())
+	if axis != nil && axis.X != nil {
+		axis.X.Scale = typeutils.NonZero(axis.X.Scale, inferHeatmapXAxisScale(m.XAxisJSON.ValueString()))
 	}
 	api.Axis = axis
 
@@ -406,8 +406,8 @@ func heatmapConfigToAPIESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPIsH
 	}
 	axis, axisDiags := heatmapAxesToAPI(m.Axis)
 	diags.Append(axisDiags...)
-	if axis != nil && axis.X != nil && axis.X.Scale == "" {
-		axis.X.Scale = inferHeatmapXAxisScale(m.XAxisJSON.ValueString())
+	if axis != nil && axis.X != nil {
+		axis.X.Scale = typeutils.NonZero(axis.X.Scale, inferHeatmapXAxisScale(m.XAxisJSON.ValueString()))
 	}
 	api.Axis = axis
 
