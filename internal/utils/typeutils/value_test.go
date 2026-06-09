@@ -54,3 +54,33 @@ func TestIsEmpty(t *testing.T) {
 		})
 	}
 }
+
+func TestNonZero(t *testing.T) {
+	t.Parallel()
+
+	t.Run("string", func(t *testing.T) {
+		t.Parallel()
+		require.Equal(t, "fallback", typeutils.NonZero("", "fallback"))
+		require.Equal(t, "value", typeutils.NonZero("value", "fallback"))
+	})
+
+	t.Run("int", func(t *testing.T) {
+		t.Parallel()
+		require.Equal(t, 42, typeutils.NonZero(0, 42))
+		require.Equal(t, 7, typeutils.NonZero(7, 42))
+	})
+
+	t.Run("bool", func(t *testing.T) {
+		t.Parallel()
+		require.True(t, typeutils.NonZero(false, true))
+		require.True(t, typeutils.NonZero(true, true))
+	})
+
+	t.Run("struct", func(t *testing.T) {
+		t.Parallel()
+		type foo struct{ x int }
+		fallback := foo{x: 42}
+		require.Equal(t, fallback, typeutils.NonZero(foo{}, fallback))
+		require.Equal(t, foo{x: 7}, typeutils.NonZero(foo{x: 7}, fallback))
+	})
+}

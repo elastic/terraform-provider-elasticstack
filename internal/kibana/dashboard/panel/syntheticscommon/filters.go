@@ -19,7 +19,10 @@
 // dashboard panel handlers (`synthetics_monitors`, `synthetics_stats_overview`).
 package syntheticscommon
 
-import "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+)
 
 // FilterAttributeOptions configures FilterAttribute.
 //
@@ -46,27 +49,27 @@ func FilterAttribute(opts FilterAttributeOptions) schema.Attribute {
 		Optional:            true,
 		Attributes: map[string]schema.Attribute{
 			"projects": schema.ListNestedAttribute{
-				MarkdownDescription: nz(opts.ProjectsDescription, "Filter by Synthetics project."),
+				MarkdownDescription: typeutils.NonZero(opts.ProjectsDescription, "Filter by Synthetics project."),
 				Optional:            true,
 				NestedObject:        item,
 			},
 			"tags": schema.ListNestedAttribute{
-				MarkdownDescription: nz(opts.TagsDescription, "Filter by monitor tag."),
+				MarkdownDescription: typeutils.NonZero(opts.TagsDescription, "Filter by monitor tag."),
 				Optional:            true,
 				NestedObject:        item,
 			},
 			"monitor_ids": schema.ListNestedAttribute{
-				MarkdownDescription: nz(opts.MonitorIDsDescription, "Filter by monitor ID. The API accepts up to 5000 entries."),
+				MarkdownDescription: typeutils.NonZero(opts.MonitorIDsDescription, "Filter by monitor ID. The API accepts up to 5000 entries."),
 				Optional:            true,
 				NestedObject:        item,
 			},
 			"locations": schema.ListNestedAttribute{
-				MarkdownDescription: nz(opts.LocationsDescription, "Filter by monitor location."),
+				MarkdownDescription: typeutils.NonZero(opts.LocationsDescription, "Filter by monitor location."),
 				Optional:            true,
 				NestedObject:        item,
 			},
 			"monitor_types": schema.ListNestedAttribute{
-				MarkdownDescription: nz(opts.MonitorTypesDescription, "Filter by monitor type (e.g. `browser`, `http`)."),
+				MarkdownDescription: typeutils.NonZero(opts.MonitorTypesDescription, "Filter by monitor type (e.g. `browser`, `http`)."),
 				Optional:            true,
 				NestedObject:        item,
 			},
@@ -87,11 +90,4 @@ func filterItem() schema.NestedAttributeObject {
 			},
 		},
 	}
-}
-
-func nz(s, def string) string {
-	if s != "" {
-		return s
-	}
-	return def
 }

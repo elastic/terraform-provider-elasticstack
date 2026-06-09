@@ -182,11 +182,7 @@ func queryRuleFromAPI(ctx context.Context, rule types.QueryRule, diagnostics *di
 		Actions:  actionsObj,
 	}
 
-	if rule.Priority != nil {
-		model.Priority = fwtypes.Int64Value(int64(*rule.Priority))
-	} else {
-		model.Priority = fwtypes.Int64Null()
-	}
+	model.Priority = typeutils.IntPointerToInt64Value(rule.Priority)
 
 	return model
 }

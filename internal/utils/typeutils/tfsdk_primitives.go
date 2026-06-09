@@ -19,9 +19,9 @@ package typeutils
 
 import "github.com/hashicorp/terraform-plugin-framework/types"
 
-// ValueStringPointer returns nil if unknown, otherwise the same as value.ValueStringPointer().
-// Useful for computed optional fields without a default value, as these unknown values
-// return a pointer to an empty string.
+// ValueStringPointer returns nil when the value is unknown or null, and &"" when empty.
+// Use for computed optional fields that must distinguish null from empty string at the API level.
+// For fields where empty string means "not set", prefer OptionalString instead.
 func ValueStringPointer(value types.String) *string {
 	if value.IsUnknown() {
 		return nil
@@ -37,14 +37,6 @@ func Float64PointerValue(value types.Float64) *float64 {
 	return value.ValueFloat64Pointer()
 }
 
-// OptStringPtr returns nil if the value is null or unknown, otherwise returns a pointer to the string value.
-func OptStringPtr(v types.String) *string {
-	if v.IsNull() || v.IsUnknown() {
-		return nil
-	}
-	return v.ValueStringPointer()
-}
-
 // OptionalBool returns a pointer to the bool value when set, or nil when null or unknown.
 func OptionalBool(value types.Bool) *bool {
 	if !IsKnown(value) {
@@ -54,7 +46,9 @@ func OptionalBool(value types.Bool) *bool {
 	return &v
 }
 
-// OptionalString returns a pointer to the string value when set and non-empty, or nil otherwise.
+// OptionalString returns a non-nil pointer only when the value is known and non-empty.
+// Returns nil when the value is null, unknown, or an empty string.
+// Use for optional API string fields where empty string and absent are equivalent.
 func OptionalString(value types.String) *string {
 	if !IsKnown(value) || value.ValueString() == "" {
 		return nil
@@ -87,6 +81,11 @@ func Int64PointerValue(v *int64) types.Int64 {
 		return types.Int64Null()
 	}
 	return types.Int64Value(*v)
+}
+
+// IntPointerToInt64Value converts a *int to a types.Int64, returning types.Int64Null() when the pointer is nil.
+func IntPointerToInt64Value(v *int) types.Int64 {
+	return Int64PointerValue(Itol(v))
 }
 
 // NonEmptyStringOrNull returns types.StringValue(*s) when s is non-nil and non-empty,

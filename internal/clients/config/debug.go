@@ -24,7 +24,6 @@ import (
 	"net/http/httputil"
 	"time"
 
-	"github.com/elastic/elastic-transport-go/v8/elastictransport"
 	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -33,9 +32,6 @@ const logRespMsg = `%s API Response for [%s] Details:
 ---[ RESPONSE ]--------------------------------------
 %s
 -----------------------------------------------------`
-
-//nolint:staticcheck // Temporary lint suppression for interface compliance assertion.
-var _ elastictransport.Logger = &debugLogger{}
 
 type debugLogger struct {
 	Name string
