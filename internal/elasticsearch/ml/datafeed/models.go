@@ -264,11 +264,7 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 	}
 
 	// Convert scroll_size
-	if apiModel.ScrollSize != nil {
-		m.ScrollSize = types.Int64Value(int64(*apiModel.ScrollSize))
-	} else {
-		m.ScrollSize = types.Int64Null()
-	}
+	m.ScrollSize = typeutils.IntPointerToInt64Value(apiModel.ScrollSize)
 
 	// Convert frequency (types.Duration is a string alias that marshals to JSON string)
 	if apiModel.Frequency != nil {
@@ -305,11 +301,7 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 	}
 
 	// Convert max_empty_searches
-	if apiModel.MaxEmptySearches != nil {
-		m.MaxEmptySearches = types.Int64Value(int64(*apiModel.MaxEmptySearches))
-	} else {
-		m.MaxEmptySearches = types.Int64Null()
-	}
+	m.MaxEmptySearches = typeutils.IntPointerToInt64Value(apiModel.MaxEmptySearches)
 
 	// Convert chunking_config
 	if apiModel.ChunkingConfig != nil {

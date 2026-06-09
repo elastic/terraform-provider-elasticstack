@@ -256,6 +256,32 @@ func TestInt64PointerValue(t *testing.T) {
 	}
 }
 
+func TestIntPointerToInt64Value(t *testing.T) {
+	t.Parallel()
+
+	pos := 42
+	neg := -7
+	zero := 0
+
+	tests := []struct {
+		name  string
+		input *int
+		want  types.Int64
+	}{
+		{name: "converts nil", input: nil, want: types.Int64Null()},
+		{name: "converts positive", input: &pos, want: types.Int64Value(42)},
+		{name: "converts negative", input: &neg, want: types.Int64Value(-7)},
+		{name: "converts zero", input: &zero, want: types.Int64Value(0)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := typeutils.IntPointerToInt64Value(tt.input)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestOptionalInt(t *testing.T) {
 	t.Parallel()
 
