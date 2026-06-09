@@ -175,7 +175,9 @@ func updateStreamsV1ToV2(ctx context.Context, v1 jsontypes.Normalized, inputID s
 		streams[streamID] = streamModel
 	}
 
-	return types.MapValueFrom(ctx, getInputStreamType(), streams)
+	m, mapDiags := types.MapValueFrom(ctx, getInputStreamType(), streams)
+	diags.Append(mapDiags...)
+	return m, diags
 }
 
 func getSchemaV1() *schema.Schema {

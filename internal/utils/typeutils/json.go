@@ -106,8 +106,11 @@ func JSONBytesEqual(a, b []byte) (bool, error) {
 }
 
 // MarshalToNormalized marshals v to a jsontypes.Normalized value.
-// If v is nil it returns jsontypes.NewNormalizedNull().
-// On marshal error it appends to diags and returns jsontypes.NewNormalizedNull().
+//
+//   - If v is nil, or a nil pointer/map/slice/channel/function stored inside
+//     an interface{}, it returns jsontypes.NewNormalizedNull().
+//   - On a marshal error it appends an attribute error at p to diags and
+//     returns jsontypes.NewNormalizedNull().
 func MarshalToNormalized(v any, p path.Path, diags *diag.Diagnostics) jsontypes.Normalized {
 	if isNil(v) {
 		return jsontypes.NewNormalizedNull()
