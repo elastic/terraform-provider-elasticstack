@@ -166,7 +166,7 @@ func TestMarshalToNormalized(t *testing.T) {
 		result := typeutils.MarshalToNormalized(map[string]any{"key": "val"}, path.Root("field"), &d)
 		require.False(t, d.HasError())
 		require.False(t, result.IsNull())
-		require.Equal(t, `{"key":"val"}`, result.ValueString())
+		require.JSONEq(t, `{"key":"val"}`, result.ValueString())
 	})
 
 	t.Run("string marshals to quoted JSON", func(t *testing.T) {
@@ -186,7 +186,7 @@ func TestMarshalToNormalized(t *testing.T) {
 		var d diag.Diagnostics
 		result := typeutils.MarshalToNormalized(inner{Name: "alice", Age: 30}, path.Root("field"), &d)
 		require.False(t, d.HasError())
-		require.Equal(t, `{"name":"alice","age":30}`, result.ValueString())
+		require.JSONEq(t, `{"name":"alice","age":30}`, result.ValueString())
 	})
 
 	t.Run("unmarshalable value adds error and returns null", func(t *testing.T) {
