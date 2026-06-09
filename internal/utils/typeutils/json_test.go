@@ -21,6 +21,8 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/stretchr/testify/require"
 )
 
@@ -145,4 +147,54 @@ func TestJSONBytesEqual(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMarshalToNormalized(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil returns null", func(t *testing.T) {
+		t.Parallel()
+		var d diag.Diagnostics
+		result := typeutils.MarshalToNormalized(nil, path.Root("field"), &d)
+		require.False(t, d.HasError())
+		require.True(t, result.IsNull())
+	})
+
+	t.Run("map marshals correctly", func(t *testing.T) {
+		t.Parallel()
+		var d diag.Diagnostics
+		result := typeutils.MarshalToNormalized(map[string]any{"key": "val"}, path.Root("field"), &d)
+		require.False(t, d.HasError())
+		require.False(t, result.IsNull())
+		require.JSONEq(t, `{"key":"val"}`, result.ValueString())
+	})
+
+	t.Run("string marshals to quoted JSON", func(t *testing.T) {
+		t.Parallel()
+		var d diag.Diagnostics
+		result := typeutils.MarshalToNormalized("hello", path.Root("field"), &d)
+		require.False(t, d.HasError())
+		require.Equal(t, `"hello"`, result.ValueString())
+	})
+
+	t.Run("struct marshals correctly", func(t *testing.T) {
+		t.Parallel()
+		type inner struct {
+			Name string `json:"name"`
+			Age  int    `json:"age"`
+		}
+		var d diag.Diagnostics
+		result := typeutils.MarshalToNormalized(inner{Name: "alice", Age: 30}, path.Root("field"), &d)
+		require.False(t, d.HasError())
+		require.JSONEq(t, `{"name":"alice","age":30}`, result.ValueString())
+	})
+
+	t.Run("unmarshalable value adds error and returns null", func(t *testing.T) {
+		t.Parallel()
+		var d diag.Diagnostics
+		result := typeutils.MarshalToNormalized(make(chan int), path.Root("field"), &d)
+		require.True(t, d.HasError())
+		require.True(t, result.IsNull())
+		require.Contains(t, d[0].Summary(), "marshal failure")
+	})
 }

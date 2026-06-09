@@ -335,29 +335,6 @@ func TestFloat64PointerValue(t *testing.T) {
 
 // Maps
 
-func TestMapToNormalizedType(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name  string
-		input map[string]naive
-		want  jsontypes.Normalized
-	}{
-		{name: "converts nil", input: naiveMapNil, want: normNil},
-		{name: "converts empty", input: naiveMapEmpty, want: normEmpty},
-		{name: "converts struct", input: naiveMapFull, want: normFull},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var diags diag.Diagnostics
-			got := typeutils.MapToNormalizedType(tt.input, path.Empty(), &diags)
-			require.Equal(t, tt.want, got)
-			require.Empty(t, diags)
-		})
-	}
-}
-
 func TestNormalizedTypeToMap(t *testing.T) {
 	t.Parallel()
 

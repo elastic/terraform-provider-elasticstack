@@ -26,7 +26,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -232,26 +231,14 @@ func fromAPIModel(ctx context.Context, transform *models.Transform, stats *types
 		}
 		src.Indices = indices
 
-		if transform.Source.Query != nil {
-			qBytes, err := json.Marshal(transform.Source.Query)
-			if err != nil {
-				diags.AddError("Error marshaling source.query", err.Error())
-				return model, diags
-			}
-			src.Query = jsontypes.NewNormalizedValue(string(qBytes))
-		} else {
-			src.Query = jsontypes.NewNormalizedNull()
+		src.Query = typeutils.MarshalToNormalized(transform.Source.Query, path.Root("source").AtName("query"), &diags)
+		if diags.HasError() {
+			return model, diags
 		}
 
-		if transform.Source.RuntimeMappings != nil {
-			rmBytes, err := json.Marshal(transform.Source.RuntimeMappings)
-			if err != nil {
-				diags.AddError("Error marshaling source.runtime_mappings", err.Error())
-				return model, diags
-			}
-			src.RuntimeMappings = jsontypes.NewNormalizedValue(string(rmBytes))
-		} else {
-			src.RuntimeMappings = jsontypes.NewNormalizedNull()
+		src.RuntimeMappings = typeutils.MarshalToNormalized(transform.Source.RuntimeMappings, path.Root("source").AtName("runtime_mappings"), &diags)
+		if diags.HasError() {
+			return model, diags
 		}
 
 		model.Source = &src
@@ -290,27 +277,15 @@ func fromAPIModel(ctx context.Context, transform *models.Transform, stats *types
 	}
 
 	// Pivot
-	if transform.Pivot != nil {
-		pivotBytes, err := json.Marshal(transform.Pivot)
-		if err != nil {
-			diags.AddError("Error marshaling pivot", err.Error())
-			return model, diags
-		}
-		model.Pivot = jsontypes.NewNormalizedValue(string(pivotBytes))
-	} else {
-		model.Pivot = jsontypes.NewNormalizedNull()
+	model.Pivot = typeutils.MarshalToNormalized(transform.Pivot, path.Root("pivot"), &diags)
+	if diags.HasError() {
+		return model, diags
 	}
 
 	// Latest
-	if transform.Latest != nil {
-		latestBytes, err := json.Marshal(transform.Latest)
-		if err != nil {
-			diags.AddError("Error marshaling latest", err.Error())
-			return model, diags
-		}
-		model.Latest = jsontypes.NewNormalizedValue(string(latestBytes))
-	} else {
-		model.Latest = jsontypes.NewNormalizedNull()
+	model.Latest = typeutils.MarshalToNormalized(transform.Latest, path.Root("latest"), &diags)
+	if diags.HasError() {
+		return model, diags
 	}
 
 	// Frequency
@@ -364,15 +339,9 @@ func fromAPIModel(ctx context.Context, transform *models.Transform, stats *types
 	}
 
 	// Metadata
-	if transform.Meta != nil {
-		metaBytes, err := json.Marshal(transform.Meta)
-		if err != nil {
-			diags.AddError("Error marshaling metadata", err.Error())
-			return model, diags
-		}
-		model.Metadata = jsontypes.NewNormalizedValue(string(metaBytes))
-	} else {
-		model.Metadata = jsontypes.NewNormalizedNull()
+	model.Metadata = typeutils.MarshalToNormalized(transform.Meta, path.Root("metadata"), &diags)
+	if diags.HasError() {
+		return model, diags
 	}
 
 	// Enabled: derived from transform stats

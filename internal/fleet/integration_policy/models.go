@@ -179,7 +179,7 @@ func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, 
 	for inputID, inputData := range inputs {
 		inputModel := integrationPolicyInputsModel{
 			Enabled: types.BoolPointerValue(inputData.Enabled),
-			Vars:    typeutils.MapToNormalizedType(typeutils.Deref(inputData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("vars"), diags),
+			Vars:    typeutils.MarshalToNormalized(typeutils.Deref(inputData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("vars"), diags),
 		}
 
 		// Populate streams
@@ -188,7 +188,7 @@ func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, 
 			for streamID, streamData := range *inputData.Streams {
 				streamModel := integrationPolicyInputStreamModel{
 					Enabled: types.BoolPointerValue(streamData.Enabled),
-					Vars:    typeutils.MapToNormalizedType(typeutils.Deref(streamData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("streams").AtMapKey(streamID).AtName("vars"), diags),
+					Vars:    typeutils.MarshalToNormalized(typeutils.Deref(streamData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("streams").AtMapKey(streamID).AtName("vars"), diags),
 				}
 
 				streams[streamID] = streamModel

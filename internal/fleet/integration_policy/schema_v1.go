@@ -169,13 +169,15 @@ func updateStreamsV1ToV2(ctx context.Context, v1 jsontypes.Normalized, inputID s
 	for streamID, streamData := range apiStreams {
 		streamModel := integrationPolicyInputStreamModel{
 			Enabled: types.BoolPointerValue(streamData.Enabled),
-			Vars:    typeutils.MapToNormalizedType(typeutils.Deref(streamData.Vars), path.Root("inputs").AtMapKey(inputID).AtName(attrStreams).AtMapKey(streamID).AtName(attrVars), &diags),
+			Vars:    typeutils.MarshalToNormalized(typeutils.Deref(streamData.Vars), path.Root("inputs").AtMapKey(inputID).AtName(attrStreams).AtMapKey(streamID).AtName(attrVars), &diags),
 		}
 
 		streams[streamID] = streamModel
 	}
 
-	return types.MapValueFrom(ctx, getInputStreamType(), streams)
+	m, mapDiags := types.MapValueFrom(ctx, getInputStreamType(), streams)
+	diags.Append(mapDiags...)
+	return m, diags
 }
 
 func getSchemaV1() *schema.Schema {

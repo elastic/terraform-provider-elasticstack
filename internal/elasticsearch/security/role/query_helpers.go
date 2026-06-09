@@ -18,28 +18,18 @@
 package role
 
 import (
-	"encoding/json"
-	"fmt"
-
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 )
 
 // marshalIndexQuery converts an Elasticsearch index query union value to a jsontypes.Normalized.
+// String values are treated as pre-serialized JSON and passed through unchanged.
 func marshalIndexQuery(query any) (jsontypes.Normalized, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	if query == nil {
-		return jsontypes.NewNormalizedNull(), diags
-	}
-	switch q := query.(type) {
-	case string:
+	if q, ok := query.(string); ok {
 		return jsontypes.NewNormalizedValue(q), diags
-	default:
-		b, err := json.Marshal(q)
-		if err != nil {
-			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling query: %s", err))
-			return jsontypes.NewNormalizedNull(), diags
-		}
-		return jsontypes.NewNormalizedValue(string(b)), diags
 	}
+	return typeutils.MarshalToNormalized(query, path.Root("query"), &diags), diags
 }
