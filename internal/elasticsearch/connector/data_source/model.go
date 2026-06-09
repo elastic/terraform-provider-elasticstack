@@ -106,8 +106,8 @@ func populateContentConnectorDataSourceFromAPI(
 	model.LastSeen = connectorDateTimeToString(resp.LastSeen)
 	model.LastSynced = connectorDateTimeToString(resp.LastSynced)
 	model.LastSyncStatus = connectorSyncStatusToString(resp.LastSyncStatus)
-	model.LastIndexedDocumentCount = connectorInt64PtrToValue(resp.LastIndexedDocumentCount)
-	model.LastDeletedDocumentCount = connectorInt64PtrToValue(resp.LastDeletedDocumentCount)
+	model.LastIndexedDocumentCount = typeutils.Int64PointerValue(resp.LastIndexedDocumentCount)
+	model.LastDeletedDocumentCount = typeutils.Int64PointerValue(resp.LastDeletedDocumentCount)
 	model.LastSyncScheduledAt = connectorDateTimeToString(resp.LastSyncScheduledAt)
 	if resp.LastSyncError != nil {
 		model.LastSyncError = fwtypes.StringValue(*resp.LastSyncError)
@@ -149,13 +149,6 @@ func connectorSyncStatusToString(status *syncstatus.SyncStatus) fwtypes.String {
 		return fwtypes.StringNull()
 	}
 	return fwtypes.StringValue(status.Name)
-}
-
-func connectorInt64PtrToValue(v *int64) fwtypes.Int64 {
-	if v == nil {
-		return fwtypes.Int64Null()
-	}
-	return fwtypes.Int64Value(*v)
 }
 
 func connectorDateTimeToString(dt estypes.DateTime) fwtypes.String {
