@@ -25,46 +25,44 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIsKnownSemanticallyEmptyMappings(t *testing.T) {
-	t.Run("null returns false", func(t *testing.T) {
-		assert.False(t, IsKnownSemanticallyEmptyMappings(esindex.NewMappingsNull()))
+func TestIsKnownSemanticallyEmpty(t *testing.T) {
+	t.Run("mappings null returns false", func(t *testing.T) {
+		assert.False(t, IsKnownSemanticallyEmpty(esindex.NewMappingsNull()))
 	})
 
-	t.Run("unknown returns false", func(t *testing.T) {
-		assert.False(t, IsKnownSemanticallyEmptyMappings(esindex.NewMappingsUnknown()))
+	t.Run("mappings unknown returns false", func(t *testing.T) {
+		assert.False(t, IsKnownSemanticallyEmpty(esindex.NewMappingsUnknown()))
 	})
 
-	t.Run("empty JSON object returns true", func(t *testing.T) {
-		assert.True(t, IsKnownSemanticallyEmptyMappings(esindex.NewMappingsValue("{}")))
+	t.Run("mappings empty JSON object returns true", func(t *testing.T) {
+		assert.True(t, IsKnownSemanticallyEmpty(esindex.NewMappingsValue("{}")))
 	})
 
-	t.Run("whitespace-padded empty JSON object returns true", func(t *testing.T) {
-		assert.True(t, IsKnownSemanticallyEmptyMappings(esindex.NewMappingsValue("  {}  ")))
+	t.Run("mappings whitespace-padded empty JSON object returns true", func(t *testing.T) {
+		assert.True(t, IsKnownSemanticallyEmpty(esindex.NewMappingsValue("  {}  ")))
 	})
 
-	t.Run("non-empty JSON object returns false", func(t *testing.T) {
-		assert.False(t, IsKnownSemanticallyEmptyMappings(esindex.NewMappingsValue(`{"properties":{}}`)))
-	})
-}
-
-func TestIsKnownSemanticallyEmptySettings(t *testing.T) {
-	t.Run("null returns false", func(t *testing.T) {
-		assert.False(t, IsKnownSemanticallyEmptySettings(customtypes.NewIndexSettingsNull()))
+	t.Run("mappings non-empty JSON object returns false", func(t *testing.T) {
+		assert.False(t, IsKnownSemanticallyEmpty(esindex.NewMappingsValue(`{"properties":{}}`)))
 	})
 
-	t.Run("unknown returns false", func(t *testing.T) {
-		assert.False(t, IsKnownSemanticallyEmptySettings(customtypes.NewIndexSettingsUnknown()))
+	t.Run("settings null returns false", func(t *testing.T) {
+		assert.False(t, IsKnownSemanticallyEmpty(customtypes.NewIndexSettingsNull()))
 	})
 
-	t.Run("empty JSON object returns true", func(t *testing.T) {
-		assert.True(t, IsKnownSemanticallyEmptySettings(customtypes.NewIndexSettingsValue("{}")))
+	t.Run("settings unknown returns false", func(t *testing.T) {
+		assert.False(t, IsKnownSemanticallyEmpty(customtypes.NewIndexSettingsUnknown()))
 	})
 
-	t.Run("whitespace-padded empty JSON object returns true", func(t *testing.T) {
-		assert.True(t, IsKnownSemanticallyEmptySettings(customtypes.NewIndexSettingsValue("  {}  ")))
+	t.Run("settings empty JSON object returns true", func(t *testing.T) {
+		assert.True(t, IsKnownSemanticallyEmpty(customtypes.NewIndexSettingsValue("{}")))
 	})
 
-	t.Run("non-empty JSON object returns false", func(t *testing.T) {
-		assert.False(t, IsKnownSemanticallyEmptySettings(customtypes.NewIndexSettingsValue(`{"number_of_shards":1}`)))
+	t.Run("settings whitespace-padded empty JSON object returns true", func(t *testing.T) {
+		assert.True(t, IsKnownSemanticallyEmpty(customtypes.NewIndexSettingsValue("  {}  ")))
+	})
+
+	t.Run("settings non-empty JSON object returns false", func(t *testing.T) {
+		assert.False(t, IsKnownSemanticallyEmpty(customtypes.NewIndexSettingsValue(`{"number_of_shards":1}`)))
 	})
 }

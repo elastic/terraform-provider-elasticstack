@@ -182,7 +182,7 @@ func flattenMappings(apiMappings map[string]any, prior esindex.MappingsValue) (e
 		}
 		return esindex.NewMappingsValue(string(b)), diags
 	}
-	if templateutil.IsKnownSemanticallyEmptyMappings(prior) {
+	if templateutil.IsKnownSemanticallyEmpty(prior) {
 		return prior, diags
 	}
 	return esindex.NewMappingsNull(), diags
@@ -200,7 +200,7 @@ func flattenSettings(apiSettings map[string]any, prior customtypes.IndexSettings
 		}
 		return customtypes.NewIndexSettingsValue(string(b)), diags
 	}
-	if templateutil.IsKnownSemanticallyEmptySettings(prior) {
+	if templateutil.IsKnownSemanticallyEmpty(prior) {
 		return prior, diags
 	}
 	return customtypes.NewIndexSettingsNull(), diags

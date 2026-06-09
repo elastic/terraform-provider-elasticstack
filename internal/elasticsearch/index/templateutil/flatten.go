@@ -18,26 +18,21 @@
 package templateutil
 
 import (
-	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 )
 
-// IsKnownSemanticallyEmptyMappings reports whether a prior MappingsValue is a
+type stringValue interface {
+	IsNull() bool
+	IsUnknown() bool
+	ValueString() string
+}
+
+// IsKnownSemanticallyEmpty reports whether a prior JSON string value is a
 // known, non-null value that nevertheless decodes to a zero-length JSON object
 // (for example `{}` or whitespace-padded variants). The flatten layer uses this
 // signal to preserve a practitioner-authored empty-object value in state when
-// the Elasticsearch GET response omits the mappings field entirely.
-func IsKnownSemanticallyEmptyMappings(v esindex.MappingsValue) bool {
-	if v.IsNull() || v.IsUnknown() {
-		return false
-	}
-	return typeutils.IsEmptyJSONObject(v.ValueString())
-}
-
-// IsKnownSemanticallyEmptySettings is the IndexSettingsValue counterpart to
-// IsKnownSemanticallyEmptyMappings.
-func IsKnownSemanticallyEmptySettings(v customtypes.IndexSettingsValue) bool {
+// the Elasticsearch GET response omits the corresponding field entirely.
+func IsKnownSemanticallyEmpty(v stringValue) bool {
 	if v.IsNull() || v.IsUnknown() {
 		return false
 	}
