@@ -353,10 +353,10 @@ func fromAPIModel(ctx context.Context, transform *models.Transform, stats *types
 			model.DocsPerSecond = basetypes.NewFloat64Value(*transform.Settings.DocsPerSecond)
 		}
 		if transform.Settings.MaxPageSearchSize != nil {
-			model.MaxPageSearchSize = basetypes.NewInt64Value(int64(*transform.Settings.MaxPageSearchSize))
+			model.MaxPageSearchSize = typeutils.IntPtrToInt64Value(transform.Settings.MaxPageSearchSize)
 		}
 		if transform.Settings.NumFailureRetries != nil {
-			model.NumFailureRetries = basetypes.NewInt64Value(int64(*transform.Settings.NumFailureRetries))
+			model.NumFailureRetries = typeutils.IntPtrToInt64Value(transform.Settings.NumFailureRetries)
 		}
 		if transform.Settings.Unattended != nil {
 			model.Unattended = basetypes.NewBoolValue(*transform.Settings.Unattended)

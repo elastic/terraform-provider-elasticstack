@@ -268,7 +268,7 @@ func convertRiskScoreMappingToModel(ctx context.Context, apiRiskScoreMapping kba
 
 		// Set optional risk score if provided
 		if apiMapping.RiskScore != nil {
-			mapping.RiskScore = types.Int64Value(int64(*apiMapping.RiskScore))
+			mapping.RiskScore = typeutils.IntPtrToInt64Value(apiMapping.RiskScore)
 		} else {
 			mapping.RiskScore = types.Int64Null()
 		}

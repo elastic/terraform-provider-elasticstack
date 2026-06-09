@@ -363,13 +363,13 @@ func (d *Data) updateFromThreatMatchRule(ctx context.Context, rule *kbapi.Securi
 	}
 
 	if rule.ConcurrentSearches != nil {
-		d.ConcurrentSearches = types.Int64Value(int64(*rule.ConcurrentSearches))
+		d.ConcurrentSearches = typeutils.IntPtrToInt64Value(rule.ConcurrentSearches)
 	} else {
 		d.ConcurrentSearches = types.Int64Null()
 	}
 
 	if rule.ItemsPerSearch != nil {
-		d.ItemsPerSearch = types.Int64Value(int64(*rule.ItemsPerSearch))
+		d.ItemsPerSearch = typeutils.IntPtrToInt64Value(rule.ItemsPerSearch)
 	} else {
 		d.ItemsPerSearch = types.Int64Null()
 	}

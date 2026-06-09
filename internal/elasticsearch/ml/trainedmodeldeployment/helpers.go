@@ -53,7 +53,7 @@ func populateComputedFromStats(data *TrainedModelDeploymentData, stats *types.Tr
 	data.StatsJSON = fwtypes.StringValue(statsJSON)
 
 	if stats.DeploymentStats.NumberOfAllocations != nil {
-		data.NumberOfAllocations = fwtypes.Int64Value(int64(*stats.DeploymentStats.NumberOfAllocations))
+		data.NumberOfAllocations = typeutils.IntPtrToInt64Value(stats.DeploymentStats.NumberOfAllocations)
 	} else {
 		data.NumberOfAllocations = fwtypes.Int64Null()
 	}

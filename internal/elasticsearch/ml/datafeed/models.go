@@ -265,7 +265,7 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 
 	// Convert scroll_size
 	if apiModel.ScrollSize != nil {
-		m.ScrollSize = types.Int64Value(int64(*apiModel.ScrollSize))
+		m.ScrollSize = typeutils.IntPtrToInt64Value(apiModel.ScrollSize)
 	} else {
 		m.ScrollSize = types.Int64Null()
 	}
@@ -306,7 +306,7 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 
 	// Convert max_empty_searches
 	if apiModel.MaxEmptySearches != nil {
-		m.MaxEmptySearches = types.Int64Value(int64(*apiModel.MaxEmptySearches))
+		m.MaxEmptySearches = typeutils.IntPtrToInt64Value(apiModel.MaxEmptySearches)
 	} else {
 		m.MaxEmptySearches = types.Int64Null()
 	}
