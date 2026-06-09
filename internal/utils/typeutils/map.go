@@ -17,6 +17,30 @@
 
 package typeutils
 
+import "github.com/hashicorp/terraform-plugin-framework/types"
+
+// BoolFromMap extracts a bool from a map[string]any by key, returning types.BoolNull() when the map is nil, the key is absent, or the value is not a bool.
+func BoolFromMap(m map[string]any, key string) types.Bool {
+	if m == nil {
+		return types.BoolNull()
+	}
+	if v, ok := m[key].(bool); ok {
+		return types.BoolValue(v)
+	}
+	return types.BoolNull()
+}
+
+// StringFromMap extracts a string from a map[string]any by key, returning types.StringNull() when the map is nil, the key is absent, or the value is not a string.
+func StringFromMap(m map[string]any, key string) types.String {
+	if m == nil {
+		return types.StringNull()
+	}
+	if v, ok := m[key].(string); ok {
+		return types.StringValue(v)
+	}
+	return types.StringNull()
+}
+
 // PointerInterfaceMapFromAnyMap converts a map[string]any to map[string]*any by
 // taking pointers to each value. This is needed when constructing API request bodies
 // that require pointer values.
