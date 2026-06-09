@@ -137,9 +137,13 @@ func buildPutAutoFollowPatternRequest(ctx context.Context, model Model) (*putaut
 		req.Settings = settings
 	}
 
+	// max_outstanding_read_requests is Optional+Computed and mapped from the GET
+	// API, which omits the field when it was never set (decoding to 0). Skip
+	// sending a non-positive value so the Computed zero echoed back on update is
+	// not rejected by Elasticsearch ("must be larger than 0").
 	if v, d := ccr.OptIntFromInt64("max_outstanding_read_requests", model.MaxOutstandingReadRequests); d.HasError() {
 		diags.Append(d...)
-	} else if v != nil {
+	} else if v != nil && *v > 0 {
 		req.MaxOutstandingReadRequests = v
 	}
 	if v, d := ccr.OptIntFromInt64("max_outstanding_write_requests", model.MaxOutstandingWriteRequests); d.HasError() {
@@ -202,9 +206,11 @@ func mapAutoFollowPatternToModel(ctx context.Context, summary *estypes.AutoFollo
 		&diags,
 	)
 	model.FollowIndexPattern = types.StringPointerValue(summary.FollowIndexPattern)
-	// Preserve prior state for write-only tuning parameters; the auto-follow
-	// GET API does not return them so summary carries zero values.
-	model.MaxOutstandingReadRequests = prior.MaxOutstandingReadRequests
+	// max_outstanding_read_requests is the only tuning parameter the auto-follow
+	// GET API returns, so it is mapped from the API response (Computed). The
+	// remaining tuning parameters are write-only and absent from the summary, so
+	// prior state is preserved for them.
+	model.MaxOutstandingReadRequests = types.Int64Value(int64(summary.MaxOutstandingReadRequests))
 	model.MaxOutstandingWriteRequests = prior.MaxOutstandingWriteRequests
 	model.MaxReadRequestOperationCount = prior.MaxReadRequestOperationCount
 	model.MaxReadRequestSize = prior.MaxReadRequestSize
