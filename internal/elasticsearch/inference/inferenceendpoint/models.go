@@ -25,6 +25,7 @@ import (
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -139,12 +140,10 @@ func (data *Data) fromAPIModel(_ context.Context, endpoint *estypes.InferenceEnd
 				return diags
 			}
 			filtered := intersectKeys(apiTS, stateTS)
-			b, err := json.Marshal(filtered)
-			if err != nil {
-				diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling task_settings: %s", err))
+			data.TaskSettings = typeutils.MarshalToNormalized(filtered, "task_settings", &diags)
+			if diags.HasError() {
 				return diags
 			}
-			data.TaskSettings = jsontypes.NewNormalizedValue(string(b))
 		}
 	}
 

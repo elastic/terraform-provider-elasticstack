@@ -21,6 +21,9 @@ import (
 	"encoding/json"
 	"reflect"
 	"strings"
+
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // WalkJSON recursively walks a decoded JSON value tree, applying leaf to every
@@ -99,4 +102,19 @@ func JSONBytesEqual(a, b []byte) (bool, error) {
 		return false, err
 	}
 	return reflect.DeepEqual(j, j2), nil
+}
+
+// MarshalToNormalized marshals v to a jsontypes.Normalized value.
+// If v is nil it returns jsontypes.NewNormalizedNull().
+// On marshal error it appends to diags and returns jsontypes.NewNormalizedNull().
+func MarshalToNormalized(v any, fieldName string, diags *diag.Diagnostics) jsontypes.Normalized {
+	if v == nil {
+		return jsontypes.NewNormalizedNull()
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		diags.AddError("Failed to marshal "+fieldName, err.Error())
+		return jsontypes.NewNormalizedNull()
+	}
+	return jsontypes.NewNormalizedValue(string(b))
 }

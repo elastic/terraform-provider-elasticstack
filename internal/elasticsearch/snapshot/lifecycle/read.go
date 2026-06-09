@@ -24,6 +24,7 @@ import (
 
 	esclients "github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -152,12 +153,10 @@ func mapSlmToData(ctx context.Context, slm *elasticsearch.SlmPolicy, resourceID 
 				}
 				meta[k] = val
 			}
-			metaBytes, err := json.Marshal(meta)
-			if err != nil {
-				diags.AddError("Failed to marshal metadata", err.Error())
+			data.Metadata = typeutils.MarshalToNormalized(meta, "metadata", &diags)
+			if diags.HasError() {
 				return state, diags
 			}
-			data.Metadata = jsontypes.NewNormalizedValue(string(metaBytes))
 		} else {
 			data.Metadata = jsontypes.NewNormalizedNull()
 		}
