@@ -1,3 +1,24 @@
+## [Unreleased]
+
+### Breaking changes
+
+`elasticstack_elasticsearch_ml_anomaly_detection_job`: `timeouts` is now an attribute instead of a block. Replace block syntax (`timeouts { delete = "20m" }`) with attribute syntax (`timeouts = { delete = "20m" }`).
+
+### Changes
+
+- Add uniform `timeouts` support to all entitycore-envelope-backed Elasticsearch and Kibana resources; `elasticsearch_ml_anomaly_detection_job` `timeouts` changes from block to attribute syntax. ([#3607](https://github.com/elastic/terraform-provider-elasticstack/pull/3607))
+- Adds Terraform resource and data source for managing the Kibana Security Entity Store resolution links and resolution groups. ([#3514](https://github.com/elastic/terraform-provider-elasticstack/pull/3514))
+- Add `elasticstack_elasticsearch_ml_trained_model_deployment` resource for managing ML trained model deployments ([#3532](https://github.com/elastic/terraform-provider-elasticstack/pull/3532))
+- Add Kibana Security Entity Store entity resource and data source ([#3529](https://github.com/elastic/terraform-provider-elasticstack/pull/3529))
+- Preserve space_ids value when Fleet API omits the field, preventing "inconsistent result after apply" error ([#3566](https://github.com/elastic/terraform-provider-elasticstack/pull/3566))
+- Stop `elasticstack_kibana_security_exception_item` and `elasticstack_kibana_security_exception_list` from tripping "produced inconsistent result after apply" when `tags` or `os_types` is configured as an empty set. ([#3552](https://github.com/elastic/terraform-provider-elasticstack/pull/3552))
+- Add elasticstack_elasticsearch_ml_trained_model_alias resource ([#3533](https://github.com/elastic/terraform-provider-elasticstack/pull/3533))
+- Add data source for reading Elasticsearch ML trained model metadata. ([#3531](https://github.com/elastic/terraform-provider-elasticstack/pull/3531))
+- Extended plan-time `params` validation for `elasticstack_kibana_alerting_rule` to cover all 35 rule types known to the generated kbapi client via discriminator dispatch, replacing the previous 12-entry hand-maintained map. This provides stricter validation for previously pass-through types such as `observability.rules.custom_threshold`. ([#3510](https://github.com/elastic/terraform-provider-elasticstack/pull/3510))
+- Adds Terraform resource and data source for managing the Kibana Security Entity Store. ([#3497](https://github.com/elastic/terraform-provider-elasticstack/pull/3497))
+- Fix 404 error on fleet_server_host update when host_id is omitted or changed ([#3508](https://github.com/elastic/terraform-provider-elasticstack/pull/3508))
+- Add agent_policy_ids support to elasticstack_fleet_elastic_defend_integration_policy and change agent_policy_id from Required to Optional. ([#3492](https://github.com/elastic/terraform-provider-elasticstack/pull/3492))
+
 ## [0.16.1] - 2026-06-01
 
 ### Changes
