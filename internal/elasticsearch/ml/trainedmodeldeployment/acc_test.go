@@ -108,6 +108,7 @@ func TestAccResourceMLTrainedModelDeployment_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet(testResourceName, "state"),
 					resource.TestCheckResourceAttrSet(testResourceName, "allocation_status"),
 					resource.TestCheckResourceAttrSet(testResourceName, "stats_json"),
+					resource.TestCheckResourceAttr(testResourceName, "wait_for", "fully_allocated"),
 				),
 			},
 			{
@@ -133,7 +134,21 @@ func TestAccResourceMLTrainedModelDeployment_basic(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_adaptive"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_adaptive_with_bounds"),
+				ConfigVariables: config.Variables{
+					"model_id": config.StringVariable(modelID),
+				},
+				SkipFunc: skipAdaptiveAllocationsIfUnsupported(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceName, "model_id", modelID),
+					resource.TestCheckResourceAttr(testResourceName, "adaptive_allocations.enabled", "true"),
+					resource.TestCheckResourceAttr(testResourceName, "adaptive_allocations.min_number_of_allocations", "1"),
+					resource.TestCheckResourceAttr(testResourceName, "adaptive_allocations.max_number_of_allocations", "3"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_adaptive_with_bounds"),
 				ConfigVariables: config.Variables{
 					"model_id": config.StringVariable(modelID),
 				},
@@ -185,6 +200,54 @@ func TestAccResourceMLTrainedModelDeployment_basic(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(testResourceName, "force_stop", "true"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLTrainedModelDeployment_priority(t *testing.T) {
+	skipMLTrainedModelDeploymentIfUnsupported(t)
+	modelID := preCheckMLTrainedModelDeployment(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: testAccCheckMLTrainedModelDeploymentDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("priority"),
+				ConfigVariables: config.Variables{
+					"model_id": config.StringVariable(modelID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceName, "model_id", modelID),
+					resource.TestCheckResourceAttr(testResourceName, "priority", "low"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLTrainedModelDeployment_deploymentID(t *testing.T) {
+	skipMLTrainedModelDeploymentIfUnsupported(t)
+	modelID := preCheckMLTrainedModelDeployment(t)
+	customDeploymentID := fmt.Sprintf("custom-deployment-%s", sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: testAccCheckMLTrainedModelDeploymentDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("custom_id"),
+				ConfigVariables: config.Variables{
+					"model_id":      config.StringVariable(modelID),
+					"deployment_id": config.StringVariable(customDeploymentID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceName, "model_id", modelID),
+					resource.TestCheckResourceAttr(testResourceName, "deployment_id", customDeploymentID),
 				),
 			},
 		},

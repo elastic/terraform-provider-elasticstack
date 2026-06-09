@@ -362,17 +362,8 @@ func (d *Data) updateFromThreatMatchRule(ctx context.Context, rule *kbapi.Securi
 		d.ThreatIndicatorPath = types.StringNull()
 	}
 
-	if rule.ConcurrentSearches != nil {
-		d.ConcurrentSearches = types.Int64Value(int64(*rule.ConcurrentSearches))
-	} else {
-		d.ConcurrentSearches = types.Int64Null()
-	}
-
-	if rule.ItemsPerSearch != nil {
-		d.ItemsPerSearch = types.Int64Value(int64(*rule.ItemsPerSearch))
-	} else {
-		d.ItemsPerSearch = types.Int64Null()
-	}
+	d.ConcurrentSearches = typeutils.IntPointerToInt64Value(rule.ConcurrentSearches)
+	d.ItemsPerSearch = typeutils.IntPointerToInt64Value(rule.ItemsPerSearch)
 
 	diags.Append(d.updateThreatFiltersFromAPI(ctx, rule.ThreatFilters)...)
 

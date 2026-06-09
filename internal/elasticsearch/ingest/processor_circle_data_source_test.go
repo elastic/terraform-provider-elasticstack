@@ -36,6 +36,12 @@ func TestAccDataSourceIngestProcessorCircle(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_circle.test", "field", "circle"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_circle.test", "error_distance", "28.1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_circle.test", "shape_type", "geo_shape"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_circle.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_circle.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_circle.test", "target_field"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_circle.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_circle.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_circle.test", "tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_circle.test", "json", expectedJSONCircle),
 				),
 			},
@@ -56,6 +62,25 @@ func TestAccDataSourceIngestProcessorCircle(t *testing.T) {
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_circle.test", "on_failure.0", `{"set":{"field":"error.message","value":"circle failed"}}`),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_circle.test", "tag", "circle-tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_circle.test", "json", expectedJSONCircleAllAttributes),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceIngestProcessorCircleMultipleOnFailure(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("multiple_on_failure"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_circle.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_circle.test", "on_failure.#", "2"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_circle.test", "on_failure.0", `{"set":{"field":"error.message","value":"circle failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_circle.test", "on_failure.1", `{"set":{"field":"error.type","value":"circle"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_circle.test", "json", expectedJSONCircleMultipleOnFailure),
 				),
 			},
 		},
@@ -110,6 +135,30 @@ const expectedJSONCircleAllAttributes = `{
 			}
 		],
 		"tag": "circle-tag"
+	}
+}`
+
+const expectedJSONCircleMultipleOnFailure = `{
+	"circle": {
+		"field": "circle",
+		"error_distance": 28.1,
+		"shape_type": "geo_shape",
+		"ignore_failure": false,
+		"ignore_missing": false,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "circle failed"
+				}
+			},
+			{
+				"set": {
+					"field": "error.type",
+					"value": "circle"
+				}
+			}
+		]
 	}
 }`
 

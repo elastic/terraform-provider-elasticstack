@@ -1,0 +1,9 @@
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+data "elasticstack_elasticsearch_ingest_processor_bytes" "test" {
+  field          = "file.size"
+  ignore_missing = false
+  ignore_failure = false
+}

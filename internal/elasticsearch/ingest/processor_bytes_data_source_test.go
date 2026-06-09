@@ -34,6 +34,10 @@ func TestAccDataSourceIngestProcessorBytes(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "field", "file.size"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "target_field"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "on_failure"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "json", expectedJSONBytes),
 				),
 			},
@@ -50,6 +54,17 @@ func TestAccDataSourceIngestProcessorBytes(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "if", "ctx.document?.size != null"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "tag", "bytes-tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "json", expectedJSONBytesAllAttributes),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("explicit_false"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "field", "file.size"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "ignore_failure", "false"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "json", expectedJSONBytesExplicitFalse),
 				),
 			},
 		},
@@ -107,6 +122,14 @@ const expectedJSONBytesOnFailure = `{
 			}
 		],
 		"field": "file.size",
+		"ignore_missing": false
+	}
+}`
+
+const expectedJSONBytesExplicitFalse = `{
+	"bytes": {
+		"field": "file.size",
+		"ignore_failure": false,
 		"ignore_missing": false
 	}
 }`
