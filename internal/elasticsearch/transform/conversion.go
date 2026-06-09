@@ -231,12 +231,12 @@ func fromAPIModel(ctx context.Context, transform *models.Transform, stats *types
 		}
 		src.Indices = indices
 
-		src.Query = typeutils.MarshalToNormalized(transform.Source.Query, "source.query", &diags)
+		src.Query = typeutils.MarshalToNormalized(transform.Source.Query, path.Root("source").AtName("query"), &diags)
 		if diags.HasError() {
 			return model, diags
 		}
 
-		src.RuntimeMappings = typeutils.MarshalToNormalized(transform.Source.RuntimeMappings, "source.runtime_mappings", &diags)
+		src.RuntimeMappings = typeutils.MarshalToNormalized(transform.Source.RuntimeMappings, path.Root("source").AtName("runtime_mappings"), &diags)
 		if diags.HasError() {
 			return model, diags
 		}
@@ -277,13 +277,13 @@ func fromAPIModel(ctx context.Context, transform *models.Transform, stats *types
 	}
 
 	// Pivot
-	model.Pivot = typeutils.MarshalToNormalized(transform.Pivot, "pivot", &diags)
+	model.Pivot = typeutils.MarshalToNormalized(transform.Pivot, path.Root("pivot"), &diags)
 	if diags.HasError() {
 		return model, diags
 	}
 
 	// Latest
-	model.Latest = typeutils.MarshalToNormalized(transform.Latest, "latest", &diags)
+	model.Latest = typeutils.MarshalToNormalized(transform.Latest, path.Root("latest"), &diags)
 	if diags.HasError() {
 		return model, diags
 	}
@@ -339,7 +339,7 @@ func fromAPIModel(ctx context.Context, transform *models.Transform, stats *types
 	}
 
 	// Metadata
-	model.Metadata = typeutils.MarshalToNormalized(transform.Meta, "metadata", &diags)
+	model.Metadata = typeutils.MarshalToNormalized(transform.Meta, path.Root("metadata"), &diags)
 	if diags.HasError() {
 		return model, diags
 	}

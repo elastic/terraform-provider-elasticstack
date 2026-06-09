@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/stretchr/testify/require"
 )
 
@@ -154,7 +155,7 @@ func TestMarshalToNormalized(t *testing.T) {
 	t.Run("nil returns null", func(t *testing.T) {
 		t.Parallel()
 		var d diag.Diagnostics
-		result := typeutils.MarshalToNormalized(nil, "field", &d)
+		result := typeutils.MarshalToNormalized(nil, path.Root("field"), &d)
 		require.False(t, d.HasError())
 		require.True(t, result.IsNull())
 	})
@@ -162,7 +163,7 @@ func TestMarshalToNormalized(t *testing.T) {
 	t.Run("map marshals correctly", func(t *testing.T) {
 		t.Parallel()
 		var d diag.Diagnostics
-		result := typeutils.MarshalToNormalized(map[string]any{"key": "val"}, "field", &d)
+		result := typeutils.MarshalToNormalized(map[string]any{"key": "val"}, path.Root("field"), &d)
 		require.False(t, d.HasError())
 		require.False(t, result.IsNull())
 		require.Equal(t, `{"key":"val"}`, result.ValueString())
@@ -171,7 +172,7 @@ func TestMarshalToNormalized(t *testing.T) {
 	t.Run("string marshals to quoted JSON", func(t *testing.T) {
 		t.Parallel()
 		var d diag.Diagnostics
-		result := typeutils.MarshalToNormalized("hello", "field", &d)
+		result := typeutils.MarshalToNormalized("hello", path.Root("field"), &d)
 		require.False(t, d.HasError())
 		require.Equal(t, `"hello"`, result.ValueString())
 	})
@@ -183,7 +184,7 @@ func TestMarshalToNormalized(t *testing.T) {
 			Age  int    `json:"age"`
 		}
 		var d diag.Diagnostics
-		result := typeutils.MarshalToNormalized(inner{Name: "alice", Age: 30}, "field", &d)
+		result := typeutils.MarshalToNormalized(inner{Name: "alice", Age: 30}, path.Root("field"), &d)
 		require.False(t, d.HasError())
 		require.Equal(t, `{"name":"alice","age":30}`, result.ValueString())
 	})
@@ -191,9 +192,9 @@ func TestMarshalToNormalized(t *testing.T) {
 	t.Run("unmarshalable value adds error and returns null", func(t *testing.T) {
 		t.Parallel()
 		var d diag.Diagnostics
-		result := typeutils.MarshalToNormalized(make(chan int), "field", &d)
+		result := typeutils.MarshalToNormalized(make(chan int), path.Root("field"), &d)
 		require.True(t, d.HasError())
 		require.True(t, result.IsNull())
-		require.Contains(t, d[0].Summary(), "Failed to marshal field")
+		require.Contains(t, d[0].Summary(), "marshal failure")
 	})
 }

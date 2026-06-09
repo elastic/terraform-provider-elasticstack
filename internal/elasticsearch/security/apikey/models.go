@@ -37,6 +37,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -422,7 +423,7 @@ func (model *TfModel) PopulateFromAPI(apiKey *estypes.ApiKey, caps APIKeyCapabil
 			}
 
 			var marshalDiags diag.Diagnostics
-			descriptors := typeutils.MarshalToNormalized(modelDescriptors, "role_descriptors", &marshalDiags)
+			descriptors := typeutils.MarshalToNormalized(modelDescriptors, path.Root("role_descriptors"), &marshalDiags)
 			if marshalDiags.HasError() {
 				return marshalDiags
 			}
@@ -442,7 +443,7 @@ func (model *TfModel) PopulateFromAPI(apiKey *estypes.ApiKey, caps APIKeyCapabil
 			return diagutil.FrameworkDiagFromError(err)
 		}
 		var marshalDiags diag.Diagnostics
-		model.Metadata = typeutils.MarshalToNormalized(metadata, "metadata", &marshalDiags)
+		model.Metadata = typeutils.MarshalToNormalized(metadata, path.Root("metadata"), &marshalDiags)
 		if marshalDiags.HasError() {
 			return marshalDiags
 		}

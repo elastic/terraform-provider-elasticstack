@@ -24,6 +24,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 )
 
 // WalkJSON recursively walks a decoded JSON value tree, applying leaf to every
@@ -107,14 +108,28 @@ func JSONBytesEqual(a, b []byte) (bool, error) {
 // MarshalToNormalized marshals v to a jsontypes.Normalized value.
 // If v is nil it returns jsontypes.NewNormalizedNull().
 // On marshal error it appends to diags and returns jsontypes.NewNormalizedNull().
-func MarshalToNormalized(v any, fieldName string, diags *diag.Diagnostics) jsontypes.Normalized {
-	if v == nil {
+func MarshalToNormalized(v any, p path.Path, diags *diag.Diagnostics) jsontypes.Normalized {
+	if isNil(v) {
 		return jsontypes.NewNormalizedNull()
 	}
 	b, err := json.Marshal(v)
 	if err != nil {
-		diags.AddError("Failed to marshal "+fieldName, err.Error())
+		diags.AddAttributeError(p, "marshal failure", err.Error())
 		return jsontypes.NewNormalizedNull()
 	}
 	return jsontypes.NewNormalizedValue(string(b))
+}
+
+// isNil reports whether v is nil or a nil interface containing a nil underlying
+// pointer, slice, map, chan or func.
+func isNil(v any) bool {
+	if v == nil {
+		return true
+	}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+		return rv.IsNil()
+	}
+	return false
 }

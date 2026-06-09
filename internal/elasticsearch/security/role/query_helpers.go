@@ -21,6 +21,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 )
 
 // marshalIndexQuery converts an Elasticsearch index query union value to a jsontypes.Normalized.
@@ -30,5 +31,5 @@ func marshalIndexQuery(query any) (jsontypes.Normalized, diag.Diagnostics) {
 	if q, ok := query.(string); ok {
 		return jsontypes.NewNormalizedValue(q), diags
 	}
-	return typeutils.MarshalToNormalized(query, "query", &diags), diags
+	return typeutils.MarshalToNormalized(query, path.Root("query"), &diags), diags
 }

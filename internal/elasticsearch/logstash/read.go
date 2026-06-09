@@ -56,7 +56,7 @@ func readLogstashPipeline(ctx context.Context, client *clients.ElasticsearchScop
 	data.Username = types.StringValue(pipeline.Username)
 
 	if pipeline.PipelineMetadata != nil {
-		data.PipelineMetadata = typeutils.MapToNormalizedType(pipeline.PipelineMetadata, path.Root("pipeline_metadata"), &diags)
+		data.PipelineMetadata = typeutils.MarshalToNormalized(pipeline.PipelineMetadata, path.Root("pipeline_metadata"), &diags)
 		if diags.HasError() {
 			return state, false, diags
 		}

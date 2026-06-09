@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -140,7 +141,7 @@ func (data *Data) fromAPIModel(_ context.Context, endpoint *estypes.InferenceEnd
 				return diags
 			}
 			filtered := intersectKeys(apiTS, stateTS)
-			data.TaskSettings = typeutils.MarshalToNormalized(filtered, "task_settings", &diags)
+			data.TaskSettings = typeutils.MarshalToNormalized(filtered, path.Root("task_settings"), &diags)
 			if diags.HasError() {
 				return diags
 			}

@@ -19,7 +19,6 @@ package typeutils
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -27,21 +26,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-// MapToNormalizedType marshals a map[string]T into a jsontypes.Normalized.
-func MapToNormalizedType[T any](value map[string]T, p path.Path, diags *diag.Diagnostics) jsontypes.Normalized {
-	if value == nil {
-		return jsontypes.NewNormalizedNull()
-	}
-
-	bytes, err := json.Marshal(value)
-	if err != nil {
-		diags.AddAttributeError(p, "marshal failure", err.Error())
-		return jsontypes.NewNormalizedNull()
-	}
-
-	return jsontypes.NewNormalizedValue(string(bytes))
-}
 
 // NormalizedTypeToMap unmarshals a jsontypes.Normalized to a map[string]T.
 func NormalizedTypeToMap[T any](value jsontypes.Normalized, p path.Path, diags *diag.Diagnostics) map[string]T {
