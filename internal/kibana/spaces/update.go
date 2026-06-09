@@ -40,11 +40,11 @@ func updateSpace(ctx context.Context, client *clients.KibanaScopedClient, req en
 	body := kbapi.PutSpacesSpaceIdJSONRequestBody{
 		Id:               req.WriteID,
 		Name:             plan.Name.ValueString(),
-		Description:      typeutils.OptionalString(plan.Description),
+		Description:      typeutils.ValueStringPointer(plan.Description),
 		DisabledFeatures: &features,
-		Initials:         typeutils.OptionalString(plan.Initials),
-		Color:            typeutils.OptionalString(plan.Color),
-		ImageUrl:         typeutils.OptionalString(plan.ImageURL),
+		Initials:         typeutils.ValueStringPointer(plan.Initials),
+		Color:            typeutils.ValueStringPointer(plan.Color),
+		ImageUrl:         typeutils.ValueStringPointer(plan.ImageURL),
 	}
 	if sol := solutionForPutBody(plan.Solution); sol != nil {
 		body.Solution = sol
