@@ -20,10 +20,8 @@ package template
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
@@ -47,35 +45,35 @@ func migrateIndexTemplateStateV0ToV1(_ context.Context, req resource.UpgradeStat
 		return
 	}
 
-	resp.Diagnostics.Append(collapseListPath(stateMap, attrDataStream, attrDataStream)...)
+	resp.Diagnostics.Append(aliasutil.CollapseListPath(stateMap, attrDataStream, attrDataStream)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	resp.Diagnostics.Append(collapseListPath(stateMap, attrTemplate, attrTemplate)...)
+	resp.Diagnostics.Append(aliasutil.CollapseListPath(stateMap, attrTemplate, attrTemplate)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	tmpl, ok := stateMap[attrTemplate].(map[string]any)
 	if ok {
-		resp.Diagnostics.Append(collapseListPath(tmpl, attrLifecycle, "template.lifecycle")...)
+		resp.Diagnostics.Append(aliasutil.CollapseListPath(tmpl, attrLifecycle, "template.lifecycle")...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		resp.Diagnostics.Append(collapseListPath(tmpl, attrDataStreamOptions, "template.data_stream_options")...)
+		resp.Diagnostics.Append(aliasutil.CollapseListPath(tmpl, attrDataStreamOptions, "template.data_stream_options")...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 
 		dso, ok := tmpl[attrDataStreamOptions].(map[string]any)
 		if ok {
-			resp.Diagnostics.Append(collapseListPath(dso, attrFailureStore, "template.data_stream_options.failure_store")...)
+			resp.Diagnostics.Append(aliasutil.CollapseListPath(dso, attrFailureStore, "template.data_stream_options.failure_store")...)
 			if resp.Diagnostics.HasError() {
 				return
 			}
 			fs, ok := dso[attrFailureStore].(map[string]any)
 			if ok {
-				resp.Diagnostics.Append(collapseListPath(fs, attrLifecycle, "template.data_stream_options.failure_store.lifecycle")...)
+				resp.Diagnostics.Append(aliasutil.CollapseListPath(fs, attrLifecycle, "template.data_stream_options.failure_store.lifecycle")...)
 				if resp.Diagnostics.HasError() {
 					return
 				}
@@ -102,36 +100,6 @@ func migrateIndexTemplateStateV0ToV1(_ context.Context, req resource.UpgradeStat
 	resp.DynamicValue = &tfprotov6.DynamicValue{
 		JSON: stateJSON,
 	}
-}
-
-// collapseListPath applies the v0→v1 singleton-list collapse rule at m[key].
-// Paths use SDK/PF attribute names (e.g. template.lifecycle). Returns a diagnostic when the value is an array with 2+ elements.
-func collapseListPath(m map[string]any, key, pathLabel string) diag.Diagnostics {
-	v, ok := m[key]
-	if !ok {
-		return nil
-	}
-	if v == nil {
-		return nil
-	}
-	list, ok := v.([]any)
-	if !ok {
-		return nil
-	}
-	switch len(list) {
-	case 0:
-		m[key] = nil
-	case 1:
-		m[key] = list[0]
-	default:
-		return diag.Diagnostics{
-			diag.NewErrorDiagnostic(
-				"State upgrade error",
-				fmt.Sprintf(`unexpected multi-element array at path %q`, pathLabel),
-			),
-		}
-	}
-	return nil
 }
 
 // ensureTemplateObjectKeysForV1 fills keys the Plugin Framework v1 schema expects on the template

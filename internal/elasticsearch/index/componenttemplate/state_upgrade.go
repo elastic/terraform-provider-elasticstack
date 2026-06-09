@@ -20,10 +20,8 @@ package componenttemplate
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
@@ -48,7 +46,7 @@ func migrateComponentTemplateStateV0ToV1(_ context.Context, req resource.Upgrade
 		return
 	}
 
-	resp.Diagnostics.Append(collapseListPath(stateMap, attrTemplate, attrTemplate)...)
+	resp.Diagnostics.Append(aliasutil.CollapseListPath(stateMap, attrTemplate, attrTemplate)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -72,36 +70,6 @@ func migrateComponentTemplateStateV0ToV1(_ context.Context, req resource.Upgrade
 	resp.DynamicValue = &tfprotov6.DynamicValue{
 		JSON: stateJSON,
 	}
-}
-
-// collapseListPath applies the v0→v1 singleton-list collapse rule at m[key].
-// Returns a diagnostic when the value is an array with 2+ elements.
-func collapseListPath(m map[string]any, key, pathLabel string) diag.Diagnostics {
-	v, ok := m[key]
-	if !ok {
-		return nil
-	}
-	if v == nil {
-		return nil
-	}
-	list, ok := v.([]any)
-	if !ok {
-		return nil
-	}
-	switch len(list) {
-	case 0:
-		m[key] = nil
-	case 1:
-		m[key] = list[0]
-	default:
-		return diag.Diagnostics{
-			diag.NewErrorDiagnostic(
-				"State upgrade error",
-				fmt.Sprintf(`unexpected multi-element array at path %q`, pathLabel),
-			),
-		}
-	}
-	return nil
 }
 
 func ensureTemplateObjectKeysForV1(tmpl map[string]any) {
