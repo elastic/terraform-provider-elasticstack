@@ -65,6 +65,33 @@ func TestNormalizeJSONScalar(t *testing.T) {
 	}
 }
 
+func TestIsEmptyJSONObject(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		in   string
+		want bool
+	}{
+		{name: "empty string", in: "", want: true},
+		{name: "whitespace only", in: "  ", want: true},
+		{name: "empty JSON object", in: "{}", want: true},
+		{name: "whitespace-padded empty object", in: "  {}  ", want: true},
+		{name: "non-empty JSON object", in: `{"k":"v"}`, want: false},
+		{name: "JSON array", in: "[]", want: false},
+		{name: "JSON null literal", in: "null", want: false},
+		{name: "JSON string", in: `"string"`, want: false},
+		{name: "invalid JSON", in: "not-json", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tt.want, typeutils.IsEmptyJSONObject(tt.in))
+		})
+	}
+}
+
 func TestJSONBytesEqual(t *testing.T) {
 	t.Parallel()
 

@@ -31,24 +31,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (model skillModel) GetID() types.String         { return model.ID }
-func (model skillModel) GetResourceID() types.String { return model.SkillID }
-func (model skillModel) GetSpaceID() types.String    { return model.SpaceID }
-
-var _ entitycore.KibanaResourceModel = skillModel{}
-var _ entitycore.WithVersionRequirements = skillModel{}
-
-func (model skillModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *minKibanaAgentBuilderSkillsAPIVersion,
-			ErrorMessage: fmt.Sprintf("Agent Builder skills require Elastic Stack v%s or later.", minKibanaAgentBuilderSkillsAPIVersion),
-		},
-	}, nil
-}
-
-type skillModel struct {
-	entitycore.ResourceTimeoutsField
+// skillBaseModel holds the fields, kibana_connection block, and version gate
+// shared by the Agent Builder skill resource and data source models. It
+// intentionally does NOT embed entitycore.ResourceTimeoutsField: only the
+// resource exposes a timeouts attribute, so the data source model (which
+// embeds this base) must not carry the timeouts field or config decode would
+// fail against the timeouts-free data source schema.
+type skillBaseModel struct {
 	entitycore.KibanaConnectionField
 	ID                types.String                 `tfsdk:"id"`
 	SkillID           types.String                 `tfsdk:"skill_id"`
@@ -60,13 +49,36 @@ type skillModel struct {
 	ReferencedContent []skillReferencedContentItem `tfsdk:"referenced_content"`
 }
 
+func (model skillBaseModel) GetID() types.String         { return model.ID }
+func (model skillBaseModel) GetResourceID() types.String { return model.SkillID }
+func (model skillBaseModel) GetSpaceID() types.String    { return model.SpaceID }
+
+func (skillBaseModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{
+		{
+			MinVersion:   *minKibanaAgentBuilderSkillsAPIVersion,
+			ErrorMessage: fmt.Sprintf("Agent Builder skills require Elastic Stack v%s or later.", minKibanaAgentBuilderSkillsAPIVersion),
+		},
+	}, nil
+}
+
+// skillModel is the model for the Agent Builder skill resource. It embeds the
+// shared base plus the timeouts attribute that only the resource exposes.
+type skillModel struct {
+	entitycore.ResourceTimeoutsField
+	skillBaseModel
+}
+
+var _ entitycore.KibanaResourceModel = skillModel{}
+var _ entitycore.WithVersionRequirements = skillModel{}
+
 type skillReferencedContentItem struct {
 	Name         types.String `tfsdk:"name"`
 	RelativePath types.String `tfsdk:"relative_path"`
 	Content      types.String `tfsdk:"content"`
 }
 
-func (model *skillModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Skill) diag.Diagnostics {
+func (model *skillBaseModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Skill) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
@@ -75,7 +87,7 @@ func (model *skillModel) populateFromAPI(ctx context.Context, spaceID string, da
 	var d diag.Diagnostics
 
 	if spaceID == "" {
-		spaceID = defaultSpaceID
+		spaceID = clients.DefaultSpaceID
 	}
 
 	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())

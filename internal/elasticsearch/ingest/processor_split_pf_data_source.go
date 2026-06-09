@@ -20,6 +20,7 @@ package ingest
 import (
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -45,7 +46,7 @@ func (m *processorSplitModel) MarshalBody() (any, diag.Diagnostics) {
 	}
 	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
 
-	if IsKnown(m.Separator) {
+	if typeutils.IsKnown(m.Separator) {
 		body.Separator = m.Separator.ValueString()
 	}
 	if m.PreserveTrailing.IsNull() || m.PreserveTrailing.IsUnknown() {

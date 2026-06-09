@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -133,20 +134,5 @@ func yamlToCanonicalJSON(yamlStr string) (string, error) {
 // normalizeYamlValue recursively converts yaml.v3 map types to map[string]any
 // so that encoding/json marshals them with sorted keys.
 func normalizeYamlValue(v any) any {
-	switch val := v.(type) {
-	case map[string]any:
-		out := make(map[string]any, len(val))
-		for k, v2 := range val {
-			out[k] = normalizeYamlValue(v2)
-		}
-		return out
-	case []any:
-		out := make([]any, len(val))
-		for i, v2 := range val {
-			out[i] = normalizeYamlValue(v2)
-		}
-		return out
-	default:
-		return val
-	}
+	return typeutils.WalkJSON(v, nil)
 }

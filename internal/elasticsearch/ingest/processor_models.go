@@ -20,6 +20,7 @@ package ingest
 import (
 	"encoding/json"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -52,19 +53,19 @@ func (m *CommonProcessorModel) toCommonProcessorBody() (CommonProcessorBody, dia
 	var body CommonProcessorBody
 	var diags diag.Diagnostics
 
-	if IsKnown(m.Description) {
+	if typeutils.IsKnown(m.Description) {
 		body.Description = m.Description.ValueString()
 	}
-	if IsKnown(m.If) {
+	if typeutils.IsKnown(m.If) {
 		body.If = m.If.ValueString()
 	}
-	if IsKnown(m.IgnoreFailure) {
+	if typeutils.IsKnown(m.IgnoreFailure) {
 		body.IgnoreFailure = m.IgnoreFailure.ValueBool()
 	} else {
 		// Normalize computed defaults while building the body so state matches the JSON.
 		m.IgnoreFailure = types.BoolValue(false)
 	}
-	if IsKnown(m.OnFailure) {
+	if typeutils.IsKnown(m.OnFailure) {
 		elements := m.OnFailure.Elements()
 		body.OnFailure = make([]map[string]any, 0, len(elements))
 		for _, elem := range elements {
@@ -73,7 +74,7 @@ func (m *CommonProcessorModel) toCommonProcessorBody() (CommonProcessorBody, dia
 				diags.AddError("Invalid on_failure element type", "expected jsontypes.Normalized")
 				continue
 			}
-			if !IsKnown(norm) {
+			if !typeutils.IsKnown(norm) {
 				diags.AddError("Unknown on_failure element", "on_failure elements cannot be unknown")
 				continue
 			}
@@ -85,7 +86,7 @@ func (m *CommonProcessorModel) toCommonProcessorBody() (CommonProcessorBody, dia
 			body.OnFailure = append(body.OnFailure, item)
 		}
 	}
-	if IsKnown(m.Tag) {
+	if typeutils.IsKnown(m.Tag) {
 		body.Tag = m.Tag.ValueString()
 	}
 

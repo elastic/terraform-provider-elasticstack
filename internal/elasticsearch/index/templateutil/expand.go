@@ -27,7 +27,10 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -88,6 +91,19 @@ func ExpandTemplateCore(
 	}
 
 	return t, diags
+}
+
+// ExpandMetadataJSON parses a jsontypes.Normalized attribute as a JSON object,
+// trimming whitespace. Returns nil when the value is null, unknown, or empty.
+// Adds a diagnostic on parse failure.
+func ExpandMetadataJSON(meta jsontypes.Normalized, diags *diag.Diagnostics) map[string]any {
+	if !typeutils.IsKnown(meta) {
+		return nil
+	}
+	if strings.TrimSpace(meta.ValueString()) == "" {
+		return nil
+	}
+	return typeutils.NormalizedTypeToMap[any](meta, path.Empty(), diags)
 }
 
 // DecodeTemplateObject unmarshals a Terraform types.Object into the provided

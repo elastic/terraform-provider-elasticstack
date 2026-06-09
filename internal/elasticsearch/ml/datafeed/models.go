@@ -113,8 +113,7 @@ func (m *Datafeed) toDatafeedRequest(ctx context.Context) (elasticsearch.Datafee
 	}
 
 	if typeutils.IsKnown(m.ScrollSize) {
-		v := int(m.ScrollSize.ValueInt64())
-		req.ScrollSize = &v
+		req.ScrollSize = typeutils.OptionalInt(m.ScrollSize)
 	}
 
 	if typeutils.IsKnown(m.Frequency) {
@@ -126,8 +125,7 @@ func (m *Datafeed) toDatafeedRequest(ctx context.Context) (elasticsearch.Datafee
 	}
 
 	if typeutils.IsKnown(m.MaxEmptySearches) {
-		v := int(m.MaxEmptySearches.ValueInt64())
-		req.MaxEmptySearches = &v
+		req.MaxEmptySearches = typeutils.OptionalInt(m.MaxEmptySearches)
 	}
 
 	if typeutils.IsKnown(m.ChunkingConfig) {

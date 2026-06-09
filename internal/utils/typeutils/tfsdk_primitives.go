@@ -63,6 +63,16 @@ func OptionalString(value types.String) *string {
 	return &v
 }
 
+// OptionalInt returns a pointer to the int value when set, or nil when null or unknown.
+// Use when the target API field expects *int rather than *int64.
+func OptionalInt(value types.Int64) *int {
+	if !IsKnown(value) {
+		return nil
+	}
+	v := int(value.ValueInt64())
+	return &v
+}
+
 // BoolPointerValue converts a *bool to a types.Bool, returning types.BoolNull() when the pointer is nil.
 func BoolPointerValue(v *bool) types.Bool {
 	if v == nil {

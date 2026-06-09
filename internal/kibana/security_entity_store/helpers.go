@@ -106,14 +106,6 @@ type entityStoreEngineError struct {
 	Message string `json:"message"`
 }
 
-func intPtr(v types.Int64) *int {
-	if v.IsNull() || v.IsUnknown() {
-		return nil
-	}
-	i := int(v.ValueInt64())
-	return &i
-}
-
 func stringListPtr(ctx context.Context, list types.List) (*[]string, diag.Diagnostics) {
 	if list.IsNull() || list.IsUnknown() {
 		return nil, nil
@@ -224,13 +216,13 @@ func expandLogExtractionCommon[T ~string](ctx context.Context, obj types.Object)
 	c := &apiLogExtraction[T]{
 		AdditionalIndexPatterns: add,
 		Delay:                   typeutils.OptionalString(model.Delay),
-		DocsLimit:               intPtr(model.DocsLimit),
+		DocsLimit:               typeutils.OptionalInt(model.DocsLimit),
 		ExcludedIndexPatterns:   excl,
-		FieldHistoryLength:      intPtr(model.FieldHistoryLength),
+		FieldHistoryLength:      typeutils.OptionalInt(model.FieldHistoryLength),
 		Frequency:               typeutils.OptionalString(model.Frequency),
 		LookbackPeriod:          typeutils.OptionalString(model.LookbackPeriod),
-		MaxLogsPerPage:          intPtr(model.MaxLogsPerPage),
-		MaxLogsPerWindow:        intPtr(model.MaxLogsPerWindow),
+		MaxLogsPerPage:          typeutils.OptionalInt(model.MaxLogsPerPage),
+		MaxLogsPerWindow:        typeutils.OptionalInt(model.MaxLogsPerWindow),
 		MaxTimeWindowSize:       typeutils.OptionalString(model.MaxTimeWindowSize),
 	}
 	if !model.MaxLogsPerWindowCapBehavior.IsNull() && !model.MaxLogsPerWindowCapBehavior.IsUnknown() {

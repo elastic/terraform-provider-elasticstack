@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -47,14 +46,9 @@ func deleteIntegration(
 		return diags
 	}
 
-	spaceAware := false
-	if typeutils.IsKnown(model.SpaceID) {
-		supported, versionDiags := supportsSpaceAwareIntegration(ctx, client, spaceID)
-		diags.Append(versionDiags...)
-		if diags.HasError() {
-			return diags
-		}
-		spaceAware = supported
+	spaceAware := resolveSpaceAware(ctx, client, model.SpaceID, &diags)
+	if diags.HasError() {
+		return diags
 	}
 
 	if spaceAware {

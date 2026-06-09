@@ -606,12 +606,7 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 		}
 
 		// Params from JSON
-		if typeutils.IsKnown(action.Params) {
-			var params map[string]any
-			if err := json.Unmarshal([]byte(action.Params.ValueString()), &params); err != nil {
-				diags.AddAttributeError(path.Root("actions").AtListIndex(i).AtName("params"), "Failed to unmarshal action params", err.Error())
-				continue
-			}
+		if params := typeutils.NormalizedTypeToMap[any](action.Params, path.Root("actions").AtListIndex(i).AtName("params"), &diags); params != nil {
 			apiAction.Params = params
 		}
 

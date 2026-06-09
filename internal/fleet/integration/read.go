@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -41,14 +40,9 @@ func readIntegration(
 	name := model.Name.ValueString()
 	version := model.Version.ValueString()
 
-	spaceAware := false
-	if typeutils.IsKnown(model.SpaceID) {
-		supported, versionDiags := supportsSpaceAwareIntegration(ctx, client, spaceID)
-		diags.Append(versionDiags...)
-		if diags.HasError() {
-			return model, false, diags
-		}
-		spaceAware = supported
+	spaceAware := resolveSpaceAware(ctx, client, model.SpaceID, &diags)
+	if diags.HasError() {
+		return model, false, diags
 	}
 
 	pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)

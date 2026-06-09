@@ -20,6 +20,7 @@ package ingest
 import (
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -54,38 +55,38 @@ func (m *processorCommunityIDModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	if IsKnown(m.SourceIP) {
+	if typeutils.IsKnown(m.SourceIP) {
 		body.SourceIP = m.SourceIP.ValueString()
 	}
-	if IsKnown(m.SourcePort) {
-		body.SourcePort = new(int(m.SourcePort.ValueInt64()))
+	if typeutils.IsKnown(m.SourcePort) {
+		body.SourcePort = typeutils.OptionalInt(m.SourcePort)
 	}
-	if IsKnown(m.DestinationIP) {
+	if typeutils.IsKnown(m.DestinationIP) {
 		body.DestinationIP = m.DestinationIP.ValueString()
 	}
-	if IsKnown(m.DestinationPort) {
-		body.DestinationPort = new(int(m.DestinationPort.ValueInt64()))
+	if typeutils.IsKnown(m.DestinationPort) {
+		body.DestinationPort = typeutils.OptionalInt(m.DestinationPort)
 	}
-	if IsKnown(m.IanaNumber) {
-		body.IanaNumber = new(int(m.IanaNumber.ValueInt64()))
+	if typeutils.IsKnown(m.IanaNumber) {
+		body.IanaNumber = typeutils.OptionalInt(m.IanaNumber)
 	}
-	if IsKnown(m.IcmpType) {
-		body.IcmpType = new(int(m.IcmpType.ValueInt64()))
+	if typeutils.IsKnown(m.IcmpType) {
+		body.IcmpType = typeutils.OptionalInt(m.IcmpType)
 	}
-	if IsKnown(m.IcmpCode) {
-		body.IcmpCode = new(int(m.IcmpCode.ValueInt64()))
+	if typeutils.IsKnown(m.IcmpCode) {
+		body.IcmpCode = typeutils.OptionalInt(m.IcmpCode)
 	}
-	if IsKnown(m.Transport) {
+	if typeutils.IsKnown(m.Transport) {
 		body.Transport = m.Transport.ValueString()
 	}
-	if IsKnown(m.TargetField) {
+	if typeutils.IsKnown(m.TargetField) {
 		body.TargetField = m.TargetField.ValueString()
 	}
 	if m.Seed.IsNull() || m.Seed.IsUnknown() {
 		m.Seed = types.Int64Value(0)
 		body.Seed = new(0)
 	} else {
-		body.Seed = new(int(m.Seed.ValueInt64()))
+		body.Seed = typeutils.OptionalInt(m.Seed)
 	}
 	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
 		m.IgnoreMissing = types.BoolValue(false)

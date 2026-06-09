@@ -20,6 +20,7 @@ package ingest
 import (
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -50,20 +51,20 @@ func (m *processorDateIndexNameModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	if IsKnown(m.Field) {
+	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	if IsKnown(m.IndexNamePrefix) {
+	if typeutils.IsKnown(m.IndexNamePrefix) {
 		body.IndexNamePrefix = m.IndexNamePrefix.ValueString()
 	}
-	if IsKnown(m.DateRounding) {
+	if typeutils.IsKnown(m.DateRounding) {
 		body.DateRounding = m.DateRounding.ValueString()
 	}
-	if IsKnown(m.DateFormats) {
+	if typeutils.IsKnown(m.DateFormats) {
 		elems := make([]string, 0, len(m.DateFormats.Elements()))
 		for _, elem := range m.DateFormats.Elements() {
 			str, ok := elem.(types.String)
-			if !ok || !IsKnown(str) {
+			if !ok || !typeutils.IsKnown(str) {
 				if !ok {
 					diags.AddError("Invalid date_formats element type", "expected types.String")
 				} else {

@@ -21,6 +21,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanacustomtypes "github.com/elastic/terraform-provider-elasticstack/internal/kibana/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -75,7 +76,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
 				Optional:    true,
 				Computed:    true,
-				Default:     stringdefault.StaticString(defaultSpaceID),
+				Default:     stringdefault.StaticString(clients.DefaultSpaceID),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -216,7 +217,7 @@ func getSchema(_ context.Context) schema.Schema {
 							Description: actionsGroupDescription,
 							Optional:    true,
 							Computed:    true,
-							Default:     stringdefault.StaticString(defaultSpaceID),
+							Default:     stringdefault.StaticString(clients.DefaultSpaceID),
 						},
 						"id": schema.StringAttribute{
 							Description: "The identifier for the connector saved object.",

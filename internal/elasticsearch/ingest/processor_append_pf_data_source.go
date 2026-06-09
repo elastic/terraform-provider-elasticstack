@@ -20,6 +20,7 @@ package ingest
 import (
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -47,15 +48,15 @@ func (m *processorAppendModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	if IsKnown(m.Field) {
+	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
 
-	if IsKnown(m.Value) {
+	if typeutils.IsKnown(m.Value) {
 		elems := make([]string, 0, len(m.Value.Elements()))
 		for _, elem := range m.Value.Elements() {
 			str, ok := elem.(types.String)
-			if !ok || !IsKnown(str) {
+			if !ok || !typeutils.IsKnown(str) {
 				if !ok {
 					diags.AddError("Invalid value element type", "expected types.String")
 				} else {
@@ -75,7 +76,7 @@ func (m *processorAppendModel) MarshalBody() (any, diag.Diagnostics) {
 		body.AllowDuplicates = m.AllowDuplicates.ValueBool()
 	}
 
-	if IsKnown(m.MediaType) {
+	if typeutils.IsKnown(m.MediaType) {
 		body.MediaType = m.MediaType.ValueString()
 	}
 

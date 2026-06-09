@@ -26,6 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -325,19 +326,6 @@ func expandKibana(ctx context.Context, set types.Set) ([]kibanaoapi.SecurityRole
 	return entries, diags
 }
 
-func expandMetadata(meta jsontypes.Normalized) (*map[string]any, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if !typeutils.IsKnown(meta) || meta.ValueString() == "" {
-		return nil, diags
-	}
-	var m map[string]any
-	if err := json.Unmarshal([]byte(meta.ValueString()), &m); err != nil {
-		diags.AddError("Invalid metadata JSON", err.Error())
-		return nil, diags
-	}
-	return &m, diags
-}
-
 func expandResourceModel(ctx context.Context, m resourceModel) (string, kibanaoapi.SecurityRolePutBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var body kibanaoapi.SecurityRolePutBody
@@ -359,13 +347,10 @@ func expandResourceModel(ctx context.Context, m resourceModel) (string, kibanaoa
 		body.Kibana = kib
 	}
 
-	if typeutils.IsKnown(m.Metadata) && m.Metadata.ValueString() != "" {
-		meta, d := expandMetadata(m.Metadata)
-		diags.Append(d...)
-		if diags.HasError() {
-			return roleName, body, diags
-		}
-		body.Metadata = meta
+	if meta := typeutils.NormalizedTypeToMap[any](m.Metadata, path.Root("metadata"), &diags); diags.HasError() {
+		return roleName, body, diags
+	} else if meta != nil {
+		body.Metadata = &meta
 	}
 
 	if typeutils.IsKnown(m.Description) && m.Description.ValueString() != "" {

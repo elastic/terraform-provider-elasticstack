@@ -23,7 +23,9 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func supportsSpaceAwareIntegration(ctx context.Context, client clients.MinVersionEnforceable, spaceID string) (bool, diag.Diagnostics) {
@@ -32,6 +34,15 @@ func supportsSpaceAwareIntegration(ctx context.Context, client clients.MinVersio
 	}
 
 	return client.EnforceMinVersion(ctx, MinVersionSpaceAwareIntegration)
+}
+
+func resolveSpaceAware(ctx context.Context, client clients.MinVersionEnforceable, spaceID types.String, diags *diag.Diagnostics) bool {
+	if !typeutils.IsKnown(spaceID) {
+		return false
+	}
+	supported, versionDiags := supportsSpaceAwareIntegration(ctx, client, spaceID.ValueString())
+	diags.Append(versionDiags...)
+	return supported
 }
 
 // fleetPackageInstalled determines whether Fleet reports a package as fully installed.

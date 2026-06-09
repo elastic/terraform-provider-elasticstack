@@ -83,8 +83,7 @@ func (m *Model) toCreateRequest() (*kbapi.CreateListJSONRequestBody, diag.Diagno
 	}
 
 	if typeutils.IsKnown(m.Version) {
-		version := int(m.Version.ValueInt64())
-		req.Version = &version
+		req.Version = typeutils.OptionalInt(m.Version)
 	}
 
 	return req, diags
@@ -116,8 +115,7 @@ func (m *Model) toUpdateRequest() (*kbapi.UpdateListJSONRequestBody, diag.Diagno
 	}
 
 	if typeutils.IsKnown(m.Version) {
-		version := int(m.Version.ValueInt64())
-		req.Version = &version
+		req.Version = typeutils.OptionalInt(m.Version)
 	}
 
 	return req, diags

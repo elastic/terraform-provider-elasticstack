@@ -25,7 +25,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -93,18 +92,7 @@ func readToolDataSource(ctx context.Context, client *clients.KibanaScopedClient,
 
 	oapiClient := client.GetKibanaOapiClient()
 
-	spaceID := defaultSpaceID
-	if typeutils.IsKnown(config.SpaceID) {
-		spaceID = config.SpaceID.ValueString()
-	}
-
-	toolID := config.ID.ValueString()
-	if compID, compDiags := clients.CompositeIDFromStr(toolID); !compDiags.HasError() {
-		toolID = compID.ResourceID
-		if !typeutils.IsKnown(config.SpaceID) {
-			spaceID = compID.ClusterID
-		}
-	}
+	spaceID, toolID := clients.ResolveCompositeSpaceAndID(config.SpaceID, config.ID.ValueString())
 
 	tool, d := kibanaoapi.GetTool(ctx, oapiClient, spaceID, toolID)
 	diags.Append(d...)

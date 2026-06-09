@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	entity "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store/entity"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -34,7 +35,7 @@ func createEntityStore(
 	req entitycore.KibanaWriteRequest[tfModel],
 ) (entitycore.KibanaWriteResult[tfModel], diag.Diagnostics) {
 	plan := req.Plan
-	spaceID := normalizeSpaceID(plan.SpaceID)
+	spaceID := entity.NormalizeSpaceID(plan.SpaceID)
 	body, diags := buildInstallBody(ctx, plan)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[tfModel]{}, diags

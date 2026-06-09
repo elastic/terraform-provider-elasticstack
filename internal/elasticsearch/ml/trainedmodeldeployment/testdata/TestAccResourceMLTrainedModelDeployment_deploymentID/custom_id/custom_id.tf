@@ -3,11 +3,16 @@ variable "model_id" {
   type        = string
 }
 
+variable "deployment_id" {
+  description = "A custom deployment ID"
+  type        = string
+}
+
 provider "elasticstack" {
   elasticsearch {}
 }
 
 resource "elasticstack_elasticsearch_ml_trained_model_deployment" "test" {
-  model_id              = var.model_id
-  number_of_allocations = 2
+  model_id      = var.model_id
+  deployment_id = var.deployment_id
 }

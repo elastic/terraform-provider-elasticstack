@@ -20,6 +20,7 @@ package ingest
 import (
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -52,14 +53,14 @@ func (m *processorGeoIPModel) MarshalBody() (any, diag.Diagnostics) {
 	} else {
 		body.TargetField = m.TargetField.ValueString()
 	}
-	if IsKnown(m.DatabaseFile) {
+	if typeutils.IsKnown(m.DatabaseFile) {
 		body.DatabaseFile = m.DatabaseFile.ValueString()
 	}
-	if IsKnown(m.Properties) {
+	if typeutils.IsKnown(m.Properties) {
 		elems := make([]string, 0, len(m.Properties.Elements()))
 		for _, elem := range m.Properties.Elements() {
 			str, ok := elem.(types.String)
-			if !ok || !IsKnown(str) {
+			if !ok || !typeutils.IsKnown(str) {
 				if !ok {
 					diags.AddError("Invalid properties element type", "expected types.String")
 				} else {

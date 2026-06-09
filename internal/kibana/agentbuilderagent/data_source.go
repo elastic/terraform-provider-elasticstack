@@ -79,18 +79,7 @@ func readAgentDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 
 	client := kbClient.GetKibanaOapiClient()
 
-	spaceID := "default"
-	if typeutils.IsKnown(config.SpaceID) && config.SpaceID.ValueString() != "" {
-		spaceID = config.SpaceID.ValueString()
-	}
-
-	agentID := config.AgentID.ValueString()
-	if compID, idDiags := clients.CompositeIDFromStr(agentID); !idDiags.HasError() {
-		agentID = compID.ResourceID
-		if !typeutils.IsKnown(config.SpaceID) || config.SpaceID.ValueString() == "" {
-			spaceID = compID.ClusterID
-		}
-	}
+	spaceID, agentID := clients.ResolveCompositeSpaceAndID(config.SpaceID, config.AgentID.ValueString())
 
 	agent, agentDiags := kibanaoapi.GetAgent(ctx, client, spaceID, agentID)
 	diags.Append(agentDiags...)
