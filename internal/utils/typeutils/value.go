@@ -19,6 +19,15 @@ package typeutils
 
 import "strings"
 
+// NonZero returns v if it is not the zero value for T; otherwise it returns fallback.
+func NonZero[T comparable](v T, fallback T) T {
+	var zero T
+	if v != zero {
+		return v
+	}
+	return fallback
+}
+
 // IsEmpty reports whether v is a zero-like value: zero number, blank string, empty slice/map, or nil.
 func IsEmpty(v any) bool {
 	switch t := v.(type) {

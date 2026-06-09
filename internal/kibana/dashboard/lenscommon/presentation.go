@@ -403,10 +403,7 @@ func LensDrilldownItemFromAPIJSON(raw []byte, pathPrefix string) (models.LensDri
 			return models.LensDrilldownItemTFModel{}, diags
 		}
 
-		trigger := body.Trigger
-		if trigger == "" {
-			trigger = LensDrilldownTriggerOnApplyFilter
-		}
+		trigger := typeutils.NonZero(body.Trigger, LensDrilldownTriggerOnApplyFilter)
 
 		return models.LensDrilldownItemTFModel{
 			DashboardDrilldown: &models.LensDashboardDrilldownTFModel{
@@ -430,10 +427,7 @@ func LensDrilldownItemFromAPIJSON(raw []byte, pathPrefix string) (models.LensDri
 			return models.LensDrilldownItemTFModel{}, diags
 		}
 
-		trigger := body.Trigger
-		if trigger == "" {
-			trigger = LensDrilldownTriggerOnApplyFilter
-		}
+		trigger := typeutils.NonZero(body.Trigger, LensDrilldownTriggerOnApplyFilter)
 
 		return models.LensDrilldownItemTFModel{
 			DiscoverDrilldown: &models.LensDiscoverDrilldownTFModel{
