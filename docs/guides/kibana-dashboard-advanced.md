@@ -7,9 +7,9 @@ description: |-
 
 # Advanced Kibana dashboard patterns
 
-This guide covers **production-style** patterns for [`elasticstack_kibana_dashboard`](/docs/resources/kibana_dashboard): collapsible **sections**, a branding **image** panel, Lens **gauge** and **heatmap** charts, a multi-layer **area + line** chart, an **ES|QL** pinned control that drives panel queries, optional **write-restricted** access control, and **tags** for organisation in the Kibana UI.
+This guide covers **production-style** patterns for [`elasticstack_kibana_dashboard`](../resources/kibana_dashboard): collapsible **sections**, a branding **image** panel, Lens **gauge** and **heatmap** charts, a multi-layer **area + line** chart, an **ES|QL** pinned control that drives panel queries, optional **write-restricted** access control, and **tags** for organisation in the Kibana UI.
 
-If you are new to the resource, start with [**Getting started with Kibana dashboards**](/docs/guides/kibana-dashboard-getting-started) (dashboard shell, grid) and [**Dashboard operations**](/docs/guides/kibana-dashboard-operations) (pinned **options list** controls and Discover sessions).
+If you are new to the resource, start with [**Getting started with Kibana dashboards**](./kibana-dashboard-getting-started) (dashboard shell, grid) and [**Dashboard operations**](./kibana-dashboard-operations) (pinned **options list** controls and Discover sessions).
 
 The runnable example lives at [`examples/guides/guide3-advanced/main.tf`](https://github.com/elastic/terraform-provider-elasticstack/tree/main/examples/guides/guide3-advanced/main.tf).
 
@@ -188,7 +188,7 @@ Add a compact **image** panel for logos or headers. The committed example loads 
 | **`hide_border`** | Removes the default panel chrome when `true`. |
 | **`object_fit`** | How the image scales inside the tile (`contain`, `cover`, `fill`, and so on). |
 
-Kibana also supports **`src.file_id`** for images uploaded to Kibana's file library. That path requires uploading the file separately (UI or API) and referencing the returned ID — see the [`image_config` schema](/docs/resources/kibana_dashboard#nestedatt--sections--panels--image_config) in the resource reference.
+Kibana also supports **`src.file_id`** for images uploaded to Kibana's file library. That path requires uploading the file separately (UI or API) and referencing the returned ID — see the [`image_config` schema](../resources/kibana_dashboard#nestedatt--sections--panels--image_config) in the resource reference.
 
 Place this panel in the first section's `panels` list before the heatmap.
 
@@ -784,7 +784,7 @@ To try **write-restricted** mode, follow the [bootstrap user caveat](#bootstrap-
 
 You now have a production-oriented dashboard pattern with sections, ES|QL controls, and optional access restrictions. Review the rest of the series:
 
-- [**Getting started with Kibana dashboards**](/docs/guides/kibana-dashboard-getting-started) — first-time walkthrough on sample web logs (markdown, metrics, line, bar, and donut panels).
-- [**Dashboard operations**](/docs/guides/kibana-dashboard-operations) — pinned **options list** controls, KPI rows, charts, and an embedded **Discover** session on sample eCommerce data.
+- [**Getting started with Kibana dashboards**](./kibana-dashboard-getting-started) — first-time walkthrough on sample web logs (markdown, metrics, line, bar, and donut panels).
+- [**Dashboard operations**](./kibana-dashboard-operations) — pinned **options list** controls, KPI rows, charts, and an embedded **Discover** session on sample eCommerce data.
 
-For every attribute and panel type, see the [`elasticstack_kibana_dashboard` resource reference](/docs/resources/kibana_dashboard). Regenerate screenshots after UI or config changes with `node scripts/screenshots/guide3.mjs` (see [`scripts/screenshots/README.md`](https://github.com/elastic/terraform-provider-elasticstack/tree/main/scripts/screenshots/README.md)).
+For every attribute and panel type, see the [`elasticstack_kibana_dashboard` resource reference](../resources/kibana_dashboard). Regenerate screenshots after UI or config changes with `node scripts/screenshots/guide3.mjs` (see [`scripts/screenshots/README.md`](https://github.com/elastic/terraform-provider-elasticstack/tree/main/scripts/screenshots/README.md)).

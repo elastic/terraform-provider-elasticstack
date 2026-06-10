@@ -9,7 +9,7 @@ description: |-
 
 This guide builds an **interactive eCommerce operations dashboard** with Terraform. You will wire a pinned **options list** control that filters every content panel at once, add a KPI row of Lens metrics, trend and breakdown charts, a Lens **Data Table**, and an embedded **Discover** session—all on the Kibana **sample eCommerce** dataset.
 
-If you have not used `elasticstack_kibana_dashboard` before, start with [**Getting started with Kibana dashboards**](/docs/guides/kibana-dashboard-getting-started), which covers the dashboard shell, and the 48-column grid.
+If you have not used `elasticstack_kibana_dashboard` before, start with [**Getting started with Kibana dashboards**](./kibana-dashboard-getting-started), which covers the dashboard shell, and the 48-column grid.
 
 The runnable example lives at [`examples/guides/guide2-operations/main.tf`](https://github.com/elastic/terraform-provider-elasticstack/tree/main/examples/guides/guide2-operations/main.tf).
 
@@ -59,7 +59,7 @@ locals {
 }
 ```
 
-That ID is the one Kibana assigns to the sample **eCommerce** data view. For your own dashboards, substitute the real data view ID—for example from an [`elasticstack_kibana_data_view`](/docs/resources/kibana_data_view) resource or from **Stack Management** → **Data views**.
+That ID is the one Kibana assigns to the sample **eCommerce** data view. For your own dashboards, substitute the real data view ID—for example from an [`elasticstack_kibana_data_view`](../resources/kibana_data_view) resource or from **Stack Management** → **Data views**.
 
 Lens panels in this guide use a separate **`data_view_spec`** local (index pattern + time field) embedded in each visualization's `data_source_json`; controls use the UUID form in `data_view_id`.
 
@@ -791,7 +791,7 @@ resource "elasticstack_kibana_dashboard" "operations" {
 
 You now have an interactive eCommerce dashboard with pinned controls and an embedded Discover session. Continue the series:
 
-- [**Getting started with Kibana dashboards**](/docs/guides/kibana-dashboard-getting-started) — first-time walkthrough on sample web logs (markdown, metrics, line, bar, and donut panels).
-- [**Advanced dashboards**](/docs/guides/kibana-dashboard-advanced) — collapsible **sections**, **image** panels, gauge and heatmap charts, **ES|QL** controls, **access control**, and **tags**.
+- [**Getting started with Kibana dashboards**](./kibana-dashboard-getting-started) — first-time walkthrough on sample web logs (markdown, metrics, line, bar, and donut panels).
+- [**Advanced dashboards**](./kibana-dashboard-advanced) — collapsible **sections**, **image** panels, gauge and heatmap charts, **ES|QL** controls, **access control**, and **tags**.
 
-For every attribute and panel type, see the [`elasticstack_kibana_dashboard` resource reference](/docs/resources/kibana_dashboard). Regenerate screenshots after UI or config changes with `node scripts/screenshots/guide2.mjs` (see [`scripts/screenshots/README.md`](https://github.com/elastic/terraform-provider-elasticstack/tree/main/scripts/screenshots/README.md)).
+For every attribute and panel type, see the [`elasticstack_kibana_dashboard` resource reference](../resources/kibana_dashboard). Regenerate screenshots after UI or config changes with `node scripts/screenshots/guide2.mjs` (see [`scripts/screenshots/README.md`](https://github.com/elastic/terraform-provider-elasticstack/tree/main/scripts/screenshots/README.md)).

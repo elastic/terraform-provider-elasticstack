@@ -20,9 +20,9 @@ Manages Kibana [dashboards](https://www.elastic.co/docs/api/doc/kibana). This fu
 
 ## See also
 
-- [Getting started with Kibana dashboards](/docs/guides/kibana-dashboard-getting-started) — build your first dashboard step by step
-- [Kibana dashboard operations guide](/docs/guides/kibana-dashboard-operations) — pinned controls, KPIs, and Discover sessions
-- [Advanced Kibana dashboard patterns](/docs/guides/kibana-dashboard-advanced) — sections, ES|QL controls, and access control
+- [Getting started with Kibana dashboards](../guides/kibana-dashboard-getting-started) — build your first dashboard step by step
+- [Kibana dashboard operations guide](../guides/kibana-dashboard-operations) — pinned controls, KPIs, and Discover sessions
+- [Advanced Kibana dashboard patterns](../guides/kibana-dashboard-advanced) — sections, ES|QL controls, and access control
 
 ## Example Usage
 
