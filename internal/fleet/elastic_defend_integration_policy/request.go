@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -251,14 +252,14 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		events := map[string]any{}
-		setBoolField(events, attrProcess, em.Process)
-		setBoolField(events, "network", em.Network)
-		setBoolField(events, "file", em.File)
-		setBoolField(events, "dll_and_driver_load", em.DllAndDriverLoad)
-		setBoolField(events, "dns", em.DNS)
-		setBoolField(events, "registry", em.Registry)
-		setBoolField(events, "security", em.Security)
-		setBoolField(events, "authentication", em.Authentication)
+		typeutils.SetBoolInMap(events, attrProcess, em.Process)
+		typeutils.SetBoolInMap(events, "network", em.Network)
+		typeutils.SetBoolInMap(events, "file", em.File)
+		typeutils.SetBoolInMap(events, "dll_and_driver_load", em.DllAndDriverLoad)
+		typeutils.SetBoolInMap(events, "dns", em.DNS)
+		typeutils.SetBoolInMap(events, "registry", em.Registry)
+		typeutils.SetBoolInMap(events, "security", em.Security)
+		typeutils.SetBoolInMap(events, "authentication", em.Authentication)
 		win["events"] = events
 	}
 
@@ -270,10 +271,10 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		malware := map[string]any{}
-		setStringField(malware, "mode", mm.Mode)
-		setBoolField(malware, "blocklist", mm.Blocklist)
-		setBoolField(malware, attrOnWriteScan, mm.OnWriteScan)
-		setBoolField(malware, attrNotifyUser, mm.NotifyUser)
+		typeutils.SetStringInMap(malware, "mode", mm.Mode)
+		typeutils.SetBoolInMap(malware, "blocklist", mm.Blocklist)
+		typeutils.SetBoolInMap(malware, attrOnWriteScan, mm.OnWriteScan)
+		typeutils.SetBoolInMap(malware, attrNotifyUser, mm.NotifyUser)
 		win["malware"] = malware
 	}
 
@@ -285,8 +286,8 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		ransomware := map[string]any{}
-		setStringField(ransomware, "mode", rm.Mode)
-		setBoolField(ransomware, attrSupported, rm.Supported)
+		typeutils.SetStringInMap(ransomware, "mode", rm.Mode)
+		typeutils.SetBoolInMap(ransomware, attrSupported, rm.Supported)
 		win[attrRansomware] = ransomware
 	}
 
@@ -298,8 +299,8 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		memProt := map[string]any{}
-		setStringField(memProt, "mode", mm.Mode)
-		setBoolField(memProt, attrSupported, mm.Supported)
+		typeutils.SetStringInMap(memProt, "mode", mm.Mode)
+		typeutils.SetBoolInMap(memProt, attrSupported, mm.Supported)
 		win["memory_protection"] = memProt
 	}
 
@@ -311,9 +312,9 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		behProt := map[string]any{}
-		setStringField(behProt, "mode", bm.Mode)
-		setBoolField(behProt, attrSupported, bm.Supported)
-		setBoolField(behProt, attrReputationService, bm.ReputationService)
+		typeutils.SetStringInMap(behProt, "mode", bm.Mode)
+		typeutils.SetBoolInMap(behProt, attrSupported, bm.Supported)
+		typeutils.SetBoolInMap(behProt, attrReputationService, bm.ReputationService)
 		win["behavior_protection"] = behProt
 	}
 
@@ -340,7 +341,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		logging := map[string]any{}
-		setStringField(logging, "file", lm.File)
+		typeutils.SetStringInMap(logging, "file", lm.File)
 		win["logging"] = logging
 	}
 
@@ -352,8 +353,8 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		avr := map[string]any{}
-		setStringField(avr, "mode", am.Mode)
-		setBoolField(avr, "enabled", am.Enabled)
+		typeutils.SetStringInMap(avr, "mode", am.Mode)
+		typeutils.SetBoolInMap(avr, "enabled", am.Enabled)
 		win["antivirus_registration"] = avr
 	}
 
@@ -373,7 +374,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 				return nil, diags
 			}
 			ch := map[string]any{}
-			setBoolField(ch, "enabled", cm.Enabled)
+			typeutils.SetBoolInMap(ch, "enabled", cm.Enabled)
 			asr["credential_hardening"] = ch
 		}
 		win["attack_surface_reduction"] = asr
@@ -405,9 +406,9 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 			return nil, diags
 		}
 		events := map[string]any{}
-		setBoolField(events, attrProcess, em.Process)
-		setBoolField(events, "network", em.Network)
-		setBoolField(events, "file", em.File)
+		typeutils.SetBoolInMap(events, attrProcess, em.Process)
+		typeutils.SetBoolInMap(events, "network", em.Network)
+		typeutils.SetBoolInMap(events, "file", em.File)
 		mac["events"] = events
 	}
 
@@ -419,10 +420,10 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 			return nil, diags
 		}
 		malware := map[string]any{}
-		setStringField(malware, "mode", malwareModel.Mode)
-		setBoolField(malware, "blocklist", malwareModel.Blocklist)
-		setBoolField(malware, attrOnWriteScan, malwareModel.OnWriteScan)
-		setBoolField(malware, attrNotifyUser, malwareModel.NotifyUser)
+		typeutils.SetStringInMap(malware, "mode", malwareModel.Mode)
+		typeutils.SetBoolInMap(malware, "blocklist", malwareModel.Blocklist)
+		typeutils.SetBoolInMap(malware, attrOnWriteScan, malwareModel.OnWriteScan)
+		typeutils.SetBoolInMap(malware, attrNotifyUser, malwareModel.NotifyUser)
 		mac["malware"] = malware
 	}
 
@@ -434,8 +435,8 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 			return nil, diags
 		}
 		memProt := map[string]any{}
-		setStringField(memProt, "mode", pm.Mode)
-		setBoolField(memProt, attrSupported, pm.Supported)
+		typeutils.SetStringInMap(memProt, "mode", pm.Mode)
+		typeutils.SetBoolInMap(memProt, attrSupported, pm.Supported)
 		mac["memory_protection"] = memProt
 	}
 
@@ -447,9 +448,9 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 			return nil, diags
 		}
 		behProt := map[string]any{}
-		setStringField(behProt, "mode", bm.Mode)
-		setBoolField(behProt, attrSupported, bm.Supported)
-		setBoolField(behProt, attrReputationService, bm.ReputationService)
+		typeutils.SetStringInMap(behProt, "mode", bm.Mode)
+		typeutils.SetBoolInMap(behProt, attrSupported, bm.Supported)
+		typeutils.SetBoolInMap(behProt, attrReputationService, bm.ReputationService)
 		mac["behavior_protection"] = behProt
 	}
 
@@ -475,7 +476,7 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 			return nil, diags
 		}
 		logging := map[string]any{}
-		setStringField(logging, "file", lm.File)
+		typeutils.SetStringInMap(logging, "file", lm.File)
 		mac["logging"] = logging
 	}
 
@@ -505,11 +506,11 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 			return nil, diags
 		}
 		events := map[string]any{}
-		setBoolField(events, attrProcess, em.Process)
-		setBoolField(events, "network", em.Network)
-		setBoolField(events, "file", em.File)
-		setBoolField(events, "session_data", em.SessionData)
-		setBoolField(events, "tty_io", em.TtyIO)
+		typeutils.SetBoolInMap(events, attrProcess, em.Process)
+		typeutils.SetBoolInMap(events, "network", em.Network)
+		typeutils.SetBoolInMap(events, "file", em.File)
+		typeutils.SetBoolInMap(events, "session_data", em.SessionData)
+		typeutils.SetBoolInMap(events, "tty_io", em.TtyIO)
 		linux["events"] = events
 	}
 
@@ -521,8 +522,8 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 			return nil, diags
 		}
 		malware := map[string]any{}
-		setStringField(malware, "mode", mm.Mode)
-		setBoolField(malware, "blocklist", mm.Blocklist)
+		typeutils.SetStringInMap(malware, "mode", mm.Mode)
+		typeutils.SetBoolInMap(malware, "blocklist", mm.Blocklist)
 		linux["malware"] = malware
 	}
 
@@ -534,8 +535,8 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 			return nil, diags
 		}
 		memProt := map[string]any{}
-		setStringField(memProt, "mode", pm.Mode)
-		setBoolField(memProt, attrSupported, pm.Supported)
+		typeutils.SetStringInMap(memProt, "mode", pm.Mode)
+		typeutils.SetBoolInMap(memProt, attrSupported, pm.Supported)
 		linux["memory_protection"] = memProt
 	}
 
@@ -547,9 +548,9 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 			return nil, diags
 		}
 		behProt := map[string]any{}
-		setStringField(behProt, "mode", bm.Mode)
-		setBoolField(behProt, attrSupported, bm.Supported)
-		setBoolField(behProt, attrReputationService, bm.ReputationService)
+		typeutils.SetStringInMap(behProt, "mode", bm.Mode)
+		typeutils.SetBoolInMap(behProt, attrSupported, bm.Supported)
+		typeutils.SetBoolInMap(behProt, attrReputationService, bm.ReputationService)
 		linux["behavior_protection"] = behProt
 	}
 
@@ -575,25 +576,11 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 			return nil, diags
 		}
 		logging := map[string]any{}
-		setStringField(logging, "file", logm.File)
+		typeutils.SetStringInMap(logging, "file", logm.File)
 		linux["logging"] = logging
 	}
 
 	return linux, diags
-}
-
-// setBoolField sets a bool field in the map if the value is known and non-null.
-func setBoolField(m map[string]any, key string, val types.Bool) {
-	if !val.IsNull() && !val.IsUnknown() {
-		m[key] = val.ValueBool()
-	}
-}
-
-// setStringField sets a string field in the map if the value is known and non-null.
-func setStringField(m map[string]any, key string, val types.String) {
-	if !val.IsNull() && !val.IsUnknown() {
-		m[key] = val.ValueString()
-	}
 }
 
 // setAgentPoliciesOnRequest populates PolicyIds / PolicyId on a request from the model.
@@ -625,7 +612,7 @@ func setPopupItem(ctx context.Context, m map[string]any, key string, obj types.O
 	d := obj.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 	diags.Append(d...)
 	item := map[string]any{}
-	setStringField(item, "message", pm.Message)
-	setBoolField(item, "enabled", pm.Enabled)
+	typeutils.SetStringInMap(item, "message", pm.Message)
+	typeutils.SetBoolInMap(item, "enabled", pm.Enabled)
 	m[key] = item
 }
