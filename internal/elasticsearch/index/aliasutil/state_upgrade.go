@@ -20,6 +20,8 @@ package aliasutil
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // NormalizeTemplateAliasesInV1State collapses SDK-style echoed index_routing/search_routing (same
@@ -67,6 +69,36 @@ func StringishJSONState(v any) string {
 		return s
 	}
 	return fmt.Sprint(v)
+}
+
+// CollapseListPath applies the v0→v1 singleton-list collapse rule at m[key].
+// Paths use SDK/PF attribute names (e.g. template.lifecycle). Returns a diagnostic when the value is an array with 2+ elements.
+func CollapseListPath(m map[string]any, key, pathLabel string) diag.Diagnostics {
+	v, ok := m[key]
+	if !ok {
+		return nil
+	}
+	if v == nil {
+		return nil
+	}
+	list, ok := v.([]any)
+	if !ok {
+		return nil
+	}
+	switch len(list) {
+	case 0:
+		m[key] = nil
+	case 1:
+		m[key] = list[0]
+	default:
+		return diag.Diagnostics{
+			diag.NewErrorDiagnostic(
+				"State upgrade error",
+				fmt.Sprintf(`unexpected multi-element array at path %q`, pathLabel),
+			),
+		}
+	}
+	return nil
 }
 
 // JSONNumberish returns v as float64 when JSON-decoded state stores numbers (typically float64).
