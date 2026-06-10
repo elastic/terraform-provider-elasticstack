@@ -122,16 +122,8 @@ func (m *CalendarEventTFModel) fromAPIModel(_ context.Context, apiModel *Calenda
 	m.StartTime = timetypes.NewRFC3339TimeValue(startTime)
 	m.EndTime = timetypes.NewRFC3339TimeValue(endTime)
 
-	if apiModel.SkipResult != nil {
-		m.SkipResult = types.BoolValue(*apiModel.SkipResult)
-	} else {
-		m.SkipResult = types.BoolNull()
-	}
-	if apiModel.SkipModelUpdate != nil {
-		m.SkipModelUpdate = types.BoolValue(*apiModel.SkipModelUpdate)
-	} else {
-		m.SkipModelUpdate = types.BoolNull()
-	}
+	m.SkipResult = typeutils.BoolPointerValue(apiModel.SkipResult)
+	m.SkipModelUpdate = typeutils.BoolPointerValue(apiModel.SkipModelUpdate)
 	if apiModel.ForceTimeShift != nil {
 		m.ForceTimeShift = types.StringValue(*apiModel.ForceTimeShift)
 	} else {

@@ -124,11 +124,7 @@ func (d *Data) updateCommonRuleFieldsFromAPI(ctx context.Context, fields commonA
 	d.Namespace = typeutils.StringishPointerValue(fields.Namespace)
 	d.RuleNameOverride = typeutils.StringishPointerValue(fields.RuleNameOverride)
 	d.TimestampOverride = typeutils.StringishPointerValue(fields.TimestampOverride)
-	if fields.TimestampOverrideFallbackDisabled != nil {
-		d.TimestampOverrideFallbackDisabled = types.BoolValue(*fields.TimestampOverrideFallbackDisabled)
-	} else {
-		d.TimestampOverrideFallbackDisabled = types.BoolNull()
-	}
+	d.TimestampOverrideFallbackDisabled = typeutils.BoolPointerValue(fields.TimestampOverrideFallbackDisabled)
 	d.BuildingBlockType = typeutils.StringishPointerValue(fields.BuildingBlockType)
 	d.License = typeutils.StringishPointerValue(fields.License)
 	d.Note = typeutils.StringishPointerValue(fields.Note)
