@@ -90,6 +90,7 @@ Read-Only:
 
 Read-Only:
 
+- `allow_restricted_indices` (Boolean) Include matching restricted indices in names parameter. Usage is strongly discouraged as it can grant unrestricted operations on critical data, make the entire system unstable or leak sensitive information.
 - `clusters` (Set of String) A list of cluster aliases to which the permissions in this entry apply.
 - `field_security` (Attributes) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedatt--elasticsearch--remote_indices--field_security))
 - `names` (Set of String) A list of indices (or index name patterns) to which the permissions in this entry apply.

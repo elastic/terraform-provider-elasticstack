@@ -26,9 +26,10 @@ resource "elasticstack_kibana_security_role" "test" {
         grant  = ["sample", "restricted"]
         except = ["restricted"]
       }
-      query      = jsonencode({ match_all = {} })
-      names      = ["sample"]
-      privileges = ["create", "read", "write"]
+      query                    = jsonencode({ match_all = {} })
+      names                    = ["sample"]
+      privileges               = ["create", "read", "write"]
+      allow_restricted_indices = true
     }
   }
   kibana {

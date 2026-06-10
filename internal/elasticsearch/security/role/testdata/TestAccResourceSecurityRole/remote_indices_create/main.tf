@@ -18,8 +18,9 @@ resource "elasticstack_elasticsearch_security_role" "test" {
       grant  = ["sample"]
       except = []
     }
-    names      = ["sample"]
-    privileges = ["create", "read", "write"]
+    names                    = ["sample"]
+    privileges               = ["create", "read", "write"]
+    allow_restricted_indices = true
     query = jsonencode({
       match_all = {}
     })
