@@ -107,28 +107,6 @@ func canonicalMapJSON(m map[string]any) string {
 	return s
 }
 
-// getStringValue returns types.StringValue if the key exists and is a string, else Null.
-func getStringValue(m map[string]any, key string) types.String {
-	if m == nil {
-		return types.StringNull()
-	}
-	if v, ok := m[key].(string); ok {
-		return types.StringValue(v)
-	}
-	return types.StringNull()
-}
-
-// getBoolValue returns types.BoolValue if the key exists and is a bool, else Null.
-func getBoolValue(m map[string]any, key string) types.Bool {
-	if m == nil {
-		return types.BoolNull()
-	}
-	if v, ok := m[key].(bool); ok {
-		return types.BoolValue(v)
-	}
-	return types.BoolNull()
-}
-
 // getFloat64Value returns types.Float64Value if the key exists and is numeric, else Null.
 func getFloat64Value(m map[string]any, key string) types.Float64 {
 	if m == nil {
@@ -1064,18 +1042,18 @@ func apiBodyToModel(ctx context.Context, body map[string]any, model *tfModel, di
 
 func mapToEntityBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnostics) entityBlockModel {
 	model := entityBlockModel{
-		ID:      getStringValue(m, "id"),
-		Name:    getStringValue(m, attrName),
-		Type:    getStringValue(m, attrType),
-		SubType: getStringValue(m, "sub_type"),
+		ID:      typeutils.StringFromMap(m, "id"),
+		Name:    typeutils.StringFromMap(m, attrName),
+		Type:    typeutils.StringFromMap(m, attrType),
+		SubType: typeutils.StringFromMap(m, "sub_type"),
 		Source:  getStringSetValue(m, "source"),
 	}
 	if attrsRaw, ok := m["attributes"].(map[string]any); ok {
 		attr := entityAttributesBlockModel{
-			Asset:      getBoolValue(attrsRaw, attrAsset),
-			Managed:    getBoolValue(attrsRaw, "managed"),
-			Privileged: getBoolValue(attrsRaw, "privileged"),
-			MfaEnabled: getBoolValue(attrsRaw, "mfa_enabled"),
+			Asset:      typeutils.BoolFromMap(attrsRaw, attrAsset),
+			Managed:    typeutils.BoolFromMap(attrsRaw, "managed"),
+			Privileged: typeutils.BoolFromMap(attrsRaw, "privileged"),
+			MfaEnabled: typeutils.BoolFromMap(attrsRaw, "mfa_enabled"),
 		}
 		model.Attributes, _ = types.ObjectValueFrom(ctx, AttributesBlockAttrTypes(), attr)
 	} else {
@@ -1083,9 +1061,9 @@ func mapToEntityBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagno
 	}
 	if behRaw, ok := m["behaviors"].(map[string]any); ok {
 		beh := entityBehaviorsBlockModel{
-			BruteForceVictim: getBoolValue(behRaw, "brute_force_victim"),
-			NewCountryLogin:  getBoolValue(behRaw, "new_country_login"),
-			UsedUsbDevice:    getBoolValue(behRaw, "used_usb_device"),
+			BruteForceVictim: typeutils.BoolFromMap(behRaw, "brute_force_victim"),
+			NewCountryLogin:  typeutils.BoolFromMap(behRaw, "new_country_login"),
+			UsedUsbDevice:    typeutils.BoolFromMap(behRaw, "used_usb_device"),
 		}
 		model.Behaviors, _ = types.ObjectValueFrom(ctx, BehaviorsBlockAttrTypes(), beh)
 	} else {
@@ -1093,9 +1071,9 @@ func mapToEntityBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagno
 	}
 	if lcRaw, ok := m["lifecycle"].(map[string]any); ok {
 		lc := entityLifecycleBlockModel{
-			FirstSeen:    getStringValue(lcRaw, "first_seen"),
-			LastSeen:     getStringValue(lcRaw, "last_seen"),
-			LastActivity: getStringValue(lcRaw, "last_activity"),
+			FirstSeen:    typeutils.StringFromMap(lcRaw, "first_seen"),
+			LastSeen:     typeutils.StringFromMap(lcRaw, "last_seen"),
+			LastActivity: typeutils.StringFromMap(lcRaw, "last_activity"),
 		}
 		model.Lifecycle, _ = types.ObjectValueFrom(ctx, LifecycleBlockAttrTypes(), lc)
 	} else {
@@ -1128,7 +1106,7 @@ func mapToEntityBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagno
 
 func mapToRiskBlockModel(ctx context.Context, m map[string]any) types.Object {
 	model := entityRiskBlockModel{
-		CalculatedLevel:     getStringValue(m, attrCalculatedLevel),
+		CalculatedLevel:     typeutils.StringFromMap(m, attrCalculatedLevel),
 		CalculatedScore:     getFloat64Value(m, attrCalculatedScore),
 		CalculatedScoreNorm: getFloat64Value(m, attrCalculatedScoreNorm),
 	}
@@ -1138,7 +1116,7 @@ func mapToRiskBlockModel(ctx context.Context, m map[string]any) types.Object {
 
 func mapToHostBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnostics) hostBlockModel {
 	model := hostBlockModel{
-		Name:         getStringValue(m, attrName),
+		Name:         typeutils.StringFromMap(m, attrName),
 		Domain:       getStringSetValue(m, attrDomain),
 		Hostname:     getStringSetValue(m, "hostname"),
 		ID:           getStringSetValue(m, "id"),
@@ -1149,13 +1127,13 @@ func mapToHostBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnost
 	}
 	if osRaw, ok := m["os"].(map[string]any); ok {
 		osModel := hostOsBlockModel{
-			Family:   getStringValue(osRaw, "family"),
-			Full:     getStringValue(osRaw, "full"),
-			Kernel:   getStringValue(osRaw, "kernel"),
-			Name:     getStringValue(osRaw, attrName),
-			Platform: getStringValue(osRaw, "platform"),
-			Type:     getStringValue(osRaw, attrType),
-			Version:  getStringValue(osRaw, "version"),
+			Family:   typeutils.StringFromMap(osRaw, "family"),
+			Full:     typeutils.StringFromMap(osRaw, "full"),
+			Kernel:   typeutils.StringFromMap(osRaw, "kernel"),
+			Name:     typeutils.StringFromMap(osRaw, attrName),
+			Platform: typeutils.StringFromMap(osRaw, "platform"),
+			Type:     typeutils.StringFromMap(osRaw, attrType),
+			Version:  typeutils.StringFromMap(osRaw, "version"),
 		}
 		model.Os, _ = types.ObjectValueFrom(ctx, HostOsBlockAttrTypes(), osModel)
 	} else {
@@ -1171,7 +1149,7 @@ func mapToHostBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnost
 
 func mapToUserBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnostics) userBlockModel {
 	model := userBlockModel{
-		Name:     getStringValue(m, attrName),
+		Name:     typeutils.StringFromMap(m, attrName),
 		Domain:   getStringSetValue(m, attrDomain),
 		Email:    getStringSetValue(m, attrEmail),
 		FullName: getStringSetValue(m, "full_name"),
@@ -1189,7 +1167,7 @@ func mapToUserBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnost
 
 func mapToServiceBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnostics) serviceBlockModel {
 	model := serviceBlockModel{
-		Name: getStringValue(m, attrName),
+		Name: typeutils.StringFromMap(m, attrName),
 	}
 	if riskRaw, ok := m[attrRisk].(map[string]any); ok {
 		model.Risk = mapToRiskBlockModel(ctx, riskRaw)
@@ -1201,59 +1179,59 @@ func mapToServiceBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagn
 
 func mapToOrchestratorBlockModel(_ context.Context, m map[string]any) orchestratorBlockModel {
 	model := orchestratorBlockModel{
-		Name:           getStringValue(m, attrName),
-		Type:           getStringValue(m, attrType),
-		Namespace:      getStringValue(m, "namespace"),
-		ClusterID:      getStringValue(m, "cluster_id"),
-		ClusterName:    getStringValue(m, "cluster_name"),
-		ClusterVersion: getStringValue(m, "cluster_version"),
-		ResourceID:     getStringValue(m, "resource_id"),
-		ResourceName:   getStringValue(m, "resource_name"),
-		ResourceType:   getStringValue(m, "resource_type"),
+		Name:           typeutils.StringFromMap(m, attrName),
+		Type:           typeutils.StringFromMap(m, attrType),
+		Namespace:      typeutils.StringFromMap(m, "namespace"),
+		ClusterID:      typeutils.StringFromMap(m, "cluster_id"),
+		ClusterName:    typeutils.StringFromMap(m, "cluster_name"),
+		ClusterVersion: typeutils.StringFromMap(m, "cluster_version"),
+		ResourceID:     typeutils.StringFromMap(m, "resource_id"),
+		ResourceName:   typeutils.StringFromMap(m, "resource_name"),
+		ResourceType:   typeutils.StringFromMap(m, "resource_type"),
 	}
 	return model
 }
 
 func mapToCloudBlockModel(_ context.Context, m map[string]any) cloudBlockModel {
 	return cloudBlockModel{
-		Provider:    getStringValue(m, attrProvider),
-		Region:      getStringValue(m, "region"),
-		AccountID:   getStringValue(m, "account_id"),
-		AccountName: getStringValue(m, "account_name"),
-		ProjectID:   getStringValue(m, "project_id"),
-		ProjectName: getStringValue(m, "project_name"),
-		ServiceName: getStringValue(m, "service_name"),
+		Provider:    typeutils.StringFromMap(m, attrProvider),
+		Region:      typeutils.StringFromMap(m, "region"),
+		AccountID:   typeutils.StringFromMap(m, "account_id"),
+		AccountName: typeutils.StringFromMap(m, "account_name"),
+		ProjectID:   typeutils.StringFromMap(m, "project_id"),
+		ProjectName: typeutils.StringFromMap(m, "project_name"),
+		ServiceName: typeutils.StringFromMap(m, "service_name"),
 	}
 }
 
 func mapToEventBlockModel(_ context.Context, m map[string]any) eventBlockModel {
 	return eventBlockModel{
-		Category:  getStringValue(m, "category"),
-		Type:      getStringValue(m, attrType),
-		Dataset:   getStringValue(m, "dataset"),
-		Kind:      getStringValue(m, "kind"),
-		Outcome:   getStringValue(m, "outcome"),
-		Provider:  getStringValue(m, attrProvider),
-		Action:    getStringValue(m, "action"),
-		Code:      getStringValue(m, "code"),
-		Reference: getStringValue(m, "reference"),
-		Reason:    getStringValue(m, attrReason),
-		Severity:  getStringValue(m, "severity"),
-		Timezone:  getStringValue(m, "timezone"),
-		URL:       getStringValue(m, "url"),
-		Ingested:  getStringValue(m, "ingested"),
+		Category:  typeutils.StringFromMap(m, "category"),
+		Type:      typeutils.StringFromMap(m, attrType),
+		Dataset:   typeutils.StringFromMap(m, "dataset"),
+		Kind:      typeutils.StringFromMap(m, "kind"),
+		Outcome:   typeutils.StringFromMap(m, "outcome"),
+		Provider:  typeutils.StringFromMap(m, attrProvider),
+		Action:    typeutils.StringFromMap(m, "action"),
+		Code:      typeutils.StringFromMap(m, "code"),
+		Reference: typeutils.StringFromMap(m, "reference"),
+		Reason:    typeutils.StringFromMap(m, attrReason),
+		Severity:  typeutils.StringFromMap(m, "severity"),
+		Timezone:  typeutils.StringFromMap(m, "timezone"),
+		URL:       typeutils.StringFromMap(m, "url"),
+		Ingested:  typeutils.StringFromMap(m, "ingested"),
 	}
 }
 
 func mapToAssetBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnostics) assetBlockModel {
 	model := assetBlockModel{
-		Criticality: getStringValue(m, "criticality"),
+		Criticality: typeutils.StringFromMap(m, "criticality"),
 		Value:       getFloat64Value(m, attrValue),
 	}
 	if fbRaw, ok := m["criticality_feedback"].(map[string]any); ok {
 		fb := assetCriticalityFeedbackBlockModel{
-			Notes:  getStringValue(fbRaw, "notes"),
-			Reason: getStringValue(fbRaw, attrReason),
+			Notes:  typeutils.StringFromMap(fbRaw, "notes"),
+			Reason: typeutils.StringFromMap(fbRaw, attrReason),
 		}
 		model.CriticalityFeedback, _ = types.ObjectValueFrom(ctx, AssetCriticalityFeedbackBlockAttrTypes(), fb)
 	} else {
@@ -1261,10 +1239,10 @@ func mapToAssetBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnos
 	}
 	if ownerRaw, ok := m["owner"].(map[string]any); ok {
 		owner := assetOwnerBlockModel{
-			Name:       getStringValue(ownerRaw, attrName),
-			Department: getStringValue(ownerRaw, "department"),
-			Email:      getStringValue(ownerRaw, attrEmail),
-			Ext:        getStringValue(ownerRaw, "ext"),
+			Name:       typeutils.StringFromMap(ownerRaw, attrName),
+			Department: typeutils.StringFromMap(ownerRaw, "department"),
+			Email:      typeutils.StringFromMap(ownerRaw, attrEmail),
+			Ext:        typeutils.StringFromMap(ownerRaw, "ext"),
 		}
 		model.Owner, _ = types.ObjectValueFrom(ctx, AssetOwnerBlockAttrTypes(), owner)
 	} else {
