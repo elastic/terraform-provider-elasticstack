@@ -241,6 +241,9 @@ func TestAccResourceCCRFollowerIndex_dataStreamNameImport(t *testing.T) {
 					"settings_raw",
 					"data_stream_name",
 				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(followerIndexResourceName, "data_stream_name"),
+				),
 			},
 		},
 	})
@@ -278,6 +281,61 @@ func TestAccResourceCCRFollowerIndex_dataStreamNameVersionGate(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          vars,
 				ExpectError:              regexp.MustCompile(`data_stream_name attribute is only supported on Elasticsearch 8\.4\.0`),
+			},
+		},
+	})
+}
+
+func TestAccResourceCCRFollowerIndex_params(t *testing.T) {
+	ccrEnv := acctest.PreCheckCCR(t)
+	leaderIndexName := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
+	followerIndexName := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
+	vars := ccrFollowerVariables(ccrEnv, leaderIndexName, followerIndexName)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheckCCR(t) },
+		CheckDestroy: checkFollowerIndexPromotedToRegular(followerIndexName),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(followerIndexResourceName, "max_outstanding_read_requests", "15"),
+					resource.TestCheckResourceAttr(followerIndexResourceName, "max_outstanding_write_requests", "10"),
+					resource.TestCheckResourceAttr(followerIndexResourceName, "max_read_request_operation_count", "5120"),
+					resource.TestCheckResourceAttr(followerIndexResourceName, "max_read_request_size", "40mb"),
+					resource.TestCheckResourceAttr(followerIndexResourceName, "max_retry_delay", "500ms"),
+					resource.TestCheckResourceAttr(followerIndexResourceName, "max_write_buffer_count", "512"),
+					resource.TestCheckResourceAttr(followerIndexResourceName, "max_write_buffer_size", "512mb"),
+					resource.TestCheckResourceAttr(followerIndexResourceName, "max_write_request_operation_count", "5120"),
+					resource.TestCheckResourceAttr(followerIndexResourceName, "max_write_request_size", "40mb"),
+					resource.TestCheckResourceAttr(followerIndexResourceName, "read_poll_timeout", "5s"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(followerIndexResourceName, "max_outstanding_read_requests", "30"),
+					resource.TestCheckResourceAttr(followerIndexResourceName, "max_outstanding_write_requests", "20"),
+					resource.TestCheckResourceAttr(followerIndexResourceName, "max_read_request_operation_count", "2048"),
+					resource.TestCheckResourceAttr(followerIndexResourceName, "max_read_request_size", "20mb"),
+					resource.TestCheckResourceAttr(followerIndexResourceName, "max_retry_delay", "1s"),
+					resource.TestCheckResourceAttr(followerIndexResourceName, "max_write_buffer_count", "256"),
+					resource.TestCheckResourceAttr(followerIndexResourceName, "max_write_buffer_size", "256mb"),
+					resource.TestCheckResourceAttr(followerIndexResourceName, "max_write_request_operation_count", "2048"),
+					resource.TestCheckResourceAttr(followerIndexResourceName, "max_write_request_size", "20mb"),
+					resource.TestCheckResourceAttr(followerIndexResourceName, "read_poll_timeout", "10s"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
 			},
 		},
 	})
