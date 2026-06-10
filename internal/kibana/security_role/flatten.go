@@ -180,6 +180,21 @@ func objectFromFieldSecurityResource(ctx context.Context, fs *map[string][]strin
 	return obj, diags
 }
 
+// allowRestrictedIndicesFromAPI maps the API value into state. When the config
+// omits allow_restricted_indices (null in the hint entry), state stays null even
+// if Kibana returns false for the unset field.
+func allowRestrictedIndicesFromAPI(apiVal *bool, hint types.Object) types.Bool {
+	if !hint.IsNull() && !hint.IsUnknown() {
+		if hintBool, ok := hint.Attributes()[attrAllowRestrictedIndices].(types.Bool); ok && hintBool.IsNull() {
+			return types.BoolNull()
+		}
+	}
+	if apiVal != nil {
+		return types.BoolValue(*apiVal)
+	}
+	return types.BoolNull()
+}
+
 // flattenIndicesResource builds the resource-side indices set: optional
 // `cluster`/`run_as`-like nested sets are null when absent, and field_security
 // is a single object (or null) rather than a list. `hint` is the plan/state
@@ -257,12 +272,7 @@ func flattenRemoteIndicesResource(ctx context.Context, indices *[]kibanaoapi.Sec
 		if diags.HasError() {
 			return types.SetNull(objType), diags
 		}
-		var allowRestricted types.Bool
-		if index.AllowRestrictedIndices != nil {
-			allowRestricted = types.BoolValue(*index.AllowRestrictedIndices)
-		} else {
-			allowRestricted = types.BoolNull()
-		}
+		allowRestricted := allowRestrictedIndicesFromAPI(index.AllowRestrictedIndices, entryHint)
 		obj, d := types.ObjectValue(esRemoteIndexResourceAttrTypes(), map[string]attr.Value{
 			attrAllowRestrictedIndices: allowRestricted,
 			attrClusters:               clustersSet,
