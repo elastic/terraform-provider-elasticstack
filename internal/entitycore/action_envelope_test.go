@@ -40,13 +40,6 @@ type testActionModel struct {
 	Value types.String `tfsdk:"value"`
 }
 
-// testKibanaActionModel mirrors testActionModel but for the Kibana variant.
-type testKibanaActionModel struct {
-	KibanaConnectionField
-	ActionTimeoutsField
-	Value types.String `tfsdk:"value"`
-}
-
 func testActionSchema(_ context.Context) actionschema.Schema {
 	return actionschema.Schema{
 		Attributes: map[string]actionschema.Attribute{
@@ -123,18 +116,6 @@ func TestNewElasticsearchAction_typeAssertions(t *testing.T) {
 	require.Implements(t, (*action.ActionWithConfigure)(nil), a)
 }
 
-func TestNewKibanaAction_typeAssertions(t *testing.T) {
-	t.Parallel()
-	a := NewKibanaAction[testKibanaActionModel]("test_entity", KibanaActionOptions[testKibanaActionModel]{
-		Schema: testActionSchema,
-		Invoke: func(_ context.Context, _ *clients.KibanaScopedClient, _ ActionRequest[testKibanaActionModel]) diag.Diagnostics {
-			return nil
-		},
-	})
-	require.Implements(t, (*action.Action)(nil), a)
-	require.Implements(t, (*action.ActionWithConfigure)(nil), a)
-}
-
 func TestNewElasticsearchAction_panicsOnNilSchema(t *testing.T) {
 	t.Parallel()
 	require.PanicsWithValue(t, "entitycore: ElasticsearchActionOptions.Schema must not be nil", func() {
@@ -155,26 +136,6 @@ func TestNewElasticsearchAction_panicsOnNilInvoke(t *testing.T) {
 	})
 }
 
-func TestNewKibanaAction_panicsOnNilSchema(t *testing.T) {
-	t.Parallel()
-	require.PanicsWithValue(t, "entitycore: KibanaActionOptions.Schema must not be nil", func() {
-		_ = NewKibanaAction[testKibanaActionModel]("x", KibanaActionOptions[testKibanaActionModel]{
-			Invoke: func(_ context.Context, _ *clients.KibanaScopedClient, _ ActionRequest[testKibanaActionModel]) diag.Diagnostics {
-				return nil
-			},
-		})
-	})
-}
-
-func TestNewKibanaAction_panicsOnNilInvoke(t *testing.T) {
-	t.Parallel()
-	require.PanicsWithValue(t, "entitycore: KibanaActionOptions.Invoke must not be nil", func() {
-		_ = NewKibanaAction[testKibanaActionModel]("x", KibanaActionOptions[testKibanaActionModel]{
-			Schema: testActionSchema,
-		})
-	})
-}
-
 func TestElasticsearchAction_SchemaInjectsBlocks(t *testing.T) {
 	t.Parallel()
 	a := NewElasticsearchAction[testActionModel]("test_entity", ElasticsearchActionOptions[testActionModel]{
@@ -187,22 +148,6 @@ func TestElasticsearchAction_SchemaInjectsBlocks(t *testing.T) {
 	schema := invokeSchema(t, a)
 
 	require.Contains(t, schema.Blocks, "elasticsearch_connection", "envelope must inject elasticsearch_connection block")
-	require.Contains(t, schema.Blocks, "timeouts", "envelope must inject timeouts block")
-	require.Contains(t, schema.Attributes, "value", "concrete attributes must be preserved")
-}
-
-func TestKibanaAction_SchemaInjectsBlocks(t *testing.T) {
-	t.Parallel()
-	a := NewKibanaAction[testKibanaActionModel]("test_entity", KibanaActionOptions[testKibanaActionModel]{
-		Schema: testActionSchema,
-		Invoke: func(_ context.Context, _ *clients.KibanaScopedClient, _ ActionRequest[testKibanaActionModel]) diag.Diagnostics {
-			return nil
-		},
-	})
-
-	schema := invokeSchema(t, a)
-
-	require.Contains(t, schema.Blocks, "kibana_connection", "envelope must inject kibana_connection block")
 	require.Contains(t, schema.Blocks, "timeouts", "envelope must inject timeouts block")
 	require.Contains(t, schema.Attributes, "value", "concrete attributes must be preserved")
 }

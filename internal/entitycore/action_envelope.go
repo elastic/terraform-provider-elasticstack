@@ -316,36 +316,6 @@ func NewElasticsearchAction[T ElasticsearchActionModel](
 	}
 }
 
-// NewKibanaAction returns an [action.Action] that owns Metadata, Configure,
-// Schema (with `kibana_connection` and `timeouts` block injection), and the
-// Invoke prelude for the Kibana namespace.
-func NewKibanaAction[T KibanaActionModel](
-	name string,
-	opts KibanaActionOptions[T],
-) action.Action {
-	if opts.Schema == nil {
-		panic("entitycore: KibanaActionOptions.Schema must not be nil")
-	}
-	if opts.Invoke == nil {
-		panic("entitycore: KibanaActionOptions.Invoke must not be nil")
-	}
-	return &genericAction[T, *clients.KibanaScopedClient]{
-		ActionBase:     NewActionBase(ComponentKibana, name),
-		schemaFactory:  opts.Schema,
-		invokeFunc:     opts.Invoke,
-		defaultTimeout: opts.DefaultInvokeTimeout,
-		adapter: actionAdapter[T, *clients.KibanaScopedClient]{
-			getConnection: func(model T) types.List { return model.GetKibanaConnection() },
-			getClient: func(ctx context.Context, factory *clients.ProviderClientFactory, connection types.List) (*clients.KibanaScopedClient, diag.Diagnostics) {
-				return factory.GetKibanaClient(ctx, connection)
-			},
-			schemaBlockKey:     blockKibanaConnection,
-			schemaBlockFactory: providerschema.GetKbActionConnectionBlock,
-			errorSummary:       "Kibana action envelope error",
-		},
-	}
-}
-
 // Compile-time interface satisfaction guards.
 var (
 	_ action.Action              = (*genericAction[elasticsearchActionModelGuard, *clients.ElasticsearchScopedClient])(nil)
