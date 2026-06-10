@@ -50,7 +50,9 @@ after `terraform import`.
 The resource SHALL expose optional tuning attributes that override Elasticsearch defaults. All are
 nullable. Duration attributes are strings in ES time format (e.g. `"10s"`); byte-size attributes are
 strings in ES byte format (e.g. `"100mb"`); count attributes are int64. Changes to any tuning
-attribute trigger an in-place update (no ForceNew).
+attribute trigger an in-place update (no ForceNew). All ten tuning attributes are `Optional +
+Computed` because `GET /{index}/_ccr/info` returns effective values (including ES defaults) in
+`Parameters` when the follower is active.
 
 Attributes: `max_outstanding_read_requests` (int64), `max_outstanding_write_requests` (int64),
 `max_read_request_operation_count` (int64), `max_read_request_size` (string, byte format),

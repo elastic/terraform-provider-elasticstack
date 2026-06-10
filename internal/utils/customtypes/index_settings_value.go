@@ -271,7 +271,7 @@ func CanonicalIndexSettingsJSON(raw string) (string, error) {
 		return "", fmt.Errorf("settings must be a JSON object")
 	}
 	flatNorm := normalizeIndexSettings(typeutils.FlattenMap(m))
-	nested := unflattenDottedMap(flatNorm)
+	nested := UnflattenDottedMap(flatNorm)
 	b, err := marshalSettingsJSONSorted(nested)
 	if err != nil {
 		return "", fmt.Errorf("marshal canonical settings: %w", err)
@@ -314,7 +314,7 @@ func marshalSettingsJSONSorted(v any) ([]byte, error) {
 	}
 }
 
-// unflattenDottedMap turns dotted keys (after normalizeIndexSettings, e.g. index.number_of_shards)
+// UnflattenDottedMap turns dotted keys (after normalizeIndexSettings, e.g. index.number_of_shards)
 // into a nested map for JSON matching Elasticsearch's index settings object shape.
 //
 // Conflict handling: keys are processed in lexicographic order so output is deterministic
@@ -322,7 +322,7 @@ func marshalSettingsJSONSorted(v any) ([]byte, error) {
 // (e.g. "index.foo") and a nested path (e.g. "index.foo.bar"), the deeper/nested path wins
 // because it is sorted after the shorter key and overwrites the leaf. Such conflicts are not
 // expected for valid Elasticsearch index settings; this rule simply guarantees stability.
-func unflattenDottedMap(flat map[string]any) map[string]any {
+func UnflattenDottedMap(flat map[string]any) map[string]any {
 	root := make(map[string]any)
 	keys := make([]string, 0, len(flat))
 	for k := range flat {

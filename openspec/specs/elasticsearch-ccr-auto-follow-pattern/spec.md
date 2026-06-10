@@ -1,10 +1,8 @@
-## ADDED Requirements
+# elasticsearch-ccr-auto-follow-pattern Specification
 
-> New resource `elasticstack_elasticsearch_ccr_auto_follow_pattern` — manages a Cross-Cluster
-> Replication (CCR) auto-follow pattern. CCR requires Platinum or Enterprise license (trial mode
-> activates enterprise features). Auto-follow is the recommended approach for time-series workloads
-> with date-partitioned indices or data streams.
-
+## Purpose
+TBD - created by archiving change elasticsearch-ccr-resources. Update Purpose after archive.
+## Requirements
 ### Requirement: Schema — identity and pattern configuration (REQ-CCR-AFP-001)
 
 The resource SHALL expose:
@@ -225,3 +223,4 @@ The resource SHALL support import by pattern name. After import, `active`, `remo
 - WHEN the practitioner runs `terraform import elasticstack_elasticsearch_ccr_auto_follow_pattern.example etl-logs`
 - THEN Terraform state SHALL reflect the pattern's current `active`, `remote_cluster`, `leader_index_patterns`, and tuning parameters from the API
 - AND `settings_raw` SHALL be empty in state
+

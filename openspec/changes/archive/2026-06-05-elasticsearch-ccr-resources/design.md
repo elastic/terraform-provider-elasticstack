@@ -68,14 +68,20 @@ state, then apply a config with `data_stream_name` set and confirm a replacement
 
 ### Auto-follow pattern tuning parameters — API read limitation
 
-`GET /_ccr/auto_follow/{name}` returns only one tuning parameter: `max_outstanding_read_requests`.
-The other nine (`max_outstanding_write_requests`, `max_read_request_operation_count`,
-`max_read_request_size`, `max_retry_delay`, `max_write_buffer_count`, `max_write_buffer_size`,
+`GET /_ccr/auto_follow/{name}` returns `max_outstanding_read_requests` and
+`leader_index_exclusion_patterns` from the tuning/pattern set. The other nine tuning parameters
+(`max_outstanding_write_requests`, `max_read_request_operation_count`, `max_read_request_size`,
+`max_retry_delay`, `max_write_buffer_count`, `max_write_buffer_size`,
 `max_write_request_operation_count`, `max_write_request_size`, `read_poll_timeout`) are accepted by
-the PUT API but never returned by the GET API. All ten are exposed in the schema as `Optional` only.
-During Read, the provider updates `max_outstanding_read_requests` from the API response and preserves
-the prior-state values for the remaining nine unchanged. This prevents perpetual diffs while still
-allowing practitioners to set, update, or remove any tuning parameter via the normal plan/apply cycle.
+the PUT API but never returned by the GET API.
+
+Attributes whose values are returned by the GET API (`max_outstanding_read_requests` and
+`leader_index_exclusion_patterns`) are `Optional + Computed` so Elasticsearch-managed defaults do not
+produce "Provider produced inconsistent result after apply" when the practitioner omits them. The nine
+params never returned by GET remain `Optional` only and are preserved from prior state during Read.
+This prevents perpetual diffs while still allowing practitioners to set, update, or remove any tuning
+parameter via the normal plan/apply cycle. `follow_index_pattern` remains `Optional` only (the API
+returns null when unset).
 
 ### ForceNew scope
 
@@ -106,7 +112,9 @@ configured desired value, and Apply calls the appropriate pause or resume API.
 | `paused` | `paused` | any | no API call; tuning changes stored in state for next resume |
 
 Create always starts active (the CCR API has no create-as-paused option). If `status = "paused"` is
-configured at creation time, the provider creates the index then immediately pauses it.
+configured at creation time, the provider creates the index, performs a `GET /{index}/_ccr/info` to
+capture tuning parameters while the follower is still active (paused followers omit `Parameters`),
+then immediately pauses it.
 
 Delete always requires the index to be paused before closing and unfollowing. The provider checks
 prior state: if `status == "active"`, it calls `pause_follow`; if already `"paused"`, it skips the
@@ -124,10 +132,15 @@ Create always starts active. If `active = false` is configured at creation time,
 
 ### Paused state and tuning parameter read-back
 
-`GET /{index}/_ccr/info` omits `Parameters` when the follower index is paused (`types.FollowerIndex`
-documents this: "If the follower index's status is paused, this object is omitted"). When Read
-encounters a paused index, it MUST preserve the prior-state tuning parameter values rather than
-zeroing them out, to avoid spurious diffs on attributes the practitioner has not changed.
+`GET /{index}/_ccr/info` returns all ten tuning parameters in `Parameters` when the follower index
+is active (Elasticsearch populates effective defaults). All ten tuning attributes are therefore
+`Optional + Computed` so ES-managed defaults do not produce "Provider produced inconsistent result
+after apply" when the practitioner omits them. When Read encounters a paused index, the API omits
+`Parameters` (`types.FollowerIndex` documents this: "If the follower index's status is paused, this
+object is omitted"); the provider MUST preserve the prior-state tuning parameter values rather than
+zeroing them out, to avoid spurious diffs on attributes the practitioner has not changed. On create
+with `status = "paused"`, the provider captures parameters via GET before pausing so the post-apply
+state carries concrete tuning values.
 
 ### `delete_index_on_destroy`
 
@@ -211,3 +224,44 @@ the info API) — see the Write-only attributes decision above.
 - **CI acceptance tests**: Confirm which CI job runs licensed-feature tests and whether trial mode
   on the existing stack is sufficient or a separate cluster is needed. The acceptance tests should
   carry an appropriate skip annotation if a licensed cluster is not available.
+
+## Resolution notes (post-archive, from local acceptance verification)
+
+### Self-remote CCR acceptance test setup
+
+CCR acceptance tests register a self-remote cluster in proxy mode. Proxy-mode remotes open raw
+transport (TCP) connections, so `proxy_address` must be `host:transport_port` (default `9300`), not
+the HTTP port from `ELASTICSEARCH_ENDPOINTS`. In CI the acceptance-test container uses
+`http://elasticsearch:9200`, so the harness derives `elasticsearch:9300` for the self-remote.
+`PreCheckCCR` registers that remote via cluster settings and polls `GET /_remote/info` until
+`connected == true`; if the transport endpoint is unreachable, tests skip with a clear message
+instead of failing at `PUT /_ccr/follow`. `docker-compose.yml` publishes the transport port.
+
+### Create waits for following to start
+
+`PUT /{index}/_ccr/follow` returns before shard follow tasks start
+(`index_following_started: false`). During that window `GET /{index}/_ccr/info` reports a transient
+`status: "paused"` and omits `parameters`. Create therefore polls `GET /_ccr/info` until the
+follower is active with readable parameters before mapping Computed tuning attributes, and the
+pause decision is driven by the desired (planned) status rather than the transient read. Without
+this, an active follower was erroneously paused (`no shard follow tasks`) and Computed attributes
+were left unknown after apply.
+
+### Computed tuning attributes use prior state on update
+
+The Computed tuning attributes carry `UseStateForUnknown` plan modifiers. A paused follower omits
+`parameters`, so on an active→paused update the planned/returned values must come from prior state
+to avoid "unknown value after apply".
+
+### Data stream follower follows a backing index
+
+`_ccr/follow` rejects following a data stream by name (`cannot follow [...] because it is a
+DATA_STREAM`). The `data_stream_name` acceptance test follows a backing index of a leader data
+stream and attaches the follower to a separately named local data stream (the leader and follower
+share a cluster in the self-remote environment).
+
+### Per-process remote alias
+
+The self-remote cluster alias is unique per test process (`acc-ccr-remote-<pid>`) because gotestsum
+runs package binaries concurrently; a shared alias caused cross-package interference on the shared
+persistent remote-cluster setting.

@@ -1,0 +1,1 @@
+terraform import elasticstack_elasticsearch_ccr_auto_follow_pattern.my_pattern <cluster_uuid>/<pattern_name>
