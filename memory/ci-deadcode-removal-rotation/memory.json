@@ -284,6 +284,34 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.AcceptanceServerInfo",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-06-10T04:28:00.978039102Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index.settingElementType",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index",
+      "attemptedAt": "2026-06-10T04:28:00.978039232Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index.settingsElementType",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index",
+      "attemptedAt": "2026-06-10T04:28:00.978039302Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.NewKibanaAction",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-06-10T04:42:01.754261396Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
