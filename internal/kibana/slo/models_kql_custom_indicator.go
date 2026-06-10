@@ -174,9 +174,7 @@ func (m *tfModel) populateFromKqlCustomIndicator(apiIndicator kbapi.SLOsIndicato
 	diags.Append(tDiags...)
 	ind.Total, ind.TotalKql = t, tK
 
-	if p.DataViewId != nil {
-		ind.DataViewID = types.StringValue(*p.DataViewId)
-	}
+	ind.DataViewID = typeutils.StringishPointerValue(p.DataViewId)
 
 	m.KqlCustomIndicator = []tfKqlCustomIndicator{ind}
 	return diags
@@ -311,11 +309,7 @@ func kqlAPIFilterRowToTF(f kbapi.SLOsFilter) (types.Object, diag.Diagnostics) {
 func kqlObjectShapeAPIToTF(kq *string, filters *[]kbapi.SLOsFilter) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var kqlStr types.String
-	if kq != nil {
-		kqlStr = types.StringValue(*kq)
-	} else {
-		kqlStr = types.StringNull()
-	}
+	kqlStr = typeutils.StringishPointerValue(kq)
 	var listVal types.List
 	if filters == nil || len(*filters) == 0 {
 		empty, lDiags := types.ListValue(tfKqlFilterRowObjectType, []attr.Value{})

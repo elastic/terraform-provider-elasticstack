@@ -109,24 +109,12 @@ func populateContentConnectorDataSourceFromAPI(
 	model.LastIndexedDocumentCount = typeutils.Int64PointerValue(resp.LastIndexedDocumentCount)
 	model.LastDeletedDocumentCount = typeutils.Int64PointerValue(resp.LastDeletedDocumentCount)
 	model.LastSyncScheduledAt = connectorDateTimeToString(resp.LastSyncScheduledAt)
-	if resp.LastSyncError != nil {
-		model.LastSyncError = fwtypes.StringValue(*resp.LastSyncError)
-	} else {
-		model.LastSyncError = fwtypes.StringNull()
-	}
+	model.LastSyncError = typeutils.StringishPointerValue(resp.LastSyncError)
 	model.LastAccessControlSyncStatus = connectorSyncStatusToString(resp.LastAccessControlSyncStatus)
-	if resp.LastAccessControlSyncError != nil {
-		model.LastAccessControlSyncError = fwtypes.StringValue(*resp.LastAccessControlSyncError)
-	} else {
-		model.LastAccessControlSyncError = fwtypes.StringNull()
-	}
+	model.LastAccessControlSyncError = typeutils.StringishPointerValue(resp.LastAccessControlSyncError)
 	model.LastAccessControlSyncScheduledAt = connectorDateTimeToString(resp.LastAccessControlSyncScheduledAt)
 	model.LastIncrementalSyncScheduledAt = connectorDateTimeToString(resp.LastIncrementalSyncScheduledAt)
-	if resp.Error != nil {
-		model.Error = fwtypes.StringValue(*resp.Error)
-	} else {
-		model.Error = fwtypes.StringNull()
-	}
+	model.Error = typeutils.StringishPointerValue(resp.Error)
 
 	model.Filtering = marshalConnectorJSONField("filtering", resp.Filtering, diags)
 	model.CustomScheduling = marshalConnectorJSONField("custom_scheduling", resp.CustomScheduling, diags)

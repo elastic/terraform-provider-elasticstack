@@ -185,11 +185,7 @@ func convertActionsToModel(ctx context.Context, apiActions []kbapi.SecurityDetec
 		// Set optional fields
 		action.Group = types.StringPointerValue(apiAction.Group)
 
-		if apiAction.Uuid != nil {
-			action.UUID = types.StringValue(*apiAction.Uuid)
-		} else {
-			action.UUID = types.StringNull()
-		}
+		action.UUID = typeutils.StringishPointerValue(apiAction.Uuid)
 
 		action.AlertsFilter = flattenActionAlertsFilter(ctx, apiAction.AlertsFilter, &diags)
 
@@ -308,11 +304,7 @@ func convertRelatedIntegrationsToModel(ctx context.Context, apiRelatedIntegratio
 		}
 
 		// Set optional integration field if provided
-		if apiIntegration.Integration != nil {
-			integration.Integration = types.StringValue(*apiIntegration.Integration)
-		} else {
-			integration.Integration = types.StringNull()
-		}
+		integration.Integration = typeutils.StringishPointerValue(apiIntegration.Integration)
 
 		integrations = append(integrations, integration)
 	}

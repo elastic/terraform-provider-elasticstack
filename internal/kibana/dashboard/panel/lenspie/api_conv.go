@@ -71,16 +71,8 @@ func pieChartConfigPopulateCommonFields(
 	} else {
 		m.Sampling = types.Float64Value(1.0)
 	}
-	if donutHole != nil {
-		m.DonutHole = types.StringValue(*donutHole)
-	} else {
-		m.DonutHole = types.StringNull()
-	}
-	if labelPosition != nil {
-		m.LabelPosition = types.StringValue(*labelPosition)
-	} else {
-		m.LabelPosition = types.StringNull()
-	}
+	m.DonutHole = typeutils.StringishPointerValue(donutHole)
+	m.LabelPosition = typeutils.StringishPointerValue(labelPosition)
 	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, datasetErr, "data_source_json", diags)
 	if !ok {
 		return false

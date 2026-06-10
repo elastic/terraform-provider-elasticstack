@@ -191,11 +191,7 @@ func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, p
 				continue
 			}
 			m.EsqlGroupBy[i].FormatJSON = jsontypes.NewNormalizedValue(string(formatBytes))
-			if gb.Label != nil {
-				m.EsqlGroupBy[i].Label = types.StringValue(*gb.Label)
-			} else {
-				m.EsqlGroupBy[i].Label = types.StringNull()
-			}
+			m.EsqlGroupBy[i].Label = typeutils.StringishPointerValue(gb.Label)
 		}
 	}
 

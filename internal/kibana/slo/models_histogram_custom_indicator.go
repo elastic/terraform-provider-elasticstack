@@ -140,9 +140,7 @@ func (m *tfModel) populateFromHistogramCustomIndicator(apiIndicator kbapi.SLOsIn
 			To:          types.Float64PointerValue(p.Total.To),
 		}},
 	}
-	if p.DataViewId != nil {
-		ind.DataViewID = types.StringValue(*p.DataViewId)
-	}
+	ind.DataViewID = typeutils.StringishPointerValue(p.DataViewId)
 
 	m.HistogramCustomIndicator = []tfHistogramCustomIndicator{ind}
 	return diags

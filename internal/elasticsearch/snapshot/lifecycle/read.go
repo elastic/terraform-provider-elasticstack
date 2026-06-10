@@ -64,11 +64,7 @@ func mapSlmToData(ctx context.Context, slm *elasticsearch.SlmPolicy, resourceID 
 
 	// Retention
 	if slm.Retention != nil {
-		if slm.Retention.ExpireAfter != nil {
-			data.ExpireAfter = types.StringValue(*slm.Retention.ExpireAfter)
-		} else {
-			data.ExpireAfter = types.StringNull()
-		}
+		data.ExpireAfter = typeutils.StringishPointerValue(slm.Retention.ExpireAfter)
 		data.MaxCount = typeutils.IntPointerToInt64Value(slm.Retention.MaxCount)
 		data.MinCount = typeutils.IntPointerToInt64Value(slm.Retention.MinCount)
 	} else {

@@ -85,11 +85,7 @@ func readAndHydrateState(
 	state.Name = types.StringValue(item.Name)
 	state.Host = types.StringValue(item.Host)
 	state.Default = types.BoolPointerValue(item.IsDefault)
-	if item.ProxyId != nil {
-		state.ProxyID = types.StringValue(*item.ProxyId)
-	} else {
-		state.ProxyID = types.StringNull()
-	}
+	state.ProxyID = typeutils.StringishPointerValue(item.ProxyId)
 	state.SpaceIDs = preservedSpaceIDs
 	state.KibanaConnection = preservedKibanaConnection
 	return state, true, diags

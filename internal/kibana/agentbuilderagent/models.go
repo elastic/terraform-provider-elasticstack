@@ -124,11 +124,7 @@ func (model *agentBaseModel) populateFromAPI(ctx context.Context, spaceID string
 
 	model.Description = typeutils.NonEmptyStringOrNull(data.Description)
 
-	if cfg := data.Configuration; cfg.Instructions != nil && *cfg.Instructions != "" {
-		model.Instructions = types.StringValue(*cfg.Instructions)
-	} else {
-		model.Instructions = types.StringNull()
-	}
+	model.Instructions = typeutils.NonEmptyStringOrNull(data.Configuration.Instructions)
 
 	model.Labels, d = typeutils.StringSetOrNull(ctx, data.Labels)
 	diags.Append(d...)
