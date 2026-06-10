@@ -257,12 +257,19 @@ func flattenRemoteIndicesResource(ctx context.Context, indices *[]kibanaoapi.Sec
 		if diags.HasError() {
 			return types.SetNull(objType), diags
 		}
+		var allowRestricted types.Bool
+		if index.AllowRestrictedIndices != nil {
+			allowRestricted = types.BoolValue(*index.AllowRestrictedIndices)
+		} else {
+			allowRestricted = types.BoolNull()
+		}
 		obj, d := types.ObjectValue(esRemoteIndexResourceAttrTypes(), map[string]attr.Value{
-			attrClusters:      clustersSet,
-			attrNames:         namesSet,
-			attrPrivileges:    privSet,
-			attrQuery:         normalizedQueryFromAPI(index.Query),
-			attrFieldSecurity: fieldObj,
+			attrAllowRestrictedIndices: allowRestricted,
+			attrClusters:               clustersSet,
+			attrNames:                  namesSet,
+			attrPrivileges:             privSet,
+			attrQuery:                  normalizedQueryFromAPI(index.Query),
+			attrFieldSecurity:          fieldObj,
 		})
 		diags.Append(d...)
 		if diags.HasError() {

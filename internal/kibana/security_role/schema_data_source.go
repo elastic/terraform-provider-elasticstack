@@ -138,6 +138,10 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 									Computed:    true,
 									ElementType: types.StringType,
 								},
+								attrAllowRestrictedIndices: schema.BoolAttribute{
+									Description: allowRestrictedIndicesDescription,
+									Computed:    true,
+								},
 							},
 						},
 					},

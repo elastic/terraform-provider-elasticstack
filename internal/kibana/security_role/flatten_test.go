@@ -66,12 +66,14 @@ func TestUnitFlattenExpandRemoteIndicesRoundTrip(t *testing.T) {
 	ctx := context.Background()
 	grant := []string{"sample"}
 	fs := map[string][]string{"grant": grant}
+	allowRestricted := true
 	es := kibanaoapi.SecurityRoleES{
 		RemoteIndices: &[]kibanaoapi.SecurityRoleESRemoteIndex{{
-			Names:         []string{"sample"},
-			Clusters:      []string{"test-cluster"},
-			Privileges:    []string{"create", "read", "write"},
-			FieldSecurity: &fs,
+			Names:                  []string{"sample"},
+			Clusters:               []string{"test-cluster"},
+			Privileges:             []string{"create", "read", "write"},
+			AllowRestrictedIndices: &allowRestricted,
+			FieldSecurity:          &fs,
 		}},
 	}
 	obj, diags := flattenElasticsearchObject(ctx, &es, nullEsHint())

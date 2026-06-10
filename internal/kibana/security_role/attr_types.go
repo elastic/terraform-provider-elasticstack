@@ -45,11 +45,12 @@ func esIndexResourceAttrTypes() map[string]attr.Type {
 
 func esRemoteIndexResourceAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		attrClusters:      types.SetType{ElemType: types.StringType},
-		attrNames:         types.SetType{ElemType: types.StringType},
-		attrPrivileges:    types.SetType{ElemType: types.StringType},
-		attrQuery:         jsontypes.NormalizedType{},
-		attrFieldSecurity: fieldSecurityObjectType(),
+		attrAllowRestrictedIndices: types.BoolType,
+		attrClusters:               types.SetType{ElemType: types.StringType},
+		attrNames:                  types.SetType{ElemType: types.StringType},
+		attrPrivileges:             types.SetType{ElemType: types.StringType},
+		attrQuery:                  jsontypes.NormalizedType{},
+		attrFieldSecurity:          fieldSecurityObjectType(),
 	}
 }
 

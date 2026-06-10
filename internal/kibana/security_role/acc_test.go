@@ -131,6 +131,7 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 					}),
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.names", []string{"sample"}),
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.privileges", []string{"create", "read", "write"}),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.allow_restricted_indices", "true"),
 				),
 			},
 			{
@@ -150,6 +151,7 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.field_security.grant", []string{"sample2"}),
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.names", []string{"sample2"}),
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.privileges", []string{"create", "read", "write"}),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.allow_restricted_indices", "false"),
 				),
 			},
 		},
@@ -297,6 +299,7 @@ func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 					resource.TestCheckTypeSetElemNestedAttrs("data.elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.*", map[string]string{
 						"query": `{"match_all":{}}`,
 					}),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.allow_restricted_indices", "true"),
 				),
 			},
 			{

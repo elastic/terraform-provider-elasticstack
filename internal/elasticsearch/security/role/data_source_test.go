@@ -66,6 +66,7 @@ func TestAccDataSourceSecurityRole(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "metadata", `{"version":1}`),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "remote_indices.*.clusters.*", "test-cluster2"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "remote_indices.*.names.*", "sample2"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "remote_indices.0.allow_restricted_indices", "true"),
 				),
 			},
 			{

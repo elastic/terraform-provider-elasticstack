@@ -20,21 +20,22 @@ package security_role
 // Terraform schema attribute keys shared across the security role resource
 // schema, data source schema, attr types, and flatten helpers.
 const (
-	attrGrant         = "grant"
-	attrExcept        = "except"
-	attrNames         = "names"
-	attrPrivileges    = "privileges"
-	attrQuery         = "query"
-	attrFieldSecurity = "field_security"
-	attrClusters      = "clusters"
-	attrCluster       = "cluster"
-	attrIndices       = "indices"
-	attrRemoteIndices = "remote_indices"
-	attrRunAs         = "run_as"
-	attrName          = "name"
-	attrSpaces        = "spaces"
-	attrBase          = "base"
-	attrFeature       = "feature"
+	attrGrant                  = "grant"
+	attrExcept                 = "except"
+	attrNames                  = "names"
+	attrPrivileges             = "privileges"
+	attrQuery                  = "query"
+	attrFieldSecurity          = "field_security"
+	attrClusters               = "clusters"
+	attrCluster                = "cluster"
+	attrIndices                = "indices"
+	attrRemoteIndices          = "remote_indices"
+	attrRunAs                  = "run_as"
+	attrName                   = "name"
+	attrSpaces                 = "spaces"
+	attrBase                   = "base"
+	attrFeature                = "feature"
+	attrAllowRestrictedIndices = "allow_restricted_indices"
 )
 
 // Schema descriptions repeated in resource and data source definitions.

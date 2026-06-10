@@ -18,8 +18,9 @@ resource "elasticstack_elasticsearch_security_role" "test" {
       grant  = ["sample"]
       except = []
     }
-    names      = ["sample2"]
-    privileges = ["create", "read", "write"]
+    names                    = ["sample2"]
+    privileges               = ["create", "read", "write"]
+    allow_restricted_indices = true
   }
 
   applications {

@@ -38,6 +38,9 @@ var resourceDescription string
 //go:embed descriptions/remote_indices_permissions.md
 var remoteIndicesPermissionsDescription string
 
+//go:embed descriptions/allow_restricted_indices.md
+var allowRestrictedIndicesDescription string
+
 func fieldSecurityResourceAttrs() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		attrGrant: schema.SetAttribute{
@@ -107,6 +110,10 @@ func remoteIndicesResourceBlock() schema.Block {
 		Description: "A list of cluster aliases to which the permissions in this entry apply.",
 		Required:    true,
 		ElementType: types.StringType,
+	}
+	attrs[attrAllowRestrictedIndices] = schema.BoolAttribute{
+		Description: allowRestrictedIndicesDescription,
+		Optional:    true,
 	}
 	return schema.SetNestedBlock{
 		Description: remoteIndicesPermissionsDescription,
