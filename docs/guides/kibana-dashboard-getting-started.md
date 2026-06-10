@@ -7,7 +7,7 @@ description: |-
 
 # Getting started with Kibana dashboards
 
-This guide walks you through building a **web server log monitoring dashboard** with Terraform. You will add panels one at a time—markdown, KPI metrics, a time-series line chart, a horizontal bar chart, and a donut chart—using the [`elasticstack_kibana_dashboard`](/docs/resources/kibana_dashboard) resource and Kibana's built-in **sample logs** dataset.
+This guide walks you through building a **web server log monitoring dashboard** with Terraform. You will add panels one at a time—markdown, KPI metrics, a time-series line chart, a horizontal bar chart, and a donut chart—using the [`elasticstack_kibana_dashboard`](../resources/kibana_dashboard) resource and Kibana's built-in **sample logs** dataset.
 
 Every visualization is defined **by value** in Terraform (no pre-existing saved objects required). Lens chart configuration is exported from the Kibana UI and embedded in `vis_config.by_value`; we explain that workflow explicitly so you can adapt the patterns to your own charts.
 
@@ -124,7 +124,7 @@ locals {
 
 Set `data_source_json = local.logs_data_source` on each `metric_chart_config`, `xy_chart_config`, or `pie_chart_config` that reads from the sample logs.
 
-> **By reference vs by value** — This guide uses only **by value** configs (`markdown_config.by_value`, `vis_config.by_value`, and so on) so `terraform apply` is self-contained. You can also reference existing saved visualizations with `by_reference` blocks; see the [`elasticstack_kibana_dashboard` resource reference](/docs/resources/kibana_dashboard) for that pattern.
+> **By reference vs by value** — This guide uses only **by value** configs (`markdown_config.by_value`, `vis_config.by_value`, and so on) so `terraform apply` is self-contained. You can also reference existing saved visualizations with `by_reference` blocks; see the [`elasticstack_kibana_dashboard` resource reference](../resources/kibana_dashboard) for that pattern.
 
 ## Markdown panel
 
@@ -625,7 +625,7 @@ resource "elasticstack_kibana_dashboard" "getting_started" {
 
 You now have a runnable logs dashboard defined entirely in Terraform. Continue with the other guides in this series:
 
-- [**Dashboard operations**](/docs/guides/kibana-dashboard-operations) — pinned **options list** controls, KPI rows, stacked area and data table panels, and an embedded **Discover** session on the sample eCommerce dataset.
-- [**Advanced dashboards**](/docs/guides/kibana-dashboard-advanced) — collapsible **sections**, branding **image** panels, gauge and heatmap charts, **ES|QL** controls, **access control**, and **tags**.
+- [**Dashboard operations**](./kibana-dashboard-operations) — pinned **options list** controls, KPI rows, stacked area and data table panels, and an embedded **Discover** session on the sample eCommerce dataset.
+- [**Advanced dashboards**](./kibana-dashboard-advanced) — collapsible **sections**, branding **image** panels, gauge and heatmap charts, **ES|QL** controls, **access control**, and **tags**.
 
-For every field and panel type, use the [`elasticstack_kibana_dashboard` resource reference](/docs/resources/kibana_dashboard). Regenerate screenshots after UI or config changes with `node scripts/screenshots/guide1.mjs` (see [`scripts/screenshots/README.md`](https://github.com/elastic/terraform-provider-elasticstack/tree/main/scripts/screenshots/README.md)).
+For every field and panel type, use the [`elasticstack_kibana_dashboard` resource reference](../resources/kibana_dashboard). Regenerate screenshots after UI or config changes with `node scripts/screenshots/guide1.mjs` (see [`scripts/screenshots/README.md`](https://github.com/elastic/terraform-provider-elasticstack/tree/main/scripts/screenshots/README.md)).

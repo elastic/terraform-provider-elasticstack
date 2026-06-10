@@ -11,11 +11,11 @@ Use this guide when you need to model least-privilege access across Elasticsearc
 
 ## When to use each resource
 
-Use [`elasticstack_elasticsearch_security_role`](/docs/resources/elasticsearch_security_role) when you need to manage Elasticsearch-native privileges such as cluster privileges, index privileges, field-level security, document-level security, or `run_as`. This is the right resource when the access decision is entirely about Elasticsearch APIs and data.
+Use [`elasticstack_elasticsearch_security_role`](../resources/elasticsearch_security_role) when you need to manage Elasticsearch-native privileges such as cluster privileges, index privileges, field-level security, document-level security, or `run_as`. This is the right resource when the access decision is entirely about Elasticsearch APIs and data.
 
-Use [`elasticstack_kibana_security_role`](/docs/resources/kibana_security_role) when you need to manage Kibana application access such as spaces, base privileges, and feature privileges. A Kibana role also carries an `elasticsearch {}` block, so it is the right choice when the same role should describe both the Elasticsearch privileges and the Kibana feature access a user gets in Kibana.
+Use [`elasticstack_kibana_security_role`](../resources/kibana_security_role) when you need to manage Kibana application access such as spaces, base privileges, and feature privileges. A Kibana role also carries an `elasticsearch {}` block, so it is the right choice when the same role should describe both the Elasticsearch privileges and the Kibana feature access a user gets in Kibana.
 
-Use `role_descriptors` on [`elasticstack_elasticsearch_security_api_key`](/docs/resources/elasticsearch_security_api_key) when you need to issue an API key that is narrower than the privileges of the user or role creating it. API key role descriptors use the Elasticsearch role structure and can only further restrict the owner's privileges; they never expand access beyond what the owner already has.
+Use `role_descriptors` on [`elasticstack_elasticsearch_security_api_key`](../resources/elasticsearch_security_api_key) when you need to issue an API key that is narrower than the privileges of the user or role creating it. API key role descriptors use the Elasticsearch role structure and can only further restrict the owner's privileges; they never expand access beyond what the owner already has.
 
 In practice, a common pattern is to define a human-facing Kibana role for interactive access, then mint API keys with narrower `role_descriptors` for automation that should only read from a subset of the same data.
 
