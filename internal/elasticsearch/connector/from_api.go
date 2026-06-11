@@ -22,6 +22,7 @@ import (
 
 	getconnector "github.com/elastic/go-elasticsearch/v8/typedapi/connector/get"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 )

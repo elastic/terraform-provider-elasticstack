@@ -308,8 +308,7 @@ func kqlAPIFilterRowToTF(f kbapi.SLOsFilter) (types.Object, diag.Diagnostics) {
 
 func kqlObjectShapeAPIToTF(kq *string, filters *[]kbapi.SLOsFilter) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var kqlStr types.String
-	kqlStr = typeutils.StringishPointerValue(kq)
+	var kqlStr = typeutils.StringishPointerValue(kq)
 	var listVal types.List
 	if filters == nil || len(*filters) == 0 {
 		empty, lDiags := types.ListValue(tfKqlFilterRowObjectType, []attr.Value{})
