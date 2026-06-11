@@ -20,9 +20,8 @@ package transform
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
-	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
@@ -45,14 +44,14 @@ func migrateStateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, res
 	}
 
 	for _, key := range [...]string{attrSource, attrDestination, attrRetentionPolicy, attrSync} {
-		resp.Diagnostics.Append(collapseSingletonList(stateMap, key, key)...)
+		resp.Diagnostics.Append(stateutil.CollapseListPath(stateMap, key, key)...)
 	}
 	for _, parent := range [...]string{attrRetentionPolicy, attrSync} {
 		parentObj, ok := stateMap[parent].(map[string]any)
 		if !ok {
 			continue
 		}
-		resp.Diagnostics.Append(collapseSingletonList(parentObj, attrTime, parent+"."+attrTime)...)
+		resp.Diagnostics.Append(stateutil.CollapseListPath(parentObj, attrTime, parent+"."+attrTime)...)
 	}
 	if resp.Diagnostics.HasError() {
 		return
@@ -93,44 +92,5 @@ func normaliseEmptyJSONStrings(state map[string]any) {
 		if v, ok := dst["pipeline"].(string); ok && v == "" {
 			dst["pipeline"] = nil
 		}
-	}
-}
-
-// collapseSingletonList unwraps m[key] from a singleton list (the SDK shape for
-// SizeBetween(1,1) / SizeAtMost(1) blocks) into a single object. An empty list
-// or nil value drops the key entirely; a multi-element list — which the prior
-// schema disallowed — is treated as corrupt state and surfaces a diagnostic.
-func collapseSingletonList(m map[string]any, key, pathLabel string) fwdiag.Diagnostics {
-	v, ok := m[key]
-	if !ok {
-		return nil
-	}
-	if v == nil {
-		delete(m, key)
-		return nil
-	}
-	list, ok := v.([]any)
-	if !ok {
-		return nil // already a single object; pass through
-	}
-	switch len(list) {
-	case 0:
-		delete(m, key)
-		return nil
-	case 1:
-		obj, ok := list[0].(map[string]any)
-		if !ok {
-			return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic(
-				"State upgrade error",
-				fmt.Sprintf("unexpected element type at path %q: want object, got %T", pathLabel, list[0]),
-			)}
-		}
-		m[key] = obj
-		return nil
-	default:
-		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic(
-			"State upgrade error",
-			fmt.Sprintf("unexpected multi-element array at path %q (expected at most one element)", pathLabel),
-		)}
 	}
 }

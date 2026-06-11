@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
@@ -43,13 +44,12 @@ func migrateILMStateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, 
 	}
 
 	for _, pk := range ilmPhaseBlockKeys {
-		if raw, ok := stateMap[pk]; ok {
-			u := unwrapSingletonListToMap(raw)
-			if u == nil {
-				delete(stateMap, pk)
-			} else {
-				stateMap[pk] = u
-			}
+		resp.Diagnostics.Append(stateutil.CollapseListPath(stateMap, pk, pk)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if phaseObj, ok := stateMap[pk].(map[string]any); ok {
+			unwrapPhaseActionLists(phaseObj)
 		}
 	}
 
@@ -61,23 +61,6 @@ func migrateILMStateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, 
 	resp.DynamicValue = &tfprotov6.DynamicValue{
 		JSON: stateJSON,
 	}
-}
-
-func unwrapSingletonListToMap(v any) any {
-	list, ok := v.([]any)
-	if !ok {
-		return v
-	}
-	if len(list) == 0 {
-		return nil
-	}
-	first := list[0]
-	phaseObj, ok := first.(map[string]any)
-	if !ok {
-		return v
-	}
-	unwrapPhaseActionLists(phaseObj)
-	return phaseObj
 }
 
 func unwrapPhaseActionLists(m map[string]any) {

@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
@@ -45,35 +46,35 @@ func migrateIndexTemplateStateV0ToV1(_ context.Context, req resource.UpgradeStat
 		return
 	}
 
-	resp.Diagnostics.Append(aliasutil.CollapseListPath(stateMap, attrDataStream, attrDataStream)...)
+	resp.Diagnostics.Append(stateutil.CollapseListPath(stateMap, attrDataStream, attrDataStream)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	resp.Diagnostics.Append(aliasutil.CollapseListPath(stateMap, attrTemplate, attrTemplate)...)
+	resp.Diagnostics.Append(stateutil.CollapseListPath(stateMap, attrTemplate, attrTemplate)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	tmpl, ok := stateMap[attrTemplate].(map[string]any)
 	if ok {
-		resp.Diagnostics.Append(aliasutil.CollapseListPath(tmpl, attrLifecycle, "template.lifecycle")...)
+		resp.Diagnostics.Append(stateutil.CollapseListPath(tmpl, attrLifecycle, "template.lifecycle")...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		resp.Diagnostics.Append(aliasutil.CollapseListPath(tmpl, attrDataStreamOptions, "template.data_stream_options")...)
+		resp.Diagnostics.Append(stateutil.CollapseListPath(tmpl, attrDataStreamOptions, "template.data_stream_options")...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 
 		dso, ok := tmpl[attrDataStreamOptions].(map[string]any)
 		if ok {
-			resp.Diagnostics.Append(aliasutil.CollapseListPath(dso, attrFailureStore, "template.data_stream_options.failure_store")...)
+			resp.Diagnostics.Append(stateutil.CollapseListPath(dso, attrFailureStore, "template.data_stream_options.failure_store")...)
 			if resp.Diagnostics.HasError() {
 				return
 			}
 			fs, ok := dso[attrFailureStore].(map[string]any)
 			if ok {
-				resp.Diagnostics.Append(aliasutil.CollapseListPath(fs, attrLifecycle, "template.data_stream_options.failure_store.lifecycle")...)
+				resp.Diagnostics.Append(stateutil.CollapseListPath(fs, attrLifecycle, "template.data_stream_options.failure_store.lifecycle")...)
 				if resp.Diagnostics.HasError() {
 					return
 				}
