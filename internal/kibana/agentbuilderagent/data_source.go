@@ -224,11 +224,7 @@ func toolModelFromAPI(ctx context.Context, spaceID string, tool *models.Tool, wo
 	tm.ToolID = types.StringValue(tool.ID)
 	tm.Type = types.StringValue(tool.Type)
 
-	if tool.Description != nil {
-		tm.Description = types.StringValue(*tool.Description)
-	} else {
-		tm.Description = types.StringNull()
-	}
+	tm.Description = typeutils.StringishPointerValue(tool.Description)
 
 	tags, d := typeutils.StringSetOrNull(ctx, tool.Tags)
 	diags.Append(d...)

@@ -356,22 +356,14 @@ func (d *Data) updateFromThreatMatchRule(ctx context.Context, rule *kbapi.Securi
 		d.ThreatIndex = types.ListValueMust(types.StringType, []attr.Value{})
 	}
 
-	if rule.ThreatIndicatorPath != nil {
-		d.ThreatIndicatorPath = types.StringValue(*rule.ThreatIndicatorPath)
-	} else {
-		d.ThreatIndicatorPath = types.StringNull()
-	}
+	d.ThreatIndicatorPath = typeutils.StringishPointerValue(rule.ThreatIndicatorPath)
 
 	d.ConcurrentSearches = typeutils.IntPointerToInt64Value(rule.ConcurrentSearches)
 	d.ItemsPerSearch = typeutils.IntPointerToInt64Value(rule.ItemsPerSearch)
 
 	diags.Append(d.updateThreatFiltersFromAPI(ctx, rule.ThreatFilters)...)
 
-	if rule.SavedId != nil {
-		d.SavedID = types.StringValue(*rule.SavedId)
-	} else {
-		d.SavedID = types.StringNull()
-	}
+	d.SavedID = typeutils.StringishPointerValue(rule.SavedId)
 
 	if len(rule.ThreatMapping) > 0 {
 		listValue, threatMappingDiags := convertThreatMappingToModel(ctx, rule.ThreatMapping)

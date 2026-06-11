@@ -48,11 +48,7 @@ func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, res
 	// Map the dashboard data fields
 	m.Title = types.StringValue(data.Data.Title)
 
-	if data.Data.Description != nil {
-		m.Description = types.StringValue(*data.Data.Description)
-	} else {
-		m.Description = types.StringNull()
-	}
+	m.Description = typeutils.StringishPointerValue(data.Data.Description)
 
 	// Map time range (preserve prior time_range.mode when GET omits it; see REQ-009)
 	var preservedMode types.String

@@ -303,7 +303,12 @@ func TestAccResourceIndexSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_normalizer", `{"lowercase_normalizer":{"filter":["lowercase"],"type":"custom"}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "settings.0.setting.0.name", "number_of_replicas"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "settings.0.setting.0.value", "2"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test_settings", "settings_raw"),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_index.test_settings", "settings_raw", func(val string) error {
+						if !strings.Contains(val, "number_of_replicas") {
+							return fmt.Errorf("settings_raw missing number_of_replicas: %s", val)
+						}
+						return nil
+					}),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "deletion_protection", "false"),
 				),
 			},
@@ -317,7 +322,12 @@ func TestAccResourceIndexSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "name", indexName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "mapping_total_fields_limit", "3000"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "load_fixed_bitset_filters_eagerly", "true"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test_settings", "settings_raw"),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_index.test_settings", "settings_raw", func(val string) error {
+						if !strings.Contains(val, "number_of_replicas") {
+							return fmt.Errorf("settings_raw missing number_of_replicas: %s", val)
+						}
+						return nil
+					}),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "deletion_protection", "false"),
 				),
 			},
@@ -468,8 +478,10 @@ func TestAccResourceIndexBlocks(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"index_name":   config.StringVariable(indexName),
-					"blocks_write": config.BoolVariable(true),
+					"index_name":      config.StringVariable(indexName),
+					"blocks_write":    config.BoolVariable(true),
+					"blocks_read":     config.BoolVariable(false),
+					"blocks_metadata": config.BoolVariable(false),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "name", indexName),
@@ -482,11 +494,37 @@ func TestAccResourceIndexBlocks(t *testing.T) {
 				),
 			},
 			{
+				// blocks_read=true disables data-read operations but leaves metadata
+				// operations (settings PUT/GET) available, so cleanup is safe.
+				// blocks_metadata=true also blocks metadata operations — setting it
+				// prevents subsequent settings updates and index deletion, so it is
+				// intentionally not tested here.
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"index_name":   config.StringVariable(indexName),
-					"blocks_write": config.BoolVariable(false),
+					"index_name":      config.StringVariable(indexName),
+					"blocks_write":    config.BoolVariable(false),
+					"blocks_read":     config.BoolVariable(true),
+					"blocks_metadata": config.BoolVariable(false),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "blocks_write", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "blocks_read", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "blocks_read_only", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "blocks_read_only_allow_delete", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "blocks_metadata", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "deletion_protection", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name":      config.StringVariable(indexName),
+					"blocks_write":    config.BoolVariable(false),
+					"blocks_read":     config.BoolVariable(false),
+					"blocks_metadata": config.BoolVariable(false),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "name", indexName),
@@ -696,6 +734,7 @@ func TestAccResourceIndexUseExistingFallthrough(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_use_existing", "name", indexName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_use_existing", "concrete_name", indexName),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test_use_existing", "id"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_use_existing", "use_existing", "true"),
 				),
 			},
 			{
@@ -811,6 +850,7 @@ func TestAccResourceIndexUseExistingAdopt(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_use_existing", "name", indexName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_use_existing", "concrete_name", indexName),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test_use_existing", "id"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_use_existing", "use_existing", "true"),
 					resource.TestMatchTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test_use_existing", "alias.*", map[string]*regexp.Regexp{
 						"name": regexp.MustCompile("adopt_alias_step1"),
 					}),
@@ -1071,6 +1111,99 @@ func checkResourceIndexDestroy(s *terraform.State) error {
 		return fmt.Errorf("Index (%s) still exists", compID.ResourceID)
 	}
 	return nil
+}
+
+func TestAccResourceIndexSortNestedAllOptions(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.0.field", "date"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.0.order", "desc"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.0.missing", "_last"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.0.mode", "min"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test", "id"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexAliasSubAttributes(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "alias.#", "2"),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test", "alias.*", map[string]string{
+						"name":           fmt.Sprintf("%s-hidden", indexName),
+						"is_hidden":      "true",
+						"is_write_index": "false",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test", "alias.*", map[string]string{
+						"name":           fmt.Sprintf("%s-write", indexName),
+						"is_write_index": "true",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexRoutingUpdate(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "routing_allocation_enable", "primaries"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "routing_rebalance_enable", "primaries"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "routing_allocation_enable", "all"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "routing_rebalance_enable", "replicas"),
+				),
+			},
+		},
+	})
 }
 
 func TestAccResourceIndexSortNested(t *testing.T) {

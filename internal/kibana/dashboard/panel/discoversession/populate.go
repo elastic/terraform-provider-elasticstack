@@ -202,11 +202,7 @@ func discoverSessionConfig1FromAPIImport(ctx context.Context, cfg1 kbapi.KibanaH
 			RefID:     types.StringValue(cfg1.RefId),
 		},
 	}
-	if cfg1.SelectedTabId != nil {
-		cfg.ByReference.SelectedTabID = types.StringValue(*cfg1.SelectedTabId)
-	} else {
-		cfg.ByReference.SelectedTabID = types.StringNull()
-	}
+	cfg.ByReference.SelectedTabID = typeutils.StringishPointerValue(cfg1.SelectedTabId)
 	if cfg1.Overrides != nil {
 		var ovDiags diag.Diagnostics
 		cfg.ByReference.Overrides, ovDiags = discoverSessionOverridesFromAPI(ctx, *cfg1.Overrides)

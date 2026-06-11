@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type ThresholdRuleProcessor struct {
@@ -298,11 +297,7 @@ func (d *Data) updateFromThresholdRule(ctx context.Context, rule *kbapi.Security
 		d.Threshold = thresholdObj
 	}
 
-	if rule.SavedId != nil {
-		d.SavedID = types.StringValue(*rule.SavedId)
-	} else {
-		d.SavedID = types.StringNull()
-	}
+	d.SavedID = typeutils.StringishPointerValue(rule.SavedId)
 
 	// Threshold uses a distinct alert suppression type that overwrites the null set by the common helper.
 	diags.Append(d.updateThresholdAlertSuppressionFromAPI(ctx, rule.AlertSuppression)...)

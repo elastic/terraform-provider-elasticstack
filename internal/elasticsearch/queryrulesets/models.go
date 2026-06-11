@@ -195,11 +195,7 @@ func queryRuleCriteriaFromAPI(criterion types.QueryRuleCriteria, diagnostics *di
 	// Elasticsearch returns metadata as an empty string for criteria types that do
 	// not use it (notably `always`, since 8.19). Normalize empty strings to null so
 	// state stays consistent with configurations that omit `metadata`.
-	if criterion.Metadata != nil && *criterion.Metadata != "" {
-		model.Metadata = fwtypes.StringValue(*criterion.Metadata)
-	} else {
-		model.Metadata = fwtypes.StringNull()
-	}
+	model.Metadata = typeutils.NonEmptyStringOrNull(criterion.Metadata)
 
 	if len(criterion.Values) == 0 {
 		model.Values = jsontypes.Normalized{StringValue: fwtypes.StringNull()}

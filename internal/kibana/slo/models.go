@@ -316,11 +316,7 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 	} else {
 		obj.TimesliceTarget = types.Float64Null()
 	}
-	if apiModel.Objective.TimesliceWindow != nil {
-		obj.TimesliceWindow = types.StringValue(*apiModel.Objective.TimesliceWindow)
-	} else {
-		obj.TimesliceWindow = types.StringNull()
-	}
+	obj.TimesliceWindow = typeutils.StringishPointerValue(apiModel.Objective.TimesliceWindow)
 	m.Objective = []tfObjective{obj}
 
 	if typeutils.IsKnown(m.Settings) && apiModel.Settings != nil {

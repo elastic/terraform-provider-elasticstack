@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -71,23 +72,11 @@ func (m *proxyModel) populateFromAPI(spaceID string, item kbapi.FleetProxyItem) 
 	m.Name = types.StringValue(item.Name)
 	m.URL = types.StringValue(item.Url)
 
-	if item.Certificate != nil && *item.Certificate != "" {
-		m.Certificate = types.StringValue(*item.Certificate)
-	} else {
-		m.Certificate = types.StringNull()
-	}
+	m.Certificate = typeutils.NonEmptyStringOrNull(item.Certificate)
 
-	if item.CertificateKey != nil && *item.CertificateKey != "" {
-		m.CertificateKey = types.StringValue(*item.CertificateKey)
-	} else {
-		m.CertificateKey = types.StringNull()
-	}
+	m.CertificateKey = typeutils.NonEmptyStringOrNull(item.CertificateKey)
 
-	if item.CertificateAuthorities != nil && *item.CertificateAuthorities != "" {
-		m.CertificateAuthorities = types.StringValue(*item.CertificateAuthorities)
-	} else {
-		m.CertificateAuthorities = types.StringNull()
-	}
+	m.CertificateAuthorities = typeutils.NonEmptyStringOrNull(item.CertificateAuthorities)
 
 	if item.IsPreconfigured != nil {
 		m.IsPreconfigured = types.BoolValue(*item.IsPreconfigured)
