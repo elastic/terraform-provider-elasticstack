@@ -6,6 +6,7 @@
 
 ### Changes
 
+- Add `elasticstack_elasticsearch_ccr_follower_index` and `elasticstack_elasticsearch_ccr_auto_follow_pattern` resources for managing Cross-Cluster Replication. ([#3615](https://github.com/elastic/terraform-provider-elasticstack/pull/3615))
 - Add uniform `timeouts` support to all entitycore-envelope-backed Elasticsearch and Kibana resources; `elasticsearch_ml_anomaly_detection_job` `timeouts` changes from block to attribute syntax. ([#3607](https://github.com/elastic/terraform-provider-elasticstack/pull/3607))
 - Adds Terraform resource and data source for managing the Kibana Security Entity Store resolution links and resolution groups. ([#3514](https://github.com/elastic/terraform-provider-elasticstack/pull/3514))
 - Add `elasticstack_elasticsearch_ml_trained_model_deployment` resource for managing ML trained model deployments ([#3532](https://github.com/elastic/terraform-provider-elasticstack/pull/3532))
