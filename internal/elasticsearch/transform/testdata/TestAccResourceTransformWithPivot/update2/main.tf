@@ -80,7 +80,6 @@ resource "elasticstack_elasticsearch_transform" "test_pivot" {
   sync {
     time {
       field = "order_date"
-      delay = "30s"
     }
   }
 
