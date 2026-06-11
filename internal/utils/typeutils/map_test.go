@@ -182,14 +182,14 @@ func TestFloat64FromMap(t *testing.T) {
 		t.Parallel()
 		got := typeutils.Float64FromMap(map[string]any{"k": int(42)}, "k")
 		require.False(t, got.IsNull())
-		require.Equal(t, float64(42), got.ValueFloat64())
+		require.InEpsilon(t, float64(42), got.ValueFloat64(), 1e-9)
 	})
 
 	t.Run("int64 value coerced to float64", func(t *testing.T) {
 		t.Parallel()
 		got := typeutils.Float64FromMap(map[string]any{"k": int64(99)}, "k")
 		require.False(t, got.IsNull())
-		require.Equal(t, float64(99), got.ValueFloat64())
+		require.InEpsilon(t, float64(99), got.ValueFloat64(), 1e-9)
 	})
 
 	t.Run("wrong type returns null", func(t *testing.T) {
@@ -262,6 +262,6 @@ func TestSetStringInMap(t *testing.T) {
 		t.Parallel()
 		m := map[string]any{}
 		typeutils.SetStringInMap(m, "key", types.StringValue(""))
-		require.Equal(t, "", m["key"])
+		require.Empty(t, m["key"])
 	})
 }
