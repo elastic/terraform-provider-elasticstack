@@ -201,6 +201,12 @@ func TestFloat64FromMap(t *testing.T) {
 func TestSetBoolInMap(t *testing.T) {
 	t.Parallel()
 
+	t.Run("nil map does not panic", func(t *testing.T) {
+		t.Parallel()
+		require.NotPanics(t, func() {
+			typeutils.SetBoolInMap(nil, "key", types.BoolValue(true))
+		})
+	})
 	t.Run("null value does not set key", func(t *testing.T) {
 		t.Parallel()
 		m := map[string]any{}
@@ -235,6 +241,12 @@ func TestSetBoolInMap(t *testing.T) {
 func TestSetStringInMap(t *testing.T) {
 	t.Parallel()
 
+	t.Run("nil map does not panic", func(t *testing.T) {
+		t.Parallel()
+		require.NotPanics(t, func() {
+			typeutils.SetStringInMap(nil, "key", types.StringValue("hello"))
+		})
+	})
 	t.Run("null value does not set key", func(t *testing.T) {
 		t.Parallel()
 		m := map[string]any{}

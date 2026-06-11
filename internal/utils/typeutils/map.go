@@ -42,8 +42,7 @@ func StringFromMap(m map[string]any, key string) types.String {
 }
 
 // Float64FromMap extracts a float64 from a map[string]any by key, returning types.Float64Null()
-// when the map is nil, the key is absent, or the value is not a numeric type.
-// It coerces int and int64 values to float64.
+// when the map is nil, the key is absent, or the value is not a float64/int/int64.
 func Float64FromMap(m map[string]any, key string) types.Float64 {
 	if m == nil {
 		return types.Float64Null()
@@ -66,16 +65,18 @@ func Float64FromMap(m map[string]any, key string) types.Float64 {
 
 // SetBoolInMap sets a bool field in the map if the value is known and non-null.
 func SetBoolInMap(m map[string]any, key string, val types.Bool) {
-	if !val.IsNull() && !val.IsUnknown() {
-		m[key] = val.ValueBool()
+	if m == nil || val.IsNull() || val.IsUnknown() {
+		return
 	}
+	m[key] = val.ValueBool()
 }
 
 // SetStringInMap sets a string field in the map if the value is known and non-null.
 func SetStringInMap(m map[string]any, key string, val types.String) {
-	if !val.IsNull() && !val.IsUnknown() {
-		m[key] = val.ValueString()
+	if m == nil || val.IsNull() || val.IsUnknown() {
+		return
 	}
+	m[key] = val.ValueString()
 }
 
 // PointerInterfaceMapFromAnyMap converts a map[string]any to map[string]*any by
