@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
 	eschema "github.com/hashicorp/terraform-plugin-framework/ephemeral/schema"
@@ -58,43 +57,6 @@ type KibanaEphemeralOptions[T KibanaEphemeralModel, S any] struct {
 // KibanaEphemeralResource implements [ephemeral.EphemeralResource] and related
 // interfaces for Kibana-backed ephemeral resources.
 type KibanaEphemeralResource[T KibanaEphemeralModel, S any] = genericEphemeralResource[T, S, *clients.KibanaScopedClient]
-
-// NewKibanaEphemeralResource returns an [ephemeral.EphemeralResource] that
-// owns Metadata, Configure, Schema (with kibana_connection block injection),
-// Open, and Close for the Kibana namespace.
-func NewKibanaEphemeralResource[T KibanaEphemeralModel, S any](
-	name string,
-	opts KibanaEphemeralOptions[T, S],
-) ephemeral.EphemeralResource {
-	if opts.Schema == nil {
-		panic("entitycore: KibanaEphemeralOptions.Schema must not be nil")
-	}
-	if opts.Open == nil {
-		panic("entitycore: KibanaEphemeralOptions.Open must not be nil")
-	}
-	if opts.Close == nil {
-		panic("entitycore: KibanaEphemeralOptions.Close must not be nil")
-	}
-	mustBePlainGoCloseState[S]()
-
-	return &genericEphemeralResource[T, S, *clients.KibanaScopedClient]{
-		EphemeralBase: NewEphemeralBase(ComponentKibana, name),
-		schemaFactory: opts.Schema,
-		openFunc:      opts.Open,
-		closeFunc:     opts.Close,
-		adapter: ephemeralAdapter[T, *clients.KibanaScopedClient]{
-			getConnection: func(model T) types.List { return model.GetKibanaConnection() },
-			getClient: func(ctx context.Context, factory *clients.ProviderClientFactory, connection types.List) (*clients.KibanaScopedClient, diag.Diagnostics) {
-				return factory.GetKibanaClient(ctx, connection)
-			},
-			encodeConn:         encodeKibanaConnection,
-			decodeConn:         decodeKibanaConnection,
-			schemaBlockKey:     blockKibanaConnection,
-			schemaBlockFactory: providerschema.GetKbEphemeralConnectionBlock,
-			errorSummary:       "Kibana ephemeral envelope internal error",
-		},
-	}
-}
 
 var (
 	_ ephemeral.EphemeralResource              = (*KibanaEphemeralResource[KibanaConnectionField, struct{}])(nil)
