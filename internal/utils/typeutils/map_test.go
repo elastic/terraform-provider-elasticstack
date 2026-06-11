@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -155,4 +156,124 @@ func TestFlattenMap(t *testing.T) {
 			require.Equal(t, tt.want, typeutils.FlattenMap(tt.input))
 		})
 	}
+}
+
+func TestFloat64FromMap(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil map returns null", func(t *testing.T) {
+		t.Parallel()
+		require.True(t, typeutils.Float64FromMap(nil, "key").IsNull())
+	})
+
+	t.Run("missing key returns null", func(t *testing.T) {
+		t.Parallel()
+		require.True(t, typeutils.Float64FromMap(map[string]any{"other": 1.0}, "key").IsNull())
+	})
+
+	t.Run("float64 value returned", func(t *testing.T) {
+		t.Parallel()
+		got := typeutils.Float64FromMap(map[string]any{"k": float64(3.14)}, "k")
+		require.False(t, got.IsNull())
+		require.InDelta(t, 3.14, got.ValueFloat64(), 1e-9)
+	})
+
+	t.Run("int value coerced to float64", func(t *testing.T) {
+		t.Parallel()
+		got := typeutils.Float64FromMap(map[string]any{"k": int(42)}, "k")
+		require.False(t, got.IsNull())
+		require.InEpsilon(t, float64(42), got.ValueFloat64(), 1e-9)
+	})
+
+	t.Run("int64 value coerced to float64", func(t *testing.T) {
+		t.Parallel()
+		got := typeutils.Float64FromMap(map[string]any{"k": int64(99)}, "k")
+		require.False(t, got.IsNull())
+		require.InEpsilon(t, float64(99), got.ValueFloat64(), 1e-9)
+	})
+
+	t.Run("wrong type returns null", func(t *testing.T) {
+		t.Parallel()
+		require.True(t, typeutils.Float64FromMap(map[string]any{"k": "not-a-number"}, "k").IsNull())
+	})
+}
+
+func TestSetBoolInMap(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil map does not panic", func(t *testing.T) {
+		t.Parallel()
+		require.NotPanics(t, func() {
+			typeutils.SetBoolInMap(nil, "key", types.BoolValue(true))
+		})
+	})
+	t.Run("null value does not set key", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{}
+		typeutils.SetBoolInMap(m, "key", types.BoolNull())
+		_, exists := m["key"]
+		require.False(t, exists)
+	})
+
+	t.Run("unknown value does not set key", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{}
+		typeutils.SetBoolInMap(m, "key", types.BoolUnknown())
+		_, exists := m["key"]
+		require.False(t, exists)
+	})
+
+	t.Run("known true sets key", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{}
+		typeutils.SetBoolInMap(m, "key", types.BoolValue(true))
+		require.Equal(t, true, m["key"])
+	})
+
+	t.Run("known false sets key", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{}
+		typeutils.SetBoolInMap(m, "key", types.BoolValue(false))
+		require.Equal(t, false, m["key"])
+	})
+}
+
+func TestSetStringInMap(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil map does not panic", func(t *testing.T) {
+		t.Parallel()
+		require.NotPanics(t, func() {
+			typeutils.SetStringInMap(nil, "key", types.StringValue("hello"))
+		})
+	})
+	t.Run("null value does not set key", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{}
+		typeutils.SetStringInMap(m, "key", types.StringNull())
+		_, exists := m["key"]
+		require.False(t, exists)
+	})
+
+	t.Run("unknown value does not set key", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{}
+		typeutils.SetStringInMap(m, "key", types.StringUnknown())
+		_, exists := m["key"]
+		require.False(t, exists)
+	})
+
+	t.Run("known value sets key", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{}
+		typeutils.SetStringInMap(m, "key", types.StringValue("hello"))
+		require.Equal(t, "hello", m["key"])
+	})
+
+	t.Run("empty string sets key", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{}
+		typeutils.SetStringInMap(m, "key", types.StringValue(""))
+		require.Empty(t, m["key"])
+	})
 }

@@ -107,23 +107,6 @@ func canonicalMapJSON(m map[string]any) string {
 	return s
 }
 
-// getFloat64Value returns types.Float64Value if the key exists and is numeric, else Null.
-func getFloat64Value(m map[string]any, key string) types.Float64 {
-	if m == nil {
-		return types.Float64Null()
-	}
-	if v, ok := m[key].(float64); ok {
-		return types.Float64Value(v)
-	}
-	if v, ok := m[key].(int); ok {
-		return types.Float64Value(float64(v))
-	}
-	if v, ok := m[key].(int64); ok {
-		return types.Float64Value(float64(v))
-	}
-	return types.Float64Null()
-}
-
 // getStringSetValue converts a []any of strings to a types.Set of strings.
 func getStringSetValue(m map[string]any, key string) types.Set {
 	if m == nil {
@@ -1107,8 +1090,8 @@ func mapToEntityBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagno
 func mapToRiskBlockModel(ctx context.Context, m map[string]any) types.Object {
 	model := entityRiskBlockModel{
 		CalculatedLevel:     typeutils.StringFromMap(m, attrCalculatedLevel),
-		CalculatedScore:     getFloat64Value(m, attrCalculatedScore),
-		CalculatedScoreNorm: getFloat64Value(m, attrCalculatedScoreNorm),
+		CalculatedScore:     typeutils.Float64FromMap(m, attrCalculatedScore),
+		CalculatedScoreNorm: typeutils.Float64FromMap(m, attrCalculatedScoreNorm),
 	}
 	obj, _ := types.ObjectValueFrom(ctx, RiskBlockAttrTypes(), model)
 	return obj
@@ -1226,7 +1209,7 @@ func mapToEventBlockModel(_ context.Context, m map[string]any) eventBlockModel {
 func mapToAssetBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnostics) assetBlockModel {
 	model := assetBlockModel{
 		Criticality: typeutils.StringFromMap(m, "criticality"),
-		Value:       getFloat64Value(m, attrValue),
+		Value:       typeutils.Float64FromMap(m, attrValue),
 	}
 	if fbRaw, ok := m["criticality_feedback"].(map[string]any); ok {
 		fb := assetCriticalityFeedbackBlockModel{

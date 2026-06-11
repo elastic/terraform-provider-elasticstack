@@ -41,6 +41,44 @@ func StringFromMap(m map[string]any, key string) types.String {
 	return types.StringNull()
 }
 
+// Float64FromMap extracts a float64 from a map[string]any by key, returning types.Float64Null()
+// when the map is nil, the key is absent, or the value is not a float64/int/int64.
+func Float64FromMap(m map[string]any, key string) types.Float64 {
+	if m == nil {
+		return types.Float64Null()
+	}
+	v, ok := m[key]
+	if !ok {
+		return types.Float64Null()
+	}
+	switch val := v.(type) {
+	case float64:
+		return types.Float64Value(val)
+	case int:
+		return types.Float64Value(float64(val))
+	case int64:
+		return types.Float64Value(float64(val))
+	default:
+		return types.Float64Null()
+	}
+}
+
+// SetBoolInMap sets a bool field in the map if the value is known and non-null.
+func SetBoolInMap(m map[string]any, key string, val types.Bool) {
+	if m == nil || val.IsNull() || val.IsUnknown() {
+		return
+	}
+	m[key] = val.ValueBool()
+}
+
+// SetStringInMap sets a string field in the map if the value is known and non-null.
+func SetStringInMap(m map[string]any, key string, val types.String) {
+	if m == nil || val.IsNull() || val.IsUnknown() {
+		return
+	}
+	m[key] = val.ValueString()
+}
+
 // PointerInterfaceMapFromAnyMap converts a map[string]any to map[string]*any by
 // taking pointers to each value. This is needed when constructing API request bodies
 // that require pointer values.
