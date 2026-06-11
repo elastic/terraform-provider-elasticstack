@@ -175,6 +175,9 @@ func ApplyToResumeFollowRequest(p TuningParams, req *resumefollow.Request) {
 
 // TuningParamsFromParameters extracts TuningParams from an estypes.FollowerIndexParameters.
 func TuningParamsFromParameters(params *estypes.FollowerIndexParameters) TuningParams {
+	if params == nil {
+		params = &estypes.FollowerIndexParameters{}
+	}
 	return TuningParams{
 		MaxOutstandingReadRequests:    typeutils.Int64PointerValue(params.MaxOutstandingReadRequests),
 		MaxOutstandingWriteRequests:   typeutils.IntPointerToInt64Value(params.MaxOutstandingWriteRequests),

@@ -205,8 +205,11 @@ func mapAutoFollowPatternToModel(ctx context.Context, summary *estypes.AutoFollo
 // customDurationToString converts a customtypes.Duration to a types.String,
 // preserving null/unknown semantics for the TuningParams intermediate type.
 func customDurationToString(v customtypes.Duration) types.String {
-	if v.IsNull() || v.IsUnknown() {
+	if v.IsNull() {
 		return types.StringNull()
+	}
+	if v.IsUnknown() {
+		return types.StringUnknown()
 	}
 	return types.StringValue(v.ValueString())
 }
