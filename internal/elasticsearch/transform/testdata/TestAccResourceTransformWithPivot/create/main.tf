@@ -43,7 +43,7 @@ resource "elasticstack_elasticsearch_transform" "test_pivot" {
     }
   }
 
-  max_page_search_size = 2000
+  max_page_search_size = 1000
   frequency            = "5m"
   enabled              = false
 
