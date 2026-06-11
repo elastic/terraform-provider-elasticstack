@@ -196,9 +196,7 @@ func (m *tfModel) populateFromMetricCustomIndicator(apiIndicator kbapi.SLOsIndic
 		Filter:         types.StringPointerValue(p.Filter),
 		DataViewID:     types.StringNull(),
 	}
-	if p.DataViewId != nil {
-		ind.DataViewID = types.StringValue(*p.DataViewId)
-	}
+	ind.DataViewID = typeutils.StringishPointerValue(p.DataViewId)
 
 	goodMetrics := make([]tfMetricCustomMetric, 0, len(p.Good.Metrics))
 	for i, mtr := range p.Good.Metrics {

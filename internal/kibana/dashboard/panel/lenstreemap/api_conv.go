@@ -141,11 +141,7 @@ func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel,
 		m.EsqlMetrics = make([]models.TreemapEsqlMetric, len(api.Metrics))
 		for i, met := range api.Metrics {
 			m.EsqlMetrics[i].Column = types.StringValue(met.Column)
-			if met.Label != nil {
-				m.EsqlMetrics[i].Label = types.StringValue(*met.Label)
-			} else {
-				m.EsqlMetrics[i].Label = types.StringNull()
-			}
+			m.EsqlMetrics[i].Label = typeutils.StringishPointerValue(met.Label)
 			formatVal, ok := lenscommon.LensESQLNumberFormatJSONFromAPI(met.Format, "esql_metrics.format_json", &diags)
 			if !ok {
 				continue
@@ -184,11 +180,7 @@ func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel,
 				continue
 			}
 			m.EsqlGroupBy[i].FormatJSON = jsontypes.NewNormalizedValue(string(formatBytes))
-			if gb.Label != nil {
-				m.EsqlGroupBy[i].Label = types.StringValue(*gb.Label)
-			} else {
-				m.EsqlGroupBy[i].Label = types.StringNull()
-			}
+			m.EsqlGroupBy[i].Label = typeutils.StringishPointerValue(gb.Label)
 		}
 	}
 

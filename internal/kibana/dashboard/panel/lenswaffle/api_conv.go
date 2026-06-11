@@ -258,11 +258,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 					Color: colorValue,
 				},
 			}
-			if met.Label != nil {
-				em.Label = types.StringValue(*met.Label)
-			} else {
-				em.Label = types.StringNull()
-			}
+			em.Label = typeutils.StringishPointerValue(met.Label)
 			m.EsqlMetrics[i] = em
 		}
 	}

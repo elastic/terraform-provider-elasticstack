@@ -177,11 +177,7 @@ func tagcloudConfigFromAPIESQL(
 		return diags
 	}
 	em.FormatJSON = metricFormat
-	if api.Metric.Label != nil {
-		em.Label = types.StringValue(*api.Metric.Label)
-	} else {
-		em.Label = types.StringNull()
-	}
+	em.Label = typeutils.StringishPointerValue(api.Metric.Label)
 	m.EsqlMetric = em
 
 	tb := &models.TagcloudEsqlTagBy{
@@ -198,11 +194,7 @@ func tagcloudConfigFromAPIESQL(
 		return diags
 	}
 	tb.ColorJSON = jsontypes.NewNormalizedValue(string(colorBytes))
-	if api.TagBy.Label != nil {
-		tb.Label = types.StringValue(*api.TagBy.Label)
-	} else {
-		tb.Label = types.StringNull()
-	}
+	tb.Label = typeutils.StringishPointerValue(api.TagBy.Label)
 	m.EsqlTagBy = tb
 
 	var priorLens *models.LensChartPresentationTFModel

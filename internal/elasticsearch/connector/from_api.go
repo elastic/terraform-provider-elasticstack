@@ -22,6 +22,7 @@ import (
 
 	getconnector "github.com/elastic/go-elasticsearch/v8/typedapi/connector/get"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -52,41 +53,13 @@ func PopulateCoreConnectorFieldsFromAPI(
 ) CoreConnectorFields {
 	f := CoreConnectorFields{IsNative: fwtypes.BoolValue(resp.IsNative)}
 
-	if resp.ServiceType != nil {
-		f.ServiceType = fwtypes.StringValue(*resp.ServiceType)
-	} else {
-		f.ServiceType = fwtypes.StringNull()
-	}
-	if resp.Name != nil {
-		f.Name = fwtypes.StringValue(*resp.Name)
-	} else {
-		f.Name = fwtypes.StringNull()
-	}
-	if resp.Description != nil {
-		f.Description = fwtypes.StringValue(*resp.Description)
-	} else {
-		f.Description = fwtypes.StringNull()
-	}
-	if resp.IndexName != nil {
-		f.IndexName = fwtypes.StringValue(*resp.IndexName)
-	} else {
-		f.IndexName = fwtypes.StringNull()
-	}
-	if resp.Language != nil {
-		f.Language = fwtypes.StringValue(*resp.Language)
-	} else {
-		f.Language = fwtypes.StringNull()
-	}
-	if resp.ApiKeyId != nil {
-		f.APIKeyID = fwtypes.StringValue(*resp.ApiKeyId)
-	} else {
-		f.APIKeyID = fwtypes.StringNull()
-	}
-	if resp.ApiKeySecretId != nil {
-		f.APIKeySecretID = fwtypes.StringValue(*resp.ApiKeySecretId)
-	} else {
-		f.APIKeySecretID = fwtypes.StringNull()
-	}
+	f.ServiceType = typeutils.StringishPointerValue(resp.ServiceType)
+	f.Name = typeutils.StringishPointerValue(resp.Name)
+	f.Description = typeutils.StringishPointerValue(resp.Description)
+	f.IndexName = typeutils.StringishPointerValue(resp.IndexName)
+	f.Language = typeutils.StringishPointerValue(resp.Language)
+	f.APIKeyID = typeutils.StringishPointerValue(resp.ApiKeyId)
+	f.APIKeySecretID = typeutils.StringishPointerValue(resp.ApiKeySecretId)
 
 	f.Pipeline = PopulatePipelineFromAPI(ctx, resp.Pipeline, diags)
 	f.Scheduling = PopulateSchedulingFromAPI(ctx, resp.Scheduling, diags)

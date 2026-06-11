@@ -310,18 +310,12 @@ func flattenStatus(ctx context.Context, engines []entityStoreEngine) (entityType
 		MaxLogsPerWindowCapBehavior: types.StringNull(),
 		MaxTimeWindowSize:           types.StringNull(),
 	}
-	if first.Delay != nil {
-		leModel.Delay = types.StringValue(*first.Delay)
-	}
+	leModel.Delay = typeutils.StringishPointerValue(first.Delay)
 	if first.FieldHistoryLength != 0 {
 		leModel.FieldHistoryLength = types.Int64Value(int64(first.FieldHistoryLength))
 	}
-	if first.Frequency != nil {
-		leModel.Frequency = types.StringValue(*first.Frequency)
-	}
-	if first.LookbackPeriod != nil {
-		leModel.LookbackPeriod = types.StringValue(*first.LookbackPeriod)
-	}
+	leModel.Frequency = typeutils.StringishPointerValue(first.Frequency)
+	leModel.LookbackPeriod = typeutils.StringishPointerValue(first.LookbackPeriod)
 
 	logExtraction, diags = types.ObjectValueFrom(ctx, logExtractionObjectType.AttrTypes, leModel)
 	if diags.HasError() {
@@ -343,36 +337,12 @@ func flattenEngines(ctx context.Context, engines []entityStoreEngine) (types.Lis
 			IndexPattern:       types.StringValue(e.IndexPattern),
 			FieldHistoryLength: types.Int64Value(int64(e.FieldHistoryLength)),
 		}
-		if e.Delay != nil {
-			em.Delay = types.StringValue(*e.Delay)
-		} else {
-			em.Delay = types.StringNull()
-		}
-		if e.Frequency != nil {
-			em.Frequency = types.StringValue(*e.Frequency)
-		} else {
-			em.Frequency = types.StringNull()
-		}
-		if e.LookbackPeriod != nil {
-			em.LookbackPeriod = types.StringValue(*e.LookbackPeriod)
-		} else {
-			em.LookbackPeriod = types.StringNull()
-		}
-		if e.Filter != nil {
-			em.Filter = types.StringValue(*e.Filter)
-		} else {
-			em.Filter = types.StringNull()
-		}
-		if e.Timeout != nil {
-			em.Timeout = types.StringValue(*e.Timeout)
-		} else {
-			em.Timeout = types.StringNull()
-		}
-		if e.TimestampField != nil {
-			em.TimestampField = types.StringValue(*e.TimestampField)
-		} else {
-			em.TimestampField = types.StringNull()
-		}
+		em.Delay = typeutils.StringishPointerValue(e.Delay)
+		em.Frequency = typeutils.StringishPointerValue(e.Frequency)
+		em.LookbackPeriod = typeutils.StringishPointerValue(e.LookbackPeriod)
+		em.Filter = typeutils.StringishPointerValue(e.Filter)
+		em.Timeout = typeutils.StringishPointerValue(e.Timeout)
+		em.TimestampField = typeutils.StringishPointerValue(e.TimestampField)
 		if e.Error != nil {
 			em.ErrorAction = types.StringValue(e.Error.Action)
 			em.ErrorMessage = types.StringValue(e.Error.Message)

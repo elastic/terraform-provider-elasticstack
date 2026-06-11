@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -71,16 +72,8 @@ func pieChartConfigPopulateCommonFields(
 	} else {
 		m.Sampling = types.Float64Value(1.0)
 	}
-	if donutHole != nil {
-		m.DonutHole = types.StringValue(*donutHole)
-	} else {
-		m.DonutHole = types.StringNull()
-	}
-	if labelPosition != nil {
-		m.LabelPosition = types.StringValue(*labelPosition)
-	} else {
-		m.LabelPosition = types.StringNull()
-	}
+	m.DonutHole = typeutils.StringishPointerValue(donutHole)
+	m.LabelPosition = typeutils.StringishPointerValue(labelPosition)
 	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, datasetErr, "data_source_json", diags)
 	if !ok {
 		return false
