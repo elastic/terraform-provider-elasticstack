@@ -119,6 +119,15 @@ func TestAccResourceCCRAutoFollowPattern_basic(t *testing.T) {
 				PlanOnly:                 true,
 				ExpectNonEmptyPlan:       false,
 			},
+			// Clear exclusions and assert the list becomes empty.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_patterns"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(autoFollowResourceName, "leader_index_exclusion_patterns.#", "0"),
+				),
+			},
 		},
 	})
 }
@@ -217,13 +226,153 @@ func TestAccResourceCCRAutoFollowPattern_import(t *testing.T) {
 	})
 }
 
+// TestAccResourceCCRAutoFollowPattern_params exercises the CCR performance tuning knobs.
+func TestAccResourceCCRAutoFollowPattern_params(t *testing.T) {
+	ccrEnv := acctest.PreCheckCCR(t)
+	leaderIndexName := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
+	patternName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	leaderPattern := leaderIndexName[:4] + "*"
+
+	varsStep1 := ccrAutoFollowVariables(ccrEnv, autoFollowVariableOptions{
+		leaderIndexName:               leaderIndexName,
+		patternName:                   patternName,
+		leaderPatterns:                []string{leaderPattern},
+		maxOutstandingRead:            5,
+		maxOutstandingWriteRequests:   3,
+		maxReadRequestOperationCount:  256,
+		maxReadRequestSize:            "32mb",
+		maxRetryDelay:                 "500ms",
+		maxWriteBufferCount:           10,
+		maxWriteBufferSize:            "512mb",
+		maxWriteRequestOperationCount: 60,
+		maxWriteRequestSize:           "9mb",
+		readPollTimeout:               "5s",
+	})
+	varsStep2 := ccrAutoFollowVariables(ccrEnv, autoFollowVariableOptions{
+		leaderIndexName:               leaderIndexName,
+		patternName:                   patternName,
+		leaderPatterns:                []string{leaderPattern},
+		maxOutstandingRead:            8,
+		maxOutstandingWriteRequests:   5,
+		maxReadRequestOperationCount:  256,
+		maxReadRequestSize:            "32mb",
+		maxRetryDelay:                 "500ms",
+		maxWriteBufferCount:           10,
+		maxWriteBufferSize:            "512mb",
+		maxWriteRequestOperationCount: 60,
+		maxWriteRequestSize:           "9mb",
+		readPollTimeout:               "5s",
+	})
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheckCCR(t) },
+		CheckDestroy: checkAutoFollowPatternDestroyed(patternName),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_params"),
+				ConfigVariables:          varsStep1,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(autoFollowResourceName, "max_outstanding_read_requests", "5"),
+					resource.TestCheckResourceAttr(autoFollowResourceName, "max_outstanding_write_requests", "3"),
+					resource.TestCheckResourceAttr(autoFollowResourceName, "max_read_request_operation_count", "256"),
+					resource.TestCheckResourceAttr(autoFollowResourceName, "max_read_request_size", "32mb"),
+					resource.TestCheckResourceAttr(autoFollowResourceName, "max_retry_delay", "500ms"),
+					resource.TestCheckResourceAttr(autoFollowResourceName, "max_write_buffer_count", "10"),
+					resource.TestCheckResourceAttr(autoFollowResourceName, "max_write_buffer_size", "512mb"),
+					resource.TestCheckResourceAttr(autoFollowResourceName, "max_write_request_operation_count", "60"),
+					resource.TestCheckResourceAttr(autoFollowResourceName, "max_write_request_size", "9mb"),
+					resource.TestCheckResourceAttr(autoFollowResourceName, "read_poll_timeout", "5s"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_params"),
+				ConfigVariables:          varsStep2,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(autoFollowResourceName, "max_outstanding_read_requests", "8"),
+					resource.TestCheckResourceAttr(autoFollowResourceName, "max_outstanding_write_requests", "5"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_params"),
+				ConfigVariables:          varsStep2,
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+		},
+	})
+}
+
+// TestAccResourceCCRAutoFollowPattern_settingsRaw verifies settings_raw round-trip.
+func TestAccResourceCCRAutoFollowPattern_settingsRaw(t *testing.T) {
+	ccrEnv := acctest.PreCheckCCR(t)
+	leaderIndexName := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
+	patternName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	leaderPattern := leaderIndexName[:4] + "*"
+
+	varsStep1 := ccrAutoFollowVariables(ccrEnv, autoFollowVariableOptions{
+		leaderIndexName: leaderIndexName,
+		patternName:     patternName,
+		leaderPatterns:  []string{leaderPattern},
+		settingsRaw:     `{"index.number_of_replicas":0}`,
+	})
+	varsStep2 := ccrAutoFollowVariables(ccrEnv, autoFollowVariableOptions{
+		leaderIndexName: leaderIndexName,
+		patternName:     patternName,
+		leaderPatterns:  []string{leaderPattern},
+		settingsRaw:     `{"index.number_of_replicas":1}`,
+	})
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheckCCR(t) },
+		CheckDestroy: checkAutoFollowPatternDestroyed(patternName),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_settings_raw"),
+				ConfigVariables:          varsStep1,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(autoFollowResourceName, "settings_raw", `{"index.number_of_replicas":0}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_settings_raw"),
+				ConfigVariables:          varsStep2,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(autoFollowResourceName, "settings_raw", `{"index.number_of_replicas":1}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_settings_raw"),
+				ConfigVariables:          varsStep2,
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+		},
+	})
+}
+
 type autoFollowVariableOptions struct {
-	leaderIndexName    string
-	patternName        string
-	leaderPatterns     []string
-	exclusionPatterns  []string
-	followIndexPattern string
-	maxOutstandingRead int64
+	leaderIndexName               string
+	patternName                   string
+	leaderPatterns                []string
+	exclusionPatterns             []string
+	followIndexPattern            string
+	maxOutstandingRead            int64
+	maxOutstandingWriteRequests   int64
+	maxReadRequestOperationCount  int64
+	maxReadRequestSize            string
+	maxRetryDelay                 string
+	maxWriteBufferCount           int64
+	maxWriteBufferSize            string
+	maxWriteRequestOperationCount int64
+	maxWriteRequestSize           string
+	readPollTimeout               string
+	settingsRaw                   string
 }
 
 func ccrAutoFollowVariables(ccrEnv acctest.CCRTestEnv, opts autoFollowVariableOptions) config.Variables {
@@ -256,6 +405,46 @@ func ccrAutoFollowVariables(ccrEnv acctest.CCRTestEnv, opts autoFollowVariableOp
 
 	if opts.maxOutstandingRead > 0 {
 		vars["max_outstanding_read_requests"] = config.IntegerVariable(opts.maxOutstandingRead)
+	}
+
+	if opts.maxOutstandingWriteRequests > 0 {
+		vars["max_outstanding_write_requests"] = config.IntegerVariable(opts.maxOutstandingWriteRequests)
+	}
+
+	if opts.maxReadRequestOperationCount > 0 {
+		vars["max_read_request_operation_count"] = config.IntegerVariable(opts.maxReadRequestOperationCount)
+	}
+
+	if opts.maxReadRequestSize != "" {
+		vars["max_read_request_size"] = config.StringVariable(opts.maxReadRequestSize)
+	}
+
+	if opts.maxRetryDelay != "" {
+		vars["max_retry_delay"] = config.StringVariable(opts.maxRetryDelay)
+	}
+
+	if opts.maxWriteBufferCount > 0 {
+		vars["max_write_buffer_count"] = config.IntegerVariable(opts.maxWriteBufferCount)
+	}
+
+	if opts.maxWriteBufferSize != "" {
+		vars["max_write_buffer_size"] = config.StringVariable(opts.maxWriteBufferSize)
+	}
+
+	if opts.maxWriteRequestOperationCount > 0 {
+		vars["max_write_request_operation_count"] = config.IntegerVariable(opts.maxWriteRequestOperationCount)
+	}
+
+	if opts.maxWriteRequestSize != "" {
+		vars["max_write_request_size"] = config.StringVariable(opts.maxWriteRequestSize)
+	}
+
+	if opts.readPollTimeout != "" {
+		vars["read_poll_timeout"] = config.StringVariable(opts.readPollTimeout)
+	}
+
+	if opts.settingsRaw != "" {
+		vars["settings_raw"] = config.StringVariable(opts.settingsRaw)
 	}
 
 	return vars
