@@ -95,10 +95,10 @@ func newFleetConfigFromFramework(ctx context.Context, cfg ProviderConfiguration,
 }
 
 func (c fleetConfig) withEnvironmentOverrides() fleetConfig {
-	_, hasUser := os.LookupEnv("FLEET_USERNAME")
-	_, hasPass := os.LookupEnv("FLEET_PASSWORD")
-	_, hasKey := os.LookupEnv("FLEET_API_KEY")
-	_, hasBearer := os.LookupEnv("FLEET_BEARER_TOKEN")
+	hasUser := envVarActive("FLEET_USERNAME")
+	hasPass := envVarActive("FLEET_PASSWORD")
+	hasKey := envVarActive("FLEET_API_KEY")
+	hasBearer := envVarActive("FLEET_BEARER_TOKEN")
 
 	switch {
 	case hasBearer:
