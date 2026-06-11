@@ -206,13 +206,7 @@ func elasticsearchConnectionFromSnapshot(snapshot *ephemeralESConnectionSnapshot
 	}
 
 	if len(snapshot.Endpoints) > 0 {
-		endpointValues := make([]attr.Value, 0, len(snapshot.Endpoints))
-		for _, endpoint := range snapshot.Endpoints {
-			endpointValues = append(endpointValues, types.StringValue(endpoint))
-		}
-		endpoints, endpointsDiags := types.ListValue(types.StringType, endpointValues)
-		diags.Append(endpointsDiags...)
-		conn.Endpoints = endpoints
+		conn.Endpoints = typeutils.StringsToList(snapshot.Endpoints)
 	} else {
 		conn.Endpoints = types.ListNull(types.StringType)
 	}
@@ -273,12 +267,7 @@ func kibanaConnectionListFromSnapshot(ctx context.Context, snapshot *ephemeralKi
 		return providerschema.KibanaConnectionNullList(), diags
 	}
 
-	conn, connDiags := kibanaConnectionFromSnapshot(snapshot)
-	diags.Append(connDiags...)
-	if diags.HasError() {
-		return providerschema.KibanaConnectionNullList(), diags
-	}
-
+	conn := kibanaConnectionFromSnapshot(snapshot)
 	connection, listDiags := types.ListValueFrom(ctx, providerschema.KibanaConnectionObjectType(), []clientconfig.KibanaConnection{conn})
 	diags.Append(listDiags...)
 	if diags.HasError() {
@@ -288,9 +277,7 @@ func kibanaConnectionListFromSnapshot(ctx context.Context, snapshot *ephemeralKi
 	return connection, diags
 }
 
-func kibanaConnectionFromSnapshot(snapshot *ephemeralKibanaConnectionSnapshot) (clientconfig.KibanaConnection, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
+func kibanaConnectionFromSnapshot(snapshot *ephemeralKibanaConnectionSnapshot) clientconfig.KibanaConnection {
 	conn := clientconfig.KibanaConnection{
 		Username:    typeutils.NonEmptyStringishValue(snapshot.Username),
 		Password:    typeutils.NonEmptyStringishValue(snapshot.Password),
@@ -300,30 +287,18 @@ func kibanaConnectionFromSnapshot(snapshot *ephemeralKibanaConnectionSnapshot) (
 	}
 
 	if len(snapshot.Endpoints) > 0 {
-		endpointValues := make([]attr.Value, 0, len(snapshot.Endpoints))
-		for _, endpoint := range snapshot.Endpoints {
-			endpointValues = append(endpointValues, types.StringValue(endpoint))
-		}
-		endpoints, endpointsDiags := types.ListValue(types.StringType, endpointValues)
-		diags.Append(endpointsDiags...)
-		conn.Endpoints = endpoints
+		conn.Endpoints = typeutils.StringsToList(snapshot.Endpoints)
 	} else {
 		conn.Endpoints = types.ListNull(types.StringType)
 	}
 
 	if len(snapshot.CACerts) > 0 {
-		caValues := make([]attr.Value, 0, len(snapshot.CACerts))
-		for _, ca := range snapshot.CACerts {
-			caValues = append(caValues, types.StringValue(ca))
-		}
-		caCerts, caDiags := types.ListValue(types.StringType, caValues)
-		diags.Append(caDiags...)
-		conn.CACerts = caCerts
+		conn.CACerts = typeutils.StringsToList(snapshot.CACerts)
 	} else {
 		conn.CACerts = types.ListNull(types.StringType)
 	}
 
-	return conn, diags
+	return conn
 }
 
 func knownStringValue(value types.String) string {
