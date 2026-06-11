@@ -35,7 +35,18 @@ func newKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigura
 		return kibanaOapiConfig{}, diags
 	}
 
-	return config.withEnvironmentOverrides(), nil
+	config = config.withEnvironmentOverrides()
+
+	if authMethodCount(kibanaoapi.Config(config)) > 1 {
+		diags.AddWarning(
+			"Multiple Kibana authentication methods configured",
+			"More than one of username/password, api_key, or bearer_token is set in "+
+				"the resolved Kibana configuration. Only one will be used. Check your "+
+				"environment variables for conflicting auth settings.",
+		)
+	}
+
+	return config, diags
 }
 
 func newProviderKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibanaOapiConfig, fwdiags.Diagnostics) {
@@ -53,7 +64,18 @@ func newProviderKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderC
 		return kibanaOapiConfig{}, diags
 	}
 
-	return config.withNonURLEnvironmentOverrides(), nil
+	config = config.withNonURLEnvironmentOverrides()
+
+	if authMethodCount(kibanaoapi.Config(config)) > 1 {
+		diags.AddWarning(
+			"Multiple Kibana authentication methods configured",
+			"More than one of username/password, api_key, or bearer_token is set in "+
+				"the resolved Kibana configuration. Only one will be used. Check your "+
+				"environment variables for conflicting auth settings.",
+		)
+	}
+
+	return config, diags
 }
 
 func buildKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibanaOapiConfig, fwdiags.Diagnostics) {
@@ -61,6 +83,20 @@ func buildKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigu
 
 	if len(cfg.Kibana) > 0 {
 		kibConfig := cfg.Kibana[0]
+
+		kibUsesBasicAuth := kibConfig.Username.ValueString() != "" || kibConfig.Password.ValueString() != ""
+		kibUsesAPIKey := kibConfig.APIKey.ValueString() != ""
+		kibUsesBearer := kibConfig.BearerToken.ValueString() != ""
+
+		switch {
+		case kibUsesBearer:
+			clearConflictingAuth((*kibanaoapi.Config)(&config), authMethodBearerToken)
+		case kibUsesAPIKey:
+			clearConflictingAuth((*kibanaoapi.Config)(&config), authMethodAPIKey)
+		case kibUsesBasicAuth:
+			clearConflictingAuth((*kibanaoapi.Config)(&config), authMethodBasicAuth)
+		}
+
 		if kibConfig.Username.ValueString() != "" {
 			config.Username = kibConfig.Username.ValueString()
 		}
@@ -104,17 +140,21 @@ func (k kibanaOapiConfig) withFleetBlockFallback(ctx context.Context, cfg Provid
 	}
 
 	fleetCfg := cfg.Fleet[0]
-	if k.Username == "" && fleetCfg.Username.ValueString() != "" {
-		k.Username = fleetCfg.Username.ValueString()
-	}
-	if k.Password == "" && fleetCfg.Password.ValueString() != "" {
-		k.Password = fleetCfg.Password.ValueString()
-	}
-	if k.APIKey == "" && fleetCfg.APIKey.ValueString() != "" {
-		k.APIKey = fleetCfg.APIKey.ValueString()
-	}
-	if k.BearerToken == "" && fleetCfg.BearerToken.ValueString() != "" {
-		k.BearerToken = fleetCfg.BearerToken.ValueString()
+
+	kibanaHasAuth := k.Username != "" || k.Password != "" || k.APIKey != "" || k.BearerToken != ""
+	if !kibanaHasAuth {
+		if fleetCfg.Username.ValueString() != "" {
+			k.Username = fleetCfg.Username.ValueString()
+		}
+		if fleetCfg.Password.ValueString() != "" {
+			k.Password = fleetCfg.Password.ValueString()
+		}
+		if fleetCfg.APIKey.ValueString() != "" {
+			k.APIKey = fleetCfg.APIKey.ValueString()
+		}
+		if fleetCfg.BearerToken.ValueString() != "" {
+			k.BearerToken = fleetCfg.BearerToken.ValueString()
+		}
 	}
 	if k.URL == "" && fleetCfg.Endpoint.ValueString() != "" {
 		k.URL = fleetCfg.Endpoint.ValueString()
@@ -151,6 +191,20 @@ func (k kibanaOapiConfig) withEnvironmentOverrides() kibanaOapiConfig {
 }
 
 func (k kibanaOapiConfig) withNonURLEnvironmentOverrides() kibanaOapiConfig {
+	_, hasUser := os.LookupEnv("KIBANA_USERNAME")
+	_, hasPass := os.LookupEnv("KIBANA_PASSWORD")
+	_, hasKey := os.LookupEnv("KIBANA_API_KEY")
+	_, hasBearer := os.LookupEnv("KIBANA_BEARER_TOKEN")
+
+	switch {
+	case hasBearer:
+		clearConflictingAuth((*kibanaoapi.Config)(&k), authMethodBearerToken)
+	case hasKey:
+		clearConflictingAuth((*kibanaoapi.Config)(&k), authMethodAPIKey)
+	case hasUser || hasPass:
+		clearConflictingAuth((*kibanaoapi.Config)(&k), authMethodBasicAuth)
+	}
+
 	k.Username = withEnvironmentOverride(k.Username, "KIBANA_USERNAME")
 	k.Password = withEnvironmentOverride(k.Password, "KIBANA_PASSWORD")
 	k.APIKey = withEnvironmentOverride(k.APIKey, "KIBANA_API_KEY")

@@ -23,16 +23,32 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 type fleetConfig fleet.Config
 
 func newFleetConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, kibanaCfg kibanaOapiConfig) (fleetConfig, fwdiags.Diagnostics) {
+	var diags fwdiags.Diagnostics
 	config := kibanaCfg.toFleetConfig()
 
 	if len(cfg.Fleet) > 0 {
 		fleetCfg := cfg.Fleet[0]
+
+		fleetUsesBasicAuth := fleetCfg.Username.ValueString() != "" || fleetCfg.Password.ValueString() != ""
+		fleetUsesAPIKey := fleetCfg.APIKey.ValueString() != ""
+		fleetUsesBearer := fleetCfg.BearerToken.ValueString() != ""
+
+		switch {
+		case fleetUsesBearer:
+			clearConflictingAuth((*kibanaoapi.Config)(&config), authMethodBearerToken)
+		case fleetUsesAPIKey:
+			clearConflictingAuth((*kibanaoapi.Config)(&config), authMethodAPIKey)
+		case fleetUsesBasicAuth:
+			clearConflictingAuth((*kibanaoapi.Config)(&config), authMethodBasicAuth)
+		}
+
 		if fleetCfg.Username.ValueString() != "" {
 			config.Username = fleetCfg.Username.ValueString()
 		}
@@ -54,7 +70,7 @@ func newFleetConfigFromFramework(ctx context.Context, cfg ProviderConfiguration,
 		}
 
 		var caCerts []string
-		diags := fleetCfg.CACerts.ElementsAs(ctx, &caCerts, true)
+		diags.Append(fleetCfg.CACerts.ElementsAs(ctx, &caCerts, true)...)
 		if diags.HasError() {
 			return fleetConfig{}, diags
 		}
@@ -64,10 +80,35 @@ func newFleetConfigFromFramework(ctx context.Context, cfg ProviderConfiguration,
 		}
 	}
 
-	return config.withEnvironmentOverrides(), nil
+	config = config.withEnvironmentOverrides()
+
+	if authMethodCount(kibanaoapi.Config(config)) > 1 {
+		diags.AddWarning(
+			"Multiple Fleet authentication methods configured",
+			"More than one of username/password, api_key, or bearer_token is set in "+
+				"the resolved Fleet configuration. Only one will be used. Check your "+
+				"Fleet environment variables for conflicting auth settings.",
+		)
+	}
+
+	return config, diags
 }
 
 func (c fleetConfig) withEnvironmentOverrides() fleetConfig {
+	_, hasUser := os.LookupEnv("FLEET_USERNAME")
+	_, hasPass := os.LookupEnv("FLEET_PASSWORD")
+	_, hasKey := os.LookupEnv("FLEET_API_KEY")
+	_, hasBearer := os.LookupEnv("FLEET_BEARER_TOKEN")
+
+	switch {
+	case hasBearer:
+		clearConflictingAuth((*kibanaoapi.Config)(&c), authMethodBearerToken)
+	case hasKey:
+		clearConflictingAuth((*kibanaoapi.Config)(&c), authMethodAPIKey)
+	case hasUser || hasPass:
+		clearConflictingAuth((*kibanaoapi.Config)(&c), authMethodBasicAuth)
+	}
+
 	if v, ok := os.LookupEnv("FLEET_ENDPOINT"); ok {
 		c.URL = v
 	}
