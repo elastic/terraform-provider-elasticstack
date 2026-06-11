@@ -376,8 +376,7 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 				return diags
 			}
 
-			var allowRestrictedVal types.Bool
-			allowRestrictedVal = typeutils.BoolPointerValue(index.AllowRestrictedIndices)
+			allowRestrictedVal := typeutils.BoolPointerValue(index.AllowRestrictedIndices)
 
 			fieldSecList, d := buildFieldSecurityDSList(ctx, index.FieldSecurity)
 			diags.Append(d...)
