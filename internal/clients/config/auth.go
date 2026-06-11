@@ -18,8 +18,16 @@
 package config
 
 import (
+	"os"
+
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 )
+
+// envVarActive reports whether an environment variable is both set and non-empty.
+func envVarActive(key string) bool {
+	v, ok := os.LookupEnv(key)
+	return ok && v != ""
+}
 
 type authMethod int
 

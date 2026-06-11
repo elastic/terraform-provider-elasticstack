@@ -191,10 +191,12 @@ func (k kibanaOapiConfig) withEnvironmentOverrides() kibanaOapiConfig {
 }
 
 func (k kibanaOapiConfig) withNonURLEnvironmentOverrides() kibanaOapiConfig {
-	_, hasUser := os.LookupEnv("KIBANA_USERNAME")
-	_, hasPass := os.LookupEnv("KIBANA_PASSWORD")
-	_, hasKey := os.LookupEnv("KIBANA_API_KEY")
-	_, hasBearer := os.LookupEnv("KIBANA_BEARER_TOKEN")
+	// Clearing is triggered only when the env var is set to a non-empty value.
+	// An explicitly-set empty string should not wipe existing credentials.
+	hasUser := envVarActive("KIBANA_USERNAME")
+	hasPass := envVarActive("KIBANA_PASSWORD")
+	hasKey := envVarActive("KIBANA_API_KEY")
+	hasBearer := envVarActive("KIBANA_BEARER_TOKEN")
 
 	switch {
 	case hasBearer:
