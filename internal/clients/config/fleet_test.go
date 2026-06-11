@@ -166,8 +166,8 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 					providerConfig: ProviderConfiguration{
 						Fleet: []FleetConnection{
 							{
-								APIKey:   types.StringValue("fleet-key"),
-								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+								APIKey:  types.StringValue("fleet-key"),
+								CACerts: types.ListValueMust(types.StringType, []attr.Value{}),
 							},
 						},
 					},
@@ -241,8 +241,8 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 					kibanaCfg:      kibanaCfg,
 					providerConfig: ProviderConfiguration{},
 					env: map[string]string{
-						"FLEET_API_KEY":   "env-key",
-						"FLEET_USERNAME":  "env-user",
+						"FLEET_API_KEY":  "env-key",
+						"FLEET_USERNAME": "env-user",
 					},
 					expectedConfig: fleetConfig{
 						APIKey:   "env-key",
