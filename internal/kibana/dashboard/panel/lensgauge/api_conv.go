@@ -138,11 +138,7 @@ func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, pri
 	}
 	em.FormatJSON = formatVal
 
-	if api.Metric.Label != nil {
-		em.Label = types.StringValue(*api.Metric.Label)
-	} else {
-		em.Label = types.StringNull()
-	}
+	em.Label = typeutils.StringishPointerValue(api.Metric.Label)
 
 	if api.Metric.Color != nil {
 		colorBytes, cErr := api.Metric.Color.MarshalJSON()
@@ -159,35 +155,19 @@ func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, pri
 		em.ColorJSON = jsontypes.NewNormalizedNull()
 	}
 
-	if api.Metric.Subtitle != nil {
-		em.Subtitle = types.StringValue(*api.Metric.Subtitle)
-	} else {
-		em.Subtitle = types.StringNull()
-	}
+	em.Subtitle = typeutils.StringishPointerValue(api.Metric.Subtitle)
 
 	if api.Metric.Goal != nil {
 		em.Goal = &models.GaugeEsqlColumnRef{Column: types.StringValue(api.Metric.Goal.Column)}
-		if api.Metric.Goal.Label != nil {
-			em.Goal.Label = types.StringValue(*api.Metric.Goal.Label)
-		} else {
-			em.Goal.Label = types.StringNull()
-		}
+		em.Goal.Label = typeutils.StringishPointerValue(api.Metric.Goal.Label)
 	}
 	if api.Metric.Max != nil {
 		em.Max = &models.GaugeEsqlColumnRef{Column: types.StringValue(api.Metric.Max.Column)}
-		if api.Metric.Max.Label != nil {
-			em.Max.Label = types.StringValue(*api.Metric.Max.Label)
-		} else {
-			em.Max.Label = types.StringNull()
-		}
+		em.Max.Label = typeutils.StringishPointerValue(api.Metric.Max.Label)
 	}
 	if api.Metric.Min != nil {
 		em.Min = &models.GaugeEsqlColumnRef{Column: types.StringValue(api.Metric.Min.Column)}
-		if api.Metric.Min.Label != nil {
-			em.Min.Label = types.StringValue(*api.Metric.Min.Label)
-		} else {
-			em.Min.Label = types.StringNull()
-		}
+		em.Min.Label = typeutils.StringishPointerValue(api.Metric.Min.Label)
 	}
 	if api.Metric.Ticks != nil {
 		em.Ticks = &models.GaugeEsqlTicks{}
@@ -200,11 +180,7 @@ func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, pri
 	}
 	if api.Metric.Title != nil {
 		em.Title = &models.GaugeEsqlTitle{}
-		if api.Metric.Title.Text != nil {
-			em.Title.Text = types.StringValue(*api.Metric.Title.Text)
-		} else {
-			em.Title.Text = types.StringNull()
-		}
+		em.Title.Text = typeutils.StringishPointerValue(api.Metric.Title.Text)
 		em.Title.Visible = typeutils.BoolPointerValue(api.Metric.Title.Visible)
 	}
 	m.EsqlMetric = em

@@ -257,11 +257,7 @@ func updateFromEqlRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIEql
 
 	diags.Append(d.updateFiltersFromAPI(ctx, rule.Filters)...)
 
-	if rule.TiebreakerField != nil {
-		d.TiebreakerField = types.StringValue(*rule.TiebreakerField)
-	} else {
-		d.TiebreakerField = types.StringNull()
-	}
+	d.TiebreakerField = typeutils.StringishPointerValue(rule.TiebreakerField)
 
 	return diags
 }

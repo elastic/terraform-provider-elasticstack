@@ -261,11 +261,7 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 	var diags diag.Diagnostics
 
 	// Description
-	if role.Description != nil {
-		config.Description = types.StringValue(*role.Description)
-	} else {
-		config.Description = types.StringNull()
-	}
+	config.Description = typeutils.StringishPointerValue(role.Description)
 
 	// Cluster
 	clusterStrings := make([]string, len(role.Cluster))
