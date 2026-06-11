@@ -275,43 +275,21 @@ func buildFollowRequest(model Model) (*follow.Request, diag.Diagnostics) {
 		req.Settings = settings
 	}
 
-	if v := ccr.OptInt64Ptr(model.MaxOutstandingReadRequests); v != nil {
-		req.MaxOutstandingReadRequests = v
+	tuning := ccr.TuningParams{
+		MaxOutstandingReadRequests:    model.MaxOutstandingReadRequests,
+		MaxOutstandingWriteRequests:   model.MaxOutstandingWriteRequests,
+		MaxReadRequestOperationCount:  model.MaxReadRequestOperationCount,
+		MaxReadRequestSize:            model.MaxReadRequestSize,
+		MaxRetryDelay:                 model.MaxRetryDelay,
+		MaxWriteBufferCount:           model.MaxWriteBufferCount,
+		MaxWriteBufferSize:            model.MaxWriteBufferSize,
+		MaxWriteRequestOperationCount: model.MaxWriteRequestOperationCount,
+		MaxWriteRequestSize:           model.MaxWriteRequestSize,
+		ReadPollTimeout:               model.ReadPollTimeout,
 	}
-	if v, d := ccr.OptIntFromInt64("max_outstanding_write_requests", model.MaxOutstandingWriteRequests); d.HasError() {
-		diags.Append(d...)
-	} else if v != nil {
-		req.MaxOutstandingWriteRequests = v
-	}
-	if v, d := ccr.OptIntFromInt64("max_read_request_operation_count", model.MaxReadRequestOperationCount); d.HasError() {
-		diags.Append(d...)
-	} else if v != nil {
-		req.MaxReadRequestOperationCount = v
-	}
-	if v := ccr.ByteSizeFromString(model.MaxReadRequestSize); v != nil {
-		req.MaxReadRequestSize = v
-	}
-	if v := ccr.DurationFromString(model.MaxRetryDelay); v != nil {
-		req.MaxRetryDelay = v
-	}
-	if v, d := ccr.OptIntFromInt64("max_write_buffer_count", model.MaxWriteBufferCount); d.HasError() {
-		diags.Append(d...)
-	} else if v != nil {
-		req.MaxWriteBufferCount = v
-	}
-	if v := ccr.ByteSizeFromString(model.MaxWriteBufferSize); v != nil {
-		req.MaxWriteBufferSize = v
-	}
-	if v, d := ccr.OptIntFromInt64("max_write_request_operation_count", model.MaxWriteRequestOperationCount); d.HasError() {
-		diags.Append(d...)
-	} else if v != nil {
-		req.MaxWriteRequestOperationCount = v
-	}
-	if v := ccr.ByteSizeFromString(model.MaxWriteRequestSize); v != nil {
-		req.MaxWriteRequestSize = v
-	}
-	if v := ccr.DurationFromString(model.ReadPollTimeout); v != nil {
-		req.ReadPollTimeout = v
+	diags.Append(ccr.ApplyToFollowRequest(tuning, req)...)
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return req, diags
@@ -319,52 +297,34 @@ func buildFollowRequest(model Model) (*follow.Request, diag.Diagnostics) {
 
 func buildResumeFollowRequest(model Model) *resumefollow.Request {
 	req := &resumefollow.Request{}
-
-	if v := ccr.OptInt64Ptr(model.MaxOutstandingReadRequests); v != nil {
-		req.MaxOutstandingReadRequests = v
+	tuning := ccr.TuningParams{
+		MaxOutstandingReadRequests:    model.MaxOutstandingReadRequests,
+		MaxOutstandingWriteRequests:   model.MaxOutstandingWriteRequests,
+		MaxReadRequestOperationCount:  model.MaxReadRequestOperationCount,
+		MaxReadRequestSize:            model.MaxReadRequestSize,
+		MaxRetryDelay:                 model.MaxRetryDelay,
+		MaxWriteBufferCount:           model.MaxWriteBufferCount,
+		MaxWriteBufferSize:            model.MaxWriteBufferSize,
+		MaxWriteRequestOperationCount: model.MaxWriteRequestOperationCount,
+		MaxWriteRequestSize:           model.MaxWriteRequestSize,
+		ReadPollTimeout:               model.ReadPollTimeout,
 	}
-	if v := ccr.OptInt64Ptr(model.MaxOutstandingWriteRequests); v != nil {
-		req.MaxOutstandingWriteRequests = v
-	}
-	if v := ccr.OptInt64Ptr(model.MaxReadRequestOperationCount); v != nil {
-		req.MaxReadRequestOperationCount = v
-	}
-	if v := typeutils.OptionalString(model.MaxReadRequestSize); v != nil {
-		req.MaxReadRequestSize = v
-	}
-	if v := ccr.DurationFromString(model.MaxRetryDelay); v != nil {
-		req.MaxRetryDelay = v
-	}
-	if v := ccr.OptInt64Ptr(model.MaxWriteBufferCount); v != nil {
-		req.MaxWriteBufferCount = v
-	}
-	if v := typeutils.OptionalString(model.MaxWriteBufferSize); v != nil {
-		req.MaxWriteBufferSize = v
-	}
-	if v := ccr.OptInt64Ptr(model.MaxWriteRequestOperationCount); v != nil {
-		req.MaxWriteRequestOperationCount = v
-	}
-	if v := typeutils.OptionalString(model.MaxWriteRequestSize); v != nil {
-		req.MaxWriteRequestSize = v
-	}
-	if v := ccr.DurationFromString(model.ReadPollTimeout); v != nil {
-		req.ReadPollTimeout = v
-	}
-
+	ccr.ApplyToResumeFollowRequest(tuning, req)
 	return req
 }
 
 func mapParametersToModel(params *estypes.FollowerIndexParameters, model Model) Model {
-	model.MaxOutstandingReadRequests = typeutils.Int64PointerValue(params.MaxOutstandingReadRequests)
-	model.MaxOutstandingWriteRequests = typeutils.IntPointerToInt64Value(params.MaxOutstandingWriteRequests)
-	model.MaxReadRequestOperationCount = typeutils.IntPointerToInt64Value(params.MaxReadRequestOperationCount)
-	model.MaxReadRequestSize = ccr.ByteSizeToString(params.MaxReadRequestSize)
-	model.MaxRetryDelay = ccr.DurationToString(params.MaxRetryDelay)
-	model.MaxWriteBufferCount = typeutils.IntPointerToInt64Value(params.MaxWriteBufferCount)
-	model.MaxWriteBufferSize = ccr.ByteSizeToString(params.MaxWriteBufferSize)
-	model.MaxWriteRequestOperationCount = typeutils.IntPointerToInt64Value(params.MaxWriteRequestOperationCount)
-	model.MaxWriteRequestSize = ccr.ByteSizeToString(params.MaxWriteRequestSize)
-	model.ReadPollTimeout = ccr.DurationToString(params.ReadPollTimeout)
+	p := ccr.TuningParamsFromParameters(params)
+	model.MaxOutstandingReadRequests = p.MaxOutstandingReadRequests
+	model.MaxOutstandingWriteRequests = p.MaxOutstandingWriteRequests
+	model.MaxReadRequestOperationCount = p.MaxReadRequestOperationCount
+	model.MaxReadRequestSize = p.MaxReadRequestSize
+	model.MaxRetryDelay = p.MaxRetryDelay
+	model.MaxWriteBufferCount = p.MaxWriteBufferCount
+	model.MaxWriteBufferSize = p.MaxWriteBufferSize
+	model.MaxWriteRequestOperationCount = p.MaxWriteRequestOperationCount
+	model.MaxWriteRequestSize = p.MaxWriteRequestSize
+	model.ReadPollTimeout = p.ReadPollTimeout
 	return model
 }
 
