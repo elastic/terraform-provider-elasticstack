@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -192,12 +193,7 @@ func TestPopulateFromAPI_artifacts(t *testing.T) {
 
 func mustSettingsObject(t *testing.T, syncDelay, frequency, syncField string, prevent *bool) types.Object {
 	t.Helper()
-	var pib types.Bool
-	if prevent == nil {
-		pib = types.BoolNull()
-	} else {
-		pib = types.BoolValue(*prevent)
-	}
+	pib := typeutils.BoolPointerValue(prevent)
 	o, odi := types.ObjectValue(tfSettingsAttrTypes, map[string]attr.Value{
 		"sync_delay":               types.StringValue(syncDelay),
 		"frequency":                stringOrEmpty(frequency),

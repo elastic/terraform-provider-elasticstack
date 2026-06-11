@@ -176,20 +176,12 @@ func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, pri
 		} else {
 			em.Ticks.Mode = types.StringNull()
 		}
-		if api.Metric.Ticks.Visible != nil {
-			em.Ticks.Visible = types.BoolValue(*api.Metric.Ticks.Visible)
-		} else {
-			em.Ticks.Visible = types.BoolNull()
-		}
+		em.Ticks.Visible = typeutils.BoolPointerValue(api.Metric.Ticks.Visible)
 	}
 	if api.Metric.Title != nil {
 		em.Title = &models.GaugeEsqlTitle{}
 		em.Title.Text = typeutils.StringishPointerValue(api.Metric.Title.Text)
-		if api.Metric.Title.Visible != nil {
-			em.Title.Visible = types.BoolValue(*api.Metric.Title.Visible)
-		} else {
-			em.Title.Visible = types.BoolNull()
-		}
+		em.Title.Visible = typeutils.BoolPointerValue(api.Metric.Title.Visible)
 	}
 	m.EsqlMetric = em
 

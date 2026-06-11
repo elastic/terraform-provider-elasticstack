@@ -124,11 +124,7 @@ func (d *Data) updateCommonRuleFieldsFromAPI(ctx context.Context, fields commonA
 	d.Namespace = typeutils.StringishPointerValue(fields.Namespace)
 	d.RuleNameOverride = typeutils.StringishPointerValue(fields.RuleNameOverride)
 	d.TimestampOverride = typeutils.StringishPointerValue(fields.TimestampOverride)
-	if fields.TimestampOverrideFallbackDisabled != nil {
-		d.TimestampOverrideFallbackDisabled = types.BoolValue(*fields.TimestampOverrideFallbackDisabled)
-	} else {
-		d.TimestampOverrideFallbackDisabled = types.BoolNull()
-	}
+	d.TimestampOverrideFallbackDisabled = typeutils.BoolPointerValue(fields.TimestampOverrideFallbackDisabled)
 	d.BuildingBlockType = typeutils.StringishPointerValue(fields.BuildingBlockType)
 	d.License = typeutils.StringishPointerValue(fields.License)
 	d.Note = typeutils.StringishPointerValue(fields.Note)
@@ -492,16 +488,8 @@ func convertOsqueryResponseActionToModel(ctx context.Context, osqueryAction kbap
 			} else {
 				query.Version = types.StringNull()
 			}
-			if apiQuery.Removed != nil {
-				query.Removed = types.BoolPointerValue(apiQuery.Removed)
-			} else {
-				query.Removed = types.BoolNull()
-			}
-			if apiQuery.Snapshot != nil {
-				query.Snapshot = types.BoolPointerValue(apiQuery.Snapshot)
-			} else {
-				query.Snapshot = types.BoolNull()
-			}
+			query.Removed = typeutils.BoolPointerValue(apiQuery.Removed)
+			query.Snapshot = typeutils.BoolPointerValue(apiQuery.Snapshot)
 
 			// Convert query ECS mapping
 			query.EcsMapping = convertEcsMappingToModel(apiQuery.EcsMapping)

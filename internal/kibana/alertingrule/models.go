@@ -189,11 +189,7 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 			LookBackWindow:        types.Int64Value(rule.Flapping.LookBackWindow),
 			StatusChangeThreshold: types.Int64Value(rule.Flapping.StatusChangeThreshold),
 		}
-		if rule.Flapping.Enabled != nil {
-			fm.Enabled = types.BoolValue(*rule.Flapping.Enabled)
-		} else {
-			fm.Enabled = types.BoolNull()
-		}
+		fm.Enabled = typeutils.BoolPointerValue(rule.Flapping.Enabled)
 		flObj, d := types.ObjectValueFrom(ctx, getFlappingAttrTypes(), fm)
 		diags.Append(d...)
 		m.Flapping = flObj

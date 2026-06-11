@@ -118,10 +118,6 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 
 	// On import (tfPanel == nil) there is no prior intent — populate from API.
 	if tfPanel == nil {
-		singleSelect := types.BoolNull()
-		if api.SingleSelect != nil {
-			singleSelect = types.BoolValue(*api.SingleSelect)
-		}
 		existing = &models.EsqlControlConfigModel{
 			SelectedOptions:  stringsToList(api.SelectedOptions),
 			VariableName:     types.StringValue(api.VariableName),
@@ -129,7 +125,7 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 			EsqlQuery:        types.StringValue(api.EsqlQuery),
 			ControlType:      types.StringValue(api.ControlType),
 			Title:            types.StringPointerValue(api.Title),
-			SingleSelect:     singleSelect,
+			SingleSelect:     typeutils.BoolPointerValue(api.SingleSelect),
 			AvailableOptions: types.ListNull(types.StringType),
 		}
 		pm.EsqlControlConfig = existing
@@ -153,10 +149,6 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 		if tfPanel == nil || tfPanel.EsqlControlConfig == nil {
 			return
 		}
-		singleSelect := types.BoolNull()
-		if api.SingleSelect != nil {
-			singleSelect = types.BoolValue(*api.SingleSelect)
-		}
 		existing = &models.EsqlControlConfigModel{
 			SelectedOptions:  stringsToList(api.SelectedOptions),
 			VariableName:     types.StringValue(api.VariableName),
@@ -164,7 +156,7 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 			EsqlQuery:        types.StringValue(api.EsqlQuery),
 			ControlType:      types.StringValue(api.ControlType),
 			Title:            types.StringPointerValue(api.Title),
-			SingleSelect:     singleSelect,
+			SingleSelect:     typeutils.BoolPointerValue(api.SingleSelect),
 			AvailableOptions: types.ListNull(types.StringType),
 		}
 		pm.EsqlControlConfig = existing

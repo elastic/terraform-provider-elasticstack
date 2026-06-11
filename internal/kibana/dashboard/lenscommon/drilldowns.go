@@ -160,21 +160,9 @@ func decodeDashboardBranchVis(raw []byte) (models.DrilldownItemModel, diag.Diagn
 		DashboardID: types.StringValue(obj.DashboardId),
 		Label:       types.StringValue(obj.Label),
 	}
-	if obj.UseFilters != nil {
-		dm.UseFilters = types.BoolValue(*obj.UseFilters)
-	} else {
-		dm.UseFilters = types.BoolNull()
-	}
-	if obj.UseTimeRange != nil {
-		dm.UseTimeRange = types.BoolValue(*obj.UseTimeRange)
-	} else {
-		dm.UseTimeRange = types.BoolNull()
-	}
-	if obj.OpenInNewTab != nil {
-		dm.OpenInNewTab = types.BoolValue(*obj.OpenInNewTab)
-	} else {
-		dm.OpenInNewTab = types.BoolNull()
-	}
+	dm.UseFilters = typeutils.BoolPointerValue(obj.UseFilters)
+	dm.UseTimeRange = typeutils.BoolPointerValue(obj.UseTimeRange)
+	dm.OpenInNewTab = typeutils.BoolPointerValue(obj.OpenInNewTab)
 	return models.DrilldownItemModel{Dashboard: dm}, diags
 }
 
@@ -200,11 +188,7 @@ func decodeDiscoverBranchVis(raw []byte) (models.DrilldownItemModel, diag.Diagno
 	discover := &models.DrilldownDiscoverBlockModel{
 		Label: types.StringValue(obj.Label),
 	}
-	if obj.OpenInNewTab != nil {
-		discover.OpenInNewTab = types.BoolValue(*obj.OpenInNewTab)
-	} else {
-		discover.OpenInNewTab = types.BoolNull()
-	}
+	discover.OpenInNewTab = typeutils.BoolPointerValue(obj.OpenInNewTab)
 	return models.DrilldownItemModel{Discover: discover}, diags
 }
 
@@ -237,16 +221,8 @@ func decodeURLBranchVis(raw []byte) (models.DrilldownItemModel, diag.Diagnostics
 		Label:   types.StringValue(obj.Label),
 		Trigger: types.StringValue(triggerStr),
 	}
-	if obj.EncodeUrl != nil {
-		url.EncodeURL = types.BoolValue(*obj.EncodeUrl)
-	} else {
-		url.EncodeURL = types.BoolNull()
-	}
-	if obj.OpenInNewTab != nil {
-		url.OpenInNewTab = types.BoolValue(*obj.OpenInNewTab)
-	} else {
-		url.OpenInNewTab = types.BoolNull()
-	}
+	url.EncodeURL = typeutils.BoolPointerValue(obj.EncodeUrl)
+	url.OpenInNewTab = typeutils.BoolPointerValue(obj.OpenInNewTab)
 	return models.DrilldownItemModel{URL: url}, diags
 }
 
