@@ -1,0 +1,31 @@
+variable "name" {
+  type = string
+}
+
+variable "name_b" {
+  type = string
+}
+
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index" "my_index" {
+  name = var.name
+
+  mappings = jsonencode({
+    properties = {
+      email      = { type = "text" }
+      first_name = { type = "text" }
+    }
+  })
+  deletion_protection = false
+}
+
+resource "elasticstack_elasticsearch_enrich_policy" "policy" {
+  name          = var.name_b
+  policy_type   = "match"
+  indices       = [elasticstack_elasticsearch_index.my_index.name]
+  match_field   = "email"
+  enrich_fields = ["first_name"]
+}
