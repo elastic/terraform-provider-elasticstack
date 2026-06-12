@@ -31,6 +31,7 @@ import (
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAccResourceDataStream(t *testing.T) {
@@ -75,11 +76,12 @@ func TestAccResourceDataStream(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "metadata"),
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_name", dataStreamBackingIndexNameRegexp(dsName)),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_uuid"),
+					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_uuid", uuidRegexp()),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "template", dsName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "ilm_policy", dsName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "timestamp_field", "@timestamp"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "generation", "1"),
+					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "status", regexp.MustCompile(`^(?i)(green|yellow|red)$`)),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "hidden", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "system", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "replicated", "false"),
@@ -138,6 +140,133 @@ func TestAccResourceDataStreamWithMetadata(t *testing.T) {
 			},
 		},
 	})
+}
+
+// TestAccResourceDataStreamMetadataTransition verifies the metadata present→absent
+// transition: a data stream name change triggers recreation, and the new data stream
+// picks up the null metadata from the updated (no-_meta) index template.
+func TestAccResourceDataStreamMetadataTransition(t *testing.T) {
+	dsName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
+	dsNameUpdated := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceDataStreamDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Create data stream backed by a template with _meta set.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "metadata", `{"env":"test","version":1}`),
+				),
+			},
+			{
+				// Change the name (triggers force-new) and switch to a template without _meta.
+				// The recreated data stream should have no metadata attribute.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_no_meta"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsNameUpdated)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsNameUpdated),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "metadata"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceDataStreamRollover verifies that after an ES rollover the
+// provider reads back an incremented generation and two backing indices.
+func TestAccResourceDataStreamRollover(t *testing.T) {
+	dsName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceDataStreamDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "generation", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.#", "1"),
+					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_name", dataStreamBackingIndexNameRegexp(dsName)),
+				),
+			},
+			{
+				// Trigger a rollover out-of-band, then re-apply to confirm the provider
+				// reads the updated generation and backing index list from Elasticsearch.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
+				PreConfig: func() {
+					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+					require.NoError(t, err)
+					_, err = client.GetESClient().Indices.Rollover(dsName).Do(context.Background())
+					require.NoError(t, err)
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "generation", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.#", "2"),
+					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.1.index_name", regexp.MustCompile(fmt.Sprintf(`^\.ds-%s-.*-000002$`, dsName))),
+					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.1.index_uuid", uuidRegexp()),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceDataStreamNoILM verifies that ilm_policy is an empty string
+// when the backing index template does not configure an ILM lifecycle policy.
+func TestAccResourceDataStreamNoILM(t *testing.T) {
+	dsName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceDataStreamDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "ilm_policy", ""),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceDataStreamHidden verifies that a data stream backed by an
+// index template with hidden:true is reported as hidden=true by the provider.
+func TestAccResourceDataStreamHidden(t *testing.T) {
+	dsName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceDataStreamDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "hidden", "true"),
+				),
+			},
+		},
+	})
+}
+
+// uuidRegexp matches the standard UUID v4 format returned by Elasticsearch for index UUIDs.
+func uuidRegexp() *regexp.Regexp {
+	return regexp.MustCompile(`^[0-9a-zA-Z_-]{20,22}$`)
 }
 
 func TestAccResourceDataStreamNameValidation(t *testing.T) {
