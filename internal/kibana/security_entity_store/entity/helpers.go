@@ -334,6 +334,31 @@ func AssetOwnerBlockAttrTypes() map[string]attr.Type {
 // Model -> API body conversion
 // ---------------------------------------------------------------------------
 
+// setBlockOrJSON writes key into body from a typed block, falling back to a
+// raw JSON value when the block is null or unknown.
+func setBlockOrJSON(
+	ctx context.Context,
+	body map[string]any,
+	key string,
+	block types.Object,
+	blockToMap func(context.Context, types.Object, *diag.Diagnostics) map[string]any,
+	jsonVal jsontypes.Normalized,
+	jsonPath path.Path,
+	diags *diag.Diagnostics,
+) {
+	if !block.IsNull() && !block.IsUnknown() {
+		if m := blockToMap(ctx, block, diags); m != nil {
+			body[key] = m
+		}
+		return
+	}
+	if !jsonVal.IsNull() && !jsonVal.IsUnknown() {
+		if m := typeutils.NormalizedTypeToMap[any](jsonVal, jsonPath, diags); m != nil {
+			body[key] = m
+		}
+	}
+}
+
 func modelToAPIBody(ctx context.Context, model tfModel) (map[string]any, diag.Diagnostics) {
 	body := make(map[string]any)
 	var diags diag.Diagnostics
@@ -367,101 +392,14 @@ func modelToAPIBody(ctx context.Context, model tfModel) (map[string]any, diag.Di
 		}
 	}
 
-	if !model.Entity.IsNull() && !model.Entity.IsUnknown() {
-		m := entityBlockToMap(ctx, model.Entity, &diags)
-		if m != nil {
-			body["entity"] = m
-		}
-	} else if !model.EntityJSON.IsNull() && !model.EntityJSON.IsUnknown() {
-		m := typeutils.NormalizedTypeToMap[any](model.EntityJSON, path.Root("entity_json"), &diags)
-		if m != nil {
-			body["entity"] = m
-		}
-	}
-
-	if !model.Host.IsNull() && !model.Host.IsUnknown() {
-		m := hostBlockToMap(ctx, model.Host, &diags)
-		if m != nil {
-			body["host"] = m
-		}
-	} else if !model.HostJSON.IsNull() && !model.HostJSON.IsUnknown() {
-		m := typeutils.NormalizedTypeToMap[any](model.HostJSON, path.Root("host_json"), &diags)
-		if m != nil {
-			body["host"] = m
-		}
-	}
-
-	if !model.User.IsNull() && !model.User.IsUnknown() {
-		m := userBlockToMap(ctx, model.User, &diags)
-		if m != nil {
-			body["user"] = m
-		}
-	} else if !model.UserJSON.IsNull() && !model.UserJSON.IsUnknown() {
-		m := typeutils.NormalizedTypeToMap[any](model.UserJSON, path.Root("user_json"), &diags)
-		if m != nil {
-			body["user"] = m
-		}
-	}
-
-	if !model.Service.IsNull() && !model.Service.IsUnknown() {
-		m := serviceBlockToMap(ctx, model.Service, &diags)
-		if m != nil {
-			body["service"] = m
-		}
-	} else if !model.ServiceJSON.IsNull() && !model.ServiceJSON.IsUnknown() {
-		m := typeutils.NormalizedTypeToMap[any](model.ServiceJSON, path.Root("service_json"), &diags)
-		if m != nil {
-			body["service"] = m
-		}
-	}
-
-	if !model.Orchestrator.IsNull() && !model.Orchestrator.IsUnknown() {
-		m := orchestratorBlockToMap(ctx, model.Orchestrator, &diags)
-		if m != nil {
-			body["orchestrator"] = m
-		}
-	} else if !model.OrchestratorJSON.IsNull() && !model.OrchestratorJSON.IsUnknown() {
-		m := typeutils.NormalizedTypeToMap[any](model.OrchestratorJSON, path.Root("orchestrator_json"), &diags)
-		if m != nil {
-			body["orchestrator"] = m
-		}
-	}
-
-	if !model.Cloud.IsNull() && !model.Cloud.IsUnknown() {
-		m := cloudBlockToMap(ctx, model.Cloud, &diags)
-		if m != nil {
-			body["cloud"] = m
-		}
-	} else if !model.CloudJSON.IsNull() && !model.CloudJSON.IsUnknown() {
-		m := typeutils.NormalizedTypeToMap[any](model.CloudJSON, path.Root("cloud_json"), &diags)
-		if m != nil {
-			body["cloud"] = m
-		}
-	}
-
-	if !model.Event.IsNull() && !model.Event.IsUnknown() {
-		m := eventBlockToMap(ctx, model.Event, &diags)
-		if m != nil {
-			body["event"] = m
-		}
-	} else if !model.EventJSON.IsNull() && !model.EventJSON.IsUnknown() {
-		m := typeutils.NormalizedTypeToMap[any](model.EventJSON, path.Root("event_json"), &diags)
-		if m != nil {
-			body["event"] = m
-		}
-	}
-
-	if !model.Asset.IsNull() && !model.Asset.IsUnknown() {
-		m := assetBlockToMap(ctx, model.Asset, &diags)
-		if m != nil {
-			body[attrAsset] = m
-		}
-	} else if !model.AssetJSON.IsNull() && !model.AssetJSON.IsUnknown() {
-		m := typeutils.NormalizedTypeToMap[any](model.AssetJSON, path.Root("asset_json"), &diags)
-		if m != nil {
-			body[attrAsset] = m
-		}
-	}
+	setBlockOrJSON(ctx, body, attrEntity, model.Entity, entityBlockToMap, model.EntityJSON, path.Root("entity_json"), &diags)
+	setBlockOrJSON(ctx, body, attrHost, model.Host, hostBlockToMap, model.HostJSON, path.Root("host_json"), &diags)
+	setBlockOrJSON(ctx, body, attrUser, model.User, userBlockToMap, model.UserJSON, path.Root("user_json"), &diags)
+	setBlockOrJSON(ctx, body, attrService, model.Service, serviceBlockToMap, model.ServiceJSON, path.Root("service_json"), &diags)
+	setBlockOrJSON(ctx, body, attrOrchestrator, model.Orchestrator, orchestratorBlockToMap, model.OrchestratorJSON, path.Root("orchestrator_json"), &diags)
+	setBlockOrJSON(ctx, body, attrCloud, model.Cloud, cloudBlockToMap, model.CloudJSON, path.Root("cloud_json"), &diags)
+	setBlockOrJSON(ctx, body, attrEvent, model.Event, eventBlockToMap, model.EventJSON, path.Root("event_json"), &diags)
+	setBlockOrJSON(ctx, body, attrAsset, model.Asset, assetBlockToMap, model.AssetJSON, path.Root("asset_json"), &diags)
 
 	return body, diags
 }
