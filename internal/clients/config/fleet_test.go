@@ -28,6 +28,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func fleetMultipleAuthWarningDiag() fwdiags.Diagnostics {
+	return fwdiags.Diagnostics{
+		fwdiags.NewWarningDiagnostic(
+			"Multiple Fleet authentication methods configured",
+			"More than one of username/password (username must be set), api_key, or bearer_token is set in "+
+				"the resolved Fleet configuration. Only one will be used. Check your "+
+				"provider configuration and Fleet environment variables for conflicting auth settings.",
+		),
+	}
+}
+
 func Test_newFleetConfigFromFramework(t *testing.T) {
 	type args struct {
 		kibanaCfg      kibanaOapiConfig
@@ -92,6 +103,7 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 						CACerts:  []string{"internal", "lets_decrypt"},
 						Insecure: false,
 					},
+					expectedDiags: fleetMultipleAuthWarningDiag(),
 				}
 			},
 		},
@@ -136,6 +148,152 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 						APIKey:   "stupefy",
 						CACerts:  []string{"black", "sea"},
 						Insecure: false,
+					},
+					expectedDiags: fleetMultipleAuthWarningDiag(),
+				}
+			},
+		},
+		// 10.1: Kibana BasicAuth + Fleet APIKey block → resolved fleet config has APIKey only
+		{
+			name: "Kibana BasicAuth + Fleet APIKey clears inherited BasicAuth",
+			args: func() args {
+				kibanaCfg := kibanaOapiConfig{
+					Username: "k",
+					Password: "p",
+				}
+				return args{
+					kibanaCfg: kibanaCfg,
+					providerConfig: ProviderConfiguration{
+						Fleet: []FleetConnection{
+							{
+								APIKey:  types.StringValue("fleet-key"),
+								CACerts: types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					expectedConfig: fleetConfig{
+						APIKey:   "fleet-key",
+						Username: "",
+						Password: "",
+					},
+				}
+			},
+		},
+		// 10.2: Kibana APIKey + FLEET_PASSWORD env + provider Fleet username → BasicAuth
+		{
+			name: "Fleet env password + provider username overrides inherited Kibana APIKey",
+			args: func() args {
+				kibanaCfg := kibanaOapiConfig{APIKey: "kibana-key"}
+				return args{
+					kibanaCfg: kibanaCfg,
+					providerConfig: ProviderConfiguration{
+						Fleet: []FleetConnection{
+							{
+								Username: types.StringValue("fleet-user"),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					env: map[string]string{
+						"FLEET_PASSWORD": "env-pass",
+					},
+					expectedConfig: fleetConfig{
+						Username: "fleet-user",
+						Password: "env-pass",
+						APIKey:   "",
+					},
+				}
+			},
+		},
+		// 10.3: FLEET_API_KEY env + Fleet provider username/password → resolved fleet config has APIKey only
+		{
+			name: "FLEET_API_KEY env overrides provider Fleet BasicAuth",
+			args: func() args {
+				kibanaCfg := kibanaOapiConfig{}
+				return args{
+					kibanaCfg: kibanaCfg,
+					providerConfig: ProviderConfiguration{
+						Fleet: []FleetConnection{
+							{
+								Username: types.StringValue("fleet-user"),
+								Password: types.StringValue("fleet-pass"),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					env: map[string]string{
+						"FLEET_API_KEY": "env-key",
+					},
+					expectedConfig: fleetConfig{
+						APIKey:   "env-key",
+						Username: "",
+						Password: "",
+					},
+				}
+			},
+		},
+		// 10.4: env-level conflict (FLEET_API_KEY and FLEET_USERNAME both set) → warning
+		{
+			name: "env-level conflict FLEET_API_KEY + FLEET_USERNAME emits warning",
+			args: func() args {
+				kibanaCfg := kibanaOapiConfig{}
+				return args{
+					kibanaCfg:      kibanaCfg,
+					providerConfig: ProviderConfiguration{},
+					env: map[string]string{
+						"FLEET_API_KEY":  "env-key",
+						"FLEET_USERNAME": "env-user",
+					},
+					expectedConfig: fleetConfig{
+						APIKey:   "env-key",
+						Username: "env-user",
+					},
+					expectedDiags: fleetMultipleAuthWarningDiag(),
+				}
+			},
+		},
+		// 10.5: Fleet inherits Kibana config that already has multiple auth methods → warning after Fleet env clearing
+		{
+			name: "inherited Kibana config with multiple auth methods emits Fleet warning",
+			args: func() args {
+				kibanaCfg := kibanaOapiConfig{
+					APIKey:   "bad-key",
+					Username: "bad-user",
+				}
+				return args{
+					kibanaCfg:      kibanaCfg,
+					providerConfig: ProviderConfiguration{},
+					expectedConfig: fleetConfig{
+						APIKey:   "bad-key",
+						Username: "bad-user",
+					},
+					expectedDiags: fleetMultipleAuthWarningDiag(),
+				}
+			},
+		},
+		// 10.6: FLEET_BEARER_TOKEN env + Fleet provider BasicAuth → resolved fleet config has BearerToken only
+		{
+			name: "FLEET_BEARER_TOKEN env overrides provider Fleet BasicAuth",
+			args: func() args {
+				kibanaCfg := kibanaOapiConfig{}
+				return args{
+					kibanaCfg: kibanaCfg,
+					providerConfig: ProviderConfiguration{
+						Fleet: []FleetConnection{
+							{
+								Username: types.StringValue("fleet-user"),
+								Password: types.StringValue("fleet-pass"),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					env: map[string]string{
+						"FLEET_BEARER_TOKEN": "env-token",
+					},
+					expectedConfig: fleetConfig{
+						BearerToken: "env-token",
+						Username:    "",
+						Password:    "",
 					},
 				}
 			},

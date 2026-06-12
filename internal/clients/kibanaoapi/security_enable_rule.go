@@ -30,6 +30,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
+const tagKeyField = "key"
+
 // performBulkRulesActionByTag marshals actionBody, calls the bulk-action API, and checks the response.
 // verb is used in error messages (e.g. "enable", "disable").
 func performBulkRulesActionByTag(ctx context.Context, client *Client, spaceID, key, value string, actionBody any, verb string) diag.Diagnostics {
@@ -40,7 +42,7 @@ func performBulkRulesActionByTag(ctx context.Context, client *Client, spaceID, k
 
 	tflog.Debug(ctx, fmt.Sprintf("%sing rules by tag", verb), map[string]any{
 		"space_id":     spaceID,
-		"key":          key,
+		tagKeyField:    key,
 		"value":        value,
 		"request_body": string(bodyBytes),
 	})
