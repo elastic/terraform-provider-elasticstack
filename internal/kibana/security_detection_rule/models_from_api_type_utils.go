@@ -696,21 +696,28 @@ func (d *Data) updateThreatFiltersFromAPI(ctx context.Context, apiThreatFilters 
 	return diags
 }
 
-// Helper function to update severity mapping from API response
 func (d *Data) updateSeverityMappingFromAPI(ctx context.Context, severityMapping *kbapi.SecurityDetectionsAPISeverityMapping) diag.Diagnostics {
 	var diags diag.Diagnostics
-
 	if severityMapping != nil && len(*severityMapping) > 0 {
-		severityMappingValue, severityMappingDiags := convertSeverityMappingToModel(ctx, severityMapping)
-		diags.Append(severityMappingDiags...)
-		if !severityMappingDiags.HasError() {
-			d.SeverityMapping = severityMappingValue
-		}
+		d.SeverityMapping, diags = convertSeverityMappingToModel(ctx, severityMapping)
 	} else {
 		d.SeverityMapping = types.ListNull(getSeverityMappingElementType())
 	}
-
 	return diags
+}
+
+// updateListFieldFromAPI converts a slice to a types.List field using the provided
+// converter. Returns nullList when slice is empty.
+func updateListFieldFromAPI[T any](
+	ctx context.Context,
+	slice []T,
+	nullList types.List,
+	converter func(context.Context, []T) (types.List, diag.Diagnostics),
+) (types.List, diag.Diagnostics) {
+	if len(slice) > 0 {
+		return converter(ctx, slice)
+	}
+	return nullList, nil
 }
 
 // stringSliceOrEmptyList converts a []string to a types.List, returning an empty
@@ -761,58 +768,27 @@ func (d *Data) updateReferencesFromAPI(ctx context.Context, references []string)
 	return diags
 }
 
-// Helper function to update exceptions list from API response
 func (d *Data) updateExceptionsListFromAPI(ctx context.Context, exceptionsList []kbapi.SecurityDetectionsAPIRuleExceptionList) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	if len(exceptionsList) > 0 {
-		exceptionsListValue, exceptionsListDiags := convertExceptionsListToModel(ctx, exceptionsList)
-		diags.Append(exceptionsListDiags...)
-		if !exceptionsListDiags.HasError() {
-			d.ExceptionsList = exceptionsListValue
-		}
-	} else {
-		d.ExceptionsList = types.ListNull(getExceptionsListElementType())
-	}
-
+	d.ExceptionsList, diags = updateListFieldFromAPI(ctx, exceptionsList,
+		types.ListNull(getExceptionsListElementType()),
+		convertExceptionsListToModel)
 	return diags
 }
 
-// Helper function to update risk score mapping from API response
 func (d *Data) updateRiskScoreMappingFromAPI(ctx context.Context, riskScoreMapping kbapi.SecurityDetectionsAPIRiskScoreMapping) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	if len(riskScoreMapping) > 0 {
-		riskScoreMappingValue, riskScoreMappingDiags := convertRiskScoreMappingToModel(ctx, riskScoreMapping)
-		diags.Append(riskScoreMappingDiags...)
-		if !riskScoreMappingDiags.HasError() {
-			d.RiskScoreMapping = riskScoreMappingValue
-		}
-	} else {
-		d.RiskScoreMapping = types.ListNull(getRiskScoreMappingElementType())
-	}
-
+	d.RiskScoreMapping, diags = updateListFieldFromAPI(ctx, riskScoreMapping,
+		types.ListNull(getRiskScoreMappingElementType()),
+		convertRiskScoreMappingToModel)
 	return diags
 }
 
-// Helper function to update actions from API response
 func (d *Data) updateActionsFromAPI(ctx context.Context, actions []kbapi.SecurityDetectionsAPIRuleAction) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	if len(actions) > 0 {
-		actionsListValue, actionDiags := convertActionsToModel(ctx, actions)
-		diags.Append(actionDiags...)
-		if !actionDiags.HasError() {
-			d.Actions = actionsListValue
-		}
-	} else {
-		actionsListValue, actionDiags := convertActionsToModel(ctx, []kbapi.SecurityDetectionsAPIRuleAction{})
-		diags.Append(actionDiags...)
-		if !actionDiags.HasError() {
-			d.Actions = actionsListValue
-		}
+	actionsListValue, diags := convertActionsToModel(ctx, actions)
+	if !diags.HasError() {
+		d.Actions = actionsListValue
 	}
-
 	return diags
 }
 
@@ -884,20 +860,13 @@ func (d *Data) updateThresholdAlertSuppressionFromAPI(ctx context.Context, apiSu
 	return diags
 }
 
-// updateResponseActionsFromAPI updates the ResponseActions field from API response
 func (d *Data) updateResponseActionsFromAPI(ctx context.Context, responseActions *[]kbapi.SecurityDetectionsAPIResponseAction) diag.Diagnostics {
 	var diags diag.Diagnostics
-
 	if responseActions != nil && len(*responseActions) > 0 {
-		responseActionsValue, responseActionsDiags := convertResponseActionsToModel(ctx, responseActions)
-		diags.Append(responseActionsDiags...)
-		if !responseActionsDiags.HasError() {
-			d.ResponseActions = responseActionsValue
-		}
+		d.ResponseActions, diags = convertResponseActionsToModel(ctx, responseActions)
 	} else {
 		d.ResponseActions = types.ListNull(getResponseActionElementType())
 	}
-
 	return diags
 }
 
@@ -915,37 +884,23 @@ func (d *Data) updateInvestigationFieldsFromAPI(ctx context.Context, investigati
 	return diags
 }
 
-// Helper function to update related integrations from API response
 func (d *Data) updateRelatedIntegrationsFromAPI(ctx context.Context, relatedIntegrations *kbapi.SecurityDetectionsAPIRelatedIntegrationArray) diag.Diagnostics {
 	var diags diag.Diagnostics
-
 	if relatedIntegrations != nil && len(*relatedIntegrations) > 0 {
-		relatedIntegrationsValue, relatedIntegrationsDiags := convertRelatedIntegrationsToModel(ctx, relatedIntegrations)
-		diags.Append(relatedIntegrationsDiags...)
-		if !relatedIntegrationsDiags.HasError() {
-			d.RelatedIntegrations = relatedIntegrationsValue
-		}
+		d.RelatedIntegrations, diags = convertRelatedIntegrationsToModel(ctx, relatedIntegrations)
 	} else {
 		d.RelatedIntegrations = types.ListNull(getRelatedIntegrationElementType())
 	}
-
 	return diags
 }
 
-// Helper function to update required fields from API response
 func (d *Data) updateRequiredFieldsFromAPI(ctx context.Context, requiredFields *kbapi.SecurityDetectionsAPIRequiredFieldArray) diag.Diagnostics {
 	var diags diag.Diagnostics
-
 	if requiredFields != nil && len(*requiredFields) > 0 {
-		requiredFieldsValue, requiredFieldsDiags := convertRequiredFieldsToModel(ctx, requiredFields)
-		diags.Append(requiredFieldsDiags...)
-		if !requiredFieldsDiags.HasError() {
-			d.RequiredFields = requiredFieldsValue
-		}
+		d.RequiredFields, diags = convertRequiredFieldsToModel(ctx, requiredFields)
 	} else {
 		d.RequiredFields = types.ListNull(getRequiredFieldElementType())
 	}
-
 	return diags
 }
 
@@ -1031,20 +986,13 @@ func convertThreatToModel(ctx context.Context, apiThreats *kbapi.SecurityDetecti
 	return listValue, diags
 }
 
-// Helper function to update threat from API response
 func (d *Data) updateThreatFromAPI(ctx context.Context, threat *kbapi.SecurityDetectionsAPIThreatArray) diag.Diagnostics {
 	var diags diag.Diagnostics
-
 	if threat != nil && len(*threat) > 0 {
-		threatValue, threatDiags := convertThreatToModel(ctx, threat)
-		diags.Append(threatDiags...)
-		if !threatDiags.HasError() {
-			d.Threat = threatValue
-		}
+		d.Threat, diags = convertThreatToModel(ctx, threat)
 	} else {
 		d.Threat = types.ListNull(getThreatElementType())
 	}
-
 	return diags
 }
 
