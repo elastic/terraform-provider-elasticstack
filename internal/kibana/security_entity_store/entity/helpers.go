@@ -1175,20 +1175,7 @@ func mapToAssetBlockModel(ctx context.Context, m map[string]any, _ *diag.Diagnos
 // ItemObjectType returns the object type for items in the list data source.
 // It covers the fields that apiBodyToModel populates from an API response.
 func ItemObjectType() attr.Type {
-	return types.ObjectType{AttrTypes: map[string]attr.Type{
-		attrTimestamp:    types.StringType,
-		attrEntity:       types.ObjectType{AttrTypes: BlockAttrTypes()},
-		attrHost:         types.ObjectType{AttrTypes: HostBlockAttrTypes()},
-		attrUser:         types.ObjectType{AttrTypes: UserBlockAttrTypes()},
-		attrService:      types.ObjectType{AttrTypes: ServiceBlockAttrTypes()},
-		attrCloud:        types.ObjectType{AttrTypes: CloudBlockAttrTypes()},
-		attrAsset:        types.ObjectType{AttrTypes: AssetBlockAttrTypes()},
-		attrOrchestrator: types.ObjectType{AttrTypes: OrchestratorBlockAttrTypes()},
-		attrEvent:        types.ObjectType{AttrTypes: EventBlockAttrTypes()},
-		attrLabels:       types.MapType{ElemType: types.StringType},
-		attrTags:         types.SetType{ElemType: types.StringType},
-		attrDocumentJSON: jsontypes.NormalizedType{},
-	}}
+	return types.ObjectType{AttrTypes: ItemAttrTypes()}
 }
 
 // APIBodyToItem converts a raw entity document from the API list response
@@ -1198,9 +1185,9 @@ func APIBodyToItem(ctx context.Context, body map[string]any, diags *diag.Diagnos
 	var item tfModel
 	apiBodyToModel(ctx, body, &item, diags)
 	if diags.HasError() {
-		return types.ObjectNull(ItemObjectType().(types.ObjectType).AttrTypes)
+		return types.ObjectNull(ItemAttrTypes())
 	}
-	obj, d := types.ObjectValue(ItemObjectType().(types.ObjectType).AttrTypes, map[string]attr.Value{
+	obj, d := types.ObjectValue(ItemAttrTypes(), map[string]attr.Value{
 		"@timestamp":     item.Timestamp,
 		attrEntity:       item.Entity,
 		attrHost:         item.Host,
