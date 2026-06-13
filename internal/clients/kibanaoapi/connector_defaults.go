@@ -79,6 +79,17 @@ var connectorConfigHandlers = map[string]connectorConfigHandler{
 		remarshalConfig: remarshalConfig[kbapi.ServicenowConfig],
 	},
 	".slack_api": {
+		// kbapi.SlackApiConfig.AllowedChannels[].Id is serialized without
+		// omitempty, so remarshaling a Slack channel that the user supplied with
+		// only a `name` injects an empty `"id":""`. The read path already
+		// remarshals the API response (ConnectorResponseToModel), so the value
+		// stored in state always carries `"id":""`, while the planned value does
+		// not. Wiring the same remarshal in as the `defaults` function means
+		// ConnectorConfigWithDefaults (used by the config attribute's semantic
+		// equality) normalizes the planned value the same way, so both sides
+		// match and Terraform no longer reports "Provider produced inconsistent
+		// result after apply" for .slack_api connectors.
+		defaults:        remarshalConfig[kbapi.SlackApiConfig],
 		remarshalConfig: remarshalConfig[kbapi.SlackApiConfig],
 	},
 	".swimlane": {
