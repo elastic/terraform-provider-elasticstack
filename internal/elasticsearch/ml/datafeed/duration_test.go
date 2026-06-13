@@ -35,6 +35,17 @@ func Test_durationPointerToString(t *testing.T) {
 		}
 	})
 
+	t.Run("typed nil pointer returns StringNull", func(t *testing.T) {
+		var d *estypes.Duration
+		result, err := durationPointerToString(d)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !result.IsNull() {
+			t.Errorf("expected null, got %v", result)
+		}
+	})
+
 	t.Run("string Duration returns StringValue", func(t *testing.T) {
 		d := estypes.Duration("10m")
 		result, err := durationPointerToString(&d)

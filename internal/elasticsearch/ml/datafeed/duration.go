@@ -19,6 +19,7 @@ package datafeed
 
 import (
 	"encoding/json"
+	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -29,6 +30,14 @@ func durationPointerToString(v any) (types.String, error) {
 	if v == nil {
 		return types.StringNull(), nil
 	}
+
+	// When a typed nil pointer is passed as an interface value (e.g. (*types.Duration)(nil)),
+	// the interface itself is non-nil. Treat these as null to avoid returning "null".
+	rv := reflect.ValueOf(v)
+	if rv.Kind() == reflect.Ptr && rv.IsNil() {
+		return types.StringNull(), nil
+	}
+
 	b, err := json.Marshal(v)
 	if err != nil {
 		return types.StringNull(), err
