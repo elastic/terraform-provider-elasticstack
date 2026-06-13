@@ -266,39 +266,21 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 	// Convert scroll_size
 	m.ScrollSize = typeutils.IntPointerToInt64Value(apiModel.ScrollSize)
 
-	// Convert frequency (types.Duration is a string alias that marshals to JSON string)
-	if apiModel.Frequency != nil {
-		freqJSON, err := json.Marshal(apiModel.Frequency)
-		if err != nil {
-			diags.AddError("Failed to marshal frequency", err.Error())
-			return diags
-		}
-		// Unmarshal the JSON string to get the actual string value
-		var freqStr string
-		if err := json.Unmarshal(freqJSON, &freqStr); err != nil {
-			// freqJSON might be the raw value itself
-			freqStr = string(freqJSON)
-		}
-		m.Frequency = types.StringValue(freqStr)
-	} else {
-		m.Frequency = types.StringNull()
+	// Convert frequency
+	freqVal, err := durationPointerToString(apiModel.Frequency)
+	if err != nil {
+		diags.AddError("Failed to marshal frequency", err.Error())
+		return diags
 	}
+	m.Frequency = freqVal
 
 	// Convert query_delay
-	if apiModel.QueryDelay != nil {
-		delayJSON, err := json.Marshal(apiModel.QueryDelay)
-		if err != nil {
-			diags.AddError("Failed to marshal query_delay", err.Error())
-			return diags
-		}
-		var delayStr string
-		if err := json.Unmarshal(delayJSON, &delayStr); err != nil {
-			delayStr = string(delayJSON)
-		}
-		m.QueryDelay = types.StringValue(delayStr)
-	} else {
-		m.QueryDelay = types.StringNull()
+	delayVal, err := durationPointerToString(apiModel.QueryDelay)
+	if err != nil {
+		diags.AddError("Failed to marshal query_delay", err.Error())
+		return diags
 	}
+	m.QueryDelay = delayVal
 
 	// Convert max_empty_searches
 	m.MaxEmptySearches = typeutils.IntPointerToInt64Value(apiModel.MaxEmptySearches)
@@ -310,17 +292,13 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 		}
 		// Only set TimeSpan if mode is "manual" and TimeSpan is not nil/empty
 		if apiModel.ChunkingConfig.Mode.String() == "manual" && apiModel.ChunkingConfig.TimeSpan != nil {
-			tsJSON, err := json.Marshal(apiModel.ChunkingConfig.TimeSpan)
+			tsVal, err := durationPointerToString(apiModel.ChunkingConfig.TimeSpan)
 			if err != nil {
 				diags.AddError("Failed to marshal chunking_config.time_span", err.Error())
 				return diags
 			}
-			var tsStr string
-			if err := json.Unmarshal(tsJSON, &tsStr); err != nil {
-				tsStr = string(tsJSON)
-			}
-			if tsStr != "" {
-				chunkingConfigTF.TimeSpan = types.StringValue(tsStr)
+			if tsVal.ValueString() != "" {
+				chunkingConfigTF.TimeSpan = tsVal
 			} else {
 				chunkingConfigTF.TimeSpan = types.StringNull()
 			}
@@ -346,20 +324,12 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 	delayedDataCheckConfigTF := DelayedDataCheckConfig{
 		Enabled: types.BoolValue(apiModel.DelayedDataCheckConfig.Enabled),
 	}
-	if apiModel.DelayedDataCheckConfig.CheckWindow != nil {
-		cwJSON, err := json.Marshal(apiModel.DelayedDataCheckConfig.CheckWindow)
-		if err != nil {
-			diags.AddError("Failed to marshal delayed_data_check_config.check_window", err.Error())
-			return diags
-		}
-		var cwStr string
-		if err := json.Unmarshal(cwJSON, &cwStr); err != nil {
-			cwStr = string(cwJSON)
-		}
-		delayedDataCheckConfigTF.CheckWindow = types.StringValue(cwStr)
-	} else {
-		delayedDataCheckConfigTF.CheckWindow = types.StringNull()
+	cwVal, err := durationPointerToString(apiModel.DelayedDataCheckConfig.CheckWindow)
+	if err != nil {
+		diags.AddError("Failed to marshal delayed_data_check_config.check_window", err.Error())
+		return diags
 	}
+	delayedDataCheckConfigTF.CheckWindow = cwVal
 	delayedDataCheckConfigObj, diag := types.ObjectValueFrom(ctx, map[string]attr.Type{
 		"enabled":      types.BoolType,
 		"check_window": types.StringType,
