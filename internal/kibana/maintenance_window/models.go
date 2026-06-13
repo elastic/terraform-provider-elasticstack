@@ -111,7 +111,7 @@ func (m Model) toAPICreateRequest(ctx context.Context) (kbapi.PostMaintenanceWin
 
 /* READ */
 
-func (m *Model) fromAPIReadResponse(ctx context.Context, data *kbapi.GetMaintenanceWindowIdResponse) diag.Diagnostics {
+func (m *Model) populateFromAPI(ctx context.Context, data *kbapi.GetMaintenanceWindowIdResponse) diag.Diagnostics {
 	if data == nil || data.JSON200 == nil {
 		return nil
 	}
