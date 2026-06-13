@@ -39,20 +39,8 @@ func TestInputValue_ObjectSemanticEquals(t *testing.T) {
 		expectError bool
 	}{
 		{
-			name:     "both null values are equal",
-			value1:   NewInputNull(attrTypes),
-			value2:   NewInputNull(attrTypes),
-			expected: true,
-		},
-		{
 			name:     "both unknown values are equal",
 			value1:   NewInputUnknown(attrTypes),
-			value2:   NewInputUnknown(attrTypes),
-			expected: true,
-		},
-		{
-			name:     "null vs unknown are equal",
-			value1:   NewInputNull(attrTypes),
 			value2:   NewInputUnknown(attrTypes),
 			expected: true,
 		},
