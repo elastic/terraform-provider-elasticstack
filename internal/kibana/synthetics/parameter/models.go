@@ -22,7 +22,6 @@ import (
 
 	kboapi "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -60,7 +59,7 @@ func (m Model) toParameterRequest(forUpdate bool) kboapi.SyntheticsParameterRequ
 		Value:       m.Value.ValueString(),
 		Description: new(m.Description.ValueString()),
 		// We need this to marshal as an empty JSON array, not null.
-		Tags:              new(typeutils.NonNilSlice(synthetics.ValueStringSlice(m.Tags))),
+		Tags:              new(typeutils.NonNilSlice(typeutils.ValueStringSlice(m.Tags))),
 		ShareAcrossSpaces: shareAcrossSpaces,
 	}
 }
@@ -77,7 +76,7 @@ func modelFromOAPI(param kboapi.SyntheticsGetParameterResponse) Model {
 		Description: types.StringPointerValue(param.Description),
 		// Terraform, like json.Marshal, treats empty slices as null. We need an
 		// actual backing array of size 0.
-		Tags:              typeutils.NonNilSlice(synthetics.StringSliceValue(typeutils.Deref(param.Tags))),
+		Tags:              typeutils.NonNilSlice(typeutils.StringSliceValue(typeutils.Deref(param.Tags))),
 		ShareAcrossSpaces: types.BoolValue(allSpaces),
 	}
 }
