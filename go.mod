@@ -3,7 +3,6 @@ module github.com/elastic/terraform-provider-elasticstack
 go 1.26.1
 
 require (
-	github.com/elastic/elastic-transport-go/v8 v8.11.0
 	github.com/elastic/go-elasticsearch/v8 v8.19.6
 	github.com/google/go-github/v88 v88.0.0
 	github.com/google/gofuzz v1.2.0
@@ -20,10 +19,11 @@ require (
 	github.com/hashicorp/terraform-plugin-testing v1.16.0
 	github.com/oapi-codegen/runtime v1.4.1
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/tools v0.45.0
+	golang.org/x/tools v0.46.0
 )
 
 require (
+	github.com/elastic/elastic-transport-go/v8 v8.11.0 // indirect
 	github.com/google/go-github/v84 v84.0.0 // indirect
 	github.com/hashicorp/go-cty v1.5.0 // indirect
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.40.0 // indirect
@@ -31,7 +31,7 @@ require (
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
 	github.com/speakeasy-api/openapi v1.19.2 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/telemetry v0.0.0-20260508192327-42602be52be6 // indirect
+	golang.org/x/telemetry v0.0.0-20260610154732-fb80ec83bdd9 // indirect
 )
 
 require (
@@ -397,8 +397,8 @@ require (
 	gocloud.dev v0.45.0 // indirect
 	golang.org/x/crypto v0.53.0
 	golang.org/x/exp v0.0.0-20251209150349-8475f28825e9 // indirect
-	golang.org/x/mod v0.36.0 // indirect
-	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/mod v0.37.0 // indirect
+	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/sync v0.21.0
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/term v0.44.0 // indirect
