@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
@@ -46,7 +47,7 @@ func migrateComponentTemplateStateV0ToV1(_ context.Context, req resource.Upgrade
 		return
 	}
 
-	resp.Diagnostics.Append(aliasutil.CollapseListPath(stateMap, attrTemplate, attrTemplate)...)
+	resp.Diagnostics.Append(stateutil.CollapseListPath(stateMap, attrTemplate, attrTemplate)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

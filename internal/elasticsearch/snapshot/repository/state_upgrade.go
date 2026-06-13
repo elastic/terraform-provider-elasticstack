@@ -20,8 +20,8 @@ package repository
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
@@ -44,17 +44,9 @@ func migrateSnapshotRepositoryStateV0ToV1(_ context.Context, req resource.Upgrad
 	}
 
 	for _, key := range typeBlockKeys {
-		if raw, ok := stateMap[key]; ok {
-			u, err := unwrapSingletonList(raw, key)
-			if err != nil {
-				resp.Diagnostics.AddError("State upgrade error", err.Error())
-				return
-			}
-			if u == nil {
-				delete(stateMap, key)
-			} else {
-				stateMap[key] = u
-			}
+		resp.Diagnostics.Append(stateutil.CollapseListPath(stateMap, key, key)...)
+		if resp.Diagnostics.HasError() {
+			return
 		}
 	}
 
@@ -66,27 +58,4 @@ func migrateSnapshotRepositoryStateV0ToV1(_ context.Context, req resource.Upgrad
 	resp.DynamicValue = &tfprotov6.DynamicValue{
 		JSON: stateJSON,
 	}
-}
-
-func unwrapSingletonList(v any, key string) (any, error) {
-	if v == nil {
-		return nil, nil
-	}
-	list, ok := v.([]any)
-	if !ok {
-		// Already an object (or absent); PF SingleNestedBlock state shape.
-		return v, nil
-	}
-	if len(list) == 0 {
-		return nil, nil
-	}
-	if len(list) > 1 {
-		return nil, fmt.Errorf("unexpected multi-element array at path %q", key)
-	}
-	first := list[0]
-	obj, ok := first.(map[string]any)
-	if !ok {
-		return nil, fmt.Errorf("unexpected non-object element at path %q", key)
-	}
-	return obj, nil
 }
