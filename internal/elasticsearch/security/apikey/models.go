@@ -189,7 +189,7 @@ func (model TfModel) buildTypedMetadata() (estypes.Metadata, diag.Diagnostics) {
 	return typedMetadata, nil
 }
 
-func (model TfModel) toAPICreateRequest() (*createapikey.Request, diag.Diagnostics) {
+func (model TfModel) toAPICreateModel() (*createapikey.Request, diag.Diagnostics) {
 	req := createapikey.NewRequest()
 
 	if model.Name.ValueString() != "" {
@@ -324,7 +324,7 @@ func (model TfModel) buildCrossClusterAccess(ctx context.Context) (*models.Cross
 	return access, nil
 }
 
-func (model TfModel) toCrossClusterAPICreateRequest(ctx context.Context) (*createcrossclusterapikey.Request, diag.Diagnostics) {
+func (model TfModel) toCrossClusterAPICreateModel(ctx context.Context) (*createcrossclusterapikey.Request, diag.Diagnostics) {
 	req := createcrossclusterapikey.NewRequest()
 	req.Name = model.Name.ValueString()
 
