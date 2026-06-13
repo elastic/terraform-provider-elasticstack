@@ -22,7 +22,7 @@ import (
 	"sync"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	kibanacustomtypes "github.com/elastic/terraform-provider-elasticstack/internal/kibana/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kibanacustomtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
