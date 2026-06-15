@@ -31,9 +31,27 @@ resource "elasticstack_kibana_action_connector" "slack-connector" {
   })
 }
 
+# Slack connector using the Web API method (token based). Requires Kibana 8.8+
+# (the .slack_api connector type is not available on earlier versions).
+#
+# `config.allowedChannels` restricts which Slack channels the connector may post
+# to. Channel-selection support depends on the Kibana version:
+#   - by `name` (shown here): requires Kibana 9.3.0 or later.
+#   - by `id`: works on Kibana 8.11+ and is required before 9.3, for example:
+#
+#       config = jsonencode({
+#         allowedChannels = [{ id = "C0123456789" }]
+#       })
+#
+# Omit `config` entirely if you do not need to restrict the channels (8.8+).
 resource "elasticstack_kibana_action_connector" "slack-api-connector" {
   name              = "slack"
   connector_type_id = ".slack_api"
+  config = jsonencode({
+    allowedChannels = [
+      { name = "#alerts" },
+    ]
+  })
   secrets = jsonencode({
     token = "<your-token>"
   })
