@@ -19,11 +19,9 @@ package transform
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
 // migrateStateV0ToV1 unwraps singleton-list nested blocks (source, destination,
@@ -32,14 +30,8 @@ import (
 // ListNestedBlock with SizeBetween(1,1) or SizeAtMost(1) and is now
 // SingleNestedBlock. The aliases block remains a list and is left unchanged.
 func migrateStateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	if req.RawState == nil || req.RawState.JSON == nil {
-		resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
-		return
-	}
-
-	var stateMap map[string]any
-	if err := json.Unmarshal(req.RawState.JSON, &stateMap); err != nil {
-		resp.Diagnostics.AddError("State upgrade error", "Could not unmarshal prior state: "+err.Error())
+	stateMap := stateutil.UnmarshalStateMap(req, resp)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -62,12 +54,7 @@ func migrateStateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, res
 	// so normalise them to nil before marshalling the upgraded state.
 	normaliseEmptyJSONStrings(stateMap)
 
-	stateJSON, err := json.Marshal(stateMap)
-	if err != nil {
-		resp.Diagnostics.AddError("State upgrade error", "Could not marshal new state: "+err.Error())
-		return
-	}
-	resp.DynamicValue = &tfprotov6.DynamicValue{JSON: stateJSON}
+	stateutil.MarshalStateMap(stateMap, resp)
 }
 
 // normaliseEmptyJSONStrings converts empty-string values stored by the SDK

@@ -19,12 +19,10 @@ package template
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
 func upgradeStateV0ToV1() resource.StateUpgrader {
@@ -35,14 +33,8 @@ func upgradeStateV0ToV1() resource.StateUpgrader {
 
 // migrateIndexTemplateStateV0ToV1 collapses SDK list/set-shaped MaxItems:1 blocks to Plugin Framework SingleNestedBlock object/null shape.
 func migrateIndexTemplateStateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	if req.RawState == nil || req.RawState.JSON == nil {
-		resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
-		return
-	}
-
-	var stateMap map[string]any
-	if err := json.Unmarshal(req.RawState.JSON, &stateMap); err != nil {
-		resp.Diagnostics.AddError("State upgrade error", "Could not unmarshal prior state: "+err.Error())
+	stateMap := stateutil.UnmarshalStateMap(req, resp)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -93,14 +85,7 @@ func migrateIndexTemplateStateV0ToV1(_ context.Context, req resource.UpgradeStat
 		delete(stateMap, "version")
 	}
 
-	stateJSON, err := json.Marshal(stateMap)
-	if err != nil {
-		resp.Diagnostics.AddError("State upgrade error", "Could not marshal new state: "+err.Error())
-		return
-	}
-	resp.DynamicValue = &tfprotov6.DynamicValue{
-		JSON: stateJSON,
-	}
+	stateutil.MarshalStateMap(stateMap, resp)
 }
 
 // ensureTemplateObjectKeysForV1 fills keys the Plugin Framework v1 schema expects on the template

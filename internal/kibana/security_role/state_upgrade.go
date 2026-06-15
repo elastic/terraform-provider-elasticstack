@@ -19,10 +19,9 @@ package security_role
 
 import (
 	"context"
-	"encoding/json"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
 // UpgradeState migrates Plugin SDKv2 state (version 0) into the Plugin
@@ -50,14 +49,8 @@ func (r *Resource) UpgradeState(context.Context) map[int64]resource.StateUpgrade
 }
 
 func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	if req.RawState == nil || req.RawState.JSON == nil {
-		resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
-		return
-	}
-
-	var state map[string]any
-	if err := json.Unmarshal(req.RawState.JSON, &state); err != nil {
-		resp.Diagnostics.AddError("Failed to unmarshal raw state", err.Error())
+	state := stateutil.UnmarshalStateMap(req, resp)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -91,12 +84,7 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 		}
 	}
 
-	out, err := json.Marshal(state)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to marshal upgraded state", err.Error())
-		return
-	}
-	resp.DynamicValue = &tfprotov6.DynamicValue{JSON: out}
+	stateutil.MarshalStateMap(state, resp)
 }
 
 // emptySetToNull normalises a `key` whose value is an empty array to JSON

@@ -19,11 +19,11 @@ package alertingrule
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
@@ -44,17 +44,13 @@ func (r *Resource) UpgradeState(context.Context) map[int64]resource.StateUpgrade
 // - throttle may be empty string instead of null
 // - frequency, alerts_filter, and timeframe change from lists to single objects
 func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	if req.RawState == nil || req.RawState.JSON == nil {
-		resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
-		return
+	// Default to returning the original state if no changes are needed
+	if req.RawState != nil && req.RawState.JSON != nil {
+		resp.DynamicValue = &tfprotov6.DynamicValue{JSON: req.RawState.JSON}
 	}
 
-	// Default to returning the original state if no changes are needed
-	resp.DynamicValue = &tfprotov6.DynamicValue{JSON: req.RawState.JSON}
-
-	var stateMap map[string]any
-	if err := json.Unmarshal(req.RawState.JSON, &stateMap); err != nil {
-		resp.Diagnostics.AddError("Failed to unmarshal raw state", err.Error())
+	stateMap := stateutil.UnmarshalStateMap(req, resp)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -139,11 +135,5 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 		return
 	}
 
-	stateJSON, err := json.Marshal(stateMap)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to marshal upgraded state", err.Error())
-		return
-	}
-
-	resp.DynamicValue.JSON = stateJSON
+	stateutil.MarshalStateMap(stateMap, resp)
 }
