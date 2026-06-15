@@ -19,11 +19,10 @@ package componenttemplate
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
 func upgradeStateV0ToV1() resource.StateUpgrader {
@@ -35,18 +34,12 @@ func upgradeStateV0ToV1() resource.StateUpgrader {
 // migrateComponentTemplateStateV0ToV1 collapses SDK list-shaped MaxItems:1 blocks to Plugin Framework
 // SingleNestedBlock object/null shape.
 func migrateComponentTemplateStateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	if req.RawState == nil || req.RawState.JSON == nil {
-		resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
+	stateMap := stateutil.UnmarshalStateMap(req, resp)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var stateMap map[string]any
-	if err := json.Unmarshal(req.RawState.JSON, &stateMap); err != nil {
-		resp.Diagnostics.AddError("State upgrade error", "Could not unmarshal prior state: "+err.Error())
-		return
-	}
-
-	resp.Diagnostics.Append(aliasutil.CollapseListPath(stateMap, attrTemplate, attrTemplate)...)
+	resp.Diagnostics.Append(stateutil.CollapseListPath(stateMap, attrTemplate, attrTemplate)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -62,14 +55,7 @@ func migrateComponentTemplateStateV0ToV1(_ context.Context, req resource.Upgrade
 		delete(stateMap, "version")
 	}
 
-	stateJSON, err := json.Marshal(stateMap)
-	if err != nil {
-		resp.Diagnostics.AddError("State upgrade error", "Could not marshal new state: "+err.Error())
-		return
-	}
-	resp.DynamicValue = &tfprotov6.DynamicValue{
-		JSON: stateJSON,
-	}
+	stateutil.MarshalStateMap(stateMap, resp)
 }
 
 func ensureTemplateObjectKeysForV1(tmpl map[string]any) {

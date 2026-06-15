@@ -41,7 +41,7 @@ func readMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedClie
 		return model, false, diags
 	}
 
-	diags.Append(model.fromAPIReadResponse(ctx, maintenanceWindow)...)
+	diags.Append(model.populateFromAPI(ctx, maintenanceWindow)...)
 	if diags.HasError() {
 		return model, false, diags
 	}

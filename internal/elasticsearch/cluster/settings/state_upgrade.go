@@ -19,11 +19,10 @@ package settings
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
 // migrateClusterSettingsStateV0ToV1 reshapes state written by the SDKv2-based
@@ -37,14 +36,8 @@ import (
 //     alternative; the framework's null representation is required for
 //     set-element identity to match the new flatten output.
 func migrateClusterSettingsStateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	if req.RawState == nil || req.RawState.JSON == nil {
-		resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
-		return
-	}
-
-	var stateMap map[string]any
-	if err := json.Unmarshal(req.RawState.JSON, &stateMap); err != nil {
-		resp.Diagnostics.AddError("State upgrade error", "Could not unmarshal prior state: "+err.Error())
+	stateMap := stateutil.UnmarshalStateMap(req, resp)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -55,12 +48,7 @@ func migrateClusterSettingsStateV0ToV1(_ context.Context, req resource.UpgradeSt
 		}
 	}
 
-	stateJSON, err := json.Marshal(stateMap)
-	if err != nil {
-		resp.Diagnostics.AddError("State upgrade error", "Could not marshal new state: "+err.Error())
-		return
-	}
-	resp.DynamicValue = &tfprotov6.DynamicValue{JSON: stateJSON}
+	stateutil.MarshalStateMap(stateMap, resp)
 }
 
 // unwrapAndNormaliseCategoryBlock unwraps a persistent/transient list-of-one
