@@ -267,7 +267,7 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 	m.ScrollSize = typeutils.IntPointerToInt64Value(apiModel.ScrollSize)
 
 	// Convert frequency
-	freqVal, err := durationPointerToString(apiModel.Frequency)
+	freqVal, err := typeutils.ElasticsearchDurationPointerToString(apiModel.Frequency)
 	if err != nil {
 		diags.AddError("Failed to marshal frequency", err.Error())
 		return diags
@@ -275,7 +275,7 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 	m.Frequency = freqVal
 
 	// Convert query_delay
-	delayVal, err := durationPointerToString(apiModel.QueryDelay)
+	delayVal, err := typeutils.ElasticsearchDurationPointerToString(apiModel.QueryDelay)
 	if err != nil {
 		diags.AddError("Failed to marshal query_delay", err.Error())
 		return diags
@@ -292,7 +292,7 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 		}
 		// Only set TimeSpan if mode is "manual" and TimeSpan is not nil/empty
 		if apiModel.ChunkingConfig.Mode.String() == "manual" && apiModel.ChunkingConfig.TimeSpan != nil {
-			tsVal, err := durationPointerToString(apiModel.ChunkingConfig.TimeSpan)
+			tsVal, err := typeutils.ElasticsearchDurationPointerToString(apiModel.ChunkingConfig.TimeSpan)
 			if err != nil {
 				diags.AddError("Failed to marshal chunking_config.time_span", err.Error())
 				return diags
@@ -324,7 +324,7 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 	delayedDataCheckConfigTF := DelayedDataCheckConfig{
 		Enabled: types.BoolValue(apiModel.DelayedDataCheckConfig.Enabled),
 	}
-	cwVal, err := durationPointerToString(apiModel.DelayedDataCheckConfig.CheckWindow)
+	cwVal, err := typeutils.ElasticsearchDurationPointerToString(apiModel.DelayedDataCheckConfig.CheckWindow)
 	if err != nil {
 		diags.AddError("Failed to marshal delayed_data_check_config.check_window", err.Error())
 		return diags

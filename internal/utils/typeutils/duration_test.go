@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package datafeed
+package typeutils
 
 import (
 	"testing"
@@ -24,9 +24,36 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func Test_durationPointerToString(t *testing.T) {
+func TestElasticsearchDurationToString(t *testing.T) {
+	t.Run("nil returns StringNull", func(t *testing.T) {
+		result := ElasticsearchDurationToString(nil)
+		if !result.IsNull() {
+			t.Errorf("expected null, got %v", result)
+		}
+	})
+
+	t.Run("string duration returns StringValue", func(t *testing.T) {
+		result := ElasticsearchDurationToString(estypes.Duration("10m"))
+		if result.IsNull() || result.IsUnknown() {
+			t.Fatalf("expected non-null value")
+		}
+		if result.ValueString() != "10m" {
+			t.Errorf("expected '10m', got %q", result.ValueString())
+		}
+	})
+
+	t.Run("empty string returns empty StringValue", func(t *testing.T) {
+		result := ElasticsearchDurationToString(estypes.Duration(""))
+		expected := types.StringValue("")
+		if result != expected {
+			t.Errorf("expected empty StringValue, got %v", result)
+		}
+	})
+}
+
+func TestElasticsearchDurationPointerToString(t *testing.T) {
 	t.Run("nil pointer returns StringNull", func(t *testing.T) {
-		result, err := durationPointerToString(nil)
+		result, err := ElasticsearchDurationPointerToString(nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -37,7 +64,7 @@ func Test_durationPointerToString(t *testing.T) {
 
 	t.Run("typed nil pointer returns StringNull", func(t *testing.T) {
 		var d *estypes.Duration
-		result, err := durationPointerToString(d)
+		result, err := ElasticsearchDurationPointerToString(d)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -46,14 +73,14 @@ func Test_durationPointerToString(t *testing.T) {
 		}
 	})
 
-	t.Run("string Duration returns StringValue", func(t *testing.T) {
+	t.Run("string Duration pointer returns StringValue", func(t *testing.T) {
 		d := estypes.Duration("10m")
-		result, err := durationPointerToString(&d)
+		result, err := ElasticsearchDurationPointerToString(&d)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if result.IsNull() || result.IsUnknown() {
-			t.Fatalf("expected non-null value, got null/unknown")
+			t.Fatalf("expected non-null value")
 		}
 		if result.ValueString() != "10m" {
 			t.Errorf("expected '10m', got %q", result.ValueString())
@@ -61,8 +88,7 @@ func Test_durationPointerToString(t *testing.T) {
 	})
 
 	t.Run("marshallable value returns StringValue", func(t *testing.T) {
-		// A plain string marshals to a JSON-quoted string; Unmarshal handles the unquoting.
-		result, err := durationPointerToString("30s")
+		result, err := ElasticsearchDurationPointerToString("30s")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -72,9 +98,7 @@ func Test_durationPointerToString(t *testing.T) {
 	})
 
 	t.Run("non-string json value uses fallback raw bytes", func(t *testing.T) {
-		// An integer marshals as a JSON number; Unmarshal into string fails,
-		// so the fallback path (string(b)) is used.
-		result, err := durationPointerToString(42)
+		result, err := ElasticsearchDurationPointerToString(42)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -84,7 +108,7 @@ func Test_durationPointerToString(t *testing.T) {
 	})
 
 	t.Run("empty string returns empty StringValue", func(t *testing.T) {
-		result, err := durationPointerToString("")
+		result, err := ElasticsearchDurationPointerToString("")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

@@ -15,29 +15,46 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package datafeed
+package typeutils
 
 import (
 	"encoding/json"
 	"reflect"
 
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// durationPointerToString converts an Elasticsearch Duration pointer to types.String.
-// Returns types.StringNull() when v is nil.
-func durationPointerToString(v any) (types.String, error) {
+// ElasticsearchDurationToString converts an estypes.Duration to a Terraform types.String.
+// Returns types.StringNull() when d is nil.
+func ElasticsearchDurationToString(d estypes.Duration) types.String {
+	if d == nil {
+		return types.StringNull()
+	}
+	if s, ok := d.(string); ok {
+		return types.StringValue(s)
+	}
+	b, err := json.Marshal(d)
+	if err != nil {
+		return types.StringNull()
+	}
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return types.StringValue(string(b))
+	}
+	return types.StringValue(s)
+}
+
+// ElasticsearchDurationPointerToString converts an Elasticsearch Duration pointer (passed as any)
+// to a Terraform types.String. Returns types.StringNull() when v is nil or a typed nil pointer.
+func ElasticsearchDurationPointerToString(v any) (types.String, error) {
 	if v == nil {
 		return types.StringNull(), nil
 	}
-
-	// When a typed nil pointer is passed as an interface value (e.g. (*types.Duration)(nil)),
-	// the interface itself is non-nil. Treat these as null to avoid returning "null".
 	rv := reflect.ValueOf(v)
 	if rv.Kind() == reflect.Pointer && rv.IsNil() {
 		return types.StringNull(), nil
 	}
-
 	b, err := json.Marshal(v)
 	if err != nil {
 		return types.StringNull(), err
