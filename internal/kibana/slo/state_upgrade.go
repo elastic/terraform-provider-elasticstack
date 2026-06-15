@@ -19,9 +19,9 @@ package slo
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
@@ -53,17 +53,13 @@ func migrateV0ToV2(ctx context.Context, req resource.UpgradeStateRequest, resp *
 }
 
 func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	if req.RawState == nil || req.RawState.JSON == nil {
-		resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
-		return
+	// Default to returning the original state if no changes are needed.
+	if req.RawState != nil && req.RawState.JSON != nil {
+		resp.DynamicValue = &tfprotov6.DynamicValue{JSON: req.RawState.JSON}
 	}
 
-	// Default to returning the original state if no changes are needed.
-	resp.DynamicValue = &tfprotov6.DynamicValue{JSON: req.RawState.JSON}
-
-	var stateMap map[string]any
-	if err := json.Unmarshal(req.RawState.JSON, &stateMap); err != nil {
-		resp.Diagnostics.AddError("Failed to unmarshal raw state", err.Error())
+	stateMap := stateutil.UnmarshalStateMap(req, resp)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -83,13 +79,7 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 
 	stateMap["group_by"] = []any{groupByStr}
 
-	stateJSON, err := json.Marshal(stateMap)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to marshal raw state", err.Error())
-		return
-	}
-
-	resp.DynamicValue.JSON = stateJSON
+	stateutil.MarshalStateMap(stateMap, resp)
 	resp.Diagnostics.AddAttributeWarning(
 		path.Root("group_by"),
 		"Upgraded legacy group_by state",
@@ -98,17 +88,13 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 }
 
 func migrateV1ToV2(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	if req.RawState == nil || req.RawState.JSON == nil {
-		resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
-		return
+	// Default to returning the original state if no changes are needed.
+	if req.RawState != nil && req.RawState.JSON != nil {
+		resp.DynamicValue = &tfprotov6.DynamicValue{JSON: req.RawState.JSON}
 	}
 
-	// Default to returning the original state if no changes are needed.
-	resp.DynamicValue = &tfprotov6.DynamicValue{JSON: req.RawState.JSON}
-
-	var stateMap map[string]any
-	if err := json.Unmarshal(req.RawState.JSON, &stateMap); err != nil {
-		resp.Diagnostics.AddError("Failed to unmarshal raw state", err.Error())
+	stateMap := stateutil.UnmarshalStateMap(req, resp)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -136,13 +122,7 @@ func migrateV1ToV2(_ context.Context, req resource.UpgradeStateRequest, resp *re
 		stateMap["settings"] = first
 	}
 
-	stateJSON, err := json.Marshal(stateMap)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to marshal raw state", err.Error())
-		return
-	}
-
-	resp.DynamicValue.JSON = stateJSON
+	stateutil.MarshalStateMap(stateMap, resp)
 	resp.Diagnostics.AddAttributeWarning(
 		path.Root("settings"),
 		"Upgraded legacy settings state",

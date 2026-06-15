@@ -19,11 +19,9 @@ package repository
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
 var typeBlockKeys = [...]string{repoTypeFS, repoTypeURL, repoTypeGCS, repoTypeAzure, repoTypeS3, repoTypeHDFS}
@@ -31,15 +29,8 @@ var typeBlockKeys = [...]string{repoTypeFS, repoTypeURL, repoTypeGCS, repoTypeAz
 // migrateSnapshotRepositoryStateV0ToV1 unwraps list-wrapped nested blocks from
 // schema version 0 (SDK) into single objects for Plugin Framework SingleNestedBlock.
 func migrateSnapshotRepositoryStateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	if req.RawState == nil || req.RawState.JSON == nil {
-		resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
-		return
-	}
-
-	var stateMap map[string]any
-	err := json.Unmarshal(req.RawState.JSON, &stateMap)
-	if err != nil {
-		resp.Diagnostics.AddError("State upgrade error", "Could not unmarshal prior state: "+err.Error())
+	stateMap := stateutil.UnmarshalStateMap(req, resp)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -50,12 +41,5 @@ func migrateSnapshotRepositoryStateV0ToV1(_ context.Context, req resource.Upgrad
 		}
 	}
 
-	stateJSON, err := json.Marshal(stateMap)
-	if err != nil {
-		resp.Diagnostics.AddError("State upgrade error", "Could not marshal new state: "+err.Error())
-		return
-	}
-	resp.DynamicValue = &tfprotov6.DynamicValue{
-		JSON: stateJSON,
-	}
+	stateutil.MarshalStateMap(stateMap, resp)
 }
