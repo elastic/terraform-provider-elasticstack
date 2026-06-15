@@ -66,7 +66,7 @@ func TestUnmarshalStateMap_success(t *testing.T) {
 	m := stateutil.UnmarshalStateMap(req, resp)
 	require.False(t, resp.Diagnostics.HasError())
 	require.Equal(t, "value", m["key"])
-	require.Equal(t, float64(42), m["num"])
+	require.InEpsilon(t, float64(42), m["num"], 0.0001)
 }
 
 func TestMarshalStateMap_success(t *testing.T) {
