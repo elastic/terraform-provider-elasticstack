@@ -34,7 +34,7 @@ func durationPointerToString(v any) (types.String, error) {
 	// When a typed nil pointer is passed as an interface value (e.g. (*types.Duration)(nil)),
 	// the interface itself is non-nil. Treat these as null to avoid returning "null".
 	rv := reflect.ValueOf(v)
-	if rv.Kind() == reflect.Ptr && rv.IsNil() {
+	if rv.Kind() == reflect.Pointer && rv.IsNil() {
 		return types.StringNull(), nil
 	}
 
