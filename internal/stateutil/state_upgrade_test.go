@@ -60,7 +60,8 @@ func TestUnmarshalStateMap_invalid_json(t *testing.T) {
 func TestUnmarshalStateMap_success(t *testing.T) {
 	t.Parallel()
 	data := map[string]any{"key": "value", "num": float64(42)}
-	raw, _ := json.Marshal(data)
+	raw, err := json.Marshal(data)
+	require.NoError(t, err)
 	req := resource.UpgradeStateRequest{RawState: &tfprotov6.RawState{JSON: raw}}
 	resp := &resource.UpgradeStateResponse{}
 	m := stateutil.UnmarshalStateMap(req, resp)
@@ -79,4 +80,14 @@ func TestMarshalStateMap_success(t *testing.T) {
 	var got map[string]any
 	require.NoError(t, json.Unmarshal(resp.DynamicValue.JSON, &got))
 	require.Equal(t, "bar", got["foo"])
+}
+
+func TestMarshalStateMap_error(t *testing.T) {
+	t.Parallel()
+	m := map[string]any{"bad": func() {}}
+	resp := &resource.UpgradeStateResponse{}
+	stateutil.MarshalStateMap(m, resp)
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics[0].Summary(), "State upgrade error")
+	require.Nil(t, resp.DynamicValue)
 }
