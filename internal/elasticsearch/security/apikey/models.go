@@ -189,6 +189,29 @@ func (model TfModel) buildTypedMetadata() (estypes.Metadata, diag.Diagnostics) {
 	return typedMetadata, nil
 }
 
+// restAPIKeyPayload holds the shared metadata and role descriptors built from
+// the model, ready to be applied to either a create or update REST API key request.
+type restAPIKeyPayload struct {
+	metadata        estypes.Metadata
+	roleDescriptors map[string]estypes.RoleDescriptor
+}
+
+// buildRESTAPIKeyPayload builds the metadata and role descriptors shared by
+// both the REST API key create and update paths.
+func (model TfModel) buildRESTAPIKeyPayload() (restAPIKeyPayload, diag.Diagnostics) {
+	typedMetadata, diags := model.buildTypedMetadata()
+	if diags.HasError() {
+		return restAPIKeyPayload{}, diags
+	}
+
+	typedDescriptors, diags := model.buildTypedRoleDescriptors()
+	if diags.HasError() {
+		return restAPIKeyPayload{}, diags
+	}
+
+	return restAPIKeyPayload{metadata: typedMetadata, roleDescriptors: typedDescriptors}, nil
+}
+
 func (model TfModel) toAPICreateModel() (*createapikey.Request, diag.Diagnostics) {
 	req := createapikey.NewRequest()
 
@@ -199,17 +222,12 @@ func (model TfModel) toAPICreateModel() (*createapikey.Request, diag.Diagnostics
 		req.Expiration = model.Expiration.ValueString()
 	}
 
-	typedMetadata, diags := model.buildTypedMetadata()
+	payload, diags := model.buildRESTAPIKeyPayload()
 	if diags.HasError() {
 		return nil, diags
 	}
-	req.Metadata = typedMetadata
-
-	typedDescriptors, diags := model.buildTypedRoleDescriptors()
-	if diags.HasError() {
-		return nil, diags
-	}
-	req.RoleDescriptors = typedDescriptors
+	req.Metadata = payload.metadata
+	req.RoleDescriptors = payload.roleDescriptors
 
 	return req, nil
 }
@@ -220,17 +238,12 @@ func (model TfModel) ToUpdateAPIRequest() (*updateapikey.Request, diag.Diagnosti
 	// Note: the Update API Key endpoint does not accept expiration.
 	// The old code explicitly zeroed it out before sending.
 
-	typedMetadata, diags := model.buildTypedMetadata()
+	payload, diags := model.buildRESTAPIKeyPayload()
 	if diags.HasError() {
 		return nil, diags
 	}
-	req.Metadata = typedMetadata
-
-	typedDescriptors, diags := model.buildTypedRoleDescriptors()
-	if diags.HasError() {
-		return nil, diags
-	}
-	req.RoleDescriptors = typedDescriptors
+	req.Metadata = payload.metadata
+	req.RoleDescriptors = payload.roleDescriptors
 
 	return req, nil
 }
@@ -324,6 +337,39 @@ func (model TfModel) buildCrossClusterAccess(ctx context.Context) (*models.Cross
 	return access, nil
 }
 
+// crossClusterAPIKeyPayload holds the shared metadata and typed access built
+// from the model, ready to be applied to either a create or update cross-cluster API key request.
+type crossClusterAPIKeyPayload struct {
+	metadata estypes.Metadata
+	// access is nil when no access block was specified.
+	access *estypes.Access
+}
+
+// buildCrossClusterAPIKeyPayload builds the metadata and access shared by
+// both the cross-cluster API key create and update paths.
+func (model TfModel) buildCrossClusterAPIKeyPayload(ctx context.Context) (crossClusterAPIKeyPayload, diag.Diagnostics) {
+	typedMetadata, diags := model.buildTypedMetadata()
+	if diags.HasError() {
+		return crossClusterAPIKeyPayload{}, diags
+	}
+
+	access, diags := model.buildCrossClusterAccess(ctx)
+	if diags.HasError() {
+		return crossClusterAPIKeyPayload{}, diags
+	}
+
+	var typedAccess *estypes.Access
+	if access != nil && (access.Search != nil || access.Replication != nil) {
+		ta, err := toTypedAccess(*access)
+		if err != nil {
+			return crossClusterAPIKeyPayload{}, diagutil.FrameworkDiagFromError(err)
+		}
+		typedAccess = &ta
+	}
+
+	return crossClusterAPIKeyPayload{metadata: typedMetadata, access: typedAccess}, nil
+}
+
 func (model TfModel) toCrossClusterAPICreateModel(ctx context.Context) (*createcrossclusterapikey.Request, diag.Diagnostics) {
 	req := createcrossclusterapikey.NewRequest()
 	req.Name = model.Name.ValueString()
@@ -332,22 +378,13 @@ func (model TfModel) toCrossClusterAPICreateModel(ctx context.Context) (*createc
 		req.Expiration = model.Expiration.ValueString()
 	}
 
-	typedMetadata, diags := model.buildTypedMetadata()
+	payload, diags := model.buildCrossClusterAPIKeyPayload(ctx)
 	if diags.HasError() {
 		return nil, diags
 	}
-	req.Metadata = typedMetadata
-
-	access, diags := model.buildCrossClusterAccess(ctx)
-	if diags.HasError() {
-		return nil, diags
-	}
-	if access != nil && (access.Search != nil || access.Replication != nil) {
-		typedAccess, err := toTypedAccess(*access)
-		if err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		req.Access = typedAccess
+	req.Metadata = payload.metadata
+	if payload.access != nil {
+		req.Access = *payload.access
 	}
 
 	return req, nil
@@ -359,22 +396,13 @@ func (model TfModel) ToUpdateCrossClusterAPIRequest(ctx context.Context) (*updat
 	// Note: the Update Cross-Cluster API Key endpoint does not accept expiration.
 	// The old code explicitly zeroed it out before sending.
 
-	typedMetadata, diags := model.buildTypedMetadata()
+	payload, diags := model.buildCrossClusterAPIKeyPayload(ctx)
 	if diags.HasError() {
 		return nil, diags
 	}
-	req.Metadata = typedMetadata
-
-	access, diags := model.buildCrossClusterAccess(ctx)
-	if diags.HasError() {
-		return nil, diags
-	}
-	if access != nil && (access.Search != nil || access.Replication != nil) {
-		typedAccess, err := toTypedAccess(*access)
-		if err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		req.Access = typedAccess
+	req.Metadata = payload.metadata
+	if payload.access != nil {
+		req.Access = *payload.access
 	}
 
 	return req, nil
