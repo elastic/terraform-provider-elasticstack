@@ -284,16 +284,16 @@ func convertInvestigationFieldsToModel(ctx context.Context, apiInvestigationFiel
 }
 
 // convertRelatedIntegrationsToModel converts kbapi.SecurityDetectionsAPIRelatedIntegrationArray to Terraform model
-func convertRelatedIntegrationsToModel(ctx context.Context, apiRelatedIntegrations *kbapi.SecurityDetectionsAPIRelatedIntegrationArray) (types.List, diag.Diagnostics) {
+func convertRelatedIntegrationsToModel(ctx context.Context, apiRelatedIntegrations kbapi.SecurityDetectionsAPIRelatedIntegrationArray) (types.List, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if apiRelatedIntegrations == nil || len(*apiRelatedIntegrations) == 0 {
+	if len(apiRelatedIntegrations) == 0 {
 		return types.ListNull(getRelatedIntegrationElementType()), diags
 	}
 
 	integrations := make([]RelatedIntegrationModel, 0)
 
-	for _, apiIntegration := range *apiRelatedIntegrations {
+	for _, apiIntegration := range apiRelatedIntegrations {
 		integration := RelatedIntegrationModel{
 			Package: types.StringValue(apiIntegration.Package),
 			Version: types.StringValue(apiIntegration.Version),
@@ -311,16 +311,16 @@ func convertRelatedIntegrationsToModel(ctx context.Context, apiRelatedIntegratio
 }
 
 // convertRequiredFieldsToModel converts kbapi.SecurityDetectionsAPIRequiredFieldArray to Terraform model
-func convertRequiredFieldsToModel(ctx context.Context, apiRequiredFields *kbapi.SecurityDetectionsAPIRequiredFieldArray) (types.List, diag.Diagnostics) {
+func convertRequiredFieldsToModel(ctx context.Context, apiRequiredFields kbapi.SecurityDetectionsAPIRequiredFieldArray) (types.List, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if apiRequiredFields == nil || len(*apiRequiredFields) == 0 {
+	if len(apiRequiredFields) == 0 {
 		return types.ListNull(getRequiredFieldElementType()), diags
 	}
 
 	fields := make([]RequiredFieldModel, 0)
 
-	for _, apiField := range *apiRequiredFields {
+	for _, apiField := range apiRequiredFields {
 		field := RequiredFieldModel{
 			Name: types.StringValue(apiField.Name),
 			Type: types.StringValue(apiField.Type),
@@ -886,35 +886,39 @@ func (d *Data) updateInvestigationFieldsFromAPI(ctx context.Context, investigati
 
 func (d *Data) updateRelatedIntegrationsFromAPI(ctx context.Context, relatedIntegrations *kbapi.SecurityDetectionsAPIRelatedIntegrationArray) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if relatedIntegrations != nil && len(*relatedIntegrations) > 0 {
-		d.RelatedIntegrations, diags = convertRelatedIntegrationsToModel(ctx, relatedIntegrations)
-	} else {
-		d.RelatedIntegrations = types.ListNull(getRelatedIntegrationElementType())
+	var slice kbapi.SecurityDetectionsAPIRelatedIntegrationArray
+	if relatedIntegrations != nil {
+		slice = *relatedIntegrations
 	}
+	d.RelatedIntegrations, diags = updateListFieldFromAPI(ctx, slice,
+		types.ListNull(getRelatedIntegrationElementType()),
+		convertRelatedIntegrationsToModel)
 	return diags
 }
 
 func (d *Data) updateRequiredFieldsFromAPI(ctx context.Context, requiredFields *kbapi.SecurityDetectionsAPIRequiredFieldArray) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if requiredFields != nil && len(*requiredFields) > 0 {
-		d.RequiredFields, diags = convertRequiredFieldsToModel(ctx, requiredFields)
-	} else {
-		d.RequiredFields = types.ListNull(getRequiredFieldElementType())
+	var slice kbapi.SecurityDetectionsAPIRequiredFieldArray
+	if requiredFields != nil {
+		slice = *requiredFields
 	}
+	d.RequiredFields, diags = updateListFieldFromAPI(ctx, slice,
+		types.ListNull(getRequiredFieldElementType()),
+		convertRequiredFieldsToModel)
 	return diags
 }
 
 // convertThreatToModel converts kbapi.SecurityDetectionsAPIThreatArray to Terraform model
-func convertThreatToModel(ctx context.Context, apiThreats *kbapi.SecurityDetectionsAPIThreatArray) (types.List, diag.Diagnostics) {
+func convertThreatToModel(ctx context.Context, apiThreats kbapi.SecurityDetectionsAPIThreatArray) (types.List, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if apiThreats == nil || len(*apiThreats) == 0 {
+	if len(apiThreats) == 0 {
 		return types.ListNull(getThreatElementType()), diags
 	}
 
 	threats := make([]ThreatModel, 0)
 
-	for _, apiThreat := range *apiThreats {
+	for _, apiThreat := range apiThreats {
 		threat := ThreatModel{
 			Framework: types.StringValue(apiThreat.Framework),
 		}
@@ -988,11 +992,13 @@ func convertThreatToModel(ctx context.Context, apiThreats *kbapi.SecurityDetecti
 
 func (d *Data) updateThreatFromAPI(ctx context.Context, threat *kbapi.SecurityDetectionsAPIThreatArray) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if threat != nil && len(*threat) > 0 {
-		d.Threat, diags = convertThreatToModel(ctx, threat)
-	} else {
-		d.Threat = types.ListNull(getThreatElementType())
+	var slice kbapi.SecurityDetectionsAPIThreatArray
+	if threat != nil {
+		slice = *threat
 	}
+	d.Threat, diags = updateListFieldFromAPI(ctx, slice,
+		types.ListNull(getThreatElementType()),
+		convertThreatToModel)
 	return diags
 }
 
