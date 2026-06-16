@@ -48,3 +48,46 @@ func MarshalStateMap(m map[string]any, resp *resource.UpgradeStateResponse) {
 	}
 	resp.DynamicValue = &tfprotov6.DynamicValue{JSON: stateJSON}
 }
+
+// NullifyEmptyString sets m[key] = nil when the value is an empty string.
+// SDKv2 stored omitted optional TypeString attributes as "" rather than null;
+// Plugin Framework produces null, so without this normalisation the difference
+// perturbs set element identity in nested SetNestedBlocks.
+func NullifyEmptyString(m map[string]any, key string) {
+	v, ok := m[key]
+	if !ok {
+		return
+	}
+	s, ok := v.(string)
+	if !ok {
+		return
+	}
+	if s == "" {
+		m[key] = nil
+	}
+}
+
+// NullifyEmptyStrings calls NullifyEmptyString for each key in keys.
+func NullifyEmptyStrings(m map[string]any, keys ...string) {
+	for _, k := range keys {
+		NullifyEmptyString(m, k)
+	}
+}
+
+// NullifyEmptySlice sets m[key] = nil when the value is an empty slice.
+// SDKv2 stored omitted optional TypeSet attributes as [] rather than null;
+// Plugin Framework produces null, so without this normalisation a known-empty
+// vs null mismatch appears on every plan.
+func NullifyEmptySlice(m map[string]any, key string) {
+	v, ok := m[key]
+	if !ok {
+		return
+	}
+	arr, ok := v.([]any)
+	if !ok {
+		return
+	}
+	if len(arr) == 0 {
+		m[key] = nil
+	}
+}

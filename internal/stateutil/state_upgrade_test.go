@@ -91,3 +91,70 @@ func TestMarshalStateMap_error(t *testing.T) {
 	require.Contains(t, resp.Diagnostics[0].Summary(), "State upgrade error")
 	require.Nil(t, resp.DynamicValue)
 }
+
+func TestNullifyEmptyString(t *testing.T) {
+	t.Parallel()
+	t.Run("empty string becomes nil", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{"k": ""}
+		stateutil.NullifyEmptyString(m, "k")
+		require.Nil(t, m["k"])
+	})
+	t.Run("non-empty string is unchanged", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{"k": "v"}
+		stateutil.NullifyEmptyString(m, "k")
+		require.Equal(t, "v", m["k"])
+	})
+	t.Run("missing key is no-op", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{}
+		stateutil.NullifyEmptyString(m, "k")
+		_, exists := m["k"]
+		require.False(t, exists)
+	})
+	t.Run("non-string value is unchanged", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{"k": 42}
+		stateutil.NullifyEmptyString(m, "k")
+		require.Equal(t, 42, m["k"])
+	})
+}
+
+func TestNullifyEmptyStrings(t *testing.T) {
+	t.Parallel()
+	m := map[string]any{"a": "", "b": "val", "c": ""}
+	stateutil.NullifyEmptyStrings(m, "a", "b", "c")
+	require.Nil(t, m["a"])
+	require.Equal(t, "val", m["b"])
+	require.Nil(t, m["c"])
+}
+
+func TestNullifyEmptySlice(t *testing.T) {
+	t.Parallel()
+	t.Run("empty slice becomes nil", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{"k": []any{}}
+		stateutil.NullifyEmptySlice(m, "k")
+		require.Nil(t, m["k"])
+	})
+	t.Run("non-empty slice is unchanged", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{"k": []any{"x"}}
+		stateutil.NullifyEmptySlice(m, "k")
+		require.Equal(t, []any{"x"}, m["k"])
+	})
+	t.Run("missing key is no-op", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{}
+		stateutil.NullifyEmptySlice(m, "k")
+		_, exists := m["k"]
+		require.False(t, exists)
+	})
+	t.Run("non-slice value is unchanged", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{"k": "notslice"}
+		stateutil.NullifyEmptySlice(m, "k")
+		require.Equal(t, "notslice", m["k"])
+	})
+}

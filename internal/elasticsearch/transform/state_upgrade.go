@@ -52,32 +52,13 @@ func migrateStateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, res
 	// The SDK provider stored unset JSON string attributes as "" rather than
 	// null. The Plugin Framework jsontypes.NormalizedType rejects empty strings,
 	// so normalise them to nil before marshalling the upgraded state.
-	normaliseEmptyJSONStrings(stateMap)
+	stateutil.NullifyEmptyStrings(stateMap, "metadata", "pivot", "latest")
+	if src, ok := stateMap[attrSource].(map[string]any); ok {
+		stateutil.NullifyEmptyStrings(src, attrQuery, "runtime_mappings")
+	}
+	if dst, ok := stateMap[attrDestination].(map[string]any); ok {
+		stateutil.NullifyEmptyString(dst, "pipeline")
+	}
 
 	stateutil.MarshalStateMap(stateMap, resp)
-}
-
-// normaliseEmptyJSONStrings converts empty-string values stored by the SDK
-// provider for optional JSON attributes into nil so the Plugin Framework
-// jsontypes.NormalizedType can accept them.
-func normaliseEmptyJSONStrings(state map[string]any) {
-	for _, key := range []string{"metadata", "pivot", "latest"} {
-		if v, ok := state[key].(string); ok && v == "" {
-			state[key] = nil
-		}
-	}
-
-	if src, ok := state[attrSource].(map[string]any); ok {
-		for _, key := range []string{attrQuery, "runtime_mappings"} {
-			if v, ok := src[key].(string); ok && v == "" {
-				src[key] = nil
-			}
-		}
-	}
-
-	if dst, ok := state[attrDestination].(map[string]any); ok {
-		if v, ok := dst["pipeline"].(string); ok && v == "" {
-			dst["pipeline"] = nil
-		}
-	}
 }

@@ -54,7 +54,7 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 		return
 	}
 
-	emptyStringToNull(state, "description")
+	stateutil.NullifyEmptyString(state, "description")
 
 	if esList, ok := state["elasticsearch"].([]any); ok {
 		var es map[string]any
@@ -64,9 +64,9 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 		if es == nil {
 			state["elasticsearch"] = nil
 		} else {
-			emptySetToNull(es, "cluster")
-			emptySetToNull(es, "run_as")
-			emptySetToNull(es, "remote_indices")
+			stateutil.NullifyEmptySlice(es, "cluster")
+			stateutil.NullifyEmptySlice(es, "run_as")
+			stateutil.NullifyEmptySlice(es, "remote_indices")
 			unwrapIndexFieldSecurity(es, "indices")
 			unwrapIndexFieldSecurity(es, "remote_indices")
 			state["elasticsearch"] = es
@@ -79,30 +79,12 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 			if !ok {
 				continue
 			}
-			emptySetToNull(kib, "base")
-			emptySetToNull(kib, "feature")
+			stateutil.NullifyEmptySlice(kib, "base")
+			stateutil.NullifyEmptySlice(kib, "feature")
 		}
 	}
 
 	stateutil.MarshalStateMap(state, resp)
-}
-
-// emptySetToNull normalises a `key` whose value is an empty array to JSON
-// null. SDKv2 stored omitted optional `TypeSet` attributes as `[]`, whereas
-// PF flatten produces null; without this both refresh and plan would see a
-// known-empty-vs-null mismatch on every run.
-func emptySetToNull(m map[string]any, key string) {
-	v, ok := m[key]
-	if !ok {
-		return
-	}
-	arr, ok := v.([]any)
-	if !ok {
-		return
-	}
-	if len(arr) == 0 {
-		m[key] = nil
-	}
 }
 
 // unwrapIndexFieldSecurity converts `field_security` from a list of (0 or 1)
@@ -123,7 +105,7 @@ func unwrapIndexFieldSecurity(es map[string]any, indicesKey string) {
 		if !ok {
 			continue
 		}
-		emptyStringToNull(entry, "query")
+		stateutil.NullifyEmptyString(entry, "query")
 		fsRaw, ok := entry["field_security"]
 		if !ok {
 			continue
@@ -141,23 +123,5 @@ func unwrapIndexFieldSecurity(es map[string]any, indicesKey string) {
 		// SDK default for omitted optional sets) already align with what PF
 		// Read produces.
 		entry["field_security"] = fsList[0]
-	}
-}
-
-// emptyStringToNull normalises an empty-string `key` to null. SDKv2 stored
-// omitted optional `TypeString` attributes as "" rather than null; PF flatten
-// produces null, so without this the difference perturbs set element
-// identity in nested SetNestedBlocks.
-func emptyStringToNull(m map[string]any, key string) {
-	v, ok := m[key]
-	if !ok {
-		return
-	}
-	s, ok := v.(string)
-	if !ok {
-		return
-	}
-	if s == "" {
-		m[key] = nil
 	}
 }

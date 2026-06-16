@@ -76,19 +76,15 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 	}
 
 	// Handle notify_when: convert empty string to null for proper handling
-	if notifyWhen, ok := stateMap["notify_when"]; ok {
-		if notifyWhenStr, ok := notifyWhen.(string); ok && notifyWhenStr == "" {
-			stateMap["notify_when"] = nil
-			modified = true
-		}
+	if v, ok := stateMap["notify_when"].(string); ok && v == "" {
+		stateutil.NullifyEmptyString(stateMap, "notify_when")
+		modified = true
 	}
 
 	// Handle throttle: convert empty string to null
-	if throttle, ok := stateMap["throttle"]; ok {
-		if throttleStr, ok := throttle.(string); ok && throttleStr == "" {
-			stateMap["throttle"] = nil
-			modified = true
-		}
+	if v, ok := stateMap["throttle"].(string); ok && v == "" {
+		stateutil.NullifyEmptyString(stateMap, "throttle")
+		modified = true
 	}
 
 	// Handle actions: convert frequency, alerts_filter, and timeframe from lists to objects
