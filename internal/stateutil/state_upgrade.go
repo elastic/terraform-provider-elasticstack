@@ -39,6 +39,17 @@ func UnmarshalStateMap(req resource.UpgradeStateRequest, resp *resource.UpgradeS
 	return m
 }
 
+// EnsureMapKeys sets each key in keys to nil in m if the key is absent. Used
+// during state upgrades to ensure the Plugin Framework can decode the JSON
+// state even when optional blocks were omitted in the prior SDK state.
+func EnsureMapKeys(m map[string]any, keys ...string) {
+	for _, k := range keys {
+		if _, ok := m[k]; !ok {
+			m[k] = nil
+		}
+	}
+}
+
 // MarshalStateMap encodes m as JSON and assigns it to resp.DynamicValue.
 func MarshalStateMap(m map[string]any, resp *resource.UpgradeStateResponse) {
 	stateJSON, err := json.Marshal(m)

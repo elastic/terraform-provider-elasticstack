@@ -75,7 +75,7 @@ func migrateIndexTemplateStateV0ToV1(_ context.Context, req resource.UpgradeStat
 	}
 
 	if tmpl, ok := stateMap[attrTemplate].(map[string]any); ok {
-		ensureTemplateObjectKeysForV1(tmpl)
+		stateutil.EnsureMapKeys(tmpl, attrAlias, attrMappings, attrSettings, attrLifecycle, attrDataStreamOptions)
 		aliasutil.NormalizeTemplateAliasesInV1State(tmpl)
 	}
 
@@ -86,25 +86,4 @@ func migrateIndexTemplateStateV0ToV1(_ context.Context, req resource.UpgradeStat
 	}
 
 	stateutil.MarshalStateMap(stateMap, resp)
-}
-
-// ensureTemplateObjectKeysForV1 fills keys the Plugin Framework v1 schema expects on the template
-// object so RawState JSON decodes after upgrade. Plugin SDK state may omit optional empty blocks.
-func ensureTemplateObjectKeysForV1(tmpl map[string]any) {
-	if _, ok := tmpl[attrAlias]; !ok {
-		// Empty nested sets are null in Terraform JSON state, not [].
-		tmpl[attrAlias] = nil
-	}
-	if _, ok := tmpl[attrMappings]; !ok {
-		tmpl[attrMappings] = nil
-	}
-	if _, ok := tmpl[attrSettings]; !ok {
-		tmpl[attrSettings] = nil
-	}
-	if _, ok := tmpl[attrLifecycle]; !ok {
-		tmpl[attrLifecycle] = nil
-	}
-	if _, ok := tmpl[attrDataStreamOptions]; !ok {
-		tmpl[attrDataStreamOptions] = nil
-	}
 }
