@@ -91,3 +91,37 @@ func TestMarshalStateMap_error(t *testing.T) {
 	require.Contains(t, resp.Diagnostics[0].Summary(), "State upgrade error")
 	require.Nil(t, resp.DynamicValue)
 }
+
+func TestEnsureMapKeys_sets_missing_keys_to_nil(t *testing.T) {
+	t.Parallel()
+	m := map[string]any{"a": "existing"}
+	stateutil.EnsureMapKeys(m, "a", "b", "c")
+	require.Equal(t, "existing", m["a"])
+	require.Nil(t, m["b"])
+	require.Nil(t, m["c"])
+}
+
+func TestEnsureMapKeys_does_not_overwrite_existing(t *testing.T) {
+	t.Parallel()
+	m := map[string]any{"x": "value", "y": 42}
+	stateutil.EnsureMapKeys(m, "x", "y", "z")
+	require.Equal(t, "value", m["x"])
+	require.Equal(t, 42, m["y"])
+	require.Nil(t, m["z"])
+}
+
+func TestEnsureMapKeys_empty_map(t *testing.T) {
+	t.Parallel()
+	m := map[string]any{}
+	stateutil.EnsureMapKeys(m, "a", "b")
+	require.Nil(t, m["a"])
+	require.Nil(t, m["b"])
+}
+
+func TestEnsureMapKeys_no_keys(t *testing.T) {
+	t.Parallel()
+	m := map[string]any{"a": "keep"}
+	stateutil.EnsureMapKeys(m)
+	require.Equal(t, "keep", m["a"])
+	require.Len(t, m, 1)
+}
