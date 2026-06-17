@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
 func (r *securityDetectionRuleResource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
@@ -41,10 +40,7 @@ func (r *securityDetectionRuleResource) UpgradeState(context.Context) map[int64]
 // the action was modified; it may also add diagnostics on resp to abort the
 // upgrade (the encoded state is left as the original input).
 func upgradeActions(req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse, mutate func(action map[string]any) bool) {
-	// Default to returning the original state if no changes are needed
-	if req.RawState != nil && req.RawState.JSON != nil {
-		resp.DynamicValue = &tfprotov6.DynamicValue{JSON: req.RawState.JSON}
-	}
+	stateutil.SetDefaultState(req, resp)
 
 	stateMap := stateutil.UnmarshalStateMap(req, resp)
 	if resp.Diagnostics.HasError() {
