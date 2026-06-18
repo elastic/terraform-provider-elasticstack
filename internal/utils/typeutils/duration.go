@@ -19,7 +19,6 @@ package typeutils
 
 import (
 	"encoding/json"
-	"reflect"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -45,23 +44,4 @@ func ElasticsearchDurationToString(d estypes.Duration) types.String {
 	return types.StringValue(s)
 }
 
-// ElasticsearchDurationPointerToString converts an Elasticsearch Duration pointer (passed as any)
-// to a Terraform types.String. Returns types.StringNull() when v is nil or a typed nil pointer.
-func ElasticsearchDurationPointerToString(v any) (types.String, error) {
-	if v == nil {
-		return types.StringNull(), nil
-	}
-	rv := reflect.ValueOf(v)
-	if rv.Kind() == reflect.Pointer && rv.IsNil() {
-		return types.StringNull(), nil
-	}
-	b, err := json.Marshal(v)
-	if err != nil {
-		return types.StringNull(), err
-	}
-	var s string
-	if err := json.Unmarshal(b, &s); err != nil {
-		s = string(b)
-	}
-	return types.StringValue(s), nil
-}
+
