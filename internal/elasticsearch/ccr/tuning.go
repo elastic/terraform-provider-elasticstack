@@ -183,11 +183,11 @@ func TuningParamsFromParameters(params *estypes.FollowerIndexParameters) TuningP
 		MaxOutstandingWriteRequests:   typeutils.IntPointerToInt64Value(params.MaxOutstandingWriteRequests),
 		MaxReadRequestOperationCount:  typeutils.IntPointerToInt64Value(params.MaxReadRequestOperationCount),
 		MaxReadRequestSize:            ByteSizeToString(params.MaxReadRequestSize),
-		MaxRetryDelay:                 DurationToString(params.MaxRetryDelay),
+		MaxRetryDelay:                 typeutils.ElasticsearchDurationToString(params.MaxRetryDelay),
 		MaxWriteBufferCount:           typeutils.IntPointerToInt64Value(params.MaxWriteBufferCount),
 		MaxWriteBufferSize:            ByteSizeToString(params.MaxWriteBufferSize),
 		MaxWriteRequestOperationCount: typeutils.IntPointerToInt64Value(params.MaxWriteRequestOperationCount),
 		MaxWriteRequestSize:           ByteSizeToString(params.MaxWriteRequestSize),
-		ReadPollTimeout:               DurationToString(params.ReadPollTimeout),
+		ReadPollTimeout:               typeutils.ElasticsearchDurationToString(params.ReadPollTimeout),
 	}
 }

@@ -100,11 +100,6 @@ func ByteSizeToString(v estypes.ByteSize) types.String {
 	}
 }
 
-// DurationToString converts an estypes.Duration to a Terraform string.
-func DurationToString(v estypes.Duration) types.String {
-	return typeutils.ElasticsearchDurationToString(v)
-}
-
 // DurationFromCustomType converts a known customtypes.Duration to an estypes.Duration.
 func DurationFromCustomType(v customtypes.Duration) estypes.Duration {
 	if v.IsNull() || v.IsUnknown() {
