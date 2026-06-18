@@ -1,8 +1,8 @@
 # `elasticstack_elasticsearch_snapshot_repository` — Schema and Functional Requirements
 
-Resource implementation: `internal/elasticsearch/cluster/snapshot_repository.go`
+Resource implementation: `internal/elasticsearch/snapshot/repository/resource.go`
 
-Data source implementation: `internal/elasticsearch/cluster/snapshot_repository_data_source.go`
+Data source implementation: `internal/elasticsearch/snapshot/repository/data_source.go`
 
 ## Purpose
 
@@ -282,6 +282,18 @@ The `url.url` attribute SHALL be validated against the regular expression `^(fil
 - GIVEN `s3.endpoint` set to `"not-a-url"`
 - WHEN Terraform validates the configuration
 - THEN a validation error SHALL be returned
+
+### Requirement: Empty string settings are treated as omitted (REQ-018)
+
+For the optional common string settings `chunk_size`, `max_snapshot_bytes_per_sec`, and `max_restore_bytes_per_sec` across all repository type blocks (`fs`, `url`, `gcs`, `azure`, `s3`, `hdfs`), an explicitly configured empty string (`""`) SHALL be treated as equivalent to omitting the setting. A plan-level string modifier SHALL convert an empty-string plan value to `null` so that Terraform's pre-apply plan matches the API's post-apply response (where omitted keys are absent from the settings map). The write path SHALL continue to skip emitting these keys from the PUT request body, and the read path SHALL continue to map an absent key to `null` in state.
+
+#### Scenario: Empty chunk_size does not cause inconsistent result after apply
+
+- GIVEN an `fs` block with `chunk_size = ""`
+- WHEN create runs
+- THEN the plan SHALL treat `chunk_size` as null
+- AND the PUT request body SHALL NOT include `chunk_size`
+- AND the post-apply refresh SHALL store `chunk_size` as null without Terraform diagnostics
 
 ### Requirement: Verify parameter (REQ-015)
 

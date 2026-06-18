@@ -271,6 +271,56 @@ func checkRepoDestroy(name string) func(s *terraform.State) error {
 	}
 }
 
+// TestAccResourceSnapRepoFsIssue3709 verifies that explicitly setting empty
+// strings for optional fs block settings no longer triggers an "inconsistent
+// result after apply" error (issue #3709). The plan modifier normalises empty
+// strings to null so the planned value matches the API's omitted-key response.
+func TestAccResourceSnapRepoFsIssue3709(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resourceName := "elasticstack_elasticsearch_snapshot_repository.test_fs_repo"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkRepoDestroy(name),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "fs.location", "/tmp"),
+					resource.TestCheckResourceAttr(resourceName, "fs.compress", "true"),
+					resource.TestCheckNoResourceAttr(resourceName, "fs.chunk_size"),
+					resource.TestCheckNoResourceAttr(resourceName, "fs.max_restore_bytes_per_sec"),
+					resource.TestCheckNoResourceAttr(resourceName, "fs.max_snapshot_bytes_per_sec"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				ResourceName:             resourceName,
+				ImportState:              true,
+				ImportStateCheck: func(is []*terraform.InstanceState) error {
+					importedName := is[0].Attributes["name"]
+					if importedName != name {
+						return fmt.Errorf("expected imported snapshot name [%s] to equal [%s]", importedName, name)
+					}
+					return nil
+				},
+			},
+		},
+	})
+}
+
 func TestAccResourceSnapRepoMigration(t *testing.T) {
 	name := "repo-migration-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resourceName := "elasticstack_elasticsearch_snapshot_repository.test_migration"
