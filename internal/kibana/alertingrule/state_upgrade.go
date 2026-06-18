@@ -25,7 +25,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
 func (r *Resource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
@@ -44,17 +43,12 @@ func (r *Resource) UpgradeState(context.Context) map[int64]resource.StateUpgrade
 // - throttle may be empty string instead of null
 // - frequency, alerts_filter, and timeframe change from lists to single objects
 func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	// Default to returning the original state if no changes are needed
-	if req.RawState != nil && req.RawState.JSON != nil {
-		resp.DynamicValue = &tfprotov6.DynamicValue{JSON: req.RawState.JSON}
-	}
+	stateutil.SetDefaultState(req, resp)
 
 	stateMap := stateutil.UnmarshalStateMap(req, resp)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	modified := false
 
 	// Normalize ID to composite format (space_id/rule_id)
 	// SDKv2 may have stored just the rule_id in the id field
@@ -71,25 +65,10 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 				ruleID = rid
 			}
 			stateMap["id"] = fmt.Sprintf("%s/%s", spaceID, ruleID)
-			modified = true
 		}
 	}
 
-	// Handle notify_when: convert empty string to null for proper handling
-	if notifyWhen, ok := stateMap["notify_when"]; ok {
-		if notifyWhenStr, ok := notifyWhen.(string); ok && notifyWhenStr == "" {
-			stateMap["notify_when"] = nil
-			modified = true
-		}
-	}
-
-	// Handle throttle: convert empty string to null
-	if throttle, ok := stateMap["throttle"]; ok {
-		if throttleStr, ok := throttle.(string); ok && throttleStr == "" {
-			stateMap["throttle"] = nil
-			modified = true
-		}
-	}
+	stateutil.NullifyEmptyString(stateMap, "notify_when", "throttle")
 
 	// Handle actions: convert frequency, alerts_filter, and timeframe from lists to objects
 	if actions, ok := stateMap["actions"].([]any); ok {
@@ -102,7 +81,6 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 					} else {
 						action["frequency"] = nil
 					}
-					modified = true
 				}
 
 				// Convert alerts_filter from list to object
@@ -124,15 +102,9 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 					} else {
 						action["alerts_filter"] = nil
 					}
-					modified = true
 				}
 			}
 		}
-	}
-
-	// Only re-marshal if we made changes
-	if !modified {
-		return
 	}
 
 	stateutil.MarshalStateMap(stateMap, resp)

@@ -27,7 +27,6 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
 var (
@@ -75,10 +74,7 @@ func (r *outputResource) UpgradeState(context.Context) map[int64]resource.StateU
 			// Legacy provider versions used a block for the `ssl` attribute which means it was stored as a list.
 			// This upgrader migrates the list into a single object if available within the raw state
 			StateUpgrader: func(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-				// Default to returning the original state if no changes are needed
-				if req.RawState != nil && req.RawState.JSON != nil {
-					resp.DynamicValue = &tfprotov6.DynamicValue{JSON: req.RawState.JSON}
-				}
+				stateutil.SetDefaultState(req, resp)
 
 				stateMap := stateutil.UnmarshalStateMap(req, resp)
 				if resp.Diagnostics.HasError() {
