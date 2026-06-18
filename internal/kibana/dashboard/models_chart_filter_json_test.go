@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/stretchr/testify/require"
@@ -33,11 +34,11 @@ func Test_chartFilterJSONModel_roundTrip_xyChart(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(raw), &item))
 
 	m := models.ChartFilterJSONModel{}
-	diags := chartFilterJSONPopulateFromAPIItem(&m, item)
+	diags := lenscommon.ChartFilterJSONPopulateFromAPIItem(&m, item)
 	require.False(t, diags.HasError())
 
 	var out kbapi.KibanaHTTPAPIsLensPanelFilters_Item
-	diags = decodeChartFilterJSON(m.FilterJSON, &out)
+	diags = lenscommon.DecodeChartFilterJSON(m.FilterJSON, &out)
 	require.False(t, diags.HasError())
 
 	cond, err := out.AsKibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeConditionFilterSchema()
@@ -53,6 +54,6 @@ func Test_chartFilterJSONModel_roundTrip_xyChart(t *testing.T) {
 
 func Test_decodeChartFilterJSON_rejects_empty(t *testing.T) {
 	var item kbapi.KibanaHTTPAPIsLensPanelFilters_Item
-	diags := decodeChartFilterJSON(jsontypes.NewNormalizedNull(), &item)
+	diags := lenscommon.DecodeChartFilterJSON(jsontypes.NewNormalizedNull(), &item)
 	require.True(t, diags.HasError())
 }
