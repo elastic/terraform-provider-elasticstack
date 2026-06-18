@@ -43,5 +43,3 @@ func ElasticsearchDurationToString(d estypes.Duration) types.String {
 	}
 	return types.StringValue(s)
 }
-
-

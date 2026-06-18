@@ -50,5 +50,3 @@ func TestElasticsearchDurationToString(t *testing.T) {
 		}
 	})
 }
-
-
