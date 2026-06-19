@@ -272,56 +272,56 @@ func TestFlattenHdfsSettings_Nulls(t *testing.T) {
 }
 
 func TestStringSetting(t *testing.T) {
-	assert.Equal(t, types.StringValue("hello"), StrSettingNull(map[string]any{"k": "hello"}, "k"))
-	assert.Equal(t, types.StringValue("42"), StrSettingNull(map[string]any{"k": 42}, "k"))
-	assert.True(t, StrSettingNull(map[string]any{}, "k").IsNull())
-	assert.True(t, StrSettingNull(map[string]any{"k": nil}, "k").IsNull())
+	assert.Equal(t, types.StringValue("hello"), strSettingNull(map[string]any{"k": "hello"}, "k"))
+	assert.Equal(t, types.StringValue("42"), strSettingNull(map[string]any{"k": 42}, "k"))
+	assert.True(t, strSettingNull(map[string]any{}, "k").IsNull())
+	assert.True(t, strSettingNull(map[string]any{"k": nil}, "k").IsNull())
 }
 
 func TestBoolSetting(t *testing.T) {
-	b, err := BoolSettingNull(map[string]any{"k": true}, "k")
+	b, err := boolSettingNull(map[string]any{"k": true}, "k")
 	require.NoError(t, err)
 	assert.Equal(t, types.BoolValue(true), b)
 
-	b, err = BoolSettingNull(map[string]any{"k": "false"}, "k")
+	b, err = boolSettingNull(map[string]any{"k": "false"}, "k")
 	require.NoError(t, err)
 	assert.Equal(t, types.BoolValue(false), b)
 
-	b, err = BoolSettingNull(map[string]any{"k": "1"}, "k")
+	b, err = boolSettingNull(map[string]any{"k": "1"}, "k")
 	require.NoError(t, err)
 	assert.Equal(t, types.BoolValue(true), b)
 
-	b, err = BoolSettingNull(map[string]any{"k": "nope"}, "k")
+	b, err = boolSettingNull(map[string]any{"k": "nope"}, "k")
 	require.Error(t, err)
 	assert.True(t, b.IsNull())
 
-	b, err = BoolSettingNull(map[string]any{}, "k")
+	b, err = boolSettingNull(map[string]any{}, "k")
 	require.NoError(t, err)
 	assert.True(t, b.IsNull())
 }
 
 func TestInt64Setting(t *testing.T) {
-	i, err := Int64SettingNull(map[string]any{"k": 42}, "k")
+	i, err := int64SettingNull(map[string]any{"k": 42}, "k")
 	require.NoError(t, err)
 	assert.Equal(t, types.Int64Value(42), i)
 
-	i, err = Int64SettingNull(map[string]any{"k": int64(42)}, "k")
+	i, err = int64SettingNull(map[string]any{"k": int64(42)}, "k")
 	require.NoError(t, err)
 	assert.Equal(t, types.Int64Value(42), i)
 
-	i, err = Int64SettingNull(map[string]any{"k": float64(42)}, "k")
+	i, err = int64SettingNull(map[string]any{"k": float64(42)}, "k")
 	require.NoError(t, err)
 	assert.Equal(t, types.Int64Value(42), i)
 
-	i, err = Int64SettingNull(map[string]any{"k": "42"}, "k")
+	i, err = int64SettingNull(map[string]any{"k": "42"}, "k")
 	require.NoError(t, err)
 	assert.Equal(t, types.Int64Value(42), i)
 
-	i, err = Int64SettingNull(map[string]any{"k": "not-a-number"}, "k")
+	i, err = int64SettingNull(map[string]any{"k": "not-a-number"}, "k")
 	require.Error(t, err)
 	assert.True(t, i.IsNull())
 
-	i, err = Int64SettingNull(map[string]any{}, "k")
+	i, err = int64SettingNull(map[string]any{}, "k")
 	require.NoError(t, err)
 	assert.True(t, i.IsNull())
 }

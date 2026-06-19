@@ -19,10 +19,9 @@ package security_role
 
 import (
 	"context"
-	"encoding/json"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
 // UpgradeState migrates Plugin SDKv2 state (version 0) into the Plugin
@@ -50,18 +49,12 @@ func (r *Resource) UpgradeState(context.Context) map[int64]resource.StateUpgrade
 }
 
 func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	if req.RawState == nil || req.RawState.JSON == nil {
-		resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
+	state := stateutil.UnmarshalStateMap(req, resp)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var state map[string]any
-	if err := json.Unmarshal(req.RawState.JSON, &state); err != nil {
-		resp.Diagnostics.AddError("Failed to unmarshal raw state", err.Error())
-		return
-	}
-
-	emptyStringToNull(state, "description")
+	stateutil.NullifyEmptyString(state, "description")
 
 	if esList, ok := state["elasticsearch"].([]any); ok {
 		var es map[string]any
@@ -71,9 +64,7 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 		if es == nil {
 			state["elasticsearch"] = nil
 		} else {
-			emptySetToNull(es, "cluster")
-			emptySetToNull(es, "run_as")
-			emptySetToNull(es, "remote_indices")
+			stateutil.NullifyEmptySlice(es, "cluster", "run_as", "remote_indices")
 			unwrapIndexFieldSecurity(es, "indices")
 			unwrapIndexFieldSecurity(es, "remote_indices")
 			state["elasticsearch"] = es
@@ -86,35 +77,11 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 			if !ok {
 				continue
 			}
-			emptySetToNull(kib, "base")
-			emptySetToNull(kib, "feature")
+			stateutil.NullifyEmptySlice(kib, "base", "feature")
 		}
 	}
 
-	out, err := json.Marshal(state)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to marshal upgraded state", err.Error())
-		return
-	}
-	resp.DynamicValue = &tfprotov6.DynamicValue{JSON: out}
-}
-
-// emptySetToNull normalises a `key` whose value is an empty array to JSON
-// null. SDKv2 stored omitted optional `TypeSet` attributes as `[]`, whereas
-// PF flatten produces null; without this both refresh and plan would see a
-// known-empty-vs-null mismatch on every run.
-func emptySetToNull(m map[string]any, key string) {
-	v, ok := m[key]
-	if !ok {
-		return
-	}
-	arr, ok := v.([]any)
-	if !ok {
-		return
-	}
-	if len(arr) == 0 {
-		m[key] = nil
-	}
+	stateutil.MarshalStateMap(state, resp)
 }
 
 // unwrapIndexFieldSecurity converts `field_security` from a list of (0 or 1)
@@ -135,7 +102,7 @@ func unwrapIndexFieldSecurity(es map[string]any, indicesKey string) {
 		if !ok {
 			continue
 		}
-		emptyStringToNull(entry, "query")
+		stateutil.NullifyEmptyString(entry, "query")
 		fsRaw, ok := entry["field_security"]
 		if !ok {
 			continue
@@ -153,23 +120,5 @@ func unwrapIndexFieldSecurity(es map[string]any, indicesKey string) {
 		// SDK default for omitted optional sets) already align with what PF
 		// Read produces.
 		entry["field_security"] = fsList[0]
-	}
-}
-
-// emptyStringToNull normalises an empty-string `key` to null. SDKv2 stored
-// omitted optional `TypeString` attributes as "" rather than null; PF flatten
-// produces null, so without this the difference perturbs set element
-// identity in nested SetNestedBlocks.
-func emptyStringToNull(m map[string]any, key string) {
-	v, ok := m[key]
-	if !ok {
-		return
-	}
-	s, ok := v.(string)
-	if !ok {
-		return
-	}
-	if s == "" {
-		m[key] = nil
 	}
 }

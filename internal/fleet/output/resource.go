@@ -19,15 +19,14 @@ package output
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
 var (
@@ -75,20 +74,10 @@ func (r *outputResource) UpgradeState(context.Context) map[int64]resource.StateU
 			// Legacy provider versions used a block for the `ssl` attribute which means it was stored as a list.
 			// This upgrader migrates the list into a single object if available within the raw state
 			StateUpgrader: func(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-				if req.RawState == nil || req.RawState.JSON == nil {
-					resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
-					return
-				}
+				stateutil.SetDefaultState(req, resp)
 
-				// Default to returning the original state if no changes are needed
-				resp.DynamicValue = &tfprotov6.DynamicValue{
-					JSON: req.RawState.JSON,
-				}
-
-				var stateMap map[string]any
-				err := json.Unmarshal(req.RawState.JSON, &stateMap)
-				if err != nil {
-					resp.Diagnostics.AddError("Failed to unmarshal raw state", err.Error())
+				stateMap := stateutil.UnmarshalStateMap(req, resp)
+				if resp.Diagnostics.HasError() {
 					return
 				}
 
@@ -112,13 +101,7 @@ func (r *outputResource) UpgradeState(context.Context) map[int64]resource.StateU
 					delete(stateMap, "ssl")
 				}
 
-				stateJSON, err := json.Marshal(stateMap)
-				if err != nil {
-					resp.Diagnostics.AddError("Failed to marshal raw state", err.Error())
-					return
-				}
-
-				resp.DynamicValue.JSON = stateJSON
+				stateutil.MarshalStateMap(stateMap, resp)
 			},
 		},
 	}

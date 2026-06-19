@@ -19,11 +19,9 @@ package repository
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
 var typeBlockKeys = [...]string{repoTypeFS, repoTypeURL, repoTypeGCS, repoTypeAzure, repoTypeS3, repoTypeHDFS}
@@ -31,62 +29,17 @@ var typeBlockKeys = [...]string{repoTypeFS, repoTypeURL, repoTypeGCS, repoTypeAz
 // migrateSnapshotRepositoryStateV0ToV1 unwraps list-wrapped nested blocks from
 // schema version 0 (SDK) into single objects for Plugin Framework SingleNestedBlock.
 func migrateSnapshotRepositoryStateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	if req.RawState == nil || req.RawState.JSON == nil {
-		resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
-		return
-	}
-
-	var stateMap map[string]any
-	err := json.Unmarshal(req.RawState.JSON, &stateMap)
-	if err != nil {
-		resp.Diagnostics.AddError("State upgrade error", "Could not unmarshal prior state: "+err.Error())
+	stateMap := stateutil.UnmarshalStateMap(req, resp)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	for _, key := range typeBlockKeys {
-		if raw, ok := stateMap[key]; ok {
-			u, err := unwrapSingletonList(raw, key)
-			if err != nil {
-				resp.Diagnostics.AddError("State upgrade error", err.Error())
-				return
-			}
-			if u == nil {
-				delete(stateMap, key)
-			} else {
-				stateMap[key] = u
-			}
+		resp.Diagnostics.Append(stateutil.CollapseListPath(stateMap, key, key)...)
+		if resp.Diagnostics.HasError() {
+			return
 		}
 	}
 
-	stateJSON, err := json.Marshal(stateMap)
-	if err != nil {
-		resp.Diagnostics.AddError("State upgrade error", "Could not marshal new state: "+err.Error())
-		return
-	}
-	resp.DynamicValue = &tfprotov6.DynamicValue{
-		JSON: stateJSON,
-	}
-}
-
-func unwrapSingletonList(v any, key string) (any, error) {
-	if v == nil {
-		return nil, nil
-	}
-	list, ok := v.([]any)
-	if !ok {
-		// Already an object (or absent); PF SingleNestedBlock state shape.
-		return v, nil
-	}
-	if len(list) == 0 {
-		return nil, nil
-	}
-	if len(list) > 1 {
-		return nil, fmt.Errorf("unexpected multi-element array at path %q", key)
-	}
-	first := list[0]
-	obj, ok := first.(map[string]any)
-	if !ok {
-		return nil, fmt.Errorf("unexpected non-object element at path %q", key)
-	}
-	return obj, nil
+	stateutil.MarshalStateMap(stateMap, resp)
 }

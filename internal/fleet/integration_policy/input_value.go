@@ -389,20 +389,6 @@ func compareStreams(ctx context.Context, oldInput, newInput integrationPolicyInp
 	return true, diags
 }
 
-// NewInputNull creates an InputValue with a null value.
-func NewInputNull(attrTypes map[string]attr.Type) InputValue {
-	return InputValue{
-		ObjectValue: basetypes.NewObjectNull(attrTypes),
-	}
-}
-
-// NewInputUnknown creates an InputValue with an unknown value.
-func NewInputUnknown(attrTypes map[string]attr.Type) InputValue {
-	return InputValue{
-		ObjectValue: basetypes.NewObjectUnknown(attrTypes),
-	}
-}
-
 // NewInputValue creates an InputValue with a known value.
 func NewInputValue(attrTypes map[string]attr.Type, attributes map[string]attr.Value) (InputValue, diag.Diagnostics) {
 	objectValue, diags := basetypes.NewObjectValue(attrTypes, attributes)

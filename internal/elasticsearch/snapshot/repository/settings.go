@@ -24,8 +24,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// StrSetting extracts a string setting, returning "" on missing or nil value.
-func StrSetting(settings map[string]any, key string) string {
+// strSetting extracts a string setting, returning "" on missing or nil value.
+func strSetting(settings map[string]any, key string) string {
 	v, ok := settings[key]
 	if !ok || v == nil {
 		return ""
@@ -38,8 +38,8 @@ func StrSetting(settings map[string]any, key string) string {
 	}
 }
 
-// StrSettingNull extracts a string setting, returning a null types.String on missing or nil value.
-func StrSettingNull(settings map[string]any, key string) types.String {
+// strSettingNull extracts a string setting, returning a null types.String on missing or nil value.
+func strSettingNull(settings map[string]any, key string) types.String {
 	v, ok := settings[key]
 	if !ok || v == nil {
 		return types.StringNull()
@@ -52,9 +52,9 @@ func StrSettingNull(settings map[string]any, key string) types.String {
 	}
 }
 
-// BoolSettingNull extracts a bool setting, returning a null types.Bool on missing or nil value.
+// boolSettingNull extracts a bool setting, returning a null types.Bool on missing or nil value.
 // Returns an error if the value is present but cannot be parsed as bool.
-func BoolSettingNull(settings map[string]any, key string) (types.Bool, error) {
+func boolSettingNull(settings map[string]any, key string) (types.Bool, error) {
 	v, ok := settings[key]
 	if !ok || v == nil {
 		return types.BoolNull(), nil
@@ -73,18 +73,18 @@ func BoolSettingNull(settings map[string]any, key string) (types.Bool, error) {
 	}
 }
 
-// BoolSetting extracts a bool setting, returning fallback on missing, nil, or unparseable value.
-func BoolSetting(settings map[string]any, key string, fallback bool) bool {
-	b, err := BoolSettingNull(settings, key)
+// boolSetting extracts a bool setting, returning fallback on missing, nil, or unparseable value.
+func boolSetting(settings map[string]any, key string, fallback bool) bool {
+	b, err := boolSettingNull(settings, key)
 	if err != nil || b.IsNull() {
 		return fallback
 	}
 	return b.ValueBool()
 }
 
-// Int64SettingNull extracts an int64 setting, returning a null types.Int64 on missing or nil value.
+// int64SettingNull extracts an int64 setting, returning a null types.Int64 on missing or nil value.
 // Returns an error if the value is present but cannot be parsed as int64.
-func Int64SettingNull(settings map[string]any, key string) (types.Int64, error) {
+func int64SettingNull(settings map[string]any, key string) (types.Int64, error) {
 	v, ok := settings[key]
 	if !ok || v == nil {
 		return types.Int64Null(), nil
@@ -111,9 +111,9 @@ func Int64SettingNull(settings map[string]any, key string) (types.Int64, error) 
 	}
 }
 
-// Int64Setting extracts an int64 setting, returning fallback on missing, nil, or unparseable value.
-func Int64Setting(settings map[string]any, key string, fallback int64) int64 {
-	i, err := Int64SettingNull(settings, key)
+// int64Setting extracts an int64 setting, returning fallback on missing, nil, or unparseable value.
+func int64Setting(settings map[string]any, key string, fallback int64) int64 {
+	i, err := int64SettingNull(settings, key)
 	if err != nil || i.IsNull() {
 		return fallback
 	}

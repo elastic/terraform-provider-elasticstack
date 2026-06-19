@@ -40,7 +40,7 @@ func CreateRESTAPIKeyOperation(ctx context.Context, client *clients.Elasticsearc
 		return diags
 	}
 
-	createRequest, modelDiags := model.toAPICreateRequest()
+	createRequest, modelDiags := model.toAPICreateModel()
 	diags.Append(modelDiags...)
 	if diags.HasError() {
 		return diags
@@ -75,7 +75,7 @@ func CreateCrossClusterAPIKeyOperation(ctx context.Context, client *clients.Elas
 		return diags
 	}
 
-	createRequest, modelDiags := model.toCrossClusterAPICreateRequest(ctx)
+	createRequest, modelDiags := model.toCrossClusterAPICreateModel(ctx)
 	diags.Append(modelDiags...)
 	if diags.HasError() {
 		return diags

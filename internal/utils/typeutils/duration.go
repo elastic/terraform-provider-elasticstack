@@ -15,22 +15,31 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard
+package typeutils
 
 import (
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"encoding/json"
+
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// The payload must match one of the union members for the parent chart's *_Filters_Item type
-// (condition, group, DSL, or spatial — see Kibana dashboard OpenAPI / kbapi).
-
-func decodeChartFilterJSON(n jsontypes.Normalized, dst any) diag.Diagnostics {
-	return lenscommon.DecodeChartFilterJSON(n, dst)
-}
-
-func chartFilterJSONPopulateFromAPIItem(m *models.ChartFilterJSONModel, item any) diag.Diagnostics {
-	return lenscommon.ChartFilterJSONPopulateFromAPIItem(m, item)
+// ElasticsearchDurationToString converts an estypes.Duration to a Terraform types.String.
+// Returns types.StringNull() when d is nil.
+func ElasticsearchDurationToString(d estypes.Duration) types.String {
+	if d == nil {
+		return types.StringNull()
+	}
+	if s, ok := d.(string); ok {
+		return types.StringValue(s)
+	}
+	b, err := json.Marshal(d)
+	if err != nil {
+		return types.StringNull()
+	}
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return types.StringValue(string(b))
+	}
+	return types.StringValue(s)
 }

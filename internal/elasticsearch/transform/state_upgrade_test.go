@@ -166,9 +166,11 @@ func TestTransformResourceUpgradeStateV0ToV1_OptionalBlocksOmitted(t *testing.T)
 	var got map[string]any
 	require.NoError(t, json.Unmarshal(resp.DynamicValue.JSON, &got))
 
-	_, present := got["sync"]
-	require.False(t, present, "empty sync list should be removed from state")
+	v, present := got["sync"]
+	require.True(t, present, "sync key should be present in state")
+	require.Nil(t, v, "empty sync list should become null in state")
 
-	_, present = got["retention_policy"]
-	require.False(t, present, "nil retention_policy should be removed from state")
+	v, present = got["retention_policy"]
+	require.True(t, present, "retention_policy key should be present in state")
+	require.Nil(t, v, "nil retention_policy should remain null in state")
 }
