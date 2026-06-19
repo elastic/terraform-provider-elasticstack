@@ -1,15 +1,13 @@
-# Regression config for https://github.com/elastic/terraform-provider-elasticstack/issues/3707
-#
-# Using operation = "percentile" in the y config_json for a bar_horizontal layer
-# previously failed: the provider unconditionally injected empty_as_null=false, which the
-# Kibana percentile metric schema rejects with HTTP 400. The config intentionally omits
-# empty_as_null so the provider's default injection (now gated by operation) is exercised.
+# Companion to the issue #3707 regression: operation = "count" maps to the Kibana XY
+# count-metric schema, which DOES accept empty_as_null. The config omits empty_as_null so
+# the provider still injects empty_as_null=false; the plan-only follow-up confirms that
+# injected default round-trips without drift (the supported-operation path is unchanged).
 
 variable "dashboard_title" {
   type = string
 }
 
-resource "elasticstack_kibana_dashboard" "repro_3707" {
+resource "elasticstack_kibana_dashboard" "test" {
   title = var.dashboard_title
   time_range = {
     from = "now-1d"
@@ -44,10 +42,10 @@ resource "elasticstack_kibana_dashboard" "repro_3707" {
             }
             y2 = {
               title = {
-                value   = "p95"
+                value   = "y2"
                 visible = true
               }
-              scale = "linear"
+              scale       = "linear"
               domain_json = jsonencode({ type = "fit" })
             }
           }
@@ -70,9 +68,8 @@ resource "elasticstack_kibana_dashboard" "repro_3707" {
               })
               y = [{
                 config_json = jsonencode({
-                  field      = "http.response.duration"
-                  operation  = "percentile"
-                  percentile = 95
+                  field     = "http.response.duration"
+                  operation = "count"
                   color = {
                     type = "auto"
                   }

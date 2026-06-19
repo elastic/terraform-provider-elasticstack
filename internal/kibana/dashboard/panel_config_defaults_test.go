@@ -63,7 +63,7 @@ func Test_populatePanelConfigJSONDefaults_legacyMetric(t *testing.T) {
 				"attributes": {
 					"type": "legacy_metric",
 					"filters": [],
-					"metric": {"field": "bytes", "operation": "last_value", "show_array_values": false, "empty_as_null": false},
+					"metric": {"field": "bytes", "operation": "last_value", "show_array_values": false},
 					"dataset": {"type": "dataView", "id": "metrics-*"}
 				}
 			}`,
@@ -81,7 +81,7 @@ func Test_populatePanelConfigJSONDefaults_legacyMetric(t *testing.T) {
 				"attributes": {
 					"type": "legacy_metric",
 					"filters": [],
-					"metric": {"field": "bytes", "operation": "last_value", "show_array_values": false, "empty_as_null": false}
+					"metric": {"field": "bytes", "operation": "last_value", "show_array_values": false}
 				}
 			}`,
 		},
@@ -195,7 +195,6 @@ func Test_populatePanelConfigJSONDefaults_gauge(t *testing.T) {
 			"metric": {
 				"operation": "median",
 				"field": "latency",
-				"empty_as_null": false,
 				"title": {"visible": true},
 				"ticks": {"visible": true, "mode": "bands"},
 				"color": {"type": "auto"}
@@ -331,7 +330,6 @@ func Test_populatePanelConfigJSONDefaults_heatmap(t *testing.T) {
 			"metric": {
 				"operation": "max",
 				"field": "cpu",
-				"empty_as_null": false,
 				"show_metric_label": true,
 				"color": {"type": "auto"}
 			}

@@ -1,15 +1,13 @@
-# Regression config for https://github.com/elastic/terraform-provider-elasticstack/issues/3707
-#
-# Using operation = "percentile" in the y config_json for a bar_horizontal layer
-# previously failed: the provider unconditionally injected empty_as_null=false, which the
-# Kibana percentile metric schema rejects with HTTP 400. The config intentionally omits
-# empty_as_null so the provider's default injection (now gated by operation) is exercised.
+# Companion to the issue #3707 regression: operation = "average" maps to the Kibana
+# XY stats-metric schema, which (like percentile) does not accept empty_as_null. The
+# config omits empty_as_null so the provider's gated default injection is exercised; a
+# clean apply confirms the gate prevents the previously-broken HTTP 400.
 
 variable "dashboard_title" {
   type = string
 }
 
-resource "elasticstack_kibana_dashboard" "repro_3707" {
+resource "elasticstack_kibana_dashboard" "test" {
   title = var.dashboard_title
   time_range = {
     from = "now-1d"
@@ -37,17 +35,17 @@ resource "elasticstack_kibana_dashboard" "repro_3707" {
           axis = {
             y = {
               title = {
-                value   = "Responses"
+                value   = "Avg duration"
                 visible = true
               }
               domain_json = jsonencode({ type = "fit" })
             }
             y2 = {
               title = {
-                value   = "p95"
+                value   = "y2"
                 visible = true
               }
-              scale = "linear"
+              scale       = "linear"
               domain_json = jsonencode({ type = "fit" })
             }
           }
@@ -70,9 +68,8 @@ resource "elasticstack_kibana_dashboard" "repro_3707" {
               })
               y = [{
                 config_json = jsonencode({
-                  field      = "http.response.duration"
-                  operation  = "percentile"
-                  percentile = 95
+                  field     = "http.response.duration"
+                  operation = "average"
                   color = {
                     type = "auto"
                   }
