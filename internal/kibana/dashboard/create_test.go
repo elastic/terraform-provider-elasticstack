@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
@@ -69,6 +70,7 @@ func TestCreateDashboard(t *testing.T) {
 		name              string
 		dashboardID       types.String
 		putStatusCode     int
+		putResponseID     *string
 		expectPOST        bool
 		expectPUT         bool
 		expectPUTID       string
@@ -110,6 +112,24 @@ func TestCreateDashboard(t *testing.T) {
 			expectDashboardID: "existing-dashboard",
 			expectCompositeID: "default/existing-dashboard",
 		},
+		{
+			name:              "PUT uses server-returned id when response differs from request",
+			dashboardID:       types.StringValue("my-team-overview"),
+			putStatusCode:     http.StatusCreated,
+			putResponseID:     new("server-normalized-id"),
+			expectPUT:         true,
+			expectPUTID:       "my-team-overview",
+			expectDashboardID: "server-normalized-id",
+			expectCompositeID: "default/server-normalized-id",
+		},
+		{
+			name:          "PUT rejects empty dashboard id in response",
+			dashboardID:   types.StringValue("my-id"),
+			putStatusCode: http.StatusCreated,
+			putResponseID: new(""),
+			expectPUT:     true,
+			expectError:   true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -130,8 +150,12 @@ func TestCreateDashboard(t *testing.T) {
 					putCalls.Add(1)
 					id := strings.TrimPrefix(req.URL.Path, dashboardAPIPathPrefix)
 					putPathID.Store(id)
+					responseID := id
+					if tt.putResponseID != nil {
+						responseID = *tt.putResponseID
+					}
 					rw.WriteHeader(tt.putStatusCode)
-					_ = json.NewEncoder(rw).Encode(map[string]string{"id": id})
+					_ = json.NewEncoder(rw).Encode(map[string]string{"id": responseID})
 				default:
 					t.Fatalf("unexpected request: %s %s", req.Method, req.URL.Path)
 				}
@@ -141,12 +165,18 @@ func TestCreateDashboard(t *testing.T) {
 			scopedClient := newTestKibanaScopedClient(t, server)
 			planModel := testDashboardPlanModel(tt.dashboardID)
 
-			result, diags := createDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
+			writeReq := entitycore.KibanaWriteRequest[models.DashboardModel]{
 				Plan: planModel,
-			})
+			}
+			if typeutils.IsKnown(planModel.DashboardID) {
+				writeReq.WriteID = planModel.DashboardID.ValueString()
+			}
+
+			result, diags := createDashboard(t.Context(), scopedClient, writeReq)
 
 			require.Equal(t, tt.expectError, diags.HasError(), "diagnostics: %v", diags)
 			if tt.expectError {
+				require.Contains(t, diags[0].Summary(), "Dashboard create returned empty id")
 				return
 			}
 
