@@ -21,15 +21,16 @@ import (
 	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func int64ToFloat32Ptr(v types.Int64) *float32 {
-	if v.IsNull() || v.IsUnknown() {
-		return nil
+	if p := typeutils.Int64Pointer(v); p != nil {
+		value := float32(*p)
+		return &value
 	}
-	value := float32(v.ValueInt64())
-	return &value
+	return nil
 }
 
 func int64ToSyntheticsIcmpMonitorFieldsWait(v types.Int64) *kbapi.SyntheticsIcmpMonitorFields_Wait {
