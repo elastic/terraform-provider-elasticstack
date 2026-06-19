@@ -22,26 +22,24 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/putautofollowpattern"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/resumefollow"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // TuningParams holds the 10 common CCR tuning parameters in their Terraform type form.
-// Duration fields (MaxRetryDelay, ReadPollTimeout) are held as types.String because
-// followerindex.Model uses types.String while autofollow.Model uses customtypes.Duration;
-// callers convert their model-specific duration type before constructing TuningParams.
 type TuningParams struct {
 	MaxOutstandingReadRequests    types.Int64
 	MaxOutstandingWriteRequests   types.Int64
 	MaxReadRequestOperationCount  types.Int64
 	MaxReadRequestSize            types.String
-	MaxRetryDelay                 types.String
+	MaxRetryDelay                 customtypes.Duration
 	MaxWriteBufferCount           types.Int64
 	MaxWriteBufferSize            types.String
 	MaxWriteRequestOperationCount types.Int64
 	MaxWriteRequestSize           types.String
-	ReadPollTimeout               types.String
+	ReadPollTimeout               customtypes.Duration
 }
 
 // ApplyToPutAutoFollowRequest sets the tuning fields on req.
@@ -68,7 +66,7 @@ func ApplyToPutAutoFollowRequest(p TuningParams, req *putautofollowpattern.Reque
 	if v := ByteSizeFromString(p.MaxReadRequestSize); v != nil {
 		req.MaxReadRequestSize = v
 	}
-	if v := DurationFromString(p.MaxRetryDelay); v != nil {
+	if v := durationFromCustomDuration(p.MaxRetryDelay); v != nil {
 		req.MaxRetryDelay = v
 	}
 	if v, d := OptIntFromInt64("max_write_buffer_count", p.MaxWriteBufferCount); d.HasError() {
@@ -87,7 +85,7 @@ func ApplyToPutAutoFollowRequest(p TuningParams, req *putautofollowpattern.Reque
 	if v := ByteSizeFromString(p.MaxWriteRequestSize); v != nil {
 		req.MaxWriteRequestSize = v
 	}
-	if v := DurationFromString(p.ReadPollTimeout); v != nil {
+	if v := durationFromCustomDuration(p.ReadPollTimeout); v != nil {
 		req.ReadPollTimeout = v
 	}
 	return diags
@@ -113,7 +111,7 @@ func ApplyToFollowRequest(p TuningParams, req *follow.Request) diag.Diagnostics 
 	if v := ByteSizeFromString(p.MaxReadRequestSize); v != nil {
 		req.MaxReadRequestSize = v
 	}
-	if v := DurationFromString(p.MaxRetryDelay); v != nil {
+	if v := durationFromCustomDuration(p.MaxRetryDelay); v != nil {
 		req.MaxRetryDelay = v
 	}
 	if v, d := OptIntFromInt64("max_write_buffer_count", p.MaxWriteBufferCount); d.HasError() {
@@ -132,7 +130,7 @@ func ApplyToFollowRequest(p TuningParams, req *follow.Request) diag.Diagnostics 
 	if v := ByteSizeFromString(p.MaxWriteRequestSize); v != nil {
 		req.MaxWriteRequestSize = v
 	}
-	if v := DurationFromString(p.ReadPollTimeout); v != nil {
+	if v := durationFromCustomDuration(p.ReadPollTimeout); v != nil {
 		req.ReadPollTimeout = v
 	}
 	return diags
@@ -153,7 +151,7 @@ func ApplyToResumeFollowRequest(p TuningParams, req *resumefollow.Request) {
 	if v := typeutils.OptionalString(p.MaxReadRequestSize); v != nil {
 		req.MaxReadRequestSize = v
 	}
-	if v := DurationFromString(p.MaxRetryDelay); v != nil {
+	if v := durationFromCustomDuration(p.MaxRetryDelay); v != nil {
 		req.MaxRetryDelay = v
 	}
 	if v := OptInt64Ptr(p.MaxWriteBufferCount); v != nil {
@@ -168,9 +166,29 @@ func ApplyToResumeFollowRequest(p TuningParams, req *resumefollow.Request) {
 	if v := typeutils.OptionalString(p.MaxWriteRequestSize); v != nil {
 		req.MaxWriteRequestSize = v
 	}
-	if v := DurationFromString(p.ReadPollTimeout); v != nil {
+	if v := durationFromCustomDuration(p.ReadPollTimeout); v != nil {
 		req.ReadPollTimeout = v
 	}
+}
+
+// durationFromCustomDuration returns an estypes.Duration when v is known, otherwise nil.
+func durationFromCustomDuration(v customtypes.Duration) estypes.Duration {
+	if !typeutils.IsKnown(v) {
+		return nil
+	}
+	return estypes.Duration(v.ValueString())
+}
+
+// customDurationFromString converts a types.String to a customtypes.Duration,
+// preserving null/unknown semantics.
+func customDurationFromString(v types.String) customtypes.Duration {
+	if v.IsUnknown() {
+		return customtypes.NewDurationUnknown()
+	}
+	if v.IsNull() {
+		return customtypes.NewDurationNull()
+	}
+	return customtypes.NewDurationValue(v.ValueString())
 }
 
 // TuningParamsFromParameters extracts TuningParams from an estypes.FollowerIndexParameters.
@@ -183,11 +201,11 @@ func TuningParamsFromParameters(params *estypes.FollowerIndexParameters) TuningP
 		MaxOutstandingWriteRequests:   typeutils.IntPointerToInt64Value(params.MaxOutstandingWriteRequests),
 		MaxReadRequestOperationCount:  typeutils.IntPointerToInt64Value(params.MaxReadRequestOperationCount),
 		MaxReadRequestSize:            ByteSizeToString(params.MaxReadRequestSize),
-		MaxRetryDelay:                 typeutils.ElasticsearchDurationToString(params.MaxRetryDelay),
+		MaxRetryDelay:                 customDurationFromString(typeutils.ElasticsearchDurationToString(params.MaxRetryDelay)),
 		MaxWriteBufferCount:           typeutils.IntPointerToInt64Value(params.MaxWriteBufferCount),
 		MaxWriteBufferSize:            ByteSizeToString(params.MaxWriteBufferSize),
 		MaxWriteRequestOperationCount: typeutils.IntPointerToInt64Value(params.MaxWriteRequestOperationCount),
 		MaxWriteRequestSize:           ByteSizeToString(params.MaxWriteRequestSize),
-		ReadPollTimeout:               typeutils.ElasticsearchDurationToString(params.ReadPollTimeout),
+		ReadPollTimeout:               customDurationFromString(typeutils.ElasticsearchDurationToString(params.ReadPollTimeout)),
 	}
 }
