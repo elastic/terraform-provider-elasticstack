@@ -24,7 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -90,7 +90,7 @@ func (m Model) toCreateBody() kbapi.PostPrivateLocationJSONRequestBody {
 		AgentPolicyId: m.AgentPolicyID.ValueString(),
 	}
 
-	tags := synthetics.ValueStringSlice(m.Tags)
+	tags := typeutils.ValueStringSlice(m.Tags)
 	if len(tags) > 0 {
 		body.Tags = &tags
 	}
@@ -132,7 +132,7 @@ func modelFromAPI(loc kbapi.SyntheticsGetPrivateLocation, spaceID string) Model 
 		Label:         types.StringValue(label),
 		AgentPolicyID: types.StringValue(agentPolicyID),
 		SpaceID:       types.StringValue(spaceID),
-		Tags:          synthetics.StringSliceValue(tags),
+		Tags:          typeutils.StringSliceValue(tags),
 		Geo:           geoFromAPIResponse(loc.Geo),
 	}
 }
