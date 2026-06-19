@@ -53,10 +53,7 @@ func migrateV0ToV2(ctx context.Context, req resource.UpgradeStateRequest, resp *
 }
 
 func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	// Default to returning the original state if no changes are needed.
-	if req.RawState != nil && req.RawState.JSON != nil {
-		resp.DynamicValue = &tfprotov6.DynamicValue{JSON: req.RawState.JSON}
-	}
+	stateutil.SetDefaultState(req, resp)
 
 	stateMap := stateutil.UnmarshalStateMap(req, resp)
 	if resp.Diagnostics.HasError() {
@@ -88,10 +85,7 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 }
 
 func migrateV1ToV2(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	// Default to returning the original state if no changes are needed.
-	if req.RawState != nil && req.RawState.JSON != nil {
-		resp.DynamicValue = &tfprotov6.DynamicValue{JSON: req.RawState.JSON}
-	}
+	stateutil.SetDefaultState(req, resp)
 
 	stateMap := stateutil.UnmarshalStateMap(req, resp)
 	if resp.Diagnostics.HasError() {

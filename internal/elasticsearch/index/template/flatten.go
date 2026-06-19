@@ -56,8 +56,7 @@ func (m *Model) fromAPIModel(ctx context.Context, name string, in *models.IndexT
 		composedOf = []string{}
 	}
 	{
-		vals := stringSliceToAttrValues(composedOf)
-		lv, d := types.ListValueFrom(ctx, types.StringType, vals)
+		lv, d := types.ListValueFrom(ctx, types.StringType, composedOf)
 		diags.Append(d...)
 		m.ComposedOf = lv
 	}
@@ -67,8 +66,7 @@ func (m *Model) fromAPIModel(ctx context.Context, name string, in *models.IndexT
 		ignoreMissing = []string{}
 	}
 	{
-		vals := stringSliceToAttrValues(ignoreMissing)
-		lv, d := types.ListValueFrom(ctx, types.StringType, vals)
+		lv, d := types.ListValueFrom(ctx, types.StringType, ignoreMissing)
 		diags.Append(d...)
 		m.IgnoreMissingComponentTemplates = lv
 	}
@@ -78,8 +76,7 @@ func (m *Model) fromAPIModel(ctx context.Context, name string, in *models.IndexT
 		indexPatterns = []string{}
 	}
 	{
-		vals := stringSliceToAttrValues(indexPatterns)
-		sv, d := types.SetValueFrom(ctx, types.StringType, vals)
+		sv, d := types.SetValueFrom(ctx, types.StringType, indexPatterns)
 		diags.Append(d...)
 		m.IndexPatterns = sv
 	}
@@ -107,14 +104,6 @@ func (m *Model) fromAPIModel(ctx context.Context, name string, in *models.IndexT
 	diags.Append(d...)
 
 	return diags
-}
-
-func stringSliceToAttrValues(elems []string) []attr.Value {
-	vals := make([]attr.Value, len(elems))
-	for i, s := range elems {
-		vals[i] = types.StringValue(s)
-	}
-	return vals
 }
 
 func flattenDataStream(ds *models.DataStreamSettings) (types.Object, diag.Diagnostics) {

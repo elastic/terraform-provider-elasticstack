@@ -37,30 +37,46 @@ func createDashboard(
 	planModel := req.Plan
 
 	kibanaClient := client.GetKibanaOapiClient()
-	spaceID := planModel.SpaceID.ValueString()
+	spaceID := req.SpaceID
 
-	apiReq := dashboardToAPICreateRequest(ctx, &planModel, &diags)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
+	var dashboardID string
+	if req.WriteID != "" {
+		// The practitioner supplied a dashboard_id, so create via PUT upsert.
+		dashboardID = putDashboard(ctx, kibanaClient, spaceID, req.WriteID, &planModel, &diags)
+		if diags.HasError() {
+			return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
+		}
+	} else {
+		apiReq := dashboardToAPICreateRequest(ctx, &planModel, &diags)
+		if diags.HasError() {
+			return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
+		}
+
+		createResp, createDiags := kibanaoapi.CreateDashboard(ctx, kibanaClient, spaceID, apiReq)
+		diags.Append(createDiags...)
+		if diags.HasError() {
+			return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
+		}
+
+		if createResp.JSON201 == nil {
+			diags.AddError("Dashboard create returned no body", "expected 201 response with dashboard id")
+			return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
+		}
+
+		dashboardID = createResp.JSON201.Id
 	}
 
-	createResp, createDiags := kibanaoapi.CreateDashboard(ctx, kibanaClient, spaceID, apiReq)
-	diags.Append(createDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
-	}
-
-	if createResp.JSON201 == nil {
-		diags.AddError("Dashboard create returned no body", "expected 201 response with dashboard id")
+	if dashboardID == "" {
+		diags.AddError("Dashboard create returned empty id", "expected non-empty dashboard id in API response")
 		return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
 	}
 
 	compID := clients.CompositeID{
 		ClusterID:  spaceID,
-		ResourceID: createResp.JSON201.Id,
+		ResourceID: dashboardID,
 	}
 	planModel.ID = types.StringValue(compID.String())
-	planModel.DashboardID = types.StringValue(createResp.JSON201.Id)
+	planModel.DashboardID = types.StringValue(dashboardID)
 
 	return entitycore.KibanaWriteResult[models.DashboardModel]{Model: planModel}, diags
 }

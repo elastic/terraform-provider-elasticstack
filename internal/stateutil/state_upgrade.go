@@ -39,6 +39,17 @@ func UnmarshalStateMap(req resource.UpgradeStateRequest, resp *resource.UpgradeS
 	return m
 }
 
+// EnsureMapKeys sets each key in keys to nil in m if the key is absent. Used
+// during state upgrades to ensure the Plugin Framework can decode the JSON
+// state even when optional blocks were omitted in the prior SDK state.
+func EnsureMapKeys(m map[string]any, keys ...string) {
+	for _, k := range keys {
+		if _, ok := m[k]; !ok {
+			m[k] = nil
+		}
+	}
+}
+
 // MarshalStateMap encodes m as JSON and assigns it to resp.DynamicValue.
 func MarshalStateMap(m map[string]any, resp *resource.UpgradeStateResponse) {
 	stateJSON, err := json.Marshal(m)
@@ -47,4 +58,53 @@ func MarshalStateMap(m map[string]any, resp *resource.UpgradeStateResponse) {
 		return
 	}
 	resp.DynamicValue = &tfprotov6.DynamicValue{JSON: stateJSON}
+}
+
+// NullifyEmptyString sets each key in keys to nil in m when the existing value
+// is an empty string. SDKv2 stored omitted optional string attributes as ""
+// rather than null; the Plugin Framework expects null, so this normalisation
+// prevents known-empty-vs-null mismatches during state upgrades.
+func NullifyEmptyString(m map[string]any, keys ...string) {
+	for _, k := range keys {
+		v, ok := m[k]
+		if !ok {
+			continue
+		}
+		s, ok := v.(string)
+		if !ok {
+			continue
+		}
+		if s == "" {
+			m[k] = nil
+		}
+	}
+}
+
+// NullifyEmptySlice sets each key in keys to nil in m when the existing value
+// is an empty slice. SDKv2 stored omitted optional TypeSet/TypeList attributes
+// as [] rather than null; the Plugin Framework expects null.
+func NullifyEmptySlice(m map[string]any, keys ...string) {
+	for _, k := range keys {
+		v, ok := m[k]
+		if !ok {
+			continue
+		}
+		arr, ok := v.([]any)
+		if !ok {
+			continue
+		}
+		if len(arr) == 0 {
+			m[k] = nil
+		}
+	}
+}
+
+// SetDefaultState sets resp.DynamicValue to the original raw state when
+// req.RawState is non-nil. Call this at the top of a state upgrade function
+// so that early returns leave a valid response even when no modifications are
+// needed.
+func SetDefaultState(req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+	if req.RawState != nil && req.RawState.JSON != nil {
+		resp.DynamicValue = &tfprotov6.DynamicValue{JSON: req.RawState.JSON}
+	}
 }

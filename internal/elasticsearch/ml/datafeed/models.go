@@ -267,20 +267,10 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 	m.ScrollSize = typeutils.IntPointerToInt64Value(apiModel.ScrollSize)
 
 	// Convert frequency
-	freqVal, err := durationPointerToString(apiModel.Frequency)
-	if err != nil {
-		diags.AddError("Failed to marshal frequency", err.Error())
-		return diags
-	}
-	m.Frequency = freqVal
+	m.Frequency = typeutils.ElasticsearchDurationToString(apiModel.Frequency)
 
 	// Convert query_delay
-	delayVal, err := durationPointerToString(apiModel.QueryDelay)
-	if err != nil {
-		diags.AddError("Failed to marshal query_delay", err.Error())
-		return diags
-	}
-	m.QueryDelay = delayVal
+	m.QueryDelay = typeutils.ElasticsearchDurationToString(apiModel.QueryDelay)
 
 	// Convert max_empty_searches
 	m.MaxEmptySearches = typeutils.IntPointerToInt64Value(apiModel.MaxEmptySearches)
@@ -292,11 +282,7 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 		}
 		// Only set TimeSpan if mode is "manual" and TimeSpan is not nil/empty
 		if apiModel.ChunkingConfig.Mode.String() == "manual" && apiModel.ChunkingConfig.TimeSpan != nil {
-			tsVal, err := durationPointerToString(apiModel.ChunkingConfig.TimeSpan)
-			if err != nil {
-				diags.AddError("Failed to marshal chunking_config.time_span", err.Error())
-				return diags
-			}
+			tsVal := typeutils.ElasticsearchDurationToString(apiModel.ChunkingConfig.TimeSpan)
 			if tsVal.ValueString() != "" {
 				chunkingConfigTF.TimeSpan = tsVal
 			} else {
@@ -324,12 +310,7 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 	delayedDataCheckConfigTF := DelayedDataCheckConfig{
 		Enabled: types.BoolValue(apiModel.DelayedDataCheckConfig.Enabled),
 	}
-	cwVal, err := durationPointerToString(apiModel.DelayedDataCheckConfig.CheckWindow)
-	if err != nil {
-		diags.AddError("Failed to marshal delayed_data_check_config.check_window", err.Error())
-		return diags
-	}
-	delayedDataCheckConfigTF.CheckWindow = cwVal
+	delayedDataCheckConfigTF.CheckWindow = typeutils.ElasticsearchDurationToString(apiModel.DelayedDataCheckConfig.CheckWindow)
 	delayedDataCheckConfigObj, diag := types.ObjectValueFrom(ctx, map[string]attr.Type{
 		"enabled":      types.BoolType,
 		"check_window": types.StringType,

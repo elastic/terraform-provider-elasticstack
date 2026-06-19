@@ -24,6 +24,7 @@ import (
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/followerindexstatus"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -255,8 +256,8 @@ func TestBuildFollowRequest_byteSizeAndDuration(t *testing.T) {
 		RemoteCluster:               types.StringValue("dc2"),
 		LeaderIndex:                 types.StringValue("leader"),
 		MaxReadRequestSize:          types.StringValue("100mb"),
-		MaxRetryDelay:               types.StringValue("10s"),
-		ReadPollTimeout:             types.StringValue("10m"),
+		MaxRetryDelay:               customtypes.NewDurationValue("10s"),
+		ReadPollTimeout:             customtypes.NewDurationValue("10m"),
 		MaxOutstandingReadRequests:  types.Int64Value(12),
 		MaxOutstandingWriteRequests: types.Int64Value(8),
 	}
@@ -282,12 +283,12 @@ func TestBuildResumeFollowRequest_typeMapping(t *testing.T) {
 		MaxOutstandingWriteRequests:   types.Int64Value(8),
 		MaxReadRequestOperationCount:  types.Int64Value(4),
 		MaxReadRequestSize:            types.StringValue("100mb"),
-		MaxRetryDelay:                 types.StringValue("10s"),
+		MaxRetryDelay:                 customtypes.NewDurationValue("10s"),
 		MaxWriteBufferCount:           types.Int64Value(16),
 		MaxWriteBufferSize:            types.StringValue("200mb"),
 		MaxWriteRequestOperationCount: types.Int64Value(32),
 		MaxWriteRequestSize:           types.StringValue("64mb"),
-		ReadPollTimeout:               types.StringValue("10m"),
+		ReadPollTimeout:               customtypes.NewDurationValue("10m"),
 	}
 
 	req := buildResumeFollowRequest(model)

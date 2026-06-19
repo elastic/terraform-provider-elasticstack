@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -314,7 +315,7 @@ func dashboardMapDashboardFiltersFromAPI(ctx context.Context, m *models.Dashboar
 	elems := make([]models.ChartFilterJSONModel, 0, len(*apiFilters))
 	for _, item := range *apiFilters {
 		fm := models.ChartFilterJSONModel{}
-		fd := chartFilterJSONPopulateFromAPIItem(&fm, item)
+		fd := lenscommon.ChartFilterJSONPopulateFromAPIItem(&fm, item)
 		diags.Append(fd...)
 		if fd.HasError() {
 			return
@@ -340,7 +341,7 @@ func dashboardBuildDashboardFiltersForAPI(ctx context.Context, m *models.Dashboa
 	items := make(kbapi.DashboardFilters, 0, len(elems))
 	for _, el := range elems {
 		var item kbapi.DashboardFilters_Item
-		fd := decodeChartFilterJSON(el.FilterJSON, &item)
+		fd := lenscommon.DecodeChartFilterJSON(el.FilterJSON, &item)
 		diags.Append(fd...)
 		if fd.HasError() {
 			return nil, false

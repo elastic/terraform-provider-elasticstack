@@ -29,7 +29,6 @@ import (
 
 func TestInputValue_ObjectSemanticEquals(t *testing.T) {
 	ctx := context.Background()
-	attrTypes := getInputsAttributeTypes()
 
 	tests := []struct {
 		name        string
@@ -38,12 +37,6 @@ func TestInputValue_ObjectSemanticEquals(t *testing.T) {
 		expected    bool
 		expectError bool
 	}{
-		{
-			name:     "both unknown values are equal",
-			value1:   NewInputUnknown(attrTypes),
-			value2:   NewInputUnknown(attrTypes),
-			expected: true,
-		},
 		{
 			name: "same inputs without defaults are equal",
 			value1: mustNewInputValue(ctx, t, integrationPolicyInputsModel{

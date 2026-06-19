@@ -302,13 +302,12 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		transform.NewTransformResource,
 		followerindex.NewFollowerIndexResource,
 		autofollow.NewAutoFollowPatternResource,
+		streams.NewResource,
 	}
 }
 
 func (p *Provider) experimentalResources(_ context.Context) []func() resource.Resource {
-	return []func() resource.Resource{
-		streams.NewResource,
-	}
+	return []func() resource.Resource{}
 }
 
 func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource {

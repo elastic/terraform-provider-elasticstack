@@ -61,7 +61,7 @@ func getSchemaFactory(_ context.Context) schema.Schema {
 				Default:     booldefault.StaticBool(true),
 			},
 			"expand_wildcards": schema.StringAttribute{
-				Description: "Determines how wildcard patterns in the `indices` parameter match data streams and indices. Supports comma-separated values, such as `closed,hidden`.",
+				Description: "Determines how wildcard patterns in the `name` parameter match data streams and indices. Accepted values are: `all`, `open`, `closed`, `hidden`, `none`.",
 				Optional:    true,
 				Computed:    true,
 				Default:     stringdefault.StaticString("open"),

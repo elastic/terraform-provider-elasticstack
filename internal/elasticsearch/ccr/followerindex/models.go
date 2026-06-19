@@ -19,6 +19,7 @@ package followerindex
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -42,12 +43,12 @@ type Model struct {
 	MaxOutstandingWriteRequests   types.Int64          `tfsdk:"max_outstanding_write_requests"`
 	MaxReadRequestOperationCount  types.Int64          `tfsdk:"max_read_request_operation_count"`
 	MaxReadRequestSize            types.String         `tfsdk:"max_read_request_size"`
-	MaxRetryDelay                 types.String         `tfsdk:"max_retry_delay"`
+	MaxRetryDelay                 customtypes.Duration `tfsdk:"max_retry_delay"`
 	MaxWriteBufferCount           types.Int64          `tfsdk:"max_write_buffer_count"`
 	MaxWriteBufferSize            types.String         `tfsdk:"max_write_buffer_size"`
 	MaxWriteRequestOperationCount types.Int64          `tfsdk:"max_write_request_operation_count"`
 	MaxWriteRequestSize           types.String         `tfsdk:"max_write_request_size"`
-	ReadPollTimeout               types.String         `tfsdk:"read_poll_timeout"`
+	ReadPollTimeout               customtypes.Duration `tfsdk:"read_poll_timeout"`
 	DeleteIndexOnDestroy          types.Bool           `tfsdk:"delete_index_on_destroy"`
 	Status                        types.String         `tfsdk:"status"`
 }
