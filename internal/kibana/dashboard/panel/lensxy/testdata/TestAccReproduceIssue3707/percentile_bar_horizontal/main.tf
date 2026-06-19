@@ -47,7 +47,7 @@ resource "elasticstack_kibana_dashboard" "repro_3707" {
                 value   = "p95"
                 visible = true
               }
-              scale = "linear"
+              scale       = "linear"
               domain_json = jsonencode({ type = "fit" })
             }
           }
