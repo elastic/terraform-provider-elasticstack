@@ -18,75 +18,20 @@
 package panelkit
 
 import (
-	"context"
-
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 // ExactlyOneOfNestedAttrsOpts configures ExactlyOneOfNestedAttrsValidator.
-type ExactlyOneOfNestedAttrsOpts struct {
-	// AttrNames lists the mutually exclusive nested attribute names; must contain at least two.
-	AttrNames []string
-	// Summary is the error summary used for both "missing" and "too many" diagnostics.
-	Summary string
-	// MissingDetail is the diagnostic detail when zero of AttrNames are set.
-	MissingDetail string
-	// TooManyDetail is the diagnostic detail when more than one of AttrNames is set.
-	TooManyDetail string
-	// Description is an optional MarkdownDescription returned by the validator (defaults to a generic phrase).
-	Description string
-}
+//
+// Deprecated: use validators.ExactlyOneOfNestedAttrsOpts from internal/utils/validators instead.
+type ExactlyOneOfNestedAttrsOpts = validators.ExactlyOneOfNestedAttrsOpts
 
 // ExactlyOneOfNestedAttrsValidator returns an object validator that enforces exactly one of the
 // nested attribute names being set on the validated object. Unknown values defer the check so
 // plan-time references resolve cleanly.
+//
+// Deprecated: use validators.ExactlyOneOfNestedAttrsValidator from internal/utils/validators instead.
 func ExactlyOneOfNestedAttrsValidator(opts ExactlyOneOfNestedAttrsOpts) validator.Object {
-	return exactlyOneOfNestedAttrsValidator{opts: opts}
-}
-
-type exactlyOneOfNestedAttrsValidator struct {
-	opts ExactlyOneOfNestedAttrsOpts
-}
-
-func (v exactlyOneOfNestedAttrsValidator) Description(_ context.Context) string {
-	if v.opts.Description != "" {
-		return v.opts.Description
-	}
-	return "Ensures exactly one of the listed nested attributes is set."
-}
-
-func (v exactlyOneOfNestedAttrsValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (v exactlyOneOfNestedAttrsValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-	attrs := req.ConfigValue.Attributes()
-	setCount := 0
-	hasUnknown := false
-	for _, name := range v.opts.AttrNames {
-		av, ok := attrs[name]
-		if !ok || av == nil {
-			continue
-		}
-		switch {
-		case av.IsUnknown():
-			hasUnknown = true
-		case av.IsNull():
-		default:
-			setCount++
-		}
-	}
-	if setCount > 1 {
-		resp.Diagnostics.AddAttributeError(req.Path, v.opts.Summary, v.opts.TooManyDetail)
-		return
-	}
-	if hasUnknown {
-		return
-	}
-	if setCount == 0 {
-		resp.Diagnostics.AddAttributeError(req.Path, v.opts.Summary, v.opts.MissingDetail)
-	}
+	return validators.ExactlyOneOfNestedAttrsValidator(opts)
 }

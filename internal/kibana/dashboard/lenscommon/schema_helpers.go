@@ -21,11 +21,8 @@ import (
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -89,24 +86,24 @@ func AxisTitleAttribute(computedVisible bool) schema.Attribute {
 
 // MutuallyExclusiveStringValidator returns a single-element validator slice declaring this
 // string attribute conflicts with the named sibling on the parent object.
+//
+// Deprecated: use validators.MutuallyExclusiveStringValidator from internal/utils/validators instead.
 func MutuallyExclusiveStringValidator(siblingName string) []validator.String {
-	return []validator.String{
-		stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(siblingName)),
-	}
+	return validators.MutuallyExclusiveStringValidator(siblingName)
 }
 
 // MutuallyExclusiveListValidator is the list-attribute counterpart to MutuallyExclusiveStringValidator.
+//
+// Deprecated: use validators.MutuallyExclusiveListValidator from internal/utils/validators instead.
 func MutuallyExclusiveListValidator(siblingName string) []validator.List {
-	return []validator.List{
-		listvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(siblingName)),
-	}
+	return validators.MutuallyExclusiveListValidator(siblingName)
 }
 
 // MutuallyExclusiveObjectValidator is the object-attribute counterpart to MutuallyExclusiveStringValidator.
+//
+// Deprecated: use validators.MutuallyExclusiveObjectValidator from internal/utils/validators instead.
 func MutuallyExclusiveObjectValidator(siblingName string) []validator.Object {
-	return []validator.Object{
-		objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(siblingName)),
-	}
+	return validators.MutuallyExclusiveObjectValidator(siblingName)
 }
 
 // MetricJSONAttribute returns the canonical chart `metric_json` schema attribute: a string
