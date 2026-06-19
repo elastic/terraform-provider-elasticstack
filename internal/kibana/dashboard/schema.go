@@ -95,10 +95,15 @@ func getSchema() schema.Schema {
 				},
 			},
 			attrDashboardID: schema.StringAttribute{
-				MarkdownDescription: "The Kibana-assigned identifier for the dashboard.",
+				MarkdownDescription: "Optional dashboard identifier. When set, create uses PUT upsert semantics; changing this value forces replacement. When omitted, Kibana assigns a UUID.",
+				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
 					stringplanmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.String{
+					stringvalidator.LengthAtLeast(1),
 				},
 			},
 			attrTitle: schema.StringAttribute{
