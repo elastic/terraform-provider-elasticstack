@@ -110,7 +110,7 @@ func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel,
 	}
 
 	datasetBytes, err := api.DataSource.MarshalJSON()
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}
@@ -205,7 +205,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 	}
 
 	datasetBytes, err := json.Marshal(api.DataSource)
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}

@@ -112,7 +112,7 @@ func metricChartConfigPopulateCommonFields(m *models.MetricChartConfigModel,
 	} else {
 		m.Sampling = types.Float64Null()
 	}
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, datasetErr, "dataset", diags)
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, datasetErr, "dataset", diags)
 	if !ok {
 		return false
 	}

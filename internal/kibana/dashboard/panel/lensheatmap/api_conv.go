@@ -74,7 +74,7 @@ func heatmapConfigPopulateCommonFields(m *models.HeatmapConfigModel,
 	} else {
 		m.Sampling = types.Float64Null()
 	}
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, datasetErr, "data_source_json", diags)
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, datasetErr, "data_source_json", diags)
 	if !ok {
 		return false
 	}
@@ -120,7 +120,7 @@ func heatmapConfigFromAPINoESQL(
 	m.MetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
 	xAxisBytes, err := api.X.MarshalJSON()
-	xv, ok := lenscommon.MarshalToNormalized(xAxisBytes, err, "x_axis", &diags)
+	xv, ok := lenscommon.WrapNormalizedJSON(xAxisBytes, err, "x_axis", &diags)
 	if !ok {
 		return diags
 	}
@@ -128,7 +128,7 @@ func heatmapConfigFromAPINoESQL(
 
 	if api.Y != nil {
 		yAxisBytes, err := api.Y.MarshalJSON()
-		yv, ok := lenscommon.MarshalToNormalized(yAxisBytes, err, "y_axis", &diags)
+		yv, ok := lenscommon.WrapNormalizedJSON(yAxisBytes, err, "y_axis", &diags)
 		if !ok {
 			return diags
 		}

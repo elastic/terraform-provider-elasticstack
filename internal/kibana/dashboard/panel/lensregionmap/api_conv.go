@@ -61,7 +61,7 @@ func regionMapConfigPopulateCommonFields(m *models.RegionMapConfigModel,
 	} else {
 		m.Sampling = types.Float64Null()
 	}
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, datasetErr, "data_source_json", diags)
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, datasetErr, "data_source_json", diags)
 	if !ok {
 		return false
 	}
@@ -94,7 +94,7 @@ func regionMapConfigFromAPINoESQL(
 	m.MetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
 	regionBytes, err := api.Region.MarshalJSON()
-	rv, ok := lenscommon.MarshalToNormalized(regionBytes, err, "region", &diags)
+	rv, ok := lenscommon.WrapNormalizedJSON(regionBytes, err, "region", &diags)
 	if !ok {
 		return diags
 	}
@@ -135,7 +135,7 @@ func regionMapConfigFromAPIESQL(
 	m.MetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
 	regionBytes, err := json.Marshal(api.Region)
-	rv, ok := lenscommon.MarshalToNormalized(regionBytes, err, "region", &diags)
+	rv, ok := lenscommon.WrapNormalizedJSON(regionBytes, err, "region", &diags)
 	if !ok {
 		return diags
 	}
