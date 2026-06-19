@@ -56,11 +56,7 @@ func regionMapConfigPopulateCommonFields(m *models.RegionMapConfigModel,
 	m.Title = types.StringPointerValue(title)
 	m.Description = types.StringPointerValue(description)
 	m.IgnoreGlobalFilters = types.BoolPointerValue(ignoreGlobalFilters)
-	if sampling != nil {
-		m.Sampling = types.Float64Value(float64(*sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
+	m.Sampling = lenscommon.SamplingFromAPI(sampling)
 	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, datasetErr, "data_source_json", diags)
 	if !ok {
 		return false
