@@ -20,26 +20,14 @@ package lenscommon
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// LensChartBaseFields holds pointers to the common base fields shared by multiple Lens chart models.
-// Pass a pointer to each field in the target model so PopulateLensChartBaseFromAPI writes to them directly.
-type LensChartBaseFields struct {
-	Title               *types.String
-	Description         *types.String
-	IgnoreGlobalFilters *types.Bool
-	Sampling            *types.Float64
-	DataSourceJSON      *jsontypes.Normalized
-	Filters             *[]models.ChartFilterJSONModel
-}
-
-// PopulateLensChartBaseFromAPI writes the common Lens chart base fields from API parameters into
-// the fields pointed to by f. Returns false (and appends to diags) when any field fails to populate.
+// PopulateLensChartBaseFromAPI writes the common Lens chart base fields from API parameters into base.
+// Returns false (and appends to diags) when any field fails to populate.
 func PopulateLensChartBaseFromAPI(
-	f LensChartBaseFields,
+	base *models.LensChartBaseTFModel,
 	title, description *string,
 	ignoreGlobalFilters *bool,
 	sampling *float32,
@@ -49,19 +37,19 @@ func PopulateLensChartBaseFromAPI(
 	filters *kbapi.KibanaHTTPAPIsLensPanelFilters,
 	diags *diag.Diagnostics,
 ) bool {
-	*f.Title = types.StringPointerValue(title)
-	*f.Description = types.StringPointerValue(description)
-	*f.IgnoreGlobalFilters = types.BoolPointerValue(ignoreGlobalFilters)
+	base.Title = types.StringPointerValue(title)
+	base.Description = types.StringPointerValue(description)
+	base.IgnoreGlobalFilters = types.BoolPointerValue(ignoreGlobalFilters)
 	if sampling != nil {
-		*f.Sampling = types.Float64Value(float64(*sampling))
+		base.Sampling = types.Float64Value(float64(*sampling))
 	} else {
-		*f.Sampling = types.Float64Null()
+		base.Sampling = types.Float64Null()
 	}
 	dv, ok := MarshalToNormalized(datasetBytes, datasetErr, dataSourceJSONFieldName, diags)
 	if !ok {
 		return false
 	}
-	*f.DataSourceJSON = dv
-	*f.Filters = PopulateFiltersFromAPI(filters, diags)
+	base.DataSourceJSON = dv
+	base.Filters = PopulateFiltersFromAPI(filters, diags)
 	return !diags.HasError()
 }

@@ -20,19 +20,13 @@ package models
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type MetricChartCoreTFModel struct {
-	Title               types.String           `tfsdk:"title"`
-	Description         types.String           `tfsdk:"description"`
-	DataSourceJSON      jsontypes.Normalized   `tfsdk:"data_source_json"`
-	IgnoreGlobalFilters types.Bool             `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64          `tfsdk:"sampling"`
-	Query               *FilterSimpleModel     `tfsdk:"query"`
-	Filters             []ChartFilterJSONModel `tfsdk:"filters"`
-	Metrics             []MetricItemModel      `tfsdk:"metrics"`
-	BreakdownByJSON     jsontypes.Normalized   `tfsdk:"breakdown_by_json"`
+	LensChartBaseTFModel
+	Query           *FilterSimpleModel   `tfsdk:"query"`
+	Metrics         []MetricItemModel    `tfsdk:"metrics"`
+	BreakdownByJSON jsontypes.Normalized `tfsdk:"breakdown_by_json"`
 }
 
 type MetricItemModel struct {

@@ -45,14 +45,7 @@ func legacyMetricConfigPopulateCommonFields(
 	diags *diag.Diagnostics,
 ) bool {
 	return lenscommon.PopulateLensChartBaseFromAPI(
-		lenscommon.LensChartBaseFields{
-			Title:               &m.Title,
-			Description:         &m.Description,
-			IgnoreGlobalFilters: &m.IgnoreGlobalFilters,
-			Sampling:            &m.Sampling,
-			DataSourceJSON:      &m.DataSourceJSON,
-			Filters:             &m.Filters,
-		},
+		&m.LensChartBaseTFModel,
 		title, description, ignoreGlobalFilters, sampling,
 		datasetBytes, datasetErr, "data_source_json", filters, diags,
 	)

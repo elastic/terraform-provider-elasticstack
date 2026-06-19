@@ -66,6 +66,16 @@ type LensChartPresentationTFModel struct {
 	Drilldowns     []LensDrilldownItemTFModel `tfsdk:"drilldowns"`
 }
 
+// LensChartBaseTFModel holds the fields shared by all Lens by-value chart config models.
+type LensChartBaseTFModel struct {
+	Title               types.String           `tfsdk:"title"`
+	Description         types.String           `tfsdk:"description"`
+	DataSourceJSON      jsontypes.Normalized   `tfsdk:"data_source_json"`
+	IgnoreGlobalFilters types.Bool             `tfsdk:"ignore_global_filters"`
+	Sampling            types.Float64          `tfsdk:"sampling"`
+	Filters             []ChartFilterJSONModel `tfsdk:"filters"`
+}
+
 type LensDrilldownItemTFModel struct {
 	DashboardDrilldown *LensDashboardDrilldownTFModel `tfsdk:"dashboard_drilldown"`
 	DiscoverDrilldown  *LensDiscoverDrilldownTFModel  `tfsdk:"discover_drilldown"`
