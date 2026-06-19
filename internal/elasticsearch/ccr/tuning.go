@@ -28,9 +28,9 @@ import (
 )
 
 // TuningParams holds the 10 common CCR tuning parameters in their Terraform type form.
-// Duration fields (MaxRetryDelay, ReadPollTimeout) are held as types.String because
-// followerindex.Model uses types.String while autofollow.Model uses customtypes.Duration;
-// callers convert their model-specific duration type before constructing TuningParams.
+// Duration fields (MaxRetryDelay, ReadPollTimeout) are held as types.String because the
+// intermediate request helpers expect strings; callers convert from customtypes.Duration
+// where needed.
 type TuningParams struct {
 	MaxOutstandingReadRequests    types.Int64
 	MaxOutstandingWriteRequests   types.Int64

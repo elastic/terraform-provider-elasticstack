@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ccr"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -109,6 +110,7 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"max_retry_delay": schema.StringAttribute{
+				CustomType:          customtypes.DurationType{},
 				MarkdownDescription: ccr.DescMaxRetryDelay,
 				Optional:            true,
 				Computed:            true,
@@ -149,6 +151,7 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"read_poll_timeout": schema.StringAttribute{
+				CustomType:          customtypes.DurationType{},
 				MarkdownDescription: ccr.DescReadPollTimeout,
 				Optional:            true,
 				Computed:            true,
