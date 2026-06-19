@@ -35,6 +35,11 @@ import (
 
 const dashboardAPIPathPrefix = "/api/dashboards/"
 
+var (
+	testServerNormalizedID = "server-normalized-id"
+	testEmptyDashboardID   = ""
+)
+
 func testDashboardPlanModel(dashboardID types.String) models.DashboardModel {
 	return models.DashboardModel{
 		SpaceID:     types.StringValue("default"),
@@ -116,7 +121,7 @@ func TestCreateDashboard(t *testing.T) {
 			name:              "PUT uses server-returned id when response differs from request",
 			dashboardID:       types.StringValue("my-team-overview"),
 			putStatusCode:     http.StatusCreated,
-			putResponseID:     new("server-normalized-id"),
+			putResponseID:     &testServerNormalizedID,
 			expectPUT:         true,
 			expectPUTID:       "my-team-overview",
 			expectDashboardID: "server-normalized-id",
@@ -126,7 +131,7 @@ func TestCreateDashboard(t *testing.T) {
 			name:          "PUT rejects empty dashboard id in response",
 			dashboardID:   types.StringValue("my-id"),
 			putStatusCode: http.StatusCreated,
-			putResponseID: new(""),
+			putResponseID: &testEmptyDashboardID,
 			expectPUT:     true,
 			expectError:   true,
 		},
