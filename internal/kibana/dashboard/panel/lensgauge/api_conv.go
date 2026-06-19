@@ -56,7 +56,7 @@ func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, prior *
 	m.Description = types.StringPointerValue(api.Description)
 
 	datasetBytes, err := api.DataSource.MarshalJSON()
-	v, ok := lenscommon.MarshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	v, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}
@@ -85,7 +85,7 @@ func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, prior *
 	m.Styling = &models.GaugeStylingModel{}
 	if api.Styling != nil && api.Styling.Shape != nil {
 		shapeBytes, err := api.Styling.Shape.MarshalJSON()
-		sv, ok := lenscommon.MarshalToNormalized(shapeBytes, err, "shape", &diags)
+		sv, ok := lenscommon.WrapNormalizedJSON(shapeBytes, err, "shape", &diags)
 		if !ok {
 			return diags
 		}
@@ -119,7 +119,7 @@ func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, pri
 	}
 
 	datasetBytes, err := json.Marshal(api.DataSource)
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}
@@ -188,7 +188,7 @@ func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, pri
 	m.Styling = &models.GaugeStylingModel{}
 	if api.Styling != nil && api.Styling.Shape != nil {
 		shapeBytes, err := api.Styling.Shape.MarshalJSON()
-		sv, ok := lenscommon.MarshalToNormalized(shapeBytes, err, "shape", &diags)
+		sv, ok := lenscommon.WrapNormalizedJSON(shapeBytes, err, "shape", &diags)
 		if !ok {
 			return diags
 		}

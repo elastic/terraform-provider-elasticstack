@@ -53,7 +53,7 @@ func legacyMetricConfigPopulateCommonFields(
 	} else {
 		m.Sampling = types.Float64Null()
 	}
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, datasetErr, "data_source_json", diags)
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, datasetErr, "data_source_json", diags)
 	if !ok {
 		return false
 	}

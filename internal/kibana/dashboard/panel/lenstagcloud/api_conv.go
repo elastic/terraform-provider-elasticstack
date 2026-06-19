@@ -90,7 +90,7 @@ func tagcloudConfigFromAPI(
 	m.Description = types.StringPointerValue(api.Description)
 
 	datasetBytes, err := api.DataSource.MarshalJSON()
-	v, ok := lenscommon.MarshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	v, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}
@@ -156,7 +156,7 @@ func tagcloudConfigFromAPIESQL(
 	}
 
 	datasetBytes, err := json.Marshal(api.DataSource)
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}
