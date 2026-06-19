@@ -23,15 +23,13 @@ import (
 )
 
 // ExactlyOneOfNestedAttrsOpts configures ExactlyOneOfNestedAttrsValidator.
-//
-// Deprecated: use validators.ExactlyOneOfNestedAttrsOpts from internal/utils/validators instead.
+// Re-exports validators.ExactlyOneOfNestedAttrsOpts for use within the panelkit package.
 type ExactlyOneOfNestedAttrsOpts = validators.ExactlyOneOfNestedAttrsOpts
 
 // ExactlyOneOfNestedAttrsValidator returns an object validator that enforces exactly one of the
 // nested attribute names being set on the validated object. Unknown values defer the check so
 // plan-time references resolve cleanly.
-//
-// Deprecated: use validators.ExactlyOneOfNestedAttrsValidator from internal/utils/validators instead.
+// Re-exports validators.ExactlyOneOfNestedAttrsValidator for use within the panelkit package.
 func ExactlyOneOfNestedAttrsValidator(opts ExactlyOneOfNestedAttrsOpts) validator.Object {
 	return validators.ExactlyOneOfNestedAttrsValidator(opts)
 }

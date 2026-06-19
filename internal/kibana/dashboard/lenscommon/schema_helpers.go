@@ -86,22 +86,19 @@ func AxisTitleAttribute(computedVisible bool) schema.Attribute {
 
 // MutuallyExclusiveStringValidator returns a single-element validator slice declaring this
 // string attribute conflicts with the named sibling on the parent object.
-//
-// Deprecated: use validators.MutuallyExclusiveStringValidator from internal/utils/validators instead.
+// Re-exports validators.MutuallyExclusiveStringValidator for use within the lenscommon package.
 func MutuallyExclusiveStringValidator(siblingName string) []validator.String {
 	return validators.MutuallyExclusiveStringValidator(siblingName)
 }
 
 // MutuallyExclusiveListValidator is the list-attribute counterpart to MutuallyExclusiveStringValidator.
-//
-// Deprecated: use validators.MutuallyExclusiveListValidator from internal/utils/validators instead.
+// Re-exports validators.MutuallyExclusiveListValidator for use within the lenscommon package.
 func MutuallyExclusiveListValidator(siblingName string) []validator.List {
 	return validators.MutuallyExclusiveListValidator(siblingName)
 }
 
 // MutuallyExclusiveObjectValidator is the object-attribute counterpart to MutuallyExclusiveStringValidator.
-//
-// Deprecated: use validators.MutuallyExclusiveObjectValidator from internal/utils/validators instead.
+// Re-exports validators.MutuallyExclusiveObjectValidator for use within the lenscommon package.
 func MutuallyExclusiveObjectValidator(siblingName string) []validator.Object {
 	return validators.MutuallyExclusiveObjectValidator(siblingName)
 }
