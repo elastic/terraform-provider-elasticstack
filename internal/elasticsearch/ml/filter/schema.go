@@ -49,7 +49,7 @@ func getSchema(_ context.Context) schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
-				Validators: []validator.String{ml.IDValidator()},
+				Validators: []validator.String{ml.IDValidatorWithoutLength()},
 			},
 			"description": schema.StringAttribute{
 				MarkdownDescription: "A description of the filter.",

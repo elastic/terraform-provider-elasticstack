@@ -62,7 +62,7 @@ func getSchema(_ context.Context) schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
-				Validators: []validator.String{ml.IDValidator()},
+				Validators: []validator.String{ml.IDValidatorWithoutLength()},
 			},
 			"job_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier for the anomaly detection job. The job must exist before creating the datafeed.",
