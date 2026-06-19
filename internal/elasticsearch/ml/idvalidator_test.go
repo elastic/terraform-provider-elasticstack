@@ -54,7 +54,6 @@ func TestPathIDRegexp(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(fmt.Sprintf("%q", tc.id), func(t *testing.T) {
 			t.Parallel()
 			got := pathIDRegexp.MatchString(tc.id)
@@ -83,7 +82,6 @@ func TestIDValidator(t *testing.T) {
 
 	v := IDValidator()
 	for _, tc := range tests {
-		tc := tc
 		t.Run(fmt.Sprintf("%q", tc.id), func(t *testing.T) {
 			t.Parallel()
 			req := validator.StringRequest{ConfigValue: types.StringValue(tc.id)}
@@ -114,7 +112,6 @@ func TestIDValidatorWithoutLength(t *testing.T) {
 
 	v := IDValidatorWithoutLength()
 	for _, tc := range tests {
-		tc := tc
 		t.Run(fmt.Sprintf("%q", tc.id), func(t *testing.T) {
 			t.Parallel()
 			req := validator.StringRequest{ConfigValue: types.StringValue(tc.id)}
