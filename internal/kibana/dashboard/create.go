@@ -24,6 +24,7 @@ import (
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -39,28 +40,54 @@ func createDashboard(
 	kibanaClient := client.GetKibanaOapiClient()
 	spaceID := planModel.SpaceID.ValueString()
 
-	apiReq := dashboardToAPICreateRequest(ctx, &planModel, &diags)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
-	}
+	var dashboardID string
+	if typeutils.IsKnown(planModel.DashboardID) {
+		apiReq := dashboardToAPIUpdateRequest(ctx, &planModel, &diags)
+		if diags.HasError() {
+			return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
+		}
 
-	createResp, createDiags := kibanaoapi.CreateDashboard(ctx, kibanaClient, spaceID, apiReq)
-	diags.Append(createDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
-	}
+		upsertResp, upsertDiags := kibanaoapi.UpdateDashboard(ctx, kibanaClient, spaceID, planModel.DashboardID.ValueString(), apiReq)
+		diags.Append(upsertDiags...)
+		if diags.HasError() {
+			return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
+		}
 
-	if createResp.JSON201 == nil {
-		diags.AddError("Dashboard create returned no body", "expected 201 response with dashboard id")
-		return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
+		switch {
+		case upsertResp.JSON201 != nil:
+			dashboardID = upsertResp.JSON201.Id
+		case upsertResp.JSON200 != nil:
+			dashboardID = upsertResp.JSON200.Id
+		default:
+			diags.AddError("Dashboard create returned no body", "expected 200 or 201 response with dashboard id")
+			return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
+		}
+	} else {
+		apiReq := dashboardToAPICreateRequest(ctx, &planModel, &diags)
+		if diags.HasError() {
+			return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
+		}
+
+		createResp, createDiags := kibanaoapi.CreateDashboard(ctx, kibanaClient, spaceID, apiReq)
+		diags.Append(createDiags...)
+		if diags.HasError() {
+			return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
+		}
+
+		if createResp.JSON201 == nil {
+			diags.AddError("Dashboard create returned no body", "expected 201 response with dashboard id")
+			return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
+		}
+
+		dashboardID = createResp.JSON201.Id
 	}
 
 	compID := clients.CompositeID{
 		ClusterID:  spaceID,
-		ResourceID: createResp.JSON201.Id,
+		ResourceID: dashboardID,
 	}
 	planModel.ID = types.StringValue(compID.String())
-	planModel.DashboardID = types.StringValue(createResp.JSON201.Id)
+	planModel.DashboardID = types.StringValue(dashboardID)
 
 	return entitycore.KibanaWriteResult[models.DashboardModel]{Model: planModel}, diags
 }
