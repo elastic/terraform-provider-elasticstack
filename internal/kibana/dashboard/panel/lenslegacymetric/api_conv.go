@@ -27,7 +27,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 const (
@@ -45,21 +44,18 @@ func legacyMetricConfigPopulateCommonFields(
 	filters *kbapi.KibanaHTTPAPIsLensPanelFilters,
 	diags *diag.Diagnostics,
 ) bool {
-	m.Title = types.StringPointerValue(title)
-	m.Description = types.StringPointerValue(description)
-	m.IgnoreGlobalFilters = types.BoolPointerValue(ignoreGlobalFilters)
-	if sampling != nil {
-		m.Sampling = types.Float64Value(float64(*sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, datasetErr, "data_source_json", diags)
-	if !ok {
-		return false
-	}
-	m.DataSourceJSON = dv
-	m.Filters = lenscommon.PopulateFiltersFromAPI(filters, diags)
-	return !diags.HasError()
+	return lenscommon.PopulateLensChartBaseFromAPI(
+		lenscommon.LensChartBaseFields{
+			Title:               &m.Title,
+			Description:         &m.Description,
+			IgnoreGlobalFilters: &m.IgnoreGlobalFilters,
+			Sampling:            &m.Sampling,
+			DataSourceJSON:      &m.DataSourceJSON,
+			Filters:             &m.Filters,
+		},
+		title, description, ignoreGlobalFilters, sampling,
+		datasetBytes, datasetErr, "data_source_json", filters, diags,
+	)
 }
 
 func legacyMetricConfigFromAPINoESQL(
