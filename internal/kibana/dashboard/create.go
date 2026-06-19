@@ -24,7 +24,6 @@ import (
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -38,28 +37,13 @@ func createDashboard(
 	planModel := req.Plan
 
 	kibanaClient := client.GetKibanaOapiClient()
-	spaceID := planModel.SpaceID.ValueString()
+	spaceID := req.SpaceID
 
 	var dashboardID string
-	if typeutils.IsKnown(planModel.DashboardID) {
-		apiReq := dashboardToAPIUpdateRequest(ctx, &planModel, &diags)
+	if req.WriteID != "" {
+		// The practitioner supplied a dashboard_id, so create via PUT upsert.
+		dashboardID = putDashboard(ctx, kibanaClient, spaceID, req.WriteID, &planModel, &diags)
 		if diags.HasError() {
-			return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
-		}
-
-		upsertResp, upsertDiags := kibanaoapi.UpdateDashboard(ctx, kibanaClient, spaceID, req.WriteID, apiReq)
-		diags.Append(upsertDiags...)
-		if diags.HasError() {
-			return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
-		}
-
-		switch {
-		case upsertResp.JSON201 != nil:
-			dashboardID = upsertResp.JSON201.Id
-		case upsertResp.JSON200 != nil:
-			dashboardID = upsertResp.JSON200.Id
-		default:
-			diags.AddError("Dashboard create returned no body", "expected 200 or 201 response with dashboard id")
 			return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
 		}
 	} else {

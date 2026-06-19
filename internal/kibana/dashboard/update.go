@@ -37,19 +37,43 @@ func updateDashboard(
 
 	kibanaClient := client.GetKibanaOapiClient()
 
-	dashboardID := req.WriteID
-	spaceID := req.SpaceID
-
-	apiReq := dashboardToAPIUpdateRequest(ctx, &planModel, &diags)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
-	}
-
-	_, updateDiags := kibanaoapi.UpdateDashboard(ctx, kibanaClient, spaceID, dashboardID, apiReq)
-	diags.Append(updateDiags...)
+	putDashboard(ctx, kibanaClient, req.SpaceID, req.WriteID, &planModel, &diags)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
 	}
 
 	return entitycore.KibanaWriteResult[models.DashboardModel]{Model: planModel}, diags
+}
+
+// putDashboard issues PUT /api/dashboards/{id} (upsert) from the plan model and
+// returns the dashboard id reported by the API. It is shared by the update path
+// and by the create path when the practitioner supplies a dashboard_id. The
+// envelope performs the read-after-write that refreshes the rest of the state.
+func putDashboard(
+	ctx context.Context,
+	kibanaClient *kibanaoapi.Client,
+	spaceID string,
+	dashboardID string,
+	planModel *models.DashboardModel,
+	diags *diag.Diagnostics,
+) string {
+	apiReq := dashboardToAPIUpdateRequest(ctx, planModel, diags)
+	if diags.HasError() {
+		return ""
+	}
+
+	resp, respDiags := kibanaoapi.UpdateDashboard(ctx, kibanaClient, spaceID, dashboardID, apiReq)
+	diags.Append(respDiags...)
+	if diags.HasError() {
+		return ""
+	}
+
+	switch {
+	case resp.JSON201 != nil:
+		return resp.JSON201.Id
+	case resp.JSON200 != nil:
+		return resp.JSON200.Id
+	default:
+		return ""
+	}
 }

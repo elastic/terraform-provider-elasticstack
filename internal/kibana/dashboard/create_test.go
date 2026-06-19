@@ -28,7 +28,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
@@ -170,11 +169,12 @@ func TestCreateDashboard(t *testing.T) {
 			scopedClient := newTestKibanaScopedClient(t, server)
 			planModel := testDashboardPlanModel(tt.dashboardID)
 
+			// Mirror how the entitycore envelope resolves write identity before
+			// invoking the create callback.
 			writeReq := entitycore.KibanaWriteRequest[models.DashboardModel]{
-				Plan: planModel,
-			}
-			if typeutils.IsKnown(planModel.DashboardID) {
-				writeReq.WriteID = planModel.DashboardID.ValueString()
+				Plan:    planModel,
+				WriteID: planModel.GetResourceID().ValueString(),
+				SpaceID: planModel.GetSpaceID().ValueString(),
 			}
 
 			result, diags := createDashboard(t.Context(), scopedClient, writeReq)

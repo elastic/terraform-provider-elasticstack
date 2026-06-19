@@ -590,7 +590,7 @@ func testCheckDashboardCompositeIDMatchesDashboardID(resourceName string) resour
 			return fmt.Errorf("%s: dashboard_id is empty", resourceName)
 		}
 
-		expectedID := "default/" + dashboardID
+		expectedID := rs.Primary.Attributes["space_id"] + "/" + dashboardID
 		if rs.Primary.Attributes["id"] != expectedID {
 			return fmt.Errorf("%s: id %q, want %q", resourceName, rs.Primary.Attributes["id"], expectedID)
 		}
