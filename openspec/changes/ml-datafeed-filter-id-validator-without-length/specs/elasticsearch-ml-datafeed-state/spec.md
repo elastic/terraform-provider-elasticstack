@@ -2,10 +2,10 @@
 
 ### Requirement: datafeed_id validation (REQ-021)
 
-The `datafeed_id` attribute SHALL be validated at plan time to contain at least one character and to
-contain only alphanumeric characters, hyphens, and underscores. No upper-bound length restriction
-is applied. The validator SHALL use `ml.IDValidatorWithoutLength()` (defined in
-`internal/elasticsearch/ml/idvalidator.go`) instead of `ml.IDValidator()`.
+The `datafeed_id` attribute SHALL be validated at plan time to contain at least one character, to
+contain only lowercase alphanumeric characters (a–z and 0–9), hyphens, underscores, and dots, and
+to start and end with an alphanumeric character. No upper-bound length restriction is applied. The
+validator SHALL use `ml.IDValidatorWithoutLength()` (defined in
 
 #### Scenario: Long datafeed_id accepted
 
