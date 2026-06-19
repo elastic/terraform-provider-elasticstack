@@ -63,7 +63,7 @@
     "elasticstack_kibana_install_prebuilt_rules": "2026-05-24T07:01:13Z",
     "elasticstack_kibana_maintenance_window": "2026-05-25T07:24:59Z",
     "elasticstack_kibana_security_detection_rule": "2026-05-26T07:09:52Z",
-    "elasticstack_kibana_security_enable_rule": "2026-03-20T02:29:06Z",
+    "elasticstack_kibana_security_enable_rule": "2026-06-19T07:41:20Z",
     "elasticstack_kibana_security_entity_store": "2026-06-03T07:35:48Z",
     "elasticstack_kibana_security_entity_store_entity": "2026-06-05T07:21:29Z",
     "elasticstack_kibana_security_entity_store_entity_link": "2026-06-05T07:21:29Z",
@@ -75,6 +75,7 @@
     "elasticstack_kibana_security_role": "2026-05-30T06:55:50Z",
     "elasticstack_kibana_slo": "2026-05-30T06:55:50Z",
     "elasticstack_kibana_space": "2026-05-30T06:55:50Z",
+    "elasticstack_kibana_stream": "2026-06-19T07:41:20Z",
     "elasticstack_kibana_synthetics_monitor": "2026-06-06T06:53:15Z",
     "elasticstack_kibana_synthetics_parameter": "2026-06-06T06:53:15Z",
     "elasticstack_kibana_synthetics_private_location": "2026-06-07T07:18:51Z"
