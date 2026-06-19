@@ -280,12 +280,12 @@ func buildFollowRequest(model Model) (*follow.Request, diag.Diagnostics) {
 		MaxOutstandingWriteRequests:   model.MaxOutstandingWriteRequests,
 		MaxReadRequestOperationCount:  model.MaxReadRequestOperationCount,
 		MaxReadRequestSize:            model.MaxReadRequestSize,
-		MaxRetryDelay:                 customDurationToString(model.MaxRetryDelay),
+		MaxRetryDelay:                 model.MaxRetryDelay,
 		MaxWriteBufferCount:           model.MaxWriteBufferCount,
 		MaxWriteBufferSize:            model.MaxWriteBufferSize,
 		MaxWriteRequestOperationCount: model.MaxWriteRequestOperationCount,
 		MaxWriteRequestSize:           model.MaxWriteRequestSize,
-		ReadPollTimeout:               customDurationToString(model.ReadPollTimeout),
+		ReadPollTimeout:               model.ReadPollTimeout,
 	}
 	diags.Append(ccr.ApplyToFollowRequest(tuning, req)...)
 	if diags.HasError() {
@@ -302,12 +302,12 @@ func buildResumeFollowRequest(model Model) *resumefollow.Request {
 		MaxOutstandingWriteRequests:   model.MaxOutstandingWriteRequests,
 		MaxReadRequestOperationCount:  model.MaxReadRequestOperationCount,
 		MaxReadRequestSize:            model.MaxReadRequestSize,
-		MaxRetryDelay:                 customDurationToString(model.MaxRetryDelay),
+		MaxRetryDelay:                 model.MaxRetryDelay,
 		MaxWriteBufferCount:           model.MaxWriteBufferCount,
 		MaxWriteBufferSize:            model.MaxWriteBufferSize,
 		MaxWriteRequestOperationCount: model.MaxWriteRequestOperationCount,
 		MaxWriteRequestSize:           model.MaxWriteRequestSize,
-		ReadPollTimeout:               customDurationToString(model.ReadPollTimeout),
+		ReadPollTimeout:               model.ReadPollTimeout,
 	}
 	ccr.ApplyToResumeFollowRequest(tuning, req)
 	return req
@@ -319,12 +319,12 @@ func mapParametersToModel(params *estypes.FollowerIndexParameters, model Model) 
 	model.MaxOutstandingWriteRequests = p.MaxOutstandingWriteRequests
 	model.MaxReadRequestOperationCount = p.MaxReadRequestOperationCount
 	model.MaxReadRequestSize = p.MaxReadRequestSize
-	model.MaxRetryDelay = customDurationFromString(p.MaxRetryDelay)
+	model.MaxRetryDelay = p.MaxRetryDelay
 	model.MaxWriteBufferCount = p.MaxWriteBufferCount
 	model.MaxWriteBufferSize = p.MaxWriteBufferSize
 	model.MaxWriteRequestOperationCount = p.MaxWriteRequestOperationCount
 	model.MaxWriteRequestSize = p.MaxWriteRequestSize
-	model.ReadPollTimeout = customDurationFromString(p.ReadPollTimeout)
+	model.ReadPollTimeout = p.ReadPollTimeout
 	return model
 }
 
@@ -346,28 +346,4 @@ func mapFollowerIndexToModel(follower *estypes.FollowerIndex, prior Model) Model
 	}
 
 	return model
-}
-
-// customDurationToString converts a customtypes.Duration to a types.String,
-// preserving null/unknown semantics.
-func customDurationToString(v customtypes.Duration) types.String {
-	if v.IsNull() {
-		return types.StringNull()
-	}
-	if v.IsUnknown() {
-		return types.StringUnknown()
-	}
-	return types.StringValue(v.ValueString())
-}
-
-// customDurationFromString converts a types.String to a customtypes.Duration,
-// preserving null/unknown semantics.
-func customDurationFromString(v types.String) customtypes.Duration {
-	if v.IsNull() {
-		return customtypes.NewDurationNull()
-	}
-	if v.IsUnknown() {
-		return customtypes.NewDurationUnknown()
-	}
-	return customtypes.NewDurationValue(v.ValueString())
 }

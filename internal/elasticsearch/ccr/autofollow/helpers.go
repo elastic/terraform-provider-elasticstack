@@ -25,7 +25,6 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/putautofollowpattern"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ccr"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -147,12 +146,12 @@ func buildPutAutoFollowPatternRequest(ctx context.Context, model Model) (*putaut
 		MaxOutstandingWriteRequests:   model.MaxOutstandingWriteRequests,
 		MaxReadRequestOperationCount:  model.MaxReadRequestOperationCount,
 		MaxReadRequestSize:            model.MaxReadRequestSize,
-		MaxRetryDelay:                 customDurationToString(model.MaxRetryDelay),
+		MaxRetryDelay:                 model.MaxRetryDelay,
 		MaxWriteBufferCount:           model.MaxWriteBufferCount,
 		MaxWriteBufferSize:            model.MaxWriteBufferSize,
 		MaxWriteRequestOperationCount: model.MaxWriteRequestOperationCount,
 		MaxWriteRequestSize:           model.MaxWriteRequestSize,
-		ReadPollTimeout:               customDurationToString(model.ReadPollTimeout),
+		ReadPollTimeout:               model.ReadPollTimeout,
 	}
 	diags.Append(ccr.ApplyToPutAutoFollowRequest(tuning, req)...)
 	if diags.HasError() {
@@ -200,16 +199,4 @@ func mapAutoFollowPatternToModel(ctx context.Context, summary *estypes.AutoFollo
 	model.SettingsRaw = prior.SettingsRaw
 
 	return model, diags
-}
-
-// customDurationToString converts a customtypes.Duration to a types.String,
-// preserving null/unknown semantics for the TuningParams intermediate type.
-func customDurationToString(v customtypes.Duration) types.String {
-	if v.IsNull() {
-		return types.StringNull()
-	}
-	if v.IsUnknown() {
-		return types.StringUnknown()
-	}
-	return types.StringValue(v.ValueString())
 }
