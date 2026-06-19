@@ -40,20 +40,34 @@ the shared `IDValidator()` unchanged for other ML resources (`job_id`, `calendar
   `ml_filter`. These are the three attributes where Elasticsearch has confirmed no length
   restriction applies.
 - **IDValidator() stays unchanged**: preserving correctness for resources where the 64-char limit
-  may still be valid (no confirmed API evidence it is wrong for `job_id`, `calendar_id`, etc.).
+  is enforced server-side — confirmed via Elasticsearch source that `job_id` and `calendar_id`
+  both call `MlStrings.hasValidLengthForId()`, making the 64-char limit intentional for those
+  entities.
 - **Spec updates**: Delta specs for `elasticsearch-ml-datafeed`,
   `elasticsearch-ml-datafeed-state`, and `elasticsearch-ml-filter` remove the 64-character
   upper-bound from their ID attribute descriptions and validation requirements.
 
 ## Open questions
 
-- Does Elasticsearch enforce any upper-bound length restriction on anomaly detection `job_id`,
+~~- Does Elasticsearch enforce any upper-bound length restriction on anomaly detection `job_id`,
   `calendar_id`, or `filter_id` in calendar resources that differs from datafeeds and filters?
   Checking the ES source (e.g. `MlStrings` / `MlField.java` in the ES monorepo) would confirm
   whether the 64-char limit was ever intentional for any ML entity type. This answer would
-  determine whether a future change should apply a similar fix to `IDValidator()` itself.
-- Are there acceptance tests that assert a 64-char `datafeed_id` or `filter_id` is the upper
-  limit? If so, they must be updated during implementation.
+  determine whether a future change should apply a similar fix to `IDValidator()` itself.~~
+
+  **Resolved**: `job_id` (`Job.java`) and `calendar_id` (`PutCalendarAction.java`) both call
+  `MlStrings.hasValidLengthForId()` server-side, confirming the 64-character limit is a real
+  Elasticsearch constraint for those entities. `datafeed_id` (`DatafeedConfig.java`) and
+  `filter_id` (`MlFilter.java`) call only `MlStrings.isValidId()` (pattern check only) — no
+  length enforcement. `IDValidator()` should remain unchanged; the split into
+  `IDValidatorWithoutLength()` for datafeed and filter is correct and complete.
+
+~~- Are there acceptance tests that assert a 64-char `datafeed_id` or `filter_id` is the upper
+  limit? If so, they must be updated during implementation.~~
+
+  **Resolved**: No acceptance tests assert a 64-char limit on `datafeed_id` or `filter_id`. The
+  `ExpectError` patterns in `filter/acc_test.go` referencing `4096` are for the `description`
+  field, not `filter_id`. No test updates beyond the unit tests in task 3.1 are required.
 
 ## Risks / Trade-offs
 
