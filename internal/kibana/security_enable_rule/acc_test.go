@@ -109,6 +109,8 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 	tagValue := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	spaceID := defaultSpaceID
 
+	var storedID string
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -123,23 +125,25 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", spaceID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", tagKey),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "value", tagValue),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "disable_on_destroy", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_enable_rule.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "all_rules_enabled", "true"),
+					captureResourceID("elasticstack_kibana_security_enable_rule.test", &storedID),
 					checkRulesEnabled(spaceID, tagKey, tagValue),
 				),
 			},
 			{
-				// Manually disable one rule outside of Terraform to test drift detection
+				// Manually disable one rule outside of Terraform to test drift detection.
+				// RefreshState captures all_rules_enabled = false in the refreshed state.
 				ProtoV6ProviderFactories: acctest.Providers,
 				PreConfig: func() {
 					disableOneRule(t, spaceID, tagKey, tagValue)
 				},
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{
-					"tag_key":   config.StringVariable(tagKey),
-					"tag_value": config.StringVariable(tagValue),
-				},
-				PlanOnly:           true,
+				RefreshState:       true,
 				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "all_rules_enabled", "false"),
+				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -150,6 +154,8 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "all_rules_enabled", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_enable_rule.test", "id"),
+					checkResourceIDStable("elasticstack_kibana_security_enable_rule.test", &storedID),
 					checkRulesEnabled(spaceID, tagKey, tagValue),
 				),
 			},
@@ -185,6 +191,7 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", tagKey),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "value", tagValue),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "disable_on_destroy", "false"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_enable_rule.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "all_rules_enabled", "true"),
 					checkRulesEnabled(spaceID, tagKey, tagValue),
 				),
@@ -201,6 +208,7 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", tagKey),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "value", tagValue),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "disable_on_destroy", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_enable_rule.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "all_rules_enabled", "true"),
 					checkRulesEnabled(spaceID, tagKey, tagValue),
 				),
@@ -217,6 +225,7 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", tagKey),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "value", tagValue),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "disable_on_destroy", "false"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_enable_rule.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "all_rules_enabled", "true"),
 					checkRulesEnabled(spaceID, tagKey, tagValue),
 				),
@@ -294,6 +303,32 @@ func checkRulesEnabled(spaceID, key, value string) resource.TestCheckFunc {
 	}
 }
 
+// captureResourceID stores the primary ID of a resource into target for cross-step comparisons.
+func captureResourceID(resourceName string, target *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		res, ok := s.RootModule().Resources[resourceName]
+		if !ok || res.Primary == nil {
+			return fmt.Errorf("resource %s not found in state", resourceName)
+		}
+		*target = res.Primary.ID
+		return nil
+	}
+}
+
+// checkResourceIDStable verifies that a resource's ID has not changed since it was captured.
+func checkResourceIDStable(resourceName string, captured *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		res, ok := s.RootModule().Resources[resourceName]
+		if !ok || res.Primary == nil {
+			return fmt.Errorf("resource %s not found in state", resourceName)
+		}
+		if res.Primary.ID != *captured {
+			return fmt.Errorf("resource %s ID changed: was %q, now %q", resourceName, *captured, res.Primary.ID)
+		}
+		return nil
+	}
+}
+
 // disableOneRule manually disables one rule matching the tag (for testing drift detection)
 func disableOneRule(t *testing.T, spaceID, key, value string) {
 	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
@@ -361,4 +396,36 @@ func disableOneRule(t *testing.T, spaceID, key, value string) {
 	if bulkResp.StatusCode() != 200 {
 		t.Fatalf("failed to disable rule, status: %d", bulkResp.StatusCode())
 	}
+}
+
+func TestAccResourceEnableRuleWithTimeouts(t *testing.T) {
+	skipFunc := versionutils.CheckIfVersionIsUnsupported(minVersionEnableRule)
+	if skip, err := skipFunc(); err != nil {
+		t.Fatalf("failed to check version: %v", err)
+	} else if skip {
+		t.Skip("Test requires version 8.11.0 or higher")
+	}
+
+	tagKey := "test_tag"
+	tagValue := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_timeouts"),
+				ConfigVariables: config.Variables{
+					"tag_key":   config.StringVariable(tagKey),
+					"tag_value": config.StringVariable(tagValue),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_enable_rule.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "all_rules_enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "timeouts.create", "5m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "timeouts.delete", "5m"),
+				),
+			},
+		},
+	})
 }
