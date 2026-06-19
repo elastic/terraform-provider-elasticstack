@@ -29,6 +29,6 @@
 
 ## 4. Spec sync
 
-- [ ] 4.1 Run `make check-openspec` and resolve any reported issues.
-- [ ] 4.2 Confirm `make build` succeeds.
-- [ ] 4.3 Run `go test ./internal/elasticsearch/ml/...` to confirm all unit tests pass.
+- [x] 4.1 Run `make check-openspec` and resolve any reported issues.
+- [x] 4.2 Confirm `make build` succeeds.
+- [x] 4.3 Run `go test ./internal/elasticsearch/ml/...` to confirm all unit tests pass.
