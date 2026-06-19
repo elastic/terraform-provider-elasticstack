@@ -47,7 +47,7 @@ func createDashboard(
 			return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
 		}
 
-		upsertResp, upsertDiags := kibanaoapi.UpdateDashboard(ctx, kibanaClient, spaceID, planModel.DashboardID.ValueString(), apiReq)
+		upsertResp, upsertDiags := kibanaoapi.UpdateDashboard(ctx, kibanaClient, spaceID, req.WriteID, apiReq)
 		diags.Append(upsertDiags...)
 		if diags.HasError() {
 			return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
@@ -80,6 +80,11 @@ func createDashboard(
 		}
 
 		dashboardID = createResp.JSON201.Id
+	}
+
+	if dashboardID == "" {
+		diags.AddError("Dashboard create returned empty id", "expected non-empty dashboard id in API response")
+		return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
 	}
 
 	compID := clients.CompositeID{
