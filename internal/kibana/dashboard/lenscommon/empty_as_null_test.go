@@ -50,23 +50,21 @@ func TestOperationSupportsEmptyAsNull(t *testing.T) {
 
 // emptyAsNullPopulators enumerates the populate functions that inject the
 // empty_as_null default so the gating is asserted uniformly across chart families.
-func emptyAsNullPopulators() map[string]func(map[string]any) map[string]any {
-	return map[string]func(map[string]any) map[string]any{
-		"PopulateLensMetricDefaults":         PopulateLensMetricDefaults,
-		"PopulateMetricChartMetricDefaults":  PopulateMetricChartMetricDefaults,
-		"PopulateGaugeMetricDefaults":        PopulateGaugeMetricDefaults,
-		"PopulatePieChartMetricDefaults":     PopulatePieChartMetricDefaults,
-		"PopulateLegacyMetricMetricDefaults": PopulateLegacyMetricMetricDefaults,
-		"PopulateTagcloudMetricDefaults":     PopulateTagcloudMetricDefaults,
-		"PopulateRegionMapMetricDefaults":    PopulateRegionMapMetricDefaults,
-	}
+var emptyAsNullPopulators = map[string]func(map[string]any) map[string]any{
+	"PopulateLensMetricDefaults":         PopulateLensMetricDefaults,
+	"PopulateMetricChartMetricDefaults":  PopulateMetricChartMetricDefaults,
+	"PopulateGaugeMetricDefaults":        PopulateGaugeMetricDefaults,
+	"PopulatePieChartMetricDefaults":     PopulatePieChartMetricDefaults,
+	"PopulateLegacyMetricMetricDefaults": PopulateLegacyMetricMetricDefaults,
+	"PopulateTagcloudMetricDefaults":     PopulateTagcloudMetricDefaults,
+	"PopulateRegionMapMetricDefaults":    PopulateRegionMapMetricDefaults,
 }
 
 func TestPopulators_injectEmptyAsNullForSupportedOperations(t *testing.T) {
 	t.Parallel()
 
 	for _, op := range []string{operationCount, operationSum, operationUniqueCount} {
-		for name, populate := range emptyAsNullPopulators() {
+		for name, populate := range emptyAsNullPopulators {
 			model := populate(map[string]any{"operation": op, "field": "f"})
 			v, exists := model["empty_as_null"]
 			assert.Truef(t, exists, "%s: expected empty_as_null to be injected for operation %q", name, op)
@@ -79,7 +77,7 @@ func TestPopulators_doNotInjectEmptyAsNullForUnsupportedOperations(t *testing.T)
 	t.Parallel()
 
 	for _, op := range emptyAsNullUnsupportedFieldOps {
-		for name, populate := range emptyAsNullPopulators() {
+		for name, populate := range emptyAsNullPopulators {
 			model := populate(map[string]any{"operation": op, "field": "f"})
 			_, exists := model["empty_as_null"]
 			assert.Falsef(t, exists, "%s: expected empty_as_null NOT to be injected for operation %q", name, op)

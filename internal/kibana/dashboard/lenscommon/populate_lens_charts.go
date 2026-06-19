@@ -272,7 +272,8 @@ func PopulateRegionMapMetricDefaults(model map[string]any) map[string]any {
 }
 
 // populateFieldMetricLensDefaults applies the standard "field metric" Lens defaults
-// (empty_as_null=false, show_metric_label=true, color=auto) when the model represents a field metric.
+// (show_metric_label=true, color=auto, plus empty_as_null=false for the operations that
+// support it) when the model represents a field metric.
 func populateFieldMetricLensDefaults(model map[string]any) map[string]any {
 	if model == nil {
 		return model
