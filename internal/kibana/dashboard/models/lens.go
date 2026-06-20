@@ -66,6 +66,12 @@ type LensChartPresentationTFModel struct {
 	Drilldowns     []LensDrilldownItemTFModel `tfsdk:"drilldowns"`
 }
 
+// GetLensChartPresentation returns a copy of this model, allowing types that embed
+// LensChartPresentationTFModel to satisfy the lenscommon.PriorLens generic constraint.
+func (m LensChartPresentationTFModel) GetLensChartPresentation() LensChartPresentationTFModel {
+	return m
+}
+
 // LensChartBaseTFModel holds the fields shared by all Lens by-value chart config models.
 type LensChartBaseTFModel struct {
 	Title               types.String           `tfsdk:"title"`

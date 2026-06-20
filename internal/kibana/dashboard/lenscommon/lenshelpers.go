@@ -18,9 +18,25 @@
 package lenscommon
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
+
+// lensChartPresentationProvider is satisfied by any type that embeds models.LensChartPresentationTFModel.
+type lensChartPresentationProvider interface {
+	GetLensChartPresentation() models.LensChartPresentationTFModel
+}
+
+// PriorLens extracts a nil-safe pointer to the embedded LensChartPresentationTFModel from prior.
+// Returns nil when prior is nil. T must embed models.LensChartPresentationTFModel.
+func PriorLens[T lensChartPresentationProvider](prior *T) *models.LensChartPresentationTFModel {
+	if prior == nil {
+		return nil
+	}
+	p := (*prior).GetLensChartPresentation()
+	return &p
+}
 
 // MarshalToJSONWithDefaults stores already-marshaled bytes as JSONWithDefaultsValue,
 // or adds an error to diags and returns (zero, false) on failure.
