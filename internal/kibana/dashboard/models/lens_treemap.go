@@ -25,19 +25,14 @@ import (
 
 type TreemapConfigModel struct {
 	LensChartPresentationTFModel
-	Title               types.String                                        `tfsdk:"title"`
-	Description         types.String                                        `tfsdk:"description"`
-	DataSourceJSON      jsontypes.Normalized                                `tfsdk:"data_source_json"`
-	IgnoreGlobalFilters types.Bool                                          `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64                                       `tfsdk:"sampling"`
-	Query               *FilterSimpleModel                                  `tfsdk:"query"`
-	Filters             []ChartFilterJSONModel                              `tfsdk:"filters"`
-	GroupBy             customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"group_by_json"`
-	Metrics             customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"metrics_json"`
-	Legend              *PartitionLegendModel                               `tfsdk:"legend"`
-	ValueDisplay        *PartitionValueDisplay                              `tfsdk:"value_display"`
-	EsqlMetrics         []TreemapEsqlMetric                                 `tfsdk:"esql_metrics"`
-	EsqlGroupBy         []TreemapEsqlGroupBy                                `tfsdk:"esql_group_by"`
+	LensChartBaseTFModel
+	Query        *FilterSimpleModel                                  `tfsdk:"query"`
+	GroupBy      customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"group_by_json"`
+	Metrics      customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"metrics_json"`
+	Legend       *PartitionLegendModel                               `tfsdk:"legend"`
+	ValueDisplay *PartitionValueDisplay                              `tfsdk:"value_display"`
+	EsqlMetrics  []TreemapEsqlMetric                                 `tfsdk:"esql_metrics"`
+	EsqlGroupBy  []TreemapEsqlGroupBy                                `tfsdk:"esql_group_by"`
 }
 
 type TreemapEsqlMetric struct {
