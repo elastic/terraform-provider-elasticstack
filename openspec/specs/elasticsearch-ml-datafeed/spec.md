@@ -61,9 +61,7 @@ resource "elasticstack_elasticsearch_ml_datafeed" "example" {
   }
 }
 ```
-
 ## Requirements
-
 ### Requirement: Datafeed CRUD APIs (REQ-001–REQ-006)
 
 The resource SHALL use the Elasticsearch Put Datafeed API to create datafeeds ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-datafeed.html)). The resource SHALL use the Elasticsearch Update Datafeed API to update datafeeds ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-update-datafeed.html)). The resource SHALL use the Elasticsearch Get Datafeeds API to read datafeed definitions ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-get-datafeed.html)). The resource SHALL use the Elasticsearch Stop Datafeed API to stop a running datafeed before updating or deleting it ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-stop-datafeed.html)). The resource SHALL use the Elasticsearch Delete Datafeed API to delete datafeeds ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-delete-datafeed.html)). When Elasticsearch returns a non-success status for any API call, the resource SHALL surface the API error as a Terraform diagnostic.
@@ -194,13 +192,29 @@ On delete, the resource SHALL check the current datafeed state. If the datafeed 
 
 ### Requirement: datafeed_id validation (REQ-021)
 
-The `datafeed_id` attribute SHALL be validated to be between 1 and 64 characters, contain only lowercase alphanumeric characters (a–z and 0–9), hyphens, and underscores, and start and end with an alphanumeric character.
+The `datafeed_id` attribute SHALL be validated at plan time to contain at least one character, to
+contain only lowercase alphanumeric characters (a–z and 0–9), hyphens, underscores, and dots, and
+to start and end with an alphanumeric character. No upper-bound length restriction is applied.
+The validator SHALL use `ml.IDValidatorWithoutLength()` (defined in
+`internal/elasticsearch/ml/idvalidator.go`) instead of `ml.IDValidator()`.
 
-#### Scenario: Invalid datafeed_id rejected
+#### Scenario: Long datafeed_id accepted
+
+- GIVEN a `datafeed_id` that is longer than 64 characters and otherwise valid (e.g. `datafeed-opserv-riskviewxml-customer-transaction-volume-decline-stop` at 68 characters)
+- WHEN the configuration is validated
+- THEN validation SHALL succeed with no error diagnostics
+
+#### Scenario: Invalid datafeed_id rejected — illegal characters
 
 - GIVEN a `datafeed_id` that starts with a hyphen or contains uppercase characters
-- WHEN the configuration is applied
-- THEN the provider SHALL return a validation error and SHALL not call the API
+- WHEN the configuration is validated
+- THEN validation SHALL fail with an error diagnostic referencing the character-class restriction
+
+#### Scenario: Empty datafeed_id rejected
+
+- GIVEN a `datafeed_id` that is an empty string
+- WHEN the configuration is validated
+- THEN validation SHALL fail with an error diagnostic
 
 ### Requirement: aggregations and script_fields are mutually exclusive (REQ-022)
 
@@ -351,3 +365,4 @@ Semantic equality rules:
 - GIVEN `indices_options.expand_wildcards = ["none"]` in configuration
 - WHEN the Elasticsearch API returns `expand_wildcards: ["open"]` on read
 - THEN Terraform SHALL show a diff for `expand_wildcards`
+

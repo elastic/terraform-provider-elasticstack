@@ -46,9 +46,7 @@ resource "elasticstack_elasticsearch_ml_datafeed_state" "example" {
   }
 }
 ```
-
 ## Requirements
-
 ### Requirement: API — Start, Stop, and Stats (REQ-001–REQ-003)
 
 To transition a datafeed to `started`, the resource SHALL call the Elasticsearch Start Datafeed API ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-start-datafeed.html)). To transition a datafeed to `stopped`, the resource SHALL call the Elasticsearch Stop Datafeed API ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-stop-datafeed.html)). To read the current datafeed state, the resource SHALL call the Elasticsearch Get Datafeed Stats API ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-get-datafeed-stats.html)). When any of these APIs returns a non-success response, the resource SHALL surface the error in Terraform diagnostics.
@@ -267,10 +265,26 @@ The `datafeed_timeout` attribute SHALL accept a Go duration string and SHALL def
 
 ### Requirement: datafeed_id validation (REQ-021)
 
-The `datafeed_id` attribute SHALL be validated to be between 1 and 64 characters, and to contain only alphanumeric characters, hyphens, and underscores.
+The `datafeed_id` attribute SHALL be validated at plan time to contain at least one character, to
+contain only lowercase alphanumeric characters (a–z and 0–9), hyphens, underscores, and dots, and
+to start and end with an alphanumeric character. No upper-bound length restriction is applied. The
+validator SHALL use `ml.IDValidatorWithoutLength()` (defined in
 
-#### Scenario: Invalid datafeed_id rejected
+#### Scenario: Long datafeed_id accepted
+
+- GIVEN a `datafeed_id` that is longer than 64 characters and otherwise valid
+- WHEN the configuration is validated
+- THEN validation SHALL succeed with no error diagnostics
+
+#### Scenario: Invalid datafeed_id rejected — illegal characters
 
 - GIVEN a `datafeed_id` containing characters outside alphanumeric, hyphens, and underscores
-- WHEN the configuration is applied
-- THEN the provider SHALL return a validation error
+- WHEN the configuration is validated
+- THEN validation SHALL fail with an error diagnostic
+
+#### Scenario: Empty datafeed_id rejected
+
+- GIVEN a `datafeed_id` that is an empty string
+- WHEN the configuration is validated
+- THEN validation SHALL fail with an error diagnostic
+

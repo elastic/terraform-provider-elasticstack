@@ -74,7 +74,7 @@ func pieChartConfigPopulateCommonFields(
 	}
 	m.DonutHole = typeutils.StringishPointerValue(donutHole)
 	m.LabelPosition = typeutils.StringishPointerValue(labelPosition)
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, datasetErr, "data_source_json", diags)
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, datasetErr, "data_source_json", diags)
 	if !ok {
 		return false
 	}

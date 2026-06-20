@@ -45,7 +45,7 @@ func PopulateLensChartBaseFromAPI(
 	} else {
 		base.Sampling = types.Float64Null()
 	}
-	dv, ok := MarshalToNormalized(datasetBytes, datasetErr, dataSourceJSONFieldName, diags)
+	dv, ok := WrapNormalizedJSON(datasetBytes, datasetErr, dataSourceJSONFieldName, diags)
 	if !ok {
 		return false
 	}

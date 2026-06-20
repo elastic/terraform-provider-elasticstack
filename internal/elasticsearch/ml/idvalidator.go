@@ -38,12 +38,23 @@ var pathIDRegexp = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9_.-]*[a-z0-9])?$`)
 // IDValidator returns a single compound validator covering the standard
 // Elasticsearch ML identifier rules: length between 1 and 64 characters and
 // the [pathIDRegexp] character/anchor pattern. Use for calendar_id, job_id,
-// job-group, datafeed, and filter id schema attributes so all ML resources
-// share one source of truth instead of duplicating LengthBetween + RegexMatches
-// pairs.
+// job-group, and any other ML identifier attributes that require the built-in
+// length bound. For identifier attributes with no upper-bound length (such as
+// datafeed_id and filter_id), use [IDValidatorWithoutLength].
 func IDValidator() validator.String {
 	return stringvalidator.All(
 		stringvalidator.LengthBetween(1, 64),
+		stringvalidator.RegexMatches(pathIDRegexp, idAllowedCharsMessage),
+	)
+}
+
+// IDValidatorWithoutLength returns a single compound validator covering the
+// [pathIDRegexp] character/anchor pattern, but without the 64-character upper
+// bound enforced by [IDValidator]. Use for ML identifier attributes where
+// Elasticsearch imposes no maximum length, such as datafeed_id and filter_id.
+func IDValidatorWithoutLength() validator.String {
+	return stringvalidator.All(
+		stringvalidator.LengthAtLeast(1),
 		stringvalidator.RegexMatches(pathIDRegexp, idAllowedCharsMessage),
 	)
 }

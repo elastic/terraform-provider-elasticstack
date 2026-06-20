@@ -54,16 +54,6 @@ func OptIntFromInt64(field string, v types.Int64) (*int, diag.Diagnostics) {
 	return &narrowed, nil
 }
 
-// OptInt64Ptr returns a pointer to the int64 value when the Terraform int64 is
-// known, or nil for unknown/null.
-func OptInt64Ptr(v types.Int64) *int64 {
-	if !typeutils.IsKnown(v) {
-		return nil
-	}
-	val := v.ValueInt64()
-	return &val
-}
-
 // ByteSizeFromString converts a known Terraform string to an estypes.ByteSize.
 func ByteSizeFromString(v types.String) estypes.ByteSize {
 	if !typeutils.IsKnown(v) {

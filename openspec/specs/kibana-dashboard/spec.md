@@ -605,6 +605,8 @@ For each Lens chart panel listed below, Kibana materializes hard-coded server de
 
 For Lens partition charts (pie `group_by[].config_json`, treemap `group_by_json`, mosaic `group_by_json`/`group_breakdown_by_json`) and Lens datatable (`metrics[].config_json`, `rows[].config_json`, `split_metrics_by[].config_json`), Kibana re-emits each `terms` dimension with the following injected default keys: `rank_by = {type="metric", metric_index=0, direction="desc"}` and `color = {mode="categorical", palette="default", mapping=[]}`. The resource SHALL populate these defaults during semantic-equality comparison so the practitioner's authored JSON round-trips without drift.
 
+When the metric-default normalization injects the `empty_as_null` default into a Lens metric `config_json`, it SHALL inject `empty_as_null = false` ONLY for metric operations whose Kibana API schema accepts the property: `count`, `sum`, and `unique_count`. For all other operations — including `percentile`, `percentile_rank`, `average`, `min`, `max`, `median`, `standard_deviation`, `last_value`, and pipeline operations such as `formula`, `moving_average`, `cumulative_sum`, `differences`, and `counter_rate` — the resource SHALL NOT inject `empty_as_null`, because the corresponding Kibana API metric schema does not define that property and rejects the request with HTTP 400 (`Additional properties are not allowed ('empty_as_null' was unexpected)`). This rule SHALL apply uniformly to every Lens chart family whose metric normalization injects `empty_as_null` — XY (`y[].config_json`), datatable (`metrics[].config_json`), metric chart, pie, gauge, legacy metric, tagcloud, treemap, mosaic, and region map — because all of those families share the same Kibana metric schema in which only `count`, `sum`, and `unique_count` define `empty_as_null`. This gating applies to both the request payload sent to Kibana and the normalization used for semantic-equality comparison, so that operations without `empty_as_null` support neither fail on apply nor produce spurious drift.
+
 #### Scenario: Unset XY X-axis scale
 
 - GIVEN an XY chart panel whose configuration left `axis.x.scale` unset
@@ -671,6 +673,19 @@ For Lens partition charts (pie `group_by[].config_json`, treemap `group_by_json`
 - WHEN create runs and Kibana's read-back re-emits those keys with their documented defaults
 - THEN the provider SHALL preserve the practitioner's `metrics[].config_json` payload via semantic-equality comparison
 - AND a subsequent plan SHALL show no changes
+
+#### Scenario: XY percentile metric does not inject empty_as_null
+
+- GIVEN an XY `bar_horizontal` panel whose `y[].config_json` uses `operation = "percentile"` with a numeric `percentile` value and omits `empty_as_null`
+- WHEN create runs and the provider builds the Kibana API request
+- THEN the request payload SHALL NOT contain `empty_as_null` for that metric and Kibana SHALL accept the request (no HTTP 400)
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: XY count metric still injects empty_as_null
+
+- GIVEN an XY panel whose `y[].config_json` uses `operation = "count"` and omits `empty_as_null`
+- WHEN create runs and the provider builds the Kibana API request and reads the panel back
+- THEN the provider SHALL inject the `empty_as_null = false` default for that metric and the metric SHALL round-trip without drift
 
 ### Requirement: Markdown panel behavior (REQ-012)
 

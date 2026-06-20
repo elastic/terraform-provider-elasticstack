@@ -83,7 +83,7 @@ func regionMapConfigFromAPINoESQL(
 	m.MetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
 	regionBytes, err := api.Region.MarshalJSON()
-	rv, ok := lenscommon.MarshalToNormalized(regionBytes, err, "region", &diags)
+	rv, ok := lenscommon.WrapNormalizedJSON(regionBytes, err, "region", &diags)
 	if !ok {
 		return diags
 	}
@@ -124,7 +124,7 @@ func regionMapConfigFromAPIESQL(
 	m.MetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
 	regionBytes, err := json.Marshal(api.Region)
-	rv, ok := lenscommon.MarshalToNormalized(regionBytes, err, "region", &diags)
+	rv, ok := lenscommon.WrapNormalizedJSON(regionBytes, err, "region", &diags)
 	if !ok {
 		return diags
 	}

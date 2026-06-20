@@ -67,6 +67,15 @@ func OptionalInt(value types.Int64) *int {
 	return &v
 }
 
+// Int64Pointer returns a pointer to the int64 value when set, or nil when null or unknown.
+func Int64Pointer(v types.Int64) *int64 {
+	if !IsKnown(v) {
+		return nil
+	}
+	val := v.ValueInt64()
+	return &val
+}
+
 // BoolPointerValue converts a *bool to a types.Bool, returning types.BoolNull() when the pointer is nil.
 func BoolPointerValue(v *bool) types.Bool {
 	if v == nil {

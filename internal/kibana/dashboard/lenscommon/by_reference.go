@@ -200,7 +200,7 @@ func PopulateVisByReferenceTFModelFromAPIConfig1(
 			diags.AddError("Failed to marshal references_json", err.Error())
 			return models.VisByReferenceModel{}, diags
 		}
-		if norm, ok := MarshalToNormalized(b, err, "references_json", &diags); ok {
+		if norm, ok := WrapNormalizedJSON(b, err, "references_json", &diags); ok {
 			if prior != nil {
 				norm = panelkit.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior.ReferencesJSON, norm, defaultOpaqueRootJSON, &diags)
 			}

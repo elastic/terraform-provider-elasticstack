@@ -7,6 +7,7 @@
 ### Changes
 
 - Promote the Kibana Streams resource from experimental to tech preview, making it publicly available without requiring the `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL` environment variable. ([#3782](https://github.com/elastic/terraform-provider-elasticstack/pull/3782))
+- Fix `elasticstack_kibana_dashboard` injecting `empty_as_null` into Lens metric `config_json` for operations whose Kibana API schema rejects it (e.g. `percentile`, `percentile_rank`, the stats operations, and `last_value`), which caused an HTTP 400 on apply. The default is now only injected for `count`, `sum`, and `unique_count`. ([#3707](https://github.com/elastic/terraform-provider-elasticstack/issues/3707))
 - Add `elasticstack_elasticsearch_ccr_follower_index` and `elasticstack_elasticsearch_ccr_auto_follow_pattern` resources for managing Cross-Cluster Replication. ([#3615](https://github.com/elastic/terraform-provider-elasticstack/pull/3615))
 - Add uniform `timeouts` support to all entitycore-envelope-backed Elasticsearch and Kibana resources; `elasticsearch_ml_anomaly_detection_job` `timeouts` changes from block to attribute syntax. ([#3607](https://github.com/elastic/terraform-provider-elasticstack/pull/3607))
 - Adds Terraform resource and data source for managing the Kibana Security Entity Store resolution links and resolution groups. ([#3514](https://github.com/elastic/terraform-provider-elasticstack/pull/3514))
