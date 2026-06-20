@@ -21,11 +21,8 @@ import (
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -87,28 +84,6 @@ func AxisTitleAttribute(computedVisible bool) schema.Attribute {
 	}
 }
 
-// MutuallyExclusiveStringValidator returns a single-element validator slice declaring this
-// string attribute conflicts with the named sibling on the parent object.
-func MutuallyExclusiveStringValidator(siblingName string) []validator.String {
-	return []validator.String{
-		stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(siblingName)),
-	}
-}
-
-// MutuallyExclusiveListValidator is the list-attribute counterpart to MutuallyExclusiveStringValidator.
-func MutuallyExclusiveListValidator(siblingName string) []validator.List {
-	return []validator.List{
-		listvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(siblingName)),
-	}
-}
-
-// MutuallyExclusiveObjectValidator is the object-attribute counterpart to MutuallyExclusiveStringValidator.
-func MutuallyExclusiveObjectValidator(siblingName string) []validator.Object {
-	return []validator.Object{
-		objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(siblingName)),
-	}
-}
-
 // MetricJSONAttribute returns the canonical chart `metric_json` schema attribute: a string
 // holding JSON normalized through the supplied JSONWithDefaults populator. When esqlSiblingName
 // is non-empty, a ConflictsWith validator is attached so practitioners can't set both `metric_json`
@@ -124,7 +99,7 @@ func MetricJSONAttribute[T any](markdown string, defaults customtypes.PopulateDe
 		attr.Optional = true
 	}
 	if esqlSiblingName != "" {
-		attr.Validators = MutuallyExclusiveStringValidator(esqlSiblingName)
+		attr.Validators = validators.MutuallyExclusiveStringValidator(esqlSiblingName)
 	}
 	return attr
 }

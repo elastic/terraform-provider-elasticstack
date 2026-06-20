@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
@@ -53,7 +54,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 				"for ES|QL, each item is the column/operation/color configuration.",
 			CustomType: customtypes.NewJSONWithDefaultsType(lenscommon.PopulatePartitionGroupByDefaults),
 			Optional:   true,
-			Validators: lenscommon.MutuallyExclusiveStringValidator("esql_group_by"),
+			Validators: validators.MutuallyExclusiveStringValidator("esql_group_by"),
 		},
 		"metrics_json": schema.StringAttribute{
 			MarkdownDescription: "Array of metric configurations as JSON (minimum 1). " +
@@ -61,7 +62,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 				"for ES|QL, each item is the column/operation/color/format configuration.",
 			CustomType: customtypes.NewJSONWithDefaultsType(lenscommon.PopulatePartitionMetricsDefaults),
 			Optional:   true,
-			Validators: lenscommon.MutuallyExclusiveStringValidator("esql_metrics"),
+			Validators: validators.MutuallyExclusiveStringValidator("esql_metrics"),
 		},
 		"legend": schema.SingleNestedAttribute{
 			MarkdownDescription: "Legend configuration for the treemap chart.",
@@ -77,13 +78,13 @@ func (converter) SchemaAttribute() schema.Attribute {
 			MarkdownDescription: "Metric columns for ES|QL treemaps. Mutually exclusive with `metrics_json`.",
 			Optional:            true,
 			NestedObject:        lenscommon.PartitionESQLMetricNestedObject(),
-			Validators:          lenscommon.MutuallyExclusiveListValidator("metrics_json"),
+			Validators:          validators.MutuallyExclusiveListValidator("metrics_json"),
 		},
 		"esql_group_by": schema.ListNestedAttribute{
 			MarkdownDescription: "Breakdown columns for ES|QL treemaps. Mutually exclusive with `group_by_json`.",
 			Optional:            true,
 			NestedObject:        lenscommon.PartitionESQLGroupByNestedObject(),
-			Validators:          lenscommon.MutuallyExclusiveListValidator("group_by_json"),
+			Validators:          validators.MutuallyExclusiveListValidator("group_by_json"),
 		},
 	}
 	maps.Copy(attrs, treemapSpecific)

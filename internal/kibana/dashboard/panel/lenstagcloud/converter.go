@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -89,7 +90,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 			"This determines how tags are grouped and displayed. Required for non-ES|QL tagclouds; mutually exclusive with `esql_tag_by`.",
 		CustomType: customtypes.NewJSONWithDefaultsType(lenscommon.PopulateTagcloudTagByDefaults),
 		Optional:   true,
-		Validators: lenscommon.MutuallyExclusiveStringValidator("esql_tag_by"),
+		Validators: validators.MutuallyExclusiveStringValidator("esql_tag_by"),
 	}
 	attrs["esql_metric"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Typed metric column for ES|QL tagclouds. Mutually exclusive with `metric_json`.",

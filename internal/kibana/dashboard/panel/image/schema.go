@@ -21,6 +21,7 @@ import (
 	_ "embed"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -92,7 +93,7 @@ func nestedAttributes() map[string]schema.Attribute {
 			},
 		},
 		Validators: []validator.Object{
-			panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
+			validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
 				AttrNames:     []string{attrFile, attrURL},
 				Summary:       "Invalid image_config.src",
 				MissingDetail: "Exactly one of `file` or `url` must be set inside `src`.",

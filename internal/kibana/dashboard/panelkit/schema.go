@@ -23,6 +23,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 )
 
 // StructuredDrilldownURLTriggerEnum lists allowed values for url.trigger on structured
@@ -205,7 +206,7 @@ func ImageDrilldownSchema(opts ImageDrilldownOptions) schema.NestedAttributeObje
 			},
 		},
 		Validators: []validator.Object{
-			ExactlyOneOfNestedAttrsValidator(ExactlyOneOfNestedAttrsOpts{
+			validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
 				AttrNames:     []string{attrDashboardDrilldown, attrURLDrilldown},
 				Summary:       "Invalid drilldown entry",
 				MissingDetail: "Exactly one of `dashboard_drilldown` or `url_drilldown` must be set.",

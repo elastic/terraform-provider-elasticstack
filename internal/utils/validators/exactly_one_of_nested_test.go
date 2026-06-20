@@ -15,13 +15,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package panelkit_test
+package validators_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -30,7 +30,7 @@ import (
 )
 
 func TestExactlyOneOfNestedAttrsValidator(t *testing.T) {
-	v := panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
+	v := validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
 		AttrNames:     []string{"a", "b"},
 		Summary:       "Invalid block",
 		MissingDetail: "Exactly one of `a` or `b` must be set.",
@@ -83,11 +83,26 @@ func TestExactlyOneOfNestedAttrsValidator(t *testing.T) {
 	})
 
 	t.Run("null config defers", func(t *testing.T) {
-		resp := validator.ObjectResponse{}
+		var resp validator.ObjectResponse
 		v.ValidateObject(context.Background(), validator.ObjectRequest{
 			Path:        path.Root("block"),
 			ConfigValue: types.ObjectNull(objectType.AttrTypes),
 		}, &resp)
 		require.False(t, resp.Diagnostics.HasError())
+	})
+
+	t.Run("description defaults when empty", func(t *testing.T) {
+		v2 := validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
+			AttrNames: []string{"a", "b"},
+		})
+		require.Equal(t, "Ensures exactly one of the listed nested attributes is set.", v2.Description(context.Background()))
+	})
+
+	t.Run("custom description returned", func(t *testing.T) {
+		v3 := validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
+			AttrNames:   []string{"a", "b"},
+			Description: "custom desc",
+		})
+		require.Equal(t, "custom desc", v3.Description(context.Background()))
 	})
 }

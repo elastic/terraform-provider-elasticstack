@@ -19,6 +19,7 @@ package markdown
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -35,7 +36,7 @@ func SchemaAttribute() schema.Attribute {
 		PanelType:  panelType,
 		Attributes: nestedAttributes(),
 		ExtraValidators: []validator.Object{
-			panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
+			validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
 				AttrNames:     []string{attrByValue, attrByReference},
 				Summary:       "Invalid " + panelConfigBlock,
 				MissingDetail: "Exactly one of `by_value` or `by_reference` must be set inside `markdown_config`.",
