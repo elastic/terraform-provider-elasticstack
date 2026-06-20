@@ -84,25 +84,6 @@ func AxisTitleAttribute(computedVisible bool) schema.Attribute {
 	}
 }
 
-// MutuallyExclusiveStringValidator returns a single-element validator slice declaring this
-// string attribute conflicts with the named sibling on the parent object.
-// Re-exports validators.MutuallyExclusiveStringValidator for use within the lenscommon package.
-func MutuallyExclusiveStringValidator(siblingName string) []validator.String {
-	return validators.MutuallyExclusiveStringValidator(siblingName)
-}
-
-// MutuallyExclusiveListValidator is the list-attribute counterpart to MutuallyExclusiveStringValidator.
-// Re-exports validators.MutuallyExclusiveListValidator for use within the lenscommon package.
-func MutuallyExclusiveListValidator(siblingName string) []validator.List {
-	return validators.MutuallyExclusiveListValidator(siblingName)
-}
-
-// MutuallyExclusiveObjectValidator is the object-attribute counterpart to MutuallyExclusiveStringValidator.
-// Re-exports validators.MutuallyExclusiveObjectValidator for use within the lenscommon package.
-func MutuallyExclusiveObjectValidator(siblingName string) []validator.Object {
-	return validators.MutuallyExclusiveObjectValidator(siblingName)
-}
-
 // MetricJSONAttribute returns the canonical chart `metric_json` schema attribute: a string
 // holding JSON normalized through the supplied JSONWithDefaults populator. When esqlSiblingName
 // is non-empty, a ConflictsWith validator is attached so practitioners can't set both `metric_json`
@@ -118,7 +99,7 @@ func MetricJSONAttribute[T any](markdown string, defaults customtypes.PopulateDe
 		attr.Optional = true
 	}
 	if esqlSiblingName != "" {
-		attr.Validators = MutuallyExclusiveStringValidator(esqlSiblingName)
+		attr.Validators = validators.MutuallyExclusiveStringValidator(esqlSiblingName)
 	}
 	return attr
 }

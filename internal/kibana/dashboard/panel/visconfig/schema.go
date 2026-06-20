@@ -20,6 +20,7 @@ package visconfig
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -57,7 +58,7 @@ func innerSchemaAttributes() map[string]schema.Attribute {
 			Optional:   true,
 			Attributes: byValueAttributes(),
 			Validators: []validator.Object{
-				panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
+				validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
 					AttrNames:     visByValueChartAttrNames(),
 					Summary:       "Invalid vis_config.by_value",
 					MissingDetail: "Set exactly one supported typed Lens chart block inside `vis_config.by_value`.",
@@ -85,7 +86,7 @@ func SchemaAttribute() schema.Attribute {
 		Required:   false,
 		Attributes: innerSchemaAttributes(),
 		ExtraValidators: []validator.Object{
-			panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
+			validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
 				AttrNames:     []string{"by_value", "by_reference"},
 				Summary:       "Invalid vis_config",
 				MissingDetail: "Exactly one of `by_value` or `by_reference` must be set inside `vis_config`.",

@@ -21,6 +21,7 @@ import (
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -35,13 +36,13 @@ func getDatatableSchema(includePresentation bool) map[string]schema.Attribute {
 			MarkdownDescription: "Datatable configuration for standard (non-ES|QL) queries.",
 			Optional:            true,
 			Attributes:          getDatatableNoESQLSchema(includePresentation),
-			Validators:          lenscommon.MutuallyExclusiveObjectValidator("esql"),
+			Validators:          validators.MutuallyExclusiveObjectValidator("esql"),
 		},
 		"esql": schema.SingleNestedAttribute{
 			MarkdownDescription: "Datatable configuration for ES|QL queries.",
 			Optional:            true,
 			Attributes:          getDatatableESQLSchema(includePresentation),
-			Validators:          lenscommon.MutuallyExclusiveObjectValidator("no_esql"),
+			Validators:          validators.MutuallyExclusiveObjectValidator("no_esql"),
 		},
 	}
 }

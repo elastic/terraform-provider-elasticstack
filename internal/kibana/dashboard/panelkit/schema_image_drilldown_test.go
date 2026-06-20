@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -30,7 +31,7 @@ import (
 
 func Test_imageDrilldownEntryValidator(t *testing.T) {
 	ctx := context.Background()
-	v := ExactlyOneOfNestedAttrsValidator(ExactlyOneOfNestedAttrsOpts{
+	v := validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
 		AttrNames:     []string{"dashboard_drilldown", "url_drilldown"},
 		Summary:       "Invalid drilldown entry",
 		MissingDetail: "Exactly one of `dashboard_drilldown` or `url_drilldown` must be set.",
