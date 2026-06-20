@@ -388,11 +388,3 @@ func compareStreams(ctx context.Context, oldInput, newInput integrationPolicyInp
 
 	return true, diags
 }
-
-// NewInputValueFrom creates an InputValue from a Go value.
-func NewInputValueFrom(ctx context.Context, attrTypes map[string]attr.Type, val any) (InputValue, diag.Diagnostics) {
-	objectValue, diags := basetypes.NewObjectValueFrom(ctx, attrTypes, val)
-	return InputValue{
-		ObjectValue: objectValue,
-	}, diags
-}
