@@ -44,11 +44,12 @@ func legacyMetricConfigPopulateCommonFields(
 	filters *kbapi.KibanaHTTPAPIsLensPanelFilters,
 	diags *diag.Diagnostics,
 ) bool {
-	return lenscommon.PopulateLensChartBaseFromAPI(
-		&m.LensChartBaseTFModel,
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
 		title, description, ignoreGlobalFilters, sampling,
 		datasetBytes, datasetErr, "data_source_json", filters, diags,
 	)
+	m.LensChartBaseTFModel = base
+	return ok
 }
 
 func legacyMetricConfigFromAPINoESQL(

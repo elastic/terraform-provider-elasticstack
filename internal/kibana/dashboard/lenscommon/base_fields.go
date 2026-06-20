@@ -24,10 +24,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// PopulateLensChartBaseFromAPI writes the common Lens chart base fields from API parameters into base.
+// PopulateLensChartBaseFromAPI returns a LensChartBaseTFModel populated from the common API parameters.
 // Returns false (and appends to diags) when any field fails to populate.
 func PopulateLensChartBaseFromAPI(
-	base *models.LensChartBaseTFModel,
 	title, description *string,
 	ignoreGlobalFilters *bool,
 	sampling *float32,
@@ -36,10 +35,12 @@ func PopulateLensChartBaseFromAPI(
 	dataSourceJSONFieldName string,
 	filters *kbapi.KibanaHTTPAPIsLensPanelFilters,
 	diags *diag.Diagnostics,
-) bool {
-	base.Title = types.StringPointerValue(title)
-	base.Description = types.StringPointerValue(description)
-	base.IgnoreGlobalFilters = types.BoolPointerValue(ignoreGlobalFilters)
+) (models.LensChartBaseTFModel, bool) {
+	base := models.LensChartBaseTFModel{
+		Title:               types.StringPointerValue(title),
+		Description:         types.StringPointerValue(description),
+		IgnoreGlobalFilters: types.BoolPointerValue(ignoreGlobalFilters),
+	}
 	if sampling != nil {
 		base.Sampling = types.Float64Value(float64(*sampling))
 	} else {
@@ -47,9 +48,9 @@ func PopulateLensChartBaseFromAPI(
 	}
 	dv, ok := WrapNormalizedJSON(datasetBytes, datasetErr, dataSourceJSONFieldName, diags)
 	if !ok {
-		return false
+		return base, false
 	}
 	base.DataSourceJSON = dv
 	base.Filters = PopulateFiltersFromAPI(filters, diags)
-	return !diags.HasError()
+	return base, !diags.HasError()
 }

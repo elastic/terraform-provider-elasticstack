@@ -103,11 +103,12 @@ func metricChartConfigPopulateCommonFields(m *models.MetricChartConfigModel,
 	filters *kbapi.KibanaHTTPAPIsLensPanelFilters,
 	diags *diag.Diagnostics,
 ) bool {
-	return lenscommon.PopulateLensChartBaseFromAPI(
-		&m.LensChartBaseTFModel,
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
 		title, description, ignoreGlobalFilters, sampling,
 		datasetBytes, datasetErr, "dataset", filters, diags,
 	)
+	m.LensChartBaseTFModel = base
+	return ok
 }
 
 func metricChartConfigFromAPIVariant0(
