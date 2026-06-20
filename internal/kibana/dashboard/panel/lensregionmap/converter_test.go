@@ -48,11 +48,13 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	ctx := t.Context()
 	var c converter
 	cfg := &models.RegionMapConfigModel{
-		Title:               types.StringValue("RM"),
-		Description:         types.StringValue("d"),
-		IgnoreGlobalFilters: types.BoolValue(true),
-		Sampling:            types.Float64Value(0.5),
-		DataSourceJSON:      jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*"}`),
+		LensChartBaseTFModel: models.LensChartBaseTFModel{
+			Title:               types.StringValue("RM"),
+			Description:         types.StringValue("d"),
+			IgnoreGlobalFilters: types.BoolValue(true),
+			Sampling:            types.Float64Value(0.5),
+			DataSourceJSON:      jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*"}`),
+		},
 		Query: &models.FilterSimpleModel{
 			Language:   types.StringValue("kql"),
 			Expression: types.StringValue("*"),

@@ -20,18 +20,12 @@ package models
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type RegionMapConfigModel struct {
 	LensChartPresentationTFModel
-	Title               types.String                                      `tfsdk:"title"`
-	Description         types.String                                      `tfsdk:"description"`
-	DataSourceJSON      jsontypes.Normalized                              `tfsdk:"data_source_json"`
-	IgnoreGlobalFilters types.Bool                                        `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64                                     `tfsdk:"sampling"`
-	Query               *FilterSimpleModel                                `tfsdk:"query"`
-	Filters             []ChartFilterJSONModel                            `tfsdk:"filters"`
-	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
-	RegionJSON          jsontypes.Normalized                              `tfsdk:"region_json"`
+	LensChartBaseTFModel
+	Query      *FilterSimpleModel                                `tfsdk:"query"`
+	MetricJSON customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
+	RegionJSON jsontypes.Normalized                              `tfsdk:"region_json"`
 }

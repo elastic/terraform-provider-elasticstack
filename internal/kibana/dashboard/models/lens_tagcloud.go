@@ -25,19 +25,14 @@ import (
 
 type TagcloudConfigModel struct {
 	LensChartPresentationTFModel
-	Title               types.String                                      `tfsdk:"title"`
-	Description         types.String                                      `tfsdk:"description"`
-	DataSourceJSON      jsontypes.Normalized                              `tfsdk:"data_source_json"`
-	IgnoreGlobalFilters types.Bool                                        `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64                                     `tfsdk:"sampling"`
-	Query               *FilterSimpleModel                                `tfsdk:"query"`
-	Filters             []ChartFilterJSONModel                            `tfsdk:"filters"`
-	Orientation         types.String                                      `tfsdk:"orientation"`
-	FontSize            *FontSizeModel                                    `tfsdk:"font_size"`
-	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
-	TagByJSON           customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"tag_by_json"`
-	EsqlMetric          *TagcloudEsqlMetric                               `tfsdk:"esql_metric"`
-	EsqlTagBy           *TagcloudEsqlTagBy                                `tfsdk:"esql_tag_by"`
+	LensChartBaseTFModel
+	Query       *FilterSimpleModel                                `tfsdk:"query"`
+	Orientation types.String                                      `tfsdk:"orientation"`
+	FontSize    *FontSizeModel                                    `tfsdk:"font_size"`
+	MetricJSON  customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
+	TagByJSON   customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"tag_by_json"`
+	EsqlMetric  *TagcloudEsqlMetric                               `tfsdk:"esql_metric"`
+	EsqlTagBy   *TagcloudEsqlTagBy                                `tfsdk:"esql_tag_by"`
 }
 
 type TagcloudEsqlMetric struct {

@@ -19,7 +19,6 @@ package models
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -37,18 +36,13 @@ type PartitionValueDisplay struct {
 
 type PieChartConfigModel struct {
 	LensChartPresentationTFModel
-	Title               types.String           `tfsdk:"title"`
-	Description         types.String           `tfsdk:"description"`
-	DataSourceJSON      jsontypes.Normalized   `tfsdk:"data_source_json"`
-	IgnoreGlobalFilters types.Bool             `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64          `tfsdk:"sampling"`
-	DonutHole           types.String           `tfsdk:"donut_hole"`
-	LabelPosition       types.String           `tfsdk:"label_position"`
-	Legend              *PartitionLegendModel  `tfsdk:"legend"`
-	Query               *FilterSimpleModel     `tfsdk:"query"`
-	Filters             []ChartFilterJSONModel `tfsdk:"filters"`
-	Metrics             []PieMetricModel       `tfsdk:"metrics"`
-	GroupBy             []PieGroupByModel      `tfsdk:"group_by"`
+	LensChartBaseTFModel
+	DonutHole     types.String          `tfsdk:"donut_hole"`
+	LabelPosition types.String          `tfsdk:"label_position"`
+	Legend        *PartitionLegendModel `tfsdk:"legend"`
+	Query         *FilterSimpleModel    `tfsdk:"query"`
+	Metrics       []PieMetricModel      `tfsdk:"metrics"`
+	GroupBy       []PieGroupByModel     `tfsdk:"group_by"`
 }
 
 type PieMetricModel struct {

@@ -25,19 +25,14 @@ import (
 
 type WaffleConfigModel struct {
 	LensChartPresentationTFModel
-	Title               types.String           `tfsdk:"title"`
-	Description         types.String           `tfsdk:"description"`
-	DataSourceJSON      jsontypes.Normalized   `tfsdk:"data_source_json"`
-	IgnoreGlobalFilters types.Bool             `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64          `tfsdk:"sampling"`
-	Query               *FilterSimpleModel     `tfsdk:"query"`
-	Filters             []ChartFilterJSONModel `tfsdk:"filters"`
-	Legend              *WaffleLegendModel     `tfsdk:"legend"`
-	ValueDisplay        *WaffleValueDisplay    `tfsdk:"value_display"`
-	Metrics             []WaffleDSLMetric      `tfsdk:"metrics"`
-	GroupBy             []WaffleDSLGroupBy     `tfsdk:"group_by"`
-	EsqlMetrics         []WaffleEsqlMetric     `tfsdk:"esql_metrics"`
-	EsqlGroupBy         []WaffleEsqlGroupBy    `tfsdk:"esql_group_by"`
+	LensChartBaseTFModel
+	Query        *FilterSimpleModel  `tfsdk:"query"`
+	Legend       *WaffleLegendModel  `tfsdk:"legend"`
+	ValueDisplay *WaffleValueDisplay `tfsdk:"value_display"`
+	Metrics      []WaffleDSLMetric   `tfsdk:"metrics"`
+	GroupBy      []WaffleDSLGroupBy  `tfsdk:"group_by"`
+	EsqlMetrics  []WaffleEsqlMetric  `tfsdk:"esql_metrics"`
+	EsqlGroupBy  []WaffleEsqlGroupBy `tfsdk:"esql_group_by"`
 }
 
 type WaffleDSLMetric struct {

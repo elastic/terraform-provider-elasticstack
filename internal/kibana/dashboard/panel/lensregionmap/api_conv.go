@@ -27,7 +27,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func isRegionMapNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsRegionMapNoESQL) bool {
@@ -44,32 +43,6 @@ func isRegionMapNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsRegionMapNoE
 	return ds.Type == lenscommon.LensDatasetTypeESQL || ds.Type == lenscommon.LensDatasetTypeTable
 }
 
-func regionMapConfigPopulateCommonFields(m *models.RegionMapConfigModel,
-	title, description *string,
-	ignoreGlobalFilters *bool,
-	sampling *float32,
-	datasetBytes []byte,
-	datasetErr error,
-	filters *kbapi.KibanaHTTPAPIsLensPanelFilters,
-	diags *diag.Diagnostics,
-) bool {
-	m.Title = types.StringPointerValue(title)
-	m.Description = types.StringPointerValue(description)
-	m.IgnoreGlobalFilters = types.BoolPointerValue(ignoreGlobalFilters)
-	if sampling != nil {
-		m.Sampling = types.Float64Value(float64(*sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
-	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, datasetErr, "data_source_json", diags)
-	if !ok {
-		return false
-	}
-	m.DataSourceJSON = dv
-	m.Filters = lenscommon.PopulateFiltersFromAPI(filters, diags)
-	return !diags.HasError()
-}
-
 func regionMapConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.RegionMapConfigModel,
@@ -79,9 +52,14 @@ func regionMapConfigFromAPINoESQL(
 	var diags diag.Diagnostics
 
 	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
-	if !regionMapConfigPopulateCommonFields(m, api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, &diags) {
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
+		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+	)
+	if !ok {
 		return diags
 	}
+	m.LensChartBaseTFModel = base
 
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
@@ -121,9 +99,14 @@ func regionMapConfigFromAPIESQL(
 	var diags diag.Diagnostics
 
 	datasetBytes, datasetErr := json.Marshal(api.DataSource)
-	if !regionMapConfigPopulateCommonFields(m, api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, &diags) {
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
+		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+	)
+	if !ok {
 		return diags
 	}
+	m.LensChartBaseTFModel = base
 
 	m.Query = nil
 

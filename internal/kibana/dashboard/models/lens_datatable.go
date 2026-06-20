@@ -29,31 +29,21 @@ type DatatableConfigModel struct {
 
 type DatatableNoESQLConfigModel struct {
 	LensChartPresentationTFModel
-	Title               types.String            `tfsdk:"title"`
-	Description         types.String            `tfsdk:"description"`
-	DataSourceJSON      jsontypes.Normalized    `tfsdk:"data_source_json"`
-	Styling             *DatatableStylingModel  `tfsdk:"styling"`
-	IgnoreGlobalFilters types.Bool              `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64           `tfsdk:"sampling"`
-	Query               *FilterSimpleModel      `tfsdk:"query"`
-	Filters             []ChartFilterJSONModel  `tfsdk:"filters"`
-	Metrics             []DatatableMetricModel  `tfsdk:"metrics"`
-	Rows                []DatatableRowModel     `tfsdk:"rows"`
-	SplitMetricsBy      []DatatableSplitByModel `tfsdk:"split_metrics_by"`
+	LensChartBaseTFModel
+	Styling        *DatatableStylingModel  `tfsdk:"styling"`
+	Query          *FilterSimpleModel      `tfsdk:"query"`
+	Metrics        []DatatableMetricModel  `tfsdk:"metrics"`
+	Rows           []DatatableRowModel     `tfsdk:"rows"`
+	SplitMetricsBy []DatatableSplitByModel `tfsdk:"split_metrics_by"`
 }
 
 type DatatableESQLConfigModel struct {
 	LensChartPresentationTFModel
-	Title               types.String            `tfsdk:"title"`
-	Description         types.String            `tfsdk:"description"`
-	DataSourceJSON      jsontypes.Normalized    `tfsdk:"data_source_json"`
-	Styling             *DatatableStylingModel  `tfsdk:"styling"`
-	IgnoreGlobalFilters types.Bool              `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64           `tfsdk:"sampling"`
-	Filters             []ChartFilterJSONModel  `tfsdk:"filters"`
-	Metrics             []DatatableMetricModel  `tfsdk:"metrics"`
-	Rows                []DatatableRowModel     `tfsdk:"rows"`
-	SplitMetricsBy      []DatatableSplitByModel `tfsdk:"split_metrics_by"`
+	LensChartBaseTFModel
+	Styling        *DatatableStylingModel  `tfsdk:"styling"`
+	Metrics        []DatatableMetricModel  `tfsdk:"metrics"`
+	Rows           []DatatableRowModel     `tfsdk:"rows"`
+	SplitMetricsBy []DatatableSplitByModel `tfsdk:"split_metrics_by"`
 }
 
 type DatatableStylingModel struct {

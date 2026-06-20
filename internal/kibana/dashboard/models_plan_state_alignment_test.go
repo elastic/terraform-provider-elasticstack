@@ -36,8 +36,10 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 				ByValue: &models.VisByValueModel{
 					LensByValueChartBlocks: models.LensByValueChartBlocks{
 						MosaicConfig: &models.MosaicConfigModel{
-							Title:       types.StringValue("Sample Mosaic"),
-							Description: types.StringValue("Test mosaic visualization"),
+							LensChartBaseTFModel: models.LensChartBaseTFModel{
+								Title:       types.StringValue("Sample Mosaic"),
+								Description: types.StringValue("Test mosaic visualization"),
+							},
 						},
 					},
 				},
@@ -56,9 +58,11 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 				ByValue: &models.VisByValueModel{
 					LensByValueChartBlocks: models.LensByValueChartBlocks{
 						TagcloudConfig: &models.TagcloudConfigModel{
-							Title:       types.StringValue("Sample Tagcloud"),
-							Description: types.StringValue("Test tagcloud visualization"),
-							TagByJSON:   mustTagcloudJSON(`{"operation":"terms","fields":["host.name"],"limit":10}`),
+							LensChartBaseTFModel: models.LensChartBaseTFModel{
+								Title:       types.StringValue("Sample Tagcloud"),
+								Description: types.StringValue("Test tagcloud visualization"),
+							},
+							TagByJSON: mustTagcloudJSON(`{"operation":"terms","fields":["host.name"],"limit":10}`),
 						},
 					},
 				},
@@ -72,8 +76,10 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 				ByValue: &models.VisByValueModel{
 					LensByValueChartBlocks: models.LensByValueChartBlocks{
 						MosaicConfig: &models.MosaicConfigModel{
-							Title:       types.StringValue(""),
-							Description: types.StringValue(""),
+							LensChartBaseTFModel: models.LensChartBaseTFModel{
+								Title:       types.StringValue(""),
+								Description: types.StringValue(""),
+							},
 						},
 					},
 				},
@@ -92,8 +98,10 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 				ByValue: &models.VisByValueModel{
 					LensByValueChartBlocks: models.LensByValueChartBlocks{
 						TagcloudConfig: &models.TagcloudConfigModel{
-							Title:       types.StringValue(""),
-							Description: types.StringValue(""),
+							LensChartBaseTFModel: models.LensChartBaseTFModel{
+								Title:       types.StringValue(""),
+								Description: types.StringValue(""),
+							},
 							TagByJSON: mustTagcloudJSON(
 								`{"operation":"terms","fields":["host.name"],"limit":10,"rank_by":{"type":"metric","metric_index":0,"direction":"desc"}}`,
 							),
@@ -196,16 +204,20 @@ func Test_alignPanelStateFromPlan_preservesMosaicTreemapPartitionSnapshots(t *te
 			ByValue: &models.VisByValueModel{
 				LensByValueChartBlocks: models.LensByValueChartBlocks{
 					MosaicConfig: &models.MosaicConfigModel{
-						Title:               types.StringValue("M"),
-						Description:         types.StringValue("d"),
-						IgnoreGlobalFilters: types.BoolValue(true),
-						Sampling:            types.Float64Value(0.5),
+						LensChartBaseTFModel: models.LensChartBaseTFModel{
+							Title:               types.StringValue("M"),
+							Description:         types.StringValue("d"),
+							IgnoreGlobalFilters: types.BoolValue(true),
+							Sampling:            types.Float64Value(0.5),
+						},
 					},
 					TreemapConfig: &models.TreemapConfigModel{
-						Title:               types.StringValue("T"),
-						Description:         types.StringValue("d"),
-						IgnoreGlobalFilters: types.BoolValue(true),
-						Sampling:            types.Float64Value(0.5),
+						LensChartBaseTFModel: models.LensChartBaseTFModel{
+							Title:               types.StringValue("T"),
+							Description:         types.StringValue("d"),
+							IgnoreGlobalFilters: types.BoolValue(true),
+							Sampling:            types.Float64Value(0.5),
+						},
 					},
 				},
 			},
@@ -216,16 +228,20 @@ func Test_alignPanelStateFromPlan_preservesMosaicTreemapPartitionSnapshots(t *te
 			ByValue: &models.VisByValueModel{
 				LensByValueChartBlocks: models.LensByValueChartBlocks{
 					MosaicConfig: &models.MosaicConfigModel{
-						Title:               types.StringValue("M"),
-						Description:         types.StringValue("d"),
-						IgnoreGlobalFilters: types.BoolNull(),
-						Sampling:            types.Float64Null(),
+						LensChartBaseTFModel: models.LensChartBaseTFModel{
+							Title:               types.StringValue("M"),
+							Description:         types.StringValue("d"),
+							IgnoreGlobalFilters: types.BoolNull(),
+							Sampling:            types.Float64Null(),
+						},
 					},
 					TreemapConfig: &models.TreemapConfigModel{
-						Title:               types.StringValue("T"),
-						Description:         types.StringValue("d"),
-						IgnoreGlobalFilters: types.BoolNull(),
-						Sampling:            types.Float64Null(),
+						LensChartBaseTFModel: models.LensChartBaseTFModel{
+							Title:               types.StringValue("T"),
+							Description:         types.StringValue("d"),
+							IgnoreGlobalFilters: types.BoolNull(),
+							Sampling:            types.Float64Null(),
+						},
 					},
 				},
 			},

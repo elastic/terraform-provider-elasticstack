@@ -66,20 +66,14 @@ func heatmapConfigPopulateCommonFields(m *models.HeatmapConfigModel,
 	prior *models.HeatmapConfigModel,
 	diags *diag.Diagnostics,
 ) bool {
-	m.Title = types.StringPointerValue(title)
-	m.Description = types.StringPointerValue(description)
-	m.IgnoreGlobalFilters = types.BoolPointerValue(ignoreGlobalFilters)
-	if sampling != nil {
-		m.Sampling = types.Float64Value(float64(*sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
-	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, datasetErr, "data_source_json", diags)
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		title, description, ignoreGlobalFilters, sampling,
+		datasetBytes, datasetErr, "data_source_json", filters, diags,
+	)
 	if !ok {
 		return false
 	}
-	m.DataSourceJSON = dv
-	m.Filters = lenscommon.PopulateFiltersFromAPI(filters, diags)
+	m.LensChartBaseTFModel = base
 	m.Axis = &models.HeatmapAxesModel{}
 	var priorAxis *models.HeatmapAxesModel
 	if prior != nil {
