@@ -118,3 +118,18 @@ func DecodeTemplateObject(ctx context.Context, obj types.Object, model any) diag
 	diags.Append(obj.As(ctx, model, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 	return diags
 }
+
+// ExpandTemplateBlock extracts the shared template block fields (alias,
+// mappings, settings, data_stream_options) from obj and delegates to
+// ExpandTemplateCore. Extra attributes such as lifecycle are silently ignored,
+// so callers may pass template block objects from packages that include
+// additional fields. The caller is responsible for applying any
+// package-specific fields to the returned *models.Template.
+func ExpandTemplateBlock(ctx context.Context, obj types.Object) (*models.Template, diag.Diagnostics) {
+	attrs := obj.Attributes()
+	alias, _ := attrs["alias"].(types.Set)
+	mappings, _ := attrs["mappings"].(index.MappingsValue)
+	settings, _ := attrs["settings"].(customtypes.IndexSettingsValue)
+	dataStreamOptions, _ := attrs["data_stream_options"].(types.Object)
+	return ExpandTemplateCore(ctx, alias, mappings, settings, dataStreamOptions)
+}
