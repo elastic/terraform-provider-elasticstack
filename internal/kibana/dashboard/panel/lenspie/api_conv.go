@@ -33,19 +33,7 @@ import (
 const jsonNullString = "null"
 
 func isPieNoESQLCandidateActuallyESQL(apiChart kbapi.KibanaHTTPAPIsPieNoESQL) bool {
-	body, err := json.Marshal(apiChart.DataSource)
-	if err != nil {
-		return false
-	}
-
-	var dataset struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(body, &dataset); err != nil {
-		return false
-	}
-
-	return dataset.Type == lenscommon.LensDatasetTypeESQL || dataset.Type == lenscommon.LensDatasetTypeTable
+	return lenscommon.LensDataSourceIsESQLOrTable(apiChart.DataSource.MarshalJSON())
 }
 
 func pieChartConfigPopulateCommonFields(

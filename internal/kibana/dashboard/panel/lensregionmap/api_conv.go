@@ -30,17 +30,7 @@ import (
 )
 
 func isRegionMapNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsRegionMapNoESQL) bool {
-	body, err := api.DataSource.MarshalJSON()
-	if err != nil {
-		return false
-	}
-	var ds struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(body, &ds); err != nil {
-		return false
-	}
-	return ds.Type == lenscommon.LensDatasetTypeESQL || ds.Type == lenscommon.LensDatasetTypeTable
+	return lenscommon.LensDataSourceIsESQLOrTable(api.DataSource.MarshalJSON())
 }
 
 func regionMapConfigFromAPINoESQL(
