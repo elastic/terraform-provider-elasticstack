@@ -140,15 +140,13 @@ func (converter) SchemaAttribute() schema.Attribute {
 }
 
 func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+	if diags := lenscommon.ValidateLensBlocks(blocks, "tagcloud_config"); diags.HasError() {
+		return diags
+	}
 	var prior *models.TagcloudConfigModel
-	if blocks != nil && blocks.TagcloudConfig != nil {
+	if blocks.TagcloudConfig != nil {
 		cpy := *blocks.TagcloudConfig
 		prior = &cpy
-	}
-	if blocks == nil {
-		var d diag.Diagnostics
-		d.AddError("Lens chart blocks missing", "cannot populate tagcloud_config without chart blocks")
-		return d
 	}
 	blocks.TagcloudConfig = &models.TagcloudConfigModel{}
 

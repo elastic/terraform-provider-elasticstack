@@ -48,15 +48,13 @@ func (converter) SchemaAttribute() schema.Attribute {
 }
 
 func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+	if diags := lenscommon.ValidateLensBlocks(blocks, "xy_chart_config"); diags.HasError() {
+		return diags
+	}
 	var prior *models.XYChartConfigModel
-	if blocks != nil && blocks.XYChartConfig != nil {
+	if blocks.XYChartConfig != nil {
 		cpy := *blocks.XYChartConfig
 		prior = &cpy
-	}
-	if blocks == nil {
-		var d diag.Diagnostics
-		d.AddError("Lens chart blocks missing", "cannot populate xy_chart_config without chart blocks")
-		return d
 	}
 	blocks.XYChartConfig = &models.XYChartConfigModel{}
 

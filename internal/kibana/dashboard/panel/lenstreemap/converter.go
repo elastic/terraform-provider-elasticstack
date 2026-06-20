@@ -92,15 +92,13 @@ func (converter) SchemaAttribute() schema.Attribute {
 }
 
 func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+	if diags := lenscommon.ValidateLensBlocks(blocks, "treemap_config"); diags.HasError() {
+		return diags
+	}
 	var prior *models.TreemapConfigModel
-	if blocks != nil && blocks.TreemapConfig != nil {
+	if blocks.TreemapConfig != nil {
 		cpy := *blocks.TreemapConfig
 		prior = &cpy
-	}
-	if blocks == nil {
-		var d diag.Diagnostics
-		d.AddError("Lens chart blocks missing", "cannot populate treemap_config without chart blocks")
-		return d
 	}
 	blocks.TreemapConfig = &models.TreemapConfigModel{}
 
