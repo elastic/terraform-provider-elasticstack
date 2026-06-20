@@ -67,16 +67,6 @@ func tagcloudConfigApplyStylingFromAPI(m *models.TagcloudConfigModel, s *kbapi.K
 	}
 }
 
-func tagcloudConfigUsesESQL(m *models.TagcloudConfigModel) bool {
-	if m == nil {
-		return false
-	}
-	if m.Query == nil {
-		return true
-	}
-	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
-}
-
 func tagcloudConfigFromAPI(
 	ctx context.Context,
 	m *models.TagcloudConfigModel,
@@ -217,7 +207,7 @@ func tagcloudConfigToAPI(m *models.TagcloudConfigModel) (lenscommon.VisByValueCo
 		return attrs, diags
 	}
 
-	if tagcloudConfigUsesESQL(m) {
+	if lenscommon.ConfigUsesESQL(m.Query) {
 		esql, d := tagcloudConfigToAPIESQL(m)
 		diags.Append(d...)
 		if diags.HasError() {

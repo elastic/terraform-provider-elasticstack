@@ -39,6 +39,16 @@ func FilterSimpleFromAPI(m *models.FilterSimpleModel, apiQuery *kbapi.KibanaHTTP
 	m.Language = typeutils.StringishPointerValue(apiQuery.Language)
 }
 
+// ConfigUsesESQL reports whether a config's query field indicates an ES|QL data source.
+// A nil query means no filter is set, which is the ES|QL default state.
+// A query with null expression and language is the explicit ES|QL sentinel.
+func ConfigUsesESQL(query *models.FilterSimpleModel) bool {
+	if query == nil {
+		return true
+	}
+	return query.Expression.IsNull() && query.Language.IsNull()
+}
+
 // FilterSimpleToAPI maps FilterSimpleModel into kbapi.KibanaHTTPAPIsFilterSimple.
 func FilterSimpleToAPI(m *models.FilterSimpleModel) *kbapi.KibanaHTTPAPIsFilterSimple {
 	if m == nil {

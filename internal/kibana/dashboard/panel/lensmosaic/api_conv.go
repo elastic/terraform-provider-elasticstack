@@ -221,7 +221,7 @@ func mosaicConfigToAPI(m *models.MosaicConfigModel) (lenscommon.VisByValueConfig
 		return attrs, diags
 	}
 
-	if mosaicConfigUsesESQL(m) {
+	if lenscommon.ConfigUsesESQL(m.Query) {
 		esql, esqlDiags := mosaicConfigToAPIMosaicESQL(m)
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
@@ -243,16 +243,6 @@ func mosaicConfigToAPI(m *models.MosaicConfigModel) (lenscommon.VisByValueConfig
 	}
 
 	return attrs, diags
-}
-
-func mosaicConfigUsesESQL(m *models.MosaicConfigModel) bool {
-	if m == nil {
-		return false
-	}
-	if m.Query == nil {
-		return true
-	}
-	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
 func mosaicConfigToAPIMosaicESQL(m *models.MosaicConfigModel) (kbapi.KibanaHTTPAPIsMosaicESQL, diag.Diagnostics) {

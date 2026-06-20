@@ -38,16 +38,6 @@ func isGaugeNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsGaugeNoESQL) boo
 	return lenscommon.LensDataSourceIsESQLOrTable(api.DataSource.MarshalJSON())
 }
 
-func gaugeConfigUsesESQL(m *models.GaugeConfigModel) bool {
-	if m == nil {
-		return false
-	}
-	if m.Query == nil {
-		return true
-	}
-	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
-}
-
 func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, prior *models.GaugeConfigModel, api kbapi.KibanaHTTPAPIsGaugeNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
@@ -217,7 +207,7 @@ func gaugeConfigToAPI(m *models.GaugeConfigModel) (lenscommon.VisByValueConfig0,
 		return attrs, diags
 	}
 
-	if gaugeConfigUsesESQL(m) {
+	if lenscommon.ConfigUsesESQL(m.Query) {
 		esql, d := gaugeConfigToAPIESQL(m)
 		diags.Append(d...)
 		if diags.HasError() {
