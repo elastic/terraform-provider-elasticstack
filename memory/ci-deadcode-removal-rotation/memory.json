@@ -432,6 +432,16 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy",
       "attemptedAt": "2026-06-19T04:46:53.271126265Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy.NewInputValueFrom",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy",
+      "attemptedAt": "2026-06-20T04:39:43.833137369Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
