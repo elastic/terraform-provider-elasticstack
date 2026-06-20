@@ -200,7 +200,7 @@ func heatmapConfigToAPI(m *models.HeatmapConfigModel) (lenscommon.VisByValueConf
 		return attrs, diags
 	}
 
-	if heatmapConfigUsesESQL(m) {
+	if lenscommon.ConfigUsesESQL(m.Query) {
 		esql, esqlDiags := heatmapConfigToAPIESQL(m)
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
@@ -222,16 +222,6 @@ func heatmapConfigToAPI(m *models.HeatmapConfigModel) (lenscommon.VisByValueConf
 	}
 
 	return attrs, diags
-}
-
-func heatmapConfigUsesESQL(m *models.HeatmapConfigModel) bool {
-	if m == nil {
-		return false
-	}
-	if m.Query == nil {
-		return true
-	}
-	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
 func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPIsHeatmapNoESQL, diag.Diagnostics) {

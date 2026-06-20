@@ -85,16 +85,6 @@ func mergeWaffleConfigFromPlanSeed(cur, seed *models.WaffleConfigModel) {
 	}
 }
 
-func waffleConfigUsesESQL(m *models.WaffleConfigModel) bool {
-	if m == nil {
-		return false
-	}
-	if m.Query == nil {
-		return true
-	}
-	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
-}
-
 func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel, prior *models.WaffleConfigModel, api kbapi.KibanaHTTPAPIsWaffleNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
@@ -408,7 +398,7 @@ func waffleConfigToAPI(m *models.WaffleConfigModel) (lenscommon.VisByValueConfig
 		return attrs, diags
 	}
 
-	diags.Append(WaffleConfigModeValidateDiags(waffleConfigUsesESQL(m), WaffleModeListStateFromSlice(len(m.Metrics)),
+	diags.Append(WaffleConfigModeValidateDiags(lenscommon.ConfigUsesESQL(m.Query), WaffleModeListStateFromSlice(len(m.Metrics)),
 		WaffleModeListStateFromSlice(len(m.GroupBy)),
 		WaffleModeListStateFromSlice(len(m.EsqlMetrics)),
 		WaffleModeListStateFromSlice(len(m.EsqlGroupBy)),
@@ -417,7 +407,7 @@ func waffleConfigToAPI(m *models.WaffleConfigModel) (lenscommon.VisByValueConfig
 		return attrs, diags
 	}
 
-	if waffleConfigUsesESQL(m) {
+	if lenscommon.ConfigUsesESQL(m.Query) {
 		esql, d := waffleConfigToAPIESQL(m)
 		diags.Append(d...)
 		if diags.HasError() {

@@ -220,7 +220,7 @@ func treemapConfigToAPI(m *models.TreemapConfigModel) (lenscommon.VisByValueConf
 		return attrs, diags
 	}
 
-	if treemapConfigUsesESQL(m) {
+	if lenscommon.ConfigUsesESQL(m.Query) {
 		esql, esqlDiags := treemapConfigToAPITreemapESQL(m)
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
@@ -375,16 +375,6 @@ func treemapConfigToAPITreemapESQL(m *models.TreemapConfigModel) (kbapi.KibanaHT
 	)...)
 
 	return api, diags
-}
-
-func treemapConfigUsesESQL(m *models.TreemapConfigModel) bool {
-	if m == nil {
-		return false
-	}
-	if m.Query == nil {
-		return true
-	}
-	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
 func treemapConfigToAPINoESQL(m *models.TreemapConfigModel) (kbapi.KibanaHTTPAPIsTreemapNoESQL, diag.Diagnostics) {
