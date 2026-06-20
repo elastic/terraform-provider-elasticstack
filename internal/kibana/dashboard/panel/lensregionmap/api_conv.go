@@ -43,23 +43,6 @@ func isRegionMapNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsRegionMapNoE
 	return ds.Type == lenscommon.LensDatasetTypeESQL || ds.Type == lenscommon.LensDatasetTypeTable
 }
 
-func regionMapConfigPopulateCommonFields(m *models.RegionMapConfigModel,
-	title, description *string,
-	ignoreGlobalFilters *bool,
-	sampling *float32,
-	datasetBytes []byte,
-	datasetErr error,
-	filters *kbapi.KibanaHTTPAPIsLensPanelFilters,
-	diags *diag.Diagnostics,
-) bool {
-	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
-		title, description, ignoreGlobalFilters, sampling,
-		datasetBytes, datasetErr, "data_source_json", filters, diags,
-	)
-	m.LensChartBaseTFModel = base
-	return ok
-}
-
 func regionMapConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.RegionMapConfigModel,
@@ -69,9 +52,14 @@ func regionMapConfigFromAPINoESQL(
 	var diags diag.Diagnostics
 
 	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
-	if !regionMapConfigPopulateCommonFields(m, api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, &diags) {
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
+		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+	)
+	if !ok {
 		return diags
 	}
+	m.LensChartBaseTFModel = base
 
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
@@ -111,9 +99,14 @@ func regionMapConfigFromAPIESQL(
 	var diags diag.Diagnostics
 
 	datasetBytes, datasetErr := json.Marshal(api.DataSource)
-	if !regionMapConfigPopulateCommonFields(m, api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, &diags) {
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
+		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+	)
+	if !ok {
 		return diags
 	}
+	m.LensChartBaseTFModel = base
 
 	m.Query = nil
 
