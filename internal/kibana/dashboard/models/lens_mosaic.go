@@ -33,19 +33,11 @@ type MosaicConfigModel struct {
 	Legend           *PartitionLegendModel                               `tfsdk:"legend"`
 	ValueDisplay     *PartitionValueDisplay                              `tfsdk:"value_display"`
 	EsqlMetrics      []MosaicEsqlMetric                                  `tfsdk:"esql_metrics"`
-	EsqlGroupBy      []MosaicEsqlGroupBy                                 `tfsdk:"esql_group_by"`
+	EsqlGroupBy      []PartitionEsqlGroupByModel                         `tfsdk:"esql_group_by"`
 }
 
 type MosaicEsqlMetric struct {
 	Column     types.String         `tfsdk:"column"`
 	Label      types.String         `tfsdk:"label"`
 	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
-}
-
-type MosaicEsqlGroupBy struct {
-	Column     types.String         `tfsdk:"column"`
-	CollapseBy types.String         `tfsdk:"collapse_by"`
-	ColorJSON  jsontypes.Normalized `tfsdk:"color_json"`
-	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
-	Label      types.String         `tfsdk:"label"`
 }

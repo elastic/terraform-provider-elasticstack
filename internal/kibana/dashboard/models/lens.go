@@ -22,6 +22,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// PartitionEsqlGroupByModel is the shared ES|QL group-by model for mosaic, treemap, and waffle.
+type PartitionEsqlGroupByModel struct {
+	Column     types.String         `tfsdk:"column"`
+	CollapseBy types.String         `tfsdk:"collapse_by"`
+	ColorJSON  jsontypes.Normalized `tfsdk:"color_json"`
+	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
+	Label      types.String         `tfsdk:"label"`
+}
+
+// LensStaticColorModel is the shared static-color model for treemap and waffle ES|QL metrics.
+type LensStaticColorModel struct {
+	Type  types.String `tfsdk:"type"`
+	Color types.String `tfsdk:"color"`
+}
+
 type URLDrilldownModel struct {
 	URL          types.String `tfsdk:"url"`
 	Label        types.String `tfsdk:"label"`

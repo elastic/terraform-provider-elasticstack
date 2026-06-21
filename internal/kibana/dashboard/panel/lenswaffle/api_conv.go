@@ -115,7 +115,7 @@ func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel,
 	waffleLegendFromAPI(ctx, m.Legend, api.Legend)
 
 	if api.Styling != nil && api.Styling.Values != nil && (api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil) {
-		m.ValueDisplay = &models.WaffleValueDisplay{
+		m.ValueDisplay = &models.PartitionValueDisplay{
 			Mode: typeutils.StringishPointerValue(api.Styling.Values.Mode),
 		}
 		if api.Styling.Values.PercentDecimals != nil {
@@ -209,7 +209,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 	waffleLegendFromAPI(ctx, m.Legend, api.Legend)
 
 	if api.Styling != nil && api.Styling.Values != nil && (api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil) {
-		m.ValueDisplay = &models.WaffleValueDisplay{
+		m.ValueDisplay = &models.PartitionValueDisplay{
 			Mode: typeutils.StringishPointerValue(api.Styling.Values.Mode),
 		}
 		if api.Styling.Values.PercentDecimals != nil {
@@ -243,7 +243,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 					}
 					return jsontypes.NewNormalizedValue(lenscommon.NormalizeKibanaLensNumberFormatJSONString(string(b)))
 				}(),
-				Color: &models.WaffleStaticColor{
+				Color: &models.LensStaticColorModel{
 					Type:  colorType,
 					Color: colorValue,
 				},
@@ -254,7 +254,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 	}
 
 	if api.GroupBy != nil && len(*api.GroupBy) > 0 {
-		m.EsqlGroupBy = make([]models.WaffleEsqlGroupBy, len(*api.GroupBy))
+		m.EsqlGroupBy = make([]models.PartitionEsqlGroupByModel, len(*api.GroupBy))
 		for i, gb := range *api.GroupBy {
 			colorBytes, err := json.Marshal(gb.Color)
 			if err != nil {
@@ -274,7 +274,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 			if gb.CollapseBy != nil {
 				collapseBy = string(*gb.CollapseBy)
 			}
-			eg := models.WaffleEsqlGroupBy{
+			eg := models.PartitionEsqlGroupByModel{
 				Column:     types.StringValue(gb.Column),
 				CollapseBy: types.StringValue(collapseBy),
 				ColorJSON:  jsontypes.NewNormalizedValue(string(colorBytes)),
@@ -380,16 +380,6 @@ func waffleLegendToAPI(m *models.WaffleLegendModel) (*kbapi.KibanaHTTPAPIsWaffle
 	return leg, diags
 }
 
-func waffleValueDisplayToAPI(m *models.WaffleValueDisplay) *kbapi.KibanaHTTPAPIsValueDisplay {
-	mode := kbapi.KibanaHTTPAPIsValueDisplayMode(m.Mode.ValueString())
-	vd := &kbapi.KibanaHTTPAPIsValueDisplay{Mode: &mode}
-	if typeutils.IsKnown(m.PercentDecimals) {
-		p := float32(m.PercentDecimals.ValueFloat64())
-		vd.PercentDecimals = &p
-	}
-	return vd
-}
-
 func waffleConfigToAPI(m *models.WaffleConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
@@ -475,7 +465,7 @@ func waffleConfigToAPINoESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsW
 	api.Legend = leg
 
 	if m.ValueDisplay != nil && typeutils.IsKnown(m.ValueDisplay.Mode) {
-		api.Styling = &kbapi.KibanaHTTPAPIsWaffleStyling{Values: waffleValueDisplayToAPI(m.ValueDisplay)}
+		api.Styling = &kbapi.KibanaHTTPAPIsWaffleStyling{Values: lenscommon.PartitionValueDisplayToAPI(m.ValueDisplay)}
 	} else {
 		// Required by the Dashboard API; omitting mode yields HTTP 400.
 		mode := kbapi.KibanaHTTPAPIsValueDisplayModePercentage
@@ -554,7 +544,7 @@ func waffleConfigToAPIESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsWaf
 	api.Legend = leg
 
 	if m.ValueDisplay != nil && typeutils.IsKnown(m.ValueDisplay.Mode) {
-		api.Styling = &kbapi.KibanaHTTPAPIsWaffleStyling{Values: waffleValueDisplayToAPI(m.ValueDisplay)}
+		api.Styling = &kbapi.KibanaHTTPAPIsWaffleStyling{Values: lenscommon.PartitionValueDisplayToAPI(m.ValueDisplay)}
 	} else {
 		mode := kbapi.KibanaHTTPAPIsValueDisplayModePercentage
 		api.Styling = &kbapi.KibanaHTTPAPIsWaffleStyling{
