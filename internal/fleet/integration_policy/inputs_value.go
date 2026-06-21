@@ -168,13 +168,6 @@ func NewInputsNull(elemType InputType) InputsValue {
 	}
 }
 
-// NewInputsUnknown creates an InputsValue with an unknown value.
-func NewInputsUnknown(elemType InputType) InputsValue {
-	return InputsValue{
-		MapValue: basetypes.NewMapUnknown(elemType),
-	}
-}
-
 // NewInputsValue creates an InputsValue with a known value.
 func NewInputsValue(elemType InputType, elements map[string]attr.Value) (InputsValue, diag.Diagnostics) {
 	mapValue, diags := basetypes.NewMapValue(elemType, elements)

@@ -45,18 +45,6 @@ func TestInputsValue_MapSemanticEquals(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "both unknown values are equal",
-			value1:   NewInputsUnknown(elemType),
-			value2:   NewInputsUnknown(elemType),
-			expected: true,
-		},
-		{
-			name:     "null vs unknown are not equal",
-			value1:   NewInputsNull(elemType),
-			value2:   NewInputsUnknown(elemType),
-			expected: false,
-		},
-		{
 			name: "same enabled inputs are equal",
 			value1: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
 				"input1": {
