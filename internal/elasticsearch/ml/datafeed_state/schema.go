@@ -54,7 +54,7 @@ func GetSchema(_ context.Context) schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
-				Validators: []validator.String{ml.IDValidator()},
+				Validators: []validator.String{ml.IDValidatorWithoutLength()},
 			},
 			"state": schema.StringAttribute{
 				MarkdownDescription: "The desired state for the ML datafeed. Valid values are `started` and `stopped`.",

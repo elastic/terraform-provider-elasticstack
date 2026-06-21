@@ -113,15 +113,13 @@ func (converter) SchemaAttribute() schema.Attribute {
 }
 
 func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+	if diags := lenscommon.ValidateLensBlocks(blocks, "pie_chart_config"); diags.HasError() {
+		return diags
+	}
 	var prior *models.PieChartConfigModel
-	if blocks != nil && blocks.PieChartConfig != nil {
+	if blocks.PieChartConfig != nil {
 		cpy := *blocks.PieChartConfig
 		prior = &cpy
-	}
-	if blocks == nil {
-		var d diag.Diagnostics
-		d.AddError("Lens chart blocks missing", "cannot populate pie_chart_config without chart blocks")
-		return d
 	}
 	blocks.PieChartConfig = &models.PieChartConfigModel{}
 

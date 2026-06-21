@@ -47,9 +47,12 @@ func (converter) SchemaAttribute() schema.Attribute {
 }
 
 func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+	if diags := lenscommon.ValidateLensBlocks(blocks, "datatable_config"); diags.HasError() {
+		return diags
+	}
 	var priorNo *models.DatatableNoESQLConfigModel
 	var priorEsql *models.DatatableESQLConfigModel
-	if blocks != nil && blocks.DatatableConfig != nil {
+	if blocks.DatatableConfig != nil {
 		if blocks.DatatableConfig.NoESQL != nil {
 			cpy := *blocks.DatatableConfig.NoESQL
 			priorNo = &cpy
@@ -58,11 +61,6 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 			cpy := *blocks.DatatableConfig.ESQL
 			priorEsql = &cpy
 		}
-	}
-	if blocks == nil {
-		var d diag.Diagnostics
-		d.AddError("Lens chart blocks missing", "cannot populate datatable_config without chart blocks")
-		return d
 	}
 	blocks.DatatableConfig = &models.DatatableConfigModel{}
 

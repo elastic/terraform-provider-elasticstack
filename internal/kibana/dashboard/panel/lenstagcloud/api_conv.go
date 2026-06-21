@@ -67,16 +67,6 @@ func tagcloudConfigApplyStylingFromAPI(m *models.TagcloudConfigModel, s *kbapi.K
 	}
 }
 
-func tagcloudConfigUsesESQL(m *models.TagcloudConfigModel) bool {
-	if m == nil {
-		return false
-	}
-	if m.Query == nil {
-		return true
-	}
-	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
-}
-
 func tagcloudConfigFromAPI(
 	ctx context.Context,
 	m *models.TagcloudConfigModel,
@@ -90,7 +80,7 @@ func tagcloudConfigFromAPI(
 	m.Description = types.StringPointerValue(api.Description)
 
 	datasetBytes, err := api.DataSource.MarshalJSON()
-	v, ok := lenscommon.MarshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	v, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}
@@ -148,7 +138,7 @@ func tagcloudConfigFromAPIESQL(
 	m.Sampling = lenscommon.SamplingFromAPI(api.Sampling)
 
 	datasetBytes, err := json.Marshal(api.DataSource)
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}
@@ -209,7 +199,7 @@ func tagcloudConfigToAPI(m *models.TagcloudConfigModel) (lenscommon.VisByValueCo
 		return attrs, diags
 	}
 
-	if tagcloudConfigUsesESQL(m) {
+	if lenscommon.ConfigUsesESQL(m.Query) {
 		esql, d := tagcloudConfigToAPIESQL(m)
 		diags.Append(d...)
 		if diags.HasError() {

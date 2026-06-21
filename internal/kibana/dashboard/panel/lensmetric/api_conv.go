@@ -28,7 +28,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 const jsonNullString = "null"
@@ -95,27 +94,6 @@ func isMetricNoESQLCandidateActuallyESQL(apiChart kbapi.KibanaHTTPAPIsMetricNoES
 	return lenscommon.LensDataSourceIsESQLOrTable(body, err)
 }
 
-func metricChartConfigPopulateCommonFields(m *models.MetricChartConfigModel,
-	title, description *string,
-	ignoreGlobalFilters *bool,
-	sampling *float32,
-	datasetBytes []byte,
-	datasetErr error,
-	filters *kbapi.KibanaHTTPAPIsLensPanelFilters,
-	diags *diag.Diagnostics,
-) bool {
-	m.Title = types.StringPointerValue(title)
-	m.Description = types.StringPointerValue(description)
-	m.IgnoreGlobalFilters = types.BoolPointerValue(ignoreGlobalFilters)
-	m.Sampling = lenscommon.SamplingFromAPI(sampling)
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, datasetErr, "dataset", diags)
-	if !ok {
-		return false
-	}
-	m.DataSourceJSON = dv
-	m.Filters = lenscommon.PopulateFiltersFromAPI(filters, diags)
-	return !diags.HasError()
-}
 
 func metricChartConfigFromAPIVariant0(
 	ctx context.Context,
@@ -127,9 +105,14 @@ func metricChartConfigFromAPIVariant0(
 	_ = ctx
 
 	datasetBytes, datasetErr := json.Marshal(apiChart.DataSource)
-	if !metricChartConfigPopulateCommonFields(m, apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling, datasetBytes, datasetErr, apiChart.Filters, &diags) {
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling,
+		datasetBytes, datasetErr, "dataset", apiChart.Filters, &diags,
+	)
+	if !ok {
 		return diags
 	}
+	m.LensChartBaseTFModel = base
 
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, apiChart.Query)
@@ -190,9 +173,14 @@ func metricChartConfigFromAPIVariant1(
 	_ = ctx
 
 	datasetBytes, datasetErr := json.Marshal(apiChart.DataSource)
-	if !metricChartConfigPopulateCommonFields(m, apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling, datasetBytes, datasetErr, apiChart.Filters, &diags) {
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling,
+		datasetBytes, datasetErr, "dataset", apiChart.Filters, &diags,
+	)
+	if !ok {
 		return diags
 	}
+	m.LensChartBaseTFModel = base
 
 	m.Query = nil
 

@@ -51,13 +51,15 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	nested := true
 	truncate := int64(3)
 	cfg := &models.PieChartConfigModel{
-		Title:               types.StringValue("Pie RT"),
-		Description:         types.StringValue("d"),
-		IgnoreGlobalFilters: types.BoolValue(true),
-		Sampling:            types.Float64Value(0.75),
-		DonutHole:           types.StringValue(string(kbapi.KibanaHTTPAPIsPieStylingDonutHoleS)),
-		LabelPosition:       types.StringValue(string(kbapi.KibanaHTTPAPIsPieStylingLabelsPositionInside)),
-		DataSourceJSON:      jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"logs-*"}`),
+		LensChartBaseTFModel: models.LensChartBaseTFModel{
+			Title:               types.StringValue("Pie RT"),
+			Description:         types.StringValue("d"),
+			IgnoreGlobalFilters: types.BoolValue(true),
+			Sampling:            types.Float64Value(0.75),
+			DataSourceJSON:      jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"logs-*"}`),
+		},
+		DonutHole:     types.StringValue(string(kbapi.KibanaHTTPAPIsPieStylingDonutHoleS)),
+		LabelPosition: types.StringValue(string(kbapi.KibanaHTTPAPIsPieStylingLabelsPositionInside)),
 		Query: &models.FilterSimpleModel{
 			Language:   types.StringValue("kql"),
 			Expression: types.StringValue("response:200"),

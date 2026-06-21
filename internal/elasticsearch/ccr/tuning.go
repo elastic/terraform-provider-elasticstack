@@ -95,7 +95,7 @@ func ApplyToPutAutoFollowRequest(p TuningParams, req *putautofollowpattern.Reque
 // MaxOutstandingReadRequests is *int64 in follow.Request; all other count fields are *int.
 func ApplyToFollowRequest(p TuningParams, req *follow.Request) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if v := OptInt64Ptr(p.MaxOutstandingReadRequests); v != nil {
+	if v := typeutils.Int64Pointer(p.MaxOutstandingReadRequests); v != nil {
 		req.MaxOutstandingReadRequests = v
 	}
 	if v, d := OptIntFromInt64("max_outstanding_write_requests", p.MaxOutstandingWriteRequests); d.HasError() {
@@ -139,13 +139,13 @@ func ApplyToFollowRequest(p TuningParams, req *follow.Request) diag.Diagnostics 
 // ApplyToResumeFollowRequest sets the tuning fields on req.
 // resumefollow.Request uses *int64 for all count fields and *string for byte sizes.
 func ApplyToResumeFollowRequest(p TuningParams, req *resumefollow.Request) {
-	if v := OptInt64Ptr(p.MaxOutstandingReadRequests); v != nil {
+	if v := typeutils.Int64Pointer(p.MaxOutstandingReadRequests); v != nil {
 		req.MaxOutstandingReadRequests = v
 	}
-	if v := OptInt64Ptr(p.MaxOutstandingWriteRequests); v != nil {
+	if v := typeutils.Int64Pointer(p.MaxOutstandingWriteRequests); v != nil {
 		req.MaxOutstandingWriteRequests = v
 	}
-	if v := OptInt64Ptr(p.MaxReadRequestOperationCount); v != nil {
+	if v := typeutils.Int64Pointer(p.MaxReadRequestOperationCount); v != nil {
 		req.MaxReadRequestOperationCount = v
 	}
 	if v := typeutils.OptionalString(p.MaxReadRequestSize); v != nil {
@@ -154,13 +154,13 @@ func ApplyToResumeFollowRequest(p TuningParams, req *resumefollow.Request) {
 	if v := durationFromCustomDuration(p.MaxRetryDelay); v != nil {
 		req.MaxRetryDelay = v
 	}
-	if v := OptInt64Ptr(p.MaxWriteBufferCount); v != nil {
+	if v := typeutils.Int64Pointer(p.MaxWriteBufferCount); v != nil {
 		req.MaxWriteBufferCount = v
 	}
 	if v := typeutils.OptionalString(p.MaxWriteBufferSize); v != nil {
 		req.MaxWriteBufferSize = v
 	}
-	if v := OptInt64Ptr(p.MaxWriteRequestOperationCount); v != nil {
+	if v := typeutils.Int64Pointer(p.MaxWriteRequestOperationCount); v != nil {
 		req.MaxWriteRequestOperationCount = v
 	}
 	if v := typeutils.OptionalString(p.MaxWriteRequestSize); v != nil {

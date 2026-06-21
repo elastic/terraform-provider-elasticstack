@@ -15,15 +15,23 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package models
+package lenscommon
 
 import (
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"fmt"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-type LegacyMetricConfigModel struct {
-	LensChartPresentationTFModel
-	LensChartBaseTFModel
-	Query      *FilterSimpleModel                                `tfsdk:"query"`
-	MetricJSON customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
+// ValidateLensBlocks returns a non-nil Diagnostics error if blocks is nil.
+// Call at the top of every PopulateFromAttributes implementation before writing to blocks.
+func ValidateLensBlocks(blocks *models.LensByValueChartBlocks, configName string) diag.Diagnostics {
+	if blocks == nil {
+		var d diag.Diagnostics
+		d.AddError("Lens chart blocks missing",
+			fmt.Sprintf("cannot populate %s without chart blocks", configName))
+		return d
+	}
+	return nil
 }

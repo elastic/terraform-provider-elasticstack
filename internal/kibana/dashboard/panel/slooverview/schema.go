@@ -19,6 +19,7 @@ package slooverview
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
@@ -47,7 +48,7 @@ func SchemaAttribute() schema.Attribute {
 		PanelType:   panelType,
 		Attributes:  nestedAttributes(),
 		ExtraValidators: []validator.Object{
-			panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
+			validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
 				AttrNames:     []string{sloOverviewModeSingle, sloOverviewModeGroups},
 				Summary:       "Invalid slo_overview_config",
 				MissingDetail: "Exactly one of `single` or `groups` must be configured inside `slo_overview_config`.",

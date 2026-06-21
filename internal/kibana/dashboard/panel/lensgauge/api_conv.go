@@ -38,16 +38,6 @@ func isGaugeNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsGaugeNoESQL) boo
 	return lenscommon.LensDataSourceIsESQLOrTable(api.DataSource.MarshalJSON())
 }
 
-func gaugeConfigUsesESQL(m *models.GaugeConfigModel) bool {
-	if m == nil {
-		return false
-	}
-	if m.Query == nil {
-		return true
-	}
-	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
-}
-
 func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, prior *models.GaugeConfigModel, api kbapi.KibanaHTTPAPIsGaugeNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
@@ -56,7 +46,7 @@ func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, prior *
 	m.Description = types.StringPointerValue(api.Description)
 
 	datasetBytes, err := api.DataSource.MarshalJSON()
-	v, ok := lenscommon.MarshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	v, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}
@@ -81,7 +71,7 @@ func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, prior *
 	m.Styling = &models.GaugeStylingModel{}
 	if api.Styling != nil && api.Styling.Shape != nil {
 		shapeBytes, err := api.Styling.Shape.MarshalJSON()
-		sv, ok := lenscommon.MarshalToNormalized(shapeBytes, err, "shape", &diags)
+		sv, ok := lenscommon.WrapNormalizedJSON(shapeBytes, err, "shape", &diags)
 		if !ok {
 			return diags
 		}
@@ -111,7 +101,7 @@ func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, pri
 	m.Sampling = lenscommon.SamplingFromAPI(api.Sampling)
 
 	datasetBytes, err := json.Marshal(api.DataSource)
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}
@@ -180,7 +170,7 @@ func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, pri
 	m.Styling = &models.GaugeStylingModel{}
 	if api.Styling != nil && api.Styling.Shape != nil {
 		shapeBytes, err := api.Styling.Shape.MarshalJSON()
-		sv, ok := lenscommon.MarshalToNormalized(shapeBytes, err, "shape", &diags)
+		sv, ok := lenscommon.WrapNormalizedJSON(shapeBytes, err, "shape", &diags)
 		if !ok {
 			return diags
 		}
@@ -209,7 +199,7 @@ func gaugeConfigToAPI(m *models.GaugeConfigModel) (lenscommon.VisByValueConfig0,
 		return attrs, diags
 	}
 
-	if gaugeConfigUsesESQL(m) {
+	if lenscommon.ConfigUsesESQL(m.Query) {
 		esql, d := gaugeConfigToAPIESQL(m)
 		diags.Append(d...)
 		if diags.HasError() {

@@ -327,7 +327,7 @@ func lensPresentationReferencesJSONRead(ctx context.Context, prior jsontypes.Nor
 		return jsontypes.NewNormalizedNull(), diags
 	}
 
-	if norm, ok := MarshalToNormalized(b, err, "references_json", &diags); ok {
+	if norm, ok := WrapNormalizedJSON(b, err, "references_json", &diags); ok {
 		norm = panelkit.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior, norm, defaultOpaqueRootJSON, &diags)
 		return norm, diags
 	}
