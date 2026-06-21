@@ -161,7 +161,7 @@ func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, p
 	}
 
 	if api.GroupBy != nil && len(*api.GroupBy) > 0 {
-		m.EsqlGroupBy = make([]models.MosaicEsqlGroupBy, len(*api.GroupBy))
+		m.EsqlGroupBy = make([]models.PartitionEsqlGroupByModel, len(*api.GroupBy))
 		for i, gb := range *api.GroupBy {
 			collapseBy := ""
 			if gb.CollapseBy != nil {

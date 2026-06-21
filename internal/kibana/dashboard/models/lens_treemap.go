@@ -32,25 +32,12 @@ type TreemapConfigModel struct {
 	Legend       *PartitionLegendModel                               `tfsdk:"legend"`
 	ValueDisplay *PartitionValueDisplay                              `tfsdk:"value_display"`
 	EsqlMetrics  []TreemapEsqlMetric                                 `tfsdk:"esql_metrics"`
-	EsqlGroupBy  []TreemapEsqlGroupBy                                `tfsdk:"esql_group_by"`
+	EsqlGroupBy  []PartitionEsqlGroupByModel                         `tfsdk:"esql_group_by"`
 }
 
 type TreemapEsqlMetric struct {
-	Column     types.String            `tfsdk:"column"`
-	Label      types.String            `tfsdk:"label"`
-	FormatJSON jsontypes.Normalized    `tfsdk:"format_json"`
-	Color      *TreemapEsqlMetricColor `tfsdk:"color"`
-}
-
-type TreemapEsqlMetricColor struct {
-	Type  types.String `tfsdk:"type"`
-	Color types.String `tfsdk:"color"`
-}
-
-type TreemapEsqlGroupBy struct {
-	Column     types.String         `tfsdk:"column"`
-	CollapseBy types.String         `tfsdk:"collapse_by"`
-	ColorJSON  jsontypes.Normalized `tfsdk:"color_json"`
-	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
-	Label      types.String         `tfsdk:"label"`
+	Column     types.String          `tfsdk:"column"`
+	Label      types.String          `tfsdk:"label"`
+	FormatJSON jsontypes.Normalized  `tfsdk:"format_json"`
+	Color      *LensStaticColorModel `tfsdk:"color"`
 }

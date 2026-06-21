@@ -140,7 +140,7 @@ func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel,
 			if met.Color != nil {
 				staticColor, colorErr := met.Color.AsKibanaHTTPAPIsStaticColor()
 				if colorErr == nil {
-					m.EsqlMetrics[i].Color = &models.TreemapEsqlMetricColor{
+					m.EsqlMetrics[i].Color = &models.LensStaticColorModel{
 						Type:  types.StringValue(string(staticColor.Type)),
 						Color: types.StringValue(staticColor.Color),
 					}
@@ -150,7 +150,7 @@ func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel,
 	}
 
 	if api.GroupBy != nil && len(*api.GroupBy) > 0 {
-		m.EsqlGroupBy = make([]models.TreemapEsqlGroupBy, len(*api.GroupBy))
+		m.EsqlGroupBy = make([]models.PartitionEsqlGroupByModel, len(*api.GroupBy))
 		for i, gb := range *api.GroupBy {
 			collapseBy := ""
 			if gb.CollapseBy != nil {
