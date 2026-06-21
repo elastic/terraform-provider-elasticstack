@@ -93,7 +93,7 @@ func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel,
 	m.Description = types.StringPointerValue(api.Description)
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
 
-	m.Sampling = lenscommon.SamplingFromAPI(api.Sampling)
+	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
 
 	datasetBytes, err := api.DataSource.MarshalJSON()
 	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
@@ -184,7 +184,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 	m.Description = types.StringPointerValue(api.Description)
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
 
-	m.Sampling = lenscommon.SamplingFromAPI(api.Sampling)
+	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
 
 	datasetBytes, err := json.Marshal(api.DataSource)
 	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)

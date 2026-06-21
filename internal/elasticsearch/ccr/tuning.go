@@ -197,7 +197,7 @@ func TuningParamsFromParameters(params *estypes.FollowerIndexParameters) TuningP
 		params = &estypes.FollowerIndexParameters{}
 	}
 	return TuningParams{
-		MaxOutstandingReadRequests:    typeutils.Int64PointerValue(params.MaxOutstandingReadRequests),
+		MaxOutstandingReadRequests:    types.Int64PointerValue(params.MaxOutstandingReadRequests),
 		MaxOutstandingWriteRequests:   typeutils.IntPointerToInt64Value(params.MaxOutstandingWriteRequests),
 		MaxReadRequestOperationCount:  typeutils.IntPointerToInt64Value(params.MaxReadRequestOperationCount),
 		MaxReadRequestSize:            ByteSizeToString(params.MaxReadRequestSize),

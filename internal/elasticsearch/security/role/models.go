@@ -396,7 +396,7 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 				return diags
 			}
 
-			allowRestrictedVal := typeutils.BoolPointerValue(index.AllowRestrictedIndices)
+			allowRestrictedVal := types.BoolPointerValue(index.AllowRestrictedIndices)
 
 			var fieldSecObj types.Object
 			if index.FieldSecurity != nil {

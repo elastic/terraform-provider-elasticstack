@@ -66,14 +66,14 @@ func heatmapConfigPopulateCommonFields(m *models.HeatmapConfigModel,
 	prior *models.HeatmapConfigModel,
 	diags *diag.Diagnostics,
 ) bool {
-base, ok := lenscommon.PopulateLensChartBaseFromAPI(
-title, description, ignoreGlobalFilters, sampling,
-datasetBytes, datasetErr, "data_source_json", filters, diags,
-)
-if !ok {
-return false
-}
-m.LensChartBaseTFModel = base
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		title, description, ignoreGlobalFilters, sampling,
+		datasetBytes, datasetErr, "data_source_json", filters, diags,
+	)
+	if !ok {
+		return false
+	}
+	m.LensChartBaseTFModel = base
 	m.Axis = &models.HeatmapAxesModel{}
 	var priorAxis *models.HeatmapAxesModel
 	if prior != nil {

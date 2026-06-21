@@ -105,7 +105,7 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 			EsqlQuery:        types.StringValue(api.EsqlQuery),
 			ControlType:      types.StringValue(api.ControlType),
 			Title:            types.StringPointerValue(api.Title),
-			SingleSelect:     typeutils.BoolPointerValue(api.SingleSelect),
+			SingleSelect:     types.BoolPointerValue(api.SingleSelect),
 			AvailableOptions: types.ListNull(types.StringType),
 		}
 		pm.EsqlControlConfig = existing
@@ -136,7 +136,7 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 			EsqlQuery:        types.StringValue(api.EsqlQuery),
 			ControlType:      types.StringValue(api.ControlType),
 			Title:            types.StringPointerValue(api.Title),
-			SingleSelect:     typeutils.BoolPointerValue(api.SingleSelect),
+			SingleSelect:     types.BoolPointerValue(api.SingleSelect),
 			AvailableOptions: types.ListNull(types.StringType),
 		}
 		pm.EsqlControlConfig = existing

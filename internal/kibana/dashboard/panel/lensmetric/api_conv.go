@@ -94,7 +94,6 @@ func isMetricNoESQLCandidateActuallyESQL(apiChart kbapi.KibanaHTTPAPIsMetricNoES
 	return lenscommon.LensDataSourceIsESQLOrTable(body, err)
 }
 
-
 func metricChartConfigFromAPIVariant0(
 	ctx context.Context,
 	m *models.MetricChartConfigModel,

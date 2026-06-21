@@ -97,20 +97,11 @@ func PreservePlanJSONWithDefaultsIfSemanticallyEqual[T any](ctx context.Context,
 	}
 }
 
-// SamplingFromAPI converts a nullable API *float32 sampling value to types.Float64.
-// Returns Float64Null when s is nil.
-func SamplingFromAPI(s *float32) types.Float64 {
-	if s != nil {
-		return types.Float64Value(float64(*s))
-	}
-	return types.Float64Null()
-}
-
 // SamplingFromAPIWithDefault converts a nullable API *float32 sampling value to types.Float64.
 // Returns Float64Value(def) when s is nil.
-func SamplingFromAPIWithDefault(s *float32, def float64) types.Float64 {
-	if s != nil {
-		return types.Float64Value(float64(*s))
+func SamplingFromAPIWithDefault(s *float32, def float32) types.Float64 {
+	if s == nil {
+		s = &def
 	}
-	return types.Float64Value(def)
+	return typeutils.Float32PointerToFloat64Value(s)
 }

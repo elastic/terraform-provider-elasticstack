@@ -143,7 +143,7 @@ func dataLayerFromAPINoESQL(ctx context.Context, m *models.DataLayerModel, apiLa
 	}
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(apiLayer.IgnoreGlobalFilters)
-	m.Sampling = lenscommon.SamplingFromAPI(apiLayer.Sampling)
+	m.Sampling = typeutils.Float32PointerToFloat64Value(apiLayer.Sampling)
 
 	if apiLayer.X != nil {
 		xJSON, err := json.Marshal(apiLayer.X)
@@ -194,7 +194,7 @@ func dataLayerFromAPIESql(ctx context.Context, m *models.DataLayerModel, apiLaye
 	}
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(apiLayer.IgnoreGlobalFilters)
-	m.Sampling = lenscommon.SamplingFromAPI(apiLayer.Sampling)
+	m.Sampling = typeutils.Float32PointerToFloat64Value(apiLayer.Sampling)
 
 	if apiLayer.X != nil {
 		xJSON, err := json.Marshal(apiLayer.X)
@@ -353,7 +353,7 @@ func referenceLineLayerFromAPINoESQL(m *models.ReferenceLineLayerModel, apiLayer
 	}
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(apiLayer.IgnoreGlobalFilters)
-	m.Sampling = lenscommon.SamplingFromAPI(apiLayer.Sampling)
+	m.Sampling = typeutils.Float32PointerToFloat64Value(apiLayer.Sampling)
 
 	// Convert thresholds
 	if len(apiLayer.Thresholds) > 0 {

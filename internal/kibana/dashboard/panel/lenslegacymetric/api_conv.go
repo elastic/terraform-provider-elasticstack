@@ -33,6 +33,7 @@ const (
 	datasetTypeDataViewReference = "data_view_reference"
 	datasetTypeDataViewSpec      = "data_view_spec"
 )
+
 func legacyMetricConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.LegacyMetricConfigModel,

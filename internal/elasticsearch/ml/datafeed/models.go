@@ -332,9 +332,9 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 		} else {
 			indicesOptionsTF.ExpandWildcards = NewExpandWildcardsNull()
 		}
-		indicesOptionsTF.IgnoreUnavailable = typeutils.BoolPointerValue(apiModel.IndicesOptions.IgnoreUnavailable)
-		indicesOptionsTF.AllowNoIndices = typeutils.BoolPointerValue(apiModel.IndicesOptions.AllowNoIndices)
-		indicesOptionsTF.IgnoreThrottled = typeutils.BoolPointerValue(apiModel.IndicesOptions.IgnoreThrottled)
+		indicesOptionsTF.IgnoreUnavailable = types.BoolPointerValue(apiModel.IndicesOptions.IgnoreUnavailable)
+		indicesOptionsTF.AllowNoIndices = types.BoolPointerValue(apiModel.IndicesOptions.AllowNoIndices)
+		indicesOptionsTF.IgnoreThrottled = types.BoolPointerValue(apiModel.IndicesOptions.IgnoreThrottled)
 
 		indicesOptionsObj, diag := types.ObjectValueFrom(ctx, map[string]attr.Type{
 			attrExpandWildcards:   ExpandWildcardsType{SetType: basetypes.SetType{ElemType: types.StringType}},

@@ -87,7 +87,7 @@ func tagcloudConfigFromAPI(
 	m.DataSourceJSON = v
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	m.Sampling = lenscommon.SamplingFromAPI(api.Sampling)
+	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
 
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
@@ -135,7 +135,7 @@ func tagcloudConfigFromAPIESQL(
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	m.Sampling = lenscommon.SamplingFromAPI(api.Sampling)
+	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
 
 	datasetBytes, err := json.Marshal(api.DataSource)
 	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)

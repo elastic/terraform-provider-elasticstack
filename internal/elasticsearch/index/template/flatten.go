@@ -27,7 +27,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -92,9 +91,9 @@ func (m *Model) fromAPIModel(ctx context.Context, name string, in *models.IndexT
 		m.Metadata = jsontypes.NewNormalizedNull()
 	}
 
-	m.Priority = typeutils.Int64PointerValue(in.Priority)
-	m.Version = typeutils.Int64PointerValue(in.Version)
-	m.AllowAutoCreate = typeutils.BoolPointerValue(in.AllowAutoCreate)
+	m.Priority = types.Int64PointerValue(in.Priority)
+	m.Version = types.Int64PointerValue(in.Version)
+	m.AllowAutoCreate = types.BoolPointerValue(in.AllowAutoCreate)
 
 	var d diag.Diagnostics
 	m.DataStream, d = flattenDataStream(in.DataStream)
