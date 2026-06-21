@@ -466,6 +466,17 @@ func LensDrilldownItemFromAPIJSON(raw []byte, pathPrefix string) (models.LensDri
 	}
 }
 
+// ExtractPriorPresentation returns a pointer to the LensChartPresentationTFModel
+// embedded in prior, or nil when prior is nil. This eliminates the repeated 4-line
+// nil-guard+copy block that appeared before every PopulateLensChartPresentation call.
+func ExtractPriorPresentation[T any](prior *T, get func(*T) models.LensChartPresentationTFModel) *models.LensChartPresentationTFModel {
+	if prior == nil {
+		return nil
+	}
+	p := get(prior)
+	return &p
+}
+
 // PopulateLensChartPresentation consolidates the repeated drilldown-wire and presentation-read
 // block found across all Lens panel FromAPI functions. It writes the result into *out.
 // Returns false if any error occurs; the caller should immediately return diags.

@@ -1219,11 +1219,9 @@ func xyChartConfigFromAPINoESQL(
 
 	m.Filters = lenscommon.PopulateFiltersFromAPI(apiChart.Filters, &diags)
 
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
+	priorLens := lenscommon.ExtractPriorPresentation(prior, func(m *models.XYChartConfigModel) models.LensChartPresentationTFModel {
+		return m.LensChartPresentationTFModel
+	})
 	if !lenscommon.PopulateLensChartPresentation(
 		ctx, &m.LensChartPresentationTFModel, priorLens, apiChart.TimeRange,
 		apiChart.HideTitle, apiChart.HideBorder, apiChart.References, apiChart.Drilldowns, &diags,
@@ -1288,11 +1286,9 @@ func xyChartConfigFromAPIESQL(
 
 	m.Filters = lenscommon.PopulateFiltersFromAPI(apiChart.Filters, &diags)
 
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
+	priorLens := lenscommon.ExtractPriorPresentation(prior, func(m *models.XYChartConfigModel) models.LensChartPresentationTFModel {
+		return m.LensChartPresentationTFModel
+	})
 	if !lenscommon.PopulateLensChartPresentation(
 		ctx, &m.LensChartPresentationTFModel, priorLens, apiChart.TimeRange,
 		apiChart.HideTitle, apiChart.HideBorder, apiChart.References, apiChart.Drilldowns, &diags,

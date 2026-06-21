@@ -68,11 +68,9 @@ func regionMapConfigFromAPINoESQL(
 	}
 	m.RegionJSON = rv
 
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
+	priorLens := lenscommon.ExtractPriorPresentation(prior, func(m *models.RegionMapConfigModel) models.LensChartPresentationTFModel {
+		return m.LensChartPresentationTFModel
+	})
 	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
@@ -114,11 +112,9 @@ func regionMapConfigFromAPIESQL(
 	}
 	m.RegionJSON = rv
 
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
+	priorLens := lenscommon.ExtractPriorPresentation(prior, func(m *models.RegionMapConfigModel) models.LensChartPresentationTFModel {
+		return m.LensChartPresentationTFModel
+	})
 	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}

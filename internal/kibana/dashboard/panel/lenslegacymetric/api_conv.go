@@ -61,11 +61,9 @@ func legacyMetricConfigFromAPINoESQL(
 	}
 	m.MetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
+	priorLens := lenscommon.ExtractPriorPresentation(prior, func(m *models.LegacyMetricConfigModel) models.LensChartPresentationTFModel {
+		return m.LensChartPresentationTFModel
+	})
 	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}

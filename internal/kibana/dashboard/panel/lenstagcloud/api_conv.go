@@ -116,11 +116,9 @@ func tagcloudConfigFromAPI(
 	m.EsqlMetric = nil
 	m.EsqlTagBy = nil
 
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
+	priorLens := lenscommon.ExtractPriorPresentation(prior, func(m *models.TagcloudConfigModel) models.LensChartPresentationTFModel {
+		return m.LensChartPresentationTFModel
+	})
 	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
@@ -187,11 +185,9 @@ func tagcloudConfigFromAPIESQL(
 	tb.Label = typeutils.StringishPointerValue(api.TagBy.Label)
 	m.EsqlTagBy = tb
 
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
+	priorLens := lenscommon.ExtractPriorPresentation(prior, func(m *models.TagcloudConfigModel) models.LensChartPresentationTFModel {
+		return m.LensChartPresentationTFModel
+	})
 	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
