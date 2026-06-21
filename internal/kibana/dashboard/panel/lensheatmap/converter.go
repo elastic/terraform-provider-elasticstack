@@ -47,15 +47,13 @@ func (converter) SchemaAttribute() schema.Attribute {
 }
 
 func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+	if diags := lenscommon.ValidateLensBlocks(blocks, "heatmap_config"); diags.HasError() {
+		return diags
+	}
 	var prior *models.HeatmapConfigModel
-	if blocks != nil && blocks.HeatmapConfig != nil {
+	if blocks.HeatmapConfig != nil {
 		cpy := *blocks.HeatmapConfig
 		prior = &cpy
-	}
-	if blocks == nil {
-		var d diag.Diagnostics
-		d.AddError("Lens chart blocks missing", "cannot populate heatmap_config without chart blocks")
-		return d
 	}
 	blocks.HeatmapConfig = &models.HeatmapConfigModel{}
 

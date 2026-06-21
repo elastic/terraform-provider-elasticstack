@@ -65,15 +65,13 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
+	if diags := lenscommon.ValidateLensBlocks(blocks, "legacy_metric_config"); diags.HasError() {
+		return diags
+	}
 	var prior *models.LegacyMetricConfigModel
-	if blocks != nil && blocks.LegacyMetricConfig != nil {
+	if blocks.LegacyMetricConfig != nil {
 		cpy := *blocks.LegacyMetricConfig
 		prior = &cpy
-	}
-	if blocks == nil {
-		var d diag.Diagnostics
-		d.AddError("Lens chart blocks missing", "cannot populate legacy_metric_config without chart blocks")
-		return d
 	}
 	blocks.LegacyMetricConfig = &models.LegacyMetricConfigModel{}
 	return legacyMetricConfigFromAPINoESQL(ctx, blocks.LegacyMetricConfig, prior, legacyMetric)

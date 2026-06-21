@@ -47,10 +47,8 @@ func (converter) SchemaAttribute() schema.Attribute {
 }
 
 func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
-	if blocks == nil {
-		var d diag.Diagnostics
-		d.AddError("Lens chart blocks missing", "cannot populate waffle_config without chart blocks")
-		return d
+	if diags := lenscommon.ValidateLensBlocks(blocks, "waffle_config"); diags.HasError() {
+		return diags
 	}
 
 	seed := blocks.WaffleConfig
