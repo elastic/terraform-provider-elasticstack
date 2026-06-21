@@ -23,6 +23,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -260,9 +261,9 @@ func TestInputValue_ObjectSemanticEquals(t *testing.T) {
 
 func mustNewInputValue(ctx context.Context, t *testing.T, input integrationPolicyInputsModel) InputValue {
 	t.Helper()
-	value, diags := NewInputValueFrom(ctx, getInputsAttributeTypes(), input)
+	value, diags := basetypes.NewObjectValueFrom(ctx, getInputsAttributeTypes(), input)
 	require.False(t, diags.HasError(), "Failed to create InputValue: %v", diags)
-	return value
+	return InputValue{ObjectValue: value}
 }
 
 func mustNewInputDefaults(ctx context.Context, t *testing.T, defaults inputDefaultsModel) types.Object {
