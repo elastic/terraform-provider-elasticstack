@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -32,18 +31,12 @@ import (
 )
 
 // Handler implements iface.Handler for slo_alerts panels.
-type Handler struct{}
+type Handler struct {
+	panelkit.NoopHandlerBase
+}
 
-func (Handler) PanelType() string                  { return panelType }
-func (Handler) SchemaAttribute() schema.Attribute  { return SchemaAttribute() }
-func (Handler) ClassifyJSON(_ map[string]any) bool { return false }
-func (Handler) PopulateJSONDefaults(config map[string]any) map[string]any {
-	return config
-}
-func (Handler) PinnedHandler() iface.PinnedHandler { return nil }
-func (Handler) AlignStateFromPlan(ctx context.Context, plan, state *models.PanelModel) {
-	_, _, _ = ctx, plan, state
-}
+func (Handler) PanelType() string                 { return panelType }
+func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	apiPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts()
