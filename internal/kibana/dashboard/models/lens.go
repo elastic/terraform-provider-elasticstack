@@ -66,9 +66,10 @@ type LensChartPresentationTFModel struct {
 	Drilldowns     []LensDrilldownItemTFModel `tfsdk:"drilldowns"`
 }
 
-// GetLensChartPresentation returns a copy of this model, allowing types that embed
-// LensChartPresentationTFModel to satisfy the lenscommon.PriorLens generic constraint.
-func (m LensChartPresentationTFModel) GetLensChartPresentation() LensChartPresentationTFModel {
+// GetLensChartPresentation returns a pointer to this model, allowing types that embed
+// LensChartPresentationTFModel to satisfy the lenscommon.lensChartPresentationProvider
+// interface. A nil receiver returns nil.
+func (m *LensChartPresentationTFModel) GetLensChartPresentation() *LensChartPresentationTFModel {
 	return m
 }
 

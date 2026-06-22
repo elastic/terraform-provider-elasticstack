@@ -111,8 +111,7 @@ func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel,
 		m.ValueDisplay = nil
 	}
 
-	priorLens := lenscommon.PriorLens(prior)
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
 	m.EsqlMetrics = nil
@@ -207,8 +206,7 @@ func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, p
 		m.ValueDisplay = nil
 	}
 
-	priorLens := lenscommon.PriorLens(prior)
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
 

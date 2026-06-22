@@ -107,8 +107,7 @@ func datatableNoESQLConfigFromAPI(
 		}
 	}
 
-	priorLens := lenscommon.PriorLens(prior)
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
 
@@ -279,8 +278,7 @@ func datatableESQLConfigFromAPI(
 		}
 	}
 
-	priorLens := lenscommon.PriorLens(prior)
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
 

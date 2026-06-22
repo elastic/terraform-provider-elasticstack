@@ -134,8 +134,7 @@ func heatmapConfigFromAPINoESQL(
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
 
-	priorLens := lenscommon.PriorLens(prior)
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
 
@@ -176,8 +175,7 @@ func heatmapConfigFromAPIESQL(ctx context.Context, m *models.HeatmapConfigModel,
 		m.YAxisJSON = jsontypes.NewNormalizedNull()
 	}
 
-	priorLens := lenscommon.PriorLens(prior)
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
 

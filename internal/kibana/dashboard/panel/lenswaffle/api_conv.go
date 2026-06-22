@@ -178,8 +178,7 @@ func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel,
 	m.EsqlMetrics = nil
 	m.EsqlGroupBy = nil
 
-	priorLens := lenscommon.PriorLens(prior)
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
 
@@ -297,8 +296,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 	m.Metrics = nil
 	m.GroupBy = nil
 
-	priorLens := lenscommon.PriorLens(prior)
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
 

@@ -101,8 +101,7 @@ func treemapConfigFromAPINoESQL(
 		m.ValueDisplay = nil
 	}
 
-	priorLens := lenscommon.PriorLens(prior)
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
 	m.EsqlMetrics = nil
@@ -196,8 +195,7 @@ func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel,
 		m.ValueDisplay = nil
 	}
 
-	priorLens := lenscommon.PriorLens(prior)
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
 

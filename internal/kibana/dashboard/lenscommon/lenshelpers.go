@@ -23,19 +23,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// lensChartPresentationProvider is satisfied by any type that embeds models.LensChartPresentationTFModel.
+// lensChartPresentationProvider is satisfied by any comparable pointer to a type
+// that embeds models.LensChartPresentationTFModel.
 type lensChartPresentationProvider interface {
-	GetLensChartPresentation() models.LensChartPresentationTFModel
-}
-
-// PriorLens extracts a nil-safe pointer to the embedded LensChartPresentationTFModel from prior.
-// Returns nil when prior is nil. T must embed models.LensChartPresentationTFModel.
-func PriorLens[T lensChartPresentationProvider](prior *T) *models.LensChartPresentationTFModel {
-	if prior == nil {
-		return nil
-	}
-	p := (*prior).GetLensChartPresentation()
-	return &p
+	comparable
+	GetLensChartPresentation() *models.LensChartPresentationTFModel
 }
 
 // MarshalToJSONWithDefaults stores already-marshaled bytes as JSONWithDefaultsValue,
