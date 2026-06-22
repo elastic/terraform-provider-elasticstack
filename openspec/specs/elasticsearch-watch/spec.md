@@ -41,7 +41,9 @@ resource "elasticstack_elasticsearch_watch" "example" {
   }
 }
 ```
+
 ## Requirements
+
 ### Requirement: Watcher CRUD APIs (REQ-001–REQ-004)
 
 The resource SHALL use the Elasticsearch Put Watch API to create and update watches ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api-put-watch.html)). The resource SHALL use the Elasticsearch Get Watch API to read a watch ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api-get-watch.html)). The resource SHALL use the Elasticsearch Delete Watch API to delete a watch ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/watcher-api-delete-watch.html)). When Elasticsearch returns a non-success status for create, update, read, or delete requests (other than 404 on read), the resource SHALL surface the API error as a Terraform diagnostic.
@@ -69,14 +71,17 @@ The resource SHALL expose a computed `id` attribute representing the watch in th
 - THEN the `id` in state SHALL be in the format `<cluster_uuid>/<watch_id>`
 
 ### Requirement: Import (REQ-007–REQ-008)
+
 The resource SHALL support import by storing the provided `id` value in state when the import identifier is in the format `<cluster_uuid>/<watch_id>`. For import and all subsequent read/delete operations, the resource SHALL require the `id` to be in the format `<cluster_uuid>/<watch_id>` and SHALL return an error diagnostic when the format is invalid.
 
 #### Scenario: Import with valid composite id
+
 - **GIVEN** an `id` in the format `<cluster_uuid>/<watch_id>`
 - **WHEN** import completes
 - **THEN** the `id` SHALL be stored in state for subsequent operations
 
 #### Scenario: Invalid id format
+
 - **GIVEN** a stored or imported `id` that does not contain exactly one `/`
 - **WHEN** read or delete runs
 - **THEN** the resource SHALL return an error diagnostic with "Wrong resource ID"
@@ -189,7 +194,7 @@ When `active` is omitted from configuration, the resource SHALL behave as if `ac
 
 ### Requirement: JSON field mapping — read/state (REQ-023–REQ-027)
 
-On read, the resource SHALL marshal the API response fields `trigger`, `input`, `condition`, and `metadata` back into normalized JSON strings and store them in state. For `actions`, the resource SHALL marshal the API response into a normalized JSON string, but when the API response contains the redacted string sentinel at a nested path and the prior known Terraform `actions` JSON value (state on refresh, or plan on read-after-write after create or update) has a concrete value of any JSON type at the same path, the resource SHALL preserve that prior concrete value at that path in the final stored JSON. When no prior concrete value exists for a redacted `actions` path, or when the prior value at that path is itself the redacted string sentinel, the resource SHALL store the API value as returned. When the API response includes a non-nil `transform`, the resource SHALL marshal it to a normalized JSON string and store it in state. When the API response has a nil `transform`, the resource SHALL clear `transform` from state so the Terraform state reflects the remote watch. The resource SHALL store `watch_id` and `active` (from `watch.status.state.active`) directly from the API response. The resource SHALL store `throttle_period_in_millis` from the API response. JSON fields SHALL normalize semantically equivalent JSON so formatting-only changes do not create perpetual diffs.
+On read, the resource SHALL marshal the API response fields `trigger`, `input`, `condition`, and `metadata` back into normalized JSON strings and store them in state. For `actions`, the resource SHALL marshal the API response into a normalized JSON string, but when the API response contains the redacted string sentinel at a nested path and the prior known Terraform `actions` JSON value (state on refresh, or plan on read-after-write after create or update) has a concrete value of any JSON type at the same path, the resource SHALL preserve that prior concrete value at that path in the final stored JSON. When no prior concrete value exists for a redacted `actions` path, or when the prior value at that path is itself the redacted string sentinel, the resource SHALL store the API value as returned. The same redaction-preservation behavior applies to `input`: when the API response contains the redacted string sentinel at a nested `input` path and the prior known Terraform `input` JSON value (state on refresh, or plan on read-after-write after create or update) has a concrete value of any JSON type at the same path, the resource SHALL preserve that prior concrete value at that path in the final stored `input` JSON. When no prior concrete value exists for a redacted `input` path, or when the prior value at that path is itself the redacted string sentinel, the resource SHALL store the API value as returned. When the API response includes a non-nil `transform`, the resource SHALL marshal it to a normalized JSON string and store it in state. When the API response has a nil `transform`, the resource SHALL clear `transform` from state so the Terraform state reflects the remote watch. The resource SHALL store `watch_id` and `active` (from `watch.status.state.active`) directly from the API response. The resource SHALL store `throttle_period_in_millis` from the API response. JSON fields SHALL normalize semantically equivalent JSON so formatting-only changes do not create perpetual diffs.
 
 When the Elasticsearch API response contains an empty `metadata` field, and the prior known Terraform `metadata` value (plan on read-after-write, or state on refresh) is the JSON string `"null"`, the resource SHALL preserve `"null"` in the `metadata` state attribute. When the API response contains an empty `metadata` field and the prior known value is anything other than `"null"`, the resource SHALL store the empty-object string `"{}"` in the `metadata` state attribute. This preserves round-trip consistency for configurations that set `metadata = jsonencode(null)`.
 
@@ -254,11 +259,53 @@ When the Elasticsearch API response contains an empty `metadata` field, and the 
 - **WHEN** read runs and the API response returns `::es_redacted::` for that nested action path
 - **THEN** the final `actions` value in state SHALL keep the prior array at that path
 
+#### Scenario: Read/state narrative covers both actions and input redaction preservation
+
+- **GIVEN** the resource preserves prior concrete values at nested paths where the Watcher API returns `::es_redacted::`
+- **WHEN** the `JSON field mapping — read/state` requirement narrative is read
+- **THEN** the requirement SHALL explicitly describe redaction-preservation for both `actions` and `input`
+- **AND** `input` SHALL be treated with the same precedence rules as `actions` (prior concrete value preserved when the API returns the sentinel; API value stored when no prior concrete value exists or the prior value is itself the sentinel)
+
+### Requirement: Input redaction preservation (REQ-030)
+
+On read, the resource SHALL preserve prior known Terraform values of any JSON type at nested `input` paths where the Watcher API returns the redacted string sentinel (`::es_redacted::`), mirroring the existing `actions` redaction-preservation behavior (REQ-014–016, REQ-023–027). The prior `input` JSON SHALL be the last-applied value from Terraform state when read is a refresh, and the configured value from the Terraform plan when read runs as read-after-write after create or update. When no prior concrete value exists for a redacted `input` path, or when the prior value at that path is itself the redacted string sentinel, the resource SHALL store the API value as returned.
+
+The `fromAPIModel` function SHALL accept the prior `input` value and, when that prior value is known, unmarshal both the API `input` response and the prior Terraform `input` value, call `mergePreserveRedactedLeaves` on the two `map[string]any` trees, and store the merged result in state. All non-redacted `input` fields SHALL remain authoritative from the API response.
+
+#### Scenario: Redacted HTTP input basic auth password on create read-after-write
+
+- **GIVEN** the Terraform plan for `apply` includes a concrete sensitive `password` value at `input.http.request.auth.basic.password`
+- **WHEN** the provider performs read-after-write after a successful Put Watch call and the Get Watch API returns `::es_redacted::` at `input.http.request.auth.basic.password`
+- **THEN** the resource SHALL store the prior plan concrete `password` value at that path in state
+- **AND** all other `input` fields from the API response SHALL be stored in state unchanged
+- **AND** a subsequent `terraform plan` SHALL produce an empty diff
+
+#### Scenario: Redacted HTTP input basic auth password on refresh
+
+- **GIVEN** the last-applied `input` JSON in Terraform state includes a concrete sensitive `password` value at `input.http.request.auth.basic.password`
+- **WHEN** read runs as a refresh and the Get Watch API returns `::es_redacted::` at that path
+- **THEN** the resource SHALL preserve the prior state concrete `password` value at that path
+- **AND** non-redacted `input` fields from the API response SHALL still be reflected in state
+
+#### Scenario: No prior input value on import or first read
+
+- **GIVEN** Terraform has no prior concrete `input` value in state or plan for a redacted nested path (e.g. after `terraform import`)
+- **WHEN** read runs and the Get Watch API returns `::es_redacted::` at a nested `input` path
+- **THEN** the resource SHALL store the redacted API value at that path in state
+
+#### Scenario: Redacted input path when prior is a non-string
+
+- **GIVEN** the prior `input` JSON has a non-string value at a nested path (e.g. an object or array)
+- **WHEN** read runs and the Get Watch API returns `::es_redacted::` at that same path
+- **THEN** the resource SHALL preserve the prior non-string value at that path
+- **AND** non-redacted `input` fields from the API response SHALL still be reflected in state
+
 ### Requirement: SDK-to-Framework watch state compatibility (REQ-029)
+
 After the watch resource is migrated to the Terraform Plugin Framework, the resource SHALL continue to manage state created by the last SDK-backed provider release without requiring import, recreation, or changes to the configured resource type. The migrated resource SHALL preserve the existing composite `id` format, `watch_id` semantics, and import identifier format.
 
 #### Scenario: upgrade an SDK-managed watch
+
 - **GIVEN** a watch created by the last SDK-backed release of the provider
 - **WHEN** Terraform refreshes and plans the resource with the Plugin Framework implementation
 - **THEN** the resource SHALL keep the same `id` and `watch_id` without forcing replacement
-
