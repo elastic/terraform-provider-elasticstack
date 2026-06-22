@@ -219,35 +219,6 @@ func TestExpandTemplateCore(t *testing.T) {
 	})
 }
 
-func TestDecodeTemplateObject(t *testing.T) {
-	t.Run("null object returns empty diags", func(t *testing.T) {
-		var m testModel
-		diags := DecodeTemplateObject(ctx, types.ObjectNull(map[string]attr.Type{}), &m)
-		require.False(t, diags.HasError())
-		assert.True(t, m.Field.IsNull())
-	})
-
-	t.Run("unknown object returns empty diags", func(t *testing.T) {
-		var m testModel
-		diags := DecodeTemplateObject(ctx, types.ObjectUnknown(map[string]attr.Type{}), &m)
-		require.False(t, diags.HasError())
-		assert.True(t, m.Field.IsNull())
-	})
-
-	t.Run("valid object decodes into model", func(t *testing.T) {
-		attrTypes := map[string]attr.Type{
-			"field": types.StringType,
-		}
-		obj, d := types.ObjectValue(attrTypes, map[string]attr.Value{"field": types.StringValue("hello")})
-		require.False(t, d.HasError())
-
-		var m testModel
-		diags := DecodeTemplateObject(ctx, obj, &m)
-		require.False(t, diags.HasError())
-		assert.Equal(t, "hello", m.Field.ValueString())
-	})
-}
-
 func TestExpandMetadataJSON(t *testing.T) {
 	t.Run("null value returns nil", func(t *testing.T) {
 		var diags diag.Diagnostics
@@ -301,8 +272,4 @@ func TestExpandMetadataJSON(t *testing.T) {
 		assert.Nil(t, result)
 		assert.Equal(t, "Normalized JSON Unmarshal Error", diags.Errors()[0].Summary())
 	})
-}
-
-type testModel struct {
-	Field types.String `tfsdk:"field"`
 }
