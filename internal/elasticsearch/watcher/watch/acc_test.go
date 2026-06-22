@@ -451,6 +451,20 @@ func TestAccResourceWatch_redactedInputBasicAuthPreserved(t *testing.T) {
 				),
 			},
 			{
+				// Re-running the same config must produce an empty plan. This is the core
+				// regression check: if the provider stored the ::es_redacted:: sentinel from
+				// the Get Watch response instead of preserving the prior concrete password,
+				// the plan would show a perpetual diff on input.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_throttle"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+			{
 				// Import after update: verify that non-redacted attributes round-trip correctly.
 				// The input attribute is excluded from import verification because Elasticsearch
 				// redacts secret values on Get Watch; there is no prior state to restore from.
