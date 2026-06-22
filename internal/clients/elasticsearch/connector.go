@@ -144,6 +144,16 @@ func DeleteConnector(
 	return nil
 }
 
+// doConnectorUpdate is a shared helper that invokes fn and converts any returned
+// error to framework diagnostics. All UpdateConnector* wrappers use this to
+// eliminate the repeated error-wrapping boilerplate.
+func doConnectorUpdate(fn func() error) fwdiag.Diagnostics {
+	if err := fn(); err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	return nil
+}
+
 // UpdateConnectorName updates the connector name and description.
 func UpdateConnectorName(
 	ctx context.Context,
@@ -151,17 +161,14 @@ func UpdateConnectorName(
 	connectorID string,
 	name, description *string,
 ) fwdiag.Diagnostics {
-	typedClient := apiClient.GetESClient()
-
-	_, err := typedClient.Connector.UpdateName(connectorID).Request(&updatename.Request{
-		Name:        name,
-		Description: description,
-	}).Do(ctx)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	return nil
+	c := apiClient.GetESClient()
+	return doConnectorUpdate(func() error {
+		_, err := c.Connector.UpdateName(connectorID).Request(&updatename.Request{
+			Name:        name,
+			Description: description,
+		}).Do(ctx)
+		return err
+	})
 }
 
 // UpdateConnectorIndexName updates the connector index name.
@@ -171,16 +178,13 @@ func UpdateConnectorIndexName(
 	connectorID string,
 	indexName *string,
 ) fwdiag.Diagnostics {
-	typedClient := apiClient.GetESClient()
-
-	_, err := typedClient.Connector.UpdateIndexName(connectorID).Request(&updateindexname.Request{
-		IndexName: indexName,
-	}).Do(ctx)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	return nil
+	c := apiClient.GetESClient()
+	return doConnectorUpdate(func() error {
+		_, err := c.Connector.UpdateIndexName(connectorID).Request(&updateindexname.Request{
+			IndexName: indexName,
+		}).Do(ctx)
+		return err
+	})
 }
 
 // UpdateConnectorServiceType updates the connector service type.
@@ -190,16 +194,13 @@ func UpdateConnectorServiceType(
 	connectorID string,
 	serviceType string,
 ) fwdiag.Diagnostics {
-	typedClient := apiClient.GetESClient()
-
-	_, err := typedClient.Connector.UpdateServiceType(connectorID).Request(&updateservicetype.Request{
-		ServiceType: serviceType,
-	}).Do(ctx)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	return nil
+	c := apiClient.GetESClient()
+	return doConnectorUpdate(func() error {
+		_, err := c.Connector.UpdateServiceType(connectorID).Request(&updateservicetype.Request{
+			ServiceType: serviceType,
+		}).Do(ctx)
+		return err
+	})
 }
 
 // UpdateConnectorNative updates the connector is_native flag.
@@ -209,16 +210,13 @@ func UpdateConnectorNative(
 	connectorID string,
 	isNative bool,
 ) fwdiag.Diagnostics {
-	typedClient := apiClient.GetESClient()
-
-	_, err := typedClient.Connector.UpdateNative(connectorID).Request(&updatenative.Request{
-		IsNative: isNative,
-	}).Do(ctx)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	return nil
+	c := apiClient.GetESClient()
+	return doConnectorUpdate(func() error {
+		_, err := c.Connector.UpdateNative(connectorID).Request(&updatenative.Request{
+			IsNative: isNative,
+		}).Do(ctx)
+		return err
+	})
 }
 
 // UpdateConnectorPipeline replaces the connector's pipeline configuration via
@@ -231,16 +229,13 @@ func UpdateConnectorPipeline(
 	connectorID string,
 	pipeline types.IngestPipelineParams,
 ) fwdiag.Diagnostics {
-	typedClient := apiClient.GetESClient()
-
-	_, err := typedClient.Connector.UpdatePipeline(connectorID).Request(&updatepipeline.Request{
-		Pipeline: pipeline,
-	}).Do(ctx)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	return nil
+	c := apiClient.GetESClient()
+	return doConnectorUpdate(func() error {
+		_, err := c.Connector.UpdatePipeline(connectorID).Request(&updatepipeline.Request{
+			Pipeline: pipeline,
+		}).Do(ctx)
+		return err
+	})
 }
 
 // UpdateConnectorScheduling replaces the connector's scheduling configuration via
@@ -253,16 +248,13 @@ func UpdateConnectorScheduling(
 	connectorID string,
 	scheduling types.SchedulingConfiguration,
 ) fwdiag.Diagnostics {
-	typedClient := apiClient.GetESClient()
-
-	_, err := typedClient.Connector.UpdateScheduling(connectorID).Request(&updatescheduling.Request{
-		Scheduling: scheduling,
-	}).Do(ctx)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	return nil
+	c := apiClient.GetESClient()
+	return doConnectorUpdate(func() error {
+		_, err := c.Connector.UpdateScheduling(connectorID).Request(&updatescheduling.Request{
+			Scheduling: scheduling,
+		}).Do(ctx)
+		return err
+	})
 }
 
 // UpdateConnectorFeatures replaces the connector's features configuration via
@@ -275,16 +267,13 @@ func UpdateConnectorFeatures(
 	connectorID string,
 	features types.ConnectorFeatures,
 ) fwdiag.Diagnostics {
-	typedClient := apiClient.GetESClient()
-
-	_, err := typedClient.Connector.UpdateFeatures(connectorID).Request(&updatefeatures.Request{
-		Features: features,
-	}).Do(ctx)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	return nil
+	c := apiClient.GetESClient()
+	return doConnectorUpdate(func() error {
+		_, err := c.Connector.UpdateFeatures(connectorID).Request(&updatefeatures.Request{
+			Features: features,
+		}).Do(ctx)
+		return err
+	})
 }
 
 // UpdateConnectorAPIKeyID updates the connector API key id and secret id.
@@ -294,17 +283,14 @@ func UpdateConnectorAPIKeyID(
 	connectorID string,
 	apiKeyID, apiKeySecretID *string,
 ) fwdiag.Diagnostics {
-	typedClient := apiClient.GetESClient()
-
-	_, err := typedClient.Connector.UpdateApiKeyId(connectorID).Request(&updateapikeyid.Request{
-		ApiKeyId:       apiKeyID,
-		ApiKeySecretId: apiKeySecretID,
-	}).Do(ctx)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	return nil
+	c := apiClient.GetESClient()
+	return doConnectorUpdate(func() error {
+		_, err := c.Connector.UpdateApiKeyId(connectorID).Request(&updateapikeyid.Request{
+			ApiKeyId:       apiKeyID,
+			ApiKeySecretId: apiKeySecretID,
+		}).Do(ctx)
+		return err
+	})
 }
 
 // UpdateConnectorConfiguration updates connector configuration values.
@@ -314,16 +300,13 @@ func UpdateConnectorConfiguration(
 	connectorID string,
 	values map[string]json.RawMessage,
 ) fwdiag.Diagnostics {
-	typedClient := apiClient.GetESClient()
-
-	_, err := typedClient.Connector.UpdateConfiguration(connectorID).Request(&updateconfiguration.Request{
-		Values: values,
-	}).Do(ctx)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	return nil
+	c := apiClient.GetESClient()
+	return doConnectorUpdate(func() error {
+		_, err := c.Connector.UpdateConfiguration(connectorID).Request(&updateconfiguration.Request{
+			Values: values,
+		}).Do(ctx)
+		return err
+	})
 }
 
 // CreateSyncJob creates a sync job for the given connector and returns its id.
