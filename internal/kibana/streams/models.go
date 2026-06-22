@@ -65,9 +65,6 @@ func populateProcessingStepsFromAPI(ingest *kibanaoapi.StreamIngest) (types.List
 // processingStepsToAPI marshals a Terraform list of processing steps to the
 // JSON array required by the API.
 func processingStepsToAPI(steps types.List, diags *diag.Diagnostics) json.RawMessage {
-	if diags == nil {
-		return nil
-	}
 	rawSteps := make([]json.RawMessage, 0)
 	for _, elem := range steps.Elements() {
 		if norm, ok := elem.(jsontypes.Normalized); ok && typeutils.IsKnown(norm) {
@@ -76,7 +73,9 @@ func processingStepsToAPI(steps types.List, diags *diag.Diagnostics) json.RawMes
 	}
 	stepsJSON, err := json.Marshal(rawSteps)
 	if err != nil {
-		diags.AddError("Failed to marshal processing steps", err.Error())
+		if diags != nil {
+			diags.AddError("Failed to marshal processing steps", err.Error())
+		}
 		return nil
 	}
 	return stepsJSON
