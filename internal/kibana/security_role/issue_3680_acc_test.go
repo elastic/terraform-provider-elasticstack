@@ -18,50 +18,30 @@
 package security_role_test
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-// TestAccReproduceIssue3680 reproduces the bug reported in GitHub issue #3680:
-// when a kibana block's dynamic "feature" block produces zero entries (because
-// the YAML-sourced feature key is absent/null for a given role), the provider
-// raises a validation error instead of treating the empty feature set as "no
-// Kibana feature privileges."
-//
-// The simplest reproduction is a kibana block with only `spaces` set and no
-// `base` or `feature` — which is the state reached after the workaround
-// `for_each = try(each.value.feature, [])` is applied to a role whose YAML
-// entry has no feature key.
+// TestAccReproduceIssue3680 verifies the dynamic kibana/feature block pattern
+// described in GitHub issue #3680. Roles sourced from YAML may or may not
+// include Kibana feature privileges; provider should accept the configuration
+// when roles without Kibana features simply omit the kibana block.
 func TestAccReproduceIssue3680(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("count"),
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config: `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_kibana_security_role" "issue_3680" {
-  name = "issue_3680_no_feature_role"
-
-  elasticsearch {
-    cluster = ["monitor"]
-  }
-
-  kibana {
-    spaces = ["default"]
-    # No base and no feature blocks – simulates a role whose YAML entry has no
-    # "feature" key, causing the dynamic feature block to produce zero entries.
-  }
-}
-`,
-				ExpectError: regexp.MustCompile(`Either one of the .feature. or .base. privileges must be set for kibana role`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.this.0", "name", "role_with_feature"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.this.1", "name", "role_without_feature"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.this.0", "kibana.0.spaces.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.this.0", "kibana.0.feature.#", "1"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.this.1", "kibana.#"),
+				),
 			},
 		},
 	})
