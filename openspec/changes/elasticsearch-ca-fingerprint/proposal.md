@@ -30,10 +30,8 @@ None.
 
 ### Modified Capabilities
 
-- `provider-elasticsearch-connection`: extend with `ca_fingerprint` optional attribute and
+- `elasticsearch-provider-connection`: extend with `ca_fingerprint` optional attribute and
   `ELASTICSEARCH_CA_FINGERPRINT` env-var override.
-- `entitycore-ephemeral-envelope`: extend ephemeral connection snapshot round-trip with
-  `ca_fingerprint`.
 
 ## Impact
 
