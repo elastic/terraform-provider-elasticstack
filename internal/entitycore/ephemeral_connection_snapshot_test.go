@@ -47,13 +47,13 @@ func TestElasticsearchConnectionSnapshotRoundTrip(t *testing.T) {
 			Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
 				"X-Custom": types.StringValue("header-value"),
 			}),
-			Insecure:      types.BoolValue(true),
-			CAFile:        types.StringValue("/path/to/ca.pem"),
-			CAData:        types.StringValue("ca-data"),
-			CertFile:      types.StringValue("/path/to/cert.pem"),
-			CertData:      types.StringValue("cert-data"),
-			KeyFile:       types.StringValue("/path/to/key.pem"),
-			KeyData:       types.StringValue("key-data"),
+			Insecure: types.BoolValue(true),
+			CAFile:   types.StringValue("/path/to/ca.pem"),
+			CAData:   types.StringValue("ca-data"),
+			CertFile: types.StringValue("/path/to/cert.pem"),
+			CertData: types.StringValue("cert-data"),
+			KeyFile:  types.StringValue("/path/to/key.pem"),
+			KeyData:  types.StringValue("key-data"),
 		},
 	})
 	require.False(t, diags.HasError())
