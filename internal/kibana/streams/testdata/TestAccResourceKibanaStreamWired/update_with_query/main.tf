@@ -8,32 +8,12 @@ provider "elasticstack" {
   kibana {}
 }
 
-resource "elasticstack_kibana_dashboard" "test" {
-  title = "testacc-stream-${var.suffix}"
-
-  time_range = {
-    from = "now-15m"
-    to   = "now"
-  }
-
-  refresh_interval = {
-    pause = true
-    value = 0
-  }
-
-  query = {
-    language = "kql"
-    text     = ""
-  }
-}
-
 resource "elasticstack_kibana_stream" "wired" {
   name        = "logs.otel.testacc${var.suffix}"
   space_id    = "default"
-  description = "Fully-configured wired stream"
+  description = "Wired stream with attached query"
 
   wired_config = {
-    # grok format
     processing_steps = [
       jsonencode({
         action   = "grok"
@@ -42,17 +22,20 @@ resource "elasticstack_kibana_stream" "wired" {
       })
     ]
 
-    # Lifecycle: retain data for 30 days
-    lifecycle_json = jsonencode({ dsl = { data_retention = "30d" } })
-
-    # Failure store: disabled
+    lifecycle_json     = jsonencode({ dsl = { data_retention = "30d" } })
     failure_store_json = jsonencode({ disabled = {} })
 
-    # Index settings
     index_number_of_shards   = 1
     index_number_of_replicas = 0
     index_refresh_interval   = "5s"
   }
 
-  dashboards = [elasticstack_kibana_dashboard.test.dashboard_id]
+  queries = [
+    {
+      id          = "testacc-query-${var.suffix}"
+      title       = "Test Query"
+      description = "A test query for acceptance testing"
+      esql        = "FROM logs.otel.testacc${var.suffix} | LIMIT 10"
+    }
+  ]
 }
