@@ -15,10 +15,13 @@ resource "elasticstack_elasticsearch_watch" "test" {
   input = jsonencode({
     http = {
       request = {
-        scheme = "http"
-        host   = "127.0.0.1"
-        port   = 9
-        path   = "/"
+        scheme  = "http"
+        method  = "get"
+        host    = "127.0.0.1"
+        port    = 9
+        path    = "/"
+        params  = {}
+        headers = {}
         auth = {
           basic = {
             username = "acc-redacted-input-user"
