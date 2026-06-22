@@ -48,7 +48,7 @@
 - [x] 9.1 Write a unit test confirming that `ca_fingerprint` in provider config wires to `elasticsearch.Config.CertificateFingerprint`
 - [x] 9.2 Write a unit test confirming the `ELASTICSEARCH_CA_FINGERPRINT` env-var override applies
 - [x] 9.3 Write a unit test confirming `ca_fingerprint` conflicts with `ca_file` and with `ca_data` at the schema validator level
-- [ ] 9.4 (Optional) Acceptance test for provider-level and per-resource connection block (requires a cluster serving a known fingerprint — mark with `t.Skip` if environment is unavailable)
+- [ ] 9.4 (Optional) Acceptance test for provider-level and per-resource connection block (requires a cluster serving a known fingerprint — mark with `t.Skip` if environment is unavailable). Deferred: no TLS fingerprint fixture exists in the repo; unit tests cover config wiring, env override, schema conflicts, and ephemeral snapshot round-trip.
 
 ## 10. Build and spec validation
 
