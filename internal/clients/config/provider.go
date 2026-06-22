@@ -36,6 +36,7 @@ type ElasticsearchConnection struct {
 	Insecure               types.Bool   `tfsdk:"insecure"`
 	CAFile                 types.String `tfsdk:"ca_file"`
 	CAData                 types.String `tfsdk:"ca_data"`
+	CAFingerprint          types.String `tfsdk:"ca_fingerprint"`
 	CertFile               types.String `tfsdk:"cert_file"`
 	KeyFile                types.String `tfsdk:"key_file"`
 	CertData               types.String `tfsdk:"cert_data"`

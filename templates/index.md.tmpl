@@ -62,6 +62,7 @@ For Elasticsearch resources, you can use the following variables:
 - `ELASTICSEARCH_API_KEY` - An Elasticsearch API key to use instead of `ELASTICSEARCH_USERNAME` and `ELASTICSEARCH_PASSWORD`
 - `ELASTICSEARCH_BEARER_TOKEN` - A bearer token to use for Elasticsearch authorization header.
 - `ELASTICSEARCH_ES_CLIENT_AUTHENTICATION` - The shared secret for the Elasticsearch authorization header.
+- `ELASTICSEARCH_CA_FINGERPRINT` - SHA-256 hex fingerprint (64 hexadecimal characters, no colons or separators) of the server TLS certificate used to pin the connection instead of a full CA chain.
 
 Kibana resources will re-use any Elasticsearch credentials specified, these may be overridden with the following variables:
 - `KIBANA_USERNAME` - The username to use for Kibana authentication
