@@ -68,3 +68,10 @@ SHALL be extended to add:
 > the final stored `input` JSON. When no prior concrete value exists for a redacted `input` path, or
 > when the prior value at that path is itself the redacted string sentinel, the resource SHALL store
 > the API value as returned.
+
+#### Scenario: Read/state narrative covers both actions and input redaction preservation
+
+- **GIVEN** the resource preserves prior concrete values at nested paths where the Watcher API returns `::es_redacted::`
+- **WHEN** the `JSON field mapping — read/state` requirement narrative is read
+- **THEN** the requirement SHALL explicitly describe redaction-preservation for both `actions` and `input`
+- **AND** `input` SHALL be treated with the same precedence rules as `actions` (prior concrete value preserved when the API returns the sentinel; API value stored when no prior concrete value exists or the prior value is itself the sentinel)
