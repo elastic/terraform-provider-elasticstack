@@ -21,6 +21,7 @@ import (
 	"context"
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/planmodifiers"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
@@ -89,6 +90,9 @@ func commonBlockAttributes() map[string]schema.Attribute {
 			MarkdownDescription: "Maximum size of files in snapshots.",
 			Optional:            true,
 			Computed:            true,
+			PlanModifiers: []planmodifier.String{
+				planmodifiers.StringNullIfEmpty(),
+			},
 		},
 		settingCompress: schema.BoolAttribute{
 			MarkdownDescription: "If true, metadata files, such as index mappings and settings, are compressed in snapshots.",
@@ -101,11 +105,17 @@ func commonBlockAttributes() map[string]schema.Attribute {
 			Optional:            true,
 			Computed:            true,
 			Default:             stringdefault.StaticString("40mb"),
+			PlanModifiers: []planmodifier.String{
+				planmodifiers.StringNullIfEmpty(),
+			},
 		},
 		settingMaxRestoreBytesPerSec: schema.StringAttribute{
 			MarkdownDescription: "Maximum snapshot restore rate per node.",
 			Optional:            true,
 			Computed:            true,
+			PlanModifiers: []planmodifier.String{
+				planmodifiers.StringNullIfEmpty(),
+			},
 		},
 		settingReadonly: schema.BoolAttribute{
 			MarkdownDescription: "If true, the repository is read-only.",
