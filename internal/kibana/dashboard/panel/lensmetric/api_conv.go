@@ -147,13 +147,8 @@ func metricChartConfigFromAPIVariant0(
 		m.BreakdownByJSON = jsontypes.NewNormalizedNull()
 	}
 
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
 	if !lenscommon.PopulateLensChartPresentation(
-		ctx, &m.LensChartPresentationTFModel, priorLens, apiChart.TimeRange,
+		ctx, &m.LensChartPresentationTFModel, prior, apiChart.TimeRange,
 		apiChart.HideTitle, apiChart.HideBorder, apiChart.References, apiChart.Drilldowns, &diags,
 	) {
 		return diags
@@ -214,13 +209,8 @@ func metricChartConfigFromAPIVariant1(
 		m.BreakdownByJSON = jsontypes.NewNormalizedNull()
 	}
 
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
 	if !lenscommon.PopulateLensChartPresentation(
-		ctx, &m.LensChartPresentationTFModel, priorLens, apiChart.TimeRange,
+		ctx, &m.LensChartPresentationTFModel, prior, apiChart.TimeRange,
 		apiChart.HideTitle, apiChart.HideBorder, apiChart.References, apiChart.Drilldowns, &diags,
 	) {
 		return diags

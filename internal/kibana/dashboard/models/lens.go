@@ -81,6 +81,13 @@ type LensChartPresentationTFModel struct {
 	Drilldowns     []LensDrilldownItemTFModel `tfsdk:"drilldowns"`
 }
 
+// GetLensChartPresentation returns a pointer to this model, allowing types that embed
+// LensChartPresentationTFModel to satisfy the lenscommon.lensChartPresentationProvider
+// interface. A nil receiver returns nil.
+func (m *LensChartPresentationTFModel) GetLensChartPresentation() *LensChartPresentationTFModel {
+	return m
+}
+
 // LensChartBaseTFModel holds the fields shared by all Lens by-value chart config models.
 type LensChartBaseTFModel struct {
 	Title               types.String           `tfsdk:"title"`
