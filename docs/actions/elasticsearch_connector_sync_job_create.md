@@ -60,7 +60,7 @@ Optional:
 - `bearer_token` (String, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Bearer Token to use for authentication to Elasticsearch
 - `ca_data` (String) PEM-encoded custom Certificate Authority certificate
 - `ca_file` (String) Path to a custom Certificate Authority certificate
-- `ca_fingerprint` (String) SHA-256 hex fingerprint of the server TLS certificate used to pin the connection instead of a full CA chain
+- `ca_fingerprint` (String) SHA-256 hex fingerprint (64 hexadecimal characters, no colons or separators) of the server TLS certificate used to pin the connection instead of a full CA chain
 - `cert_data` (String) PEM encoded certificate for client auth
 - `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
 - `endpoints` (List of String) A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.

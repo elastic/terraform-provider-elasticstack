@@ -102,7 +102,7 @@ For Elasticsearch resources, you can use the following variables:
 - `ELASTICSEARCH_API_KEY` - An Elasticsearch API key to use instead of `ELASTICSEARCH_USERNAME` and `ELASTICSEARCH_PASSWORD`
 - `ELASTICSEARCH_BEARER_TOKEN` - A bearer token to use for Elasticsearch authorization header.
 - `ELASTICSEARCH_ES_CLIENT_AUTHENTICATION` - The shared secret for the Elasticsearch authorization header.
-- `ELASTICSEARCH_CA_FINGERPRINT` - SHA-256 hex fingerprint of the server TLS certificate used to pin the connection instead of a full CA chain.
+- `ELASTICSEARCH_CA_FINGERPRINT` - SHA-256 hex fingerprint (64 hexadecimal characters, no colons or separators) of the server TLS certificate used to pin the connection instead of a full CA chain.
 
 Kibana resources will re-use any Elasticsearch credentials specified, these may be overridden with the following variables:
 - `KIBANA_USERNAME` - The username to use for Kibana authentication
@@ -171,7 +171,7 @@ Optional:
 - `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Elasticsearch
 - `ca_data` (String) PEM-encoded custom Certificate Authority certificate
 - `ca_file` (String) Path to a custom Certificate Authority certificate
-- `ca_fingerprint` (String) SHA-256 hex fingerprint of the server TLS certificate used to pin the connection instead of a full CA chain
+- `ca_fingerprint` (String) SHA-256 hex fingerprint (64 hexadecimal characters, no colons or separators) of the server TLS certificate used to pin the connection instead of a full CA chain
 - `cert_data` (String) PEM encoded certificate for client auth
 - `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
 - `endpoints` (List of String, Sensitive) A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
