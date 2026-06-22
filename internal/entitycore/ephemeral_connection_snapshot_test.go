@@ -47,13 +47,14 @@ func TestElasticsearchConnectionSnapshotRoundTrip(t *testing.T) {
 			Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
 				"X-Custom": types.StringValue("header-value"),
 			}),
-			Insecure: types.BoolValue(true),
-			CAFile:   types.StringValue("/path/to/ca.pem"),
-			CAData:   types.StringValue("ca-data"),
-			CertFile: types.StringValue("/path/to/cert.pem"),
-			CertData: types.StringValue("cert-data"),
-			KeyFile:  types.StringValue("/path/to/key.pem"),
-			KeyData:  types.StringValue("key-data"),
+			Insecure:      types.BoolValue(true),
+			CAFile:        types.StringValue("/path/to/ca.pem"),
+			CAData:        types.StringValue("ca-data"),
+			CAFingerprint: types.StringValue("aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899"),
+			CertFile:      types.StringValue("/path/to/cert.pem"),
+			CertData:      types.StringValue("cert-data"),
+			KeyFile:       types.StringValue("/path/to/key.pem"),
+			KeyData:       types.StringValue("key-data"),
 		},
 	})
 	require.False(t, diags.HasError())
@@ -78,6 +79,7 @@ func TestElasticsearchConnectionSnapshotRoundTrip(t *testing.T) {
 	require.True(t, decodedConn.Insecure.ValueBool())
 	require.Equal(t, "/path/to/ca.pem", decodedConn.CAFile.ValueString())
 	require.Equal(t, "ca-data", decodedConn.CAData.ValueString())
+	require.Equal(t, "aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899", decodedConn.CAFingerprint.ValueString())
 	require.Equal(t, "/path/to/cert.pem", decodedConn.CertFile.ValueString())
 	require.Equal(t, "cert-data", decodedConn.CertData.ValueString())
 	require.Equal(t, "/path/to/key.pem", decodedConn.KeyFile.ValueString())

@@ -79,6 +79,7 @@ func elasticsearchConnectionAttrTypes() map[string]attr.Type {
 		"insecure":                 types.BoolType,
 		"ca_file":                  types.StringType,
 		"ca_data":                  types.StringType,
+		"ca_fingerprint":           types.StringType,
 		"cert_file":                types.StringType,
 		"key_file":                 types.StringType,
 		"cert_data":                types.StringType,

@@ -118,6 +118,63 @@ func Test_newElasticsearchConfigFromFramework(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "should wire ca_fingerprint to CertificateFingerprint",
+			args: func() args {
+				base := baseConfig{
+					Username: "elastic",
+					Password: "changeme",
+				}
+
+				config := base.toElasticsearchConfig()
+				config.config.CertificateFingerprint = "aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899"
+
+				return args{
+					providerConfig: ProviderConfiguration{
+						Elasticsearch: []ElasticsearchConnection{
+							{
+								Endpoints: basetypes.NewListNull(basetypes.StringType{}),
+								Headers:   basetypes.NewMapNull(basetypes.StringType{}),
+								CAFingerprint: basetypes.NewStringValue(
+									"aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899",
+								),
+							},
+						},
+					},
+					base:             base,
+					expectedESConfig: &config,
+				}
+			},
+		},
+		{
+			name: "should prefer ELASTICSEARCH_CA_FINGERPRINT from environment",
+			args: func() args {
+				base := baseConfig{
+					Username: "elastic",
+					Password: "changeme",
+				}
+
+				config := base.toElasticsearchConfig()
+				config.config.CertificateFingerprint = "env-fingerprint-value"
+
+				return args{
+					providerConfig: ProviderConfiguration{
+						Elasticsearch: []ElasticsearchConnection{
+							{
+								Endpoints: basetypes.NewListNull(basetypes.StringType{}),
+								Headers:   basetypes.NewMapNull(basetypes.StringType{}),
+								CAFingerprint: basetypes.NewStringValue("config-fingerprint-value"),
+							},
+						},
+					},
+					env: map[string]string{
+						"ELASTICSEARCH_CA_FINGERPRINT": "env-fingerprint-value",
+					},
+					base:             base,
+					expectedESConfig: &config,
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -126,6 +183,7 @@ func Test_newElasticsearchConfigFromFramework(t *testing.T) {
 			os.Unsetenv("ELASTICSEARCH_INSECURE")
 			os.Unsetenv("ELASTICSEARCH_BEARER_TOKEN")
 			os.Unsetenv("ELASTICSEARCH_ES_CLIENT_AUTHENTICATION")
+			os.Unsetenv("ELASTICSEARCH_CA_FINGERPRINT")
 
 			args := tt.args()
 
