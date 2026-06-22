@@ -2,13 +2,13 @@
 
 ### Requirement: CA fingerprint attribute on Elasticsearch connection blocks (REQ-007)
 
-Every Elasticsearch connection block surface SHALL expose an optional `ca_fingerprint` string attribute that maps to `elasticsearch.Config.CertificateFingerprint` in the go-elasticsearch SDK. The attribute SHALL be present on `GetEsFWConnectionBlock` (managed resources), `GetEsEphemeralConnectionBlock` (ephemeral resources), `GetEsActionConnectionBlock` (actions), and the provider-level `ProviderConfiguration.Elasticsearch` struct.
+Every Elasticsearch connection block surface SHALL expose an optional `ca_fingerprint` string attribute that maps to `elasticsearch.Config.CertificateFingerprint` in the go-elasticsearch SDK. The attribute SHALL be present on `GetEsFWConnectionBlock` (managed resources), `GetEsEphemeralConnectionBlock` (ephemeral resources), `GetEsActionConnectionBlock` (actions), and the provider-level `elasticsearch` connection block (`internal/clients/config.ProviderConfiguration.Elasticsearch`, modelled by `ElasticsearchConnection`).
 
 When `ca_fingerprint` is set, the provider SHALL set `elasticsearch.Config.CertificateFingerprint` to the supplied value so the client uses the SHA-256 hex fingerprint to pin the server certificate.
 
 `ca_fingerprint` SHALL conflict with `ca_file` and `ca_data`: mixing full-chain CA material with fingerprint pinning SHALL produce a plan-time error diagnostic.
 
-An environment-variable override `ELASTICSEARCH_CA_FINGERPRINT` SHALL be honoured in `withEnvironmentOverrides`, consistent with the `ELASTICSEARCH_<ATTR>` pattern used for all other connection attributes.
+An environment-variable override `ELASTICSEARCH_CA_FINGERPRINT` SHALL be honoured in `withEnvironmentOverrides`, consistent with existing Elasticsearch connection env-var overrides (e.g. `ELASTICSEARCH_ENDPOINTS`, `ELASTICSEARCH_INSECURE`, `ELASTICSEARCH_BEARER_TOKEN`).
 
 The `ephemeralESConnectionSnapshot` struct SHALL include a `CAFingerprint` field so ephemeral resources correctly restore the fingerprint on the Close lifecycle call.
 
