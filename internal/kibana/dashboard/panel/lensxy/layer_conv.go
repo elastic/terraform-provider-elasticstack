@@ -143,11 +143,7 @@ func dataLayerFromAPINoESQL(ctx context.Context, m *models.DataLayerModel, apiLa
 	}
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(apiLayer.IgnoreGlobalFilters)
-	if apiLayer.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*apiLayer.Sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
+	m.Sampling = typeutils.Float32PointerToFloat64Value(apiLayer.Sampling)
 
 	if apiLayer.X != nil {
 		xJSON, err := json.Marshal(apiLayer.X)
@@ -198,11 +194,7 @@ func dataLayerFromAPIESql(ctx context.Context, m *models.DataLayerModel, apiLaye
 	}
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(apiLayer.IgnoreGlobalFilters)
-	if apiLayer.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*apiLayer.Sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
+	m.Sampling = typeutils.Float32PointerToFloat64Value(apiLayer.Sampling)
 
 	if apiLayer.X != nil {
 		xJSON, err := json.Marshal(apiLayer.X)
@@ -361,11 +353,7 @@ func referenceLineLayerFromAPINoESQL(m *models.ReferenceLineLayerModel, apiLayer
 	}
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(apiLayer.IgnoreGlobalFilters)
-	if apiLayer.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*apiLayer.Sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
+	m.Sampling = typeutils.Float32PointerToFloat64Value(apiLayer.Sampling)
 
 	// Convert thresholds
 	if len(apiLayer.Thresholds) > 0 {

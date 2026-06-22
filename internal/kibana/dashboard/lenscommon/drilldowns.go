@@ -160,9 +160,9 @@ func decodeDashboardBranchVis(raw []byte) (models.DrilldownItemModel, diag.Diagn
 		DashboardID: types.StringValue(obj.DashboardId),
 		Label:       types.StringValue(obj.Label),
 	}
-	dm.UseFilters = typeutils.BoolPointerValue(obj.UseFilters)
-	dm.UseTimeRange = typeutils.BoolPointerValue(obj.UseTimeRange)
-	dm.OpenInNewTab = typeutils.BoolPointerValue(obj.OpenInNewTab)
+	dm.UseFilters = types.BoolPointerValue(obj.UseFilters)
+	dm.UseTimeRange = types.BoolPointerValue(obj.UseTimeRange)
+	dm.OpenInNewTab = types.BoolPointerValue(obj.OpenInNewTab)
 	return models.DrilldownItemModel{Dashboard: dm}, diags
 }
 
@@ -188,7 +188,7 @@ func decodeDiscoverBranchVis(raw []byte) (models.DrilldownItemModel, diag.Diagno
 	discover := &models.DrilldownDiscoverBlockModel{
 		Label: types.StringValue(obj.Label),
 	}
-	discover.OpenInNewTab = typeutils.BoolPointerValue(obj.OpenInNewTab)
+	discover.OpenInNewTab = types.BoolPointerValue(obj.OpenInNewTab)
 	return models.DrilldownItemModel{Discover: discover}, diags
 }
 
@@ -221,8 +221,8 @@ func decodeURLBranchVis(raw []byte) (models.DrilldownItemModel, diag.Diagnostics
 		Label:   types.StringValue(obj.Label),
 		Trigger: types.StringValue(triggerStr),
 	}
-	url.EncodeURL = typeutils.BoolPointerValue(obj.EncodeUrl)
-	url.OpenInNewTab = typeutils.BoolPointerValue(obj.OpenInNewTab)
+	url.EncodeURL = types.BoolPointerValue(obj.EncodeUrl)
+	url.OpenInNewTab = types.BoolPointerValue(obj.OpenInNewTab)
 	return models.DrilldownItemModel{URL: url}, diags
 }
 

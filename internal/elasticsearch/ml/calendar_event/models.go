@@ -122,8 +122,8 @@ func (m *CalendarEventTFModel) fromAPIModel(_ context.Context, apiModel *Calenda
 	m.StartTime = timetypes.NewRFC3339TimeValue(startTime)
 	m.EndTime = timetypes.NewRFC3339TimeValue(endTime)
 
-	m.SkipResult = typeutils.BoolPointerValue(apiModel.SkipResult)
-	m.SkipModelUpdate = typeutils.BoolPointerValue(apiModel.SkipModelUpdate)
+	m.SkipResult = types.BoolPointerValue(apiModel.SkipResult)
+	m.SkipModelUpdate = types.BoolPointerValue(apiModel.SkipModelUpdate)
 	m.ForceTimeShift = typeutils.StringishPointerValue(apiModel.ForceTimeShift)
 
 	return diags

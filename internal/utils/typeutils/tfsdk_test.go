@@ -206,56 +206,6 @@ func TestOptionalString(t *testing.T) {
 	}
 }
 
-func TestBoolPointerValue(t *testing.T) {
-	t.Parallel()
-
-	trueVal := true
-	falseVal := false
-
-	tests := []struct {
-		name  string
-		input *bool
-		want  types.Bool
-	}{
-		{name: "converts nil", input: nil, want: types.BoolNull()},
-		{name: "converts true", input: &trueVal, want: types.BoolValue(true)},
-		{name: "converts false", input: &falseVal, want: types.BoolValue(false)},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := typeutils.BoolPointerValue(tt.input)
-			require.Equal(t, tt.want, got)
-		})
-	}
-}
-
-func TestInt64PointerValue(t *testing.T) {
-	t.Parallel()
-
-	pos := int64(42)
-	neg := int64(-7)
-	zero := int64(0)
-
-	tests := []struct {
-		name  string
-		input *int64
-		want  types.Int64
-	}{
-		{name: "converts nil", input: nil, want: types.Int64Null()},
-		{name: "converts positive", input: &pos, want: types.Int64Value(42)},
-		{name: "converts negative", input: &neg, want: types.Int64Value(-7)},
-		{name: "converts zero", input: &zero, want: types.Int64Value(0)},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := typeutils.Int64PointerValue(tt.input)
-			require.Equal(t, tt.want, got)
-		})
-	}
-}
-
 func TestIntPointerToInt64Value(t *testing.T) {
 	t.Parallel()
 
@@ -277,6 +227,32 @@ func TestIntPointerToInt64Value(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := typeutils.IntPointerToInt64Value(tt.input)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestFloat32PointerToFloat64Value(t *testing.T) {
+	t.Parallel()
+
+	pos := float32(1.5)
+	neg := float32(-7.25)
+	zero := float32(0)
+
+	tests := []struct {
+		name  string
+		input *float32
+		want  types.Float64
+	}{
+		{name: "converts nil", input: nil, want: types.Float64Null()},
+		{name: "converts positive", input: &pos, want: types.Float64Value(1.5)},
+		{name: "converts negative", input: &neg, want: types.Float64Value(-7.25)},
+		{name: "converts zero", input: &zero, want: types.Float64Value(0)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := typeutils.Float32PointerToFloat64Value(tt.input)
 			require.Equal(t, tt.want, got)
 		})
 	}

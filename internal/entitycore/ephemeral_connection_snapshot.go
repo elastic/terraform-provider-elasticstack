@@ -196,7 +196,7 @@ func elasticsearchConnectionFromSnapshot(snapshot *ephemeralESConnectionSnapshot
 		APIKey:                 typeutils.NonEmptyStringishValue(snapshot.APIKey),
 		BearerToken:            typeutils.NonEmptyStringishValue(snapshot.BearerToken),
 		ESClientAuthentication: typeutils.NonEmptyStringishValue(snapshot.ESClientAuthentication),
-		Insecure:               typeutils.BoolPointerValue(snapshot.Insecure),
+		Insecure:               types.BoolPointerValue(snapshot.Insecure),
 		CAFile:                 typeutils.NonEmptyStringishValue(snapshot.CAFile),
 		CAData:                 typeutils.NonEmptyStringishValue(snapshot.CAData),
 		CertFile:               typeutils.NonEmptyStringishValue(snapshot.CertFile),
@@ -283,7 +283,7 @@ func kibanaConnectionFromSnapshot(snapshot *ephemeralKibanaConnectionSnapshot) c
 		Password:    typeutils.NonEmptyStringishValue(snapshot.Password),
 		APIKey:      typeutils.NonEmptyStringishValue(snapshot.APIKey),
 		BearerToken: typeutils.NonEmptyStringishValue(snapshot.BearerToken),
-		Insecure:    typeutils.BoolPointerValue(snapshot.Insecure),
+		Insecure:    types.BoolPointerValue(snapshot.Insecure),
 	}
 
 	if len(snapshot.Endpoints) > 0 {

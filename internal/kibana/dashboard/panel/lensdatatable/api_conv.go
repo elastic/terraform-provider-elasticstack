@@ -55,11 +55,7 @@ func datatableNoESQLConfigFromAPI(
 	m.DataSourceJSON = dv
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	if api.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*api.Sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
+	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
 
 	m.Styling = &models.DatatableStylingModel{}
 	if stylingDiags := datatableStylingFromAPI(m.Styling, api.Styling); stylingDiags.HasError() {
@@ -234,11 +230,7 @@ func datatableESQLConfigFromAPI(
 	m.DataSourceJSON = dv
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	if api.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*api.Sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
+	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
 
 	m.Styling = &models.DatatableStylingModel{}
 	if stylingDiags := datatableStylingFromAPI(m.Styling, api.Styling); stylingDiags.HasError() {

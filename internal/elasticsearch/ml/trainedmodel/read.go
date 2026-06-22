@@ -92,7 +92,7 @@ func mapTrainedModelConfig(ctx context.Context, model *estypes.TrainedModelConfi
 		data.ModelType = types.StringNull()
 	}
 	data.ModelSizeBytes = byteSizeToInt64Value(model.ModelSizeBytes)
-	data.FullyDefined = typeutils.BoolPointerValue(model.FullyDefined)
+	data.FullyDefined = types.BoolPointerValue(model.FullyDefined)
 
 	// Tags
 	if model.Tags == nil {

@@ -55,11 +55,7 @@ func pieChartConfigPopulateCommonFields(
 	} else {
 		m.IgnoreGlobalFilters = types.BoolValue(false)
 	}
-	if sampling != nil {
-		m.Sampling = types.Float64Value(float64(*sampling))
-	} else {
-		m.Sampling = types.Float64Value(1.0)
-	}
+	m.Sampling = lenscommon.SamplingFromAPIWithDefault(sampling, 1.0)
 	m.DonutHole = typeutils.StringishPointerValue(donutHole)
 	m.LabelPosition = typeutils.StringishPointerValue(labelPosition)
 	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, datasetErr, "data_source_json", diags)

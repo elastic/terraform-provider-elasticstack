@@ -53,11 +53,7 @@ func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, prior *
 	m.DataSourceJSON = v
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	if api.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*api.Sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
+	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
 
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
@@ -102,11 +98,7 @@ func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, pri
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	if api.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*api.Sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
+	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
 
 	datasetBytes, err := json.Marshal(api.DataSource)
 	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
@@ -166,12 +158,12 @@ func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, pri
 		} else {
 			em.Ticks.Mode = types.StringNull()
 		}
-		em.Ticks.Visible = typeutils.BoolPointerValue(api.Metric.Ticks.Visible)
+		em.Ticks.Visible = types.BoolPointerValue(api.Metric.Ticks.Visible)
 	}
 	if api.Metric.Title != nil {
 		em.Title = &models.GaugeEsqlTitle{}
 		em.Title.Text = typeutils.StringishPointerValue(api.Metric.Title.Text)
-		em.Title.Visible = typeutils.BoolPointerValue(api.Metric.Title.Visible)
+		em.Title.Visible = types.BoolPointerValue(api.Metric.Title.Visible)
 	}
 	m.EsqlMetric = em
 
