@@ -127,6 +127,33 @@ func TestElasticsearchConnectionBlocks_tlsTrustAttributesHaveMatchingValidatorCo
 	require.Equal(t, managed, action)
 }
 
+func TestElasticsearchConnectionBlocks_allAttributesPresent(t *testing.T) {
+	t.Parallel()
+
+	wantAttrs := []string{
+		attrUsername, attrPassword, attrAPIKey, attrBearerToken,
+		attrESClientAuthentication, attrEndpoints, attrHeaders,
+		attrInsecure, attrCAFile, attrCAData, attrCAFingerprint,
+		attrCertFile, attrKeyFile, attrCertData, attrKeyData,
+	}
+
+	managed := fwConnectionBlockAttributeNames(GetEsFWConnectionBlock())
+	ephemeral := ephemeralConnectionBlockAttributeNames(GetEsEphemeralConnectionBlock())
+	action := actionConnectionBlockAttributeNames(GetEsActionConnectionBlock())
+
+	for _, attr := range wantAttrs {
+		if _, ok := managed[attr]; !ok {
+			t.Errorf("managed connection block missing attribute %q", attr)
+		}
+		if _, ok := ephemeral[attr]; !ok {
+			t.Errorf("ephemeral connection block missing attribute %q", attr)
+		}
+		if _, ok := action[attr]; !ok {
+			t.Errorf("action connection block missing attribute %q", attr)
+		}
+	}
+}
+
 func TestKibanaConnectionNullList_objectMatchesGetKbFWConnectionBlock(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
