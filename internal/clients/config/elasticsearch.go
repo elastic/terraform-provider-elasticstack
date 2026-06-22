@@ -163,6 +163,7 @@ func (c elasticsearchConfig) withEnvironmentOverrides() elasticsearchConfig {
 
 	if caFingerprint := os.Getenv("ELASTICSEARCH_CA_FINGERPRINT"); caFingerprint != "" {
 		c.config.CertificateFingerprint = caFingerprint
+		c.config.CACert = nil
 	}
 
 	return c

@@ -176,6 +176,35 @@ func Test_newElasticsearchConfigFromFramework(t *testing.T) {
 			},
 		},
 		{
+			name: "should clear CACert when ELASTICSEARCH_CA_FINGERPRINT overrides ca_data",
+			args: func() args {
+				base := baseConfig{
+					Username: "elastic",
+					Password: "changeme",
+				}
+
+				config := base.toElasticsearchConfig()
+				config.config.CertificateFingerprint = "env-fingerprint-value"
+
+				return args{
+					providerConfig: ProviderConfiguration{
+						Elasticsearch: []ElasticsearchConnection{
+							{
+								Endpoints: basetypes.NewListNull(basetypes.StringType{}),
+								Headers:   basetypes.NewMapNull(basetypes.StringType{}),
+								CAData:    basetypes.NewStringValue("-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----"),
+							},
+						},
+					},
+					env: map[string]string{
+						"ELASTICSEARCH_CA_FINGERPRINT": "env-fingerprint-value",
+					},
+					base:             base,
+					expectedESConfig: &config,
+				}
+			},
+		},
+		{
 			name: "should apply ELASTICSEARCH_CA_FINGERPRINT when config omits ca_fingerprint",
 			args: func() args {
 				base := baseConfig{
