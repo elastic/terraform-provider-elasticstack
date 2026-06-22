@@ -189,6 +189,14 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 	diags.Append(d...)
 	model.Policy = policyObj
 
+	originallySetAdvancedSettings := typeutils.IsKnown(model.AdvancedSettings)
+	if originallySetAdvancedSettings {
+		settings := advancedSettingsFromPolicyData(policyData)
+		advancedSettings, d := advancedSettingsMapToTerraform(ctx, settings)
+		diags.Append(d...)
+		model.AdvancedSettings = advancedSettings
+	}
+
 	return diags
 }
 

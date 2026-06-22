@@ -114,6 +114,13 @@ func resourceSchema() schema.Schema {
 					"Common values include `\"NGAv1\"`, `\"NGAV\"`, `\"dataCollection\"`, `\"EDRComplete\"`, `\"EDREssential\"`.",
 				Optional: true,
 			},
+			"advanced_settings": schema.MapAttribute{
+				Description: "Elastic Defend advanced settings as a map of setting name to value. Keys use Elastic's " +
+					"documented dot notation with OS prefix (for example `linux.advanced.artifacts.global.base_url`). " +
+					"See https://www.elastic.co/docs/reference/security/defend-advanced-settings for available settings.",
+				ElementType: types.StringType,
+				Optional:    true,
+			},
 			"policy": policySchema(),
 		},
 

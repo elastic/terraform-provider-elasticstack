@@ -35,5 +35,20 @@ var BuildBootstrapRequest = buildBootstrapRequest
 // BuildFinalizeRequest is exported for unit tests.
 var BuildFinalizeRequest = buildFinalizeRequest
 
+// AdvancedSettingsMapFromTerraform is exported for unit tests.
+var AdvancedSettingsMapFromTerraform = advancedSettingsMapFromTerraform
+
+// AdvancedSettingsFromPolicyData is exported for unit tests.
+var AdvancedSettingsFromPolicyData = advancedSettingsFromPolicyData
+
+// MergeAdvancedSettingsIntoPolicy is exported for unit tests.
+var MergeAdvancedSettingsIntoPolicy = mergeAdvancedSettingsIntoPolicy
+
+// BuildPolicyPayload is exported for unit tests.
+var BuildPolicyPayload = buildPolicyPayload
+
+// AdvancedSettingsMapToTerraform is exported for unit tests.
+var AdvancedSettingsMapToTerraform = advancedSettingsMapToTerraform
+
 // ExtractPrivateStateFromResponse is exported for unit tests.
 var ExtractPrivateStateFromResponse = extractPrivateStateFromResponse

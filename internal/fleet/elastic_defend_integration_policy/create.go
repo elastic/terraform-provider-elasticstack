@@ -106,7 +106,7 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 	}
 
 	// Step 2: Finalize with the user-configured typed policy
-	finalizeReq, d := buildFinalizeRequest(ctx, &planModel, ps)
+	finalizeReq, d := buildFinalizeRequest(ctx, &planModel, nil, ps)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return

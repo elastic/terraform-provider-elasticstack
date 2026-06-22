@@ -93,7 +93,7 @@ func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationP
 // after the bootstrap to apply the user-configured policy settings. It uses
 // the typed-inputs format with an "endpoint" input and includes the
 // server-managed artifact_manifest and version from the private state.
-func buildFinalizeRequest(ctx context.Context, model *elasticDefendIntegrationPolicyModel, ps defendPrivateState) (kbapi.PackagePolicyRequestTypedInputs, diag.Diagnostics) {
+func buildFinalizeRequest(ctx context.Context, model *elasticDefendIntegrationPolicyModel, priorAdvanced map[string]string, ps defendPrivateState) (kbapi.PackagePolicyRequestTypedInputs, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	pkg := kbapi.PackagePolicyRequestPackage{
@@ -126,7 +126,7 @@ func buildFinalizeRequest(ctx context.Context, model *elasticDefendIntegrationPo
 	}
 
 	// Build the finalize input config
-	inputConfig, d := buildFinalizeInputConfig(ctx, model, ps)
+	inputConfig, d := buildFinalizeInputConfig(ctx, model, priorAdvanced, ps)
 	diags.Append(d...)
 	if diags.HasError() {
 		return req, diags
@@ -149,7 +149,7 @@ func buildFinalizeRequest(ctx context.Context, model *elasticDefendIntegrationPo
 // buildFinalizeInputConfig builds the config map for the finalize/update input.
 // It includes integration_config (with preset), artifact_manifest (from private
 // state), and the typed policy payload.
-func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrationPolicyModel, ps defendPrivateState) (map[string]any, diag.Diagnostics) {
+func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrationPolicyModel, priorAdvanced map[string]string, ps defendPrivateState) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	config := map[string]any{}
 
@@ -179,7 +179,7 @@ func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrati
 	// Build the typed policy payload from the Terraform model.
 	// The Fleet API expects the policy wrapped in a {"value": {...}} envelope,
 	// consistent with how other config keys like "integration_config" are structured.
-	policyData, d := buildPolicyPayload(ctx, model)
+	policyData, d := buildPolicyPayload(ctx, model, priorAdvanced)
 	diags.Append(d...)
 	if policyData != nil {
 		config["policy"] = map[string]any{
@@ -192,7 +192,7 @@ func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrati
 
 // buildPolicyPayload converts the Terraform policy model into the Defend API
 // policy map structure.
-func buildPolicyPayload(ctx context.Context, model *elasticDefendIntegrationPolicyModel) (map[string]any, diag.Diagnostics) {
+func buildPolicyPayload(ctx context.Context, model *elasticDefendIntegrationPolicyModel, priorAdvanced map[string]string) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if model.Policy.IsNull() || model.Policy.IsUnknown() {
@@ -225,6 +225,13 @@ func buildPolicyPayload(ctx context.Context, model *elasticDefendIntegrationPoli
 	if linuxData != nil {
 		policy["linux"] = linuxData
 	}
+
+	settings, d := advancedSettingsMapFromTerraform(ctx, model.AdvancedSettings)
+	diags.Append(d...)
+	if diags.HasError() {
+		return nil, diags
+	}
+	mergeAdvancedSettingsIntoPolicy(policy, settings, priorAdvanced)
 
 	return policy, diags
 }
