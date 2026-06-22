@@ -3,15 +3,28 @@ variable "suffix" {
   type        = string
 }
 
-variable "dashboard_id" {
-  description = "A Kibana dashboard ID to attach to the stream."
-  type        = string
-  default     = ""
-}
-
 provider "elasticstack" {
   elasticsearch {}
   kibana {}
+}
+
+resource "elasticstack_kibana_dashboard" "test" {
+  title = "testacc-stream-${var.suffix}"
+
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+
+  query = {
+    language = "kql"
+    text     = ""
+  }
 }
 
 resource "elasticstack_kibana_stream" "wired" {
@@ -20,7 +33,7 @@ resource "elasticstack_kibana_stream" "wired" {
   description = "Fully-configured wired stream"
 
   wired_config = {
-    # Processing step — streamlang grok format
+    # grok format
     processing_steps = [
       jsonencode({
         action   = "grok"
@@ -30,9 +43,7 @@ resource "elasticstack_kibana_stream" "wired" {
     ]
 
     # Lifecycle: retain data for 30 days
-    lifecycle_json = jsonencode({
-      dsl = { data_retention = "30d" }
-    })
+    lifecycle_json = jsonencode({ dsl = { data_retention = "30d" } })
 
     # Failure store: disabled
     failure_store_json = jsonencode({ disabled = {} })
@@ -43,5 +54,5 @@ resource "elasticstack_kibana_stream" "wired" {
     index_refresh_interval   = "5s"
   }
 
-  dashboards = var.dashboard_id != "" ? [var.dashboard_id] : []
+  dashboards = [elasticstack_kibana_dashboard.test.dashboard_id]
 }

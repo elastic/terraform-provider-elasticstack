@@ -216,69 +216,6 @@ func prepareStreamsEnvironment(t *testing.T) {
 	}
 }
 
-// createTestDashboard creates a minimal Kibana dashboard via the saved objects API
-// and returns its ID. The dashboard is cleaned up after the test by registering
-// a t.Cleanup function. Returns an empty string if creation fails (non-fatal).
-func createTestDashboard(t *testing.T, suffix string) string {
-	t.Helper()
-	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
-	if err != nil {
-		t.Logf("createTestDashboard: could not create Kibana client: %v", err)
-		return ""
-	}
-	kbClient := apiClient.GetKibanaOapiClient()
-
-	body, _ := json.Marshal(map[string]any{
-		"attributes": map[string]any{
-			"title":       "testacc-stream-" + suffix,
-			"hits":        0,
-			"description": "",
-			"panelsJSON":  "[]",
-			"optionsJSON": "{}",
-			"version":     1,
-			"timeRestore": false,
-			"kibanaSavedObjectMeta": map[string]any{
-				"searchSourceJSON": `{"query":{"language":"kuery","query":""}}`,
-			},
-		},
-	})
-
-	createURL := fmt.Sprintf("%s/api/saved_objects/dashboard", kbClient.URL)
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, createURL, bytes.NewReader(body))
-	if err != nil {
-		t.Logf("createTestDashboard: could not build request: %v", err)
-		return ""
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("kbn-xsrf", "true")
-
-	resp, err := kbClient.HTTP.Do(req)
-	if err != nil {
-		t.Logf("createTestDashboard: request failed: %v", err)
-		return ""
-	}
-	defer resp.Body.Close()
-	var result map[string]any
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		t.Logf("createTestDashboard: decode failed: %v", err)
-		return ""
-	}
-	id, _ := result["id"].(string)
-	if id != "" {
-		t.Cleanup(func() {
-			deleteURL := fmt.Sprintf("%s/api/saved_objects/dashboard/%s", kbClient.URL, id)
-			delReq, _ := http.NewRequestWithContext(context.Background(), http.MethodDelete, deleteURL, http.NoBody)
-			delReq.Header.Set("kbn-xsrf", "true")
-			delResp, delErr := kbClient.HTTP.Do(delReq)
-			if delErr == nil {
-				delResp.Body.Close()
-			}
-		})
-	}
-	t.Logf("createTestDashboard: created dashboard %q", id)
-	return id
-}
-
 // checkStepAction returns a check function that decodes a JSON processing step
 // and verifies its "action" field equals the expected value.
 func checkStepAction(expectedAction string) resource.CheckResourceAttrWithFunc {
@@ -299,8 +236,6 @@ func TestAccResourceKibanaStreamWired(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionStreamsAcc, versionutils.FlavorAny)
 
 	suffix := sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
-	dashboardID := createTestDashboard(t, suffix)
-
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
@@ -345,15 +280,9 @@ func TestAccResourceKibanaStreamWired(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_full"),
-				ConfigVariables: func() config.Variables {
-					vars := config.Variables{"suffix": config.StringVariable(suffix)}
-					if dashboardID != "" {
-						vars["dashboard_id"] = config.StringVariable(dashboardID)
-					} else {
-						vars["dashboard_id"] = config.StringVariable("")
-					}
-					return vars
-				}(),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(suffix),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "description", "Fully-configured wired stream"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.processing_steps.#", "1"),
@@ -369,16 +298,9 @@ func TestAccResourceKibanaStreamWired(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.index_number_of_shards", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.index_number_of_replicas", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.index_refresh_interval", "5s"),
-					// Dashboards populated and asserted (only when we created a test dashboard).
-					func() resource.TestCheckFunc {
-						if dashboardID != "" {
-							return resource.ComposeTestCheckFunc(
-								resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "dashboards.#", "1"),
-								resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "dashboards.0", dashboardID),
-							)
-						}
-						return resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "dashboards.#", "0")
-					}(),
+					// Dashboard is managed by Terraform; verify it is attached via the dashboard resource.
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "dashboards.#", "1"),
+					resource.TestCheckResourceAttrPair("elasticstack_kibana_stream.wired", "dashboards.0", "elasticstack_kibana_dashboard.test", "dashboard_id"),
 				),
 			},
 			// Step 4: add an attached query — covers the queries block and all sub-attributes.
@@ -402,15 +324,9 @@ func TestAccResourceKibanaStreamWired(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_full"),
-				ConfigVariables: func() config.Variables {
-					vars := config.Variables{"suffix": config.StringVariable(suffix)}
-					if dashboardID != "" {
-						vars["dashboard_id"] = config.StringVariable(dashboardID)
-					} else {
-						vars["dashboard_id"] = config.StringVariable("")
-					}
-					return vars
-				}(),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(suffix),
+				},
 				ImportState:       true,
 				ImportStateVerify: true,
 				ResourceName:      "elasticstack_kibana_stream.wired",
