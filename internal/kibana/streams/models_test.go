@@ -302,11 +302,47 @@ func TestWiredConfigToAPIIngest(t *testing.T) {
 	})
 }
 
+// ── populateProcessingStepsFromAPI ────────────────────────────────────────────
+
+func TestPopulateProcessingStepsFromAPI(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil ingest returns null list without error", func(t *testing.T) {
+		t.Parallel()
+		list, diags := populateProcessingStepsFromAPI(nil)
+		require.False(t, diags.HasError())
+		assert.True(t, list.IsNull())
+	})
+
+	t.Run("invalid JSON in steps returns error diagnostic", func(t *testing.T) {
+		t.Parallel()
+		ingest := &kibanaoapi.StreamIngest{
+			Processing: kibanaoapi.StreamProcessing{
+				Steps: json.RawMessage(`not-valid-json`),
+			},
+		}
+		_, diags := populateProcessingStepsFromAPI(ingest)
+		assert.True(t, diags.HasError())
+	})
+}
+
 // ── classicConfigModel ────────────────────────────────────────────────────────
 
 func TestClassicConfigPopulateFromAPI(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
+
+	t.Run("invalid JSON in processing steps returns error diagnostic", func(t *testing.T) {
+		t.Parallel()
+		ingest := &kibanaoapi.StreamIngest{
+			Processing: kibanaoapi.StreamProcessing{
+				Steps: json.RawMessage(`not-valid-json`),
+			},
+		}
+		var m classicConfigModel
+		diags := m.populateFromAPI(ctx, ingest)
+		assert.True(t, diags.HasError())
+	})
 
 	t.Run("non-float64 index setting value produces null", func(t *testing.T) {
 		t.Parallel()

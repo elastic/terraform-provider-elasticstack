@@ -44,7 +44,7 @@ const (
 // response into a Terraform list. Returns diag.Diagnostics on error.
 func populateProcessingStepsFromAPI(ingest *kibanaoapi.StreamIngest) (types.List, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	if len(ingest.Processing.Steps) == 0 {
+	if ingest == nil || len(ingest.Processing.Steps) == 0 {
 		return types.ListNull(jsontypes.NormalizedType{}), diags
 	}
 	var rawSteps []json.RawMessage
