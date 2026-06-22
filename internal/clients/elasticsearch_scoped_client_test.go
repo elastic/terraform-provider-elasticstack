@@ -98,6 +98,7 @@ func newScopedElasticsearchClientFromFactory(t *testing.T, endpoint string) *Ela
 		"ELASTICSEARCH_INSECURE",
 		"ELASTICSEARCH_BEARER_TOKEN",
 		"ELASTICSEARCH_ES_CLIENT_AUTHENTICATION",
+		"ELASTICSEARCH_CA_FINGERPRINT",
 	} {
 		if val, ok := os.LookupEnv(key); ok {
 			t.Setenv(key, val)

@@ -72,3 +72,28 @@ data "elasticstack_elasticsearch_info" "test" {
 		},
 	})
 }
+
+func TestUnitEphemeralElasticsearchConnectionCAFingerprintConflictsWithCAFile(t *testing.T) {
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: `
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+ephemeral "elasticstack_elasticsearch_security_api_key" "test" {
+  name = "test-key"
+  elasticsearch_connection {
+    ca_fingerprint = "aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899"
+    ca_file        = "/path/to/ca.pem"
+  }
+}
+`,
+				ExpectError: regexp.MustCompile(`(?s)(Invalid Attribute Combination|ca_fingerprint.*ca_file|ca_file.*ca_fingerprint)`),
+			},
+		},
+	})
+}

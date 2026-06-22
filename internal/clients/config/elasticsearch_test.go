@@ -161,14 +161,42 @@ func Test_newElasticsearchConfigFromFramework(t *testing.T) {
 					providerConfig: ProviderConfiguration{
 						Elasticsearch: []ElasticsearchConnection{
 							{
-								Endpoints: basetypes.NewListNull(basetypes.StringType{}),
-								Headers:   basetypes.NewMapNull(basetypes.StringType{}),
+								Endpoints:     basetypes.NewListNull(basetypes.StringType{}),
+								Headers:       basetypes.NewMapNull(basetypes.StringType{}),
 								CAFingerprint: basetypes.NewStringValue("config-fingerprint-value"),
 							},
 						},
 					},
 					env: map[string]string{
 						"ELASTICSEARCH_CA_FINGERPRINT": "env-fingerprint-value",
+					},
+					base:             base,
+					expectedESConfig: &config,
+				}
+			},
+		},
+		{
+			name: "should apply ELASTICSEARCH_CA_FINGERPRINT when config omits ca_fingerprint",
+			args: func() args {
+				base := baseConfig{
+					Username: "elastic",
+					Password: "changeme",
+				}
+
+				config := base.toElasticsearchConfig()
+				config.config.CertificateFingerprint = "env-only-fingerprint"
+
+				return args{
+					providerConfig: ProviderConfiguration{
+						Elasticsearch: []ElasticsearchConnection{
+							{
+								Endpoints: basetypes.NewListNull(basetypes.StringType{}),
+								Headers:   basetypes.NewMapNull(basetypes.StringType{}),
+							},
+						},
+					},
+					env: map[string]string{
+						"ELASTICSEARCH_CA_FINGERPRINT": "env-only-fingerprint",
 					},
 					base:             base,
 					expectedESConfig: &config,

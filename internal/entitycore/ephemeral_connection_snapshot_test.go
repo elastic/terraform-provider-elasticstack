@@ -50,7 +50,6 @@ func TestElasticsearchConnectionSnapshotRoundTrip(t *testing.T) {
 			Insecure:      types.BoolValue(true),
 			CAFile:        types.StringValue("/path/to/ca.pem"),
 			CAData:        types.StringValue("ca-data"),
-			CAFingerprint: types.StringValue("aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899"),
 			CertFile:      types.StringValue("/path/to/cert.pem"),
 			CertData:      types.StringValue("cert-data"),
 			KeyFile:       types.StringValue("/path/to/key.pem"),
@@ -79,7 +78,6 @@ func TestElasticsearchConnectionSnapshotRoundTrip(t *testing.T) {
 	require.True(t, decodedConn.Insecure.ValueBool())
 	require.Equal(t, "/path/to/ca.pem", decodedConn.CAFile.ValueString())
 	require.Equal(t, "ca-data", decodedConn.CAData.ValueString())
-	require.Equal(t, "aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899", decodedConn.CAFingerprint.ValueString())
 	require.Equal(t, "/path/to/cert.pem", decodedConn.CertFile.ValueString())
 	require.Equal(t, "cert-data", decodedConn.CertData.ValueString())
 	require.Equal(t, "/path/to/key.pem", decodedConn.KeyFile.ValueString())
@@ -92,6 +90,42 @@ func TestElasticsearchConnectionSnapshotRoundTrip(t *testing.T) {
 	var headers map[string]string
 	require.False(t, decodedConn.Headers.ElementsAs(ctx, &headers, false).HasError())
 	require.Equal(t, map[string]string{"X-Custom": "header-value"}, headers)
+}
+
+func TestElasticsearchConnectionSnapshotRoundTripCAFingerprintOnly(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	fingerprint := "aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899"
+
+	connection, diags := types.ListValueFrom(ctx, providerschema.ElasticsearchConnectionObjectType(), []clientconfig.ElasticsearchConnection{
+		{
+			Username: types.StringValue("elastic"),
+			Password: types.StringValue("secret"),
+			Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+				types.StringValue("https://es.example:9200"),
+			}),
+			Headers:       types.MapNull(types.StringType),
+			CAFingerprint: types.StringValue(fingerprint),
+		},
+	})
+	require.False(t, diags.HasError())
+
+	encoded, encodeDiags := encodeElasticsearchConnection(ctx, connection)
+	require.False(t, encodeDiags.HasError())
+	require.Contains(t, string(encoded), `"ca_fingerprint":`)
+
+	decoded, decodeDiags := decodeElasticsearchConnection(ctx, encoded)
+	require.False(t, decodeDiags.HasError())
+
+	var decodedConnections []clientconfig.ElasticsearchConnection
+	require.False(t, decoded.ElementsAs(ctx, &decodedConnections, false).HasError())
+	require.Len(t, decodedConnections, 1)
+
+	decodedConn := decodedConnections[0]
+	require.Equal(t, fingerprint, decodedConn.CAFingerprint.ValueString())
+	require.Empty(t, decodedConn.CAFile.ValueString())
+	require.Empty(t, decodedConn.CAData.ValueString())
 }
 
 func TestElasticsearchConnectionSnapshotRoundTripExplicitInsecureFalse(t *testing.T) {
