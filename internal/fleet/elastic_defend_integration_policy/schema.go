@@ -134,9 +134,9 @@ func policySchema() schema.Attribute {
 		Description: "Elastic Defend policy configuration.",
 		Required:    true,
 		Attributes: map[string]schema.Attribute{
-			"windows": windowsPolicySchema(),
-			"mac":     macPolicySchema(),
-			"linux":   linuxPolicySchema(),
+			policyOSWindows: windowsPolicySchema(),
+			policyOSMac:     macPolicySchema(),
+			policyOSLinux:   linuxPolicySchema(),
 		},
 	}
 }

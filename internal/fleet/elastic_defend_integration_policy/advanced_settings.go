@@ -123,12 +123,12 @@ func advancedSettingsFromPolicyData(policyData map[string]any) map[string]string
 	}
 
 	result := map[string]string{}
-	for _, os := range []string{"linux", "mac", "windows"} {
+	for _, os := range []string{policyOSLinux, policyOSMac, policyOSWindows} {
 		osData, ok := policyData[os].(map[string]any)
 		if !ok || osData == nil {
 			continue
 		}
-		advanced, ok := osData["advanced"].(map[string]any)
+		advanced, ok := osData[attrAdvanced].(map[string]any)
 		if !ok || advanced == nil {
 			continue
 		}
@@ -185,12 +185,12 @@ func mergeAdvancedSettingsIntoPolicy(policy map[string]any, settings, priorSetti
 			}
 			setNestedValue(advanced, matches[2], value)
 		}
-		osBlock["advanced"] = advanced
+		osBlock[attrAdvanced] = advanced
 	}
 }
 
 // advancedSettingsMapToTerraform converts a flat settings map to a Terraform Map value.
-func advancedSettingsMapToTerraform(ctx context.Context, settings map[string]string) (types.Map, diag.Diagnostics) {
+func advancedSettingsMapToTerraform(settings map[string]string) (types.Map, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if settings == nil {
 		return types.MapNull(types.StringType), diags

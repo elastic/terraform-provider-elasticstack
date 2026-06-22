@@ -41,6 +41,11 @@ const (
 	attrRansomware          = "ransomware"
 	attrPopup               = "popup"
 	attrValue               = "value"
+	attrAdvanced            = "advanced"
+
+	policyOSLinux   = "linux"
+	policyOSMac     = "mac"
+	policyOSWindows = "windows"
 )
 
 // Description strings reused by attribute schema definitions for repeated

@@ -93,7 +93,12 @@ func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationP
 // after the bootstrap to apply the user-configured policy settings. It uses
 // the typed-inputs format with an "endpoint" input and includes the
 // server-managed artifact_manifest and version from the private state.
-func buildFinalizeRequest(ctx context.Context, model *elasticDefendIntegrationPolicyModel, priorAdvanced map[string]string, ps defendPrivateState) (kbapi.PackagePolicyRequestTypedInputs, diag.Diagnostics) {
+func buildFinalizeRequest(
+	ctx context.Context,
+	model *elasticDefendIntegrationPolicyModel,
+	priorAdvanced map[string]string,
+	ps defendPrivateState,
+) (kbapi.PackagePolicyRequestTypedInputs, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	pkg := kbapi.PackagePolicyRequestPackage{
@@ -211,19 +216,19 @@ func buildPolicyPayload(ctx context.Context, model *elasticDefendIntegrationPoli
 	winData, d := buildWindowsPolicyPayload(ctx, pm.Windows)
 	diags.Append(d...)
 	if winData != nil {
-		policy["windows"] = winData
+		policy[policyOSWindows] = winData
 	}
 
 	macData, d := buildMacPolicyPayload(ctx, pm.Mac)
 	diags.Append(d...)
 	if macData != nil {
-		policy["mac"] = macData
+		policy[policyOSMac] = macData
 	}
 
 	linuxData, d := buildLinuxPolicyPayload(ctx, pm.Linux)
 	diags.Append(d...)
 	if linuxData != nil {
-		policy["linux"] = linuxData
+		policy[policyOSLinux] = linuxData
 	}
 
 	settings, d := advancedSettingsMapFromTerraform(ctx, model.AdvancedSettings)
