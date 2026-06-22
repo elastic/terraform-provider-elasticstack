@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -215,10 +216,90 @@ func prepareStreamsEnvironment(t *testing.T) {
 	}
 }
 
+// createTestDashboard creates a minimal Kibana dashboard via the saved objects API
+// and returns its ID. The dashboard is cleaned up after the test by registering
+// a t.Cleanup function. Returns an empty string if creation fails (non-fatal).
+func createTestDashboard(t *testing.T, suffix string) string {
+	t.Helper()
+	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		t.Logf("createTestDashboard: could not create Kibana client: %v", err)
+		return ""
+	}
+	kbClient := apiClient.GetKibanaOapiClient()
+
+	body, _ := json.Marshal(map[string]any{
+		"attributes": map[string]any{
+			"title":       "testacc-stream-" + suffix,
+			"hits":        0,
+			"description": "",
+			"panelsJSON":  "[]",
+			"optionsJSON": "{}",
+			"version":     1,
+			"timeRestore": false,
+			"kibanaSavedObjectMeta": map[string]any{
+				"searchSourceJSON": `{"query":{"language":"kuery","query":""}}`,
+			},
+		},
+	})
+
+	createURL := fmt.Sprintf("%s/api/saved_objects/dashboard", kbClient.URL)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, createURL, bytes.NewReader(body))
+	if err != nil {
+		t.Logf("createTestDashboard: could not build request: %v", err)
+		return ""
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("kbn-xsrf", "true")
+
+	resp, err := kbClient.HTTP.Do(req)
+	if err != nil {
+		t.Logf("createTestDashboard: request failed: %v", err)
+		return ""
+	}
+	defer resp.Body.Close()
+	var result map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Logf("createTestDashboard: decode failed: %v", err)
+		return ""
+	}
+	id, _ := result["id"].(string)
+	if id != "" {
+		t.Cleanup(func() {
+			deleteURL := fmt.Sprintf("%s/api/saved_objects/dashboard/%s", kbClient.URL, id)
+			delReq, _ := http.NewRequestWithContext(context.Background(), http.MethodDelete, deleteURL, http.NoBody)
+			delReq.Header.Set("kbn-xsrf", "true")
+			delResp, delErr := kbClient.HTTP.Do(delReq)
+			if delErr == nil {
+				delResp.Body.Close()
+			}
+		})
+	}
+	t.Logf("createTestDashboard: created dashboard %q", id)
+	return id
+}
+
+// checkStepAction returns a check function that decodes a JSON processing step
+// and verifies its "action" field equals the expected value.
+func checkStepAction(expectedAction string) resource.CheckResourceAttrWithFunc {
+	return func(value string) error {
+		var step map[string]any
+		if err := json.Unmarshal([]byte(value), &step); err != nil {
+			return err
+		}
+		action, _ := step["action"].(string)
+		if action != expectedAction {
+			return fmt.Errorf("expected processing step action %q, got %q (raw: %s)", expectedAction, action, value)
+		}
+		return nil
+	}
+}
+
 func TestAccResourceKibanaStreamWired(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionStreamsAcc, versionutils.FlavorAny)
 
 	suffix := sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
+	dashboardID := createTestDashboard(t, suffix)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
@@ -238,6 +319,9 @@ func TestAccResourceKibanaStreamWired(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "name", "logs.otel.testacc"+suffix),
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "space_id", "default"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "description", "Test wired stream"),
+					// Computed lifecycle/failure_store defaults must be populated on create.
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.wired", "wired_config.lifecycle_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.wired", "wired_config.failure_store_json"),
 					// Optional attributes absent — verify empty/default state.
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.processing_steps.#", "0"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_stream.wired", "dashboards"),
@@ -254,39 +338,112 @@ func TestAccResourceKibanaStreamWired(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "description", "Updated wired stream"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.processing_steps.#", "1"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.wired", "wired_config.processing_steps.0"),
+					resource.TestCheckResourceAttrWith("elasticstack_kibana_stream.wired", "wired_config.processing_steps.0", checkStepAction("grok")),
 				),
 			},
-			// Step 3: full update — lifecycle, failure_store, index settings, attached query.
+			// Step 3: full update — lifecycle, failure_store, index settings, dashboards.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_full"),
+				ConfigVariables: func() config.Variables {
+					vars := config.Variables{"suffix": config.StringVariable(suffix)}
+					if dashboardID != "" {
+						vars["dashboard_id"] = config.StringVariable(dashboardID)
+					} else {
+						vars["dashboard_id"] = config.StringVariable("")
+					}
+					return vars
+				}(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "description", "Fully-configured wired stream"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.processing_steps.#", "1"),
+					// Value-specific assertions for lifecycle_json and failure_store_json.
+					resource.TestCheckResourceAttrWith("elasticstack_kibana_stream.wired", "wired_config.lifecycle_json", func(value string) error {
+						var v map[string]any
+						return json.Unmarshal([]byte(value), &v)
+					}),
+					resource.TestCheckResourceAttrWith("elasticstack_kibana_stream.wired", "wired_config.failure_store_json", func(value string) error {
+						var v map[string]any
+						return json.Unmarshal([]byte(value), &v)
+					}),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.index_number_of_shards", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.index_number_of_replicas", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.index_refresh_interval", "5s"),
+					// Dashboards populated and asserted (only when we created a test dashboard).
+					func() resource.TestCheckFunc {
+						if dashboardID != "" {
+							return resource.ComposeTestCheckFunc(
+								resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "dashboards.#", "1"),
+								resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "dashboards.0", dashboardID),
+							)
+						}
+						return resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "dashboards.#", "0")
+					}(),
+				),
+			},
+			// Step 4: add an attached query — covers the queries block and all sub-attributes.
+			// Skipped when the Kibana "significant events" feature flag is not enabled.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 checkStreamQueriesEnabled(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_with_query"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(suffix),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "description", "Fully-configured wired stream"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.processing_steps.#", "1"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.wired", "wired_config.lifecycle_json"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.wired", "wired_config.failure_store_json"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.index_number_of_shards", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.index_number_of_replicas", "0"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.index_refresh_interval", "5s"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "queries.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "queries.0.id", "testacc-query-"+suffix),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "queries.0.title", "Test Query"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "queries.0.description", "A test query for acceptance testing"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.wired", "queries.0.esql"),
 				),
 			},
-			// Step 4: import from the fully-configured state.
+			// Step 5: import from the fully-configured state.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_full"),
-				ConfigVariables: config.Variables{
-					"suffix": config.StringVariable(suffix),
-				},
+				ConfigVariables: func() config.Variables {
+					vars := config.Variables{"suffix": config.StringVariable(suffix)}
+					if dashboardID != "" {
+						vars["dashboard_id"] = config.StringVariable(dashboardID)
+					} else {
+						vars["dashboard_id"] = config.StringVariable("")
+					}
+					return vars
+				}(),
 				ImportState:       true,
 				ImportStateVerify: true,
 				ResourceName:      "elasticstack_kibana_stream.wired",
 			},
 		},
 	})
+}
+
+// checkStreamQueriesEnabled returns a SkipFunc that skips when the Kibana
+// Streams "significant events" feature is not enabled
+// (requires observability:streamsEnableSignificantEvents).
+func checkStreamQueriesEnabled() func() (bool, error) {
+	return func() (bool, error) {
+		apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return false, err
+		}
+		kbClient := apiClient.GetKibanaOapiClient()
+		// Probe: attempt to GET the queries sub-resource of a well-known stream.
+		// HTTP 403 "Significant events is disabled" → skip; any other response → don't skip.
+		probeURL := fmt.Sprintf("%s/api/streams/logs.otel/queries", kbClient.URL)
+		req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, probeURL, http.NoBody)
+		req.Header.Set("kbn-xsrf", "true")
+		resp, httpErr := kbClient.HTTP.Do(req)
+		if httpErr != nil {
+			return false, nil
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode == http.StatusForbidden {
+			return true, nil
+		}
+		return false, nil
+	}
 }
 
 // checkQueryStreamsEnabled returns a SkipFunc that skips when Kibana query
@@ -360,6 +517,8 @@ func TestAccResourceKibanaStreamQuery(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "description", "Updated query stream"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.esql", "FROM $.logs.otel | WHERE @timestamp > NOW() - 1 HOUR | LIMIT 10"),
+					// Assert view is still set after update.
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.view", "$.logs.otel.testacc-q"+suffix),
 				),
 			},
 			{
@@ -372,6 +531,91 @@ func TestAccResourceKibanaStreamQuery(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ResourceName:      "elasticstack_kibana_stream.query",
+			},
+		},
+	})
+}
+
+// TestAccResourceKibanaStreamClassic tests import and update of a classic stream.
+// Classic streams cannot be created via this resource — they must be imported from
+// pre-existing Elasticsearch data streams. The test imports a built-in data stream
+// (logs-elastic_agent.status_change-default) and then applies a processing step update.
+func TestAccResourceKibanaStreamClassic(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionStreamsAcc, versionutils.FlavorAny)
+
+	// Use a well-known built-in data stream that is always present on Fleet-enabled stacks.
+	const classicStreamName = "logs-elastic_agent.status_change-default"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			prepareStreamsEnvironment(t)
+			// Skip if the classic stream is not available (non-Fleet environments).
+			kibanaAPIClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
+			if err != nil {
+				t.Skipf("could not create Kibana client: %v", err)
+			}
+			resp, diags := kibanaoapi.GetStream(context.Background(), kibanaAPIClient.GetKibanaOapiClient(), "default", classicStreamName)
+			if diags.HasError() || resp == nil {
+				t.Skipf("classic stream %q not available on this stack — skipping", classicStreamName)
+			}
+			if resp.Stream.Type != "classic" {
+				t.Skipf("stream %q is type %q, not classic — skipping", classicStreamName, resp.Stream.Type)
+			}
+		},
+		Steps: []resource.TestStep{
+			// Step 1: import the pre-existing classic stream and persist state for subsequent steps.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import_and_update"),
+				ConfigVariables: config.Variables{
+					"stream_name": config.StringVariable(classicStreamName),
+				},
+				ImportState:        true,
+				ImportStateVerify:  false,
+				ImportStatePersist: true,
+				ResourceName:       "elasticstack_kibana_stream.classic",
+				ImportStateId:      "default/" + classicStreamName,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.classic", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.classic", "name", classicStreamName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.classic", "space_id", "default"),
+					// classic_config block must be populated after import.
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.classic", "classic_config.lifecycle_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.classic", "classic_config.failure_store_json"),
+				),
+			},
+			// Step 2: apply a processing step update and verify the classic_config attributes.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import_and_update"),
+				ConfigVariables: config.Variables{
+					"stream_name": config.StringVariable(classicStreamName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.classic", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.classic", "name", classicStreamName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.classic", "space_id", "default"),
+					// classic_config block must be populated.
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.classic", "classic_config.processing_steps.#", "1"),
+					// Computed lifecycle and failure_store must be set.
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.classic", "classic_config.lifecycle_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.classic", "classic_config.failure_store_json"),
+					// Verify the processing step JSON contains a grok action.
+					resource.TestCheckResourceAttrWith("elasticstack_kibana_stream.classic", "classic_config.processing_steps.0", checkStepAction("grok")),
+				),
+			},
+			// Step 3: import/verify from the updated state.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import_and_update"),
+				ConfigVariables: config.Variables{
+					"stream_name": config.StringVariable(classicStreamName),
+				},
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ResourceName:            "elasticstack_kibana_stream.classic",
+				ImportStateVerifyIgnore: []string{"classic_config.field_overrides_json"},
 			},
 		},
 	})

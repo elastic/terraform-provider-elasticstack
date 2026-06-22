@@ -3,12 +3,6 @@ variable "suffix" {
   type        = string
 }
 
-variable "dashboard_id" {
-  description = "A Kibana dashboard ID to attach to the stream."
-  type        = string
-  default     = ""
-}
-
 provider "elasticstack" {
   elasticsearch {}
   kibana {}
@@ -17,10 +11,9 @@ provider "elasticstack" {
 resource "elasticstack_kibana_stream" "wired" {
   name        = "logs.otel.testacc${var.suffix}"
   space_id    = "default"
-  description = "Fully-configured wired stream"
+  description = "Wired stream with attached query"
 
   wired_config = {
-    # Processing step — streamlang grok format
     processing_steps = [
       jsonencode({
         action   = "grok"
@@ -29,19 +22,20 @@ resource "elasticstack_kibana_stream" "wired" {
       })
     ]
 
-    # Lifecycle: retain data for 30 days
-    lifecycle_json = jsonencode({
-      dsl = { data_retention = "30d" }
-    })
-
-    # Failure store: disabled
+    lifecycle_json     = jsonencode({ dsl = { data_retention = "30d" } })
     failure_store_json = jsonencode({ disabled = {} })
 
-    # Index settings
     index_number_of_shards   = 1
     index_number_of_replicas = 0
     index_refresh_interval   = "5s"
   }
 
-  dashboards = var.dashboard_id != "" ? [var.dashboard_id] : []
+  queries = [
+    {
+      id          = "testacc-query-${var.suffix}"
+      title       = "Test Query"
+      description = "A test query for acceptance testing"
+      esql        = "FROM logs.otel.testacc${var.suffix} | LIMIT 10"
+    }
+  ]
 }
