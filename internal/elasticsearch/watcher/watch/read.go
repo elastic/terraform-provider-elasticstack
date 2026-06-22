@@ -41,7 +41,7 @@ func readWatch(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 		return state, false, nil
 	}
 
-	diags.Append(state.fromAPIModel(ctx, watch, state.Actions)...)
+	diags.Append(state.fromAPIModel(ctx, watch, state.Actions, state.Input)...)
 	if diags.HasError() {
 		return state, false, diags
 	}
