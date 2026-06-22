@@ -452,6 +452,16 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateutil.DecodeTemplateObject",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateutil",
+      "attemptedAt": "2026-06-22T04:41:38.008046906Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
