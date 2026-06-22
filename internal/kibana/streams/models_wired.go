@@ -24,7 +24,6 @@ import (
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -49,25 +48,12 @@ func (m *wiredConfigModel) populateFromAPI(_ context.Context, ingest *kibanaoapi
 	}
 
 	// Processing steps — each step is a JSON-encoded streamlang object.
-	// An empty array from the API is treated as null (no steps configured).
-	if len(ingest.Processing.Steps) > 0 {
-		var rawSteps []json.RawMessage
-		if err := json.Unmarshal(ingest.Processing.Steps, &rawSteps); err != nil {
-			diags.AddError("Failed to unmarshal processing steps", err.Error())
-			return diags
-		}
-		if len(rawSteps) > 0 {
-			elems := make([]attr.Value, len(rawSteps))
-			for i, raw := range rawSteps {
-				elems[i] = jsontypes.NewNormalizedValue(string(raw))
-			}
-			m.ProcessingSteps = types.ListValueMust(jsontypes.NormalizedType{}, elems)
-		} else {
-			m.ProcessingSteps = types.ListNull(jsontypes.NormalizedType{})
-		}
-	} else {
-		m.ProcessingSteps = types.ListNull(jsontypes.NormalizedType{})
+	steps, stepsDiags := populateProcessingStepsFromAPI(ingest)
+	diags.Append(stepsDiags...)
+	if diags.HasError() {
+		return diags
 	}
+	m.ProcessingSteps = steps
 
 	// Wired-specific fields and routing.
 	// An empty object {} from the API means no fields are configured → null.
@@ -147,15 +133,8 @@ func (m *wiredConfigModel) toAPIIngest(diags *diag.Diagnostics) *kibanaoapi.Stre
 	ingest := &kibanaoapi.StreamIngest{}
 
 	// Processing steps — the API requires the array to be present (even empty).
-	rawSteps := make([]json.RawMessage, 0)
-	for _, elem := range m.ProcessingSteps.Elements() {
-		if norm, ok := elem.(jsontypes.Normalized); ok && typeutils.IsKnown(norm) {
-			rawSteps = append(rawSteps, json.RawMessage(norm.ValueString()))
-		}
-	}
-	stepsJSON, err := json.Marshal(rawSteps)
-	if err != nil {
-		diags.AddError("Failed to marshal processing steps", err.Error())
+	stepsJSON := processingStepsToAPI(m.ProcessingSteps, diags)
+	if diags.HasError() {
 		return ingest
 	}
 	ingest.Processing.Steps = stepsJSON
