@@ -32,26 +32,74 @@ type connectorConfigHandler struct {
 
 var connectorConfigHandlers = map[string]connectorConfigHandler{
 	".cases-webhook": {
-		defaults:        connectorConfigWithDefaultsCasesWebhook,
+		defaults: func(plan string) (string, error) {
+			return connectorConfigWithDefaults(plan, func(c *kbapi.CasesWebhookConfig) {
+				if c.AuthType == nil {
+					authType := kbapi.WebhookAuthenticationBasic
+					c.AuthType = &authType
+				}
+				if c.CreateIncidentMethod == nil {
+					c.CreateIncidentMethod = new(kbapi.CasesWebhookConfigCreateIncidentMethodPost)
+				}
+				if c.HasAuth == nil {
+					c.HasAuth = new(true)
+				}
+				if c.UpdateIncidentMethod == nil {
+					c.UpdateIncidentMethod = new(kbapi.CasesWebhookConfigUpdateIncidentMethodPut)
+				}
+				if c.CreateCommentMethod == nil {
+					c.CreateCommentMethod = new(kbapi.CasesWebhookConfigCreateCommentMethodPut)
+				}
+			})
+		},
 		remarshalConfig: remarshalConfig[kbapi.CasesWebhookConfig],
 	},
 	".email": {
-		defaults:        connectorConfigWithDefaultsEmail,
+		defaults: func(plan string) (string, error) {
+			return connectorConfigWithDefaults(plan, func(c *kbapi.EmailConfig) {
+				if c.HasAuth == nil {
+					c.HasAuth = new(true)
+				}
+				if c.Service == nil {
+					c.Service = new(kbapi.EmailConfigService("other"))
+				}
+			})
+		},
 		remarshalConfig: remarshalConfig[kbapi.EmailConfig],
 	},
 	".bedrock": {
-		defaults:        connectorConfigWithDefaultsBedrock,
+		defaults: func(plan string) (string, error) {
+			return connectorConfigWithDefaults(plan, func(c *kbapi.BedrockConfig) {
+				if c.DefaultModel == nil {
+					c.DefaultModel = new("us.anthropic.claude-sonnet-4-5-20250929-v1:0")
+				}
+			})
+		},
 		remarshalConfig: remarshalConfig[kbapi.BedrockConfig],
 	},
 	".gen-ai": {
-		defaults:        connectorConfigWithDefaultsGenAi,
-		remarshalConfig: remarshalConfigGenAi,
+		defaults: func(plan string) (string, error) {
+			return dispatchGenAiConfig(plan, func(c *kbapi.GenaiOpenaiOtherConfig) {
+				if c.VerificationMode == nil {
+					c.VerificationMode = new(kbapi.GenaiOpenaiOtherConfigVerificationModeFull)
+				}
+			})
+		},
+		remarshalConfig: func(plan string) (string, error) {
+			return dispatchGenAiConfig(plan, nil)
+		},
 	},
 	".gemini": {
 		remarshalConfig: remarshalConfig[kbapi.GeminiConfig],
 	},
 	".index": {
-		defaults:        connectorConfigWithDefaultsIndex,
+		defaults: func(plan string) (string, error) {
+			return connectorConfigWithDefaults(plan, func(c *kbapi.IndexConfig) {
+				if c.Refresh == nil {
+					c.Refresh = new(false)
+				}
+			})
+		},
 		remarshalConfig: remarshalConfig[kbapi.IndexConfig],
 	},
 	".jira": {
@@ -67,15 +115,39 @@ var connectorConfigHandlers = map[string]connectorConfigHandler{
 		remarshalConfig: remarshalConfig[kbapi.ResilientConfig],
 	},
 	".servicenow": {
-		defaults:        connectorConfigWithDefaultsServicenow,
+		defaults: func(plan string) (string, error) {
+			return connectorConfigWithDefaults(plan, func(c *kbapi.ServicenowConfig) {
+				if c.IsOAuth == nil {
+					c.IsOAuth = new(false)
+				}
+				if c.UsesTableApi == nil {
+					c.UsesTableApi = new(true)
+				}
+			})
+		},
 		remarshalConfig: remarshalConfig[kbapi.ServicenowConfig],
 	},
 	".servicenow-itom": {
-		defaults:        connectorConfigWithDefaultsServicenowItom,
+		defaults: func(plan string) (string, error) {
+			return connectorConfigWithDefaults(plan, func(c *kbapi.ServicenowItomConfig) {
+				if c.IsOAuth == nil {
+					c.IsOAuth = new(false)
+				}
+			})
+		},
 		remarshalConfig: remarshalConfig[kbapi.ServicenowItomConfig],
 	},
 	".servicenow-sir": {
-		defaults:        connectorConfigWithDefaultsServicenow,
+		defaults: func(plan string) (string, error) {
+			return connectorConfigWithDefaults(plan, func(c *kbapi.ServicenowConfig) {
+				if c.IsOAuth == nil {
+					c.IsOAuth = new(false)
+				}
+				if c.UsesTableApi == nil {
+					c.UsesTableApi = new(true)
+				}
+			})
+		},
 		remarshalConfig: remarshalConfig[kbapi.ServicenowConfig],
 	},
 	".slack_api": {
@@ -93,18 +165,79 @@ var connectorConfigHandlers = map[string]connectorConfigHandler{
 		remarshalConfig: remarshalConfig[kbapi.SlackApiConfig],
 	},
 	".swimlane": {
-		defaults:        connectorConfigWithDefaultsSwimlane,
+		defaults: func(plan string) (string, error) {
+			return connectorConfigWithDefaults(plan, func(c *kbapi.SwimlaneConfig) {
+				if c.Mappings == nil {
+					c.Mappings = &struct {
+						AlertIdConfig *struct { //nolint:revive // var-naming: API struct field
+							FieldType string "json:\"fieldType\""
+							Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
+							Key       string "json:\"key\""
+							Name      string "json:\"name\""
+						} "json:\"alertIdConfig,omitempty\""
+						CaseIdConfig *struct { //nolint:revive // var-naming: API struct field
+							FieldType string "json:\"fieldType\""
+							Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
+							Key       string "json:\"key\""
+							Name      string "json:\"name\""
+						} "json:\"caseIdConfig,omitempty\""
+						CaseNameConfig *struct {
+							FieldType string "json:\"fieldType\""
+							Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
+							Key       string "json:\"key\""
+							Name      string "json:\"name\""
+						} "json:\"caseNameConfig,omitempty\""
+						CommentsConfig *struct {
+							FieldType string "json:\"fieldType\""
+							Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
+							Key       string "json:\"key\""
+							Name      string "json:\"name\""
+						} "json:\"commentsConfig,omitempty\""
+						DescriptionConfig *struct {
+							FieldType string "json:\"fieldType\""
+							Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
+							Key       string "json:\"key\""
+							Name      string "json:\"name\""
+						} "json:\"descriptionConfig,omitempty\""
+						RuleNameConfig *struct {
+							FieldType string "json:\"fieldType\""
+							Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
+							Key       string "json:\"key\""
+							Name      string "json:\"name\""
+						} "json:\"ruleNameConfig,omitempty\""
+						SeverityConfig *struct {
+							FieldType string "json:\"fieldType\""
+							Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
+							Key       string "json:\"key\""
+							Name      string "json:\"name\""
+						} "json:\"severityConfig,omitempty\""
+					}{}
+				}
+			})
+		},
 		remarshalConfig: remarshalConfig[kbapi.SwimlaneConfig],
 	},
 	".tines": {
 		remarshalConfig: remarshalConfig[kbapi.TinesConfig],
 	},
 	".webhook": {
-		defaults:        connectorConfigWithDefaultsWebhook,
+		defaults: func(plan string) (string, error) {
+			return connectorConfigWithDefaults(plan, func(c *kbapi.WebhookConfig) {
+				if c.Method == nil {
+					c.Method = new(kbapi.WebhookConfigMethodPost)
+				}
+			})
+		},
 		remarshalConfig: remarshalConfig[kbapi.WebhookConfig],
 	},
 	".xmatters": {
-		defaults:        connectorConfigWithDefaultsXmatters,
+		defaults: func(plan string) (string, error) {
+			return connectorConfigWithDefaults(plan, func(c *kbapi.XmattersConfig) {
+				if c.UsesBasic == nil {
+					c.UsesBasic = new(true)
+				}
+			})
+		},
 		remarshalConfig: remarshalConfig[kbapi.XmattersConfig],
 	},
 }
@@ -183,150 +316,4 @@ func dispatchGenAiConfig(plan string, setOtherDefaults func(*kbapi.GenaiOpenaiOt
 	default:
 		return "", fmt.Errorf("unsupported apiProvider %q for .gen-ai connector type, must be one of: OpenAI, Azure OpenAI, Other", apiProvider)
 	}
-}
-
-func remarshalConfigGenAi(plan string) (string, error) {
-	return dispatchGenAiConfig(plan, nil)
-}
-
-func connectorConfigWithDefaultsBedrock(plan string) (string, error) {
-	return connectorConfigWithDefaults(plan, func(c *kbapi.BedrockConfig) {
-		if c.DefaultModel == nil {
-			c.DefaultModel = new("us.anthropic.claude-sonnet-4-5-20250929-v1:0")
-		}
-	})
-}
-
-func connectorConfigWithDefaultsGenAi(plan string) (string, error) {
-	return dispatchGenAiConfig(plan, func(c *kbapi.GenaiOpenaiOtherConfig) {
-		if c.VerificationMode == nil {
-			c.VerificationMode = new(kbapi.GenaiOpenaiOtherConfigVerificationModeFull)
-		}
-	})
-}
-
-func connectorConfigWithDefaultsCasesWebhook(plan string) (string, error) {
-	return connectorConfigWithDefaults(plan, func(c *kbapi.CasesWebhookConfig) {
-		if c.AuthType == nil {
-			authType := kbapi.WebhookAuthenticationBasic
-			c.AuthType = &authType
-		}
-		if c.CreateIncidentMethod == nil {
-			c.CreateIncidentMethod = new(kbapi.CasesWebhookConfigCreateIncidentMethodPost)
-		}
-		if c.HasAuth == nil {
-			c.HasAuth = new(true)
-		}
-		if c.UpdateIncidentMethod == nil {
-			c.UpdateIncidentMethod = new(kbapi.CasesWebhookConfigUpdateIncidentMethodPut)
-		}
-		if c.CreateCommentMethod == nil {
-			c.CreateCommentMethod = new(kbapi.CasesWebhookConfigCreateCommentMethodPut)
-		}
-	})
-}
-
-func connectorConfigWithDefaultsEmail(plan string) (string, error) {
-	return connectorConfigWithDefaults(plan, func(c *kbapi.EmailConfig) {
-		if c.HasAuth == nil {
-			c.HasAuth = new(true)
-		}
-		if c.Service == nil {
-			c.Service = new(kbapi.EmailConfigService("other"))
-		}
-	})
-}
-
-func connectorConfigWithDefaultsIndex(plan string) (string, error) {
-	return connectorConfigWithDefaults(plan, func(c *kbapi.IndexConfig) {
-		if c.Refresh == nil {
-			c.Refresh = new(false)
-		}
-	})
-}
-
-func connectorConfigWithDefaultsServicenow(plan string) (string, error) {
-	return connectorConfigWithDefaults(plan, func(c *kbapi.ServicenowConfig) {
-		if c.IsOAuth == nil {
-			c.IsOAuth = new(false)
-		}
-		if c.UsesTableApi == nil {
-			c.UsesTableApi = new(true)
-		}
-	})
-}
-
-func connectorConfigWithDefaultsServicenowItom(plan string) (string, error) {
-	return connectorConfigWithDefaults(plan, func(c *kbapi.ServicenowItomConfig) {
-		if c.IsOAuth == nil {
-			c.IsOAuth = new(false)
-		}
-	})
-}
-
-func connectorConfigWithDefaultsSwimlane(plan string) (string, error) {
-	return connectorConfigWithDefaults(plan, func(c *kbapi.SwimlaneConfig) {
-		if c.Mappings == nil {
-			c.Mappings = &struct {
-				AlertIdConfig *struct { //nolint:revive // var-naming: API struct field
-					FieldType string "json:\"fieldType\""
-					Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-					Key       string "json:\"key\""
-					Name      string "json:\"name\""
-				} "json:\"alertIdConfig,omitempty\""
-				CaseIdConfig *struct { //nolint:revive // var-naming: API struct field
-					FieldType string "json:\"fieldType\""
-					Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-					Key       string "json:\"key\""
-					Name      string "json:\"name\""
-				} "json:\"caseIdConfig,omitempty\""
-				CaseNameConfig *struct {
-					FieldType string "json:\"fieldType\""
-					Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-					Key       string "json:\"key\""
-					Name      string "json:\"name\""
-				} "json:\"caseNameConfig,omitempty\""
-				CommentsConfig *struct {
-					FieldType string "json:\"fieldType\""
-					Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-					Key       string "json:\"key\""
-					Name      string "json:\"name\""
-				} "json:\"commentsConfig,omitempty\""
-				DescriptionConfig *struct {
-					FieldType string "json:\"fieldType\""
-					Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-					Key       string "json:\"key\""
-					Name      string "json:\"name\""
-				} "json:\"descriptionConfig,omitempty\""
-				RuleNameConfig *struct {
-					FieldType string "json:\"fieldType\""
-					Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-					Key       string "json:\"key\""
-					Name      string "json:\"name\""
-				} "json:\"ruleNameConfig,omitempty\""
-				SeverityConfig *struct {
-					FieldType string "json:\"fieldType\""
-					Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-					Key       string "json:\"key\""
-					Name      string "json:\"name\""
-				} "json:\"severityConfig,omitempty\""
-			}{}
-		}
-	})
-}
-
-func connectorConfigWithDefaultsWebhook(plan string) (string, error) {
-	return connectorConfigWithDefaults(plan, func(c *kbapi.WebhookConfig) {
-		if c.Method == nil {
-			c.Method = new(kbapi.WebhookConfigMethodPost)
-		}
-	})
-}
-
-func connectorConfigWithDefaultsXmatters(plan string) (string, error) {
-	return connectorConfigWithDefaults(plan, func(c *kbapi.XmattersConfig) {
-		if c.UsesBasic == nil {
-			c.UsesBasic = new(true)
-		}
-	})
 }
