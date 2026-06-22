@@ -178,6 +178,7 @@ resource "elasticstack_kibana_dashboard" "markdown_by_reference" {
 ### Optional
 
 - `access_control` (Attributes) Access control parameters for the dashboard. (see [below for nested schema](#nestedatt--access_control))
+- `dashboard_id` (String) Optional dashboard identifier. When set, create uses PUT upsert semantics; changing this value forces replacement. When omitted, Kibana assigns a UUID.
 - `description` (String) A short description of the dashboard.
 - `filters` (Attributes List) Dashboard-level saved filter pills (`kbn-dashboard-data.filters` in the Kibana Dashboard API). Each element is one filter in display order. The JSON shape for each `filter_json` matches the dashboard filters discriminated union (including DSL and spatial variants), consistent with per-panel `filter_json` on Lens chart blocks. (see [below for nested schema](#nestedatt--filters))
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
@@ -193,7 +194,6 @@ When omitted from configuration and Kibana returns an empty list, Terraform keep
 
 ### Read-Only
 
-- `dashboard_id` (String) The Kibana-assigned identifier for the dashboard.
 - `id` (String) Generated composite identifier for the dashboard.
 
 <a id="nestedatt--query"></a>

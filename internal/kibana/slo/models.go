@@ -387,10 +387,7 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 	} else {
 		m.GroupBy = NewGroupByNull()
 	}
-	m.Tags = nil
-	for _, t := range apiModel.Tags {
-		m.Tags = append(m.Tags, types.StringValue(t))
-	}
+	m.Tags = typeutils.StringSliceValue(apiModel.Tags)
 
 	m.MetricCustomIndicator = nil
 	m.HistogramCustomIndicator = nil

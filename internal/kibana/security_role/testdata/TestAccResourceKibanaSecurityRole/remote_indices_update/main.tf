@@ -22,8 +22,9 @@ resource "elasticstack_kibana_security_role" "test" {
         grant  = ["sample2"]
         except = []
       }
-      names      = ["sample2"]
-      privileges = ["create", "read", "write"]
+      names                    = ["sample2"]
+      privileges               = ["create", "read", "write"]
+      allow_restricted_indices = false
     }
     run_as = ["kibana", "elastic"]
   }

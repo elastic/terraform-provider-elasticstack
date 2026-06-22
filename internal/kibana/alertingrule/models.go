@@ -23,7 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	kibanacustomtypes "github.com/elastic/terraform-provider-elasticstack/internal/kibana/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kibanacustomtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
@@ -189,11 +189,7 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 			LookBackWindow:        types.Int64Value(rule.Flapping.LookBackWindow),
 			StatusChangeThreshold: types.Int64Value(rule.Flapping.StatusChangeThreshold),
 		}
-		if rule.Flapping.Enabled != nil {
-			fm.Enabled = types.BoolValue(*rule.Flapping.Enabled)
-		} else {
-			fm.Enabled = types.BoolNull()
-		}
+		fm.Enabled = types.BoolPointerValue(rule.Flapping.Enabled)
 		flObj, d := types.ObjectValueFrom(ctx, getFlappingAttrTypes(), fm)
 		diags.Append(d...)
 		m.Flapping = flObj

@@ -67,16 +67,6 @@ func tagcloudConfigApplyStylingFromAPI(m *models.TagcloudConfigModel, s *kbapi.K
 	}
 }
 
-func tagcloudConfigUsesESQL(m *models.TagcloudConfigModel) bool {
-	if m == nil {
-		return false
-	}
-	if m.Query == nil {
-		return true
-	}
-	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
-}
-
 func tagcloudConfigFromAPI(
 	ctx context.Context,
 	m *models.TagcloudConfigModel,
@@ -90,18 +80,14 @@ func tagcloudConfigFromAPI(
 	m.Description = types.StringPointerValue(api.Description)
 
 	datasetBytes, err := api.DataSource.MarshalJSON()
-	v, ok := lenscommon.MarshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	v, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}
 	m.DataSourceJSON = v
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	if api.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*api.Sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
+	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
 
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
@@ -126,12 +112,7 @@ func tagcloudConfigFromAPI(
 	m.EsqlMetric = nil
 	m.EsqlTagBy = nil
 
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
 
@@ -149,14 +130,10 @@ func tagcloudConfigFromAPIESQL(
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	if api.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*api.Sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
+	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
 
 	datasetBytes, err := json.Marshal(api.DataSource)
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}
@@ -197,12 +174,7 @@ func tagcloudConfigFromAPIESQL(
 	tb.Label = typeutils.StringishPointerValue(api.TagBy.Label)
 	m.EsqlTagBy = tb
 
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
 
@@ -217,7 +189,7 @@ func tagcloudConfigToAPI(m *models.TagcloudConfigModel) (lenscommon.VisByValueCo
 		return attrs, diags
 	}
 
-	if tagcloudConfigUsesESQL(m) {
+	if lenscommon.ConfigUsesESQL(m.Query) {
 		esql, d := tagcloudConfigToAPIESQL(m)
 		diags.Append(d...)
 		if diags.HasError() {

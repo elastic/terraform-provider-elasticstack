@@ -66,20 +66,14 @@ func heatmapConfigPopulateCommonFields(m *models.HeatmapConfigModel,
 	prior *models.HeatmapConfigModel,
 	diags *diag.Diagnostics,
 ) bool {
-	m.Title = types.StringPointerValue(title)
-	m.Description = types.StringPointerValue(description)
-	m.IgnoreGlobalFilters = types.BoolPointerValue(ignoreGlobalFilters)
-	if sampling != nil {
-		m.Sampling = types.Float64Value(float64(*sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, datasetErr, "data_source_json", diags)
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		title, description, ignoreGlobalFilters, sampling,
+		datasetBytes, datasetErr, "data_source_json", filters, diags,
+	)
 	if !ok {
 		return false
 	}
-	m.DataSourceJSON = dv
-	m.Filters = lenscommon.PopulateFiltersFromAPI(filters, diags)
+	m.LensChartBaseTFModel = base
 	m.Axis = &models.HeatmapAxesModel{}
 	var priorAxis *models.HeatmapAxesModel
 	if prior != nil {
@@ -120,7 +114,7 @@ func heatmapConfigFromAPINoESQL(
 	m.MetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
 	xAxisBytes, err := api.X.MarshalJSON()
-	xv, ok := lenscommon.MarshalToNormalized(xAxisBytes, err, "x_axis", &diags)
+	xv, ok := lenscommon.WrapNormalizedJSON(xAxisBytes, err, "x_axis", &diags)
 	if !ok {
 		return diags
 	}
@@ -128,7 +122,7 @@ func heatmapConfigFromAPINoESQL(
 
 	if api.Y != nil {
 		yAxisBytes, err := api.Y.MarshalJSON()
-		yv, ok := lenscommon.MarshalToNormalized(yAxisBytes, err, "y_axis", &diags)
+		yv, ok := lenscommon.WrapNormalizedJSON(yAxisBytes, err, "y_axis", &diags)
 		if !ok {
 			return diags
 		}
@@ -140,12 +134,7 @@ func heatmapConfigFromAPINoESQL(
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
 
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
 
@@ -186,12 +175,7 @@ func heatmapConfigFromAPIESQL(ctx context.Context, m *models.HeatmapConfigModel,
 		m.YAxisJSON = jsontypes.NewNormalizedNull()
 	}
 
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
 
@@ -206,7 +190,7 @@ func heatmapConfigToAPI(m *models.HeatmapConfigModel) (lenscommon.VisByValueConf
 		return attrs, diags
 	}
 
-	if heatmapConfigUsesESQL(m) {
+	if lenscommon.ConfigUsesESQL(m.Query) {
 		esql, esqlDiags := heatmapConfigToAPIESQL(m)
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
@@ -228,16 +212,6 @@ func heatmapConfigToAPI(m *models.HeatmapConfigModel) (lenscommon.VisByValueConf
 	}
 
 	return attrs, diags
-}
-
-func heatmapConfigUsesESQL(m *models.HeatmapConfigModel) bool {
-	if m == nil {
-		return false
-	}
-	if m.Query == nil {
-		return true
-	}
-	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
 func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPIsHeatmapNoESQL, diag.Diagnostics) {

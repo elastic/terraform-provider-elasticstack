@@ -19,11 +19,10 @@ package componenttemplate
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
 func upgradeStateV0ToV1() resource.StateUpgrader {
@@ -35,24 +34,18 @@ func upgradeStateV0ToV1() resource.StateUpgrader {
 // migrateComponentTemplateStateV0ToV1 collapses SDK list-shaped MaxItems:1 blocks to Plugin Framework
 // SingleNestedBlock object/null shape.
 func migrateComponentTemplateStateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	if req.RawState == nil || req.RawState.JSON == nil {
-		resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
+	stateMap := stateutil.UnmarshalStateMap(req, resp)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var stateMap map[string]any
-	if err := json.Unmarshal(req.RawState.JSON, &stateMap); err != nil {
-		resp.Diagnostics.AddError("State upgrade error", "Could not unmarshal prior state: "+err.Error())
-		return
-	}
-
-	resp.Diagnostics.Append(aliasutil.CollapseListPath(stateMap, attrTemplate, attrTemplate)...)
+	resp.Diagnostics.Append(stateutil.CollapseListPath(stateMap, attrTemplate, attrTemplate)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	if tmpl, ok := stateMap[attrTemplate].(map[string]any); ok {
-		ensureTemplateObjectKeysForV1(tmpl)
+		stateutil.EnsureMapKeys(tmpl, attrAlias, attrMappings, attrSettings, attrDataStreamOptions)
 		aliasutil.NormalizeTemplateAliasesInV1State(tmpl)
 	}
 
@@ -62,28 +55,5 @@ func migrateComponentTemplateStateV0ToV1(_ context.Context, req resource.Upgrade
 		delete(stateMap, "version")
 	}
 
-	stateJSON, err := json.Marshal(stateMap)
-	if err != nil {
-		resp.Diagnostics.AddError("State upgrade error", "Could not marshal new state: "+err.Error())
-		return
-	}
-	resp.DynamicValue = &tfprotov6.DynamicValue{
-		JSON: stateJSON,
-	}
-}
-
-func ensureTemplateObjectKeysForV1(tmpl map[string]any) {
-	if _, ok := tmpl[attrAlias]; !ok {
-		// Empty nested sets are null in Terraform JSON state, not [].
-		tmpl[attrAlias] = nil
-	}
-	if _, ok := tmpl[attrMappings]; !ok {
-		tmpl[attrMappings] = nil
-	}
-	if _, ok := tmpl[attrSettings]; !ok {
-		tmpl[attrSettings] = nil
-	}
-	if _, ok := tmpl[attrDataStreamOptions]; !ok {
-		tmpl[attrDataStreamOptions] = nil
-	}
+	stateutil.MarshalStateMap(stateMap, resp)
 }

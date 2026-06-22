@@ -94,6 +94,11 @@ func (model *tfModel) populateFromAPI(ctx context.Context, ds []models.DataStrea
 		if apiRetention != actualRetention {
 			model.DataRetention = types.StringValue(apiRetention)
 		}
+
+		if lf.Lifecycle.Enabled != model.Enabled.ValueBool() {
+			model.Enabled = types.BoolValue(lf.Lifecycle.Enabled)
+		}
+
 		var updateDownsampling bool
 		apiDs := lf.Lifecycle.Downsampling
 		if len(apiDs) != len(actualDownsampling) {

@@ -48,18 +48,14 @@ func datatableNoESQLConfigFromAPI(
 	m.Description = types.StringPointerValue(api.Description)
 
 	datasetBytes, err := json.Marshal(api.DataSource)
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}
 	m.DataSourceJSON = dv
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	if api.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*api.Sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
+	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
 
 	m.Styling = &models.DatatableStylingModel{}
 	if stylingDiags := datatableStylingFromAPI(m.Styling, api.Styling); stylingDiags.HasError() {
@@ -75,7 +71,7 @@ func datatableNoESQLConfigFromAPI(
 		m.Metrics = make([]models.DatatableMetricModel, len(api.Metrics))
 		for i, metric := range api.Metrics {
 			metricBytes, err := json.Marshal(metric)
-			mv, ok := lenscommon.MarshalToNormalized(metricBytes, err, "metric", &diags)
+			mv, ok := lenscommon.WrapNormalizedJSON(metricBytes, err, "metric", &diags)
 			if !ok {
 				return diags
 			}
@@ -87,7 +83,7 @@ func datatableNoESQLConfigFromAPI(
 		m.Rows = make([]models.DatatableRowModel, len(*api.Rows))
 		for i, row := range *api.Rows {
 			rowBytes, err := json.Marshal(row)
-			rv, ok := lenscommon.MarshalToNormalized(rowBytes, err, "row", &diags)
+			rv, ok := lenscommon.WrapNormalizedJSON(rowBytes, err, "row", &diags)
 			if !ok {
 				return diags
 			}
@@ -99,7 +95,7 @@ func datatableNoESQLConfigFromAPI(
 		m.SplitMetricsBy = make([]models.DatatableSplitByModel, len(*api.SplitMetricsBy))
 		for i, splitBy := range *api.SplitMetricsBy {
 			splitBytes, err := json.Marshal(splitBy)
-			sv, ok := lenscommon.MarshalToNormalized(splitBytes, err, "split_metrics_by", &diags)
+			sv, ok := lenscommon.WrapNormalizedJSON(splitBytes, err, "split_metrics_by", &diags)
 			if !ok {
 				return diags
 			}
@@ -107,12 +103,7 @@ func datatableNoESQLConfigFromAPI(
 		}
 	}
 
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
 
@@ -227,18 +218,14 @@ func datatableESQLConfigFromAPI(
 	m.Description = types.StringPointerValue(api.Description)
 
 	datasetBytes, err := json.Marshal(api.DataSource)
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}
 	m.DataSourceJSON = dv
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	if api.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*api.Sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
+	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
 
 	m.Styling = &models.DatatableStylingModel{}
 	if stylingDiags := datatableStylingFromAPI(m.Styling, api.Styling); stylingDiags.HasError() {
@@ -251,7 +238,7 @@ func datatableESQLConfigFromAPI(
 		m.Metrics = make([]models.DatatableMetricModel, len(*api.Metrics))
 		for i, metric := range *api.Metrics {
 			metricBytes, err := json.Marshal(metric)
-			mv, ok := lenscommon.MarshalToNormalized(metricBytes, err, "metric", &diags)
+			mv, ok := lenscommon.WrapNormalizedJSON(metricBytes, err, "metric", &diags)
 			if !ok {
 				return diags
 			}
@@ -263,7 +250,7 @@ func datatableESQLConfigFromAPI(
 		m.Rows = make([]models.DatatableRowModel, len(*api.Rows))
 		for i, row := range *api.Rows {
 			rowBytes, err := json.Marshal(row)
-			rv, ok := lenscommon.MarshalToNormalized(rowBytes, err, "row", &diags)
+			rv, ok := lenscommon.WrapNormalizedJSON(rowBytes, err, "row", &diags)
 			if !ok {
 				return diags
 			}
@@ -275,7 +262,7 @@ func datatableESQLConfigFromAPI(
 		m.SplitMetricsBy = make([]models.DatatableSplitByModel, len(*api.SplitMetricsBy))
 		for i, splitBy := range *api.SplitMetricsBy {
 			splitBytes, err := json.Marshal(splitBy)
-			sv, ok := lenscommon.MarshalToNormalized(splitBytes, err, "split_metrics_by", &diags)
+			sv, ok := lenscommon.WrapNormalizedJSON(splitBytes, err, "split_metrics_by", &diags)
 			if !ok {
 				return diags
 			}
@@ -283,12 +270,7 @@ func datatableESQLConfigFromAPI(
 		}
 	}
 
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
 
@@ -414,7 +396,7 @@ func datatableStylingFromAPI(m *models.DatatableStylingModel, api *kbapi.KibanaH
 
 	if api.SortBy != nil {
 		sortBytes, err := json.Marshal(api.SortBy)
-		sortV, ok := lenscommon.MarshalToNormalized(sortBytes, err, "sort_by", &diags)
+		sortV, ok := lenscommon.WrapNormalizedJSON(sortBytes, err, "sort_by", &diags)
 		if !ok {
 			return diags
 		}

@@ -23,7 +23,6 @@ import (
 	"strconv"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -55,30 +54,12 @@ func OptIntFromInt64(field string, v types.Int64) (*int, diag.Diagnostics) {
 	return &narrowed, nil
 }
 
-// OptInt64Ptr returns a pointer to the int64 value when the Terraform int64 is
-// known, or nil for unknown/null.
-func OptInt64Ptr(v types.Int64) *int64 {
-	if !typeutils.IsKnown(v) {
-		return nil
-	}
-	val := v.ValueInt64()
-	return &val
-}
-
 // ByteSizeFromString converts a known Terraform string to an estypes.ByteSize.
 func ByteSizeFromString(v types.String) estypes.ByteSize {
 	if !typeutils.IsKnown(v) {
 		return nil
 	}
 	return estypes.ByteSize(v.ValueString())
-}
-
-// DurationFromString converts a known Terraform string to an estypes.Duration.
-func DurationFromString(v types.String) estypes.Duration {
-	if !typeutils.IsKnown(v) {
-		return nil
-	}
-	return estypes.Duration(v.ValueString())
 }
 
 // ByteSizeToString converts an estypes.ByteSize to a Terraform string.
@@ -98,23 +79,4 @@ func ByteSizeToString(v estypes.ByteSize) types.String {
 	default:
 		return types.StringValue(fmt.Sprint(v))
 	}
-}
-
-// DurationToString converts an estypes.Duration to a Terraform string.
-func DurationToString(v estypes.Duration) types.String {
-	if v == nil {
-		return types.StringNull()
-	}
-	if s, ok := v.(string); ok {
-		return types.StringValue(s)
-	}
-	return types.StringValue(fmt.Sprint(v))
-}
-
-// DurationFromCustomType converts a known customtypes.Duration to an estypes.Duration.
-func DurationFromCustomType(v customtypes.Duration) estypes.Duration {
-	if v.IsNull() || v.IsUnknown() {
-		return nil
-	}
-	return estypes.Duration(v.ValueString())
 }

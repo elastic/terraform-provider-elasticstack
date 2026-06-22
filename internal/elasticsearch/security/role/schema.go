@@ -188,6 +188,14 @@ func GetSchema(version int64) schema.Schema {
 								setvalidator.SizeAtLeast(1),
 							},
 						},
+						attrAllowRestrictedIndices: schema.BoolAttribute{
+							MarkdownDescription: allowRestrictedIndicesDescription,
+							Optional:            true,
+							Computed:            true,
+							PlanModifiers: []planmodifier.Bool{
+								boolplanmodifier.UseStateForUnknown(),
+							},
+						},
 					},
 				},
 			},

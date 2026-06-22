@@ -6,6 +6,11 @@
 
 ### Changes
 
+- Relax provider-side length validation for ML datafeed and filter IDs ([#3798](https://github.com/elastic/terraform-provider-elasticstack/pull/3798))
+- Stop `elasticstack_kibana_dashboard` from injecting `empty_as_null` into Lens metric `config_json` for operations the Kibana API rejects (e.g. `percentile`), which previously caused an HTTP 400 on apply. ([#3720](https://github.com/elastic/terraform-provider-elasticstack/pull/3720))
+- Fix "Provider produced inconsistent result after apply" for `.slack_api` action connectors by normalizing the planned `config` value the same way the read response is normalized. ([#3749](https://github.com/elastic/terraform-provider-elasticstack/pull/3749))
+- The `elasticstack_kibana_dashboard` resource now supports an optional user-supplied `dashboard_id`, creating the dashboard via PUT upsert so practitioners can assign stable, human-readable identifiers. ([#3788](https://github.com/elastic/terraform-provider-elasticstack/pull/3788))
+- Promote the Kibana Streams resource from experimental to tech preview, making it publicly available without requiring the `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL` environment variable. ([#3782](https://github.com/elastic/terraform-provider-elasticstack/pull/3782))
 - Add `elasticstack_elasticsearch_ccr_follower_index` and `elasticstack_elasticsearch_ccr_auto_follow_pattern` resources for managing Cross-Cluster Replication. ([#3615](https://github.com/elastic/terraform-provider-elasticstack/pull/3615))
 - Add uniform `timeouts` support to all entitycore-envelope-backed Elasticsearch and Kibana resources; `elasticsearch_ml_anomaly_detection_job` `timeouts` changes from block to attribute syntax. ([#3607](https://github.com/elastic/terraform-provider-elasticstack/pull/3607))
 - Adds Terraform resource and data source for managing the Kibana Security Entity Store resolution links and resolution groups. ([#3514](https://github.com/elastic/terraform-provider-elasticstack/pull/3514))

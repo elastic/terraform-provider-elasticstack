@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/putautofollowpattern"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/resumefollow"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,12 +36,12 @@ func fullTuningParams() TuningParams {
 		MaxOutstandingWriteRequests:   types.Int64Value(8),
 		MaxReadRequestOperationCount:  types.Int64Value(512),
 		MaxReadRequestSize:            types.StringValue("100mb"),
-		MaxRetryDelay:                 types.StringValue("30s"),
+		MaxRetryDelay:                 customtypes.NewDurationValue("30s"),
 		MaxWriteBufferCount:           types.Int64Value(100),
 		MaxWriteBufferSize:            types.StringValue("200mb"),
 		MaxWriteRequestOperationCount: types.Int64Value(256),
 		MaxWriteRequestSize:           types.StringValue("64mb"),
-		ReadPollTimeout:               types.StringValue("5m"),
+		ReadPollTimeout:               customtypes.NewDurationValue("5m"),
 	}
 }
 
@@ -85,7 +86,7 @@ func TestApplyToPutAutoFollowRequest_nullFieldsSkipped(t *testing.T) {
 	p := TuningParams{
 		MaxOutstandingReadRequests: types.Int64Null(),
 		MaxReadRequestSize:         types.StringNull(),
-		MaxRetryDelay:              types.StringNull(),
+		MaxRetryDelay:              customtypes.NewDurationNull(),
 	}
 	req := &putautofollowpattern.Request{}
 	diags := ApplyToPutAutoFollowRequest(p, req)
@@ -173,12 +174,12 @@ func TestTuningParamsFromParameters_allFields(t *testing.T) {
 	assert.Equal(t, types.Int64Value(8), p.MaxOutstandingWriteRequests)
 	assert.Equal(t, types.Int64Value(512), p.MaxReadRequestOperationCount)
 	assert.Equal(t, types.StringValue("100mb"), p.MaxReadRequestSize)
-	assert.Equal(t, types.StringValue("30s"), p.MaxRetryDelay)
+	assert.Equal(t, customtypes.NewDurationValue("30s"), p.MaxRetryDelay)
 	assert.Equal(t, types.Int64Value(100), p.MaxWriteBufferCount)
 	assert.Equal(t, types.StringValue("200mb"), p.MaxWriteBufferSize)
 	assert.Equal(t, types.Int64Value(256), p.MaxWriteRequestOperationCount)
 	assert.Equal(t, types.StringValue("64mb"), p.MaxWriteRequestSize)
-	assert.Equal(t, types.StringValue("5m"), p.ReadPollTimeout)
+	assert.Equal(t, customtypes.NewDurationValue("5m"), p.ReadPollTimeout)
 }
 
 func TestTuningParamsFromParameters_nilPointers(t *testing.T) {
@@ -191,10 +192,10 @@ func TestTuningParamsFromParameters_nilPointers(t *testing.T) {
 	assert.Equal(t, types.Int64Null(), p.MaxOutstandingWriteRequests)
 	assert.Equal(t, types.Int64Null(), p.MaxReadRequestOperationCount)
 	assert.Equal(t, types.StringNull(), p.MaxReadRequestSize)
-	assert.Equal(t, types.StringNull(), p.MaxRetryDelay)
+	assert.Equal(t, customtypes.NewDurationNull(), p.MaxRetryDelay)
 	assert.Equal(t, types.Int64Null(), p.MaxWriteBufferCount)
 	assert.Equal(t, types.StringNull(), p.MaxWriteBufferSize)
 	assert.Equal(t, types.Int64Null(), p.MaxWriteRequestOperationCount)
 	assert.Equal(t, types.StringNull(), p.MaxWriteRequestSize)
-	assert.Equal(t, types.StringNull(), p.ReadPollTimeout)
+	assert.Equal(t, customtypes.NewDurationNull(), p.ReadPollTimeout)
 }

@@ -33,7 +33,6 @@ import (
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages Kibana [Streams](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-streams). " +
-			"Streams is an experimental feature for managing data ingestion in Kibana. " +
 			"Requires Elastic Stack 9.4.0 or higher (the stream type discriminator field used by this resource was introduced in 9.4.0). " +
 			"This functionality is in technical preview and may be changed or removed in a future release.\n\n" +
 			"Three stream types are supported:\n" +

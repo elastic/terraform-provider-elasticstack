@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // expandFromData builds a models.ComponentTemplate from a Data plan/state value.
@@ -39,7 +38,7 @@ func expandFromData(ctx context.Context, d Data) (models.ComponentTemplate, diag
 	}
 
 	if !d.Template.IsNull() && !d.Template.IsUnknown() {
-		tpl, d2 := expandTemplateBlock(ctx, d.Template)
+		tpl, d2 := templateutil.ExpandTemplateBlock(ctx, d.Template)
 		diags.Append(d2...)
 		if diags.HasError() {
 			return out, diags
@@ -53,14 +52,4 @@ func expandFromData(ctx context.Context, d Data) (models.ComponentTemplate, diag
 	}
 
 	return out, diags
-}
-
-// expandTemplateBlock expands the template block object to *models.Template.
-func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Template, diag.Diagnostics) {
-	var tm TemplateModel
-	if d := templateutil.DecodeTemplateObject(ctx, obj, &tm); d.HasError() {
-		return nil, d
-	}
-
-	return templateutil.ExpandTemplateCore(ctx, tm.Alias, tm.Mappings, tm.Settings, tm.DataStreamOptions)
 }

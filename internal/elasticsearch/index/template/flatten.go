@@ -27,7 +27,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -56,8 +55,7 @@ func (m *Model) fromAPIModel(ctx context.Context, name string, in *models.IndexT
 		composedOf = []string{}
 	}
 	{
-		vals := stringSliceToAttrValues(composedOf)
-		lv, d := types.ListValueFrom(ctx, types.StringType, vals)
+		lv, d := types.ListValueFrom(ctx, types.StringType, composedOf)
 		diags.Append(d...)
 		m.ComposedOf = lv
 	}
@@ -67,8 +65,7 @@ func (m *Model) fromAPIModel(ctx context.Context, name string, in *models.IndexT
 		ignoreMissing = []string{}
 	}
 	{
-		vals := stringSliceToAttrValues(ignoreMissing)
-		lv, d := types.ListValueFrom(ctx, types.StringType, vals)
+		lv, d := types.ListValueFrom(ctx, types.StringType, ignoreMissing)
 		diags.Append(d...)
 		m.IgnoreMissingComponentTemplates = lv
 	}
@@ -78,8 +75,7 @@ func (m *Model) fromAPIModel(ctx context.Context, name string, in *models.IndexT
 		indexPatterns = []string{}
 	}
 	{
-		vals := stringSliceToAttrValues(indexPatterns)
-		sv, d := types.SetValueFrom(ctx, types.StringType, vals)
+		sv, d := types.SetValueFrom(ctx, types.StringType, indexPatterns)
 		diags.Append(d...)
 		m.IndexPatterns = sv
 	}
@@ -95,9 +91,9 @@ func (m *Model) fromAPIModel(ctx context.Context, name string, in *models.IndexT
 		m.Metadata = jsontypes.NewNormalizedNull()
 	}
 
-	m.Priority = typeutils.Int64PointerValue(in.Priority)
-	m.Version = typeutils.Int64PointerValue(in.Version)
-	m.AllowAutoCreate = typeutils.BoolPointerValue(in.AllowAutoCreate)
+	m.Priority = types.Int64PointerValue(in.Priority)
+	m.Version = types.Int64PointerValue(in.Version)
+	m.AllowAutoCreate = types.BoolPointerValue(in.AllowAutoCreate)
 
 	var d diag.Diagnostics
 	m.DataStream, d = flattenDataStream(in.DataStream)
@@ -107,14 +103,6 @@ func (m *Model) fromAPIModel(ctx context.Context, name string, in *models.IndexT
 	diags.Append(d...)
 
 	return diags
-}
-
-func stringSliceToAttrValues(elems []string) []attr.Value {
-	vals := make([]attr.Value, len(elems))
-	for i, s := range elems {
-		vals[i] = types.StringValue(s)
-	}
-	return vals
 }
 
 func flattenDataStream(ds *models.DataStreamSettings) (types.Object, diag.Diagnostics) {

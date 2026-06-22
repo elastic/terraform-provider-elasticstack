@@ -67,25 +67,26 @@ func OptionalInt(value types.Int64) *int {
 	return &v
 }
 
-// BoolPointerValue converts a *bool to a types.Bool, returning types.BoolNull() when the pointer is nil.
-func BoolPointerValue(v *bool) types.Bool {
-	if v == nil {
-		return types.BoolNull()
+// Int64Pointer returns a pointer to the int64 value when set, or nil when null or unknown.
+func Int64Pointer(v types.Int64) *int64 {
+	if !IsKnown(v) {
+		return nil
 	}
-	return types.BoolValue(*v)
-}
-
-// Int64PointerValue converts a *int64 to a types.Int64, returning types.Int64Null() when the pointer is nil.
-func Int64PointerValue(v *int64) types.Int64 {
-	if v == nil {
-		return types.Int64Null()
-	}
-	return types.Int64Value(*v)
+	val := v.ValueInt64()
+	return &val
 }
 
 // IntPointerToInt64Value converts a *int to a types.Int64, returning types.Int64Null() when the pointer is nil.
 func IntPointerToInt64Value(v *int) types.Int64 {
-	return Int64PointerValue(Itol(v))
+	return types.Int64PointerValue(Itol(v))
+}
+
+// Float32PointerToFloat64Value converts a *float32 to a types.Float64, returning types.Float64Null() when the pointer is nil.
+func Float32PointerToFloat64Value(v *float32) types.Float64 {
+	if v == nil {
+		return types.Float64Null()
+	}
+	return types.Float64Value(float64(*v))
 }
 
 // NonEmptyStringOrNull returns types.StringValue(*s) when s is non-nil and non-empty,

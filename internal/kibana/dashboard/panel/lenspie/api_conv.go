@@ -33,19 +33,7 @@ import (
 const jsonNullString = "null"
 
 func isPieNoESQLCandidateActuallyESQL(apiChart kbapi.KibanaHTTPAPIsPieNoESQL) bool {
-	body, err := json.Marshal(apiChart.DataSource)
-	if err != nil {
-		return false
-	}
-
-	var dataset struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(body, &dataset); err != nil {
-		return false
-	}
-
-	return dataset.Type == lenscommon.LensDatasetTypeESQL || dataset.Type == lenscommon.LensDatasetTypeTable
+	return lenscommon.LensDataSourceIsESQLOrTable(apiChart.DataSource.MarshalJSON())
 }
 
 func pieChartConfigPopulateCommonFields(
@@ -67,14 +55,10 @@ func pieChartConfigPopulateCommonFields(
 	} else {
 		m.IgnoreGlobalFilters = types.BoolValue(false)
 	}
-	if sampling != nil {
-		m.Sampling = types.Float64Value(float64(*sampling))
-	} else {
-		m.Sampling = types.Float64Value(1.0)
-	}
+	m.Sampling = lenscommon.SamplingFromAPIWithDefault(sampling, 1.0)
 	m.DonutHole = typeutils.StringishPointerValue(donutHole)
 	m.LabelPosition = typeutils.StringishPointerValue(labelPosition)
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, datasetErr, "data_source_json", diags)
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, datasetErr, "data_source_json", diags)
 	if !ok {
 		return false
 	}
@@ -149,13 +133,8 @@ func pieChartConfigFromAPINoESQL(
 		}
 	}
 
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
 	if !lenscommon.PopulateLensChartPresentation(
-		ctx, &m.LensChartPresentationTFModel, priorLens, apiChart.TimeRange,
+		ctx, &m.LensChartPresentationTFModel, prior, apiChart.TimeRange,
 		apiChart.HideTitle, apiChart.HideBorder, apiChart.References, apiChart.Drilldowns, &diags,
 	) {
 		return diags
@@ -227,13 +206,8 @@ func pieChartConfigFromAPIESQL(
 		}
 	}
 
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
 	if !lenscommon.PopulateLensChartPresentation(
-		ctx, &m.LensChartPresentationTFModel, priorLens, apiChart.TimeRange,
+		ctx, &m.LensChartPresentationTFModel, prior, apiChart.TimeRange,
 		apiChart.HideTitle, apiChart.HideBorder, apiChart.References, apiChart.Drilldowns, &diags,
 	) {
 		return diags

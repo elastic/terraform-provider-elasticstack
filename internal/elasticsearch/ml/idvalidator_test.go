@@ -94,3 +94,33 @@ func TestIDValidator(t *testing.T) {
 		})
 	}
 }
+
+func TestIDValidatorWithoutLength(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		id      string
+		wantErr bool
+	}{
+		{"datafeed-opserv-riskviewxml-customer-transaction-volume-decline-stop", false},
+		{strings.Repeat("a", 65), false},
+		{"a", false},
+		{"", true},
+		{"Abc", true},
+		{"_ab", true},
+	}
+
+	v := IDValidatorWithoutLength()
+	for _, tc := range tests {
+		t.Run(fmt.Sprintf("%q", tc.id), func(t *testing.T) {
+			t.Parallel()
+			req := validator.StringRequest{ConfigValue: types.StringValue(tc.id)}
+			var resp validator.StringResponse
+			v.ValidateString(context.Background(), req, &resp)
+			gotErr := resp.Diagnostics.HasError()
+			if gotErr != tc.wantErr {
+				t.Fatalf("ValidateString(%q) hasError=%v, want %v (%s)", tc.id, gotErr, tc.wantErr, resp.Diagnostics)
+			}
+		})
+	}
+}

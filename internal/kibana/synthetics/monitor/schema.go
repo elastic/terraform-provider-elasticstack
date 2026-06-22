@@ -730,9 +730,9 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 		// than re-deriving from the API response. Private locations are re-derived from
 		// the API response where IsServiceManaged == false.
 		Locations:        v.Locations,
-		PrivateLocations: synthetics.StringSliceValue(privateLocLabels),
+		PrivateLocations: typeutils.StringSliceValue(privateLocLabels),
 		Enabled:          types.BoolPointerValue(api.Enabled),
-		Tags:             synthetics.StringSliceValue(typeutils.Deref(api.Tags)),
+		Tags:             typeutils.StringSliceValue(typeutils.Deref(api.Tags)),
 		Labels:           typeutils.MapValueFrom(ctx, typeutils.Deref(api.Labels), types.StringType, path.Root("labels"), &dg),
 		Alert:            alertV0,
 		APMServiceName:   types.StringPointerValue(api.ServiceName),
@@ -811,7 +811,7 @@ func (v *tfBrowserMonitorFieldsV0) toTfBrowserMonitorFieldsV0(api *kbapi.Synthet
 
 	syntheticsArgs := v.SyntheticsArgs
 	if api.SyntheticsArgs != nil {
-		syntheticsArgs = synthetics.StringSliceValue(*api.SyntheticsArgs)
+		syntheticsArgs = typeutils.StringSliceValue(*api.SyntheticsArgs)
 	}
 
 	inlineScript := v.InlineScript
@@ -895,7 +895,7 @@ func toTFSSLConfig(ctx context.Context, dg diag.Diagnostics, api *kbapi.Syntheti
 	return tfSSLConfig{
 		SslVerificationMode:       types.StringPointerValue(api.SslVerificationMode),
 		SslSupportedProtocols:     sslSupportedProtocols,
-		SslCertificateAuthorities: synthetics.StringSliceValue(typeutils.Deref(api.SslCertificateAuthorities)),
+		SslCertificateAuthorities: typeutils.StringSliceValue(typeutils.Deref(api.SslCertificateAuthorities)),
 		SslCertificate:            types.StringPointerValue(api.SslCertificate),
 		SslKey:                    types.StringPointerValue(api.SslKey),
 		SslKeyPassphrase:          types.StringPointerValue(api.SslKeyPassphrase),
@@ -962,7 +962,7 @@ func toSSLConfig(ctx context.Context, dg diag.Diagnostics, v tfSSLConfig, p stri
 		ssl.VerificationMode = &value
 	}
 
-	certAuths := synthetics.ValueStringSlice(v.SslCertificateAuthorities)
+	certAuths := typeutils.ValueStringSlice(v.SslCertificateAuthorities)
 	if len(certAuths) > 0 {
 		if ssl == nil {
 			ssl = &kbapi.SyntheticsSslConfig{}
@@ -1119,7 +1119,7 @@ func (v *tfModelV0) newHTTPMonitorRequest(
 		Namespace:            typeutils.OptionalString(v.Namespace),
 		Params:               typeutils.MapRef(params),
 		Password:             typeutils.OptionalString(h.Password),
-		PrivateLocations:     typeutils.SliceNilIfEmpty(synthetics.ValueStringSlice(v.PrivateLocations)),
+		PrivateLocations:     typeutils.SliceNilIfEmpty(typeutils.ValueStringSlice(v.PrivateLocations)),
 		ProxyHeaders:         typeutils.MapRef(proxyHeaders),
 		ProxyUrl:             typeutils.OptionalString(h.ProxyURL),
 		Response:             typeutils.MapRef(response),
@@ -1127,7 +1127,7 @@ func (v *tfModelV0) newHTTPMonitorRequest(
 		Schedule:             int64ToFloat32Ptr(v.Schedule),
 		ServiceName:          typeutils.OptionalString(v.APMServiceName),
 		Ssl:                  ssl,
-		Tags:                 typeutils.SliceNilIfEmpty(synthetics.ValueStringSlice(v.Tags)),
+		Tags:                 typeutils.SliceNilIfEmpty(typeutils.ValueStringSlice(v.Tags)),
 		Timeout:              int64ToFloat32Ptr(v.TimeoutSeconds),
 		Type:                 kbapi.SyntheticsHttpMonitorFieldsType(kbapi.SyntheticsMonitorTypeHttp),
 		Url:                  h.URL.ValueString(),
@@ -1170,14 +1170,14 @@ func (v *tfModelV0) newTCPMonitorRequest(
 		Name:                  v.Name.ValueString(),
 		Namespace:             typeutils.OptionalString(v.Namespace),
 		Params:                typeutils.MapRef(params),
-		PrivateLocations:      typeutils.SliceNilIfEmpty(synthetics.ValueStringSlice(v.PrivateLocations)),
+		PrivateLocations:      typeutils.SliceNilIfEmpty(typeutils.ValueStringSlice(v.PrivateLocations)),
 		ProxyUrl:              typeutils.OptionalString(v.TCP.ProxyURL),
 		ProxyUseLocalResolver: v.TCP.ProxyUseLocalResolver.ValueBoolPointer(),
 		RetestOnFailure:       v.RetestOnFailure.ValueBoolPointer(),
 		Schedule:              int64ToFloat32Ptr(v.Schedule),
 		ServiceName:           typeutils.OptionalString(v.APMServiceName),
 		Ssl:                   ssl,
-		Tags:                  typeutils.SliceNilIfEmpty(synthetics.ValueStringSlice(v.Tags)),
+		Tags:                  typeutils.SliceNilIfEmpty(typeutils.ValueStringSlice(v.Tags)),
 		Timeout:               int64ToFloat32Ptr(v.TimeoutSeconds),
 		Type:                  kbapi.SyntheticsTcpMonitorFieldsType(kbapi.SyntheticsMonitorTypeTcp),
 		AdditionalProperties:  additionalProperties,
@@ -1194,11 +1194,11 @@ func (v *tfModelV0) newICMPMonitorRequest(labels map[string]string, locations []
 		Name:             v.Name.ValueString(),
 		Namespace:        typeutils.OptionalString(v.Namespace),
 		Params:           typeutils.MapRef(params),
-		PrivateLocations: typeutils.SliceNilIfEmpty(synthetics.ValueStringSlice(v.PrivateLocations)),
+		PrivateLocations: typeutils.SliceNilIfEmpty(typeutils.ValueStringSlice(v.PrivateLocations)),
 		RetestOnFailure:  v.RetestOnFailure.ValueBoolPointer(),
 		Schedule:         int64ToFloat32Ptr(v.Schedule),
 		ServiceName:      typeutils.OptionalString(v.APMServiceName),
-		Tags:             typeutils.SliceNilIfEmpty(synthetics.ValueStringSlice(v.Tags)),
+		Tags:             typeutils.SliceNilIfEmpty(typeutils.ValueStringSlice(v.Tags)),
 		Timeout:          int64ToFloat32Ptr(v.TimeoutSeconds),
 		Type:             kbapi.SyntheticsIcmpMonitorFieldsType(kbapi.SyntheticsMonitorTypeIcmp),
 		Wait:             int64ToSyntheticsIcmpMonitorFieldsWait(v.ICMP.Wait),
@@ -1227,13 +1227,13 @@ func (v *tfModelV0) newBrowserMonitorRequest(
 		Namespace:         typeutils.OptionalString(v.Namespace),
 		Params:            typeutils.MapRef(params),
 		PlaywrightOptions: typeutils.MapRef(playwrightOptions),
-		PrivateLocations:  typeutils.SliceNilIfEmpty(synthetics.ValueStringSlice(v.PrivateLocations)),
+		PrivateLocations:  typeutils.SliceNilIfEmpty(typeutils.ValueStringSlice(v.PrivateLocations)),
 		RetestOnFailure:   v.RetestOnFailure.ValueBoolPointer(),
 		Schedule:          int64ToFloat32Ptr(v.Schedule),
 		Screenshots:       typeutils.StringishToPointer[kbapi.SyntheticsBrowserMonitorFieldsScreenshots](v.Browser.Screenshots),
 		ServiceName:       typeutils.OptionalString(v.APMServiceName),
-		SyntheticsArgs:    typeutils.SliceNilIfEmpty(synthetics.ValueStringSlice(v.Browser.SyntheticsArgs)),
-		Tags:              typeutils.SliceNilIfEmpty(synthetics.ValueStringSlice(v.Tags)),
+		SyntheticsArgs:    typeutils.SliceNilIfEmpty(typeutils.ValueStringSlice(v.Browser.SyntheticsArgs)),
+		Tags:              typeutils.SliceNilIfEmpty(typeutils.ValueStringSlice(v.Tags)),
 		Timeout:           int64ToFloat32Ptr(v.TimeoutSeconds),
 		Type:              kbapi.SyntheticsBrowserMonitorFieldsType(kbapi.SyntheticsMonitorTypeBrowser),
 	}, dg

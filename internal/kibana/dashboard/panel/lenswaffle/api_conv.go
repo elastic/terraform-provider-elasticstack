@@ -85,16 +85,6 @@ func mergeWaffleConfigFromPlanSeed(cur, seed *models.WaffleConfigModel) {
 	}
 }
 
-func waffleConfigUsesESQL(m *models.WaffleConfigModel) bool {
-	if m == nil {
-		return false
-	}
-	if m.Query == nil {
-		return true
-	}
-	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
-}
-
 func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel, prior *models.WaffleConfigModel, api kbapi.KibanaHTTPAPIsWaffleNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
@@ -103,14 +93,10 @@ func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel,
 	m.Description = types.StringPointerValue(api.Description)
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
 
-	if api.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*api.Sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
+	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
 
 	datasetBytes, err := api.DataSource.MarshalJSON()
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}
@@ -125,7 +111,7 @@ func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel,
 	waffleLegendFromAPI(ctx, m.Legend, api.Legend)
 
 	if api.Styling != nil && api.Styling.Values != nil && (api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil) {
-		m.ValueDisplay = &models.WaffleValueDisplay{
+		m.ValueDisplay = &models.PartitionValueDisplay{
 			Mode: typeutils.StringishPointerValue(api.Styling.Values.Mode),
 		}
 		if api.Styling.Values.PercentDecimals != nil {
@@ -178,12 +164,7 @@ func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel,
 	m.EsqlMetrics = nil
 	m.EsqlGroupBy = nil
 
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
 
@@ -198,14 +179,10 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 	m.Description = types.StringPointerValue(api.Description)
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
 
-	if api.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*api.Sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
+	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
 
 	datasetBytes, err := json.Marshal(api.DataSource)
-	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
 	if !ok {
 		return diags
 	}
@@ -219,7 +196,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 	waffleLegendFromAPI(ctx, m.Legend, api.Legend)
 
 	if api.Styling != nil && api.Styling.Values != nil && (api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil) {
-		m.ValueDisplay = &models.WaffleValueDisplay{
+		m.ValueDisplay = &models.PartitionValueDisplay{
 			Mode: typeutils.StringishPointerValue(api.Styling.Values.Mode),
 		}
 		if api.Styling.Values.PercentDecimals != nil {
@@ -253,7 +230,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 					}
 					return jsontypes.NewNormalizedValue(lenscommon.NormalizeKibanaLensNumberFormatJSONString(string(b)))
 				}(),
-				Color: &models.WaffleStaticColor{
+				Color: &models.LensStaticColorModel{
 					Type:  colorType,
 					Color: colorValue,
 				},
@@ -264,7 +241,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 	}
 
 	if api.GroupBy != nil && len(*api.GroupBy) > 0 {
-		m.EsqlGroupBy = make([]models.WaffleEsqlGroupBy, len(*api.GroupBy))
+		m.EsqlGroupBy = make([]models.PartitionEsqlGroupByModel, len(*api.GroupBy))
 		for i, gb := range *api.GroupBy {
 			colorBytes, err := json.Marshal(gb.Color)
 			if err != nil {
@@ -284,7 +261,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 			if gb.CollapseBy != nil {
 				collapseBy = string(*gb.CollapseBy)
 			}
-			eg := models.WaffleEsqlGroupBy{
+			eg := models.PartitionEsqlGroupByModel{
 				Column:     types.StringValue(gb.Column),
 				CollapseBy: types.StringValue(collapseBy),
 				ColorJSON:  jsontypes.NewNormalizedValue(string(colorBytes)),
@@ -301,12 +278,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 	m.Metrics = nil
 	m.GroupBy = nil
 
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
 
@@ -390,16 +362,6 @@ func waffleLegendToAPI(m *models.WaffleLegendModel) (*kbapi.KibanaHTTPAPIsWaffle
 	return leg, diags
 }
 
-func waffleValueDisplayToAPI(m *models.WaffleValueDisplay) *kbapi.KibanaHTTPAPIsValueDisplay {
-	mode := kbapi.KibanaHTTPAPIsValueDisplayMode(m.Mode.ValueString())
-	vd := &kbapi.KibanaHTTPAPIsValueDisplay{Mode: &mode}
-	if typeutils.IsKnown(m.PercentDecimals) {
-		p := float32(m.PercentDecimals.ValueFloat64())
-		vd.PercentDecimals = &p
-	}
-	return vd
-}
-
 func waffleConfigToAPI(m *models.WaffleConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var attrs lenscommon.VisByValueConfig0
 	var diags diag.Diagnostics
@@ -408,7 +370,7 @@ func waffleConfigToAPI(m *models.WaffleConfigModel) (lenscommon.VisByValueConfig
 		return attrs, diags
 	}
 
-	diags.Append(WaffleConfigModeValidateDiags(waffleConfigUsesESQL(m), WaffleModeListStateFromSlice(len(m.Metrics)),
+	diags.Append(WaffleConfigModeValidateDiags(lenscommon.ConfigUsesESQL(m.Query), WaffleModeListStateFromSlice(len(m.Metrics)),
 		WaffleModeListStateFromSlice(len(m.GroupBy)),
 		WaffleModeListStateFromSlice(len(m.EsqlMetrics)),
 		WaffleModeListStateFromSlice(len(m.EsqlGroupBy)),
@@ -417,7 +379,7 @@ func waffleConfigToAPI(m *models.WaffleConfigModel) (lenscommon.VisByValueConfig
 		return attrs, diags
 	}
 
-	if waffleConfigUsesESQL(m) {
+	if lenscommon.ConfigUsesESQL(m.Query) {
 		esql, d := waffleConfigToAPIESQL(m)
 		diags.Append(d...)
 		if diags.HasError() {
@@ -485,7 +447,7 @@ func waffleConfigToAPINoESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsW
 	api.Legend = leg
 
 	if m.ValueDisplay != nil && typeutils.IsKnown(m.ValueDisplay.Mode) {
-		api.Styling = &kbapi.KibanaHTTPAPIsWaffleStyling{Values: waffleValueDisplayToAPI(m.ValueDisplay)}
+		api.Styling = &kbapi.KibanaHTTPAPIsWaffleStyling{Values: lenscommon.PartitionValueDisplayToAPI(m.ValueDisplay)}
 	} else {
 		// Required by the Dashboard API; omitting mode yields HTTP 400.
 		mode := kbapi.KibanaHTTPAPIsValueDisplayModePercentage
@@ -564,7 +526,7 @@ func waffleConfigToAPIESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsWaf
 	api.Legend = leg
 
 	if m.ValueDisplay != nil && typeutils.IsKnown(m.ValueDisplay.Mode) {
-		api.Styling = &kbapi.KibanaHTTPAPIsWaffleStyling{Values: waffleValueDisplayToAPI(m.ValueDisplay)}
+		api.Styling = &kbapi.KibanaHTTPAPIsWaffleStyling{Values: lenscommon.PartitionValueDisplayToAPI(m.ValueDisplay)}
 	} else {
 		mode := kbapi.KibanaHTTPAPIsValueDisplayModePercentage
 		api.Styling = &kbapi.KibanaHTTPAPIsWaffleStyling{

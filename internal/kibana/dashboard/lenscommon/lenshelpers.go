@@ -18,9 +18,17 @@
 package lenscommon
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
+
+// lensChartPresentationProvider is satisfied by any comparable pointer to a type
+// that embeds models.LensChartPresentationTFModel.
+type lensChartPresentationProvider interface {
+	comparable
+	GetLensChartPresentation() *models.LensChartPresentationTFModel
+}
 
 // MarshalToJSONWithDefaults stores already-marshaled bytes as JSONWithDefaultsValue,
 // or adds an error to diags and returns (zero, false) on failure.

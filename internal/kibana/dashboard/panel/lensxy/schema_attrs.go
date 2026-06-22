@@ -21,6 +21,7 @@ import (
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -311,13 +312,13 @@ func xyLayerSchemaNestedObject() schema.NestedAttributeObject {
 				MarkdownDescription: "Configuration for data layers (area, line, bar charts). Mutually exclusive with `reference_line_layer`.",
 				Optional:            true,
 				Attributes:          xyDataLayerAttributes(),
-				Validators:          lenscommon.MutuallyExclusiveObjectValidator("reference_line_layer"),
+				Validators:          validators.MutuallyExclusiveObjectValidator("reference_line_layer"),
 			},
 			"reference_line_layer": schema.SingleNestedAttribute{
 				MarkdownDescription: "Configuration for reference line layers. Mutually exclusive with `data_layer`.",
 				Optional:            true,
 				Attributes:          xyReferenceLineLayerAttributes(),
-				Validators:          lenscommon.MutuallyExclusiveObjectValidator("data_layer"),
+				Validators:          validators.MutuallyExclusiveObjectValidator("data_layer"),
 			},
 		},
 	}

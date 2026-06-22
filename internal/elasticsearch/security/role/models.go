@@ -71,7 +71,8 @@ type IndexPermsData struct {
 
 type RemoteIndexPermsData struct {
 	CommonIndexPermsData
-	Clusters types.Set `tfsdk:"clusters"`
+	AllowRestrictedIndices types.Bool `tfsdk:"allow_restricted_indices"`
+	Clusters               types.Set  `tfsdk:"clusters"`
 }
 
 type FieldSecurityData struct {
@@ -182,14 +183,17 @@ func (data *Data) toAPIModel(ctx context.Context) (*estypes.Role, diag.Diagnosti
 				return nil, diags
 			}
 
-			remoteIndices[i] = estypes.RemoteIndicesPrivileges{
-				Names:                  idx.Names,
-				Privileges:             idx.Privileges,
-				Query:                  idx.Query,
-				FieldSecurity:          idx.FieldSecurity,
-				AllowRestrictedIndices: idx.AllowRestrictedIndices,
-				Clusters:               clusters,
+			remoteEntry := estypes.RemoteIndicesPrivileges{
+				Names:         idx.Names,
+				Privileges:    idx.Privileges,
+				Query:         idx.Query,
+				FieldSecurity: idx.FieldSecurity,
+				Clusters:      clusters,
 			}
+			if typeutils.IsKnown(remoteIdx.AllowRestrictedIndices) {
+				remoteEntry.AllowRestrictedIndices = remoteIdx.AllowRestrictedIndices.ValueBoolPointer()
+			}
+			remoteIndices[i] = remoteEntry
 		}
 		role.RemoteIndices = remoteIndices
 	}
@@ -396,12 +400,7 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 				return diags
 			}
 
-			var allowRestrictedVal types.Bool
-			if index.AllowRestrictedIndices != nil {
-				allowRestrictedVal = types.BoolValue(*index.AllowRestrictedIndices)
-			} else {
-				allowRestrictedVal = types.BoolNull()
-			}
+			allowRestrictedVal := types.BoolPointerValue(index.AllowRestrictedIndices)
 
 			var fieldSecObj types.Object
 			if index.FieldSecurity != nil {
@@ -486,6 +485,13 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 				return diags
 			}
 
+			var allowRestrictedVal types.Bool
+			if remoteIndex.AllowRestrictedIndices != nil {
+				allowRestrictedVal = types.BoolValue(*remoteIndex.AllowRestrictedIndices)
+			} else {
+				allowRestrictedVal = types.BoolNull()
+			}
+
 			var fieldSecObj types.Object
 			if remoteIndex.FieldSecurity != nil {
 				grantSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(remoteIndex.FieldSecurity.Grant))
@@ -513,11 +519,12 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 			}
 
 			remoteIndexObj, d := types.ObjectValue(getRemoteIndexPermsAttrTypes(), map[string]attr.Value{
-				attrClusters:      clustersSet,
-				attrFieldSecurity: fieldSecObj,
-				attrQuery:         queryVal,
-				attrNames:         namesSet,
-				attrPrivileges:    privSet,
+				attrAllowRestrictedIndices: allowRestrictedVal,
+				attrClusters:               clustersSet,
+				attrFieldSecurity:          fieldSecObj,
+				attrQuery:                  queryVal,
+				attrNames:                  namesSet,
+				attrPrivileges:             privSet,
 			})
 			diags.Append(d...)
 			if diags.HasError() {

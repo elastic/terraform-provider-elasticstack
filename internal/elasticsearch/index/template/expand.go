@@ -123,23 +123,15 @@ func expandDataStreamBlock(obj types.Object) *models.DataStreamSettings {
 }
 
 func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Template, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var tm TemplateBlockModel
-	diags.Append(templateutil.DecodeTemplateObject(ctx, obj, &tm)...)
+	t, diags := templateutil.ExpandTemplateBlock(ctx, obj)
 	if diags.HasError() {
 		return nil, diags
 	}
-
-	t, d := templateutil.ExpandTemplateCore(ctx, tm.Alias, tm.Mappings, tm.Settings, tm.DataStreamOptions)
-	diags.Append(d...)
-	if diags.HasError() {
-		return nil, diags
+	if lc, ok := obj.Attributes()["lifecycle"]; ok {
+		if lcObj, ok := lc.(types.Object); ok {
+			t.Lifecycle = expandTemplateLifecycle(lcObj)
+		}
 	}
-
-	if !tm.Lifecycle.IsNull() && !tm.Lifecycle.IsUnknown() {
-		t.Lifecycle = expandTemplateLifecycle(tm.Lifecycle)
-	}
-
 	return t, diags
 }
 

@@ -327,7 +327,7 @@ func lensPresentationReferencesJSONRead(ctx context.Context, prior jsontypes.Nor
 		return jsontypes.NewNormalizedNull(), diags
 	}
 
-	if norm, ok := MarshalToNormalized(b, err, "references_json", &diags); ok {
+	if norm, ok := WrapNormalizedJSON(b, err, "references_json", &diags); ok {
 		norm = panelkit.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior, norm, defaultOpaqueRootJSON, &diags)
 		return norm, diags
 	}
@@ -469,10 +469,10 @@ func LensDrilldownItemFromAPIJSON(raw []byte, pathPrefix string) (models.LensDri
 // PopulateLensChartPresentation consolidates the repeated drilldown-wire and presentation-read
 // block found across all Lens panel FromAPI functions. It writes the result into *out.
 // Returns false if any error occurs; the caller should immediately return diags.
-func PopulateLensChartPresentation[Item any](
+func PopulateLensChartPresentation[Item any, Prior lensChartPresentationProvider](
 	ctx context.Context,
 	out *models.LensChartPresentationTFModel,
-	prior *models.LensChartPresentationTFModel,
+	prior Prior,
 	apiTimeRange *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema,
 	hideTitle, hideBorder *bool,
 	refs *[]CMReferenceSchema,
@@ -494,9 +494,9 @@ func PopulateLensChartPresentation[Item any](
 }
 
 // LensChartPresentationReadsFor maps optional chart-root presentation API fields into Terraform state with REQ-009-style null preservation.
-func LensChartPresentationReadsFor(
+func LensChartPresentationReadsFor[Prior lensChartPresentationProvider](
 	ctx context.Context,
-	prior *models.LensChartPresentationTFModel,
+	prior Prior,
 	apiTimeRange *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema,
 	hideTitle *bool,
 	hideBorder *bool,
@@ -506,18 +506,26 @@ func LensChartPresentationReadsFor(
 ) (models.LensChartPresentationTFModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	var priorPres *models.LensChartPresentationTFModel
+	// Comparing against the zero value detects a nil typed pointer (e.g. *TreemapConfigModel)
+	// because assigning it to an interface would not yield a nil interface.
+	var zeroPrior Prior
+	if prior != zeroPrior {
+		priorPres = prior.GetLensChartPresentation()
+	}
+
 	var priorTime *models.TimeRangeModel
 	var priorRefs jsontypes.Normalized
 	var priorHideTitle types.Bool
 	var priorHideBorder types.Bool
 	var priorDrills []models.LensDrilldownItemTFModel
 
-	if prior != nil {
-		priorTime = prior.TimeRange
-		priorRefs = prior.ReferencesJSON
-		priorHideTitle = prior.HideTitle
-		priorHideBorder = prior.HideBorder
-		priorDrills = prior.Drilldowns
+	if priorPres != nil {
+		priorTime = priorPres.TimeRange
+		priorRefs = priorPres.ReferencesJSON
+		priorHideTitle = priorPres.HideTitle
+		priorHideBorder = priorPres.HideBorder
+		priorDrills = priorPres.Drilldowns
 	} else {
 		priorHideTitle = types.BoolNull()
 		priorHideBorder = types.BoolNull()

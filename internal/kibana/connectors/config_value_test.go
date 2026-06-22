@@ -209,6 +209,42 @@ func TestConfigValue_StringSemanticEquals(t *testing.T) {
 	}
 }
 
+// TestConfigValue_StringSemanticEquals_SlackAPI is a regression test for the
+// ".slack_api" connector "Provider produced inconsistent result after apply"
+// bug. The user supplies allowedChannels with only `name` fields, but the
+// Kibana read response is remarshaled through kbapi.SlackApiConfig, whose
+// channel `Id` field lacks omitempty, so each channel gains `"id":""`. The
+// planned value (raw user config) and the value read back into state must
+// still compare as semantically equal.
+func TestConfigValue_StringSemanticEquals_SlackAPI(t *testing.T) {
+	const connectorTypeID = ".slack_api"
+
+	// Planned value: exactly what the user wrote, parsed via ConfigType the same
+	// way the framework parses the config attribute during plan (no context key,
+	// no per-channel id).
+	plannedRaw := `{"allowedChannels":[{"name":"#kar_testing"},{"name":"#test-prod-alerts"}]}`
+	plannedValuable, diags := NewConfigType().ValueFromString(context.Background(), basetypes.NewStringValue(plannedRaw))
+	require.False(t, diags.HasError(), "unexpected error parsing planned config: %v", diags)
+	planned := plannedValuable.(ConfigValue)
+
+	// State value: what populateFromAPI stores after the read. Kibana echoes the
+	// channels back and ConnectorResponseToModel remarshals through
+	// kbapi.SlackApiConfig, adding the empty "id" fields; NewConfigValueWithConnectorID
+	// then injects the __tf_provider_context key.
+	readBack := `{"allowedChannels":[{"id":"","name":"#kar_testing"},{"id":"","name":"#test-prod-alerts"}]}`
+	state, diags := NewConfigValueWithConnectorID(readBack, connectorTypeID)
+	require.False(t, diags.HasError(), "unexpected error building state config: %v", diags)
+
+	// The apply consistency check is order-independent; assert both directions.
+	equal, diags := state.StringSemanticEquals(context.Background(), planned)
+	require.False(t, diags.HasError(), "unexpected error: %v", diags)
+	require.True(t, equal, "state and planned slack_api config must be semantically equal")
+
+	equal, diags = planned.StringSemanticEquals(context.Background(), state)
+	require.False(t, diags.HasError(), "unexpected error: %v", diags)
+	require.True(t, equal, "planned and state slack_api config must be semantically equal")
+}
+
 func TestNewConfigValueWithConnectorID(t *testing.T) {
 	tests := []struct {
 		name            string

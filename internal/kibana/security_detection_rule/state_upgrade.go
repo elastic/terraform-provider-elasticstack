@@ -21,8 +21,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
 func (r *securityDetectionRuleResource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
@@ -40,16 +40,10 @@ func (r *securityDetectionRuleResource) UpgradeState(context.Context) map[int64]
 // the action was modified; it may also add diagnostics on resp to abort the
 // upgrade (the encoded state is left as the original input).
 func upgradeActions(req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse, mutate func(action map[string]any) bool) {
-	if req.RawState == nil || req.RawState.JSON == nil {
-		resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
-		return
-	}
+	stateutil.SetDefaultState(req, resp)
 
-	resp.DynamicValue = &tfprotov6.DynamicValue{JSON: req.RawState.JSON}
-
-	var stateMap map[string]any
-	if err := json.Unmarshal(req.RawState.JSON, &stateMap); err != nil {
-		resp.Diagnostics.AddError("Failed to unmarshal raw state", err.Error())
+	stateMap := stateutil.UnmarshalStateMap(req, resp)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -76,12 +70,7 @@ func upgradeActions(req resource.UpgradeStateRequest, resp *resource.UpgradeStat
 		return
 	}
 
-	stateJSON, err := json.Marshal(stateMap)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to marshal upgraded state", err.Error())
-		return
-	}
-	resp.DynamicValue.JSON = stateJSON
+	stateutil.MarshalStateMap(stateMap, resp)
 }
 
 // migrateParamsV0ToV1 converts each action's params from a JSON object

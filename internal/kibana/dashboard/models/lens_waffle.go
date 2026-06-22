@@ -25,19 +25,14 @@ import (
 
 type WaffleConfigModel struct {
 	LensChartPresentationTFModel
-	Title               types.String           `tfsdk:"title"`
-	Description         types.String           `tfsdk:"description"`
-	DataSourceJSON      jsontypes.Normalized   `tfsdk:"data_source_json"`
-	IgnoreGlobalFilters types.Bool             `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64          `tfsdk:"sampling"`
-	Query               *FilterSimpleModel     `tfsdk:"query"`
-	Filters             []ChartFilterJSONModel `tfsdk:"filters"`
-	Legend              *WaffleLegendModel     `tfsdk:"legend"`
-	ValueDisplay        *WaffleValueDisplay    `tfsdk:"value_display"`
-	Metrics             []WaffleDSLMetric      `tfsdk:"metrics"`
-	GroupBy             []WaffleDSLGroupBy     `tfsdk:"group_by"`
-	EsqlMetrics         []WaffleEsqlMetric     `tfsdk:"esql_metrics"`
-	EsqlGroupBy         []WaffleEsqlGroupBy    `tfsdk:"esql_group_by"`
+	LensChartBaseTFModel
+	Query        *FilterSimpleModel          `tfsdk:"query"`
+	Legend       *WaffleLegendModel          `tfsdk:"legend"`
+	ValueDisplay *PartitionValueDisplay      `tfsdk:"value_display"`
+	Metrics      []WaffleDSLMetric           `tfsdk:"metrics"`
+	GroupBy      []WaffleDSLGroupBy          `tfsdk:"group_by"`
+	EsqlMetrics  []WaffleEsqlMetric          `tfsdk:"esql_metrics"`
+	EsqlGroupBy  []PartitionEsqlGroupByModel `tfsdk:"esql_group_by"`
 }
 
 type WaffleDSLMetric struct {
@@ -55,27 +50,9 @@ type WaffleLegendModel struct {
 	Visible            types.String `tfsdk:"visible"`
 }
 
-type WaffleValueDisplay struct {
-	Mode            types.String  `tfsdk:"mode"`
-	PercentDecimals types.Float64 `tfsdk:"percent_decimals"`
-}
-
 type WaffleEsqlMetric struct {
-	Column     types.String         `tfsdk:"column"`
-	Label      types.String         `tfsdk:"label"`
-	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
-	Color      *WaffleStaticColor   `tfsdk:"color"`
-}
-
-type WaffleStaticColor struct {
-	Type  types.String `tfsdk:"type"`
-	Color types.String `tfsdk:"color"`
-}
-
-type WaffleEsqlGroupBy struct {
-	Column     types.String         `tfsdk:"column"`
-	CollapseBy types.String         `tfsdk:"collapse_by"`
-	ColorJSON  jsontypes.Normalized `tfsdk:"color_json"`
-	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
-	Label      types.String         `tfsdk:"label"`
+	Column     types.String          `tfsdk:"column"`
+	Label      types.String          `tfsdk:"label"`
+	FormatJSON jsontypes.Normalized  `tfsdk:"format_json"`
+	Color      *LensStaticColorModel `tfsdk:"color"`
 }

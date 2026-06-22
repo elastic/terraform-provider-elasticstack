@@ -1398,3 +1398,167 @@ func checkEnrichPolicyQueryNull(resourceName string) resource.TestCheckFunc {
 		return fmt.Errorf("Expected query to be null, got %q", value)
 	}
 }
+
+// TestAccResourceEnrichPolicyIndicesChange verifies that changing the indices set
+// triggers a destroy+recreate (RequiresReplace) and the new state reflects 2 indices.
+func TestAccResourceEnrichPolicyIndicesChange(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkEnrichPolicyDestroyFW(name),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step1"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "name", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "indices.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_enrich_policy.policy", "indices.*", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.#", "2"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "name", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "indices.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_enrich_policy.policy", "indices.*", name+"-a"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_enrich_policy.policy", "indices.*", name+"-b"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.#", "2"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceEnrichPolicyQueryChange verifies that transitioning from no query
+// to a term query triggers a destroy+recreate (RequiresReplace) and the new state
+// reflects the configured query value.
+func TestAccResourceEnrichPolicyQueryChange(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkEnrichPolicyDestroyFW(name),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step1"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "name", name),
+					checkEnrichPolicyQueryNull("elasticstack_elasticsearch_enrich_policy.policy"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "name", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "query", `{"term":{"active":{"value":true}}}`),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceEnrichPolicyEnrichFieldsChange verifies that expanding the
+// enrich_fields set triggers a destroy+recreate (RequiresReplace) and the new
+// state reflects the full set of fields.
+func TestAccResourceEnrichPolicyEnrichFieldsChange(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkEnrichPolicyDestroyFW(name),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step1"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "name", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.*", "first_name"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "name", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.*", "first_name"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.*", "last_name"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceEnrichPolicyExecuteChange verifies that toggling execute from
+// false to true triggers a destroy+recreate (RequiresReplace) and the new state
+// reflects execute=true.
+func TestAccResourceEnrichPolicyExecuteChange(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkEnrichPolicyDestroyFW(name),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step1"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "name", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "execute", "false"),
+					checkEnrichPolicyIndexDoesNotExist(name),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "name", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "execute", "true"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceEnrichPolicyNameChange verifies that changing the policy name
+// triggers a destroy+recreate (RequiresReplace) and the new state reflects the
+// updated name.
+func TestAccResourceEnrichPolicyNameChange(t *testing.T) {
+	nameA := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	nameB := nameA + "-2"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkEnrichPolicyDestroyFW(nameB),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step1"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(nameA)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "name", nameA),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.#", "1"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(nameA), "name_b": config.StringVariable(nameB)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "name", nameB),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.#", "1"),
+				),
+			},
+		},
+	})
+}

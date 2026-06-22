@@ -485,14 +485,14 @@ func populateRepositoryTypeBlocks(
 func flattenCommonSettings(settings map[string]any) (commonDataSourceModel, error) {
 	var m commonDataSourceModel
 	var err error
-	m.ChunkSize = StrSettingNull(settings, settingChunkSize)
-	m.Compress, err = BoolSettingNull(settings, settingCompress)
+	m.ChunkSize = strSettingNull(settings, settingChunkSize)
+	m.Compress, err = boolSettingNull(settings, settingCompress)
 	if err != nil {
 		return m, err
 	}
-	m.MaxSnapshotBytesPerSec = StrSettingNull(settings, settingMaxSnapshotBytesPerSec)
-	m.MaxRestoreBytesPerSec = StrSettingNull(settings, settingMaxRestoreBytesPerSec)
-	m.Readonly, err = BoolSettingNull(settings, settingReadonly)
+	m.MaxSnapshotBytesPerSec = strSettingNull(settings, settingMaxSnapshotBytesPerSec)
+	m.MaxRestoreBytesPerSec = strSettingNull(settings, settingMaxRestoreBytesPerSec)
+	m.Readonly, err = boolSettingNull(settings, settingReadonly)
 	if err != nil {
 		return m, err
 	}
@@ -506,11 +506,11 @@ func flattenFsSettings(settings map[string]any) (fsDataSourceModel, error) {
 	if err != nil {
 		return m, err
 	}
-	m.MaxNumberOfSnapshots, err = Int64SettingNull(settings, settingMaxNumberOfSnapshots)
+	m.MaxNumberOfSnapshots, err = int64SettingNull(settings, settingMaxNumberOfSnapshots)
 	if err != nil {
 		return m, err
 	}
-	m.Location = StrSettingNull(settings, settingLocation)
+	m.Location = strSettingNull(settings, settingLocation)
 	return m, nil
 }
 
@@ -521,16 +521,16 @@ func flattenURLSettings(settings map[string]any) (urlDataSourceModel, error) {
 	if err != nil {
 		return m, err
 	}
-	m.MaxNumberOfSnapshots, err = Int64SettingNull(settings, settingMaxNumberOfSnapshots)
+	m.MaxNumberOfSnapshots, err = int64SettingNull(settings, settingMaxNumberOfSnapshots)
 	if err != nil {
 		return m, err
 	}
-	m.URL = StrSettingNull(settings, settingURL)
-	m.HTTPMaxRetries, err = Int64SettingNull(settings, "http_max_retries")
+	m.URL = strSettingNull(settings, settingURL)
+	m.HTTPMaxRetries, err = int64SettingNull(settings, "http_max_retries")
 	if err != nil {
 		return m, err
 	}
-	m.HTTPSocketTimeout = StrSettingNull(settings, "http_socket_timeout")
+	m.HTTPSocketTimeout = strSettingNull(settings, "http_socket_timeout")
 	return m, nil
 }
 
@@ -541,9 +541,9 @@ func flattenGCSSettings(settings map[string]any) (gcsDataSourceModel, error) {
 	if err != nil {
 		return m, err
 	}
-	m.Bucket = StrSettingNull(settings, settingBucket)
-	m.Client = StrSettingNull(settings, settingClient)
-	m.BasePath = StrSettingNull(settings, settingBasePath)
+	m.Bucket = strSettingNull(settings, settingBucket)
+	m.Client = strSettingNull(settings, settingClient)
+	m.BasePath = strSettingNull(settings, settingBasePath)
 	return m, nil
 }
 
@@ -554,10 +554,10 @@ func flattenAzureSettings(settings map[string]any) (azureDataSourceModel, error)
 	if err != nil {
 		return m, err
 	}
-	m.Container = StrSettingNull(settings, settingContainer)
-	m.Client = StrSettingNull(settings, settingClient)
-	m.BasePath = StrSettingNull(settings, settingBasePath)
-	m.LocationMode = StrSettingNull(settings, "location_mode")
+	m.Container = strSettingNull(settings, settingContainer)
+	m.Client = strSettingNull(settings, settingClient)
+	m.BasePath = strSettingNull(settings, settingBasePath)
+	m.LocationMode = strSettingNull(settings, "location_mode")
 	return m, nil
 }
 
@@ -568,17 +568,17 @@ func flattenS3Settings(settings map[string]any) (s3DataSourceModel, error) {
 	if err != nil {
 		return m, err
 	}
-	m.Bucket = StrSettingNull(settings, settingBucket)
-	m.Client = StrSettingNull(settings, settingClient)
-	m.BasePath = StrSettingNull(settings, settingBasePath)
-	m.ServerSideEncryption, err = BoolSettingNull(settings, "server_side_encryption")
+	m.Bucket = strSettingNull(settings, settingBucket)
+	m.Client = strSettingNull(settings, settingClient)
+	m.BasePath = strSettingNull(settings, settingBasePath)
+	m.ServerSideEncryption, err = boolSettingNull(settings, "server_side_encryption")
 	if err != nil {
 		return m, err
 	}
-	m.BufferSize = StrSettingNull(settings, "buffer_size")
-	m.CannedACL = StrSettingNull(settings, "canned_acl")
-	m.StorageClass = StrSettingNull(settings, "storage_class")
-	m.PathStyleAccess, err = BoolSettingNull(settings, "path_style_access")
+	m.BufferSize = strSettingNull(settings, "buffer_size")
+	m.CannedACL = strSettingNull(settings, "canned_acl")
+	m.StorageClass = strSettingNull(settings, "storage_class")
+	m.PathStyleAccess, err = boolSettingNull(settings, "path_style_access")
 	if err != nil {
 		return m, err
 	}
@@ -592,9 +592,9 @@ func flattenHDFSSettings(settings map[string]any) (hdfsDataSourceModel, error) {
 	if err != nil {
 		return m, err
 	}
-	m.URI = StrSettingNull(settings, settingURI)
-	m.Path = StrSettingNull(settings, settingPath)
-	m.LoadDefaults, err = BoolSettingNull(settings, "load_defaults")
+	m.URI = strSettingNull(settings, settingURI)
+	m.Path = strSettingNull(settings, settingPath)
+	m.LoadDefaults, err = boolSettingNull(settings, "load_defaults")
 	if err != nil {
 		return m, err
 	}

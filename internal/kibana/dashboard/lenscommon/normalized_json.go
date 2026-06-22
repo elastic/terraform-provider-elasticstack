@@ -22,9 +22,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// MarshalToNormalized stores already-marshaled bytes as a jsontypes.Normalized value,
+// WrapNormalizedJSON stores already-marshaled bytes as a jsontypes.Normalized value,
 // or adds an error to diags and returns (zero, false) on failure.
-func MarshalToNormalized(bytes []byte, err error, fieldName string, diags *diag.Diagnostics) (jsontypes.Normalized, bool) {
+func WrapNormalizedJSON(bytes []byte, err error, fieldName string, diags *diag.Diagnostics) (jsontypes.Normalized, bool) {
 	if err != nil {
 		diags.AddError("Failed to marshal "+fieldName, err.Error())
 		return jsontypes.Normalized{}, false

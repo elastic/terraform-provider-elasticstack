@@ -22,6 +22,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// PartitionEsqlGroupByModel is the shared ES|QL group-by model for mosaic, treemap, and waffle.
+type PartitionEsqlGroupByModel struct {
+	Column     types.String         `tfsdk:"column"`
+	CollapseBy types.String         `tfsdk:"collapse_by"`
+	ColorJSON  jsontypes.Normalized `tfsdk:"color_json"`
+	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
+	Label      types.String         `tfsdk:"label"`
+}
+
+// LensStaticColorModel is the shared static-color model for treemap and waffle ES|QL metrics.
+type LensStaticColorModel struct {
+	Type  types.String `tfsdk:"type"`
+	Color types.String `tfsdk:"color"`
+}
+
 type URLDrilldownModel struct {
 	URL          types.String `tfsdk:"url"`
 	Label        types.String `tfsdk:"label"`
@@ -64,6 +79,23 @@ type LensChartPresentationTFModel struct {
 	HideBorder     types.Bool                 `tfsdk:"hide_border"`
 	ReferencesJSON jsontypes.Normalized       `tfsdk:"references_json"`
 	Drilldowns     []LensDrilldownItemTFModel `tfsdk:"drilldowns"`
+}
+
+// GetLensChartPresentation returns a pointer to this model, allowing types that embed
+// LensChartPresentationTFModel to satisfy the lenscommon.lensChartPresentationProvider
+// interface. A nil receiver returns nil.
+func (m *LensChartPresentationTFModel) GetLensChartPresentation() *LensChartPresentationTFModel {
+	return m
+}
+
+// LensChartBaseTFModel holds the fields shared by all Lens by-value chart config models.
+type LensChartBaseTFModel struct {
+	Title               types.String           `tfsdk:"title"`
+	Description         types.String           `tfsdk:"description"`
+	DataSourceJSON      jsontypes.Normalized   `tfsdk:"data_source_json"`
+	IgnoreGlobalFilters types.Bool             `tfsdk:"ignore_global_filters"`
+	Sampling            types.Float64          `tfsdk:"sampling"`
+	Filters             []ChartFilterJSONModel `tfsdk:"filters"`
 }
 
 type LensDrilldownItemTFModel struct {

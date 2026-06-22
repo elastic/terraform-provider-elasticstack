@@ -127,7 +127,7 @@ On create and update, the resource SHALL read the plan model, resolve the Elasti
 
 ### Requirement: Read (REQ-016–REQ-018)
 
-On read, the resource SHALL parse the composite `id` from state using `CompositeIDFromStr` to extract the data stream name, then call `GetDataStreamLifecycle` with that name and the `expand_wildcards` value. When the Get API returns HTTP 404 (or an empty `data_streams` list), the resource SHALL remove itself from state (`resp.State.RemoveResource`). When the Get API returns a non-empty list, the resource SHALL update `data_retention` and `downsampling` in state from the first matching entry where the API value differs from the current state value; `enabled` and `expand_wildcards` are preserved from state and not overwritten from the API response.
+On read, the resource SHALL parse the composite `id` from state using `CompositeIDFromStr` to extract the data stream name, then call `GetDataStreamLifecycle` with that name and the `expand_wildcards` value. When the Get API returns HTTP 404 (or an empty `data_streams` list), the resource SHALL remove itself from state (`resp.State.RemoveResource`). When the Get API returns a non-empty list, the resource SHALL update `data_retention`, `downsampling`, and `enabled` in state from the first matching entry where the API value differs from the current state value; `expand_wildcards` is preserved from state and not overwritten from the API response.
 
 #### Scenario: Data stream not found on read
 
@@ -140,6 +140,12 @@ On read, the resource SHALL parse the composite `id` from state using `Composite
 - GIVEN the API returns a `data_retention` different from the state value
 - WHEN read runs
 - THEN `data_retention` in state SHALL be updated to the API value
+
+#### Scenario: Enabled synchronized on read
+
+- GIVEN the API returns an `enabled` value different from the state value
+- WHEN read runs
+- THEN `enabled` in state SHALL be updated to the API value
 
 ### Requirement: Delete (REQ-019–REQ-020)
 
@@ -163,13 +169,19 @@ When converting plan to API model, the resource SHALL set `data_retention` from 
 
 ### Requirement: Mapping — API to state (REQ-024–REQ-026)
 
-When populating state from the API response, the resource SHALL iterate over the returned `data_streams` entries and update `data_retention` in state only when the API value differs from the current state value. The resource SHALL update `downsampling` in state only when the API list differs from state (by length or element values); if they match, the state value SHALL be preserved without modification. `enabled` and `expand_wildcards` SHALL not be read from the API response and SHALL remain as stored in state.
+When populating state from the API response, the resource SHALL iterate over the returned `data_streams` entries and update `data_retention` in state only when the API value differs from the current state value. The resource SHALL update `downsampling` in state only when the API list differs from state (by length or element values); if they match, the state value SHALL be preserved without modification. The resource SHALL update `enabled` in state when the API value differs from the current state value. `expand_wildcards` SHALL not be read from the API response and SHALL remain as stored in state.
 
 #### Scenario: Downsampling unchanged
 
 - GIVEN API returns downsampling identical to state
 - WHEN read maps the response to state
 - THEN `downsampling` in state SHALL remain unchanged
+
+#### Scenario: Enabled value unchanged
+
+- GIVEN API returns an `enabled` value identical to state
+- WHEN read maps the response to state
+- THEN `enabled` in state SHALL remain unchanged
 
 ### Requirement: Schema — expand_wildcards validation (REQ-027)
 

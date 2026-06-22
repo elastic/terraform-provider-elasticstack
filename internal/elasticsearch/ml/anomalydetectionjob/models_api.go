@@ -340,7 +340,7 @@ func fromTypedJob(job *types.Job) *APIModel {
 
 	// BackgroundPersistInterval
 	if job.BackgroundPersistInterval != nil {
-		m.BackgroundPersistInterval = durationToString(job.BackgroundPersistInterval)
+		m.BackgroundPersistInterval = typeutils.ElasticsearchDurationToString(job.BackgroundPersistInterval).ValueString()
 	}
 
 	// AnalysisConfig
@@ -503,7 +503,7 @@ func detectionRuleAPIModelToTyped(cr *CustomRuleAPIModel) types.DetectionRule {
 // typedAnalysisConfigToAPIModel converts a types.AnalysisConfig to AnalysisConfigAPIModel.
 func typedAnalysisConfigToAPIModel(cfg *types.AnalysisConfig) AnalysisConfigAPIModel {
 	a := AnalysisConfigAPIModel{
-		BucketSpan: durationToString(cfg.BucketSpan),
+		BucketSpan: typeutils.ElasticsearchDurationToString(cfg.BucketSpan).ValueString(),
 		Detectors:  make([]DetectorAPIModel, len(cfg.Detectors)),
 	}
 	if cfg.CategorizationFieldName != nil {
@@ -511,8 +511,8 @@ func typedAnalysisConfigToAPIModel(cfg *types.AnalysisConfig) AnalysisConfigAPIM
 	}
 	a.CategorizationFilters = cfg.CategorizationFilters
 	a.Influencers = cfg.Influencers
-	a.Latency = durationToString(cfg.Latency)
-	a.ModelPruneWindow = durationToString(cfg.ModelPruneWindow)
+	a.Latency = typeutils.ElasticsearchDurationToString(cfg.Latency).ValueString()
+	a.ModelPruneWindow = typeutils.ElasticsearchDurationToString(cfg.ModelPruneWindow).ValueString()
 	a.MultivariateByFields = cfg.MultivariateByFields
 	if cfg.SummaryCountFieldName != nil {
 		a.SummaryCountFieldName = *cfg.SummaryCountFieldName
@@ -607,28 +607,6 @@ func customSettingsFromRaw(raw json.RawMessage) map[string]any {
 		return nil
 	}
 	return m
-}
-
-// durationToString converts a types.Duration (any) to string.
-func durationToString(d types.Duration) string {
-	if d == nil {
-		return ""
-	}
-	switch v := d.(type) {
-	case string:
-		return v
-	default:
-		raw, err := json.Marshal(v)
-		if err != nil {
-			return ""
-		}
-		s := string(raw)
-		// Remove surrounding quotes if present
-		if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
-			return s[1 : len(s)-1]
-		}
-		return s
-	}
 }
 
 // bytesSizeToString converts a types.ByteSize (any) to string.

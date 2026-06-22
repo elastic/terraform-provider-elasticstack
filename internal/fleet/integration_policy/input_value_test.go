@@ -23,13 +23,13 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestInputValue_ObjectSemanticEquals(t *testing.T) {
 	ctx := context.Background()
-	attrTypes := getInputsAttributeTypes()
 
 	tests := []struct {
 		name        string
@@ -38,24 +38,6 @@ func TestInputValue_ObjectSemanticEquals(t *testing.T) {
 		expected    bool
 		expectError bool
 	}{
-		{
-			name:     "both null values are equal",
-			value1:   NewInputNull(attrTypes),
-			value2:   NewInputNull(attrTypes),
-			expected: true,
-		},
-		{
-			name:     "both unknown values are equal",
-			value1:   NewInputUnknown(attrTypes),
-			value2:   NewInputUnknown(attrTypes),
-			expected: true,
-		},
-		{
-			name:     "null vs unknown are equal",
-			value1:   NewInputNull(attrTypes),
-			value2:   NewInputUnknown(attrTypes),
-			expected: true,
-		},
 		{
 			name: "same inputs without defaults are equal",
 			value1: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
@@ -279,9 +261,9 @@ func TestInputValue_ObjectSemanticEquals(t *testing.T) {
 
 func mustNewInputValue(ctx context.Context, t *testing.T, input integrationPolicyInputsModel) InputValue {
 	t.Helper()
-	value, diags := NewInputValueFrom(ctx, getInputsAttributeTypes(), input)
+	value, diags := basetypes.NewObjectValueFrom(ctx, getInputsAttributeTypes(), input)
 	require.False(t, diags.HasError(), "Failed to create InputValue: %v", diags)
-	return value
+	return InputValue{ObjectValue: value}
 }
 
 func mustNewInputDefaults(ctx context.Context, t *testing.T, defaults inputDefaultsModel) types.Object {

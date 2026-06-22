@@ -25,19 +25,14 @@ import (
 
 type HeatmapConfigModel struct {
 	LensChartPresentationTFModel
-	Title               types.String                                      `tfsdk:"title"`
-	Description         types.String                                      `tfsdk:"description"`
-	DataSourceJSON      jsontypes.Normalized                              `tfsdk:"data_source_json"`
-	IgnoreGlobalFilters types.Bool                                        `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64                                     `tfsdk:"sampling"`
-	Query               *FilterSimpleModel                                `tfsdk:"query"`
-	Filters             []ChartFilterJSONModel                            `tfsdk:"filters"`
-	Axis                *HeatmapAxesModel                                 `tfsdk:"axis"`
-	Styling             *HeatmapStylingModel                              `tfsdk:"styling"`
-	Legend              *HeatmapLegendModel                               `tfsdk:"legend"`
-	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
-	XAxisJSON           jsontypes.Normalized                              `tfsdk:"x_axis_json"`
-	YAxisJSON           jsontypes.Normalized                              `tfsdk:"y_axis_json"`
+	LensChartBaseTFModel
+	Query      *FilterSimpleModel                                `tfsdk:"query"`
+	Axis       *HeatmapAxesModel                                 `tfsdk:"axis"`
+	Styling    *HeatmapStylingModel                              `tfsdk:"styling"`
+	Legend     *HeatmapLegendModel                               `tfsdk:"legend"`
+	MetricJSON customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
+	XAxisJSON  jsontypes.Normalized                              `tfsdk:"x_axis_json"`
+	YAxisJSON  jsontypes.Normalized                              `tfsdk:"y_axis_json"`
 }
 
 type HeatmapStylingModel struct {

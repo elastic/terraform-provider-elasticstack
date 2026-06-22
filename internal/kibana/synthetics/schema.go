@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -60,19 +61,16 @@ func TryReadCompositeID(id string) (*clients.CompositeID, diag.Diagnostics) {
 	return GetCompositeID(id)
 }
 
-// Shared utility functions for type conversions
+// ValueStringSlice converts []types.String to []string.
+//
+// Deprecated: use typeutils.ValueStringSlice directly.
 func ValueStringSlice(v []types.String) []string {
-	var res []string
-	for _, s := range v {
-		res = append(res, s.ValueString())
-	}
-	return res
+	return typeutils.ValueStringSlice(v)
 }
 
+// StringSliceValue converts []string to []types.String.
+//
+// Deprecated: use typeutils.StringSliceValue directly.
 func StringSliceValue(v []string) []types.String {
-	var res []types.String
-	for _, s := range v {
-		res = append(res, types.StringValue(s))
-	}
-	return res
+	return typeutils.StringSliceValue(v)
 }

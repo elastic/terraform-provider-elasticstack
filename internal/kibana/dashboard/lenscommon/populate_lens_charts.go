@@ -23,15 +23,50 @@ const (
 	pieChartTypeNumber  = "number"
 	pieChartTypePercent = "percent"
 	dashboardValueAvg   = "average"
+
+	// operationCount, operationSum, and operationUniqueCount name the only Lens metric
+	// operations whose Kibana API metric schema defines the empty_as_null property.
+	operationCount       = "count"
+	operationSum         = "sum"
+	operationUniqueCount = "unique_count"
 )
 
 // IsFieldMetricOperation reports whether operation names a standard Lens field metric.
 func IsFieldMetricOperation(operation string) bool {
 	switch operation {
-	case "count", "unique_count", "min", "max", dashboardValueAvg, "median", "standard_deviation", "sum", "last_value", "percentile", "percentile_rank":
+	case operationCount, operationUniqueCount, "min", "max", dashboardValueAvg, "median", "standard_deviation", operationSum, "last_value", "percentile", "percentile_rank":
 		return true
 	default:
 		return false
+	}
+}
+
+// operationSupportsEmptyAsNull reports whether the Kibana API metric schema for this
+// operation accepts the empty_as_null property. Across every Lens chart family (XY,
+// datatable, metric chart, pie, gauge, legacy metric, tagcloud, treemap, mosaic, region
+// map) only the count, sum, and unique_count metric variants define empty_as_null; all
+// other operations (percentile, percentile_rank, the stats operations, last_value, and
+// pipeline operations such as formula or moving_average) reject it with an HTTP 400
+// "additional properties are not allowed" error. Injecting empty_as_null only for the
+// supported operations avoids both that failure and spurious drift on read-back.
+func operationSupportsEmptyAsNull(operation string) bool {
+	switch operation {
+	case operationCount, operationSum, operationUniqueCount:
+		return true
+	default:
+		return false
+	}
+}
+
+// injectEmptyAsNullDefault sets empty_as_null=false on the model when the model's
+// operation supports the property and it is not already present.
+func injectEmptyAsNullDefault(model map[string]any) {
+	operation, _ := model["operation"].(string)
+	if !operationSupportsEmptyAsNull(operation) {
+		return
+	}
+	if _, exists := model["empty_as_null"]; !exists {
+		model["empty_as_null"] = false
 	}
 }
 
@@ -66,9 +101,7 @@ func PopulateLensMetricDefaults(model map[string]any) map[string]any {
 		}
 	}
 
-	if _, exists := model["empty_as_null"]; !exists {
-		model["empty_as_null"] = false
-	}
+	injectEmptyAsNullDefault(model)
 	if _, exists := model["fit"]; !exists {
 		model["fit"] = false
 	}
@@ -217,9 +250,7 @@ func PopulateGaugeMetricDefaults(model map[string]any) map[string]any {
 		return model
 	}
 
-	if _, exists := model["empty_as_null"]; !exists {
-		model["empty_as_null"] = false
-	}
+	injectEmptyAsNullDefault(model)
 	if _, exists := model["title"]; !exists {
 		model["title"] = map[string]any{attrVisible: true}
 	}
@@ -241,15 +272,14 @@ func PopulateRegionMapMetricDefaults(model map[string]any) map[string]any {
 }
 
 // populateFieldMetricLensDefaults applies the standard "field metric" Lens defaults
-// (empty_as_null=false, show_metric_label=true, color=auto) when the model represents a field metric.
+// (show_metric_label=true, color=auto, plus empty_as_null=false for the operations that
+// support it) when the model represents a field metric.
 func populateFieldMetricLensDefaults(model map[string]any) map[string]any {
 	if model == nil {
 		return model
 	}
 	if operation, ok := model["operation"].(string); ok && IsFieldMetricOperation(operation) {
-		if _, exists := model["empty_as_null"]; !exists {
-			model["empty_as_null"] = false
-		}
+		injectEmptyAsNullDefault(model)
 		if _, exists := model["show_metric_label"]; !exists {
 			model["show_metric_label"] = true
 		}
@@ -266,9 +296,7 @@ func PopulatePieChartMetricDefaults(model map[string]any) map[string]any {
 		return model
 	}
 
-	if _, exists := model["empty_as_null"]; !exists {
-		model["empty_as_null"] = false
-	}
+	injectEmptyAsNullDefault(model)
 	if _, exists := model["color"]; !exists {
 		model["color"] = map[string]any{attrType: colorTypeAuto}
 	}
@@ -327,9 +355,7 @@ func PopulateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
 		if _, exists := model["show_array_values"]; !exists {
 			model["show_array_values"] = false
 		}
-		if _, exists := model["empty_as_null"]; !exists {
-			model["empty_as_null"] = false
-		}
+		injectEmptyAsNullDefault(model)
 	}
 
 	format, ok := model["format"].(map[string]any)

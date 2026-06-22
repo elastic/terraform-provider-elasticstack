@@ -155,6 +155,7 @@ func TestAccResourceSecurityRole(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "metadata", `{"version":1}`),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.*.clusters.*", "test-cluster"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.*.names.*", "sample"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.0.allow_restricted_indices", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.0.query", `{"match_all":{}}`),
 				),
 			},
@@ -177,6 +178,7 @@ func TestAccResourceSecurityRole(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "metadata", `{"version":1}`),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.*.clusters.*", "test-cluster2"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.*.names.*", "sample2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.0.allow_restricted_indices", "false"),
 				),
 			},
 			{

@@ -164,6 +164,45 @@ func TestAccResourceIngestPipeline_multiOnFailure(t *testing.T) {
 	})
 }
 
+// TestAccResourceIngestPipeline_addOptionals exercises the "unset→set" update path
+// for optional attributes: step 1 creates a pipeline with processors only, step 2
+// adds description, metadata, and on_failure via an in-place update.
+func TestAccResourceIngestPipeline_addOptionals(t *testing.T) {
+	pipelineName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	resourceName := ingestPipelineResourceName
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIngestPipelineDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Step 1: minimal — processors only, no optionals
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("minimal"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(pipelineName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "processors.#", "1"),
+					resource.TestCheckNoResourceAttr(resourceName, "description"),
+					resource.TestCheckNoResourceAttr(resourceName, "metadata"),
+					resource.TestCheckNoResourceAttr(resourceName, "on_failure.#"),
+				),
+			},
+			{
+				// Step 2: update — add description, metadata, and on_failure
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("add_optionals"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(pipelineName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "description", "Added via update"),
+					CheckResourceJSON(resourceName, "metadata", `{"added":true}`),
+					resource.TestCheckResourceAttr(resourceName, "on_failure.#", "1"),
+					CheckResourceJSON(resourceName, "on_failure.0", `{"set":{"field":"error","value":"{{ _ingest.on_failure_message }}"}}`),
+				),
+			},
+		},
+	})
+}
+
 // TestAccResourceIngestPipeline_validators locks in the SizeAtLeast(1) validators
 // on processors and on_failure.
 func TestAccResourceIngestPipeline_validators(t *testing.T) {
