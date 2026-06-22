@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: Input redaction preservation (REQ-030)
 
@@ -47,7 +47,9 @@ state. All non-redacted `input` fields SHALL remain authoritative from the API r
 - **THEN** the resource SHALL preserve the prior non-string value at that path
 - **AND** non-redacted `input` fields from the API response SHALL still be reflected in state
 
-### MODIFIED Requirement: JSON field mapping — read/state (REQ-023–027)
+## MODIFIED Requirements
+
+### Requirement: JSON field mapping — read/state (REQ-023–REQ-027)
 
 The narrative SHALL be updated to include `input` alongside `actions` in the redaction-preservation
 description. Specifically, the sentence:

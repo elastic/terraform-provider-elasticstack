@@ -36,16 +36,17 @@
 
 ## 5. Spec update
 
-- [ ] 5.1 In `openspec/specs/elasticsearch-watch/spec.md`, add:
-  - **REQ-030** under a new `### Requirement: Input redaction preservation (REQ-030)` section
+- [ ] 5.1 Update the delta spec in `openspec/changes/fix-watch-input-redacted-secret/specs/elasticsearch-watch/spec.md` to:
+  - Add **REQ-030** under a new `### Requirement: Input redaction preservation (REQ-030)` section
     specifying that the resource SHALL preserve prior known Terraform values at nested `input` paths
     where the API returns `::es_redacted::`, mirroring REQ-014–016 for `actions`
-  - Scenarios for:
+  - Add scenarios for:
     - Redacted `input` secret preserved on read-after-write after create/update
     - Redacted `input` secret preserved on refresh
     - No prior `input` value (import/first read) — sentinel stored as-is
-  - Update the narrative in the **REQ-023–027** `JSON field mapping — read/state` section to
+  - Update the narrative in the **REQ-023–REQ-027** `JSON field mapping — read/state` section to
     explicitly include `input` alongside `actions` in the redaction-preservation description
+- [ ] 5.2 After implementation is verified, sync the delta into `openspec/specs/elasticsearch-watch/spec.md` (or archive the change) per project workflow
 
 ## 6. OpenSpec validation
 
