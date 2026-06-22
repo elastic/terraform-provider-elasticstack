@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -62,16 +63,71 @@ func TestUnitFlattenExpandIndexFieldSecurityRoundTrip(t *testing.T) {
 	assert.JSONEq(t, string(b1), string(b2))
 }
 
+func TestUnitFlattenRemoteIndicesAPIFalseWithNullHint(t *testing.T) {
+	ctx := context.Background()
+	apiFalse := false
+	es := kibanaoapi.SecurityRoleES{
+		RemoteIndices: &[]kibanaoapi.SecurityRoleESRemoteIndex{{
+			Names:                  []string{"sample"},
+			Clusters:               []string{"test-cluster"},
+			Privileges:             []string{"read"},
+			AllowRestrictedIndices: &apiFalse,
+		}},
+	}
+	obj, diags := flattenElasticsearchObject(ctx, &es, nullEsHint())
+	require.False(t, diags.HasError())
+	remoteSet := obj.Attributes()[attrRemoteIndices].(types.Set)
+	require.Equal(t, types.BoolValue(false), remoteSet.Elements()[0].(types.Object).Attributes()[attrAllowRestrictedIndices])
+}
+
+func TestUnitFlattenRemoteIndicesHintNullPreservesNullDespiteAPIFalse(t *testing.T) {
+	ctx := context.Background()
+	apiFalse := false
+	es := kibanaoapi.SecurityRoleES{
+		RemoteIndices: &[]kibanaoapi.SecurityRoleESRemoteIndex{{
+			Names:                  []string{"sample"},
+			Clusters:               []string{"test-cluster"},
+			Privileges:             []string{"read"},
+			AllowRestrictedIndices: &apiFalse,
+		}},
+	}
+	clustersSet := types.SetValueMust(types.StringType, []attr.Value{types.StringValue("test-cluster")})
+	namesSet := types.SetValueMust(types.StringType, []attr.Value{types.StringValue("sample")})
+	privSet := types.SetValueMust(types.StringType, []attr.Value{types.StringValue("read")})
+	hintEntry, d := types.ObjectValue(esRemoteIndexResourceAttrTypes(), map[string]attr.Value{
+		attrAllowRestrictedIndices: types.BoolNull(),
+		attrClusters:               clustersSet,
+		attrNames:                  namesSet,
+		attrPrivileges:             privSet,
+		attrQuery:                  jsontypes.NewNormalizedNull(),
+		attrFieldSecurity:          types.ObjectNull(fieldSecurityAttrTypes()),
+	})
+	require.False(t, d.HasError())
+	hint, d := types.ObjectValue(elasticsearchResourceAttrTypes(), map[string]attr.Value{
+		attrCluster:       types.SetNull(types.StringType),
+		attrRunAs:         types.SetNull(types.StringType),
+		attrIndices:       types.SetNull(types.ObjectType{AttrTypes: esIndexResourceAttrTypes()}),
+		attrRemoteIndices: types.SetValueMust(types.ObjectType{AttrTypes: esRemoteIndexResourceAttrTypes()}, []attr.Value{hintEntry}),
+	})
+	require.False(t, d.HasError())
+	obj, diags := flattenElasticsearchObject(ctx, &es, hint)
+	require.False(t, diags.HasError())
+	remoteSet := obj.Attributes()[attrRemoteIndices].(types.Set)
+	require.Equal(t, types.BoolNull(), remoteSet.Elements()[0].(types.Object).Attributes()[attrAllowRestrictedIndices])
+}
+
 func TestUnitFlattenExpandRemoteIndicesRoundTrip(t *testing.T) {
 	ctx := context.Background()
 	grant := []string{"sample"}
 	fs := map[string][]string{"grant": grant}
+	allowRestricted := true
 	es := kibanaoapi.SecurityRoleES{
 		RemoteIndices: &[]kibanaoapi.SecurityRoleESRemoteIndex{{
-			Names:         []string{"sample"},
-			Clusters:      []string{"test-cluster"},
-			Privileges:    []string{"create", "read", "write"},
-			FieldSecurity: &fs,
+			Names:                  []string{"sample"},
+			Clusters:               []string{"test-cluster"},
+			Privileges:             []string{"create", "read", "write"},
+			AllowRestrictedIndices: &allowRestricted,
+			FieldSecurity:          &fs,
 		}},
 	}
 	obj, diags := flattenElasticsearchObject(ctx, &es, nullEsHint())

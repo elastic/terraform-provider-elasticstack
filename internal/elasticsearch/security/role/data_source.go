@@ -204,6 +204,10 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 							Computed:            true,
 							CustomType:          jsontypes.NormalizedType{},
 						},
+						attrAllowRestrictedIndices: dsschema.BoolAttribute{
+							MarkdownDescription: allowRestrictedIndicesDescription,
+							Computed:            true,
+						},
 					},
 				},
 			},
@@ -437,6 +441,13 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 				return diags
 			}
 
+			var allowRestrictedVal types.Bool
+			if remoteIndex.AllowRestrictedIndices != nil {
+				allowRestrictedVal = types.BoolValue(*remoteIndex.AllowRestrictedIndices)
+			} else {
+				allowRestrictedVal = types.BoolNull()
+			}
+
 			fieldSecList, d := buildFieldSecurityDSList(ctx, remoteIndex.FieldSecurity)
 			diags.Append(d...)
 			if diags.HasError() {
@@ -444,11 +455,12 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 			}
 
 			remoteIndexObj, d := types.ObjectValue(getRemoteIndexPermsDSAttrTypes(), map[string]attr.Value{
-				attrClusters:      clustersSet,
-				attrFieldSecurity: fieldSecList,
-				attrNames:         namesSet,
-				attrPrivileges:    privSet,
-				attrQuery:         queryVal,
+				attrAllowRestrictedIndices: allowRestrictedVal,
+				attrClusters:               clustersSet,
+				attrFieldSecurity:          fieldSecList,
+				attrNames:                  namesSet,
+				attrPrivileges:             privSet,
+				attrQuery:                  queryVal,
 			})
 			diags.Append(d...)
 			if diags.HasError() {
@@ -530,7 +542,8 @@ func getIndexPermsDSAttrTypes() map[string]attr.Type {
 
 func getRemoteIndexPermsDSAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		attrClusters: types.SetType{ElemType: types.StringType},
+		attrAllowRestrictedIndices: types.BoolType,
+		attrClusters:               types.SetType{ElemType: types.StringType},
 		attrFieldSecurity: types.ListType{
 			ElemType: types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()},
 		},

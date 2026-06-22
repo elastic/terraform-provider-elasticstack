@@ -104,11 +104,12 @@ func expandFieldSecurity(ctx context.Context, obj types.Object) (map[string][]st
 // `remote_indices` entries; `Clusters` is only populated for the remote
 // variant.
 type expandedEntry struct {
-	Names      []string
-	Clusters   []string
-	Privileges []string
-	Query      *string
-	FS         *map[string][]string
+	Names                  []string
+	Clusters               []string
+	Privileges             []string
+	Query                  *string
+	AllowRestrictedIndices *bool
+	FS                     *map[string][]string
 }
 
 // expandEntryCommon reads names/privileges/query/field_security (and
@@ -142,6 +143,10 @@ func expandEntryCommon(ctx context.Context, obj types.Object, wantClusters bool)
 			out.FS = &fsMap
 		}
 	}
+	if ari, ok := obj.Attributes()[attrAllowRestrictedIndices].(types.Bool); ok && typeutils.IsKnown(ari) {
+		v := ari.ValueBool()
+		out.AllowRestrictedIndices = &v
+	}
 	return out, diags
 }
 
@@ -164,11 +169,12 @@ func expandRemoteEntry(ctx context.Context, obj types.Object) (kibanaoapi.Securi
 		return kibanaoapi.SecurityRoleESRemoteIndex{}, diags
 	}
 	return kibanaoapi.SecurityRoleESRemoteIndex{
-		Names:         e.Names,
-		Clusters:      e.Clusters,
-		Privileges:    e.Privileges,
-		Query:         e.Query,
-		FieldSecurity: e.FS,
+		Names:                  e.Names,
+		Clusters:               e.Clusters,
+		Privileges:             e.Privileges,
+		Query:                  e.Query,
+		AllowRestrictedIndices: e.AllowRestrictedIndices,
+		FieldSecurity:          e.FS,
 	}, diags
 }
 
