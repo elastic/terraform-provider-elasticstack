@@ -150,41 +150,53 @@ func TestAccResourceAgentConfiguration_kibanaConnection(t *testing.T) {
 	serviceName := tf_acctest.RandStringFromCharSet(10, tf_acctest.CharSetAlphaNum)
 	expectedID := serviceName + ":production"
 
+	kibanaConnectionVars := acctest.KibanaConnectionVariables(config.Variables{
+		"service_name": config.StringVariable(serviceName),
+		"insecure":     config.BoolVariable(true),
+		"ca_certs":     config.ListVariable(),
+	})
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheckWithExplicitKibanaEndpoint(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
-				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
-					"service_name": config.StringVariable(serviceName),
-				}),
+				ConfigVariables:          kibanaConnectionVars,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "id", expectedID),
-					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_name", serviceName),
-					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_environment", "production"),
-					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "agent_name", "go"),
-					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.%", "2"),
-					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.transaction_sample_rate", "0.5"),
-					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.capture_body", "all"),
+					append(
+						[]resource.TestCheckFunc{
+							resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "id", expectedID),
+							resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_name", serviceName),
+							resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_environment", "production"),
+							resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "agent_name", "go"),
+							resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.%", "2"),
+							resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.transaction_sample_rate", "0.5"),
+							resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.capture_body", "all"),
+							resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "kibana_connection.0.endpoints.#", "1"),
+							resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "kibana_connection.0.insecure", "true"),
+							resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "kibana_connection.0.ca_certs.#", "0"),
+						},
+						acctest.KibanaConnectionAuthChecks("elasticstack_apm_agent_configuration.test_config")...,
+					)...,
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
-				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
-					"service_name": config.StringVariable(serviceName),
-				}),
-				ResourceName:            "elasticstack_apm_agent_configuration.test_config",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"kibana_connection"},
+				ConfigVariables:          kibanaConnectionVars,
+				ResourceName:             "elasticstack_apm_agent_configuration.test_config",
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"kibana_connection"},
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
 					"service_name": config.StringVariable(serviceName),
+					"insecure":     config.BoolVariable(true),
+					"ca_certs":     config.ListVariable(),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "id", expectedID),
@@ -193,6 +205,8 @@ func TestAccResourceAgentConfiguration_kibanaConnection(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.%", "2"),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.transaction_sample_rate", "0.8"),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.capture_body", "off"),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "kibana_connection.0.endpoints.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "kibana_connection.0.insecure", "true"),
 				),
 			},
 			{
@@ -200,6 +214,8 @@ func TestAccResourceAgentConfiguration_kibanaConnection(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
 					"service_name": config.StringVariable(serviceName),
+					"insecure":     config.BoolVariable(true),
+					"ca_certs":     config.ListVariable(),
 				}),
 				ResourceName:            "elasticstack_apm_agent_configuration.test_config",
 				ImportState:             true,
