@@ -35,7 +35,13 @@ func newKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigura
 		return kibanaOapiConfig{}, diags
 	}
 
-	return config.withEnvironmentOverrides(), nil
+	config = config.withEnvironmentOverrides()
+
+	if authMethodCount(kibanaoapi.Config(config)) > 1 {
+		addMultipleAuthWarning(&diags, "Kibana", "environment variables")
+	}
+
+	return config, diags
 }
 
 func newProviderKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibanaOapiConfig, fwdiags.Diagnostics) {
@@ -53,7 +59,13 @@ func newProviderKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderC
 		return kibanaOapiConfig{}, diags
 	}
 
-	return config.withNonURLEnvironmentOverrides(), nil
+	config = config.withNonURLEnvironmentOverrides()
+
+	if authMethodCount(kibanaoapi.Config(config)) > 1 {
+		addMultipleAuthWarning(&diags, "Kibana", "environment variables")
+	}
+
+	return config, diags
 }
 
 func buildKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibanaOapiConfig, fwdiags.Diagnostics) {
@@ -61,18 +73,14 @@ func buildKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigu
 
 	if len(cfg.Kibana) > 0 {
 		kibConfig := cfg.Kibana[0]
-		if kibConfig.Username.ValueString() != "" {
-			config.Username = kibConfig.Username.ValueString()
-		}
-		if kibConfig.Password.ValueString() != "" {
-			config.Password = kibConfig.Password.ValueString()
-		}
-		if kibConfig.APIKey.ValueString() != "" {
-			config.APIKey = kibConfig.APIKey.ValueString()
-		}
-		if kibConfig.BearerToken.ValueString() != "" {
-			config.BearerToken = kibConfig.BearerToken.ValueString()
-		}
+
+		applyAuthOverride(
+			(*kibanaoapi.Config)(&config),
+			kibConfig.Username.ValueString(),
+			kibConfig.Password.ValueString(),
+			kibConfig.APIKey.ValueString(),
+			kibConfig.BearerToken.ValueString(),
+		)
 		var endpoints []string
 		diags := kibConfig.Endpoints.ElementsAs(ctx, &endpoints, true)
 
@@ -104,17 +112,21 @@ func (k kibanaOapiConfig) withFleetBlockFallback(ctx context.Context, cfg Provid
 	}
 
 	fleetCfg := cfg.Fleet[0]
-	if k.Username == "" && fleetCfg.Username.ValueString() != "" {
-		k.Username = fleetCfg.Username.ValueString()
-	}
-	if k.Password == "" && fleetCfg.Password.ValueString() != "" {
-		k.Password = fleetCfg.Password.ValueString()
-	}
-	if k.APIKey == "" && fleetCfg.APIKey.ValueString() != "" {
-		k.APIKey = fleetCfg.APIKey.ValueString()
-	}
-	if k.BearerToken == "" && fleetCfg.BearerToken.ValueString() != "" {
-		k.BearerToken = fleetCfg.BearerToken.ValueString()
+
+	kibanaHasAuth := k.Username != "" || k.Password != "" || k.APIKey != "" || k.BearerToken != ""
+	if !kibanaHasAuth {
+		if user := fleetCfg.Username.ValueString(); user != "" {
+			k.Username = user
+		}
+		if pass := fleetCfg.Password.ValueString(); pass != "" {
+			k.Password = pass
+		}
+		if apiKey := fleetCfg.APIKey.ValueString(); apiKey != "" {
+			k.APIKey = apiKey
+		}
+		if bearer := fleetCfg.BearerToken.ValueString(); bearer != "" {
+			k.BearerToken = bearer
+		}
 	}
 	if k.URL == "" && fleetCfg.Endpoint.ValueString() != "" {
 		k.URL = fleetCfg.Endpoint.ValueString()
@@ -151,10 +163,8 @@ func (k kibanaOapiConfig) withEnvironmentOverrides() kibanaOapiConfig {
 }
 
 func (k kibanaOapiConfig) withNonURLEnvironmentOverrides() kibanaOapiConfig {
-	k.Username = withEnvironmentOverride(k.Username, "KIBANA_USERNAME")
-	k.Password = withEnvironmentOverride(k.Password, "KIBANA_PASSWORD")
-	k.APIKey = withEnvironmentOverride(k.APIKey, "KIBANA_API_KEY")
-	k.BearerToken = withEnvironmentOverride(k.BearerToken, "KIBANA_BEARER_TOKEN")
+	applyAuthEnvOverrides((*kibanaoapi.Config)(&k), "KIBANA")
+
 	if caCerts, ok := os.LookupEnv("KIBANA_CA_CERTS"); ok {
 		k.CACerts = strings.Split(caCerts, ",")
 	}
