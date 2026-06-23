@@ -22,24 +22,17 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuildercommon"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func readAgent(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, prior agentModel) (agentModel, bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	agent, d := kibanaoapi.GetAgent(ctx, oapiClient, spaceID, resourceID)
-	diags.Append(d...)
-	if diags.HasError() {
-		return prior, false, diags
-	}
-
-	if agent == nil {
-		return prior, false, diags
-	}
-
-	diags.Append(prior.populateFromAPI(ctx, spaceID, agent)...)
-	return prior, true, diags
+	return agentbuildercommon.ReadEntity(
+		ctx, client, resourceID, spaceID, prior,
+		kibanaoapi.GetAgent,
+		func(m *agentModel, data *models.Agent) diag.Diagnostics {
+			return m.populateFromAPI(ctx, spaceID, data)
+		},
+	)
 }

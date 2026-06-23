@@ -22,28 +22,21 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuildercommon"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func readWorkflow(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, prior workflowModel) (workflowModel, bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
 	// Restore space_id so populateFromAPI can build the composite ID correctly.
 	prior.SpaceID = types.StringValue(spaceID)
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	workflow, d := kibanaoapi.GetWorkflow(ctx, oapiClient, spaceID, resourceID)
-	diags.Append(d...)
-	if diags.HasError() {
-		return prior, false, diags
-	}
-
-	if workflow == nil {
-		return prior, false, diags
-	}
-
-	prior.populateFromAPI(workflow)
-	return prior, true, diags
+	return agentbuildercommon.ReadEntity(
+		ctx, client, resourceID, spaceID, prior,
+		kibanaoapi.GetWorkflow,
+		func(m *workflowModel, data *models.Workflow) diag.Diagnostics {
+			m.populateFromAPI(data)
+			return nil
+		},
+	)
 }

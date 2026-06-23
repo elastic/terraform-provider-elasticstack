@@ -22,27 +22,19 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuildercommon"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func readTool(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, prior toolModel) (toolModel, bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
 	prior.SpaceID = types.StringValue(spaceID)
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	tool, d := kibanaoapi.GetTool(ctx, oapiClient, spaceID, resourceID)
-	diags.Append(d...)
-	if diags.HasError() {
-		return prior, false, diags
-	}
-
-	if tool == nil {
-		return prior, false, diags
-	}
-
-	diags.Append(prior.populateFromAPI(ctx, tool)...)
-	return prior, true, diags
+	return agentbuildercommon.ReadEntity(
+		ctx, client, resourceID, spaceID, prior,
+		kibanaoapi.GetTool,
+		func(m *toolModel, data *models.Tool) diag.Diagnostics {
+			return m.populateFromAPI(ctx, data)
+		},
+	)
 }

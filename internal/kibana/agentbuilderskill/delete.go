@@ -22,10 +22,10 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuildercommon"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func deleteSkill(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, _ skillModel) diag.Diagnostics {
-	oapiClient := client.GetKibanaOapiClient()
-	return kibanaoapi.DeleteSkill(ctx, oapiClient, spaceID, resourceID)
+	return agentbuildercommon.DeleteEntity(ctx, client, resourceID, spaceID, kibanaoapi.DeleteSkill)
 }
