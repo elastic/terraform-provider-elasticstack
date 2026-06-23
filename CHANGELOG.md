@@ -6,6 +6,9 @@
 
 ### Changes
 
+- Add Elasticsearch CA fingerprint connection support via `ca_fingerprint` and `ELASTICSEARCH_CA_FINGERPRINT`. ([#3837](https://github.com/elastic/terraform-provider-elasticstack/pull/3837))
+- preserve prior input values across ES redaction on read for `elasticstack_elasticsearch_watch` resources with HTTP basic auth ([#3839](https://github.com/elastic/terraform-provider-elasticstack/pull/3839))
+- Adds allow_restricted_indices to remote_indices on elasticstack_elasticsearch_security_role and elasticstack_kibana_security_role ([#3701](https://github.com/elastic/terraform-provider-elasticstack/pull/3701))
 - Relax provider-side length validation for ML datafeed and filter IDs ([#3798](https://github.com/elastic/terraform-provider-elasticstack/pull/3798))
 - Stop `elasticstack_kibana_dashboard` from injecting `empty_as_null` into Lens metric `config_json` for operations the Kibana API rejects (e.g. `percentile`), which previously caused an HTTP 400 on apply. ([#3720](https://github.com/elastic/terraform-provider-elasticstack/pull/3720))
 - Fix "Provider produced inconsistent result after apply" for `.slack_api` action connectors by normalizing the planned `config` value the same way the read response is normalized. ([#3749](https://github.com/elastic/terraform-provider-elasticstack/pull/3749))
