@@ -31,17 +31,6 @@ const (
 	MetadataPrefix = "_kibana_synthetics_"
 )
 
-// GetCompositeID parses a composite ID and returns the parsed components
-func GetCompositeID(id string) (*clients.CompositeID, diag.Diagnostics) {
-	compositeID, sdkDiag := clients.CompositeIDFromStr(id)
-	dg := diag.Diagnostics{}
-	if sdkDiag.HasError() {
-		dg.AddError(fmt.Sprintf("Failed to parse monitor ID %s", id), fmt.Sprintf("Resource ID must have following format: <cluster_uuid>/<resource identifier>. Current value: %s", id))
-		return nil, dg
-	}
-	return compositeID, dg
-}
-
 // TryReadCompositeID parses a composite ID when the id contains "/".
 // Plain IDs are treated as legacy non-composite identifiers and return nil
 // without diagnostics. Kibana synthetics IDs allow at most one slash (for example
@@ -50,15 +39,23 @@ func TryReadCompositeID(id string) (*clients.CompositeID, diag.Diagnostics) {
 	if !strings.Contains(id, "/") {
 		return nil, diag.Diagnostics{}
 	}
+	dg := diag.Diagnostics{}
 	if strings.Count(id, "/") > 1 {
-		dg := diag.Diagnostics{}
 		dg.AddError(
 			fmt.Sprintf("Failed to parse monitor ID %s", id),
 			fmt.Sprintf("Resource ID must have following format: <cluster_uuid>/<resource identifier>. Current value: %s", id),
 		)
 		return nil, dg
 	}
-	return GetCompositeID(id)
+	compositeID, sdkDiag := clients.CompositeIDFromStr(id)
+	if sdkDiag.HasError() {
+		dg.AddError(
+			fmt.Sprintf("Failed to parse monitor ID %s", id),
+			fmt.Sprintf("Resource ID must have following format: <cluster_uuid>/<resource identifier>. Current value: %s", id),
+		)
+		return nil, dg
+	}
+	return compositeID, dg
 }
 
 // ValueStringSlice converts []types.String to []string.
