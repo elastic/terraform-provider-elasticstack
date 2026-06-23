@@ -22,8 +22,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	actionschema "github.com/hashicorp/terraform-plugin-framework/action/schema"
-	ephemeralschema "github.com/hashicorp/terraform-plugin-framework/ephemeral/schema"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	ephemeralschema "github.com/hashicorp/terraform-plugin-framework/ephemeral/schema"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
