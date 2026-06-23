@@ -76,6 +76,57 @@ func TestElasticsearchConnectionBlockObjectAttrTypes_returnsCopy(t *testing.T) {
 	require.NotEqual(t, first, second)
 }
 
+func TestElasticsearchConnectionFallbackAttrTypes_matchGetEsFWConnectionBlock(t *testing.T) {
+	t.Parallel()
+
+	block := GetEsFWConnectionBlock()
+	lb, ok := block.(fwschema.ListNestedBlock)
+	require.True(t, ok, "GetEsFWConnectionBlock must return a ListNestedBlock")
+
+	want, err := fwNestedBlockAttributesToAttrTypes(lb.NestedObject.Attributes)
+	require.NoError(t, err)
+
+	got := elasticsearchConnectionBlockObjectAttrTypesFallback()
+	require.Equal(t, want, got)
+}
+
+func TestElasticsearchConnectionBlocks_includeCAFingerprintAttribute(t *testing.T) {
+	t.Parallel()
+
+	require.Contains(t, fwConnectionBlockAttributeNames(GetEsFWConnectionBlock()), attrCAFingerprint)
+	require.Contains(t, ephemeralConnectionBlockAttributeNames(GetEsEphemeralConnectionBlock()), attrCAFingerprint)
+	require.Contains(t, actionConnectionBlockAttributeNames(GetEsActionConnectionBlock()), attrCAFingerprint)
+}
+
+func TestElasticsearchConnectionBlocks_tlsTrustAttributesHaveMatchingValidatorCounts(t *testing.T) {
+	t.Parallel()
+
+	managed := tlsTrustAttributeValidatorCounts{
+		caFile:        countFWStringValidators(GetEsFWConnectionBlock(), attrCAFile),
+		caData:        countFWStringValidators(GetEsFWConnectionBlock(), attrCAData),
+		caFingerprint: countFWStringValidators(GetEsFWConnectionBlock(), attrCAFingerprint),
+	}
+	ephemeral := tlsTrustAttributeValidatorCounts{
+		caFile:        countEphemeralStringValidators(GetEsEphemeralConnectionBlock(), attrCAFile),
+		caData:        countEphemeralStringValidators(GetEsEphemeralConnectionBlock(), attrCAData),
+		caFingerprint: countEphemeralStringValidators(GetEsEphemeralConnectionBlock(), attrCAFingerprint),
+	}
+	action := tlsTrustAttributeValidatorCounts{
+		caFile:        countActionStringValidators(GetEsActionConnectionBlock(), attrCAFile),
+		caData:        countActionStringValidators(GetEsActionConnectionBlock(), attrCAData),
+		caFingerprint: countActionStringValidators(GetEsActionConnectionBlock(), attrCAFingerprint),
+	}
+
+	for _, counts := range []tlsTrustAttributeValidatorCounts{managed, ephemeral, action} {
+		require.GreaterOrEqual(t, counts.caFile, 1)
+		require.GreaterOrEqual(t, counts.caData, 1)
+		require.GreaterOrEqual(t, counts.caFingerprint, 1)
+	}
+
+	require.Equal(t, managed, ephemeral)
+	require.Equal(t, managed, action)
+}
+
 func TestKibanaConnectionNullList_objectMatchesGetKbFWConnectionBlock(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

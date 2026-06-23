@@ -85,6 +85,9 @@ func newElasticsearchConfigFromFramework(ctx context.Context, cfg ProviderConfig
 	if caData := esConfig.CAData.ValueString(); caData != "" {
 		config.config.CACert = []byte(caData)
 	}
+	if fingerprint := esConfig.CAFingerprint.ValueString(); fingerprint != "" {
+		config.config.CertificateFingerprint = fingerprint
+	}
 
 	if certFile := esConfig.CertFile.ValueString(); certFile != "" {
 		if keyFile := esConfig.KeyFile.ValueString(); keyFile != "" {
@@ -156,6 +159,11 @@ func (c elasticsearchConfig) withEnvironmentOverrides() elasticsearchConfig {
 
 	if esClientAuthentication := os.Getenv("ELASTICSEARCH_ES_CLIENT_AUTHENTICATION"); esClientAuthentication != "" {
 		c.esClientAuthentication = esClientAuthentication
+	}
+
+	if caFingerprint := os.Getenv("ELASTICSEARCH_CA_FINGERPRINT"); caFingerprint != "" {
+		c.config.CertificateFingerprint = caFingerprint
+		c.config.CACert = nil
 	}
 
 	return c

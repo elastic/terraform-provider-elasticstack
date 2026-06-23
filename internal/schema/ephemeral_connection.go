@@ -35,6 +35,7 @@ func GetEsEphemeralConnectionBlock() schema.Block {
 	bearerTokenPath := path.MatchRelative().AtParent().AtName(attrBearerToken)
 	caFilePath := path.MatchRelative().AtParent().AtName(attrCAFile)
 	caDataPath := path.MatchRelative().AtParent().AtName(attrCAData)
+	caFingerprintPath := path.MatchRelative().AtParent().AtName(attrCAFingerprint)
 	certFilePath := path.MatchRelative().AtParent().AtName(attrCertFile)
 	certDataPath := path.MatchRelative().AtParent().AtName(attrCertData)
 	keyFilePath := path.MatchRelative().AtParent().AtName(attrKeyFile)
@@ -101,14 +102,21 @@ func GetEsEphemeralConnectionBlock() schema.Block {
 					MarkdownDescription: descCAFile,
 					Optional:            true,
 					Validators: []validator.String{
-						stringvalidator.ConflictsWith(caDataPath),
+						stringvalidator.ConflictsWith(caDataPath, caFingerprintPath),
 					},
 				},
 				attrCAData: schema.StringAttribute{
 					MarkdownDescription: descCAData,
 					Optional:            true,
 					Validators: []validator.String{
-						stringvalidator.ConflictsWith(caFilePath),
+						stringvalidator.ConflictsWith(caFilePath, caFingerprintPath),
+					},
+				},
+				attrCAFingerprint: schema.StringAttribute{
+					MarkdownDescription: descCAFingerprint,
+					Optional:            true,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(caFilePath, caDataPath),
 					},
 				},
 				attrCertFile: schema.StringAttribute{

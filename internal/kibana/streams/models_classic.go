@@ -137,11 +137,10 @@ func (m *classicConfigModel) toAPIIngest(diags *diag.Diagnostics) *kibanaoapi.St
 	}
 	ingest.Processing.Steps = stepsJSON
 
-	// Classic field overrides
+	// Classic field overrides — the API always requires the classic block.
+	ingest.Classic = &kibanaoapi.StreamIngestClassic{}
 	if typeutils.IsKnown(m.FieldOverridesJSON) {
-		ingest.Classic = &kibanaoapi.StreamIngestClassic{
-			FieldOverrides: json.RawMessage(m.FieldOverridesJSON.ValueString()),
-		}
+		ingest.Classic.FieldOverrides = json.RawMessage(m.FieldOverridesJSON.ValueString())
 	}
 
 	// Lifecycle — required by API; default to inherit when not configured.

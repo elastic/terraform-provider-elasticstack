@@ -69,6 +69,7 @@ func GetEsFWConnectionBlock() fwschema.Block {
 	bearerTokenPath := path.MatchRelative().AtParent().AtName(attrBearerToken)
 	caFilePath := path.MatchRelative().AtParent().AtName(attrCAFile)
 	caDataPath := path.MatchRelative().AtParent().AtName(attrCAData)
+	caFingerprintPath := path.MatchRelative().AtParent().AtName(attrCAFingerprint)
 	certFilePath := path.MatchRelative().AtParent().AtName(attrCertFile)
 	certDataPath := path.MatchRelative().AtParent().AtName(attrCertData)
 	keyFilePath := path.MatchRelative().AtParent().AtName(attrKeyFile)
@@ -135,14 +136,21 @@ func GetEsFWConnectionBlock() fwschema.Block {
 					MarkdownDescription: descCAFile,
 					Optional:            true,
 					Validators: []validator.String{
-						stringvalidator.ConflictsWith(caDataPath),
+						stringvalidator.ConflictsWith(caDataPath, caFingerprintPath),
 					},
 				},
 				attrCAData: fwschema.StringAttribute{
 					MarkdownDescription: descCAData,
 					Optional:            true,
 					Validators: []validator.String{
-						stringvalidator.ConflictsWith(caFilePath),
+						stringvalidator.ConflictsWith(caFilePath, caFingerprintPath),
+					},
+				},
+				attrCAFingerprint: fwschema.StringAttribute{
+					MarkdownDescription: descCAFingerprint,
+					Optional:            true,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(caFilePath, caDataPath),
 					},
 				},
 				attrCertFile: fwschema.StringAttribute{
@@ -342,6 +350,7 @@ func elasticsearchConnectionBlockObjectAttrTypesFallback() map[string]attr.Type 
 		attrInsecure:               types.BoolType,
 		attrCAFile:                 types.StringType,
 		attrCAData:                 types.StringType,
+		attrCAFingerprint:          types.StringType,
 		attrCertFile:               types.StringType,
 		attrKeyFile:                types.StringType,
 		attrCertData:               types.StringType,

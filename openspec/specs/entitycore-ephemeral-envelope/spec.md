@@ -185,7 +185,7 @@ The user `Close` callback SHALL NOT receive `req.Private` or be required to touc
 
 ### Requirement: Connection round-trip is lossless for the documented connection fields (REQ-ENVE-007)
 
-The envelope's connection-snapshot codec SHALL round-trip the following Elasticsearch connection fields without loss when present and known: `endpoints`, `username`, `password`, `api_key`, `bearer_token`, `es_client_authentication`, `insecure`, `ca_file`, `ca_data`, `cert_file`, `cert_data`, `key_file`, `key_data`, `headers`.
+The envelope's connection-snapshot codec SHALL round-trip the following Elasticsearch connection fields without loss when present and known: `endpoints`, `username`, `password`, `api_key`, `bearer_token`, `es_client_authentication`, `insecure`, `ca_file`, `ca_data`, `ca_fingerprint`, `cert_file`, `cert_data`, `key_file`, `key_data`, `headers`.
 
 The Kibana variant SHALL round-trip the equivalent set of `clientconfig.KibanaConnection` fields.
 
@@ -202,6 +202,12 @@ The snapshot codec SHALL NOT use `encoding/json` to marshal `terraform-plugin-fr
 - **GIVEN** an `elasticsearch_connection` block with `endpoints = ["https://a", "https://b"]` and `headers = { "X-Foo" = "bar" }`
 - **WHEN** the connection is snapshotted and restored
 - **THEN** the restored value SHALL preserve both endpoints in order and the header map verbatim
+
+#### Scenario: CA fingerprint round-trips without loss
+
+- **GIVEN** an `elasticsearch_connection` block with `ca_fingerprint` set to a SHA-256 certificate fingerprint
+- **WHEN** the connection is snapshotted during Open and restored during Close
+- **THEN** the restored value SHALL preserve the `ca_fingerprint` value verbatim
 
 #### Scenario: Null connection block produces a null restored List
 

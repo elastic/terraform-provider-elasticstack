@@ -11,9 +11,11 @@ if not env_path.exists():
 
 port = "{{ 10000 + (branch | hash_port) % 5000 }}"
 kb_port = "{{ 15000 + ((branch ~ '-kb') | hash_port) % 5000 }}"
+es_transport_port = "{{ 20000 + ((branch ~ '-es-transport') | hash_port) % 5000 }}"
 
 required = {
     "ELASTICSEARCH_PORT": port,
+    "ELASTICSEARCH_TRANSPORT_PORT": es_transport_port,
     "KIBANA_PORT": kb_port,
     "ELASTICSEARCH_URL": f"http://localhost:{port}",
     "ELASTICSEARCH_ENDPOINTS": f"http://localhost:{port}",
