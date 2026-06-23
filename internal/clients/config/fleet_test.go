@@ -29,14 +29,9 @@ import (
 )
 
 func fleetMultipleAuthWarningDiag() fwdiags.Diagnostics {
-	return fwdiags.Diagnostics{
-		fwdiags.NewWarningDiagnostic(
-			"Multiple Fleet authentication methods configured",
-			"More than one of username/password (username must be set), api_key, or bearer_token is set in "+
-				"the resolved Fleet configuration. Only one will be used. Check your "+
-				"provider configuration and Fleet environment variables for conflicting auth settings.",
-		),
-	}
+	var d fwdiags.Diagnostics
+	addMultipleAuthWarning(&d, "Fleet", "Fleet environment variables")
+	return d
 }
 
 func Test_newFleetConfigFromFramework(t *testing.T) {
@@ -153,7 +148,6 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 				}
 			},
 		},
-		// 10.1: Kibana BasicAuth + Fleet APIKey block → resolved fleet config has APIKey only
 		{
 			name: "Kibana BasicAuth + Fleet APIKey clears inherited BasicAuth",
 			args: func() args {
@@ -179,7 +173,6 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 				}
 			},
 		},
-		// 10.2: Kibana APIKey + FLEET_PASSWORD env + provider Fleet username → BasicAuth
 		{
 			name: "Fleet env password + provider username overrides inherited Kibana APIKey",
 			args: func() args {
@@ -205,7 +198,6 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 				}
 			},
 		},
-		// 10.3: FLEET_API_KEY env + Fleet provider username/password → resolved fleet config has APIKey only
 		{
 			name: "FLEET_API_KEY env overrides provider Fleet BasicAuth",
 			args: func() args {
@@ -232,7 +224,6 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 				}
 			},
 		},
-		// 10.4: env-level conflict (FLEET_API_KEY and FLEET_USERNAME both set) → warning
 		{
 			name: "env-level conflict FLEET_API_KEY + FLEET_USERNAME emits warning",
 			args: func() args {
@@ -252,7 +243,6 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 				}
 			},
 		},
-		// 10.5: Fleet inherits Kibana config that already has multiple auth methods → warning after Fleet env clearing
 		{
 			name: "inherited Kibana config with multiple auth methods emits Fleet warning",
 			args: func() args {
@@ -271,7 +261,6 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 				}
 			},
 		},
-		// 10.6: FLEET_BEARER_TOKEN env + Fleet provider BasicAuth → resolved fleet config has BearerToken only
 		{
 			name: "FLEET_BEARER_TOKEN env overrides provider Fleet BasicAuth",
 			args: func() args {

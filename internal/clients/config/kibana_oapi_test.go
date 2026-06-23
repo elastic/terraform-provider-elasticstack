@@ -29,14 +29,9 @@ import (
 )
 
 func kibanaMultipleAuthWarningDiag() fwdiags.Diagnostics {
-	return fwdiags.Diagnostics{
-		fwdiags.NewWarningDiagnostic(
-			"Multiple Kibana authentication methods configured",
-			"More than one of username/password (username must be set), api_key, or bearer_token is set in "+
-				"the resolved Kibana configuration. Only one will be used. Check your "+
-				"provider configuration and environment variables for conflicting auth settings.",
-		),
-	}
+	var d fwdiags.Diagnostics
+	addMultipleAuthWarning(&d, "Kibana", "environment variables")
+	return d
 }
 
 func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
@@ -207,7 +202,6 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 				}
 			},
 		},
-		// 9.1: ES APIKey + Kibana username/password → resolved config has username/password only
 		{
 			name: "ES APIKey + Kibana username/password clears inherited APIKey",
 			args: func() args {
@@ -231,7 +225,6 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 				}
 			},
 		},
-		// 9.2: ES APIKey + Kibana APIKey → resolved config has Kibana APIKey only
 		{
 			name: "ES APIKey + Kibana APIKey clears inherited BasicAuth",
 			args: func() args {
@@ -257,7 +250,6 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 				}
 			},
 		},
-		// 9.3: ES APIKey + no Kibana auth block → inherits ES APIKey unchanged
 		{
 			name: "ES APIKey with no Kibana block inherits APIKey unchanged",
 			args: func() args {
@@ -268,7 +260,6 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 				}
 			},
 		},
-		// 9.4: KIBANA_PASSWORD env + provider username → both fields set (same method)
 		{
 			name: "KIBANA_PASSWORD env + provider username preserves partial BasicAuth",
 			args: func() args {
@@ -294,7 +285,6 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 				}
 			},
 		},
-		// 9.5: KIBANA_API_KEY env + provider username/password → APIKey only, BasicAuth cleared
 		{
 			name: "KIBANA_API_KEY env overrides provider BasicAuth",
 			args: func() args {
@@ -321,7 +311,6 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 				}
 			},
 		},
-		// 9.6: env-level conflict (KIBANA_API_KEY and KIBANA_USERNAME both set) → warning
 		{
 			name: "env-level conflict KIBANA_API_KEY + KIBANA_USERNAME emits warning",
 			args: func() args {
@@ -340,7 +329,6 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 				}
 			},
 		},
-		// 9.7: exactly one auth method → no warning
 		{
 			name: "exactly one auth method emits no warning",
 			args: func() args {
@@ -357,7 +345,6 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 				}
 			},
 		},
-		// 9.8: KIBANA_BEARER_TOKEN env + provider username/password → BearerToken only
 		{
 			name: "KIBANA_BEARER_TOKEN env overrides provider BasicAuth",
 			args: func() args {
@@ -384,7 +371,6 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 				}
 			},
 		},
-		// 9.9: Kibana block sets only username → ES APIKey cleared, partial BasicAuth preserved
 		{
 			name: "Kibana block with only username clears inherited APIKey",
 			args: func() args {
@@ -407,7 +393,7 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 				}
 			},
 		},
-		// 9.10: Kibana block sets only password (no username) → not a valid basic-auth
+		// Kibana block sets only password (no username) → not a valid basic-auth
 		// intent; inherited ES APIKey must NOT be wiped, otherwise the client ends up
 		// with no working auth at all.
 		{
@@ -780,7 +766,6 @@ func Test_newProviderKibanaOapiConfigFromFramework_fleetBlockFallback(t *testing
 				}
 			},
 		},
-		// 9.11: Kibana BasicAuth set + Fleet block has api_key → withFleetBlockFallback does NOT set APIKey
 		{
 			name: "Kibana BasicAuth blocks Fleet APIKey fallback",
 			args: func() args {
@@ -809,7 +794,6 @@ func Test_newProviderKibanaOapiConfigFromFramework_fleetBlockFallback(t *testing
 				}
 			},
 		},
-		// 9.12: Kibana APIKey set (inherited from ES) + Fleet block has username/password → withFleetBlockFallback does NOT fill Username/Password
 		{
 			name: "Kibana APIKey blocks Fleet BasicAuth fallback",
 			args: func() args {
@@ -832,7 +816,6 @@ func Test_newProviderKibanaOapiConfigFromFramework_fleetBlockFallback(t *testing
 				}
 			},
 		},
-		// 9.13: no Kibana auth set + Fleet block has username/password → withFleetBlockFallback fills both fields
 		{
 			name: "Fleet BasicAuth fills Kibana when Kibana has no auth",
 			args: func() args {

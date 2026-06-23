@@ -18,15 +18,25 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// envVarActive reports whether an environment variable is both set and non-empty.
-func envVarActive(key string) bool {
-	v, ok := os.LookupEnv(key)
-	return ok && v != ""
+// clearConflictingAuth removes auth fields on c that are incompatible with the
+// selected primary method. The method values mirror the priority used by the
+// transport layer and the auth resolution helpers: bearer > api_key > basic.
+func clearConflictingAuth(c *kibanaoapi.Config, method string) {
+	switch method {
+	case "bearer":
+		c.Username, c.Password, c.APIKey = "", "", ""
+	case "api_key":
+		c.Username, c.Password, c.BearerToken = "", "", ""
+	case "basic":
+		c.APIKey, c.BearerToken = "", ""
+	}
 }
 
 // applyAuthOverride applies auth fields from a later-layer source (e.g. a
@@ -44,11 +54,11 @@ func envVarActive(key string) bool {
 func applyAuthOverride(c *kibanaoapi.Config, user, pass, key, bearer string) {
 	switch {
 	case bearer != "":
-		c.Username, c.Password, c.APIKey = "", "", ""
+		clearConflictingAuth(c, "bearer")
 	case key != "":
-		c.Username, c.Password, c.BearerToken = "", "", ""
+		clearConflictingAuth(c, "api_key")
 	case user != "":
-		c.APIKey, c.BearerToken = "", ""
+		clearConflictingAuth(c, "basic")
 	}
 
 	if user != "" {
@@ -76,19 +86,43 @@ func applyAuthEnvOverrides(c *kibanaoapi.Config, prefix string) {
 	apiKeyKey := prefix + "_API_KEY"
 	bearerKey := prefix + "_BEARER_TOKEN"
 
+	userValue, userOK := os.LookupEnv(userKey)
+	passValue, passOK := os.LookupEnv(passKey)
+	apiKeyValue, apiKeyOK := os.LookupEnv(apiKeyKey)
+	bearerValue, bearerOK := os.LookupEnv(bearerKey)
+
 	switch {
-	case envVarActive(bearerKey):
-		c.Username, c.Password, c.APIKey = "", "", ""
-	case envVarActive(apiKeyKey):
-		c.Username, c.Password, c.BearerToken = "", "", ""
-	case envVarActive(userKey):
-		c.APIKey, c.BearerToken = "", ""
+	case bearerOK && bearerValue != "":
+		clearConflictingAuth(c, "bearer")
+	case apiKeyOK && apiKeyValue != "":
+		clearConflictingAuth(c, "api_key")
+	case userOK && userValue != "":
+		clearConflictingAuth(c, "basic")
 	}
 
-	c.Username = withEnvironmentOverride(c.Username, userKey)
-	c.Password = withEnvironmentOverride(c.Password, passKey)
-	c.APIKey = withEnvironmentOverride(c.APIKey, apiKeyKey)
-	c.BearerToken = withEnvironmentOverride(c.BearerToken, bearerKey)
+	if userOK {
+		c.Username = userValue
+	}
+	if passOK {
+		c.Password = passValue
+	}
+	if apiKeyOK {
+		c.APIKey = apiKeyValue
+	}
+	if bearerOK {
+		c.BearerToken = bearerValue
+	}
+}
+
+// addMultipleAuthWarning appends a uniform warning when more than one primary
+// auth method is present in a resolved component configuration.
+func addMultipleAuthWarning(diags *fwdiags.Diagnostics, component, envDesc string) {
+	diags.AddWarning(
+		fmt.Sprintf("Multiple %s authentication methods configured", component),
+		fmt.Sprintf("More than one of username/password (username must be set), api_key, or bearer_token is set in "+
+			"the resolved %s configuration. Only one will be used. Check your "+
+			"provider configuration and %s for conflicting auth settings.", component, envDesc),
+	)
 }
 
 // authMethodCount returns the number of distinct primary auth methods set on

@@ -66,12 +66,7 @@ func newFleetConfigFromFramework(ctx context.Context, cfg ProviderConfiguration,
 	config = config.withEnvironmentOverrides()
 
 	if authMethodCount(kibanaoapi.Config(config)) > 1 {
-		diags.AddWarning(
-			"Multiple Fleet authentication methods configured",
-			"More than one of username/password (username must be set), api_key, or bearer_token is set in "+
-				"the resolved Fleet configuration. Only one will be used. Check your "+
-				"provider configuration and Fleet environment variables for conflicting auth settings.",
-		)
+		addMultipleAuthWarning(&diags, "Fleet", "Fleet environment variables")
 	}
 
 	return config, diags

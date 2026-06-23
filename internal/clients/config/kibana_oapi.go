@@ -38,12 +38,7 @@ func newKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigura
 	config = config.withEnvironmentOverrides()
 
 	if authMethodCount(kibanaoapi.Config(config)) > 1 {
-		diags.AddWarning(
-			"Multiple Kibana authentication methods configured",
-			"More than one of username/password (username must be set), api_key, or bearer_token is set in "+
-				"the resolved Kibana configuration. Only one will be used. Check your "+
-				"provider configuration and environment variables for conflicting auth settings.",
-		)
+		addMultipleAuthWarning(&diags, "Kibana", "environment variables")
 	}
 
 	return config, diags
@@ -67,12 +62,7 @@ func newProviderKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderC
 	config = config.withNonURLEnvironmentOverrides()
 
 	if authMethodCount(kibanaoapi.Config(config)) > 1 {
-		diags.AddWarning(
-			"Multiple Kibana authentication methods configured",
-			"More than one of username/password (username must be set), api_key, or bearer_token is set in "+
-				"the resolved Kibana configuration. Only one will be used. Check your "+
-				"provider configuration and environment variables for conflicting auth settings.",
-		)
+		addMultipleAuthWarning(&diags, "Kibana", "environment variables")
 	}
 
 	return config, diags
@@ -125,17 +115,17 @@ func (k kibanaOapiConfig) withFleetBlockFallback(ctx context.Context, cfg Provid
 
 	kibanaHasAuth := k.Username != "" || k.Password != "" || k.APIKey != "" || k.BearerToken != ""
 	if !kibanaHasAuth {
-		if fleetCfg.Username.ValueString() != "" {
-			k.Username = fleetCfg.Username.ValueString()
+		if user := fleetCfg.Username.ValueString(); user != "" {
+			k.Username = user
 		}
-		if fleetCfg.Password.ValueString() != "" {
-			k.Password = fleetCfg.Password.ValueString()
+		if pass := fleetCfg.Password.ValueString(); pass != "" {
+			k.Password = pass
 		}
-		if fleetCfg.APIKey.ValueString() != "" {
-			k.APIKey = fleetCfg.APIKey.ValueString()
+		if apiKey := fleetCfg.APIKey.ValueString(); apiKey != "" {
+			k.APIKey = apiKey
 		}
-		if fleetCfg.BearerToken.ValueString() != "" {
-			k.BearerToken = fleetCfg.BearerToken.ValueString()
+		if bearer := fleetCfg.BearerToken.ValueString(); bearer != "" {
+			k.BearerToken = bearer
 		}
 	}
 	if k.URL == "" && fleetCfg.Endpoint.ValueString() != "" {

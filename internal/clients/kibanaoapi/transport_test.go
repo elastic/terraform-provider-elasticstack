@@ -107,7 +107,7 @@ func TestTransport_RoundTrip_AuthPriority(t *testing.T) {
 				t.Fatal(err)
 			}
 			if resp != nil && resp.Body != nil {
-				resp.Body.Close()
+				_ = resp.Body.Close()
 			}
 		})
 	}
