@@ -23,30 +23,29 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 type fleetConfig fleet.Config
 
 func newFleetConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, kibanaCfg kibanaOapiConfig) (fleetConfig, fwdiags.Diagnostics) {
+	var diags fwdiags.Diagnostics
 	config := kibanaCfg.toFleetConfig()
 
 	if len(cfg.Fleet) > 0 {
 		fleetCfg := cfg.Fleet[0]
-		if fleetCfg.Username.ValueString() != "" {
-			config.Username = fleetCfg.Username.ValueString()
-		}
-		if fleetCfg.Password.ValueString() != "" {
-			config.Password = fleetCfg.Password.ValueString()
-		}
+
+		applyAuthOverride(
+			(*kibanaoapi.Config)(&config),
+			fleetCfg.Username.ValueString(),
+			fleetCfg.Password.ValueString(),
+			fleetCfg.APIKey.ValueString(),
+			fleetCfg.BearerToken.ValueString(),
+		)
+
 		if fleetCfg.Endpoint.ValueString() != "" {
 			config.URL = fleetCfg.Endpoint.ValueString()
-		}
-		if fleetCfg.APIKey.ValueString() != "" {
-			config.APIKey = fleetCfg.APIKey.ValueString()
-		}
-		if fleetCfg.BearerToken.ValueString() != "" {
-			config.BearerToken = fleetCfg.BearerToken.ValueString()
 		}
 
 		if !fleetCfg.Insecure.IsNull() && !fleetCfg.Insecure.IsUnknown() {
@@ -54,7 +53,7 @@ func newFleetConfigFromFramework(ctx context.Context, cfg ProviderConfiguration,
 		}
 
 		var caCerts []string
-		diags := fleetCfg.CACerts.ElementsAs(ctx, &caCerts, true)
+		diags.Append(fleetCfg.CACerts.ElementsAs(ctx, &caCerts, true)...)
 		if diags.HasError() {
 			return fleetConfig{}, diags
 		}
@@ -64,24 +63,20 @@ func newFleetConfigFromFramework(ctx context.Context, cfg ProviderConfiguration,
 		}
 	}
 
-	return config.withEnvironmentOverrides(), nil
+	config = config.withEnvironmentOverrides()
+
+	if authMethodCount(kibanaoapi.Config(config)) > 1 {
+		addMultipleAuthWarning(&diags, "Fleet", "Fleet environment variables")
+	}
+
+	return config, diags
 }
 
 func (c fleetConfig) withEnvironmentOverrides() fleetConfig {
+	applyAuthEnvOverrides((*kibanaoapi.Config)(&c), "FLEET")
+
 	if v, ok := os.LookupEnv("FLEET_ENDPOINT"); ok {
 		c.URL = v
-	}
-	if v, ok := os.LookupEnv("FLEET_USERNAME"); ok {
-		c.Username = v
-	}
-	if v, ok := os.LookupEnv("FLEET_PASSWORD"); ok {
-		c.Password = v
-	}
-	if v, ok := os.LookupEnv("FLEET_API_KEY"); ok {
-		c.APIKey = v
-	}
-	if v, ok := os.LookupEnv("FLEET_BEARER_TOKEN"); ok {
-		c.BearerToken = v
 	}
 	if v, ok := os.LookupEnv("FLEET_CA_CERTS"); ok {
 		c.CACerts = strings.Split(v, ",")
