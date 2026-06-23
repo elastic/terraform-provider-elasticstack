@@ -76,13 +76,20 @@ func TestTransport_RoundTrip_AuthPriority(t *testing.T) {
 			tr := &transport{
 				Config: tt.cfg,
 				next: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
-					auth := req.Header.Get("Authorization")
+					values := req.Header.Values("Authorization")
 					if tt.wantNoAuth {
-						if auth != "" {
-							t.Errorf("expected no Authorization header, got %q", auth)
+						if len(values) != 0 {
+							t.Errorf("expected no Authorization header, got %d: %v", len(values), values)
 						}
 						return &http.Response{StatusCode: 200, Request: req}, nil
 					}
+					// Regression guard for issue #1393: exactly one Authorization
+					// header must be sent regardless of how many auth fields are
+					// populated on the config.
+					if len(values) != 1 {
+						t.Errorf("expected exactly one Authorization header, got %d: %v", len(values), values)
+					}
+					auth := req.Header.Get("Authorization")
 					if strings.HasPrefix(tt.wantAuth, "Basic ") {
 						if auth == "" || !strings.HasPrefix(auth, "Basic ") {
 							t.Errorf("expected Basic auth header, got %q", auth)

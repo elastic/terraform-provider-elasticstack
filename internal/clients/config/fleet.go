@@ -36,33 +36,16 @@ func newFleetConfigFromFramework(ctx context.Context, cfg ProviderConfiguration,
 	if len(cfg.Fleet) > 0 {
 		fleetCfg := cfg.Fleet[0]
 
-		fleetUsesBasicAuth := fleetCfg.Username.ValueString() != "" || fleetCfg.Password.ValueString() != ""
-		fleetUsesAPIKey := fleetCfg.APIKey.ValueString() != ""
-		fleetUsesBearer := fleetCfg.BearerToken.ValueString() != ""
+		applyAuthOverride(
+			(*kibanaoapi.Config)(&config),
+			fleetCfg.Username.ValueString(),
+			fleetCfg.Password.ValueString(),
+			fleetCfg.APIKey.ValueString(),
+			fleetCfg.BearerToken.ValueString(),
+		)
 
-		switch {
-		case fleetUsesBearer:
-			clearConflictingAuth((*kibanaoapi.Config)(&config), authMethodBearerToken)
-		case fleetUsesAPIKey:
-			clearConflictingAuth((*kibanaoapi.Config)(&config), authMethodAPIKey)
-		case fleetUsesBasicAuth:
-			clearConflictingAuth((*kibanaoapi.Config)(&config), authMethodBasicAuth)
-		}
-
-		if fleetCfg.Username.ValueString() != "" {
-			config.Username = fleetCfg.Username.ValueString()
-		}
-		if fleetCfg.Password.ValueString() != "" {
-			config.Password = fleetCfg.Password.ValueString()
-		}
 		if fleetCfg.Endpoint.ValueString() != "" {
 			config.URL = fleetCfg.Endpoint.ValueString()
-		}
-		if fleetCfg.APIKey.ValueString() != "" {
-			config.APIKey = fleetCfg.APIKey.ValueString()
-		}
-		if fleetCfg.BearerToken.ValueString() != "" {
-			config.BearerToken = fleetCfg.BearerToken.ValueString()
 		}
 
 		if !fleetCfg.Insecure.IsNull() && !fleetCfg.Insecure.IsUnknown() {
@@ -95,34 +78,10 @@ func newFleetConfigFromFramework(ctx context.Context, cfg ProviderConfiguration,
 }
 
 func (c fleetConfig) withEnvironmentOverrides() fleetConfig {
-	hasUser := envVarActive("FLEET_USERNAME")
-	hasPass := envVarActive("FLEET_PASSWORD")
-	hasKey := envVarActive("FLEET_API_KEY")
-	hasBearer := envVarActive("FLEET_BEARER_TOKEN")
-
-	switch {
-	case hasBearer:
-		clearConflictingAuth((*kibanaoapi.Config)(&c), authMethodBearerToken)
-	case hasKey:
-		clearConflictingAuth((*kibanaoapi.Config)(&c), authMethodAPIKey)
-	case hasUser || hasPass:
-		clearConflictingAuth((*kibanaoapi.Config)(&c), authMethodBasicAuth)
-	}
+	applyAuthEnvOverrides((*kibanaoapi.Config)(&c), "FLEET")
 
 	if v, ok := os.LookupEnv("FLEET_ENDPOINT"); ok {
 		c.URL = v
-	}
-	if v, ok := os.LookupEnv("FLEET_USERNAME"); ok {
-		c.Username = v
-	}
-	if v, ok := os.LookupEnv("FLEET_PASSWORD"); ok {
-		c.Password = v
-	}
-	if v, ok := os.LookupEnv("FLEET_API_KEY"); ok {
-		c.APIKey = v
-	}
-	if v, ok := os.LookupEnv("FLEET_BEARER_TOKEN"); ok {
-		c.BearerToken = v
 	}
 	if v, ok := os.LookupEnv("FLEET_CA_CERTS"); ok {
 		c.CACerts = strings.Split(v, ",")

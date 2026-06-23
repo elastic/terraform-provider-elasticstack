@@ -84,31 +84,13 @@ func buildKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigu
 	if len(cfg.Kibana) > 0 {
 		kibConfig := cfg.Kibana[0]
 
-		kibUsesBasicAuth := kibConfig.Username.ValueString() != "" || kibConfig.Password.ValueString() != ""
-		kibUsesAPIKey := kibConfig.APIKey.ValueString() != ""
-		kibUsesBearer := kibConfig.BearerToken.ValueString() != ""
-
-		switch {
-		case kibUsesBearer:
-			clearConflictingAuth((*kibanaoapi.Config)(&config), authMethodBearerToken)
-		case kibUsesAPIKey:
-			clearConflictingAuth((*kibanaoapi.Config)(&config), authMethodAPIKey)
-		case kibUsesBasicAuth:
-			clearConflictingAuth((*kibanaoapi.Config)(&config), authMethodBasicAuth)
-		}
-
-		if kibConfig.Username.ValueString() != "" {
-			config.Username = kibConfig.Username.ValueString()
-		}
-		if kibConfig.Password.ValueString() != "" {
-			config.Password = kibConfig.Password.ValueString()
-		}
-		if kibConfig.APIKey.ValueString() != "" {
-			config.APIKey = kibConfig.APIKey.ValueString()
-		}
-		if kibConfig.BearerToken.ValueString() != "" {
-			config.BearerToken = kibConfig.BearerToken.ValueString()
-		}
+		applyAuthOverride(
+			(*kibanaoapi.Config)(&config),
+			kibConfig.Username.ValueString(),
+			kibConfig.Password.ValueString(),
+			kibConfig.APIKey.ValueString(),
+			kibConfig.BearerToken.ValueString(),
+		)
 		var endpoints []string
 		diags := kibConfig.Endpoints.ElementsAs(ctx, &endpoints, true)
 
@@ -191,26 +173,8 @@ func (k kibanaOapiConfig) withEnvironmentOverrides() kibanaOapiConfig {
 }
 
 func (k kibanaOapiConfig) withNonURLEnvironmentOverrides() kibanaOapiConfig {
-	// Clearing is triggered only when the env var is set to a non-empty value.
-	// An explicitly-set empty string should not wipe existing credentials.
-	hasUser := envVarActive("KIBANA_USERNAME")
-	hasPass := envVarActive("KIBANA_PASSWORD")
-	hasKey := envVarActive("KIBANA_API_KEY")
-	hasBearer := envVarActive("KIBANA_BEARER_TOKEN")
+	applyAuthEnvOverrides((*kibanaoapi.Config)(&k), "KIBANA")
 
-	switch {
-	case hasBearer:
-		clearConflictingAuth((*kibanaoapi.Config)(&k), authMethodBearerToken)
-	case hasKey:
-		clearConflictingAuth((*kibanaoapi.Config)(&k), authMethodAPIKey)
-	case hasUser || hasPass:
-		clearConflictingAuth((*kibanaoapi.Config)(&k), authMethodBasicAuth)
-	}
-
-	k.Username = withEnvironmentOverride(k.Username, "KIBANA_USERNAME")
-	k.Password = withEnvironmentOverride(k.Password, "KIBANA_PASSWORD")
-	k.APIKey = withEnvironmentOverride(k.APIKey, "KIBANA_API_KEY")
-	k.BearerToken = withEnvironmentOverride(k.BearerToken, "KIBANA_BEARER_TOKEN")
 	if caCerts, ok := os.LookupEnv("KIBANA_CA_CERTS"); ok {
 		k.CACerts = strings.Split(caCerts, ",")
 	}

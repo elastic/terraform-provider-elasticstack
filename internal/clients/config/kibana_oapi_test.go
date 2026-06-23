@@ -407,6 +407,30 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 				}
 			},
 		},
+		// 9.10: Kibana block sets only password (no username) → not a valid basic-auth
+		// intent; inherited ES APIKey must NOT be wiped, otherwise the client ends up
+		// with no working auth at all.
+		{
+			name: "Kibana block with only password preserves inherited APIKey",
+			args: func() args {
+				return args{
+					baseCfg: baseConfig{APIKey: "es-key"},
+					providerConfig: ProviderConfiguration{
+						Kibana: []KibanaConnection{
+							{
+								Password:  types.StringValue("orphan-pass"),
+								Endpoints: types.ListValueMust(types.StringType, []attr.Value{}),
+								CACerts:   types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					expectedConfig: kibanaOapiConfig{
+						APIKey:   "es-key",
+						Password: "orphan-pass",
+					},
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {

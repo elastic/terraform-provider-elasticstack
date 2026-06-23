@@ -29,31 +29,72 @@ func envVarActive(key string) bool {
 	return ok && v != ""
 }
 
-type authMethod int
+// applyAuthOverride applies auth fields from a later-layer source (e.g. a
+// provider Kibana/Fleet block) onto c, clearing conflicting prior-layer auth
+// when the source specifies a primary auth method.
+//
+// Priority for "primary method": bearer > api_key > username. A username is
+// required to claim basic auth; a password alone is not a valid intent signal
+// (basic auth without a username cannot authenticate), so it does not trigger
+// clearing of inherited api_key/bearer_token.
+//
+// Non-empty source fields overwrite c; empty source fields leave c unchanged,
+// which preserves partial overrides (e.g. setting only username while
+// inheriting password from a prior layer).
+func applyAuthOverride(c *kibanaoapi.Config, user, pass, key, bearer string) {
+	switch {
+	case bearer != "":
+		c.Username, c.Password, c.APIKey = "", "", ""
+	case key != "":
+		c.Username, c.Password, c.BearerToken = "", "", ""
+	case user != "":
+		c.APIKey, c.BearerToken = "", ""
+	}
 
-const (
-	authMethodNone authMethod = iota
-	authMethodBasicAuth
-	authMethodAPIKey
-	authMethodBearerToken
-)
-
-func clearConflictingAuth(c *kibanaoapi.Config, method authMethod) {
-	switch method {
-	case authMethodBasicAuth:
-		c.APIKey = ""
-		c.BearerToken = ""
-	case authMethodAPIKey:
-		c.Username = ""
-		c.Password = ""
-		c.BearerToken = ""
-	case authMethodBearerToken:
-		c.Username = ""
-		c.Password = ""
-		c.APIKey = ""
+	if user != "" {
+		c.Username = user
+	}
+	if pass != "" {
+		c.Password = pass
+	}
+	if key != "" {
+		c.APIKey = key
+	}
+	if bearer != "" {
+		c.BearerToken = bearer
 	}
 }
 
+// applyAuthEnvOverrides applies <prefix>_USERNAME/PASSWORD/API_KEY/BEARER_TOKEN
+// environment variables onto c. The clearing rule matches applyAuthOverride
+// (bearer > api_key > username), but only non-empty env vars signal intent —
+// an env var explicitly set to "" still overrides the field on c (the
+// established override contract), without triggering clearing.
+func applyAuthEnvOverrides(c *kibanaoapi.Config, prefix string) {
+	userKey := prefix + "_USERNAME"
+	passKey := prefix + "_PASSWORD"
+	apiKeyKey := prefix + "_API_KEY"
+	bearerKey := prefix + "_BEARER_TOKEN"
+
+	switch {
+	case envVarActive(bearerKey):
+		c.Username, c.Password, c.APIKey = "", "", ""
+	case envVarActive(apiKeyKey):
+		c.Username, c.Password, c.BearerToken = "", "", ""
+	case envVarActive(userKey):
+		c.APIKey, c.BearerToken = "", ""
+	}
+
+	c.Username = withEnvironmentOverride(c.Username, userKey)
+	c.Password = withEnvironmentOverride(c.Password, passKey)
+	c.APIKey = withEnvironmentOverride(c.APIKey, apiKeyKey)
+	c.BearerToken = withEnvironmentOverride(c.BearerToken, bearerKey)
+}
+
+// authMethodCount returns the number of distinct primary auth methods set on
+// c. Basic auth is only counted when Username is set, mirroring
+// applyAuthOverride's intent rule and the transport's selection (which
+// requires a username to issue a Basic header).
 func authMethodCount(c kibanaoapi.Config) int {
 	count := 0
 	if c.Username != "" {
