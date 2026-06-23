@@ -10,12 +10,12 @@ The eponymous feature request ([#3706](https://github.com/elastic/terraform-prov
 - Add `GetKbResourceConnectionBlock()` in `internal/schema/connection.go` using `resource/schema`. This mirrors `GetKbFWConnectionBlock()` but adds `password_wo`, `api_key_wo`, and `bearer_token_wo` companions and `PreferWriteOnlyAttribute` validators on the corresponding plain companions.
 - Add `ElasticsearchResourceConnection` struct in `internal/clients/config/` with `_wo` fields alongside the existing fields.
 - Add `KibanaResourceConnection` struct in `internal/clients/config/` with `_wo` fields.
-- Update `GetElasticsearchClient` in `internal/clients/provider_client_factory.go` to accept a `types.List` of `ElasticsearchResourceConnection` (resource variant) and prefer `_wo` over plain when both are set.
-- Update `GetKibanaClient` similarly to accept `KibanaResourceConnection`.
+- Update `GetElasticsearchClient` in `internal/clients/provider_client_factory.go` to decode the `types.List` into `[]ElasticsearchResourceConnection`, apply `_wo`-over-plain preference, and continue building the scoped client from the resolved connection. Existing callers pass the same `types.List` and require no signature changes.
+- Update `GetKibanaClient` similarly to decode into `[]KibanaResourceConnection` and apply `_wo`-over-plain preference.
 - Update `NewElasticsearchResource` envelope in `internal/entitycore/resource_envelope.go` to use `GetEsResourceConnectionBlock()` instead of `GetEsFWConnectionBlock()`.
 - Update `NewKibanaResource` envelope in `internal/entitycore/kibana_resource_envelope.go` to use `GetKbResourceConnectionBlock()` instead of `GetKbFWConnectionBlock()`.
 - Add new null-list helpers and object-type functions for the resource connection variants (`ElasticsearchResourceConnectionNullList`, `ElasticsearchResourceConnectionObjectType`, `KibanaResourceConnectionNullList`, `KibanaResourceConnectionObjectType`) so that ImportState and state upgraders that call `ElasticsearchConnectionNullList` / `KibanaConnectionNullList` can be updated or stay on the provider-schema variant as appropriate.
-- Wire `writeonlyhash`-based `ModifyPlan` in both envelopes to detect silent in-config changes to write-only credentials and schedule updates without requiring user-managed version companions. No `_wo_version` attributes are added — the `writeonlyhash` mechanism is the sole drift-detection mechanism.
+- Wire `writeonlyhash`-based `ModifyPlan` in both envelopes to detect silent in-config changes to write-only credentials and schedule updates without requiring user-managed version companions. No `_wo_version` attributes are added — the `writeonlyhash` mechanism is the sole drift-detection mechanism. Each concrete resource type uses its own per-type `Hasher` salt.
 
 ## Capabilities
 
@@ -26,14 +26,16 @@ The eponymous feature request ([#3706](https://github.com/elastic/terraform-prov
 
 ### Modified Capabilities
 
-- `elasticsearch-connection-block` (modified): Provider-level block unchanged; resource-level block extended.
-- `kibana-connection-block` (modified): Provider-level block unchanged; resource-level block extended.
+- `elasticsearch-provider-connection` (modified): Managed resources now expose the resource-schema `elasticsearch_connection` block variant with `_wo` companions; provider-level, data-source, ephemeral-resource, and action surfaces remain on the provider-schema variant.
+- `provider-kibana-connection` (modified): Managed resources now expose the resource-schema `kibana_connection` block variant with `_wo` companions; provider-level, data-source, ephemeral-resource, and action surfaces remain on the provider-schema variant.
+- `entitycore-resource-envelope` (modified): Switches `NewElasticsearchResource` to inject the resource-schema connection block and adds envelope-level `ModifyPlan` for `_wo` drift detection.
+- `entitycore-kibana-resource-envelope` (modified): Switches `NewKibanaResource` to inject the resource-schema connection block and adds envelope-level `ModifyPlan` for `_wo` drift detection.
 
 ## Impact
 
-All managed resources that embed `elasticsearch_connection` or `kibana_connection` via the `NewElasticsearchResource` / `NewKibanaResource` envelopes gain the new write-only attributes automatically. No existing attribute is removed or renamed. The plain `password`, `api_key`, `bearer_token`, `es_client_authentication`, and `key_data` attributes remain; their behavior is unchanged when the `_wo` companion is not set. When both are set, the `_wo` value wins.
+All managed resources that embed `elasticsearch_connection` or `kibana_connection` via the `NewElasticsearchResource` / `NewKibanaResource` envelopes gain the new write-only attributes automatically. No existing attribute is removed or renamed. The plain `password`, `api_key`, `bearer_token`, `es_client_authentication`, and `key_data` attributes remain; their behavior is unchanged when the `_wo` companion is not set. When both are set, the `_wo` value is never actually reachable because the attributes hard-conflict, but the factory still defensively prefers `_wo` should a conflict validator be relaxed.
 
-Practitioners currently relying on the plain attributes for resource-level connections are unaffected. No state migration is required.
+Practitioners currently relying on the plain attributes for resource-level connections are unaffected. No state migration is required. Only practitioners who switch to `_wo` attributes avoid storing plaintext credentials in state; plain attributes continue to be stored in state as before.
 
 ### Compatibility
 
