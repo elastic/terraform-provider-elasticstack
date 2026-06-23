@@ -23,6 +23,7 @@ import (
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -104,7 +105,7 @@ func getSchema(_ context.Context) schema.Schema {
 						Optional:   true,
 						CustomType: esindex.MappingsType{},
 						Validators: []validator.String{
-							esindex.StringIsJSONObject{},
+							validators.StringIsJSONObject{},
 						},
 					},
 					attrSettings: schema.StringAttribute{
@@ -131,7 +132,7 @@ func getSchema(_ context.Context) schema.Schema {
 									Optional:            true,
 									CustomType:          jsontypes.NormalizedType{},
 									Validators: []validator.String{
-										esindex.StringIsJSONObject{},
+										validators.StringIsJSONObject{},
 									},
 								},
 								attrIndexRouting: schema.StringAttribute{
