@@ -63,76 +63,11 @@ func ElasticsearchConnectionObjectType() types.ObjectType {
 }
 
 func GetEsFWConnectionBlock() fwschema.Block {
-	return fwschema.ListNestedBlock{
-		MarkdownDescription: descESConnectionBlock,
-		Description:         descESConnectionBlock,
-		NestedObject: fwschema.NestedBlockObject{
-			Attributes: buildFWESConnectionAttributes(),
-		},
-		Validators: []validator.List{
-			listvalidator.SizeAtMost(1),
-		},
-	}
+	return esConnectionBlockSpec().fwBlock()
 }
 
 func GetKbFWConnectionBlock() fwschema.Block {
-	usernamePath := path.MatchRelative().AtParent().AtName(attrUsername)
-	passwordPath := path.MatchRelative().AtParent().AtName(attrPassword)
-	apiKeyPath := path.MatchRelative().AtParent().AtName(attrAPIKey)
-	bearerTokenPath := path.MatchRelative().AtParent().AtName(attrBearerToken)
-
-	return fwschema.ListNestedBlock{
-		MarkdownDescription: descKbConnectionBlock,
-		NestedObject: fwschema.NestedBlockObject{
-			Attributes: map[string]fwschema.Attribute{
-				attrAPIKey: fwschema.StringAttribute{
-					MarkdownDescription: descKbAPIKey,
-					Optional:            true,
-					Sensitive:           true,
-					Validators: []validator.String{
-						stringvalidator.ConflictsWith(usernamePath, passwordPath, bearerTokenPath),
-					},
-				},
-				attrBearerToken: fwschema.StringAttribute{
-					MarkdownDescription: descKbBearerToken,
-					Optional:            true,
-					Sensitive:           true,
-					Validators: []validator.String{
-						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
-					},
-				},
-				attrUsername: fwschema.StringAttribute{
-					MarkdownDescription: descKbUsername,
-					Optional:            true,
-					Validators:          []validator.String{stringvalidator.AlsoRequires(passwordPath)},
-				},
-				attrPassword: fwschema.StringAttribute{
-					MarkdownDescription: descKbPassword,
-					Optional:            true,
-					Sensitive:           true,
-					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
-				},
-				attrEndpoints: fwschema.ListAttribute{
-					MarkdownDescription: descKbEndpoints,
-					Optional:            true,
-					Sensitive:           true,
-					ElementType:         types.StringType,
-				},
-				attrCACerts: fwschema.ListAttribute{
-					MarkdownDescription: descKbCACerts,
-					Optional:            true,
-					ElementType:         types.StringType,
-				},
-				attrInsecure: fwschema.BoolAttribute{
-					MarkdownDescription: descInsecureTLS,
-					Optional:            true,
-				},
-			},
-		},
-		Validators: []validator.List{
-			listvalidator.SizeAtMost(1),
-		},
-	}
+	return kbConnectionBlockSpec().fwBlock()
 }
 
 func GetFleetFWConnectionBlock() fwschema.Block {
@@ -195,84 +130,37 @@ func GetFleetFWConnectionBlock() fwschema.Block {
 }
 
 var (
-	elasticsearchConnectionBlockObjectAttrTypesOnce sync.Once
-	elasticsearchConnectionBlockObjectAttrTypesVal  map[string]attr.Type
+	// elasticsearchConnectionBlockObjectAttrTypesVal is the canonical
+	// attribute-type map for the elasticsearch_connection block, derived once
+	// from esConnectionBlockSpec(). Deriving from the spec (rather than the
+	// built schema, with a hand-maintained fallback) keeps the object type and
+	// the schema from drifting apart.
+	elasticsearchConnectionBlockObjectAttrTypesVal = sync.OnceValue(func() map[string]attr.Type {
+		return esConnectionBlockSpec().attrTypes()
+	})
 
-	kibanaConnectionBlockObjectAttrTypesOnce sync.Once
-	kibanaConnectionBlockObjectAttrTypesVal  map[string]attr.Type
+	// kibanaConnectionBlockObjectAttrTypesVal is the canonical attribute-type
+	// map for the kibana_connection block, derived once from
+	// kbConnectionBlockSpec().
+	kibanaConnectionBlockObjectAttrTypesVal = sync.OnceValue(func() map[string]attr.Type {
+		return kbConnectionBlockSpec().attrTypes()
+	})
 )
 
+// copyAttrTypes returns a shallow copy of src so callers cannot mutate the
+// cached attribute-type map shared across calls.
 func copyAttrTypes(src map[string]attr.Type) map[string]attr.Type {
-	if src == nil {
-		return nil
-	}
 	out := make(map[string]attr.Type, len(src))
 	maps.Copy(out, src)
 	return out
 }
 
-func connectionBlockObjectAttrTypes(block fwschema.Block) (map[string]attr.Type, error) {
-	lb, ok := block.(fwschema.ListNestedBlock)
-	if !ok {
-		return nil, fmt.Errorf("connection block is %T, want ListNestedBlock", block)
-	}
-	return fwNestedBlockAttributesToAttrTypes(lb.NestedObject.Attributes)
-}
-
-func elasticsearchConnectionBlockObjectAttrTypesFallback() map[string]attr.Type {
-	return map[string]attr.Type{
-		attrUsername:               types.StringType,
-		attrPassword:               types.StringType,
-		attrAPIKey:                 types.StringType,
-		attrBearerToken:            types.StringType,
-		attrESClientAuthentication: types.StringType,
-		attrEndpoints:              types.ListType{ElemType: types.StringType},
-		attrHeaders:                types.MapType{ElemType: types.StringType},
-		attrInsecure:               types.BoolType,
-		attrCAFile:                 types.StringType,
-		attrCAData:                 types.StringType,
-		attrCAFingerprint:          types.StringType,
-		attrCertFile:               types.StringType,
-		attrKeyFile:                types.StringType,
-		attrCertData:               types.StringType,
-		attrKeyData:                types.StringType,
-	}
-}
-
-func kibanaConnectionBlockObjectAttrTypesFallback() map[string]attr.Type {
-	return map[string]attr.Type{
-		attrAPIKey:      types.StringType,
-		attrBearerToken: types.StringType,
-		attrUsername:    types.StringType,
-		attrPassword:    types.StringType,
-		attrEndpoints:   types.ListType{ElemType: types.StringType},
-		attrCACerts:     types.ListType{ElemType: types.StringType},
-		attrInsecure:    types.BoolType,
-	}
-}
-
 func elasticsearchConnectionBlockObjectAttrTypes() map[string]attr.Type {
-	elasticsearchConnectionBlockObjectAttrTypesOnce.Do(func() {
-		m, err := connectionBlockObjectAttrTypes(GetEsFWConnectionBlock())
-		if err != nil {
-			elasticsearchConnectionBlockObjectAttrTypesVal = elasticsearchConnectionBlockObjectAttrTypesFallback()
-			return
-		}
-		elasticsearchConnectionBlockObjectAttrTypesVal = m
-	})
-	return copyAttrTypes(elasticsearchConnectionBlockObjectAttrTypesVal)
+	return copyAttrTypes(elasticsearchConnectionBlockObjectAttrTypesVal())
 }
 
 func kibanaConnectionBlockObjectAttrTypes() map[string]attr.Type {
-	kibanaConnectionBlockObjectAttrTypesOnce.Do(func() {
-		m, err := connectionBlockObjectAttrTypes(GetKbFWConnectionBlock())
-		if err != nil {
-			kibanaConnectionBlockObjectAttrTypesVal = kibanaConnectionBlockObjectAttrTypesFallback()
-			return
-		}
-		kibanaConnectionBlockObjectAttrTypesVal = m
-	})
-	return copyAttrTypes(kibanaConnectionBlockObjectAttrTypesVal)
+	return copyAttrTypes(kibanaConnectionBlockObjectAttrTypesVal())
 }
 
 func fwNestedBlockAttributesToAttrTypes(attrs map[string]fwschema.Attribute) (map[string]attr.Type, error) {

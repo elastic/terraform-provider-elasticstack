@@ -18,88 +18,18 @@
 package schema
 
 import (
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/action/schema"
-	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // GetEsActionConnectionBlock returns the elasticsearch_connection block for
 // provider-defined actions, mirroring GetEsEphemeralConnectionBlock for ephemeral resources.
 func GetEsActionConnectionBlock() schema.Block {
-	return schema.ListNestedBlock{
-		MarkdownDescription: descESConnectionBlock,
-		Description:         descESConnectionBlock,
-		NestedObject: schema.NestedBlockObject{
-			Attributes: buildActionESConnectionAttributes(),
-		},
-		Validators: []validator.List{
-			listvalidator.SizeAtMost(1),
-		},
-	}
+	return esConnectionBlockSpec().actionBlock()
 }
 
 // GetKbActionConnectionBlock returns the kibana_connection block for
 // provider-defined actions, mirroring GetKbEphemeralConnectionBlock for
 // ephemeral resources.
 func GetKbActionConnectionBlock() schema.Block {
-	usernamePath := path.MatchRelative().AtParent().AtName(attrUsername)
-	passwordPath := path.MatchRelative().AtParent().AtName(attrPassword)
-	apiKeyPath := path.MatchRelative().AtParent().AtName(attrAPIKey)
-	bearerTokenPath := path.MatchRelative().AtParent().AtName(attrBearerToken)
-
-	return schema.ListNestedBlock{
-		MarkdownDescription: descKbConnectionBlock,
-		Description:         descKbConnectionBlock,
-		NestedObject: schema.NestedBlockObject{
-			Attributes: map[string]schema.Attribute{
-				attrAPIKey: schema.StringAttribute{
-					MarkdownDescription: descKbAPIKey,
-					Optional:            true,
-					WriteOnly:           true,
-					Validators: []validator.String{
-						stringvalidator.ConflictsWith(usernamePath, passwordPath, bearerTokenPath),
-					},
-				},
-				attrBearerToken: schema.StringAttribute{
-					MarkdownDescription: descKbBearerToken,
-					Optional:            true,
-					WriteOnly:           true,
-					Validators: []validator.String{
-						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
-					},
-				},
-				attrUsername: schema.StringAttribute{
-					MarkdownDescription: descKbUsername,
-					Optional:            true,
-					Validators:          []validator.String{stringvalidator.AlsoRequires(passwordPath)},
-				},
-				attrPassword: schema.StringAttribute{
-					MarkdownDescription: descKbPassword,
-					Optional:            true,
-					WriteOnly:           true,
-					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
-				},
-				attrEndpoints: schema.ListAttribute{
-					MarkdownDescription: descKbEndpoints,
-					Optional:            true,
-					ElementType:         types.StringType,
-				},
-				attrCACerts: schema.ListAttribute{
-					MarkdownDescription: descKbCACerts,
-					Optional:            true,
-					ElementType:         types.StringType,
-				},
-				attrInsecure: schema.BoolAttribute{
-					MarkdownDescription: descInsecureTLS,
-					Optional:            true,
-				},
-			},
-		},
-		Validators: []validator.List{
-			listvalidator.SizeAtMost(1),
-		},
-	}
+	return kbConnectionBlockSpec().actionBlock()
 }

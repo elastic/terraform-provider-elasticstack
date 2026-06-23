@@ -19,41 +19,16 @@ package schema
 
 import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	actionschema "github.com/hashicorp/terraform-plugin-framework/action/schema"
-	ephemeralschema "github.com/hashicorp/terraform-plugin-framework/ephemeral/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type esConnAttrKind int
-
-const (
-	esConnAttrKindString esConnAttrKind = iota
-	esConnAttrKindBool
-	esConnAttrKindList
-	esConnAttrKindMap
-)
-
-// esConnAttrDef describes a single attribute in the elasticsearch_connection block.
-// Three adapter functions (buildFWESConnectionAttributes,
-// buildEphemeralESConnectionAttributes, buildActionESConnectionAttributes) convert
-// these descriptors to the appropriate framework-specific schema attribute types.
-type esConnAttrDef struct {
-	description string
-	kind        esConnAttrKind
-	// sensitive is set to Sensitive on managed/ephemeral resources.
-	sensitive bool
-	// writeOnly is set to WriteOnly on action resources.
-	writeOnly  bool
-	validators []validator.String
-}
-
-// esConnectionAttrDefs returns the canonical attribute definitions for the
-// elasticsearch_connection block. Adding a new connection attribute here
-// automatically propagates it to managed, ephemeral, and action resource types.
-func esConnectionAttrDefs() map[string]esConnAttrDef {
+// esConnectionBlockSpec returns the canonical connectionBlockSpec for the
+// elasticsearch_connection block. It is the single source of truth from which
+// the managed-resource, ephemeral-resource, action-resource blocks (and the
+// object attribute-type map) are generated. Adding a new connection attribute
+// here automatically propagates it to every entity kind.
+func esConnectionBlockSpec() connectionBlockSpec {
 	usernamePath := path.MatchRelative().AtParent().AtName(attrUsername)
 	passwordPath := path.MatchRelative().AtParent().AtName(attrPassword)
 	apiKeyPath := path.MatchRelative().AtParent().AtName(attrAPIKey)
@@ -66,232 +41,135 @@ func esConnectionAttrDefs() map[string]esConnAttrDef {
 	keyFilePath := path.MatchRelative().AtParent().AtName(attrKeyFile)
 	keyDataPath := path.MatchRelative().AtParent().AtName(attrKeyData)
 
-	return map[string]esConnAttrDef{
-		attrUsername: {
-			description: descUsername,
-			kind:        esConnAttrKindString,
-			validators:  []validator.String{stringvalidator.AlsoRequires(passwordPath)},
-		},
-		attrPassword: {
-			description: descPassword,
-			kind:        esConnAttrKindString,
-			sensitive:   true,
-			writeOnly:   true,
-			validators:  []validator.String{stringvalidator.AlsoRequires(usernamePath)},
-		},
-		attrAPIKey: {
-			description: descAPIKey,
-			kind:        esConnAttrKindString,
-			sensitive:   true,
-			writeOnly:   true,
-			validators: []validator.String{
-				stringvalidator.ConflictsWith(usernamePath, passwordPath, bearerTokenPath),
+	return connectionBlockSpec{
+		description: descESConnectionBlock,
+		attrs: []connAttrSpec{
+			{
+				name:        attrUsername,
+				description: descUsername,
+				kind:        connAttrString,
+				validators:  []validator.String{stringvalidator.AlsoRequires(passwordPath)},
 			},
-		},
-		attrBearerToken: {
-			description: descBearerToken,
-			kind:        esConnAttrKindString,
-			sensitive:   true,
-			writeOnly:   true,
-			validators: []validator.String{
-				stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
+			{
+				name:        attrPassword,
+				description: descPassword,
+				kind:        connAttrString,
+				sensitive:   true,
+				writeOnly:   true,
+				validators:  []validator.String{stringvalidator.AlsoRequires(usernamePath)},
 			},
-		},
-		attrESClientAuthentication: {
-			description: descESClientAuthentication,
-			kind:        esConnAttrKindString,
-			sensitive:   true,
-			writeOnly:   true,
-			validators: []validator.String{
-				stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
-				stringvalidator.AlsoRequires(bearerTokenPath),
+			{
+				name:        attrAPIKey,
+				description: descAPIKey,
+				kind:        connAttrString,
+				sensitive:   true,
+				writeOnly:   true,
+				validators: []validator.String{
+					stringvalidator.ConflictsWith(usernamePath, passwordPath, bearerTokenPath),
+				},
 			},
-		},
-		attrEndpoints: {
-			description: descEndpoints,
-			kind:        esConnAttrKindList,
-			sensitive:   true,
-			// writeOnly is deliberately false: action resources read endpoints back.
-		},
-		attrHeaders: {
-			description: descHeaders,
-			kind:        esConnAttrKindMap,
-			sensitive:   true,
-			writeOnly:   true,
-		},
-		attrInsecure: {
-			description: descInsecureTLS,
-			kind:        esConnAttrKindBool,
-		},
-		attrCAFile: {
-			description: descCAFile,
-			kind:        esConnAttrKindString,
-			validators: []validator.String{
-				stringvalidator.ConflictsWith(caDataPath, caFingerprintPath),
+			{
+				name:        attrBearerToken,
+				description: descBearerToken,
+				kind:        connAttrString,
+				sensitive:   true,
+				writeOnly:   true,
+				validators: []validator.String{
+					stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
+				},
 			},
-		},
-		attrCAData: {
-			description: descCAData,
-			kind:        esConnAttrKindString,
-			validators: []validator.String{
-				stringvalidator.ConflictsWith(caFilePath, caFingerprintPath),
+			{
+				name:        attrESClientAuthentication,
+				description: descESClientAuthentication,
+				kind:        connAttrString,
+				sensitive:   true,
+				writeOnly:   true,
+				validators: []validator.String{
+					stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
+					stringvalidator.AlsoRequires(bearerTokenPath),
+				},
 			},
-		},
-		attrCAFingerprint: {
-			description: descCAFingerprint,
-			kind:        esConnAttrKindString,
-			validators: []validator.String{
-				stringvalidator.ConflictsWith(caFilePath, caDataPath),
+			{
+				name:        attrEndpoints,
+				description: descEndpoints,
+				kind:        connAttrList,
+				sensitive:   true,
+				// writeOnly is deliberately false: action resources read endpoints back.
 			},
-		},
-		attrCertFile: {
-			description: descCertFile,
-			kind:        esConnAttrKindString,
-			validators: []validator.String{
-				stringvalidator.AlsoRequires(keyFilePath),
-				stringvalidator.ConflictsWith(caDataPath, keyDataPath),
+			{
+				name:        attrHeaders,
+				description: descHeaders,
+				kind:        connAttrMap,
+				sensitive:   true,
+				writeOnly:   true,
 			},
-		},
-		attrKeyFile: {
-			description: descKeyFile,
-			kind:        esConnAttrKindString,
-			validators: []validator.String{
-				stringvalidator.AlsoRequires(certFilePath),
-				stringvalidator.ConflictsWith(certDataPath, keyDataPath),
+			{
+				name:        attrInsecure,
+				description: descInsecureTLS,
+				kind:        connAttrBool,
 			},
-		},
-		attrCertData: {
-			description: descCertData,
-			kind:        esConnAttrKindString,
-			validators: []validator.String{
-				stringvalidator.AlsoRequires(keyDataPath),
-				stringvalidator.ConflictsWith(certFilePath, keyFilePath),
+			{
+				name:        attrCAFile,
+				description: descCAFile,
+				kind:        connAttrString,
+				validators: []validator.String{
+					stringvalidator.ConflictsWith(caDataPath, caFingerprintPath),
+				},
 			},
-		},
-		attrKeyData: {
-			description: descKeyData,
-			kind:        esConnAttrKindString,
-			sensitive:   true,
-			writeOnly:   true,
-			validators: []validator.String{
-				stringvalidator.AlsoRequires(certDataPath),
-				stringvalidator.ConflictsWith(certFilePath, keyFilePath),
+			{
+				name:        attrCAData,
+				description: descCAData,
+				kind:        connAttrString,
+				validators: []validator.String{
+					stringvalidator.ConflictsWith(caFilePath, caFingerprintPath),
+				},
+			},
+			{
+				name:        attrCAFingerprint,
+				description: descCAFingerprint,
+				kind:        connAttrString,
+				validators: []validator.String{
+					stringvalidator.ConflictsWith(caFilePath, caDataPath),
+				},
+			},
+			{
+				name:        attrCertFile,
+				description: descCertFile,
+				kind:        connAttrString,
+				validators: []validator.String{
+					stringvalidator.AlsoRequires(keyFilePath),
+					stringvalidator.ConflictsWith(certDataPath, keyDataPath),
+				},
+			},
+			{
+				name:        attrKeyFile,
+				description: descKeyFile,
+				kind:        connAttrString,
+				validators: []validator.String{
+					stringvalidator.AlsoRequires(certFilePath),
+					stringvalidator.ConflictsWith(certDataPath, keyDataPath),
+				},
+			},
+			{
+				name:        attrCertData,
+				description: descCertData,
+				kind:        connAttrString,
+				validators: []validator.String{
+					stringvalidator.AlsoRequires(keyDataPath),
+					stringvalidator.ConflictsWith(certFilePath, keyFilePath),
+				},
+			},
+			{
+				name:        attrKeyData,
+				description: descKeyData,
+				kind:        connAttrString,
+				sensitive:   true,
+				writeOnly:   true,
+				validators: []validator.String{
+					stringvalidator.AlsoRequires(certDataPath),
+					stringvalidator.ConflictsWith(certFilePath, keyFilePath),
+				},
 			},
 		},
 	}
-}
-
-// buildFWESConnectionAttributes converts the shared esConnAttrDef descriptors into
-// managed-resource (provider/schema) attribute types. Sensitive fields use Sensitive: true.
-func buildFWESConnectionAttributes() map[string]fwschema.Attribute {
-	defs := esConnectionAttrDefs()
-	attrs := make(map[string]fwschema.Attribute, len(defs))
-	for name, def := range defs {
-		switch def.kind {
-		case esConnAttrKindString:
-			attrs[name] = fwschema.StringAttribute{
-				MarkdownDescription: def.description,
-				Optional:            true,
-				Sensitive:           def.sensitive,
-				Validators:          def.validators,
-			}
-		case esConnAttrKindBool:
-			attrs[name] = fwschema.BoolAttribute{
-				MarkdownDescription: def.description,
-				Optional:            true,
-			}
-		case esConnAttrKindList:
-			attrs[name] = fwschema.ListAttribute{
-				MarkdownDescription: def.description,
-				Optional:            true,
-				Sensitive:           def.sensitive,
-				ElementType:         types.StringType,
-			}
-		case esConnAttrKindMap:
-			attrs[name] = fwschema.MapAttribute{
-				MarkdownDescription: def.description,
-				Optional:            true,
-				Sensitive:           def.sensitive,
-				ElementType:         types.StringType,
-			}
-		}
-	}
-	return attrs
-}
-
-// buildEphemeralESConnectionAttributes converts the shared esConnAttrDef descriptors
-// into ephemeral-resource (ephemeral/schema) attribute types. Sensitive fields use
-// Sensitive: true.
-func buildEphemeralESConnectionAttributes() map[string]ephemeralschema.Attribute {
-	defs := esConnectionAttrDefs()
-	attrs := make(map[string]ephemeralschema.Attribute, len(defs))
-	for name, def := range defs {
-		switch def.kind {
-		case esConnAttrKindString:
-			attrs[name] = ephemeralschema.StringAttribute{
-				MarkdownDescription: def.description,
-				Optional:            true,
-				Sensitive:           def.sensitive,
-				Validators:          def.validators,
-			}
-		case esConnAttrKindBool:
-			attrs[name] = ephemeralschema.BoolAttribute{
-				MarkdownDescription: def.description,
-				Optional:            true,
-			}
-		case esConnAttrKindList:
-			attrs[name] = ephemeralschema.ListAttribute{
-				MarkdownDescription: def.description,
-				Optional:            true,
-				Sensitive:           def.sensitive,
-				ElementType:         types.StringType,
-			}
-		case esConnAttrKindMap:
-			attrs[name] = ephemeralschema.MapAttribute{
-				MarkdownDescription: def.description,
-				Optional:            true,
-				Sensitive:           def.sensitive,
-				ElementType:         types.StringType,
-			}
-		}
-	}
-	return attrs
-}
-
-// buildActionESConnectionAttributes converts the shared esConnAttrDef descriptors
-// into action-resource (action/schema) attribute types. Sensitive fields use
-// WriteOnly: true instead of Sensitive.
-func buildActionESConnectionAttributes() map[string]actionschema.Attribute {
-	defs := esConnectionAttrDefs()
-	attrs := make(map[string]actionschema.Attribute, len(defs))
-	for name, def := range defs {
-		switch def.kind {
-		case esConnAttrKindString:
-			attrs[name] = actionschema.StringAttribute{
-				MarkdownDescription: def.description,
-				Optional:            true,
-				WriteOnly:           def.writeOnly,
-				Validators:          def.validators,
-			}
-		case esConnAttrKindBool:
-			attrs[name] = actionschema.BoolAttribute{
-				MarkdownDescription: def.description,
-				Optional:            true,
-			}
-		case esConnAttrKindList:
-			attrs[name] = actionschema.ListAttribute{
-				MarkdownDescription: def.description,
-				Optional:            true,
-				ElementType:         types.StringType,
-			}
-		case esConnAttrKindMap:
-			attrs[name] = actionschema.MapAttribute{
-				MarkdownDescription: def.description,
-				Optional:            true,
-				WriteOnly:           def.writeOnly,
-				ElementType:         types.StringType,
-			}
-		}
-	}
-	return attrs
 }

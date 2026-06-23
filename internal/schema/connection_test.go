@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
@@ -76,18 +77,39 @@ func TestElasticsearchConnectionBlockObjectAttrTypes_returnsCopy(t *testing.T) {
 	require.NotEqual(t, first, second)
 }
 
-func TestElasticsearchConnectionFallbackAttrTypes_matchGetEsFWConnectionBlock(t *testing.T) {
+func TestConnectionBlockObjectAttrTypes_matchBuiltBlock(t *testing.T) {
 	t.Parallel()
 
-	block := GetEsFWConnectionBlock()
-	lb, ok := block.(fwschema.ListNestedBlock)
-	require.True(t, ok, "GetEsFWConnectionBlock must return a ListNestedBlock")
+	cases := []struct {
+		name  string
+		block fwschema.Block
+		got   map[string]attr.Type
+	}{
+		{
+			name:  "elasticsearch",
+			block: GetEsFWConnectionBlock(),
+			got:   elasticsearchConnectionBlockObjectAttrTypes(),
+		},
+		{
+			name:  "kibana",
+			block: GetKbFWConnectionBlock(),
+			got:   kibanaConnectionBlockObjectAttrTypes(),
+		},
+	}
 
-	want, err := fwNestedBlockAttributesToAttrTypes(lb.NestedObject.Attributes)
-	require.NoError(t, err)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	got := elasticsearchConnectionBlockObjectAttrTypesFallback()
-	require.Equal(t, want, got)
+			lb, ok := tc.block.(fwschema.ListNestedBlock)
+			require.True(t, ok, "block must return a ListNestedBlock")
+
+			want, err := fwNestedBlockAttributesToAttrTypes(lb.NestedObject.Attributes)
+			require.NoError(t, err)
+
+			require.Equal(t, want, tc.got)
+		})
+	}
 }
 
 func TestElasticsearchConnectionBlocks_includeCAFingerprintAttribute(t *testing.T) {
