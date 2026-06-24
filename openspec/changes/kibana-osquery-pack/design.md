@@ -33,7 +33,7 @@ Non-trivial implementation areas:
 **Non-Goals:**
 - `elasticstack_kibana_osquery_saved_query` resource/data source (separate change: `kibana-osquery-saved-query`).
 - Osquery live queries — ephemeral, not suitable for Terraform.
-- Plural list data source (`elasticstack_kibana_osquery_packs`) — deferred (list endpoint returns different `ecs_mapping`/`shards\` format than the detail endpoint).
+- Plural list data source (`elasticstack_kibana_osquery_packs`) — deferred (list endpoint returns different `ecs_mapping`/`shards` format than the detail endpoint).
 - Osquery response actions within security detection rules.
 
 ## Decisions

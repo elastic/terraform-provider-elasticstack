@@ -9,7 +9,7 @@
 
 ## 2. kibanaoapi client helper
 
-- [ ] 2.1 Create `internal/clients/kibanaoapi/osquery_pack.go` with thin wrappers `CreateOsqueryPack`, `GetOsqueryPack`, `UpdateOsqueryPack`, `DeleteOsqueryPack` — each passing `kibanautil.SpaceAwarePathRequestEditor(spaceID)` and using `HandleGetTypedResponse` / `HandleMutateTypedResponse` / `HandleStatusResponse` consistently with `osquery_saved_query.go`
+- [ ] 2.1 Create `internal/clients/kibanaoapi/osquery_pack.go` with thin wrappers `CreateOsqueryPack`, `GetOsqueryPack`, `UpdateOsqueryPack`, `DeleteOsqueryPack` — each passing `kibanautil.SpaceAwarePathRequestEditor(spaceID)` and using `HandleGetTypedResponse` / `HandleMutateTypedResponse` / `diagutil.HandleStatusResponse` consistently with existing kibanaoapi wrappers (e.g. `synthetics_private_location.go`)
 - [ ] 2.2 Map HTTP 404 on Get to a nil/sentinel result (resource removed from state); map HTTP 404 on Delete to a no-op success
 - [ ] 2.3 Map non-2xx responses to provider diagnostics consistently with other kibanaoapi helpers
 - [ ] 2.4 Normalize `shards` on read: convert `map[string]float32` from `GetPacksDetails` to `map[string]float64` (or `map[string]int64` pending task 1.6 resolution) for state
