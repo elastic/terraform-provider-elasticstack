@@ -330,6 +330,41 @@ func TestAccResourceILMColdPhase(t *testing.T) {
 	})
 }
 
+func TestAccResourceILMDeleteMinAge(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceILMDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_delete_min_age", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_delete_min_age", "delete.min_age", "7d"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_delete_min_age", "modified_date"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_delete_min_age", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_delete_min_age", "delete.min_age", "30d"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_delete_min_age", "modified_date"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceILMForcemerge(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
@@ -378,6 +413,21 @@ func TestAccResourceILMFrozenPhase(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_frozen", "frozen.min_age", "30d"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_frozen", "frozen.searchable_snapshot.snapshot_repository", repositoryName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_frozen", "frozen.searchable_snapshot.force_merge_index", "false"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_frozen", "modified_date"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name":     config.StringVariable(policyName),
+					"repository_name": config.StringVariable(repositoryName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_frozen", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_frozen", "frozen.min_age", "30d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_frozen", "frozen.searchable_snapshot.snapshot_repository", repositoryName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_frozen", "frozen.searchable_snapshot.force_merge_index", "true"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_frozen", "modified_date"),
 				),
 			},
@@ -520,7 +570,7 @@ func TestAccResourceILMSearchableSnapshotPhases(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_searchable_snapshot", "name", policyName),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_searchable_snapshot", "hot.searchable_snapshot.snapshot_repository"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_searchable_snapshot", "cold.searchable_snapshot.snapshot_repository", repositoryName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_searchable_snapshot", "cold.searchable_snapshot.force_merge_index", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_searchable_snapshot", "cold.searchable_snapshot.force_merge_index", "false"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_searchable_snapshot", "modified_date"),
 				),
 			},
@@ -618,6 +668,7 @@ func TestAccResourceILMWarmDownsampleAndShrink(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "warm.allocate.include"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "warm.allocate.require"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "warm.downsample.fixed_interval", "2d"),
+					checkILMDownsampleDefaultWaitTimeout("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "warm.downsample.wait_timeout"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "warm.shrink.number_of_shards"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "warm.shrink.max_primary_shard_size", "50gb"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_warm_actions", "warm.shrink.allow_write_after_shrink", "false"),
@@ -669,6 +720,7 @@ func TestAccResourceILMColdAllocateAndDownsample(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "cold.allocate.exclude"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "cold.allocate.require"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "cold.downsample.fixed_interval", "2d"),
+					checkILMDownsampleDefaultWaitTimeout("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "cold.downsample.wait_timeout"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_cold_actions", "modified_date"),
 				),
 			},
@@ -913,7 +965,7 @@ func checkILMDownsampleDefaultWaitTimeout(resourceName, attribute string) resour
 			return err
 		}
 		if versionLacksDefaultExposure {
-			return nil
+			return resource.TestCheckNoResourceAttr(resourceName, attribute)(s)
 		}
 
 		return resource.TestCheckResourceAttr(resourceName, attribute, "1d")(s)
@@ -964,6 +1016,7 @@ func TestAccResourceILM_deleteWithReferencedIndex(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "force_destroy", "true"),
 				),
 			},
 			// Step 3: Destroy the ILM policy (force_destroy clears references first).
