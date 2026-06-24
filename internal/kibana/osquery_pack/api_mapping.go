@@ -82,7 +82,7 @@ func (m osqueryPackModel) toWriteRequestBody(ctx context.Context) (kbapi.Securit
 }
 
 func policyIDsToAPI(ctx context.Context, list types.List) (*kbapi.SecurityOsqueryAPIPolicyIds, diag.Diagnostics) {
-	if !typeutils.IsKnown(list) || list.IsNull() {
+	if list.IsUnknown() || list.IsNull() {
 		return nil, nil
 	}
 
@@ -91,25 +91,19 @@ func policyIDsToAPI(ctx context.Context, list types.List) (*kbapi.SecurityOsquer
 	if diags.HasError() {
 		return nil, diags
 	}
-	if len(ids) == 0 {
-		return nil, nil
-	}
 
 	result := kbapi.SecurityOsqueryAPIPolicyIds(ids)
 	return &result, diags
 }
 
 func shardsMapToAPI(shards types.Map) (*kbapi.SecurityOsqueryAPIShards, diag.Diagnostics) {
-	if !typeutils.IsKnown(shards) || shards.IsNull() {
+	if shards.IsUnknown() || shards.IsNull() {
 		return nil, nil
 	}
 
 	result := make(kbapi.SecurityOsqueryAPIShards, len(shards.Elements()))
 	for policyID, av := range shards.Elements() {
 		result[policyID] = float32(av.(types.Float64).ValueFloat64())
-	}
-	if len(result) == 0 {
-		return nil, nil
 	}
 
 	return &result, nil

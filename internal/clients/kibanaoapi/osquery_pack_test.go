@@ -231,3 +231,32 @@ func TestUpdateOsqueryPackNilDataDiagnostic(t *testing.T) {
 	assert.Equal(t, "Failed to parse response", diags[0].Summary())
 	assert.Contains(t, diags[0].Detail(), "update response data was nil")
 }
+
+func TestGetOsqueryPack404(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, "/api/osquery/packs/missing-pack", r.URL.Path)
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(srv.Close)
+
+	client := newTestClient(t, srv)
+	result, diags := GetOsqueryPack(context.Background(), client, "default", "missing-pack")
+
+	assert.False(t, diags.HasError(), diags)
+	assert.Nil(t, result)
+}
+
+func TestDeleteOsqueryPack404(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodDelete, r.Method)
+		assert.Equal(t, "/api/osquery/packs/missing-pack", r.URL.Path)
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(srv.Close)
+
+	client := newTestClient(t, srv)
+	diags := DeleteOsqueryPack(context.Background(), client, "default", "missing-pack")
+
+	assert.False(t, diags.HasError(), diags)
+}
