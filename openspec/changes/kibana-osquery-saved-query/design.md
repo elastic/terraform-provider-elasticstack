@@ -39,13 +39,13 @@ Implement the resource as an `entitycore.KibanaResource[osquerySavedQueryModel]`
 
 **Why:** The pattern is standard for all new Kibana resources in this provider. Maintenance Window is the closest existing analogue (medium-complexity, Plugin Framework, kibanaoapi helper). Considered: standalone `resource.Resource` without entitycore — rejected for inconsistency and unnecessary boilerplate.
 
-### Decision 2: Identity — `saved_query_id` Optional+Computed, RequiresReplace
+### Decision 2: Identity — `saved_query_id` Required, RequiresReplace
 
-`saved_query_id` is Optional+Computed with `RequiresReplace`. When omitted, the resource falls back to the server-generated ID (expected to be a UUID). `id` in state is Computed and mirrors `saved_query_id`. Import uses `saved_query_id` as the lookup key.
+`saved_query_id` is **Required** with `RequiresReplace`. Kibana does **not** generate an ID when `id` is omitted on create: the route handler passes `request.body.id` straight into saved-object attributes (`create_saved_query_route.ts`), the OpenAPI request schema marks `id` optional but provides no server-side default, and the Kibana UI requires a user-entered ID via `QueryIdField`. `id` in state is Computed and mirrors `saved_query_id`. Import uses `saved_query_id` as the lookup key.
 
-**Why:** Matches the majority of Kibana resources where the user may provide a meaningful ID (e.g., `list_all_processes`) or defer to Kibana. RequiresReplace prevents a silent rename, which would orphan the old query.
+**Why:** RequiresReplace prevents a silent rename, which would orphan the old query. Optional+Computed was rejected after discovery (task 1.3): no UUID auto-generation in server or UI.
 
-**Open verification item**: Confirm during implementation that Kibana generates a UUID when `saved_query_id` is omitted on create; escalate to Required if it doesn't (unlikely but undocumented).
+**Discovery evidence (task 1.3):** Kibana `x-pack/platform/plugins/shared/osquery/server/routes/saved_query/create_saved_query_route.ts`; `create_saved_query.gen.ts` (`id: SavedQueryId.optional()` with no default); `use_saved_query_form.tsx` (form default `id: ''`, user must supply). Live Kibana CRUD was not exercised (stack unavailable).
 
 ### Decision 3: Space support via `SpaceAwarePathRequestEditor`
 
@@ -71,7 +71,7 @@ A `ConfigValidator` enforces that exactly one of `field`, `value`, or `values` i
 
 Partial ECS mapping precedent exists at `internal/kibana/security_detection_rule/models_to_api_type_utils.go:827` (`buildEcsMappingFromModel`) but covers only the `field` case. This resource must handle all three.
 
-**Open verification item**: Confirm during implementation that `plugin-framework-validators` exactly-one-of works inside `MapNestedAttribute` values for the three-way constraint.
+**Discovery (task 1.4):** `resourcevalidator.ExactlyOneOf` is resource-level only (see `internal/kibana/slo/resource.go`, `streams/resource.go`). `objectvalidator.ExactlyOneOf` is unsuitable on nested objects — it counts the parent object in path resolution (see archived change `2026-05-11-expose-lens-chart-presentation-fields`). **Plan:** attach `internal/utils/validators.ExactlyOneOfNestedAttrsValidator` to `ecs_mapping` `MapNestedAttribute.NestedObject.Validators` (same pattern as `internal/kibana/dashboard/panelkit/schema.go` list-item validators and `internal/fleet/agentpolicy/schema.go` two-way map-value constraints). Do not use `plugin-framework-validators` exactly-one-of inside map values.
 
 ### Decision 7: `interval` — `Int64Attribute`
 
@@ -113,9 +113,11 @@ The Create response wraps the entity in a `data` field. The `populateFromAPI` fu
 
 The data source accepts `saved_query_id` (Required), `space_id` (Optional, default `"default"`), and `kibana_connection` (Optional). It calls GET by ID and populates all managed fields. Unlike the resource, it does NOT error on `prebuilt == true` — the data source is the intentional path for referencing prebuilt queries.
 
-### Decision 16: Minimum version — `8.5.0` (verify during implementation)
+### Decision 16: Minimum version — `8.5.0` (confirmed in discovery)
 
-The resource declares `8.5.0` as the minimum Kibana version via `GetVersionRequirements`. This must be verified against actual Kibana CHANGELOG / API availability during implementation; it may need to be raised.
+The resource declares `8.5.0` as the minimum Kibana version via `GetVersionRequirements` (implemented in task 3.2).
+
+**Discovery evidence (task 1.2):** Osquery saved-queries CRUD is documented under Kibana v8 API reference (`POST/GET/PUT/DELETE /api/osquery/saved_queries`); Kibana PR [#137162](https://github.com/elastic/kibana/pull/137162) (Osquery API docs) is labeled `v8.5.0`; the Osquery plugin public API version is `2023-10-31` (`API_VERSIONS.public.v1` in Kibana `common/constants.ts`); all four CRUD bindings are present in `generated/kbapi/kibana.gen.go`. Live version-gate testing deferred to acceptance tests (task 7.9); Kibana stack was unavailable locally.
 
 ### Decision 17: Naming
 
@@ -125,14 +127,27 @@ Resource and data source: `elasticstack_kibana_osquery_saved_query`. Go package:
 
 | Risk | Mitigation |
 |---|---|
-| **`saved_query_id` omitted on create — does Kibana generate a UUID?** | Verification task in tasks.md; escalate to Required if not. |
-| **`8.5.0` version floor is too low** | Verification task in tasks.md; the acceptance test exercises real CRUD and will fail if the floor is wrong. |
-| **`ecs_mapping` exactly-one-of validator inside `MapNestedAttribute`** | Verification task in tasks.md; test confirms validator fires on invalid and accepts all three valid forms. |
+| **`saved_query_id` omitted on create — does Kibana generate a UUID?** | Resolved (task 1.3): no — `saved_query_id` is Required. |
+| **`8.5.0` version floor is too low** | Confirmed at 8.5.0 from docs/Kibana source (task 1.2); acceptance tests (task 7.9) validate against a live stack. |
+| **`ecs_mapping` exactly-one-of validator inside `MapNestedAttribute`** | Resolved (task 1.4): use `ExactlyOneOfNestedAttrsValidator` on `NestedObject.Validators`; task 7.6 validates behavior. |
 | **`interval`/`version` union-type edge cases** | Both union arms (`AsXxx0`/`AsXxx1`) are exercised in unit tests; round-trip acceptance test confirms no data loss. |
 | **Prebuilt queries silently imported** | Runtime guard on Read (and post-Create) returns an explicit error diagnostic before touching state. |
 
 ## Open Questions
 
-1. **Exact minimum Kibana version**: Confirm the CRUD endpoints exist at `8.5.0`; raise if testing fails.
-2. **Server-generated ID on create**: Confirm Kibana generates a UUID when `saved_query_id` is omitted; escalate to Required if it doesn't.
-3. **`plugin-framework-validators` exactly-one-of inside `MapNestedAttribute`**: Confirm this works; if not, implement an inline `ValidateObject` function on the nested attribute.
+<!-- All task-1 discovery items resolved; see Decisions 2, 6, and 16. -->
+
+## Discovery notes (task group 1)
+
+### 1.1 kbapi CRUD bindings verified
+
+All four methods exist in `generated/kbapi/kibana.gen.go` with signatures matching this design:
+
+| Method | Request body | Response `JSON200` type | `data` wrapper |
+|---|---|---|---|
+| `OsqueryCreateSavedQuery` | `SecurityOsqueryAPICreateSavedQueryRequestBody` (`Id *SecurityOsqueryAPISavedQueryId`, optional) | `SecurityOsqueryAPICreateSavedQueryResponse` | yes — unwrap `.Data` |
+| `OsqueryGetSavedQueryDetails` | path `id` only | `SecurityOsqueryAPIFindSavedQueryDetailResponse` | yes — unwrap `.Data` |
+| `OsqueryUpdateSavedQuery` | `SecurityOsqueryAPIUpdateSavedQueryRequestBody` | `SecurityOsqueryAPIUpdateSavedQueryResponse` | yes — unwrap `.Data` |
+| `OsqueryDeleteSavedQuery` | path `id` only | `SecurityOsqueryAPIDefaultSuccessResponse` (empty map) | n/a |
+
+Create request uses JSON field `id` (maps to Terraform `saved_query_id`). ECS mapping item type is `SecurityOsqueryAPIECSMappingItem` with `{Field *string, Value *SecurityOsqueryAPIECSMappingItem_Value}` union (`AsSecurityOsqueryAPIECSMappingItemValue0/1` for string|[]string).

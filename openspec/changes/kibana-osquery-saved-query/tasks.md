@@ -1,9 +1,9 @@
 ## 1. Prep and discovery
 
-- [ ] 1.1 Verify that `OsqueryCreateSavedQuery`, `OsqueryGetSavedQueryDetails`, `OsqueryUpdateSavedQuery`, `OsqueryDeleteSavedQuery` are present in `generated/kbapi/kibana.gen.go` and confirm their request/response type signatures match the design (in particular: `SecurityOsqueryAPICreateSavedQueryRequestBody` and the `data`-wrapped create response)
-- [ ] 1.2 Confirm the minimum Kibana version that ships `/api/osquery/saved_queries` CRUD; record the confirmed version in design.md and update `GetVersionRequirements` accordingly (current assumption: `8.5.0`)
-- [ ] 1.3 Confirm that Kibana generates a UUID for `saved_query_id` when it is omitted on Create; if it does not, escalate `saved_query_id` to Required and update design.md Decision 2
-- [ ] 1.4 Confirm `plugin-framework-validators` exactly-one-of works inside `MapNestedAttribute` values for the three-way `field`/`value`/`values` constraint; if not, plan an inline `ValidateObject` implementation
+- [x] 1.1 Verify that `OsqueryCreateSavedQuery`, `OsqueryGetSavedQueryDetails`, `OsqueryUpdateSavedQuery`, `OsqueryDeleteSavedQuery` are present in `generated/kbapi/kibana.gen.go` and confirm their request/response type signatures match the design (in particular: `SecurityOsqueryAPICreateSavedQueryRequestBody` and the `data`-wrapped create response)
+- [x] 1.2 Confirm the minimum Kibana version that ships `/api/osquery/saved_queries` CRUD; record the confirmed version in design.md and update `GetVersionRequirements` accordingly (current assumption: `8.5.0`)
+- [x] 1.3 Confirm that Kibana generates a UUID for `saved_query_id` when it is omitted on Create; if it does not, escalate `saved_query_id` to Required and update design.md Decision 2
+- [x] 1.4 Confirm `plugin-framework-validators` exactly-one-of works inside `MapNestedAttribute` values for the three-way `field`/`value`/`values` constraint; if not, plan an inline `ValidateObject` implementation
 
 ## 2. kibanaoapi client helper
 

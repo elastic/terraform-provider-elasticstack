@@ -2,17 +2,16 @@
 
 ### Requirement: Resource identity and composite ID
 
-The `elasticstack_kibana_osquery_saved_query` resource SHALL set its `id` to `saved_query_id` after every Create and Update. `saved_query_id` SHALL be Optional + Computed with `RequiresReplace`: when omitted from config, the API-assigned ID SHALL be populated into state; when supplied, the API SHALL be called with that ID. `space_id` SHALL be Optional + Computed, defaulting to `"default"`, and SHALL force replacement on change.
+The `elasticstack_kibana_osquery_saved_query` resource SHALL set its `id` to `saved_query_id` after every Create and Update. `saved_query_id` SHALL be **Required** with `RequiresReplace`: the API does not assign an ID when `id` is omitted on create (see design Decision 2). `space_id` SHALL be Optional + Computed, defaulting to `"default"`, and SHALL force replacement on change.
 
 #### Scenario: Create with explicit saved_query_id
 - **WHEN** `saved_query_id = "list_all_processes"` is set and the resource is created
 - **THEN** the API SHALL be called with `id: "list_all_processes"`
 - **AND** `id` in state SHALL equal `"list_all_processes"`
 
-#### Scenario: Create with server-generated saved_query_id
-- **WHEN** `saved_query_id` is not set in config and the resource is created
-- **THEN** `saved_query_id` SHALL be populated from the API-assigned ID
-- **AND** `id` SHALL equal that API-assigned ID
+#### Scenario: saved_query_id is required
+- **WHEN** `saved_query_id` is not set in config
+- **THEN** Terraform SHALL report a configuration validation error at plan time
 
 #### Scenario: saved_query_id change forces replacement
 - **WHEN** `saved_query_id` is changed in config
@@ -27,7 +26,7 @@ The `elasticstack_kibana_osquery_saved_query` resource SHALL set its `id` to `sa
 The resource SHALL expose the following attributes:
 
 - `id` — Computed string; mirrors `saved_query_id`
-- `saved_query_id` — Optional + Computed string with RequiresReplace
+- `saved_query_id` — Required string with RequiresReplace
 - `space_id` — Optional + Computed string, default `"default"`, RequiresReplace
 - `kibana_connection` — Optional block (provided by entitycore envelope)
 - `query` — Required string; the SQL query text
