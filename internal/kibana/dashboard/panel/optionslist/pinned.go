@@ -43,7 +43,11 @@ func (pinnedHandler) FromAPI(ctx context.Context, prior *models.PinnedPanelModel
 
 	ppm, populateTf := models.SeedPinnedPanelForRead(prior, panelType)
 	pm := ppm.SyntheticPanel()
-	PopulateFromAPI(&pm, populateTf, &olPanel)
+	populateDiags := PopulateFromAPI(&pm, populateTf, &olPanel)
+	diags.Append(populateDiags...)
+	if diags.HasError() {
+		return models.PinnedPanelModel{}, diags
+	}
 	models.ApplyPinnedSiblingControlConfig(&ppm, panelType, &pm)
 	_ = ctx
 	return ppm, diags

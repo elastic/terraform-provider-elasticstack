@@ -63,9 +63,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 	if configBytes, err := json.Marshal(olPanel.Config); err == nil {
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), panelkit.PanelJSONDefaultsFunc())
 	}
-	PopulateFromAPI(pm, prior, &olPanel)
-	_ = ctx
-	return nil
+	return PopulateFromAPI(pm, prior, &olPanel)
 }
 
 func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {

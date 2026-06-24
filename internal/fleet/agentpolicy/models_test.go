@@ -384,7 +384,7 @@ func TestPopulateFromAPI_SpaceIDs_Null_vs_EmptyList(t *testing.T) {
 			if tc.apiValue != nil {
 				apiSpaceIDs = &tc.apiValue
 			}
-			data := &kbapi.AgentPolicy{
+			data := &kbapi.KibanaHTTPAPIsAgentPolicyResponse{
 				Id:       "policy-id",
 				SpaceIds: apiSpaceIDs,
 			}

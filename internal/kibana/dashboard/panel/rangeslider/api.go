@@ -59,8 +59,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 	pm.Grid = panelkit.GridFromAPI(rsPanel.Grid.X, rsPanel.Grid.Y, rsPanel.Grid.W, rsPanel.Grid.H)
 	pm.ID = panelkit.IDFromAPI(rsPanel.Id)
 	pm.ConfigJSON = panelkit.PanelConfigJSONNull()
-	PopulateFromAPI(ctx, pm, prior, &rsPanel)
-	return nil
+	return PopulateFromAPI(ctx, pm, prior, &rsPanel)
 }
 
 func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {

@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -34,11 +35,23 @@ import (
 //
 // tfPanel is the prior TF state/plan panel, or nil on import. When nil, the function
 // populates all API-returned fields unconditionally (no prior intent to preserve).
-func PopulateFromAPI(ctx context.Context, pm *models.PanelModel, tfPanel *models.PanelModel, rs *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) {
+func PopulateFromAPI(ctx context.Context, pm *models.PanelModel, tfPanel *models.PanelModel, rs *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) diag.Diagnostics {
 	if rs == nil {
-		return
+		return nil
 	}
-	apiConfig := &rs.Config
+	// The control config is a discriminated union (field-based vs ES|QL).
+	// The TF model only describes the field-based variant; a valid ES|QL config
+	// is left unchanged. If the config matches neither variant it is malformed
+	// and surfaced as an error.
+	apiConfig, err := rs.Config.AsKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField()
+	if err != nil {
+		if _, esqlErr := rs.Config.AsKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsql(); esqlErr != nil {
+			var diags diag.Diagnostics
+			diags.AddError("Failed to decode range slider control config", err.Error())
+			return diags
+		}
+		return nil
+	}
 	existing := pm.RangeSliderControlConfig
 
 	// On import (tfPanel == nil) there is no prior intent. Populate from API unconditionally.
@@ -64,12 +77,12 @@ func PopulateFromAPI(ctx context.Context, pm *models.PanelModel, tfPanel *models
 		if apiConfig.Step != nil {
 			existing.Step = types.Float32Value(*apiConfig.Step)
 		}
-		return
+		return nil
 	}
 
 	if existing == nil {
 		if tfPanel == nil || tfPanel.RangeSliderControlConfig == nil {
-			return
+			return nil
 		}
 		pm.RangeSliderControlConfig = &models.RangeSliderControlConfigModel{
 			DataViewID: types.StringValue(apiConfig.DataViewId),
@@ -118,6 +131,7 @@ func PopulateFromAPI(ctx context.Context, pm *models.PanelModel, tfPanel *models
 	if tfPanel != nil && tfPanel.RangeSliderControlConfig != nil {
 		rangeSliderPreserveNullIntentFromPrior(tfPanel.RangeSliderControlConfig, existing)
 	}
+	return nil
 }
 
 func rangeSliderPreserveNullIntentFromPrior(prior, existing *models.RangeSliderControlConfigModel) {
@@ -147,17 +161,18 @@ func BuildConfig(pm models.PanelModel, rsPanel *kbapi.KibanaHTTPAPIsKbnDashboard
 	if cfg == nil {
 		return
 	}
-	rsPanel.Config.DataViewId = cfg.DataViewID.ValueString()
-	rsPanel.Config.FieldName = cfg.FieldName.ValueString()
+	var c kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField
+	c.DataViewId = cfg.DataViewID.ValueString()
+	c.FieldName = cfg.FieldName.ValueString()
 
 	if typeutils.IsKnown(cfg.Title) {
-		rsPanel.Config.Title = cfg.Title.ValueStringPointer()
+		c.Title = cfg.Title.ValueStringPointer()
 	}
 	if typeutils.IsKnown(cfg.UseGlobalFilters) {
-		rsPanel.Config.UseGlobalFilters = cfg.UseGlobalFilters.ValueBoolPointer()
+		c.UseGlobalFilters = cfg.UseGlobalFilters.ValueBoolPointer()
 	}
 	if typeutils.IsKnown(cfg.IgnoreValidations) {
-		rsPanel.Config.IgnoreValidations = cfg.IgnoreValidations.ValueBoolPointer()
+		c.IgnoreValidations = cfg.IgnoreValidations.ValueBoolPointer()
 	}
 	if typeutils.IsKnown(cfg.Value) {
 		raw := cfg.Value.Elements()
@@ -165,10 +180,11 @@ func BuildConfig(pm models.PanelModel, rsPanel *kbapi.KibanaHTTPAPIsKbnDashboard
 		for i, e := range raw {
 			elems[i] = e.(types.String).ValueString()
 		}
-		rsPanel.Config.Value = &elems
+		c.Value = &elems
 	}
 	if typeutils.IsKnown(cfg.Step) {
 		v := cfg.Step.ValueFloat32()
-		rsPanel.Config.Step = &v
+		c.Step = &v
 	}
+	rsPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField(c)
 }

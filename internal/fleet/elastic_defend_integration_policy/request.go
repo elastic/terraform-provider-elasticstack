@@ -19,8 +19,6 @@ package elasticdefendintegrationpolicy
 
 import (
 	"context"
-	"encoding/json"
-
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -28,33 +26,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-// typedInputConfig converts a raw config map into the typed
-// PackagePolicyRequestTypedInput.Config shape. The generated field is an
-// anonymous struct (`map[string]struct{Frozen, Type, Value}`) because the
-// upstream spec boxes each config entry in a `{value, type, frozen}` wrapper;
-// callers in this package already supply entries in that shape, so this helper
-// just JSON round-trips into the typed map.
-func typedInputConfig(raw map[string]any) *map[string]struct {
+// configEntry mirrors kbapi.PackagePolicyRequestTypedInput.Config entries.
+// The generated Config field is an anonymous struct (map[string]struct{Frozen, Type, Value})
+// because the upstream spec boxes each config entry in a {value, type, frozen} wrapper;
+// this alias lets consuming code build the typed map directly without a JSON round-trip.
+type configEntry = struct {
 	Frozen *bool   `json:"frozen,omitempty"`
 	Type   *string `json:"type,omitempty"`
 	Value  any     `json:"value,omitempty"`
-} {
-	if len(raw) == 0 {
-		return nil
-	}
-	bytes, err := json.Marshal(raw)
-	if err != nil {
-		return nil
-	}
-	var out map[string]struct {
-		Frozen *bool   `json:"frozen,omitempty"`
-		Type   *string `json:"type,omitempty"`
-		Value  any     `json:"value,omitempty"`
-	}
-	if err := json.Unmarshal(bytes, &out); err != nil {
-		return nil
-	}
-	return &out
 }
 
 const (
@@ -93,16 +72,14 @@ func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationP
 	}
 
 	// Build bootstrap input config: _config.value.endpointConfig.preset
-	inputConfig := map[string]any{}
+	config := map[string]configEntry{}
 	if !model.Preset.IsNull() && !model.Preset.IsUnknown() && model.Preset.ValueString() != "" {
-		inputConfig["_config"] = map[string]any{
-			attrValue: map[string]any{
-				"type": endpointPackageName,
-				"endpointConfig": map[string]any{
-					attrPreset: model.Preset.ValueString(),
-				},
+		config["_config"] = configEntry{Value: map[string]any{
+			"type": endpointPackageName,
+			"endpointConfig": map[string]any{
+				attrPreset: model.Preset.ValueString(),
 			},
-		}
+		}}
 	}
 
 	streams := []kbapi.PackagePolicyRequestTypedInputStream{}
@@ -111,8 +88,8 @@ func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationP
 		Enabled: true,
 		Streams: &streams,
 	}
-	if cfg := typedInputConfig(inputConfig); cfg != nil {
-		input.Config = cfg
+	if len(config) > 0 {
+		input.Config = &config
 	}
 	req.Inputs = &[]kbapi.PackagePolicyRequestTypedInput{input}
 
@@ -156,7 +133,7 @@ func buildFinalizeRequest(ctx context.Context, model *elasticDefendIntegrationPo
 	}
 
 	// Build the finalize input config
-	inputConfig, d := buildFinalizeInputConfig(ctx, model, ps)
+	config, d := buildFinalizeInputConfig(ctx, model, ps)
 	diags.Append(d...)
 	if diags.HasError() {
 		return req, diags
@@ -168,20 +145,21 @@ func buildFinalizeRequest(ctx context.Context, model *elasticDefendIntegrationPo
 		Enabled: true,
 		Streams: &streams,
 	}
-	if cfg := typedInputConfig(inputConfig); cfg != nil {
-		input.Config = cfg
+	if len(config) > 0 {
+		input.Config = &config
 	}
 	req.Inputs = &[]kbapi.PackagePolicyRequestTypedInput{input}
 
 	return req, diags
 }
 
-// buildFinalizeInputConfig builds the config map for the finalize/update input.
-// It includes integration_config (with preset), artifact_manifest (from private
-// state), and the typed policy payload.
-func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrationPolicyModel, ps defendPrivateState) (map[string]any, diag.Diagnostics) {
+// buildFinalizeInputConfig builds the typed config map for the finalize/update
+// input. It includes integration_config (with preset), artifact_manifest (from
+// private state), and the typed policy payload. Each entry wraps its payload in
+// the {value, type, frozen} config-entry envelope the Defend API expects.
+func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrationPolicyModel, ps defendPrivateState) (map[string]configEntry, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	config := map[string]any{}
+	config := map[string]configEntry{}
 
 	// integration_config with preset — only include when preset is set
 	preset := ""
@@ -189,32 +167,26 @@ func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrati
 		preset = model.Preset.ValueString()
 	}
 	if preset != "" {
-		config["integration_config"] = map[string]any{
-			attrValue: map[string]any{
-				"endpointConfig": map[string]any{
-					attrPreset: preset,
-				},
+		config["integration_config"] = configEntry{Value: map[string]any{
+			"endpointConfig": map[string]any{
+				attrPreset: preset,
 			},
-		}
+		}}
 	}
 
 	// Kibana requires callers to echo back the opaque artifact_manifest on
 	// update/finalize requests. Persist it in private state and round-trip it.
 	if ps.ArtifactManifest != nil {
-		config["artifact_manifest"] = map[string]any{
-			attrValue: ps.ArtifactManifest,
-		}
+		config["artifact_manifest"] = configEntry{Value: ps.ArtifactManifest}
 	}
 
 	// Build the typed policy payload from the Terraform model.
-	// The Fleet API expects the policy wrapped in a {"value": {...}} envelope,
+	// The Fleet API expects the policy wrapped in a {value: {...}} envelope,
 	// consistent with how other config keys like "integration_config" are structured.
 	policyData, d := buildPolicyPayload(ctx, model)
 	diags.Append(d...)
 	if policyData != nil {
-		config["policy"] = map[string]any{
-			attrValue: policyData,
-		}
+		config["policy"] = configEntry{Value: policyData}
 	}
 
 	return config, diags

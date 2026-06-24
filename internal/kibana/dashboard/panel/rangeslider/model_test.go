@@ -28,33 +28,41 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func apiRangeSliderConfig(opts ...func(*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl)) *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl {
-	p := &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{}
-	p.Config.DataViewId = "dv-1"
-	p.Config.FieldName = "bytes"
+type rsFieldCfg = kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField
+
+func apiRangeSliderConfig(opts ...func(*rsFieldCfg)) *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl {
+	c := rsFieldCfg{DataViewId: "dv-1", FieldName: "bytes"}
 	for _, o := range opts {
-		o(p)
+		o(&c)
 	}
+	p := &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{}
+	_ = p.Config.FromKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField(c)
 	return p
 }
 
-func rsWithTitle(t string) func(*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) {
-	return func(p *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) { p.Config.Title = &t }
+func rsConfigField(t *testing.T, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) rsFieldCfg {
+	c, err := p.Config.AsKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField()
+	require.NoError(t, err)
+	return c
 }
-func withUseGlobalFilters(b bool) func(*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) {
-	return func(p *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) { p.Config.UseGlobalFilters = &b }
+
+func rsWithTitle(t string) func(*rsFieldCfg) {
+	return func(c *rsFieldCfg) { c.Title = &t }
 }
-func withIgnoreValidations(b bool) func(*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) {
-	return func(p *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) { p.Config.IgnoreValidations = &b }
+func withUseGlobalFilters(b bool) func(*rsFieldCfg) {
+	return func(c *rsFieldCfg) { c.UseGlobalFilters = &b }
 }
-func withValue(lo, hi string) func(*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) {
-	return func(p *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) {
+func withIgnoreValidations(b bool) func(*rsFieldCfg) {
+	return func(c *rsFieldCfg) { c.IgnoreValidations = &b }
+}
+func withValue(lo, hi string) func(*rsFieldCfg) {
+	return func(c *rsFieldCfg) {
 		v := []string{lo, hi}
-		p.Config.Value = &v
+		c.Value = &v
 	}
 }
-func withStep(s float32) func(*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) {
-	return func(p *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) { p.Config.Step = &s }
+func withStep(s float32) func(*rsFieldCfg) {
+	return func(c *rsFieldCfg) { c.Step = &s }
 }
 
 func mustStringList(elems ...string) types.List {
@@ -186,18 +194,19 @@ func Test_BuildConfig_knownFields(t *testing.T) {
 	}
 	rsPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{}
 	BuildConfig(pm, &rsPanel)
-	assert.Equal(t, "dv-1", rsPanel.Config.DataViewId)
-	assert.Equal(t, "bytes", rsPanel.Config.FieldName)
-	require.NotNil(t, rsPanel.Config.Title)
-	assert.Equal(t, "My Slider", *rsPanel.Config.Title)
-	require.NotNil(t, rsPanel.Config.UseGlobalFilters)
-	assert.True(t, *rsPanel.Config.UseGlobalFilters)
-	require.NotNil(t, rsPanel.Config.IgnoreValidations)
-	assert.False(t, *rsPanel.Config.IgnoreValidations)
-	require.NotNil(t, rsPanel.Config.Value)
-	assert.Equal(t, []string{"10", "100"}, *rsPanel.Config.Value)
-	require.NotNil(t, rsPanel.Config.Step)
-	assert.InEpsilon(t, float32(5), *rsPanel.Config.Step, 1e-6)
+	cfg := rsConfigField(t, rsPanel)
+	assert.Equal(t, "dv-1", cfg.DataViewId)
+	assert.Equal(t, "bytes", cfg.FieldName)
+	require.NotNil(t, cfg.Title)
+	assert.Equal(t, "My Slider", *cfg.Title)
+	require.NotNil(t, cfg.UseGlobalFilters)
+	assert.True(t, *cfg.UseGlobalFilters)
+	require.NotNil(t, cfg.IgnoreValidations)
+	assert.False(t, *cfg.IgnoreValidations)
+	require.NotNil(t, cfg.Value)
+	assert.Equal(t, []string{"10", "100"}, *cfg.Value)
+	require.NotNil(t, cfg.Step)
+	assert.InEpsilon(t, float32(5), *cfg.Step, 1e-6)
 }
 
 // Test: BuildConfig omits null optional fields.
@@ -215,13 +224,14 @@ func Test_BuildConfig_nullOptionalFields(t *testing.T) {
 	}
 	rsPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{}
 	BuildConfig(pm, &rsPanel)
-	assert.Equal(t, "dv-1", rsPanel.Config.DataViewId)
-	assert.Equal(t, "bytes", rsPanel.Config.FieldName)
-	assert.Nil(t, rsPanel.Config.Title)
-	assert.Nil(t, rsPanel.Config.UseGlobalFilters)
-	assert.Nil(t, rsPanel.Config.IgnoreValidations)
-	assert.Nil(t, rsPanel.Config.Value)
-	assert.Nil(t, rsPanel.Config.Step)
+	cfg := rsConfigField(t, rsPanel)
+	assert.Equal(t, "dv-1", cfg.DataViewId)
+	assert.Equal(t, "bytes", cfg.FieldName)
+	assert.Nil(t, cfg.Title)
+	assert.Nil(t, cfg.UseGlobalFilters)
+	assert.Nil(t, cfg.IgnoreValidations)
+	assert.Nil(t, cfg.Value)
+	assert.Nil(t, cfg.Step)
 }
 
 // Test: round-trip — write then read back yields the same values.
@@ -274,8 +284,9 @@ func Test_rangeSliderControl_value_exactlyTwoElements(t *testing.T) {
 	}
 	rsPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{}
 	BuildConfig(pm, &rsPanel)
-	require.NotNil(t, rsPanel.Config.Value)
-	assert.Len(t, *rsPanel.Config.Value, 2)
-	assert.Equal(t, "0", (*rsPanel.Config.Value)[0])
-	assert.Equal(t, "1000", (*rsPanel.Config.Value)[1])
+	cfg := rsConfigField(t, rsPanel)
+	require.NotNil(t, cfg.Value)
+	assert.Len(t, *cfg.Value, 2)
+	assert.Equal(t, "0", (*cfg.Value)[0])
+	assert.Equal(t, "1000", (*cfg.Value)[1])
 }
