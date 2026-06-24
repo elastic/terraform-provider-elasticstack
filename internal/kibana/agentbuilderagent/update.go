@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func updateAgent(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[agentModel]) (entitycore.KibanaWriteResult[agentModel], diag.Diagnostics) {
@@ -50,6 +51,10 @@ func updateAgent(ctx context.Context, client *clients.KibanaScopedClient, req en
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[agentModel]{}, diags
 	}
+
+	// SpaceID is set explicitly so the returned model carries the resolved
+	// space for the envelope's read-after-write step.
+	plan.SpaceID = types.StringValue(req.SpaceID)
 
 	return entitycore.KibanaWriteResult[agentModel]{Model: plan}, diags
 }

@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func updateSkill(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[skillModel]) (entitycore.KibanaWriteResult[skillModel], diag.Diagnostics) {
@@ -43,6 +44,10 @@ func updateSkill(ctx context.Context, client *clients.KibanaScopedClient, req en
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[skillModel]{}, diags
 	}
+
+	// SpaceID is set explicitly so the returned model carries the resolved
+	// space for the envelope's read-after-write step.
+	plan.SpaceID = types.StringValue(req.SpaceID)
 
 	return entitycore.KibanaWriteResult[skillModel]{Model: plan}, diags
 }
