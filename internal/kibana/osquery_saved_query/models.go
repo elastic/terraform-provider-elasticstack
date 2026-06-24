@@ -165,10 +165,7 @@ func (m *osquerySavedQueryModel) populateSharedFields(
 }
 
 func (m *osquerySavedQueryModel) setCompositeIdentity(savedQueryID kbapi.SecurityOsqueryAPISavedQueryId) {
-	spaceID := m.SpaceID.ValueString()
-	if spaceID == "" {
-		spaceID = "default"
-	}
+	spaceID := compositeSpaceID(m.SpaceID)
 
 	compID := clients.CompositeID{
 		ClusterID:  spaceID,
@@ -178,25 +175,61 @@ func (m *osquerySavedQueryModel) setCompositeIdentity(savedQueryID kbapi.Securit
 	m.ID = types.StringValue(compID.String())
 	m.SavedQueryID = types.StringValue(savedQueryID)
 
-	if !typeutils.IsKnown(m.SpaceID) || m.SpaceID.ValueString() == "" {
+	// Populate computed space_id when absent, but preserve unknown plan/state values.
+	if m.SpaceID.IsNull() || (typeutils.IsKnown(m.SpaceID) && m.SpaceID.ValueString() == "") {
 		m.SpaceID = types.StringValue(spaceID)
 	}
 }
 
-func (e ecsMapping) toAPIType() kbapi.SecurityOsqueryAPIECSMappingItem {
+// compositeSpaceID returns the space segment for composite IDs. Unknown space_id
+// falls back to "default" for ID composition without overwriting unknown state.
+func compositeSpaceID(spaceID types.String) string {
+	if typeutils.IsKnown(spaceID) && spaceID.ValueString() != "" {
+		return spaceID.ValueString()
+	}
+
+	return "default"
+}
+
+func (e ecsMapping) toAPIType() (kbapi.SecurityOsqueryAPIECSMappingItem, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	fieldSet := typeutils.IsKnown(e.Field)
+	valueSet := typeutils.IsKnown(e.Value)
+	valuesSet := typeutils.IsKnown(e.Values)
+
+	setCount := 0
+	if fieldSet {
+		setCount++
+	}
+	if valueSet {
+		setCount++
+	}
+	if valuesSet {
+		setCount++
+	}
+
+	if setCount > 1 {
+		diags.AddError(
+			"Invalid ecs_mapping element",
+			"Exactly one of field, value, or values must be set per ecs_mapping element.",
+		)
+		return kbapi.SecurityOsqueryAPIECSMappingItem{}, diags
+	}
+
 	item := kbapi.SecurityOsqueryAPIECSMappingItem{}
 
-	if typeutils.IsKnown(e.Field) {
+	switch {
+	case fieldSet:
 		item.Field = e.Field.ValueStringPointer()
-	}
-
-	if typeutils.IsKnown(e.Value) {
+	case valueSet:
 		var value kbapi.SecurityOsqueryAPIECSMappingItem_Value
-		_ = value.FromSecurityOsqueryAPIECSMappingItemValue0(e.Value.ValueString())
+		if err := value.FromSecurityOsqueryAPIECSMappingItemValue0(e.Value.ValueString()); err != nil {
+			diags.AddError("Invalid ecs_mapping element", fmt.Sprintf("Failed to encode scalar value: %s", err))
+			return kbapi.SecurityOsqueryAPIECSMappingItem{}, diags
+		}
 		item.Value = &value
-	}
-
-	if typeutils.IsKnown(e.Values) {
+	case valuesSet:
 		var values []string
 		for _, element := range e.Values.Elements() {
 			if str, ok := element.(types.String); ok && typeutils.IsKnown(str) {
@@ -206,60 +239,77 @@ func (e ecsMapping) toAPIType() kbapi.SecurityOsqueryAPIECSMappingItem {
 		sort.Strings(values)
 
 		var value kbapi.SecurityOsqueryAPIECSMappingItem_Value
-		_ = value.FromSecurityOsqueryAPIECSMappingItemValue1(values)
+		if err := value.FromSecurityOsqueryAPIECSMappingItemValue1(values); err != nil {
+			diags.AddError("Invalid ecs_mapping element", fmt.Sprintf("Failed to encode array values: %s", err))
+			return kbapi.SecurityOsqueryAPIECSMappingItem{}, diags
+		}
 		item.Value = &value
 	}
 
-	return item
+	return item, diags
 }
 
-func ecsMappingFromAPIType(item kbapi.SecurityOsqueryAPIECSMappingItem) ecsMapping {
+func ecsMappingFromAPIType(item kbapi.SecurityOsqueryAPIECSMappingItem) (ecsMapping, diag.Diagnostics) {
 	result := ecsMapping{
 		Field:  types.StringNull(),
 		Value:  types.StringNull(),
 		Values: types.SetNull(types.StringType),
 	}
 
-	if item.Field != nil {
-		result.Field = types.StringValue(*item.Field)
-	}
-
 	if item.Value != nil {
 		if scalar, err := item.Value.AsSecurityOsqueryAPIECSMappingItemValue0(); err == nil {
 			result.Value = types.StringValue(scalar)
-			return result
+			return result, nil
 		}
 
 		if values, err := item.Value.AsSecurityOsqueryAPIECSMappingItemValue1(); err == nil {
 			sorted := append([]string(nil), values...)
 			sort.Strings(sorted)
 			result.Values = stringSetValue(sorted)
+			return result, nil
+		}
+
+		return result, diag.Diagnostics{
+			diag.NewErrorDiagnostic("Invalid ecs_mapping value", "API ecs_mapping value is neither string nor string array."),
 		}
 	}
 
-	return result
+	if item.Field != nil {
+		result.Field = types.StringValue(*item.Field)
+	}
+
+	return result, nil
 }
 
 func ecsMappingMapFromAPI(_ context.Context, api *kbapi.SecurityOsqueryAPIECSMapping) (types.Map, diag.Diagnostics) {
-	if api == nil {
+	if api == nil || len(*api) == 0 {
 		return types.MapNull(getEcsMappingElemType()), nil
 	}
 
 	elems := make(map[string]attr.Value, len(*api))
+	var diags diag.Diagnostics
 	for key, item := range *api {
-		mapping := ecsMappingFromAPIType(item)
+		mapping, mappingDiags := ecsMappingFromAPIType(item)
+		diags.Append(mappingDiags...)
+		if diags.HasError() {
+			return types.MapNull(getEcsMappingElemType()), diags
+		}
+
 		obj, objDiags := types.ObjectValue(ecsMappingAttrTypes, map[string]attr.Value{
 			"field":  mapping.Field,
 			"value":  mapping.Value,
 			"values": mapping.Values,
 		})
-		if objDiags.HasError() {
-			return types.MapNull(getEcsMappingElemType()), objDiags
+		diags.Append(objDiags...)
+		if diags.HasError() {
+			return types.MapNull(getEcsMappingElemType()), diags
 		}
 		elems[key] = obj
 	}
 
-	return types.MapValue(getEcsMappingElemType(), elems)
+	m, mapDiags := types.MapValue(getEcsMappingElemType(), elems)
+	diags.Append(mapDiags...)
+	return m, diags
 }
 
 func platformSetFromAPI(platform *kbapi.SecurityOsqueryAPIPlatform) types.Set {
@@ -281,7 +331,7 @@ func platformSetFromAPI(platform *kbapi.SecurityOsqueryAPIPlatform) types.Set {
 }
 
 func platformToAPI(ctx context.Context, platform types.Set) (*kbapi.SecurityOsqueryAPIPlatform, diag.Diagnostics) {
-	if !typeutils.IsKnown(platform) {
+	if !typeutils.IsKnown(platform) || platform.IsNull() {
 		return nil, nil
 	}
 
@@ -289,6 +339,10 @@ func platformToAPI(ctx context.Context, platform types.Set) (*kbapi.SecurityOsqu
 	var values []string
 	diags.Append(platform.ElementsAs(ctx, &values, false)...)
 	if diags.HasError() {
+		return nil, diags
+	}
+
+	if len(values) == 0 {
 		return nil, diags
 	}
 
