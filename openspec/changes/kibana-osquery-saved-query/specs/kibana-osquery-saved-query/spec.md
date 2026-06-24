@@ -86,9 +86,9 @@ On read, the API `Value` field SHALL be inspected for string vs array type to de
 
 ### Requirement: `interval` and `version` response normalisation
 
-`interval` SHALL be stored as Int64 in Terraform state. On read from Create and GET responses, the API `interval` field is a `json.RawMessage` union (`int | string`); the provider SHALL use the integer accessor first (falling back to parsing the string arm as int64). Update response also wraps `.Data` but uses the same union type for `interval`. On write, the Int64 value SHALL be sent as a stringified integer.
+`interval` SHALL be stored as Int64 in Terraform state. On read from Create and GET kibanaoapi entities, the API `interval` field is a `json.RawMessage` union (`int | string`); the provider SHALL use the integer accessor first (falling back to parsing the string arm as int64). The Update kibanaoapi entity uses the same union type for `interval`. On write, the Int64 value SHALL be sent as a stringified integer.
 
-`version` SHALL be stored as a string in Terraform state. On read from Create and GET responses, the API `version` field is a `json.RawMessage` union (`int | string`); the provider SHALL stringify the value regardless of which arm is populated. Update response types `version` as plain `*string` in `.Data` — dereference directly without union accessors. On write, the string is sent verbatim.
+`version` SHALL be stored as a string in Terraform state. On read from Create and GET kibanaoapi entities, the API `version` field is a `json.RawMessage` union (`int | string`); the provider SHALL stringify the value regardless of which arm is populated. The Update kibanaoapi entity types `version` as plain `*string` — dereference directly without union accessors. On write, the string is sent verbatim.
 
 #### Scenario: interval round-trip as integer
 - **WHEN** `interval = 3600` is set in config
@@ -101,7 +101,7 @@ On read, the API `Value` field SHALL be inspected for string vs array type to de
 
 ### Requirement: Create
 
-The resource SHALL call `POST /api/osquery/saved_queries` (space-aware via `SpaceAwarePathRequestEditor`) with `query` (required) and any optional fields that are set. The Create response wraps the entity in a `data` field; the provider SHALL unwrap `data` before populating state. After unwrapping, if `prebuilt == true`, the provider SHALL return an error diagnostic and not write to state.
+The resource SHALL call `POST /api/osquery/saved_queries` (space-aware via `SpaceAwarePathRequestEditor`) with `query` (required) and any optional fields that are set. The API response wraps the entity in a `data` field; the kibanaoapi helper returns an unwrapped `OsquerySavedQueryCreateEntity`. The resource SHALL map that entity to state via `populateFromAPI`. If `prebuilt == true` on the entity, the provider SHALL return an error diagnostic and not write to state.
 
 #### Scenario: Successful create
 - **WHEN** a resource with `query = "SELECT * FROM processes"` is applied
@@ -115,7 +115,7 @@ The resource SHALL call `POST /api/osquery/saved_queries` (space-aware via `Spac
 
 ### Requirement: Read
 
-The resource SHALL call `GET /api/osquery/saved_queries/{id}` (space-aware) using `saved_query_id` as the path parameter. The GET response wraps the entity in a `data` field; the provider SHALL unwrap `data` before populating state. On HTTP 404 the resource SHALL be removed from state without error. On success, if `prebuilt == true`, the provider SHALL return an error diagnostic explaining that the query is prebuilt and cannot be managed by this resource.
+The resource SHALL call `GET /api/osquery/saved_queries/{id}` (space-aware) using `saved_query_id` as the path parameter via `GetOsquerySavedQuery`. The API response wraps the entity in a `data` field; the kibanaoapi helper returns an unwrapped `OsquerySavedQueryGetEntity` for model mapping. On HTTP 404 the resource SHALL be removed from state without error. On success, if `prebuilt == true`, the provider SHALL return an error diagnostic explaining that the query is prebuilt and cannot be managed by this resource.
 
 #### Scenario: Resource deleted out of band
 - **WHEN** the API returns HTTP 404 on Read
@@ -127,7 +127,7 @@ The resource SHALL call `GET /api/osquery/saved_queries/{id}` (space-aware) usin
 
 ### Requirement: Update
 
-The resource SHALL call `PUT /api/osquery/saved_queries/{id}` (space-aware) using `saved_query_id` as the path parameter. The PUT body SHALL contain the managed field set from plan/state (`query`, `description`, `platform`, `interval`, `version`, `snapshot`, `removed`, `ecs_mapping`); server-managed fields (`created_at`, `updated_at`, `created_by_profile_uid`, `updated_by_profile_uid`, `saved_object_id`) SHALL be omitted. Optional attributes null/unset in plan omit the corresponding JSON keys. The Update response wraps the entity in a `data` field; the provider SHALL unwrap `data` before repopulating state.
+The resource SHALL call `PUT /api/osquery/saved_queries/{id}` (space-aware) using `saved_query_id` as the path parameter via `UpdateOsquerySavedQuery`. The PUT body SHALL contain the managed field set from plan/state (`query`, `description`, `platform`, `interval`, `version`, `snapshot`, `removed`, `ecs_mapping`); server-managed fields (`created_at`, `updated_at`, `created_by_profile_uid`, `updated_by_profile_uid`, `saved_object_id`) SHALL be omitted. Optional attributes null/unset in plan omit the corresponding JSON keys. The API response wraps the entity in a `data` field; the kibanaoapi helper returns an unwrapped `OsquerySavedQueryUpdateEntity` for model mapping.
 
 #### Scenario: Update query text
 - **WHEN** `query` is changed in config

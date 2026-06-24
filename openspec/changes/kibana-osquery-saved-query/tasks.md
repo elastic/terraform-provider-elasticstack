@@ -17,8 +17,8 @@
 - [ ] 3.1 Create `internal/kibana/osquery_saved_query/` directory mirroring `internal/kibana/maintenance_window/`
 - [ ] 3.2 Implement `models.go` with `osquerySavedQueryModel`, implementing `GetID` (composite `<space_id>/<saved_query_id>`), `GetResourceID` (`saved_query_id` for API lookup), `GetSpaceID`, `GetKibanaConnection`, `GetVersionRequirements` (declare `8.5.0` floor from task 1.2)
 - [ ] 3.3 Implement `ecsMapping` nested model covering `field`, `value` (string), `values` (set of string), plus the `toAPIType()` and `fromAPIType()` converters handling the `string | []string` union
-- [ ] 3.4 Implement `populateFromAPI` (or per-operation mappers) that unwrap `.Data` from Create/GET/Update responses and maps to the model: Create and GET use union types for `interval`/`version` (`AsXxx0()/AsXxx1()`); Update response types `version` as plain `*string` while `interval` remains a union; handle `platform` comma-split
-- [ ] 3.5 Add unit tests for `populateFromAPI` and converters: interval int and string union arms, version int and string union arms on Create/GET responses, Update plain `*string` version, platform comma join/split
+- [ ] 3.4 Implement per-operation `populateFromAPI` mappers from kibanaoapi entity types (`OsquerySavedQueryCreateEntity`, `OsquerySavedQueryGetEntity`, `OsquerySavedQueryUpdateEntity`) to the model: Create and GET use union types for `interval`/`version` (`AsXxx0()/AsXxx1()`); Update entity types `version` as plain `*string` while `interval` remains a union; handle `platform` comma-split
+- [ ] 3.5 Add unit tests for `populateFromAPI` and converters covering all three kibanaoapi entity shapes: interval int and string union arms on Create/GET entities, version int and string union arms on Create/GET entities, Update plain `*string` version, platform comma join/split (kibanaoapi `.Data` unwrap mappers covered in task 2 — see `osquery_saved_query_test.go`)
 
 ## 4. Resource schema
 
@@ -30,9 +30,9 @@
 
 ## 5. Resource CRUD and import
 
-- [ ] 5.1 Implement `create.go` calling `POST /api/osquery/saved_queries` (space-aware), unwrapping `data` from the response, and calling `populateFromAPI`; return a prebuilt error diagnostic if `prebuilt == true` in the response
-- [ ] 5.2 Implement `read.go` calling `GET /api/osquery/saved_queries/{id}` (space-aware, lookup via `saved_query_id`); unwrap `data` from response; on HTTP 404, remove from state without error; on success, call `populateFromAPI`; return a prebuilt error diagnostic if `prebuilt == true`
-- [ ] 5.3 Implement `update.go` calling `PUT /api/osquery/saved_queries/{id}` (space-aware, managed field set from plan/state, omitting server-managed fields and null/unset optional keys), unwrap `data` from response, then repopulating state
+- [ ] 5.1 Implement `create.go` via `CreateOsquerySavedQuery`, map the returned entity with `populateFromAPI`, and return a prebuilt error diagnostic if `prebuilt == true`
+- [ ] 5.2 Implement `read.go` via `GetOsquerySavedQuery` (lookup via `saved_query_id`); on HTTP 404, remove from state without error; on success, call `populateFromAPI`; return a prebuilt error diagnostic if `prebuilt == true`
+- [ ] 5.3 Implement `update.go` via `UpdateOsquerySavedQuery` (managed field set from plan/state, omitting server-managed fields and null/unset optional keys), then repopulate state from the returned entity
 - [ ] 5.4 Implement `delete.go` calling `DELETE /api/osquery/saved_queries/{id}` (space-aware); treat HTTP 404 as success
 - [ ] 5.5 Implement `ImportState` for composite `"<space_id>/<saved_query_id>"`: prefer `ImportStatePassthroughID` on `id`; if Required `saved_query_id` must be seeded before Read, use thin custom parser (as `alerting_rule`) to set `space_id`, `saved_query_id`, and `id` from import string
 - [ ] 5.6 Register `osquerySavedQuery.NewResource()` in the resource slice in `provider/plugin_framework.go`
@@ -40,7 +40,7 @@
 ## 6. Data source
 
 - [ ] 6.1 Implement `internal/kibana/osquery_saved_query/datasource.go` (or `data_source.go`) with schema: `saved_query_id` (Required), `space_id` (Optional, default `"default"`), `kibana_connection` (Optional), plus all the same Computed fields as the resource (`query`, `description`, `platform`, `interval`, `version`, `snapshot`, `removed`, `ecs_mapping`, and `prebuilt` as Computed bool); shared model or datasource model implements `GetVersionRequirements` with `8.5.0` floor
-- [ ] 6.2 Implement Read calling `GET /api/osquery/saved_queries/{id}` — same kibanaoapi wrapper as the resource, unwrap `data` from response; on HTTP 404, return an error diagnostic rather than removing from state (data sources error on missing)
+- [ ] 6.2 Implement Read via `GetOsquerySavedQuery` (same kibanaoapi wrapper as the resource); on HTTP 404, return an error diagnostic rather than removing from state (data sources error on missing)
 - [ ] 6.3 Do NOT error on `prebuilt == true` in the data source — prebuilt queries are a primary use case for the data source
 - [ ] 6.4 Register the data source in `provider/plugin_framework.go`
 

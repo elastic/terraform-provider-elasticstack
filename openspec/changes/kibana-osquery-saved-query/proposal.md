@@ -10,7 +10,7 @@ This change adds `elasticstack_kibana_osquery_saved_query` resource and matching
 - Refuse to manage prebuilt queries (those with `prebuilt == true` in the API response) with a runtime error diagnostic guiding users to use the data source instead.
 - Add `elasticstack_kibana_osquery_saved_query` data source (read-only GET-by-id) as the only Terraform-native way to reference prebuilt queries or queries managed outside Terraform (e.g., ones referenced by `response_actions[].params.saved_query_id` in a detection rule).
 - Model `ecs_mapping` as a `MapNestedAttribute` of `SingleNestedAttribute` with `field`, `value`, and `values` fields — matching the `{Field, Value: string|[]string}` union returned by the generated `kbapi` client.
-- Normalise `interval` and `version` from API responses to `int64` and `string` in state. Create and GET responses use `json.RawMessage` unions (`AsXxx0()/AsXxx1()` accessors); Update response wraps `.Data` but types `version` as plain `*string` while `interval` remains a union.
+- Normalise `interval` and `version` from kibanaoapi entity types to `int64` and `string` in state. Create and GET entities use `json.RawMessage` unions (`AsXxx0()/AsXxx1()` accessors); the Update entity types `version` as plain `*string` while `interval` remains a union.
 
 ## Capabilities
 

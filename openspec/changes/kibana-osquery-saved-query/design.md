@@ -12,7 +12,7 @@ The osquery paths are **not** in the `spaceIdPaths` allow-list in `generated/kba
 The non-trivial implementation areas are:
 
 1. **`ecs_mapping` modelling**: each key maps to `{ field, value: string | []string }` — a three-way exactly-one-of constraint (`field`/`value`/`values`) on a `MapNestedAttribute`.
-2. **`interval`/`version` response shapes differ by operation**: Create and GET wrap the entity in `.Data` and type both fields as `json.RawMessage` unions (`int | string`). Update also wraps `.Data`, but types `version` as plain `*string` while `interval` remains a union. `populateFromAPI` (task 3.4) must branch on response type.
+2. **`interval`/`version` response shapes differ by operation**: Create and GET API responses wrap the entity in `.Data` and type both fields as `json.RawMessage` unions (`int | string`). Update also wraps `.Data`, but types `version` as plain `*string` while `interval` remains a union. The kibanaoapi helper unwraps `.Data` into per-operation entity types (`OsquerySavedQueryCreateEntity`, `OsquerySavedQueryGetEntity`, `OsquerySavedQueryUpdateEntity`); `populateFromAPI` (task 3.4) maps those entities to the model and must branch on entity type.
 3. **Prebuilt-query protection**: `prebuilt` is server-returned and unknown at plan time — enforced as a runtime diagnostic, not a plan-time validator.
 
 ## Goals / Non-Goals
@@ -97,15 +97,15 @@ This is a runtime guard (not plan-time) because `prebuilt` is server-returned an
 
 ### Decision 11: Update is PUT (full replacement of managed fields)
 
-The API uses PUT (full replacement, not PATCH). On Update, the provider sends the **managed field set from plan/state** — `query`, `description`, `platform`, `interval`, `version`, `snapshot`, `removed`, `ecs_mapping` — omitting server-managed fields (`created_at`, `updated_at`, `created_by_profile_uid`, `updated_by_profile_uid`, `saved_object_id`). Optional attributes that are null/unset in plan omit the corresponding JSON keys (same nullable semantics as Create). The Update response wraps `.Data`; unwrap before repopulating state.
+The API uses PUT (full replacement, not PATCH). On Update, the provider sends the **managed field set from plan/state** — `query`, `description`, `platform`, `interval`, `version`, `snapshot`, `removed`, `ecs_mapping` — omitting server-managed fields (`created_at`, `updated_at`, `created_by_profile_uid`, `updated_by_profile_uid`, `saved_object_id`). Optional attributes that are null/unset in plan omit the corresponding JSON keys (same nullable semantics as Create). The Update API response wraps `.Data`; the kibanaoapi helper returns an unwrapped `OsquerySavedQueryUpdateEntity` for model mapping.
 
 ### Decision 12: Delete returns empty body — `HandleStatusResponse`
 
 Delete returns an empty body with HTTP 200 on success, and the provider should treat HTTP 404 as idempotent success. The kibanaoapi wrapper uses `HandleStatusResponse(..., http.StatusOK)` with a 404 no-op, matching the `maintenance_window` pattern.
 
-### Decision 13: Response bodies wrap in `data` — unwrap in `populateFromAPI`
+### Decision 13: Response bodies wrap in `data` — unwrap in kibanaoapi; map in `populateFromAPI`
 
-Create, GET, and Update responses wrap the entity in a `data` field. `populateFromAPI` (task 3.4) must unwrap `.Data` before mapping to the model. Response field typing differs by operation — see discovery note 1.1 and Decisions 7–8.
+Create, GET, and Update API responses wrap the entity in a `data` field. The kibanaoapi helper (task 2) unwraps `.Data` and returns typed entities: `OsquerySavedQueryCreateEntity`, `OsquerySavedQueryGetEntity`, and `OsquerySavedQueryUpdateEntity`. Create and GET share union semantics for `interval`/`version` but use distinct kbapi generated union types, so they remain separate entity types rather than a single consolidated read type. `populateFromAPI` (task 3.4) consumes those entities and maps to the Terraform model. Response field typing differs by operation — see discovery note 1.1 and Decisions 7–8.
 
 ### Decision 14: Server-managed fields not exposed
 
@@ -145,11 +145,11 @@ Resource and data source: `elasticstack_kibana_osquery_saved_query`. Go package:
 
 All four methods exist in `generated/kbapi/kibana.gen.go` with signatures matching this design:
 
-| Method | Request body | Response `JSON200` type | `data` wrapper | `interval` / `version` typing in `.Data` |
-|---|---|---|---|---|
-| `OsqueryCreateSavedQuery` | `SecurityOsqueryAPICreateSavedQueryRequestBody` (`Id *SecurityOsqueryAPISavedQueryId`, optional) | `SecurityOsqueryAPICreateSavedQueryResponse` | yes — unwrap `.Data` | both unions (`AsXxx0()/AsXxx1()`) |
-| `OsqueryGetSavedQueryDetails` | path `id` only | `SecurityOsqueryAPIFindSavedQueryDetailResponse` | yes — unwrap `.Data` | both unions |
-| `OsqueryUpdateSavedQuery` | `SecurityOsqueryAPIUpdateSavedQueryRequestBody` | `SecurityOsqueryAPIUpdateSavedQueryResponse` | yes — unwrap `.Data` | `interval` union; `version` plain `*string` |
+| Method | Request body | Response `JSON200` type | `data` wrapper | kibanaoapi entity | `interval` / `version` typing |
+|---|---|---|---|---|---|
+| `OsqueryCreateSavedQuery` | `SecurityOsqueryAPICreateSavedQueryRequestBody` (`Id *SecurityOsqueryAPISavedQueryId`, optional) | `SecurityOsqueryAPICreateSavedQueryResponse` | yes | `OsquerySavedQueryCreateEntity` | both unions (`AsXxx0()/AsXxx1()`) |
+| `OsqueryGetSavedQueryDetails` | path `id` only | `SecurityOsqueryAPIFindSavedQueryDetailResponse` | yes | `OsquerySavedQueryGetEntity` | both unions |
+| `OsqueryUpdateSavedQuery` | `SecurityOsqueryAPIUpdateSavedQueryRequestBody` | `SecurityOsqueryAPIUpdateSavedQueryResponse` | yes | `OsquerySavedQueryUpdateEntity` | `interval` union; `version` plain `*string` |
 | `OsqueryDeleteSavedQuery` | path `id` only | `SecurityOsqueryAPIDefaultSuccessResponse` (empty map) | n/a | n/a |
 
 Create request uses JSON field `id` (maps to Terraform `saved_query_id`). ECS mapping item type is `SecurityOsqueryAPIECSMappingItem` with `{Field *string, Value *SecurityOsqueryAPIECSMappingItem_Value}` union (`AsSecurityOsqueryAPIECSMappingItemValue0/1` for string|[]string).

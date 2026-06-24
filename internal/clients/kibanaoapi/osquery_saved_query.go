@@ -32,21 +32,21 @@ import (
 type OsquerySavedQueryCreateEntity struct {
 	CreatedAt           *time.Time
 	CreatedBy           *string
-	CreatedByProfileUid *string
+	CreatedByProfileUID *string
 	Description         *kbapi.SecurityOsqueryAPISavedQueryDescription
 	EcsMapping          *kbapi.SecurityOsqueryAPIECSMapping
-	Id                  kbapi.SecurityOsqueryAPISavedQueryId
+	ID                  kbapi.SecurityOsqueryAPISavedQueryId
 	Interval            *kbapi.SecurityOsqueryAPICreateSavedQueryResponse_Data_Interval
 	Platform            *kbapi.SecurityOsqueryAPIPlatform
 	Prebuilt            *bool
 	Query               *kbapi.SecurityOsqueryAPIQuery
 	Removed             *kbapi.SecurityOsqueryAPIRemoved
-	SavedObjectId       string
+	SavedObjectID       string
 	Snapshot            *kbapi.SecurityOsqueryAPISnapshot
 	Timeout             *int
 	UpdatedAt           *time.Time
 	UpdatedBy           *string
-	UpdatedByProfileUid *string
+	UpdatedByProfileUID *string
 	Version             *kbapi.SecurityOsqueryAPICreateSavedQueryResponse_Data_Version
 }
 
@@ -54,21 +54,21 @@ type OsquerySavedQueryCreateEntity struct {
 type OsquerySavedQueryGetEntity struct {
 	CreatedAt           *time.Time
 	CreatedBy           *string
-	CreatedByProfileUid *string
+	CreatedByProfileUID *string
 	Description         *kbapi.SecurityOsqueryAPISavedQueryDescription
 	EcsMapping          *kbapi.SecurityOsqueryAPIECSMapping
-	Id                  kbapi.SecurityOsqueryAPISavedQueryId
+	ID                  kbapi.SecurityOsqueryAPISavedQueryId
 	Interval            *kbapi.SecurityOsqueryAPIFindSavedQueryDetailResponse_Data_Interval
 	Platform            *kbapi.SecurityOsqueryAPIPlatform
 	Prebuilt            *bool
 	Query               *kbapi.SecurityOsqueryAPIQuery
 	Removed             *kbapi.SecurityOsqueryAPIRemoved
-	SavedObjectId       string
+	SavedObjectID       string
 	Snapshot            *kbapi.SecurityOsqueryAPISnapshot
 	Timeout             *int
 	UpdatedAt           *time.Time
 	UpdatedBy           *string
-	UpdatedByProfileUid *string
+	UpdatedByProfileUID *string
 	Version             *kbapi.SecurityOsqueryAPIFindSavedQueryDetailResponse_Data_Version
 }
 
@@ -76,21 +76,21 @@ type OsquerySavedQueryGetEntity struct {
 type OsquerySavedQueryUpdateEntity struct {
 	CreatedAt           *time.Time
 	CreatedBy           *string
-	CreatedByProfileUid *string
+	CreatedByProfileUID *string
 	Description         *kbapi.SecurityOsqueryAPISavedQueryDescription
 	EcsMapping          *kbapi.SecurityOsqueryAPIECSMapping
-	Id                  kbapi.SecurityOsqueryAPISavedQueryId
+	ID                  kbapi.SecurityOsqueryAPISavedQueryId
 	Interval            *kbapi.SecurityOsqueryAPIUpdateSavedQueryResponse_Data_Interval
 	Platform            *kbapi.SecurityOsqueryAPIPlatform
 	Prebuilt            *bool
 	Query               *kbapi.SecurityOsqueryAPIQuery
 	Removed             *kbapi.SecurityOsqueryAPIRemoved
-	SavedObjectId       string
+	SavedObjectID       string
 	Snapshot            *kbapi.SecurityOsqueryAPISnapshot
 	Timeout             *int
 	UpdatedAt           *time.Time
 	UpdatedBy           *string
-	UpdatedByProfileUid *string
+	UpdatedByProfileUID *string
 	Version             *string
 }
 
@@ -102,21 +102,21 @@ func osquerySavedQueryCreateEntityFrom(resp *kbapi.SecurityOsqueryAPICreateSaved
 	return &OsquerySavedQueryCreateEntity{
 		CreatedAt:           d.CreatedAt,
 		CreatedBy:           d.CreatedBy,
-		CreatedByProfileUid: d.CreatedByProfileUid,
+		CreatedByProfileUID: d.CreatedByProfileUid,
 		Description:         d.Description,
 		EcsMapping:          d.EcsMapping,
-		Id:                  d.Id,
+		ID:                  d.Id,
 		Interval:            d.Interval,
 		Platform:            d.Platform,
 		Prebuilt:            d.Prebuilt,
 		Query:               d.Query,
 		Removed:             d.Removed,
-		SavedObjectId:       d.SavedObjectId,
+		SavedObjectID:       d.SavedObjectId,
 		Snapshot:            d.Snapshot,
 		Timeout:             d.Timeout,
 		UpdatedAt:           d.UpdatedAt,
 		UpdatedBy:           d.UpdatedBy,
-		UpdatedByProfileUid: d.UpdatedByProfileUid,
+		UpdatedByProfileUID: d.UpdatedByProfileUid,
 		Version:             d.Version,
 	}
 }
@@ -129,21 +129,21 @@ func osquerySavedQueryGetEntityFrom(resp *kbapi.SecurityOsqueryAPIFindSavedQuery
 	return &OsquerySavedQueryGetEntity{
 		CreatedAt:           d.CreatedAt,
 		CreatedBy:           d.CreatedBy,
-		CreatedByProfileUid: d.CreatedByProfileUid,
+		CreatedByProfileUID: d.CreatedByProfileUid,
 		Description:         d.Description,
 		EcsMapping:          d.EcsMapping,
-		Id:                  d.Id,
+		ID:                  d.Id,
 		Interval:            d.Interval,
 		Platform:            d.Platform,
 		Prebuilt:            d.Prebuilt,
 		Query:               d.Query,
 		Removed:             d.Removed,
-		SavedObjectId:       d.SavedObjectId,
+		SavedObjectID:       d.SavedObjectId,
 		Snapshot:            d.Snapshot,
 		Timeout:             d.Timeout,
 		UpdatedAt:           d.UpdatedAt,
 		UpdatedBy:           d.UpdatedBy,
-		UpdatedByProfileUid: d.UpdatedByProfileUid,
+		UpdatedByProfileUID: d.UpdatedByProfileUid,
 		Version:             d.Version,
 	}
 }
@@ -156,27 +156,32 @@ func osquerySavedQueryUpdateEntityFrom(resp *kbapi.SecurityOsqueryAPIUpdateSaved
 	return &OsquerySavedQueryUpdateEntity{
 		CreatedAt:           d.CreatedAt,
 		CreatedBy:           d.CreatedBy,
-		CreatedByProfileUid: d.CreatedByProfileUid,
+		CreatedByProfileUID: d.CreatedByProfileUid,
 		Description:         d.Description,
 		EcsMapping:          d.EcsMapping,
-		Id:                  d.Id,
+		ID:                  d.Id,
 		Interval:            d.Interval,
 		Platform:            d.Platform,
 		Prebuilt:            d.Prebuilt,
 		Query:               d.Query,
 		Removed:             d.Removed,
-		SavedObjectId:       d.SavedObjectId,
+		SavedObjectID:       d.SavedObjectId,
 		Snapshot:            d.Snapshot,
 		Timeout:             d.Timeout,
 		UpdatedAt:           d.UpdatedAt,
 		UpdatedBy:           d.UpdatedBy,
-		UpdatedByProfileUid: d.UpdatedByProfileUid,
+		UpdatedByProfileUID: d.UpdatedByProfileUid,
 		Version:             d.Version,
 	}
 }
 
 // CreateOsquerySavedQuery creates a new Osquery saved query via POST /api/osquery/saved_queries.
-func CreateOsquerySavedQuery(ctx context.Context, client *Client, spaceID string, body kbapi.OsqueryCreateSavedQueryJSONRequestBody) (*OsquerySavedQueryCreateEntity, diag.Diagnostics) {
+func CreateOsquerySavedQuery(
+	ctx context.Context,
+	client *Client,
+	spaceID string,
+	body kbapi.OsqueryCreateSavedQueryJSONRequestBody,
+) (*OsquerySavedQueryCreateEntity, diag.Diagnostics) {
 	resp, err := client.API.OsqueryCreateSavedQueryWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -190,7 +195,12 @@ func CreateOsquerySavedQuery(ctx context.Context, client *Client, spaceID string
 
 // GetOsquerySavedQuery reads an Osquery saved query by ID via GET /api/osquery/saved_queries/{id}.
 // Returns (nil, nil) when the saved query is not found (HTTP 404).
-func GetOsquerySavedQuery(ctx context.Context, client *Client, spaceID string, savedQueryID kbapi.SecurityOsqueryAPISavedQueryId) (*OsquerySavedQueryGetEntity, diag.Diagnostics) {
+func GetOsquerySavedQuery(
+	ctx context.Context,
+	client *Client,
+	spaceID string,
+	savedQueryID kbapi.SecurityOsqueryAPISavedQueryId,
+) (*OsquerySavedQueryGetEntity, diag.Diagnostics) {
 	resp, err := client.API.OsqueryGetSavedQueryDetailsWithResponse(ctx, savedQueryID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -203,7 +213,13 @@ func GetOsquerySavedQuery(ctx context.Context, client *Client, spaceID string, s
 }
 
 // UpdateOsquerySavedQuery updates an Osquery saved query via PUT /api/osquery/saved_queries/{id}.
-func UpdateOsquerySavedQuery(ctx context.Context, client *Client, spaceID string, savedQueryID kbapi.SecurityOsqueryAPISavedQueryId, body kbapi.OsqueryUpdateSavedQueryJSONRequestBody) (*OsquerySavedQueryUpdateEntity, diag.Diagnostics) {
+func UpdateOsquerySavedQuery(
+	ctx context.Context,
+	client *Client,
+	spaceID string,
+	savedQueryID kbapi.SecurityOsqueryAPISavedQueryId,
+	body kbapi.OsqueryUpdateSavedQueryJSONRequestBody,
+) (*OsquerySavedQueryUpdateEntity, diag.Diagnostics) {
 	resp, err := client.API.OsqueryUpdateSavedQueryWithResponse(ctx, savedQueryID, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -217,7 +233,12 @@ func UpdateOsquerySavedQuery(ctx context.Context, client *Client, spaceID string
 
 // DeleteOsquerySavedQuery deletes an Osquery saved query via DELETE /api/osquery/saved_queries/{id}.
 // HTTP 404 is treated as success (idempotent delete).
-func DeleteOsquerySavedQuery(ctx context.Context, client *Client, spaceID string, savedQueryID kbapi.SecurityOsqueryAPISavedQueryId) diag.Diagnostics {
+func DeleteOsquerySavedQuery(
+	ctx context.Context,
+	client *Client,
+	spaceID string,
+	savedQueryID kbapi.SecurityOsqueryAPISavedQueryId,
+) diag.Diagnostics {
 	resp, err := client.API.OsqueryDeleteSavedQueryWithResponse(ctx, savedQueryID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)

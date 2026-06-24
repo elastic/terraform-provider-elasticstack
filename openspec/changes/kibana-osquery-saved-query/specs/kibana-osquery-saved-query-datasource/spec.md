@@ -35,7 +35,7 @@ The data source SHALL expose a computed `id` in the format `<space_id>/<saved_qu
 
 ### Requirement: Read
 
-The data source SHALL call `GET /api/osquery/saved_queries/{id}` (space-aware via `SpaceAwarePathRequestEditor`) using `saved_query_id` and `space_id`. The GET response wraps the entity in a `data` field; the provider SHALL unwrap `data` before populating state. On HTTP 404, the data source SHALL return an error diagnostic (data sources do not remove from state; they error on missing). On success, all Computed attributes SHALL be populated from the API response.
+The data source SHALL call `GET /api/osquery/saved_queries/{id}` (space-aware via `SpaceAwarePathRequestEditor`) using `saved_query_id` and `space_id` via `GetOsquerySavedQuery`. The API response wraps the entity in a `data` field; the kibanaoapi helper returns an unwrapped `OsquerySavedQueryGetEntity` for model mapping. On HTTP 404, the data source SHALL return an error diagnostic (data sources do not remove from state; they error on missing). On success, all Computed attributes SHALL be populated from the entity.
 
 #### Scenario: Successful read of a user-managed query
 - **WHEN** a data source with `saved_query_id = "list_all_processes"` is read
