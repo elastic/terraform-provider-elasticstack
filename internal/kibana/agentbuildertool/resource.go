@@ -21,17 +21,14 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 var (
-	_                                       resource.Resource                = newToolResource()
-	_                                       resource.ResourceWithConfigure   = newToolResource()
-	_                                       resource.ResourceWithImportState = newToolResource()
-	minKibanaAgentBuilderAPIVersion                                          = version.Must(version.NewVersion("9.3.0"))
-	minKibanaAgentBuilderWorkflowAPIVersion                                  = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
+	_ resource.Resource                = newToolResource()
+	_ resource.ResourceWithConfigure   = newToolResource()
+	_ resource.ResourceWithImportState = newToolResource()
 )
 
 type ToolResource struct {

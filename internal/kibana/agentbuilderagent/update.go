@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -30,7 +31,7 @@ func updateAgent(ctx context.Context, client *clients.KibanaScopedClient, req en
 	plan := req.Plan
 	var diags diag.Diagnostics
 
-	supportsSkillIDs, d := client.EnforceMinVersion(ctx, minVersionAdvancedAgentConfig)
+	supportsSkillIDs, d := client.EnforceMinVersion(ctx, agentbuilder.MinExtendedAPIVersion)
 	diags.Append(d...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[agentModel]{}, diags

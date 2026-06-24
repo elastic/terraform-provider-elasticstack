@@ -24,9 +24,9 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -37,10 +37,8 @@ const (
 	dataSourceID   = "data.elasticstack_kibana_agentbuilder_skill.test"
 )
 
-var minKibanaAgentBuilderSkillsAPIVersion = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
-
 func TestAccResourceAgentBuilderSkill(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderSkillsAPIVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, agentbuilder.MinExtendedAPIVersion, versionutils.FlavorAny)
 
 	skillID := "test-skill-" + uuid.New().String()[:8]
 
@@ -130,7 +128,7 @@ func TestAccResourceAgentBuilderSkill(t *testing.T) {
 }
 
 func TestAccResourceAgentBuilderSkillFull(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderSkillsAPIVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, agentbuilder.MinExtendedAPIVersion, versionutils.FlavorAny)
 
 	skillID := "test-skill-" + uuid.New().String()[:8]
 
@@ -184,7 +182,7 @@ func TestAccResourceAgentBuilderSkillFull(t *testing.T) {
 }
 
 func TestAccResourceAgentBuilderSkillSpace(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderSkillsAPIVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, agentbuilder.MinExtendedAPIVersion, versionutils.FlavorAny)
 
 	skillID := "test-skill-space-" + uuid.New().String()[:8]
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
@@ -225,7 +223,7 @@ func TestAccResourceAgentBuilderSkillSpace(t *testing.T) {
 }
 
 func TestAccResourceAgentBuilderSkillKibanaConnection(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderSkillsAPIVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, agentbuilder.MinExtendedAPIVersion, versionutils.FlavorAny)
 
 	skillID := "test-skill-kbconn-" + uuid.New().String()[:8]
 
@@ -267,7 +265,7 @@ func TestAccResourceAgentBuilderSkillKibanaConnection(t *testing.T) {
 }
 
 func TestAccDataSourceKibanaAgentBuilderSkill(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderSkillsAPIVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, agentbuilder.MinExtendedAPIVersion, versionutils.FlavorAny)
 
 	skillID := "test-skill-" + uuid.New().String()[:8]
 
@@ -300,7 +298,7 @@ func TestAccDataSourceKibanaAgentBuilderSkill(t *testing.T) {
 }
 
 func TestAccDataSourceKibanaAgentBuilderSkillSpace(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderSkillsAPIVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, agentbuilder.MinExtendedAPIVersion, versionutils.FlavorAny)
 
 	skillID := "test-skill-space-ds-" + uuid.New().String()[:8]
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
@@ -329,7 +327,7 @@ func TestAccDataSourceKibanaAgentBuilderSkillSpace(t *testing.T) {
 }
 
 func TestAccDataSourceKibanaAgentBuilderSkillKibanaConnection(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderSkillsAPIVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, agentbuilder.MinExtendedAPIVersion, versionutils.FlavorAny)
 
 	skillID := "test-skill-ds-kbconn-" + uuid.New().String()[:8]
 

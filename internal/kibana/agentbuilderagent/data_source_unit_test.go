@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/stretchr/testify/require"
 )
@@ -112,7 +113,7 @@ func TestNewDataSource_schemaAttributes(t *testing.T) {
 
 // TestAgentDataSourceModel_GetVersionRequirements confirms that
 // agentDataSourceModel.GetVersionRequirements returns exactly one requirement
-// with MinVersion equal to minKibanaAgentBuilderAPIVersion and a non-empty
+// with MinVersion equal to agentbuilder.MinAPIVersion and a non-empty
 // ErrorMessage.
 func TestAgentDataSourceModel_GetVersionRequirements(t *testing.T) {
 	t.Parallel()
@@ -120,8 +121,8 @@ func TestAgentDataSourceModel_GetVersionRequirements(t *testing.T) {
 	reqs, diags := m.GetVersionRequirements(context.Background())
 	require.False(t, diags.HasError(), "GetVersionRequirements must not return error diagnostics")
 	require.Len(t, reqs, 1, "GetVersionRequirements must return exactly one requirement")
-	require.Equal(t, *minKibanaAgentBuilderAPIVersion, reqs[0].MinVersion,
-		"MinVersion must equal minKibanaAgentBuilderAPIVersion")
+	require.Equal(t, *agentbuilder.MinAPIVersion, reqs[0].MinVersion,
+		"MinVersion must equal agentbuilder.MinAPIVersion")
 	require.NotEmpty(t, reqs[0].ErrorMessage,
 		"ErrorMessage must not be empty")
 }

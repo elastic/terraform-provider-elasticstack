@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
@@ -31,11 +32,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-var (
-	minKibanaAgentBuilderAPIVersion         = version.Must(version.NewVersion("9.3.0"))
-	minKibanaAgentBuilderWorkflowAPIVersion = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
-	below940Constraints                     = version.MustConstraints(version.NewConstraint(">= 9.3.0, < 9.4.0-SNAPSHOT"))
-)
+var below940Constraints = version.MustConstraints(version.NewConstraint(">= 9.3.0, < 9.4.0-SNAPSHOT"))
 
 // testAccAgentBuilderEsqlResourceName is the address of the ESQL tool used in acc configs.
 const testAccAgentBuilderEsqlResourceName = "elasticstack_kibana_agentbuilder_tool.test_esql"
@@ -50,13 +47,13 @@ const testAccAgentBuilderIndexSearchResourceName = "elasticstack_kibana_agentbui
 const testAccAgentBuilderToolDataSourceName = "data.elasticstack_kibana_agentbuilder_tool.test"
 
 func TestAccResourceAgentBuilderToolEsql(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, agentbuilder.MinAPIVersion, versionutils.FlavorAny)
 
 	toolID := "test-esql-tool-" + uuid.New().String()[:8]
 	resourceID := testAccAgentBuilderEsqlResourceName
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, agentbuilder.MinAPIVersion) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -126,7 +123,7 @@ func TestAccResourceAgentBuilderToolEsql(t *testing.T) {
 // TestAccResourceAgentBuilderToolEsqlKibanaConnection exercises a scoped
 // kibana_connection block (Kibana client from r.Client) with import round-trip.
 func TestAccResourceAgentBuilderToolEsqlKibanaConnection(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, agentbuilder.MinAPIVersion, versionutils.FlavorAny)
 
 	toolID := "test-kb-conn-tool-" + uuid.New().String()[:8]
 	resourceID := testAccAgentBuilderEsqlResourceName
@@ -134,7 +131,7 @@ func TestAccResourceAgentBuilderToolEsqlKibanaConnection(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheckWithExplicitKibanaEndpoint(t)
-			acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion)
+			acctest.PreCheckWithWorkflowsEnabled(t, agentbuilder.MinAPIVersion)
 		},
 		Steps: []resource.TestStep{
 			{
@@ -200,7 +197,7 @@ func TestAccResourceAgentBuilderToolEsqlKibanaConnection(t *testing.T) {
 }
 
 func TestAccResourceAgentBuilderToolEsqlSpace(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, agentbuilder.MinAPIVersion, versionutils.FlavorAny)
 
 	toolID := "test-esql-tool-" + uuid.New().String()[:8]
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
@@ -208,7 +205,7 @@ func TestAccResourceAgentBuilderToolEsqlSpace(t *testing.T) {
 	spaceResourceID := "elasticstack_kibana_space.test"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, agentbuilder.MinAPIVersion) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -246,13 +243,13 @@ func TestAccResourceAgentBuilderToolEsqlSpace(t *testing.T) {
 }
 
 func TestAccResourceAgentBuilderToolIndexSearch(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, agentbuilder.MinAPIVersion, versionutils.FlavorAny)
 
 	toolID := "test-index-search-" + uuid.New().String()[:8]
 	resourceID := testAccAgentBuilderIndexSearchResourceName
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, agentbuilder.MinAPIVersion) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -288,13 +285,13 @@ func TestAccResourceAgentBuilderToolIndexSearch(t *testing.T) {
 }
 
 func TestAccResourceAgentBuilderToolWorkflow(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderWorkflowAPIVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, agentbuilder.MinExtendedAPIVersion, versionutils.FlavorAny)
 
 	toolID := "test-workflow-tool-" + uuid.New().String()[:8]
 	resourceID := testAccAgentBuilderWorkflowResourceName
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, agentbuilder.MinAPIVersion) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -358,7 +355,7 @@ func TestAccResourceAgentBuilderToolWorkflow(t *testing.T) {
 // TestAccResourceAgentBuilderToolWorkflow with entity-local kibana_connection
 // (9.4+ workflow tool API) and the ESQL kibana_connection import pattern.
 func TestAccResourceAgentBuilderToolWorkflowKibanaConnection(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderWorkflowAPIVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, agentbuilder.MinExtendedAPIVersion, versionutils.FlavorAny)
 
 	toolID := "test-wf-kb-conn-" + uuid.New().String()[:8]
 	resourceID := testAccAgentBuilderWorkflowResourceName
@@ -366,7 +363,7 @@ func TestAccResourceAgentBuilderToolWorkflowKibanaConnection(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheckWithExplicitKibanaEndpoint(t)
-			acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion)
+			acctest.PreCheckWithWorkflowsEnabled(t, agentbuilder.MinAPIVersion)
 		},
 		Steps: []resource.TestStep{
 			{
@@ -430,13 +427,13 @@ func TestAccResourceAgentBuilderToolWorkflowKibanaConnection(t *testing.T) {
 }
 
 func TestAccDataSourceKibanaAgentBuilderTool(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, agentbuilder.MinAPIVersion, versionutils.FlavorAny)
 
 	toolID := "test-tool-" + uuid.New().String()[:8]
 	dsID := testAccAgentBuilderToolDataSourceName
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, agentbuilder.MinAPIVersion) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -470,13 +467,13 @@ func TestAccDataSourceKibanaAgentBuilderTool(t *testing.T) {
 }
 
 func TestAccDataSourceKibanaAgentBuilderToolWorkflow(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderWorkflowAPIVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, agentbuilder.MinExtendedAPIVersion, versionutils.FlavorAny)
 
 	toolID := "test-workflow-tool-" + uuid.New().String()[:8]
 	dsID := testAccAgentBuilderToolDataSourceName
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, agentbuilder.MinAPIVersion) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -513,7 +510,7 @@ func TestAccDataSourceKibanaAgentBuilderToolWorkflowUnsupportedVersion(t *testin
 	toolID := "test-workflow-tool-" + uuid.New().String()[:8]
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, agentbuilder.MinAPIVersion) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -528,14 +525,14 @@ func TestAccDataSourceKibanaAgentBuilderToolWorkflowUnsupportedVersion(t *testin
 }
 
 func TestAccDataSourceKibanaAgentBuilderToolSpace(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, agentbuilder.MinAPIVersion, versionutils.FlavorAny)
 
 	toolID := "test-tool-" + uuid.New().String()[:8]
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
 	dsID := testAccAgentBuilderToolDataSourceName
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, agentbuilder.MinAPIVersion) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -565,7 +562,7 @@ func TestAccDataSourceKibanaAgentBuilderToolSpace(t *testing.T) {
 // TestAccDataSourceKibanaAgentBuilderToolKibanaConnection exercises the data source
 // with an entity-local kibana_connection block, mirroring the resource-level connection tests.
 func TestAccDataSourceKibanaAgentBuilderToolKibanaConnection(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, agentbuilder.MinAPIVersion, versionutils.FlavorAny)
 
 	toolID := "test-tool-ds-conn-" + uuid.New().String()[:8]
 	dsID := testAccAgentBuilderToolDataSourceName
@@ -573,7 +570,7 @@ func TestAccDataSourceKibanaAgentBuilderToolKibanaConnection(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheckWithExplicitKibanaEndpoint(t)
-			acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion)
+			acctest.PreCheckWithWorkflowsEnabled(t, agentbuilder.MinAPIVersion)
 		},
 		Steps: []resource.TestStep{
 			{
