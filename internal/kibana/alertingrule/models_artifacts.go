@@ -82,6 +82,12 @@ func artifactsVersionSupported(sv *version.Version) bool {
 	return sv.GreaterThanOrEqual(artifactsMinSupportedVersion8)
 }
 
+// ArtifactsVersionSupported reports whether the connected Kibana version supports
+// configuring alerting rule artifacts.
+func ArtifactsVersionSupported(sv *version.Version) bool {
+	return artifactsVersionSupported(sv)
+}
+
 func enforceArtifactsVersion(ctx context.Context, client *clients.KibanaScopedClient, m alertingRuleModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if !typeutils.IsKnown(m.Artifacts) || m.Artifacts.IsNull() {
@@ -106,6 +112,7 @@ func (m *alertingRuleModel) populateArtifactsFromAPI(ctx context.Context, rule *
 
 	if rule.Artifacts == nil {
 		if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
+			diags.Append(finalizeArtifactsChecksumInModel(ctx, m)...)
 			return diags
 		}
 		if m.Artifacts.IsUnknown() {
@@ -116,6 +123,7 @@ func (m *alertingRuleModel) populateArtifactsFromAPI(ctx context.Context, rule *
 
 	if !artifactsAPIHasContent(rule.Artifacts) {
 		if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
+			diags.Append(finalizeArtifactsChecksumInModel(ctx, m)...)
 			return diags
 		}
 		m.Artifacts = types.ObjectNull(getArtifactsAttrTypes())
@@ -176,6 +184,7 @@ func (m *alertingRuleModel) populateArtifactsFromAPI(ctx context.Context, rule *
 	obj, d := types.ObjectValueFrom(ctx, getArtifactsAttrTypes(), out)
 	diags.Append(d...)
 	m.Artifacts = obj
+	diags.Append(finalizeArtifactsChecksumInModel(ctx, m)...)
 	return diags
 }
 
@@ -251,6 +260,10 @@ func investigationGuideBlobFromModel(ig investigationGuideModel) (string, diag.D
 }
 
 func applyArtifactsChecksumToModel(ctx context.Context, m *alertingRuleModel) diag.Diagnostics {
+	return finalizeArtifactsChecksumInModel(ctx, m)
+}
+
+func finalizeArtifactsChecksumInModel(ctx context.Context, m *alertingRuleModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if !typeutils.IsKnown(m.Artifacts) || m.Artifacts.IsNull() {
 		return diags
@@ -270,21 +283,22 @@ func applyArtifactsChecksumToModel(ctx context.Context, m *alertingRuleModel) di
 	if diags.HasError() {
 		return diags
 	}
-	if !typeutils.IsKnown(ig.ContentPath) || ig.ContentPath.IsNull() {
-		return diags
+
+	if typeutils.IsKnown(ig.ContentPath) && !ig.ContentPath.IsNull() {
+		checksum, err := sha256HexFile(ig.ContentPath.ValueString())
+		if err != nil {
+			diags.AddAttributeError(
+				fwpath.Root("artifacts").AtName("investigation_guide").AtName(attrInvestigationGuideContentPath),
+				"Cannot read investigation guide file",
+				err.Error(),
+			)
+			return diags
+		}
+		ig.Checksum = types.StringValue(checksum)
+	} else {
+		ig.Checksum = types.StringNull()
 	}
 
-	checksum, err := sha256HexFile(ig.ContentPath.ValueString())
-	if err != nil {
-		diags.AddAttributeError(
-			fwpath.Root("artifacts").AtName("investigation_guide").AtName(attrInvestigationGuideContentPath),
-			"Cannot read investigation guide file",
-			err.Error(),
-		)
-		return diags
-	}
-
-	ig.Checksum = types.StringValue(checksum)
 	igObj, d := types.ObjectValueFrom(ctx, investigationGuideAttrTypes(), ig)
 	diags.Append(d...)
 	am.InvestigationGuide = igObj

@@ -175,6 +175,39 @@ func Test_populateArtifactsFromAPI_omitsEmptyAPIArtifacts(t *testing.T) {
 	require.True(t, m.Artifacts.IsNull())
 }
 
+func Test_populateArtifactsFromAPI_finalizesUnknownChecksumWhenAPIOmits(t *testing.T) {
+	ctx := context.Background()
+
+	igObj, diags := types.ObjectValueFrom(ctx, investigationGuideAttrTypes(), investigationGuideModel{
+		Content:     types.StringValue("guide"),
+		ContentPath: types.StringNull(),
+		Checksum:    types.StringUnknown(),
+	})
+	require.False(t, diags.HasError())
+
+	artObj, diags := types.ObjectValueFrom(ctx, getArtifactsAttrTypes(), artifactsModel{
+		Dashboards:         types.ListNull(types.ObjectType{AttrTypes: map[string]attr.Type{"id": types.StringType}}),
+		InvestigationGuide: igObj,
+	})
+	require.False(t, diags.HasError())
+
+	m := baseAlertingRuleModel()
+	m.Artifacts = artObj
+
+	popDiags := m.populateArtifactsFromAPI(ctx, &models.AlertingRule{})
+	require.False(t, popDiags.HasError())
+
+	var am artifactsModel
+	diags = m.Artifacts.As(ctx, &am, basetypes.ObjectAsOptions{})
+	require.False(t, diags.HasError())
+
+	var ig investigationGuideModel
+	diags = am.InvestigationGuide.As(ctx, &ig, basetypes.ObjectAsOptions{})
+	require.False(t, diags.HasError())
+	require.True(t, ig.Checksum.IsNull())
+	require.Equal(t, "guide", ig.Content.ValueString())
+}
+
 func baseAlertingRuleModel() alertingRuleModel {
 	return alertingRuleModel{
 		ID:         types.StringValue("default/r1"),

@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingrule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
@@ -1089,7 +1090,20 @@ func testCheckAlertingRuleStateParamsOnlyKeys(resourceName string, allowedKeys .
 }
 
 func skipIfArtifactsUnsupported() func() (bool, error) {
-	return versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.19.0")))
+	return func() (bool, error) {
+		if os.Getenv("TF_ACC") == "" {
+			return false, nil
+		}
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		if err != nil {
+			return false, err
+		}
+		serverVersion, _, diags := clients.AcceptanceServerInfo(context.Background(), client)
+		if diags.HasError() {
+			return false, fmt.Errorf("failed to get elasticsearch server info: %v", diags)
+		}
+		return !alertingrule.ArtifactsVersionSupported(serverVersion), nil
+	}
 }
 
 func TestAccResourceAlertingRuleArtifacts(t *testing.T) {
