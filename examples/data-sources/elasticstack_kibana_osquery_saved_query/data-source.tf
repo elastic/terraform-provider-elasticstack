@@ -6,6 +6,7 @@ provider "elasticstack" {
 resource "elasticstack_kibana_osquery_saved_query" "example" {
   saved_query_id = "list_processes"
   query          = "SELECT pid, name FROM processes LIMIT 10;"
+  interval       = 3600
 }
 
 # Read a user-managed query by ID (created above or outside Terraform).
