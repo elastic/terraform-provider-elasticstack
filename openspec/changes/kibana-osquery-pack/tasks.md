@@ -25,10 +25,10 @@
 
 ## 4. Resource schema
 
-- [ ] 4.1 Implement `getSchema` covering: `id` (Computed), `pack_id` (Computed), `space_id` (Optional+Computed, default `"default"`, RequiresReplace), `kibana_connection` (Optional), `name` (Required string), `description` (Optional string), `enabled` (Optional bool), `policy_ids` (Optional list(string)), `shards` (Optional MapAttribute of numbers), `queries` (Required MapNestedAttribute)
-- [ ] 4.2 Implement the per-query nested schema inside `queries` map: `query` (Required string), `platform` (Optional SetAttribute of strings with allowed-values validator), `version` (Optional string), `snapshot` (Optional+Computed bool), `removed` (Optional+Computed bool), `saved_query_id` (Optional string), `ecs_mapping` (Optional MapNestedAttribute)
-- [ ] 4.3 Add the per-element `ConfigValidator` on each `ecs_mapping` enforcing exactly-one-of `field`/`value`/`values`
-- [ ] 4.4 Add `RequiresReplace` plan modifier on `space_id` only; add `UseStateForUnknown` on Optional+Computed fields (`pack_id` is Computed-only, no RequiresReplace)
+- [x] 4.1 Implement `getSchema` covering: `id` (Computed), `pack_id` (Computed), `space_id` (Optional+Computed, default `"default"`, RequiresReplace), `kibana_connection` (Optional), `name` (Required string), `description` (Optional string), `enabled` (Optional bool), `policy_ids` (Optional list(string)), `shards` (Optional MapAttribute of numbers), `queries` (Required MapNestedAttribute)
+- [x] 4.2 Implement the per-query nested schema inside `queries` map: `query` (Required string), `platform` (Optional SetAttribute of strings with allowed-values validator), `version` (Optional string), `snapshot` (Optional+Computed bool), `removed` (Optional+Computed bool), `saved_query_id` (Optional string), `ecs_mapping` (Optional MapNestedAttribute)
+- [x] 4.3 Add the per-element `ConfigValidator` on each `ecs_mapping` enforcing exactly-one-of `field`/`value`/`values`
+- [x] 4.4 Add `RequiresReplace` plan modifier on `space_id` only; add `UseStateForUnknown` on Optional+Computed fields (`pack_id` is Computed-only, no RequiresReplace)
 
 ## 5. Resource CRUD and import
 
