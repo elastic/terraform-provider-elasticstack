@@ -3,12 +3,12 @@
 page_title: "elasticstack_kibana_osquery_saved_query Resource - terraform-provider-elasticstack"
 subcategory: "Kibana"
 description: |-
-  Manages a user-defined Osquery saved query in Kibana. Prebuilt queries shipped with the osquery_manager integration cannot be managed by this resource; use the elasticstack_kibana_osquery_saved_query data source to read them instead.
+  Manages a user-defined Osquery saved query in Kibana. Requires Kibana 8.5.0 or later. Prebuilt queries shipped with the osquery_manager integration cannot be managed by this resource; use the elasticstack_kibana_osquery_saved_query data source to read them instead. Import of prebuilt queries fails; use the data source for prebuilt queries.
 ---
 
 # elasticstack_kibana_osquery_saved_query (Resource)
 
-Manages a user-defined Osquery saved query in Kibana. Prebuilt queries shipped with the osquery_manager integration cannot be managed by this resource; use the `elasticstack_kibana_osquery_saved_query` data source to read them instead.
+Manages a user-defined Osquery saved query in Kibana. Requires Kibana 8.5.0 or later. Prebuilt queries shipped with the osquery_manager integration cannot be managed by this resource; use the `elasticstack_kibana_osquery_saved_query` data source to read them instead. Import of prebuilt queries fails; use the data source for prebuilt queries.
 ## Example Usage
 
 ```terraform

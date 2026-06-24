@@ -2,7 +2,7 @@
 
 ### Changes
 
-- Add `elasticstack_kibana_osquery_saved_query` resource and data source for managing Osquery saved queries in Kibana.
+- Add `elasticstack_kibana_osquery_saved_query` resource for CRUD management of user-defined Osquery saved queries and a matching data source for reading prebuilt or externally managed queries in Kibana.
 
 ## [0.16.2] - 2026-06-23
 

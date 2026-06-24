@@ -26,7 +26,8 @@ import (
 
 func getDataSourceSchema(_ context.Context) dsschema.Schema {
 	return dsschema.Schema{
-		MarkdownDescription: "Reads an Osquery saved query from Kibana, including prebuilt queries shipped with the osquery_manager integration.",
+		MarkdownDescription: "Reads an Osquery saved query from Kibana, including prebuilt queries shipped with the osquery_manager integration. " +
+			"Requires Kibana 8.5.0 or later. A common use is looking up saved query IDs referenced by Security detection rule response actions.",
 		Attributes: map[string]dsschema.Attribute{
 			attrID: dsschema.StringAttribute{
 				MarkdownDescription: "Composite identifier in the form `<space_id>/<saved_query_id>`.",
