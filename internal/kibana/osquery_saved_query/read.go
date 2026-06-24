@@ -44,12 +44,12 @@ func readOsquerySavedQuery(ctx context.Context, client *clients.KibanaScopedClie
 
 	model.SpaceID = types.StringValue(spaceID)
 
-	diags.Append(model.populateFromGetAPI(ctx, entity)...)
+	diags.Append(prebuiltGuardDiagnostic(entity.Prebuilt)...)
 	if diags.HasError() {
 		return model, false, diags
 	}
 
-	diags.Append(prebuiltGuardDiagnostic(entity.Prebuilt)...)
+	diags.Append(model.populateFromGetAPI(ctx, entity)...)
 	if diags.HasError() {
 		return model, false, diags
 	}

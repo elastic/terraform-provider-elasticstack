@@ -50,12 +50,12 @@ func updateOsquerySavedQuery(
 		return entitycore.KibanaWriteResult[osquerySavedQueryModel]{}, diags
 	}
 
-	diags.Append(plan.populateFromUpdateAPI(ctx, entity)...)
+	diags.Append(prebuiltGuardDiagnostic(entity.Prebuilt)...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[osquerySavedQueryModel]{}, diags
 	}
 
-	diags.Append(prebuiltGuardDiagnostic(entity.Prebuilt)...)
+	diags.Append(plan.populateFromUpdateAPI(ctx, entity)...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[osquerySavedQueryModel]{}, diags
 	}

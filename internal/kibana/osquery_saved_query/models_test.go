@@ -246,18 +246,17 @@ func TestEcsMappingConversion(t *testing.T) {
 		assert.Equal(t, expected, got.Values)
 	})
 
-	t.Run("from API value wins over field", func(t *testing.T) {
+	t.Run("from API field and value returns error", func(t *testing.T) {
 		field := "cmdline"
 		var value kbapi.SecurityOsqueryAPIECSMappingItem_Value
 		require.NoError(t, value.FromSecurityOsqueryAPIECSMappingItemValue0("process"))
 
-		got, diags := ecsMappingFromAPIType(kbapi.SecurityOsqueryAPIECSMappingItem{
+		_, diags := ecsMappingFromAPIType(kbapi.SecurityOsqueryAPIECSMappingItem{
 			Field: &field,
 			Value: &value,
 		})
-		require.Empty(t, diags)
-		assert.True(t, got.Field.IsNull())
-		assert.Equal(t, types.StringValue("process"), got.Value)
+		require.True(t, diags.HasError())
+		assert.Contains(t, diags.Errors()[0].Detail(), "both field and value")
 	})
 }
 

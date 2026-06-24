@@ -268,6 +268,15 @@ func ecsMappingFromAPIType(item kbapi.SecurityOsqueryAPIECSMappingItem) (ecsMapp
 	}
 
 	if item.Value != nil {
+		if item.Field != nil {
+			return result, diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Invalid ecs_mapping value",
+					"API ecs_mapping item contains both field and value; exactly one is expected.",
+				),
+			}
+		}
+
 		if scalar, err := item.Value.AsSecurityOsqueryAPIECSMappingItemValue0(); err == nil {
 			result.Value = types.StringValue(scalar)
 			return result, nil
