@@ -12,7 +12,7 @@ The osquery paths are **not** in the `spaceIdPaths` allow-list in `generated/kba
 The non-trivial implementation areas are:
 
 1. **`ecs_mapping` modelling**: each key maps to `{ field, value: string | []string }` — a three-way exactly-one-of constraint (`field`/`value`/`values`) on a `MapNestedAttribute`.
-2. **`interval`/`version` union types**: the API returns these as `json.RawMessage` unions (`int | string`). Read uses `AsXxx0()/AsXxx1()` accessors; write normalises to `int64` for `interval` and `string` for `version`.
+2. **`interval`/`version` response shapes differ by operation**: Create and GET wrap the entity in `.Data` and type both fields as `json.RawMessage` unions (`int | string`). Update also wraps `.Data`, but types `version` as plain `*string` while `interval` remains a union. `populateFromAPI` (task 3.4) must branch on response type.
 3. **Prebuilt-query protection**: `prebuilt` is server-returned and unknown at plan time — enforced as a runtime diagnostic, not a plan-time validator.
 
 ## Goals / Non-Goals
@@ -67,19 +67,19 @@ Import accepts `"<space_id>/<saved_query_id>"` (e.g., `"default/list_all_process
 - `value` (Optional string) — static scalar value
 - `values` (Optional set of string) — static array value
 
-A `ConfigValidator` enforces that exactly one of `field`, `value`, or `values` is set per element. Maps to the generated `{Field, Value: string|[]string}` shape: `field` → `{field: "..."}`, `value` → `{value: "..."}` (string), `values` → `{value: [...]}` (array).
+`ExactlyOneOfNestedAttrsValidator` from `internal/utils/validators` on `ecs_mapping` `MapNestedAttribute.NestedObject.Validators` enforces that exactly one of `field`, `value`, or `values` is set per map element. Maps to the generated `{Field, Value: string|[]string}` shape: `field` → `{field: "..."}`, `value` → `{value: "..."}` (string), `values` → `{value: [...]}` (array).
 
 Partial ECS mapping precedent exists at `internal/kibana/security_detection_rule/models_to_api_type_utils.go:827` (`buildEcsMappingFromModel`) but covers only the `field` case. This resource must handle all three.
 
-**Discovery (task 1.4):** `resourcevalidator.ExactlyOneOf` is resource-level only (see `internal/kibana/slo/resource.go`, `streams/resource.go`). `objectvalidator.ExactlyOneOf` is unsuitable on nested objects — it counts the parent object in path resolution (see archived change `2026-05-11-expose-lens-chart-presentation-fields`). **Plan:** attach `internal/utils/validators.ExactlyOneOfNestedAttrsValidator` to `ecs_mapping` `MapNestedAttribute.NestedObject.Validators` (same pattern as `internal/kibana/dashboard/panelkit/schema.go` list-item validators and `internal/fleet/agentpolicy/schema.go` two-way map-value constraints). Do not use `plugin-framework-validators` exactly-one-of inside map values.
+**Discovery (task 1.4):** `resourcevalidator.ExactlyOneOf` is resource-level only. `objectvalidator.ExactlyOneOf` is unsuitable on nested objects — it counts the parent object in path resolution (archived change `2026-05-11-expose-lens-chart-presentation-fields`). **Plan:** attach `ExactlyOneOfNestedAttrsValidator` to `MapNestedAttribute.NestedObject.Validators` (precedent: `internal/kibana/dashboard/panelkit/schema.go` list-item validators). **Fallback:** custom inline `ValidateObject` only if map nested validation fails during task 4.5 implementation.
 
 ### Decision 7: `interval` — `Int64Attribute`
 
-`interval` is Optional `Int64Attribute` (seconds). On read, the `json.RawMessage` union is read via `AsInt` accessor; if that fails, the string arm is parsed as `int64`. On write, the `int64` is stringified before sending to the API (the API wire type accepts both `int` and `string`; sending as string is always valid). Nullable (omit from request body when not set).
+`interval` is Optional `Int64Attribute` (seconds). On read from Create/GET responses, the `json.RawMessage` union is read via `AsXxx0()/AsXxx1()` accessors; if the int arm fails, the string arm is parsed as `int64`. Update response uses the same union type for `interval`. On write, the `int64` is stringified before sending to the API. Nullable (omit from request body when not set).
 
 ### Decision 8: `version` — `StringAttribute`
 
-`version` is Optional `StringAttribute`. On read, the `json.RawMessage` union is stringified (using the string accessor; fallback to `fmt.Sprintf` if the int arm). On write, the string is sent verbatim. Nullable (omit from request body when not set).
+`version` is Optional `StringAttribute`. On read from Create/GET responses, the `json.RawMessage` union is stringified (string accessor; fallback to `fmt.Sprintf` if the int arm). Update response types `version` as plain `*string` — dereference directly without union accessors. On write, the string is sent verbatim. Nullable (omit from request body when not set).
 
 ### Decision 9: `snapshot` and `removed` — Optional+Computed, no static default
 
@@ -101,9 +101,9 @@ The API uses PUT (full replacement, not PATCH). On Update, all managed fields ar
 
 Delete returns an empty body with HTTP 200 on success, and the provider should treat HTTP 404 as idempotent success. The kibanaoapi wrapper uses `HandleStatusResponse(..., http.StatusOK)` with a 404 no-op, matching the `maintenance_window` pattern.
 
-### Decision 13: Create response wraps in `data` — unwrap in `populateFromAPI`
+### Decision 13: Response bodies wrap in `data` — unwrap in `populateFromAPI`
 
-The Create response wraps the entity in a `data` field. The `populateFromAPI` function must unwrap `data` before mapping to the model.
+Create, GET, and Update responses wrap the entity in a `data` field. `populateFromAPI` (task 3.4) must unwrap `.Data` before mapping to the model. Response field typing differs by operation — see discovery note 1.1 and Decisions 7–8.
 
 ### Decision 14: Server-managed fields not exposed
 
@@ -113,11 +113,11 @@ The Create response wraps the entity in a `data` field. The `populateFromAPI` fu
 
 The data source accepts `saved_query_id` (Required), `space_id` (Optional, default `"default"`), and `kibana_connection` (Optional). It calls GET by ID and populates all managed fields. Unlike the resource, it does NOT error on `prebuilt == true` — the data source is the intentional path for referencing prebuilt queries.
 
-### Decision 16: Minimum version — `8.5.0` (confirmed in discovery)
+### Decision 16: Minimum version — `8.5.0` (documented/conservative floor)
 
-The resource declares `8.5.0` as the minimum Kibana version via `GetVersionRequirements` (implemented in task 3.2).
+The resource declares `8.5.0` as the minimum Kibana version via `GetVersionRequirements` (implemented in task 3.2). This is the documented/conservative floor from Kibana API docs and source — not live-validated during discovery.
 
-**Discovery evidence (task 1.2):** Osquery saved-queries CRUD is documented under Kibana v8 API reference (`POST/GET/PUT/DELETE /api/osquery/saved_queries`); Kibana PR [#137162](https://github.com/elastic/kibana/pull/137162) (Osquery API docs) is labeled `v8.5.0`; the Osquery plugin public API version is `2023-10-31` (`API_VERSIONS.public.v1` in Kibana `common/constants.ts`); all four CRUD bindings are present in `generated/kbapi/kibana.gen.go`. Live version-gate testing deferred to acceptance tests (task 7.9); Kibana stack was unavailable locally.
+**Discovery evidence (task 1.2):** Osquery saved-queries CRUD is documented under Kibana v8 API reference (`POST/GET/PUT/DELETE /api/osquery/saved_queries`); Kibana PR [#137162](https://github.com/elastic/kibana/pull/137162) (Osquery API docs) is labeled `v8.5.0`; the Osquery plugin public API version is `2023-10-31` (`API_VERSIONS.public.v1` in Kibana `common/constants.ts`); all four CRUD bindings are present in `generated/kbapi/kibana.gen.go`. Live confirmation deferred to acceptance task 7.9; Kibana stack was unavailable locally.
 
 ### Decision 17: Naming
 
@@ -128,7 +128,7 @@ Resource and data source: `elasticstack_kibana_osquery_saved_query`. Go package:
 | Risk | Mitigation |
 |---|---|
 | **`saved_query_id` omitted on create — does Kibana generate a UUID?** | Resolved (task 1.3): no — `saved_query_id` is Required. |
-| **`8.5.0` version floor is too low** | Confirmed at 8.5.0 from docs/Kibana source (task 1.2); acceptance tests (task 7.9) validate against a live stack. |
+| **`8.5.0` version floor is too low** | Documented/conservative floor from docs/Kibana source (task 1.2); live confirmation in acceptance task 7.9. |
 | **`ecs_mapping` exactly-one-of validator inside `MapNestedAttribute`** | Resolved (task 1.4): use `ExactlyOneOfNestedAttrsValidator` on `NestedObject.Validators`; task 7.6 validates behavior. |
 | **`interval`/`version` union-type edge cases** | Both union arms (`AsXxx0`/`AsXxx1`) are exercised in unit tests; round-trip acceptance test confirms no data loss. |
 | **Prebuilt queries silently imported** | Runtime guard on Read (and post-Create) returns an explicit error diagnostic before touching state. |
@@ -143,11 +143,11 @@ Resource and data source: `elasticstack_kibana_osquery_saved_query`. Go package:
 
 All four methods exist in `generated/kbapi/kibana.gen.go` with signatures matching this design:
 
-| Method | Request body | Response `JSON200` type | `data` wrapper |
-|---|---|---|---|
-| `OsqueryCreateSavedQuery` | `SecurityOsqueryAPICreateSavedQueryRequestBody` (`Id *SecurityOsqueryAPISavedQueryId`, optional) | `SecurityOsqueryAPICreateSavedQueryResponse` | yes — unwrap `.Data` |
-| `OsqueryGetSavedQueryDetails` | path `id` only | `SecurityOsqueryAPIFindSavedQueryDetailResponse` | yes — unwrap `.Data` |
-| `OsqueryUpdateSavedQuery` | `SecurityOsqueryAPIUpdateSavedQueryRequestBody` | `SecurityOsqueryAPIUpdateSavedQueryResponse` | yes — unwrap `.Data` |
-| `OsqueryDeleteSavedQuery` | path `id` only | `SecurityOsqueryAPIDefaultSuccessResponse` (empty map) | n/a |
+| Method | Request body | Response `JSON200` type | `data` wrapper | `interval` / `version` typing in `.Data` |
+|---|---|---|---|---|
+| `OsqueryCreateSavedQuery` | `SecurityOsqueryAPICreateSavedQueryRequestBody` (`Id *SecurityOsqueryAPISavedQueryId`, optional) | `SecurityOsqueryAPICreateSavedQueryResponse` | yes — unwrap `.Data` | both unions (`AsXxx0()/AsXxx1()`) |
+| `OsqueryGetSavedQueryDetails` | path `id` only | `SecurityOsqueryAPIFindSavedQueryDetailResponse` | yes — unwrap `.Data` | both unions |
+| `OsqueryUpdateSavedQuery` | `SecurityOsqueryAPIUpdateSavedQueryRequestBody` | `SecurityOsqueryAPIUpdateSavedQueryResponse` | yes — unwrap `.Data` | `interval` union; `version` plain `*string` |
+| `OsqueryDeleteSavedQuery` | path `id` only | `SecurityOsqueryAPIDefaultSuccessResponse` (empty map) | n/a | n/a |
 
 Create request uses JSON field `id` (maps to Terraform `saved_query_id`). ECS mapping item type is `SecurityOsqueryAPIECSMappingItem` with `{Field *string, Value *SecurityOsqueryAPIECSMappingItem_Value}` union (`AsSecurityOsqueryAPIECSMappingItemValue0/1` for string|[]string).

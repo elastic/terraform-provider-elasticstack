@@ -48,7 +48,7 @@ The resource SHALL expose the following attributes:
 
 ### Requirement: ECS mapping with three-way exactly-one-of constraint
 
-The `ecs_mapping` attribute SHALL be a MapNestedAttribute where each key maps to a SingleNestedAttribute with three Optional fields: `field` (string), `value` (string), `values` (set of strings). A ConfigValidator SHALL enforce that exactly one of `field`, `value`, or `values` is set per element.
+The `ecs_mapping` attribute SHALL be a MapNestedAttribute where each key maps to a SingleNestedAttribute with three Optional fields: `field` (string), `value` (string), `values` (set of strings). `ExactlyOneOfNestedAttrsValidator` from `internal/utils/validators` SHALL be attached to `MapNestedAttribute.NestedObject.Validators` to enforce that exactly one of `field`, `value`, or `values` is set per element. If map nested validation fails during implementation, a custom inline `ValidateObject` MAY be used instead.
 
 On write, the mapping SHALL be converted to the API `{Field, Value: string|[]string}` shape: `field` → `{field: "..."}`, `value` → `{value: "abc"}` (string arm), `values` → `{value: ["a", "b"]}` (array arm).
 
@@ -74,11 +74,11 @@ On read, the API `Value` field SHALL be inspected for string vs array type to de
 - **WHEN** `ecs_mapping = { "k" = {} }` is set in config
 - **THEN** Terraform SHALL reject the plan with a validation error indicating exactly one of `field`, `value`, `values` must be set
 
-### Requirement: `interval` and `version` union-type normalisation
+### Requirement: `interval` and `version` response normalisation
 
-`interval` SHALL be stored as Int64 in Terraform state. On read, the API `interval` field is a `json.RawMessage` union (`int | string`); the provider SHALL use the integer accessor first (falling back to parsing the string arm as int64). On write, the Int64 value SHALL be sent as a stringified integer.
+`interval` SHALL be stored as Int64 in Terraform state. On read from Create and GET responses, the API `interval` field is a `json.RawMessage` union (`int | string`); the provider SHALL use the integer accessor first (falling back to parsing the string arm as int64). Update response also wraps `.Data` but uses the same union type for `interval`. On write, the Int64 value SHALL be sent as a stringified integer.
 
-`version` SHALL be stored as a string in Terraform state. On read, the API `version` field is a `json.RawMessage` union (`int | string`); the provider SHALL stringify the value regardless of which arm is populated.
+`version` SHALL be stored as a string in Terraform state. On read from Create and GET responses, the API `version` field is a `json.RawMessage` union (`int | string`); the provider SHALL stringify the value regardless of which arm is populated. Update response types `version` as plain `*string` in `.Data` — dereference directly without union accessors. On write, the string is sent verbatim.
 
 #### Scenario: interval round-trip as integer
 - **WHEN** `interval = 3600` is set in config
@@ -152,9 +152,14 @@ The resource SHALL support import via the composite ID `"<space_id>/<saved_query
 - **AND** `space_id` SHALL be set to `"default"`
 - **AND** all other attributes SHALL be populated from the API GET response
 
+#### Scenario: Import of prebuilt query fails
+- **WHEN** import targets a query whose GET response has `prebuilt: true`
+- **THEN** the provider SHALL return the prebuilt error diagnostic
+- **AND** state SHALL NOT be written
+
 ### Requirement: Connection override and version gating
 
-The resource SHALL obtain its Kibana client via the resource-level `kibana_connection` block when provided, otherwise via the provider-level Kibana configuration. Space-aware requests SHALL use `space_id` via `kibanautil.SpaceAwarePathRequestEditor`. The resource SHALL declare a `GetVersionRequirements` entry that fails with a helpful error against Kibana versions older than the confirmed minimum version (initial assumption: `8.5.0`; verify during implementation).
+The resource SHALL obtain its Kibana client via the resource-level `kibana_connection` block when provided, otherwise via the provider-level Kibana configuration. Space-aware requests SHALL use `space_id` via `kibanautil.SpaceAwarePathRequestEditor`. The resource SHALL declare a `GetVersionRequirements` entry that fails with a helpful error against Kibana versions older than `8.5.0` — the documented/conservative floor from discovery; live confirmation against a running stack is expected via acceptance tests.
 
 #### Scenario: Resource-level kibana_connection override
 - **WHEN** `kibana_connection` is configured on the resource

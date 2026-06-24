@@ -1,9 +1,9 @@
 ## 1. Prep and discovery
 
 - [x] 1.1 Verify that `OsqueryCreateSavedQuery`, `OsqueryGetSavedQueryDetails`, `OsqueryUpdateSavedQuery`, `OsqueryDeleteSavedQuery` are present in `generated/kbapi/kibana.gen.go` and confirm their request/response type signatures match the design (in particular: `SecurityOsqueryAPICreateSavedQueryRequestBody` and the `data`-wrapped create response)
-- [x] 1.2 Confirm the minimum Kibana version that ships `/api/osquery/saved_queries` CRUD; record the confirmed version in design.md and update `GetVersionRequirements` accordingly (current assumption: `8.5.0`)
+- [x] 1.2 Confirm the minimum Kibana version that ships `/api/osquery/saved_queries` CRUD; record the documented/conservative floor (`8.5.0`) in design.md (implementation of `GetVersionRequirements` is task 3.2; live confirmation is task 7.9)
 - [x] 1.3 Confirm that Kibana generates a UUID for `saved_query_id` when it is omitted on Create; if it does not, escalate `saved_query_id` to Required and update design.md Decision 2
-- [x] 1.4 Confirm `plugin-framework-validators` exactly-one-of works inside `MapNestedAttribute` values for the three-way `field`/`value`/`values` constraint; if not, plan an inline `ValidateObject` implementation
+- [x] 1.4 Confirm validator approach for the three-way `field`/`value`/`values` constraint inside `MapNestedAttribute` values; plan `ExactlyOneOfNestedAttrsValidator` on `NestedObject.Validators` (fallback: custom inline `ValidateObject` only if map nested validation fails at implementation time)
 
 ## 2. kibanaoapi client helper
 
@@ -15,17 +15,17 @@
 ## 3. Resource skeleton and model
 
 - [ ] 3.1 Create `internal/kibana/osquery_saved_query/` directory mirroring `internal/kibana/maintenance_window/`
-- [ ] 3.2 Implement `models.go` with `osquerySavedQueryModel`, implementing `GetID`, `GetResourceID`, `GetSpaceID`, `GetKibanaConnection`, `GetVersionRequirements` (version floor from task 1.2)
+- [ ] 3.2 Implement `models.go` with `osquerySavedQueryModel`, implementing `GetID`, `GetResourceID`, `GetSpaceID`, `GetKibanaConnection`, `GetVersionRequirements` (declare `8.5.0` floor from task 1.2)
 - [ ] 3.3 Implement `ecsMapping` nested model covering `field`, `value` (string), `values` (set of string), plus the `toAPIType()` and `fromAPIType()` converters handling the `string | []string` union
-- [ ] 3.4 Implement `populateFromAPI` that maps the kbapi response type to the model, handling `interval`/`version` union types via `AsXxx0()/AsXxx1()` accessors and the `platform` comma-split
+- [ ] 3.4 Implement `populateFromAPI` (or per-operation mappers) that unwrap `.Data` from Create/GET/Update responses and maps to the model: Create and GET use union types for `interval`/`version` (`AsXxx0()/AsXxx1()`); Update response types `version` as plain `*string` while `interval` remains a union; handle `platform` comma-split
 
 ## 4. Resource schema
 
-- [ ] 4.1 Implement `getSchema` covering: `id` (Computed), `saved_query_id` (Optional+Computed, RequiresReplace), `space_id` (Optional+Computed, default `"default"`, RequiresReplace), `kibana_connection` (Optional, from `entitycore`), `query` (Required string), `description` (Optional string), `platform` (Optional SetAttribute of strings with allowed-values validator), `interval` (Optional Int64), `version` (Optional string), `snapshot` (Optional+Computed bool), `removed` (Optional+Computed bool), `ecs_mapping` (Optional MapNestedAttribute)
+- [ ] 4.1 Implement `getSchema` covering: `id` (Computed), `saved_query_id` (Required, RequiresReplace), `space_id` (Optional+Computed, default `"default"`, RequiresReplace), `kibana_connection` (Optional, from `entitycore`), `query` (Required string), `description` (Optional string), `platform` (Optional SetAttribute of strings with allowed-values validator), `interval` (Optional Int64), `version` (Optional string), `snapshot` (Optional+Computed bool), `removed` (Optional+Computed bool), `ecs_mapping` (Optional MapNestedAttribute)
 - [ ] 4.2 Add `RequiresReplace` plan modifiers on `saved_query_id` and `space_id`
-- [ ] 4.3 Add `UseStateForUnknown` plan modifiers on `saved_query_id` (to avoid unknown diffs when Kibana assigns the ID) and other Optional+Computed fields
+- [ ] 4.3 Add `UseStateForUnknown` plan modifiers on Optional+Computed fields (`space_id`, `snapshot`, `removed`, and other computed-only attributes as needed)
 - [ ] 4.4 Implement the `ecs_mapping` element schema as a `SingleNestedAttribute` with `field` (Optional string), `value` (Optional string), `values` (Optional SetAttribute of strings)
-- [ ] 4.5 Add the per-element `ConfigValidator` on `ecs_mapping` enforcing exactly-one-of `field`, `value`, `values`; if `plugin-framework-validators` exactly-one-of does not work inside MapNestedAttribute, implement an inline `ValidateObject` per task 1.4
+- [ ] 4.5 Attach `validators.ExactlyOneOfNestedAttrsValidator` to `ecs_mapping` `MapNestedAttribute.NestedObject.Validators` enforcing exactly-one-of `field`, `value`, `values` per element; if map nested validation fails at implementation time, fall back to a custom inline `ValidateObject` per task 1.4
 
 ## 5. Resource CRUD and import
 
@@ -47,13 +47,14 @@
 
 - [ ] 7.1 Add `acc_test.go` covering full resource lifecycle: create with all fields (including `ecs_mapping` with all three shapes) → read → update `query` and `description` → destroy
 - [ ] 7.2 Add resource lifecycle test with `saved_query_id` explicitly set (forces-new on change)
-- [ ] 7.3 Add resource lifecycle test with `saved_query_id` omitted (verify Kibana generates an ID; import by generated ID)
+- [ ] 7.3 Add plan/validation test: config without `saved_query_id` → verify plan-time error (Required attribute)
 - [ ] 7.4 Add import test via composite `"<space_id>/<saved_query_id>"`
 - [ ] 7.5 Add `platform` test: create with `["linux", "darwin"]` → verify state and round-trip
-- [ ] 7.6 Add `ecs_mapping` validator test: config with two fields set in same element → verify plan error
+- [ ] 7.6 Add `ecs_mapping` validator tests: config with two fields set in same element → plan error; config with empty element `{}` → plan error
+- [ ] 7.10 Add resource test: import or read of a prebuilt query (by known prebuilt ID, skip if none in test env) → verify prebuilt error diagnostic and no state write
 - [ ] 7.7 Add data source test: resource creates query → data source reads same query by ID → values match
 - [ ] 7.8 Add data source test: read a prebuilt query by ID (skip if none available in test environment)
-- [ ] 7.9 Version-skip gate: skip tests against Kibana versions below the confirmed minimum
+- [ ] 7.9 Version-skip gate: skip tests against Kibana versions below the documented minimum (`8.5.0`); confirms floor against a live stack when available
 
 ## 8. Documentation and examples
 
