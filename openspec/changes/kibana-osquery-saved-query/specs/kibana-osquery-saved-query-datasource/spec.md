@@ -10,6 +10,7 @@ The `elasticstack_kibana_osquery_saved_query` data source SHALL expose the follo
 
 And the following Computed output attributes (populated from the API response):
 
+- `id` — Computed string; composite identifier in the format `<space_id>/<saved_query_id>`, used to uniquely identify the data source state entry across spaces
 - `query` — Computed string
 - `description` — Computed string
 - `platform` — Computed SetAttribute of strings
@@ -23,6 +24,14 @@ And the following Computed output attributes (populated from the API response):
 #### Scenario: Required saved_query_id enforced
 - **WHEN** the data source is configured without `saved_query_id`
 - **THEN** Terraform SHALL reject the configuration with a validation error
+
+### Requirement: Composite id
+
+The data source SHALL expose a computed `id` in the format `<space_id>/<saved_query_id>` to uniquely identify the state entry across spaces.
+
+#### Scenario: Computed id after read
+- **WHEN** the data source reads a query with `saved_query_id = "list_all_processes"` in `space_id = "default"`
+- **THEN** `id` SHALL equal `"default/list_all_processes"`
 
 ### Requirement: Read
 
@@ -72,7 +81,7 @@ The data source SHALL apply the same union-type normalisation as the resource: `
 
 ### Requirement: Connection override
 
-The data source SHALL obtain its Kibana client via the resource-level `kibana_connection` block when provided, otherwise via the provider-level Kibana configuration. Space-aware requests SHALL use `space_id` via `kibanautil.SpaceAwarePathRequestEditor`.
+The data source SHALL obtain its Kibana client via the data source-level `kibana_connection` block when provided, otherwise via the provider-level Kibana configuration. Space-aware requests SHALL use `space_id` via `kibanautil.SpaceAwarePathRequestEditor`.
 
 #### Scenario: Data source kibana_connection override
 - **WHEN** `kibana_connection` is configured on the data source
