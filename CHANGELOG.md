@@ -1,3 +1,9 @@
+## [Unreleased]
+
+### Changes
+
+- Add `elasticstack_kibana_osquery_saved_query` resource and data source for managing Osquery saved queries in Kibana.
+
 ## [0.16.2] - 2026-06-23
 
 ### Breaking changes

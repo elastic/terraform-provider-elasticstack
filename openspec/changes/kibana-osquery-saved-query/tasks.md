@@ -59,11 +59,11 @@
 
 ## 8. Documentation and examples
 
-- [ ] 8.1 Add `examples/resources/elasticstack_kibana_osquery_saved_query/resource.tf` with `ecs_mapping` example (covering `field`, `value`, and `values` forms)
-- [ ] 8.2 Add `examples/resources/elasticstack_kibana_osquery_saved_query/import.sh` showing composite ID import
-- [ ] 8.3 Add `examples/data-sources/elasticstack_kibana_osquery_saved_query/data-source.tf`
-- [ ] 8.4 Generate provider docs (`docs/resources/kibana_osquery_saved_query.md`, `docs/data-sources/kibana_osquery_saved_query.md`) via the existing `make` target
-- [ ] 8.5 Add a CHANGELOG entry following the repo's existing format
+- [x] 8.1 Add `examples/resources/elasticstack_kibana_osquery_saved_query/resource.tf` with `ecs_mapping` example (covering `field`, `value`, and `values` forms)
+- [x] 8.2 Add `examples/resources/elasticstack_kibana_osquery_saved_query/import.sh` showing composite ID import
+- [x] 8.3 Add `examples/data-sources/elasticstack_kibana_osquery_saved_query/data-source.tf`
+- [x] 8.4 Generate provider docs (`docs/resources/kibana_osquery_saved_query.md`, `docs/data-sources/kibana_osquery_saved_query.md`) via the existing `make` target
+- [x] 8.5 Add a CHANGELOG entry following the repo's existing format
 
 ## 9. Validation and cleanup
 
