@@ -7,10 +7,10 @@
 
 ## 2. kibanaoapi client helper
 
-- [ ] 2.1 Create `internal/clients/kibanaoapi/osquery_saved_query.go` with thin wrappers `CreateOsquerySavedQuery`, `GetOsquerySavedQuery`, `UpdateOsquerySavedQuery`, `DeleteOsquerySavedQuery` — each passing `kibanautil.SpaceAwarePathRequestEditor(spaceID)` and using `HandleGetTypedResponse` / `HandleMutateTypedResponse` / `HandleStatusResponse` consistently with `maintenance_window.go`
-- [ ] 2.2 Map HTTP 404 on Get to a nil/sentinel result (resource removed from state); map HTTP 404 on Delete to a no-op success
-- [ ] 2.3 Map non-2xx responses to provider diagnostics consistently with other kibanaoapi helpers
-- [ ] 2.4 Unwrap the `data` field from the Create (and Update, if applicable) response before returning the typed entity
+- [x] 2.1 Create `internal/clients/kibanaoapi/osquery_saved_query.go` with thin wrappers `CreateOsquerySavedQuery`, `GetOsquerySavedQuery`, `UpdateOsquerySavedQuery`, `DeleteOsquerySavedQuery` — each passing `kibanautil.SpaceAwarePathRequestEditor(spaceID)` and using `HandleGetTypedResponse` / `HandleMutateTypedResponse` / `HandleStatusResponse` consistently with `maintenance_window.go`
+- [x] 2.2 Map HTTP 404 on Get to a nil/sentinel result (resource removed from state); map HTTP 404 on Delete to a no-op success
+- [x] 2.3 Map non-2xx responses to provider diagnostics consistently with other kibanaoapi helpers
+- [x] 2.4 Unwrap the `data` field from the Create (and Update, if applicable) response before returning the typed entity
 
 ## 3. Resource skeleton and model
 
