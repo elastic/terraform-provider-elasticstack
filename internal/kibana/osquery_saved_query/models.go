@@ -40,10 +40,14 @@ var _ entitycore.KibanaResourceModel = osquerySavedQueryModel{}
 var (
 	osquerySavedQueryMinVersion = version.Must(version.NewVersion("8.5.0"))
 
+	attrEcsMappingField  = "field"
+	attrEcsMappingValue  = "value"
+	attrEcsMappingValues = "values"
+
 	ecsMappingAttrTypes = map[string]attr.Type{
-		"field":  types.StringType,
-		"value":  types.StringType,
-		"values": types.SetType{ElemType: types.StringType},
+		attrEcsMappingField:  types.StringType,
+		attrEcsMappingValue:  types.StringType,
+		attrEcsMappingValues: types.SetType{ElemType: types.StringType},
 	}
 )
 
@@ -296,9 +300,9 @@ func ecsMappingMapFromAPI(_ context.Context, api *kbapi.SecurityOsqueryAPIECSMap
 		}
 
 		obj, objDiags := types.ObjectValue(ecsMappingAttrTypes, map[string]attr.Value{
-			"field":  mapping.Field,
-			"value":  mapping.Value,
-			"values": mapping.Values,
+			attrEcsMappingField:  mapping.Field,
+			attrEcsMappingValue:  mapping.Value,
+			attrEcsMappingValues: mapping.Values,
 		})
 		diags.Append(objDiags...)
 		if diags.HasError() {

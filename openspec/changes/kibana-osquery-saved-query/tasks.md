@@ -22,11 +22,11 @@
 
 ## 4. Resource schema
 
-- [ ] 4.1 Implement `getSchema` covering: `id` (Computed, composite `<space_id>/<saved_query_id>`), `saved_query_id` (Required, RequiresReplace), `space_id` (Optional+Computed, default `"default"`, RequiresReplace), `kibana_connection` (Optional, from `entitycore`), `query` (Required string), `description` (Optional string), `platform` (Optional SetAttribute of strings with allowed-values validator), `interval` (Optional Int64), `version` (Optional string), `snapshot` (Optional+Computed bool), `removed` (Optional+Computed bool), `ecs_mapping` (Optional MapNestedAttribute)
-- [ ] 4.2 Add `RequiresReplace` plan modifiers on `saved_query_id` and `space_id`
-- [ ] 4.3 Add `UseStateForUnknown` plan modifiers on Optional+Computed fields (`space_id`, `snapshot`, `removed`, and other computed-only attributes as needed)
-- [ ] 4.4 Implement the `ecs_mapping` element schema as a `SingleNestedAttribute` with `field` (Optional string), `value` (Optional string), `values` (Optional SetAttribute of strings)
-- [ ] 4.5 Attach `validators.ExactlyOneOfNestedAttrsValidator` to `ecs_mapping` `MapNestedAttribute.NestedObject.Validators` enforcing exactly-one-of `field`, `value`, `values` per element (proven on nested/list objects, not yet on map values — task 7.6 validates); if map nested validation fails at implementation time, fall back to a custom inline `ValidateObject` per task 1.4
+- [x] 4.1 Implement `getSchema` covering: `id` (Computed, composite `<space_id>/<saved_query_id>`), `saved_query_id` (Required, RequiresReplace), `space_id` (Optional+Computed, default `"default"`, RequiresReplace), `kibana_connection` (Optional, from `entitycore`), `query` (Required string), `description` (Optional string), `platform` (Optional SetAttribute of strings with allowed-values validator), `interval` (Optional Int64), `version` (Optional string), `snapshot` (Optional+Computed bool), `removed` (Optional+Computed bool), `ecs_mapping` (Optional MapNestedAttribute)
+- [x] 4.2 Add `RequiresReplace` plan modifiers on `saved_query_id` and `space_id`
+- [x] 4.3 Add `UseStateForUnknown` plan modifiers on Optional+Computed fields (`space_id`, `snapshot`, `removed`, and other computed-only attributes as needed)
+- [x] 4.4 Implement the `ecs_mapping` element schema as a `SingleNestedAttribute` with `field` (Optional string), `value` (Optional string), `values` (Optional SetAttribute of strings)
+- [x] 4.5 Attach `validators.ExactlyOneOfNestedAttrsValidator` to `ecs_mapping` `MapNestedAttribute.NestedObject.Validators` enforcing exactly-one-of `field`, `value`, `values` per element (proven on nested/list objects, not yet on map values — task 7.6 validates); if map nested validation fails at implementation time, fall back to a custom inline `ValidateObject` per task 1.4
 
 ## 5. Resource CRUD and import
 
