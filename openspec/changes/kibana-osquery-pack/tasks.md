@@ -16,12 +16,12 @@
 
 ## 3. Resource skeleton and model
 
-- [ ] 3.1 Create `internal/kibana/osquery_pack/` directory mirroring `internal/kibana/osquery_saved_query/`
-- [ ] 3.2 Implement `models.go` with `osqueryPackModel` implementing `GetID`, `GetResourceID`, `GetSpaceID`, `GetKibanaConnection`, `GetVersionRequirements` (v1: single entry `8.5.0` base CRUD floor)
-- [ ] 3.3 Implement `queryModel` nested struct covering `query`, `platform`, `version`, `snapshot`, `removed`, `saved_query_id`, `ecs_mapping` (pinned kbapi fields only); plus `toAPIType()` and `fromAPIType()`
-- [ ] 3.4 Implement `ecsMappingModel` (reuse or mirror from `osquery_saved_query`) covering `field`, `value`, `values`
-- [ ] 3.5 Implement `populateFromAPI` accepting unwrapped detail payload (from `response.JSON200.Data`); map `saved_object_id` → `pack_id`, shards normalization, and per-query field mapping
-- [ ] 3.6 Add unit tests for `populateFromAPI` / converters: shards map normalization, ECS mapping three shapes, platform comma-string ↔ set, version round-trip
+- [x] 3.1 Create `internal/kibana/osquery_pack/` directory mirroring `internal/kibana/osquery_saved_query/`
+- [x] 3.2 Implement `models.go` with `osqueryPackModel` implementing `GetID`, `GetResourceID`, `GetSpaceID`, `GetKibanaConnection`, `GetVersionRequirements` (v1: single entry `8.5.0` base CRUD floor)
+- [x] 3.3 Implement `queryModel` nested struct covering `query`, `platform`, `version`, `snapshot`, `removed`, `saved_query_id`, `ecs_mapping` (pinned kbapi fields only); plus `toAPIType()` and `fromAPIType()`
+- [x] 3.4 Implement `ecsMappingModel` (reuse or mirror from `osquery_saved_query`) covering `field`, `value`, `values`
+- [x] 3.5 Implement `populateFromAPI` accepting unwrapped detail payload (from `response.JSON200.Data`); map `saved_object_id` → `pack_id`, shards normalization, and per-query field mapping
+- [x] 3.6 Add unit tests for `populateFromAPI` / converters: shards map normalization, ECS mapping three shapes, platform comma-string ↔ set, version round-trip
 
 ## 4. Resource schema
 
