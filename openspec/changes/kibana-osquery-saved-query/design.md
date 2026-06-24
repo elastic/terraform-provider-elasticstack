@@ -123,7 +123,7 @@ The data source accepts `saved_query_id` (Required), `space_id` (Optional, defau
 
 The resource declares `8.5.0` as the minimum Kibana version via `GetVersionRequirements` (implemented in task 3.2). This is the documented/conservative floor from Kibana API docs and source — not live-validated during discovery.
 
-**Discovery evidence (task 1.2):** Osquery saved-queries CRUD is documented under Kibana v8 API reference (`POST/GET/PUT/DELETE /api/osquery/saved_queries`); Kibana PR [#137162](https://github.com/elastic/kibana/pull/137162) (Osquery API docs) is labeled `v8.5.0`; the Osquery plugin public API version is `2023-10-31` (`API_VERSIONS.public.v1` in Kibana `common/constants.ts`); all four CRUD bindings are present in `generated/kbapi/kibana.gen.go`. Live confirmation deferred to acceptance task 7.9; Kibana stack was unavailable locally.
+**Discovery evidence (task 1.2):** Osquery saved-queries CRUD is documented under Kibana v8 API reference (`POST/GET/PUT/DELETE /api/osquery/saved_queries`); Kibana PR [#137162](https://github.com/elastic/kibana/pull/137162) (Osquery API docs) is labeled `v8.5.0`; the Osquery plugin public API version is `2023-10-31` (`API_VERSIONS.public.v1` in Kibana `common/constants.ts`); all four CRUD bindings are present in `generated/kbapi/kibana.gen.go`. Live confirmation deferred to acceptance task 9.3; Kibana stack was unavailable locally.
 
 ### Decision 17: Naming
 
@@ -134,7 +134,7 @@ Resource and data source: `elasticstack_kibana_osquery_saved_query`. Go package:
 | Risk | Mitigation |
 |---|---|
 | **`saved_query_id` omitted on create — does Kibana generate a UUID?** | Resolved (task 1.3): no — `saved_query_id` is Required. |
-| **`8.5.0` version floor is too low** | Documented/conservative floor from docs/Kibana source (task 1.2); live confirmation in acceptance task 7.9. |
+| **`8.5.0` version floor is too low** | Documented/conservative floor from docs/Kibana source (task 1.2); live confirmation in acceptance task 9.3. |
 | **`ecs_mapping` exactly-one-of validator inside `MapNestedAttribute`** | Resolved (task 1.4): use `ExactlyOneOfNestedAttrsValidator` on `NestedObject.Validators`; task 7.6 validates behavior. |
 | **`interval`/`version` union-type edge cases** | Unit tests in task 3.5 cover union arms and Update plain `*string` version; acceptance round-trip in task 7.1 confirms no data loss. |
 | **Prebuilt queries silently imported** | Runtime guard on Read (and post-Create) returns an explicit error diagnostic before touching state. |

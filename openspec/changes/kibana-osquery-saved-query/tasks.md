@@ -1,7 +1,7 @@
 ## 1. Prep and discovery
 
 - [x] 1.1 Verify that `OsqueryCreateSavedQuery`, `OsqueryGetSavedQueryDetails`, `OsqueryUpdateSavedQuery`, `OsqueryDeleteSavedQuery` are present in `generated/kbapi/kibana.gen.go` and confirm their request/response type signatures match the design (in particular: `SecurityOsqueryAPICreateSavedQueryRequestBody` and the `data`-wrapped create response)
-- [x] 1.2 Confirm the minimum Kibana version that ships `/api/osquery/saved_queries` CRUD; record the documented/conservative floor (`8.5.0`) in design.md (implementation of `GetVersionRequirements` is task 3.2; live confirmation is task 7.9)
+- [x] 1.2 Confirm the minimum Kibana version that ships `/api/osquery/saved_queries` CRUD; record the documented/conservative floor (`8.5.0`) in design.md (implementation of `GetVersionRequirements` is task 3.2; live confirmation is task 9.3)
 - [x] 1.3 Confirm that Kibana generates a UUID for `saved_query_id` when it is omitted on Create; if it does not, escalate `saved_query_id` to Required and update design.md Decision 2
 - [x] 1.4 Confirm validator approach for the three-way `field`/`value`/`values` constraint inside `MapNestedAttribute` values; plan `ExactlyOneOfNestedAttrsValidator` on `NestedObject.Validators` (fallback: custom inline `ValidateObject` only if map nested validation fails at implementation time)
 

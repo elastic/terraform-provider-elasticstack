@@ -455,6 +455,8 @@ func TestAccDataSourceOsquerySavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "ecs_mapping.process.name.field", "cmdline"),
 					resource.TestCheckResourceAttr(dataSourceName, "ecs_mapping.event.category.value", "process"),
 					resource.TestCheckResourceAttr(dataSourceName, "ecs_mapping.event.type.values.#", "2"),
+					resource.TestCheckTypeSetElemAttr(dataSourceName, "ecs_mapping.event.type.values.*", "end"),
+					resource.TestCheckTypeSetElemAttr(dataSourceName, "ecs_mapping.event.type.values.*", "start"),
 				),
 			},
 		},

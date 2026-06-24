@@ -29,5 +29,5 @@ This change adds `elasticstack_kibana_osquery_saved_query` resource and matching
 - **No kbapi regeneration needed**: all four CRUD bindings already exist in `generated/kbapi/kibana.gen.go` (`OsqueryCreateSavedQuery`, `OsqueryGetSavedQueryDetails`, `OsqueryUpdateSavedQuery`, `OsqueryDeleteSavedQuery`). Space support is injected via `kibanautil.SpaceAwarePathRequestEditor` (no `transform_schema.go` changes needed).
 - **New docs/examples**: `docs/resources/kibana_osquery_saved_query.md`, `docs/data-sources/kibana_osquery_saved_query.md`, `examples/resources/elasticstack_kibana_osquery_saved_query/`, `examples/data-sources/elasticstack_kibana_osquery_saved_query/`.
 - **Provider registration**: register the new resource and data source in `provider/plugin_framework.go`.
-- **Minimum version**: `8.5.0` documented/conservative floor from Kibana API docs and source (task 1.2); `GetVersionRequirements` in task 3.2; live confirmation deferred to acceptance task 7.9.
+- **Minimum version**: `8.5.0` documented/conservative floor from Kibana API docs and source (task 1.2); `GetVersionRequirements` in task 3.2; live confirmation deferred to acceptance task 9.3.
 - **Backward compatibility**: additive only — no breaking changes to existing resources or data sources.
