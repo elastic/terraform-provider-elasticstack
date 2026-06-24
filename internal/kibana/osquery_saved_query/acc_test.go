@@ -32,9 +32,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	osquerysavedquery "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_saved_query"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -49,13 +49,11 @@ const (
 )
 
 var (
-	minOsquerySavedQueryVersion = version.Must(version.NewVersion("8.5.0"))
-
 	importStateVerifyIgnore = []string{"snapshot", "removed"}
 )
 
 func TestAccResourceOsquerySavedQuery(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsquerySavedQueryVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, osquerysavedquery.MinSupportedVersion, versionutils.FlavorAny)
 
 	savedQueryID := "tf-osquery-" + uuid.New().String()
 	spaceID := clients.DefaultSpaceID
@@ -163,7 +161,7 @@ func TestAccResourceOsquerySavedQuery(t *testing.T) {
 }
 
 func TestAccResourceOsquerySavedQuery_ExplicitSavedQueryID(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsquerySavedQueryVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, osquerysavedquery.MinSupportedVersion, versionutils.FlavorAny)
 
 	firstID := "tf-osquery-first-" + uuid.New().String()
 	secondID := "tf-osquery-second-" + uuid.New().String()
@@ -266,7 +264,7 @@ func TestAccResourceOsquerySavedQuery_Validation(t *testing.T) {
 }
 
 func TestAccResourceOsquerySavedQuery_Platform(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsquerySavedQueryVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, osquerysavedquery.MinSupportedVersion, versionutils.FlavorAny)
 
 	savedQueryID := "tf-osquery-platform-" + uuid.New().String()
 
@@ -300,7 +298,7 @@ func TestAccResourceOsquerySavedQuery_Platform(t *testing.T) {
 }
 
 func TestAccResourceOsquerySavedQuery_Space(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsquerySavedQueryVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, osquerysavedquery.MinSupportedVersion, versionutils.FlavorAny)
 
 	spaceID := "tf-osquery-space-" + uuid.New().String()[:8]
 	savedQueryID := "tf-osquery-space-query-" + uuid.New().String()
@@ -340,7 +338,7 @@ func TestAccResourceOsquerySavedQuery_Space(t *testing.T) {
 }
 
 func TestAccResourceOsquerySavedQuery_SpaceRequiresReplace(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsquerySavedQueryVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, osquerysavedquery.MinSupportedVersion, versionutils.FlavorAny)
 
 	spaceID1 := "tf-oq-sp1-" + uuid.New().String()[:8]
 	spaceID2 := "tf-oq-sp2-" + uuid.New().String()[:8]
@@ -399,7 +397,7 @@ func TestAccResourceOsquerySavedQuery_SpaceRequiresReplace(t *testing.T) {
 }
 
 func TestAccResourceOsquerySavedQuery_PrebuiltImport(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsquerySavedQueryVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, osquerysavedquery.MinSupportedVersion, versionutils.FlavorAny)
 
 	prebuiltID, ok := discoverPrebuiltSavedQueryID(t)
 	if !ok {
@@ -425,7 +423,7 @@ func TestAccResourceOsquerySavedQuery_PrebuiltImport(t *testing.T) {
 }
 
 func TestAccDataSourceOsquerySavedQuery(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsquerySavedQueryVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, osquerysavedquery.MinSupportedVersion, versionutils.FlavorAny)
 
 	savedQueryID := "tf-osquery-ds-" + uuid.New().String()
 
@@ -481,7 +479,7 @@ func TestAccDataSourceOsquerySavedQuery_Validation(t *testing.T) {
 }
 
 func TestAccDataSourceOsquerySavedQuery_NotFound(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsquerySavedQueryVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, osquerysavedquery.MinSupportedVersion, versionutils.FlavorAny)
 
 	missingID := "tf-osquery-missing-" + uuid.New().String()
 
@@ -501,7 +499,7 @@ func TestAccDataSourceOsquerySavedQuery_NotFound(t *testing.T) {
 }
 
 func TestAccDataSourceOsquerySavedQuery_Prebuilt(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsquerySavedQueryVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, osquerysavedquery.MinSupportedVersion, versionutils.FlavorAny)
 
 	prebuiltID, ok := discoverPrebuiltSavedQueryID(t)
 	if !ok {

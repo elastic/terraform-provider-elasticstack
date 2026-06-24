@@ -28,6 +28,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/examples"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/queryrulesets"
+	osquerysavedquery "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_saved_query"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl/v2/hclparse"
@@ -63,6 +64,8 @@ var planOnlySkippedEmbedPaths = []string{
 // PlanOnly and therefore require a minimum Elasticsearch version on the acceptance cluster.
 var planOnlyMinElasticsearchVersion = map[string]*version.Version{
 	"data-sources/elasticstack_elasticsearch_query_ruleset/data-source.tf": queryrulesets.MinSupportedVersion,
+	"data-sources/elasticstack_kibana_osquery_saved_query/data-source.tf":  osquerysavedquery.MinSupportedVersion,
+	"resources/elasticstack_kibana_osquery_saved_query/resource.tf":        osquerysavedquery.MinSupportedVersion,
 }
 
 func shouldSkipPlanOnlyExample(pathUnderExamples string) bool {

@@ -29,7 +29,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -41,8 +40,6 @@ var (
 )
 
 var (
-	osquerySavedQueryMinVersion = version.Must(version.NewVersion("8.5.0"))
-
 	attrEcsMappingField  = "field"
 	attrEcsMappingValue  = "value"
 	attrEcsMappingValues = "values"
@@ -89,8 +86,8 @@ func (m osquerySavedQueryModel) GetSpaceID() types.String    { return m.SpaceID 
 func (m osquerySavedQueryModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
-			MinVersion:   *osquerySavedQueryMinVersion,
-			ErrorMessage: fmt.Sprintf("Osquery saved queries require Elastic Stack v%s or later.", osquerySavedQueryMinVersion),
+			MinVersion:   *MinSupportedVersion,
+			ErrorMessage: fmt.Sprintf("Osquery saved queries require Elastic Stack v%s or later.", MinSupportedVersion),
 		},
 	}, nil
 }
