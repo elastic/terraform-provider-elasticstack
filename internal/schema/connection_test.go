@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
@@ -76,18 +77,39 @@ func TestElasticsearchConnectionBlockObjectAttrTypes_returnsCopy(t *testing.T) {
 	require.NotEqual(t, first, second)
 }
 
-func TestElasticsearchConnectionFallbackAttrTypes_matchGetEsFWConnectionBlock(t *testing.T) {
+func TestConnectionBlockObjectAttrTypes_matchBuiltBlock(t *testing.T) {
 	t.Parallel()
 
-	block := GetEsFWConnectionBlock()
-	lb, ok := block.(fwschema.ListNestedBlock)
-	require.True(t, ok, "GetEsFWConnectionBlock must return a ListNestedBlock")
+	cases := []struct {
+		name  string
+		block fwschema.Block
+		got   map[string]attr.Type
+	}{
+		{
+			name:  "elasticsearch",
+			block: GetEsFWConnectionBlock(),
+			got:   elasticsearchConnectionBlockObjectAttrTypes(),
+		},
+		{
+			name:  "kibana",
+			block: GetKbFWConnectionBlock(),
+			got:   kibanaConnectionBlockObjectAttrTypes(),
+		},
+	}
 
-	want, err := fwNestedBlockAttributesToAttrTypes(lb.NestedObject.Attributes)
-	require.NoError(t, err)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	got := elasticsearchConnectionBlockObjectAttrTypesFallback()
-	require.Equal(t, want, got)
+			lb, ok := tc.block.(fwschema.ListNestedBlock)
+			require.True(t, ok, "block must return a ListNestedBlock")
+
+			want, err := fwNestedBlockAttributesToAttrTypes(lb.NestedObject.Attributes)
+			require.NoError(t, err)
+
+			require.Equal(t, want, tc.got)
+		})
+	}
 }
 
 func TestElasticsearchConnectionBlocks_includeCAFingerprintAttribute(t *testing.T) {
@@ -125,6 +147,33 @@ func TestElasticsearchConnectionBlocks_tlsTrustAttributesHaveMatchingValidatorCo
 
 	require.Equal(t, managed, ephemeral)
 	require.Equal(t, managed, action)
+}
+
+func TestElasticsearchConnectionBlocks_allAttributesPresent(t *testing.T) {
+	t.Parallel()
+
+	wantAttrs := []string{
+		attrUsername, attrPassword, attrAPIKey, attrBearerToken,
+		attrESClientAuthentication, attrEndpoints, attrHeaders,
+		attrInsecure, attrCAFile, attrCAData, attrCAFingerprint,
+		attrCertFile, attrKeyFile, attrCertData, attrKeyData,
+	}
+
+	managed := fwConnectionBlockAttributeNames(GetEsFWConnectionBlock())
+	ephemeral := ephemeralConnectionBlockAttributeNames(GetEsEphemeralConnectionBlock())
+	action := actionConnectionBlockAttributeNames(GetEsActionConnectionBlock())
+
+	for _, attr := range wantAttrs {
+		if _, ok := managed[attr]; !ok {
+			t.Errorf("managed connection block missing attribute %q", attr)
+		}
+		if _, ok := ephemeral[attr]; !ok {
+			t.Errorf("ephemeral connection block missing attribute %q", attr)
+		}
+		if _, ok := action[attr]; !ok {
+			t.Errorf("action connection block missing attribute %q", attr)
+		}
+	}
 }
 
 func TestKibanaConnectionNullList_objectMatchesGetKbFWConnectionBlock(t *testing.T) {
