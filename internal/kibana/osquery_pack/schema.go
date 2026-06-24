@@ -22,6 +22,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
+	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -90,9 +92,14 @@ func getSchema(_ context.Context) schema.Schema {
 				ElementType:         types.StringType,
 			},
 			"shards": schema.MapAttribute{
-				MarkdownDescription: "Percent (1–100) of hosts per policy ID that receive the pack.",
+				MarkdownDescription: "Percent (1-100) of hosts per policy ID that receive the pack.",
 				Optional:            true,
 				ElementType:         types.Float64Type,
+				Validators: []validator.Map{
+					mapvalidator.ValueFloat64sAre(
+						float64validator.Between(1, 100),
+					),
+				},
 			},
 			"queries": queriesSchema(),
 		},
@@ -103,6 +110,9 @@ func queriesSchema() schema.MapNestedAttribute {
 	return schema.MapNestedAttribute{
 		MarkdownDescription: "Osquery queries in the pack. Map keys are query names (canonical identifiers in Kibana).",
 		Required:            true,
+		Validators: []validator.Map{
+			mapvalidator.SizeAtLeast(1),
+		},
 		NestedObject: schema.NestedAttributeObject{
 			Attributes: queryNestedAttributes(),
 		},

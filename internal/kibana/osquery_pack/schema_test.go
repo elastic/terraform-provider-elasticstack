@@ -65,13 +65,55 @@ func TestSchema_attributeMetadata(t *testing.T) {
 	require.True(t, ok)
 	assert.True(t, nameAttr.IsRequired())
 
+	descriptionAttr, ok := s.Attributes["description"].(schema.StringAttribute)
+	require.True(t, ok)
+	assert.True(t, descriptionAttr.IsOptional())
+	assert.False(t, descriptionAttr.IsRequired())
+	assert.False(t, descriptionAttr.IsComputed())
+
+	enabledAttr, ok := s.Attributes["enabled"].(schema.BoolAttribute)
+	require.True(t, ok)
+	assert.True(t, enabledAttr.IsOptional())
+	assert.False(t, enabledAttr.IsRequired())
+	assert.False(t, enabledAttr.IsComputed())
+
+	policyIDsAttr, ok := s.Attributes["policy_ids"].(schema.ListAttribute)
+	require.True(t, ok)
+	assert.True(t, policyIDsAttr.IsOptional())
+	assert.Equal(t, types.StringType, policyIDsAttr.ElementType)
+
+	shardsAttr, ok := s.Attributes["shards"].(schema.MapAttribute)
+	require.True(t, ok)
+	assert.True(t, shardsAttr.IsOptional())
+	assert.Equal(t, types.Float64Type, shardsAttr.ElementType)
+	require.NotEmpty(t, shardsAttr.Validators)
+
 	queriesAttr, ok := s.Attributes["queries"].(schema.MapNestedAttribute)
 	require.True(t, ok)
 	assert.True(t, queriesAttr.IsRequired())
+	require.NotEmpty(t, queriesAttr.Validators)
 
 	queryAttr, ok := queriesAttr.NestedObject.Attributes["query"].(schema.StringAttribute)
 	require.True(t, ok)
 	assert.True(t, queryAttr.IsRequired())
+
+	platformAttr, ok := queriesAttr.NestedObject.Attributes["platform"].(schema.SetAttribute)
+	require.True(t, ok)
+	assert.True(t, platformAttr.IsOptional())
+	assert.Equal(t, types.StringType, platformAttr.ElementType)
+	require.NotEmpty(t, platformAttr.Validators)
+
+	versionAttr, ok := queriesAttr.NestedObject.Attributes["version"].(schema.StringAttribute)
+	require.True(t, ok)
+	assert.True(t, versionAttr.IsOptional())
+
+	savedQueryIDAttr, ok := queriesAttr.NestedObject.Attributes["saved_query_id"].(schema.StringAttribute)
+	require.True(t, ok)
+	assert.True(t, savedQueryIDAttr.IsOptional())
+
+	ecsMappingAttr, ok := queriesAttr.NestedObject.Attributes["ecs_mapping"].(schema.MapNestedAttribute)
+	require.True(t, ok)
+	assert.True(t, ecsMappingAttr.IsOptional())
 
 	snapshotAttr, ok := queriesAttr.NestedObject.Attributes["snapshot"].(schema.BoolAttribute)
 	require.True(t, ok)
@@ -84,6 +126,72 @@ func TestSchema_attributeMetadata(t *testing.T) {
 	assert.True(t, removedAttr.IsOptional())
 	assert.True(t, removedAttr.IsComputed())
 	assertHasBoolPlanModifier(t, removedAttr.BoolPlanModifiers(), "useStateForUnknown")
+}
+
+func TestSchema_queriesMapValidators(t *testing.T) {
+	t.Parallel()
+
+	queriesAttr, ok := getSchema(context.Background()).Attributes["queries"].(schema.MapNestedAttribute)
+	require.True(t, ok)
+	require.NotEmpty(t, queriesAttr.Validators)
+
+	t.Run("rejects empty map", func(t *testing.T) {
+		t.Parallel()
+		diags := validateMapValidators(
+			context.Background(),
+			queriesAttr.Validators,
+			types.MapValueMust(queryMapElemType(), map[string]attr.Value{}),
+			path.Root("queries"),
+		)
+		require.True(t, diags.HasError())
+	})
+}
+
+func TestSchema_shardsMapValidators(t *testing.T) {
+	t.Parallel()
+
+	shardsAttr, ok := getSchema(context.Background()).Attributes["shards"].(schema.MapAttribute)
+	require.True(t, ok)
+	require.NotEmpty(t, shardsAttr.Validators)
+
+	t.Run("accepts value in range", func(t *testing.T) {
+		t.Parallel()
+		diags := validateMapValidators(
+			context.Background(),
+			shardsAttr.Validators,
+			types.MapValueMust(types.Float64Type, map[string]attr.Value{
+				"policy-abc": types.Float64Value(75),
+			}),
+			path.Root("shards"),
+		)
+		require.False(t, diags.HasError(), "%s", diags)
+	})
+
+	t.Run("rejects value below range", func(t *testing.T) {
+		t.Parallel()
+		diags := validateMapValidators(
+			context.Background(),
+			shardsAttr.Validators,
+			types.MapValueMust(types.Float64Type, map[string]attr.Value{
+				"policy-abc": types.Float64Value(0),
+			}),
+			path.Root("shards"),
+		)
+		require.True(t, diags.HasError())
+	})
+
+	t.Run("rejects value above range", func(t *testing.T) {
+		t.Parallel()
+		diags := validateMapValidators(
+			context.Background(),
+			shardsAttr.Validators,
+			types.MapValueMust(types.Float64Type, map[string]attr.Value{
+				"policy-abc": types.Float64Value(101),
+			}),
+			path.Root("shards"),
+		)
+		require.True(t, diags.HasError())
+	})
 }
 
 func TestSchema_spaceIDDefault(t *testing.T) {
@@ -237,6 +345,69 @@ func TestSchema_ecsMappingNestedObjectValidators(t *testing.T) {
 		require.True(t, diags.HasError())
 		require.Contains(t, diags.Errors()[0].Detail(), "not more than one")
 	})
+
+	t.Run("rejects field and values", func(t *testing.T) {
+		t.Parallel()
+		obj := types.ObjectValueMust(ecsMappingAttrTypes(), map[string]attr.Value{
+			attrEcsMappingField: types.StringValue("cmdline"),
+			attrEcsMappingValue: types.StringNull(),
+			attrEcsMappingValues: types.SetValueMust(types.StringType, []attr.Value{
+				types.StringValue("process"),
+			}),
+		})
+		diags := validateObjectValidators(ctx, nestedObject.Validators, obj, elemPath)
+		require.True(t, diags.HasError())
+		require.Contains(t, diags.Errors()[0].Detail(), "not more than one")
+	})
+
+	t.Run("rejects value and values", func(t *testing.T) {
+		t.Parallel()
+		obj := types.ObjectValueMust(ecsMappingAttrTypes(), map[string]attr.Value{
+			attrEcsMappingField:  types.StringNull(),
+			attrEcsMappingValue:  types.StringValue("literal"),
+			attrEcsMappingValues: types.SetValueMust(types.StringType, []attr.Value{
+				types.StringValue("process"),
+			}),
+		})
+		diags := validateObjectValidators(ctx, nestedObject.Validators, obj, elemPath)
+		require.True(t, diags.HasError())
+		require.Contains(t, diags.Errors()[0].Detail(), "not more than one")
+	})
+
+	t.Run("rejects all three", func(t *testing.T) {
+		t.Parallel()
+		obj := types.ObjectValueMust(ecsMappingAttrTypes(), map[string]attr.Value{
+			attrEcsMappingField: types.StringValue("cmdline"),
+			attrEcsMappingValue: types.StringValue("literal"),
+			attrEcsMappingValues: types.SetValueMust(types.StringType, []attr.Value{
+				types.StringValue("process"),
+			}),
+		})
+		diags := validateObjectValidators(ctx, nestedObject.Validators, obj, elemPath)
+		require.True(t, diags.HasError())
+		require.Contains(t, diags.Errors()[0].Detail(), "not more than one")
+	})
+}
+
+func TestSchema_ecsMappingValuesSetValidators(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	nestedObject := requireEcsMappingNestedObjectFromSchema(t)
+	valuesAttr, ok := nestedObject.Attributes[attrEcsMappingValues].(schema.SetAttribute)
+	require.True(t, ok)
+	require.NotEmpty(t, valuesAttr.Validators)
+
+	t.Run("rejects empty values set", func(t *testing.T) {
+		t.Parallel()
+		diags := validateSetValidators(
+			ctx,
+			valuesAttr.Validators,
+			types.SetValueMust(types.StringType, []attr.Value{}),
+			path.Root("queries").AtMapKey("find_procs").AtName("ecs_mapping").AtMapKey("process.name").AtName(attrEcsMappingValues),
+		)
+		require.True(t, diags.HasError())
+	})
 }
 
 func requireQueriesNestedObjectFromSchema(t *testing.T) schema.NestedAttributeObject {
@@ -274,6 +445,17 @@ func validateSetValidators(ctx context.Context, validators []validator.Set, valu
 	for _, v := range validators {
 		var resp validator.SetResponse
 		v.ValidateSet(ctx, req, &resp)
+		diags.Append(resp.Diagnostics...)
+	}
+	return diags
+}
+
+func validateMapValidators(ctx context.Context, validators []validator.Map, value types.Map, p path.Path) diag.Diagnostics {
+	var diags diag.Diagnostics
+	req := validator.MapRequest{ConfigValue: value, Path: p}
+	for _, v := range validators {
+		var resp validator.MapResponse
+		v.ValidateMap(ctx, req, &resp)
 		diags.Append(resp.Diagnostics...)
 	}
 	return diags
