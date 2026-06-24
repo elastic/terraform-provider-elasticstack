@@ -82,6 +82,8 @@ func finishOsquerySavedQueryDataSourceRead(
 }
 
 func resolveDataSourceSpaceID(spaceID types.String) string {
+	// Datasource schema cannot declare stringdefault.StaticString (no Default on datasource
+	// StringAttribute in terraform-plugin-framework); default the default space at read time.
 	if typeutils.IsKnown(spaceID) && spaceID.ValueString() != "" {
 		return spaceID.ValueString()
 	}

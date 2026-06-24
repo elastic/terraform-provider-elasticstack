@@ -74,7 +74,17 @@ func (m *dataSourceModel) populateFromGetAPI(ctx context.Context, entity *kibana
 	m.Snapshot = scratch.Snapshot
 	m.Removed = scratch.Removed
 	m.EcsMapping = scratch.EcsMapping
-	m.Prebuilt = boolPointerValue(entity.Prebuilt)
+	m.Prebuilt = prebuiltFromAPI(entity.Prebuilt)
 
 	return diags
+}
+
+// prebuiltFromAPI maps the API prebuilt flag to state. Omitted/nil is treated as false
+// so user-managed queries surface prebuilt = false rather than null.
+func prebuiltFromAPI(prebuilt *bool) types.Bool {
+	if prebuilt == nil {
+		return types.BoolValue(false)
+	}
+
+	return types.BoolValue(*prebuilt)
 }

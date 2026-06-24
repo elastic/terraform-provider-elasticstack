@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -68,36 +69,87 @@ func TestNewDataSource_schemaAttributes(t *testing.T) {
 	require.Contains(t, resp.Schema.Blocks, "kibana_connection")
 
 	wantAttrs := []string{
-		"id",
-		"saved_query_id",
-		"space_id",
-		"query",
-		"description",
-		"platform",
-		"interval",
-		"version",
-		"snapshot",
-		"removed",
-		"ecs_mapping",
-		"prebuilt",
+		attrID,
+		attrSavedQueryID,
+		attrSpaceID,
+		attrQuery,
+		attrDescription,
+		attrPlatform,
+		attrInterval,
+		attrVersion,
+		attrSnapshot,
+		attrRemoved,
+		attrEcsMapping,
+		attrPrebuilt,
 	}
 	for _, attr := range wantAttrs {
 		require.Contains(t, resp.Schema.Attributes, attr, "schema Attributes must contain %q", attr)
 	}
+}
 
-	savedQueryIDAttr, ok := resp.Schema.Attributes["saved_query_id"].(dsschema.StringAttribute)
-	require.True(t, ok)
-	require.True(t, savedQueryIDAttr.IsRequired())
-	require.False(t, savedQueryIDAttr.IsComputed())
+func TestDataSourceSchema_attributeMetadata(t *testing.T) {
+	t.Parallel()
 
-	idAttr, ok := resp.Schema.Attributes["id"].(dsschema.StringAttribute)
-	require.True(t, ok)
-	require.True(t, idAttr.IsComputed())
-	require.False(t, idAttr.IsRequired())
+	s := getDataSourceSchema(context.Background())
 
-	prebuiltAttr, ok := resp.Schema.Attributes["prebuilt"].(dsschema.BoolAttribute)
+	savedQueryIDAttr, ok := s.Attributes[attrSavedQueryID].(dsschema.StringAttribute)
 	require.True(t, ok)
-	require.True(t, prebuiltAttr.IsComputed())
+	assert.True(t, savedQueryIDAttr.IsRequired())
+	assert.False(t, savedQueryIDAttr.IsComputed())
+	assert.False(t, savedQueryIDAttr.IsOptional())
+
+	spaceIDAttr, ok := s.Attributes[attrSpaceID].(dsschema.StringAttribute)
+	require.True(t, ok)
+	assert.True(t, spaceIDAttr.IsOptional())
+	assert.True(t, spaceIDAttr.IsComputed())
+	assert.False(t, spaceIDAttr.IsRequired())
+
+	computedOnlyStringAttrs := []string{attrID, attrQuery, attrDescription, attrVersion}
+	for _, name := range computedOnlyStringAttrs {
+		attr, ok := s.Attributes[name].(dsschema.StringAttribute)
+		require.True(t, ok, "expected %q to be StringAttribute", name)
+		assert.True(t, attr.IsComputed(), "%q must be computed", name)
+		assert.False(t, attr.IsRequired(), "%q must not be required", name)
+		assert.False(t, attr.IsOptional(), "%q must not be optional", name)
+	}
+
+	platformAttr, ok := s.Attributes[attrPlatform].(dsschema.SetAttribute)
+	require.True(t, ok)
+	assert.True(t, platformAttr.IsComputed())
+	assert.False(t, platformAttr.IsRequired())
+	assert.False(t, platformAttr.IsOptional())
+
+	intervalAttr, ok := s.Attributes[attrInterval].(dsschema.Int64Attribute)
+	require.True(t, ok)
+	assert.True(t, intervalAttr.IsComputed())
+	assert.False(t, intervalAttr.IsRequired())
+	assert.False(t, intervalAttr.IsOptional())
+
+	computedOnlyBoolAttrs := []string{attrSnapshot, attrRemoved, attrPrebuilt}
+	for _, name := range computedOnlyBoolAttrs {
+		attr, ok := s.Attributes[name].(dsschema.BoolAttribute)
+		require.True(t, ok, "expected %q to be BoolAttribute", name)
+		assert.True(t, attr.IsComputed(), "%q must be computed", name)
+		assert.False(t, attr.IsRequired(), "%q must not be required", name)
+		assert.False(t, attr.IsOptional(), "%q must not be optional", name)
+	}
+
+	ecsMappingAttr, ok := s.Attributes[attrEcsMapping].(dsschema.MapNestedAttribute)
+	require.True(t, ok)
+	assert.True(t, ecsMappingAttr.IsComputed())
+	assert.False(t, ecsMappingAttr.IsRequired())
+	assert.False(t, ecsMappingAttr.IsOptional())
+}
+
+func TestEcsMappingDataSourceElemType_matchesSchema(t *testing.T) {
+	t.Parallel()
+
+	ecsMappingAttr, ok := getDataSourceSchema(context.Background()).Attributes[attrEcsMapping].(dsschema.MapNestedAttribute)
+	require.True(t, ok, "expected ecs_mapping to be MapNestedAttribute")
+
+	schemaElem := dataSourceSchemaNestedObjectElemType(ecsMappingAttr.NestedObject)
+	require.Equal(t, schemaElem, getEcsMappingElemType(),
+		"getEcsMappingElemType() drifted from data source ecs_mapping nested object; update both together")
 }
 
 func TestResolveDataSourceSpaceID(t *testing.T) {
@@ -128,6 +180,44 @@ func TestFinishOsquerySavedQueryDataSourceRead_notFound(t *testing.T) {
 	assert.Equal(t, "Osquery saved query not found", diags.Errors()[0].Summary())
 	assert.Contains(t, diags.Errors()[0].Detail(), "missing-query")
 	assert.Contains(t, diags.Errors()[0].Detail(), "default")
+}
+
+func TestFinishOsquerySavedQueryDataSourceRead_successWithDefaultSpace(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	prebuilt := false
+	query := kbapi.SecurityOsqueryAPIQuery("SELECT pid FROM processes")
+	description := kbapi.SecurityOsqueryAPISavedQueryDescription("List processes")
+	platform := kbapi.SecurityOsqueryAPIPlatform("linux,darwin")
+	snapshot := true
+	removed := false
+	entity := &kibanaoapi.OsquerySavedQueryGetEntity{
+		ID:          "list_processes",
+		Query:       &query,
+		Description: &description,
+		Platform:    &platform,
+		Prebuilt:    &prebuilt,
+		Snapshot:    &snapshot,
+		Removed:     &removed,
+	}
+
+	config := dataSourceModel{
+		SavedQueryID: types.StringValue("list_processes"),
+		SpaceID:      types.StringNull(),
+	}
+
+	result, diags := finishOsquerySavedQueryDataSourceRead(ctx, config, entity, clients.DefaultSpaceID)
+	require.False(t, diags.HasError())
+	assert.Equal(t, clients.DefaultSpaceID, result.SpaceID.ValueString())
+	assert.Equal(t, "default/list_processes", result.ID.ValueString())
+	assert.Equal(t, "list_processes", result.SavedQueryID.ValueString())
+	assert.Equal(t, "SELECT pid FROM processes", result.Query.ValueString())
+	assert.Equal(t, "List processes", result.Description.ValueString())
+	assert.False(t, result.Prebuilt.ValueBool())
+	assert.True(t, result.Snapshot.ValueBool())
+	assert.False(t, result.Removed.ValueBool())
+	require.False(t, result.Platform.IsNull())
 }
 
 func TestDataSourceModel_populateFromGetAPI_prebuilt(t *testing.T) {
@@ -173,4 +263,54 @@ func TestDataSourceModel_populateFromGetAPI_userManaged(t *testing.T) {
 	require.False(t, diags.HasError())
 	assert.Equal(t, "production/list_processes", model.ID.ValueString())
 	assert.False(t, model.Prebuilt.ValueBool())
+}
+
+func TestDataSourceModel_populateFromGetAPI_prebuiltOmitted(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	query := kbapi.SecurityOsqueryAPIQuery("SELECT 1")
+	entity := &kibanaoapi.OsquerySavedQueryGetEntity{
+		ID:    "list_processes",
+		Query: &query,
+	}
+
+	model := dataSourceModel{
+		SavedQueryID: types.StringValue("list_processes"),
+		SpaceID:      types.StringValue("default"),
+	}
+	diags := model.populateFromGetAPI(ctx, entity)
+	require.False(t, diags.HasError())
+	assert.False(t, model.Prebuilt.ValueBool())
+	assert.False(t, model.Prebuilt.IsNull())
+}
+
+func TestPrebuiltFromAPI(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil defaults to false", func(t *testing.T) {
+		result := prebuiltFromAPI(nil)
+		assert.False(t, result.ValueBool())
+		assert.False(t, result.IsNull())
+	})
+
+	t.Run("false stays false", func(t *testing.T) {
+		prebuilt := false
+		result := prebuiltFromAPI(&prebuilt)
+		assert.False(t, result.ValueBool())
+	})
+
+	t.Run("true stays true", func(t *testing.T) {
+		prebuilt := true
+		result := prebuiltFromAPI(&prebuilt)
+		assert.True(t, result.ValueBool())
+	})
+}
+
+func dataSourceSchemaNestedObjectElemType(no dsschema.NestedAttributeObject) attr.Type {
+	attrTypes := make(map[string]attr.Type, len(no.Attributes))
+	for name, a := range no.Attributes {
+		attrTypes[name] = a.GetType()
+	}
+	return types.ObjectType{AttrTypes: attrTypes}
 }

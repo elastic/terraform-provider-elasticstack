@@ -115,6 +115,10 @@ Create, GET, and Update API responses wrap the entity in a `data` field. The kib
 
 The data source accepts `saved_query_id` (Required), `space_id` (Optional, default `"default"`), and `kibana_connection` (Optional). It calls GET by ID and populates all managed fields. Unlike the resource, it does NOT error on `prebuilt == true`. The data source model (or shared base) implements `GetVersionRequirements` with the same `8.5.0` conservative floor as the resource.
 
+**`space_id` default:** The resource uses `stringdefault.StaticString("default")` on Optional+Computed `space_id`. Datasource `StringAttribute` in terraform-plugin-framework has no `Default` field, so the data source applies `clients.DefaultSpaceID` in `resolveDataSourceSpaceID` at read time (same effective behavior).
+
+**`prebuilt` when omitted:** If the API omits `prebuilt`, state sets `prebuilt = false` (not null) so user-managed queries are explicit.
+
 ### Decision 16: Minimum version — `8.5.0` (documented/conservative floor)
 
 The resource declares `8.5.0` as the minimum Kibana version via `GetVersionRequirements` (implemented in task 3.2). This is the documented/conservative floor from Kibana API docs and source — not live-validated during discovery.

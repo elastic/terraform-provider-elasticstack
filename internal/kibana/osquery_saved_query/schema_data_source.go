@@ -37,6 +37,8 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				Required:            true,
 			},
 			attrSpaceID: dsschema.StringAttribute{
+				// Datasource schema (unlike resource schema) has no Default field; resolveDataSourceSpaceID
+				// applies clients.DefaultSpaceID at read time when space_id is omitted or empty.
 				MarkdownDescription: "Kibana space identifier. When omitted, the default space is used.",
 				Optional:            true,
 				Computed:            true,
