@@ -26,8 +26,8 @@ import (
 
 func getDataSourceSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Reads an Osquery query pack from Kibana by `pack_id` (`saved_object_id`). " +
-			"Use this data source to reference prebuilt (read-only) packs that cannot be managed by the " +
+		MarkdownDescription: "Reads any Osquery query pack from Kibana by `pack_id` (`saved_object_id`), " +
+			"including user-defined and prebuilt (read-only) packs. Prebuilt packs cannot be managed by the " +
 			"`elasticstack_kibana_osquery_pack` resource. Requires Kibana 8.5.0 or later.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

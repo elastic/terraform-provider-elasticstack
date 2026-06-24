@@ -6,7 +6,7 @@
 
 ### Changes
 
-- Add `elasticstack_kibana_osquery_pack` resource and data source for managing Kibana Osquery query packs.
+- Add `elasticstack_kibana_osquery_pack` resource for managing user-defined Osquery query packs and data source for reading packs (including prebuilt read-only packs).
 - Fix duplicate Authorization headers when ES and Kibana/Fleet use different auth methods ([#3722](https://github.com/elastic/terraform-provider-elasticstack/pull/3722))
 - Add Elasticsearch CA fingerprint connection support via `ca_fingerprint` and `ELASTICSEARCH_CA_FINGERPRINT`. ([#3837](https://github.com/elastic/terraform-provider-elasticstack/pull/3837))
 - preserve prior input values across ES redaction on read for `elasticstack_elasticsearch_watch` resources with HTTP basic auth ([#3839](https://github.com/elastic/terraform-provider-elasticstack/pull/3839))
