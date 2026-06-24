@@ -591,9 +591,12 @@ func skipIfOsquerySavedQueryAPIUnavailable(t *testing.T) {
 		t.Skipf("skipping Osquery saved query acceptance tests: %v", err)
 	}
 
+	oapiClient := client.GetKibanaOapiClient()
+	spaceID := clients.DefaultSpaceID
+
 	page := 1
 	pageSize := kbapi.SecurityOsqueryAPIPageSizeOrUndefined(1)
-	resp, err := client.GetKibanaOapiClient().API.OsqueryFindSavedQueriesWithResponse(ctx, &kbapi.OsqueryFindSavedQueriesParams{
+	resp, err := oapiClient.API.OsqueryFindSavedQueriesWithResponse(ctx, &kbapi.OsqueryFindSavedQueriesParams{
 		Page:     &page,
 		PageSize: &pageSize,
 	})
@@ -605,6 +608,35 @@ func skipIfOsquerySavedQueryAPIUnavailable(t *testing.T) {
 	}
 	if resp.StatusCode() != http.StatusOK {
 		t.Fatalf("unexpected Osquery saved query availability response status=%d body=%s", resp.StatusCode(), string(resp.Body))
+	}
+
+	// Some matrix stacks return 200 on find but cannot serve create/read round-trips.
+	savedQueryID := "tf-osquery-probe-" + uuid.New().String()
+	query := "SELECT 1;"
+	interval := "3600"
+	entity, createDiags := kibanaoapi.CreateOsquerySavedQuery(ctx, oapiClient, spaceID, kbapi.OsqueryCreateSavedQueryJSONRequestBody{
+		Id:       &savedQueryID,
+		Query:    &query,
+		Interval: &interval,
+	})
+	if createDiags.HasError() {
+		t.Skipf("skipping Osquery saved query acceptance tests: create probe failed: %v", createDiags)
+	}
+	if entity == nil || entity.SavedObjectID == "" {
+		t.Skip("skipping Osquery saved query acceptance tests: create probe returned no saved_object_id")
+	}
+	defer func() {
+		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cleanupCancel()
+		_ = kibanaoapi.DeleteOsquerySavedQueryBySavedObjectID(cleanupCtx, oapiClient, spaceID, entity.SavedObjectID)
+	}()
+
+	readEntity, readDiags := kibanaoapi.GetOsquerySavedQueryBySavedObjectID(ctx, oapiClient, spaceID, entity.SavedObjectID)
+	if readDiags.HasError() {
+		t.Skipf("skipping Osquery saved query acceptance tests: read probe failed: %v", readDiags)
+	}
+	if readEntity == nil {
+		t.Skip("skipping Osquery saved query acceptance tests: read probe returned not found after create")
 	}
 }
 
