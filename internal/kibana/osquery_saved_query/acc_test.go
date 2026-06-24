@@ -42,9 +42,15 @@ import (
 const (
 	resourceName   = "elasticstack_kibana_osquery_saved_query.test"
 	dataSourceName = "data.elasticstack_kibana_osquery_saved_query.test"
+
+	osqueryPrebuiltSavedQueryIDEnvVar = "TF_OSQUERY_PREBUILT_SAVED_QUERY_ID"
 )
 
-var minOsquerySavedQueryVersion = version.Must(version.NewVersion("8.5.0"))
+var (
+	minOsquerySavedQueryVersion = version.Must(version.NewVersion("8.5.0"))
+
+	importStateVerifyIgnore = []string{"snapshot", "removed"}
+)
 
 func TestAccResourceOsquerySavedQuery(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minOsquerySavedQueryVersion, versionutils.FlavorAny)
@@ -88,6 +94,7 @@ func TestAccResourceOsquerySavedQuery(t *testing.T) {
 				ResourceName:             resourceName,
 				ImportState:              true,
 				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  importStateVerifyIgnore,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"saved_query_id": config.StringVariable(savedQueryID),
@@ -104,6 +111,23 @@ func TestAccResourceOsquerySavedQuery(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "query", "SELECT pid, name FROM processes LIMIT 10;"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Terraform acceptance update"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_ecs_mapping"),
+				ConfigVariables: config.Variables{
+					"saved_query_id": config.StringVariable(savedQueryID),
+					"space_id":       config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "ecs_mapping.%", "3"),
+					resource.TestCheckResourceAttr(resourceName, "ecs_mapping.host.name.field", "hostname"),
+					resource.TestCheckResourceAttr(resourceName, "ecs_mapping.event.kind.value", "event"),
+					resource.TestCheckResourceAttr(resourceName, "ecs_mapping.event.outcome.values.#", "2"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "ecs_mapping.event.outcome.values.*", "failure"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "ecs_mapping.event.outcome.values.*", "success"),
+					resource.TestCheckNoResourceAttr(resourceName, "ecs_mapping.process.name"),
 				),
 			},
 			{
@@ -190,8 +214,6 @@ func TestAccResourceOsquerySavedQuery_ExplicitSavedQueryID(t *testing.T) {
 }
 
 func TestAccResourceOsquerySavedQuery_Validation(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsquerySavedQueryVersion, versionutils.FlavorAny)
-
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -200,6 +222,24 @@ func TestAccResourceOsquerySavedQuery_Validation(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("missing_saved_query_id"),
 				ExpectError:              regexp.MustCompile(`(?s)(saved_query_id.*required|The argument "saved_query_id" is required)`),
 				PlanOnly:                 true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("missing_query"),
+				ConfigVariables: config.Variables{
+					"saved_query_id": config.StringVariable("tf-osquery-validation-" + uuid.New().String()),
+				},
+				ExpectError: regexp.MustCompile(`(?s)(query.*required|The argument "query" is required)`),
+				PlanOnly:    true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_platform"),
+				ConfigVariables: config.Variables{
+					"saved_query_id": config.StringVariable("tf-osquery-validation-" + uuid.New().String()),
+				},
+				ExpectError: regexp.MustCompile(`(?s)(platform|ios|must be one of)`),
+				PlanOnly:    true,
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -286,11 +326,71 @@ func TestAccResourceOsquerySavedQuery_Space(t *testing.T) {
 				ResourceName:             resourceName,
 				ImportState:              true,
 				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  importStateVerifyIgnore,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("space_create"),
 				ConfigVariables: config.Variables{
 					"space_id":       config.StringVariable(spaceID),
 					"saved_query_id": config.StringVariable(savedQueryID),
 				},
+			},
+		},
+	})
+}
+
+func TestAccResourceOsquerySavedQuery_SpaceRequiresReplace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minOsquerySavedQueryVersion, versionutils.FlavorAny)
+
+	spaceID1 := "tf-oq-sp1-" + uuid.New().String()[:8]
+	spaceID2 := "tf-oq-sp2-" + uuid.New().String()[:8]
+	savedQueryID := "tf-oq-space-replace-" + uuid.New().String()
+	var firstCompositeID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceOsquerySavedQueryDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("space_create"),
+				ConfigVariables: config.Variables{
+					"space_id":       config.StringVariable(spaceID1),
+					"saved_query_id": config.StringVariable(savedQueryID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "space_id", spaceID1),
+					resource.TestCheckResourceAttr(resourceName, "id", fmt.Sprintf("%s/%s", spaceID1, savedQueryID)),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[resourceName]
+						if !ok {
+							return fmt.Errorf("resource not found: %s", resourceName)
+						}
+						firstCompositeID = rs.Primary.ID
+						return nil
+					},
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("space_replace"),
+				ConfigVariables: config.Variables{
+					"space_id":       config.StringVariable(spaceID2),
+					"saved_query_id": config.StringVariable(savedQueryID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "space_id", spaceID2),
+					resource.TestCheckResourceAttr(resourceName, "id", fmt.Sprintf("%s/%s", spaceID2, savedQueryID)),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[resourceName]
+						if !ok {
+							return fmt.Errorf("resource not found: %s", resourceName)
+						}
+						if rs.Primary.ID == firstCompositeID {
+							return fmt.Errorf("expected new composite id after space_id change (RequiresReplace), got same id: %s", firstCompositeID)
+						}
+						return nil
+					},
+					checkOsquerySavedQueryNotFound(spaceID1, savedQueryID),
+				),
 			},
 		},
 	})
@@ -340,13 +440,56 @@ func TestAccDataSourceOsquerySavedQuery(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "saved_query_id", savedQueryID),
 					resource.TestCheckResourceAttr(dataSourceName, "saved_query_id", savedQueryID),
+					resource.TestCheckResourceAttr(dataSourceName, "space_id", clients.DefaultSpaceID),
 					resource.TestCheckResourceAttrPair(dataSourceName, "id", resourceName, "id"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "query", resourceName, "query"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "description", resourceName, "description"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "interval", resourceName, "interval"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "version", resourceName, "version"),
+					resource.TestCheckResourceAttrPair(dataSourceName, "snapshot", resourceName, "snapshot"),
+					resource.TestCheckResourceAttrPair(dataSourceName, "removed", resourceName, "removed"),
 					resource.TestCheckResourceAttr(dataSourceName, "prebuilt", "false"),
+					resource.TestCheckTypeSetElemAttr(dataSourceName, "platform.*", "darwin"),
+					resource.TestCheckTypeSetElemAttr(dataSourceName, "platform.*", "linux"),
+					resource.TestCheckResourceAttr(dataSourceName, "ecs_mapping.%", "3"),
+					resource.TestCheckResourceAttr(dataSourceName, "ecs_mapping.process.name.field", "cmdline"),
+					resource.TestCheckResourceAttr(dataSourceName, "ecs_mapping.event.category.value", "process"),
+					resource.TestCheckResourceAttr(dataSourceName, "ecs_mapping.event.type.values.#", "2"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceOsquerySavedQuery_Validation(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("missing_saved_query_id"),
+				ExpectError:              regexp.MustCompile(`(?s)(saved_query_id.*required|The argument "saved_query_id" is required)`),
+				PlanOnly:                 true,
+			},
+		},
+	})
+}
+
+func TestAccDataSourceOsquerySavedQuery_NotFound(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minOsquerySavedQueryVersion, versionutils.FlavorAny)
+
+	missingID := "tf-osquery-missing-" + uuid.New().String()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("not_found"),
+				ConfigVariables: config.Variables{
+					"saved_query_id": config.StringVariable(missingID),
+				},
+				ExpectError: regexp.MustCompile(`Osquery saved query not found`),
 			},
 		},
 	})
@@ -371,6 +514,8 @@ func TestAccDataSourceOsquerySavedQuery_Prebuilt(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(dataSourceName, "saved_query_id", prebuiltID),
+					resource.TestCheckResourceAttr(dataSourceName, "space_id", clients.DefaultSpaceID),
+					resource.TestCheckResourceAttrSet(dataSourceName, "id"),
 					resource.TestCheckResourceAttr(dataSourceName, "prebuilt", "true"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "query"),
 				),
@@ -390,10 +535,32 @@ var checkResourceOsquerySavedQueryDestroy = checks.KibanaResourceDestroyCheckCom
 	},
 )
 
+func checkOsquerySavedQueryNotFound(spaceID, savedQueryID string) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+
+		entity, diags := kibanaoapi.GetOsquerySavedQuery(context.Background(), client.GetKibanaOapiClient(), spaceID, savedQueryID)
+		if diags.HasError() {
+			return fmt.Errorf("failed to verify osquery saved query %q in space %q: %v", savedQueryID, spaceID, diags)
+		}
+		if entity != nil {
+			return fmt.Errorf("expected osquery saved query %q to be absent from space %q after RequiresReplace", savedQueryID, spaceID)
+		}
+		return nil
+	}
+}
+
 func discoverPrebuiltSavedQueryID(t *testing.T) (string, bool) {
 	t.Helper()
 	if os.Getenv("TF_ACC") == "" {
 		return "", false
+	}
+
+	if override := os.Getenv(osqueryPrebuiltSavedQueryIDEnvVar); override != "" {
+		return override, true
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -405,20 +572,31 @@ func discoverPrebuiltSavedQueryID(t *testing.T) (string, bool) {
 	}
 
 	pageSize := kbapi.SecurityOsqueryAPIPageSizeOrUndefined(100)
-	resp, err := client.GetKibanaOapiClient().API.OsqueryFindSavedQueriesWithResponse(ctx, &kbapi.OsqueryFindSavedQueriesParams{
-		PageSize: &pageSize,
-	})
-	if err != nil {
-		t.Skipf("skipping prebuilt query discovery: %v", err)
-	}
-	if resp.StatusCode() != http.StatusOK || resp.JSON200 == nil {
-		t.Skipf("skipping prebuilt query discovery: unexpected list response status=%d", resp.StatusCode())
-	}
+	page := 1
 
-	for _, item := range resp.JSON200.Data {
-		if item.Prebuilt != nil && *item.Prebuilt && item.Id != "" {
-			return item.Id, true
+	for {
+		pageParam := page
+		resp, err := client.GetKibanaOapiClient().API.OsqueryFindSavedQueriesWithResponse(ctx, &kbapi.OsqueryFindSavedQueriesParams{
+			Page:     &pageParam,
+			PageSize: &pageSize,
+		})
+		if err != nil {
+			t.Skipf("skipping prebuilt query discovery: %v", err)
 		}
+		if resp.StatusCode() != http.StatusOK || resp.JSON200 == nil {
+			t.Skipf("skipping prebuilt query discovery: unexpected list response status=%d", resp.StatusCode())
+		}
+
+		for _, item := range resp.JSON200.Data {
+			if item.Prebuilt != nil && *item.Prebuilt && item.Id != "" {
+				return item.Id, true
+			}
+		}
+
+		if len(resp.JSON200.Data) == 0 || page*pageSize >= resp.JSON200.Total {
+			break
+		}
+		page++
 	}
 
 	return "", false

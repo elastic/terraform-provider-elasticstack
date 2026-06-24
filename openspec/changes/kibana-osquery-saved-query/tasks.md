@@ -48,14 +48,14 @@
 
 - [x] 7.1 Add `acc_test.go` covering full resource lifecycle: create with all fields (including `ecs_mapping` with all three shapes) → read → update `query` and `description` → destroy
 - [x] 7.2 Add resource lifecycle test with `saved_query_id` explicitly set (forces-new on change)
-- [x] 7.3 Add plan/validation test: config without `saved_query_id` → verify plan-time error (Required attribute)
+- [x] 7.3 Add plan/validation tests: missing `saved_query_id`, missing `query`, invalid `platform`, and `ecs_mapping` validator errors (schema-only cases omit version skip)
 - [x] 7.4 Add import test via composite `"<space_id>/<saved_query_id>"`
 - [x] 7.5 Add `platform` test: create with `["linux", "darwin"]` → verify state and round-trip
 - [x] 7.6 Add `ecs_mapping` validator tests: config with two fields set in same element → plan error; config with empty element `{}` → plan error
 - [x] 7.10 Add resource test: import or read of a prebuilt query (by known prebuilt ID, skip if none in test env) → verify prebuilt error diagnostic and no state write
 - [x] 7.7 Add data source test: resource creates query → data source reads same query by ID → values match
-- [x] 7.8 Add data source test: read a prebuilt query by ID (skip if none available in test environment); add data source pre-minimum version gate test aligned with task 7.9
-- [x] 7.9 Version-skip gate: skip tests against Kibana versions below the documented minimum (`8.5.0`); confirms floor against a live stack when available
+- [x] 7.8 Add data source test: read a prebuilt query by ID (skip if none available in test environment); data source validation and not-found coverage authored (live read confirmation deferred to task 9.3)
+- [x] 7.9 Version-skip gate: acceptance tests that call the API use `SkipIfUnsupported` at `8.5.0`; live confirmation against a running stack is task 9.3
 
 ## 8. Documentation and examples
 
