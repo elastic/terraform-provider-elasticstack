@@ -59,6 +59,7 @@
 - [ ] 7.9 Add data source non-default `space_id` test: read pack in non-default space
 - [ ] 7.10 Add resource read 404 test: external delete → refresh removes resource from state without error
 - [ ] 7.11 Add delete 404 idempotency test: destroy after external delete succeeds
+- [ ] 7.12 Add data source missing-pack test: read by unknown `pack_id` returns error diagnostic (HTTP 404), not silent empty state
 
 ## 8. Documentation and examples
 

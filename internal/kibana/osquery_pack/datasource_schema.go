@@ -41,6 +41,8 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 			"space_id": schema.StringAttribute{
 				MarkdownDescription: "Kibana space identifier. When omitted, the default space is used.",
 				Optional:            true,
+				// Datasource schema has no Default field (unlike resource schema); read resolves
+				// omitted space_id to clients.DefaultSpaceID via ResolveCompositeSpaceAndID.
 			},
 			"name": schema.StringAttribute{
 				MarkdownDescription: "Human-readable name of the Osquery pack.",

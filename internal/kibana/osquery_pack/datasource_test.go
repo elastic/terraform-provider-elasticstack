@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -91,6 +92,54 @@ func TestNewDataSource_schemaAttributes(t *testing.T) {
 	require.True(t, ok)
 	assert.True(t, queriesAttr.IsComputed())
 	assert.False(t, queriesAttr.IsRequired())
+
+	for _, attr := range []string{"id", "name", "description", "enabled", "policy_ids", "shards"} {
+		switch attr {
+		case "policy_ids":
+			listAttr, ok := resp.Schema.Attributes[attr].(schema.ListAttribute)
+			require.True(t, ok, "%q should be ListAttribute", attr)
+			assert.True(t, listAttr.IsComputed(), "%q should be computed-only", attr)
+			assert.False(t, listAttr.IsRequired(), "%q should not be required", attr)
+			assert.False(t, listAttr.IsOptional(), "%q should not be optional", attr)
+		case "shards":
+			mapAttr, ok := resp.Schema.Attributes[attr].(schema.MapAttribute)
+			require.True(t, ok, "%q should be MapAttribute", attr)
+			assert.True(t, mapAttr.IsComputed(), "%q should be computed-only", attr)
+			assert.False(t, mapAttr.IsRequired(), "%q should not be required", attr)
+			assert.False(t, mapAttr.IsOptional(), "%q should not be optional", attr)
+		case "enabled":
+			boolAttr, ok := resp.Schema.Attributes[attr].(schema.BoolAttribute)
+			require.True(t, ok, "%q should be BoolAttribute", attr)
+			assert.True(t, boolAttr.IsComputed(), "%q should be computed-only", attr)
+			assert.False(t, boolAttr.IsRequired(), "%q should not be required", attr)
+			assert.False(t, boolAttr.IsOptional(), "%q should not be optional", attr)
+		default:
+			strAttr, ok := resp.Schema.Attributes[attr].(schema.StringAttribute)
+			require.True(t, ok, "%q should be StringAttribute", attr)
+			assert.True(t, strAttr.IsComputed(), "%q should be computed-only", attr)
+			assert.False(t, strAttr.IsRequired(), "%q should not be required", attr)
+			assert.False(t, strAttr.IsOptional(), "%q should not be optional", attr)
+		}
+	}
+
+	spaceIDAttr, ok := resp.Schema.Attributes["space_id"].(schema.StringAttribute)
+	require.True(t, ok)
+	assert.True(t, spaceIDAttr.IsOptional())
+	assert.False(t, spaceIDAttr.IsRequired())
+	assert.False(t, spaceIDAttr.IsComputed())
+}
+
+func TestDataSourceSchema_spaceIDOptionalWithoutSchemaDefault(t *testing.T) {
+	t.Parallel()
+
+	spaceIDAttr, ok := getDataSourceSchema(context.Background()).Attributes["space_id"].(schema.StringAttribute)
+	require.True(t, ok)
+	assert.True(t, spaceIDAttr.IsOptional())
+	assert.False(t, spaceIDAttr.IsComputed())
+
+	// Datasource schema lacks resource-style Default; read resolves omitted space_id to default.
+	spaceID, _ := clients.ResolveCompositeSpaceAndID(types.StringNull(), "pack-id")
+	assert.Equal(t, clients.DefaultSpaceID, spaceID)
 }
 
 func TestDataSourceModel_GetVersionRequirements(t *testing.T) {
@@ -106,6 +155,39 @@ func TestDataSourceModel_GetVersionRequirements(t *testing.T) {
 func TestDataSourceModel_satisfiesWithVersionRequirements(t *testing.T) {
 	t.Parallel()
 	var _ entitycore.WithVersionRequirements = (*dataSourceModel)(nil)
+}
+
+func TestDataSourceModel_populateFromAPI_readOnlyFalse(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	readOnly := false
+	detail := &kibanaoapi.OsqueryPackDetail{
+		SavedObjectId: "pack-id",
+		Name:          kbapi.SecurityOsqueryAPIPackName("Managed pack"),
+		ReadOnly:      &readOnly,
+	}
+
+	var model dataSourceModel
+	diags := model.populateFromAPI(ctx, "default", detail)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.False(t, model.ReadOnly.ValueBool())
+}
+
+func TestDataSourceModel_populateFromAPI_readOnlyNil(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	detail := &kibanaoapi.OsqueryPackDetail{
+		SavedObjectId: "pack-id",
+		Name:          kbapi.SecurityOsqueryAPIPackName("Managed pack"),
+		ReadOnly:      nil,
+	}
+
+	var model dataSourceModel
+	diags := model.populateFromAPI(ctx, "default", detail)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.True(t, model.ReadOnly.IsNull())
 }
 
 func TestDataSourceModel_populateFromAPI_prebuiltPack(t *testing.T) {
@@ -144,6 +226,20 @@ func TestQueryDataSourceElemType_matchesSchema(t *testing.T) {
 	schemaElem := dataSourceNestedObjectElemType(queriesAttr.NestedObject)
 	require.Equal(t, schemaElem, queryMapElemType(),
 		"queryMapElemType() drifted from the data source queries nested object; update both together")
+}
+
+func TestEcsMappingDataSourceElemType_matchesSchema(t *testing.T) {
+	t.Parallel()
+
+	queriesAttr, ok := getDataSourceSchema(context.Background()).Attributes["queries"].(schema.MapNestedAttribute)
+	require.True(t, ok)
+
+	ecsMappingAttr, ok := queriesAttr.NestedObject.Attributes["ecs_mapping"].(schema.MapNestedAttribute)
+	require.True(t, ok)
+
+	schemaElem := dataSourceNestedObjectElemType(ecsMappingAttr.NestedObject)
+	require.Equal(t, schemaElem, ecsMappingMapElemType(),
+		"ecsMappingMapElemType() drifted from the data source ecs_mapping nested object; update both together")
 }
 
 func dataSourceNestedObjectElemType(no schema.NestedAttributeObject) attr.Type {
