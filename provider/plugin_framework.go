@@ -339,6 +339,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		role.NewRoleDataSource,
 		securityuser.NewUserDataSource,
 		outputds.NewDataSource,
+		osquerypack.NewDataSource,
 		ingest.NewProcessorAppendDataSource,
 		ingest.NewProcessorBytesDataSource,
 		ingest.NewProcessorCircleDataSource,

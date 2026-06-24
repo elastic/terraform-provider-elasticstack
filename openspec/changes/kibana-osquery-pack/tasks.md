@@ -41,10 +41,10 @@
 
 ## 6. Data source
 
-- [ ] 6.1 Implement `internal/kibana/osquery_pack/datasource.go` with schema: `pack_id` (Required), `space_id` (Optional, default `"default"`), `kibana_connection` (Optional), plus Computed fields matching v1 resource (`name`, `description`, `enabled`, `policy_ids`, `shards`, `queries`, `read_only` as Computed bool)
-- [ ] 6.2 Implement Read calling `GET /api/osquery/packs/{id}` — same kibanaoapi wrapper, unwrap `response.JSON200.Data`; on HTTP 404, return error diagnostic
-- [ ] 6.3 Do NOT error on `read_only=true` in the data source
-- [ ] 6.4 Register the data source in `provider/plugin_framework.go`
+- [x] 6.1 Implement `internal/kibana/osquery_pack/datasource.go` with schema: `pack_id` (Required), `space_id` (Optional, default `"default"`), `kibana_connection` (Optional), plus Computed fields matching v1 resource (`name`, `description`, `enabled`, `policy_ids`, `shards`, `queries`, `read_only` as Computed bool)
+- [x] 6.2 Implement Read calling `GET /api/osquery/packs/{id}` — same kibanaoapi wrapper, unwrap `response.JSON200.Data`; on HTTP 404, return error diagnostic
+- [x] 6.3 Do NOT error on `read_only=true` in the data source
+- [x] 6.4 Register the data source in `provider/plugin_framework.go`
 
 ## 7. Acceptance tests
 
