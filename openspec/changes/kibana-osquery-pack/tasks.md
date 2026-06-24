@@ -83,3 +83,4 @@
 - Scheduling schema: `schedule_type`, pack-level `interval`/`rrule_schedule`, per-query `interval`/`timeout`, RRULE validators, cross-mode ConfigValidators; interval Int64 normalization (former Decision 15)
 - `GetVersionRequirements` second entry: scheduling floor `9.5.0`
 - Acceptance tests for scheduling modes
+- Acceptance test for `space_id` RequiresReplace (recreate pack when space changes)

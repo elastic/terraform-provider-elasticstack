@@ -1,14 +1,11 @@
-variable "prebuilt_pack_id" {
-  type = string
-}
-
 provider "elasticstack" {
   elasticsearch {}
   kibana {}
 }
 
+# Placeholder resource shell for import-only testing; this step never runs apply.
 resource "elasticstack_kibana_osquery_pack" "test" {
-  name = "tf-acc-prebuilt-import-should-fail"
+  name = "import-placeholder"
 
   queries = {
     q = {

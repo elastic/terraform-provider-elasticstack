@@ -41,8 +41,11 @@ import (
 var (
 	minOsqueryPackVersion = version.Must(version.NewVersion("8.5.0"))
 
-	osqueryPackResourceAddr  = "elasticstack_kibana_osquery_pack.test"
+	osqueryPackResourceAddr   = "elasticstack_kibana_osquery_pack.test"
 	osqueryPackDataSourceAddr = "data.elasticstack_kibana_osquery_pack.test"
+	fleetAgentPolicyAddr      = "elasticstack_fleet_agent_policy.test_policy"
+
+	invalidPlatformErrorPattern = `(?s)platform.*must be one of`
 
 	// accTestKibanaSpaceIDCharset matches elasticstack_kibana_space space_id validation (^[a-z0-9_-]+$).
 	accTestKibanaSpaceIDCharset = "abcdefghijklmnopqrstuvwxyz0123456789_-"
@@ -59,6 +62,7 @@ func TestAccResourceOsqueryPack(t *testing.T) {
 	vars := config.Variables{
 		"suffix": config.StringVariable(suffix),
 	}
+	var fleetPolicyID string
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -72,12 +76,13 @@ func TestAccResourceOsqueryPack(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(osqueryPackResourceAddr, "id"),
 					resource.TestCheckResourceAttrSet(osqueryPackResourceAddr, "pack_id"),
+					testAccCheckCompositeIDFormat(osqueryPackResourceAddr, clients.DefaultSpaceID),
+					captureFleetPolicyID(fleetAgentPolicyAddr, &fleetPolicyID),
+					testAccCheckOsqueryPackPolicyAndShards(osqueryPackResourceAddr, &fleetPolicyID, "100"),
 					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "space_id", "default"),
 					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "name", fmt.Sprintf("tf-acc-osquery-pack-%s", suffix)),
 					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "description", "Terraform acceptance test pack"),
 					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "enabled", "true"),
-					resource.TestCheckResourceAttrSet(osqueryPackResourceAddr, "policy_ids.0"),
-					resource.TestCheckResourceAttrSet(osqueryPackResourceAddr, "shards.%"),
 					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.%", "1"),
 					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.find_procs.query", "SELECT pid, name FROM processes LIMIT 5;"),
 					resource.TestCheckTypeSetElemAttr(osqueryPackResourceAddr, "queries.find_procs.platform.*", "darwin"),
@@ -97,7 +102,19 @@ func TestAccResourceOsqueryPack(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "name", fmt.Sprintf("tf-acc-osquery-pack-updated-%s", suffix)),
 					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "description", "Updated Terraform acceptance test pack"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "enabled", "false"),
+					testAccCheckOsqueryPackPolicyAndShards(osqueryPackResourceAddr, &fleetPolicyID, "75"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.%", "2"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.find_procs.query", "SELECT pid, name, path FROM processes LIMIT 10;"),
+					resource.TestCheckTypeSetElemAttr(osqueryPackResourceAddr, "queries.find_procs.platform.*", "linux"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.find_procs.version", "1.1.0"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.find_procs.snapshot", "true"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.list_users.query", "SELECT username FROM users LIMIT 5;"),
+					resource.TestCheckTypeSetElemAttr(osqueryPackResourceAddr, "queries.list_users.platform.*", "linux"),
+					resource.TestCheckTypeSetElemAttr(osqueryPackResourceAddr, "queries.list_users.platform.*", "windows"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.list_users.version", "2.0.0"),
 				),
 			},
 			{
@@ -148,7 +165,7 @@ func TestAccResourceOsqueryPack_invalidPlatform(t *testing.T) {
 				SkipFunc:                 skipOsqueryPackUnsupported(),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_platform"),
 				PlanOnly:                 true,
-				ExpectError: regexp.MustCompile(`(?s)platform.*ios`),
+				ExpectError: regexp.MustCompile(invalidPlatformErrorPattern),
 			},
 		},
 	})
@@ -161,6 +178,7 @@ func TestAccDataSourceOsqueryPack(t *testing.T) {
 	vars := config.Variables{
 		"suffix": config.StringVariable(suffix),
 	}
+	var fleetPolicyID string
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -171,18 +189,14 @@ func TestAccDataSourceOsqueryPack(t *testing.T) {
 				SkipFunc:                 skipOsqueryPackUnsupported(),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables:          vars,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet(osqueryPackResourceAddr, "pack_id"),
-					resource.TestCheckResourceAttrSet(osqueryPackDataSourceAddr, "pack_id"),
-					resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "pack_id", osqueryPackResourceAddr, "pack_id"),
-					resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "name", osqueryPackResourceAddr, "name"),
-					resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "description", osqueryPackResourceAddr, "description"),
-					resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "enabled", osqueryPackResourceAddr, "enabled"),
-					resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "space_id", osqueryPackResourceAddr, "space_id"),
-					resource.TestCheckResourceAttr(osqueryPackDataSourceAddr, "read_only", "false"),
-					resource.TestCheckResourceAttr(osqueryPackDataSourceAddr, "queries.find_procs.query", "SELECT pid, name FROM processes LIMIT 5;"),
-					resource.TestCheckResourceAttr(osqueryPackDataSourceAddr, "queries.find_procs.ecs_mapping.process.name.field", "name"),
-				),
+				Check: func(s *terraform.State) error {
+					checks := osqueryPackV1DataSourceParityChecks(&fleetPolicyID)
+					checks = append([]resource.TestCheckFunc{
+						testAccCheckCompositeIDFormat(osqueryPackDataSourceAddr, clients.DefaultSpaceID),
+						captureFleetPolicyID(fleetAgentPolicyAddr, &fleetPolicyID),
+					}, checks...)
+					return resource.ComposeTestCheckFunc(checks...)(s)
+				},
 			},
 		},
 	})
@@ -214,11 +228,25 @@ func TestAccPrebuiltOsqueryPack(t *testing.T) {
 					resource.TestCheckResourceAttrSet(osqueryPackDataSourceAddr, "name"),
 				),
 			},
+		},
+	})
+}
+
+func TestAccPrebuiltOsqueryPack_importRejected(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+
+	prebuiltPackID, skipReason := findPrebuiltOsqueryPack(t, clients.DefaultSpaceID)
+	if skipReason != "" {
+		t.Skip(skipReason)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 skipOsqueryPackUnsupported(),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("resource_import"),
-				ConfigVariables:          vars,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import_only"),
 				ResourceName:             osqueryPackResourceAddr,
 				ImportState:              true,
 				ImportStateId:            fmt.Sprintf("%s/%s", clients.DefaultSpaceID, prebuiltPackID),
@@ -267,6 +295,7 @@ func TestAccDataSourceOsqueryPack_nonDefaultSpace(t *testing.T) {
 		"suffix":   config.StringVariable(suffix),
 		"space_id": config.StringVariable(spaceID),
 	}
+	var fleetPolicyID string
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -277,11 +306,15 @@ func TestAccDataSourceOsqueryPack_nonDefaultSpace(t *testing.T) {
 				SkipFunc:                 skipOsqueryPackUnsupported(),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables:          vars,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(osqueryPackDataSourceAddr, "space_id", spaceID),
-					resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "pack_id", osqueryPackResourceAddr, "pack_id"),
-					resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "name", osqueryPackResourceAddr, "name"),
-				),
+				Check: func(s *terraform.State) error {
+					checks := osqueryPackV1DataSourceParityChecks(&fleetPolicyID)
+					checks = append([]resource.TestCheckFunc{
+						resource.TestCheckResourceAttr(osqueryPackDataSourceAddr, "space_id", spaceID),
+						testAccCheckCompositeIDFormat(osqueryPackDataSourceAddr, spaceID),
+						captureFleetPolicyID(fleetAgentPolicyAddr, &fleetPolicyID),
+					}, checks...)
+					return resource.ComposeTestCheckFunc(checks...)(s)
+				},
 			},
 		},
 	})
@@ -376,6 +409,7 @@ func TestAccDataSourceOsqueryPack_missingPack(t *testing.T) {
 				SkipFunc:                 skipOsqueryPackUnsupported(),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables:          vars,
+				PlanOnly:                 true,
 				ExpectError:              regexp.MustCompile(`Osquery pack not found`),
 			},
 		},
@@ -398,6 +432,135 @@ func testAccCheckOsqueryPackAbsentFromState(addr string) resource.TestCheckFunc 
 		if _, ok := s.RootModule().Resources[addr]; ok {
 			return fmt.Errorf("expected %q to be absent from state after refresh (pack deleted out-of-band)", addr)
 		}
+		return nil
+	}
+}
+
+func osqueryPackV1DataSourceParityChecks(fleetPolicyID *string) []resource.TestCheckFunc {
+	checks := []resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(osqueryPackResourceAddr, "pack_id"),
+		resource.TestCheckResourceAttrSet(osqueryPackDataSourceAddr, "pack_id"),
+		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "id", osqueryPackResourceAddr, "id"),
+		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "pack_id", osqueryPackResourceAddr, "pack_id"),
+		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "name", osqueryPackResourceAddr, "name"),
+		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "description", osqueryPackResourceAddr, "description"),
+		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "enabled", osqueryPackResourceAddr, "enabled"),
+		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "space_id", osqueryPackResourceAddr, "space_id"),
+		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "policy_ids.0", osqueryPackResourceAddr, "policy_ids.0"),
+		resource.TestCheckResourceAttr(osqueryPackDataSourceAddr, "read_only", "false"),
+		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "queries.find_procs.query", osqueryPackResourceAddr, "queries.find_procs.query"),
+		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "queries.find_procs.platform.#", osqueryPackResourceAddr, "queries.find_procs.platform.#"),
+		resource.TestCheckTypeSetElemAttr(osqueryPackDataSourceAddr, "queries.find_procs.platform.*", "darwin"),
+		resource.TestCheckTypeSetElemAttr(osqueryPackDataSourceAddr, "queries.find_procs.platform.*", "linux"),
+		resource.TestCheckTypeSetElemAttr(osqueryPackResourceAddr, "queries.find_procs.platform.*", "darwin"),
+		resource.TestCheckTypeSetElemAttr(osqueryPackResourceAddr, "queries.find_procs.platform.*", "linux"),
+		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "queries.find_procs.version", osqueryPackResourceAddr, "queries.find_procs.version"),
+		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "queries.find_procs.snapshot", osqueryPackResourceAddr, "queries.find_procs.snapshot"),
+		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "queries.find_procs.removed", osqueryPackResourceAddr, "queries.find_procs.removed"),
+		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "queries.find_procs.ecs_mapping.process.name.field", osqueryPackResourceAddr, "queries.find_procs.ecs_mapping.process.name.field"),
+		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "queries.find_procs.ecs_mapping.process.pid.value", osqueryPackResourceAddr, "queries.find_procs.ecs_mapping.process.pid.value"),
+		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "queries.find_procs.ecs_mapping.host.name.values.#", osqueryPackResourceAddr, "queries.find_procs.ecs_mapping.host.name.values.#"),
+		resource.TestCheckTypeSetElemAttr(osqueryPackDataSourceAddr, "queries.find_procs.ecs_mapping.host.name.values.*", "host-a"),
+		resource.TestCheckTypeSetElemAttr(osqueryPackDataSourceAddr, "queries.find_procs.ecs_mapping.host.name.values.*", "host-b"),
+		resource.TestCheckTypeSetElemAttr(osqueryPackResourceAddr, "queries.find_procs.ecs_mapping.host.name.values.*", "host-a"),
+		resource.TestCheckTypeSetElemAttr(osqueryPackResourceAddr, "queries.find_procs.ecs_mapping.host.name.values.*", "host-b"),
+	}
+
+	if fleetPolicyID != nil {
+		checks = append(checks, testAccCheckDataSourceShardParity(osqueryPackDataSourceAddr, osqueryPackResourceAddr, fleetPolicyID))
+	}
+
+	return checks
+}
+
+func testAccCheckDataSourceShardParity(dataSourceAddr, resourceAddr string, policyID *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if policyID == nil || *policyID == "" {
+			return fmt.Errorf("fleet policy ID was not captured before shard parity check")
+		}
+
+		shardKey := "shards." + *policyID
+		ds, ok := s.RootModule().Resources[dataSourceAddr]
+		if !ok {
+			return fmt.Errorf("data source %q not found in state", dataSourceAddr)
+		}
+		rs, ok := s.RootModule().Resources[resourceAddr]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceAddr)
+		}
+
+		dsShard, ok := ds.Primary.Attributes[shardKey]
+		if !ok {
+			return fmt.Errorf("data source %q missing %q", dataSourceAddr, shardKey)
+		}
+		rsShard, ok := rs.Primary.Attributes[shardKey]
+		if !ok {
+			return fmt.Errorf("resource %q missing %q", resourceAddr, shardKey)
+		}
+		if dsShard != rsShard {
+			return fmt.Errorf("data source %s = %q, resource %s = %q", shardKey, dsShard, shardKey, rsShard)
+		}
+		return nil
+	}
+}
+
+func testAccCheckCompositeIDFormat(resourceAddr, spaceID string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceAddr]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceAddr)
+		}
+
+		packID, ok := rs.Primary.Attributes["pack_id"]
+		if !ok || packID == "" {
+			return fmt.Errorf("resource %q missing pack_id in state", resourceAddr)
+		}
+
+		want := spaceID + "/" + packID
+		if rs.Primary.ID != want {
+			return fmt.Errorf("resource %q id %q, want composite %q", resourceAddr, rs.Primary.ID, want)
+		}
+		return nil
+	}
+}
+
+func captureFleetPolicyID(resourceAddr string, policyID *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceAddr]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceAddr)
+		}
+
+		id, ok := rs.Primary.Attributes["policy_id"]
+		if !ok || id == "" {
+			return fmt.Errorf("resource %q missing policy_id in state", resourceAddr)
+		}
+
+		*policyID = id
+		return nil
+	}
+}
+
+func testAccCheckOsqueryPackPolicyAndShards(resourceAddr string, policyID *string, shardPercent string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if *policyID == "" {
+			return fmt.Errorf("fleet policy ID was not captured before shard/policy check")
+		}
+
+		rs, ok := s.RootModule().Resources[resourceAddr]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceAddr)
+		}
+
+		if got := rs.Primary.Attributes["policy_ids.0"]; got != *policyID {
+			return fmt.Errorf("policy_ids.0 = %q, want %q", got, *policyID)
+		}
+
+		shardKey := "shards." + *policyID
+		if got := rs.Primary.Attributes[shardKey]; got != shardPercent {
+			return fmt.Errorf("%s = %q, want %q", shardKey, got, shardPercent)
+		}
+
 		return nil
 	}
 }
@@ -449,26 +612,34 @@ func findPrebuiltOsqueryPack(t *testing.T, spaceID string) (packID string, skipR
 		return "", fmt.Sprintf("skipping prebuilt pack test: could not create Kibana client: %v", err)
 	}
 
-	page := kbapi.SecurityOsqueryAPIPageOrUndefined(1)
 	pageSize := kbapi.SecurityOsqueryAPIPageSizeOrUndefined(100)
-	resp, err := apiClient.GetKibanaOapiClient().API.OsqueryFindPacksWithResponse(
-		context.Background(),
-		&kbapi.OsqueryFindPacksParams{Page: &page, PageSize: &pageSize},
-		kibanautil.SpaceAwarePathRequestEditor(spaceID),
-	)
-	if err != nil {
-		return "", fmt.Sprintf("skipping prebuilt pack test: list osquery packs failed: %v", err)
-	}
-	if resp.StatusCode() != 200 || resp.JSON200 == nil {
-		return "", fmt.Sprintf(
-			"skipping prebuilt pack test: list osquery packs returned HTTP %d (install osquery_manager integration to seed prebuilt packs)",
-			resp.StatusCode(),
-		)
-	}
+	client := apiClient.GetKibanaOapiClient()
 
-	for _, pack := range resp.JSON200.Data {
-		if pack.ReadOnly != nil && *pack.ReadOnly && pack.SavedObjectId != "" {
-			return pack.SavedObjectId, ""
+	for pageNum := 1; ; pageNum++ {
+		page := kbapi.SecurityOsqueryAPIPageOrUndefined(pageNum)
+		resp, err := client.API.OsqueryFindPacksWithResponse(
+			context.Background(),
+			&kbapi.OsqueryFindPacksParams{Page: &page, PageSize: &pageSize},
+			kibanautil.SpaceAwarePathRequestEditor(spaceID),
+		)
+		if err != nil {
+			return "", fmt.Sprintf("skipping prebuilt pack test: list osquery packs failed: %v", err)
+		}
+		if resp.StatusCode() != 200 || resp.JSON200 == nil {
+			return "", fmt.Sprintf(
+				"skipping prebuilt pack test: list osquery packs returned HTTP %d (install osquery_manager integration to seed prebuilt packs)",
+				resp.StatusCode(),
+			)
+		}
+
+		for _, pack := range resp.JSON200.Data {
+			if pack.ReadOnly != nil && *pack.ReadOnly && pack.SavedObjectId != "" {
+				return pack.SavedObjectId, ""
+			}
+		}
+
+		if len(resp.JSON200.Data) == 0 || pageNum*int(pageSize) >= resp.JSON200.Total {
+			break
 		}
 	}
 
