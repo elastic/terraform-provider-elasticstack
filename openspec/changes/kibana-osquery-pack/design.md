@@ -7,18 +7,18 @@ Kibana exposes Osquery packs under `/api/osquery/packs` with full CRUD plus a li
 - `OsqueryUpdatePacks` / `...WithResponse`
 - `OsqueryDeletePacks` / `...WithResponse`
 
-However, the pinned client is **stale**: it is missing the modern scheduling model (`schedule_type`, `rrule_schedule`, per-query `interval`/`timeout`/`splay`) exposed by the live API. Bumping the OAS ref to a commit that includes these fields (first merged in Kibana PR #270639, commit `9dc7627253d0`, label `v9.5.0`) is **blocked** as of this discovery pass: `transform_schema.go` panics on new Fleet API response shapes (`$ref`-wrapped responses instead of inline `properties.item` / `properties.items.items`) when running `make -C generated/kbapi all` against `e2ad94a623e87b1276f4bf35ec9561788e446569` (main). **v1 implementation is scoped to interval-only scheduling** using the pinned client until kbapi regeneration is unblocked (separate transform fix + OAS bump).
+However, the pinned client is **stale**: it is missing scheduling fields (`schedule_type`, `rrule_schedule`, per-query `interval`/`timeout`/`splay`) exposed by the live API. Bumping the OAS ref to a commit that includes these fields (first merged in Kibana PR #270639, commit `9dc7627253d0`, label `v9.5.0`) is **blocked** as of this discovery pass: `transform_schema.go` panics on new Fleet API response shapes when running `make -C generated/kbapi all` against main. **v1 implements packs CRUD with no scheduling attributes** using the pinned client until kbapi regeneration is unblocked (separate transform fix + OAS bump).
 
 The Osquery paths are not in the `spaceIdPaths` allow-list in `generated/kbapi/transform_schema.go`, so generated URLs lack `/s/{spaceId}`. Space support is injected at request time via `kibanautil.SpaceAwarePathRequestEditor(spaceID)`, the same mechanism used by `agentbuilder`, `entity_store`, `alerting_rule`, `dashboards`, and `synthetics` — no `transform_schema.go` changes required.
 
 Non-trivial implementation areas:
 
-1. **kbapi client regeneration (blocked)**: OAS refs at or after `9dc7627253d0` include `schedule_type`/`rrule_schedule`, but `transform_schema.go` must be updated for new Fleet response shapes before regeneration succeeds. Until then, v1 uses the pinned client and interval-only scheduling (legacy per-query `interval`, no pack-level `schedule_type`/`rrule_schedule` in generated types).
-2. **`queries` as MapNestedAttribute**: each key is the query name; value holds SQL, scheduling, platform, ECS mapping, and other per-query options. The inner `id` field is not exposed (map key is canonical).
-3. **Dual scheduling modes (deferred to post-kbapi-bump)**: pack-level `schedule_type` (`"interval"` | `"rrule"`) with exactly-one-of `interval`/`rrule_schedule` is documented in Kibana main OAS and merged in PR #270639 (`v9.5.0`, behind experimental `rruleScheduling` flag). **v1 scopes to legacy interval-only**: per-query `interval` without pack-level `schedule_type` in the pinned kbapi client.
+1. **kbapi client regeneration (blocked)**: OAS refs at or after `9dc7627253d0` include scheduling fields, but `transform_schema.go` must be updated for new Fleet response shapes before regeneration succeeds. Until then, v1 uses the pinned client with **no scheduling attributes** in schema or API mapping.
+2. **`queries` as MapNestedAttribute**: each key is the query name; value holds SQL, platform, ECS mapping, and other per-query options supported by the pinned kbapi types. The inner `id` field is not exposed (map key is canonical).
+3. **Scheduling (deferred)**: pack-level `schedule_type`, `interval`, `rrule_schedule`, and per-query scheduling overrides documented in Kibana main OAS (PR #270639, `v9.5.0`) — not in v1.
 4. **`shards` format mismatch**: create/update **request** uses `map[string]float32` (`SecurityOsqueryAPIShards`); create **response** OAS declares an array `[{key, value}]` (generated client: `*[]struct{Key, Value *float32}`) while create response **examples** and GET/Update use map form; `GetPacksDetails` returns `*map[string]float32`. Read normalizes to `map(string → number)` in state; create-response array form is normalized on read after follow-up GET or treated as map when empty.
 5. **`ecs_mapping` modelling**: same three-way `field`/`value`/`values` constraint as the sibling `osquery_saved_query` resource.
-6. **Prebuilt pack protection**: `read_only=true` is server-returned; enforced as runtime diagnostic on Read and post-Create, not plan-time.
+6. **Prebuilt pack protection**: `read_only=true` appears on GET detail responses only (not on Create POST response). Enforced as runtime diagnostic on Read, read-after-write (GET following Create/Update), and Import refresh — not by inspecting the Create POST body.
 
 ## Goals / Non-Goals
 
@@ -70,20 +70,11 @@ Map key is the query name (canonical in Kibana; inner `id` field NOT exposed). E
 
 **Why:** Map key is the natural query identifier in Kibana. Exposing the inner `id` would duplicate it and create confusion.
 
-### Decision 6: Dual scheduling — `schedule_type`, `interval`, `rrule_schedule` (v1: interval-only)
+### Decision 6: Scheduling (deferred — post-kbapi bump)
 
-**Target state** (post-kbapi bump, Kibana ≥ 9.5.0):
+**v1:** No scheduling attributes in resource or data source schema. Pinned `SecurityOsqueryAPICreatePacksRequestBody` and `SecurityOsqueryAPIObjectQueriesItem` omit `schedule_type`, pack-level `interval`, `rrule_schedule`, and per-query `interval`/`timeout`. v1 manages pack metadata, policy assignment, shards, and query definitions (SQL, platform, ECS mapping) only.
 
-Pack-level:
-- `schedule_type` — Required string, enum `["interval", "rrule"]`
-- `interval` — Optional Int64; exactly-one-of with `rrule_schedule` (required when `schedule_type = "interval"`)
-- `rrule_schedule` — Optional SingleNestedAttribute; required when `schedule_type = "rrule"`
-
-Provider-side `ConfigValidator` enforces:
-1. Exactly one of `interval`/`rrule_schedule` is set at pack level.
-2. Per-query override mode (if set) must match pack's `schedule_type`.
-
-**v1 scope (pinned kbapi)**: No scheduling attributes in resource or data source schema. Pinned `SecurityOsqueryAPICreatePacksRequestBody` and `SecurityOsqueryAPIObjectQueriesItem` omit `schedule_type`, pack-level `interval`, `rrule_schedule`, and per-query `interval`/`timeout` even though the live API wire format may include them. v1 manages pack metadata, policy assignment, shards, and query definitions (SQL, platform, ECS mapping) only.
+**Deferred target state** (post-kbapi bump, Kibana ≥ 9.5.0): pack-level `schedule_type` (`"interval"` | `"rrule"`), exactly-one-of `interval`/`rrule_schedule`, per-query scheduling overrides, and cross-mode ConfigValidators. See Decision 7 for `rrule_schedule` shape; interval Int64 normalization follows the `osquery_saved_query` pattern.
 
 **Why deferred:** OAS bump blocked by `transform_schema.go` incompatibility with Fleet response shape changes in main OAS.
 
@@ -111,8 +102,10 @@ Read path uses `GetPacksDetails` map form as canonical for state. Int-vs-Number 
 
 ### Decision 9: Prebuilt pack protection — runtime error diagnostic
 
-When `read_only=true` in the API response (on Read or post-Create), return an error diagnostic:
+When `read_only=true` on a GET detail response, return an error diagnostic:
 > `"This Osquery pack is read-only (prebuilt) and cannot be managed by this resource. Use the elasticstack_kibana_osquery_pack data source to read this pack."`
+
+The Create POST response does **not** include `read_only`. The resource guard runs on Read, read-after-write (GET following Create/Update to populate detail fields), and Import refresh — not by inspecting the Create POST body directly.
 
 The data source does NOT error on `read_only=true`.
 
@@ -139,28 +132,24 @@ The list endpoint returns a different `ecs_mapping`/`shards` format than `GetPac
 
 Per-query optional `SetAttribute` of strings with allowed-values validator (`"linux"`, `"darwin"`, `"windows"`). On write, sorted and joined to comma-separated string. On read, split back to set.
 
-### Decision 14: Create response shape — `data` wrapper (confirmed)
+### Decision 14: Response shape — `data` wrapper (confirmed)
 
-**Confirmed (task 1.5):** Create response wraps the pack in a `data` field, matching `osquery_saved_query`. Type: `SecurityOsqueryAPICreatePacksResponse` with embedded `Data struct { ... } \`json:"data"\``. Unwrap `response.JSON200.Data` on create. Required fields in `data`: `saved_object_id`, `name`.
+**Create (task 1.5):** Response wraps the pack in a `data` field. Type: `SecurityOsqueryAPICreatePacksResponse` with embedded `Data struct { ... } \`json:"data"\``. Unwrap `response.JSON200.Data` on create. Required fields in `data`: `saved_object_id`, `name`. Create `data` omits `read_only`.
 
-### Decision 15: `interval` type — Int64, normalize on read
-
-`interval` is stored as Int64 in state. On read, normalize any number/string response union to int64 using the same pattern as `osquery_saved_query`. On write, send as string (accepted by the API).
+**Get / Update detail responses:** `OsqueryGetPacksDetails` and update responses use typed wrappers whose detail payload is at `response.JSON200.Data` (`SecurityOsqueryAPIFindPackResponse.Data`). Unwrap `.Data` before calling `populateFromAPI`.
 
 ## Risks / Trade-offs
 
 | Risk | Mitigation |
 |---|---|
-| **kbapi OAS bump blocked by Fleet transform** | Task 1.2 confirmed; v1 interval-only scope; fix `transform_schema.go` + bump to ≥ `9dc7627253d0` in follow-up. |
+| **kbapi OAS bump blocked by Fleet transform** | Task 1.2 confirmed; v1 has no scheduling attributes; fix `transform_schema.go` + bump to ≥ `9dc7627253d0` in follow-up. |
 | **`shards` Int-vs-Number precision (float32 → int64)** | Deferred to implementation spike; use `NumberAttribute` if float32 precision matters. |
 | **rrule_schedule validator complexity** | Shallow regex (must start with `FREQ=`); defer deep RFC 5545 validation to API. |
 | **Per-query schedule override cross-mode validation** | Provider-side ConfigValidator at plan time; API also returns 400 on mismatch. |
-| **Prebuilt packs silently imported** | Runtime guard on Read and post-Create returns explicit error diagnostic. |
+| **Prebuilt packs silently imported** | Runtime guard on Read, read-after-write GET, and Import refresh returns explicit error diagnostic. |
 
 ## Open Questions
 
-1. **kbapi regeneration unblock**: Fix `transform_schema.go` for `$ref`-wrapped Fleet responses, then bump to ≥ `9dc7627253d0` and re-enable full scheduling scope.
-2. **`rruleScheduling` flag**: RRULE scheduling requires experimental flag until Kibana flag-flip PR; document in provider docs / acceptance test skip logic.
-3. **Resource spec reconciled**: v1 spec now matches Computed-only `pack_id`; scheduling deferred to follow-up.
-4. **`shards` Int-vs-Number**: Use `Int64Attribute` or `NumberAttribute`? Depends on whether the API round-trips fractional values from other clients.
-5. **Per-query `interval`/`timeout`**: Out of v1 scope — pinned `SecurityOsqueryAPIObjectQueriesItem` omits them; add after kbapi bump.
+1. **kbapi regeneration unblock**: Fix `transform_schema.go` for `$ref`-wrapped Fleet responses, then bump to ≥ `9dc7627253d0` and add scheduling scope.
+2. **`rruleScheduling` flag**: RRULE scheduling requires experimental flag until Kibana flag-flip PR; document in provider docs / acceptance test skip logic when scheduling lands.
+3. **`shards` Int-vs-Number**: Use `Int64Attribute` or `NumberAttribute`? Depends on whether the API round-trips fractional values from other clients.

@@ -1,8 +1,8 @@
 ## 1. Prep and discovery
 
 - [x] 1.1 Verify that `OsqueryCreatePacks`, `OsqueryGetPacksDetails`, `OsqueryUpdatePacks`, `OsqueryDeletePacks` are present in `generated/kbapi/kibana.gen.go`; confirm their request/response type signatures (especially `queries`, `shards`, and the create response wrapper shape)
-- [x] 1.2 Bump OAS ref in `generated/kbapi/Makefile` to a version that includes `schedule_type`/`rrule_schedule`/per-query `interval`/`timeout`/`splay`; run `make -C generated/kbapi all`; confirm these fields appear in the regenerated client. If they do not, scope the implementation to interval-only scheduling and update design.md accordingly.
-- [x] 1.3 Confirm the minimum Kibana version for base packs CRUD (`/api/osquery/packs`) and for the full scheduling model; record confirmed versions in design.md Decision 11 and update `GetVersionRequirements`
+- [x] 1.2 Bump OAS ref in `generated/kbapi/Makefile` to a version that includes `schedule_type`/`rrule_schedule`/per-query `interval`/`timeout`/`splay`; run `make -C generated/kbapi all`; confirm these fields appear in the regenerated client. **Fallback (confirmed):** kbapi bump blocked by `transform_schema.go`; v1 scoped to packs CRUD with **no scheduling attributes** in schema or API mapping; design.md updated accordingly.
+- [x] 1.3 Confirm and record minimum Kibana versions for base packs CRUD and for the full scheduling model in design.md Decision 11 (base **8.5.0**, scheduling **9.5.0** deferred). Code implementation of `GetVersionRequirements` is task 3.2.
 - [x] 1.4 Confirm that Kibana generates a UUID for `pack_id` when omitted on Create; if not, escalate to Required and update design.md Decision 2
 - [x] 1.5 Confirm whether the Create response wraps the pack in a `data` field (like `osquery_saved_query`) or is a direct object; update design.md Decision 14 if different
 - [x] 1.6 Confirm the exact `shards` wire format on Create/Update (array `[{key, value}]` or already a map?); confirm read (`GetPacksDetails`) returns `map[string]float32`; update design.md Decision 8 if different
@@ -20,7 +20,8 @@
 - [ ] 3.2 Implement `models.go` with `osqueryPackModel` implementing `GetID`, `GetResourceID`, `GetSpaceID`, `GetKibanaConnection`, `GetVersionRequirements` (v1: single entry `8.5.0` base CRUD floor)
 - [ ] 3.3 Implement `queryModel` nested struct covering `query`, `platform`, `version`, `snapshot`, `removed`, `saved_query_id`, `ecs_mapping` (pinned kbapi fields only); plus `toAPIType()` and `fromAPIType()`
 - [ ] 3.4 Implement `ecsMappingModel` (reuse or mirror from `osquery_saved_query`) covering `field`, `value`, `values`
-- [ ] 3.5 Implement `populateFromAPI` mapping the kbapi pack response to the model, including `shards` normalization (`map[string]float32` → state map) and per-query field mapping; set `pack_id` from `saved_object_id`
+- [ ] 3.5 Implement `populateFromAPI` accepting unwrapped detail payload (from `response.JSON200.Data`); map `saved_object_id` → `pack_id`, shards normalization, and per-query field mapping
+- [ ] 3.6 Add unit tests for `populateFromAPI` / converters: shards map normalization, ECS mapping three shapes, platform comma-string ↔ set, version round-trip
 
 ## 4. Resource schema
 
@@ -31,17 +32,17 @@
 
 ## 5. Resource CRUD and import
 
-- [ ] 5.1 Implement `create.go` calling `POST /api/osquery/packs` (space-aware), unwrapping `data` wrapper from response, calling `populateFromAPI`; populate Computed `pack_id` from `saved_object_id`; error if `read_only=true`
-- [ ] 5.2 Implement `read.go` calling `GET /api/osquery/packs/{id}` (space-aware) using `pack_id`; on HTTP 404, remove from state; error if `read_only=true`
-- [ ] 5.3 Implement `update.go` calling `PUT /api/osquery/packs/{id}` (space-aware, full body); repopulate state from response
+- [ ] 5.1 Implement `create.go` calling `POST /api/osquery/packs` (space-aware), unwrap `response.JSON200.Data` for initial fields, then read-after-write GET (unwrap `.Data`) to populate full state and enforce prebuilt guard — Create POST response omits `read_only`
+- [ ] 5.2 Implement `read.go` calling `GET /api/osquery/packs/{id}` (space-aware) using `pack_id`, unwrap `response.JSON200.Data`; on HTTP 404, remove from state; error if detail payload has `read_only=true`
+- [ ] 5.3 Implement `update.go` calling `PUT /api/osquery/packs/{id}` (space-aware, full body); unwrap update response `.Data` or read-after-write GET; repopulate state
 - [ ] 5.4 Implement `delete.go` calling `DELETE /api/osquery/packs/{id}` (space-aware); treat HTTP 404 as success
-- [ ] 5.5 Implement `ImportState` accepting composite `"<space_id>/<pack_id>"` form (pack_id is saved_object_id UUID)
+- [ ] 5.5 Implement `ImportState` accepting composite `"<space_id>/<pack_id>"` form (pack_id is saved_object_id UUID); Import refresh uses GET detail and prebuilt guard
 - [ ] 5.6 Register `osqueryPack.NewResource()` in `provider/plugin_framework.go`
 
 ## 6. Data source
 
 - [ ] 6.1 Implement `internal/kibana/osquery_pack/datasource.go` with schema: `pack_id` (Required), `space_id` (Optional, default `"default"`), `kibana_connection` (Optional), plus Computed fields matching v1 resource (`name`, `description`, `enabled`, `policy_ids`, `shards`, `queries`, `read_only` as Computed bool)
-- [ ] 6.2 Implement Read calling `GET /api/osquery/packs/{id}` — same kibanaoapi wrapper; on HTTP 404, return error diagnostic
+- [ ] 6.2 Implement Read calling `GET /api/osquery/packs/{id}` — same kibanaoapi wrapper, unwrap `response.JSON200.Data`; on HTTP 404, return error diagnostic
 - [ ] 6.3 Do NOT error on `read_only=true` in the data source
 - [ ] 6.4 Register the data source in `provider/plugin_framework.go`
 
@@ -52,6 +53,12 @@
 - [ ] 7.3 Add `ecs_mapping` validator test: config with two fields set in same element → verify plan error
 - [ ] 7.4 Add data source test: resource creates pack → data source reads same pack by `pack_id` → values match
 - [ ] 7.5 Version-skip gate: skip tests against Kibana versions below `8.5.0`
+- [ ] 7.6 Add prebuilt-pack test: data source reads a known prebuilt pack with `read_only=true` successfully; resource read/import against same pack returns error diagnostic
+- [ ] 7.7 Add invalid `platform` plan-error test (e.g., `"ios"`)
+- [ ] 7.8 Add non-default `space_id` resource test: create and read in a non-default space
+- [ ] 7.9 Add data source non-default `space_id` test: read pack in non-default space
+- [ ] 7.10 Add resource read 404 test: external delete → refresh removes resource from state without error
+- [ ] 7.11 Add delete 404 idempotency test: destroy after external delete succeeds
 
 ## 8. Documentation and examples
 
@@ -72,6 +79,6 @@
 ## Deferred (post-kbapi bump follow-up — not in v1)
 
 - kbapi regeneration: fix `transform_schema.go` for Fleet `$ref` responses, bump OAS to ≥ `9dc7627253d0`, run `make -C generated/kbapi all`
-- Scheduling schema: `schedule_type`, pack-level `interval`/`rrule_schedule`, per-query `interval`/`timeout`, RRULE validators, cross-mode ConfigValidators
+- Scheduling schema: `schedule_type`, pack-level `interval`/`rrule_schedule`, per-query `interval`/`timeout`, RRULE validators, cross-mode ConfigValidators; interval Int64 normalization (former Decision 15)
 - `GetVersionRequirements` second entry: scheduling floor `9.5.0`
-- Acceptance tests for scheduling modes and pack-level interval
+- Acceptance tests for scheduling modes

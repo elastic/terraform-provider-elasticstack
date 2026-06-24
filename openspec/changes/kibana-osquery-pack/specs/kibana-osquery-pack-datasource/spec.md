@@ -7,7 +7,7 @@ The `elasticstack_kibana_osquery_pack` data source SHALL accept `pack_id` (Requi
 #### Scenario: Read by pack_id
 - **WHEN** `pack_id = "3c42c847-eb30-4452-80e0-728584042334"` is configured
 - **THEN** the data source SHALL call `GET /api/osquery/packs/3c42c847-eb30-4452-80e0-728584042334` (space-aware)
-- **AND** all Computed attributes SHALL be populated from the response
+- **AND** SHALL unwrap `response.JSON200.Data` before populating Computed attributes
 
 #### Scenario: Missing pack returns error
 - **WHEN** the pack does not exist (HTTP 404)

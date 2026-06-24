@@ -84,25 +84,38 @@ The `shards` attribute SHALL be stored as `map(string → number)` in Terraform 
 
 ### Requirement: Prebuilt pack protection
 
-The `elasticstack_kibana_osquery_pack` resource SHALL return an error diagnostic and refuse to write state when the API response indicates `read_only = true`. This guard applies on Read and after Create. The error diagnostic SHALL direct users to the `elasticstack_kibana_osquery_pack` data source.
+The `elasticstack_kibana_osquery_pack` resource SHALL return an error diagnostic and refuse to write state when a GET detail response indicates `read_only = true`. The Create POST response does **not** include `read_only`. The guard applies on Read, read-after-write (GET following Create/Update), and Import refresh — not by inspecting the Create POST body. The error diagnostic SHALL direct users to the `elasticstack_kibana_osquery_pack` data source.
 
 #### Scenario: Prebuilt pack detected on read
-- **WHEN** the API returns `read_only = true` for a pack
+- **WHEN** a GET detail response returns `read_only = true`
 - **THEN** the resource SHALL return an error diagnostic
 - **AND** SHALL NOT write the prebuilt pack into state
 
+#### Scenario: Prebuilt pack detected after create via read-after-write
+- **WHEN** Create succeeds and the follow-up GET returns `read_only = true`
+- **THEN** the resource SHALL return an error diagnostic
+- **AND** SHALL NOT persist the pack in state
+
+### Requirement: API response mapping
+
+Detail endpoints (Get, Update response, read-after-write GET) return a typed wrapper whose pack payload is at `response.JSON200.Data`. The provider SHALL unwrap `.Data` before calling `populateFromAPI`. Create unwraps `response.JSON200.Data` from `SecurityOsqueryAPICreatePacksResponse` for initial `saved_object_id` and managed fields, then uses read-after-write GET for full detail state and prebuilt guard.
+
+#### Scenario: Get detail response unwrapped before state mapping
+- **WHEN** the resource or data source receives a successful GET detail response
+- **THEN** the provider SHALL read pack fields from `response.JSON200.Data` before populating state
+
 ### Requirement: Create
 
-The resource SHALL call `POST /api/osquery/packs` (space-aware via `SpaceAwarePathRequestEditor`) with all managed fields. On success, the provider SHALL unwrap the `data` wrapper from the response and populate state from `saved_object_id` and other fields; on `read_only = true`, the provider SHALL return an error diagnostic.
+The resource SHALL call `POST /api/osquery/packs` (space-aware via `SpaceAwarePathRequestEditor`) with all managed fields. On success, the provider SHALL unwrap `response.JSON200.Data`, populate Computed `pack_id` from `saved_object_id`, then perform read-after-write GET to populate full detail state and enforce the prebuilt guard.
 
 #### Scenario: Successful create
 - **WHEN** a resource with `name`, `queries`, and optional managed fields is applied
 - **THEN** `POST /api/osquery/packs` SHALL be called (space-aware)
-- **AND** state SHALL be populated with Computed `pack_id` from `saved_object_id`
+- **AND** a follow-up GET SHALL populate state including Computed `pack_id`
 
 ### Requirement: Read
 
-The resource SHALL call `GET /api/osquery/packs/{id}` (space-aware) using `pack_id` as `{id}`. On HTTP 404, the resource SHALL remove itself from state without error. On `read_only = true`, the resource SHALL return an error diagnostic.
+The resource SHALL call `GET /api/osquery/packs/{id}` (space-aware) using `pack_id` as `{id}`, unwrap `response.JSON200.Data`, and map to state. On HTTP 404, the resource SHALL remove itself from state without error. On `read_only = true` in the detail payload, the resource SHALL return an error diagnostic.
 
 #### Scenario: Resource removed from state on 404
 - **WHEN** the pack no longer exists in Kibana (HTTP 404)
@@ -114,7 +127,7 @@ The resource SHALL call `GET /api/osquery/packs/{id}` (space-aware) using `pack_
 
 ### Requirement: Update
 
-The resource SHALL call `PUT /api/osquery/packs/{id}` (space-aware, full body replacement) using `pack_id` as `{id}`. Server-managed fields SHALL be omitted from the request. After a successful update, state SHALL be repopulated from the response.
+The resource SHALL call `PUT /api/osquery/packs/{id}` (space-aware, full body replacement) using `pack_id` as `{id}`. Server-managed fields SHALL be omitted from the request. After a successful update, the provider SHALL unwrap `response.JSON200.Data` (or read-after-write GET) and repopulate state.
 
 #### Scenario: Successful update of description
 - **WHEN** `description` is changed in config and `terraform apply` is run
