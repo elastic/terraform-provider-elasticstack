@@ -90,17 +90,19 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:            true,
 			},
 			"snapshot": schema.BoolAttribute{
-				MarkdownDescription: "Whether the saved query is a snapshot. Server-managed; preserved from state after first read.",
-				Optional:            true,
-				Computed:            true,
+				MarkdownDescription: "Whether the saved query is a snapshot. Returned by the API and may be set explicitly in configuration. " +
+					"When omitted or unknown at plan time, the prior state value is preserved (`UseStateForUnknown`).",
+				Optional: true,
+				Computed: true,
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"removed": schema.BoolAttribute{
-				MarkdownDescription: "Whether the saved query is marked removed. Server-managed; preserved from state after first read.",
-				Optional:            true,
-				Computed:            true,
+				MarkdownDescription: "Whether the saved query is marked removed. Returned by the API and may be set explicitly in configuration. " +
+					"When omitted or unknown at plan time, the prior state value is preserved (`UseStateForUnknown`).",
+				Optional: true,
+				Computed: true,
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.UseStateForUnknown(),
 				},
@@ -122,15 +124,24 @@ func ecsMappingSchema() schema.MapNestedAttribute {
 				attrEcsMappingField: schema.StringAttribute{
 					MarkdownDescription: "Query result column name to map from.",
 					Optional:            true,
+					Validators: []validator.String{
+						stringvalidator.LengthAtLeast(1),
+					},
 				},
 				attrEcsMappingValue: schema.StringAttribute{
 					MarkdownDescription: "Static scalar ECS mapping value.",
 					Optional:            true,
+					Validators: []validator.String{
+						stringvalidator.LengthAtLeast(1),
+					},
 				},
 				attrEcsMappingValues: schema.SetAttribute{
 					MarkdownDescription: "Static array ECS mapping values.",
 					Optional:            true,
 					ElementType:         types.StringType,
+					Validators: []validator.Set{
+						setvalidator.SizeAtLeast(1),
+					},
 				},
 			},
 		},

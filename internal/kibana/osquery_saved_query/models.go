@@ -186,13 +186,13 @@ func (m *osquerySavedQueryModel) setCompositeIdentity(savedQueryID kbapi.Securit
 }
 
 // compositeSpaceID returns the space segment for composite IDs. Unknown space_id
-// falls back to "default" for ID composition without overwriting unknown state.
+// falls back to clients.DefaultSpaceID for ID composition without overwriting unknown state.
 func compositeSpaceID(spaceID types.String) string {
 	if typeutils.IsKnown(spaceID) && spaceID.ValueString() != "" {
 		return spaceID.ValueString()
 	}
 
-	return "default"
+	return clients.DefaultSpaceID
 }
 
 func (e ecsMapping) toAPIType() (kbapi.SecurityOsqueryAPIECSMappingItem, diag.Diagnostics) {
