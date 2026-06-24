@@ -168,14 +168,6 @@ func NewInputsNull(elemType InputType) InputsValue {
 	}
 }
 
-// NewInputsValue creates an InputsValue with a known value.
-func NewInputsValue(elemType InputType, elements map[string]attr.Value) (InputsValue, diag.Diagnostics) {
-	mapValue, diags := basetypes.NewMapValue(elemType, elements)
-	return InputsValue{
-		MapValue: mapValue,
-	}, diags
-}
-
 // NewInputsValueFrom creates an InputsValue from a map of Go values.
 func NewInputsValueFrom(ctx context.Context, elemType InputType, elements any) (InputsValue, diag.Diagnostics) {
 	mapValue, diags := basetypes.NewMapValueFrom(ctx, elemType, elements)
