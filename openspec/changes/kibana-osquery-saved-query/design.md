@@ -39,13 +39,15 @@ Implement the resource as an `entitycore.KibanaResource[osquerySavedQueryModel]`
 
 **Why:** The pattern is standard for all new Kibana resources in this provider. Maintenance Window is the closest existing analogue (medium-complexity, Plugin Framework, kibanaoapi helper). Considered: standalone `resource.Resource` without entitycore — rejected for inconsistency and unnecessary boilerplate.
 
-### Decision 2: Identity — `saved_query_id` Required, RequiresReplace
+### Decision 2: Identity — composite `id`, `saved_query_id` Required, RequiresReplace
 
-`saved_query_id` is **Required** with `RequiresReplace`. Kibana does **not** generate an ID when `id` is omitted on create: the route handler passes `request.body.id` straight into saved-object attributes (`create_saved_query_route.ts`), the OpenAPI request schema marks `id` optional but provides no server-side default, and the Kibana UI requires a user-entered ID via `QueryIdField`. `id` in state is Computed and mirrors `saved_query_id`. Import uses `saved_query_id` as the lookup key.
+`saved_query_id` is **Required** with `RequiresReplace` and is the API lookup key (`GET/PUT/DELETE /api/osquery/saved_queries/{id}`). State `id` is **Computed** and follows the repo space-aware composite pattern: `<space_id>/<saved_query_id>` (e.g. `"default/list_all_processes"`). `GetID()` returns the composite; `GetResourceID()` returns `saved_query_id` for API calls (entitycore `resolveKibanaResourceIdentity` parses the composite when present).
 
-**Why:** RequiresReplace prevents a silent rename, which would orphan the old query. Optional+Computed was rejected after discovery (task 1.3): no UUID auto-generation in server or UI.
+Kibana does **not** generate an ID when `id` is omitted on create (see task 1.3 discovery evidence).
 
-**Discovery evidence (task 1.3):** Kibana `x-pack/platform/plugins/shared/osquery/server/routes/saved_query/create_saved_query_route.ts`; `create_saved_query.gen.ts` (`id: SavedQueryId.optional()` with no default); `use_saved_query_form.tsx` (form default `id: ''`, user must supply). Live Kibana CRUD was not exercised (stack unavailable).
+**Why:** RequiresReplace prevents a silent rename, which would orphan the old query. Optional+Computed was rejected after discovery: no UUID auto-generation in server or UI.
+
+**Discovery evidence (task 1.3):** Kibana `create_saved_query_route.ts`; `create_saved_query.gen.ts` (`id: SavedQueryId.optional()` with no default); `use_saved_query_form.tsx` (user must supply ID). Live Kibana CRUD was not exercised (stack unavailable).
 
 ### Decision 3: Space support via `SpaceAwarePathRequestEditor`
 
@@ -53,7 +55,7 @@ Implement the resource as an `entitycore.KibanaResource[osquerySavedQueryModel]`
 
 ### Decision 4: Composite import ID `<space_id>/<saved_query_id>`
 
-Import accepts `"<space_id>/<saved_query_id>"` (e.g., `"default/list_all_processes"`). When `space_id` is `"default"`, the default space is used. This matches the import idiom of every other space-aware Kibana resource in the provider.
+Import accepts `"<space_id>/<saved_query_id>"` (e.g., `"default/list_all_processes"`). Prefer **`ImportStatePassthroughID`** on `id` (same pattern as `slo`, `security_detection_rule`, `dashboard`) — entitycore `resolveKibanaResourceIdentity` parses the composite on subsequent Read. Read/Create MUST populate `space_id`, `saved_query_id`, and composite `id` in state. If passthrough alone leaves Required `saved_query_id` unset before Read, use a thin custom `ImportState` (as in `alerting_rule`) to seed `space_id` and `saved_query_id` from the composite import string before Read.
 
 ### Decision 5: `platform` — set of strings, join to comma-string on write
 
@@ -71,7 +73,7 @@ Import accepts `"<space_id>/<saved_query_id>"` (e.g., `"default/list_all_process
 
 Partial ECS mapping precedent exists at `internal/kibana/security_detection_rule/models_to_api_type_utils.go:827` (`buildEcsMappingFromModel`) but covers only the `field` case. This resource must handle all three.
 
-**Discovery (task 1.4):** `resourcevalidator.ExactlyOneOf` is resource-level only. `objectvalidator.ExactlyOneOf` is unsuitable on nested objects — it counts the parent object in path resolution (archived change `2026-05-11-expose-lens-chart-presentation-fields`). **Plan:** attach `ExactlyOneOfNestedAttrsValidator` to `MapNestedAttribute.NestedObject.Validators` (precedent: `internal/kibana/dashboard/panelkit/schema.go` list-item validators). **Fallback:** custom inline `ValidateObject` only if map nested validation fails during task 4.5 implementation.
+**Discovery (task 1.4):** `resourcevalidator.ExactlyOneOf` is resource-level only. `objectvalidator.ExactlyOneOf` is unsuitable on nested objects — it counts the parent object in path resolution (archived change `2026-05-11-expose-lens-chart-presentation-fields`). **Plan:** attach `ExactlyOneOfNestedAttrsValidator` to `MapNestedAttribute.NestedObject.Validators`. Precedent exists on nested/list objects (`internal/kibana/dashboard/panelkit/schema.go` list-item validators) but **not yet directly proven on MapNestedAttribute map values** — task 4.5 validates; **fallback:** custom inline `ValidateObject` only if map nested validation fails during implementation.
 
 ### Decision 7: `interval` — `Int64Attribute`
 
@@ -93,9 +95,9 @@ When `prebuilt == true` in the API response (on Read or post-Create Read), the r
 
 This is a runtime guard (not plan-time) because `prebuilt` is server-returned and unknown at plan time. The resource does not expose a `prebuilt` attribute in state. Affects Read and the read-after-write in Create.
 
-### Decision 11: Update is PUT (full body)
+### Decision 11: Update is PUT (full replacement of managed fields)
 
-The API uses PUT (full replacement, not PATCH). On Update, all managed fields are sent; server-managed fields (`created_at`, `updated_at`, `created_by_profile_uid`, `updated_by_profile_uid`, `saved_object_id`) are omitted from the request body. No drift risk.
+The API uses PUT (full replacement, not PATCH). On Update, the provider sends the **managed field set from plan/state** — `query`, `description`, `platform`, `interval`, `version`, `snapshot`, `removed`, `ecs_mapping` — omitting server-managed fields (`created_at`, `updated_at`, `created_by_profile_uid`, `updated_by_profile_uid`, `saved_object_id`). Optional attributes that are null/unset in plan omit the corresponding JSON keys (same nullable semantics as Create). The Update response wraps `.Data`; unwrap before repopulating state.
 
 ### Decision 12: Delete returns empty body — `HandleStatusResponse`
 
@@ -107,11 +109,11 @@ Create, GET, and Update responses wrap the entity in a `data` field. `populateFr
 
 ### Decision 14: Server-managed fields not exposed
 
-`created_at`, `updated_at`, `created_by_profile_uid`, `updated_by_profile_uid`, and `saved_object_id` are server-managed and NOT exposed as attributes. Only the internal Computed `id` is stored in state (mirrors `saved_query_id`).
+`created_at`, `updated_at`, `created_by_profile_uid`, `updated_by_profile_uid`, and `saved_object_id` are server-managed and NOT exposed as attributes. Computed `id` stores the composite `<space_id>/<saved_query_id>`.
 
-### Decision 15: Data source — single-item GET-by-id, prebuilt-safe
+### Decision 15: Data source — single-item GET-by-id, prebuilt-safe, version-gated
 
-The data source accepts `saved_query_id` (Required), `space_id` (Optional, default `"default"`), and `kibana_connection` (Optional). It calls GET by ID and populates all managed fields. Unlike the resource, it does NOT error on `prebuilt == true` — the data source is the intentional path for referencing prebuilt queries.
+The data source accepts `saved_query_id` (Required), `space_id` (Optional, default `"default"`), and `kibana_connection` (Optional). It calls GET by ID and populates all managed fields. Unlike the resource, it does NOT error on `prebuilt == true`. The data source model (or shared base) implements `GetVersionRequirements` with the same `8.5.0` conservative floor as the resource.
 
 ### Decision 16: Minimum version — `8.5.0` (documented/conservative floor)
 
@@ -130,7 +132,7 @@ Resource and data source: `elasticstack_kibana_osquery_saved_query`. Go package:
 | **`saved_query_id` omitted on create — does Kibana generate a UUID?** | Resolved (task 1.3): no — `saved_query_id` is Required. |
 | **`8.5.0` version floor is too low** | Documented/conservative floor from docs/Kibana source (task 1.2); live confirmation in acceptance task 7.9. |
 | **`ecs_mapping` exactly-one-of validator inside `MapNestedAttribute`** | Resolved (task 1.4): use `ExactlyOneOfNestedAttrsValidator` on `NestedObject.Validators`; task 7.6 validates behavior. |
-| **`interval`/`version` union-type edge cases** | Both union arms (`AsXxx0`/`AsXxx1`) are exercised in unit tests; round-trip acceptance test confirms no data loss. |
+| **`interval`/`version` union-type edge cases** | Unit tests in task 3.5 cover union arms and Update plain `*string` version; acceptance round-trip in task 7.1 confirms no data loss. |
 | **Prebuilt queries silently imported** | Runtime guard on Read (and post-Create) returns an explicit error diagnostic before touching state. |
 
 ## Open Questions

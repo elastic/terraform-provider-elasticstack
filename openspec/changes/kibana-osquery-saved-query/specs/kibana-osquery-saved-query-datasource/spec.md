@@ -35,7 +35,7 @@ The data source SHALL expose a computed `id` in the format `<space_id>/<saved_qu
 
 ### Requirement: Read
 
-The data source SHALL call `GET /api/osquery/saved_queries/{id}` (space-aware via `SpaceAwarePathRequestEditor`) using `saved_query_id` and `space_id`. On HTTP 404, the data source SHALL return an error diagnostic (data sources do not remove from state; they error on missing). On success, all Computed attributes SHALL be populated from the API response.
+The data source SHALL call `GET /api/osquery/saved_queries/{id}` (space-aware via `SpaceAwarePathRequestEditor`) using `saved_query_id` and `space_id`. The GET response wraps the entity in a `data` field; the provider SHALL unwrap `data` before populating state. On HTTP 404, the data source SHALL return an error diagnostic (data sources do not remove from state; they error on missing). On success, all Computed attributes SHALL be populated from the API response.
 
 #### Scenario: Successful read of a user-managed query
 - **WHEN** a data source with `saved_query_id = "list_all_processes"` is read
@@ -79,10 +79,14 @@ The data source SHALL apply the same union-type normalisation as the resource: `
 - **WHEN** the API response contains `version: "1.0.0"` or `version: 1`
 - **THEN** state SHALL contain `version` as a non-empty string
 
-### Requirement: Connection override
+### Requirement: Connection override and version gating
 
-The data source SHALL obtain its Kibana client via the data source-level `kibana_connection` block when provided, otherwise via the provider-level Kibana configuration. Space-aware requests SHALL use `space_id` via `kibanautil.SpaceAwarePathRequestEditor`.
+The data source SHALL obtain its Kibana client via the data source-level `kibana_connection` block when provided, otherwise via the provider-level Kibana configuration. Space-aware requests SHALL use `space_id` via `kibanautil.SpaceAwarePathRequestEditor`. The data source model (or shared base) SHALL implement `GetVersionRequirements` with the same `8.5.0` documented/conservative minimum as the resource.
 
 #### Scenario: Data source kibana_connection override
 - **WHEN** `kibana_connection` is configured on the data source
 - **THEN** the GET call SHALL use that connection instead of the provider-level Kibana connection
+
+#### Scenario: Pre-minimum Kibana version
+- **WHEN** the data source is read against a Kibana version older than `8.5.0`
+- **THEN** Terraform SHALL fail with an error message stating the minimum required version

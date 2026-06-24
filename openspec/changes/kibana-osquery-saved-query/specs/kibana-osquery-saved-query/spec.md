@@ -2,12 +2,13 @@
 
 ### Requirement: Resource identity and composite ID
 
-The `elasticstack_kibana_osquery_saved_query` resource SHALL set its `id` to `saved_query_id` after every Create and Update. `saved_query_id` SHALL be **Required** with `RequiresReplace`: the API does not assign an ID when `id` is omitted on create (see design Decision 2). `space_id` SHALL be Optional + Computed, defaulting to `"default"`, and SHALL force replacement on change.
+The `elasticstack_kibana_osquery_saved_query` resource SHALL set its Computed `id` to the composite `<space_id>/<saved_query_id>` after every Create, Update, and Read. `GetResourceID()` / API path lookup SHALL use `saved_query_id` only. `saved_query_id` SHALL be **Required** with `RequiresReplace`: the API does not assign an ID when `id` is omitted on create (see design Decision 2). `space_id` SHALL be Optional + Computed, defaulting to `"default"`, and SHALL force replacement on change.
 
 #### Scenario: Create with explicit saved_query_id
-- **WHEN** `saved_query_id = "list_all_processes"` is set and the resource is created
-- **THEN** the API SHALL be called with `id: "list_all_processes"`
-- **AND** `id` in state SHALL equal `"list_all_processes"`
+- **WHEN** `saved_query_id = "list_all_processes"` and `space_id = "default"` and the resource is created
+- **THEN** the API SHALL be called with `id: "list_all_processes"` (space-aware)
+- **AND** `id` in state SHALL equal `"default/list_all_processes"`
+- **AND** `saved_query_id` SHALL equal `"list_all_processes"`
 
 #### Scenario: saved_query_id is required
 - **WHEN** `saved_query_id` is not set in config
@@ -25,8 +26,8 @@ The `elasticstack_kibana_osquery_saved_query` resource SHALL set its `id` to `sa
 
 The resource SHALL expose the following attributes:
 
-- `id` — Computed string; mirrors `saved_query_id`
-- `saved_query_id` — Required string with RequiresReplace
+- `id` — Computed string; composite `<space_id>/<saved_query_id>`
+- `saved_query_id` — Required string with RequiresReplace; API lookup key
 - `space_id` — Optional + Computed string, default `"default"`, RequiresReplace
 - `kibana_connection` — Optional block (provided by entitycore envelope)
 - `query` — Required string; the SQL query text
@@ -46,9 +47,18 @@ The resource SHALL expose the following attributes:
 - **WHEN** `platform = ["ios"]` is set in config
 - **THEN** Terraform SHALL reject the plan with a validation error naming the disallowed value
 
+### Requirement: Platform wire format
+
+On write, `platform` SHALL be sorted and joined to a comma-separated string (e.g. `"darwin,linux"`). On read, the API comma-string SHALL be split back into a set in state. Sorting ensures deterministic plan output.
+
+#### Scenario: Platform round-trip
+- **WHEN** `platform = ["linux", "darwin"]` is set in config
+- **THEN** the API SHALL be sent `platform: "darwin,linux"` (sorted)
+- **AND** after read, state SHALL contain `platform = ["darwin", "linux"]`
+
 ### Requirement: ECS mapping with three-way exactly-one-of constraint
 
-The `ecs_mapping` attribute SHALL be a MapNestedAttribute where each key maps to a SingleNestedAttribute with three Optional fields: `field` (string), `value` (string), `values` (set of strings). `ExactlyOneOfNestedAttrsValidator` from `internal/utils/validators` SHALL be attached to `MapNestedAttribute.NestedObject.Validators` to enforce that exactly one of `field`, `value`, or `values` is set per element. If map nested validation fails during implementation, a custom inline `ValidateObject` MAY be used instead.
+The `ecs_mapping` attribute SHALL be a MapNestedAttribute where each key maps to a SingleNestedAttribute with three Optional fields: `field` (string), `value` (string), `values` (set of strings). `ExactlyOneOfNestedAttrsValidator` from `internal/utils/validators` SHALL be attached to `MapNestedAttribute.NestedObject.Validators` to enforce that exactly one of `field`, `value`, or `values` is set per element. This validator is proven on nested/list objects but not yet directly proven on MapNestedAttribute map values; if map nested validation fails during implementation, a custom inline `ValidateObject` MAY be used instead.
 
 On write, the mapping SHALL be converted to the API `{Field, Value: string|[]string}` shape: `field` → `{field: "..."}`, `value` → `{value: "abc"}` (string arm), `values` → `{value: ["a", "b"]}` (array arm).
 
@@ -105,7 +115,7 @@ The resource SHALL call `POST /api/osquery/saved_queries` (space-aware via `Spac
 
 ### Requirement: Read
 
-The resource SHALL call `GET /api/osquery/saved_queries/{id}` (space-aware). On HTTP 404 the resource SHALL be removed from state without error. On success, if `prebuilt == true`, the provider SHALL return an error diagnostic explaining that the query is prebuilt and cannot be managed by this resource.
+The resource SHALL call `GET /api/osquery/saved_queries/{id}` (space-aware) using `saved_query_id` as the path parameter. The GET response wraps the entity in a `data` field; the provider SHALL unwrap `data` before populating state. On HTTP 404 the resource SHALL be removed from state without error. On success, if `prebuilt == true`, the provider SHALL return an error diagnostic explaining that the query is prebuilt and cannot be managed by this resource.
 
 #### Scenario: Resource deleted out of band
 - **WHEN** the API returns HTTP 404 on Read
@@ -117,7 +127,7 @@ The resource SHALL call `GET /api/osquery/saved_queries/{id}` (space-aware). On 
 
 ### Requirement: Update
 
-The resource SHALL call `PUT /api/osquery/saved_queries/{id}` (space-aware, full body replacement) with all managed fields that are set. Server-managed fields (`created_at`, `updated_at`, `created_by_profile_uid`, `updated_by_profile_uid`, `saved_object_id`) SHALL be omitted from the PUT body. After Update, state SHALL be repopulated from the PUT response.
+The resource SHALL call `PUT /api/osquery/saved_queries/{id}` (space-aware) using `saved_query_id` as the path parameter. The PUT body SHALL contain the managed field set from plan/state (`query`, `description`, `platform`, `interval`, `version`, `snapshot`, `removed`, `ecs_mapping`); server-managed fields (`created_at`, `updated_at`, `created_by_profile_uid`, `updated_by_profile_uid`, `saved_object_id`) SHALL be omitted. Optional attributes null/unset in plan omit the corresponding JSON keys. The Update response wraps the entity in a `data` field; the provider SHALL unwrap `data` before repopulating state.
 
 #### Scenario: Update query text
 - **WHEN** `query` is changed in config
@@ -144,11 +154,12 @@ The resource SHALL call `DELETE /api/osquery/saved_queries/{id}` (space-aware). 
 
 ### Requirement: Import
 
-The resource SHALL support import via the composite ID `"<space_id>/<saved_query_id>"`. On import, the provider SHALL parse the composite ID to derive `space_id` and `saved_query_id`, then call Read. If `prebuilt == true` on the read-after-import, the import SHALL fail with the prebuilt error diagnostic.
+The resource SHALL support import via the composite ID `"<space_id>/<saved_query_id>"`. Prefer `ImportStatePassthroughID` on `id` (entitycore parses the composite on Read); if Required `saved_query_id` must be seeded before Read, use a thin custom `ImportState` (as in `alerting_rule`) to set `space_id` and `saved_query_id` from the composite string and set `id` to the import string. Read after import populates remaining attributes. If `prebuilt == true` on the read-after-import, the import SHALL fail with the prebuilt error diagnostic.
 
 #### Scenario: Import by composite ID
 - **WHEN** `terraform import elasticstack_kibana_osquery_saved_query.x "default/list_all_processes"` is run
-- **THEN** `saved_query_id` SHALL be set to `"list_all_processes"`
+- **THEN** `id` SHALL equal `"default/list_all_processes"`
+- **AND** `saved_query_id` SHALL be set to `"list_all_processes"`
 - **AND** `space_id` SHALL be set to `"default"`
 - **AND** all other attributes SHALL be populated from the API GET response
 

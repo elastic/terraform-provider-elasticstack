@@ -6,7 +6,7 @@ This change adds `elasticstack_kibana_osquery_saved_query` resource and matching
 
 ## What Changes
 
-- Add `elasticstack_kibana_osquery_saved_query` resource with full CRUD lifecycle against `/api/osquery/saved_queries` (POST/GET/PUT/DELETE), composite import via `<space_id>/<saved_query_id>`, and `kibana_connection` override consistent with other Kibana resources.
+- Add `elasticstack_kibana_osquery_saved_query` resource with full CRUD lifecycle against `/api/osquery/saved_queries` (POST/GET/PUT/DELETE), composite state/import `id` (`<space_id>/<saved_query_id>`) with API lookup via `saved_query_id`, and `kibana_connection` override consistent with other Kibana resources.
 - Refuse to manage prebuilt queries (those with `prebuilt == true` in the API response) with a runtime error diagnostic guiding users to use the data source instead.
 - Add `elasticstack_kibana_osquery_saved_query` data source (read-only GET-by-id) as the only Terraform-native way to reference prebuilt queries or queries managed outside Terraform (e.g., ones referenced by `response_actions[].params.saved_query_id` in a detection rule).
 - Model `ecs_mapping` as a `MapNestedAttribute` of `SingleNestedAttribute` with `field`, `value`, and `values` fields — matching the `{Field, Value: string|[]string}` union returned by the generated `kbapi` client.
@@ -16,8 +16,8 @@ This change adds `elasticstack_kibana_osquery_saved_query` resource and matching
 
 ### New Capabilities
 
-- `kibana-osquery-saved-query`: Defines the schema and runtime behavior of the `elasticstack_kibana_osquery_saved_query` resource, including identity (`saved_query_id` Required+RequiresReplace), space-awareness via `SpaceAwarePathRequestEditor`, prebuilt-query guard, ECS mapping with three-way `field`/`value`/`values` exactly-one-of constraint via `ExactlyOneOfNestedAttrsValidator`, and `interval`/`version` response normalisation.
-- `kibana-osquery-saved-query-datasource`: Defines the `elasticstack_kibana_osquery_saved_query` data source backed by GET-by-id, prebuilt-safe, enabling lookup of queries managed outside Terraform.
+- `kibana-osquery-saved-query`: Defines the schema and runtime behavior of the `elasticstack_kibana_osquery_saved_query` resource, including composite state `id` (`<space_id>/<saved_query_id>`), API lookup via `saved_query_id` (Required+RequiresReplace), space-awareness via `SpaceAwarePathRequestEditor`, prebuilt-query guard, ECS mapping with three-way `field`/`value`/`values` exactly-one-of constraint via `ExactlyOneOfNestedAttrsValidator`, platform comma-string wire format, and `interval`/`version` response normalisation.
+- `kibana-osquery-saved-query-datasource`: Defines the `elasticstack_kibana_osquery_saved_query` data source backed by GET-by-id, prebuilt-safe, with the same `8.5.0` version floor via `GetVersionRequirements`.
 
 ### Modified Capabilities
 
