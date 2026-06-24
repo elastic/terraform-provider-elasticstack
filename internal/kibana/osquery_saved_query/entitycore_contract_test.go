@@ -134,7 +134,7 @@ func TestPrebuiltGuardDiagnostic(t *testing.T) {
 	})
 }
 
-func TestToAPICreateRequest_minimalOmitsOptionalFields(t *testing.T) {
+func TestToAPICreateRequest_minimalIncludesRequiredFields(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -142,6 +142,7 @@ func TestToAPICreateRequest_minimalOmitsOptionalFields(t *testing.T) {
 	model := osquerySavedQueryModel{
 		SavedQueryID: types.StringValue("list_processes"),
 		Query:        types.StringValue("SELECT 1"),
+		Interval:     types.Int64Value(3600),
 	}
 
 	body, diags := model.toAPICreateRequest(ctx)
@@ -151,9 +152,10 @@ func TestToAPICreateRequest_minimalOmitsOptionalFields(t *testing.T) {
 	assert.Equal(t, "list_processes", *body.Id)
 	require.NotNil(t, body.Query)
 	assert.Equal(t, "SELECT 1", *body.Query)
+	require.NotNil(t, body.Interval)
+	assert.Equal(t, "3600", *body.Interval)
 	assert.Nil(t, body.Description)
 	assert.Nil(t, body.Platform)
-	assert.Nil(t, body.Interval)
 	assert.Nil(t, body.Version)
 	assert.Nil(t, body.Snapshot)
 	assert.Nil(t, body.Removed)
@@ -168,9 +170,9 @@ func TestToAPICreateRequest_omitsNullOptionalFields(t *testing.T) {
 	model := osquerySavedQueryModel{
 		SavedQueryID: types.StringValue("list_processes"),
 		Query:        types.StringValue("SELECT 1"),
+		Interval:     types.Int64Value(3600),
 		Description:  types.StringNull(),
 		Platform:     types.SetNull(types.StringType),
-		Interval:     types.Int64Null(),
 		Version:      types.StringNull(),
 		Snapshot:     types.BoolNull(),
 		Removed:      types.BoolNull(),
@@ -182,9 +184,10 @@ func TestToAPICreateRequest_omitsNullOptionalFields(t *testing.T) {
 
 	require.NotNil(t, body.Id)
 	require.NotNil(t, body.Query)
+	require.NotNil(t, body.Interval)
+	assert.Equal(t, "3600", *body.Interval)
 	assert.Nil(t, body.Description)
 	assert.Nil(t, body.Platform)
-	assert.Nil(t, body.Interval)
 	assert.Nil(t, body.Version)
 	assert.Nil(t, body.Snapshot)
 	assert.Nil(t, body.Removed)
@@ -243,26 +246,76 @@ func TestToAPICreateRequest(t *testing.T) {
 	require.Contains(t, *body.EcsMapping, "process.name")
 }
 
-func TestToAPIUpdateRequest_omitsUnsetOptionalFields(t *testing.T) {
+func TestToAPIUpdateRequest_includesRequiredFieldsAndOmitsUnsetOptionalFields(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
 
 	model := osquerySavedQueryModel{
-		Query: types.StringValue("SELECT 1"),
+		SavedQueryID: types.StringValue("list_processes"),
+		Query:        types.StringValue("SELECT 1"),
+		Interval:     types.Int64Value(3600),
 	}
 
-	body, diags := model.toAPIUpdateRequest(ctx)
+	body, diags := model.toAPIUpdateRequest(ctx, nil)
 	require.Empty(t, diags)
 
+	require.NotNil(t, body.Id)
+	assert.Equal(t, "list_processes", *body.Id)
 	require.NotNil(t, body.Query)
 	assert.Equal(t, "SELECT 1", *body.Query)
+	require.NotNil(t, body.Interval)
+	assert.Equal(t, "3600", *body.Interval)
 	assert.Nil(t, body.Description)
 	assert.Nil(t, body.Platform)
-	assert.Nil(t, body.Interval)
 	assert.Nil(t, body.Version)
 	assert.Nil(t, body.Snapshot)
 	assert.Nil(t, body.Removed)
 	assert.Nil(t, body.EcsMapping)
-	assert.Nil(t, body.Id)
+}
+
+func TestToAPIUpdateRequest_clearsRemovedOptionalFields(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	ecsObj, objDiags := types.ObjectValue(ecsMappingAttrTypes, map[string]attr.Value{
+		attrEcsMappingField:  types.StringValue("cmdline"),
+		attrEcsMappingValue:  types.StringNull(),
+		attrEcsMappingValues: types.SetNull(types.StringType),
+	})
+	require.Empty(t, objDiags)
+
+	ecsMap, mapDiags := types.MapValue(getEcsMappingElemType(), map[string]attr.Value{
+		"process.name": ecsObj,
+	})
+	require.Empty(t, mapDiags)
+
+	prior := &osquerySavedQueryModel{
+		Description: types.StringValue("previous"),
+		Platform:    stringSetValue([]string{"linux"}),
+		Version:     types.StringValue("1.0.0"),
+		EcsMapping:  ecsMap,
+	}
+	model := osquerySavedQueryModel{
+		SavedQueryID: types.StringValue("list_processes"),
+		Query:        types.StringValue("SELECT 1"),
+		Interval:     types.Int64Value(3600),
+		Description:  types.StringNull(),
+		Platform:     types.SetNull(types.StringType),
+		Version:      types.StringNull(),
+		EcsMapping:   types.MapNull(getEcsMappingElemType()),
+	}
+
+	body, diags := model.toAPIUpdateRequest(ctx, prior)
+	require.Empty(t, diags)
+
+	require.NotNil(t, body.Description)
+	assert.Empty(t, *body.Description)
+	require.NotNil(t, body.Platform)
+	assert.Empty(t, *body.Platform)
+	require.NotNil(t, body.Version)
+	assert.Empty(t, *body.Version)
+	require.NotNil(t, body.EcsMapping)
+	assert.Empty(t, *body.EcsMapping)
 }

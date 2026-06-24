@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -31,7 +32,7 @@ func readOsquerySavedQuery(ctx context.Context, client *clients.KibanaScopedClie
 
 	oapiClient := client.GetKibanaOapiClient()
 
-	entity, getDiags := kibanaoapi.GetOsquerySavedQuery(ctx, oapiClient, spaceID, resourceID)
+	entity, getDiags := getOsquerySavedQueryForRead(ctx, oapiClient, spaceID, resourceID, model)
 	diags.Append(getDiags...)
 	if diags.HasError() {
 		return model, false, diags
@@ -54,4 +55,18 @@ func readOsquerySavedQuery(ctx context.Context, client *clients.KibanaScopedClie
 	}
 
 	return model, true, diags
+}
+
+func getOsquerySavedQueryForRead(
+	ctx context.Context,
+	oapiClient *kibanaoapi.Client,
+	spaceID string,
+	savedQueryID string,
+	model osquerySavedQueryModel,
+) (*kibanaoapi.OsquerySavedQueryGetEntity, diag.Diagnostics) {
+	if typeutils.IsKnown(model.SavedObjectID) && model.SavedObjectID.ValueString() != "" {
+		return kibanaoapi.GetOsquerySavedQueryBySavedObjectID(ctx, oapiClient, spaceID, model.SavedObjectID.ValueString())
+	}
+
+	return kibanaoapi.GetOsquerySavedQuery(ctx, oapiClient, spaceID, savedQueryID)
 }

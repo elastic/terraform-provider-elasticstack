@@ -28,6 +28,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
+const osqueryFindSavedQueriesPageSize = 100
+
 // OsquerySavedQueryCreateEntity is the unwrapped `data` object from POST /api/osquery/saved_queries.
 type OsquerySavedQueryCreateEntity struct {
 	CreatedAt           *time.Time
@@ -193,15 +195,71 @@ func CreateOsquerySavedQuery(
 		})
 }
 
-// GetOsquerySavedQuery reads an Osquery saved query by ID via GET /api/osquery/saved_queries/{id}.
-// Returns (nil, nil) when the saved query is not found (HTTP 404).
-func GetOsquerySavedQuery(
+// FindOsquerySavedObjectID resolves the Kibana saved object ID for a user-facing saved_query_id
+// by paginating GET /api/osquery/saved_queries (OsqueryFindSavedQueries). Returns ("", false, nil)
+// when no matching query exists in the space.
+func FindOsquerySavedObjectID(
 	ctx context.Context,
 	client *Client,
 	spaceID string,
 	savedQueryID kbapi.SecurityOsqueryAPISavedQueryId,
+) (string, bool, diag.Diagnostics) {
+	pageSize := kbapi.SecurityOsqueryAPIPageSizeOrUndefined(osqueryFindSavedQueriesPageSize)
+	page := 1
+
+	for {
+		pageParam := page
+		resp, err := client.API.OsqueryFindSavedQueriesWithResponse(ctx, &kbapi.OsqueryFindSavedQueriesParams{
+			Page:     &pageParam,
+			PageSize: &pageSize,
+		}, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return "", false, diagutil.FrameworkDiagFromError(err)
+		}
+
+		if resp.StatusCode() != http.StatusOK {
+			return "", false, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+		}
+		if resp.JSON200 == nil {
+			return "", false, diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Failed to parse response",
+					"Osquery find saved queries returned success status but response body was nil or not JSON",
+				),
+			}
+		}
+
+		for _, item := range resp.JSON200.Data {
+			if item.Id == savedQueryID {
+				return item.SavedObjectId, true, nil
+			}
+		}
+
+		if len(resp.JSON200.Data) == 0 {
+			break
+		}
+
+		perPage := pageSize
+		if resp.JSON200.PerPage > 0 {
+			perPage = resp.JSON200.PerPage
+		}
+		if page*perPage >= resp.JSON200.Total {
+			break
+		}
+		page++
+	}
+
+	return "", false, nil
+}
+
+// GetOsquerySavedQueryBySavedObjectID reads an Osquery saved query using Kibana's saved_object_id.
+func GetOsquerySavedQueryBySavedObjectID(
+	ctx context.Context,
+	client *Client,
+	spaceID string,
+	savedObjectID kbapi.SecurityOsqueryAPISavedQueryId,
 ) (*OsquerySavedQueryGetEntity, diag.Diagnostics) {
-	resp, err := client.API.OsqueryGetSavedQueryDetailsWithResponse(ctx, savedQueryID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.OsqueryGetSavedQueryDetailsWithResponse(ctx, savedObjectID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -212,15 +270,35 @@ func GetOsquerySavedQuery(
 		})
 }
 
-// UpdateOsquerySavedQuery updates an Osquery saved query via PUT /api/osquery/saved_queries/{id}.
-func UpdateOsquerySavedQuery(
+// GetOsquerySavedQuery reads an Osquery saved query by user-facing saved_query_id.
+// It resolves saved_object_id via OsqueryFindSavedQueries, then GETs details by saved object ID.
+// Returns (nil, nil) when the saved query is not found.
+func GetOsquerySavedQuery(
 	ctx context.Context,
 	client *Client,
 	spaceID string,
 	savedQueryID kbapi.SecurityOsqueryAPISavedQueryId,
+) (*OsquerySavedQueryGetEntity, diag.Diagnostics) {
+	savedObjectID, found, diags := FindOsquerySavedObjectID(ctx, client, spaceID, savedQueryID)
+	if diags.HasError() {
+		return nil, diags
+	}
+	if !found {
+		return nil, diags
+	}
+
+	return GetOsquerySavedQueryBySavedObjectID(ctx, client, spaceID, savedObjectID)
+}
+
+// UpdateOsquerySavedQueryBySavedObjectID updates an Osquery saved query using Kibana's saved_object_id.
+func UpdateOsquerySavedQueryBySavedObjectID(
+	ctx context.Context,
+	client *Client,
+	spaceID string,
+	savedObjectID kbapi.SecurityOsqueryAPISavedQueryId,
 	body kbapi.OsqueryUpdateSavedQueryJSONRequestBody,
 ) (*OsquerySavedQueryUpdateEntity, diag.Diagnostics) {
-	resp, err := client.API.OsqueryUpdateSavedQueryWithResponse(ctx, savedQueryID, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.OsqueryUpdateSavedQueryWithResponse(ctx, savedObjectID, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -231,18 +309,63 @@ func UpdateOsquerySavedQuery(
 		})
 }
 
-// DeleteOsquerySavedQuery deletes an Osquery saved query via DELETE /api/osquery/saved_queries/{id}.
-// HTTP 404 is treated as success (idempotent delete).
+// UpdateOsquerySavedQuery updates an Osquery saved query via PUT /api/osquery/saved_queries/{saved_object_id}.
+// The path parameter is the Kibana saved object ID resolved from saved_query_id.
+func UpdateOsquerySavedQuery(
+	ctx context.Context,
+	client *Client,
+	spaceID string,
+	savedQueryID kbapi.SecurityOsqueryAPISavedQueryId,
+	body kbapi.OsqueryUpdateSavedQueryJSONRequestBody,
+) (*OsquerySavedQueryUpdateEntity, diag.Diagnostics) {
+	savedObjectID, found, diags := FindOsquerySavedObjectID(ctx, client, spaceID, savedQueryID)
+	if diags.HasError() {
+		return nil, diags
+	}
+	if !found {
+		return nil, diag.Diagnostics{
+			diag.NewErrorDiagnostic(
+				"Osquery saved query not found",
+				"Cannot update Osquery saved query: no saved query with the configured saved_query_id exists in the target Kibana space.",
+			),
+		}
+	}
+
+	return UpdateOsquerySavedQueryBySavedObjectID(ctx, client, spaceID, savedObjectID, body)
+}
+
+// DeleteOsquerySavedQueryBySavedObjectID deletes an Osquery saved query using Kibana's saved_object_id.
+func DeleteOsquerySavedQueryBySavedObjectID(
+	ctx context.Context,
+	client *Client,
+	spaceID string,
+	savedObjectID kbapi.SecurityOsqueryAPISavedQueryId,
+) diag.Diagnostics {
+	resp, err := client.API.OsqueryDeleteSavedQueryWithResponse(ctx, savedObjectID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
+}
+
+// DeleteOsquerySavedQuery deletes an Osquery saved query via DELETE /api/osquery/saved_queries/{saved_object_id}.
+// The path parameter is the Kibana saved object ID resolved from saved_query_id.
+// HTTP 404 is treated as success (idempotent delete). When the query is already absent from the find
+// list, delete is treated as success.
 func DeleteOsquerySavedQuery(
 	ctx context.Context,
 	client *Client,
 	spaceID string,
 	savedQueryID kbapi.SecurityOsqueryAPISavedQueryId,
 ) diag.Diagnostics {
-	resp, err := client.API.OsqueryDeleteSavedQueryWithResponse(ctx, savedQueryID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	savedObjectID, found, diags := FindOsquerySavedObjectID(ctx, client, spaceID, savedQueryID)
+	if diags.HasError() {
+		return diags
+	}
+	if !found {
+		return nil
 	}
 
-	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
+	return DeleteOsquerySavedQueryBySavedObjectID(ctx, client, spaceID, savedObjectID)
 }

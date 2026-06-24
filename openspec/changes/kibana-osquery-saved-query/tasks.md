@@ -7,7 +7,7 @@
 
 ## 2. kibanaoapi client helper
 
-- [x] 2.1 Create `internal/clients/kibanaoapi/osquery_saved_query.go` with thin wrappers `CreateOsquerySavedQuery`, `GetOsquerySavedQuery`, `UpdateOsquerySavedQuery`, `DeleteOsquerySavedQuery` — each passing `kibanautil.SpaceAwarePathRequestEditor(spaceID)` and using `HandleGetTypedResponse` / `HandleMutateTypedResponse` / `HandleStatusResponse` consistently with `maintenance_window.go`
+- [x] 2.1 Create `internal/clients/kibanaoapi/osquery_saved_query.go` with thin wrappers `CreateOsquerySavedQuery`, `GetOsquerySavedQuery`, `UpdateOsquerySavedQuery`, `DeleteOsquerySavedQuery`, and `FindOsquerySavedObjectID` — each passing `kibanautil.SpaceAwarePathRequestEditor(spaceID)` and using `HandleGetTypedResponse` / `HandleMutateTypedResponse` / `HandleStatusResponse` consistently with `maintenance_window.go`
 - [x] 2.2 Map HTTP 404 on Get to a nil/sentinel result (resource removed from state); map HTTP 404 on Delete to a no-op success
 - [x] 2.3 Map non-2xx responses to provider diagnostics consistently with other kibanaoapi helpers
 - [x] 2.4 Unwrap the `data` field from the Create (and Update, if applicable) response before returning the typed entity
@@ -22,7 +22,7 @@
 
 ## 4. Resource schema
 
-- [x] 4.1 Implement `getSchema` covering: `id` (Computed, composite `<space_id>/<saved_query_id>`), `saved_query_id` (Required, RequiresReplace), `space_id` (Optional+Computed, default `"default"`, RequiresReplace), `kibana_connection` (Optional, from `entitycore`), `query` (Required string), `description` (Optional string), `platform` (Optional SetAttribute of strings with allowed-values validator), `interval` (Optional Int64), `version` (Optional string), `snapshot` (Optional+Computed bool), `removed` (Optional+Computed bool), `ecs_mapping` (Optional MapNestedAttribute)
+- [x] 4.1 Implement `getSchema` covering: `id` (Computed, composite `<space_id>/<saved_query_id>`), `saved_object_id` (Computed), `saved_query_id` (Required, RequiresReplace), `space_id` (Optional+Computed, default `"default"`, RequiresReplace), `kibana_connection` (Optional, from `entitycore`), `query` (Required string), `description` (Optional string), `platform` (Optional SetAttribute of strings with allowed-values validator), `interval` (Required Int64), `version` (Optional string), `snapshot` (Optional+Computed bool), `removed` (Optional+Computed bool), `ecs_mapping` (Optional MapNestedAttribute)
 - [x] 4.2 Add `RequiresReplace` plan modifiers on `saved_query_id` and `space_id`
 - [x] 4.3 Add `UseStateForUnknown` plan modifiers on Optional+Computed fields (`space_id`, `snapshot`, `removed`, and other computed-only attributes as needed)
 - [x] 4.4 Implement the `ecs_mapping` element schema as a `MapNestedAttribute` nested object with `field` (Optional string), `value` (Optional string), `values` (Optional SetAttribute of strings)
@@ -31,15 +31,15 @@
 ## 5. Resource CRUD and import
 
 - [x] 5.1 Implement `create.go` via `CreateOsquerySavedQuery`, map the returned entity with `populateFromAPI`, and return a prebuilt error diagnostic if `prebuilt == true`
-- [x] 5.2 Implement `read.go` via `GetOsquerySavedQuery` (lookup via `saved_query_id`); on HTTP 404, remove from state without error; on success, call `populateFromAPI`; return a prebuilt error diagnostic if `prebuilt == true`
-- [x] 5.3 Implement `update.go` via `UpdateOsquerySavedQuery` (managed field set from plan/state, omitting server-managed fields and null/unset optional keys), then repopulate state from the returned entity
-- [x] 5.4 Implement `delete.go` calling `DELETE /api/osquery/saved_queries/{id}` (space-aware); treat HTTP 404 as success
+- [x] 5.2 Implement `read.go` via `GetOsquerySavedQuery`: use computed `saved_object_id` directly when present, otherwise resolve via `saved_query_id`; on HTTP 404, remove from state without error; on success, call `populateFromAPI`; return a prebuilt error diagnostic if `prebuilt == true`
+- [x] 5.3 Implement `update.go` via `UpdateOsquerySavedQuery`: use computed `saved_object_id` directly when present, otherwise resolve via `saved_query_id`; send required `id`, `query`, `interval`, managed optional fields, and explicit empty values/maps when clearing removed optionals; then repopulate state from the returned entity
+- [x] 5.4 Implement `delete.go` calling `DELETE /api/osquery/saved_queries/{saved_object_id}` (space-aware), using computed `saved_object_id` or resolving by `saved_query_id`; treat lookup miss / HTTP 404 as success
 - [x] 5.5 Implement `ImportState` for composite `"<space_id>/<saved_query_id>"`: prefer `ImportStatePassthroughID` on `id`; if Required `saved_query_id` must be seeded before Read, use thin custom parser (as `alerting_rule`) to set `space_id`, `saved_query_id`, and `id` from import string
 - [x] 5.6 Register `osquerySavedQuery.NewResource()` in the resource slice in `provider/plugin_framework.go`
 
 ## 6. Data source
 
-- [x] 6.1 Implement `internal/kibana/osquery_saved_query/datasource.go` (or `data_source.go`) with schema: `saved_query_id` (Required), `space_id` (Optional, default `"default"`), `kibana_connection` (Optional), plus all the same Computed fields as the resource (`query`, `description`, `platform`, `interval`, `version`, `snapshot`, `removed`, `ecs_mapping`, and `prebuilt` as Computed bool); shared model or datasource model implements `GetVersionRequirements` with `8.5.0` floor
+- [x] 6.1 Implement `internal/kibana/osquery_saved_query/datasource.go` (or `data_source.go`) with schema: `saved_query_id` (Required), `space_id` (Optional, default `"default"`), `kibana_connection` (Optional), plus all the same Computed fields as the resource (`saved_object_id`, `query`, `description`, `platform`, `interval`, `version`, `snapshot`, `removed`, `ecs_mapping`, and `prebuilt` as Computed bool); shared model or datasource model implements `GetVersionRequirements` with `8.5.0` floor
 - [x] 6.2 Implement Read via `GetOsquerySavedQuery` (same kibanaoapi wrapper as the resource); on HTTP 404, return an error diagnostic rather than removing from state (data sources error on missing)
 - [x] 6.3 Do NOT error on `prebuilt == true` in the data source — prebuilt queries are a primary use case for the data source
 - [x] 6.4 Register the data source in `provider/plugin_framework.go`
@@ -67,8 +67,8 @@
 
 ## 9. Validation and cleanup
 
-- [ ] 9.1 Run `make build` and `make check-lint` — fix any issues
-- [ ] 9.2 Run `make check-openspec` — confirm this change validates
-- [ ] 9.3 Run targeted acceptance tests against a real Kibana at or above the confirmed minimum version (per `dev-docs/high-level/testing.md`)
-- [ ] 9.4 Verify generated docs render correctly
-- [ ] 9.5 Self-review with the `requirements-verification` skill against this change's specs
+- [x] 9.1 Run `make build` and `make check-lint` — fix any issues
+- [x] 9.2 Run `make check-openspec` — confirm this change validates
+- [x] 9.3 Run targeted acceptance tests against a real Kibana at or above the confirmed minimum version (per `dev-docs/high-level/testing.md`)
+- [x] 9.4 Verify generated docs render correctly
+- [x] 9.5 Self-review with the `requirements-verification` skill against this change's specs

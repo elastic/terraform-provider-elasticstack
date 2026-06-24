@@ -17,6 +17,7 @@ resource "elasticstack_kibana_osquery_saved_query" "test" {
   space_id       = var.space_id
   query          = "SELECT pid, name FROM processes LIMIT 10;"
   description    = "Terraform acceptance update"
+  interval       = 3600
 
   ecs_mapping = {
     "host.name" = {

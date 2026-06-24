@@ -33,6 +33,10 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				MarkdownDescription: "Composite identifier in the form `<space_id>/<saved_query_id>`.",
 				Computed:            true,
 			},
+			attrSavedObjectID: dsschema.StringAttribute{
+				MarkdownDescription: "Kibana saved object identifier used by Kibana's Osquery saved query detail API.",
+				Computed:            true,
+			},
 			attrSavedQueryID: dsschema.StringAttribute{
 				MarkdownDescription: "Stable identifier for the saved query to look up.",
 				Required:            true,

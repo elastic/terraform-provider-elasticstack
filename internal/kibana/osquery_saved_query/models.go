@@ -58,17 +58,18 @@ type osquerySavedQueryModel struct {
 	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
 
-	ID           types.String `tfsdk:"id"`
-	SavedQueryID types.String `tfsdk:"saved_query_id"`
-	SpaceID      types.String `tfsdk:"space_id"`
-	Query        types.String `tfsdk:"query"`
-	Description  types.String `tfsdk:"description"`
-	Platform     types.Set    `tfsdk:"platform"`
-	Interval     types.Int64  `tfsdk:"interval"`
-	Version      types.String `tfsdk:"version"`
-	Snapshot     types.Bool   `tfsdk:"snapshot"`
-	Removed      types.Bool   `tfsdk:"removed"`
-	EcsMapping   types.Map    `tfsdk:"ecs_mapping"`
+	ID            types.String `tfsdk:"id"`
+	SavedObjectID types.String `tfsdk:"saved_object_id"`
+	SavedQueryID  types.String `tfsdk:"saved_query_id"`
+	SpaceID       types.String `tfsdk:"space_id"`
+	Query         types.String `tfsdk:"query"`
+	Description   types.String `tfsdk:"description"`
+	Platform      types.Set    `tfsdk:"platform"`
+	Interval      types.Int64  `tfsdk:"interval"`
+	Version       types.String `tfsdk:"version"`
+	Snapshot      types.Bool   `tfsdk:"snapshot"`
+	Removed       types.Bool   `tfsdk:"removed"`
+	EcsMapping    types.Map    `tfsdk:"ecs_mapping"`
 }
 
 type ecsMapping struct {
@@ -105,7 +106,7 @@ func (m *osquerySavedQueryModel) populateFromCreateAPI(ctx context.Context, enti
 	diags := diag.Diagnostics{}
 	diags.Append(intervalDiags...)
 	diags.Append(versionDiags...)
-	diags.Append(m.populateSharedFields(ctx, entity.ID, entity.Query, entity.Description, entity.Platform, entity.EcsMapping, entity.Snapshot, entity.Removed, interval, version)...)
+	diags.Append(m.populateSharedFields(ctx, entity.ID, entity.SavedObjectID, entity.Query, entity.Description, entity.Platform, entity.EcsMapping, entity.Snapshot, entity.Removed, interval, version)...)
 
 	return diags
 }
@@ -121,7 +122,7 @@ func (m *osquerySavedQueryModel) populateFromGetAPI(ctx context.Context, entity 
 	diags := diag.Diagnostics{}
 	diags.Append(intervalDiags...)
 	diags.Append(versionDiags...)
-	diags.Append(m.populateSharedFields(ctx, entity.ID, entity.Query, entity.Description, entity.Platform, entity.EcsMapping, entity.Snapshot, entity.Removed, interval, version)...)
+	diags.Append(m.populateSharedFields(ctx, entity.ID, entity.SavedObjectID, entity.Query, entity.Description, entity.Platform, entity.EcsMapping, entity.Snapshot, entity.Removed, interval, version)...)
 
 	return diags
 }
@@ -136,7 +137,7 @@ func (m *osquerySavedQueryModel) populateFromUpdateAPI(ctx context.Context, enti
 
 	diags := diag.Diagnostics{}
 	diags.Append(intervalDiags...)
-	diags.Append(m.populateSharedFields(ctx, entity.ID, entity.Query, entity.Description, entity.Platform, entity.EcsMapping, entity.Snapshot, entity.Removed, interval, version)...)
+	diags.Append(m.populateSharedFields(ctx, entity.ID, entity.SavedObjectID, entity.Query, entity.Description, entity.Platform, entity.EcsMapping, entity.Snapshot, entity.Removed, interval, version)...)
 
 	return diags
 }
@@ -144,6 +145,7 @@ func (m *osquerySavedQueryModel) populateFromUpdateAPI(ctx context.Context, enti
 func (m *osquerySavedQueryModel) populateSharedFields(
 	ctx context.Context,
 	savedQueryID kbapi.SecurityOsqueryAPISavedQueryId,
+	savedObjectID string,
 	query *kbapi.SecurityOsqueryAPIQuery,
 	description *kbapi.SecurityOsqueryAPISavedQueryDescription,
 	platform *kbapi.SecurityOsqueryAPIPlatform,
@@ -156,8 +158,13 @@ func (m *osquerySavedQueryModel) populateSharedFields(
 	var diags diag.Diagnostics
 
 	m.setCompositeIdentity(savedQueryID)
+	if savedObjectID == "" {
+		m.SavedObjectID = types.StringNull()
+	} else {
+		m.SavedObjectID = types.StringValue(savedObjectID)
+	}
 	m.Query = typeutils.StringishPointerValue(query)
-	m.Description = typeutils.StringishPointerValue(description)
+	m.Description = optionalStringPointerValue(description)
 	m.Platform = platformSetFromAPI(platform)
 	m.Interval = interval
 	m.Version = version
@@ -418,7 +425,7 @@ func versionFromCreateAPI(version *kbapi.SecurityOsqueryAPICreateSavedQueryRespo
 	}
 
 	if value, err := version.AsSecurityOsqueryAPICreateSavedQueryResponseDataVersion1(); err == nil {
-		return types.StringValue(value), nil
+		return versionStringValue(value), nil
 	}
 
 	if value, err := version.AsSecurityOsqueryAPICreateSavedQueryResponseDataVersion0(); err == nil {
@@ -436,7 +443,7 @@ func versionFromGetAPI(version *kbapi.SecurityOsqueryAPIFindSavedQueryDetailResp
 	}
 
 	if value, err := version.AsSecurityOsqueryAPIFindSavedQueryDetailResponseDataVersion1(); err == nil {
-		return types.StringValue(value), nil
+		return versionStringValue(value), nil
 	}
 
 	if value, err := version.AsSecurityOsqueryAPIFindSavedQueryDetailResponseDataVersion0(); err == nil {
@@ -449,7 +456,27 @@ func versionFromGetAPI(version *kbapi.SecurityOsqueryAPIFindSavedQueryDetailResp
 }
 
 func versionFromUpdateAPI(version *string) types.String {
-	return typeutils.StringishPointerValue(version)
+	if version == nil {
+		return types.StringNull()
+	}
+
+	return versionStringValue(*version)
+}
+
+func versionStringValue(value string) types.String {
+	if strings.TrimSpace(value) == "" {
+		return types.StringNull()
+	}
+
+	return types.StringValue(value)
+}
+
+func optionalStringPointerValue[T ~string](value *T) types.String {
+	if value == nil || strings.TrimSpace(string(*value)) == "" {
+		return types.StringNull()
+	}
+
+	return types.StringValue(string(*value))
 }
 
 func parseIntervalString(value string) (types.Int64, diag.Diagnostics) {

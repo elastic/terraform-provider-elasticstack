@@ -22,10 +22,15 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func deleteOsquerySavedQuery(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ osquerySavedQueryModel) diag.Diagnostics {
+func deleteOsquerySavedQuery(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model osquerySavedQueryModel) diag.Diagnostics {
 	oapiClient := client.GetKibanaOapiClient()
+	if typeutils.IsKnown(model.SavedObjectID) && model.SavedObjectID.ValueString() != "" {
+		return kibanaoapi.DeleteOsquerySavedQueryBySavedObjectID(ctx, oapiClient, spaceID, model.SavedObjectID.ValueString())
+	}
+
 	return kibanaoapi.DeleteOsquerySavedQuery(ctx, oapiClient, spaceID, resourceID)
 }

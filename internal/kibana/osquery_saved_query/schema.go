@@ -33,22 +33,27 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var osqueryPlatformValues = []string{"linux", "darwin", "windows"}
-
 const (
-	attrID           = "id"
-	attrSavedQueryID = "saved_query_id"
-	attrSpaceID      = "space_id"
-	attrQuery        = "query"
-	attrDescription  = "description"
-	attrPlatform     = "platform"
-	attrInterval     = "interval"
-	attrVersion      = "version"
-	attrSnapshot     = "snapshot"
-	attrRemoved      = "removed"
-	attrEcsMapping   = "ecs_mapping"
-	attrPrebuilt     = "prebuilt"
+	osqueryPlatformLinux   = "linux"
+	osqueryPlatformDarwin  = "darwin"
+	osqueryPlatformWindows = "windows"
+
+	attrID            = "id"
+	attrSavedObjectID = "saved_object_id"
+	attrSavedQueryID  = "saved_query_id"
+	attrSpaceID       = "space_id"
+	attrQuery         = "query"
+	attrDescription   = "description"
+	attrPlatform      = "platform"
+	attrInterval      = "interval"
+	attrVersion       = "version"
+	attrSnapshot      = "snapshot"
+	attrRemoved       = "removed"
+	attrEcsMapping    = "ecs_mapping"
+	attrPrebuilt      = "prebuilt"
 )
+
+var osqueryPlatformValues = []string{osqueryPlatformLinux, osqueryPlatformDarwin, osqueryPlatformWindows}
 
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
@@ -64,8 +69,15 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			attrSavedObjectID: schema.StringAttribute{
+				MarkdownDescription: "Kibana saved object identifier used internally by Kibana's Osquery saved query detail, update, and delete APIs.",
+				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 			attrSavedQueryID: schema.StringAttribute{
-				MarkdownDescription: "Stable identifier for the saved query. Used as the API lookup key and forces replacement when changed.",
+				MarkdownDescription: "Stable user-facing identifier for the saved query. Forces replacement when changed.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -98,8 +110,8 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			attrInterval: schema.Int64Attribute{
-				MarkdownDescription: "Query execution interval in seconds.",
-				Optional:            true,
+				MarkdownDescription: "Query execution interval in seconds. Required by the Kibana Osquery API on create and update.",
+				Required:            true,
 			},
 			attrVersion: schema.StringAttribute{
 				MarkdownDescription: "Saved query version string.",

@@ -31,9 +31,11 @@ import (
 func (m *osquerySavedQueryModel) toAPICreateRequest(ctx context.Context) (kbapi.OsqueryCreateSavedQueryJSONRequestBody, diag.Diagnostics) {
 	savedQueryID := m.SavedQueryID.ValueString()
 	query := m.Query.ValueString()
+	interval := strconv.FormatInt(m.Interval.ValueInt64(), 10)
 	body := kbapi.OsqueryCreateSavedQueryJSONRequestBody{
-		Id:    &savedQueryID,
-		Query: &query,
+		Id:       &savedQueryID,
+		Query:    &query,
+		Interval: &interval,
 	}
 
 	optional, diags := m.managedOptionalAPIFields(ctx)
@@ -43,7 +45,6 @@ func (m *osquerySavedQueryModel) toAPICreateRequest(ctx context.Context) (kbapi.
 
 	body.Description = optional.description
 	body.Platform = optional.platform
-	body.Interval = optional.interval
 	body.Version = optional.version
 	body.Snapshot = optional.snapshot
 	body.Removed = optional.removed
@@ -52,10 +53,14 @@ func (m *osquerySavedQueryModel) toAPICreateRequest(ctx context.Context) (kbapi.
 	return body, diags
 }
 
-func (m *osquerySavedQueryModel) toAPIUpdateRequest(ctx context.Context) (kbapi.OsqueryUpdateSavedQueryJSONRequestBody, diag.Diagnostics) {
+func (m *osquerySavedQueryModel) toAPIUpdateRequest(ctx context.Context, prior *osquerySavedQueryModel) (kbapi.OsqueryUpdateSavedQueryJSONRequestBody, diag.Diagnostics) {
+	savedQueryID := m.SavedQueryID.ValueString()
 	query := m.Query.ValueString()
+	interval := strconv.FormatInt(m.Interval.ValueInt64(), 10)
 	body := kbapi.OsqueryUpdateSavedQueryJSONRequestBody{
-		Query: &query,
+		Id:       &savedQueryID,
+		Query:    &query,
+		Interval: &interval,
 	}
 
 	optional, diags := m.managedOptionalAPIFields(ctx)
@@ -65,19 +70,43 @@ func (m *osquerySavedQueryModel) toAPIUpdateRequest(ctx context.Context) (kbapi.
 
 	body.Description = optional.description
 	body.Platform = optional.platform
-	body.Interval = optional.interval
 	body.Version = optional.version
 	body.Snapshot = optional.snapshot
 	body.Removed = optional.removed
 	body.EcsMapping = optional.ecsMapping
 
+	if prior != nil {
+		m.applyRemovedOptionalFields(prior, &body)
+	}
+
 	return body, diags
+}
+
+func (m *osquerySavedQueryModel) applyRemovedOptionalFields(prior *osquerySavedQueryModel, body *kbapi.OsqueryUpdateSavedQueryJSONRequestBody) {
+	if body.Description == nil && typeutils.IsKnown(prior.Description) {
+		empty := kbapi.SecurityOsqueryAPISavedQueryDescription("")
+		body.Description = &empty
+	}
+
+	if body.Platform == nil && typeutils.IsKnown(prior.Platform) {
+		empty := kbapi.SecurityOsqueryAPIPlatform("")
+		body.Platform = &empty
+	}
+
+	if body.Version == nil && typeutils.IsKnown(prior.Version) {
+		empty := kbapi.SecurityOsqueryAPIVersion("")
+		body.Version = &empty
+	}
+
+	if body.EcsMapping == nil && typeutils.IsKnown(prior.EcsMapping) && !prior.EcsMapping.IsNull() {
+		empty := kbapi.SecurityOsqueryAPIECSMapping{}
+		body.EcsMapping = &empty
+	}
 }
 
 type managedOptionalAPIFields struct {
 	description *kbapi.SecurityOsqueryAPISavedQueryDescription
 	platform    *kbapi.SecurityOsqueryAPIPlatform
-	interval    *kbapi.SecurityOsqueryAPIInterval
 	version     *kbapi.SecurityOsqueryAPIVersion
 	snapshot    *kbapi.SecurityOsqueryAPISnapshot
 	removed     *kbapi.SecurityOsqueryAPIRemoved
@@ -101,11 +130,6 @@ func (m *osquerySavedQueryModel) managedOptionalAPIFields(ctx context.Context) (
 		return result, diags
 	}
 	result.platform = platform
-
-	if typeutils.IsKnown(m.Interval) {
-		interval := strconv.FormatInt(m.Interval.ValueInt64(), 10)
-		result.interval = &interval
-	}
 
 	if typeutils.IsKnown(m.Version) {
 		version := m.Version.ValueString()

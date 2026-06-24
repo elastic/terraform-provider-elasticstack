@@ -41,7 +41,7 @@ Implement the resource as an `entitycore.KibanaResource[osquerySavedQueryModel]`
 
 ### Decision 2: Identity — composite `id`, `saved_query_id` Required, RequiresReplace
 
-`saved_query_id` is **Required** with `RequiresReplace` and is the API lookup key (`GET/PUT/DELETE /api/osquery/saved_queries/{id}`). State `id` is **Computed** and follows the repo space-aware composite pattern: `<space_id>/<saved_query_id>` (e.g. `"default/list_all_processes"`). `GetID()` returns the composite; `GetResourceID()` returns `saved_query_id` for API calls (entitycore `resolveKibanaResourceIdentity` parses the composite when present).
+`saved_query_id` is **Required** with `RequiresReplace` and is the user-facing lookup key. State `id` is **Computed** and follows the repo space-aware composite pattern: `<space_id>/<saved_query_id>` (e.g. `"default/list_all_processes"`). `GetID()` returns the composite; `GetResourceID()` returns `saved_query_id`. **Live Kibana (task 9.3):** detail/update/delete path parameters use the Kibana `saved_object_id` (UUID), not `saved_query_id`. The provider resolves `saved_object_id` by paginating `GET /api/osquery/saved_queries` (`OsqueryFindSavedQueries`) and matching `data[].id == saved_query_id` before calling GET/PUT/DELETE details.
 
 Kibana does **not** generate an ID when `id` is omitted on create (see task 1.3 discovery evidence).
 
@@ -75,9 +75,9 @@ Partial ECS mapping precedent exists at `internal/kibana/security_detection_rule
 
 **Discovery (task 1.4):** `resourcevalidator.ExactlyOneOf` is resource-level only. `objectvalidator.ExactlyOneOf` is unsuitable on nested objects — it counts the parent object in path resolution (archived change `2026-05-11-expose-lens-chart-presentation-fields`). **Plan:** attach `ExactlyOneOfNestedAttrsValidator` to `MapNestedAttribute.NestedObject.Validators`. Precedent exists on nested/list objects (`internal/kibana/dashboard/panelkit/schema.go` list-item validators) but **not yet directly proven on MapNestedAttribute map values** — task 4.5 validates; **fallback:** custom inline `ValidateObject` only if map nested validation fails during implementation.
 
-### Decision 7: `interval` — `Int64Attribute`
+### Decision 7: `interval` — Required `Int64Attribute`
 
-`interval` is Optional `Int64Attribute` (seconds). On read from Create/GET responses, the `json.RawMessage` union is read via `AsXxx0()/AsXxx1()` accessors; if the int arm fails, the string arm is parsed as `int64`. Update response uses the same union type for `interval`. On write, the `int64` is stringified before sending to the API. Nullable (omit from request body when not set).
+`interval` is **Required** `Int64Attribute` (seconds). Live Kibana rejects create/update when `interval` is omitted (HTTP 400: `Invalid value "undefined" supplied to "interval"`) despite OpenAPI marking it optional. On read from Create and GET responses, the `json.RawMessage` union is read via `AsXxx0()/AsXxx1()` accessors; if the int arm fails, the string arm is parsed as `int64`. The Update kibanaoapi entity uses the same union type for `interval`. On write, the `int64` is always stringified and sent on create and update.
 
 ### Decision 8: `version` — `StringAttribute`
 
@@ -97,7 +97,7 @@ This is a runtime guard (not plan-time) because `prebuilt` is server-returned an
 
 ### Decision 11: Update is PUT (full replacement of managed fields)
 
-The API uses PUT (full replacement, not PATCH). On Update, the provider sends the **managed field set from plan/state** — `query`, `description`, `platform`, `interval`, `version`, `snapshot`, `removed`, `ecs_mapping` — omitting server-managed fields (`created_at`, `updated_at`, `created_by_profile_uid`, `updated_by_profile_uid`, `saved_object_id`). Optional attributes that are null/unset in plan omit the corresponding JSON keys (same nullable semantics as Create). The Update API response wraps `.Data`; the kibanaoapi helper returns an unwrapped `OsquerySavedQueryUpdateEntity` for model mapping.
+The API uses PUT (full replacement, not PATCH). On Update, the provider sends `id` (saved_query_id), `query`, `interval`, and the **managed optional field set from plan/state** — `description`, `platform`, `version`, `snapshot`, `removed`, `ecs_mapping` — omitting server-managed fields (`created_at`, `updated_at`, `created_by_profile_uid`, `updated_by_profile_uid`). Live Kibana requires `id`, `query`, and `interval` on update. Optional attributes that are null/unset in plan usually omit the corresponding JSON keys, but if a string/map optional was previously set and is now removed from config, the provider sends an empty string (`description`, `platform`, `version`) or empty map (`ecs_mapping`) so Kibana clears the remote field instead of preserving it. Empty API strings for optional fields are normalised back to null in state. The Update API response wraps `.Data`; the kibanaoapi helper returns an unwrapped `OsquerySavedQueryUpdateEntity` for model mapping.
 
 ### Decision 12: Delete returns empty body — `HandleStatusResponse`
 
@@ -107,9 +107,9 @@ Delete returns an empty body with HTTP 200 on success, and the provider should t
 
 Create, GET, and Update API responses wrap the entity in a `data` field. The kibanaoapi helper (task 2) unwraps `.Data` and returns typed entities: `OsquerySavedQueryCreateEntity`, `OsquerySavedQueryGetEntity`, and `OsquerySavedQueryUpdateEntity`. Create and GET share union semantics for `interval`/`version` but use distinct kbapi generated union types, so they remain separate entity types rather than a single consolidated read type. `populateFromAPI` (task 3.4) consumes those entities and maps to the Terraform model. Response field typing differs by operation — see discovery note 1.1 and Decisions 7–8.
 
-### Decision 14: Server-managed fields not exposed
+### Decision 14: Server-managed fields and `saved_object_id`
 
-`created_at`, `updated_at`, `created_by_profile_uid`, `updated_by_profile_uid`, and `saved_object_id` are server-managed and NOT exposed as attributes. Computed `id` stores the composite `<space_id>/<saved_query_id>`.
+`created_at`, `updated_at`, `created_by_profile_uid`, and `updated_by_profile_uid` are server-managed and NOT exposed as attributes. `saved_object_id` is server-managed but exposed as a Computed attribute because Kibana's detail, update, and delete endpoints use the saved object UUID in the path, while Terraform users configure/import the user-facing `saved_query_id`. Normal reads, updates, and deletes use `saved_object_id` directly when it is present in state; imports and older state without `saved_object_id` resolve it by paginating `OsqueryFindSavedQueries` and matching `data[].id == saved_query_id`. Computed `id` remains the public composite `<space_id>/<saved_query_id>`.
 
 ### Decision 15: Data source — single-item GET-by-id, prebuilt-safe, version-gated
 
@@ -156,4 +156,4 @@ All four methods exist in `generated/kbapi/kibana.gen.go` with signatures matchi
 | `OsqueryUpdateSavedQuery` | `SecurityOsqueryAPIUpdateSavedQueryRequestBody` | `SecurityOsqueryAPIUpdateSavedQueryResponse` | yes | `OsquerySavedQueryUpdateEntity` | `interval` union; `version` plain `*string` |
 | `OsqueryDeleteSavedQuery` | path `id` only | `SecurityOsqueryAPIDefaultSuccessResponse` (empty map) | n/a | n/a |
 
-Create request uses JSON field `id` (maps to Terraform `saved_query_id`). ECS mapping item type is `SecurityOsqueryAPIECSMappingItem` with `{Field *string, Value *SecurityOsqueryAPIECSMappingItem_Value}` union (`AsSecurityOsqueryAPIECSMappingItemValue0/1` for string|[]string).
+Create request uses JSON field `id` (maps to Terraform `saved_query_id`) and requires `interval` on live Kibana. Update request requires `id` in the body. Detail/update/delete path `{id}` is the Kibana `saved_object_id`; resolve via `OsqueryFindSavedQueries` before GET/PUT/DELETE. ECS mapping item type is `SecurityOsqueryAPIECSMappingItem` with `{Field *string, Value *SecurityOsqueryAPIECSMappingItem_Value}` union (`AsSecurityOsqueryAPIECSMappingItemValue0/1` for string|[]string).

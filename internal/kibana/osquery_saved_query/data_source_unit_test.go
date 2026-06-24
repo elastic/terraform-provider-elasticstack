@@ -70,6 +70,7 @@ func TestNewDataSource_schemaAttributes(t *testing.T) {
 
 	wantAttrs := []string{
 		attrID,
+		attrSavedObjectID,
 		attrSavedQueryID,
 		attrSpaceID,
 		attrQuery,
@@ -104,7 +105,7 @@ func TestDataSourceSchema_attributeMetadata(t *testing.T) {
 	assert.True(t, spaceIDAttr.IsComputed())
 	assert.False(t, spaceIDAttr.IsRequired())
 
-	computedOnlyStringAttrs := []string{attrID, attrQuery, attrDescription, attrVersion}
+	computedOnlyStringAttrs := []string{attrID, attrSavedObjectID, attrQuery, attrDescription, attrVersion}
 	for _, name := range computedOnlyStringAttrs {
 		attr, ok := s.Attributes[name].(dsschema.StringAttribute)
 		require.True(t, ok, "expected %q to be StringAttribute", name)
@@ -193,13 +194,14 @@ func TestFinishOsquerySavedQueryDataSourceRead_successWithDefaultSpace(t *testin
 	snapshot := true
 	removed := false
 	entity := &kibanaoapi.OsquerySavedQueryGetEntity{
-		ID:          "list_processes",
-		Query:       &query,
-		Description: &description,
-		Platform:    &platform,
-		Prebuilt:    &prebuilt,
-		Snapshot:    &snapshot,
-		Removed:     &removed,
+		ID:            "list_processes",
+		SavedObjectID: "saved-object-123",
+		Query:         &query,
+		Description:   &description,
+		Platform:      &platform,
+		Prebuilt:      &prebuilt,
+		Snapshot:      &snapshot,
+		Removed:       &removed,
 	}
 
 	config := dataSourceModel{
@@ -211,6 +213,7 @@ func TestFinishOsquerySavedQueryDataSourceRead_successWithDefaultSpace(t *testin
 	require.False(t, diags.HasError())
 	assert.Equal(t, clients.DefaultSpaceID, result.SpaceID.ValueString())
 	assert.Equal(t, "default/list_processes", result.ID.ValueString())
+	assert.Equal(t, "saved-object-123", result.SavedObjectID.ValueString())
 	assert.Equal(t, "list_processes", result.SavedQueryID.ValueString())
 	assert.Equal(t, "SELECT pid FROM processes", result.Query.ValueString())
 	assert.Equal(t, "List processes", result.Description.ValueString())
@@ -227,9 +230,10 @@ func TestDataSourceModel_populateFromGetAPI_prebuilt(t *testing.T) {
 	prebuilt := true
 	query := kbapi.SecurityOsqueryAPIQuery("SELECT 1")
 	entity := &kibanaoapi.OsquerySavedQueryGetEntity{
-		ID:       "list_all_processes",
-		Query:    &query,
-		Prebuilt: &prebuilt,
+		ID:            "list_all_processes",
+		SavedObjectID: "saved-object-prebuilt",
+		Query:         &query,
+		Prebuilt:      &prebuilt,
 	}
 
 	model := dataSourceModel{
@@ -239,6 +243,7 @@ func TestDataSourceModel_populateFromGetAPI_prebuilt(t *testing.T) {
 	diags := model.populateFromGetAPI(ctx, entity)
 	require.False(t, diags.HasError())
 	assert.Equal(t, "default/list_all_processes", model.ID.ValueString())
+	assert.Equal(t, "saved-object-prebuilt", model.SavedObjectID.ValueString())
 	assert.Equal(t, "SELECT 1", model.Query.ValueString())
 	assert.True(t, model.Prebuilt.ValueBool())
 }

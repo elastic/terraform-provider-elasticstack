@@ -68,6 +68,7 @@ output "prebuilt" {
 - `prebuilt` (Boolean) Whether the saved query is prebuilt by the osquery_manager integration package.
 - `query` (String) Osquery SQL query text.
 - `removed` (Boolean) Whether the saved query is marked removed.
+- `saved_object_id` (String) Kibana saved object identifier used by Kibana's Osquery saved query detail API.
 - `snapshot` (Boolean) Whether the saved query is a snapshot.
 - `version` (String) Saved query version string.
 

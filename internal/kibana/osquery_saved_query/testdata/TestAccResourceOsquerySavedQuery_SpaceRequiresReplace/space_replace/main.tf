@@ -21,4 +21,5 @@ resource "elasticstack_kibana_osquery_saved_query" "test" {
   space_id       = elasticstack_kibana_space.test.space_id
   query          = "SELECT pid FROM processes LIMIT 1;"
   description    = "Space replace target"
+  interval       = 3600
 }

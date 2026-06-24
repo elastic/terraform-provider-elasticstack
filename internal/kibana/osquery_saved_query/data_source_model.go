@@ -31,18 +31,19 @@ var _ entitycore.WithVersionRequirements = dataSourceModel{}
 type dataSourceModel struct {
 	entitycore.KibanaConnectionField
 
-	ID           types.String `tfsdk:"id"`
-	SavedQueryID types.String `tfsdk:"saved_query_id"`
-	SpaceID      types.String `tfsdk:"space_id"`
-	Query        types.String `tfsdk:"query"`
-	Description  types.String `tfsdk:"description"`
-	Platform     types.Set    `tfsdk:"platform"`
-	Interval     types.Int64  `tfsdk:"interval"`
-	Version      types.String `tfsdk:"version"`
-	Snapshot     types.Bool   `tfsdk:"snapshot"`
-	Removed      types.Bool   `tfsdk:"removed"`
-	EcsMapping   types.Map    `tfsdk:"ecs_mapping"`
-	Prebuilt     types.Bool   `tfsdk:"prebuilt"`
+	ID            types.String `tfsdk:"id"`
+	SavedObjectID types.String `tfsdk:"saved_object_id"`
+	SavedQueryID  types.String `tfsdk:"saved_query_id"`
+	SpaceID       types.String `tfsdk:"space_id"`
+	Query         types.String `tfsdk:"query"`
+	Description   types.String `tfsdk:"description"`
+	Platform      types.Set    `tfsdk:"platform"`
+	Interval      types.Int64  `tfsdk:"interval"`
+	Version       types.String `tfsdk:"version"`
+	Snapshot      types.Bool   `tfsdk:"snapshot"`
+	Removed       types.Bool   `tfsdk:"removed"`
+	EcsMapping    types.Map    `tfsdk:"ecs_mapping"`
+	Prebuilt      types.Bool   `tfsdk:"prebuilt"`
 }
 
 func (m dataSourceModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
@@ -64,6 +65,7 @@ func (m *dataSourceModel) populateFromGetAPI(ctx context.Context, entity *kibana
 	}
 
 	m.ID = scratch.ID
+	m.SavedObjectID = scratch.SavedObjectID
 	m.SavedQueryID = scratch.SavedQueryID
 	m.SpaceID = scratch.SpaceID
 	m.Query = scratch.Query

@@ -47,14 +47,14 @@ resource "elasticstack_kibana_osquery_saved_query" "list_processes" {
 
 ### Required
 
+- `interval` (Number) Query execution interval in seconds. Required by the Kibana Osquery API on create and update.
 - `query` (String) Osquery SQL query text.
-- `saved_query_id` (String) Stable identifier for the saved query. Used as the API lookup key and forces replacement when changed.
+- `saved_query_id` (String) Stable user-facing identifier for the saved query. Forces replacement when changed.
 
 ### Optional
 
 - `description` (String) Human-readable description of the saved query.
 - `ecs_mapping` (Attributes Map) Maps query result columns to ECS field paths. Each map value must set exactly one of `field`, `value`, or `values`. (see [below for nested schema](#nestedatt--ecs_mapping))
-- `interval` (Number) Query execution interval in seconds.
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `platform` (Set of String) Target platforms for the query. Allowed values: `linux`, `darwin`, `windows`.
 - `removed` (Boolean) Whether the saved query is marked removed. Returned by the API and may be set explicitly in configuration. When omitted or unknown at plan time, the prior state value is preserved (`UseStateForUnknown`).
@@ -66,6 +66,7 @@ resource "elasticstack_kibana_osquery_saved_query" "list_processes" {
 ### Read-Only
 
 - `id` (String) Composite identifier in the form `<space_id>/<saved_query_id>`.
+- `saved_object_id` (String) Kibana saved object identifier used internally by Kibana's Osquery saved query detail, update, and delete APIs.
 
 <a id="nestedatt--ecs_mapping"></a>
 ### Nested Schema for `ecs_mapping`

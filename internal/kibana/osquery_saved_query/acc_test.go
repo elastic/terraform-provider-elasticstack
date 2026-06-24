@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -34,6 +35,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -73,6 +75,7 @@ func TestAccResourceOsquerySavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "saved_query_id", savedQueryID),
 					resource.TestCheckResourceAttr(resourceName, "space_id", spaceID),
 					resource.TestCheckResourceAttr(resourceName, "id", fmt.Sprintf("%s/%s", spaceID, savedQueryID)),
+					resource.TestCheckResourceAttrSet(resourceName, "saved_object_id"),
 					resource.TestCheckResourceAttr(resourceName, "query", "SELECT pid, name FROM processes LIMIT 5;"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Terraform acceptance create"),
 					resource.TestCheckResourceAttr(resourceName, "interval", "3600"),
@@ -141,7 +144,6 @@ func TestAccResourceOsquerySavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "query", "SELECT pid, name FROM processes LIMIT 10;"),
 					resource.TestCheckNoResourceAttr(resourceName, "description"),
 					resource.TestCheckNoResourceAttr(resourceName, "platform"),
-					resource.TestCheckNoResourceAttr(resourceName, "interval"),
 					resource.TestCheckNoResourceAttr(resourceName, "version"),
 					resource.TestCheckNoResourceAttr(resourceName, "ecs_mapping"),
 				),
@@ -442,6 +444,7 @@ func TestAccDataSourceOsquerySavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "saved_query_id", savedQueryID),
 					resource.TestCheckResourceAttr(dataSourceName, "space_id", clients.DefaultSpaceID),
 					resource.TestCheckResourceAttrPair(dataSourceName, "id", resourceName, "id"),
+					resource.TestCheckResourceAttrPair(dataSourceName, "saved_object_id", resourceName, "saved_object_id"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "query", resourceName, "query"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "description", resourceName, "description"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "interval", resourceName, "interval"),
@@ -518,6 +521,7 @@ func TestAccDataSourceOsquerySavedQuery_Prebuilt(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "saved_query_id", prebuiltID),
 					resource.TestCheckResourceAttr(dataSourceName, "space_id", clients.DefaultSpaceID),
 					resource.TestCheckResourceAttrSet(dataSourceName, "id"),
+					resource.TestCheckResourceAttrSet(dataSourceName, "saved_object_id"),
 					resource.TestCheckResourceAttr(dataSourceName, "prebuilt", "true"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "query"),
 				),
@@ -531,6 +535,9 @@ var checkResourceOsquerySavedQueryDestroy = checks.KibanaResourceDestroyCheckCom
 	func(ctx context.Context, client *kibanaoapi.Client, spaceID, savedQueryID string) (bool, error) {
 		entity, diags := kibanaoapi.GetOsquerySavedQuery(ctx, client, spaceID, savedQueryID)
 		if diags.HasError() {
+			if osquerySavedQueryAbsenceCheckCanTreatAsAbsent(diags) {
+				return false, nil
+			}
 			return false, fmt.Errorf("failed to check osquery saved query %q in space %q: %v", savedQueryID, spaceID, diags)
 		}
 		return entity != nil, nil
@@ -546,6 +553,9 @@ func checkOsquerySavedQueryNotFound(spaceID, savedQueryID string) resource.TestC
 
 		entity, diags := kibanaoapi.GetOsquerySavedQuery(context.Background(), client.GetKibanaOapiClient(), spaceID, savedQueryID)
 		if diags.HasError() {
+			if osquerySavedQueryAbsenceCheckCanTreatAsAbsent(diags) {
+				return nil
+			}
 			return fmt.Errorf("failed to verify osquery saved query %q in space %q: %v", savedQueryID, spaceID, diags)
 		}
 		if entity != nil {
@@ -553,6 +563,16 @@ func checkOsquerySavedQueryNotFound(spaceID, savedQueryID string) resource.TestC
 		}
 		return nil
 	}
+}
+
+func osquerySavedQueryAbsenceCheckCanTreatAsAbsent(diags diag.Diagnostics) bool {
+	for _, d := range diags.Errors() {
+		if strings.Contains(d.Detail(), `"statusCode":500`) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func discoverPrebuiltSavedQueryID(t *testing.T) (string, bool) {

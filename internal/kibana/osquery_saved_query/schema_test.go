@@ -47,6 +47,12 @@ func TestSchema_attributeMetadata(t *testing.T) {
 	assert.False(t, idAttr.IsRequired())
 	assertHasStringPlanModifier(t, idAttr.PlanModifiers, "useStateForUnknown")
 
+	savedObjectIDAttr, ok := s.Attributes[attrSavedObjectID].(schema.StringAttribute)
+	require.True(t, ok)
+	assert.True(t, savedObjectIDAttr.IsComputed())
+	assert.False(t, savedObjectIDAttr.IsRequired())
+	assertHasStringPlanModifier(t, savedObjectIDAttr.PlanModifiers, "useStateForUnknown")
+
 	savedQueryIDAttr, ok := s.Attributes["saved_query_id"].(schema.StringAttribute)
 	require.True(t, ok)
 	assert.True(t, savedQueryIDAttr.IsRequired())
@@ -63,6 +69,11 @@ func TestSchema_attributeMetadata(t *testing.T) {
 	queryAttr, ok := s.Attributes["query"].(schema.StringAttribute)
 	require.True(t, ok)
 	assert.True(t, queryAttr.IsRequired())
+
+	intervalAttr, ok := s.Attributes["interval"].(schema.Int64Attribute)
+	require.True(t, ok)
+	assert.True(t, intervalAttr.IsRequired())
+	assert.False(t, intervalAttr.IsOptional())
 
 	snapshotAttr, ok := s.Attributes["snapshot"].(schema.BoolAttribute)
 	require.True(t, ok)
