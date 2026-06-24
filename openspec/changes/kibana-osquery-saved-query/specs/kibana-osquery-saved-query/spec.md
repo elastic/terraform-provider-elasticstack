@@ -106,7 +106,7 @@ The resource SHALL call `POST /api/osquery/saved_queries` (space-aware via `Spac
 #### Scenario: Successful create
 - **WHEN** a resource with `query = "SELECT * FROM processes"` is applied
 - **THEN** `POST /api/osquery/saved_queries` SHALL be called (space-aware)
-- **AND** state SHALL be populated from the response `data` object
+- **AND** state SHALL be populated from the unwrapped `OsquerySavedQueryCreateEntity` returned by `CreateOsquerySavedQuery` via `populateFromAPI`
 
 #### Scenario: Create of a prebuilt query is refused
 - **WHEN** the Create API response contains `prebuilt: true`
