@@ -209,7 +209,7 @@ func (e ecsMapping) toAPIType() (kbapi.SecurityOsqueryAPIECSMappingItem, diag.Di
 		setCount++
 	}
 
-	if setCount > 1 {
+	if setCount != 1 {
 		diags.AddError(
 			"Invalid ecs_mapping element",
 			"Exactly one of field, value, or values must be set per ecs_mapping element.",

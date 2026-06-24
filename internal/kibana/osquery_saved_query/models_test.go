@@ -196,6 +196,11 @@ func TestEcsMappingConversion(t *testing.T) {
 		assert.Equal(t, []string{"network", "process"}, values)
 	})
 
+	t.Run("zero arms returns error", func(t *testing.T) {
+		_, diags := ecsMapping{}.toAPIType()
+		require.True(t, diags.HasError())
+	})
+
 	t.Run("multiple arms returns error", func(t *testing.T) {
 		mapping := ecsMapping{
 			Field: types.StringValue("cmdline"),
