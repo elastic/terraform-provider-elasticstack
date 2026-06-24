@@ -65,6 +65,14 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 		return
 	}
 
+	if composite.ClusterID == "" {
+		resp.Diagnostics.AddError(
+			"Wrong resource ID.",
+			"Import ID must include a Kibana space in the form `<space_id>/<saved_query_id>`.",
+		)
+		return
+	}
+
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("saved_query_id"), composite.ResourceID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("space_id"), composite.ClusterID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), types.StringValue(req.ID))...)

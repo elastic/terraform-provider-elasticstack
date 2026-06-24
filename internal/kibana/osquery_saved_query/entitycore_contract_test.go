@@ -32,6 +32,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestOsquerySavedQueryModel_satisfiesKibanaResourceModel(t *testing.T) {
+	t.Parallel()
+	var _ entitycore.KibanaResourceModel = osquerySavedQueryModel{}
+}
+
+func TestOsquerySavedQueryModel_satisfiesWithVersionRequirements(t *testing.T) {
+	t.Parallel()
+	var _ entitycore.WithVersionRequirements = osquerySavedQueryModel{}
+}
+
+func TestNewResource_satisfiesFrameworkInterfaces(t *testing.T) {
+	t.Parallel()
+	var _ resource.Resource = newResource()
+	var _ resource.ResourceWithConfigure = newResource()
+	var _ resource.ResourceWithImportState = newResource()
+}
+
 func TestResource_embedsEntityCoreKibanaResource(t *testing.T) {
 	t.Parallel()
 
@@ -67,6 +84,21 @@ func TestResource_importState_seedsCompositeIdentity(t *testing.T) {
 	assert.Equal(t, "production", spaceID.ValueString())
 }
 
+func TestResource_importState_rejectsEmptySpaceSegment(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	r, ok := any(newResource()).(resource.ResourceWithImportState)
+	require.True(t, ok)
+
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	r.ImportState(ctx, resource.ImportStateRequest{ID: "/list_all_processes"}, resp)
+	require.True(t, resp.Diagnostics.HasError())
+	assert.Contains(t, resp.Diagnostics.Errors()[0].Detail(), "<space_id>/<saved_query_id>")
+}
+
 func TestPrebuiltGuardDiagnostic(t *testing.T) {
 	t.Parallel()
 
@@ -88,6 +120,63 @@ func TestPrebuiltGuardDiagnostic(t *testing.T) {
 		assert.Equal(t, prebuiltSavedQueryDiagnosticSummary, diags.Errors()[0].Summary())
 		assert.Equal(t, prebuiltSavedQueryDiagnosticDetail, diags.Errors()[0].Detail())
 	})
+}
+
+func TestToAPICreateRequest_minimalOmitsOptionalFields(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	model := osquerySavedQueryModel{
+		SavedQueryID: types.StringValue("list_processes"),
+		Query:        types.StringValue("SELECT 1"),
+	}
+
+	body, diags := model.toAPICreateRequest(ctx)
+	require.Empty(t, diags)
+
+	require.NotNil(t, body.Id)
+	assert.Equal(t, "list_processes", *body.Id)
+	require.NotNil(t, body.Query)
+	assert.Equal(t, "SELECT 1", *body.Query)
+	assert.Nil(t, body.Description)
+	assert.Nil(t, body.Platform)
+	assert.Nil(t, body.Interval)
+	assert.Nil(t, body.Version)
+	assert.Nil(t, body.Snapshot)
+	assert.Nil(t, body.Removed)
+	assert.Nil(t, body.EcsMapping)
+}
+
+func TestToAPICreateRequest_omitsNullOptionalFields(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	model := osquerySavedQueryModel{
+		SavedQueryID: types.StringValue("list_processes"),
+		Query:        types.StringValue("SELECT 1"),
+		Description:  types.StringNull(),
+		Platform:     types.SetNull(types.StringType),
+		Interval:     types.Int64Null(),
+		Version:      types.StringNull(),
+		Snapshot:     types.BoolNull(),
+		Removed:      types.BoolNull(),
+		EcsMapping:   types.MapNull(getEcsMappingElemType()),
+	}
+
+	body, diags := model.toAPICreateRequest(ctx)
+	require.Empty(t, diags)
+
+	require.NotNil(t, body.Id)
+	require.NotNil(t, body.Query)
+	assert.Nil(t, body.Description)
+	assert.Nil(t, body.Platform)
+	assert.Nil(t, body.Interval)
+	assert.Nil(t, body.Version)
+	assert.Nil(t, body.Snapshot)
+	assert.Nil(t, body.Removed)
+	assert.Nil(t, body.EcsMapping)
 }
 
 func TestToAPICreateRequest(t *testing.T) {

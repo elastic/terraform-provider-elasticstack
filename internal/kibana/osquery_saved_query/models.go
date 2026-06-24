@@ -35,7 +35,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var _ entitycore.KibanaResourceModel = osquerySavedQueryModel{}
+var (
+	_ entitycore.KibanaResourceModel     = osquerySavedQueryModel{}
+	_ entitycore.WithVersionRequirements = osquerySavedQueryModel{}
+)
 
 var (
 	osquerySavedQueryMinVersion = version.Must(version.NewVersion("8.5.0"))

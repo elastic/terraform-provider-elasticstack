@@ -24,6 +24,7 @@ import (
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func createOsquerySavedQuery(
@@ -57,6 +58,8 @@ func createOsquerySavedQuery(
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[osquerySavedQueryModel]{}, diags
 	}
+
+	plan.SpaceID = types.StringValue(req.SpaceID)
 
 	return entitycore.KibanaWriteResult[osquerySavedQueryModel]{Model: plan}, diags
 }
