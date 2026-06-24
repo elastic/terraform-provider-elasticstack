@@ -48,18 +48,18 @@
 
 ## 7. Acceptance tests
 
-- [ ] 7.1 Add `acc_test.go` covering full resource lifecycle: create with all v1 fields (including `ecs_mapping` with all three shapes, `policy_ids`, `shards`) → read → update `description` → destroy
-- [ ] 7.2 Add import test via composite `"<space_id>/<pack_id>"` using server-generated UUID from create
-- [ ] 7.3 Add `ecs_mapping` validator test: config with two fields set in same element → verify plan error
-- [ ] 7.4 Add data source test: resource creates pack → data source reads same pack by `pack_id` → values match
-- [ ] 7.5 Version-skip gate: skip tests against Kibana versions below `8.5.0`
-- [ ] 7.6 Add prebuilt-pack test: data source reads a known prebuilt pack with `read_only=true` successfully; resource read/import against same pack returns error diagnostic
-- [ ] 7.7 Add invalid `platform` plan-error test (e.g., `"ios"`)
-- [ ] 7.8 Add non-default `space_id` resource test: create and read in a non-default space
-- [ ] 7.9 Add data source non-default `space_id` test: read pack in non-default space
-- [ ] 7.10 Add resource read 404 test: external delete → refresh removes resource from state without error
-- [ ] 7.11 Add delete 404 idempotency test: destroy after external delete succeeds
-- [ ] 7.12 Add data source missing-pack test: read by unknown `pack_id` returns error diagnostic (HTTP 404), not silent empty state
+- [x] 7.1 Add `acc_test.go` covering full resource lifecycle: create with all v1 fields (including `ecs_mapping` with all three shapes, `policy_ids`, `shards`) → read → update `description` → destroy
+- [x] 7.2 Add import test via composite `"<space_id>/<pack_id>"` using server-generated UUID from create
+- [x] 7.3 Add `ecs_mapping` validator test: config with two fields set in same element → verify plan error
+- [x] 7.4 Add data source test: resource creates pack → data source reads same pack by `pack_id` → values match
+- [x] 7.5 Version-skip gate: skip tests against Kibana versions below `8.5.0`
+- [x] 7.6 Add prebuilt-pack test: data source reads a known prebuilt pack with `read_only=true` successfully; resource read/import against same pack returns error diagnostic
+- [x] 7.7 Add invalid `platform` plan-error test (e.g., `"ios"`)
+- [x] 7.8 Add non-default `space_id` resource test: create and read in a non-default space
+- [x] 7.9 Add data source non-default `space_id` test: read pack in non-default space
+- [x] 7.10 Add resource read 404 test: external delete → refresh removes resource from state without error
+- [x] 7.11 Add delete 404 idempotency test: destroy after external delete succeeds
+- [x] 7.12 Add data source missing-pack test: read by unknown `pack_id` returns error diagnostic (HTTP 404), not silent empty state
 
 ## 8. Documentation and examples
 

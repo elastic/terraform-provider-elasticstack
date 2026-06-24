@@ -1,0 +1,476 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package osquerypack_test
+
+import (
+	"context"
+	"fmt"
+	"regexp"
+	"testing"
+
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/google/uuid"
+	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
+)
+
+var (
+	minOsqueryPackVersion = version.Must(version.NewVersion("8.5.0"))
+
+	osqueryPackResourceAddr  = "elasticstack_kibana_osquery_pack.test"
+	osqueryPackDataSourceAddr = "data.elasticstack_kibana_osquery_pack.test"
+
+	// accTestKibanaSpaceIDCharset matches elasticstack_kibana_space space_id validation (^[a-z0-9_-]+$).
+	accTestKibanaSpaceIDCharset = "abcdefghijklmnopqrstuvwxyz0123456789_-"
+)
+
+func skipOsqueryPackUnsupported() func() (bool, error) {
+	return versionutils.CheckIfVersionIsUnsupported(minOsqueryPackVersion)
+}
+
+func TestAccResourceOsqueryPack(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{
+		"suffix": config.StringVariable(suffix),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkOsqueryPackDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(osqueryPackResourceAddr, "id"),
+					resource.TestCheckResourceAttrSet(osqueryPackResourceAddr, "pack_id"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "space_id", "default"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "name", fmt.Sprintf("tf-acc-osquery-pack-%s", suffix)),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "description", "Terraform acceptance test pack"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "enabled", "true"),
+					resource.TestCheckResourceAttrSet(osqueryPackResourceAddr, "policy_ids.0"),
+					resource.TestCheckResourceAttrSet(osqueryPackResourceAddr, "shards.%"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.%", "1"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.find_procs.query", "SELECT pid, name FROM processes LIMIT 5;"),
+					resource.TestCheckTypeSetElemAttr(osqueryPackResourceAddr, "queries.find_procs.platform.*", "darwin"),
+					resource.TestCheckTypeSetElemAttr(osqueryPackResourceAddr, "queries.find_procs.platform.*", "linux"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.find_procs.version", "1.0.0"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.find_procs.snapshot", "false"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.find_procs.removed", "false"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.find_procs.ecs_mapping.process.name.field", "name"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.find_procs.ecs_mapping.process.pid.value", "0"),
+					resource.TestCheckTypeSetElemAttr(osqueryPackResourceAddr, "queries.find_procs.ecs_mapping.host.name.values.*", "host-a"),
+					resource.TestCheckTypeSetElemAttr(osqueryPackResourceAddr, "queries.find_procs.ecs_mapping.host.name.values.*", "host-b"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "description", "Updated Terraform acceptance test pack"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ResourceName:             osqueryPackResourceAddr,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs, ok := s.RootModule().Resources[osqueryPackResourceAddr]
+					if !ok {
+						return "", fmt.Errorf("resource not found: %s", osqueryPackResourceAddr)
+					}
+					return rs.Primary.ID, nil
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("import"),
+				ConfigVariables: vars,
+			},
+		},
+	})
+}
+
+func TestAccResourceOsqueryPack_ecsMappingValidator(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_ecs_mapping"),
+				PlanOnly:                 true,
+				ExpectError: regexp.MustCompile(`(?s)not more than one`),
+			},
+		},
+	})
+}
+
+func TestAccResourceOsqueryPack_invalidPlatform(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_platform"),
+				PlanOnly:                 true,
+				ExpectError: regexp.MustCompile(`(?s)platform.*ios`),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceOsqueryPack(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{
+		"suffix": config.StringVariable(suffix),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkOsqueryPackDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(osqueryPackResourceAddr, "pack_id"),
+					resource.TestCheckResourceAttrSet(osqueryPackDataSourceAddr, "pack_id"),
+					resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "pack_id", osqueryPackResourceAddr, "pack_id"),
+					resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "name", osqueryPackResourceAddr, "name"),
+					resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "description", osqueryPackResourceAddr, "description"),
+					resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "enabled", osqueryPackResourceAddr, "enabled"),
+					resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "space_id", osqueryPackResourceAddr, "space_id"),
+					resource.TestCheckResourceAttr(osqueryPackDataSourceAddr, "read_only", "false"),
+					resource.TestCheckResourceAttr(osqueryPackDataSourceAddr, "queries.find_procs.query", "SELECT pid, name FROM processes LIMIT 5;"),
+					resource.TestCheckResourceAttr(osqueryPackDataSourceAddr, "queries.find_procs.ecs_mapping.process.name.field", "name"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccPrebuiltOsqueryPack(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+
+	prebuiltPackID, skipReason := findPrebuiltOsqueryPack(t, clients.DefaultSpaceID)
+	if skipReason != "" {
+		t.Skip(skipReason)
+	}
+
+	vars := config.Variables{
+		"prebuilt_pack_id": config.StringVariable(prebuiltPackID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("datasource"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(osqueryPackDataSourceAddr, "pack_id", prebuiltPackID),
+					resource.TestCheckResourceAttr(osqueryPackDataSourceAddr, "read_only", "true"),
+					resource.TestCheckResourceAttrSet(osqueryPackDataSourceAddr, "name"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("resource_import"),
+				ConfigVariables:          vars,
+				ResourceName:             osqueryPackResourceAddr,
+				ImportState:              true,
+				ImportStateId:            fmt.Sprintf("%s/%s", clients.DefaultSpaceID, prebuiltPackID),
+				ExpectError:              regexp.MustCompile(`read-only \(prebuilt\)`),
+			},
+		},
+	})
+}
+
+func TestAccResourceOsqueryPack_nonDefaultSpace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+	vars := config.Variables{
+		"suffix":   config.StringVariable(suffix),
+		"space_id": config.StringVariable(spaceID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkOsqueryPackDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "space_id", spaceID),
+					resource.TestCheckResourceAttrSet(osqueryPackResourceAddr, "pack_id"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "name", fmt.Sprintf("tf-acc-osquery-pack-space-%s", suffix)),
+					resource.TestMatchResourceAttr(osqueryPackResourceAddr, "id", regexp.MustCompile("^"+regexp.QuoteMeta(spaceID)+"/")),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceOsqueryPack_nonDefaultSpace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+	vars := config.Variables{
+		"suffix":   config.StringVariable(suffix),
+		"space_id": config.StringVariable(spaceID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkOsqueryPackDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(osqueryPackDataSourceAddr, "space_id", spaceID),
+					resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "pack_id", osqueryPackResourceAddr, "pack_id"),
+					resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "name", osqueryPackResourceAddr, "name"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceOsqueryPack_externalDelete(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{
+		"suffix": config.StringVariable(suffix),
+	}
+	var packSpaceID, packID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkOsqueryPackDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(osqueryPackResourceAddr, "pack_id"),
+					captureOsqueryPackID(osqueryPackResourceAddr, &packSpaceID, &packID),
+				),
+			},
+			{
+				PreConfig: func() {
+					deleteOsqueryPackAPI(t, mustKibanaOapiClient(t), packSpaceID, packID)
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       true,
+				Check:                    testAccCheckOsqueryPackAbsentFromState(osqueryPackResourceAddr),
+			},
+		},
+	})
+}
+
+func TestAccResourceOsqueryPack_deleteIdempotent(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{
+		"suffix": config.StringVariable(suffix),
+	}
+	var packSpaceID, packID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkOsqueryPackDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check:                    captureOsqueryPackID(osqueryPackResourceAddr, &packSpaceID, &packID),
+			},
+			{
+				PreConfig: func() {
+					deleteOsqueryPackAPI(t, mustKibanaOapiClient(t), packSpaceID, packID)
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Destroy:                  true,
+			},
+		},
+	})
+}
+
+func TestAccDataSourceOsqueryPack_missingPack(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+
+	unknownPackID := uuid.NewString()
+	vars := config.Variables{
+		"unknown_pack_id": config.StringVariable(unknownPackID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          vars,
+				ExpectError:              regexp.MustCompile(`Osquery pack not found`),
+			},
+		},
+	})
+}
+
+var checkOsqueryPackDestroy = checks.KibanaResourceDestroyCheckCompositeID(
+	"elasticstack_kibana_osquery_pack",
+	func(ctx context.Context, client *kibanaoapi.Client, spaceID, packID string) (bool, error) {
+		detail, diags := kibanaoapi.GetOsqueryPack(ctx, client, spaceID, packID)
+		if diags.HasError() {
+			return false, fmt.Errorf("failed to get osquery pack %q in space %q: %v", packID, spaceID, diags)
+		}
+		return detail != nil, nil
+	},
+)
+
+func testAccCheckOsqueryPackAbsentFromState(addr string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if _, ok := s.RootModule().Resources[addr]; ok {
+			return fmt.Errorf("expected %q to be absent from state after refresh (pack deleted out-of-band)", addr)
+		}
+		return nil
+	}
+}
+
+func captureOsqueryPackID(resourceAddr string, spaceID, packID *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceAddr]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceAddr)
+		}
+
+		compID, diags := clients.CompositeIDFromStr(rs.Primary.ID)
+		if diags.HasError() {
+			return fmt.Errorf("parse composite id %q: %v", rs.Primary.ID, diags)
+		}
+
+		*spaceID = compID.ClusterID
+		*packID = compID.ResourceID
+		return nil
+	}
+}
+
+func mustKibanaOapiClient(t *testing.T) *kibanaoapi.Client {
+	t.Helper()
+
+	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		t.Fatalf("create Kibana client: %v", err)
+	}
+	return apiClient.GetKibanaOapiClient()
+}
+
+func deleteOsqueryPackAPI(t *testing.T, client *kibanaoapi.Client, spaceID, packID string) {
+	t.Helper()
+
+	diags := kibanaoapi.DeleteOsqueryPack(context.Background(), client, spaceID, packID)
+	if diags.HasError() {
+		t.Fatalf("delete osquery pack %q in space %q: %s", packID, spaceID, diags[0].Summary())
+	}
+}
+
+// findPrebuiltOsqueryPack returns a read-only prebuilt pack ID from the default space list
+// endpoint, or a skip reason when none are available (osquery_manager integration not installed).
+func findPrebuiltOsqueryPack(t *testing.T, spaceID string) (packID string, skipReason string) {
+	t.Helper()
+
+	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		return "", fmt.Sprintf("skipping prebuilt pack test: could not create Kibana client: %v", err)
+	}
+
+	page := kbapi.SecurityOsqueryAPIPageOrUndefined(1)
+	pageSize := kbapi.SecurityOsqueryAPIPageSizeOrUndefined(100)
+	resp, err := apiClient.GetKibanaOapiClient().API.OsqueryFindPacksWithResponse(
+		context.Background(),
+		&kbapi.OsqueryFindPacksParams{Page: &page, PageSize: &pageSize},
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
+	)
+	if err != nil {
+		return "", fmt.Sprintf("skipping prebuilt pack test: list osquery packs failed: %v", err)
+	}
+	if resp.StatusCode() != 200 || resp.JSON200 == nil {
+		return "", fmt.Sprintf(
+			"skipping prebuilt pack test: list osquery packs returned HTTP %d (install osquery_manager integration to seed prebuilt packs)",
+			resp.StatusCode(),
+		)
+	}
+
+	for _, pack := range resp.JSON200.Data {
+		if pack.ReadOnly != nil && *pack.ReadOnly && pack.SavedObjectId != "" {
+			return pack.SavedObjectId, ""
+		}
+	}
+
+	return "", "skipping prebuilt pack test: no read_only prebuilt osquery pack found in default space (install osquery_manager integration to seed prebuilt packs)"
+}
