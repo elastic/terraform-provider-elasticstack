@@ -324,6 +324,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		securityentitystore.NewDataSource,
 		securityentitystoreentities.NewDataSource,
 		connectors.NewDataSource,
+		osquerysavedquery.NewDataSource,
 		agentbuilderagent.NewDataSource,
 		agentbuilderskill.NewDataSource,
 		agentbuildertool.NewDataSource,

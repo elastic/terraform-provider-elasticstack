@@ -39,10 +39,10 @@
 
 ## 6. Data source
 
-- [ ] 6.1 Implement `internal/kibana/osquery_saved_query/datasource.go` (or `data_source.go`) with schema: `saved_query_id` (Required), `space_id` (Optional, default `"default"`), `kibana_connection` (Optional), plus all the same Computed fields as the resource (`query`, `description`, `platform`, `interval`, `version`, `snapshot`, `removed`, `ecs_mapping`, and `prebuilt` as Computed bool); shared model or datasource model implements `GetVersionRequirements` with `8.5.0` floor
-- [ ] 6.2 Implement Read via `GetOsquerySavedQuery` (same kibanaoapi wrapper as the resource); on HTTP 404, return an error diagnostic rather than removing from state (data sources error on missing)
-- [ ] 6.3 Do NOT error on `prebuilt == true` in the data source — prebuilt queries are a primary use case for the data source
-- [ ] 6.4 Register the data source in `provider/plugin_framework.go`
+- [x] 6.1 Implement `internal/kibana/osquery_saved_query/datasource.go` (or `data_source.go`) with schema: `saved_query_id` (Required), `space_id` (Optional, default `"default"`), `kibana_connection` (Optional), plus all the same Computed fields as the resource (`query`, `description`, `platform`, `interval`, `version`, `snapshot`, `removed`, `ecs_mapping`, and `prebuilt` as Computed bool); shared model or datasource model implements `GetVersionRequirements` with `8.5.0` floor
+- [x] 6.2 Implement Read via `GetOsquerySavedQuery` (same kibanaoapi wrapper as the resource); on HTTP 404, return an error diagnostic rather than removing from state (data sources error on missing)
+- [x] 6.3 Do NOT error on `prebuilt == true` in the data source — prebuilt queries are a primary use case for the data source
+- [x] 6.4 Register the data source in `provider/plugin_framework.go`
 
 ## 7. Acceptance tests
 

@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/providerfwtest"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -47,6 +48,17 @@ func TestNewResource_satisfiesFrameworkInterfaces(t *testing.T) {
 	var _ resource.Resource = newResource()
 	var _ resource.ResourceWithConfigure = newResource()
 	var _ resource.ResourceWithImportState = newResource()
+}
+
+func TestNewDataSource_satisfiesFrameworkInterfaces(t *testing.T) {
+	t.Parallel()
+	var _ = NewDataSource()
+	var _ = NewDataSource().(datasource.DataSourceWithConfigure)
+}
+
+func TestDataSourceModel_satisfiesWithVersionRequirements(t *testing.T) {
+	t.Parallel()
+	var _ entitycore.WithVersionRequirements = dataSourceModel{}
 }
 
 func TestResource_embedsEntityCoreKibanaResource(t *testing.T) {

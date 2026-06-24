@@ -35,27 +35,42 @@ import (
 
 var osqueryPlatformValues = []string{"linux", "darwin", "windows"}
 
+const (
+	attrID           = "id"
+	attrSavedQueryID = "saved_query_id"
+	attrSpaceID      = "space_id"
+	attrQuery        = "query"
+	attrDescription  = "description"
+	attrPlatform     = "platform"
+	attrInterval     = "interval"
+	attrVersion      = "version"
+	attrSnapshot     = "snapshot"
+	attrRemoved      = "removed"
+	attrEcsMapping   = "ecs_mapping"
+	attrPrebuilt     = "prebuilt"
+)
+
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages a user-defined Osquery saved query in Kibana. " +
 			"Prebuilt queries shipped with the osquery_manager integration cannot be managed by this resource; " +
 			"use the `elasticstack_kibana_osquery_saved_query` data source to read them instead.",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
+			attrID: schema.StringAttribute{
 				MarkdownDescription: "Composite identifier in the form `<space_id>/<saved_query_id>`.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"saved_query_id": schema.StringAttribute{
+			attrSavedQueryID: schema.StringAttribute{
 				MarkdownDescription: "Stable identifier for the saved query. Used as the API lookup key and forces replacement when changed.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"space_id": schema.StringAttribute{
+			attrSpaceID: schema.StringAttribute{
 				MarkdownDescription: "Kibana space identifier. When omitted, the default space is used.",
 				Optional:            true,
 				Computed:            true,
@@ -65,15 +80,15 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"query": schema.StringAttribute{
+			attrQuery: schema.StringAttribute{
 				MarkdownDescription: "Osquery SQL query text.",
 				Required:            true,
 			},
-			"description": schema.StringAttribute{
+			attrDescription: schema.StringAttribute{
 				MarkdownDescription: "Human-readable description of the saved query.",
 				Optional:            true,
 			},
-			"platform": schema.SetAttribute{
+			attrPlatform: schema.SetAttribute{
 				MarkdownDescription: "Target platforms for the query. Allowed values: `linux`, `darwin`, `windows`.",
 				Optional:            true,
 				ElementType:         types.StringType,
@@ -81,15 +96,15 @@ func getSchema(_ context.Context) schema.Schema {
 					setvalidator.ValueStringsAre(stringvalidator.OneOf(osqueryPlatformValues...)),
 				},
 			},
-			"interval": schema.Int64Attribute{
+			attrInterval: schema.Int64Attribute{
 				MarkdownDescription: "Query execution interval in seconds.",
 				Optional:            true,
 			},
-			"version": schema.StringAttribute{
+			attrVersion: schema.StringAttribute{
 				MarkdownDescription: "Saved query version string.",
 				Optional:            true,
 			},
-			"snapshot": schema.BoolAttribute{
+			attrSnapshot: schema.BoolAttribute{
 				MarkdownDescription: "Whether the saved query is a snapshot. Returned by the API and may be set explicitly in configuration. " +
 					"When omitted or unknown at plan time, the prior state value is preserved (`UseStateForUnknown`).",
 				Optional: true,
@@ -98,7 +113,7 @@ func getSchema(_ context.Context) schema.Schema {
 					boolplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"removed": schema.BoolAttribute{
+			attrRemoved: schema.BoolAttribute{
 				MarkdownDescription: "Whether the saved query is marked removed. Returned by the API and may be set explicitly in configuration. " +
 					"When omitted or unknown at plan time, the prior state value is preserved (`UseStateForUnknown`).",
 				Optional: true,
@@ -107,7 +122,7 @@ func getSchema(_ context.Context) schema.Schema {
 					boolplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"ecs_mapping": ecsMappingSchema(),
+			attrEcsMapping: ecsMappingSchema(),
 		},
 	}
 }
