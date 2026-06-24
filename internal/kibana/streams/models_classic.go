@@ -24,7 +24,6 @@ import (
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -41,29 +40,19 @@ type classicConfigModel struct {
 }
 
 // populateFromAPI populates the classic config model from an API ingest response.
-func (m *classicConfigModel) populateFromAPI(_ context.Context, ingest *kibanaoapi.StreamIngest) {
+func (m *classicConfigModel) populateFromAPI(_ context.Context, ingest *kibanaoapi.StreamIngest) diag.Diagnostics {
+	var diags diag.Diagnostics
 	if ingest == nil {
-		return
+		return diags
 	}
 
 	// Processing steps — each step is a JSON-encoded streamlang object.
-	// An empty array from the API is treated as null (no steps configured).
-	if len(ingest.Processing.Steps) > 0 {
-		var rawSteps []json.RawMessage
-		if err := json.Unmarshal(ingest.Processing.Steps, &rawSteps); err != nil {
-			m.ProcessingSteps = types.ListNull(jsontypes.NormalizedType{})
-		} else if len(rawSteps) > 0 {
-			elems := make([]attr.Value, len(rawSteps))
-			for i, raw := range rawSteps {
-				elems[i] = jsontypes.NewNormalizedValue(string(raw))
-			}
-			m.ProcessingSteps = types.ListValueMust(jsontypes.NormalizedType{}, elems)
-		} else {
-			m.ProcessingSteps = types.ListNull(jsontypes.NormalizedType{})
-		}
-	} else {
-		m.ProcessingSteps = types.ListNull(jsontypes.NormalizedType{})
+	steps, stepsDiags := populateProcessingStepsFromAPI(ingest)
+	diags.Append(stepsDiags...)
+	if diags.HasError() {
+		return diags
 	}
+	m.ProcessingSteps = steps
 
 	// Classic-specific field overrides
 	if ingest.Classic != nil && len(ingest.Classic.FieldOverrides) > 0 {
@@ -117,6 +106,8 @@ func (m *classicConfigModel) populateFromAPI(_ context.Context, ingest *kibanaoa
 	} else {
 		m.IndexRefreshInterval = types.StringNull()
 	}
+
+	return diags
 }
 
 // toAPIIngest converts the classic config model to an API ingest object.
@@ -124,15 +115,8 @@ func (m *classicConfigModel) toAPIIngest(diags *diag.Diagnostics) *kibanaoapi.St
 	ingest := &kibanaoapi.StreamIngest{}
 
 	// Processing steps — the API requires the array to be present (even empty).
-	rawSteps := make([]json.RawMessage, 0)
-	for _, elem := range m.ProcessingSteps.Elements() {
-		if norm, ok := elem.(jsontypes.Normalized); ok && typeutils.IsKnown(norm) {
-			rawSteps = append(rawSteps, json.RawMessage(norm.ValueString()))
-		}
-	}
-	stepsJSON, err := json.Marshal(rawSteps)
-	if err != nil {
-		diags.AddError("Failed to marshal processing steps", err.Error())
+	stepsJSON := processingStepsToAPI(m.ProcessingSteps, diags)
+	if diags.HasError() {
 		return ingest
 	}
 	ingest.Processing.Steps = stepsJSON

@@ -19,6 +19,7 @@ package streams
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -26,6 +27,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -36,6 +39,47 @@ const (
 	streamTypeClassic = "classic"
 	streamTypeQuery   = "query"
 )
+
+// populateProcessingStepsFromAPI parses the processing steps from an API ingest
+// response into a Terraform list. Returns diag.Diagnostics on error.
+func populateProcessingStepsFromAPI(ingest *kibanaoapi.StreamIngest) (types.List, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if ingest == nil || len(ingest.Processing.Steps) == 0 {
+		return types.ListNull(jsontypes.NormalizedType{}), diags
+	}
+	var rawSteps []json.RawMessage
+	if err := json.Unmarshal(ingest.Processing.Steps, &rawSteps); err != nil {
+		diags.AddError("Failed to unmarshal processing steps", err.Error())
+		return types.ListNull(jsontypes.NormalizedType{}), diags
+	}
+	if len(rawSteps) == 0 {
+		return types.ListNull(jsontypes.NormalizedType{}), diags
+	}
+	elems := make([]attr.Value, len(rawSteps))
+	for i, raw := range rawSteps {
+		elems[i] = jsontypes.NewNormalizedValue(string(raw))
+	}
+	return types.ListValueMust(jsontypes.NormalizedType{}, elems), diags
+}
+
+// processingStepsToAPI marshals a Terraform list of processing steps to the
+// JSON array required by the API.
+func processingStepsToAPI(steps types.List, diags *diag.Diagnostics) json.RawMessage {
+	rawSteps := make([]json.RawMessage, 0)
+	for _, elem := range steps.Elements() {
+		if norm, ok := elem.(jsontypes.Normalized); ok && typeutils.IsKnown(norm) {
+			rawSteps = append(rawSteps, json.RawMessage(norm.ValueString()))
+		}
+	}
+	stepsJSON, err := json.Marshal(rawSteps)
+	if err != nil {
+		if diags != nil {
+			diags.AddError("Failed to marshal processing steps", err.Error())
+		}
+		return nil
+	}
+	return stepsJSON
+}
 
 // streamModel is the top-level Terraform model for elasticstack_kibana_stream.
 type streamModel struct {
@@ -119,7 +163,7 @@ func (m *streamModel) populateFromAPI(ctx context.Context, resp *kibanaoapi.Stre
 		if m.ClassicConfig == nil {
 			m.ClassicConfig = &classicConfigModel{}
 		}
-		m.ClassicConfig.populateFromAPI(ctx, resp.Stream.Ingest)
+		diags.Append(m.ClassicConfig.populateFromAPI(ctx, resp.Stream.Ingest)...)
 		m.WiredConfig = nil
 		m.QueryConfig = nil
 	case streamTypeQuery:
