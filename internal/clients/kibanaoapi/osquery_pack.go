@@ -29,11 +29,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// OsqueryPackShards is the normalized shard map for Terraform state (percent 1–100 per policy ID).
+// OsqueryPackShards is the normalized shard map for Terraform state (percent 1-100 per policy ID).
 type OsqueryPackShards map[string]float64
 
 // OsqueryPackDetail is the unwrapped pack payload from GET/Create/Update detail responses.
 // Shards are normalized to map[string]float64 regardless of API wire format.
+// GetOsqueryPack detail is authoritative for read-only and other GET-only fields.
+// CreateOsqueryPack and UpdateOsqueryPack return non-authoritative detail; resource CRUD
+// must follow with read-after-write GetOsqueryPack for full detail and the prebuilt guard.
 type OsqueryPackDetail struct {
 	CreatedAt           *time.Time
 	CreatedBy           *string
@@ -55,7 +58,8 @@ type OsqueryPackDetail struct {
 }
 
 // CreateOsqueryPack creates a new Osquery pack via the OpenAPI client.
-// On success it returns detail with normalized shards (create responses may use array form).
+// The returned detail is not authoritative final state (Create omits read_only and may
+// return array-form shards). Callers must read-after-write via GetOsqueryPack.
 func CreateOsqueryPack(ctx context.Context, client *Client, spaceID string, body kbapi.OsqueryCreatePacksJSONRequestBody) (*OsqueryPackDetail, diag.Diagnostics) {
 	resp, err := client.API.OsqueryCreatePacksWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
@@ -90,6 +94,8 @@ func GetOsqueryPack(ctx context.Context, client *Client, spaceID string, packID 
 }
 
 // UpdateOsqueryPack updates an existing Osquery pack.
+// The returned detail is not authoritative final state. Callers must read-after-write
+// via GetOsqueryPack for full detail and the prebuilt guard.
 func UpdateOsqueryPack(ctx context.Context, client *Client, spaceID string, packID string, body kbapi.OsqueryUpdatePacksJSONRequestBody) (*OsqueryPackDetail, diag.Diagnostics) {
 	resp, err := client.API.OsqueryUpdatePacksWithResponse(ctx, packID, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {

@@ -18,10 +18,15 @@
 package kibanaoapi
 
 import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestOsqueryPackShardsFromMap(t *testing.T) {
@@ -88,4 +93,141 @@ func TestOsqueryPackShardsFromCreateArray(t *testing.T) {
 
 		assert.Nil(t, osqueryPackShardsFromCreateArray(&shards))
 	})
+
+	t.Run("uses zero when key is present but value is nil", func(t *testing.T) {
+		key := "policy-a"
+		shards := []struct {
+			Key   *string  `json:"key,omitempty"`
+			Value *float32 `json:"value,omitempty"`
+		}{
+			{Key: &key, Value: nil},
+		}
+
+		result := osqueryPackShardsFromCreateArray(&shards)
+
+		assert.Equal(t, OsqueryPackShards{"policy-a": 0}, result)
+	})
+
+	t.Run("keeps valid entries when mixed with nil-key rows", func(t *testing.T) {
+		validKey := "policy-b"
+		validVal := float32(60)
+		droppedVal := float32(99)
+		shards := []struct {
+			Key   *string  `json:"key,omitempty"`
+			Value *float32 `json:"value,omitempty"`
+		}{
+			{Key: nil, Value: &droppedVal},
+			{Key: &validKey, Value: &validVal},
+		}
+
+		result := osqueryPackShardsFromCreateArray(&shards)
+
+		assert.Equal(t, OsqueryPackShards{"policy-b": 60}, result)
+	})
+}
+
+func TestOsqueryPackDetailFromFindResponse(t *testing.T) {
+	readOnly := true
+	packType := "osquery-pack"
+	namespaces := []string{"default", "security"}
+	shards := kbapi.SecurityOsqueryAPIShards{"policy-1": 50}
+
+	resp := &kbapi.SecurityOsqueryAPIFindPackResponse{}
+	resp.Data.Name = "find-pack"
+	resp.Data.SavedObjectId = "find-id"
+	resp.Data.ReadOnly = &readOnly
+	resp.Data.Namespaces = &namespaces
+	resp.Data.Type = &packType
+	resp.Data.Shards = &shards
+
+	detail := osqueryPackDetailFromFindResponse(resp)
+
+	require.NotNil(t, detail)
+	assert.Equal(t, kbapi.SecurityOsqueryAPIPackName("find-pack"), detail.Name)
+	assert.Equal(t, "find-id", detail.SavedObjectId)
+	assert.Equal(t, &readOnly, detail.ReadOnly)
+	assert.Equal(t, &namespaces, detail.Namespaces)
+	assert.Equal(t, &packType, detail.Type)
+	assert.Equal(t, OsqueryPackShards{"policy-1": 50}, detail.Shards)
+}
+
+func TestOsqueryPackDetailFromCreateResponse(t *testing.T) {
+	key := "policy-a"
+	val := float32(33)
+	shards := []struct {
+		Key   *string  `json:"key,omitempty"`
+		Value *float32 `json:"value,omitempty"`
+	}{
+		{Key: &key, Value: &val},
+	}
+
+	resp := &kbapi.SecurityOsqueryAPICreatePacksResponse{}
+	resp.Data.Name = "create-pack"
+	resp.Data.SavedObjectId = "create-id"
+	resp.Data.Shards = &shards
+
+	detail := osqueryPackDetailFromCreateResponse(resp)
+
+	require.NotNil(t, detail)
+	assert.Equal(t, kbapi.SecurityOsqueryAPIPackName("create-pack"), detail.Name)
+	assert.Equal(t, "create-id", detail.SavedObjectId)
+	assert.Nil(t, detail.ReadOnly)
+	assert.Nil(t, detail.Namespaces)
+	assert.Nil(t, detail.Type)
+	assert.Equal(t, OsqueryPackShards{"policy-a": 33}, detail.Shards)
+}
+
+func TestOsqueryPackDetailFromUpdateResponse(t *testing.T) {
+	t.Run("maps optional name and saved_object_id pointers", func(t *testing.T) {
+		var resp kbapi.SecurityOsqueryAPIUpdatePacksResponse
+		require.NoError(t, json.Unmarshal([]byte(`{
+			"data": {
+				"name": "updated-pack",
+				"saved_object_id": "update-id",
+				"shards": {"policy-x": 80}
+			}
+		}`), &resp))
+
+		detail := osqueryPackDetailFromUpdateResponse(&resp)
+
+		require.NotNil(t, detail)
+		assert.Equal(t, kbapi.SecurityOsqueryAPIPackName("updated-pack"), detail.Name)
+		assert.Equal(t, "update-id", detail.SavedObjectId)
+		assert.Equal(t, OsqueryPackShards{"policy-x": 80}, detail.Shards)
+	})
+
+	t.Run("leaves name and saved_object_id empty when pointers absent", func(t *testing.T) {
+		var resp kbapi.SecurityOsqueryAPIUpdatePacksResponse
+		require.NoError(t, json.Unmarshal([]byte(`{"data":{"shards":{"policy-y": 10}}}`), &resp))
+
+		detail := osqueryPackDetailFromUpdateResponse(&resp)
+
+		require.NotNil(t, detail)
+		assert.Empty(t, detail.Name)
+		assert.Empty(t, detail.SavedObjectId)
+		assert.Equal(t, OsqueryPackShards{"policy-y": 10}, detail.Shards)
+	})
+
+	t.Run("returns nil when data is nil", func(t *testing.T) {
+		assert.Nil(t, osqueryPackDetailFromUpdateResponse(&kbapi.SecurityOsqueryAPIUpdatePacksResponse{}))
+	})
+}
+
+func TestUpdateOsqueryPackNilDataDiagnostic(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPut, r.Method)
+		assert.Equal(t, "/api/osquery/packs/pack-id", r.URL.Path)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	client := newTestClient(t, srv)
+	_, diags := UpdateOsqueryPack(context.Background(), client, "default", "pack-id", kbapi.OsqueryUpdatePacksJSONRequestBody{})
+
+	require.True(t, diags.HasError())
+	assert.Equal(t, "Failed to parse response", diags[0].Summary())
+	assert.Contains(t, diags[0].Detail(), "update response data was nil")
 }
