@@ -14,11 +14,11 @@
 
 ## 3. Resource skeleton and model
 
-- [ ] 3.1 Create `internal/kibana/osquery_saved_query/` directory mirroring `internal/kibana/maintenance_window/`
-- [ ] 3.2 Implement `models.go` with `osquerySavedQueryModel`, implementing `GetID` (composite `<space_id>/<saved_query_id>`), `GetResourceID` (`saved_query_id` for API lookup), `GetSpaceID`, `GetKibanaConnection`, `GetVersionRequirements` (declare `8.5.0` floor from task 1.2)
-- [ ] 3.3 Implement `ecsMapping` nested model covering `field`, `value` (string), `values` (set of string), plus the `toAPIType()` and `fromAPIType()` converters handling the `string | []string` union
-- [ ] 3.4 Implement per-operation `populateFromAPI` mappers from kibanaoapi entity types (`OsquerySavedQueryCreateEntity`, `OsquerySavedQueryGetEntity`, `OsquerySavedQueryUpdateEntity`) to the model: Create and GET use union types for `interval`/`version` (`AsXxx0()/AsXxx1()`); Update entity types `version` as plain `*string` while `interval` remains a union; handle `platform` comma-split
-- [ ] 3.5 Add unit tests for `populateFromAPI` and converters covering all three kibanaoapi entity shapes: interval int and string union arms on Create/GET entities, version int and string union arms on Create/GET entities, Update plain `*string` version, platform comma join/split (kibanaoapi `.Data` unwrap mappers covered in task 2 — see `osquery_saved_query_test.go`)
+- [x] 3.1 Create `internal/kibana/osquery_saved_query/` directory mirroring `internal/kibana/maintenance_window/`
+- [x] 3.2 Implement `models.go` with `osquerySavedQueryModel`, implementing `GetID` (composite `<space_id>/<saved_query_id>`), `GetResourceID` (`saved_query_id` for API lookup), `GetSpaceID`, `GetKibanaConnection`, `GetVersionRequirements` (declare `8.5.0` floor from task 1.2)
+- [x] 3.3 Implement `ecsMapping` nested model covering `field`, `value` (string), `values` (set of string), plus the `toAPIType()` and `fromAPIType()` converters handling the `string | []string` union
+- [x] 3.4 Implement per-operation `populateFromAPI` mappers from kibanaoapi entity types (`OsquerySavedQueryCreateEntity`, `OsquerySavedQueryGetEntity`, `OsquerySavedQueryUpdateEntity`) to the model: Create and GET use union types for `interval`/`version` (`AsXxx0()/AsXxx1()`); Update entity types `version` as plain `*string` while `interval` remains a union; handle `platform` comma-split
+- [x] 3.5 Add unit tests for `populateFromAPI` and converters covering all three kibanaoapi entity shapes: interval int and string union arms on Create/GET entities, version int and string union arms on Create/GET entities, Update plain `*string` version, platform comma join/split (kibanaoapi `.Data` unwrap mappers covered in task 2 — see `osquery_saved_query_test.go`)
 
 ## 4. Resource schema
 
