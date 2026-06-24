@@ -30,12 +30,12 @@
 
 ## 5. Resource CRUD and import
 
-- [ ] 5.1 Implement `create.go` via `CreateOsquerySavedQuery`, map the returned entity with `populateFromAPI`, and return a prebuilt error diagnostic if `prebuilt == true`
-- [ ] 5.2 Implement `read.go` via `GetOsquerySavedQuery` (lookup via `saved_query_id`); on HTTP 404, remove from state without error; on success, call `populateFromAPI`; return a prebuilt error diagnostic if `prebuilt == true`
-- [ ] 5.3 Implement `update.go` via `UpdateOsquerySavedQuery` (managed field set from plan/state, omitting server-managed fields and null/unset optional keys), then repopulate state from the returned entity
-- [ ] 5.4 Implement `delete.go` calling `DELETE /api/osquery/saved_queries/{id}` (space-aware); treat HTTP 404 as success
-- [ ] 5.5 Implement `ImportState` for composite `"<space_id>/<saved_query_id>"`: prefer `ImportStatePassthroughID` on `id`; if Required `saved_query_id` must be seeded before Read, use thin custom parser (as `alerting_rule`) to set `space_id`, `saved_query_id`, and `id` from import string
-- [ ] 5.6 Register `osquerySavedQuery.NewResource()` in the resource slice in `provider/plugin_framework.go`
+- [x] 5.1 Implement `create.go` via `CreateOsquerySavedQuery`, map the returned entity with `populateFromAPI`, and return a prebuilt error diagnostic if `prebuilt == true`
+- [x] 5.2 Implement `read.go` via `GetOsquerySavedQuery` (lookup via `saved_query_id`); on HTTP 404, remove from state without error; on success, call `populateFromAPI`; return a prebuilt error diagnostic if `prebuilt == true`
+- [x] 5.3 Implement `update.go` via `UpdateOsquerySavedQuery` (managed field set from plan/state, omitting server-managed fields and null/unset optional keys), then repopulate state from the returned entity
+- [x] 5.4 Implement `delete.go` calling `DELETE /api/osquery/saved_queries/{id}` (space-aware); treat HTTP 404 as success
+- [x] 5.5 Implement `ImportState` for composite `"<space_id>/<saved_query_id>"`: prefer `ImportStatePassthroughID` on `id`; if Required `saved_query_id` must be seeded before Read, use thin custom parser (as `alerting_rule`) to set `space_id`, `saved_query_id`, and `id` from import string
+- [x] 5.6 Register `osquerySavedQuery.NewResource()` in the resource slice in `provider/plugin_framework.go`
 
 ## 6. Data source
 
