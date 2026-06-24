@@ -114,6 +114,14 @@ func (m *alertingRuleModel) populateArtifactsFromAPI(ctx context.Context, rule *
 		return diags
 	}
 
+	if !artifactsAPIHasContent(rule.Artifacts) {
+		if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
+			return diags
+		}
+		m.Artifacts = types.ObjectNull(getArtifactsAttrTypes())
+		return diags
+	}
+
 	var prior artifactsModel
 	if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
 		diags.Append(m.Artifacts.As(ctx, &prior, basetypes.ObjectAsOptions{})...)
@@ -147,7 +155,7 @@ func (m *alertingRuleModel) populateArtifactsFromAPI(ctx context.Context, rule *
 		out.Dashboards = prior.Dashboards
 	}
 
-	if rule.Artifacts.InvestigationGuide != nil {
+	if rule.Artifacts.InvestigationGuide != nil && rule.Artifacts.InvestigationGuide.Blob != "" {
 		ig := investigationGuideModel{}
 		if typeutils.IsKnown(priorIG.ContentPath) && !priorIG.ContentPath.IsNull() {
 			ig.ContentPath = priorIG.ContentPath
@@ -299,4 +307,14 @@ func sha256HexFile(filePath string) (string, error) {
 		return "", fmt.Errorf("failed to read %q: %w", filePath, err)
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func artifactsAPIHasContent(a *models.AlertingRuleArtifacts) bool {
+	if a == nil {
+		return false
+	}
+	if len(a.Dashboards) > 0 {
+		return true
+	}
+	return a.InvestigationGuide != nil && a.InvestigationGuide.Blob != ""
 }

@@ -77,6 +77,16 @@ func TestExactlyOneOfNestedAttrsValidator(t *testing.T) {
 		require.NotContains(t, resp.Diagnostics[0].Detail(), "not both")
 	})
 
+	t.Run("neither set allowed when AllowNoneSet", func(t *testing.T) {
+		vAllow := validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
+			AttrNames:    []string{"a", "b"},
+			Summary:      "Invalid block",
+			AllowNoneSet: true,
+		})
+		resp := run(vAllow, build(types.StringNull(), types.StringNull()))
+		require.False(t, resp.Diagnostics.HasError())
+	})
+
 	t.Run("unknown defers", func(t *testing.T) {
 		resp := run(v, build(types.StringUnknown(), types.StringNull()))
 		require.False(t, resp.Diagnostics.HasError())

@@ -33,6 +33,10 @@ type ExactlyOneOfNestedAttrsOpts struct {
 	MissingDetail string
 	// TooManyDetail is the diagnostic detail when more than one of AttrNames is set.
 	TooManyDetail string
+	// AllowNoneSet permits zero of AttrNames being set (for optional nested blocks that may
+	// appear in state without practitioner configuration). ValidateConfig should enforce
+	// required mutual exclusion when the block is explicitly configured.
+	AllowNoneSet bool
 	// Description is an optional MarkdownDescription returned by the validator (defaults to a generic phrase).
 	Description string
 }
@@ -84,6 +88,9 @@ func (v exactlyOneOfNestedAttrsValidator) ValidateObject(_ context.Context, req 
 		return
 	}
 	if hasUnknown {
+		return
+	}
+	if setCount == 0 && v.opts.AllowNoneSet {
 		return
 	}
 	if setCount == 0 {

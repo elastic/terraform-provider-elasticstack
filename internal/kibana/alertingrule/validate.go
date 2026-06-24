@@ -28,8 +28,10 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // paramsSchemaSpec contains precomputed key metadata and decode factory for
@@ -116,6 +118,7 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 	}
 
 	validateNotifyWhenThrottleFrequencyExclusivity(ctx, &data, &resp.Diagnostics)
+	validateInvestigationGuideConfig(ctx, &data, &resp.Diagnostics)
 
 	if !typeutils.IsKnown(data.Params) || !typeutils.IsKnown(data.RuleTypeID) {
 		return
@@ -430,6 +433,34 @@ func stripKeys(raw []byte, keys []string) ([]byte, error) {
 	}
 
 	return stripped, nil
+}
+
+func validateInvestigationGuideConfig(ctx context.Context, data *alertingRuleModel, diags *diag.Diagnostics) {
+	if !typeutils.IsKnown(data.Artifacts) || data.Artifacts.IsNull() {
+		return
+	}
+
+	var am artifactsModel
+	diags.Append(data.Artifacts.As(ctx, &am, basetypes.ObjectAsOptions{})...)
+	if diags.HasError() || !typeutils.IsKnown(am.InvestigationGuide) || am.InvestigationGuide.IsNull() {
+		return
+	}
+
+	var ig investigationGuideModel
+	diags.Append(am.InvestigationGuide.As(ctx, &ig, basetypes.ObjectAsOptions{})...)
+	if diags.HasError() {
+		return
+	}
+
+	contentSet := typeutils.IsKnown(ig.Content) && !ig.Content.IsNull()
+	pathSet := typeutils.IsKnown(ig.ContentPath) && !ig.ContentPath.IsNull()
+	if contentSet == pathSet {
+		diags.AddAttributeError(
+			path.Root("artifacts").AtName("investigation_guide"),
+			"Invalid investigation_guide configuration",
+			"Exactly one of `content` or `content_path` must be set when `investigation_guide` is configured.",
+		)
+	}
 }
 
 func formatParamsValidationErrors(errs []string) string {

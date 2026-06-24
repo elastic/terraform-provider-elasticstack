@@ -162,6 +162,19 @@ func Test_populateArtifactsFromAPI_mapsBlobToContent(t *testing.T) {
 	require.Equal(t, "api blob", outIG.Content.ValueString())
 }
 
+func Test_populateArtifactsFromAPI_omitsEmptyAPIArtifacts(t *testing.T) {
+	ctx := context.Background()
+
+	m := baseAlertingRuleModel()
+	m.Artifacts = types.ObjectUnknown(getArtifactsAttrTypes())
+
+	popDiags := m.populateArtifactsFromAPI(ctx, &models.AlertingRule{
+		Artifacts: &models.AlertingRuleArtifacts{},
+	})
+	require.False(t, popDiags.HasError())
+	require.True(t, m.Artifacts.IsNull())
+}
+
 func baseAlertingRuleModel() alertingRuleModel {
 	return alertingRuleModel{
 		ID:         types.StringValue("default/r1"),

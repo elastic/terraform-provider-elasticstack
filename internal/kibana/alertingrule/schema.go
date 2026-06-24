@@ -23,7 +23,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kibanacustomtypes"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/validators"
+	kibanavalidators "github.com/elastic/terraform-provider-elasticstack/internal/kibana/validators"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -230,10 +231,16 @@ func getSchema(_ context.Context) schema.Schema {
 					"investigation_guide": schema.SingleNestedBlock{
 						MarkdownDescription: investigationGuideDescription,
 						Validators: []validator.Object{
-							objectvalidator.ExactlyOneOf(
-								path.MatchRelative().AtName(attrInvestigationGuideContent),
-								path.MatchRelative().AtName(attrInvestigationGuideContentPath),
-							),
+							validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
+								AttrNames: []string{
+									attrInvestigationGuideContent,
+									attrInvestigationGuideContentPath,
+								},
+								Summary:       "Invalid investigation_guide configuration",
+								MissingDetail: "Exactly one of `content` or `content_path` must be set when `investigation_guide` is configured.",
+								TooManyDetail: "Exactly one of `content` or `content_path` must be set in `investigation_guide`, not both.",
+								AllowNoneSet:  true,
+							}),
 						},
 						Attributes: map[string]schema.Attribute{
 							attrInvestigationGuideContent: schema.StringAttribute{
@@ -344,14 +351,14 @@ func getSchema(_ context.Context) schema.Schema {
 											Description: "Defines the range of time in a day that the action can run. The start of the time frame in 24-hour notation (hh:mm).",
 											Optional:    true,
 											Validators: []validator.String{
-												validators.StringIsHours,
+												kibanavalidators.StringIsHours,
 											},
 										},
 										"hours_end": schema.StringAttribute{
 											Description: "Defines the range of time in a day that the action can run. The end of the time frame in 24-hour notation (hh:mm).",
 											Optional:    true,
 											Validators: []validator.String{
-												validators.StringIsHours,
+												kibanavalidators.StringIsHours,
 											},
 										},
 									},
