@@ -1,11 +1,11 @@
 ## 1. Prep and discovery
 
-- [ ] 1.1 Verify that `OsqueryCreatePacks`, `OsqueryGetPacksDetails`, `OsqueryUpdatePacks`, `OsqueryDeletePacks` are present in `generated/kbapi/kibana.gen.go`; confirm their request/response type signatures (especially `queries`, `shards`, and the create response wrapper shape)
-- [ ] 1.2 Bump OAS ref in `generated/kbapi/Makefile` to a version that includes `schedule_type`/`rrule_schedule`/per-query `interval`/`timeout`/`splay`; run `make -C generated/kbapi all`; confirm these fields appear in the regenerated client. If they do not, scope the implementation to interval-only scheduling and update design.md accordingly.
-- [ ] 1.3 Confirm the minimum Kibana version for base packs CRUD (`/api/osquery/packs`) and for the full scheduling model; record confirmed versions in design.md Decision 11 and update `GetVersionRequirements`
-- [ ] 1.4 Confirm that Kibana generates a UUID for `pack_id` when omitted on Create; if not, escalate to Required and update design.md Decision 2
-- [ ] 1.5 Confirm whether the Create response wraps the pack in a `data` field (like `osquery_saved_query`) or is a direct object; update design.md Decision 14 if different
-- [ ] 1.6 Confirm the exact `shards` wire format on Create/Update (array `[{key, value}]` or already a map?); confirm read (`GetPacksDetails`) returns `map[string]float32`; update design.md Decision 8 if different
+- [x] 1.1 Verify that `OsqueryCreatePacks`, `OsqueryGetPacksDetails`, `OsqueryUpdatePacks`, `OsqueryDeletePacks` are present in `generated/kbapi/kibana.gen.go`; confirm their request/response type signatures (especially `queries`, `shards`, and the create response wrapper shape)
+- [x] 1.2 Bump OAS ref in `generated/kbapi/Makefile` to a version that includes `schedule_type`/`rrule_schedule`/per-query `interval`/`timeout`/`splay`; run `make -C generated/kbapi all`; confirm these fields appear in the regenerated client. If they do not, scope the implementation to interval-only scheduling and update design.md accordingly.
+- [x] 1.3 Confirm the minimum Kibana version for base packs CRUD (`/api/osquery/packs`) and for the full scheduling model; record confirmed versions in design.md Decision 11 and update `GetVersionRequirements`
+- [x] 1.4 Confirm that Kibana generates a UUID for `pack_id` when omitted on Create; if not, escalate to Required and update design.md Decision 2
+- [x] 1.5 Confirm whether the Create response wraps the pack in a `data` field (like `osquery_saved_query`) or is a direct object; update design.md Decision 14 if different
+- [x] 1.6 Confirm the exact `shards` wire format on Create/Update (array `[{key, value}]` or already a map?); confirm read (`GetPacksDetails`) returns `map[string]float32`; update design.md Decision 8 if different
 
 ## 2. kibanaoapi client helper
 
