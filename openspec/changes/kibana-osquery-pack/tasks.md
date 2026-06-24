@@ -32,12 +32,12 @@
 
 ## 5. Resource CRUD and import
 
-- [ ] 5.1 Implement `create.go` calling `POST /api/osquery/packs` (space-aware), unwrap `response.JSON200.Data` for initial fields, then read-after-write GET (unwrap `.Data`) to populate full state and enforce prebuilt guard — Create POST response omits `read_only`
-- [ ] 5.2 Implement `read.go` calling `GET /api/osquery/packs/{id}` (space-aware) using `pack_id`, unwrap `response.JSON200.Data`; on HTTP 404, remove from state; error if detail payload has `read_only=true`
-- [ ] 5.3 Implement `update.go` calling `PUT /api/osquery/packs/{id}` (space-aware, full body); unwrap update response `.Data` or read-after-write GET; repopulate state
-- [ ] 5.4 Implement `delete.go` calling `DELETE /api/osquery/packs/{id}` (space-aware); treat HTTP 404 as success
-- [ ] 5.5 Implement `ImportState` accepting composite `"<space_id>/<pack_id>"` form (pack_id is saved_object_id UUID); Import refresh uses GET detail and prebuilt guard
-- [ ] 5.6 Register `osqueryPack.NewResource()` in `provider/plugin_framework.go`
+- [x] 5.1 Implement `create.go` calling `POST /api/osquery/packs` (space-aware), unwrap `response.JSON200.Data` for initial fields, then read-after-write GET (unwrap `.Data`) to populate full state and enforce prebuilt guard — Create POST response omits `read_only`
+- [x] 5.2 Implement `read.go` calling `GET /api/osquery/packs/{id}` (space-aware) using `pack_id`, unwrap `response.JSON200.Data`; on HTTP 404, remove from state; error if detail payload has `read_only=true`
+- [x] 5.3 Implement `update.go` calling `PUT /api/osquery/packs/{id}` (space-aware, full body); unwrap update response `.Data` or read-after-write GET; repopulate state
+- [x] 5.4 Implement `delete.go` calling `DELETE /api/osquery/packs/{id}` (space-aware); treat HTTP 404 as success
+- [x] 5.5 Implement `ImportState` accepting composite `"<space_id>/<pack_id>"` form (pack_id is saved_object_id UUID); Import refresh uses GET detail and prebuilt guard
+- [x] 5.6 Register `osqueryPack.NewResource()` in `provider/plugin_framework.go`
 
 ## 6. Data source
 
