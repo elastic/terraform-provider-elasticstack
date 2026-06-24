@@ -69,14 +69,12 @@ func TestShardsMapToAPI(t *testing.T) {
 	t.Parallel()
 
 	t.Run("null omits field", func(t *testing.T) {
-		result, diags := shardsMapToAPI(types.MapNull(types.Float64Type))
-		require.False(t, diags.HasError())
+		result := shardsMapToAPI(types.MapNull(types.Float64Type))
 		assert.Nil(t, result)
 	})
 
 	t.Run("unknown omits field", func(t *testing.T) {
-		result, diags := shardsMapToAPI(types.MapUnknown(types.Float64Type))
-		require.False(t, diags.HasError())
+		result := shardsMapToAPI(types.MapUnknown(types.Float64Type))
 		assert.Nil(t, result)
 	})
 
@@ -84,8 +82,7 @@ func TestShardsMapToAPI(t *testing.T) {
 		empty, d := types.MapValue(types.Float64Type, map[string]attr.Value{})
 		require.False(t, d.HasError())
 
-		result, diags := shardsMapToAPI(empty)
-		require.False(t, diags.HasError())
+		result := shardsMapToAPI(empty)
 		require.NotNil(t, result)
 		assert.Empty(t, *result)
 	})
@@ -96,8 +93,7 @@ func TestShardsMapToAPI(t *testing.T) {
 		})
 		require.False(t, d.HasError())
 
-		result, diags := shardsMapToAPI(shards)
-		require.False(t, diags.HasError())
+		result := shardsMapToAPI(shards)
 		require.NotNil(t, result)
 		assert.InDelta(t, float32(75.5), (*result)["policy-a"], 0.001)
 	})
@@ -107,7 +103,7 @@ func TestToWriteRequestBody_fullV1Fields(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	model := fullWriteModel(t, ctx)
+	model := fullWriteModel(ctx, t)
 
 	body, diags := model.toWriteRequestBody(ctx)
 	require.False(t, diags.HasError())
@@ -117,7 +113,7 @@ func TestToWriteRequestBody_fullV1Fields(t *testing.T) {
 	require.NotNil(t, body.Description)
 	assert.Equal(t, kbapi.SecurityOsqueryAPIPackDescription("pack description"), *body.Description)
 	require.NotNil(t, body.Enabled)
-	assert.True(t, bool(*body.Enabled))
+	assert.True(t, *body.Enabled)
 	require.NotNil(t, body.PolicyIds)
 	assert.Equal(t, kbapi.SecurityOsqueryAPIPolicyIds{"policy-a"}, *body.PolicyIds)
 	require.NotNil(t, body.Shards)
@@ -148,7 +144,7 @@ func TestToUpdateRequestBody_fieldParityWithCreate(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	model := fullWriteModel(t, ctx)
+	model := fullWriteModel(ctx, t)
 
 	createBody, createDiags := model.toCreateRequestBody(ctx)
 	require.False(t, createDiags.HasError())
@@ -172,7 +168,7 @@ func TestToWriteRequestBody_nullOptionalFieldsOmitted(t *testing.T) {
 		Name:      types.StringValue("pack-name"),
 		PolicyIDs: types.ListNull(types.StringType),
 		Shards:    types.MapNull(types.Float64Type),
-		Queries:   mustQueriesMap(t, ctx, singleQueryObject(t, ctx, "q1", "SELECT 1")),
+		Queries:   mustQueriesMap(t, singleQueryObject(t, "q1", "SELECT 1")),
 	}
 
 	body, diags := model.toWriteRequestBody(ctx)
@@ -194,7 +190,7 @@ func TestToWriteRequestBody_knownEmptyOptionalsSent(t *testing.T) {
 		Name:      types.StringValue("pack-name"),
 		PolicyIDs: policyIDs,
 		Shards:    shards,
-		Queries:   mustQueriesMap(t, ctx, singleQueryObject(t, ctx, "q1", "SELECT 1")),
+		Queries:   mustQueriesMap(t, singleQueryObject(t, "q1", "SELECT 1")),
 	}
 
 	body, diags := model.toWriteRequestBody(ctx)
@@ -205,7 +201,7 @@ func TestToWriteRequestBody_knownEmptyOptionalsSent(t *testing.T) {
 	assert.Empty(t, *body.Shards)
 }
 
-func fullWriteModel(t *testing.T, ctx context.Context) osqueryPackModel {
+func fullWriteModel(ctx context.Context, t *testing.T) osqueryPackModel {
 	t.Helper()
 
 	policyIDs, d := types.ListValueFrom(ctx, types.StringType, []string{"policy-a"})
@@ -273,7 +269,7 @@ func fullWriteModel(t *testing.T, ctx context.Context) osqueryPackModel {
 	}
 }
 
-func singleQueryObject(t *testing.T, ctx context.Context, name, query string) map[string]attr.Value {
+func singleQueryObject(t *testing.T, name, query string) map[string]attr.Value {
 	t.Helper()
 
 	obj, d := types.ObjectValue(queryAttrTypes(), map[string]attr.Value{
@@ -289,7 +285,7 @@ func singleQueryObject(t *testing.T, ctx context.Context, name, query string) ma
 	return map[string]attr.Value{name: obj}
 }
 
-func mustQueriesMap(t *testing.T, ctx context.Context, elems map[string]attr.Value) types.Map {
+func mustQueriesMap(t *testing.T, elems map[string]attr.Value) types.Map {
 	t.Helper()
 	queries, d := types.MapValue(queryMapElemType(), elems)
 	require.False(t, d.HasError())

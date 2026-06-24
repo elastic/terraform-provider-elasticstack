@@ -49,7 +49,7 @@ func createOsqueryPack(
 		return entitycore.KibanaWriteResult[osqueryPackModel]{}, diags
 	}
 
-	if detail == nil || detail.SavedObjectId == "" {
+	if detail == nil || detail.SavedObjectID == "" {
 		diags.AddError(
 			"Invalid create response",
 			"Create succeeded but the response did not include saved_object_id.",
@@ -57,11 +57,11 @@ func createOsqueryPack(
 		return entitycore.KibanaWriteResult[osqueryPackModel]{}, diags
 	}
 
-	plan.PackID = types.StringValue(detail.SavedObjectId)
+	plan.PackID = types.StringValue(detail.SavedObjectID)
 	plan.SpaceID = types.StringValue(req.SpaceID)
 	plan.ID = types.StringValue((&clients.CompositeID{
 		ClusterID:  req.SpaceID,
-		ResourceID: detail.SavedObjectId,
+		ResourceID: detail.SavedObjectID,
 	}).String())
 
 	return entitycore.KibanaWriteResult[osqueryPackModel]{Model: plan}, diags

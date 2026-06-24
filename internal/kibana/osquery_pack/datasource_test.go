@@ -163,7 +163,7 @@ func TestDataSourceModel_populateFromAPI_readOnlyFalse(t *testing.T) {
 
 	readOnly := false
 	detail := &kibanaoapi.OsqueryPackDetail{
-		SavedObjectId: "pack-id",
+		SavedObjectID: "pack-id",
 		Name:          kbapi.SecurityOsqueryAPIPackName("Managed pack"),
 		ReadOnly:      &readOnly,
 	}
@@ -179,7 +179,7 @@ func TestDataSourceModel_populateFromAPI_readOnlyNil(t *testing.T) {
 	ctx := context.Background()
 
 	detail := &kibanaoapi.OsqueryPackDetail{
-		SavedObjectId: "pack-id",
+		SavedObjectID: "pack-id",
 		Name:          kbapi.SecurityOsqueryAPIPackName("Managed pack"),
 		ReadOnly:      nil,
 	}
@@ -198,7 +198,7 @@ func TestDataSourceModel_populateFromAPI_prebuiltPack(t *testing.T) {
 	name := kbapi.SecurityOsqueryAPIPackName("Prebuilt pack")
 	query := kbapi.SecurityOsqueryAPIQuery("SELECT 1;")
 	detail := &kibanaoapi.OsqueryPackDetail{
-		SavedObjectId: "3c42c847-eb30-4452-80e0-728584042334",
+		SavedObjectID: "3c42c847-eb30-4452-80e0-728584042334",
 		Name:          name,
 		ReadOnly:      &readOnly,
 		Queries: &kbapi.SecurityOsqueryAPIObjectQueries{

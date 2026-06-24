@@ -37,14 +37,7 @@ func (m osqueryPackModel) toUpdateRequestBody(ctx context.Context) (kbapi.Osquer
 		return kbapi.OsqueryUpdatePacksJSONRequestBody{}, diags
 	}
 
-	return kbapi.SecurityOsqueryAPIUpdatePacksRequestBody{
-		Description: createBody.Description,
-		Enabled:     createBody.Enabled,
-		Name:        createBody.Name,
-		PolicyIds:   createBody.PolicyIds,
-		Queries:     createBody.Queries,
-		Shards:      createBody.Shards,
-	}, diags
+	return kbapi.OsqueryUpdatePacksJSONRequestBody(createBody), diags
 }
 
 func (m osqueryPackModel) toWriteRequestBody(ctx context.Context) (kbapi.SecurityOsqueryAPICreatePacksRequestBody, diag.Diagnostics) {
@@ -52,17 +45,17 @@ func (m osqueryPackModel) toWriteRequestBody(ctx context.Context) (kbapi.Securit
 	body := kbapi.SecurityOsqueryAPICreatePacksRequestBody{}
 
 	if typeutils.IsKnown(m.Name) {
-		name := kbapi.SecurityOsqueryAPIPackName(m.Name.ValueString())
+		name := m.Name.ValueString()
 		body.Name = &name
 	}
 
 	if typeutils.IsKnown(m.Description) {
-		desc := kbapi.SecurityOsqueryAPIPackDescription(m.Description.ValueString())
+		desc := m.Description.ValueString()
 		body.Description = &desc
 	}
 
 	if typeutils.IsKnown(m.Enabled) {
-		enabled := kbapi.SecurityOsqueryAPIEnabled(m.Enabled.ValueBool())
+		enabled := m.Enabled.ValueBool()
 		body.Enabled = &enabled
 	}
 
@@ -70,8 +63,7 @@ func (m osqueryPackModel) toWriteRequestBody(ctx context.Context) (kbapi.Securit
 	diags.Append(d...)
 	body.PolicyIds = policyIDs
 
-	shards, d := shardsMapToAPI(m.Shards)
-	diags.Append(d...)
+	shards := shardsMapToAPI(m.Shards)
 	body.Shards = shards
 
 	queries, d := queriesMapToAPI(ctx, m.Queries)
@@ -92,13 +84,13 @@ func policyIDsToAPI(ctx context.Context, list types.List) (*kbapi.SecurityOsquer
 		return nil, diags
 	}
 
-	result := kbapi.SecurityOsqueryAPIPolicyIds(ids)
+	result := ids
 	return &result, diags
 }
 
-func shardsMapToAPI(shards types.Map) (*kbapi.SecurityOsqueryAPIShards, diag.Diagnostics) {
+func shardsMapToAPI(shards types.Map) *kbapi.SecurityOsqueryAPIShards {
 	if shards.IsUnknown() || shards.IsNull() {
-		return nil, nil
+		return nil
 	}
 
 	result := make(kbapi.SecurityOsqueryAPIShards, len(shards.Elements()))
@@ -106,7 +98,7 @@ func shardsMapToAPI(shards types.Map) (*kbapi.SecurityOsqueryAPIShards, diag.Dia
 		result[policyID] = float32(av.(types.Float64).ValueFloat64())
 	}
 
-	return &result, nil
+	return &result
 }
 
 func queriesMapToAPI(ctx context.Context, queries types.Map) (*kbapi.SecurityOsqueryAPIObjectQueries, diag.Diagnostics) {

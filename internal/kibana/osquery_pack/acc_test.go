@@ -148,7 +148,7 @@ func TestAccResourceOsqueryPack_ecsMappingValidator(t *testing.T) {
 				SkipFunc:                 skipOsqueryPackUnsupported(),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_ecs_mapping"),
 				PlanOnly:                 true,
-				ExpectError: regexp.MustCompile(`(?s)not more than one`),
+				ExpectError:              regexp.MustCompile(`(?s)not more than one`),
 			},
 		},
 	})
@@ -165,7 +165,7 @@ func TestAccResourceOsqueryPack_invalidPlatform(t *testing.T) {
 				SkipFunc:                 skipOsqueryPackUnsupported(),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_platform"),
 				PlanOnly:                 true,
-				ExpectError: regexp.MustCompile(invalidPlatformErrorPattern),
+				ExpectError:              regexp.MustCompile(invalidPlatformErrorPattern),
 			},
 		},
 	})
@@ -616,7 +616,7 @@ func findPrebuiltOsqueryPack(t *testing.T, spaceID string) (packID string, skipR
 	client := apiClient.GetKibanaOapiClient()
 
 	for pageNum := 1; ; pageNum++ {
-		page := kbapi.SecurityOsqueryAPIPageOrUndefined(pageNum)
+		page := pageNum
 		resp, err := client.API.OsqueryFindPacksWithResponse(
 			context.Background(),
 			&kbapi.OsqueryFindPacksParams{Page: &page, PageSize: &pageSize},
@@ -638,7 +638,7 @@ func findPrebuiltOsqueryPack(t *testing.T, spaceID string) (packID string, skipR
 			}
 		}
 
-		if len(resp.JSON200.Data) == 0 || pageNum*int(pageSize) >= resp.JSON200.Total {
+		if len(resp.JSON200.Data) == 0 || pageNum*pageSize >= resp.JSON200.Total {
 			break
 		}
 	}

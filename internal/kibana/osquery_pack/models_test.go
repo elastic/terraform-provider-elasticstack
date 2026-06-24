@@ -130,7 +130,7 @@ func TestEcsMappingThreeShapes(t *testing.T) {
 
 	t.Run("field reference", func(t *testing.T) {
 		api := kbapi.SecurityOsqueryAPIECSMapping{
-			"process.name": {Field: strPtr("cmdline")},
+			"process.name": {Field: new("cmdline")},
 		}
 
 		mapping, diags := ecsMappingMapFromAPI(ctx, &api)
@@ -146,7 +146,7 @@ func TestEcsMappingThreeShapes(t *testing.T) {
 		roundTrip, diags := ecsMappingMapToAPI(ctx, mapping)
 		require.False(t, diags.HasError())
 		require.NotNil(t, roundTrip)
-		assert.Equal(t, strPtr("cmdline"), (*roundTrip)["process.name"].Field)
+		assert.Equal(t, new("cmdline"), (*roundTrip)["process.name"].Field)
 	})
 
 	t.Run("scalar value", func(t *testing.T) {
@@ -223,7 +223,7 @@ func TestEcsMappingThreeShapes(t *testing.T) {
 		require.NoError(t, val.FromSecurityOsqueryAPIECSMappingItemValue0("literal"))
 
 		api := kbapi.SecurityOsqueryAPIECSMapping{
-			"conflict": {Field: strPtr("col"), Value: &val},
+			"conflict": {Field: new("col"), Value: &val},
 		}
 
 		_, diags := ecsMappingMapFromAPI(ctx, &api)
@@ -247,14 +247,14 @@ func TestQueryModelFullRoundTrip(t *testing.T) {
 	require.NoError(t, scalarVal.FromSecurityOsqueryAPIECSMappingItemValue0("literal"))
 
 	apiItem := kbapi.SecurityOsqueryAPIObjectQueriesItem{
-		Query:        queryPtr("SELECT * FROM users"),
+		Query:        new(kbapi.SecurityOsqueryAPIQuery("SELECT * FROM users")),
 		Platform:     &platform,
 		Version:      &version,
 		Snapshot:     &snapshot,
 		Removed:      &removed,
 		SavedQueryId: &savedQueryID,
 		EcsMapping: &kbapi.SecurityOsqueryAPIECSMapping{
-			"user.name": {Field: strPtr("username")},
+			"user.name": {Field: new("username")},
 			"host.name": {Value: &scalarVal},
 		},
 	}
@@ -279,7 +279,7 @@ func TestQueryModelFullRoundTrip(t *testing.T) {
 	assert.Equal(t, kbapi.SecurityOsqueryAPISavedQueryId("my-saved-query"), *roundTrip.SavedQueryId)
 
 	require.NotNil(t, roundTrip.EcsMapping)
-	assert.Equal(t, strPtr("username"), (*roundTrip.EcsMapping)["user.name"].Field)
+	assert.Equal(t, new("username"), (*roundTrip.EcsMapping)["user.name"].Field)
 	got, err := (*roundTrip.EcsMapping)["host.name"].Value.AsSecurityOsqueryAPIECSMappingItemValue0()
 	require.NoError(t, err)
 	assert.Equal(t, "literal", got)
@@ -303,14 +303,14 @@ func TestPopulateFromAPI(t *testing.T) {
 
 	queries := kbapi.SecurityOsqueryAPIObjectQueries{
 		"find_procs": {
-			Query:        queryPtr("SELECT * FROM processes"),
+			Query:        new(kbapi.SecurityOsqueryAPIQuery("SELECT * FROM processes")),
 			Platform:     &platform,
 			Version:      &version,
 			Snapshot:     &snapshot,
 			Removed:      &removed,
 			SavedQueryId: &savedQueryID,
 			EcsMapping: &kbapi.SecurityOsqueryAPIECSMapping{
-				"process.name": {Field: strPtr("cmdline")},
+				"process.name": {Field: new("cmdline")},
 				"host.name":    {Value: &fieldVal},
 			},
 		},
@@ -320,8 +320,8 @@ func TestPopulateFromAPI(t *testing.T) {
 		Name:          "test-pack",
 		Description:   &desc,
 		Enabled:       &enabled,
-		PolicyIds:     &policyIDs,
-		SavedObjectId: "pack-uuid-123",
+		PolicyIDs:     &policyIDs,
+		SavedObjectID: "pack-uuid-123",
 		Shards: kibanaoapi.OsqueryPackShards{
 			"policy-1": 75,
 		},
@@ -382,9 +382,9 @@ func TestPopulateFromAPI_DefaultSpaceAndEmptyOptionals(t *testing.T) {
 
 	detail := &kibanaoapi.OsqueryPackDetail{
 		Name:          "minimal-pack",
-		SavedObjectId: "minimal-id",
+		SavedObjectID: "minimal-id",
 		Queries: &kbapi.SecurityOsqueryAPIObjectQueries{
-			"q1": {Query: queryPtr("SELECT 1")},
+			"q1": {Query: new(kbapi.SecurityOsqueryAPIQuery("SELECT 1"))},
 		},
 	}
 
@@ -418,7 +418,7 @@ func TestPopulateFromAPI_NilAndEmptyQueries(t *testing.T) {
 	t.Run("nil queries", func(t *testing.T) {
 		detail := &kibanaoapi.OsqueryPackDetail{
 			Name:          "no-queries",
-			SavedObjectId: "no-queries-id",
+			SavedObjectID: "no-queries-id",
 		}
 
 		var model osqueryPackModel
@@ -431,7 +431,7 @@ func TestPopulateFromAPI_NilAndEmptyQueries(t *testing.T) {
 		empty := kbapi.SecurityOsqueryAPIObjectQueries{}
 		detail := &kibanaoapi.OsqueryPackDetail{
 			Name:          "empty-queries",
-			SavedObjectId: "empty-queries-id",
+			SavedObjectID: "empty-queries-id",
 			Queries:       &empty,
 		}
 
@@ -449,10 +449,10 @@ func TestPopulateFromAPI_EmptyPolicyIDs(t *testing.T) {
 	emptyPolicies := kbapi.SecurityOsqueryAPIPolicyIds{}
 	detail := &kibanaoapi.OsqueryPackDetail{
 		Name:          "empty-policies",
-		SavedObjectId: "empty-policies-id",
-		PolicyIds:     &emptyPolicies,
+		SavedObjectID: "empty-policies-id",
+		PolicyIDs:     &emptyPolicies,
 		Queries: &kbapi.SecurityOsqueryAPIObjectQueries{
-			"q1": {Query: queryPtr("SELECT 1")},
+			"q1": {Query: new(kbapi.SecurityOsqueryAPIQuery("SELECT 1"))},
 		},
 	}
 
@@ -468,9 +468,9 @@ func TestPopulateFromAPI_QueryRequiredOnlyNullOptionals(t *testing.T) {
 
 	detail := &kibanaoapi.OsqueryPackDetail{
 		Name:          "query-only",
-		SavedObjectId: "query-only-id",
+		SavedObjectID: "query-only-id",
 		Queries: &kbapi.SecurityOsqueryAPIObjectQueries{
-			"q1": {Query: queryPtr("SELECT 1")},
+			"q1": {Query: new(kbapi.SecurityOsqueryAPIQuery("SELECT 1"))},
 		},
 	}
 
@@ -488,11 +488,4 @@ func TestPopulateFromAPI_QueryRequiredOnlyNullOptionals(t *testing.T) {
 	assert.True(t, q.Removed.IsNull())
 	assert.True(t, q.SavedQueryID.IsNull())
 	assert.True(t, q.EcsMapping.IsNull())
-}
-
-func strPtr(s string) *string { return &s }
-
-func queryPtr(q string) *kbapi.SecurityOsqueryAPIQuery {
-	v := kbapi.SecurityOsqueryAPIQuery(q)
-	return &v
 }

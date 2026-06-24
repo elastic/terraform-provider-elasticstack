@@ -39,10 +39,6 @@ const (
 	osqueryPlatformLinux   = "linux"
 	osqueryPlatformDarwin  = "darwin"
 	osqueryPlatformWindows = "windows"
-
-	attrEcsMappingField  = "field"
-	attrEcsMappingValue  = "value"
-	attrEcsMappingValues = "values"
 )
 
 var osqueryPlatformValues = []string{osqueryPlatformLinux, osqueryPlatformDarwin, osqueryPlatformWindows}
@@ -60,11 +56,11 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"pack_id": schema.StringAttribute{
+			attrPackID: schema.StringAttribute{
 				MarkdownDescription: "Server-generated Kibana saved object identifier for the pack (`saved_object_id`).",
 				Computed:            true,
 			},
-			"space_id": schema.StringAttribute{
+			attrSpaceID: schema.StringAttribute{
 				MarkdownDescription: "Kibana space identifier. When omitted, the default space is used.",
 				Optional:            true,
 				Computed:            true,
@@ -74,24 +70,24 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				MarkdownDescription: "Human-readable name of the Osquery pack.",
 				Required:            true,
 			},
-			"description": schema.StringAttribute{
+			attrDescription: schema.StringAttribute{
 				MarkdownDescription: "Description of the Osquery pack.",
 				Optional:            true,
 			},
-			"enabled": schema.BoolAttribute{
+			attrEnabled: schema.BoolAttribute{
 				MarkdownDescription: "Whether the pack is enabled.",
 				Optional:            true,
 			},
-			"policy_ids": schema.ListAttribute{
+			attrPolicyIDs: schema.ListAttribute{
 				MarkdownDescription: "Fleet agent policy IDs this pack is deployed to.",
 				Optional:            true,
 				ElementType:         types.StringType,
 			},
-			"shards": schema.MapAttribute{
+			attrShards: schema.MapAttribute{
 				MarkdownDescription: "Percent (1-100) of hosts per policy ID that receive the pack.",
 				Optional:            true,
 				ElementType:         types.Float64Type,
@@ -101,7 +97,7 @@ func getSchema(_ context.Context) schema.Schema {
 					),
 				},
 			},
-			"queries": queriesSchema(),
+			attrQueries: queriesSchema(),
 		},
 	}
 }
@@ -121,11 +117,11 @@ func queriesSchema() schema.MapNestedAttribute {
 
 func queryNestedAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"query": schema.StringAttribute{
+		attrQuery: schema.StringAttribute{
 			MarkdownDescription: "Osquery SQL query text.",
 			Required:            true,
 		},
-		"platform": schema.SetAttribute{
+		attrPlatform: schema.SetAttribute{
 			MarkdownDescription: "Target platforms for the query. Allowed values: `linux`, `darwin`, `windows`.",
 			Optional:            true,
 			ElementType:         types.StringType,
@@ -133,11 +129,11 @@ func queryNestedAttributes() map[string]schema.Attribute {
 				setvalidator.ValueStringsAre(stringvalidator.OneOf(osqueryPlatformValues...)),
 			},
 		},
-		"version": schema.StringAttribute{
+		attrVersion: schema.StringAttribute{
 			MarkdownDescription: "Query version string.",
 			Optional:            true,
 		},
-		"snapshot": schema.BoolAttribute{
+		attrSnapshot: schema.BoolAttribute{
 			MarkdownDescription: "Whether the query is a snapshot. Returned by the API and may be set explicitly in configuration. " +
 				"When omitted or unknown at plan time, the prior state value is preserved (`UseStateForUnknown`).",
 			Optional: true,
@@ -146,7 +142,7 @@ func queryNestedAttributes() map[string]schema.Attribute {
 				boolplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"removed": schema.BoolAttribute{
+		attrRemoved: schema.BoolAttribute{
 			MarkdownDescription: "Whether the query is marked removed. Returned by the API and may be set explicitly in configuration. " +
 				"When omitted or unknown at plan time, the prior state value is preserved (`UseStateForUnknown`).",
 			Optional: true,
@@ -155,11 +151,11 @@ func queryNestedAttributes() map[string]schema.Attribute {
 				boolplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"saved_query_id": schema.StringAttribute{
+		attrSavedQueryID: schema.StringAttribute{
 			MarkdownDescription: "References an `elasticstack_kibana_osquery_saved_query` resource.",
 			Optional:            true,
 		},
-		"ecs_mapping": ecsMappingSchema(),
+		attrEcsMapping: ecsMappingSchema(),
 	}
 }
 

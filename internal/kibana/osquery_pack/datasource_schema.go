@@ -34,39 +34,39 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 				MarkdownDescription: "Composite identifier in the form `<space_id>/<pack_id>`.",
 				Computed:            true,
 			},
-			"pack_id": schema.StringAttribute{
+			attrPackID: schema.StringAttribute{
 				MarkdownDescription: "Kibana saved object identifier for the pack (`saved_object_id`).",
 				Required:            true,
 			},
-			"space_id": schema.StringAttribute{
+			attrSpaceID: schema.StringAttribute{
 				MarkdownDescription: "Kibana space identifier. When omitted, the default space is used.",
 				Optional:            true,
 				// Datasource schema has no Default field (unlike resource schema); read resolves
 				// omitted space_id to clients.DefaultSpaceID via ResolveCompositeSpaceAndID.
 			},
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				MarkdownDescription: "Human-readable name of the Osquery pack.",
 				Computed:            true,
 			},
-			"description": schema.StringAttribute{
+			attrDescription: schema.StringAttribute{
 				MarkdownDescription: "Description of the Osquery pack.",
 				Computed:            true,
 			},
-			"enabled": schema.BoolAttribute{
+			attrEnabled: schema.BoolAttribute{
 				MarkdownDescription: "Whether the pack is enabled.",
 				Computed:            true,
 			},
-			"policy_ids": schema.ListAttribute{
+			attrPolicyIDs: schema.ListAttribute{
 				MarkdownDescription: "Fleet agent policy IDs this pack is deployed to.",
 				Computed:            true,
 				ElementType:         types.StringType,
 			},
-			"shards": schema.MapAttribute{
+			attrShards: schema.MapAttribute{
 				MarkdownDescription: "Percent (1-100) of hosts per policy ID that receive the pack.",
 				Computed:            true,
 				ElementType:         types.Float64Type,
 			},
-			"queries": queriesDataSourceSchema(),
+			attrQueries: queriesDataSourceSchema(),
 			"read_only": schema.BoolAttribute{
 				MarkdownDescription: "Whether the pack is prebuilt and read-only. Prebuilt packs can be read by this data source but not managed by the resource.",
 				Computed:            true,
@@ -87,32 +87,32 @@ func queriesDataSourceSchema() schema.MapNestedAttribute {
 
 func queryDataSourceNestedAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"query": schema.StringAttribute{
+		attrQuery: schema.StringAttribute{
 			MarkdownDescription: "Osquery SQL query text.",
 			Computed:            true,
 		},
-		"platform": schema.SetAttribute{
+		attrPlatform: schema.SetAttribute{
 			MarkdownDescription: "Target platforms for the query. Allowed values: `linux`, `darwin`, `windows`.",
 			Computed:            true,
 			ElementType:         types.StringType,
 		},
-		"version": schema.StringAttribute{
+		attrVersion: schema.StringAttribute{
 			MarkdownDescription: "Query version string.",
 			Computed:            true,
 		},
-		"snapshot": schema.BoolAttribute{
+		attrSnapshot: schema.BoolAttribute{
 			MarkdownDescription: "Whether the query is a snapshot.",
 			Computed:            true,
 		},
-		"removed": schema.BoolAttribute{
+		attrRemoved: schema.BoolAttribute{
 			MarkdownDescription: "Whether the query is marked removed.",
 			Computed:            true,
 		},
-		"saved_query_id": schema.StringAttribute{
+		attrSavedQueryID: schema.StringAttribute{
 			MarkdownDescription: "References an `elasticstack_kibana_osquery_saved_query` resource.",
 			Computed:            true,
 		},
-		"ecs_mapping": ecsMappingDataSourceSchema(),
+		attrEcsMapping: ecsMappingDataSourceSchema(),
 	}
 }
 

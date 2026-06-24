@@ -220,17 +220,29 @@ func TestSchema_platformAllowedValues(t *testing.T) {
 	require.True(t, ok)
 	require.NotEmpty(t, platformAttr.Validators)
 
+	platformPath := path.Root("queries").AtMapKey("find_procs").AtName("platform")
+
 	for _, value := range osqueryPlatformValues {
 		t.Run("valid/"+value, func(t *testing.T) {
 			t.Parallel()
-			diags := validateSetValidators(context.Background(), platformAttr.Validators, types.SetValueMust(types.StringType, []attr.Value{types.StringValue(value)}), path.Root("queries").AtMapKey("find_procs").AtName("platform"))
+			diags := validateSetValidators(
+				context.Background(),
+				platformAttr.Validators,
+				types.SetValueMust(types.StringType, []attr.Value{types.StringValue(value)}),
+				platformPath,
+			)
 			assert.False(t, diags.HasError(), "expected %q to be valid: %v", value, diags)
 		})
 	}
 
 	t.Run("invalid/ios", func(t *testing.T) {
 		t.Parallel()
-		diags := validateSetValidators(context.Background(), platformAttr.Validators, types.SetValueMust(types.StringType, []attr.Value{types.StringValue("ios")}), path.Root("queries").AtMapKey("find_procs").AtName("platform"))
+		diags := validateSetValidators(
+			context.Background(),
+			platformAttr.Validators,
+			types.SetValueMust(types.StringType, []attr.Value{types.StringValue("ios")}),
+			platformPath,
+		)
 		assert.True(t, diags.HasError())
 	})
 }
@@ -295,8 +307,8 @@ func TestSchema_ecsMappingNestedObjectValidators(t *testing.T) {
 	}
 	valuesOnly := func() types.Object {
 		return types.ObjectValueMust(ecsMappingAttrTypes(), map[string]attr.Value{
-			attrEcsMappingField:  types.StringNull(),
-			attrEcsMappingValue:  types.StringNull(),
+			attrEcsMappingField: types.StringNull(),
+			attrEcsMappingValue: types.StringNull(),
 			attrEcsMappingValues: types.SetValueMust(types.StringType, []attr.Value{
 				types.StringValue("process"),
 				types.StringValue("network"),
@@ -363,8 +375,8 @@ func TestSchema_ecsMappingNestedObjectValidators(t *testing.T) {
 	t.Run("rejects value and values", func(t *testing.T) {
 		t.Parallel()
 		obj := types.ObjectValueMust(ecsMappingAttrTypes(), map[string]attr.Value{
-			attrEcsMappingField:  types.StringNull(),
-			attrEcsMappingValue:  types.StringValue("literal"),
+			attrEcsMappingField: types.StringNull(),
+			attrEcsMappingValue: types.StringValue("literal"),
 			attrEcsMappingValues: types.SetValueMust(types.StringType, []attr.Value{
 				types.StringValue("process"),
 			}),

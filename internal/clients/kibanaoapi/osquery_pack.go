@@ -40,20 +40,20 @@ type OsqueryPackShards map[string]float64
 type OsqueryPackDetail struct {
 	CreatedAt           *time.Time
 	CreatedBy           *string
-	CreatedByProfileUid *string
+	CreatedByProfileUID *string
 	Description         *kbapi.SecurityOsqueryAPIPackDescription
 	Enabled             *kbapi.SecurityOsqueryAPIEnabled
 	Name                kbapi.SecurityOsqueryAPIPackName
 	Namespaces          *[]string
-	PolicyIds           *kbapi.SecurityOsqueryAPIPolicyIds
+	PolicyIDs           *kbapi.SecurityOsqueryAPIPolicyIds
 	Queries             *kbapi.SecurityOsqueryAPIObjectQueries
 	ReadOnly            *bool
-	SavedObjectId       string
+	SavedObjectID       string
 	Shards              OsqueryPackShards
 	Type                *string
 	UpdatedAt           *time.Time
 	UpdatedBy           *string
-	UpdatedByProfileUid *string
+	UpdatedByProfileUID *string
 	Version             *int
 }
 
@@ -139,20 +139,20 @@ func osqueryPackDetailFromFindResponse(resp *kbapi.SecurityOsqueryAPIFindPackRes
 	return &OsqueryPackDetail{
 		CreatedAt:           data.CreatedAt,
 		CreatedBy:           data.CreatedBy,
-		CreatedByProfileUid: data.CreatedByProfileUid,
+		CreatedByProfileUID: data.CreatedByProfileUid,
 		Description:         data.Description,
 		Enabled:             data.Enabled,
 		Name:                data.Name,
 		Namespaces:          data.Namespaces,
-		PolicyIds:           data.PolicyIds,
+		PolicyIDs:           data.PolicyIds,
 		Queries:             data.Queries,
 		ReadOnly:            data.ReadOnly,
-		SavedObjectId:       data.SavedObjectId,
+		SavedObjectID:       data.SavedObjectId,
 		Shards:              osqueryPackShardsFromMap(data.Shards),
 		Type:                data.Type,
 		UpdatedAt:           data.UpdatedAt,
 		UpdatedBy:           data.UpdatedBy,
-		UpdatedByProfileUid: data.UpdatedByProfileUid,
+		UpdatedByProfileUID: data.UpdatedByProfileUid,
 		Version:             data.Version,
 	}
 }
@@ -166,17 +166,17 @@ func osqueryPackDetailFromCreateResponse(resp *kbapi.SecurityOsqueryAPICreatePac
 	return &OsqueryPackDetail{
 		CreatedAt:           data.CreatedAt,
 		CreatedBy:           data.CreatedBy,
-		CreatedByProfileUid: data.CreatedByProfileUid,
+		CreatedByProfileUID: data.CreatedByProfileUid,
 		Description:         data.Description,
 		Enabled:             data.Enabled,
 		Name:                data.Name,
-		PolicyIds:           data.PolicyIds,
+		PolicyIDs:           data.PolicyIds,
 		Queries:             data.Queries,
-		SavedObjectId:       data.SavedObjectId,
+		SavedObjectID:       data.SavedObjectId,
 		Shards:              osqueryPackShardsFromCreateArray(data.Shards),
 		UpdatedAt:           data.UpdatedAt,
 		UpdatedBy:           data.UpdatedBy,
-		UpdatedByProfileUid: data.UpdatedByProfileUid,
+		UpdatedByProfileUID: data.UpdatedByProfileUid,
 		Version:             data.Version,
 	}
 }
@@ -190,22 +190,22 @@ func osqueryPackDetailFromUpdateResponse(resp *kbapi.SecurityOsqueryAPIUpdatePac
 	detail := &OsqueryPackDetail{
 		CreatedAt:           data.CreatedAt,
 		CreatedBy:           data.CreatedBy,
-		CreatedByProfileUid: data.CreatedByProfileUid,
+		CreatedByProfileUID: data.CreatedByProfileUid,
 		Description:         data.Description,
 		Enabled:             data.Enabled,
-		PolicyIds:           data.PolicyIds,
+		PolicyIDs:           data.PolicyIds,
 		Queries:             data.Queries,
 		Shards:              osqueryPackShardsFromMap(data.Shards),
 		UpdatedAt:           data.UpdatedAt,
 		UpdatedBy:           data.UpdatedBy,
-		UpdatedByProfileUid: data.UpdatedByProfileUid,
+		UpdatedByProfileUID: data.UpdatedByProfileUid,
 		Version:             data.Version,
 	}
 	if data.Name != nil {
 		detail.Name = *data.Name
 	}
 	if data.SavedObjectId != nil {
-		detail.SavedObjectId = *data.SavedObjectId
+		detail.SavedObjectID = *data.SavedObjectId
 	}
 	return detail
 }

@@ -144,7 +144,7 @@ func TestOsqueryPackDetailFromFindResponse(t *testing.T) {
 
 	require.NotNil(t, detail)
 	assert.Equal(t, kbapi.SecurityOsqueryAPIPackName("find-pack"), detail.Name)
-	assert.Equal(t, "find-id", detail.SavedObjectId)
+	assert.Equal(t, "find-id", detail.SavedObjectID)
 	assert.Equal(t, &readOnly, detail.ReadOnly)
 	assert.Equal(t, &namespaces, detail.Namespaces)
 	assert.Equal(t, &packType, detail.Type)
@@ -170,7 +170,7 @@ func TestOsqueryPackDetailFromCreateResponse(t *testing.T) {
 
 	require.NotNil(t, detail)
 	assert.Equal(t, kbapi.SecurityOsqueryAPIPackName("create-pack"), detail.Name)
-	assert.Equal(t, "create-id", detail.SavedObjectId)
+	assert.Equal(t, "create-id", detail.SavedObjectID)
 	assert.Nil(t, detail.ReadOnly)
 	assert.Nil(t, detail.Namespaces)
 	assert.Nil(t, detail.Type)
@@ -192,7 +192,7 @@ func TestOsqueryPackDetailFromUpdateResponse(t *testing.T) {
 
 		require.NotNil(t, detail)
 		assert.Equal(t, kbapi.SecurityOsqueryAPIPackName("updated-pack"), detail.Name)
-		assert.Equal(t, "update-id", detail.SavedObjectId)
+		assert.Equal(t, "update-id", detail.SavedObjectID)
 		assert.Equal(t, OsqueryPackShards{"policy-x": 80}, detail.Shards)
 	})
 
@@ -204,7 +204,7 @@ func TestOsqueryPackDetailFromUpdateResponse(t *testing.T) {
 
 		require.NotNil(t, detail)
 		assert.Empty(t, detail.Name)
-		assert.Empty(t, detail.SavedObjectId)
+		assert.Empty(t, detail.SavedObjectID)
 		assert.Equal(t, OsqueryPackShards{"policy-y": 10}, detail.Shards)
 	})
 
