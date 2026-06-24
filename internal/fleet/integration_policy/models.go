@@ -285,49 +285,29 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integra
 	mappedBody.Inputs = model.toAPIInputsFromInputsAttribute(ctx, &diags)
 	// Note: space_ids is not included in the request body; the Fleet API manages space assignment
 
-	// The upstream Kibana OpenAPI spec for the simplified create body
-	// (Kibana_HTTP_APIs_simplified_create_package_policy_request) no longer
-	// declares output_id / policy_id / policy_ids, but the Fleet server still
-	// accepts and respects them on that body shape - they were on the
-	// simplified body pre-regen and the runtime behavior is unchanged. We
-	// embed the typed body in a wrapper that adds those fields back, marshal
-	// the wrapper, and inject the bytes into the union directly via
-	// UnmarshalJSON. This avoids switching to the typed body shape (which
-	// would require splitting the input map keys into <policy_template, type>
-	// pairs - information the resource model does not track).
-	type extendedSimplifiedBody struct {
-		kbapi.PackagePolicyRequestMappedInputs
-		OutputID  *string   `json:"output_id,omitempty"`
-		PolicyID  *string   `json:"policy_id,omitempty"`
-		PolicyIDs *[]string `json:"policy_ids,omitempty"`
-	}
-	extended := extendedSimplifiedBody{
-		PackagePolicyRequestMappedInputs: mappedBody,
-		OutputID:                         model.OutputID.ValueStringPointer(),
-		PolicyID:                         model.AgentPolicyID.ValueStringPointer(),
-		PolicyIDs: func() *[]string {
-			if !model.AgentPolicyIDs.IsNull() && !model.AgentPolicyIDs.IsUnknown() {
-				var policyIDs []string
-				d := model.AgentPolicyIDs.ElementsAs(ctx, &policyIDs, false)
-				diags.Append(d...)
-				return &policyIDs
-			}
-			// 8.15+ accepts an empty array to clear any existing associations.
-			if feat.SupportsPolicyIDs {
-				emptyArray := []string{}
-				return &emptyArray
-			}
-			return nil
-		}(),
-	}
+	// output_id / policy_id / policy_ids are declared on the simplified create
+	// body (Kibana_HTTP_APIs_simplified_create_package_policy_request) again, so
+	// set them directly on the typed mapped body and populate the union via its
+	// generated accessor instead of a JSON wrapper round-trip.
+	mappedBody.OutputId = model.OutputID.ValueStringPointer()
+	mappedBody.PolicyId = model.AgentPolicyID.ValueStringPointer()
+	mappedBody.PolicyIds = func() *[]string {
+		if !model.AgentPolicyIDs.IsNull() && !model.AgentPolicyIDs.IsUnknown() {
+			var policyIDs []string
+			d := model.AgentPolicyIDs.ElementsAs(ctx, &policyIDs, false)
+			diags.Append(d...)
+			return &policyIDs
+		}
+		// 8.15+ accepts an empty array to clear any existing associations.
+		if feat.SupportsPolicyIDs {
+			emptyArray := []string{}
+			return &emptyArray
+		}
+		return nil
+	}()
 
-	bodyBytes, err := json.Marshal(extended)
-	if err != nil {
-		diags.AddError("Failed to marshal package policy request", err.Error())
-		return kbapi.PackagePolicyRequest{}, diags
-	}
 	var body kbapi.PackagePolicyRequest
-	if err := body.UnmarshalJSON(bodyBytes); err != nil {
+	if err := body.FromPackagePolicyRequestMappedInputs(mappedBody); err != nil {
 		diags.AddError("Failed to build package policy request", err.Error())
 		return kbapi.PackagePolicyRequest{}, diags
 	}
