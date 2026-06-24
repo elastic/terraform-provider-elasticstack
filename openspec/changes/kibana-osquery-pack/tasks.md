@@ -63,11 +63,11 @@
 
 ## 8. Documentation and examples
 
-- [ ] 8.1 Add `examples/resources/elasticstack_kibana_osquery_pack/resource.tf` with queries and `ecs_mapping` example (v1 — no scheduling fields)
-- [ ] 8.2 Add `examples/resources/elasticstack_kibana_osquery_pack/import.sh` showing composite UUID import
-- [ ] 8.3 Add `examples/data-sources/elasticstack_kibana_osquery_pack/data-source.tf`
-- [ ] 8.4 Generate provider docs via the existing `make` target
-- [ ] 8.5 Add a CHANGELOG entry following the repo's existing format
+- [x] 8.1 Add `examples/resources/elasticstack_kibana_osquery_pack/resource.tf` with queries and `ecs_mapping` example (v1 — no scheduling fields)
+- [x] 8.2 Add `examples/resources/elasticstack_kibana_osquery_pack/import.sh` showing composite UUID import
+- [x] 8.3 Add `examples/data-sources/elasticstack_kibana_osquery_pack/data-source.tf`
+- [x] 8.4 Generate provider docs via the existing `make` target
+- [x] 8.5 Add a CHANGELOG entry following the repo's existing format
 
 ## 9. Validation and cleanup
 
