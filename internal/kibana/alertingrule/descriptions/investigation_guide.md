@@ -1,0 +1,1 @@
+Markdown investigation guide attached to the rule. Maps to `artifacts.investigation_guide.blob` in the Kibana API (maximum 10,000 characters). Set exactly one of `content` (inline text) or `content_path` (local file path). When `content_path` is used, `checksum` is computed as the SHA-256 hex digest of the file for drift detection.

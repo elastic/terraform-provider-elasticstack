@@ -65,6 +65,14 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 			LookBackWindow        float64 `json:"look_back_window"`
 			StatusChangeThreshold float64 `json:"status_change_threshold"`
 		} `json:"flapping"`
+		Artifacts *struct {
+			Dashboards []struct {
+				ID string `json:"id"`
+			} `json:"dashboards"`
+			InvestigationGuide *struct {
+				Blob string `json:"blob"`
+			} `json:"investigation_guide"`
+		} `json:"artifacts"`
 		Actions []struct {
 			Group     *string        `json:"group"`
 			ID        string         `json:"id"`
@@ -155,6 +163,21 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		}
 	}
 
+	var artifacts *models.AlertingRuleArtifacts
+	if intermediate.Artifacts != nil {
+		artifacts = &models.AlertingRuleArtifacts{
+			Dashboards: make([]models.AlertingRuleArtifactDashboard, 0, len(intermediate.Artifacts.Dashboards)),
+		}
+		for _, d := range intermediate.Artifacts.Dashboards {
+			artifacts.Dashboards = append(artifacts.Dashboards, models.AlertingRuleArtifactDashboard{ID: d.ID})
+		}
+		if intermediate.Artifacts.InvestigationGuide != nil {
+			artifacts.InvestigationGuide = &models.AlertingRuleArtifactInvestigationGuide{
+				Blob: intermediate.Artifacts.InvestigationGuide.Blob,
+			}
+		}
+	}
+
 	var lastExecutionDate *time.Time
 	if intermediate.ExecutionStatus.LastExecutionDate != "" {
 		if parsed, err := time.Parse(time.RFC3339, intermediate.ExecutionStatus.LastExecutionDate); err == nil {
@@ -189,6 +212,7 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		Actions:    actions,
 		AlertDelay: alertDelay,
 		Flapping:   flapping,
+		Artifacts:  artifacts,
 	}, nil
 }
 
@@ -374,6 +398,39 @@ type flappingWire = struct {
 	StatusChangeThreshold float32 `json:"status_change_threshold"`
 }
 
+type artifactsWire struct {
+	Dashboards []struct {
+		ID string `json:"id"`
+	} `json:"dashboards,omitempty"`
+	InvestigationGuide *struct {
+		Blob string `json:"blob"`
+	} `json:"investigation_guide,omitempty"`
+}
+
+func artifactsWireFromModel(a *models.AlertingRuleArtifacts) *artifactsWire {
+	if a == nil {
+		return nil
+	}
+	w := &artifactsWire{}
+	if len(a.Dashboards) > 0 {
+		w.Dashboards = make([]struct {
+			ID string `json:"id"`
+		}, len(a.Dashboards))
+		for i, d := range a.Dashboards {
+			w.Dashboards[i].ID = d.ID
+		}
+	}
+	if a.InvestigationGuide != nil && a.InvestigationGuide.Blob != "" {
+		w.InvestigationGuide = &struct {
+			Blob string `json:"blob"`
+		}{Blob: a.InvestigationGuide.Blob}
+	}
+	if len(w.Dashboards) == 0 && w.InvestigationGuide == nil {
+		return &artifactsWire{}
+	}
+	return w
+}
+
 func flappingWireFromModel(f *models.AlertingRuleFlapping) *flappingWire {
 	if f == nil {
 		return nil
@@ -396,7 +453,8 @@ type ruleBodyOptionalFields struct {
 	AlertDelay *struct {
 		Active float32 `json:"active"`
 	} `json:"alert_delay,omitempty"`
-	Flapping *flappingWire `json:"flapping,omitempty"`
+	Flapping  *flappingWire  `json:"flapping,omitempty"`
+	Artifacts *artifactsWire `json:"artifacts,omitempty"`
 }
 
 func buildOptionalRuleFields(rule models.AlertingRule) ruleBodyOptionalFields {
@@ -425,6 +483,10 @@ func buildOptionalRuleFields(rule models.AlertingRule) ruleBodyOptionalFields {
 
 	if w := flappingWireFromModel(rule.Flapping); w != nil {
 		fields.Flapping = w
+	}
+
+	if rule.Artifacts != nil {
+		fields.Artifacts = artifactsWireFromModel(rule.Artifacts)
 	}
 
 	return fields

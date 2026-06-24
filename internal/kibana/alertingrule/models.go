@@ -55,6 +55,7 @@ type alertingRuleModel struct {
 	LastExecutionDate   types.String                       `tfsdk:"last_execution_date"`
 	AlertDelay          types.Int64                        `tfsdk:"alert_delay"`
 	Flapping            types.Object                       `tfsdk:"flapping"`
+	Artifacts           types.Object                       `tfsdk:"artifacts"`
 	Actions             types.List                         `tfsdk:"actions"`
 }
 
@@ -196,6 +197,8 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 	} else if m.Flapping.IsUnknown() {
 		m.Flapping = types.ObjectNull(getFlappingAttrTypes())
 	}
+
+	diags.Append(m.populateArtifactsFromAPI(ctx, rule)...)
 
 	// Actions
 	if len(rule.Actions) > 0 {
@@ -398,6 +401,14 @@ func (m alertingRuleModel) GetVersionRequirements(ctx context.Context) ([]entity
 		}
 	}
 
+	// 8.19.0 when Artifacts is set (9.x stacks below 9.1 are rejected in create/update via EnforceVersionCheck).
+	if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
+		reqs = append(reqs, entitycore.VersionRequirement{
+			MinVersion:   *artifactsMinSupportedVersion8,
+			ErrorMessage: "artifacts is only supported for Kibana 8.19 or higher on the 8.x line and 9.1 or higher on the 9.x line",
+		})
+	}
+
 	return reqs, diags
 }
 
@@ -492,6 +503,13 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context) (models.AlertingRule,
 		if typeutils.IsKnown(fm.Enabled) && !fm.Enabled.IsNull() {
 			rule.Flapping.Enabled = fm.Enabled.ValueBoolPointer()
 		}
+	}
+
+	// Artifacts
+	if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
+		artifacts, d := artifactsToAPIModel(ctx, m.Artifacts)
+		diags.Append(d...)
+		rule.Artifacts = artifacts
 	}
 
 	// Actions

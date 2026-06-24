@@ -1087,3 +1087,47 @@ func testCheckAlertingRuleStateParamsOnlyKeys(resourceName string, allowedKeys .
 		return nil
 	})
 }
+
+func skipIfArtifactsUnsupported() func() (bool, error) {
+	return versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.19.0")))
+}
+
+func TestAccResourceAlertingRuleArtifacts(t *testing.T) {
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
+	dashboardID := uuid.New().String()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name":         config.StringVariable(ruleName),
+					"rule_id":      config.StringVariable(ruleID),
+					"dashboard_id": config.StringVariable(dashboardID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.dashboards.0.id", dashboardID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.content", "Check logs and restart the service if needed."),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"name":         config.StringVariable(ruleName),
+					"rule_id":      config.StringVariable(ruleID),
+					"dashboard_id": config.StringVariable(dashboardID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.content", "Updated investigation guide content."),
+				),
+			},
+		},
+	})
+}

@@ -34,6 +34,7 @@ var (
 	_ resource.ResourceWithImportState    = newResource()
 	_ resource.ResourceWithValidateConfig = newResource()
 	_ resource.ResourceWithUpgradeState   = newResource()
+	_ resource.ResourceWithModifyPlan     = newResource()
 )
 
 //go:embed resource-description.md

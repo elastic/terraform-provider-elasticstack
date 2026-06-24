@@ -49,6 +49,7 @@ var (
 	cachedFilterTypes    map[string]attr.Type
 	cachedTimeframeTypes map[string]attr.Type
 	cachedFlappingTypes  map[string]attr.Type
+	cachedArtifactsTypes map[string]attr.Type
 )
 
 func getSchema(_ context.Context) schema.Schema {
@@ -209,6 +210,54 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 		},
 		Blocks: map[string]schema.Block{
+			"artifacts": schema.SingleNestedBlock{
+				MarkdownDescription: artifactsDescription,
+				Blocks: map[string]schema.Block{
+					"dashboards": schema.ListNestedBlock{
+						Description: "Dashboard saved-object references linked to the rule (at most 10).",
+						Validators: []validator.List{
+							listvalidator.SizeAtMost(10),
+						},
+						NestedObject: schema.NestedBlockObject{
+							Attributes: map[string]schema.Attribute{
+								"id": schema.StringAttribute{
+									Description: "Dashboard saved object id.",
+									Required:    true,
+								},
+							},
+						},
+					},
+					"investigation_guide": schema.SingleNestedBlock{
+						MarkdownDescription: investigationGuideDescription,
+						Validators: []validator.Object{
+							objectvalidator.ExactlyOneOf(
+								path.MatchRelative().AtName(attrInvestigationGuideContent),
+								path.MatchRelative().AtName(attrInvestigationGuideContentPath),
+							),
+						},
+						Attributes: map[string]schema.Attribute{
+							attrInvestigationGuideContent: schema.StringAttribute{
+								Description: "Inline Markdown guide text sent as `blob` to the API.",
+								Optional:    true,
+								Validators: []validator.String{
+									stringvalidator.LengthAtMost(10000),
+								},
+							},
+							attrInvestigationGuideContentPath: schema.StringAttribute{
+								Description: "Path to a local file whose contents are sent as `blob` to the API.",
+								Optional:    true,
+							},
+							attrInvestigationGuideChecksum: schema.StringAttribute{
+								Description: "SHA-256 hex digest of the file at `content_path`. Computed by the provider.",
+								Computed:    true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.UseStateForUnknown(),
+								},
+							},
+						},
+					},
+				},
+			},
 			"actions": schema.ListNestedBlock{
 				Description: "An action that runs under defined conditions.",
 				NestedObject: schema.NestedBlockObject{
@@ -335,6 +384,9 @@ func initAttrTypes() {
 
 	flapAttr := s.Attributes["flapping"].(schema.SingleNestedAttribute)
 	cachedFlappingTypes = flapAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+
+	artifactsBlock := s.Blocks["artifacts"].(schema.SingleNestedBlock)
+	cachedArtifactsTypes = artifactsBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 // getActionsAttrTypes returns the attribute types for actions list elements.
@@ -365,4 +417,10 @@ func getTimeframeAttrTypes() map[string]attr.Type {
 func getFlappingAttrTypes() map[string]attr.Type {
 	attrTypesOnce.Do(initAttrTypes)
 	return cachedFlappingTypes
+}
+
+// getArtifactsAttrTypes returns the attribute types for the artifacts object.
+func getArtifactsAttrTypes() map[string]attr.Type {
+	attrTypesOnce.Do(initAttrTypes)
+	return cachedArtifactsTypes
 }

@@ -34,6 +34,11 @@ func updateAlertingRule(
 	m := req.Plan
 	var diags diag.Diagnostics
 
+	diags.Append(enforceArtifactsVersion(ctx, client, m)...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[alertingRuleModel]{}, diags
+	}
+
 	// Convert to API model
 	rule, d := m.toAPIModel(ctx)
 	diags.Append(d...)
@@ -52,6 +57,8 @@ func updateAlertingRule(
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[alertingRuleModel]{}, diags
 	}
+
+	diags.Append(applyArtifactsChecksumToModel(ctx, &m)...)
 
 	return entitycore.KibanaWriteResult[alertingRuleModel]{Model: m}, diags
 }
