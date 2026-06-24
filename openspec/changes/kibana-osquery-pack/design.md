@@ -22,15 +22,21 @@ Non-trivial implementation areas:
 
 ## Goals / Non-Goals
 
-**Goals:**
+**Goals (v1):**
 - Full lifecycle (Create, Read, Update, Delete) of user-managed Osquery packs with import support.
 - Single-item data source for read-only lookup (prebuilt-safe).
-- Space-awareness via composite `<space_id>/<pack_id>` import ID.
+- Space-awareness via composite `<space_id>/<pack_id>` import ID (`pack_id` = `saved_object_id` UUID).
+- Faithful `ecs_mapping` and `shards` representation using pinned kbapi types.
+
+**Non-Goals (v1):**
+- Scheduling fields (`schedule_type`, `interval`, `rrule_schedule`, per-query `interval`/`timeout`) — deferred until kbapi regeneration.
+- kbapi regeneration in this change (blocked by `transform_schema.go`).
+
+**Deferred goals (follow-up):**
 - Full scheduling model including `interval` mode and `rrule_schedule` mode with provider-side validation.
-- Faithful `ecs_mapping` and `shards` representation.
 - kbapi regeneration to include modern scheduling fields.
 
-**Non-Goals:**
+**Other non-goals:**
 - `elasticstack_kibana_osquery_saved_query` resource/data source (separate change: `kibana-osquery-saved-query`).
 - Osquery live queries — ephemeral, not suitable for Terraform.
 - Plural list data source (`elasticstack_kibana_osquery_packs`) — deferred (list endpoint returns different `ecs_mapping`/`shards` format than the detail endpoint).
@@ -48,7 +54,7 @@ Implement the resource as an `entitycore.KibanaResource[osqueryPackModel]`, matc
 
 `pack_id` is **Computed-only** (maps to API `saved_object_id`). The Create request body does **not** accept a client-supplied pack ID (`SecurityOsqueryAPICreatePacksRequestBody` has no `pack_id`/`id` field; Kibana `create_pack_route` calls `spaceScopedClient.create()` without an explicit ID, yielding a server-generated UUID). The path parameter `{id}` for GET/PUT/DELETE is this same `saved_object_id`. `id` in state mirrors `pack_id`. Import uses `pack_id` as the lookup key.
 
-**Confirmed (task 1.4)**: Kibana always generates a UUID for `saved_object_id` on Create; user cannot supply an ID. Do **not** expose `pack_id` as Optional+Computed with RequiresReplace for user-supplied values — update resource spec in a follow-up if it still assumes user-settable IDs like `"linux-processes"`.
+**Confirmed (task 1.4)**: Kibana always generates a UUID for `saved_object_id` on Create; user cannot supply an ID. Resource spec requires Computed-only `pack_id`.
 
 ### Decision 3: Space support via `SpaceAwarePathRequestEditor`
 
@@ -56,7 +62,7 @@ Implement the resource as an `entitycore.KibanaResource[osqueryPackModel]`, matc
 
 ### Decision 4: Composite import ID `<space_id>/<pack_id>`
 
-Import accepts `"<space_id>/<pack_id>"` (e.g., `"default/linux-processes"`). Matches the import idiom of every other space-aware Kibana resource in the provider.
+Import accepts `"<space_id>/<pack_id>"` (e.g., `"default/3c42c847-eb30-4452-80e0-728584042334"` where `pack_id` is the API `saved_object_id`). Matches the import idiom of every other space-aware Kibana resource in the provider.
 
 ### Decision 5: `queries` as MapNestedAttribute
 
@@ -77,11 +83,11 @@ Provider-side `ConfigValidator` enforces:
 1. Exactly one of `interval`/`rrule_schedule` is set at pack level.
 2. Per-query override mode (if set) must match pack's `schedule_type`.
 
-**v1 scope (pinned kbapi)**: Legacy interval-only — per-query `interval` (and `timeout` on wire, not in pinned `ObjectQueriesItem` type). No pack-level `schedule_type`/`rrule_schedule` in generated client. Resource schema should not require `schedule_type` until kbapi regeneration lands.
+**v1 scope (pinned kbapi)**: No scheduling attributes in resource or data source schema. Pinned `SecurityOsqueryAPICreatePacksRequestBody` and `SecurityOsqueryAPIObjectQueriesItem` omit `schedule_type`, pack-level `interval`, `rrule_schedule`, and per-query `interval`/`timeout` even though the live API wire format may include them. v1 manages pack metadata, policy assignment, shards, and query definitions (SQL, platform, ECS mapping) only.
 
 **Why deferred:** OAS bump blocked by `transform_schema.go` incompatibility with Fleet response shape changes in main OAS.
 
-### Decision 7: `rrule_schedule` schema shape (shared helper)
+### Decision 7: `rrule_schedule` schema shape (deferred — post-kbapi bump)
 
 ```
 SingleNestedAttribute (optional at pack/per-query level):
@@ -123,7 +129,7 @@ Identical to the `osquery_saved_query` resource: `field` (Optional string), `val
 | Base packs CRUD (`/api/osquery/packs`) | **8.5.0** | `create_pack_route` present in `v8.5.0` |
 | Full scheduling (`schedule_type`, `rrule_schedule`, pack-level `interval`) | **9.5.0** | Kibana PR #270639 (merged 2026-05-28, label `v9.5.0`); `rruleScheduling` experimental flag default `false` until flag-flip PR |
 
-`GetVersionRequirements` (task 3.2): register two entries — base CRUD floor `8.5.0`, scheduling floor `9.5.0` (second entry gated until kbapi bump + full scheduling scope).
+`GetVersionRequirements` (task 3.2): v1 registers **8.5.0** only. Second scheduling-floor entry (`9.5.0`) deferred to post-kbapi-bump follow-up.
 
 ### Decision 12: Plural list data source deferred
 
@@ -155,6 +161,6 @@ Per-query optional `SetAttribute` of strings with allowed-values validator (`"li
 
 1. **kbapi regeneration unblock**: Fix `transform_schema.go` for `$ref`-wrapped Fleet responses, then bump to ≥ `9dc7627253d0` and re-enable full scheduling scope.
 2. **`rruleScheduling` flag**: RRULE scheduling requires experimental flag until Kibana flag-flip PR; document in provider docs / acceptance test skip logic.
-3. **Resource spec vs API identity**: Spec assumes user-settable `pack_id`; API only exposes server-generated `saved_object_id` — reconcile spec in follow-up.
+3. **Resource spec reconciled**: v1 spec now matches Computed-only `pack_id`; scheduling deferred to follow-up.
 4. **`shards` Int-vs-Number**: Use `Int64Attribute` or `NumberAttribute`? Depends on whether the API round-trips fractional values from other clients.
-5. **Per-query `interval`/`timeout` in pinned client**: Wire format and examples include them; pinned `SecurityOsqueryAPIObjectQueriesItem` omits them — may need manual JSON fields or post-bump types.
+5. **Per-query `interval`/`timeout`**: Out of v1 scope — pinned `SecurityOsqueryAPIObjectQueriesItem` omits them; add after kbapi bump.

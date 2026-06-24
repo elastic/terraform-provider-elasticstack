@@ -2,21 +2,12 @@
 
 ### Requirement: Resource identity and composite ID
 
-The `elasticstack_kibana_osquery_pack` resource SHALL set its `id` to `pack_id` after every Create and Update. `pack_id` SHALL be Optional + Computed with `RequiresReplace`: when omitted from config, the API-assigned ID SHALL be populated into state; when supplied, the API SHALL be called with that ID. `space_id` SHALL be Optional + Computed, defaulting to `"default"`, and SHALL force replacement on change.
+The `elasticstack_kibana_osquery_pack` resource SHALL set its `id` to `pack_id` after every Create and Update. `pack_id` SHALL be **Computed-only** (maps to API `saved_object_id`); the Create request body does not accept a client-supplied pack ID and Kibana always generates a UUID on Create. `space_id` SHALL be Optional + Computed, defaulting to `"default"`, and SHALL force replacement on change.
 
-#### Scenario: Create with explicit pack_id
-- **WHEN** `pack_id = "linux-processes"` is set and the resource is created
-- **THEN** the API SHALL be called with `id: "linux-processes"`
-- **AND** `id` in state SHALL equal `"linux-processes"`
-
-#### Scenario: Create with server-generated pack_id
-- **WHEN** `pack_id` is not set in config and the resource is created
-- **THEN** `pack_id` SHALL be populated from the API-assigned ID
-- **AND** `id` SHALL equal that API-assigned ID
-
-#### Scenario: pack_id change forces replacement
-- **WHEN** `pack_id` is changed in config
-- **THEN** Terraform SHALL destroy and recreate the resource
+#### Scenario: Create populates server-generated pack_id
+- **WHEN** a resource is created successfully
+- **THEN** `pack_id` SHALL be populated from the API `saved_object_id` in the Create response
+- **AND** `id` SHALL equal `pack_id`
 
 #### Scenario: space_id change forces replacement
 - **WHEN** `space_id` is changed in config
@@ -24,10 +15,10 @@ The `elasticstack_kibana_osquery_pack` resource SHALL set its `id` to `pack_id` 
 
 ### Requirement: Schema attributes
 
-The resource SHALL expose the following attributes:
+The resource SHALL expose the following attributes (v1 scope — pinned kbapi client, no scheduling fields):
 
 - `id` — Computed string; mirrors `pack_id`
-- `pack_id` — Optional + Computed string with RequiresReplace
+- `pack_id` — Computed string (API `saved_object_id`; not settable in config)
 - `space_id` — Optional + Computed string, default `"default"`, RequiresReplace
 - `kibana_connection` — Optional block (provided by entitycore envelope)
 - `name` — Required string; human-readable pack name
@@ -35,10 +26,9 @@ The resource SHALL expose the following attributes:
 - `enabled` — Optional bool
 - `policy_ids` — Optional list of strings; Fleet agent policy IDs this pack is deployed to
 - `shards` — Optional map(string → number); percent (1–100) of hosts per policy ID to receive the pack
-- `schedule_type` — Required string; must be `"interval"` or `"rrule"`
-- `interval` — Optional Int64; pack-level execution interval in seconds; exactly-one-of with `rrule_schedule`
-- `rrule_schedule` — Optional SingleNestedAttribute; pack-level RRULE schedule; exactly-one-of with `interval`
 - `queries` — Required MapNestedAttribute; at least one query must be provided
+
+Scheduling attributes (`schedule_type`, pack-level `interval`, `rrule_schedule`, per-query `interval`/`timeout`) are **out of v1 scope** because the pinned `SecurityOsqueryAPIObjectQueriesItem` and create/update request types do not include them. A follow-up change after kbapi regeneration may add scheduling.
 
 #### Scenario: Required name attribute enforced
 - **WHEN** a resource is configured without `name`
@@ -48,73 +38,17 @@ The resource SHALL expose the following attributes:
 - **WHEN** a resource is configured without `queries`
 - **THEN** Terraform SHALL reject the plan with a validation error
 
-#### Scenario: Invalid schedule_type rejected
-- **WHEN** `schedule_type = "cron"` is set
-- **THEN** Terraform SHALL reject the plan with a validation error
-
-### Requirement: Scheduling — exactly-one-of interval / rrule_schedule at pack level
-
-The resource SHALL enforce that exactly one of `interval` or `rrule_schedule` is set (not both, not neither).
-
-#### Scenario: Both interval and rrule_schedule set — plan error
-- **WHEN** both `interval = 3600` and `rrule_schedule = { ... }` are set in config
-- **THEN** Terraform SHALL reject the plan with a validation error indicating exactly one must be set
-
-#### Scenario: Neither interval nor rrule_schedule set — plan error
-- **WHEN** `schedule_type = "interval"` and neither `interval` nor `rrule_schedule` is set
-- **THEN** Terraform SHALL reject the plan with a validation error
-
-#### Scenario: interval matches schedule_type interval
-- **WHEN** `schedule_type = "interval"` and `interval = 3600` (and no `rrule_schedule`)
-- **THEN** the plan SHALL be accepted
-
-#### Scenario: rrule_schedule matches schedule_type rrule
-- **WHEN** `schedule_type = "rrule"` and `rrule_schedule = { rrule = "FREQ=DAILY;COUNT=5", start_date = "2025-01-01T00:00:00Z" }`
-- **THEN** the plan SHALL be accepted
-
-### Requirement: rrule_schedule nested attribute
-
-The `rrule_schedule` attribute (at pack level and as per-query override) SHALL be a SingleNestedAttribute with the following fields:
-
-- `rrule` — Required string; validator: must start with `FREQ=` (shallow RFC 5545 check)
-- `start_date` — Required `timetypes.RFC3339`; schedule anchor
-- `end_date` — Optional `timetypes.RFC3339`; provider SHALL validate that `end_date > start_date` when both are set
-- `splay` — Optional `customtypes.DurationType`; provider SHALL validate that `splay ≤ 12h` (43200s)
-- `timeout` — Optional Int64; execution timeout in seconds
-
-#### Scenario: rrule missing FREQ= prefix rejected
-- **WHEN** `rrule_schedule = { rrule = "INTERVAL=1", start_date = "2025-01-01T00:00:00Z" }`
-- **THEN** Terraform SHALL reject the plan with a validation error
-
-#### Scenario: end_date before start_date rejected
-- **WHEN** `rrule_schedule.end_date < rrule_schedule.start_date`
-- **THEN** Terraform SHALL reject the plan with a validation error
-
-#### Scenario: splay exceeding 12h rejected
-- **WHEN** `rrule_schedule.splay = "13h"`
-- **THEN** Terraform SHALL reject the plan with a validation error
-
 ### Requirement: queries MapNestedAttribute
 
-The `queries` attribute SHALL be a MapNestedAttribute where map keys are query names (canonical query identifier in Kibana; the inner `id` field is NOT exposed). Each element SHALL be a SingleNestedAttribute with the following fields:
+The `queries` attribute SHALL be a MapNestedAttribute where map keys are query names (canonical query identifier in Kibana; the inner `id` field is NOT exposed). Each element SHALL be a SingleNestedAttribute with the following fields (aligned with pinned `SecurityOsqueryAPIObjectQueriesItem`):
 
 - `query` — Required string; SQL query text
-- `interval` — Optional Int64; per-query scheduling override; only allowed when pack `schedule_type = "interval"`
-- `rrule_schedule` — Optional SingleNestedAttribute; per-query scheduling override; same shape as pack-level; only allowed when pack `schedule_type = "rrule"`
 - `platform` — Optional SetAttribute of strings; allowed values: `"linux"`, `"darwin"`, `"windows"`; on write, sorted and joined to comma-separated string; on read, split back to set
 - `version` — Optional string
 - `snapshot` — Optional + Computed bool
 - `removed` — Optional + Computed bool
 - `saved_query_id` — Optional string; references an `elasticstack_kibana_osquery_saved_query`
 - `ecs_mapping` — Optional MapNestedAttribute; same shape as the `ecs_mapping` on `elasticstack_kibana_osquery_saved_query`
-
-#### Scenario: Per-query interval override allowed when pack uses interval mode
-- **WHEN** `schedule_type = "interval"` and a query sets `interval = 1800`
-- **THEN** the plan SHALL be accepted and the override interval SHALL be sent to the API
-
-#### Scenario: Per-query interval override rejected when pack uses rrule mode
-- **WHEN** `schedule_type = "rrule"` and a query sets `interval = 1800`
-- **THEN** Terraform SHALL reject the plan with a validation error indicating schedule mode mismatch
 
 #### Scenario: Invalid platform value rejected
 - **WHEN** a query sets `platform = ["ios"]`
@@ -142,7 +76,7 @@ On read, the API `Value` field SHALL be inspected for string vs array type to de
 
 ### Requirement: shards normalization
 
-The `shards` attribute SHALL be stored as `map(string → number)` in Terraform state. The canonical source for state is the `GetPacksDetails` response, which returns `map[string]float32`. The provider SHALL normalize this to numeric values in state. On write, the provider SHALL convert to the API-expected wire format (confirmed during implementation per task 1.6).
+The `shards` attribute SHALL be stored as `map(string → number)` in Terraform state. On write (Create/Update), the provider SHALL send `map[string]float32` (`SecurityOsqueryAPIShards`). On read, the canonical source is `GetPacksDetails`, which returns `map[string]float32`. The Create response may return shards as an array of `{key, value}` pairs; the provider SHALL normalize to map form in state (prefer re-read via GET when the create response uses array form).
 
 #### Scenario: shards round-trip
 - **WHEN** `shards = { "policy-abc" = 75 }` is set
@@ -159,16 +93,16 @@ The `elasticstack_kibana_osquery_pack` resource SHALL return an error diagnostic
 
 ### Requirement: Create
 
-The resource SHALL call `POST /api/osquery/packs` (space-aware via `SpaceAwarePathRequestEditor`) with all managed fields. On success, the provider SHALL populate state from the response; on `read_only = true`, the provider SHALL return an error diagnostic.
+The resource SHALL call `POST /api/osquery/packs` (space-aware via `SpaceAwarePathRequestEditor`) with all managed fields. On success, the provider SHALL unwrap the `data` wrapper from the response and populate state from `saved_object_id` and other fields; on `read_only = true`, the provider SHALL return an error diagnostic.
 
-#### Scenario: Successful create with interval scheduling
-- **WHEN** a resource with `schedule_type = "interval"`, `interval = 3600`, and one query is applied
+#### Scenario: Successful create
+- **WHEN** a resource with `name`, `queries`, and optional managed fields is applied
 - **THEN** `POST /api/osquery/packs` SHALL be called (space-aware)
-- **AND** state SHALL be populated from the response
+- **AND** state SHALL be populated with Computed `pack_id` from `saved_object_id`
 
 ### Requirement: Read
 
-The resource SHALL call `GET /api/osquery/packs/{id}` (space-aware). On HTTP 404, the resource SHALL remove itself from state without error. On `read_only = true`, the resource SHALL return an error diagnostic.
+The resource SHALL call `GET /api/osquery/packs/{id}` (space-aware) using `pack_id` as `{id}`. On HTTP 404, the resource SHALL remove itself from state without error. On `read_only = true`, the resource SHALL return an error diagnostic.
 
 #### Scenario: Resource removed from state on 404
 - **WHEN** the pack no longer exists in Kibana (HTTP 404)
@@ -180,7 +114,7 @@ The resource SHALL call `GET /api/osquery/packs/{id}` (space-aware). On HTTP 404
 
 ### Requirement: Update
 
-The resource SHALL call `PUT /api/osquery/packs/{id}` (space-aware, full body replacement). Server-managed fields SHALL be omitted from the request. After a successful update, state SHALL be repopulated from the response.
+The resource SHALL call `PUT /api/osquery/packs/{id}` (space-aware, full body replacement) using `pack_id` as `{id}`. Server-managed fields SHALL be omitted from the request. After a successful update, state SHALL be repopulated from the response.
 
 #### Scenario: Successful update of description
 - **WHEN** `description` is changed in config and `terraform apply` is run
@@ -189,7 +123,7 @@ The resource SHALL call `PUT /api/osquery/packs/{id}` (space-aware, full body re
 
 ### Requirement: Delete
 
-The resource SHALL call `DELETE /api/osquery/packs/{id}` (space-aware). HTTP 404 SHALL be treated as idempotent success.
+The resource SHALL call `DELETE /api/osquery/packs/{id}` (space-aware) using `pack_id` as `{id}`. HTTP 404 SHALL be treated as idempotent success.
 
 #### Scenario: Successful delete
 - **WHEN** `terraform destroy` is run for the resource
@@ -203,16 +137,16 @@ The resource SHALL call `DELETE /api/osquery/packs/{id}` (space-aware). HTTP 404
 
 ### Requirement: Import
 
-The resource SHALL support composite import with format `"<space_id>/<pack_id>"` (e.g., `"default/linux-processes"`).
+The resource SHALL support composite import with format `"<space_id>/<pack_id>"` where `pack_id` is the API `saved_object_id` (UUID).
 
 #### Scenario: Import via composite ID
-- **WHEN** `terraform import elasticstack_kibana_osquery_pack.example default/linux-processes` is run
-- **THEN** state SHALL be populated for the pack with `pack_id = "linux-processes"` in space `"default"`
+- **WHEN** `terraform import elasticstack_kibana_osquery_pack.example default/3c42c847-eb30-4452-80e0-728584042334` is run
+- **THEN** state SHALL be populated for the pack with `pack_id = "3c42c847-eb30-4452-80e0-728584042334"` in space `"default"`
 
 ### Requirement: Minimum Kibana version
 
-The resource SHALL enforce a minimum Kibana version via `GetVersionRequirements`. Two version requirements SHALL be registered: one for base packs CRUD (initially `8.5.0`, confirmed in task 1.3) and one for the full scheduling model (`schedule_type`/`rrule_schedule`) at a higher version (TBD in task 1.3).
+The resource SHALL enforce minimum Kibana version **8.5.0** via `GetVersionRequirements` (base packs CRUD). A second scheduling-floor requirement (9.5.0) is deferred until kbapi regeneration and scheduling scope land in a follow-up.
 
 #### Scenario: Kibana below minimum version returns a version error
-- **WHEN** the configured Kibana instance is below the declared minimum version
+- **WHEN** the configured Kibana instance is below `8.5.0`
 - **THEN** the provider SHALL return an error diagnostic indicating the unsatisfied version requirement before making any API calls
