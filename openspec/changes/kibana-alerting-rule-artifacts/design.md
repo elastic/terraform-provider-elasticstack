@@ -1,6 +1,16 @@
 ## Context
 
-The Kibana alerting rule API accepts an `artifacts` object in the create (`POST /api/alerting/rule/{id}`) and update (`PUT /api/alerting/rule/{id}`) request bodies, and returns it in the GET response. The generated `kbapi` client already models this in `AlertingRuleAPIBodyGeneric.Artifacts` (dashboards list + investigation_guide.blob) and in `GetAlertingRuleIdResponse.JSON200.Artifacts`. Neither `internal/models.AlertingRule` nor the Terraform resource schema currently surface these fields.
+The Kibana alerting rule API accepts an `artifacts` object in the create (`POST /api/alerting/rule/{id}`) and update (`PUT /api/alerting/rule/{id}`) request bodies. The generated `kbapi` client already models this in `AlertingRuleAPIBodyGeneric.Artifacts` (dashboards list + investigation_guide.blob) and in `GetAlertingRuleIdResponse.JSON200.Artifacts`. Neither `internal/models.AlertingRule` nor the Terraform resource schema currently surface these fields.
+
+**Version history (from Kibana source):**
+
+| Capability | Minimum version | Kibana reference |
+|------------|-----------------|------------------|
+| Write (`artifacts` on POST/PUT) — dashboards | **8.19.0** / **9.1.0** | [PR #216292](https://github.com/elastic/kibana/pull/216292), backported to 8.19 as [PR #218920](https://github.com/elastic/kibana/pull/218920) |
+| Write — `investigation_guide` | **8.19.0** / **9.1.0** | [PR #216377](https://github.com/elastic/kibana/pull/216377), backported to 8.19 as [PR #219943](https://github.com/elastic/kibana/pull/219943) |
+| Read (`artifacts` on public GET / `_find`) | Documented from 8.19; **bugfix in 9.5.0** | Public GET/find omitted `artifacts` until [PR #247279](https://github.com/elastic/kibana/pull/247279) ([kibana#242792](https://github.com/elastic/kibana/issues/242792)); backports to older lines were in progress at research time |
+
+On stacks between **8.19.0** and the GET fix, create/update with `artifacts` works but authoritative re-read after apply may not populate `artifacts` from the API. The provider MUST preserve configured values in state per REQ-048 when the API omits the field.
 
 ## Goals
 
@@ -27,6 +37,9 @@ The Kibana alerting rule API accepts an `artifacts` object in the create (`POST 
 | Update when absent | When `artifacts` is not in the Terraform config, the provider SHALL omit `artifacts` from the PUT body so Kibana leaves existing rule artifacts unchanged. |
 | Read path — content vs content_path | If prior state has `content` set (and `content_path` null): populate `content` from API `blob` after read. If prior state has `content_path` set (and `content` null): do not update `content` or `content_path` from the API; the plan modifier handles drift detection via `checksum`. |
 | Plan modifier | A `ModifyPlan` hook on the resource (mirroring `elasticstack_fleet_custom_integration`) reads `content_path` during plan, computes SHA-256, and if it differs from the stored `checksum`, marks `checksum` (and potentially `id`) as unknown so Terraform shows a non-empty plan. |
+| Version gate (write) | When `artifacts` is configured with known values, create/update SHALL fail on stack **&lt; 8.19.0** (8.x line) or **&lt; 9.1.0** (9.x line), mirroring the `flapping` / `flapping.enabled` split-gate pattern in `models.go`. Diagnostic text SHALL name both minimums. **9.0.x does not support `artifacts`.** |
+| Public GET limitation | When the API omits `artifacts` on GET/find (known on 8.19–9.4.x before [PR #247279](https://github.com/elastic/kibana/pull/247279) backports land), the read path SHALL preserve prior known state rather than clearing `artifacts`. Document this in resource descriptions. |
+| Acceptance-test gates | Write tests: skip below **8.19.0** or **9.1.0** (use version constraints like `flapping` tests). Read round-trip assertions (dashboard IDs / inline `content` from API): prefer gating at **≥ 9.5.0** unless CI runs a stack with the GET fix backported to an earlier minor. |
 
 ## Non-Goals (implementation)
 
@@ -37,11 +50,12 @@ The Kibana alerting rule API accepts an `artifacts` object in the create (`POST 
 - **Removing `artifacts` from Terraform config** still results in an update that omits `artifacts`; Kibana keeps any previously stored artifacts. After refresh, state may again show `artifacts` from the API while configuration omits the block, producing a **plan diff** until the practitioner aligns config with the API or clears rule artifacts outside Terraform. Document in resource docs.
 - **External file changes**: When `content_path` is used, an external change to the file (without running `terraform plan`) will not be detected until the next `terraform plan` (at which point the plan modifier detects the checksum mismatch). This is consistent with the custom integration behavior and acceptable.
 - **Content drift from Kibana**: Kibana may normalise the blob (e.g. trim whitespace). If so, `content`-based state may show perpetual drift. If this is observed during testing, consider trimming both sides before comparison or treating blob as opaque (read-only after first write). This should be investigated at implementation time.
+- **GET does not return `artifacts` on some stacks**: Between 8.19.0 and the [PR #247279](https://github.com/elastic/kibana/pull/247279) fix (9.5.0+), public GET/find may omit `artifacts` even after a successful write. Refresh can show drift when config includes `artifacts` but the API response does not. Preserving prior state (REQ-048) avoids wiping practitioner config; document that `terraform refresh` may not reflect server-side artifacts until the stack includes the GET fix.
 
 ## Open Questions
 
-1. **Minimum Kibana version for `artifacts` on alerting rules**: Not confirmed from release notes. Implementation MUST check whether the field is rejected on older stack versions and add an appropriate version gate (e.g. `>= 8.16.0` or `>= 9.x`) with a diagnostic if confirmed. If no minimum version can be established, rely on the API to reject the request on unsupported versions.
-2. **Blob normalisation**: Does Kibana modify the investigation guide blob (e.g. trim whitespace, normalise line endings) before storing? If so, read-path comparison for `content` may produce spurious drift. Investigate during acceptance testing.
+1. **Blob normalisation**: Does Kibana modify the investigation guide blob (e.g. trim whitespace, normalise line endings) before storing? If so, read-path comparison for `content` may produce spurious drift. Investigate during acceptance testing.
+2. **GET-fix backport matrix**: [PR #247279](https://github.com/elastic/kibana/pull/247279) was labeled `v9.5.0` with `backport:skip` on the PR itself, but maintainers noted backports were planned. Confirm which 8.x/9.x minors receive the fix before tightening acceptance-test skip thresholds below 9.5.0.
 
 ## Migration / State
 

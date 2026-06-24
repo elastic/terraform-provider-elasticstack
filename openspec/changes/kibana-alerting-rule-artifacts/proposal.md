@@ -1,6 +1,6 @@
 ## Why
 
-Practitioners cannot attach **artifacts** (dashboard links and investigation guides) to Kibana alerting rules via Terraform today ([terraform-provider-elasticstack#1408](https://github.com/elastic/terraform-provider-elasticstack/issues/1408)). The Kibana alerting rule API already supports an `artifacts` object on create and update requests, and returns it on read (GET). The provider's generated `kbapi` models the `artifacts` field; the Terraform resource does not yet surface or map it.
+Practitioners cannot attach **artifacts** (dashboard links and investigation guides) to Kibana alerting rules via Terraform today ([terraform-provider-elasticstack#1408](https://github.com/elastic/terraform-provider-elasticstack/issues/1408)). The Kibana alerting rule API supports an `artifacts` object on create and update requests from **Kibana 8.19.0** / **9.1.0** onward; public GET/find responses include `artifacts` only on stacks with the [kibana#247279](https://github.com/elastic/kibana/pull/247279) fix (9.5.0+ and planned backports). The provider's generated `kbapi` models the field; the Terraform resource does not yet surface or map it.
 
 Teams managing large alert rule inventories across environments (Kubernetes, AWS) want to link dashboards and attach investigation guides alongside rule definitions, so that runbooks and context are co-located with the alert configuration as code.
 
@@ -35,11 +35,17 @@ Add an optional single nested block at rule level:
 
 ### Version rules
 
-The minimum Kibana version that supports `artifacts` on alerting rules has not been independently confirmed from release notes. The kbapi generated client already models the field, and it is present in the current API. An exact minimum version MUST be determined during implementation; if no server-side version check can be confirmed, the provider SHOULD omit the version gate and rely on the Kibana API to reject the field on incompatible versions. This is an open question recorded in `design.md`.
+| Operation | Minimum Kibana version | Notes |
+|-----------|------------------------|-------|
+| Create/update with `artifacts` | **8.19.0** (8.x) or **9.1.0** (9.x) | Dashboards: [kibana#216292](https://github.com/elastic/kibana/pull/216292) / [kibana#218920](https://github.com/elastic/kibana/pull/218920). Investigation guide: [kibana#216377](https://github.com/elastic/kibana/pull/216377) / [kibana#219943](https://github.com/elastic/kibana/pull/219943). **9.0.x is unsupported.** |
+| Read round-trip via public GET/find | **9.5.0** (fix); backports TBD | Public GET/find omitted `artifacts` until [kibana#247279](https://github.com/elastic/kibana/pull/247279) ([kibana#242792](https://github.com/elastic/kibana/issues/242792)). Write still works on 8.19+; provider preserves state when GET omits the field. |
+
+The provider SHALL enforce the write minimums at create/update (REQ-053). Resource documentation SHALL mention the GET limitation on older stacks.
 
 ### Acceptance tests
 
-- Any acceptance test that sets `artifacts` MUST be skipped if the minimum Kibana version for this feature cannot be met by the test environment.
+- Tests that **set** `artifacts` MUST be skipped when the stack is strictly below **8.19.0** (8.x) or strictly below **9.1.0** (9.x).
+- Tests that assert **read round-trip** of `artifacts` from the API (dashboard IDs or inline `content` after refresh) SHOULD be skipped unless the stack is **9.5.0** or newer, unless CI targets a stack known to include the GET fix on an earlier minor.
 - Separate test steps (or tests) SHOULD cover: dashboards only, investigation_guide with `content` only, investigation_guide with `content_path` + checksum drift detection, and clearing artifacts.
 
 ## Capabilities
@@ -50,7 +56,7 @@ The minimum Kibana version that supports `artifacts` on alerting rules has not b
 
 ### Modified Capabilities
 
-- `kibana-alerting-rule`: Add optional `artifacts` block (dashboards list + investigation guide), including validation rules (mutually exclusive `content`/`content_path`), create/update/read mapping, checksum drift-detection for file-based content, and acceptance-test expectations (REQ-045–REQ-050).
+- `kibana-alerting-rule`: Add optional `artifacts` block (dashboards list + investigation guide), including validation rules (mutually exclusive `content`/`content_path`), version gates (REQ-053), create/update/read mapping with GET-limitation handling (REQ-054), checksum drift-detection for file-based content, and acceptance-test expectations (REQ-045–REQ-055).
 
 ## Impact
 

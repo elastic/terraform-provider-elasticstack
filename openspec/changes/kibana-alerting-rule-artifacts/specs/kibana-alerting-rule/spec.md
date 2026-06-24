@@ -86,7 +86,7 @@ After a successful create or update (and on refresh reads), if the Kibana API re
 - `artifacts.investigation_guide.content`: if prior state used `content` (i.e., `content_path` was null in prior state), the provider SHALL set `content` in state from the API-returned `blob`. If prior state used `content_path` (i.e., `content` was null), the provider SHALL leave `content` null and SHALL NOT overwrite `content_path` from the API response.
 - `artifacts.investigation_guide.checksum`: NOT updated from the API on read; it is managed exclusively by the plan modifier (see REQ-049).
 
-If the API response omits `artifacts` and the prior state value was null, the provider SHALL set `artifacts` to null. If the API omits `artifacts` and the prior state had a known non-null value, the provider SHALL keep the prior known value (consistent with the preserve-on-partial-response pattern used for `scheduled_task_id` and `alert_delay`).
+If the API response omits `artifacts` and the prior state value was null, the provider SHALL set `artifacts` to null. If the API omits `artifacts` and the prior state had a known non-null value, the provider SHALL keep the prior known value (consistent with the preserve-on-partial-response pattern used for `scheduled_task_id` and `alert_delay`). This preservation is required on stacks where public GET/find do not yet return `artifacts` (see REQ-054).
 
 #### Scenario: Read maps blob to content when prior state used content
 
@@ -140,7 +140,7 @@ The acceptance test suite for `elasticstack_kibana_alerting_rule` SHALL include:
 3. At least one test case that configures **`artifacts.investigation_guide`** with **`content_path`**, asserts that `checksum` is set in state after create, modifies the file, runs plan, and asserts a non-empty plan is produced.
 4. At least one test case or step that removes the `artifacts` block from configuration and verifies that a subsequent plan shows the expected behaviour (artifacts persisted by Kibana, drift visible in plan if Kibana returns them).
 
-If the minimum Kibana version for `artifacts` is confirmed to be above the CI default, test cases SHALL be gated with an appropriate `SkipFunc` aligned with that minimum version.
+Tests that configure `artifacts` SHALL be skipped when the stack is strictly below **8.19.0** (8.x line) or strictly below **9.1.0** (9.x line). Tests that assert read round-trip of `artifacts` from the public GET/find API (dashboard IDs or inline `content` after refresh) SHOULD be skipped unless the stack is **9.5.0** or newer, unless the test environment is known to include the [kibana#247279](https://github.com/elastic/kibana/pull/247279) fix on an earlier minor.
 
 #### Scenario: Dashboard IDs round-trip
 
@@ -159,3 +159,59 @@ If the minimum Kibana version for `artifacts` is confirmed to be above the CI de
 - GIVEN a rule applied with `artifacts.investigation_guide.content_path` pointing to a file
 - WHEN the file's content is modified and `terraform plan` runs
 - THEN the plan SHALL show a diff for the `artifacts` block
+
+### Requirement: Compatibility — `artifacts` write path (REQ-053)
+
+When the practitioner configures an `artifacts` block with known values, create and update SHALL fail if the stack version is unsupported:
+
+- On the **8.x** line: strictly below **8.19.0**.
+- On the **9.x** line: strictly below **9.1.0** (including all **9.0.x** releases).
+
+The diagnostic SHALL state that `artifacts` requires Kibana **8.19** or higher on 8.x and **9.1** or higher on 9.x (or equivalent wording naming both minimums the provider enforces).
+
+#### Scenario: Artifacts on 8.x below 8.19
+
+- GIVEN server version &lt; 8.19.0 and a configured `artifacts` block with known values
+- WHEN create or update runs
+- THEN the provider SHALL return an `artifacts` unsupported error
+
+#### Scenario: Artifacts on 9.0.x
+
+- GIVEN server version &lt; 9.1.0 on the 9.x line and a configured `artifacts` block with known values
+- WHEN create or update runs
+- THEN the provider SHALL return an `artifacts` unsupported error
+
+#### Scenario: Artifacts on supported stack
+
+- GIVEN server version ≥ 8.19.0 on the 8.x line, or ≥ 9.1.0 on the 9.x line, and a valid `artifacts` configuration
+- WHEN create or update runs
+- THEN the provider SHALL NOT reject the configuration under REQ-053
+
+### Requirement: Public GET/find limitation — preserve `artifacts` when omitted (REQ-054)
+
+On Kibana versions that accept `artifacts` on write but omit `artifacts` from public `GET /api/alerting/rule/{id}` or `GET /api/alerting/rules/_find` responses (documented gap fixed in [kibana#247279](https://github.com/elastic/kibana/pull/247279), labeled **9.5.0**), the provider SHALL NOT clear a known non-null `artifacts` value from state solely because the API response omitted the field. Resource documentation SHALL note that `terraform refresh` may not reflect server-side artifacts until the stack includes that fix (or a backport).
+
+#### Scenario: GET omits artifacts after successful write
+
+- GIVEN a rule in state with a known non-null `artifacts` block and a stack where public GET omits `artifacts`
+- WHEN the provider reads the rule from Kibana
+- THEN `artifacts` in state SHALL remain the prior known value
+
+#### Scenario: GET returns artifacts when fix is present
+
+- GIVEN a stack at **9.5.0** or newer (or a version with the kibana#247279 backport) and a rule whose API response includes `artifacts`
+- WHEN the provider reads the rule from Kibana
+- THEN REQ-048 mapping SHALL populate `artifacts` from the API response
+
+### Requirement: Schema documentation — `artifacts` versions (REQ-055)
+
+The resource schema's embedded Markdown description for `artifacts` (or the parent resource description) SHALL state:
+
+- Minimum stack versions for configuring `artifacts`: **8.19** (8.x) and **9.1** (9.x).
+- That public GET/find may omit `artifacts` on older stacks even after a successful write, and that refresh behaviour improves from **9.5.0** onward with kibana#247279.
+
+#### Scenario: Schema description mentions version window
+
+- GIVEN the resource schema's embedded Markdown description
+- WHEN a reader inspects provider documentation for `artifacts`
+- THEN the text SHALL mention stack **8.19** / **9.1** minimums for write and SHALL mention the GET limitation on older stacks
