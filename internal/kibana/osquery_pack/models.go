@@ -187,7 +187,7 @@ func (m *queryModel) fromAPIType(ctx context.Context, item kbapi.SecurityOsquery
 		m.Query = types.StringNull()
 	}
 
-	m.Platform = platformSetFromAPI(item.Platform)
+	m.Platform = platformSetFromAPI(ctx, item.Platform)
 
 	if item.Version != nil {
 		m.Version = types.StringValue(string(*item.Version))
@@ -260,7 +260,7 @@ func removedBool(v *kbapi.SecurityOsqueryAPIRemoved) *bool {
 	return &b
 }
 
-func platformSetFromAPI(platform *kbapi.SecurityOsqueryAPIPlatform) types.Set {
+func platformSetFromAPI(ctx context.Context, platform *kbapi.SecurityOsqueryAPIPlatform) types.Set {
 	if platform == nil || *platform == "" {
 		return types.SetNull(types.StringType)
 	}
@@ -279,7 +279,7 @@ func platformSetFromAPI(platform *kbapi.SecurityOsqueryAPIPlatform) types.Set {
 	}
 
 	sort.Strings(platforms)
-	set, _ := types.SetValueFrom(context.Background(), types.StringType, platforms)
+	set, _ := types.SetValueFrom(ctx, types.StringType, platforms)
 	return set
 }
 
@@ -313,7 +313,10 @@ func ecsMappingMapFromAPI(ctx context.Context, mapping *kbapi.SecurityOsqueryAPI
 
 	for key, item := range *mapping {
 		var m ecsMappingModel
-		m.fromAPIType(item)
+		diags.Append(m.fromAPIType(ctx, key, item)...)
+		if diags.HasError() {
+			return types.MapNull(ecsMappingMapElemType()), diags
+		}
 
 		obj, d := types.ObjectValueFrom(ctx, ecsMappingAttrTypes(), m)
 		diags.Append(d...)
@@ -344,7 +347,7 @@ func ecsMappingMapToAPI(ctx context.Context, mapping types.Map) (*kbapi.Security
 			return nil, diags
 		}
 
-		item, d := m.toAPIType()
+		item, d := m.toAPIType(ctx)
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
@@ -359,32 +362,50 @@ func ecsMappingMapToAPI(ctx context.Context, mapping types.Map) (*kbapi.Security
 	return &elems, diags
 }
 
-func (m *ecsMappingModel) fromAPIType(item kbapi.SecurityOsqueryAPIECSMappingItem) {
+func (m *ecsMappingModel) fromAPIType(ctx context.Context, key string, item kbapi.SecurityOsqueryAPIECSMappingItem) diag.Diagnostics {
+	var diags diag.Diagnostics
+
 	m.Field = types.StringNull()
 	m.Value = types.StringNull()
 	m.Values = types.SetNull(types.StringType)
 
+	if item.Field != nil && item.Value != nil {
+		diags.AddError(
+			"Invalid ECS mapping",
+			fmt.Sprintf("ecs_mapping[%q]: API returned both field and value", key),
+		)
+		return diags
+	}
+
 	if item.Field != nil {
 		m.Field = types.StringValue(*item.Field)
-		return
+		return diags
 	}
 
 	if item.Value == nil {
-		return
+		return diags
 	}
 
 	if str, err := item.Value.AsSecurityOsqueryAPIECSMappingItemValue0(); err == nil {
 		m.Value = types.StringValue(str)
-		return
+		return diags
 	}
 
 	if arr, err := item.Value.AsSecurityOsqueryAPIECSMappingItemValue1(); err == nil {
-		set, _ := types.SetValueFrom(context.Background(), types.StringType, arr)
+		set, d := types.SetValueFrom(ctx, types.StringType, arr)
+		diags.Append(d...)
 		m.Values = set
+		return diags
 	}
+
+	diags.AddError(
+		"Invalid ECS mapping value",
+		fmt.Sprintf("ecs_mapping[%q]: API value is not a string or string array", key),
+	)
+	return diags
 }
 
-func (m ecsMappingModel) toAPIType() (kbapi.SecurityOsqueryAPIECSMappingItem, diag.Diagnostics) {
+func (m ecsMappingModel) toAPIType(ctx context.Context) (kbapi.SecurityOsqueryAPIECSMappingItem, diag.Diagnostics) {
 	item := kbapi.SecurityOsqueryAPIECSMappingItem{}
 
 	if typeutils.IsKnown(m.Field) {
@@ -405,7 +426,7 @@ func (m ecsMappingModel) toAPIType() (kbapi.SecurityOsqueryAPIECSMappingItem, di
 
 	if typeutils.IsKnown(m.Values) {
 		var values []string
-		diags := m.Values.ElementsAs(context.Background(), &values, false)
+		diags := m.Values.ElementsAs(ctx, &values, false)
 		if diags.HasError() {
 			return item, diags
 		}

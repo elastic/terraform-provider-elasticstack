@@ -2,12 +2,12 @@
 
 ### Requirement: Resource identity and composite ID
 
-The `elasticstack_kibana_osquery_pack` resource SHALL set its `id` to `pack_id` after every Create and Update. `pack_id` SHALL be **Computed-only** (maps to API `saved_object_id`); the Create request body does not accept a client-supplied pack ID and Kibana always generates a UUID on Create. `space_id` SHALL be Optional + Computed, defaulting to `"default"`, and SHALL force replacement on change.
+The `elasticstack_kibana_osquery_pack` resource SHALL set its `id` to the space-aware composite form `"<space_id>/<pack_id>"` after every Create and Update. `pack_id` SHALL be **Computed-only** (maps to API `saved_object_id`); the Create request body does not accept a client-supplied pack ID and Kibana always generates a UUID on Create. `space_id` SHALL be Optional + Computed, defaulting to `"default"`, and SHALL force replacement on change.
 
 #### Scenario: Create populates server-generated pack_id
 - **WHEN** a resource is created successfully
 - **THEN** `pack_id` SHALL be populated from the API `saved_object_id` in the Create response
-- **AND** `id` SHALL equal `pack_id`
+- **AND** `id` SHALL equal `"<space_id>/<pack_id>"` (e.g., `"default/3c42c847-eb30-4452-80e0-728584042334"`)
 
 #### Scenario: space_id change forces replacement
 - **WHEN** `space_id` is changed in config
@@ -17,7 +17,7 @@ The `elasticstack_kibana_osquery_pack` resource SHALL set its `id` to `pack_id` 
 
 The resource SHALL expose the following attributes (v1 scope — pinned kbapi client, no scheduling fields):
 
-- `id` — Computed string; mirrors `pack_id`
+- `id` — Computed string; space-aware composite `"<space_id>/<pack_id>"`
 - `pack_id` — Computed string (API `saved_object_id`; not settable in config)
 - `space_id` — Optional + Computed string, default `"default"`, RequiresReplace
 - `kibana_connection` — Optional block (provided by entitycore envelope)

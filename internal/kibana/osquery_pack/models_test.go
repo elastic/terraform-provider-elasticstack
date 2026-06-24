@@ -19,6 +19,7 @@ package osquerypack
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -73,7 +74,7 @@ func TestPlatformCommaStringSetRoundTrip(t *testing.T) {
 
 	t.Run("comma string to sorted set", func(t *testing.T) {
 		platform := kbapi.SecurityOsqueryAPIPlatform("darwin,linux")
-		set := platformSetFromAPI(&platform)
+		set := platformSetFromAPI(ctx, &platform)
 
 		require.False(t, set.IsNull())
 		var platforms []string
@@ -94,7 +95,7 @@ func TestPlatformCommaStringSetRoundTrip(t *testing.T) {
 
 	t.Run("round trip", func(t *testing.T) {
 		initial := kbapi.SecurityOsqueryAPIPlatform("linux,darwin")
-		set := platformSetFromAPI(&initial)
+		set := platformSetFromAPI(ctx, &initial)
 
 		platform, diags := platformCommaStringFromSet(ctx, set)
 		require.False(t, diags.HasError())
@@ -102,11 +103,24 @@ func TestPlatformCommaStringSetRoundTrip(t *testing.T) {
 	})
 
 	t.Run("null platform stays null", func(t *testing.T) {
-		assert.True(t, platformSetFromAPI(nil).IsNull())
+		assert.True(t, platformSetFromAPI(ctx, nil).IsNull())
+
+		empty := kbapi.SecurityOsqueryAPIPlatform("")
+		assert.True(t, platformSetFromAPI(ctx, &empty).IsNull())
 
 		platform, diags := platformCommaStringFromSet(ctx, types.SetNull(types.StringType))
 		require.False(t, diags.HasError())
 		assert.Nil(t, platform)
+	})
+
+	t.Run("trims whitespace after comma", func(t *testing.T) {
+		platform := kbapi.SecurityOsqueryAPIPlatform("linux, darwin ,windows")
+		set := platformSetFromAPI(ctx, &platform)
+
+		var platforms []string
+		diags := set.ElementsAs(ctx, &platforms, false)
+		require.False(t, diags.HasError())
+		assert.Equal(t, []string{"darwin", "linux", "windows"}, platforms)
 	})
 }
 
@@ -192,26 +206,83 @@ func TestEcsMappingThreeShapes(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, []string{"a", "b"}, got)
 	})
+
+	t.Run("invalid value type returns error", func(t *testing.T) {
+		var item kbapi.SecurityOsqueryAPIECSMappingItem
+		require.NoError(t, json.Unmarshal([]byte(`{"value": 123}`), &item))
+
+		api := kbapi.SecurityOsqueryAPIECSMapping{"bad.key": item}
+
+		_, diags := ecsMappingMapFromAPI(ctx, &api)
+		require.True(t, diags.HasError())
+		assert.Contains(t, diags[0].Detail(), `ecs_mapping["bad.key"]`)
+	})
+
+	t.Run("field and value both set returns error", func(t *testing.T) {
+		var val kbapi.SecurityOsqueryAPIECSMappingItem_Value
+		require.NoError(t, val.FromSecurityOsqueryAPIECSMappingItemValue0("literal"))
+
+		api := kbapi.SecurityOsqueryAPIECSMapping{
+			"conflict": {Field: strPtr("col"), Value: &val},
+		}
+
+		_, diags := ecsMappingMapFromAPI(ctx, &api)
+		require.True(t, diags.HasError())
+		assert.Contains(t, diags[0].Detail(), `ecs_mapping["conflict"]`)
+		assert.Contains(t, diags[0].Detail(), "both field and value")
+	})
 }
 
-func TestQueryModelVersionRoundTrip(t *testing.T) {
+func TestQueryModelFullRoundTrip(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
+	platform := kbapi.SecurityOsqueryAPIPlatform("windows,linux")
 	version := kbapi.SecurityOsqueryAPIVersion("5.0.0")
+	snapshot := kbapi.SecurityOsqueryAPISnapshot(true)
+	removed := kbapi.SecurityOsqueryAPIRemoved(false)
+	savedQueryID := kbapi.SecurityOsqueryAPISavedQueryId("my-saved-query")
+
+	var scalarVal kbapi.SecurityOsqueryAPIECSMappingItem_Value
+	require.NoError(t, scalarVal.FromSecurityOsqueryAPIECSMappingItemValue0("literal"))
+
 	apiItem := kbapi.SecurityOsqueryAPIObjectQueriesItem{
-		Query:   queryPtr("SELECT 1"),
-		Version: &version,
+		Query:        queryPtr("SELECT * FROM users"),
+		Platform:     &platform,
+		Version:      &version,
+		Snapshot:     &snapshot,
+		Removed:      &removed,
+		SavedQueryId: &savedQueryID,
+		EcsMapping: &kbapi.SecurityOsqueryAPIECSMapping{
+			"user.name": {Field: strPtr("username")},
+			"host.name": {Value: &scalarVal},
+		},
 	}
 
 	var q queryModel
 	require.False(t, q.fromAPIType(ctx, apiItem).HasError())
-	assert.Equal(t, "5.0.0", q.Version.ValueString())
 
 	roundTrip, diags := q.toAPIType(ctx)
 	require.False(t, diags.HasError())
+
+	require.NotNil(t, roundTrip.Query)
+	assert.Equal(t, kbapi.SecurityOsqueryAPIQuery("SELECT * FROM users"), *roundTrip.Query)
+	require.NotNil(t, roundTrip.Platform)
+	assert.Equal(t, kbapi.SecurityOsqueryAPIPlatform("linux,windows"), *roundTrip.Platform)
 	require.NotNil(t, roundTrip.Version)
 	assert.Equal(t, kbapi.SecurityOsqueryAPIVersion("5.0.0"), *roundTrip.Version)
+	require.NotNil(t, roundTrip.Snapshot)
+	assert.True(t, *roundTrip.Snapshot)
+	require.NotNil(t, roundTrip.Removed)
+	assert.False(t, *roundTrip.Removed)
+	require.NotNil(t, roundTrip.SavedQueryId)
+	assert.Equal(t, kbapi.SecurityOsqueryAPISavedQueryId("my-saved-query"), *roundTrip.SavedQueryId)
+
+	require.NotNil(t, roundTrip.EcsMapping)
+	assert.Equal(t, strPtr("username"), (*roundTrip.EcsMapping)["user.name"].Field)
+	got, err := (*roundTrip.EcsMapping)["host.name"].Value.AsSecurityOsqueryAPIECSMappingItemValue0()
+	require.NoError(t, err)
+	assert.Equal(t, "literal", got)
 }
 
 func TestPopulateFromAPI(t *testing.T) {
@@ -327,6 +398,96 @@ func TestPopulateFromAPI_DefaultSpaceAndEmptyOptionals(t *testing.T) {
 	assert.True(t, model.Enabled.IsNull())
 	assert.True(t, model.PolicyIDs.IsNull())
 	assert.True(t, model.Shards.IsNull())
+}
+
+func TestPopulateFromAPI_NilDetail(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	var model osqueryPackModel
+	model.ID = types.StringValue("prior/id")
+	diags := model.populateFromAPI(ctx, "default", nil)
+	require.False(t, diags.HasError())
+	assert.Equal(t, "prior/id", model.ID.ValueString())
+}
+
+func TestPopulateFromAPI_NilAndEmptyQueries(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	t.Run("nil queries", func(t *testing.T) {
+		detail := &kibanaoapi.OsqueryPackDetail{
+			Name:          "no-queries",
+			SavedObjectId: "no-queries-id",
+		}
+
+		var model osqueryPackModel
+		diags := model.populateFromAPI(ctx, "default", detail)
+		require.False(t, diags.HasError())
+		assert.True(t, model.Queries.IsNull())
+	})
+
+	t.Run("empty queries map", func(t *testing.T) {
+		empty := kbapi.SecurityOsqueryAPIObjectQueries{}
+		detail := &kibanaoapi.OsqueryPackDetail{
+			Name:          "empty-queries",
+			SavedObjectId: "empty-queries-id",
+			Queries:       &empty,
+		}
+
+		var model osqueryPackModel
+		diags := model.populateFromAPI(ctx, "default", detail)
+		require.False(t, diags.HasError())
+		assert.True(t, model.Queries.IsNull())
+	})
+}
+
+func TestPopulateFromAPI_EmptyPolicyIDs(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	emptyPolicies := kbapi.SecurityOsqueryAPIPolicyIds{}
+	detail := &kibanaoapi.OsqueryPackDetail{
+		Name:          "empty-policies",
+		SavedObjectId: "empty-policies-id",
+		PolicyIds:     &emptyPolicies,
+		Queries: &kbapi.SecurityOsqueryAPIObjectQueries{
+			"q1": {Query: queryPtr("SELECT 1")},
+		},
+	}
+
+	var model osqueryPackModel
+	diags := model.populateFromAPI(ctx, "default", detail)
+	require.False(t, diags.HasError())
+	assert.True(t, model.PolicyIDs.IsNull())
+}
+
+func TestPopulateFromAPI_QueryRequiredOnlyNullOptionals(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	detail := &kibanaoapi.OsqueryPackDetail{
+		Name:          "query-only",
+		SavedObjectId: "query-only-id",
+		Queries: &kbapi.SecurityOsqueryAPIObjectQueries{
+			"q1": {Query: queryPtr("SELECT 1")},
+		},
+	}
+
+	var model osqueryPackModel
+	diags := model.populateFromAPI(ctx, "default", detail)
+	require.False(t, diags.HasError())
+
+	queryObj := model.Queries.Elements()["q1"].(basetypes.ObjectValue)
+	var q queryModel
+	require.False(t, queryObj.As(ctx, &q, basetypes.ObjectAsOptions{}).HasError())
+	assert.Equal(t, "SELECT 1", q.Query.ValueString())
+	assert.True(t, q.Platform.IsNull())
+	assert.True(t, q.Version.IsNull())
+	assert.True(t, q.Snapshot.IsNull())
+	assert.True(t, q.Removed.IsNull())
+	assert.True(t, q.SavedQueryID.IsNull())
+	assert.True(t, q.EcsMapping.IsNull())
 }
 
 func strPtr(s string) *string { return &s }

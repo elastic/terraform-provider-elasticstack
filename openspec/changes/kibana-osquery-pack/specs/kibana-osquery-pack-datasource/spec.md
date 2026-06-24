@@ -17,7 +17,7 @@ The `elasticstack_kibana_osquery_pack` data source SHALL accept `pack_id` (Requi
 
 The data source SHALL expose the following attributes (Computed unless noted as Required/Optional), matching v1 resource scope (pinned kbapi — no scheduling fields):
 
-- `id` — Computed string; mirrors `pack_id`
+- `id` — Computed string; space-aware composite `"<space_id>/<pack_id>"`
 - `pack_id` — Required string (input identity; API `saved_object_id`)
 - `space_id` — Optional string, default `"default"`
 - `kibana_connection` — Optional block

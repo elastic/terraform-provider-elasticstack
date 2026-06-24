@@ -52,7 +52,7 @@ Implement the resource as an `entitycore.KibanaResource[osqueryPackModel]`, matc
 
 ### Decision 2: Identity — `pack_id` Computed from `saved_object_id`
 
-`pack_id` is **Computed-only** (maps to API `saved_object_id`). The Create request body does **not** accept a client-supplied pack ID (`SecurityOsqueryAPICreatePacksRequestBody` has no `pack_id`/`id` field; Kibana `create_pack_route` calls `spaceScopedClient.create()` without an explicit ID, yielding a server-generated UUID). The path parameter `{id}` for GET/PUT/DELETE is this same `saved_object_id`. `id` in state mirrors `pack_id`. Import uses `pack_id` as the lookup key.
+`pack_id` is **Computed-only** (maps to API `saved_object_id`). The Create request body does **not** accept a client-supplied pack ID (`SecurityOsqueryAPICreatePacksRequestBody` has no `pack_id`/`id` field; Kibana `create_pack_route` calls `spaceScopedClient.create()` without an explicit ID, yielding a server-generated UUID). The path parameter `{id}` for GET/PUT/DELETE is this same `saved_object_id`. `id` in state is the space-aware composite `"<space_id>/<pack_id>"` (matching other space-aware Kibana resources). Import uses the same composite form; API calls use `pack_id` alone as the lookup key.
 
 **Confirmed (task 1.4)**: Kibana always generates a UUID for `saved_object_id` on Create; user cannot supply an ID. Resource spec requires Computed-only `pack_id`.
 
