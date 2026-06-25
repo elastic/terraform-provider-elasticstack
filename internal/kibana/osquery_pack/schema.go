@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
@@ -35,13 +36,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-const (
-	osqueryPlatformLinux   = "linux"
-	osqueryPlatformDarwin  = "darwin"
-	osqueryPlatformWindows = "windows"
-)
-
-var osqueryPlatformValues = []string{osqueryPlatformLinux, osqueryPlatformDarwin, osqueryPlatformWindows}
+var osqueryPlatformValues = osquery.PlatformValues
 
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{

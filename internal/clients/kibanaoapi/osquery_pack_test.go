@@ -19,7 +19,6 @@ package kibanaoapi
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -177,43 +176,7 @@ func TestOsqueryPackDetailFromCreateResponse(t *testing.T) {
 	assert.Equal(t, OsqueryPackShards{"policy-a": 33}, detail.Shards)
 }
 
-func TestOsqueryPackDetailFromUpdateResponse(t *testing.T) {
-	t.Run("maps optional name and saved_object_id pointers", func(t *testing.T) {
-		var resp kbapi.SecurityOsqueryAPIUpdatePacksResponse
-		require.NoError(t, json.Unmarshal([]byte(`{
-			"data": {
-				"name": "updated-pack",
-				"saved_object_id": "update-id",
-				"shards": {"policy-x": 80}
-			}
-		}`), &resp))
-
-		detail := osqueryPackDetailFromUpdateResponse(&resp)
-
-		require.NotNil(t, detail)
-		assert.Equal(t, kbapi.SecurityOsqueryAPIPackName("updated-pack"), detail.Name)
-		assert.Equal(t, "update-id", detail.SavedObjectID)
-		assert.Equal(t, OsqueryPackShards{"policy-x": 80}, detail.Shards)
-	})
-
-	t.Run("leaves name and saved_object_id empty when pointers absent", func(t *testing.T) {
-		var resp kbapi.SecurityOsqueryAPIUpdatePacksResponse
-		require.NoError(t, json.Unmarshal([]byte(`{"data":{"shards":{"policy-y": 10}}}`), &resp))
-
-		detail := osqueryPackDetailFromUpdateResponse(&resp)
-
-		require.NotNil(t, detail)
-		assert.Empty(t, detail.Name)
-		assert.Empty(t, detail.SavedObjectID)
-		assert.Equal(t, OsqueryPackShards{"policy-y": 10}, detail.Shards)
-	})
-
-	t.Run("returns nil when data is nil", func(t *testing.T) {
-		assert.Nil(t, osqueryPackDetailFromUpdateResponse(&kbapi.SecurityOsqueryAPIUpdatePacksResponse{}))
-	})
-}
-
-func TestUpdateOsqueryPackArrayShardsFallback(t *testing.T) {
+func TestUpdateOsqueryPackStatusOnly(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodPut, r.Method)
 		assert.Equal(t, "/api/osquery/packs/pack-id", r.URL.Path)
@@ -231,32 +194,27 @@ func TestUpdateOsqueryPackArrayShardsFallback(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	client := newTestClient(t, srv)
-	detail, diags := UpdateOsqueryPack(context.Background(), client, "default", "pack-id", kbapi.OsqueryUpdatePacksJSONRequestBody{})
+	diags := UpdateOsqueryPack(context.Background(), client, "default", "pack-id", kbapi.OsqueryUpdatePacksJSONRequestBody{})
 
 	require.False(t, diags.HasError(), diags)
-	require.NotNil(t, detail)
-	assert.Equal(t, kbapi.SecurityOsqueryAPIPackName("updated-pack"), detail.Name)
-	assert.Equal(t, "pack-id", detail.SavedObjectID)
-	assert.Equal(t, OsqueryPackShards{"policy-a": 75}, detail.Shards)
 }
 
-func TestUpdateOsqueryPackNilDataDiagnostic(t *testing.T) {
+func TestUpdateOsqueryPackStatusDiagnostic(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodPut, r.Method)
 		assert.Equal(t, "/api/osquery/packs/pack-id", r.URL.Path)
 
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{}`))
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"message":"bad update"}`))
 	}))
 	t.Cleanup(srv.Close)
 
 	client := newTestClient(t, srv)
-	_, diags := UpdateOsqueryPack(context.Background(), client, "default", "pack-id", kbapi.OsqueryUpdatePacksJSONRequestBody{})
+	diags := UpdateOsqueryPack(context.Background(), client, "default", "pack-id", kbapi.OsqueryUpdatePacksJSONRequestBody{})
 
 	require.True(t, diags.HasError())
-	assert.Equal(t, "Failed to parse response", diags[0].Summary())
-	assert.Contains(t, diags[0].Detail(), "update response data was nil")
+	assert.Contains(t, diags[0].Detail(), "bad update")
 }
 
 func TestGetOsqueryPack404(t *testing.T) {

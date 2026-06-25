@@ -71,7 +71,9 @@ func TestReadOsqueryPackDataSource_invalidPackID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			_, diags := readOsqueryPackDataSource(ctx, client, dataSourceModel{PackID: tt.packID})
+			_, diags := readOsqueryPackDataSource(ctx, client, dataSourceModel{
+				osqueryPackBaseModel: osqueryPackBaseModel{PackID: tt.packID},
+			})
 			require.True(t, diags.HasError())
 			require.Equal(t, "Invalid configuration", diags.Errors()[0].Summary())
 			assert.Contains(t, diags.Errors()[0].Detail(), "pack_id must be set")
@@ -91,7 +93,7 @@ func TestReadOsqueryPackDataSource_notFound(t *testing.T) {
 
 	client := newTestKibanaScopedClient(t, server)
 	_, diags := readOsqueryPackDataSource(ctx, client, dataSourceModel{
-		PackID: types.StringValue("missing-pack"),
+		osqueryPackBaseModel: osqueryPackBaseModel{PackID: types.StringValue("missing-pack")},
 	})
 
 	require.True(t, diags.HasError())
@@ -115,7 +117,7 @@ func TestReadOsqueryPackDataSource_prebuiltPack(t *testing.T) {
 
 	client := newTestKibanaScopedClient(t, server)
 	result, diags := readOsqueryPackDataSource(ctx, client, dataSourceModel{
-		PackID: types.StringValue("prebuilt-pack-id"),
+		osqueryPackBaseModel: osqueryPackBaseModel{PackID: types.StringValue("prebuilt-pack-id")},
 	})
 
 	require.False(t, diags.HasError(), "%v", diags)
@@ -138,8 +140,10 @@ func TestReadOsqueryPackDataSource_nonDefaultSpace(t *testing.T) {
 
 	client := newTestKibanaScopedClient(t, server)
 	result, diags := readOsqueryPackDataSource(ctx, client, dataSourceModel{
-		PackID:  types.StringValue("staging-pack-id"),
-		SpaceID: types.StringValue("staging"),
+		osqueryPackBaseModel: osqueryPackBaseModel{
+			PackID:  types.StringValue("staging-pack-id"),
+			SpaceID: types.StringValue("staging"),
+		},
 	})
 
 	require.False(t, diags.HasError(), "%v", diags)
@@ -161,8 +165,10 @@ func TestReadOsqueryPackDataSource_defaultSpaceWhenOmitted(t *testing.T) {
 
 	client := newTestKibanaScopedClient(t, server)
 	result, diags := readOsqueryPackDataSource(ctx, client, dataSourceModel{
-		PackID:  types.StringValue("pack-id"),
-		SpaceID: types.StringNull(),
+		osqueryPackBaseModel: osqueryPackBaseModel{
+			PackID:  types.StringValue("pack-id"),
+			SpaceID: types.StringNull(),
+		},
 	})
 
 	require.False(t, diags.HasError(), "%v", diags)

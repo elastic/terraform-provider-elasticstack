@@ -260,7 +260,7 @@ func TestQueryModelFullRoundTrip(t *testing.T) {
 	}
 
 	var q queryModel
-	require.False(t, q.fromAPIType(ctx, apiItem).HasError())
+	require.False(t, q.fromAPIType(apiItem).HasError())
 
 	roundTrip, diags := q.toAPIType(ctx)
 	require.False(t, diags.HasError())

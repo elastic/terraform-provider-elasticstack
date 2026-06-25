@@ -24,7 +24,6 @@ import (
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func createOsqueryPack(
@@ -57,12 +56,7 @@ func createOsqueryPack(
 		return entitycore.KibanaWriteResult[osqueryPackModel]{}, diags
 	}
 
-	plan.PackID = types.StringValue(detail.SavedObjectID)
-	plan.SpaceID = types.StringValue(req.SpaceID)
-	plan.ID = types.StringValue((&clients.CompositeID{
-		ClusterID:  req.SpaceID,
-		ResourceID: detail.SavedObjectID,
-	}).String())
+	plan.setCompositeIdentity(req.SpaceID, detail.SavedObjectID)
 
 	return entitycore.KibanaWriteResult[osqueryPackModel]{Model: plan}, diags
 }

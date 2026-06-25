@@ -67,7 +67,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 				ElementType:         types.Float64Type,
 			},
 			attrQueries: queriesDataSourceSchema(),
-			"read_only": schema.BoolAttribute{
+			attrReadOnly: schema.BoolAttribute{
 				MarkdownDescription: "Whether the pack is prebuilt and read-only. Prebuilt packs can be read by this data source but not managed by the resource.",
 				Computed:            true,
 			},

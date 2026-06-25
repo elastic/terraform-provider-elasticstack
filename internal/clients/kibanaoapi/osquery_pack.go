@@ -19,7 +19,6 @@ package kibanaoapi
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -96,46 +95,20 @@ func GetOsqueryPack(ctx context.Context, client *Client, spaceID string, packID 
 }
 
 // UpdateOsqueryPack updates an existing Osquery pack.
-// The returned detail is not authoritative final state. Callers must read-after-write
-// via GetOsqueryPack for full detail and the prebuilt guard.
-func UpdateOsqueryPack(ctx context.Context, client *Client, spaceID string, packID string, body kbapi.OsqueryUpdatePacksJSONRequestBody) (*OsqueryPackDetail, diag.Diagnostics) {
+// Callers must read-after-write via GetOsqueryPack for full detail and the prebuilt guard.
+func UpdateOsqueryPack(ctx context.Context, client *Client, spaceID string, packID string, body kbapi.OsqueryUpdatePacksJSONRequestBody) diag.Diagnostics {
 	resp, err := client.API.OsqueryUpdatePacks(ctx, packID, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, diagutil.ErrDiag(fmt.Sprintf("HTTP request failed updating osquery pack %q", packID), err)
+		return diagutil.ErrDiag(fmt.Sprintf("HTTP request failed updating osquery pack %q", packID), err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, diagutil.ErrDiag(fmt.Sprintf("HTTP request failed updating osquery pack %q", packID), err)
+		return diagutil.ErrDiag(fmt.Sprintf("HTTP request failed updating osquery pack %q", packID), err)
 	}
 
-	if diags := diagutil.HandleStatusResponse(resp.StatusCode, bodyBytes, http.StatusOK); diags.HasError() {
-		return nil, diags
-	}
-
-	updateResp, diags := osqueryPackDetailFromFlexibleUpdateBody(bodyBytes)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	return updateResp, nil
-}
-
-func osqueryPackDetailFromFlexibleUpdateBody(body []byte) (*OsqueryPackDetail, diag.Diagnostics) {
-	var resp osqueryPackFlexibleUpdateResponse
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return nil, diagutil.ErrDiag("Failed to parse response", err)
-	}
-	if resp.Data == nil {
-		return nil, diag.Diagnostics{
-			diag.NewErrorDiagnostic(
-				"Failed to parse response",
-				"API returned success status but update response data was nil",
-			),
-		}
-	}
-	return osqueryPackDetailFromFlexibleUpdateResponse(&resp), nil
+	return diagutil.HandleStatusResponse(resp.StatusCode, bodyBytes, http.StatusOK)
 }
 
 // DeleteOsqueryPack deletes an Osquery pack by saved_object_id.
@@ -198,105 +171,6 @@ func osqueryPackDetailFromCreateResponse(resp *kbapi.SecurityOsqueryAPICreatePac
 		UpdatedByProfileUID: data.UpdatedByProfileUid,
 		Version:             data.Version,
 	}
-}
-
-func osqueryPackDetailFromUpdateResponse(resp *kbapi.SecurityOsqueryAPIUpdatePacksResponse) *OsqueryPackDetail {
-	if resp == nil || resp.Data == nil {
-		return nil
-	}
-
-	data := resp.Data
-	detail := &OsqueryPackDetail{
-		CreatedAt:           data.CreatedAt,
-		CreatedBy:           data.CreatedBy,
-		CreatedByProfileUID: data.CreatedByProfileUid,
-		Description:         data.Description,
-		Enabled:             data.Enabled,
-		PolicyIDs:           data.PolicyIds,
-		Queries:             data.Queries,
-		Shards:              osqueryPackShardsFromMap(data.Shards),
-		UpdatedAt:           data.UpdatedAt,
-		UpdatedBy:           data.UpdatedBy,
-		UpdatedByProfileUID: data.UpdatedByProfileUid,
-		Version:             data.Version,
-	}
-	if data.Name != nil {
-		detail.Name = *data.Name
-	}
-	if data.SavedObjectId != nil {
-		detail.SavedObjectID = *data.SavedObjectId
-	}
-	return detail
-}
-
-type osqueryPackFlexibleUpdateResponse struct {
-	Data *struct {
-		CreatedAt           *time.Time                               `json:"created_at,omitempty"`
-		CreatedBy           *string                                  `json:"created_by,omitempty"`
-		CreatedByProfileUID *string                                  `json:"created_by_profile_uid,omitempty"`
-		Description         *kbapi.SecurityOsqueryAPIPackDescription `json:"description,omitempty"`
-		Enabled             *kbapi.SecurityOsqueryAPIEnabled         `json:"enabled,omitempty"`
-		Name                *kbapi.SecurityOsqueryAPIPackName        `json:"name,omitempty"`
-		PolicyIDs           *kbapi.SecurityOsqueryAPIPolicyIds       `json:"policy_ids,omitempty"`
-		Queries             *kbapi.SecurityOsqueryAPIObjectQueries   `json:"queries,omitempty"`
-		SavedObjectID       *string                                  `json:"saved_object_id,omitempty"`
-		Shards              osqueryPackFlexibleShards                `json:"shards"`
-		UpdatedAt           *time.Time                               `json:"updated_at,omitempty"`
-		UpdatedBy           *string                                  `json:"updated_by,omitempty"`
-		UpdatedByProfileUID *string                                  `json:"updated_by_profile_uid,omitempty"`
-		Version             *int                                     `json:"version,omitempty"`
-	} `json:"data,omitempty"`
-}
-
-func osqueryPackDetailFromFlexibleUpdateResponse(resp *osqueryPackFlexibleUpdateResponse) *OsqueryPackDetail {
-	if resp == nil || resp.Data == nil {
-		return nil
-	}
-
-	data := resp.Data
-	detail := &OsqueryPackDetail{
-		CreatedAt:           data.CreatedAt,
-		CreatedBy:           data.CreatedBy,
-		CreatedByProfileUID: data.CreatedByProfileUID,
-		Description:         data.Description,
-		Enabled:             data.Enabled,
-		PolicyIDs:           data.PolicyIDs,
-		Queries:             data.Queries,
-		Shards:              data.Shards.Value,
-		UpdatedAt:           data.UpdatedAt,
-		UpdatedBy:           data.UpdatedBy,
-		UpdatedByProfileUID: data.UpdatedByProfileUID,
-		Version:             data.Version,
-	}
-	if data.Name != nil {
-		detail.Name = *data.Name
-	}
-	if data.SavedObjectID != nil {
-		detail.SavedObjectID = *data.SavedObjectID
-	}
-	return detail
-}
-
-type osqueryPackFlexibleShards struct {
-	Value OsqueryPackShards
-}
-
-func (s *osqueryPackFlexibleShards) UnmarshalJSON(data []byte) error {
-	var shards kbapi.SecurityOsqueryAPIShards
-	if err := json.Unmarshal(data, &shards); err == nil {
-		s.Value = osqueryPackShardsFromMap(&shards)
-		return nil
-	}
-
-	var shardArray []struct {
-		Key   *string  `json:"key,omitempty"`
-		Value *float32 `json:"value,omitempty"`
-	}
-	if err := json.Unmarshal(data, &shardArray); err != nil {
-		return err
-	}
-	s.Value = osqueryPackShardsFromCreateArray(&shardArray)
-	return nil
 }
 
 func osqueryPackShardsFromMap(shards *kbapi.SecurityOsqueryAPIShards) OsqueryPackShards {

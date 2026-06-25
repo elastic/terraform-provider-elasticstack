@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
@@ -38,10 +39,6 @@ import (
 var MinSupportedVersion = version.Must(version.NewVersion("8.5.0"))
 
 const (
-	osqueryPlatformLinux   = "linux"
-	osqueryPlatformDarwin  = "darwin"
-	osqueryPlatformWindows = "windows"
-
 	attrID            = "id"
 	attrSavedObjectID = "saved_object_id"
 	attrSavedQueryID  = "saved_query_id"
@@ -57,7 +54,7 @@ const (
 	attrPrebuilt      = "prebuilt"
 )
 
-var osqueryPlatformValues = []string{osqueryPlatformLinux, osqueryPlatformDarwin, osqueryPlatformWindows}
+var osqueryPlatformValues = osquery.PlatformValues
 
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{

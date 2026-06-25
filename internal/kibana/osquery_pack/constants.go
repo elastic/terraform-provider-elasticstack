@@ -34,6 +34,7 @@ const (
 	attrSnapshot         = "snapshot"
 	attrRemoved          = "removed"
 	attrSavedQueryID     = "saved_query_id"
+	attrReadOnly         = "read_only"
 	attrEcsMapping       = "ecs_mapping"
 	attrEcsMappingField  = "field"
 	attrEcsMappingValue  = "value"

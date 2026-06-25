@@ -20,23 +20,20 @@ package osquerypack
 import (
 	"context"
 	"fmt"
-	"sort"
-	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-type osqueryPackModel struct {
-	entitycore.ResourceTimeoutsField
+type osqueryPackBaseModel struct {
 	entitycore.KibanaConnectionField
 	ID          types.String `tfsdk:"id"`
 	PackID      types.String `tfsdk:"pack_id"`
@@ -49,6 +46,11 @@ type osqueryPackModel struct {
 	Queries     types.Map    `tfsdk:"queries"`
 }
 
+type osqueryPackModel struct {
+	entitycore.ResourceTimeoutsField
+	osqueryPackBaseModel
+}
+
 type queryModel struct {
 	Query        types.String `tfsdk:"query"`
 	Platform     types.Set    `tfsdk:"platform"`
@@ -59,11 +61,7 @@ type queryModel struct {
 	EcsMapping   types.Map    `tfsdk:"ecs_mapping"`
 }
 
-type ecsMappingModel struct {
-	Field  types.String `tfsdk:"field"`
-	Value  types.String `tfsdk:"value"`
-	Values types.Set    `tfsdk:"values"`
-}
+type ecsMappingModel = osquery.ECSMapping
 
 var (
 	_ entitycore.KibanaResourceModel     = osqueryPackModel{}
@@ -72,11 +70,17 @@ var (
 	osqueryPackMinVersion = version.Must(version.NewVersion("8.5.0"))
 )
 
-func (m osqueryPackModel) GetID() types.String         { return m.ID }
-func (m osqueryPackModel) GetResourceID() types.String { return m.PackID }
-func (m osqueryPackModel) GetSpaceID() types.String    { return m.SpaceID }
+func (m osqueryPackBaseModel) GetID() types.String         { return m.ID }
+func (m osqueryPackBaseModel) GetResourceID() types.String { return m.PackID }
+func (m osqueryPackBaseModel) GetSpaceID() types.String    { return m.SpaceID }
 
-func (osqueryPackModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m *osqueryPackBaseModel) setCompositeIdentity(spaceID, packID string) {
+	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: packID}).String())
+	m.PackID = types.StringValue(packID)
+	m.SpaceID = types.StringValue(spaceID)
+}
+
+func (osqueryPackBaseModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *osqueryPackMinVersion,
@@ -85,7 +89,7 @@ func (osqueryPackModel) GetVersionRequirements(_ context.Context) ([]entitycore.
 	}, nil
 }
 
-func (m *osqueryPackModel) populateFromAPI(ctx context.Context, spaceID string, data *kibanaoapi.OsqueryPackDetail) diag.Diagnostics {
+func (m *osqueryPackBaseModel) populateFromAPI(ctx context.Context, spaceID string, data *kibanaoapi.OsqueryPackDetail) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
@@ -96,12 +100,10 @@ func (m *osqueryPackModel) populateFromAPI(ctx context.Context, spaceID string, 
 
 	var diags diag.Diagnostics
 
-	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.SavedObjectID}).String())
-	m.PackID = types.StringValue(data.SavedObjectID)
-	m.SpaceID = types.StringValue(spaceID)
+	m.setCompositeIdentity(spaceID, data.SavedObjectID)
 	m.Name = types.StringValue(data.Name)
-	m.Description = types.StringPointerValue(descriptionString(data.Description))
-	m.Enabled = types.BoolPointerValue(enabledBool(data.Enabled))
+	m.Description = typeutils.StringishPointerValue(data.Description)
+	m.Enabled = types.BoolPointerValue(data.Enabled)
 
 	if data.PolicyIDs != nil && len(*data.PolicyIDs) > 0 {
 		policyIDs, d := types.ListValueFrom(ctx, types.StringType, *data.PolicyIDs)
@@ -118,22 +120,6 @@ func (m *osqueryPackModel) populateFromAPI(ctx context.Context, spaceID string, 
 	m.Queries = queries
 
 	return diags
-}
-
-func descriptionString(v *kbapi.SecurityOsqueryAPIPackDescription) *string {
-	if v == nil {
-		return nil
-	}
-	s := *v
-	return &s
-}
-
-func enabledBool(v *kbapi.SecurityOsqueryAPIEnabled) *bool {
-	if v == nil {
-		return nil
-	}
-	b := *v
-	return &b
 }
 
 func shardsMapFromAPI(shards kibanaoapi.OsqueryPackShards) types.Map {
@@ -160,7 +146,7 @@ func queriesMapFromAPI(ctx context.Context, queries *kbapi.SecurityOsqueryAPIObj
 
 	for name, item := range *queries {
 		var q queryModel
-		diags.Append(q.fromAPIType(ctx, item)...)
+		diags.Append(q.fromAPIType(item)...)
 		if diags.HasError() {
 			return types.MapNull(queryMapElemType()), diags
 		}
@@ -178,7 +164,7 @@ func queriesMapFromAPI(ctx context.Context, queries *kbapi.SecurityOsqueryAPIObj
 	return result, diags
 }
 
-func (m *queryModel) fromAPIType(ctx context.Context, item kbapi.SecurityOsqueryAPIObjectQueriesItem) diag.Diagnostics {
+func (m *queryModel) fromAPIType(item kbapi.SecurityOsqueryAPIObjectQueriesItem) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if item.Query != nil {
@@ -187,7 +173,7 @@ func (m *queryModel) fromAPIType(ctx context.Context, item kbapi.SecurityOsquery
 		m.Query = types.StringNull()
 	}
 
-	m.Platform = platformSetFromAPI(ctx, item.Platform)
+	m.Platform = osquery.PlatformSetFromAPI(item.Platform)
 
 	if item.Version != nil {
 		m.Version = types.StringValue(*item.Version)
@@ -195,8 +181,8 @@ func (m *queryModel) fromAPIType(ctx context.Context, item kbapi.SecurityOsquery
 		m.Version = types.StringNull()
 	}
 
-	m.Snapshot = types.BoolPointerValue(snapshotBool(item.Snapshot))
-	m.Removed = types.BoolPointerValue(removedBool(item.Removed))
+	m.Snapshot = types.BoolPointerValue(item.Snapshot)
+	m.Removed = types.BoolPointerValue(item.Removed)
 
 	if item.SavedQueryId != nil {
 		m.SavedQueryID = types.StringValue(*item.SavedQueryId)
@@ -204,7 +190,7 @@ func (m *queryModel) fromAPIType(ctx context.Context, item kbapi.SecurityOsquery
 		m.SavedQueryID = types.StringNull()
 	}
 
-	ecsMapping, d := ecsMappingMapFromAPI(ctx, item.EcsMapping)
+	ecsMapping, d := osquery.ECSMappingMapFromAPI(item.EcsMapping)
 	diags.Append(d...)
 	m.EcsMapping = ecsMapping
 
@@ -220,7 +206,7 @@ func (m queryModel) toAPIType(ctx context.Context) (kbapi.SecurityOsqueryAPIObje
 		item.Query = &q
 	}
 
-	platform, d := platformCommaStringFromSet(ctx, m.Platform)
+	platform, d := osquery.PlatformToAPI(ctx, m.Platform)
 	diags.Append(d...)
 	item.Platform = platform
 
@@ -237,211 +223,27 @@ func (m queryModel) toAPIType(ctx context.Context) (kbapi.SecurityOsqueryAPIObje
 		item.SavedQueryId = &id
 	}
 
-	ecsMapping, d := ecsMappingMapToAPI(ctx, m.EcsMapping)
+	ecsMapping, d := osquery.ECSMappingMapToAPI(ctx, m.EcsMapping)
 	diags.Append(d...)
 	item.EcsMapping = ecsMapping
 
 	return item, diags
 }
 
-func snapshotBool(v *kbapi.SecurityOsqueryAPISnapshot) *bool {
-	if v == nil {
-		return nil
-	}
-	b := *v
-	return &b
-}
-
-func removedBool(v *kbapi.SecurityOsqueryAPIRemoved) *bool {
-	if v == nil {
-		return nil
-	}
-	b := *v
-	return &b
-}
-
-func platformSetFromAPI(ctx context.Context, platform *kbapi.SecurityOsqueryAPIPlatform) types.Set {
-	if platform == nil || *platform == "" {
-		return types.SetNull(types.StringType)
-	}
-
-	parts := strings.Split(*platform, ",")
-	platforms := make([]string, 0, len(parts))
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		if part != "" {
-			platforms = append(platforms, part)
-		}
-	}
-
-	if len(platforms) == 0 {
-		return types.SetNull(types.StringType)
-	}
-
-	sort.Strings(platforms)
-	set, _ := types.SetValueFrom(ctx, types.StringType, platforms)
-	return set
+func platformSetFromAPI(_ context.Context, platform *kbapi.SecurityOsqueryAPIPlatform) types.Set {
+	return osquery.PlatformSetFromAPI(platform)
 }
 
 func platformCommaStringFromSet(ctx context.Context, platform types.Set) (*kbapi.SecurityOsqueryAPIPlatform, diag.Diagnostics) {
-	if !typeutils.IsKnown(platform) || platform.IsNull() {
-		return nil, nil
-	}
-
-	var platforms []string
-	diags := platform.ElementsAs(ctx, &platforms, false)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	if len(platforms) == 0 {
-		return nil, nil
-	}
-
-	sort.Strings(platforms)
-	s := strings.Join(platforms, ",")
-	return &s, nil
+	return osquery.PlatformToAPI(ctx, platform)
 }
 
-func ecsMappingMapFromAPI(ctx context.Context, mapping *kbapi.SecurityOsqueryAPIECSMapping) (types.Map, diag.Diagnostics) {
-	if mapping == nil || len(*mapping) == 0 {
-		return types.MapNull(ecsMappingMapElemType()), nil
-	}
-
-	var diags diag.Diagnostics
-	elems := make(map[string]attr.Value, len(*mapping))
-
-	for key, item := range *mapping {
-		var m ecsMappingModel
-		diags.Append(m.fromAPIType(ctx, key, item)...)
-		if diags.HasError() {
-			return types.MapNull(ecsMappingMapElemType()), diags
-		}
-
-		obj, d := types.ObjectValueFrom(ctx, ecsMappingAttrTypes(), m)
-		diags.Append(d...)
-		if diags.HasError() {
-			return types.MapNull(ecsMappingMapElemType()), diags
-		}
-		elems[key] = obj
-	}
-
-	result, d := types.MapValue(ecsMappingMapElemType(), elems)
-	diags.Append(d...)
-	return result, diags
+func ecsMappingMapFromAPI(_ context.Context, mapping *kbapi.SecurityOsqueryAPIECSMapping) (types.Map, diag.Diagnostics) {
+	return osquery.ECSMappingMapFromAPI(mapping)
 }
 
 func ecsMappingMapToAPI(ctx context.Context, mapping types.Map) (*kbapi.SecurityOsqueryAPIECSMapping, diag.Diagnostics) {
-	if !typeutils.IsKnown(mapping) || mapping.IsNull() {
-		return nil, nil
-	}
-
-	var diags diag.Diagnostics
-	elems := make(kbapi.SecurityOsqueryAPIECSMapping, len(mapping.Elements()))
-
-	for key, av := range mapping.Elements() {
-		var m ecsMappingModel
-		d := av.(basetypes.ObjectValue).As(ctx, &m, basetypes.ObjectAsOptions{})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
-
-		item, d := m.toAPIType(ctx)
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		elems[key] = item
-	}
-
-	if len(elems) == 0 {
-		return nil, nil
-	}
-
-	return &elems, diags
-}
-
-func (m *ecsMappingModel) fromAPIType(ctx context.Context, key string, item kbapi.SecurityOsqueryAPIECSMappingItem) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	m.Field = types.StringNull()
-	m.Value = types.StringNull()
-	m.Values = types.SetNull(types.StringType)
-
-	if item.Field != nil && item.Value != nil {
-		diags.AddError(
-			"Invalid ECS mapping",
-			fmt.Sprintf("ecs_mapping[%q]: API returned both field and value", key),
-		)
-		return diags
-	}
-
-	if item.Field != nil {
-		m.Field = types.StringValue(*item.Field)
-		return diags
-	}
-
-	if item.Value == nil {
-		return diags
-	}
-
-	if str, err := item.Value.AsSecurityOsqueryAPIECSMappingItemValue0(); err == nil {
-		m.Value = types.StringValue(str)
-		return diags
-	}
-
-	if arr, err := item.Value.AsSecurityOsqueryAPIECSMappingItemValue1(); err == nil {
-		set, d := types.SetValueFrom(ctx, types.StringType, arr)
-		diags.Append(d...)
-		m.Values = set
-		return diags
-	}
-
-	diags.AddError(
-		"Invalid ECS mapping value",
-		fmt.Sprintf("ecs_mapping[%q]: API value is not a string or string array", key),
-	)
-	return diags
-}
-
-func (m ecsMappingModel) toAPIType(ctx context.Context) (kbapi.SecurityOsqueryAPIECSMappingItem, diag.Diagnostics) {
-	item := kbapi.SecurityOsqueryAPIECSMappingItem{}
-
-	if typeutils.IsKnown(m.Field) {
-		item.Field = m.Field.ValueStringPointer()
-		return item, nil
-	}
-
-	if typeutils.IsKnown(m.Value) {
-		var val kbapi.SecurityOsqueryAPIECSMappingItem_Value
-		if err := val.FromSecurityOsqueryAPIECSMappingItemValue0(m.Value.ValueString()); err != nil {
-			return item, diag.Diagnostics{
-				diag.NewErrorDiagnostic("Failed to encode ECS mapping value", err.Error()),
-			}
-		}
-		item.Value = &val
-		return item, nil
-	}
-
-	if typeutils.IsKnown(m.Values) {
-		var values []string
-		diags := m.Values.ElementsAs(ctx, &values, false)
-		if diags.HasError() {
-			return item, diags
-		}
-
-		var val kbapi.SecurityOsqueryAPIECSMappingItem_Value
-		if err := val.FromSecurityOsqueryAPIECSMappingItemValue1(values); err != nil {
-			return item, diag.Diagnostics{
-				diag.NewErrorDiagnostic("Failed to encode ECS mapping values", err.Error()),
-			}
-		}
-		item.Value = &val
-		return item, nil
-	}
-
-	return item, nil
+	return osquery.ECSMappingMapToAPI(ctx, mapping)
 }
 
 func queryAttrTypes() map[string]attr.Type {
@@ -452,7 +254,7 @@ func queryAttrTypes() map[string]attr.Type {
 		attrSnapshot:     types.BoolType,
 		attrRemoved:      types.BoolType,
 		attrSavedQueryID: types.StringType,
-		attrEcsMapping:   types.MapType{ElemType: ecsMappingMapElemType()},
+		attrEcsMapping:   types.MapType{ElemType: osquery.ECSMappingElemType()},
 	}
 }
 
@@ -461,13 +263,9 @@ func queryMapElemType() attr.Type {
 }
 
 func ecsMappingAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		attrEcsMappingField:  types.StringType,
-		attrEcsMappingValue:  types.StringType,
-		attrEcsMappingValues: types.SetType{ElemType: types.StringType},
-	}
+	return osquery.ECSMappingAttrTypes
 }
 
 func ecsMappingMapElemType() attr.Type {
-	return types.ObjectType{AttrTypes: ecsMappingAttrTypes()}
+	return osquery.ECSMappingElemType()
 }

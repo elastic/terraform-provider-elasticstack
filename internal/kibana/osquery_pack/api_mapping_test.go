@@ -165,10 +165,12 @@ func TestToWriteRequestBody_nullOptionalFieldsOmitted(t *testing.T) {
 	ctx := context.Background()
 
 	model := osqueryPackModel{
-		Name:      types.StringValue("pack-name"),
-		PolicyIDs: types.ListNull(types.StringType),
-		Shards:    types.MapNull(types.Float64Type),
-		Queries:   mustQueriesMap(t, singleQueryObject(t, "q1", "SELECT 1")),
+		osqueryPackBaseModel: osqueryPackBaseModel{
+			Name:      types.StringValue("pack-name"),
+			PolicyIDs: types.ListNull(types.StringType),
+			Shards:    types.MapNull(types.Float64Type),
+			Queries:   mustQueriesMap(t, singleQueryObject(t, "q1", "SELECT 1")),
+		},
 	}
 
 	body, diags := model.toWriteRequestBody(ctx)
@@ -187,10 +189,12 @@ func TestToWriteRequestBody_knownEmptyOptionalsSent(t *testing.T) {
 	require.False(t, d.HasError())
 
 	model := osqueryPackModel{
-		Name:      types.StringValue("pack-name"),
-		PolicyIDs: policyIDs,
-		Shards:    shards,
-		Queries:   mustQueriesMap(t, singleQueryObject(t, "q1", "SELECT 1")),
+		osqueryPackBaseModel: osqueryPackBaseModel{
+			Name:      types.StringValue("pack-name"),
+			PolicyIDs: policyIDs,
+			Shards:    shards,
+			Queries:   mustQueriesMap(t, singleQueryObject(t, "q1", "SELECT 1")),
+		},
 	}
 
 	body, diags := model.toWriteRequestBody(ctx)
@@ -260,12 +264,14 @@ func fullWriteModel(ctx context.Context, t *testing.T) osqueryPackModel {
 	require.False(t, d.HasError())
 
 	return osqueryPackModel{
-		Name:        types.StringValue("pack-name"),
-		Description: types.StringValue("pack description"),
-		Enabled:     types.BoolValue(true),
-		PolicyIDs:   policyIDs,
-		Shards:      shards,
-		Queries:     queries,
+		osqueryPackBaseModel: osqueryPackBaseModel{
+			Name:        types.StringValue("pack-name"),
+			Description: types.StringValue("pack description"),
+			Enabled:     types.BoolValue(true),
+			PolicyIDs:   policyIDs,
+			Shards:      shards,
+			Queries:     queries,
+		},
 	}
 }
 

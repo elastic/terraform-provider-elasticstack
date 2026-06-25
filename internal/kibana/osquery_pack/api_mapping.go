@@ -84,8 +84,7 @@ func policyIDsToAPI(ctx context.Context, list types.List) (*kbapi.SecurityOsquer
 		return nil, diags
 	}
 
-	result := ids
-	return &result, diags
+	return &ids, diags
 }
 
 func shardsMapToAPI(shards types.Map) *kbapi.SecurityOsqueryAPIShards {
