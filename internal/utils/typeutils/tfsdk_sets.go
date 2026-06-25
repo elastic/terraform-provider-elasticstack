@@ -38,11 +38,7 @@ func StringSetOrNull(ctx context.Context, src []string) (types.Set, diag.Diagnos
 // NonEmptySetOrDefault returns the original set if slice is empty,
 // otherwise converts slice into a types.Set.
 func NonEmptySetOrDefault[T any](ctx context.Context, original types.Set, elemType attr.Type, slice []T) (types.Set, diag.Diagnostics) {
-	if len(slice) == 0 {
-		return original, nil
-	}
-
-	return types.SetValueFrom(ctx, elemType, slice)
+	return nonEmptyCollectionOrDefault(ctx, original, elemType, slice, types.SetValueFrom)
 }
 
 // SetTypeAs converts a types.Set into a tfsdk aware []T.
@@ -52,9 +48,7 @@ func SetTypeAs[T any](ctx context.Context, value types.Set, p path.Path, diags *
 
 // SetValueFrom converts a tfsdk aware []T to a types.Set.
 func SetValueFrom[T any](ctx context.Context, value []T, elemType attr.Type, p path.Path, diags *diag.Diagnostics) types.Set {
-	list, d := types.SetValueFrom(ctx, elemType, value)
-	diags.Append(convertToAttrDiags(d, p)...)
-	return list
+	return collectionValueFrom(ctx, value, elemType, p, diags, types.SetValueFrom)
 }
 
 // StringSetElements extracts the string values from a types.Set of strings
