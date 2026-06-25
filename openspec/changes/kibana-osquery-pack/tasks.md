@@ -73,7 +73,7 @@
 
 - [x] 9.1 Run `make build` and `make check-lint` — fix any issues
 - [x] 9.2 Run `make check-openspec` — confirm this change validates
-- [ ] 9.3 Run targeted acceptance tests against a real Kibana at or above `8.5.0`
+- [x] 9.3 Run targeted acceptance tests against a real Kibana at or above `8.5.0`
 - [x] 9.4 Verify generated docs render correctly
 - [x] 9.5 Self-review with the `requirements-verification` skill against this change's specs
 

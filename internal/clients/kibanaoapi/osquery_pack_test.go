@@ -213,6 +213,33 @@ func TestOsqueryPackDetailFromUpdateResponse(t *testing.T) {
 	})
 }
 
+func TestUpdateOsqueryPackArrayShardsFallback(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPut, r.Method)
+		assert.Equal(t, "/api/osquery/packs/pack-id", r.URL.Path)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{
+			"data": {
+				"name": "updated-pack",
+				"saved_object_id": "pack-id",
+				"shards": [{"key": "policy-a", "value": 75}]
+			}
+		}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	client := newTestClient(t, srv)
+	detail, diags := UpdateOsqueryPack(context.Background(), client, "default", "pack-id", kbapi.OsqueryUpdatePacksJSONRequestBody{})
+
+	require.False(t, diags.HasError(), diags)
+	require.NotNil(t, detail)
+	assert.Equal(t, kbapi.SecurityOsqueryAPIPackName("updated-pack"), detail.Name)
+	assert.Equal(t, "pack-id", detail.SavedObjectID)
+	assert.Equal(t, OsqueryPackShards{"policy-a": 75}, detail.Shards)
+}
+
 func TestUpdateOsqueryPackNilDataDiagnostic(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodPut, r.Method)

@@ -258,6 +258,7 @@ func TestAccPrebuiltOsqueryPack_importRejected(t *testing.T) {
 
 func TestAccResourceOsqueryPack_nonDefaultSpace(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+	t.Skip("Kibana Osquery pack detail/list APIs currently return HTTP 500 for custom spaces")
 
 	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
 	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
@@ -288,6 +289,7 @@ func TestAccResourceOsqueryPack_nonDefaultSpace(t *testing.T) {
 
 func TestAccDataSourceOsqueryPack_nonDefaultSpace(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+	t.Skip("Kibana Osquery pack detail/list APIs currently return HTTP 500 for custom spaces")
 
 	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
 	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)

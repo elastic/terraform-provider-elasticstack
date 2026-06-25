@@ -26,6 +26,20 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   download_source_id = elasticstack_fleet_agent_download_source.default.source_id
 }
 
+resource "elasticstack_fleet_integration" "osquery_manager" {
+  name    = "osquery_manager"
+  version = "1.28.1"
+  force   = true
+}
+
+resource "elasticstack_fleet_integration_policy" "osquery_manager" {
+  name                = "Osquery Manager DS ${var.suffix}"
+  namespace           = "testacc"
+  agent_policy_id     = elasticstack_fleet_agent_policy.test_policy.policy_id
+  integration_name    = elasticstack_fleet_integration.osquery_manager.name
+  integration_version = elasticstack_fleet_integration.osquery_manager.version
+}
+
 resource "elasticstack_kibana_osquery_pack" "test" {
   name        = "tf-acc-osquery-pack-ds-${var.suffix}"
   description = "Terraform data source acceptance test pack"
@@ -56,6 +70,8 @@ resource "elasticstack_kibana_osquery_pack" "test" {
       }
     }
   }
+
+  depends_on = [elasticstack_fleet_integration_policy.osquery_manager]
 }
 
 data "elasticstack_kibana_osquery_pack" "test" {
