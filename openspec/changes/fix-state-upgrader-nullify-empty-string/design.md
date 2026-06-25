@@ -2,8 +2,9 @@
 
 ## Overview
 
-Both `migrateComponentTemplateStateV0ToV1` and `migrateIndexTemplateStateV0ToV1` need a single
-`stateutil.NullifyEmptyString` call after `stateutil.EnsureMapKeys`. The transform resource
+Both `migrateComponentTemplateStateV0ToV1` and `migrateIndexTemplateStateV0ToV1` need
+`stateutil.NullifyEmptyString` calls for the JSON-string fields that SDK state can persist as empty
+strings: `template.mappings`, `template.settings`, and top-level `metadata`. The transform resource
 upgrader (`internal/elasticsearch/transform/state_upgrade.go:55`) already uses this pattern:
 
 ```go
@@ -47,12 +48,15 @@ stateutil.NullifyEmptyString(stateMap, "metadata")  // ADD
 
 ### Unit tests
 
-Add two test cases each to `state_upgrade_test.go` for both resources:
+Add three test cases each to `state_upgrade_test.go` for both resources:
 
 1. **`settings_only_empty_string_mappings`** — state with `"mappings": ""` and a valid `settings`
    JSON. Assert the upgraded state has `mappings = null`, `settings` preserved, and that the result
    decodes against the v1 schema without error.
-2. **`metadata_empty_string`** — state with `"metadata": ""` at top level. Assert the upgraded
+2. **`mappings_only_empty_string_settings`** — state with a valid `mappings` JSON and
+   `"settings": ""`. Assert the upgraded state has `settings = null`, `mappings` preserved, and that
+   the result decodes against the v1 schema without error.
+3. **`metadata_empty_string`** — state with `"metadata": ""` at top level. Assert the upgraded
    state has `metadata = null` and decodes cleanly.
 
 ### Acceptance tests
@@ -67,17 +71,14 @@ Add a settings-only variant to each resource's SDK upgrade acceptance test:
 
 The acceptance tests serve as the end-to-end regression gate for the reported issue.
 
-## Open questions
+## Validation questions
 
-- Does `metadata` on `component_template` also arrive as `""` from SDK v0 state when unset? (The
-  transform upgrader nullifies `metadata` at top level; the component template upgrader does not —
-  worth checking and including in the same fix if so.)
 - Can the `index_template` empty-string bug be reproduced with a targeted acceptance test to confirm
   the symmetric fix works?
 
-Both questions are non-blocking for implementation; the fix is correct regardless. The `metadata`
-question should be verified by inspecting SDK source or a recorded state file before finalizing the
-delta spec; if `metadata` arrives as `""`, add it to the `NullifyEmptyString` call.
+This question is non-blocking for implementation; the symmetric fix is correct regardless. The
+settings-only index template SDK upgrade acceptance test should be used as the end-to-end validation
+gate.
 
 ## Invariants
 

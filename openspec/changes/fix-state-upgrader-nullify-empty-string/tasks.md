@@ -52,7 +52,7 @@ stateutil.NullifyEmptyString(stateMap, "metadata")
 
 ## TASK-3: Add unit tests to `componenttemplate/state_upgrade_test.go`
 
-Add two test cases to the `TestComponentTemplateUpgradeState_template_path` table (or a new table
+Add three test cases to the `TestComponentTemplateUpgradeState_template_path` table (or a new table
 function):
 
 1. **`settings_only_empty_string_mappings`**: Input state has `template` as a single-element list
@@ -60,7 +60,12 @@ function):
    Assert: upgraded state has `template.mappings == nil` (null), `template.settings` is preserved,
    and `requireUpgradedStateDecodes` passes.
 
-2. **`metadata_empty_string`**: Input state has `"metadata": ""` at top level with no `template`
+2. **`mappings_only_empty_string_settings`**: Input state has `template` as a single-element list
+   containing `{"mappings": "{\"properties\":{\"field\":{\"type\":\"keyword\"}}}", "settings": ""}`.
+   Assert: upgraded state has `template.settings == nil` (null), `template.mappings` is preserved,
+   and `requireUpgradedStateDecodes` passes.
+
+3. **`metadata_empty_string`**: Input state has `"metadata": ""` at top level with no `template`
    block. Assert: upgraded state has `metadata == nil` (null) and `requireUpgradedStateDecodes`
    passes.
 
@@ -70,7 +75,9 @@ Mirror of TASK-3 for `migrateIndexTemplateStateV0ToV1`. Add:
 
 1. **`settings_only_empty_string_mappings`**: Same as TASK-3 case 1 but for index template state
    shape (include `composed_of`, `index_patterns` in base state as the resource requires them).
-2. **`metadata_empty_string`**: Same as TASK-3 case 2, for index template state.
+2. **`mappings_only_empty_string_settings`**: Same as TASK-3 case 2 but for index template state
+   shape.
+3. **`metadata_empty_string`**: Same as TASK-3 case 3, for index template state.
 
 Reference the existing `runUpgrade` / `requireUpgradedStateDecodes` helpers (or equivalents) in
 that package.

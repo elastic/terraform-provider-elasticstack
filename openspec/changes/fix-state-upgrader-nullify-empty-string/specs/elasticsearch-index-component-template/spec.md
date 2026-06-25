@@ -2,17 +2,34 @@
 
 ## MODIFIED Requirements
 
-### Requirement: State upgrade to schema version 1 SHALL nullify empty-string JSON fields (REQ-032–REQ-035)
+### Requirement: State upgrade to schema version 1 (REQ-032–REQ-035)
 
-The state upgrade path from schema version `0` to `1` SHALL call `stateutil.NullifyEmptyString` on
-the `template` map for the `mappings` and `settings` attributes immediately after calling
-`stateutil.EnsureMapKeys`. The upgrader SHALL also call `stateutil.NullifyEmptyString` on the
-top-level state map for the `metadata` attribute. Both calls SHALL convert any empty-string value
-(`""`) to null; keys that are absent or already null SHALL be left unchanged.
+The resource SHALL define schema version `1` and provide an upgrade path from version `0`. During
+state upgrade from version `0`, the provider SHALL collapse legacy list-shaped `template` blocks to
+the Plugin Framework object-or-null representation. During that upgrade, the provider SHALL ensure
+the migrated `template` object contains explicit keys for `alias`, `mappings`, `settings`, and
+`data_stream_options`, using null when absent. During that upgrade, the provider SHALL normalize
+legacy alias state by converting SDK-style duplicated `index_routing` and `search_routing` values
+into the Plugin Framework routing-only representation and by converting empty-string alias `filter`
+values to null.
 
-This change ensures that SDK v2 state written with `"mappings": ""` (produced when `mappings` was
-omitted from the HCL configuration) is normalized to `null` before the Plugin Framework decodes it,
-preventing the `unexpected end of JSON input` error in `MappingsValue.StringSemanticEquals`.
+Immediately after ensuring the migrated `template` keys, the upgrader SHALL call
+`stateutil.NullifyEmptyString` on the `template` map for the `mappings` and `settings` attributes.
+The upgrader SHALL also call `stateutil.NullifyEmptyString` on the top-level state map for the
+`metadata` attribute. Both calls SHALL convert any empty-string value (`""`) to null; keys that are
+absent, already null, or non-empty SHALL be left unchanged.
+
+This change ensures that SDK v2 state written with `"mappings": ""` or `"settings": ""` (produced
+when the corresponding HCL attribute was omitted) is normalized to `null` before the Plugin
+Framework decodes it, preventing JSON semantic-equality errors such as `unexpected end of JSON
+input`.
+
+#### Scenario: Upgrade legacy template state
+
+- GIVEN version `0` state containing list-shaped `template` data and legacy alias routing values
+- WHEN the provider upgrades state to schema version `1`
+- THEN the provider SHALL collapse `template` to object-or-null form
+- AND it SHALL preserve equivalent alias routing semantics without creating spurious diffs
 
 #### Scenario: Settings-only template — empty-string mappings normalized to null
 
@@ -30,6 +47,16 @@ preventing the `unexpected end of JSON input` error in `MappingsValue.StringSema
 - WHEN the provider upgrades state to schema version `1`
 - THEN the upgraded state SHALL contain `metadata = null`
 - AND the upgraded state SHALL decode against the v1 schema without error
+
+#### Scenario: Mappings-only template — empty-string settings normalized to null
+
+- GIVEN version `0` state produced by Plugin SDK v2 where `template.settings` is `""` and
+  `template.mappings` contains a non-empty JSON object (a mappings-only template with no `settings`
+  block in HCL)
+- WHEN the provider upgrades state to schema version `1`
+- THEN the upgraded state SHALL contain `template.settings = null`
+- AND `template.mappings` SHALL be preserved unchanged
+- AND subsequent `terraform plan` SHALL complete without a Semantic Equality Check Error
 
 #### Scenario: Non-empty JSON strings are preserved
 

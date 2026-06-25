@@ -26,11 +26,12 @@ The same omission exists in `migrateIndexTemplateStateV0ToV1`, which likely caus
 
 Fix the root cause in both state upgraders by adding `stateutil.NullifyEmptyString` calls
 immediately after `stateutil.EnsureMapKeys` for all JSON-string attributes inside `template`
-(`mappings`, `settings`). The identical helper is already applied by the transform resource upgrader
-for exactly this pattern and is proven to work.
+(`mappings`, `settings`). Also call `stateutil.NullifyEmptyString` for top-level `metadata` in both
+state upgraders. The helper is idempotent, so this is safe whether SDK state omitted `metadata`,
+stored it as `null`, or stored it as `""`.
 
-Additionally, check whether `metadata` (a top-level JSON string attribute on both resources) is
-stored as `""` by the SDK when unset, and nullify it if so.
+The identical helper is already applied by the transform resource upgrader for exactly this pattern
+and is proven to work.
 
 ## Scope
 
