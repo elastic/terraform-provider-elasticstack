@@ -28,6 +28,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/examples"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/queryrulesets"
+	osquerysavedquery "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_saved_query"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl/v2/hclparse"
@@ -57,12 +58,15 @@ var planOnlySkippedEmbedPaths = []string{
 	"resources/elasticstack_elasticsearch_security_api_key/rotation.tf",
 	// Requires a Fleet agent policy UUID that exists in Kibana/Fleet — matrix stacks yield 404 otherwise; no stack-agnostic UUID for copy-pasted examples.
 	"data-sources/elasticstack_fleet_enrollment_tokens/data-source.tf",
+	// Requires the osquery_manager integration's prebuilt saved queries; matrix stacks may expose the API but return 500 without the integration data.
+	"data-sources/elasticstack_kibana_osquery_saved_query/data-source.tf",
 }
 
 // planOnlyMinElasticsearchVersion lists example embed paths whose data sources read during
 // PlanOnly and therefore require a minimum Elasticsearch version on the acceptance cluster.
 var planOnlyMinElasticsearchVersion = map[string]*version.Version{
 	"data-sources/elasticstack_elasticsearch_query_ruleset/data-source.tf": queryrulesets.MinSupportedVersion,
+	"resources/elasticstack_kibana_osquery_saved_query/resource.tf":        osquerysavedquery.MinSupportedVersion,
 }
 
 func shouldSkipPlanOnlyExample(pathUnderExamples string) bool {

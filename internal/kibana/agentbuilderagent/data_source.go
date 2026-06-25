@@ -25,10 +25,10 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -37,10 +37,6 @@ import (
 var (
 	_ datasource.DataSource              = NewDataSource()
 	_ datasource.DataSourceWithConfigure = NewDataSource().(datasource.DataSourceWithConfigure)
-
-	// minVersionAdvancedAgentConfig is the minimum Kibana version required for
-	// workflow_ids, skill_ids, and plugin_ids on agents (workflow API).
-	minVersionAdvancedAgentConfig = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 )
 
 // NewDataSource is a helper function to simplify the provider implementation.
@@ -60,7 +56,7 @@ func NewDataSource() datasource.DataSource {
 func readAgentDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config agentDataSourceModel) (agentDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	supportsAdvancedConfig, verDiags := kbClient.EnforceMinVersion(ctx, minVersionAdvancedAgentConfig)
+	supportsAdvancedConfig, verDiags := kbClient.EnforceMinVersion(ctx, agentbuilder.MinExtendedAPIVersion)
 	diags.Append(verDiags...)
 	if diags.HasError() {
 		return config, diags
@@ -139,7 +135,7 @@ func readAgentDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 				fmt.Sprintf(
 					"This agent has workflow-type tools whose configuration cannot be exported: "+
 						"the workflow API requires Elastic Stack v%s or later.",
-					minVersionAdvancedAgentConfig,
+					agentbuilder.MinExtendedAPIVersion,
 				),
 			)
 			return config, diags

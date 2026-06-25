@@ -41,6 +41,8 @@ func updateWorkflow(ctx context.Context, client *clients.KibanaScopedClient, req
 		return entitycore.KibanaWriteResult[workflowModel]{}, diags
 	}
 
+	// SpaceID is set explicitly so the returned model carries the resolved
+	// space for the envelope's read-after-write step.
 	plan.SpaceID = types.StringValue(req.SpaceID)
 
 	if updated != nil && !updated.Valid {
