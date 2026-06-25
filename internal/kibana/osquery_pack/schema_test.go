@@ -488,11 +488,6 @@ func assertHasStringPlanModifier(t *testing.T, modifiers []planmodifier.String, 
 	}, suffix)
 }
 
-func assertEmptyStringPlanModifiers(t *testing.T, modifiers []planmodifier.String) {
-	t.Helper()
-	require.Empty(t, modifiers)
-}
-
 func assertHasBoolPlanModifier(t *testing.T, modifiers []planmodifier.Bool, suffix string) {
 	t.Helper()
 	assertHasPlanModifierType(t, len(modifiers), func(i int) string {
