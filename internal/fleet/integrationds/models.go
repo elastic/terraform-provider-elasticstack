@@ -32,7 +32,7 @@ type integrationDataSourceModel struct {
 	SpaceID    types.String `tfsdk:"space_id"`
 }
 
-func (m *integrationDataSourceModel) populateFromAPI(pkgName string, packages []kbapi.PackageListItem) {
+func (m *integrationDataSourceModel) populateFromAPI(pkgName string, packages []kbapi.KibanaHTTPAPIsPackageListItem) {
 	m.Version = types.StringNull()
 	for _, pkg := range packages {
 		if pkg.Name == pkgName {

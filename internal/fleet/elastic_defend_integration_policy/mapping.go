@@ -53,12 +53,13 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 				"Not an Elastic Defend policy",
 				fmt.Sprintf("Package policy %q belongs to package %q, not %q. "+
 					"Only Elastic Defend package policies can be managed by elasticstack_fleet_elastic_defend_integration_policy.",
-					policy.Id, pkgName, endpointPackageName),
+					typeutils.Deref(policy.Id), pkgName, endpointPackageName),
 			),
 		}
 	}
 
-	model.PolicyID = types.StringValue(policy.Id)
+	policyID := typeutils.Deref(policy.Id)
+	model.PolicyID = types.StringValue(policyID)
 	model.Name = types.StringValue(policy.Name)
 	model.Namespace = types.StringPointerValue(policy.Namespace)
 	// Kibana retains an existing description when the field is omitted from
@@ -128,9 +129,9 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 
 	// Set composite ID: "<space_id>/<policy_id>" when a space is in use.
 	if operationalSpaceID != "" {
-		model.ID = types.StringValue(operationalSpaceID + "/" + policy.Id)
+		model.ID = types.StringValue(operationalSpaceID + "/" + policyID)
 	} else {
-		model.ID = types.StringValue(policy.Id)
+		model.ID = types.StringValue(policyID)
 	}
 
 	// Extract typed inputs from the union Inputs field

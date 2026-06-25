@@ -24,7 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *kbapi.OutputElasticsearch) (diags diag.Diagnostics) {
+func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputElasticsearch) (diags diag.Diagnostics) {
 	diags = model.fromAPICommonFields(ctx, commonOutputReadData{
 		id:                   data.Id,
 		name:                 data.Name,
@@ -48,7 +48,7 @@ func (model outputModel) toAPICreateElasticsearchModel(ctx context.Context) (kba
 		return kbapi.NewOutputUnion{}, diags
 	}
 
-	body := kbapi.NewOutputElasticsearch{
+	body := kbapi.KibanaHTTPAPIsNewOutputElasticsearch{
 		Type:                 kbapi.KibanaHTTPAPIsNewOutputElasticsearchTypeElasticsearch,
 		CaSha256:             f.CaSha256,
 		CaTrustedFingerprint: f.CaTrustedFingerprint,
@@ -62,7 +62,7 @@ func (model outputModel) toAPICreateElasticsearchModel(ctx context.Context) (kba
 	}
 
 	var union kbapi.NewOutputUnion
-	err := union.FromNewOutputElasticsearch(body)
+	err := union.FromKibanaHTTPAPIsNewOutputElasticsearch(body)
 	if err != nil {
 		diags.AddError(err.Error(), "")
 		return kbapi.NewOutputUnion{}, diags
@@ -78,7 +78,7 @@ func (model outputModel) toAPIUpdateElasticsearchModel(ctx context.Context) (kba
 		return kbapi.UpdateOutputUnion{}, diags
 	}
 
-	body := kbapi.UpdateOutputElasticsearch{
+	body := kbapi.KibanaHTTPAPIsUpdateOutputElasticsearch{
 		Type: func() *kbapi.KibanaHTTPAPIsUpdateOutputElasticsearchType {
 			outputType := kbapi.Elasticsearch
 			return &outputType
@@ -94,7 +94,7 @@ func (model outputModel) toAPIUpdateElasticsearchModel(ctx context.Context) (kba
 	}
 
 	var union kbapi.UpdateOutputUnion
-	err := union.FromUpdateOutputElasticsearch(body)
+	err := union.FromKibanaHTTPAPIsUpdateOutputElasticsearch(body)
 	if err != nil {
 		diags.AddError(err.Error(), "")
 		return kbapi.UpdateOutputUnion{}, diags

@@ -23,6 +23,7 @@ import (
 
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -85,11 +86,12 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 	// resource can be recovered if finalize fails. Populate basic fields from
 	// the bootstrap response to ensure no unknown values remain in state
 	// (the framework rejects unknown values after apply).
-	planModel.PolicyID = types.StringValue(bootstrapPolicy.Id)
+	bootstrapID := typeutils.Deref(bootstrapPolicy.Id)
+	planModel.PolicyID = types.StringValue(bootstrapID)
 	if spaceID != "" {
-		planModel.ID = types.StringValue(spaceID + "/" + bootstrapPolicy.Id)
+		planModel.ID = types.StringValue(spaceID + "/" + bootstrapID)
 	} else {
-		planModel.ID = types.StringValue(bootstrapPolicy.Id)
+		planModel.ID = types.StringValue(bootstrapID)
 	}
 	// Normalize space_ids from bootstrap response to avoid unknown state values
 	if bootstrapPolicy.SpaceIds != nil && len(*bootstrapPolicy.SpaceIds) > 0 {
@@ -113,7 +115,7 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 	}
 	// ID is passed as the URL path parameter to UpdateDefendPackagePolicy
 
-	_, d = fleetclient.UpdateDefendPackagePolicy(ctx, fleetClient, bootstrapPolicy.Id, spaceID, finalizeReq)
+	_, d = fleetclient.UpdateDefendPackagePolicy(ctx, fleetClient, bootstrapID, spaceID, finalizeReq)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -121,7 +123,7 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 
 	// The PUT response does not include spaceIds, so do a GET to retrieve the
 	// full policy state (including spaceIds and the server-managed artifact_manifest).
-	finalPolicy, d := fleetclient.GetDefendPackagePolicy(ctx, fleetClient, bootstrapPolicy.Id, spaceID)
+	finalPolicy, d := fleetclient.GetDefendPackagePolicy(ctx, fleetClient, bootstrapID, spaceID)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -510,7 +510,7 @@ func TestApiDatastreamsDefaults_StreamProperties(t *testing.T) {
 func TestPackageInfoToDefaults(t *testing.T) {
 	tests := []struct {
 		name              string
-		pkg               *kbapi.PackageInfo
+		pkg               *kbapi.KibanaHTTPAPIsGetPackageInfo
 		expectedInputKeys []string
 		expectError       bool
 	}{
@@ -521,7 +521,7 @@ func TestPackageInfoToDefaults(t *testing.T) {
 		},
 		{
 			name:              "package with no policy templates or datastreams",
-			pkg:               &kbapi.PackageInfo{},
+			pkg:               &kbapi.KibanaHTTPAPIsGetPackageInfo{},
 			expectedInputKeys: []string{},
 		},
 	}
@@ -547,7 +547,7 @@ func TestPackageInfoToDefaults(t *testing.T) {
 func TestPackageInfoToDefaults_Kafka(t *testing.T) {
 	// Load the actual Kafka package JSON
 	var wrapper struct {
-		Item kbapi.PackageInfo `json:"item"`
+		Item kbapi.KibanaHTTPAPIsGetPackageInfo `json:"item"`
 	}
 	err := json.Unmarshal(kafkaIntegrationJSON, &wrapper)
 	require.NoError(t, err, "Failed to unmarshal Kafka integration JSON")
@@ -657,7 +657,7 @@ func TestPackageInfoToDefaults_Kafka(t *testing.T) {
 func TestPolicyTemplateAndDataStreamsFromPackageInfo(t *testing.T) {
 	tests := []struct {
 		name                   string
-		pkg                    *kbapi.PackageInfo
+		pkg                    *kbapi.KibanaHTTPAPIsGetPackageInfo
 		expectedPolicyTemplate bool
 		expectedDataStreams    bool
 		expectError            bool
@@ -670,7 +670,7 @@ func TestPolicyTemplateAndDataStreamsFromPackageInfo(t *testing.T) {
 		},
 		{
 			name:                   "empty package returns nil",
-			pkg:                    &kbapi.PackageInfo{},
+			pkg:                    &kbapi.KibanaHTTPAPIsGetPackageInfo{},
 			expectedPolicyTemplate: false,
 			expectedDataStreams:    false,
 		},
@@ -703,7 +703,7 @@ func TestPolicyTemplateAndDataStreamsFromPackageInfo(t *testing.T) {
 func TestPolicyTemplateAndDataStreamsFromPackageInfo_Kafka(t *testing.T) {
 	// Load the actual Kafka package JSON
 	var wrapper struct {
-		Item kbapi.PackageInfo `json:"item"`
+		Item kbapi.KibanaHTTPAPIsGetPackageInfo `json:"item"`
 	}
 	err := json.Unmarshal(kafkaIntegrationJSON, &wrapper)
 	require.NoError(t, err, "Failed to unmarshal Kafka integration JSON")
@@ -776,7 +776,7 @@ func TestPolicyTemplateAndDataStreamsFromPackageInfo_Kafka(t *testing.T) {
 func TestPolicyTemplateAndDataStreamsFromPackageInfo_GCP_VertexAI(t *testing.T) {
 	// Load the actual GCP Vertex AI package JSON
 	var wrapper struct {
-		Item kbapi.PackageInfo `json:"item"`
+		Item kbapi.KibanaHTTPAPIsGetPackageInfo `json:"item"`
 	}
 	err := json.Unmarshal(gcpVertexAIIntegrationJSON, &wrapper)
 	require.NoError(t, err, "Failed to unmarshal GCP Vertex AI integration JSON")
@@ -845,7 +845,7 @@ func TestPolicyTemplateAndDataStreamsFromPackageInfo_GCP_VertexAI(t *testing.T) 
 
 func TestPackageInfoToDefaults_InputPackage(t *testing.T) {
 	// Verify that policy-template vars become stream defaults for input-type packages.
-	var pkg kbapi.PackageInfo
+	var pkg kbapi.KibanaHTTPAPIsGetPackageInfo
 	require.NoError(t, json.Unmarshal(gcpPubSubIntegrationJSON, &pkg))
 
 	result, diags := packageInfoToDefaults(&pkg)
@@ -869,7 +869,7 @@ func TestPackageInfoToDefaults_InputPackage(t *testing.T) {
 
 func TestPackageInfoToDefaults_InputPackage_WithDataStreams(t *testing.T) {
 	// Verify merging of policy-template stream defaults with existing data_stream defaults.
-	var pkg kbapi.PackageInfo
+	var pkg kbapi.KibanaHTTPAPIsGetPackageInfo
 	require.NoError(t, json.Unmarshal(gcpPubSubWithDataStreamsIntegrationJSON, &pkg))
 
 	result, diags := packageInfoToDefaults(&pkg)

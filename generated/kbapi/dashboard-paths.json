@@ -359,7 +359,7 @@
                     "type": "array",
                     "description": "Panels and sections in the dashboard. Each entry is either a panel (with a `type` and `config`) or a collapsible section (with a `title`, `collapsed` state, and nested `panels`).",
                     "default": [],
-                    "maxItems": 100,
+                    "maxItems": 1000,
                     "items": {
                       "anyOf": [
                         {

@@ -34,29 +34,13 @@ const testArtifactManifest = "WzEyMywxXQ=="
 // suitable for Defend resource tests.
 func buildTestPackagePolicy(id, name, pkgName, pkgVersion string, enabled bool, inputs kbapi.PackagePolicyTypedInputs) *kbapi.PackagePolicy {
 	policy := &kbapi.PackagePolicy{
-		Id:      id,
+		Id:      &id,
 		Name:    name,
 		Enabled: enabled,
-		Package: &struct {
-			ExperimentalDataStreamFeatures *[]struct {
-				DataStream string `json:"data_stream"`
-				Features   struct {
-					DocValueOnlyNumeric *bool `json:"doc_value_only_numeric,omitempty"`
-					DocValueOnlyOther   *bool `json:"doc_value_only_other,omitempty"`
-					SyntheticSource     *bool `json:"synthetic_source,omitempty"`
-					Tsdb                *bool `json:"tsdb,omitempty"`
-				} `json:"features"`
-			} `json:"experimental_data_stream_features,omitempty"`
-			FipsCompatible *bool `json:"fips_compatible,omitempty"`
-
-			// Name Package name
-			Name         string  `json:"name"`
-			RequiresRoot *bool   `json:"requires_root,omitempty"`
-			Title        *string `json:"title,omitempty"`
-
-			// Version Package version
-			Version string `json:"version"`
-		}{Name: pkgName, Version: pkgVersion},
+		Package: &kbapi.KibanaHTTPAPIsPackagePolicyPackage{
+			Name:    pkgName,
+			Version: pkgVersion,
+		},
 	}
 	if err := policy.Inputs.FromPackagePolicyTypedInputs(inputs); err != nil {
 		panic("failed to set typed inputs: " + err.Error())
@@ -287,25 +271,16 @@ func TestBuildBootstrapRequest(t *testing.T) {
 		t.Fatal("expected config to be non-nil when preset is set")
 	}
 
-	icRaw, ok := (*input.Config)["_config"]
+	icEntry, ok := (*input.Config)["_config"]
 	if !ok {
 		t.Fatal("expected _config in bootstrap input config")
 	}
 
-	icMap, ok := icRaw.(map[string]any)
+	// The Config field is a typed map[string]struct{Frozen,Type,Value}; the
+	// raw payload lives in Value.
+	valueMap, ok := icEntry.Value.(map[string]any)
 	if !ok {
-		t.Fatalf("expected _config to be a map, got %T", icRaw)
-	}
-
-	// The value is stored directly (not struct-wrapped) in the request config
-	valueRaw, ok := icMap["value"]
-	if !ok {
-		t.Fatal("expected _config.value to be present")
-	}
-
-	valueMap, ok := valueRaw.(map[string]any)
-	if !ok {
-		t.Fatalf("expected _config.value to be a map, got %T", valueRaw)
+		t.Fatalf("expected _config.value to be a map, got %T", icEntry.Value)
 	}
 
 	if valueMap["type"] != "endpoint" {
@@ -523,21 +498,13 @@ func TestBuildFinalizeRequestIncludesArtifactManifest(t *testing.T) {
 	if input.Config == nil {
 		t.Fatal("expected config to be non-nil")
 	}
-	artifactManifestRaw, ok := (*input.Config)["artifact_manifest"]
+	artifactManifestEntry, ok := (*input.Config)["artifact_manifest"]
 	if !ok {
 		t.Fatal("expected artifact_manifest in finalize input config")
 	}
-	artifactManifestMap, ok := artifactManifestRaw.(map[string]any)
+	valueMap, ok := artifactManifestEntry.Value.(map[string]any)
 	if !ok {
-		t.Fatalf("expected artifact_manifest to be a map, got %T", artifactManifestRaw)
-	}
-	valueRaw, ok := artifactManifestMap["value"]
-	if !ok {
-		t.Fatal("expected artifact_manifest.value to be present")
-	}
-	valueMap, ok := valueRaw.(map[string]any)
-	if !ok {
-		t.Fatalf("expected artifact_manifest.value to be a map, got %T", valueRaw)
+		t.Fatalf("expected artifact_manifest.value to be a map, got %T", artifactManifestEntry.Value)
 	}
 	if valueMap["manifest_version"] != "1.0.0" {
 		t.Errorf("expected manifest_version=%q, got %v", "1.0.0", valueMap["manifest_version"])

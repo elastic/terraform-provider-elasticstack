@@ -48,7 +48,7 @@ func resolveSpaceAware(ctx context.Context, client clients.MinVersionEnforceable
 // fleetPackageInstalled determines whether Fleet reports a package as fully installed.
 // Newer Kibana versions may populate InstallationInfo.install_status instead of (or in addition to) status,
 // and status casing can vary.
-func fleetPackageInstalled(pkg *kbapi.PackageInfo, spaceID string, spaceAware bool) bool {
+func fleetPackageInstalled(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, spaceID string, spaceAware bool) bool {
 	if pkg == nil {
 		return false
 	}
@@ -56,9 +56,9 @@ func fleetPackageInstalled(pkg *kbapi.PackageInfo, spaceID string, spaceAware bo
 	globalInstalled := false
 	if pkg.InstallationInfo != nil {
 		switch pkg.InstallationInfo.InstallStatus {
-		case kbapi.PackageInfoInstallationInfoInstallStatusInstalled:
+		case kbapi.KibanaHTTPAPIsInstallationInfoInstallStatusInstalled:
 			globalInstalled = true
-		case kbapi.PackageInfoInstallationInfoInstallStatusInstallFailed:
+		case kbapi.KibanaHTTPAPIsInstallationInfoInstallStatusInstallFailed:
 			return false
 		}
 	}
@@ -76,7 +76,7 @@ func fleetPackageInstalled(pkg *kbapi.PackageInfo, spaceID string, spaceAware bo
 	return packageInstalledInKibanaSpace(pkg.InstallationInfo, spaceID)
 }
 
-func packageInstalledInKibanaSpace(info *kbapi.PackageInfo_InstallationInfo, spaceID string) bool {
+func packageInstalledInKibanaSpace(info *kbapi.KibanaHTTPAPIsInstallationInfo, spaceID string) bool {
 	if info == nil {
 		return false
 	}

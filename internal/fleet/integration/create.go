@@ -114,7 +114,7 @@ func writeIntegration(
 	return entitycore.KibanaWriteResult[integrationModel]{Model: planModel}, diags
 }
 
-func installedKibanaSpaceID(pkg *kbapi.PackageInfo) types.String {
+func installedKibanaSpaceID(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo) types.String {
 	if pkg == nil || pkg.InstallationInfo == nil {
 		return types.StringNull()
 	}
@@ -171,7 +171,7 @@ func waitForFleetIntegrationInstalled(ctx context.Context, fleetClient *fleet.Cl
 			return true, nil
 		}
 
-		if pkg.InstallationInfo != nil && pkg.InstallationInfo.InstallStatus == kbapi.PackageInfoInstallationInfoInstallStatusInstallFailed {
+		if pkg.InstallationInfo != nil && pkg.InstallationInfo.InstallStatus == kbapi.KibanaHTTPAPIsInstallationInfoInstallStatusInstallFailed {
 			return false, fmt.Errorf("package %s/%s installation failed", name, version)
 		}
 		if pkg.Status != nil && strings.EqualFold(*pkg.Status, "install_failed") {
