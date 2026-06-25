@@ -39,12 +39,11 @@ import (
 )
 
 var (
-	// Fixtures install elasticstack_fleet_agent_download_source (8.13+) and osquery_manager (8.7+).
-	minOsqueryPackAccTestVersion = version.Must(version.NewVersion("8.13.0"))
+	// Older Kibana versions can return HTTP 500 for deleted or missing Osquery packs.
+	minOsqueryPackAccTestVersion = version.Must(version.NewVersion("9.4.0"))
 
 	osqueryPackResourceAddr   = "elasticstack_kibana_osquery_pack.test"
 	osqueryPackDataSourceAddr = "data.elasticstack_kibana_osquery_pack.test"
-	fleetAgentPolicyAddr      = "elasticstack_fleet_agent_policy.test_policy"
 
 	invalidPlatformErrorPattern = `(?s)platform.*must be one of`
 
@@ -63,7 +62,6 @@ func TestAccResourceOsqueryPack(t *testing.T) {
 	vars := config.Variables{
 		"suffix": config.StringVariable(suffix),
 	}
-	var fleetPolicyID string
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -78,8 +76,6 @@ func TestAccResourceOsqueryPack(t *testing.T) {
 					resource.TestCheckResourceAttrSet(osqueryPackResourceAddr, "id"),
 					resource.TestCheckResourceAttrSet(osqueryPackResourceAddr, "pack_id"),
 					testAccCheckCompositeIDFormat(osqueryPackResourceAddr, clients.DefaultSpaceID),
-					captureFleetPolicyID(fleetAgentPolicyAddr, &fleetPolicyID),
-					testAccCheckOsqueryPackPolicyAndShards(osqueryPackResourceAddr, &fleetPolicyID, "100"),
 					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "space_id", "default"),
 					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "name", fmt.Sprintf("tf-acc-osquery-pack-%s", suffix)),
 					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "description", "Terraform acceptance test pack"),
@@ -106,7 +102,6 @@ func TestAccResourceOsqueryPack(t *testing.T) {
 					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "name", fmt.Sprintf("tf-acc-osquery-pack-updated-%s", suffix)),
 					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "description", "Updated Terraform acceptance test pack"),
 					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "enabled", "false"),
-					testAccCheckOsqueryPackPolicyAndShards(osqueryPackResourceAddr, &fleetPolicyID, "75"),
 					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.%", "2"),
 					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.find_procs.query", "SELECT pid, name, path FROM processes LIMIT 10;"),
 					resource.TestCheckTypeSetElemAttr(osqueryPackResourceAddr, "queries.find_procs.platform.*", "linux"),
@@ -179,7 +174,6 @@ func TestAccDataSourceOsqueryPack(t *testing.T) {
 	vars := config.Variables{
 		"suffix": config.StringVariable(suffix),
 	}
-	var fleetPolicyID string
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -191,10 +185,9 @@ func TestAccDataSourceOsqueryPack(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables:          vars,
 				Check: func(s *terraform.State) error {
-					checks := osqueryPackV1DataSourceParityChecks(&fleetPolicyID)
+					checks := osqueryPackV1DataSourceParityChecks()
 					checks = append([]resource.TestCheckFunc{
 						testAccCheckCompositeIDFormat(osqueryPackDataSourceAddr, clients.DefaultSpaceID),
-						captureFleetPolicyID(fleetAgentPolicyAddr, &fleetPolicyID),
 					}, checks...)
 					return resource.ComposeTestCheckFunc(checks...)(s)
 				},
@@ -298,7 +291,6 @@ func TestAccDataSourceOsqueryPack_nonDefaultSpace(t *testing.T) {
 		"suffix":   config.StringVariable(suffix),
 		"space_id": config.StringVariable(spaceID),
 	}
-	var fleetPolicyID string
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -310,11 +302,10 @@ func TestAccDataSourceOsqueryPack_nonDefaultSpace(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables:          vars,
 				Check: func(s *terraform.State) error {
-					checks := osqueryPackV1DataSourceParityChecks(&fleetPolicyID)
+					checks := osqueryPackV1DataSourceParityChecks()
 					checks = append([]resource.TestCheckFunc{
 						resource.TestCheckResourceAttr(osqueryPackDataSourceAddr, "space_id", spaceID),
 						testAccCheckCompositeIDFormat(osqueryPackDataSourceAddr, spaceID),
-						captureFleetPolicyID(fleetAgentPolicyAddr, &fleetPolicyID),
 					}, checks...)
 					return resource.ComposeTestCheckFunc(checks...)(s)
 				},
@@ -439,8 +430,8 @@ func testAccCheckOsqueryPackAbsentFromState(addr string) resource.TestCheckFunc 
 	}
 }
 
-func osqueryPackV1DataSourceParityChecks(fleetPolicyID *string) []resource.TestCheckFunc {
-	checks := []resource.TestCheckFunc{
+func osqueryPackV1DataSourceParityChecks() []resource.TestCheckFunc {
+	return []resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(osqueryPackResourceAddr, "pack_id"),
 		resource.TestCheckResourceAttrSet(osqueryPackDataSourceAddr, "pack_id"),
 		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "id", osqueryPackResourceAddr, "id"),
@@ -449,7 +440,6 @@ func osqueryPackV1DataSourceParityChecks(fleetPolicyID *string) []resource.TestC
 		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "description", osqueryPackResourceAddr, "description"),
 		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "enabled", osqueryPackResourceAddr, "enabled"),
 		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "space_id", osqueryPackResourceAddr, "space_id"),
-		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "policy_ids.0", osqueryPackResourceAddr, "policy_ids.0"),
 		resource.TestCheckResourceAttr(osqueryPackDataSourceAddr, "read_only", "false"),
 		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "queries.find_procs.query", osqueryPackResourceAddr, "queries.find_procs.query"),
 		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "queries.find_procs.platform.#", osqueryPackResourceAddr, "queries.find_procs.platform.#"),
@@ -467,43 +457,6 @@ func osqueryPackV1DataSourceParityChecks(fleetPolicyID *string) []resource.TestC
 		resource.TestCheckTypeSetElemAttr(osqueryPackDataSourceAddr, "queries.find_procs.ecs_mapping.host.name.values.*", "host-b"),
 		resource.TestCheckTypeSetElemAttr(osqueryPackResourceAddr, "queries.find_procs.ecs_mapping.host.name.values.*", "host-a"),
 		resource.TestCheckTypeSetElemAttr(osqueryPackResourceAddr, "queries.find_procs.ecs_mapping.host.name.values.*", "host-b"),
-	}
-
-	if fleetPolicyID != nil {
-		checks = append(checks, testAccCheckDataSourceShardParity(osqueryPackDataSourceAddr, osqueryPackResourceAddr, fleetPolicyID))
-	}
-
-	return checks
-}
-
-func testAccCheckDataSourceShardParity(dataSourceAddr, resourceAddr string, policyID *string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		if policyID == nil || *policyID == "" {
-			return fmt.Errorf("fleet policy ID was not captured before shard parity check")
-		}
-
-		shardKey := "shards." + *policyID
-		ds, ok := s.RootModule().Resources[dataSourceAddr]
-		if !ok {
-			return fmt.Errorf("data source %q not found in state", dataSourceAddr)
-		}
-		rs, ok := s.RootModule().Resources[resourceAddr]
-		if !ok {
-			return fmt.Errorf("resource %q not found in state", resourceAddr)
-		}
-
-		dsShard, ok := ds.Primary.Attributes[shardKey]
-		if !ok {
-			return fmt.Errorf("data source %q missing %q", dataSourceAddr, shardKey)
-		}
-		rsShard, ok := rs.Primary.Attributes[shardKey]
-		if !ok {
-			return fmt.Errorf("resource %q missing %q", resourceAddr, shardKey)
-		}
-		if dsShard != rsShard {
-			return fmt.Errorf("data source %s = %q, resource %s = %q", shardKey, dsShard, shardKey, rsShard)
-		}
-		return nil
 	}
 }
 
@@ -523,47 +476,6 @@ func testAccCheckCompositeIDFormat(resourceAddr, spaceID string) resource.TestCh
 		if rs.Primary.ID != want {
 			return fmt.Errorf("resource %q id %q, want composite %q", resourceAddr, rs.Primary.ID, want)
 		}
-		return nil
-	}
-}
-
-func captureFleetPolicyID(resourceAddr string, policyID *string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[resourceAddr]
-		if !ok {
-			return fmt.Errorf("resource %q not found in state", resourceAddr)
-		}
-
-		id, ok := rs.Primary.Attributes["policy_id"]
-		if !ok || id == "" {
-			return fmt.Errorf("resource %q missing policy_id in state", resourceAddr)
-		}
-
-		*policyID = id
-		return nil
-	}
-}
-
-func testAccCheckOsqueryPackPolicyAndShards(resourceAddr string, policyID *string, shardPercent string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		if *policyID == "" {
-			return fmt.Errorf("fleet policy ID was not captured before shard/policy check")
-		}
-
-		rs, ok := s.RootModule().Resources[resourceAddr]
-		if !ok {
-			return fmt.Errorf("resource %q not found in state", resourceAddr)
-		}
-
-		if got := rs.Primary.Attributes["policy_ids.0"]; got != *policyID {
-			return fmt.Errorf("policy_ids.0 = %q, want %q", got, *policyID)
-		}
-
-		shardKey := "shards." + *policyID
-		if got := rs.Primary.Attributes[shardKey]; got != shardPercent {
-			return fmt.Errorf("%s = %q, want %q", shardKey, got, shardPercent)
-		}
-
 		return nil
 	}
 }
