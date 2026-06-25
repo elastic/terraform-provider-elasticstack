@@ -511,7 +511,7 @@ func TestBuildFinalizeRequestIncludesArtifactManifest(t *testing.T) {
 		ArtifactManifest: artifactManifest,
 	}
 
-	req, diags := edip.BuildFinalizeRequest(ctx, model, ps)
+	req, diags := edip.BuildFinalizeRequest(ctx, model, nil, ps)
 	if diags.HasError() {
 		t.Fatalf("expected no diagnostics, got %v", diags)
 	}
@@ -541,6 +541,51 @@ func TestBuildFinalizeRequestIncludesArtifactManifest(t *testing.T) {
 	}
 	if valueMap["manifest_version"] != "1.0.0" {
 		t.Errorf("expected manifest_version=%q, got %v", "1.0.0", valueMap["manifest_version"])
+	}
+}
+
+func TestPopulateModelFromAPIAdvancedSettingsWhenConfigured(t *testing.T) {
+	ctx := context.Background()
+
+	endpointConfig := map[string]struct {
+		Frozen *bool   `json:"frozen,omitempty"`
+		Type   *string `json:"type,omitempty"`
+		Value  any     `json:"value,omitempty"`
+	}{
+		"policy": buildConfigEntry(map[string]any{
+			"linux": map[string]any{
+				"advanced": map[string]any{
+					"artifacts": map[string]any{
+						"global": map[string]any{"base_url": "http://mirror.example.com"},
+					},
+				},
+			},
+		}),
+	}
+	inputs := kbapi.PackagePolicyTypedInputs{{
+		Type:    "endpoint",
+		Enabled: true,
+		Config:  &endpointConfig,
+		Streams: []kbapi.PackagePolicyTypedInputStream{},
+	}}
+	policy := buildTestPackagePolicy("policy-123", "my-endpoint", "endpoint", "8.14.0", true, inputs)
+
+	model := &edip.ElasticDefendIntegrationPolicyModel{
+		AdvancedSettings: types.MapValueMust(types.StringType, map[string]attr.Value{
+			"linux.advanced.artifacts.global.base_url": types.StringValue("http://placeholder.example.com"),
+		}),
+	}
+	diags := edip.PopulateModelFromAPI(ctx, model, policy)
+	if diags.HasError() {
+		t.Fatalf("expected no diagnostics, got %v", diags)
+	}
+
+	val, ok := model.AdvancedSettings.Elements()["linux.advanced.artifacts.global.base_url"]
+	if !ok {
+		t.Fatal("expected advanced setting in state")
+	}
+	if val.(types.String).ValueString() != "http://mirror.example.com" {
+		t.Fatalf("unexpected value: %v", val)
 	}
 }
 
