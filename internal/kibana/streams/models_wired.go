@@ -79,51 +79,8 @@ func (m *wiredConfigModel) populateFromAPI(_ context.Context, ingest *kibanaoapi
 		m.RoutingJSON = jsontypes.NewNormalizedNull()
 	}
 
-	// Lifecycle
-	if len(ingest.Lifecycle) > 0 {
-		m.LifecycleJSON = jsontypes.NewNormalizedValue(string(ingest.Lifecycle))
-	} else {
-		m.LifecycleJSON = jsontypes.NewNormalizedNull()
-	}
-
-	// Failure store
-	if len(ingest.FailureStore) > 0 {
-		m.FailureStoreJSON = jsontypes.NewNormalizedValue(string(ingest.FailureStore))
-	} else {
-		m.FailureStoreJSON = jsontypes.NewNormalizedNull()
-	}
-
-	// Index settings
-	if ingest.Settings.IndexNumberOfShards != nil {
-		if v, ok := ingest.Settings.IndexNumberOfShards.Value.(float64); ok {
-			m.IndexNumberOfShards = types.Int64Value(int64(v))
-		} else {
-			m.IndexNumberOfShards = types.Int64Null()
-		}
-	} else {
-		m.IndexNumberOfShards = types.Int64Null()
-	}
-
-	if ingest.Settings.IndexNumberOfReplicas != nil {
-		if v, ok := ingest.Settings.IndexNumberOfReplicas.Value.(float64); ok {
-			m.IndexNumberOfReplicas = types.Int64Value(int64(v))
-		} else {
-			m.IndexNumberOfReplicas = types.Int64Null()
-		}
-	} else {
-		m.IndexNumberOfReplicas = types.Int64Null()
-	}
-
-	if ingest.Settings.IndexRefreshInterval != nil {
-		switch v := ingest.Settings.IndexRefreshInterval.Value.(type) {
-		case string:
-			m.IndexRefreshInterval = types.StringValue(v)
-		default:
-			m.IndexRefreshInterval = types.StringNull()
-		}
-	} else {
-		m.IndexRefreshInterval = types.StringNull()
-	}
+	m.LifecycleJSON, m.FailureStoreJSON = populateLifecycleAndFailureStoreFromAPI(ingest)
+	m.IndexNumberOfShards, m.IndexNumberOfReplicas, m.IndexRefreshInterval = populateIndexSettingsFromAPI(ingest)
 
 	return diags
 }
@@ -172,22 +129,7 @@ func (m *wiredConfigModel) toAPIIngest(diags *diag.Diagnostics) *kibanaoapi.Stre
 		ingest.FailureStore = json.RawMessage(`{"disabled":{}}`)
 	}
 
-	// Index settings
-	if typeutils.IsKnown(m.IndexNumberOfShards) {
-		ingest.Settings.IndexNumberOfShards = &kibanaoapi.StreamIngestSettingValue{
-			Value: float64(m.IndexNumberOfShards.ValueInt64()),
-		}
-	}
-	if typeutils.IsKnown(m.IndexNumberOfReplicas) {
-		ingest.Settings.IndexNumberOfReplicas = &kibanaoapi.StreamIngestSettingValue{
-			Value: float64(m.IndexNumberOfReplicas.ValueInt64()),
-		}
-	}
-	if typeutils.IsKnown(m.IndexRefreshInterval) {
-		ingest.Settings.IndexRefreshInterval = &kibanaoapi.StreamIngestSettingValue{
-			Value: m.IndexRefreshInterval.ValueString(),
-		}
-	}
+	applyIndexSettingsToAPI(m.IndexNumberOfShards, m.IndexNumberOfReplicas, m.IndexRefreshInterval, ingest)
 
 	return ingest
 }
