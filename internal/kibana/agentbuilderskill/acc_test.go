@@ -24,9 +24,9 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -37,7 +37,7 @@ const (
 	dataSourceID   = "data.elasticstack_kibana_agentbuilder_skill.test"
 )
 
-var minKibanaAgentBuilderSkillsAPIVersion = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
+var minKibanaAgentBuilderSkillsAPIVersion = agentbuilder.MinExtendedAPIVersion
 
 func TestAccResourceAgentBuilderSkill(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderSkillsAPIVersion, versionutils.FlavorAny)

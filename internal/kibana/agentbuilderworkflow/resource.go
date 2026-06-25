@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -30,8 +29,6 @@ var (
 	_ resource.Resource                = newWorkflowResource()
 	_ resource.ResourceWithConfigure   = newWorkflowResource()
 	_ resource.ResourceWithImportState = newWorkflowResource()
-	// Workflow API is GA from 9.4.x onwards
-	minKibanaAgentBuilderAPIVersion = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 )
 
 type WorkflowResource struct {

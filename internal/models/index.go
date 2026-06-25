@@ -44,7 +44,7 @@ type DataStreamOptions struct {
 }
 
 type FailureStoreOptions struct {
-	Enabled   bool                   `json:"enabled"`
+	Enabled   *bool                  `json:"enabled,omitempty"`
 	Lifecycle *FailureStoreLifecycle `json:"lifecycle,omitempty"`
 }
 

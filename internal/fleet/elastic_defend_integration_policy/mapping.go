@@ -190,6 +190,14 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 	diags.Append(d...)
 	model.Policy = policyObj
 
+	originallySetAdvancedSettings := typeutils.IsKnown(model.AdvancedSettings)
+	if originallySetAdvancedSettings {
+		settings := advancedSettingsFromPolicyData(policyData)
+		advancedSettings, d := advancedSettingsMapToTerraform(settings)
+		diags.Append(d...)
+		model.AdvancedSettings = advancedSettings
+	}
+
 	return diags
 }
 
@@ -204,17 +212,17 @@ func mapPolicyFromAPI(ctx context.Context, policyData map[string]any) (types.Obj
 	}
 
 	var winData, macData, linuxData map[string]any
-	if w, ok := policyData["windows"]; ok {
+	if w, ok := policyData[policyOSWindows]; ok {
 		if wMap, ok := w.(map[string]any); ok {
 			winData = wMap
 		}
 	}
-	if m, ok := policyData["mac"]; ok {
+	if m, ok := policyData[policyOSMac]; ok {
 		if mMap, ok := m.(map[string]any); ok {
 			macData = mMap
 		}
 	}
-	if l, ok := policyData["linux"]; ok {
+	if l, ok := policyData[policyOSLinux]; ok {
 		if lMap, ok := l.(map[string]any); ok {
 			linuxData = lMap
 		}
@@ -809,8 +817,8 @@ func linuxAttrTypes() map[string]attr.Type {
 
 func policyAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"windows": types.ObjectType{AttrTypes: windowsAttrTypes()},
-		"mac":     types.ObjectType{AttrTypes: macAttrTypes()},
-		"linux":   types.ObjectType{AttrTypes: linuxAttrTypes()},
+		policyOSWindows: types.ObjectType{AttrTypes: windowsAttrTypes()},
+		policyOSMac:     types.ObjectType{AttrTypes: macAttrTypes()},
+		policyOSLinux:   types.ObjectType{AttrTypes: linuxAttrTypes()},
 	}
 }

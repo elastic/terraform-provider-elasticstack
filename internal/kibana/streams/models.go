@@ -81,6 +81,76 @@ func processingStepsToAPI(steps types.List, diags *diag.Diagnostics) json.RawMes
 	return stepsJSON
 }
 
+// populateLifecycleAndFailureStoreFromAPI reads lifecycle and failure-store from
+// an API ingest response into jsontypes.Normalized values.
+func populateLifecycleAndFailureStoreFromAPI(ingest *kibanaoapi.StreamIngest) (lifecycleJSON, failureStoreJSON jsontypes.Normalized) {
+	if len(ingest.Lifecycle) > 0 {
+		lifecycleJSON = jsontypes.NewNormalizedValue(string(ingest.Lifecycle))
+	} else {
+		lifecycleJSON = jsontypes.NewNormalizedNull()
+	}
+	if len(ingest.FailureStore) > 0 {
+		failureStoreJSON = jsontypes.NewNormalizedValue(string(ingest.FailureStore))
+	} else {
+		failureStoreJSON = jsontypes.NewNormalizedNull()
+	}
+	return
+}
+
+// populateIndexSettingsFromAPI reads index settings from an API ingest response.
+func populateIndexSettingsFromAPI(ingest *kibanaoapi.StreamIngest) (shards, replicas types.Int64, interval types.String) {
+	if ingest.Settings.IndexNumberOfShards != nil {
+		if v, ok := ingest.Settings.IndexNumberOfShards.Value.(float64); ok {
+			shards = types.Int64Value(int64(v))
+		} else {
+			shards = types.Int64Null()
+		}
+	} else {
+		shards = types.Int64Null()
+	}
+
+	if ingest.Settings.IndexNumberOfReplicas != nil {
+		if v, ok := ingest.Settings.IndexNumberOfReplicas.Value.(float64); ok {
+			replicas = types.Int64Value(int64(v))
+		} else {
+			replicas = types.Int64Null()
+		}
+	} else {
+		replicas = types.Int64Null()
+	}
+
+	if ingest.Settings.IndexRefreshInterval != nil {
+		switch v := ingest.Settings.IndexRefreshInterval.Value.(type) {
+		case string:
+			interval = types.StringValue(v)
+		default:
+			interval = types.StringNull()
+		}
+	} else {
+		interval = types.StringNull()
+	}
+	return
+}
+
+// applyIndexSettingsToAPI writes index settings to an API ingest object.
+func applyIndexSettingsToAPI(numberOfShards types.Int64, numberOfReplicas types.Int64, refreshInterval types.String, ingest *kibanaoapi.StreamIngest) {
+	if typeutils.IsKnown(numberOfShards) {
+		ingest.Settings.IndexNumberOfShards = &kibanaoapi.StreamIngestSettingValue{
+			Value: float64(numberOfShards.ValueInt64()),
+		}
+	}
+	if typeutils.IsKnown(numberOfReplicas) {
+		ingest.Settings.IndexNumberOfReplicas = &kibanaoapi.StreamIngestSettingValue{
+			Value: float64(numberOfReplicas.ValueInt64()),
+		}
+	}
+	if typeutils.IsKnown(refreshInterval) {
+		ingest.Settings.IndexRefreshInterval = &kibanaoapi.StreamIngestSettingValue{
+			Value: refreshInterval.ValueString(),
+		}
+	}
+}
+
 // streamModel is the top-level Terraform model for elasticstack_kibana_stream.
 type streamModel struct {
 	entitycore.ResourceTimeoutsField

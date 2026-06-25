@@ -82,7 +82,13 @@ func (r *elasticDefendIntegrationPolicyResource) Update(ctx context.Context, req
 	}
 
 	// Build and send the update request with the typed policy payload
-	updateReq, diags := buildFinalizeRequest(ctx, &planModel, ps)
+	priorAdvanced, d := advancedSettingsMapFromTerraform(ctx, stateModel.AdvancedSettings)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	updateReq, diags := buildFinalizeRequest(ctx, &planModel, priorAdvanced, ps)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

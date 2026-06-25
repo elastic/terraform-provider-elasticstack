@@ -29,6 +29,7 @@ import (
 func readTool(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, prior toolModel) (toolModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	// SpaceID must be set before populateFromAPI so it can build the composite ID.
 	prior.SpaceID = types.StringValue(spaceID)
 
 	oapiClient := client.GetKibanaOapiClient()

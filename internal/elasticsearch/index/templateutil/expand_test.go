@@ -174,7 +174,8 @@ func TestExpandTemplateCore(t *testing.T) {
 		require.False(t, diags.HasError())
 		require.NotNil(t, tpl.DataStreamOptions)
 		require.NotNil(t, tpl.DataStreamOptions.FailureStore)
-		assert.True(t, tpl.DataStreamOptions.FailureStore.Enabled)
+		require.NotNil(t, tpl.DataStreamOptions.FailureStore.Enabled)
+		assert.True(t, *tpl.DataStreamOptions.FailureStore.Enabled)
 	})
 
 	t.Run("data stream options null", func(t *testing.T) {
