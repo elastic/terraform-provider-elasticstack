@@ -20,6 +20,7 @@ package osquerypack
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -41,7 +42,7 @@ type osqueryPackBaseModel struct {
 	Name        types.String `tfsdk:"name"`
 	Description types.String `tfsdk:"description"`
 	Enabled     types.Bool   `tfsdk:"enabled"`
-	PolicyIDs   types.List   `tfsdk:"policy_ids"`
+	PolicyIDs   types.Set    `tfsdk:"policy_ids"`
 	Shards      types.Map    `tfsdk:"shards"`
 	Queries     types.Map    `tfsdk:"queries"`
 }
@@ -102,15 +103,15 @@ func (m *osqueryPackBaseModel) populateFromAPI(ctx context.Context, spaceID stri
 
 	m.setCompositeIdentity(spaceID, data.SavedObjectID)
 	m.Name = types.StringValue(data.Name)
-	m.Description = typeutils.StringishPointerValue(data.Description)
+	m.Description = optionalStringishPointerValue(data.Description)
 	m.Enabled = types.BoolPointerValue(data.Enabled)
 
 	if data.PolicyIDs != nil && len(*data.PolicyIDs) > 0 {
-		policyIDs, d := types.ListValueFrom(ctx, types.StringType, *data.PolicyIDs)
+		policyIDs, d := types.SetValueFrom(ctx, types.StringType, *data.PolicyIDs)
 		diags.Append(d...)
 		m.PolicyIDs = policyIDs
 	} else {
-		m.PolicyIDs = types.ListNull(types.StringType)
+		m.PolicyIDs = types.SetNull(types.StringType)
 	}
 
 	m.Shards = shardsMapFromAPI(data.Shards)
@@ -120,6 +121,14 @@ func (m *osqueryPackBaseModel) populateFromAPI(ctx context.Context, spaceID stri
 	m.Queries = queries
 
 	return diags
+}
+
+func optionalStringishPointerValue[T ~string](value *T) types.String {
+	if value == nil || strings.TrimSpace(string(*value)) == "" {
+		return types.StringNull()
+	}
+
+	return types.StringValue(string(*value))
 }
 
 func shardsMapFromAPI(shards kibanaoapi.OsqueryPackShards) types.Map {

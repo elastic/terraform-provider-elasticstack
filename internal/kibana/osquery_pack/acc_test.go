@@ -133,6 +133,42 @@ func TestAccResourceOsqueryPack(t *testing.T) {
 	})
 }
 
+func TestAccResourceOsqueryPack_omittedDescriptionUpdate(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
+
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{
+		"suffix": config.StringVariable(suffix),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkOsqueryPackDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omitted_description_create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(osqueryPackResourceAddr, "description"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "enabled", "true"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omitted_description_update"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(osqueryPackResourceAddr, "description"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "enabled", "false"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceOsqueryPack_ecsMappingValidator(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
 
@@ -252,7 +288,6 @@ func TestAccPrebuiltOsqueryPack_importRejected(t *testing.T) {
 
 func TestAccResourceOsqueryPack_nonDefaultSpace(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
-	t.Skip("Kibana Osquery pack detail/list APIs currently return HTTP 500 for custom spaces")
 
 	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
 	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
@@ -283,7 +318,6 @@ func TestAccResourceOsqueryPack_nonDefaultSpace(t *testing.T) {
 
 func TestAccDataSourceOsqueryPack_nonDefaultSpace(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
-	t.Skip("Kibana Osquery pack detail/list APIs currently return HTTP 500 for custom spaces")
 
 	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
 	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
@@ -413,6 +447,20 @@ func TestAccDataSourceOsqueryPack_missingPack(t *testing.T) {
 var checkOsqueryPackDestroy = checks.KibanaResourceDestroyCheckCompositeID(
 	"elasticstack_kibana_osquery_pack",
 	func(ctx context.Context, client *kibanaoapi.Client, spaceID, packID string) (bool, error) {
+		if spaceID != clients.DefaultSpaceID {
+			space, diags := kibanaoapi.GetSpace(ctx, client, spaceID)
+			if diags.HasError() {
+				return false, fmt.Errorf("failed to get space %q while checking osquery pack destroy: %v", spaceID, diags)
+			}
+			if space == nil {
+				// Terraform destroys resources in dependency order, so a deleted containing
+				// space means the pack is gone. Avoid probing the Osquery route here: Kibana
+				// currently returns HTTP 500 for Osquery APIs under non-existent spaces
+				// (elastic/kibana#275119), which would make successful destroys look failed.
+				return false, nil
+			}
+		}
+
 		detail, diags := kibanaoapi.GetOsqueryPack(ctx, client, spaceID, packID)
 		if diags.HasError() {
 			return false, fmt.Errorf("failed to get osquery pack %q in space %q: %v", packID, spaceID, diags)

@@ -56,7 +56,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 				MarkdownDescription: "Whether the pack is enabled.",
 				Computed:            true,
 			},
-			attrPolicyIDs: schema.ListAttribute{
+			attrPolicyIDs: schema.SetAttribute{
 				MarkdownDescription: "Fleet agent policy IDs this pack is deployed to.",
 				Computed:            true,
 				ElementType:         types.StringType,

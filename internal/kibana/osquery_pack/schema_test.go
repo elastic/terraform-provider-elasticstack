@@ -75,9 +75,10 @@ func TestSchema_attributeMetadata(t *testing.T) {
 	require.True(t, ok)
 	assert.True(t, enabledAttr.IsOptional())
 	assert.False(t, enabledAttr.IsRequired())
-	assert.False(t, enabledAttr.IsComputed())
+	assert.True(t, enabledAttr.IsComputed())
+	assertHasBoolPlanModifier(t, enabledAttr.PlanModifiers, "useStateForUnknown")
 
-	policyIDsAttr, ok := s.Attributes["policy_ids"].(schema.ListAttribute)
+	policyIDsAttr, ok := s.Attributes["policy_ids"].(schema.SetAttribute)
 	require.True(t, ok)
 	assert.True(t, policyIDsAttr.IsOptional())
 	assert.Equal(t, types.StringType, policyIDsAttr.ElementType)

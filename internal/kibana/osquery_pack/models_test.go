@@ -342,7 +342,7 @@ func TestPopulateFromAPI(t *testing.T) {
 	var policies []string
 	policyDiags := model.PolicyIDs.ElementsAs(ctx, &policies, false)
 	require.False(t, policyDiags.HasError())
-	assert.Equal(t, []string{"policy-1", "policy-2"}, policies)
+	assert.ElementsMatch(t, []string{"policy-1", "policy-2"}, policies)
 
 	assert.Equal(t, types.Float64Value(75), model.Shards.Elements()["policy-1"])
 
@@ -398,6 +398,26 @@ func TestPopulateFromAPI_DefaultSpaceAndEmptyOptionals(t *testing.T) {
 	assert.True(t, model.Enabled.IsNull())
 	assert.True(t, model.PolicyIDs.IsNull())
 	assert.True(t, model.Shards.IsNull())
+}
+
+func TestPopulateFromAPI_EmptyDescriptionIsNull(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	desc := kbapi.SecurityOsqueryAPIPackDescription("   ")
+	detail := &kibanaoapi.OsqueryPackDetail{
+		Name:          "empty-description",
+		SavedObjectID: "empty-description-id",
+		Description:   &desc,
+		Queries: &kbapi.SecurityOsqueryAPIObjectQueries{
+			"q1": {Query: new(kbapi.SecurityOsqueryAPIQuery("SELECT 1"))},
+		},
+	}
+
+	var model osqueryPackModel
+	diags := model.populateFromAPI(ctx, "default", detail)
+	require.False(t, diags.HasError())
+	assert.True(t, model.Description.IsNull())
 }
 
 func TestPopulateFromAPI_NilDetail(t *testing.T) {

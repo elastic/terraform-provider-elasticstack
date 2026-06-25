@@ -19,6 +19,7 @@ package osquerypack
 
 import (
 	"context"
+	"sort"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -73,17 +74,18 @@ func (m osqueryPackModel) toWriteRequestBody(ctx context.Context) (kbapi.Securit
 	return body, diags
 }
 
-func policyIDsToAPI(ctx context.Context, list types.List) (*kbapi.SecurityOsqueryAPIPolicyIds, diag.Diagnostics) {
-	if list.IsUnknown() || list.IsNull() {
+func policyIDsToAPI(ctx context.Context, set types.Set) (*kbapi.SecurityOsqueryAPIPolicyIds, diag.Diagnostics) {
+	if set.IsUnknown() || set.IsNull() {
 		return nil, nil
 	}
 
 	var ids []string
-	diags := list.ElementsAs(ctx, &ids, false)
+	diags := set.ElementsAs(ctx, &ids, false)
 	if diags.HasError() {
 		return nil, diags
 	}
 
+	sort.Strings(ids)
 	return &ids, diags
 }
 

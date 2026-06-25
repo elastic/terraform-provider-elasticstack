@@ -79,8 +79,12 @@ func getSchema(_ context.Context) schema.Schema {
 			attrEnabled: schema.BoolAttribute{
 				MarkdownDescription: "Whether the pack is enabled.",
 				Optional:            true,
+				Computed:            true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
-			attrPolicyIDs: schema.ListAttribute{
+			attrPolicyIDs: schema.SetAttribute{
 				MarkdownDescription: "Fleet agent policy IDs this pack is deployed to.",
 				Optional:            true,
 				ElementType:         types.StringType,

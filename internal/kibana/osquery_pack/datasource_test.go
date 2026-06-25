@@ -96,11 +96,11 @@ func TestNewDataSource_schemaAttributes(t *testing.T) {
 	for _, attr := range []string{"id", "name", "description", "enabled", "policy_ids", "shards"} {
 		switch attr {
 		case "policy_ids":
-			listAttr, ok := resp.Schema.Attributes[attr].(schema.ListAttribute)
-			require.True(t, ok, "%q should be ListAttribute", attr)
-			assert.True(t, listAttr.IsComputed(), "%q should be computed-only", attr)
-			assert.False(t, listAttr.IsRequired(), "%q should not be required", attr)
-			assert.False(t, listAttr.IsOptional(), "%q should not be optional", attr)
+			setAttr, ok := resp.Schema.Attributes[attr].(schema.SetAttribute)
+			require.True(t, ok, "%q should be SetAttribute", attr)
+			assert.True(t, setAttr.IsComputed(), "%q should be computed-only", attr)
+			assert.False(t, setAttr.IsRequired(), "%q should not be required", attr)
+			assert.False(t, setAttr.IsOptional(), "%q should not be optional", attr)
 		case "shards":
 			mapAttr, ok := resp.Schema.Attributes[attr].(schema.MapAttribute)
 			require.True(t, ok, "%q should be MapAttribute", attr)

@@ -27,7 +27,7 @@ The data source SHALL expose the following attributes (Computed unless noted as 
 - `name` — Computed string
 - `description` — Computed string
 - `enabled` — Computed bool
-- `policy_ids` — Computed list of strings
+- `policy_ids` — Computed set of strings
 - `shards` — Computed map(string → number)
 - `queries` — Computed MapNestedAttribute (same nested schema as the resource v1 query fields, all Computed)
 - `read_only` — Computed bool; indicates whether the pack is prebuilt and cannot be managed via the resource

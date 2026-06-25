@@ -25,9 +25,9 @@ The resource SHALL expose the following attributes (v1 scope — pinned kbapi cl
 - `space_id` — Optional + Computed string, default `"default"`, RequiresReplace
 - `kibana_connection` — Optional block (provided by entitycore envelope)
 - `name` — Required string; human-readable pack name
-- `description` — Optional string
-- `enabled` — Optional bool
-- `policy_ids` — Optional list of strings; Fleet agent policy IDs this pack is deployed to
+- `description` — Optional string; empty or whitespace-only API values are normalized to null when the attribute is omitted from configuration
+- `enabled` — Optional + Computed bool
+- `policy_ids` — Optional set of strings; Fleet agent policy IDs this pack is deployed to
 - `shards` — Optional map(string → number); percent (1–100) of hosts per policy ID to receive the pack
 - `queries` — Required MapNestedAttribute; at least one query must be provided
 

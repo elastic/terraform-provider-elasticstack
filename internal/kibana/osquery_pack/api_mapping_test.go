@@ -33,32 +33,32 @@ func TestPolicyIDsToAPI(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("null omits field", func(t *testing.T) {
-		result, diags := policyIDsToAPI(ctx, types.ListNull(types.StringType))
+		result, diags := policyIDsToAPI(ctx, types.SetNull(types.StringType))
 		require.False(t, diags.HasError())
 		assert.Nil(t, result)
 	})
 
 	t.Run("unknown omits field", func(t *testing.T) {
-		result, diags := policyIDsToAPI(ctx, types.ListUnknown(types.StringType))
+		result, diags := policyIDsToAPI(ctx, types.SetUnknown(types.StringType))
 		require.False(t, diags.HasError())
 		assert.Nil(t, result)
 	})
 
 	t.Run("known empty sends empty slice", func(t *testing.T) {
-		list, d := types.ListValueFrom(ctx, types.StringType, []string{})
+		set, d := types.SetValueFrom(ctx, types.StringType, []string{})
 		require.False(t, d.HasError())
 
-		result, diags := policyIDsToAPI(ctx, list)
+		result, diags := policyIDsToAPI(ctx, set)
 		require.False(t, diags.HasError())
 		require.NotNil(t, result)
 		assert.Empty(t, *result)
 	})
 
-	t.Run("known values are sent", func(t *testing.T) {
-		list, d := types.ListValueFrom(ctx, types.StringType, []string{"policy-a", "policy-b"})
+	t.Run("known values are sorted before sending", func(t *testing.T) {
+		set, d := types.SetValueFrom(ctx, types.StringType, []string{"policy-b", "policy-a"})
 		require.False(t, d.HasError())
 
-		result, diags := policyIDsToAPI(ctx, list)
+		result, diags := policyIDsToAPI(ctx, set)
 		require.False(t, diags.HasError())
 		require.NotNil(t, result)
 		assert.Equal(t, kbapi.SecurityOsqueryAPIPolicyIds{"policy-a", "policy-b"}, *result)
@@ -167,7 +167,7 @@ func TestToWriteRequestBody_nullOptionalFieldsOmitted(t *testing.T) {
 	model := osqueryPackModel{
 		osqueryPackBaseModel: osqueryPackBaseModel{
 			Name:      types.StringValue("pack-name"),
-			PolicyIDs: types.ListNull(types.StringType),
+			PolicyIDs: types.SetNull(types.StringType),
 			Shards:    types.MapNull(types.Float64Type),
 			Queries:   mustQueriesMap(t, singleQueryObject(t, "q1", "SELECT 1")),
 		},
@@ -183,7 +183,7 @@ func TestToWriteRequestBody_knownEmptyOptionalsSent(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	policyIDs, d := types.ListValueFrom(ctx, types.StringType, []string{})
+	policyIDs, d := types.SetValueFrom(ctx, types.StringType, []string{})
 	require.False(t, d.HasError())
 	shards, d := types.MapValue(types.Float64Type, map[string]attr.Value{})
 	require.False(t, d.HasError())
@@ -208,7 +208,7 @@ func TestToWriteRequestBody_knownEmptyOptionalsSent(t *testing.T) {
 func fullWriteModel(ctx context.Context, t *testing.T) osqueryPackModel {
 	t.Helper()
 
-	policyIDs, d := types.ListValueFrom(ctx, types.StringType, []string{"policy-a"})
+	policyIDs, d := types.SetValueFrom(ctx, types.StringType, []string{"policy-a"})
 	require.False(t, d.HasError())
 	shards, d := types.MapValue(types.Float64Type, map[string]attr.Value{
 		"policy-a": types.Float64Value(80),

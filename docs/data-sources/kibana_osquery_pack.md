@@ -69,7 +69,7 @@ output "managed_pack_name" {
 - `enabled` (Boolean) Whether the pack is enabled.
 - `id` (String) Composite identifier in the form `<space_id>/<pack_id>`.
 - `name` (String) Human-readable name of the Osquery pack.
-- `policy_ids` (List of String) Fleet agent policy IDs this pack is deployed to.
+- `policy_ids` (Set of String) Fleet agent policy IDs this pack is deployed to.
 - `queries` (Attributes Map) Osquery queries in the pack. Map keys are query names (canonical identifiers in Kibana). (see [below for nested schema](#nestedatt--queries))
 - `read_only` (Boolean) Whether the pack is prebuilt and read-only. Prebuilt packs can be read by this data source but not managed by the resource.
 - `shards` (Map of Number) Percent (1-100) of hosts per policy ID that receive the pack.
