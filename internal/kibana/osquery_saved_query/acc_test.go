@@ -466,6 +466,28 @@ func TestAccDataSourceOsquerySavedQuery(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr(dataSourceName, "ecs_mapping.event.type.values.*", "start"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("minimal_read"),
+				ConfigVariables: config.Variables{
+					"saved_query_id": config.StringVariable(savedQueryID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(dataSourceName, "ecs_mapping.%", "0"),
+					resource.TestCheckNoResourceAttr(dataSourceName, "platform"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("snapshot_removed_true"),
+				ConfigVariables: config.Variables{
+					"saved_query_id": config.StringVariable(savedQueryID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(dataSourceName, "snapshot", "true"),
+					resource.TestCheckResourceAttr(dataSourceName, "removed", "true"),
+				),
+			},
 		},
 	})
 }
@@ -529,6 +551,36 @@ func TestAccDataSourceOsquerySavedQuery_Prebuilt(t *testing.T) {
 					resource.TestCheckResourceAttrSet(dataSourceName, "saved_object_id"),
 					resource.TestCheckResourceAttr(dataSourceName, "prebuilt", "true"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "query"),
+					resource.TestCheckResourceAttrSet(dataSourceName, "description"),
+					resource.TestCheckResourceAttrSet(dataSourceName, "snapshot"),
+					resource.TestCheckResourceAttrSet(dataSourceName, "removed"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceOsquerySavedQuery_Space(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, osquerysavedquery.MinSupportedVersion, versionutils.FlavorAny)
+	skipIfOsquerySavedQueryAPIUnavailable(t)
+
+	spaceID := "tf-oq-ds-space-" + uuid.New().String()[:8]
+	savedQueryID := "tf-oq-ds-" + uuid.New().String()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceOsquerySavedQueryDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("space_read"),
+				ConfigVariables: config.Variables{
+					"space_id":       config.StringVariable(spaceID),
+					"saved_query_id": config.StringVariable(savedQueryID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(dataSourceName, "space_id", spaceID),
+					resource.TestCheckResourceAttrPair(dataSourceName, "query", resourceName, "query"),
 				),
 			},
 		},
