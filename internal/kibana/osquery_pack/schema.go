@@ -59,6 +59,9 @@ func getSchema(_ context.Context) schema.Schema {
 			attrPackID: schema.StringAttribute{
 				MarkdownDescription: "Server-generated Kibana saved object identifier for the pack (`saved_object_id`).",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			attrSpaceID: schema.StringAttribute{
 				MarkdownDescription: "Kibana space identifier. When omitted, the default space is used.",
