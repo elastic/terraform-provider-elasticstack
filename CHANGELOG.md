@@ -2,7 +2,8 @@
 
 ### Changes
 
-- Add `elasticstack_kibana_osquery_saved_query` resource for CRUD management of user-defined Osquery saved queries and a matching data source for reading prebuilt or externally managed queries in Kibana.
+- Add advanced_settings map to elasticstack_fleet_elastic_defend_integration_policy for Elastic Defend advanced policy configuration. ([#3845](https://github.com/elastic/terraform-provider-elasticstack/pull/3845))
+- Add `elasticstack_kibana_osquery_saved_query` resource and data source for managing Kibana Osquery saved queries. ([#3883](https://github.com/elastic/terraform-provider-elasticstack/pull/3883))
 
 ## [0.16.2] - 2026-06-23
 
