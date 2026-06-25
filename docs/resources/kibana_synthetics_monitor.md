@@ -62,6 +62,11 @@ resource "elasticstack_kibana_synthetics_monitor" "my_monitor" {
     mode                    = "all"
     ipv4                    = true
     ipv6                    = true
+    check = jsonencode({
+      response = {
+        status = [200, 201, 301]
+      }
+    })
   }
 }
 ```
@@ -148,7 +153,7 @@ Required:
 
 Optional:
 
-- `check` (String) The check request settings.. Raw JSON object, use `jsonencode` function to represent JSON
+- `check` (String) HTTP request and response check settings. Supported sub-keys include `request.{method,headers,body}` and `response.{status,body,headers,json}`. For example, to assert an expected HTTP status: `check = jsonencode({ response = { status = [200, 201, 301] } })`. See [Heartbeat HTTP options](https://www.elastic.co/docs/reference/beats/heartbeat/monitor-http-options) for the full list of supported keys (note: the Heartbeat YAML uses dotted keys like `check.response.status`; here they are passed as nested JSON).. Raw JSON object, use `jsonencode` function to represent JSON
 - `ipv4` (Boolean) Whether to ping using the ipv4 protocol.
 - `ipv6` (Boolean) Whether to ping using the ipv6 protocol.
 - `max_redirects` (Number) The maximum number of redirects to follow. Default: `0`
@@ -156,7 +161,7 @@ Optional:
 - `password` (String, Sensitive) The password for authenticating with the server. The credentials are passed with the request.
 - `proxy_header` (String) Additional headers to send to proxies during CONNECT requests. Raw JSON object, use `jsonencode` function to represent JSON
 - `proxy_url` (String) The URL of the proxy to use for this monitor.
-- `response` (String) Controls the indexing of the HTTP response body contents to the `http.response.body.contents` field.. Raw JSON object, use `jsonencode` function to represent JSON
+- `response` (String) Controls the indexing of the HTTP response body contents to the `http.response.body.contents` field. Supported sub-keys include `include_body` (`on_error`/`never`/`always`) and `include_body_max_bytes`. See [Heartbeat HTTP options](https://www.elastic.co/docs/reference/beats/heartbeat/monitor-http-options) for the full list.. Raw JSON object, use `jsonencode` function to represent JSON
 - `ssl_certificate` (String) Certificate.
 - `ssl_certificate_authorities` (List of String) The list of root certificates for verifications is required.
 - `ssl_key` (String, Sensitive) Certificate key.
