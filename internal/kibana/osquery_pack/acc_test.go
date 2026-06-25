@@ -39,7 +39,8 @@ import (
 )
 
 var (
-	minOsqueryPackVersion = version.Must(version.NewVersion("8.5.0"))
+	// Fixtures install elasticstack_fleet_agent_download_source (8.13+) and osquery_manager (8.7+).
+	minOsqueryPackAccTestVersion = version.Must(version.NewVersion("8.13.0"))
 
 	osqueryPackResourceAddr   = "elasticstack_kibana_osquery_pack.test"
 	osqueryPackDataSourceAddr = "data.elasticstack_kibana_osquery_pack.test"
@@ -52,11 +53,11 @@ var (
 )
 
 func skipOsqueryPackUnsupported() func() (bool, error) {
-	return versionutils.CheckIfVersionIsUnsupported(minOsqueryPackVersion)
+	return versionutils.CheckIfVersionIsUnsupported(minOsqueryPackAccTestVersion)
 }
 
 func TestAccResourceOsqueryPack(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
 
 	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
 	vars := config.Variables{
@@ -138,7 +139,7 @@ func TestAccResourceOsqueryPack(t *testing.T) {
 }
 
 func TestAccResourceOsqueryPack_ecsMappingValidator(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -155,7 +156,7 @@ func TestAccResourceOsqueryPack_ecsMappingValidator(t *testing.T) {
 }
 
 func TestAccResourceOsqueryPack_invalidPlatform(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -172,7 +173,7 @@ func TestAccResourceOsqueryPack_invalidPlatform(t *testing.T) {
 }
 
 func TestAccDataSourceOsqueryPack(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
 
 	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
 	vars := config.Variables{
@@ -203,7 +204,7 @@ func TestAccDataSourceOsqueryPack(t *testing.T) {
 }
 
 func TestAccPrebuiltOsqueryPack(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
 
 	prebuiltPackID, skipReason := findPrebuiltOsqueryPack(t, clients.DefaultSpaceID)
 	if skipReason != "" {
@@ -233,7 +234,7 @@ func TestAccPrebuiltOsqueryPack(t *testing.T) {
 }
 
 func TestAccPrebuiltOsqueryPack_importRejected(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
 
 	prebuiltPackID, skipReason := findPrebuiltOsqueryPack(t, clients.DefaultSpaceID)
 	if skipReason != "" {
@@ -257,7 +258,7 @@ func TestAccPrebuiltOsqueryPack_importRejected(t *testing.T) {
 }
 
 func TestAccResourceOsqueryPack_nonDefaultSpace(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
 	t.Skip("Kibana Osquery pack detail/list APIs currently return HTTP 500 for custom spaces")
 
 	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
@@ -288,7 +289,7 @@ func TestAccResourceOsqueryPack_nonDefaultSpace(t *testing.T) {
 }
 
 func TestAccDataSourceOsqueryPack_nonDefaultSpace(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
 	t.Skip("Kibana Osquery pack detail/list APIs currently return HTTP 500 for custom spaces")
 
 	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
@@ -323,7 +324,7 @@ func TestAccDataSourceOsqueryPack_nonDefaultSpace(t *testing.T) {
 }
 
 func TestAccResourceOsqueryPack_externalDelete(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
 
 	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
 	vars := config.Variables{
@@ -362,7 +363,7 @@ func TestAccResourceOsqueryPack_externalDelete(t *testing.T) {
 }
 
 func TestAccResourceOsqueryPack_deleteIdempotent(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
 
 	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
 	vars := config.Variables{
@@ -396,7 +397,7 @@ func TestAccResourceOsqueryPack_deleteIdempotent(t *testing.T) {
 }
 
 func TestAccDataSourceOsqueryPack_missingPack(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minOsqueryPackVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
 
 	unknownPackID := uuid.NewString()
 	vars := config.Variables{
