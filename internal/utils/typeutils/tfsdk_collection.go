@@ -25,9 +25,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 )
 
+// collectionFactory creates a collection type C from a context, element type, and value.
+type collectionFactory[C attr.Value] func(context.Context, attr.Type, any) (C, diag.Diagnostics)
+
 // collectionValueFrom converts a []T to a collection type C (types.List or types.Set)
 // using the provided factory function.
-func collectionValueFrom[T any, C attr.Value](ctx context.Context, value []T, elemType attr.Type, p path.Path, diags *diag.Diagnostics, factory func(context.Context, attr.Type, any) (C, diag.Diagnostics)) C {
+func collectionValueFrom[T any, C attr.Value](
+	ctx context.Context,
+	value []T,
+	elemType attr.Type,
+	p path.Path,
+	diags *diag.Diagnostics,
+	factory collectionFactory[C],
+) C {
 	result, d := factory(ctx, elemType, value)
 	diags.Append(convertToAttrDiags(d, p)...)
 	return result
@@ -35,7 +45,13 @@ func collectionValueFrom[T any, C attr.Value](ctx context.Context, value []T, el
 
 // nonEmptyCollectionOrDefault returns original if slice is empty, otherwise converts
 // slice into a collection type C (types.List or types.Set) using the provided factory.
-func nonEmptyCollectionOrDefault[T any, C attr.Value](ctx context.Context, original C, elemType attr.Type, slice []T, factory func(context.Context, attr.Type, any) (C, diag.Diagnostics)) (C, diag.Diagnostics) {
+func nonEmptyCollectionOrDefault[T any, C attr.Value](
+	ctx context.Context,
+	original C,
+	elemType attr.Type,
+	slice []T,
+	factory collectionFactory[C],
+) (C, diag.Diagnostics) {
 	if len(slice) == 0 {
 		return original, nil
 	}
