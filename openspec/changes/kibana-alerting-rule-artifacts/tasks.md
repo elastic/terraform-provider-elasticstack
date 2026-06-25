@@ -2,7 +2,7 @@
 
 - [x] 1.1 Keep delta spec aligned with `proposal.md` / `design.md`; run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate kibana-alerting-rule-artifacts --type change` (or `make check-openspec` after sync).
 - [x] 1.2 Minimum Kibana versions confirmed: write **8.19.0** / **9.1.0**; public GET round-trip **9.5.0** (kibana#247279). Recorded in delta spec as REQ-053–REQ-055.
-- [ ] 1.3 On completion of implementation, **sync** delta into `openspec/specs/kibana-alerting-rule/spec.md` or **archive** the change per project workflow.
+- [x] 1.3 On completion of implementation, **sync** delta into `openspec/specs/kibana-alerting-rule/spec.md` or **archive** the change per project workflow.
 
 ## 2. Implementation
 
@@ -19,7 +19,7 @@
 
 - [x] 3.1 Add acceptance test(s) for `artifacts.dashboards`: create a rule with one or more dashboard IDs; assert state matches; update the list. Skip when stack is below **8.19.0** (8.x) or **9.1.0** (9.x). For assertions that depend on GET returning `artifacts`, skip below **9.5.0** unless CI stack includes the kibana#247279 backport.
 - [x] 3.2 Add acceptance test for `artifacts.investigation_guide` with inline `content`: create rule with guide text; assert state stores the text; update text. Same version skips as 3.1; read assertions from API gated at **9.5.0** where applicable.
-- [ ] 3.3 Add acceptance test for `artifacts.investigation_guide` with `content_path`: write a temp file; create rule; assert `checksum` is set; modify file; run `terraform plan`; assert a non-empty plan is produced; apply; assert `checksum` reflects the new file content. Same write-version skip as 3.1.
-- [ ] 3.4 Add acceptance test for clearing `artifacts`: create rule with artifacts; remove the `artifacts` block; assert Kibana's stored artifacts remain (provider omits key from PUT, API leaves value unchanged). On stacks where GET omits `artifacts`, assert state preserves configured values rather than clearing (REQ-054).
+- [x] 3.3 Add acceptance test for `artifacts.investigation_guide` with `content_path`: write a temp file; create rule; assert `checksum` is set; modify file; run `terraform plan`; assert a non-empty plan is produced; apply; assert `checksum` reflects the new file content. Same write-version skip as 3.1.
+- [x] 3.4 Add acceptance test for clearing `artifacts`: create rule with artifacts; remove the `artifacts` block; assert Kibana's stored artifacts remain (provider omits key from PUT, API leaves value unchanged). On stacks where GET omits `artifacts`, assert state preserves configured values rather than clearing (REQ-054).
 - [x] 3.5 Add unit tests for version gating (8.19 / 9.1 thresholds) and for `content` vs `content_path` request body construction, mirroring existing unit test patterns in `models_flapping_test.go`.
 - [x] 3.6 Add unit tests for the read-path mapping: blob → `content` when prior state used `content`; no overwrite of `content_path` when prior state used `content_path`; preserve known `artifacts` when API omits the field (REQ-054).

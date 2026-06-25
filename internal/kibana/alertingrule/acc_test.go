@@ -19,10 +19,13 @@ package alertingrule_test
 
 import (
 	"context"
+	"crypto/sha256"
 	_ "embed"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"testing"
 
@@ -1144,4 +1147,229 @@ func TestAccResourceAlertingRuleArtifacts(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccResourceAlertingRuleArtifactsContentPath(t *testing.T) {
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
+
+	guideFile := filepath.Join(t.TempDir(), "investigation-guide.md")
+	if err := os.WriteFile(guideFile, []byte("initial investigation guide"), 0o600); err != nil {
+		t.Fatalf("write guide file: %v", err)
+	}
+
+	var step1Checksum string
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name":       config.StringVariable(ruleName),
+					"rule_id":    config.StringVariable(ruleID),
+					"guide_path": config.StringVariable(guideFile),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.checksum"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.content_path", guideFile),
+					testCheckAlertingRuleStateChecksumMatchesFile("elasticstack_kibana_alerting_rule.test_rule", guideFile),
+					func(s *terraform.State) error {
+						rs := s.RootModule().Resources["elasticstack_kibana_alerting_rule.test_rule"]
+						if rs == nil {
+							return fmt.Errorf("resource elasticstack_kibana_alerting_rule.test_rule not found in state")
+						}
+						step1Checksum = rs.Primary.Attributes["artifacts.investigation_guide.checksum"]
+						return nil
+					},
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name":       config.StringVariable(ruleName),
+					"rule_id":    config.StringVariable(ruleID),
+					"guide_path": config.StringVariable(guideFile),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name":       config.StringVariable(ruleName),
+					"rule_id":    config.StringVariable(ruleID),
+					"guide_path": config.StringVariable(guideFile),
+				},
+				PreConfig: func() {
+					if err := os.WriteFile(guideFile, []byte("updated investigation guide"), 0o600); err != nil {
+						t.Fatalf("update guide file: %v", err)
+					}
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectUnknownValue(
+							"elasticstack_kibana_alerting_rule.test_rule",
+							tfjsonpath.New("artifacts").AtMapKey("investigation_guide").AtMapKey("checksum"),
+						),
+					},
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name":       config.StringVariable(ruleName),
+					"rule_id":    config.StringVariable(ruleID),
+					"guide_path": config.StringVariable(guideFile),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testCheckAlertingRuleStateChecksumMatchesFile("elasticstack_kibana_alerting_rule.test_rule", guideFile),
+					func(s *terraform.State) error {
+						rs := s.RootModule().Resources["elasticstack_kibana_alerting_rule.test_rule"]
+						if rs == nil {
+							return fmt.Errorf("resource elasticstack_kibana_alerting_rule.test_rule not found in state")
+						}
+						step3Checksum := rs.Primary.Attributes["artifacts.investigation_guide.checksum"]
+						if step3Checksum == step1Checksum {
+							return fmt.Errorf("expected checksum to change after guide file update, still %s", step3Checksum)
+						}
+						return nil
+					},
+					testCheckAlertingRuleAPIInvestigationGuideBlob(
+						"elasticstack_kibana_alerting_rule.test_rule",
+						"updated investigation guide",
+					),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceAlertingRuleArtifactsClear(t *testing.T) {
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
+	dashboardID := uuid.New().String()
+
+	guideContent := "Guide kept when artifacts block is removed from config."
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name":         config.StringVariable(ruleName),
+					"rule_id":      config.StringVariable(ruleID),
+					"dashboard_id": config.StringVariable(dashboardID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.dashboards.0.id", dashboardID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.content", guideContent),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_artifacts"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.dashboards.0.id", dashboardID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.content", guideContent),
+					testCheckAlertingRuleAPIInvestigationGuideBlob(
+						"elasticstack_kibana_alerting_rule.test_rule",
+						guideContent,
+					),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_artifacts"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+func testCheckAlertingRuleStateChecksumMatchesFile(resourceName, filePath string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+
+		expected, err := fileSHA256Hex(filePath)
+		if err != nil {
+			return err
+		}
+
+		got := rs.Primary.Attributes["artifacts.investigation_guide.checksum"]
+		if got != expected {
+			return fmt.Errorf("checksum %q does not match SHA-256 of %q (%q)", got, filePath, expected)
+		}
+		return nil
+	}
+}
+
+func testCheckAlertingRuleAPIInvestigationGuideBlob(resourceName, expected string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
+
+		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+
+		rule, diags := kibanaoapi.GetAlertingRule(context.Background(), client.GetKibanaOapiClient(), compID.ClusterID, compID.ResourceID)
+		if diags.HasError() {
+			return fmt.Errorf("failed to get alerting rule: %v", diags)
+		}
+		if rule == nil {
+			return fmt.Errorf("alerting rule (%s) not found", compID.ResourceID)
+		}
+		if rule.Artifacts == nil || rule.Artifacts.InvestigationGuide == nil {
+			// Public GET may omit artifacts on stacks before kibana#247279.
+			return nil
+		}
+		if rule.Artifacts.InvestigationGuide.Blob != expected {
+			return fmt.Errorf("expected Kibana investigation_guide.blob %q, got %q", expected, rule.Artifacts.InvestigationGuide.Blob)
+		}
+		return nil
+	}
+}
+
+func fileSHA256Hex(filePath string) (string, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("read %q: %w", filePath, err)
+	}
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:]), nil
 }
