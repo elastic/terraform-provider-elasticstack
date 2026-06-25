@@ -424,7 +424,7 @@ func testAccCheckIntegrationInstalled(pkgName, pkgVersion string) resource.TestC
 		}
 		installed := false
 		if pkg.InstallationInfo != nil {
-			installed = pkg.InstallationInfo.InstallStatus == kbapi.PackageInfoInstallationInfoInstallStatusInstalled
+			installed = pkg.InstallationInfo.InstallStatus == kbapi.KibanaHTTPAPIsInstallationInfoInstallStatusInstalled
 		}
 		if !installed && pkg.Status != nil && strings.EqualFold(*pkg.Status, "installed") {
 			installed = true
@@ -496,7 +496,7 @@ func testAccCheckIntegrationInstalledInSpace(name, version, spaceID string) reso
 		}
 		globalInstalled := false
 		if pkg.InstallationInfo != nil {
-			globalInstalled = pkg.InstallationInfo.InstallStatus == kbapi.PackageInfoInstallationInfoInstallStatusInstalled
+			globalInstalled = pkg.InstallationInfo.InstallStatus == kbapi.KibanaHTTPAPIsInstallationInfoInstallStatusInstalled
 		}
 		if !globalInstalled && pkg.Status != nil && strings.EqualFold(*pkg.Status, "installed") {
 			globalInstalled = true

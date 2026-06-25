@@ -241,8 +241,8 @@ func createConnectorRequestBody(connector models.KibanaActionConnector) (kbapi.P
 	req := kbapi.PostActionsConnectorIdJSONRequestBody{
 		ConnectorTypeId: connector.ConnectorTypeID,
 		Name:            connector.Name,
-		Config:          &kbapi.PostActionsConnectorIdJSONBody_Config{},
-		Secrets:         &kbapi.PostActionsConnectorIdJSONBody_Secrets{},
+		Config:          &kbapi.KibanaHTTPAPIsNewConnector_Config{},
+		Secrets:         &kbapi.KibanaHTTPAPIsNewConnector_Secrets{},
 	}
 
 	if err := unmarshalConnectorFields(connector.ConfigJSON, connector.SecretsJSON, &req.Config.AdditionalProperties, &req.Secrets.AdditionalProperties); err != nil {
@@ -255,8 +255,8 @@ func createConnectorRequestBody(connector models.KibanaActionConnector) (kbapi.P
 func updateConnectorRequestBody(connector models.KibanaActionConnector) (kbapi.PutActionsConnectorIdJSONRequestBody, error) {
 	req := kbapi.PutActionsConnectorIdJSONRequestBody{
 		Name:    connector.Name,
-		Config:  &kbapi.PutActionsConnectorIdJSONBody_Config{},
-		Secrets: &kbapi.PutActionsConnectorIdJSONBody_Secrets{},
+		Config:  &kbapi.KibanaHTTPAPIsUpdateConnector_Config{},
+		Secrets: &kbapi.KibanaHTTPAPIsUpdateConnector_Secrets{},
 	}
 
 	if err := unmarshalConnectorFields(connector.ConfigJSON, connector.SecretsJSON, &req.Config.AdditionalProperties, &req.Secrets.AdditionalProperties); err != nil {

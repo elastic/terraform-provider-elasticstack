@@ -21,16 +21,14 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 var (
-	_                               resource.Resource                = newAgentResource()
-	_                               resource.ResourceWithConfigure   = newAgentResource()
-	_                               resource.ResourceWithImportState = newAgentResource()
-	minKibanaAgentBuilderAPIVersion                                  = version.Must(version.NewVersion("9.3.0"))
+	_ resource.Resource                = newAgentResource()
+	_ resource.ResourceWithConfigure   = newAgentResource()
+	_ resource.ResourceWithImportState = newAgentResource()
 )
 
 type AgentResource struct {

@@ -233,6 +233,17 @@ func TestAccResourceComponentTemplateDataStreamOptions(t *testing.T) {
 				ImportStateVerify: true,
 				ResourceName:      "elasticstack_elasticsearch_component_template.test",
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_lifecycle"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(templateName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.data_stream_options.failure_store.enabled", "false"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_component_template.test", "template.data_stream_options.failure_store.lifecycle.data_retention"),
+				),
+			},
 		},
 	})
 }
@@ -288,4 +299,119 @@ func testAccCheckResourceAttrIndexSettingsSemantic(addr, want string) resource.T
 		}
 		return nil
 	}
+}
+
+func TestAccResourceComponentTemplateAliasFilter(t *testing.T) {
+	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceComponentTemplateDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
+					resource.TestCheckTypeSetElemNestedAttrs(
+						"elasticstack_elasticsearch_component_template.test",
+						"template.alias.*",
+						map[string]string{
+							"name": "filtered_alias",
+						},
+					),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_component_template.test", "template.alias.0.filter"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ResourceName:             "elasticstack_elasticsearch_component_template.test",
+			},
+		},
+	})
+}
+
+func TestAccResourceComponentTemplateMetadataAndVersion(t *testing.T) {
+	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceComponentTemplateDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "version", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_component_template.test", "metadata"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "version", "2"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_component_template.test", "metadata"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("unset"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_component_template.test", "metadata"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_component_template.test", "version"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceComponentTemplateMinimal(t *testing.T) {
+	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceComponentTemplateDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ResourceName:             "elasticstack_elasticsearch_component_template.test",
+			},
+		},
+	})
 }

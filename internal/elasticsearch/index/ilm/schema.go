@@ -21,7 +21,7 @@ import (
 	"context"
 	_ "embed"
 
-	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -68,7 +68,7 @@ func ilmSchema(_ context.Context) schema.Schema {
 				Description: "Optional user metadata about the ilm policy. Must be valid JSON document.",
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
-				Validators:  []validator.String{esindex.StringIsJSONObject{}},
+				Validators:  []validator.String{validators.StringIsJSONObject{}},
 			},
 			"force_destroy": schema.BoolAttribute{
 				Description: "When true, the provider will clear index.lifecycle.name from any indices that reference this policy before deleting the policy.",

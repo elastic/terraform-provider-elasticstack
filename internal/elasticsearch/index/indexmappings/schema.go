@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -55,7 +56,7 @@ func getSchemaFactory(_ context.Context) schema.Schema {
 				Required:   true,
 				CustomType: index.MappingsType{},
 				Validators: []validator.String{
-					index.StringIsJSONObject{NonEmpty: true},
+					validators.StringIsJSONObject{NonEmpty: true},
 				},
 			},
 		},

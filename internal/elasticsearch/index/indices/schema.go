@@ -21,8 +21,8 @@ import (
 	"context"
 	"regexp"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -308,7 +308,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 							Optional:    true,
 							CustomType:  jsontypes.NormalizedType{},
 							Validators: []validator.String{
-								index.StringIsJSONObject{},
+								validators.StringIsJSONObject{},
 							},
 						},
 						"analysis_tokenizer": schema.StringAttribute{
@@ -316,7 +316,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 							Optional:    true,
 							CustomType:  jsontypes.NormalizedType{},
 							Validators: []validator.String{
-								index.StringIsJSONObject{},
+								validators.StringIsJSONObject{},
 							},
 						},
 						"analysis_char_filter": schema.StringAttribute{
@@ -324,7 +324,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 							Optional:    true,
 							CustomType:  jsontypes.NormalizedType{},
 							Validators: []validator.String{
-								index.StringIsJSONObject{},
+								validators.StringIsJSONObject{},
 							},
 						},
 						"analysis_filter": schema.StringAttribute{
@@ -332,7 +332,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 							Optional:    true,
 							CustomType:  jsontypes.NormalizedType{},
 							Validators: []validator.String{
-								index.StringIsJSONObject{},
+								validators.StringIsJSONObject{},
 							},
 						},
 						"analysis_normalizer": schema.StringAttribute{
@@ -340,7 +340,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 							Optional:    true,
 							CustomType:  jsontypes.NormalizedType{},
 							Validators: []validator.String{
-								index.StringIsJSONObject{},
+								validators.StringIsJSONObject{},
 							},
 						},
 						"deletion_protection": schema.BoolAttribute{
@@ -371,7 +371,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 							Computed:    true,
 							CustomType:  jsontypes.NormalizedType{},
 							Validators: []validator.String{
-								index.StringIsJSONObject{},
+								validators.StringIsJSONObject{},
 							},
 						},
 						"settings_raw": schema.StringAttribute{

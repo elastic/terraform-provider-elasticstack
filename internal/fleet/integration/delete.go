@@ -70,7 +70,7 @@ func deleteIntegration(
 	return diags
 }
 
-func isInstalledInMultipleSpaces(pkg *kbapi.PackageInfo, spaceID string) bool {
+func isInstalledInMultipleSpaces(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, spaceID string) bool {
 	if pkg == nil || pkg.InstallationInfo == nil {
 		return false
 	}

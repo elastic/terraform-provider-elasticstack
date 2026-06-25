@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/planmodifiers"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
@@ -505,7 +506,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
 				Validators: []validator.String{
-					index.StringIsJSONObject{},
+					validators.StringIsJSONObject{},
 				},
 			},
 			"analysis_tokenizer": schema.StringAttribute{
@@ -513,7 +514,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
 				Validators: []validator.String{
-					index.StringIsJSONObject{},
+					validators.StringIsJSONObject{},
 				},
 			},
 			"analysis_char_filter": schema.StringAttribute{
@@ -521,7 +522,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
 				Validators: []validator.String{
-					index.StringIsJSONObject{},
+					validators.StringIsJSONObject{},
 				},
 			},
 			"analysis_filter": schema.StringAttribute{
@@ -529,7 +530,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
 				Validators: []validator.String{
-					index.StringIsJSONObject{},
+					validators.StringIsJSONObject{},
 				},
 			},
 			"analysis_normalizer": schema.StringAttribute{
@@ -537,7 +538,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
 				Validators: []validator.String{
-					index.StringIsJSONObject{},
+					validators.StringIsJSONObject{},
 				},
 			},
 			"mappings": schema.StringAttribute{
@@ -546,7 +547,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Computed:    true,
 				CustomType:  index.MappingsType{},
 				Validators: []validator.String{
-					index.StringIsJSONObject{},
+					validators.StringIsJSONObject{},
 				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),

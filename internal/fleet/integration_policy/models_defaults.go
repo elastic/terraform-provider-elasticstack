@@ -190,7 +190,7 @@ func (v apiVars) defaults() (jsontypes.Normalized, diag.Diagnostics) {
 	return jsontypes.NewNormalizedValue(string(varDefaultsBytes)), nil
 }
 
-func packageInfoToDefaults(pkg *kbapi.PackageInfo) (map[string]inputDefaultsModel, diag.Diagnostics) {
+func packageInfoToDefaults(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo) (map[string]inputDefaultsModel, diag.Diagnostics) {
 	policyTemplates, datastreams, diags := policyTemplateAndDataStreamsFromPackageInfo(pkg)
 	if diags.HasError() {
 		return nil, diags
@@ -255,7 +255,7 @@ func packageInfoToDefaults(pkg *kbapi.PackageInfo) (map[string]inputDefaultsMode
 	return defaultInputsByID, diags
 }
 
-func varsFromPackageInfo(pkg *kbapi.PackageInfo) (apiVars, diag.Diagnostics) {
+func varsFromPackageInfo(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo) (apiVars, diag.Diagnostics) {
 	if pkg == nil {
 		return nil, nil
 	}
@@ -274,7 +274,7 @@ func varsFromPackageInfo(pkg *kbapi.PackageInfo) (apiVars, diag.Diagnostics) {
 	return vars, nil
 }
 
-func policyTemplateAndDataStreamsFromPackageInfo(pkg *kbapi.PackageInfo) (apiPolicyTemplates, apiDatastreams, diag.Diagnostics) {
+func policyTemplateAndDataStreamsFromPackageInfo(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo) (apiPolicyTemplates, apiDatastreams, diag.Diagnostics) {
 	if pkg == nil {
 		return nil, nil, nil
 	}

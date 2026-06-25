@@ -1,0 +1,12 @@
+variable "saved_query_id" {
+  type = string
+}
+
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+data "elasticstack_kibana_osquery_saved_query" "test" {
+  saved_query_id = var.saved_query_id
+}

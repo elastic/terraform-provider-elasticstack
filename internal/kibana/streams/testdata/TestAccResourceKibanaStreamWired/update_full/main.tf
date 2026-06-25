@@ -8,13 +8,32 @@ provider "elasticstack" {
   kibana {}
 }
 
+resource "elasticstack_kibana_dashboard" "test" {
+  title = "testacc-stream-${var.suffix}"
+
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+
+  query = {
+    language = "kql"
+    text     = ""
+  }
+}
+
 resource "elasticstack_kibana_stream" "wired" {
   name        = "logs.otel.testacc${var.suffix}"
   space_id    = "default"
   description = "Fully-configured wired stream"
 
   wired_config = {
-    # Processing step — streamlang grok format
+    # grok format
     processing_steps = [
       jsonencode({
         action   = "grok"
@@ -24,9 +43,7 @@ resource "elasticstack_kibana_stream" "wired" {
     ]
 
     # Lifecycle: retain data for 30 days
-    lifecycle_json = jsonencode({
-      dsl = { data_retention = "30d" }
-    })
+    lifecycle_json = jsonencode({ dsl = { data_retention = "30d" } })
 
     # Failure store: disabled
     failure_store_json = jsonencode({ disabled = {} })
@@ -37,4 +54,5 @@ resource "elasticstack_kibana_stream" "wired" {
     index_refresh_interval   = "5s"
   }
 
+  dashboards = [elasticstack_kibana_dashboard.test.dashboard_id]
 }

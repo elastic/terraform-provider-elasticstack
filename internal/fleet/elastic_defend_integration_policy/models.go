@@ -38,6 +38,7 @@ type elasticDefendIntegrationPolicyModel struct {
 	SpaceIDs           types.Set    `tfsdk:"space_ids"`
 	Preset             types.String `tfsdk:"preset"`
 	Policy             types.Object `tfsdk:"policy"`
+	AdvancedSettings   types.Map    `tfsdk:"advanced_settings"`
 }
 
 // policyModel holds the top-level policy nested attribute.
