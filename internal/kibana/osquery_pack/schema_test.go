@@ -52,7 +52,7 @@ func TestSchema_attributeMetadata(t *testing.T) {
 	assert.True(t, packIDAttr.IsComputed())
 	assert.False(t, packIDAttr.IsRequired())
 	assert.False(t, packIDAttr.IsOptional())
-	assertEmptyStringPlanModifiers(t, packIDAttr.PlanModifiers)
+	assertHasStringPlanModifier(t, packIDAttr.PlanModifiers, "useStateForUnknown")
 
 	spaceIDAttr, ok := s.Attributes["space_id"].(schema.StringAttribute)
 	require.True(t, ok)
