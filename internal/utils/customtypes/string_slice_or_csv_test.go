@@ -15,31 +15,32 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package models
+package customtypes_test
 
 import (
 	"encoding/json"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/stretchr/testify/require"
 )
 
-func TestStringSliceOrCSV_UnmarshalJSON9(t *testing.T) {
+func TestStringSliceOrCSV_UnmarshalJSON(t *testing.T) {
 	tests := []struct {
 		name           string
 		jsonString     string
-		expectedResult StringSliceOrCSV
+		expectedResult customtypes.StringSliceOrCSV
 		expectedErr    error
 	}{
 		{
 			name:           "should handle json arrays",
 			jsonString:     `["a", "b", "c"]`,
-			expectedResult: StringSliceOrCSV{"a", "b", "c"},
+			expectedResult: customtypes.StringSliceOrCSV{"a", "b", "c"},
 		},
 		{
 			name:           "should handle csv strings",
 			jsonString:     `"a,b,c"`,
-			expectedResult: StringSliceOrCSV{"a", "b", "c"},
+			expectedResult: customtypes.StringSliceOrCSV{"a", "b", "c"},
 		},
 		{
 			name:       "should handle explicit nulls",
@@ -52,13 +53,13 @@ func TestStringSliceOrCSV_UnmarshalJSON9(t *testing.T) {
 		{
 			name:        "should fail on invalid data",
 			jsonString:  "true",
-			expectedErr: ErrInvalidStringSliceOrCSV,
+			expectedErr: customtypes.ErrInvalidStringSliceOrCSV,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var actualModel StringSliceOrCSV
+			var actualModel customtypes.StringSliceOrCSV
 			err := json.Unmarshal([]byte(tt.jsonString), &actualModel)
 
 			if tt.expectedErr == nil {

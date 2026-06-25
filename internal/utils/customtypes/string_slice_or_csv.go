@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package models
+package customtypes
 
 import (
 	"encoding/json"
@@ -23,9 +23,12 @@ import (
 	"strings"
 )
 
-type StringSliceOrCSV []string
-
+// ErrInvalidStringSliceOrCSV is returned when UnmarshalJSON receives an unexpected type.
 var ErrInvalidStringSliceOrCSV = errors.New("expected array of strings, or a csv string")
+
+// StringSliceOrCSV deserialises a JSON field that can be either an array ["a","b"]
+// or a comma-separated string "a,b".
+type StringSliceOrCSV []string
 
 func (i *StringSliceOrCSV) UnmarshalJSON(data []byte) error {
 	// Ignore null, like in the main JSON package.
