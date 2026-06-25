@@ -29,6 +29,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
+// strSettingNullWithFallback returns the API value for key if present, otherwise
+// the prior state value when it is known. This keeps explicitly configured empty
+// strings ("") from drifting to null after apply because the write path omits
+// them from the API request.
+func strSettingNullWithFallback(settings map[string]any, key string, fallback types.String) types.String {
+	v := strSettingNull(settings, key)
+	if !v.IsNull() {
+		return v
+	}
+	if !fallback.IsNull() && !fallback.IsUnknown() {
+		return fallback
+	}
+	return types.StringNull()
+}
+
 func readSnapshotRepository(ctx context.Context, client *esclients.ElasticsearchScopedClient, resourceID string, state Data) (Data, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -70,14 +85,14 @@ func readSnapshotRepository(ctx context.Context, client *esclients.Elasticsearch
 		}
 		data.URL = u
 	case repoTypeGCS:
-		gcs, gcsDiags := settingsToGcs(ctx, repo)
+		gcs, gcsDiags := settingsToGcs(ctx, repo, state)
 		diags.Append(gcsDiags...)
 		if diags.HasError() {
 			return state, false, diags
 		}
 		data.Gcs = gcs
 	case repoTypeAzure:
-		azure, azureDiags := settingsToAzure(ctx, repo)
+		azure, azureDiags := settingsToAzure(ctx, repo, state)
 		diags.Append(azureDiags...)
 		if diags.HasError() {
 			return state, false, diags
@@ -91,7 +106,7 @@ func readSnapshotRepository(ctx context.Context, client *esclients.Elasticsearch
 		}
 		data.S3 = s3
 	case repoTypeHDFS:
-		hdfs, hdfsDiags := settingsToHdfs(ctx, repo)
+		hdfs, hdfsDiags := settingsToHdfs(ctx, repo, state)
 		diags.Append(hdfsDiags...)
 		if diags.HasError() {
 			return state, false, diags
@@ -111,21 +126,27 @@ func readSnapshotRepository(ctx context.Context, client *esclients.Elasticsearch
 func settingsToFs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo, state Data) (types.Object, diag.Diagnostics) {
 	s := repo.Settings
 
+	var diags diag.Diagnostics
+	var priorFs FsSettings
+	if !state.Fs.IsNull() && !state.Fs.IsUnknown() {
+		diags.Append(state.Fs.As(ctx, &priorFs, basetypes.ObjectAsOptions{})...)
+	}
+
 	// Try to inherit compress from state if API does not return it
 	compressFallback := true
 	if !state.Fs.IsNull() && !state.Fs.IsUnknown() {
 		var stateFs FsSettings
-		if diags := state.Fs.As(ctx, &stateFs, basetypes.ObjectAsOptions{}); !diags.HasError() {
+		if asDiags := state.Fs.As(ctx, &stateFs, basetypes.ObjectAsOptions{}); !asDiags.HasError() {
 			compressFallback = stateFs.Compress.ValueBool()
 		}
 	}
 
 	fs := FsSettings{
 		CommonSettings: CommonSettings{
-			ChunkSize:              strSettingNull(s, settingChunkSize),
+			ChunkSize:              strSettingNullWithFallback(s, settingChunkSize, priorFs.ChunkSize),
 			Compress:               types.BoolValue(boolSetting(s, settingCompress, compressFallback)),
-			MaxSnapshotBytesPerSec: strSettingNull(s, settingMaxSnapshotBytesPerSec),
-			MaxRestoreBytesPerSec:  strSettingNull(s, settingMaxRestoreBytesPerSec),
+			MaxSnapshotBytesPerSec: strSettingNullWithFallback(s, settingMaxSnapshotBytesPerSec, priorFs.MaxSnapshotBytesPerSec),
+			MaxRestoreBytesPerSec:  strSettingNullWithFallback(s, settingMaxRestoreBytesPerSec, priorFs.MaxRestoreBytesPerSec),
 			Readonly:               types.BoolValue(boolSetting(s, settingReadonly, false)),
 		},
 		CommonStdSettings: CommonStdSettings{
@@ -133,26 +154,34 @@ func settingsToFs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 		},
 		Location: types.StringValue(strSetting(s, settingLocation)),
 	}
-	return types.ObjectValueFrom(ctx, fsAttrTypes(), fs)
+	obj, objDiags := types.ObjectValueFrom(ctx, fsAttrTypes(), fs)
+	diags.Append(objDiags...)
+	return obj, diags
 }
 
 func settingsToURL(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo, state Data) (types.Object, diag.Diagnostics) {
 	s := repo.Settings
 
+	var diags diag.Diagnostics
+	var priorURL URLSettings
+	if !state.URL.IsNull() && !state.URL.IsUnknown() {
+		diags.Append(state.URL.As(ctx, &priorURL, basetypes.ObjectAsOptions{})...)
+	}
+
 	compressFallback := true
 	if !state.URL.IsNull() && !state.URL.IsUnknown() {
 		var stateURL URLSettings
-		if diags := state.URL.As(ctx, &stateURL, basetypes.ObjectAsOptions{}); !diags.HasError() {
+		if asDiags := state.URL.As(ctx, &stateURL, basetypes.ObjectAsOptions{}); !asDiags.HasError() {
 			compressFallback = stateURL.Compress.ValueBool()
 		}
 	}
 
 	u := URLSettings{
 		CommonSettings: CommonSettings{
-			ChunkSize:              strSettingNull(s, settingChunkSize),
+			ChunkSize:              strSettingNullWithFallback(s, settingChunkSize, priorURL.ChunkSize),
 			Compress:               types.BoolValue(boolSetting(s, settingCompress, compressFallback)),
-			MaxSnapshotBytesPerSec: strSettingNull(s, settingMaxSnapshotBytesPerSec),
-			MaxRestoreBytesPerSec:  strSettingNull(s, settingMaxRestoreBytesPerSec),
+			MaxSnapshotBytesPerSec: strSettingNullWithFallback(s, settingMaxSnapshotBytesPerSec, priorURL.MaxSnapshotBytesPerSec),
+			MaxRestoreBytesPerSec:  strSettingNullWithFallback(s, settingMaxRestoreBytesPerSec, priorURL.MaxRestoreBytesPerSec),
 			Readonly:               types.BoolValue(boolSetting(s, settingReadonly, false)),
 		},
 		CommonStdSettings: CommonStdSettings{
@@ -160,36 +189,54 @@ func settingsToURL(ctx context.Context, repo *elasticsearch.SnapshotRepositoryIn
 		},
 		URL:               types.StringValue(strSetting(s, settingURL)),
 		HTTPMaxRetries:    types.Int64Value(int64Setting(s, settingHTTPMaxRetries, 5)),
-		HTTPSocketTimeout: strSettingNull(s, settingHTTPSocketTimeout),
+		HTTPSocketTimeout: strSettingNullWithFallback(s, settingHTTPSocketTimeout, priorURL.HTTPSocketTimeout),
 	}
-	return types.ObjectValueFrom(ctx, urlAttrTypes(), u)
+	obj, objDiags := types.ObjectValueFrom(ctx, urlAttrTypes(), u)
+	diags.Append(objDiags...)
+	return obj, diags
 }
 
-func settingsToGcs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo) (types.Object, diag.Diagnostics) {
+func settingsToGcs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo, state Data) (types.Object, diag.Diagnostics) {
 	s := repo.Settings
+
+	var diags diag.Diagnostics
+	var priorGcs GcsSettings
+	if !state.Gcs.IsNull() && !state.Gcs.IsUnknown() {
+		diags.Append(state.Gcs.As(ctx, &priorGcs, basetypes.ObjectAsOptions{})...)
+	}
+
 	gcs := GcsSettings{
 		CommonSettings: CommonSettings{
-			ChunkSize:              strSettingNull(s, settingChunkSize),
+			ChunkSize:              strSettingNullWithFallback(s, settingChunkSize, priorGcs.ChunkSize),
 			Compress:               types.BoolValue(boolSetting(s, settingCompress, true)),
-			MaxSnapshotBytesPerSec: strSettingNull(s, settingMaxSnapshotBytesPerSec),
-			MaxRestoreBytesPerSec:  strSettingNull(s, settingMaxRestoreBytesPerSec),
+			MaxSnapshotBytesPerSec: strSettingNullWithFallback(s, settingMaxSnapshotBytesPerSec, priorGcs.MaxSnapshotBytesPerSec),
+			MaxRestoreBytesPerSec:  strSettingNullWithFallback(s, settingMaxRestoreBytesPerSec, priorGcs.MaxRestoreBytesPerSec),
 			Readonly:               types.BoolValue(boolSetting(s, settingReadonly, false)),
 		},
 		Bucket:   types.StringValue(strSetting(s, settingBucket)),
 		Client:   strSettingNull(s, settingClient),
 		BasePath: strSettingNull(s, settingBasePath),
 	}
-	return types.ObjectValueFrom(ctx, gcsAttrTypes(), gcs)
+	obj, objDiags := types.ObjectValueFrom(ctx, gcsAttrTypes(), gcs)
+	diags.Append(objDiags...)
+	return obj, diags
 }
 
-func settingsToAzure(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo) (types.Object, diag.Diagnostics) {
+func settingsToAzure(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo, state Data) (types.Object, diag.Diagnostics) {
 	s := repo.Settings
+
+	var diags diag.Diagnostics
+	var priorAzure AzureSettings
+	if !state.Azure.IsNull() && !state.Azure.IsUnknown() {
+		diags.Append(state.Azure.As(ctx, &priorAzure, basetypes.ObjectAsOptions{})...)
+	}
+
 	azure := AzureSettings{
 		CommonSettings: CommonSettings{
-			ChunkSize:              strSettingNull(s, settingChunkSize),
+			ChunkSize:              strSettingNullWithFallback(s, settingChunkSize, priorAzure.ChunkSize),
 			Compress:               types.BoolValue(boolSetting(s, settingCompress, true)),
-			MaxSnapshotBytesPerSec: strSettingNull(s, settingMaxSnapshotBytesPerSec),
-			MaxRestoreBytesPerSec:  strSettingNull(s, settingMaxRestoreBytesPerSec),
+			MaxSnapshotBytesPerSec: strSettingNullWithFallback(s, settingMaxSnapshotBytesPerSec, priorAzure.MaxSnapshotBytesPerSec),
+			MaxRestoreBytesPerSec:  strSettingNullWithFallback(s, settingMaxRestoreBytesPerSec, priorAzure.MaxRestoreBytesPerSec),
 			Readonly:               types.BoolValue(boolSetting(s, settingReadonly, false)),
 		},
 		Container:    types.StringValue(strSetting(s, settingContainer)),
@@ -197,17 +244,25 @@ func settingsToAzure(ctx context.Context, repo *elasticsearch.SnapshotRepository
 		BasePath:     strSettingNull(s, settingBasePath),
 		LocationMode: strSettingNull(s, settingLocationMode),
 	}
-	return types.ObjectValueFrom(ctx, azureAttrTypes(), azure)
+	obj, objDiags := types.ObjectValueFrom(ctx, azureAttrTypes(), azure)
+	diags.Append(objDiags...)
+	return obj, diags
 }
 
 func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo, state Data) (types.Object, diag.Diagnostics) {
 	s := repo.Settings
 
+	var diags diag.Diagnostics
+	var priorS3 S3Settings
+	if !state.S3.IsNull() && !state.S3.IsUnknown() {
+		diags.Append(state.S3.As(ctx, &priorS3, basetypes.ObjectAsOptions{})...)
+	}
+
 	endpointFallback := types.StringNull()
 	pathStyleAccessFallback := false
 	if !state.S3.IsNull() && !state.S3.IsUnknown() {
 		var stateS3 S3Settings
-		if diags := state.S3.As(ctx, &stateS3, basetypes.ObjectAsOptions{}); !diags.HasError() {
+		if asDiags := state.S3.As(ctx, &stateS3, basetypes.ObjectAsOptions{}); !asDiags.HasError() {
 			endpointFallback = stateS3.Endpoint
 			if !stateS3.PathStyleAccess.IsNull() && !stateS3.PathStyleAccess.IsUnknown() {
 				pathStyleAccessFallback = stateS3.PathStyleAccess.ValueBool()
@@ -233,10 +288,10 @@ func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 
 	s3 := S3Settings{
 		CommonSettings: CommonSettings{
-			ChunkSize:              strSettingNull(s, settingChunkSize),
+			ChunkSize:              strSettingNullWithFallback(s, settingChunkSize, priorS3.ChunkSize),
 			Compress:               types.BoolValue(boolSetting(s, settingCompress, true)),
-			MaxSnapshotBytesPerSec: strSettingNull(s, settingMaxSnapshotBytesPerSec),
-			MaxRestoreBytesPerSec:  strSettingNull(s, settingMaxRestoreBytesPerSec),
+			MaxSnapshotBytesPerSec: strSettingNullWithFallback(s, settingMaxSnapshotBytesPerSec, priorS3.MaxSnapshotBytesPerSec),
+			MaxRestoreBytesPerSec:  strSettingNullWithFallback(s, settingMaxRestoreBytesPerSec, priorS3.MaxRestoreBytesPerSec),
 			Readonly:               types.BoolValue(boolSetting(s, settingReadonly, false)),
 		},
 		Bucket:               types.StringValue(strSetting(s, settingBucket)),
@@ -249,22 +304,33 @@ func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 		StorageClass:         strSettingNull(s, settingStorageClass),
 		PathStyleAccess:      types.BoolValue(boolSetting(s, settingPathStyleAccess, pathStyleAccessFallback)),
 	}
-	return types.ObjectValueFrom(ctx, s3AttrTypes(), s3)
+	obj, objDiags := types.ObjectValueFrom(ctx, s3AttrTypes(), s3)
+	diags.Append(objDiags...)
+	return obj, diags
 }
 
-func settingsToHdfs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo) (types.Object, diag.Diagnostics) {
+func settingsToHdfs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo, state Data) (types.Object, diag.Diagnostics) {
 	s := repo.Settings
+
+	var diags diag.Diagnostics
+	var priorHdfs HdfsSettings
+	if !state.Hdfs.IsNull() && !state.Hdfs.IsUnknown() {
+		diags.Append(state.Hdfs.As(ctx, &priorHdfs, basetypes.ObjectAsOptions{})...)
+	}
+
 	hdfs := HdfsSettings{
 		CommonSettings: CommonSettings{
-			ChunkSize:              strSettingNull(s, settingChunkSize),
+			ChunkSize:              strSettingNullWithFallback(s, settingChunkSize, priorHdfs.ChunkSize),
 			Compress:               types.BoolValue(boolSetting(s, settingCompress, true)),
-			MaxSnapshotBytesPerSec: strSettingNull(s, settingMaxSnapshotBytesPerSec),
-			MaxRestoreBytesPerSec:  strSettingNull(s, settingMaxRestoreBytesPerSec),
+			MaxSnapshotBytesPerSec: strSettingNullWithFallback(s, settingMaxSnapshotBytesPerSec, priorHdfs.MaxSnapshotBytesPerSec),
+			MaxRestoreBytesPerSec:  strSettingNullWithFallback(s, settingMaxRestoreBytesPerSec, priorHdfs.MaxRestoreBytesPerSec),
 			Readonly:               types.BoolValue(boolSetting(s, settingReadonly, false)),
 		},
 		URI:          types.StringValue(strSetting(s, settingURI)),
 		Path:         types.StringValue(strSetting(s, settingPath)),
 		LoadDefaults: types.BoolValue(boolSetting(s, settingLoadDefaults, true)),
 	}
-	return types.ObjectValueFrom(ctx, hdfsAttrTypes(), hdfs)
+	obj, objDiags := types.ObjectValueFrom(ctx, hdfsAttrTypes(), hdfs)
+	diags.Append(objDiags...)
+	return obj, diags
 }

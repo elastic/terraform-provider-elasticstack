@@ -23,6 +23,7 @@ Manages an Elastic Defend Fleet integration policy (package policy for the `endp
 
 ### Optional
 
+- `advanced_settings` (Map of String) Elastic Defend advanced settings as a map of setting name to value. Keys use Elastic's documented dot notation with OS prefix (for example `linux.advanced.artifacts.global.base_url`). See https://www.elastic.co/docs/reference/security/defend-advanced-settings for available settings.
 - `agent_policy_id` (String) ID of the agent policy. Conflicts with agent_policy_ids.
 - `agent_policy_ids` (List of String) List of agent policy IDs. Requires Elastic Stack >= 8.15.0. Conflicts with agent_policy_id.
 - `description` (String) The description of the integration policy.

@@ -103,7 +103,7 @@ func fileUploaderAttrTypes() map[string]attr.Type {
 }
 
 // populateAdvancedMonitoringFromAPI populates the advanced monitoring options from API response
-func (model *agentPolicyModel) populateAdvancedMonitoringFromAPI(ctx context.Context, data *kbapi.AgentPolicy) diag.Diagnostics {
+func (model *agentPolicyModel) populateAdvancedMonitoringFromAPI(ctx context.Context, data *kbapi.KibanaHTTPAPIsAgentPolicyResponse) diag.Diagnostics {
 	// Check if any advanced monitoring data exists in the API response
 	hasHTTPMonitoring := data.MonitoringHttp != nil
 	hasPprofEnabled := data.MonitoringPprofEnabled != nil

@@ -48,7 +48,8 @@ func Expand(obj types.Object) (*models.DataStreamOptions, diag.Diagnostics) {
 	}
 	if en, ok := fsAttrs["enabled"]; ok && !en.IsNull() && !en.IsUnknown() {
 		if b, ok := en.(types.Bool); ok {
-			out.FailureStore.Enabled = b.ValueBool()
+			v := b.ValueBool()
+			out.FailureStore.Enabled = &v
 		}
 	}
 	if lcVal, ok := fsAttrs["lifecycle"]; ok && !lcVal.IsNull() && !lcVal.IsUnknown() {

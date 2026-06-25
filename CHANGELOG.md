@@ -1,11 +1,22 @@
 ## [Unreleased]
 
+### Changes
+
+- Add advanced_settings map to elasticstack_fleet_elastic_defend_integration_policy for Elastic Defend advanced policy configuration. ([#3845](https://github.com/elastic/terraform-provider-elasticstack/pull/3845))
+- Add `elasticstack_kibana_osquery_saved_query` resource and data source for managing Kibana Osquery saved queries. ([#3883](https://github.com/elastic/terraform-provider-elasticstack/pull/3883))
+
+## [0.16.2] - 2026-06-23
+
 ### Breaking changes
 
 `elasticstack_elasticsearch_ml_anomaly_detection_job`: `timeouts` is now an attribute instead of a block. Replace block syntax (`timeouts { delete = "20m" }`) with attribute syntax (`timeouts = { delete = "20m" }`).
 
 ### Changes
 
+- Fix duplicate Authorization headers when ES and Kibana/Fleet use different auth methods ([#3722](https://github.com/elastic/terraform-provider-elasticstack/pull/3722))
+- Add Elasticsearch CA fingerprint connection support via `ca_fingerprint` and `ELASTICSEARCH_CA_FINGERPRINT`. ([#3837](https://github.com/elastic/terraform-provider-elasticstack/pull/3837))
+- preserve prior input values across ES redaction on read for `elasticstack_elasticsearch_watch` resources with HTTP basic auth ([#3839](https://github.com/elastic/terraform-provider-elasticstack/pull/3839))
+- Adds allow_restricted_indices to remote_indices on elasticstack_elasticsearch_security_role and elasticstack_kibana_security_role ([#3701](https://github.com/elastic/terraform-provider-elasticstack/pull/3701))
 - Relax provider-side length validation for ML datafeed and filter IDs ([#3798](https://github.com/elastic/terraform-provider-elasticstack/pull/3798))
 - Stop `elasticstack_kibana_dashboard` from injecting `empty_as_null` into Lens metric `config_json` for operations the Kibana API rejects (e.g. `percentile`), which previously caused an HTTP 400 on apply. ([#3720](https://github.com/elastic/terraform-provider-elasticstack/pull/3720))
 - Fix "Provider produced inconsistent result after apply" for `.slack_api` action connectors by normalizing the planned `config` value the same way the read response is normalized. ([#3749](https://github.com/elastic/terraform-provider-elasticstack/pull/3749))
@@ -1000,7 +1011,8 @@ resource "elasticstack_fleet_output" "output" {
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.1...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.2...HEAD
+[0.16.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.15.2...v0.16.0
 [0.15.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.15.1...v0.15.2

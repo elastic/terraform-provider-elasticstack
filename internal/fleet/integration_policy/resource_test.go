@@ -70,9 +70,9 @@ func TestGetPackageInfo_Success(t *testing.T) {
 
 	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		resp := struct {
-			Item kbapi.PackageInfo `json:"item"`
+			Item kbapi.KibanaHTTPAPIsGetPackageInfo `json:"item"`
 		}{
-			Item: kbapi.PackageInfo{
+			Item: kbapi.KibanaHTTPAPIsGetPackageInfo{
 				Name:    "tcp",
 				Version: "3.1.11",
 			},
@@ -90,7 +90,7 @@ func TestGetPackageInfo_Success(t *testing.T) {
 }
 
 func TestGetPackageInfo_CacheHit(t *testing.T) {
-	cached := kbapi.PackageInfo{Name: "tcp", Version: "3.1.11"}
+	cached := kbapi.KibanaHTTPAPIsGetPackageInfo{Name: "tcp", Version: "3.1.11"}
 	knownPackages.Store(getPackageCacheKey("tcp", "3.1.11"), cached)
 	t.Cleanup(func() { knownPackages.Delete(getPackageCacheKey("tcp", "3.1.11")) })
 
@@ -114,9 +114,9 @@ func TestGetPackageInfo_SpaceAware(t *testing.T) {
 		assert.Equal(t, "/s/my-space/api/fleet/epm/packages/tcp/3.1.11", r.URL.Path)
 
 		resp := struct {
-			Item kbapi.PackageInfo `json:"item"`
+			Item kbapi.KibanaHTTPAPIsGetPackageInfo `json:"item"`
 		}{
-			Item: kbapi.PackageInfo{
+			Item: kbapi.KibanaHTTPAPIsGetPackageInfo{
 				Name:    "tcp",
 				Version: "3.1.11",
 			},
@@ -140,9 +140,9 @@ func TestGetPackageInfo_FallbackToInstalled(t *testing.T) {
 	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/tcp/") {
 			resp := struct {
-				Item kbapi.PackageInfo `json:"item"`
+				Item kbapi.KibanaHTTPAPIsGetPackageInfo `json:"item"`
 			}{
-				Item: kbapi.PackageInfo{
+				Item: kbapi.KibanaHTTPAPIsGetPackageInfo{
 					Name:    "tcp",
 					Version: "3.1.11",
 				},

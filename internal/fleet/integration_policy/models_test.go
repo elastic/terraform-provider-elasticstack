@@ -19,6 +19,7 @@ package integrationpolicy
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -30,26 +31,12 @@ func TestOutputIdHandling(t *testing.T) {
 	t.Run("populateFromAPI", func(t *testing.T) {
 		model := &integrationPolicyModel{}
 		outputID := "test-output-id"
+		testID := "test-id"
 		data := &kbapi.PackagePolicy{
-			Id:      "test-id",
+			Id:      &testID,
 			Name:    "test-policy",
 			Enabled: true,
-			Package: &struct {
-				ExperimentalDataStreamFeatures *[]struct {
-					DataStream string `json:"data_stream"`
-					Features   struct {
-						DocValueOnlyNumeric *bool `json:"doc_value_only_numeric,omitempty"`
-						DocValueOnlyOther   *bool `json:"doc_value_only_other,omitempty"`
-						SyntheticSource     *bool `json:"synthetic_source,omitempty"`
-						Tsdb                *bool `json:"tsdb,omitempty"`
-					} `json:"features"`
-				} `json:"experimental_data_stream_features,omitempty"`
-				FipsCompatible *bool   `json:"fips_compatible,omitempty"`
-				Name           string  `json:"name"`
-				RequiresRoot   *bool   `json:"requires_root,omitempty"`
-				Title          *string `json:"title,omitempty"`
-				Version        string  `json:"version"`
-			}{
+			Package: &kbapi.KibanaHTTPAPIsPackagePolicyPackage{
 				Name:    "test-integration",
 				Version: "1.0.0",
 			},
@@ -67,6 +54,8 @@ func TestOutputIdHandling(t *testing.T) {
 			IntegrationName:    types.StringValue("test-integration"),
 			IntegrationVersion: types.StringValue("1.0.0"),
 			OutputID:           types.StringValue("test-output-id"),
+			AgentPolicyID:      types.StringValue("test-policy-id"),
+			AgentPolicyIDs:     types.ListNull(types.StringType),
 		}
 
 		feat := integrationPolicyFeatures{
@@ -74,12 +63,17 @@ func TestOutputIdHandling(t *testing.T) {
 			SupportsOutputID:  true,
 		}
 
-		result, diags := model.toAPIModel(context.Background(), feat)
+		body, diags := model.toAPIModel(context.Background(), feat)
 		require.Empty(t, diags)
-		mappedResult, err := result.AsPackagePolicyRequestMappedInputs()
+
+		raw, err := body.MarshalJSON()
 		require.NoError(t, err)
-		require.NotNil(t, mappedResult.OutputId)
-		require.Equal(t, "test-output-id", *mappedResult.OutputId)
+
+		var decoded map[string]any
+		require.NoError(t, json.Unmarshal(raw, &decoded))
+		require.Equal(t, "test-output-id", decoded["output_id"])
+		require.Equal(t, "test-policy-id", decoded["policy_id"])
+		require.Equal(t, []any{}, decoded["policy_ids"])
 	})
 
 	t.Run("toAPIModel_unsupported_version", func(t *testing.T) {

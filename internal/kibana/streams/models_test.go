@@ -302,11 +302,47 @@ func TestWiredConfigToAPIIngest(t *testing.T) {
 	})
 }
 
+// ── populateProcessingStepsFromAPI ────────────────────────────────────────────
+
+func TestPopulateProcessingStepsFromAPI(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil ingest returns null list without error", func(t *testing.T) {
+		t.Parallel()
+		list, diags := populateProcessingStepsFromAPI(nil)
+		require.False(t, diags.HasError())
+		assert.True(t, list.IsNull())
+	})
+
+	t.Run("invalid JSON in steps returns error diagnostic", func(t *testing.T) {
+		t.Parallel()
+		ingest := &kibanaoapi.StreamIngest{
+			Processing: kibanaoapi.StreamProcessing{
+				Steps: json.RawMessage(`not-valid-json`),
+			},
+		}
+		_, diags := populateProcessingStepsFromAPI(ingest)
+		assert.True(t, diags.HasError())
+	})
+}
+
 // ── classicConfigModel ────────────────────────────────────────────────────────
 
 func TestClassicConfigPopulateFromAPI(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
+
+	t.Run("invalid JSON in processing steps returns error diagnostic", func(t *testing.T) {
+		t.Parallel()
+		ingest := &kibanaoapi.StreamIngest{
+			Processing: kibanaoapi.StreamProcessing{
+				Steps: json.RawMessage(`not-valid-json`),
+			},
+		}
+		var m classicConfigModel
+		diags := m.populateFromAPI(ctx, ingest)
+		assert.True(t, diags.HasError())
+	})
 
 	t.Run("non-float64 index setting value produces null", func(t *testing.T) {
 		t.Parallel()
@@ -364,7 +400,7 @@ func TestClassicConfigToAPIIngest(t *testing.T) {
 		assert.NotNil(t, ingest.Classic.FieldOverrides)
 	})
 
-	t.Run("nil field overrides does not populate Classic block", func(t *testing.T) {
+	t.Run("nil field overrides populates empty Classic block (API requires it)", func(t *testing.T) {
 		t.Parallel()
 		m := classicConfigModel{
 			ProcessingSteps:       types.ListNull(jsontypes.NormalizedType{}),
@@ -378,7 +414,9 @@ func TestClassicConfigToAPIIngest(t *testing.T) {
 		var diags diag.Diagnostics
 		ingest := m.toAPIIngest(&diags)
 		require.False(t, diags.HasError())
-		assert.Nil(t, ingest.Classic)
+		// The API always requires the classic block to be present, even when empty.
+		require.NotNil(t, ingest.Classic)
+		assert.Nil(t, ingest.Classic.FieldOverrides)
 	})
 }
 

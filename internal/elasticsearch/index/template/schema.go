@@ -23,6 +23,7 @@ import (
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -134,7 +135,7 @@ func templateBlock() schema.SingleNestedBlock {
 				Optional:            true,
 				CustomType:          esindex.MappingsType{},
 				Validators: []validator.String{
-					esindex.StringIsJSONObject{},
+					validators.StringIsJSONObject{},
 				},
 			},
 			attrSettings: schema.StringAttribute{

@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
@@ -32,8 +33,8 @@ import (
 )
 
 var (
-	minKibanaAgentBuilderAPIVersion         = version.Must(version.NewVersion("9.3.0"))
-	minKibanaAgentBuilderWorkflowAPIVersion = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
+	minKibanaAgentBuilderAPIVersion         = agentbuilder.MinCoreAPIVersion
+	minKibanaAgentBuilderWorkflowAPIVersion = agentbuilder.MinExtendedAPIVersion
 	below940Constraints                     = version.MustConstraints(version.NewConstraint(">= 9.3.0, < 9.4.0-SNAPSHOT"))
 )
 

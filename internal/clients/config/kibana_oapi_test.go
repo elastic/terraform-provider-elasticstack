@@ -28,6 +28,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func kibanaMultipleAuthWarningDiag() fwdiags.Diagnostics {
+	var d fwdiags.Diagnostics
+	addMultipleAuthWarning(&d, "Kibana", "environment variables")
+	return d
+}
+
 func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 	type args struct {
 		baseCfg        baseConfig
@@ -192,6 +198,221 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 						URL:      "example.com/kibana",
 						Username: "elastic",
 						Password: "changeme",
+					},
+				}
+			},
+		},
+		{
+			name: "ES APIKey + Kibana username/password clears inherited APIKey",
+			args: func() args {
+				return args{
+					baseCfg: baseConfig{APIKey: "es-key"},
+					providerConfig: ProviderConfiguration{
+						Kibana: []KibanaConnection{
+							{
+								Username:  types.StringValue("kibana-user"),
+								Password:  types.StringValue("kibana-pass"),
+								Endpoints: types.ListValueMust(types.StringType, []attr.Value{}),
+								CACerts:   types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					expectedConfig: kibanaOapiConfig{
+						Username: "kibana-user",
+						Password: "kibana-pass",
+						APIKey:   "",
+					},
+				}
+			},
+		},
+		{
+			name: "ES APIKey + Kibana APIKey clears inherited BasicAuth",
+			args: func() args {
+				return args{
+					baseCfg: baseConfig{
+						Username: "elastic",
+						Password: "changeme",
+					},
+					providerConfig: ProviderConfiguration{
+						Kibana: []KibanaConnection{
+							{
+								APIKey:    types.StringValue("kibana-key"),
+								Endpoints: types.ListValueMust(types.StringType, []attr.Value{}),
+								CACerts:   types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					expectedConfig: kibanaOapiConfig{
+						APIKey:   "kibana-key",
+						Username: "",
+						Password: "",
+					},
+				}
+			},
+		},
+		{
+			name: "ES APIKey with no Kibana block inherits APIKey unchanged",
+			args: func() args {
+				return args{
+					baseCfg:        baseConfig{APIKey: "es-key"},
+					providerConfig: ProviderConfiguration{},
+					expectedConfig: kibanaOapiConfig{APIKey: "es-key"},
+				}
+			},
+		},
+		{
+			name: "KIBANA_PASSWORD env + provider username preserves partial BasicAuth",
+			args: func() args {
+				return args{
+					baseCfg: baseConfig{},
+					providerConfig: ProviderConfiguration{
+						Kibana: []KibanaConnection{
+							{
+								Username:  types.StringValue("provider-user"),
+								Endpoints: types.ListValueMust(types.StringType, []attr.Value{}),
+								CACerts:   types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					env: map[string]string{
+						"KIBANA_PASSWORD": "env-pass",
+					},
+					expectedConfig: kibanaOapiConfig{
+						Username: "provider-user",
+						Password: "env-pass",
+						APIKey:   "",
+					},
+				}
+			},
+		},
+		{
+			name: "KIBANA_API_KEY env overrides provider BasicAuth",
+			args: func() args {
+				return args{
+					baseCfg: baseConfig{},
+					providerConfig: ProviderConfiguration{
+						Kibana: []KibanaConnection{
+							{
+								Username:  types.StringValue("provider-user"),
+								Password:  types.StringValue("provider-pass"),
+								Endpoints: types.ListValueMust(types.StringType, []attr.Value{}),
+								CACerts:   types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					env: map[string]string{
+						"KIBANA_API_KEY": "env-key",
+					},
+					expectedConfig: kibanaOapiConfig{
+						APIKey:   "env-key",
+						Username: "",
+						Password: "",
+					},
+				}
+			},
+		},
+		{
+			name: "env-level conflict KIBANA_API_KEY + KIBANA_USERNAME emits warning",
+			args: func() args {
+				return args{
+					baseCfg:        baseConfig{},
+					providerConfig: ProviderConfiguration{},
+					env: map[string]string{
+						"KIBANA_API_KEY":  "env-key",
+						"KIBANA_USERNAME": "env-user",
+					},
+					expectedConfig: kibanaOapiConfig{
+						APIKey:   "env-key",
+						Username: "env-user",
+					},
+					expectedDiags: kibanaMultipleAuthWarningDiag(),
+				}
+			},
+		},
+		{
+			name: "exactly one auth method emits no warning",
+			args: func() args {
+				return args{
+					baseCfg: baseConfig{
+						Username: "elastic",
+						Password: "changeme",
+					},
+					providerConfig: ProviderConfiguration{},
+					expectedConfig: kibanaOapiConfig{
+						Username: "elastic",
+						Password: "changeme",
+					},
+				}
+			},
+		},
+		{
+			name: "KIBANA_BEARER_TOKEN env overrides provider BasicAuth",
+			args: func() args {
+				return args{
+					baseCfg: baseConfig{},
+					providerConfig: ProviderConfiguration{
+						Kibana: []KibanaConnection{
+							{
+								Username:  types.StringValue("provider-user"),
+								Password:  types.StringValue("provider-pass"),
+								Endpoints: types.ListValueMust(types.StringType, []attr.Value{}),
+								CACerts:   types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					env: map[string]string{
+						"KIBANA_BEARER_TOKEN": "env-token",
+					},
+					expectedConfig: kibanaOapiConfig{
+						BearerToken: "env-token",
+						Username:    "",
+						Password:    "",
+					},
+				}
+			},
+		},
+		{
+			name: "Kibana block with only username clears inherited APIKey",
+			args: func() args {
+				return args{
+					baseCfg: baseConfig{APIKey: "es-key"},
+					providerConfig: ProviderConfiguration{
+						Kibana: []KibanaConnection{
+							{
+								Username:  types.StringValue("kibana-user"),
+								Endpoints: types.ListValueMust(types.StringType, []attr.Value{}),
+								CACerts:   types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					expectedConfig: kibanaOapiConfig{
+						Username: "kibana-user",
+						APIKey:   "",
+						Password: "",
+					},
+				}
+			},
+		},
+		// Kibana block sets only password (no username) → not a valid basic-auth
+		// intent; inherited ES APIKey must NOT be wiped, otherwise the client ends up
+		// with no working auth at all.
+		{
+			name: "Kibana block with only password preserves inherited APIKey",
+			args: func() args {
+				return args{
+					baseCfg: baseConfig{APIKey: "es-key"},
+					providerConfig: ProviderConfiguration{
+						Kibana: []KibanaConnection{
+							{
+								Password:  types.StringValue("orphan-pass"),
+								Endpoints: types.ListValueMust(types.StringType, []attr.Value{}),
+								CACerts:   types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					expectedConfig: kibanaOapiConfig{
+						APIKey:   "es-key",
+						Password: "orphan-pass",
 					},
 				}
 			},
@@ -517,7 +738,7 @@ func Test_newProviderKibanaOapiConfigFromFramework_fleetBlockFallback(t *testing
 			},
 		},
 		{
-			name: "kibana username with fleet password uses both blocks field-by-field",
+			name: "kibana username with fleet password does not fill Password when Kibana has auth",
 			args: func() args {
 				return args{
 					providerConfig: ProviderConfiguration{
@@ -540,6 +761,76 @@ func Test_newProviderKibanaOapiConfigFromFramework_fleetBlockFallback(t *testing
 					expectedConfig: kibanaOapiConfig{
 						URL:      "https://kibana.example.com",
 						Username: "kibana-user",
+						Password: "",
+					},
+				}
+			},
+		},
+		{
+			name: "Kibana BasicAuth blocks Fleet APIKey fallback",
+			args: func() args {
+				return args{
+					providerConfig: ProviderConfiguration{
+						Kibana: []KibanaConnection{
+							{
+								Username:  types.StringValue("k"),
+								Password:  types.StringValue("p"),
+								Endpoints: types.ListValueMust(types.StringType, []attr.Value{}),
+								CACerts:   types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+						Fleet: []FleetConnection{
+							{
+								APIKey:  types.StringValue("fleet-key"),
+								CACerts: types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					expectedConfig: kibanaOapiConfig{
+						Username: "k",
+						Password: "p",
+						APIKey:   "",
+					},
+				}
+			},
+		},
+		{
+			name: "Kibana APIKey blocks Fleet BasicAuth fallback",
+			args: func() args {
+				return args{
+					baseCfg: baseConfig{APIKey: "es-key"},
+					providerConfig: ProviderConfiguration{
+						Fleet: []FleetConnection{
+							{
+								Username: types.StringValue("fleet-user"),
+								Password: types.StringValue("fleet-pass"),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					expectedConfig: kibanaOapiConfig{
+						APIKey:   "es-key",
+						Username: "",
+						Password: "",
+					},
+				}
+			},
+		},
+		{
+			name: "Fleet BasicAuth fills Kibana when Kibana has no auth",
+			args: func() args {
+				return args{
+					providerConfig: ProviderConfiguration{
+						Fleet: []FleetConnection{
+							{
+								Username: types.StringValue("fleet-user"),
+								Password: types.StringValue("fleet-pass"),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					expectedConfig: kibanaOapiConfig{
+						Username: "fleet-user",
 						Password: "fleet-pass",
 					},
 				}

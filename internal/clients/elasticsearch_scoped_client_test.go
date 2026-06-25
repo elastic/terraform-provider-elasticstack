@@ -79,6 +79,7 @@ func elasticsearchConnectionAttrTypes() map[string]attr.Type {
 		"insecure":                 types.BoolType,
 		"ca_file":                  types.StringType,
 		"ca_data":                  types.StringType,
+		"ca_fingerprint":           types.StringType,
 		"cert_file":                types.StringType,
 		"key_file":                 types.StringType,
 		"cert_data":                types.StringType,
@@ -97,6 +98,7 @@ func newScopedElasticsearchClientFromFactory(t *testing.T, endpoint string) *Ela
 		"ELASTICSEARCH_INSECURE",
 		"ELASTICSEARCH_BEARER_TOKEN",
 		"ELASTICSEARCH_ES_CLIENT_AUTHENTICATION",
+		"ELASTICSEARCH_CA_FINGERPRINT",
 	} {
 		if val, ok := os.LookupEnv(key); ok {
 			t.Setenv(key, val)

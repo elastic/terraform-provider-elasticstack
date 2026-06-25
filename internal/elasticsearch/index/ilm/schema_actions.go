@@ -20,7 +20,7 @@ package ilm
 import (
 	_ "embed"
 
-	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
@@ -70,19 +70,19 @@ func blockAllocate() schema.SingleNestedBlock {
 				Description: "Assigns an index to nodes that have at least one of the specified custom attributes. Must be valid JSON document.",
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
-				Validators:  []validator.String{esindex.StringIsJSONObject{}},
+				Validators:  []validator.String{validators.StringIsJSONObject{}},
 			},
 			attrExclude: schema.StringAttribute{
 				Description: "Assigns an index to nodes that have none of the specified custom attributes. Must be valid JSON document.",
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
-				Validators:  []validator.String{esindex.StringIsJSONObject{}},
+				Validators:  []validator.String{validators.StringIsJSONObject{}},
 			},
 			attrRequire: schema.StringAttribute{
 				Description: "Assigns an index to nodes that have all of the specified custom attributes. Must be valid JSON document.",
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
-				Validators:  []validator.String{esindex.StringIsJSONObject{}},
+				Validators:  []validator.String{validators.StringIsJSONObject{}},
 			},
 		},
 	})

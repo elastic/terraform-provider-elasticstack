@@ -44,6 +44,13 @@ func TestAccResourceClusterSettings(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_cluster_settings.test", "id"),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_cluster_settings.test", "id",
+						func(v string) error {
+							if !strings.HasSuffix(v, "/cluster-settings") {
+								return fmt.Errorf("expected id to end with /cluster-settings, got %s", v)
+							}
+							return nil
+						}),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.setting.#", "3"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "transient.setting.#", "2"),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "persistent.setting.*",
@@ -149,6 +156,16 @@ func TestAccResourceClusterSettings(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("transient_only_after_persistent"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.setting.#"),
+					checkRemoteSettingAbsent("persistent", "indices.lifecycle.poll_interval"),
+					checkRemoteSettingAbsent("persistent", "indices.recovery.max_bytes_per_sec"),
+					checkRemoteSettingAbsent("persistent", "indices.breaker.total.limit"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("persistent_value_list_update"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_cluster_settings.test", "id"),
@@ -230,6 +247,36 @@ func TestAccResourceClusterSettingsPersistentOnly(t *testing.T) {
 							"value": "10m",
 						}),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_cluster_settings.test_persistent", "transient.setting.#"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceClusterSettingsTransientOnly(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceClusterSettingsDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("transient_only"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_cluster_settings.test", "id"),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_cluster_settings.test", "id",
+						func(v string) error {
+							if !strings.HasSuffix(v, "/cluster-settings") {
+								return fmt.Errorf("expected id to end with /cluster-settings, got %s", v)
+							}
+							return nil
+						}),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "transient.setting.#", "1"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.setting.#"),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "transient.setting.*",
+						map[string]string{
+							"name":  "indices.breaker.total.limit",
+							"value": "55%",
+						}),
 				),
 			},
 		},

@@ -59,8 +59,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 	pm.Grid = panelkit.GridFromAPI(rsPanel.Grid.X, rsPanel.Grid.Y, rsPanel.Grid.W, rsPanel.Grid.H)
 	pm.ID = panelkit.IDFromAPI(rsPanel.Id)
 	pm.ConfigJSON = panelkit.PanelConfigJSONNull()
-	PopulateFromAPI(ctx, pm, prior, &rsPanel)
-	return nil
+	return PopulateFromAPI(ctx, pm, prior, &rsPanel)
 }
 
 func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
@@ -79,7 +78,10 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 		Grid: grid,
 		Id:   id,
 	}
-	BuildConfig(pm, &panel)
+	diags.Append(BuildConfig(pm, &panel)...)
+	if diags.HasError() {
+		return kbapi.DashboardPanelItem{}, diags
+	}
 	var panelItem kbapi.DashboardPanelItem
 	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl(panel); err != nil {
 		diags.AddError("Failed to create range slider control panel", err.Error())

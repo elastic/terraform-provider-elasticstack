@@ -1,8 +1,8 @@
 # `elasticstack_elasticsearch_snapshot_repository` — Schema and Functional Requirements
 
-Resource implementation: `internal/elasticsearch/cluster/snapshot_repository.go`
+Resource implementation: `internal/elasticsearch/snapshot/repository/resource.go`
 
-Data source implementation: `internal/elasticsearch/cluster/snapshot_repository_data_source.go`
+Data source implementation: `internal/elasticsearch/snapshot/repository/data_source.go`
 
 ## Purpose
 
@@ -282,6 +282,18 @@ The `url.url` attribute SHALL be validated against the regular expression `^(fil
 - GIVEN `s3.endpoint` set to `"not-a-url"`
 - WHEN Terraform validates the configuration
 - THEN a validation error SHALL be returned
+
+### Requirement: Empty string settings are treated as omitted (REQ-018)
+
+For the optional common string settings `chunk_size`, `max_snapshot_bytes_per_sec`, and `max_restore_bytes_per_sec` across all repository type blocks (`fs`, `url`, `gcs`, `azure`, `s3`, `hdfs`), the write path SHALL continue to skip emitting these keys from the PUT request body when the configured value is `""`. The read path SHALL preserve the prior Terraform state value for these keys when the API omits them from the GET response. This ensures that a configured empty string does not drift to `null` during the read-after-write refresh, preventing the "inconsistent result after apply" error.
+
+#### Scenario: Empty chunk_size does not cause inconsistent result after apply
+
+- GIVEN an `fs` block with `chunk_size = ""`
+- WHEN create runs
+- THEN the PUT request body SHALL NOT include `chunk_size`
+- AND the post-apply refresh SHALL store `chunk_size` as `""` by inheriting it from the prior plan state
+- AND Terraform SHALL NOT emit "inconsistent result after apply"
 
 ### Requirement: Verify parameter (REQ-015)
 

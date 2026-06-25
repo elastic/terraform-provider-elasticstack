@@ -24,7 +24,6 @@ import (
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -49,25 +48,12 @@ func (m *wiredConfigModel) populateFromAPI(_ context.Context, ingest *kibanaoapi
 	}
 
 	// Processing steps — each step is a JSON-encoded streamlang object.
-	// An empty array from the API is treated as null (no steps configured).
-	if len(ingest.Processing.Steps) > 0 {
-		var rawSteps []json.RawMessage
-		if err := json.Unmarshal(ingest.Processing.Steps, &rawSteps); err != nil {
-			diags.AddError("Failed to unmarshal processing steps", err.Error())
-			return diags
-		}
-		if len(rawSteps) > 0 {
-			elems := make([]attr.Value, len(rawSteps))
-			for i, raw := range rawSteps {
-				elems[i] = jsontypes.NewNormalizedValue(string(raw))
-			}
-			m.ProcessingSteps = types.ListValueMust(jsontypes.NormalizedType{}, elems)
-		} else {
-			m.ProcessingSteps = types.ListNull(jsontypes.NormalizedType{})
-		}
-	} else {
-		m.ProcessingSteps = types.ListNull(jsontypes.NormalizedType{})
+	steps, stepsDiags := populateProcessingStepsFromAPI(ingest)
+	diags.Append(stepsDiags...)
+	if diags.HasError() {
+		return diags
 	}
+	m.ProcessingSteps = steps
 
 	// Wired-specific fields and routing.
 	// An empty object {} from the API means no fields are configured → null.
@@ -93,51 +79,8 @@ func (m *wiredConfigModel) populateFromAPI(_ context.Context, ingest *kibanaoapi
 		m.RoutingJSON = jsontypes.NewNormalizedNull()
 	}
 
-	// Lifecycle
-	if len(ingest.Lifecycle) > 0 {
-		m.LifecycleJSON = jsontypes.NewNormalizedValue(string(ingest.Lifecycle))
-	} else {
-		m.LifecycleJSON = jsontypes.NewNormalizedNull()
-	}
-
-	// Failure store
-	if len(ingest.FailureStore) > 0 {
-		m.FailureStoreJSON = jsontypes.NewNormalizedValue(string(ingest.FailureStore))
-	} else {
-		m.FailureStoreJSON = jsontypes.NewNormalizedNull()
-	}
-
-	// Index settings
-	if ingest.Settings.IndexNumberOfShards != nil {
-		if v, ok := ingest.Settings.IndexNumberOfShards.Value.(float64); ok {
-			m.IndexNumberOfShards = types.Int64Value(int64(v))
-		} else {
-			m.IndexNumberOfShards = types.Int64Null()
-		}
-	} else {
-		m.IndexNumberOfShards = types.Int64Null()
-	}
-
-	if ingest.Settings.IndexNumberOfReplicas != nil {
-		if v, ok := ingest.Settings.IndexNumberOfReplicas.Value.(float64); ok {
-			m.IndexNumberOfReplicas = types.Int64Value(int64(v))
-		} else {
-			m.IndexNumberOfReplicas = types.Int64Null()
-		}
-	} else {
-		m.IndexNumberOfReplicas = types.Int64Null()
-	}
-
-	if ingest.Settings.IndexRefreshInterval != nil {
-		switch v := ingest.Settings.IndexRefreshInterval.Value.(type) {
-		case string:
-			m.IndexRefreshInterval = types.StringValue(v)
-		default:
-			m.IndexRefreshInterval = types.StringNull()
-		}
-	} else {
-		m.IndexRefreshInterval = types.StringNull()
-	}
+	m.LifecycleJSON, m.FailureStoreJSON = populateLifecycleAndFailureStoreFromAPI(ingest)
+	m.IndexNumberOfShards, m.IndexNumberOfReplicas, m.IndexRefreshInterval = populateIndexSettingsFromAPI(ingest)
 
 	return diags
 }
@@ -147,15 +90,8 @@ func (m *wiredConfigModel) toAPIIngest(diags *diag.Diagnostics) *kibanaoapi.Stre
 	ingest := &kibanaoapi.StreamIngest{}
 
 	// Processing steps — the API requires the array to be present (even empty).
-	rawSteps := make([]json.RawMessage, 0)
-	for _, elem := range m.ProcessingSteps.Elements() {
-		if norm, ok := elem.(jsontypes.Normalized); ok && typeutils.IsKnown(norm) {
-			rawSteps = append(rawSteps, json.RawMessage(norm.ValueString()))
-		}
-	}
-	stepsJSON, err := json.Marshal(rawSteps)
-	if err != nil {
-		diags.AddError("Failed to marshal processing steps", err.Error())
+	stepsJSON := processingStepsToAPI(m.ProcessingSteps, diags)
+	if diags.HasError() {
 		return ingest
 	}
 	ingest.Processing.Steps = stepsJSON
@@ -193,22 +129,7 @@ func (m *wiredConfigModel) toAPIIngest(diags *diag.Diagnostics) *kibanaoapi.Stre
 		ingest.FailureStore = json.RawMessage(`{"disabled":{}}`)
 	}
 
-	// Index settings
-	if typeutils.IsKnown(m.IndexNumberOfShards) {
-		ingest.Settings.IndexNumberOfShards = &kibanaoapi.StreamIngestSettingValue{
-			Value: float64(m.IndexNumberOfShards.ValueInt64()),
-		}
-	}
-	if typeutils.IsKnown(m.IndexNumberOfReplicas) {
-		ingest.Settings.IndexNumberOfReplicas = &kibanaoapi.StreamIngestSettingValue{
-			Value: float64(m.IndexNumberOfReplicas.ValueInt64()),
-		}
-	}
-	if typeutils.IsKnown(m.IndexRefreshInterval) {
-		ingest.Settings.IndexRefreshInterval = &kibanaoapi.StreamIngestSettingValue{
-			Value: m.IndexRefreshInterval.ValueString(),
-		}
-	}
+	applyIndexSettingsToAPI(m.IndexNumberOfShards, m.IndexNumberOfReplicas, m.IndexRefreshInterval, ingest)
 
 	return ingest
 }

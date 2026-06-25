@@ -28,6 +28,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func fleetMultipleAuthWarningDiag() fwdiags.Diagnostics {
+	var d fwdiags.Diagnostics
+	addMultipleAuthWarning(&d, "Fleet", "Fleet environment variables")
+	return d
+}
+
 func Test_newFleetConfigFromFramework(t *testing.T) {
 	type args struct {
 		kibanaCfg      kibanaOapiConfig
@@ -92,6 +98,7 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 						CACerts:  []string{"internal", "lets_decrypt"},
 						Insecure: false,
 					},
+					expectedDiags: fleetMultipleAuthWarningDiag(),
 				}
 			},
 		},
@@ -136,6 +143,146 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 						APIKey:   "stupefy",
 						CACerts:  []string{"black", "sea"},
 						Insecure: false,
+					},
+					expectedDiags: fleetMultipleAuthWarningDiag(),
+				}
+			},
+		},
+		{
+			name: "Kibana BasicAuth + Fleet APIKey clears inherited BasicAuth",
+			args: func() args {
+				kibanaCfg := kibanaOapiConfig{
+					Username: "k",
+					Password: "p",
+				}
+				return args{
+					kibanaCfg: kibanaCfg,
+					providerConfig: ProviderConfiguration{
+						Fleet: []FleetConnection{
+							{
+								APIKey:  types.StringValue("fleet-key"),
+								CACerts: types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					expectedConfig: fleetConfig{
+						APIKey:   "fleet-key",
+						Username: "",
+						Password: "",
+					},
+				}
+			},
+		},
+		{
+			name: "Fleet env password + provider username overrides inherited Kibana APIKey",
+			args: func() args {
+				kibanaCfg := kibanaOapiConfig{APIKey: "kibana-key"}
+				return args{
+					kibanaCfg: kibanaCfg,
+					providerConfig: ProviderConfiguration{
+						Fleet: []FleetConnection{
+							{
+								Username: types.StringValue("fleet-user"),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					env: map[string]string{
+						"FLEET_PASSWORD": "env-pass",
+					},
+					expectedConfig: fleetConfig{
+						Username: "fleet-user",
+						Password: "env-pass",
+						APIKey:   "",
+					},
+				}
+			},
+		},
+		{
+			name: "FLEET_API_KEY env overrides provider Fleet BasicAuth",
+			args: func() args {
+				kibanaCfg := kibanaOapiConfig{}
+				return args{
+					kibanaCfg: kibanaCfg,
+					providerConfig: ProviderConfiguration{
+						Fleet: []FleetConnection{
+							{
+								Username: types.StringValue("fleet-user"),
+								Password: types.StringValue("fleet-pass"),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					env: map[string]string{
+						"FLEET_API_KEY": "env-key",
+					},
+					expectedConfig: fleetConfig{
+						APIKey:   "env-key",
+						Username: "",
+						Password: "",
+					},
+				}
+			},
+		},
+		{
+			name: "env-level conflict FLEET_API_KEY + FLEET_USERNAME emits warning",
+			args: func() args {
+				kibanaCfg := kibanaOapiConfig{}
+				return args{
+					kibanaCfg:      kibanaCfg,
+					providerConfig: ProviderConfiguration{},
+					env: map[string]string{
+						"FLEET_API_KEY":  "env-key",
+						"FLEET_USERNAME": "env-user",
+					},
+					expectedConfig: fleetConfig{
+						APIKey:   "env-key",
+						Username: "env-user",
+					},
+					expectedDiags: fleetMultipleAuthWarningDiag(),
+				}
+			},
+		},
+		{
+			name: "inherited Kibana config with multiple auth methods emits Fleet warning",
+			args: func() args {
+				kibanaCfg := kibanaOapiConfig{
+					APIKey:   "bad-key",
+					Username: "bad-user",
+				}
+				return args{
+					kibanaCfg:      kibanaCfg,
+					providerConfig: ProviderConfiguration{},
+					expectedConfig: fleetConfig{
+						APIKey:   "bad-key",
+						Username: "bad-user",
+					},
+					expectedDiags: fleetMultipleAuthWarningDiag(),
+				}
+			},
+		},
+		{
+			name: "FLEET_BEARER_TOKEN env overrides provider Fleet BasicAuth",
+			args: func() args {
+				kibanaCfg := kibanaOapiConfig{}
+				return args{
+					kibanaCfg: kibanaCfg,
+					providerConfig: ProviderConfiguration{
+						Fleet: []FleetConnection{
+							{
+								Username: types.StringValue("fleet-user"),
+								Password: types.StringValue("fleet-pass"),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+							},
+						},
+					},
+					env: map[string]string{
+						"FLEET_BEARER_TOKEN": "env-token",
+					},
+					expectedConfig: fleetConfig{
+						BearerToken: "env-token",
+						Username:    "",
+						Password:    "",
 					},
 				}
 			},

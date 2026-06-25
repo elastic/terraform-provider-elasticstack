@@ -76,7 +76,7 @@ func getPackageCacheKey(name, version string) string {
 	return fmt.Sprintf("%s-%s", name, version)
 }
 
-func getPackageInfo(ctx context.Context, client *fleet.Client, name, version, spaceID string) (*kbapi.PackageInfo, diag.Diagnostics) {
+func getPackageInfo(ctx context.Context, client *fleet.Client, name, version, spaceID string) (*kbapi.KibanaHTTPAPIsGetPackageInfo, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if pkg, ok := getCachedPackageInfo(name, version); ok {
@@ -114,14 +114,14 @@ func getPackageInfo(ctx context.Context, client *fleet.Client, name, version, sp
 	return pkg, diags
 }
 
-func getCachedPackageInfo(name, version string) (kbapi.PackageInfo, bool) {
+func getCachedPackageInfo(name, version string) (kbapi.KibanaHTTPAPIsGetPackageInfo, bool) {
 	value, ok := knownPackages.Load(getPackageCacheKey(name, version))
 	if !ok {
-		return kbapi.PackageInfo{}, false
+		return kbapi.KibanaHTTPAPIsGetPackageInfo{}, false
 	}
-	pkg, ok := value.(kbapi.PackageInfo)
+	pkg, ok := value.(kbapi.KibanaHTTPAPIsGetPackageInfo)
 	if !ok {
-		return kbapi.PackageInfo{}, false
+		return kbapi.KibanaHTTPAPIsGetPackageInfo{}, false
 	}
 	return pkg, true
 }

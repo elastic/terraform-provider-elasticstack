@@ -46,7 +46,7 @@ var (
 )
 
 // GetPackage reads a specific package from the API.
-func GetPackage(ctx context.Context, client *Client, name, version, spaceID string) (*kbapi.PackageInfo, diag.Diagnostics) {
+func GetPackage(ctx context.Context, client *Client, name, version, spaceID string) (*kbapi.KibanaHTTPAPIsGetPackageInfo, diag.Diagnostics) {
 	params := kbapi.GetFleetEpmPackagesPkgnamePkgversionParams{}
 
 	resp, err := client.API.GetFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, kibanautil.SpaceAwarePathRequestEditor(spaceID))
@@ -160,9 +160,7 @@ func DeleteKibanaAssets(ctx context.Context, client *Client, name, version strin
 
 // GetPackages returns information about the latest packages known to Fleet.
 // If spaceID is non-empty and not "default", the request will be scoped to that Kibana space.
-func unpackGetPackagesItems(resp *struct {
-	Items []kbapi.PackageListItem `json:"items"`
-}, contentType string) ([]kbapi.PackageListItem, diag.Diagnostics) {
+func unpackGetPackagesItems(resp *kbapi.KibanaHTTPAPIsGetPackagesResponse, contentType string) ([]kbapi.KibanaHTTPAPIsPackageListItem, diag.Diagnostics) {
 	if resp == nil {
 		return nil, diag.Diagnostics{
 			diag.NewErrorDiagnostic(
@@ -178,7 +176,7 @@ func unpackGetPackagesItems(resp *struct {
 	return resp.Items, nil
 }
 
-func GetPackages(ctx context.Context, client *Client, prerelease bool, spaceID string) ([]kbapi.PackageListItem, diag.Diagnostics) {
+func GetPackages(ctx context.Context, client *Client, prerelease bool, spaceID string) ([]kbapi.KibanaHTTPAPIsPackageListItem, diag.Diagnostics) {
 	params := kbapi.GetFleetEpmPackagesParams{
 		Prerelease: &prerelease,
 	}
@@ -431,9 +429,9 @@ func waitForPackageInstalled(ctx context.Context, client *Client, packageName, p
 		}
 		if pkg.InstallationInfo != nil {
 			switch pkg.InstallationInfo.InstallStatus {
-			case kbapi.PackageInfoInstallationInfoInstallStatusInstalled:
+			case kbapi.KibanaHTTPAPIsInstallationInfoInstallStatusInstalled:
 				return true, nil
-			case kbapi.PackageInfoInstallationInfoInstallStatusInstallFailed:
+			case kbapi.KibanaHTTPAPIsInstallationInfoInstallStatusInstallFailed:
 				return false, fmt.Errorf("package %s/%s installation failed", packageName, packageVersion)
 			}
 		}

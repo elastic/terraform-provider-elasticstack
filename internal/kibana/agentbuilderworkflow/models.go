@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -47,8 +48,8 @@ type workflowDataSourceModel struct {
 
 func (workflowDataSourceModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{{
-		MinVersion:   *minKibanaAgentBuilderAPIVersion,
-		ErrorMessage: fmt.Sprintf("Agent Builder workflows require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
+		MinVersion:   *agentbuilder.MinExtendedAPIVersion,
+		ErrorMessage: fmt.Sprintf("Agent Builder workflows require Elastic Stack v%s or later.", agentbuilder.MinExtendedAPIVersion),
 	}}, nil
 }
 

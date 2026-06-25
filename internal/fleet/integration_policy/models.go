@@ -60,15 +60,16 @@ type integrationPolicyInputStreamModel struct {
 	Vars    jsontypes.Normalized `tfsdk:"vars"`
 }
 
-func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *kbapi.PackageInfo, data *kbapi.PackagePolicy) diag.Diagnostics {
+func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, data *kbapi.PackagePolicy) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
 
 	var diags diag.Diagnostics
 
-	model.ID = types.StringValue(data.Id)
-	model.PolicyID = types.StringValue(data.Id)
+	dataID := typeutils.Deref(data.Id)
+	model.ID = types.StringValue(dataID)
+	model.PolicyID = types.StringValue(dataID)
 	model.Name = types.StringValue(data.Name)
 	model.Namespace = types.StringPointerValue(data.Namespace)
 
@@ -109,8 +110,8 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 	model.IntegrationVersion = types.StringValue(data.Package.Version)
 	model.OutputID = types.StringPointerValue(data.OutputId)
 
-	varsMap := typeutils.Deref(data.Vars)
-	if varsMap == nil {
+	varsMap := varsAnyToMap(data.Vars)
+	if len(varsMap) == 0 {
 		model.VarsJSON = NewVarsJSONNull()
 	} else {
 		jsonBytes, err := json.Marshal(varsMap)
@@ -147,7 +148,7 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 	return diags
 }
 
-func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, pkg *kbapi.PackageInfo, inputs kbapi.PackagePolicyMappedInputs, diags *diag.Diagnostics) {
+func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, inputs kbapi.PackagePolicyMappedInputs, diags *diag.Diagnostics) {
 	// Handle input population based on context:
 	// 1. If model.Inputs is unknown: we're importing or reading fresh state → populate from API
 	// 2. If model.Inputs is known and null/empty: user explicitly didn't configure inputs → don't populate (avoid inconsistent state)
@@ -252,27 +253,11 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integra
 		Force:       model.Force.ValueBoolPointer(),
 		Name:        model.Name.ValueString(),
 		Namespace:   model.Namespace.ValueStringPointer(),
-		OutputId:    model.OutputID.ValueStringPointer(),
 		Package: kbapi.PackagePolicyRequestPackage{
 			Name:    model.IntegrationName.ValueString(),
 			Version: model.IntegrationVersion.ValueString(),
 		},
-		PolicyId: model.AgentPolicyID.ValueStringPointer(),
-		PolicyIds: func() *[]string {
-			if !model.AgentPolicyIDs.IsNull() && !model.AgentPolicyIDs.IsUnknown() {
-				var policyIDs []string
-				d := model.AgentPolicyIDs.ElementsAs(ctx, &policyIDs, false)
-				diags.Append(d...)
-				return &policyIDs
-			}
-			// Only return empty array for 8.15+ when agent_policy_ids is not defined
-			if feat.SupportsPolicyIDs {
-				emptyArray := []string{}
-				return &emptyArray
-			}
-			return nil
-		}(),
-		Vars: func() *map[string]any {
+		Vars: func() *map[string]*kbapi.KibanaHTTPAPIsSimplifiedCreatePackagePolicyRequest_Vars_AdditionalProperties {
 			// Use SanitizedValue to strip internal metadata like __tf_provider_context
 			// before sending to the Kibana API. This prevents HTTP 400 errors when Kibana
 			// doesn't recognize the internal __tf_provider_context variable.
@@ -284,7 +269,8 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integra
 			if diags.HasError() {
 				return nil
 			}
-			return typeutils.MapRef(typeutils.NormalizedTypeToMap[any](jsontypes.NewNormalizedValue(sanitizedVars), path.Root("vars_json"), &diags))
+			m := typeutils.NormalizedTypeToMap[any](jsontypes.NewNormalizedValue(sanitizedVars), path.Root("vars_json"), &diags)
+			return varsMapToTypedMap[kbapi.KibanaHTTPAPIsSimplifiedCreatePackagePolicyRequest_Vars_AdditionalProperties](m)
 		}(),
 	}
 
@@ -298,6 +284,27 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integra
 
 	mappedBody.Inputs = model.toAPIInputsFromInputsAttribute(ctx, &diags)
 	// Note: space_ids is not included in the request body; the Fleet API manages space assignment
+
+	// output_id / policy_id / policy_ids are declared on the simplified create
+	// body (Kibana_HTTP_APIs_simplified_create_package_policy_request) again, so
+	// set them directly on the typed mapped body and populate the union via its
+	// generated accessor instead of a JSON wrapper round-trip.
+	mappedBody.OutputId = model.OutputID.ValueStringPointer()
+	mappedBody.PolicyId = model.AgentPolicyID.ValueStringPointer()
+	mappedBody.PolicyIds = func() *[]string {
+		if !model.AgentPolicyIDs.IsNull() && !model.AgentPolicyIDs.IsUnknown() {
+			var policyIDs []string
+			d := model.AgentPolicyIDs.ElementsAs(ctx, &policyIDs, false)
+			diags.Append(d...)
+			return &policyIDs
+		}
+		// 8.15+ accepts an empty array to clear any existing associations.
+		if feat.SupportsPolicyIDs {
+			emptyArray := []string{}
+			return &emptyArray
+		}
+		return nil
+	}()
 
 	var body kbapi.PackagePolicyRequest
 	if err := body.FromPackagePolicyRequestMappedInputs(mappedBody); err != nil {
@@ -324,7 +331,7 @@ func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(ctx context.C
 
 		apiInput := kbapi.PackagePolicyRequestMappedInput{
 			Enabled: inputModel.Enabled.ValueBoolPointer(),
-			Vars:    typeutils.MapRef(typeutils.NormalizedTypeToMap[any](inputModel.Vars, inputPath.AtName("vars"), diags)),
+			Vars:    varsMapToTypedMap[kbapi.PackagePolicyRequestMappedInput_Vars_AdditionalProperties](typeutils.NormalizedTypeToMap[any](inputModel.Vars, inputPath.AtName("vars"), diags)),
 		}
 
 		// Convert streams if present
@@ -333,9 +340,11 @@ func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(ctx context.C
 			if streamsMap != nil {
 				streams := make(map[string]kbapi.PackagePolicyRequestMappedInputStream, len(streamsMap))
 				for streamID, streamModel := range streamsMap {
+					streamVarsPath := inputPath.AtName("streams").AtMapKey(streamID).AtName("vars")
+					streamVars := typeutils.NormalizedTypeToMap[any](streamModel.Vars, streamVarsPath, diags)
 					streams[streamID] = kbapi.PackagePolicyRequestMappedInputStream{
 						Enabled: streamModel.Enabled.ValueBoolPointer(),
-						Vars:    typeutils.MapRef(typeutils.NormalizedTypeToMap[any](streamModel.Vars, inputPath.AtName("streams").AtMapKey(streamID).AtName("vars"), diags)),
+						Vars:    varsMapToTypedMap[kbapi.PackagePolicyRequestMappedInputStream_Vars_AdditionalProperties](streamVars),
 					}
 				}
 				apiInput.Streams = &streams

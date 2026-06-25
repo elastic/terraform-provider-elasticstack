@@ -32,5 +32,10 @@ resource "elasticstack_kibana_synthetics_monitor" "my_monitor" {
     mode                    = "all"
     ipv4                    = true
     ipv6                    = true
+    check = jsonencode({
+      response = {
+        status = [200, 201, 301]
+      }
+    })
   }
 }

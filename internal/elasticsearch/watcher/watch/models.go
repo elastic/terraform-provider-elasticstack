@@ -116,9 +116,10 @@ func marshalCompact(v any) (string, error) {
 }
 
 // fromAPIModel populates the Data model from an API watch response. priorActions
-// is the actions JSON from Terraform plan or state; redacted string leaves from
-// the API are replaced with prior non-redacted values at the same paths when present.
-func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch, priorActions jsontypes.Normalized) diag.Diagnostics {
+// and priorInput are the actions and input JSON from Terraform plan or state;
+// redacted string leaves from the API are replaced with prior non-redacted
+// values at the same paths when present.
+func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch, priorActions, priorInput jsontypes.Normalized) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	d.WatchID = types.StringValue(watch.WatchID)
@@ -138,7 +139,18 @@ func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch, priorActions
 	if watch.Body.Input == nil {
 		d.Input = jsontypes.NewNormalizedValue(`{"none":{}}`)
 	} else {
-		input, err := marshalCompact(watch.Body.Input)
+		var mergedInput any = watch.Body.Input
+		if typeutils.IsKnown(priorInput) {
+			var priorRoot any
+			if err := json.Unmarshal([]byte(priorInput.ValueString()), &priorRoot); err != nil {
+				diags.AddError("Invalid input JSON in Terraform state or plan", fmt.Sprintf("Error parsing prior input: %s", err))
+				return diags
+			}
+			if priorMap, ok := priorRoot.(map[string]any); ok {
+				mergedInput = mergePreserveRedactedLeaves(watch.Body.Input, priorMap)
+			}
+		}
+		input, err := marshalCompact(mergedInput)
 		if err != nil {
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling input: %s", err))
 			return diags
