@@ -35,14 +35,12 @@ const optionsListControlTestDataViewID = "dv1"
 // model only describes the field-based variant.
 type olFieldCfg = kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField
 
-func ptr[T any](v T) *T { return &v }
-
-func makeAPIConfig(dataViewID, fieldName string) *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl {
+func makeAPIConfig(t *testing.T, dataViewID, fieldName string) *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl {
 	p := &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{}
-	_ = p.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(olFieldCfg{
+	require.NoError(t, p.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(olFieldCfg{
 		DataViewId: dataViewID,
 		FieldName:  fieldName,
-	})
+	}))
 	return p
 }
 
@@ -56,7 +54,7 @@ func olConfigField(t *testing.T, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOpti
 func Test_PopulateFromAPI_nilBlock_preservedAsNil(t *testing.T) {
 	pm := &models.PanelModel{}
 	tfPanel := &models.PanelModel{}
-	PopulateFromAPI(pm, tfPanel, makeAPIConfig(optionsListControlTestDataViewID, "field1"))
+	PopulateFromAPI(pm, tfPanel, makeAPIConfig(t, optionsListControlTestDataViewID, "field1"))
 	assert.Nil(t, pm.OptionsListControlConfig)
 }
 
@@ -70,13 +68,13 @@ func Test_PopulateFromAPI_import_populatesUserConfigurableFields(t *testing.T) {
 	c := olFieldCfg{
 		DataViewId:        optionsListControlTestDataViewID,
 		FieldName:         "field1",
-		Title:             ptr("My Control"),
-		UseGlobalFilters:  ptr(true),
-		IgnoreValidations: ptr(false),
-		SingleSelect:      ptr(true),
-		Exclude:           ptr(false),
-		ExistsSelected:    ptr(true),
-		RunPastTimeout:    ptr(false),
+		Title:             new("My Control"),
+		UseGlobalFilters:  new(true),
+		IgnoreValidations: new(false),
+		SingleSelect:      new(true),
+		Exclude:           new(false),
+		ExistsSelected:    new(true),
+		RunPastTimeout:    new(false),
 		SearchTechnique:   &st,
 		DisplaySettings: &struct {
 			HideActionBar *bool   `json:"hide_action_bar,omitempty"`
@@ -85,11 +83,11 @@ func Test_PopulateFromAPI_import_populatesUserConfigurableFields(t *testing.T) {
 			HideSort      *bool   `json:"hide_sort,omitempty"`
 			Placeholder   *string `json:"placeholder,omitempty"`
 		}{
-			Placeholder:   ptr("Select..."),
-			HideActionBar: ptr(true),
-			HideExclude:   ptr(false),
-			HideExists:    ptr(true),
-			HideSort:      ptr(false),
+			Placeholder:   new("Select..."),
+			HideActionBar: new(true),
+			HideExclude:   new(false),
+			HideExists:    new(true),
+			HideSort:      new(false),
 		},
 		Sort: &struct {
 			By        kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSortBy        `json:"by"`
@@ -100,7 +98,7 @@ func Test_PopulateFromAPI_import_populatesUserConfigurableFields(t *testing.T) {
 		},
 	}
 	var api kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl
-	api.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(c)
+	require.NoError(t, api.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(c))
 	PopulateFromAPI(pm, nil, &api)
 	require.NotNil(t, pm.OptionsListControlConfig)
 	cfg := pm.OptionsListControlConfig
@@ -127,7 +125,7 @@ func Test_PopulateFromAPI_import_populatesUserConfigurableFields(t *testing.T) {
 // Test: on import with no optional fields, only required fields are populated.
 func Test_PopulateFromAPI_import_requiredFieldsOnly(t *testing.T) {
 	pm := &models.PanelModel{}
-	PopulateFromAPI(pm, nil, makeAPIConfig("dv2", "status"))
+	PopulateFromAPI(pm, nil, makeAPIConfig(t, "dv2", "status"))
 	require.NotNil(t, pm.OptionsListControlConfig)
 	assert.Equal(t, types.StringValue("dv2"), pm.OptionsListControlConfig.DataViewID)
 	assert.Equal(t, types.StringValue("status"), pm.OptionsListControlConfig.FieldName)
@@ -150,11 +148,11 @@ func Test_PopulateFromAPI_knownFields_updatedFromAPI(t *testing.T) {
 	c := olFieldCfg{
 		DataViewId:       "new-dv",
 		FieldName:        "new-field",
-		UseGlobalFilters: ptr(true),
+		UseGlobalFilters: new(true),
 		SearchTechnique:  &st,
 	}
 	var api kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl
-	api.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(c)
+	require.NoError(t, api.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(c))
 	PopulateFromAPI(pm, tfPanel, &api)
 	require.NotNil(t, pm.OptionsListControlConfig)
 	assert.Equal(t, types.StringValue("new-dv"), pm.OptionsListControlConfig.DataViewID)
@@ -178,11 +176,11 @@ func Test_PopulateFromAPI_nullFields_preservedAsNull(t *testing.T) {
 	c := olFieldCfg{
 		DataViewId:       optionsListControlTestDataViewID,
 		FieldName:        "f1",
-		UseGlobalFilters: ptr(true),
+		UseGlobalFilters: new(true),
 		SearchTechnique:  &st,
 	}
 	var api kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl
-	api.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(c)
+	require.NoError(t, api.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(c))
 	PopulateFromAPI(pm, tfPanel, &api)
 	require.NotNil(t, pm.OptionsListControlConfig)
 	assert.True(t, pm.OptionsListControlConfig.UseGlobalFilters.IsNull())
@@ -209,11 +207,11 @@ func Test_PopulateFromAPI_nilDisplaySettings_preservedAsNil(t *testing.T) {
 			HideSort      *bool   `json:"hide_sort,omitempty"`
 			Placeholder   *string `json:"placeholder,omitempty"`
 		}{
-			Placeholder: ptr("test"),
+			Placeholder: new("test"),
 		},
 	}
 	var api kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl
-	api.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(c)
+	require.NoError(t, api.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(c))
 	PopulateFromAPI(pm, tfPanel, &api)
 	require.NotNil(t, pm.OptionsListControlConfig)
 	assert.Nil(t, pm.OptionsListControlConfig.DisplaySettings)

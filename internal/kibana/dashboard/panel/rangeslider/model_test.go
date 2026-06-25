@@ -30,13 +30,13 @@ import (
 
 type rsFieldCfg = kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField
 
-func apiRangeSliderConfig(opts ...func(*rsFieldCfg)) *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl {
+func apiRangeSliderConfig(t *testing.T, opts ...func(*rsFieldCfg)) *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl {
 	c := rsFieldCfg{DataViewId: "dv-1", FieldName: "bytes"}
 	for _, o := range opts {
 		o(&c)
 	}
 	p := &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{}
-	_ = p.Config.FromKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField(c)
+	require.NoError(t, p.Config.FromKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField(c))
 	return p
 }
 
@@ -73,7 +73,7 @@ func mustStringList(elems ...string) types.List {
 // Test: on import (tfPanel == nil) with API data, populate all fields.
 func Test_PopulateFromAPI_import_allFields(t *testing.T) {
 	pm := &models.PanelModel{}
-	apiCfg := apiRangeSliderConfig(
+	apiCfg := apiRangeSliderConfig(t,
 		rsWithTitle("My Control"),
 		withUseGlobalFilters(true),
 		withIgnoreValidations(false),
@@ -94,7 +94,7 @@ func Test_PopulateFromAPI_import_allFields(t *testing.T) {
 // Test: on import (tfPanel == nil) with minimal API data (only required fields).
 func Test_PopulateFromAPI_import_requiredOnly(t *testing.T) {
 	pm := &models.PanelModel{}
-	PopulateFromAPI(context.Background(), pm, nil, apiRangeSliderConfig())
+	PopulateFromAPI(context.Background(), pm, nil, apiRangeSliderConfig(t))
 	require.NotNil(t, pm.RangeSliderControlConfig)
 	assert.Equal(t, types.StringValue("dv-1"), pm.RangeSliderControlConfig.DataViewID)
 	assert.Equal(t, types.StringValue("bytes"), pm.RangeSliderControlConfig.FieldName)
@@ -109,7 +109,7 @@ func Test_PopulateFromAPI_import_requiredOnly(t *testing.T) {
 func Test_PopulateFromAPI_nilBlock_preservesNil(t *testing.T) {
 	pm := &models.PanelModel{}
 	tfPanel := &models.PanelModel{}
-	PopulateFromAPI(context.Background(), pm, tfPanel, apiRangeSliderConfig())
+	PopulateFromAPI(context.Background(), pm, tfPanel, apiRangeSliderConfig(t))
 	assert.Nil(t, pm.RangeSliderControlConfig)
 }
 
@@ -127,7 +127,7 @@ func Test_PopulateFromAPI_knownFields_updatedFromAPI(t *testing.T) {
 		},
 	}
 	tfPanel := &models.PanelModel{RangeSliderControlConfig: pm.RangeSliderControlConfig}
-	apiCfg := apiRangeSliderConfig(
+	apiCfg := apiRangeSliderConfig(t,
 		rsWithTitle("new title"),
 		withUseGlobalFilters(true),
 		withIgnoreValidations(true),
@@ -159,7 +159,7 @@ func Test_PopulateFromAPI_nullOptionalFields_preserved(t *testing.T) {
 		},
 	}
 	tfPanel := &models.PanelModel{RangeSliderControlConfig: pm.RangeSliderControlConfig}
-	apiCfg := apiRangeSliderConfig(
+	apiCfg := apiRangeSliderConfig(t,
 		rsWithTitle("ignored"),
 		withUseGlobalFilters(true),
 		withIgnoreValidations(true),
@@ -193,7 +193,7 @@ func Test_BuildConfig_knownFields(t *testing.T) {
 		},
 	}
 	rsPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{}
-	BuildConfig(pm, &rsPanel)
+	require.False(t, BuildConfig(pm, &rsPanel).HasError(), "BuildConfig failed")
 	cfg := rsConfigField(t, rsPanel)
 	assert.Equal(t, "dv-1", cfg.DataViewId)
 	assert.Equal(t, "bytes", cfg.FieldName)
@@ -223,7 +223,7 @@ func Test_BuildConfig_nullOptionalFields(t *testing.T) {
 		},
 	}
 	rsPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{}
-	BuildConfig(pm, &rsPanel)
+	require.False(t, BuildConfig(pm, &rsPanel).HasError(), "BuildConfig failed")
 	cfg := rsConfigField(t, rsPanel)
 	assert.Equal(t, "dv-1", cfg.DataViewId)
 	assert.Equal(t, "bytes", cfg.FieldName)
@@ -247,7 +247,7 @@ func Test_rangeSliderControl_roundTrip(t *testing.T) {
 	}
 	pm := models.PanelModel{RangeSliderControlConfig: &original}
 	rsPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{}
-	BuildConfig(pm, &rsPanel)
+	require.False(t, BuildConfig(pm, &rsPanel).HasError(), "BuildConfig failed")
 
 	out := &models.PanelModel{
 		RangeSliderControlConfig: &models.RangeSliderControlConfigModel{
@@ -283,7 +283,7 @@ func Test_rangeSliderControl_value_exactlyTwoElements(t *testing.T) {
 		},
 	}
 	rsPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{}
-	BuildConfig(pm, &rsPanel)
+	require.False(t, BuildConfig(pm, &rsPanel).HasError(), "BuildConfig failed")
 	cfg := rsConfigField(t, rsPanel)
 	require.NotNil(t, cfg.Value)
 	assert.Len(t, *cfg.Value, 2)

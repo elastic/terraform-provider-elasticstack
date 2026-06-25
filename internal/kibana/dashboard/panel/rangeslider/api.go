@@ -78,7 +78,10 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 		Grid: grid,
 		Id:   id,
 	}
-	BuildConfig(pm, &panel)
+	diags.Append(BuildConfig(pm, &panel)...)
+	if diags.HasError() {
+		return kbapi.DashboardPanelItem{}, diags
+	}
 	var panelItem kbapi.DashboardPanelItem
 	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl(panel); err != nil {
 		diags.AddError("Failed to create range slider control panel", err.Error())

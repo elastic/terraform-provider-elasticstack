@@ -156,10 +156,10 @@ func rangeSliderPreserveNullIntentFromPrior(prior, existing *models.RangeSliderC
 }
 
 // BuildConfig writes TF model fields into the API panel payload.
-func BuildConfig(pm models.PanelModel, rsPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) {
+func BuildConfig(pm models.PanelModel, rsPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) diag.Diagnostics {
 	cfg := pm.RangeSliderControlConfig
 	if cfg == nil {
-		return
+		return nil
 	}
 	var c kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField
 	c.DataViewId = cfg.DataViewID.ValueString()
@@ -186,5 +186,10 @@ func BuildConfig(pm models.PanelModel, rsPanel *kbapi.KibanaHTTPAPIsKbnDashboard
 		v := cfg.Step.ValueFloat32()
 		c.Step = &v
 	}
-	rsPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField(c)
+	if err := rsPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField(c); err != nil {
+		var diags diag.Diagnostics
+		diags.AddError("Failed to build range slider control config", err.Error())
+		return diags
+	}
+	return nil
 }

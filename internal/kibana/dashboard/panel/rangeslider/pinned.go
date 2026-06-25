@@ -58,7 +58,10 @@ func (pinnedHandler) ToAPI(ppm models.PinnedPanelModel) (kbapi.DashboardPinnedPa
 	rsPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{
 		Grid: kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
 	}
-	BuildConfig(pm, &rsPanel)
+	diags.Append(BuildConfig(pm, &rsPanel)...)
+	if diags.HasError() {
+		return kbapi.DashboardPinnedPanels_Item{}, diags
+	}
 	var group kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl
 	if err := panelkit.RemapViaJSON(rsPanel, &group); err != nil {
 		diags.AddError("Failed to remap pinned range slider control", err.Error())

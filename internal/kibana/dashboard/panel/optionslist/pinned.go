@@ -59,7 +59,10 @@ func (pinnedHandler) ToAPI(ppm models.PinnedPanelModel) (kbapi.DashboardPinnedPa
 	olPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{
 		Grid: kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
 	}
-	BuildConfig(pm, &olPanel)
+	diags.Append(BuildConfig(pm, &olPanel)...)
+	if diags.HasError() {
+		return kbapi.DashboardPinnedPanels_Item{}, diags
+	}
 	var group kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControl
 	if err := panelkit.RemapViaJSON(olPanel, &group); err != nil {
 		diags.AddError("Failed to remap pinned options list control", err.Error())

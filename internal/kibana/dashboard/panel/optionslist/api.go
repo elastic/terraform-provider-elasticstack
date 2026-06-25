@@ -50,7 +50,7 @@ func (Handler) AlignStateFromPlan(ctx context.Context, plan, state *models.Panel
 	_, _, _ = ctx, plan, state
 }
 
-func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
+func (Handler) FromAPI(_ context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	olPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl()
 	if err != nil {
 		var d diag.Diagnostics
@@ -67,6 +67,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 }
 
 func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+	var diags diag.Diagnostics
 	_ = dashboard
 	grid := panelkit.GridToAPI(pm.Grid)
 	id := panelkit.IDToAPI(pm.ID)
@@ -74,14 +75,16 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 		Grid: grid,
 		Id:   id,
 	}
-	BuildConfig(pm, &panel)
+	diags.Append(BuildConfig(pm, &panel)...)
+	if diags.HasError() {
+		return kbapi.DashboardPanelItem{}, diags
+	}
 	var panelItem kbapi.DashboardPanelItem
 	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl(panel); err != nil {
-		var diags diag.Diagnostics
 		diags.AddError("Failed to create options list control panel", err.Error())
 		return panelItem, diags
 	}
-	return panelItem, nil
+	return panelItem, diags
 }
 
 func optionsListAttrsShape(attrs map[string]attr.Value) (flat bool, obj types.Object, shaped bool) {

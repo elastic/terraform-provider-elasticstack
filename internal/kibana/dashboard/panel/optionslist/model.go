@@ -216,10 +216,10 @@ func optionsListPreserveNullIntentFromPrior(prior, existing *models.OptionsListC
 }
 
 // BuildConfig writes TF model fields into the API panel payload.
-func BuildConfig(pm models.PanelModel, olPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl) {
+func BuildConfig(pm models.PanelModel, olPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl) diag.Diagnostics {
 	cfg := pm.OptionsListControlConfig
 	if cfg == nil {
-		return
+		return nil
 	}
 
 	var c kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField
@@ -298,7 +298,12 @@ func BuildConfig(pm models.PanelModel, olPanel *kbapi.KibanaHTTPAPIsKbnDashboard
 			Direction: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSortDirection(cfg.Sort.Direction.ValueString()),
 		}
 	}
-	olPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(c)
+	if err := olPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(c); err != nil {
+		var diags diag.Diagnostics
+		diags.AddError("Failed to build options list control config", err.Error())
+		return diags
+	}
+	return nil
 }
 
 func selectedOptionsToList(items []kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField_SelectedOptions_Item) types.List {

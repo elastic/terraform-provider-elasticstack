@@ -35,7 +35,12 @@ const tamperProtectionNotEnabledDetail = "Tamper protection can only be enabled 
 
 // waitForTamperProtection polls Fleet until is_protected becomes true or the timeout elapses.
 // On success it returns the reloaded policy; on timeout or reload error it returns the last policy and an error.
-func waitForTamperProtection(ctx context.Context, fleetClient *fleet.Client, policyID, spaceID string, policy *kbapi.KibanaHTTPAPIsAgentPolicyResponse) (*kbapi.KibanaHTTPAPIsAgentPolicyResponse, error) {
+func waitForTamperProtection(
+	ctx context.Context,
+	fleetClient *fleet.Client,
+	policyID, spaceID string,
+	policy *kbapi.KibanaHTTPAPIsAgentPolicyResponse,
+) (*kbapi.KibanaHTTPAPIsAgentPolicyResponse, error) {
 	waitCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
