@@ -42,6 +42,8 @@ func StringSliceValue(v []string) []types.String {
 
 // StringsToList converts a []string to a types.List of string elements.
 // The result is always valid; an empty slice produces an empty list.
+// This is a Must-style variant that panics on error; use SliceToListTypeString for
+// safe, diagnostic-based conversion.
 func StringsToList(strs []string) types.List {
 	if len(strs) == 0 {
 		return types.ListValueMust(types.StringType, []attr.Value{})
@@ -55,6 +57,8 @@ func StringsToList(strs []string) types.List {
 
 // ListToStrings extracts a []string from a types.List of string elements.
 // Null or unknown lists return nil.
+// This is a Must-style variant that panics on non-string elements; use ListTypeToSliceString
+// for safe, diagnostic-based extraction.
 func ListToStrings(list types.List) []string {
 	if list.IsNull() || list.IsUnknown() {
 		return nil
