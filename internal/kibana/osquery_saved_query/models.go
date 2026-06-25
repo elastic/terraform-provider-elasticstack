@@ -51,8 +51,7 @@ var (
 	}
 )
 
-type osquerySavedQueryModel struct {
-	entitycore.ResourceTimeoutsField
+type osquerySavedQueryBaseModel struct {
 	entitycore.KibanaConnectionField
 
 	ID            types.String `tfsdk:"id"`
@@ -69,6 +68,11 @@ type osquerySavedQueryModel struct {
 	EcsMapping    types.Map    `tfsdk:"ecs_mapping"`
 }
 
+type osquerySavedQueryModel struct {
+	entitycore.ResourceTimeoutsField
+	osquerySavedQueryBaseModel
+}
+
 type ecsMapping struct {
 	Field  types.String `tfsdk:"field"`
 	Value  types.String `tfsdk:"value"`
@@ -79,11 +83,11 @@ func getEcsMappingElemType() attr.Type {
 	return types.ObjectType{AttrTypes: ecsMappingAttrTypes}
 }
 
-func (m osquerySavedQueryModel) GetID() types.String         { return m.ID }
-func (m osquerySavedQueryModel) GetResourceID() types.String { return m.SavedQueryID }
-func (m osquerySavedQueryModel) GetSpaceID() types.String    { return m.SpaceID }
+func (m osquerySavedQueryBaseModel) GetID() types.String         { return m.ID }
+func (m osquerySavedQueryBaseModel) GetResourceID() types.String { return m.SavedQueryID }
+func (m osquerySavedQueryBaseModel) GetSpaceID() types.String    { return m.SpaceID }
 
-func (m osquerySavedQueryModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m osquerySavedQueryBaseModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *MinSupportedVersion,
@@ -92,7 +96,7 @@ func (m osquerySavedQueryModel) GetVersionRequirements(_ context.Context) ([]ent
 	}, nil
 }
 
-func (m *osquerySavedQueryModel) populateFromCreateAPI(ctx context.Context, entity *kibanaoapi.OsquerySavedQueryCreateEntity) diag.Diagnostics {
+func (m *osquerySavedQueryBaseModel) populateFromCreateAPI(ctx context.Context, entity *kibanaoapi.OsquerySavedQueryCreateEntity) diag.Diagnostics {
 	if entity == nil {
 		return nil
 	}
@@ -108,7 +112,7 @@ func (m *osquerySavedQueryModel) populateFromCreateAPI(ctx context.Context, enti
 	return diags
 }
 
-func (m *osquerySavedQueryModel) populateFromGetAPI(ctx context.Context, entity *kibanaoapi.OsquerySavedQueryGetEntity) diag.Diagnostics {
+func (m *osquerySavedQueryBaseModel) populateFromGetAPI(ctx context.Context, entity *kibanaoapi.OsquerySavedQueryGetEntity) diag.Diagnostics {
 	if entity == nil {
 		return nil
 	}
@@ -124,7 +128,7 @@ func (m *osquerySavedQueryModel) populateFromGetAPI(ctx context.Context, entity 
 	return diags
 }
 
-func (m *osquerySavedQueryModel) populateFromUpdateAPI(ctx context.Context, entity *kibanaoapi.OsquerySavedQueryUpdateEntity) diag.Diagnostics {
+func (m *osquerySavedQueryBaseModel) populateFromUpdateAPI(ctx context.Context, entity *kibanaoapi.OsquerySavedQueryUpdateEntity) diag.Diagnostics {
 	if entity == nil {
 		return nil
 	}
@@ -139,7 +143,7 @@ func (m *osquerySavedQueryModel) populateFromUpdateAPI(ctx context.Context, enti
 	return diags
 }
 
-func (m *osquerySavedQueryModel) populateSharedFields(
+func (m *osquerySavedQueryBaseModel) populateSharedFields(
 	ctx context.Context,
 	savedQueryID kbapi.SecurityOsqueryAPISavedQueryId,
 	savedObjectID string,
@@ -165,8 +169,8 @@ func (m *osquerySavedQueryModel) populateSharedFields(
 	m.Platform = platformSetFromAPI(platform)
 	m.Interval = interval
 	m.Version = version
-	m.Snapshot = boolPointerValue(snapshot)
-	m.Removed = boolPointerValue(removed)
+	m.Snapshot = types.BoolPointerValue(snapshot)
+	m.Removed = types.BoolPointerValue(removed)
 
 	ecsMapping, ecsDiags := ecsMappingMapFromAPI(ctx, ecsMappingAPI)
 	diags.Append(ecsDiags...)
@@ -175,7 +179,7 @@ func (m *osquerySavedQueryModel) populateSharedFields(
 	return diags
 }
 
-func (m *osquerySavedQueryModel) setCompositeIdentity(savedQueryID kbapi.SecurityOsqueryAPISavedQueryId) {
+func (m *osquerySavedQueryBaseModel) setCompositeIdentity(savedQueryID kbapi.SecurityOsqueryAPISavedQueryId) {
 	spaceID := compositeSpaceID(m.SpaceID)
 
 	compID := clients.CompositeID{
@@ -200,6 +204,14 @@ func compositeSpaceID(spaceID types.String) string {
 	}
 
 	return clients.DefaultSpaceID
+}
+
+func knownSavedObjectID(savedObjectID types.String) (string, bool) {
+	if typeutils.IsKnown(savedObjectID) && savedObjectID.ValueString() != "" {
+		return savedObjectID.ValueString(), true
+	}
+
+	return "", false
 }
 
 func (e ecsMapping) toAPIType() (kbapi.SecurityOsqueryAPIECSMappingItem, diag.Diagnostics) {
@@ -494,14 +506,6 @@ func parseIntervalString(value string) (types.Int64, diag.Diagnostics) {
 	}
 
 	return types.Int64Value(parsed), nil
-}
-
-func boolPointerValue(value *bool) types.Bool {
-	if value == nil {
-		return types.BoolNull()
-	}
-
-	return types.BoolValue(*value)
 }
 
 func stringSetValue(values []string) types.Set {

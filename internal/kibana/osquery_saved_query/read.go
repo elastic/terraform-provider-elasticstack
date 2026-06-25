@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -64,8 +63,8 @@ func getOsquerySavedQueryForRead(
 	savedQueryID string,
 	model osquerySavedQueryModel,
 ) (*kibanaoapi.OsquerySavedQueryGetEntity, diag.Diagnostics) {
-	if typeutils.IsKnown(model.SavedObjectID) && model.SavedObjectID.ValueString() != "" {
-		return kibanaoapi.GetOsquerySavedQueryBySavedObjectID(ctx, oapiClient, spaceID, model.SavedObjectID.ValueString())
+	if savedObjectID, ok := knownSavedObjectID(model.SavedObjectID); ok {
+		return kibanaoapi.GetOsquerySavedQueryBySavedObjectID(ctx, oapiClient, spaceID, savedObjectID)
 	}
 
 	return kibanaoapi.GetOsquerySavedQuery(ctx, oapiClient, spaceID, savedQueryID)

@@ -34,9 +34,11 @@ func TestOsquerySavedQueryModelIdentityMethods(t *testing.T) {
 	t.Parallel()
 
 	model := osquerySavedQueryModel{
-		ID:           types.StringValue("production/list_processes"),
-		SavedQueryID: types.StringValue("list_processes"),
-		SpaceID:      types.StringValue("production"),
+		osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{
+			ID:           types.StringValue("production/list_processes"),
+			SavedQueryID: types.StringValue("list_processes"),
+			SpaceID:      types.StringValue("production"),
+		},
 	}
 
 	assert.Equal(t, "production/list_processes", model.GetID().ValueString())
@@ -53,7 +55,7 @@ func TestSetCompositeIdentity(t *testing.T) {
 	t.Parallel()
 
 	t.Run("uses configured space_id", func(t *testing.T) {
-		model := osquerySavedQueryModel{SpaceID: types.StringValue("production")}
+		model := osquerySavedQueryModel{osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{SpaceID: types.StringValue("production")}}
 		model.setCompositeIdentity("list_processes")
 
 		assert.Equal(t, "production/list_processes", model.ID.ValueString())
@@ -71,7 +73,7 @@ func TestSetCompositeIdentity(t *testing.T) {
 	})
 
 	t.Run("defaults space_id to default when null", func(t *testing.T) {
-		model := osquerySavedQueryModel{SpaceID: types.StringNull()}
+		model := osquerySavedQueryModel{osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{SpaceID: types.StringNull()}}
 		model.setCompositeIdentity("list_processes")
 
 		assert.Equal(t, "default/list_processes", model.ID.ValueString())
@@ -79,7 +81,7 @@ func TestSetCompositeIdentity(t *testing.T) {
 	})
 
 	t.Run("preserves unknown space_id while composing default segment", func(t *testing.T) {
-		model := osquerySavedQueryModel{SpaceID: types.StringUnknown()}
+		model := osquerySavedQueryModel{osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{SpaceID: types.StringUnknown()}}
 		model.setCompositeIdentity("list_processes")
 
 		assert.Equal(t, "default/list_processes", model.ID.ValueString())
@@ -300,7 +302,7 @@ func TestPopulateFromCreateAPI(t *testing.T) {
 		}
 	}`)
 
-	model := osquerySavedQueryModel{SpaceID: types.StringValue("default")}
+	model := osquerySavedQueryModel{osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{SpaceID: types.StringValue("default")}}
 	diags := model.populateFromCreateAPI(ctx, entity)
 	require.Empty(t, diags)
 
@@ -341,7 +343,7 @@ func TestPopulateFromGetAPI(t *testing.T) {
 		}
 	}`)
 
-	model := osquerySavedQueryModel{SpaceID: types.StringValue("production")}
+	model := osquerySavedQueryModel{osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{SpaceID: types.StringValue("production")}}
 	diags := model.populateFromGetAPI(ctx, entity)
 	require.Empty(t, diags)
 
@@ -364,7 +366,7 @@ func TestPopulateFromUpdateAPI(t *testing.T) {
 		}
 	}`)
 
-	model := osquerySavedQueryModel{SavedQueryID: types.StringValue("list_processes")}
+	model := osquerySavedQueryModel{osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{SavedQueryID: types.StringValue("list_processes")}}
 	diags := model.populateFromUpdateAPI(ctx, entity)
 	require.Empty(t, diags)
 
@@ -385,7 +387,7 @@ func TestPopulateFromAPISparseEntity(t *testing.T) {
 		}
 	}`)
 
-	model := osquerySavedQueryModel{SpaceID: types.StringValue("default")}
+	model := osquerySavedQueryModel{osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{SpaceID: types.StringValue("default")}}
 	diags := model.populateFromGetAPI(ctx, entity)
 	require.Empty(t, diags)
 

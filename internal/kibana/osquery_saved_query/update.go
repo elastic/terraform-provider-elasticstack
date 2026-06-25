@@ -24,7 +24,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -72,11 +71,13 @@ func updateOsquerySavedQueryWithBestID(
 	prior *osquerySavedQueryModel,
 	body kbapi.OsqueryUpdateSavedQueryJSONRequestBody,
 ) (*kibanaoapi.OsquerySavedQueryUpdateEntity, diag.Diagnostics) {
-	if typeutils.IsKnown(plan.SavedObjectID) && plan.SavedObjectID.ValueString() != "" {
-		return kibanaoapi.UpdateOsquerySavedQueryBySavedObjectID(ctx, oapiClient, spaceID, plan.SavedObjectID.ValueString(), body)
+	if savedObjectID, ok := knownSavedObjectID(plan.SavedObjectID); ok {
+		return kibanaoapi.UpdateOsquerySavedQueryBySavedObjectID(ctx, oapiClient, spaceID, savedObjectID, body)
 	}
-	if prior != nil && typeutils.IsKnown(prior.SavedObjectID) && prior.SavedObjectID.ValueString() != "" {
-		return kibanaoapi.UpdateOsquerySavedQueryBySavedObjectID(ctx, oapiClient, spaceID, prior.SavedObjectID.ValueString(), body)
+	if prior != nil {
+		if savedObjectID, ok := knownSavedObjectID(prior.SavedObjectID); ok {
+			return kibanaoapi.UpdateOsquerySavedQueryBySavedObjectID(ctx, oapiClient, spaceID, savedObjectID, body)
+		}
 	}
 
 	return kibanaoapi.UpdateOsquerySavedQuery(ctx, oapiClient, spaceID, savedQueryID, body)

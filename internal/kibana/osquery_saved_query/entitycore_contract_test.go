@@ -140,9 +140,11 @@ func TestToAPICreateRequest_minimalIncludesRequiredFields(t *testing.T) {
 	ctx := context.Background()
 
 	model := osquerySavedQueryModel{
-		SavedQueryID: types.StringValue("list_processes"),
-		Query:        types.StringValue("SELECT 1"),
-		Interval:     types.Int64Value(3600),
+		osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{
+			SavedQueryID: types.StringValue("list_processes"),
+			Query:        types.StringValue("SELECT 1"),
+			Interval:     types.Int64Value(3600),
+		},
 	}
 
 	body, diags := model.toAPICreateRequest(ctx)
@@ -168,15 +170,17 @@ func TestToAPICreateRequest_omitsNullOptionalFields(t *testing.T) {
 	ctx := context.Background()
 
 	model := osquerySavedQueryModel{
-		SavedQueryID: types.StringValue("list_processes"),
-		Query:        types.StringValue("SELECT 1"),
-		Interval:     types.Int64Value(3600),
-		Description:  types.StringNull(),
-		Platform:     types.SetNull(types.StringType),
-		Version:      types.StringNull(),
-		Snapshot:     types.BoolNull(),
-		Removed:      types.BoolNull(),
-		EcsMapping:   types.MapNull(getEcsMappingElemType()),
+		osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{
+			SavedQueryID: types.StringValue("list_processes"),
+			Query:        types.StringValue("SELECT 1"),
+			Interval:     types.Int64Value(3600),
+			Description:  types.StringNull(),
+			Platform:     types.SetNull(types.StringType),
+			Version:      types.StringNull(),
+			Snapshot:     types.BoolNull(),
+			Removed:      types.BoolNull(),
+			EcsMapping:   types.MapNull(getEcsMappingElemType()),
+		},
 	}
 
 	body, diags := model.toAPICreateRequest(ctx)
@@ -212,15 +216,17 @@ func TestToAPICreateRequest(t *testing.T) {
 	require.Empty(t, mapDiags)
 
 	model := osquerySavedQueryModel{
-		SavedQueryID: types.StringValue("list_processes"),
-		Query:        types.StringValue("SELECT * FROM processes"),
-		Description:  types.StringValue("List processes"),
-		Platform:     stringSetValue([]string{"linux", "darwin"}),
-		Interval:     types.Int64Value(3600),
-		Version:      types.StringValue("5.0.0"),
-		Snapshot:     types.BoolValue(true),
-		Removed:      types.BoolValue(false),
-		EcsMapping:   ecsMap,
+		osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{
+			SavedQueryID: types.StringValue("list_processes"),
+			Query:        types.StringValue("SELECT * FROM processes"),
+			Description:  types.StringValue("List processes"),
+			Platform:     stringSetValue([]string{"linux", "darwin"}),
+			Interval:     types.Int64Value(3600),
+			Version:      types.StringValue("5.0.0"),
+			Snapshot:     types.BoolValue(true),
+			Removed:      types.BoolValue(false),
+			EcsMapping:   ecsMap,
+		},
 	}
 
 	body, diags := model.toAPICreateRequest(ctx)
@@ -252,9 +258,11 @@ func TestToAPIUpdateRequest_includesRequiredFieldsAndOmitsUnsetOptionalFields(t 
 	ctx := context.Background()
 
 	model := osquerySavedQueryModel{
-		SavedQueryID: types.StringValue("list_processes"),
-		Query:        types.StringValue("SELECT 1"),
-		Interval:     types.Int64Value(3600),
+		osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{
+			SavedQueryID: types.StringValue("list_processes"),
+			Query:        types.StringValue("SELECT 1"),
+			Interval:     types.Int64Value(3600),
+		},
 	}
 
 	body, diags := model.toAPIUpdateRequest(ctx, nil)
@@ -292,19 +300,23 @@ func TestToAPIUpdateRequest_clearsRemovedOptionalFields(t *testing.T) {
 	require.Empty(t, mapDiags)
 
 	prior := &osquerySavedQueryModel{
-		Description: types.StringValue("previous"),
-		Platform:    stringSetValue([]string{"linux"}),
-		Version:     types.StringValue("1.0.0"),
-		EcsMapping:  ecsMap,
+		osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{
+			Description: types.StringValue("previous"),
+			Platform:    stringSetValue([]string{"linux"}),
+			Version:     types.StringValue("1.0.0"),
+			EcsMapping:  ecsMap,
+		},
 	}
 	model := osquerySavedQueryModel{
-		SavedQueryID: types.StringValue("list_processes"),
-		Query:        types.StringValue("SELECT 1"),
-		Interval:     types.Int64Value(3600),
-		Description:  types.StringNull(),
-		Platform:     types.SetNull(types.StringType),
-		Version:      types.StringNull(),
-		EcsMapping:   types.MapNull(getEcsMappingElemType()),
+		osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{
+			SavedQueryID: types.StringValue("list_processes"),
+			Query:        types.StringValue("SELECT 1"),
+			Interval:     types.Int64Value(3600),
+			Description:  types.StringNull(),
+			Platform:     types.SetNull(types.StringType),
+			Version:      types.StringNull(),
+			EcsMapping:   types.MapNull(getEcsMappingElemType()),
+		},
 	}
 
 	body, diags := model.toAPIUpdateRequest(ctx, prior)

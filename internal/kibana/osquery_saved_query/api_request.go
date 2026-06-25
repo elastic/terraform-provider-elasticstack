@@ -43,12 +43,7 @@ func (m *osquerySavedQueryModel) toAPICreateRequest(ctx context.Context) (kbapi.
 		return body, diags
 	}
 
-	body.Description = optional.description
-	body.Platform = optional.platform
-	body.Version = optional.version
-	body.Snapshot = optional.snapshot
-	body.Removed = optional.removed
-	body.EcsMapping = optional.ecsMapping
+	optional.applyToCreate(&body)
 
 	return body, diags
 }
@@ -68,12 +63,7 @@ func (m *osquerySavedQueryModel) toAPIUpdateRequest(ctx context.Context, prior *
 		return body, diags
 	}
 
-	body.Description = optional.description
-	body.Platform = optional.platform
-	body.Version = optional.version
-	body.Snapshot = optional.snapshot
-	body.Removed = optional.removed
-	body.EcsMapping = optional.ecsMapping
+	optional.applyToUpdate(&body)
 
 	if prior != nil {
 		m.applyRemovedOptionalFields(prior, &body)
@@ -111,6 +101,24 @@ type managedOptionalAPIFields struct {
 	snapshot    *kbapi.SecurityOsqueryAPISnapshot
 	removed     *kbapi.SecurityOsqueryAPIRemoved
 	ecsMapping  *kbapi.SecurityOsqueryAPIECSMapping
+}
+
+func (f managedOptionalAPIFields) applyToCreate(body *kbapi.OsqueryCreateSavedQueryJSONRequestBody) {
+	body.Description = f.description
+	body.Platform = f.platform
+	body.Version = f.version
+	body.Snapshot = f.snapshot
+	body.Removed = f.removed
+	body.EcsMapping = f.ecsMapping
+}
+
+func (f managedOptionalAPIFields) applyToUpdate(body *kbapi.OsqueryUpdateSavedQueryJSONRequestBody) {
+	body.Description = f.description
+	body.Platform = f.platform
+	body.Version = f.version
+	body.Snapshot = f.snapshot
+	body.Removed = f.removed
+	body.EcsMapping = f.ecsMapping
 }
 
 func (m *osquerySavedQueryModel) managedOptionalAPIFields(ctx context.Context) (managedOptionalAPIFields, diag.Diagnostics) {

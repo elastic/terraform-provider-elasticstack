@@ -29,25 +29,12 @@ import (
 var _ entitycore.WithVersionRequirements = dataSourceModel{}
 
 type dataSourceModel struct {
-	entitycore.KibanaConnectionField
-
-	ID            types.String `tfsdk:"id"`
-	SavedObjectID types.String `tfsdk:"saved_object_id"`
-	SavedQueryID  types.String `tfsdk:"saved_query_id"`
-	SpaceID       types.String `tfsdk:"space_id"`
-	Query         types.String `tfsdk:"query"`
-	Description   types.String `tfsdk:"description"`
-	Platform      types.Set    `tfsdk:"platform"`
-	Interval      types.Int64  `tfsdk:"interval"`
-	Version       types.String `tfsdk:"version"`
-	Snapshot      types.Bool   `tfsdk:"snapshot"`
-	Removed       types.Bool   `tfsdk:"removed"`
-	EcsMapping    types.Map    `tfsdk:"ecs_mapping"`
-	Prebuilt      types.Bool   `tfsdk:"prebuilt"`
+	osquerySavedQueryBaseModel
+	Prebuilt types.Bool `tfsdk:"prebuilt"`
 }
 
 func (m dataSourceModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return osquerySavedQueryModel{}.GetVersionRequirements(ctx)
+	return m.osquerySavedQueryBaseModel.GetVersionRequirements(ctx)
 }
 
 func (m *dataSourceModel) populateFromGetAPI(ctx context.Context, entity *kibanaoapi.OsquerySavedQueryGetEntity) diag.Diagnostics {
@@ -55,27 +42,11 @@ func (m *dataSourceModel) populateFromGetAPI(ctx context.Context, entity *kibana
 		return nil
 	}
 
-	scratch := osquerySavedQueryModel{
-		SavedQueryID: m.SavedQueryID,
-		SpaceID:      m.SpaceID,
-	}
-	diags := scratch.populateFromGetAPI(ctx, entity)
+	diags := m.osquerySavedQueryBaseModel.populateFromGetAPI(ctx, entity)
 	if diags.HasError() {
 		return diags
 	}
 
-	m.ID = scratch.ID
-	m.SavedObjectID = scratch.SavedObjectID
-	m.SavedQueryID = scratch.SavedQueryID
-	m.SpaceID = scratch.SpaceID
-	m.Query = scratch.Query
-	m.Description = scratch.Description
-	m.Platform = scratch.Platform
-	m.Interval = scratch.Interval
-	m.Version = scratch.Version
-	m.Snapshot = scratch.Snapshot
-	m.Removed = scratch.Removed
-	m.EcsMapping = scratch.EcsMapping
 	m.Prebuilt = prebuiltFromAPI(entity.Prebuilt)
 
 	return diags

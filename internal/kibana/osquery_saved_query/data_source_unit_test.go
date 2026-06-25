@@ -175,7 +175,7 @@ func TestDataSourceModel_GetVersionRequirements(t *testing.T) {
 func TestFinishOsquerySavedQueryDataSourceRead_notFound(t *testing.T) {
 	t.Parallel()
 
-	config := dataSourceModel{SavedQueryID: types.StringValue("missing-query")}
+	config := dataSourceModel{osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{SavedQueryID: types.StringValue("missing-query")}}
 	_, diags := finishOsquerySavedQueryDataSourceRead(context.Background(), config, nil, "default")
 	require.True(t, diags.HasError())
 	assert.Equal(t, "Osquery saved query not found", diags.Errors()[0].Summary())
@@ -205,8 +205,10 @@ func TestFinishOsquerySavedQueryDataSourceRead_successWithDefaultSpace(t *testin
 	}
 
 	config := dataSourceModel{
-		SavedQueryID: types.StringValue("list_processes"),
-		SpaceID:      types.StringNull(),
+		osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{
+			SavedQueryID: types.StringValue("list_processes"),
+			SpaceID:      types.StringNull(),
+		},
 	}
 
 	result, diags := finishOsquerySavedQueryDataSourceRead(ctx, config, entity, clients.DefaultSpaceID)
@@ -237,8 +239,10 @@ func TestDataSourceModel_populateFromGetAPI_prebuilt(t *testing.T) {
 	}
 
 	model := dataSourceModel{
-		SavedQueryID: types.StringValue("list_all_processes"),
-		SpaceID:      types.StringValue("default"),
+		osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{
+			SavedQueryID: types.StringValue("list_all_processes"),
+			SpaceID:      types.StringValue("default"),
+		},
 	}
 	diags := model.populateFromGetAPI(ctx, entity)
 	require.False(t, diags.HasError())
@@ -261,8 +265,10 @@ func TestDataSourceModel_populateFromGetAPI_userManaged(t *testing.T) {
 	}
 
 	model := dataSourceModel{
-		SavedQueryID: types.StringValue("list_processes"),
-		SpaceID:      types.StringValue("production"),
+		osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{
+			SavedQueryID: types.StringValue("list_processes"),
+			SpaceID:      types.StringValue("production"),
+		},
 	}
 	diags := model.populateFromGetAPI(ctx, entity)
 	require.False(t, diags.HasError())
@@ -281,8 +287,10 @@ func TestDataSourceModel_populateFromGetAPI_prebuiltOmitted(t *testing.T) {
 	}
 
 	model := dataSourceModel{
-		SavedQueryID: types.StringValue("list_processes"),
-		SpaceID:      types.StringValue("default"),
+		osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{
+			SavedQueryID: types.StringValue("list_processes"),
+			SpaceID:      types.StringValue("default"),
+		},
 	}
 	diags := model.populateFromGetAPI(ctx, entity)
 	require.False(t, diags.HasError())
