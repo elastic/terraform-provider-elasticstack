@@ -42,7 +42,7 @@ func (Handler) PopulateJSONDefaults(config map[string]any) map[string]any {
 	return config
 }
 
-func (Handler) PinnedHandler() iface.PinnedHandler { return pinnedHandler{} }
+func (Handler) PinnedHandler() iface.PinnedHandler { return newPinnedHandler() }
 
 func (Handler) AlignStateFromPlan(_ context.Context, plan, state *models.PanelModel) {
 	AlignEsqlPanels(plan, state)

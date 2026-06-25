@@ -26,52 +26,32 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-type pinnedHandler struct{}
+type pinnedHandler = panelkit.ControlPinnedHandler[
+	kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControl,
+	kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl,
+]
 
-func (pinnedHandler) FromAPI(ctx context.Context, prior *models.PinnedPanelModel, raw kbapi.DashboardPinnedPanels_Item) (models.PinnedPanelModel, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	group, err := raw.AsKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControl()
-	if err != nil {
-		diags.AddError("Failed to parse pinned options list control", err.Error())
-		return models.PinnedPanelModel{}, diags
+func newPinnedHandler() pinnedHandler {
+	return pinnedHandler{
+		PanelTypeDiscriminator: panelType,
+		AsGroup: func(raw kbapi.DashboardPinnedPanels_Item) (kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControl, error) {
+			return raw.AsKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControl()
+		},
+		BuildPanel: func() kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl {
+			return kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{
+				Grid: kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
+			}
+		},
+		PopulateFromAPI: func(_ context.Context, pm *models.PanelModel, prior *models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl) diag.Diagnostics {
+			return PopulateFromAPI(pm, prior, panel)
+		},
+		BuildConfig: BuildConfig,
+		FromGroup: func(item *kbapi.DashboardPinnedPanels_Item, group kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControl) error {
+			return item.FromKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControl(group)
+		},
+		ParseErrSummary:     "Failed to parse pinned options list control",
+		RemapFromErrSummary: "Failed to remap pinned options list control from API",
+		RemapToErrSummary:   "Failed to remap pinned options list control",
+		FromGroupErrSummary: "Failed to build pinned options list control payload",
 	}
-	var olPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl
-	if err := panelkit.RemapViaJSON(group, &olPanel); err != nil {
-		diags.AddError("Failed to remap pinned options list control from API", err.Error())
-		return models.PinnedPanelModel{}, diags
-	}
-
-	ppm, populateTf := models.SeedPinnedPanelForRead(prior, panelType)
-	pm := ppm.SyntheticPanel()
-	populateDiags := PopulateFromAPI(&pm, populateTf, &olPanel)
-	diags.Append(populateDiags...)
-	if diags.HasError() {
-		return models.PinnedPanelModel{}, diags
-	}
-	models.ApplyPinnedSiblingControlConfig(&ppm, panelType, &pm)
-	_ = ctx
-	return ppm, diags
-}
-
-func (pinnedHandler) ToAPI(ppm models.PinnedPanelModel) (kbapi.DashboardPinnedPanels_Item, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	pm := ppm.SyntheticPanel()
-	olPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{
-		Grid: kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
-	}
-	diags.Append(BuildConfig(pm, &olPanel)...)
-	if diags.HasError() {
-		return kbapi.DashboardPinnedPanels_Item{}, diags
-	}
-	var group kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControl
-	if err := panelkit.RemapViaJSON(olPanel, &group); err != nil {
-		diags.AddError("Failed to remap pinned options list control", err.Error())
-		return kbapi.DashboardPinnedPanels_Item{}, diags
-	}
-	var item kbapi.DashboardPinnedPanels_Item
-	if err := item.FromKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControl(group); err != nil {
-		diags.AddError("Failed to build pinned options list control payload", err.Error())
-		return kbapi.DashboardPinnedPanels_Item{}, diags
-	}
-	return item, diags
 }
