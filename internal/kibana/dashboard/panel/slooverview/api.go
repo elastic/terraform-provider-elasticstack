@@ -38,36 +38,27 @@ func (Handler) PanelType() string                 { return panelType }
 func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	apiPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloOverview()
-	if err != nil {
-		var d diag.Diagnostics
-		d.AddError("Dashboard panel decode", err.Error())
-		return d
-	}
-
-	pm.Grid = panelkit.GridFromAPI(apiPanel.Grid.X, apiPanel.Grid.Y, apiPanel.Grid.W, apiPanel.Grid.H)
-	pm.ID = panelkit.IDFromAPI(apiPanel.Id)
-	pm.ConfigJSON = panelkit.PanelConfigJSONNull()
-	diags := PopulateFromAPI(pm, prior, apiPanel)
-	_ = ctx
-	return diags
+	return panelkit.SimpleFromAPI(ctx, pm, prior, item,
+		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloOverview,
+		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
+			return p.Grid, p.Id
+		},
+		PopulateFromAPI,
+	)
 }
 
 func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	_ = dashboard
-	grid := panelkit.GridToAPI(pm.Grid)
-	id := panelkit.IDToAPI(pm.ID)
-	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview{
-		Grid: grid,
-		Id:   id,
-		Type: kbapi.SloOverview,
-	}
-	diags := BuildConfig(pm, &panel)
-	var panelItem kbapi.DashboardPanelItem
-	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeSloOverview(panel); err != nil {
-		diags.AddError("Failed to create SLO overview panel", err.Error())
-	}
-	return panelItem, diags
+	return panelkit.SimpleToAPI(pm,
+		func(grid kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, id *string) (kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview, diag.Diagnostics) {
+			panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview{Grid: grid, Id: id, Type: kbapi.SloOverview}
+			return panel, BuildConfig(pm, &panel)
+		},
+		func(item *kbapi.DashboardPanelItem, panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview) error {
+			return item.FromKibanaHTTPAPIsKbnDashboardPanelTypeSloOverview(panel)
+		},
+		"Failed to create SLO overview panel",
+	)
 }
 
 func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
