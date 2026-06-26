@@ -363,7 +363,7 @@ func TestKibanaEphemeralResource_Open_userCallbackDiagnostics(t *testing.T) {
 func TestKibanaEphemeralResource_Open_versionRequirementErrorShortCircuits(t *testing.T) {
 	ctx := context.Background()
 
-	srv := newMockKibanaStatusServer("7.17.0", "default")
+	srv := newMockKibanaStatusServer("7.17.0")
 	defer srv.Close()
 
 	openCalled := false

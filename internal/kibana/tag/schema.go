@@ -43,9 +43,10 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			attrTagID: schema.StringAttribute{
-				MarkdownDescription: "Client-specified UUID for the tag. When set, the provider uses PUT semantics to create the tag. When omitted, the server mints the ID on POST. Changing this value forces replacement.",
-				Optional:            true,
-				Computed:            true,
+				MarkdownDescription: "Client-specified UUID for the tag. When set, the provider uses PUT semantics to " +
+					"create the tag. When omitted, the server mints the ID on POST. Changing this value forces replacement.",
+				Optional: true,
+				Computed: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),

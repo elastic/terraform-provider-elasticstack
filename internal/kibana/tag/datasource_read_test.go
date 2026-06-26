@@ -42,7 +42,7 @@ func TestListAllTags_paginatesUntilTotalCollected(t *testing.T) {
 
 		switch *params.Page {
 		case 1:
-			require.Equal(t, float32(100), *params.PerPage)
+			require.InEpsilon(t, float32(100), *params.PerPage, 0)
 			tags := make([]kibanaoapi.TagDetail, 100)
 			for i := range tags {
 				tags[i] = kibanaoapi.TagDetail{ID: fmt.Sprintf("tag-%d", i+1), Name: fmt.Sprintf("tag-%d", i+1), Color: "#111111"}

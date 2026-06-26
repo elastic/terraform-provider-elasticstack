@@ -63,7 +63,7 @@ func GetTag(ctx context.Context, client *Client, spaceID, id string) (*TagDetail
 	tagResp, diags := HandleGetTypedResponse(resp.StatusCode(), resp.Body,
 		func() *struct {
 			Data kbapi.KibanaHTTPAPIsKbnTagsAttributes `json:"data"`
-			Id   string                                `json:"id"`
+			ID   string                                `json:"id"`
 			Meta kbapi.KibanaHTTPAPIsKbnAsCodeMeta     `json:"meta"`
 		} {
 			if resp.JSON200 == nil {
@@ -71,11 +71,11 @@ func GetTag(ctx context.Context, client *Client, spaceID, id string) (*TagDetail
 			}
 			return &struct {
 				Data kbapi.KibanaHTTPAPIsKbnTagsAttributes `json:"data"`
-				Id   string                                `json:"id"`
+				ID   string                                `json:"id"`
 				Meta kbapi.KibanaHTTPAPIsKbnAsCodeMeta     `json:"meta"`
 			}{
 				Data: resp.JSON200.Data,
-				Id:   resp.JSON200.Id,
+				ID:   resp.JSON200.Id,
 				Meta: resp.JSON200.Meta,
 			}
 		})
@@ -83,7 +83,7 @@ func GetTag(ctx context.Context, client *Client, spaceID, id string) (*TagDetail
 		return nil, diags
 	}
 
-	return tagDetailFromResponse(tagResp.Id, tagResp.Data, tagResp.Meta), nil
+	return tagDetailFromResponse(tagResp.ID, tagResp.Data, tagResp.Meta), nil
 }
 
 // CreateTag creates a tag via POST /api/tags.
@@ -96,7 +96,7 @@ func CreateTag(ctx context.Context, client *Client, spaceID string, body kbapi.P
 	createResp, diags := HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *struct {
 			Data kbapi.KibanaHTTPAPIsKbnTagsAttributes `json:"data"`
-			Id   string                                `json:"id"`
+			ID   string                                `json:"id"`
 			Meta kbapi.KibanaHTTPAPIsKbnAsCodeMeta     `json:"meta"`
 		} {
 			if resp.JSON201 == nil {
@@ -104,11 +104,11 @@ func CreateTag(ctx context.Context, client *Client, spaceID string, body kbapi.P
 			}
 			return &struct {
 				Data kbapi.KibanaHTTPAPIsKbnTagsAttributes `json:"data"`
-				Id   string                                `json:"id"`
+				ID   string                                `json:"id"`
 				Meta kbapi.KibanaHTTPAPIsKbnAsCodeMeta     `json:"meta"`
 			}{
 				Data: resp.JSON201.Data,
-				Id:   resp.JSON201.Id,
+				ID:   resp.JSON201.Id,
 				Meta: resp.JSON201.Meta,
 			}
 		}, http.StatusCreated)
@@ -116,7 +116,7 @@ func CreateTag(ctx context.Context, client *Client, spaceID string, body kbapi.P
 		return nil, diags
 	}
 
-	return tagDetailFromResponse(createResp.Id, createResp.Data, createResp.Meta), nil
+	return tagDetailFromResponse(createResp.ID, createResp.Data, createResp.Meta), nil
 }
 
 // UpsertTag creates or updates a tag via PUT /api/tags/{id}.
@@ -129,28 +129,28 @@ func UpsertTag(ctx context.Context, client *Client, spaceID, id string, body kba
 	upsertResp, diags := HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *struct {
 			Data kbapi.KibanaHTTPAPIsKbnTagsAttributes `json:"data"`
-			Id   string                                `json:"id"`
+			ID   string                                `json:"id"`
 			Meta kbapi.KibanaHTTPAPIsKbnAsCodeMeta     `json:"meta"`
 		} {
 			switch {
 			case resp.JSON200 != nil:
 				return &struct {
 					Data kbapi.KibanaHTTPAPIsKbnTagsAttributes `json:"data"`
-					Id   string                                `json:"id"`
+					ID   string                                `json:"id"`
 					Meta kbapi.KibanaHTTPAPIsKbnAsCodeMeta     `json:"meta"`
 				}{
 					Data: resp.JSON200.Data,
-					Id:   resp.JSON200.Id,
+					ID:   resp.JSON200.Id,
 					Meta: resp.JSON200.Meta,
 				}
 			case resp.JSON201 != nil:
 				return &struct {
 					Data kbapi.KibanaHTTPAPIsKbnTagsAttributes `json:"data"`
-					Id   string                                `json:"id"`
+					ID   string                                `json:"id"`
 					Meta kbapi.KibanaHTTPAPIsKbnAsCodeMeta     `json:"meta"`
 				}{
 					Data: resp.JSON201.Data,
-					Id:   resp.JSON201.Id,
+					ID:   resp.JSON201.Id,
 					Meta: resp.JSON201.Meta,
 				}
 			default:
@@ -161,7 +161,7 @@ func UpsertTag(ctx context.Context, client *Client, spaceID, id string, body kba
 		return nil, diags
 	}
 
-	return tagDetailFromResponse(upsertResp.Id, upsertResp.Data, upsertResp.Meta), nil
+	return tagDetailFromResponse(upsertResp.ID, upsertResp.Data, upsertResp.Meta), nil
 }
 
 // DeleteTag deletes a tag by ID. HTTP 404 is treated as success.

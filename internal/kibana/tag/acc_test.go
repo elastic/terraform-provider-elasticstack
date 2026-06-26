@@ -40,8 +40,6 @@ var (
 	minKibanaTagAccTestVersion = version.Must(version.NewVersion("9.5.0"))
 
 	tagResourceAddr    = "elasticstack_kibana_tag.test"
-	tagResourceAddrA   = "elasticstack_kibana_tag.tag_a"
-	tagResourceAddrB   = "elasticstack_kibana_tag.tag_b"
 	tagsDataSourceAddr = "data.elasticstack_kibana_tags.test"
 
 	accTestKibanaSpaceIDCharset = "abcdefghijklmnopqrstuvwxyz0123456789_-"

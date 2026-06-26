@@ -2552,7 +2552,7 @@ func (*testKibanaResourceModelMinVersion955) GetVersionRequirements(_ context.Co
 func TestKibanaResource_Delete_unsupportedServerStopsBeforeDeleteFunc(t *testing.T) {
 	ctx := context.Background()
 
-	srv := newMockKibanaStatusServer("7.17.0", "default")
+	srv := newMockKibanaStatusServer("7.17.0")
 	defer srv.Close()
 
 	deleteCalled := false
