@@ -84,7 +84,7 @@ func TestOutputResourceUpgradeState(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name: "empty ssl list - removes ssl field",
+			name: "empty ssl list - sets ssl to nil",
 			rawState: map[string]any{
 				"id":    "test-output",
 				"name":  "Test Output",
@@ -96,25 +96,31 @@ func TestOutputResourceUpgradeState(t *testing.T) {
 				"id":    "test-output",
 				"name":  "Test Output",
 				"type":  "elasticsearch",
+				"ssl":   nil,
 				"hosts": []any{"https://localhost:9200"},
 			},
 			expectError: false,
 		},
 		{
-			name: "ssl not an array - returns error",
+			name: "ssl not an array - no-op pass-through",
 			rawState: map[string]any{
 				"id":    "test-output",
 				"name":  "Test Output",
 				"type":  "elasticsearch",
-				"ssl":   "invalid-type",
+				"ssl":   "non-list-value",
 				"hosts": []any{"https://localhost:9200"},
 			},
-			expectedState: nil,
-			expectError:   true,
-			errorContains: "Unexpected type for legacy ssl attribute",
+			expectedState: map[string]any{
+				"id":    "test-output",
+				"name":  "Test Output",
+				"type":  "elasticsearch",
+				"ssl":   "non-list-value",
+				"hosts": []any{"https://localhost:9200"},
+			},
+			expectError: false,
 		},
 		{
-			name: "multiple ssl items - takes first item",
+			name: "multiple ssl items - returns error",
 			rawState: map[string]any{
 				"id":   "test-output",
 				"name": "Test Output",
@@ -125,14 +131,9 @@ func TestOutputResourceUpgradeState(t *testing.T) {
 				},
 				"hosts": []any{"https://localhost:9200"},
 			},
-			expectedState: map[string]any{
-				"id":    "test-output",
-				"name":  "Test Output",
-				"type":  "elasticsearch",
-				"ssl":   map[string]any{"certificate": "cert1"},
-				"hosts": []any{"https://localhost:9200"},
-			},
-			expectError: false,
+			expectedState: nil,
+			expectError:   true,
+			errorContains: "unexpected multi-element array at path",
 		},
 	}
 

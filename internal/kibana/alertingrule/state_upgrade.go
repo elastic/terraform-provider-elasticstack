@@ -74,33 +74,20 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 	if actions, ok := stateMap["actions"].([]any); ok {
 		for _, actionAny := range actions {
 			if action, ok := actionAny.(map[string]any); ok {
-				// Convert frequency from list to object
-				if freq, ok := action["frequency"].([]any); ok {
-					if len(freq) > 0 {
-						action["frequency"] = freq[0]
-					} else {
-						action["frequency"] = nil
-					}
+				resp.Diagnostics.Append(stateutil.CollapseListPath(action, "frequency", "actions.frequency")...)
+				if resp.Diagnostics.HasError() {
+					return
 				}
 
-				// Convert alerts_filter from list to object
-				if filter, ok := action["alerts_filter"].([]any); ok {
-					if len(filter) > 0 {
-						filterObj := filter[0]
-						action["alerts_filter"] = filterObj
+				resp.Diagnostics.Append(stateutil.CollapseListPath(action, "alerts_filter", "actions.alerts_filter")...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
 
-						// Also convert timeframe within alerts_filter
-						if filterMap, ok := filterObj.(map[string]any); ok {
-							if tf, ok := filterMap["timeframe"].([]any); ok {
-								if len(tf) > 0 {
-									filterMap["timeframe"] = tf[0]
-								} else {
-									filterMap["timeframe"] = nil
-								}
-							}
-						}
-					} else {
-						action["alerts_filter"] = nil
+				if filterMap, ok := action["alerts_filter"].(map[string]any); ok {
+					resp.Diagnostics.Append(stateutil.CollapseListPath(filterMap, "timeframe", "actions.alerts_filter.timeframe")...)
+					if resp.Diagnostics.HasError() {
+						return
 					}
 				}
 			}
