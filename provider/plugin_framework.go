@@ -98,6 +98,7 @@ import (
 	maintenancewindow "github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
 	osquerypack "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_pack"
 	osquerysavedquery "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_saved_query"
+	kibanatag "github.com/elastic/terraform-provider-elasticstack/internal/kibana/tag"
 	prebuilt_rules "github.com/elastic/terraform-provider-elasticstack/internal/kibana/prebuilt_rules"
 	security_detection_rule "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
 	securityenablerule "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_enable_rule"
@@ -267,6 +268,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		logstash.NewLogstashPipelineResource,
 		maintenancewindow.NewResource,
 		osquerypack.NewResource,
+		kibanatag.NewResource,
 		osquerysavedquery.NewResource,
 		enrich.NewEnrichPolicyResource,
 		synonyms.NewSynonymSetResource,
@@ -327,6 +329,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		securityentitystoreentities.NewDataSource,
 		connectors.NewDataSource,
 		osquerysavedquery.NewDataSource,
+		kibanatag.NewDataSource,
 		agentbuilderagent.NewDataSource,
 		agentbuilderskill.NewDataSource,
 		agentbuildertool.NewDataSource,
