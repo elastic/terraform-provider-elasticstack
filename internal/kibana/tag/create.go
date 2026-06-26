@@ -52,7 +52,7 @@ func createTag(
 		case tagCreateActionRejectExisting:
 			diags.AddError(
 				"Tag already exists",
-				fmt.Sprintf("A tag with ID %q already exists in space %q. Import it with: terraform import elasticstack_kibana_tag.<name> %q/%q",
+				fmt.Sprintf("A tag with ID %q already exists in space %q. Import it with: terraform import elasticstack_kibana_tag.<name> '%s/%s'",
 					tagID, req.SpaceID, req.SpaceID, tagID),
 			)
 			return entitycore.KibanaWriteResult[tagModel]{}, diags
