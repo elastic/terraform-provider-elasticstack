@@ -140,6 +140,7 @@ jobs:
           - '9.2.3'
           - '9.3.0'
           - '9.4.0'
+          - '9.5.0-SNAPSHOT'
         shard: [0, 1]
         include:
           - version: '8.0.1'
