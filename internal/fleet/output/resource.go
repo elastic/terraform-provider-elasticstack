@@ -19,11 +19,9 @@ package output
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -73,36 +71,7 @@ func (r *outputResource) UpgradeState(context.Context) map[int64]resource.StateU
 		0: {
 			// Legacy provider versions used a block for the `ssl` attribute which means it was stored as a list.
 			// This upgrader migrates the list into a single object if available within the raw state
-			StateUpgrader: func(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-				stateutil.SetDefaultState(req, resp)
-
-				stateMap := stateutil.UnmarshalStateMap(req, resp)
-				if resp.Diagnostics.HasError() {
-					return
-				}
-
-				sslInterface, ok := stateMap["ssl"]
-				if !ok {
-					return
-				}
-
-				sslList, ok := sslInterface.([]any)
-				if !ok {
-					resp.Diagnostics.AddAttributeError(path.Root("ssl"),
-						"Unexpected type for legacy ssl attribute",
-						fmt.Sprintf("Expected []any, got %T", sslInterface),
-					)
-					return
-				}
-
-				if len(sslList) > 0 {
-					stateMap["ssl"] = sslList[0]
-				} else {
-					delete(stateMap, "ssl")
-				}
-
-				stateutil.MarshalStateMap(stateMap, resp)
-			},
+			StateUpgrader: upgradeStateV0,
 		},
 	}
 }
