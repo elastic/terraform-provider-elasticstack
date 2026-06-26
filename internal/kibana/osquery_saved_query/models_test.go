@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -104,7 +105,7 @@ func TestPlatformConversion(t *testing.T) {
 
 	t.Run("split and sort from API comma string", func(t *testing.T) {
 		platform := kbapi.SecurityOsqueryAPIPlatform("linux,darwin")
-		got := platformSetFromAPI(&platform)
+		got := osquery.PlatformSetFromAPI(&platform)
 
 		expected := types.SetValueMust(types.StringType, []attr.Value{
 			types.StringValue("darwin"),
@@ -114,17 +115,17 @@ func TestPlatformConversion(t *testing.T) {
 	})
 
 	t.Run("nil platform returns null set", func(t *testing.T) {
-		assert.True(t, platformSetFromAPI(nil).IsNull())
+		assert.True(t, osquery.PlatformSetFromAPI(nil).IsNull())
 	})
 
 	t.Run("empty platform returns null set", func(t *testing.T) {
 		platform := kbapi.SecurityOsqueryAPIPlatform("")
-		assert.True(t, platformSetFromAPI(&platform).IsNull())
+		assert.True(t, osquery.PlatformSetFromAPI(&platform).IsNull())
 	})
 
 	t.Run("whitespace platform returns null set", func(t *testing.T) {
 		platform := kbapi.SecurityOsqueryAPIPlatform("  ,  ")
-		assert.True(t, platformSetFromAPI(&platform).IsNull())
+		assert.True(t, osquery.PlatformSetFromAPI(&platform).IsNull())
 	})
 
 	t.Run("join and sort for API write", func(t *testing.T) {
@@ -133,26 +134,26 @@ func TestPlatformConversion(t *testing.T) {
 			types.StringValue("darwin"),
 		})
 
-		got, diags := platformToAPI(ctx, platform)
+		got, diags := osquery.PlatformToAPI(ctx, platform)
 		require.Empty(t, diags)
 		require.NotNil(t, got)
 		assert.Equal(t, kbapi.SecurityOsqueryAPIPlatform("darwin,linux"), *got)
 	})
 
 	t.Run("null platform omits API key", func(t *testing.T) {
-		got, diags := platformToAPI(ctx, types.SetNull(types.StringType))
+		got, diags := osquery.PlatformToAPI(ctx, types.SetNull(types.StringType))
 		require.Empty(t, diags)
 		assert.Nil(t, got)
 	})
 
 	t.Run("unknown platform omits API key", func(t *testing.T) {
-		got, diags := platformToAPI(ctx, types.SetUnknown(types.StringType))
+		got, diags := osquery.PlatformToAPI(ctx, types.SetUnknown(types.StringType))
 		require.Empty(t, diags)
 		assert.Nil(t, got)
 	})
 
 	t.Run("empty known platform omits API key", func(t *testing.T) {
-		got, diags := platformToAPI(ctx, types.SetValueMust(types.StringType, nil))
+		got, diags := osquery.PlatformToAPI(ctx, types.SetValueMust(types.StringType, nil))
 		require.Empty(t, diags)
 		assert.Nil(t, got)
 	})
@@ -264,17 +265,16 @@ func TestEcsMappingConversion(t *testing.T) {
 
 func TestEcsMappingMapFromAPI(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
 
 	t.Run("nil map is null", func(t *testing.T) {
-		got, diags := ecsMappingMapFromAPI(ctx, nil)
+		got, diags := osquery.ECSMappingMapFromAPI(nil)
 		require.Empty(t, diags)
 		assert.True(t, got.IsNull())
 	})
 
 	t.Run("empty map is null", func(t *testing.T) {
 		empty := kbapi.SecurityOsqueryAPIECSMapping{}
-		got, diags := ecsMappingMapFromAPI(ctx, &empty)
+		got, diags := osquery.ECSMappingMapFromAPI(&empty)
 		require.Empty(t, diags)
 		assert.True(t, got.IsNull())
 	})

@@ -17,7 +17,11 @@
 
 package typeutils
 
-import "github.com/hashicorp/terraform-plugin-framework/types"
+import (
+	"strings"
+
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
 
 // StringishPointerValue converts a pointer to a string-like type to a Terraform types.String value.
 func StringishPointerValue[T ~string](ptr *T) types.String {
@@ -44,6 +48,15 @@ func NonEmptyStringishPointerValue[T ~string](ptr *T) types.String {
 		return types.StringNull()
 	}
 	return NonEmptyStringishValue(*ptr)
+}
+
+// TrimmedStringishPointerValue converts a pointer to a string-like type to a Terraform types.String,
+// returning types.StringNull() when the pointer is nil or the trimmed string is empty.
+func TrimmedStringishPointerValue[T ~string](ptr *T) types.String {
+	if ptr == nil || strings.TrimSpace(string(*ptr)) == "" {
+		return types.StringNull()
+	}
+	return types.StringValue(string(*ptr))
 }
 
 // StringishToPointer converts a types.String to a typed string-enum pointer,
