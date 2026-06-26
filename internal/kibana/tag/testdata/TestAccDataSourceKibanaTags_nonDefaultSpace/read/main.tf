@@ -25,4 +25,8 @@ resource "elasticstack_kibana_tag" "test" {
 
 data "elasticstack_kibana_tags" "test" {
   space_id = elasticstack_kibana_space.test.space_id
+
+  depends_on = [
+    elasticstack_kibana_tag.test,
+  ]
 }

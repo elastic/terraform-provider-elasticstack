@@ -37,7 +37,7 @@ import (
 )
 
 var (
-	minKibanaTagAccTestVersion = version.Must(version.NewVersion("9.5.0"))
+	minKibanaTagAccTestVersion = version.Must(version.NewVersion("9.5.0-SNAPSHOT"))
 
 	tagResourceAddr    = "elasticstack_kibana_tag.test"
 	tagsDataSourceAddr = "data.elasticstack_kibana_tags.test"
@@ -121,7 +121,7 @@ func TestAccResourceKibanaTag_noColor(t *testing.T) {
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(tagResourceAddr, "name", fmt.Sprintf("tf-acc-tag-nocolor-updated-%s", suffix)),
-					resource.TestCheckResourceAttr(tagResourceAddr, "color", initialColor),
+					testAccCheckTagColorEquals(tagResourceAddr, &initialColor),
 				),
 			},
 		},
@@ -409,6 +409,22 @@ func captureTagColor(addr string, color *string) resource.TestCheckFunc {
 			return fmt.Errorf("resource %q has no color in state", addr)
 		}
 		*color = value
+		return nil
+	}
+}
+
+func testAccCheckTagColorEquals(addr string, expectedColor *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if expectedColor == nil || *expectedColor == "" {
+			return fmt.Errorf("no expected color captured for %q", addr)
+		}
+		rs, ok := s.RootModule().Resources[addr]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", addr)
+		}
+		if got := rs.Primary.Attributes["color"]; got != *expectedColor {
+			return fmt.Errorf("expected color %q, got %q", *expectedColor, got)
+		}
 		return nil
 	}
 }

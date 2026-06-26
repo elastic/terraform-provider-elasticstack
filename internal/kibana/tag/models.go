@@ -19,7 +19,6 @@ package tag
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -53,7 +52,7 @@ var (
 	_ entitycore.KibanaResourceModel     = tagModel{}
 	_ entitycore.WithVersionRequirements = tagModel{}
 
-	tagMinVersion = version.Must(version.NewVersion("9.5.0"))
+	tagMinVersion = version.Must(version.NewVersion("9.5.0-SNAPSHOT"))
 )
 
 func (m tagBaseModel) GetID() types.String         { return m.ID }
@@ -70,7 +69,7 @@ func (tagBaseModel) GetVersionRequirements(_ context.Context) ([]entitycore.Vers
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *tagMinVersion,
-			ErrorMessage: fmt.Sprintf("Kibana tags require Elastic Stack v%s or later (introduced in Kibana 9.5).", tagMinVersion),
+			ErrorMessage: "Kibana tags require Elastic Stack v9.5.0 or later (introduced in Kibana 9.5).",
 		},
 	}, nil
 }

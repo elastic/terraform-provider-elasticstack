@@ -23,4 +23,9 @@ resource "elasticstack_kibana_tag" "tag_b" {
 
 data "elasticstack_kibana_tags" "test" {
   query = var.query_name
+
+  depends_on = [
+    elasticstack_kibana_tag.tag_a,
+    elasticstack_kibana_tag.tag_b,
+  ]
 }

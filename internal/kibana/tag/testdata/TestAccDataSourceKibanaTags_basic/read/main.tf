@@ -17,4 +17,11 @@ resource "elasticstack_kibana_tag" "tag_b" {
   color = "#222222"
 }
 
-data "elasticstack_kibana_tags" "test" {}
+data "elasticstack_kibana_tags" "test" {
+  query = var.suffix
+
+  depends_on = [
+    elasticstack_kibana_tag.tag_a,
+    elasticstack_kibana_tag.tag_b,
+  ]
+}

@@ -171,7 +171,7 @@ func DeleteTag(ctx context.Context, client *Client, spaceID, id string) diag.Dia
 		return diagutil.ErrDiag(fmt.Sprintf("HTTP request failed deleting tag %q", id), err)
 	}
 
-	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent, http.StatusNotFound)
 }
 
 // ListTags fetches a single page of tags from GET /api/tags.
