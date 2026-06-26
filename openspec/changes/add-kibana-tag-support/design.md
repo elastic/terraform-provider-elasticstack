@@ -69,6 +69,7 @@ Response shape (all single-tag endpoints):
 2. **Color validation**: Is the hex color format strictly enforced (must be `#RRGGBB`), or does Kibana accept short-form (`#RGB`)? Confirm during acceptance testing; add `stringvalidator.RegexMatches` if strict.
 3. **Pagination max per_page**: Does the server cap `per_page`? If so, the data source auto-pagination must not exceed the cap. Investigate during implementation; default to 100 and handle server rejection gracefully.
 4. **Name uniqueness enforcement**: Server-side uniqueness per space — error response shape and HTTP status to be confirmed during implementation.
+5. **`description` null vs empty-string round-trip**: The API models `description` as `*string` (optional). It is not yet confirmed whether sending `description = ""` round-trips identically to sending `description: null` (omitted), or whether the server normalizes empty to absent. If the two are not equivalent, Terraform could observe a perpetual diff when a practitioner writes `description = ""` in HCL. Confirm during implementation via a round-trip unit test on `toAPIModel`/`fromAPIModel`; add a normalizer (treat empty string as absent on write) if necessary.
 
 ## Migration / State
 

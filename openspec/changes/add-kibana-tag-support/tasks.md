@@ -39,3 +39,5 @@
 - [ ] 3.7 All acceptance tests MUST be skipped when the connected Kibana version is below 9.5.0 (use existing skip-version helper or add one consistent with other resources).
 - [ ] 3.8 Add unit tests for `toAPIModel()` (nil description, nil color), `fromAPIModel()` (populated and sparse responses), and the create-branching logic (POST path vs PUT path).
 - [ ] 3.9 Add unit test for managed-tag guard: simulate `meta.managed = true` response; assert `checkManagedTag` returns a non-nil error diagnostic.
+- [ ] 3.10 Add acceptance test `TestAccResourceKibanaTag_nonDefaultSpace` covering create/read/update/delete in a non-default space (mirrors `internal/kibana/osquery_pack/acc_test.go::TestAccResourceOsqueryPack_nonDefaultSpace`); also add `TestAccDataSourceKibanaTags_nonDefaultSpace` exercising the data source against tags in a non-default space.
+- [ ] 3.11 Add acceptance test `TestAccResourceKibanaTag_colorUpdate`: create with `color = "#FF0000"`; update to `color = "#00FF00"`; assert the plan shows a diff and apply persists the new color (confirms `color` is a managed attribute, not just one-shot computed).
