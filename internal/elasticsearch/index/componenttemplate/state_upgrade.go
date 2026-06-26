@@ -46,8 +46,11 @@ func migrateComponentTemplateStateV0ToV1(_ context.Context, req resource.Upgrade
 
 	if tmpl, ok := stateMap[attrTemplate].(map[string]any); ok {
 		stateutil.EnsureMapKeys(tmpl, attrAlias, attrMappings, attrSettings, attrDataStreamOptions)
+		stateutil.NullifyEmptyString(tmpl, attrMappings, attrSettings)
 		aliasutil.NormalizeTemplateAliasesInV1State(tmpl)
 	}
+
+	stateutil.NullifyEmptyString(stateMap, "metadata")
 
 	// SDKv2 may persist version = 0 when the field is omitted in HCL; Elasticsearch readback and
 	// the Plugin Framework schema treat that as unset (null). Drop the key so migrated state matches.
