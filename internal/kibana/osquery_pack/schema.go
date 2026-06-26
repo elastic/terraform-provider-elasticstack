@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package osquerysavedquery
+package osquerypack
 
 import (
 	"context"
@@ -23,7 +23,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
-	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -35,53 +36,26 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// MinSupportedVersion is the minimum Elastic Stack version supported by Osquery saved query resources and data sources.
-var MinSupportedVersion = version.Must(version.NewVersion("8.5.0"))
-
-const (
-	attrID            = "id"
-	attrSavedObjectID = "saved_object_id"
-	attrSavedQueryID  = "saved_query_id"
-	attrSpaceID       = "space_id"
-	attrQuery         = "query"
-	attrDescription   = "description"
-	attrPlatform      = "platform"
-	attrInterval      = "interval"
-	attrVersion       = "version"
-	attrSnapshot      = "snapshot"
-	attrRemoved       = "removed"
-	attrEcsMapping    = "ecs_mapping"
-	attrPrebuilt      = "prebuilt"
-)
-
 var osqueryPlatformValues = osquery.PlatformValues
 
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Manages a user-defined Osquery saved query in Kibana. Requires Kibana 8.5.0 or later. " +
-			"Prebuilt queries shipped with the osquery_manager integration cannot be managed by this resource; " +
-			"use the `elasticstack_kibana_osquery_saved_query` data source to read them instead. " +
-			"Import of prebuilt queries fails; use the data source for prebuilt queries.",
+		MarkdownDescription: "Manages a user-defined Osquery query pack in Kibana. Requires Kibana 8.5.0 or later. " +
+			"Prebuilt packs shipped with the osquery_manager integration cannot be managed by this resource; " +
+			"use the `elasticstack_kibana_osquery_pack` data source to read them instead.",
 		Attributes: map[string]schema.Attribute{
-			attrID: schema.StringAttribute{
-				MarkdownDescription: "Composite identifier in the form `<space_id>/<saved_query_id>`.",
+			"id": schema.StringAttribute{
+				MarkdownDescription: "Composite identifier in the form `<space_id>/<pack_id>`.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			attrSavedObjectID: schema.StringAttribute{
-				MarkdownDescription: "Kibana saved object identifier used internally by Kibana's Osquery saved query detail, update, and delete APIs.",
+			attrPackID: schema.StringAttribute{
+				MarkdownDescription: "Server-generated Kibana saved object identifier for the pack (`saved_object_id`).",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			attrSavedQueryID: schema.StringAttribute{
-				MarkdownDescription: "Stable user-facing identifier for the saved query. Forces replacement when changed.",
-				Required:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			attrSpaceID: schema.StringAttribute{
@@ -94,50 +68,96 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			attrQuery: schema.StringAttribute{
-				MarkdownDescription: "Osquery SQL query text.",
+			attrName: schema.StringAttribute{
+				MarkdownDescription: "Human-readable name of the Osquery pack.",
 				Required:            true,
 			},
 			attrDescription: schema.StringAttribute{
-				MarkdownDescription: "Human-readable description of the saved query.",
+				MarkdownDescription: "Description of the Osquery pack.",
 				Optional:            true,
 			},
-			attrPlatform: schema.SetAttribute{
-				MarkdownDescription: "Target platforms for the query. Allowed values: `linux`, `darwin`, `windows`.",
+			attrEnabled: schema.BoolAttribute{
+				MarkdownDescription: "Whether the pack is enabled.",
+				Optional:            true,
+				Computed:            true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
+			attrPolicyIDs: schema.SetAttribute{
+				MarkdownDescription: "Fleet agent policy IDs this pack is deployed to.",
 				Optional:            true,
 				ElementType:         types.StringType,
-				Validators: []validator.Set{
-					setvalidator.ValueStringsAre(stringvalidator.OneOf(osqueryPlatformValues...)),
-				},
 			},
-			attrInterval: schema.Int64Attribute{
-				MarkdownDescription: "Query execution interval in seconds. Required by the Kibana Osquery API on create and update.",
-				Required:            true,
-			},
-			attrVersion: schema.StringAttribute{
-				MarkdownDescription: "Saved query version string.",
+			attrShards: schema.MapAttribute{
+				MarkdownDescription: "Percent (1-100) of hosts per policy ID that receive the pack.",
 				Optional:            true,
-			},
-			attrSnapshot: schema.BoolAttribute{
-				MarkdownDescription: "Whether the saved query is a snapshot. Returned by the API and may be set explicitly in configuration. " +
-					"When omitted or unknown at plan time, the prior state value is preserved (`UseStateForUnknown`).",
-				Optional: true,
-				Computed: true,
-				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.UseStateForUnknown(),
+				ElementType:         types.Float64Type,
+				Validators: []validator.Map{
+					mapvalidator.ValueFloat64sAre(
+						float64validator.Between(1, 100),
+					),
 				},
 			},
-			attrRemoved: schema.BoolAttribute{
-				MarkdownDescription: "Whether the saved query is marked removed. Returned by the API and may be set explicitly in configuration. " +
-					"When omitted or unknown at plan time, the prior state value is preserved (`UseStateForUnknown`).",
-				Optional: true,
-				Computed: true,
-				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.UseStateForUnknown(),
-				},
-			},
-			attrEcsMapping: ecsMappingSchema(),
+			attrQueries: queriesSchema(),
 		},
+	}
+}
+
+func queriesSchema() schema.MapNestedAttribute {
+	return schema.MapNestedAttribute{
+		MarkdownDescription: "Osquery queries in the pack. Map keys are query names (canonical identifiers in Kibana).",
+		Required:            true,
+		Validators: []validator.Map{
+			mapvalidator.SizeAtLeast(1),
+		},
+		NestedObject: schema.NestedAttributeObject{
+			Attributes: queryNestedAttributes(),
+		},
+	}
+}
+
+func queryNestedAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		attrQuery: schema.StringAttribute{
+			MarkdownDescription: "Osquery SQL query text.",
+			Required:            true,
+		},
+		attrPlatform: schema.SetAttribute{
+			MarkdownDescription: "Target platforms for the query. Allowed values: `linux`, `darwin`, `windows`.",
+			Optional:            true,
+			ElementType:         types.StringType,
+			Validators: []validator.Set{
+				setvalidator.ValueStringsAre(stringvalidator.OneOf(osqueryPlatformValues...)),
+			},
+		},
+		attrVersion: schema.StringAttribute{
+			MarkdownDescription: "Query version string.",
+			Optional:            true,
+		},
+		attrSnapshot: schema.BoolAttribute{
+			MarkdownDescription: "Whether the query is a snapshot. Returned by the API and may be set explicitly in configuration. " +
+				"When omitted or unknown at plan time, the prior state value is preserved (`UseStateForUnknown`).",
+			Optional: true,
+			Computed: true,
+			PlanModifiers: []planmodifier.Bool{
+				boolplanmodifier.UseStateForUnknown(),
+			},
+		},
+		attrRemoved: schema.BoolAttribute{
+			MarkdownDescription: "Whether the query is marked removed. Returned by the API and may be set explicitly in configuration. " +
+				"When omitted or unknown at plan time, the prior state value is preserved (`UseStateForUnknown`).",
+			Optional: true,
+			Computed: true,
+			PlanModifiers: []planmodifier.Bool{
+				boolplanmodifier.UseStateForUnknown(),
+			},
+		},
+		attrSavedQueryID: schema.StringAttribute{
+			MarkdownDescription: "References an `elasticstack_kibana_osquery_saved_query` resource.",
+			Optional:            true,
+		},
+		attrEcsMapping: ecsMappingSchema(),
 	}
 }
 
@@ -177,9 +197,6 @@ func ecsMappingSchema() schema.MapNestedAttribute {
 	}
 }
 
-// ecsMappingExactlyOneOfValidator enforces exactly one of field/value/values per ecs_mapping
-// element. Uses ExactlyOneOfNestedAttrsValidator (primary path per design Decision 6); a custom
-// inline ValidateObject fallback is documented in tasks.md if map nested validation fails in CI.
 func ecsMappingExactlyOneOfValidator() validator.Object {
 	return validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
 		AttrNames:     []string{attrEcsMappingField, attrEcsMappingValue, attrEcsMappingValues},

@@ -96,6 +96,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportsavedobjects"
 	importsavedobjects "github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	maintenancewindow "github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
+	osquerypack "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_pack"
 	osquerysavedquery "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_saved_query"
 	prebuilt_rules "github.com/elastic/terraform-provider-elasticstack/internal/kibana/prebuilt_rules"
 	security_detection_rule "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
@@ -265,6 +266,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		script.NewScriptResource,
 		logstash.NewLogstashPipelineResource,
 		maintenancewindow.NewResource,
+		osquerypack.NewResource,
 		osquerysavedquery.NewResource,
 		enrich.NewEnrichPolicyResource,
 		synonyms.NewSynonymSetResource,
@@ -340,6 +342,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		role.NewRoleDataSource,
 		securityuser.NewUserDataSource,
 		outputds.NewDataSource,
+		osquerypack.NewDataSource,
 		ingest.NewProcessorAppendDataSource,
 		ingest.NewProcessorBytesDataSource,
 		ingest.NewProcessorCircleDataSource,
