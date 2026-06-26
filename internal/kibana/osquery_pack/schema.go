@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
@@ -167,7 +166,7 @@ func ecsMappingSchema() schema.MapNestedAttribute {
 		Optional:            true,
 		NestedObject: schema.NestedAttributeObject{
 			Validators: []validator.Object{
-				ecsMappingExactlyOneOfValidator(),
+				osquery.ECSMappingExactlyOneOfValidator(),
 			},
 			Attributes: map[string]schema.Attribute{
 				attrEcsMappingField: schema.StringAttribute{
@@ -195,14 +194,4 @@ func ecsMappingSchema() schema.MapNestedAttribute {
 			},
 		},
 	}
-}
-
-func ecsMappingExactlyOneOfValidator() validator.Object {
-	return validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
-		AttrNames:     []string{attrEcsMappingField, attrEcsMappingValue, attrEcsMappingValues},
-		Summary:       "Invalid ecs_mapping element",
-		MissingDetail: "Exactly one of `field`, `value`, or `values` must be set per `ecs_mapping` element.",
-		TooManyDetail: "Exactly one of `field`, `value`, or `values` must be set per `ecs_mapping` element, not more than one.",
-		Description:   "Ensures exactly one of `field`, `value`, or `values` is set on each `ecs_mapping` map value.",
-	})
 }
