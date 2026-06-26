@@ -19,8 +19,6 @@ package security_entity_store_entity_link
 
 import (
 	"context"
-	"fmt"
-	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -69,35 +67,4 @@ func (r *EntityLinkResource) ImportState(ctx context.Context, req resource.Impor
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(attrSpaceID), composite.ClusterID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(attrTargetID), composite.ResourceID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(attrID), types.StringValue(req.ID))...)
-}
-
-// ValidateConfig performs cross-attribute validation.  It rejects configurations
-// where target_id appears in entity_ids (self-link guard).
-func (r *EntityLinkResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
-	var data entityLinkModel
-	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if data.TargetID.IsNull() || data.TargetID.IsUnknown() || data.EntityIDs.IsNull() || data.EntityIDs.IsUnknown() {
-		return
-	}
-
-	targetID := data.TargetID.ValueString()
-	var entityIDs []string
-	diags := data.EntityIDs.ElementsAs(ctx, &entityIDs, false)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if slices.Contains(entityIDs, targetID) {
-		resp.Diagnostics.AddAttributeError(
-			path.Root(attrEntityIDs),
-			"Self-link not allowed",
-			fmt.Sprintf("target_id %q must not appear in entity_ids", targetID),
-		)
-		return
-	}
 }
