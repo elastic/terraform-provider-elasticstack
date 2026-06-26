@@ -4,7 +4,7 @@
 
 Define requirements for `elasticstack_kibana_tag` (resource) and `elasticstack_kibana_tags` (data source), which manage Kibana tags via the public `/api/tags` REST API introduced in Kibana 9.5.0.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Resource schema attributes (REQ-001)
 
