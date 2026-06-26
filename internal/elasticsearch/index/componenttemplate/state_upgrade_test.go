@@ -313,6 +313,32 @@ func TestComponentTemplateUpgradeState_settings_only_empty_string_mappings(t *te
 	requireUpgradedStateDecodes(t, resp)
 }
 
+func TestComponentTemplateUpgradeState_list_shaped_settings_only_empty_string_mappings(t *testing.T) {
+	t.Parallel()
+
+	raw := baseComponentTemplateState()
+	raw["metadata"] = ""
+	raw["template"] = []any{
+		map[string]any{
+			"mappings": "",
+			"settings": `{"index":{"number_of_replicas":"1"}}`,
+		},
+	}
+
+	resp := runUpgrade(t, raw)
+	require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+	var got map[string]any
+	require.NoError(t, json.Unmarshal(resp.DynamicValue.JSON, &got))
+	require.Nil(t, got["metadata"])
+	tmpl, ok := got["template"].(map[string]any)
+	require.True(t, ok)
+	require.Nil(t, tmpl["mappings"])
+	settings, ok := tmpl["settings"].(string)
+	require.True(t, ok)
+	require.JSONEq(t, `{"index":{"number_of_replicas":"1"}}`, settings)
+	requireUpgradedStateDecodes(t, resp)
+}
+
 func TestComponentTemplateUpgradeState_mappings_only_empty_string_settings(t *testing.T) {
 	t.Parallel()
 
