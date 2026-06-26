@@ -291,3 +291,59 @@ func TestComponentTemplateUpgradeState_invalid_json(t *testing.T) {
 	}, resp)
 	require.True(t, resp.Diagnostics.HasError())
 }
+
+func TestComponentTemplateUpgradeState_settings_only_empty_string_mappings(t *testing.T) {
+	t.Parallel()
+
+	raw := baseComponentTemplateState()
+	raw["template"] = map[string]any{
+		"mappings": "",
+		"settings": `{"index":{"number_of_replicas":"1"}}`,
+	}
+
+	resp := runUpgrade(t, raw)
+	require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+	var got map[string]any
+	require.NoError(t, json.Unmarshal(resp.DynamicValue.JSON, &got))
+	tmpl := got["template"].(map[string]any)
+	require.Nil(t, tmpl["mappings"])
+	settings, ok := tmpl["settings"].(string)
+	require.True(t, ok)
+	require.JSONEq(t, `{"index":{"number_of_replicas":"1"}}`, settings)
+	requireUpgradedStateDecodes(t, resp)
+}
+
+func TestComponentTemplateUpgradeState_mappings_only_empty_string_settings(t *testing.T) {
+	t.Parallel()
+
+	raw := baseComponentTemplateState()
+	raw["template"] = map[string]any{
+		"mappings": `{"properties":{"field":{"type":"keyword"}}}`,
+		"settings": "",
+	}
+
+	resp := runUpgrade(t, raw)
+	require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+	var got map[string]any
+	require.NoError(t, json.Unmarshal(resp.DynamicValue.JSON, &got))
+	tmpl := got["template"].(map[string]any)
+	require.Nil(t, tmpl["settings"])
+	mappings, ok := tmpl["mappings"].(string)
+	require.True(t, ok)
+	require.JSONEq(t, `{"properties":{"field":{"type":"keyword"}}}`, mappings)
+	requireUpgradedStateDecodes(t, resp)
+}
+
+func TestComponentTemplateUpgradeState_metadata_empty_string(t *testing.T) {
+	t.Parallel()
+
+	raw := baseComponentTemplateState()
+	raw["metadata"] = ""
+
+	resp := runUpgrade(t, raw)
+	require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+	var got map[string]any
+	require.NoError(t, json.Unmarshal(resp.DynamicValue.JSON, &got))
+	require.Nil(t, got["metadata"])
+	requireUpgradedStateDecodes(t, resp)
+}
