@@ -70,8 +70,12 @@ type ControlPinnedHandler[G any, P any] struct {
 func (h ControlPinnedHandler[G, P]) FromAPI(ctx context.Context, prior *models.PinnedPanelModel, raw kbapi.DashboardPinnedPanels_Item) (models.PinnedPanelModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	if h.PanelTypeDiscriminator == "" || h.AsGroup == nil || h.BuildPanel == nil || h.PopulateFromAPI == nil {
+		diags.AddError("Internal error", "ControlPinnedHandler is misconfigured (missing required callback or panel type discriminator)")
+		return models.PinnedPanelModel{}, diags
+	}
+
 	group, err := h.AsGroup(raw)
-	if err != nil {
 		diags.AddError(h.ParseErrSummary, err.Error())
 		return models.PinnedPanelModel{}, diags
 	}
@@ -97,9 +101,13 @@ func (h ControlPinnedHandler[G, P]) FromAPI(ctx context.Context, prior *models.P
 func (h ControlPinnedHandler[G, P]) ToAPI(ppm models.PinnedPanelModel) (kbapi.DashboardPinnedPanels_Item, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	if h.BuildPanel == nil || h.BuildConfig == nil || h.FromGroup == nil {
+		diags.AddError("Internal error", "ControlPinnedHandler is misconfigured (missing required callback)")
+		return kbapi.DashboardPinnedPanels_Item{}, diags
+	}
+
 	pm := ppm.SyntheticPanel()
 	panel := h.BuildPanel()
-	diags.Append(h.BuildConfig(pm, &panel)...)
 	if diags.HasError() {
 		return kbapi.DashboardPinnedPanels_Item{}, diags
 	}
