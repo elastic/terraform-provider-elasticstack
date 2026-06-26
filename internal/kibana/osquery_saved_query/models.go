@@ -190,8 +190,8 @@ func (m *osquerySavedQueryBaseModel) setCompositeIdentity(savedQueryID kbapi.Sec
 // compositeSpaceID returns the space segment for composite IDs. Unknown space_id
 // falls back to clients.DefaultSpaceID for ID composition without overwriting unknown state.
 func compositeSpaceID(spaceID types.String) string {
-	if typeutils.IsKnown(spaceID) && spaceID.ValueString() != "" {
-		return spaceID.ValueString()
+	if typeutils.IsKnown(spaceID) {
+		return clients.EffectiveSpaceID(spaceID.ValueString())
 	}
 
 	return clients.DefaultSpaceID

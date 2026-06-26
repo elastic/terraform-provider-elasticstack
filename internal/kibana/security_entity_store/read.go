@@ -48,7 +48,7 @@ func readEntityStore(
 		return model, true, flattenDiags
 	}
 
-	model.ID = types.StringValue(buildID(spaceID))
+	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: resourceID}).String())
 	model.SpaceID = types.StringValue(spaceID)
 	model.EntityTypes = entityTypes
 	model.Started = types.BoolValue(started)

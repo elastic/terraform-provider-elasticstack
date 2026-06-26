@@ -86,7 +86,7 @@ func readEntity(
 		}
 	}
 
-	model.ID = types.StringValue(buildID(spaceID, entityID))
+	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: entityID}).String())
 	model.SpaceID = types.StringValue(spaceID)
 	model.EntityType = types.StringValue(entityType)
 	model.EntityID = types.StringValue(entityID)

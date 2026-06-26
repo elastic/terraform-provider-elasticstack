@@ -17,15 +17,14 @@
 
 package clients
 
-// DefaultSpaceID is the Kibana default space identifier used when the resource
-// does not target a specific space.
-const DefaultSpaceID = "default"
+import (
+	"testing"
 
-// EffectiveSpaceID returns spaceID when non-empty, or DefaultSpaceID as the
-// fallback for resources that do not target a specific space.
-func EffectiveSpaceID(spaceID string) string {
-	if spaceID == "" {
-		return DefaultSpaceID
-	}
-	return spaceID
+	"github.com/stretchr/testify/assert"
+)
+
+func TestEffectiveSpaceID(t *testing.T) {
+	assert.Equal(t, DefaultSpaceID, EffectiveSpaceID(""), "empty string should return default space ID")
+	assert.Equal(t, "production", EffectiveSpaceID("production"), "non-empty string should be returned as-is")
+	assert.Equal(t, DefaultSpaceID, EffectiveSpaceID(DefaultSpaceID), "default space ID should pass through unchanged")
 }
