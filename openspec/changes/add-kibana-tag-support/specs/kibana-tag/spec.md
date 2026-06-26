@@ -104,7 +104,7 @@ If the tag is not found (404), the provider SHALL remove the resource from state
 - GIVEN a tag exists with `name = "prod"`, `color = "#FF0000"`, and `description = null`
 - WHEN Read runs
 - THEN `name`, `color` SHALL be set in state
-- AND `description` SHALL be null/empty in state
+- AND `description` SHALL be null in state
 
 #### Scenario: Read on missing tag removes from state
 
@@ -114,7 +114,7 @@ If the tag is not found (404), the provider SHALL remove the resource from state
 
 ### Requirement: Update path (REQ-007)
 
-On Update, the provider SHALL call `PUT /api/tags/{id}` with the configured `name`, `color` (if set), and `description` (if set). The provider SHALL apply the managed-tag guard (REQ-009) before calling the API.
+On Update, the provider SHALL call `PUT /api/tags/{id}` with the configured `name` and the planned `color` value (preserving prior state when unknown via `UseStateForUnknown`) so that omitting `color` from configuration does not cause server-side color regeneration. The provider SHALL include `description` only when set in configuration. The provider SHALL apply the managed-tag guard (REQ-009) before calling the API.
 
 Both `JSON200` (updated) and `JSON201` (upserted, in a race where the tag was deleted between plan and apply) responses SHALL be treated as success.
 
@@ -211,7 +211,7 @@ The `elasticstack_kibana_tags` data source SHALL expose:
   - `id` (string) — the tag UUID
   - `name` (string)
   - `color` (string)
-  - `description` (string, may be empty)
+  - `description` (string, may be null)
   - `managed` (bool) — `true` when Kibana manages the tag
   - `created_at` (string)
   - `updated_at` (string)
