@@ -30,8 +30,8 @@ import (
 //go:embed testdata/TestAccResourceComponentTemplateFromSDK/config/main.tf
 var sdkComponentTemplateFromSDKConfig string
 
-//go:embed testdata/TestAccResourceComponentTemplateFromSDKSettingsOnly/step1_sdk/main.tf
-var sdkComponentTemplateFromSDKSettingsOnlyStep1Config string
+//go:embed testdata/TestAccResourceComponentTemplateFromSDKSettingsOnly/config/main.tf
+var sdkComponentTemplateFromSDKSettingsOnlyConfig string
 
 // TestAccResourceComponentTemplateFromSDK upgrades state authored by the last Plugin SDK v2 release
 // (REQ-042). Step 1 uses registry provider 0.14.5; step 2 applies the Plugin Framework configuration;
@@ -122,7 +122,7 @@ func TestAccResourceComponentTemplateFromSDKSettingsOnly(t *testing.T) {
 						VersionConstraint: "0.14.5",
 					},
 				},
-				Config: sdkComponentTemplateFromSDKSettingsOnlyStep1Config,
+				Config: sdkComponentTemplateFromSDKSettingsOnlyConfig,
 				ConfigVariables: config.Variables{
 					"template_name": config.StringVariable(templateName),
 				},

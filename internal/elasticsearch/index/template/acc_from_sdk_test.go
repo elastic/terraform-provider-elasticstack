@@ -32,8 +32,8 @@ import (
 //go:embed testdata/TestAccResourceIndexTemplateFromSDK/step1_sdk_no_dso/main.tf
 var sdkIndexTemplateFromSDKStep1Compat string
 
-//go:embed testdata/TestAccResourceIndexTemplateFromSDKSettingsOnly/step1_sdk/main.tf
-var sdkIndexTemplateFromSDKSettingsOnlyStep1Config string
+//go:embed testdata/TestAccResourceIndexTemplateFromSDKSettingsOnly/config/main.tf
+var sdkIndexTemplateFromSDKSettingsOnlyConfig string
 
 // TestAccResourceIndexTemplateFromSDK upgrades state authored by the last Plugin SDK v2 release
 // (REQ-042). Step 1 uses registry provider 0.14.5 without template.data_stream_options (not in the
@@ -148,7 +148,7 @@ func TestAccResourceIndexTemplateFromSDKSettingsOnly(t *testing.T) {
 						VersionConstraint: "0.14.5",
 					},
 				},
-				Config: sdkIndexTemplateFromSDKSettingsOnlyStep1Config,
+				Config: sdkIndexTemplateFromSDKSettingsOnlyConfig,
 				ConfigVariables: config.Variables{
 					"template_name": config.StringVariable(templateName),
 				},
