@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -2484,6 +2485,125 @@ func TestKibanaResource_Read_versionReqDiagsStopRead(t *testing.T) {
 	}
 	require.Contains(t, summaries, "version requirements error",
 		"diagnostic from GetVersionRequirements must be appended; got: %v", summaries)
+}
+
+func TestKibanaResource_Delete_versionReqDiagsStopDelete(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	deleteCalled := false
+	opts := versionReqTestKibanaResourceOptions(nil, nil)
+	opts.Delete = func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModelWithVersionReqs) diag.Diagnostics {
+		deleteCalled = true
+		return nil
+	}
+	r := NewKibanaResource[testKibanaResourceModelWithVersionReqs](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	state := tfsdk.State{
+		Raw: tftypes.NewValue(testKibanaResourceObjectType(), map[string]tftypes.Value{
+			"id":                tftypes.NewValue(tftypes.String, "default/my-resource"),
+			"name":              tftypes.NewValue(tftypes.String, "my-resource"),
+			"space_id":          tftypes.NewValue(tftypes.String, "default"),
+			"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+			"timeouts":          resourceTimeoutsNullValue(),
+		}),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
+	}
+	req := resource.DeleteRequest{State: state}
+	resp := resource.DeleteResponse{State: state}
+
+	r.Delete(ctx, req, &resp)
+
+	require.False(t, deleteCalled, "deleteFunc must NOT be called when GetVersionRequirements returns error diags")
+	require.True(t, resp.Diagnostics.HasError(), "Delete must propagate error from GetVersionRequirements")
+	summaries := make([]string, 0, len(resp.Diagnostics))
+	for _, d := range resp.Diagnostics {
+		summaries = append(summaries, d.Summary())
+	}
+	require.Contains(t, summaries, "version requirements error",
+		"diagnostic from GetVersionRequirements must be appended; got: %v", summaries)
+}
+
+type testKibanaResourceModelMinVersion955 struct {
+	ResourceTimeoutsField
+	ID               types.String `tfsdk:"id"`
+	Name             types.String `tfsdk:"name"`
+	SpaceID          types.String `tfsdk:"space_id"`
+	KibanaConnection types.List   `tfsdk:"kibana_connection"`
+}
+
+func (m testKibanaResourceModelMinVersion955) GetID() types.String         { return m.ID }
+func (m testKibanaResourceModelMinVersion955) GetResourceID() types.String { return m.Name }
+func (m testKibanaResourceModelMinVersion955) GetSpaceID() types.String    { return m.SpaceID }
+func (m testKibanaResourceModelMinVersion955) GetKibanaConnection() types.List {
+	return m.KibanaConnection
+}
+
+func (*testKibanaResourceModelMinVersion955) GetVersionRequirements(_ context.Context) ([]VersionRequirement, diag.Diagnostics) {
+	return []VersionRequirement{
+		{
+			MinVersion:   *version.Must(version.NewVersion("9.5.0")),
+			ErrorMessage: "requires Kibana 9.5.0 or later",
+		},
+	}, nil
+}
+
+func TestKibanaResource_Delete_unsupportedServerStopsBeforeDeleteFunc(t *testing.T) {
+	ctx := context.Background()
+
+	srv := newMockKibanaStatusServer("7.17.0", "default")
+	defer srv.Close()
+
+	deleteCalled := false
+	r := NewKibanaResource[testKibanaResourceModelMinVersion955](ComponentKibana, "test_entity", KibanaResourceOptions[testKibanaResourceModelMinVersion955]{
+		Schema: func(ctx context.Context) rschema.Schema {
+			s := getTestKibanaResourceSchema(ctx)
+			s.Blocks = map[string]rschema.Block{
+				"kibana_connection": providerschema.GetKbFWConnectionBlock(),
+			}
+			return s
+		},
+		Read: func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModelMinVersion955) (testKibanaResourceModelMinVersion955, bool, diag.Diagnostics) {
+			return testKibanaResourceModelMinVersion955{}, false, nil
+		},
+		Delete: func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModelMinVersion955) diag.Diagnostics {
+			deleteCalled = true
+			return nil
+		},
+		Create: PlaceholderKibanaWriteCallback[testKibanaResourceModelMinVersion955](),
+		Update: PlaceholderKibanaWriteCallback[testKibanaResourceModelMinVersion955](),
+	})
+	factory := newKibanaFactoryForURL(t, srv.URL)
+	r.client = factory
+
+	state := tfsdk.State{
+		Raw: tftypes.NewValue(testKibanaResourceObjectType(), map[string]tftypes.Value{
+			"id":                tftypes.NewValue(tftypes.String, "default/my-resource"),
+			"name":              tftypes.NewValue(tftypes.String, "my-resource"),
+			"space_id":          tftypes.NewValue(tftypes.String, "default"),
+			"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+			"timeouts":          resourceTimeoutsNullValue(),
+		}),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
+	}
+	req := resource.DeleteRequest{State: state}
+	resp := resource.DeleteResponse{State: state}
+
+	r.Delete(ctx, req, &resp)
+
+	require.False(t, deleteCalled, "deleteFunc must NOT be called when server is below minimum version")
+	require.True(t, resp.Diagnostics.HasError(), "Delete must produce an error diagnostic for unsupported server")
+
+	var foundUnsupported bool
+	for _, e := range resp.Diagnostics.Errors() {
+		if e.Summary() == "Unsupported server version" {
+			foundUnsupported = true
+			require.Contains(t, e.Detail(), "requires Kibana 9.5.0 or later")
+		}
+	}
+	require.True(t, foundUnsupported,
+		"must have an 'Unsupported server version' diagnostic; got: %v", resp.Diagnostics.Errors())
 }
 
 func TestNewKibanaResource_Read_postReadReceivesPriorStateAsPrior(t *testing.T) {
