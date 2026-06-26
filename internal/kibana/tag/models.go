@@ -104,8 +104,7 @@ func (m tagModel) toAPIModel(includeDescription bool) kbapi.KibanaHTTPAPIsKbnTag
 		Name: m.Name.ValueString(),
 	}
 
-	if typeutils.IsKnown(m.Color) {
-		color := m.Color.ValueString()
+	if color, ok := m.resolvedColor(nil); ok {
 		body.Color = &color
 	}
 
@@ -117,6 +116,32 @@ func (m tagModel) toAPIModel(includeDescription bool) kbapi.KibanaHTTPAPIsKbnTag
 	}
 
 	return body
+}
+
+func (m tagModel) toUpdateAPIModel(prior *tagModel) kbapi.KibanaHTTPAPIsKbnTagsRequestAttributes {
+	return m.withResolvedColor(prior).toAPIModel(true)
+}
+
+func (m tagModel) withResolvedColor(prior *tagModel) tagModel {
+	if typeutils.IsKnown(m.Color) || prior == nil {
+		return m
+	}
+
+	if !typeutils.IsKnown(prior.Color) {
+		return m
+	}
+
+	updated := m
+	updated.Color = prior.Color
+	return updated
+}
+
+func (m tagModel) resolvedColor(prior *tagModel) (string, bool) {
+	model := m.withResolvedColor(prior)
+	if !typeutils.IsKnown(model.Color) {
+		return "", false
+	}
+	return model.Color.ValueString(), true
 }
 
 type tagCreateAction int

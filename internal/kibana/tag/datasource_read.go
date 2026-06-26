@@ -43,7 +43,7 @@ func readTagsDataSource(
 
 	oapiClient := client.GetKibanaOapiClient()
 	query := typeutils.ValueStringPointer(config.Query)
-	tags, listDiags := listAllTags(ctx, oapiClient, spaceID, query)
+	tags, listDiags := listAllTags(ctx, oapiClient, spaceID, query, kibanaoapi.ListTags)
 	diags.Append(listDiags...)
 	if diags.HasError() {
 		return config, diags
@@ -53,7 +53,9 @@ func readTagsDataSource(
 	return config, diags
 }
 
-func listAllTags(ctx context.Context, client *kibanaoapi.Client, spaceID string, query *string) ([]kibanaoapi.TagDetail, diag.Diagnostics) {
+type listTagsPageFunc func(context.Context, *kibanaoapi.Client, string, *kbapi.GetTagsParams) (*kibanaoapi.TagListResult, diag.Diagnostics)
+
+func listAllTags(ctx context.Context, client *kibanaoapi.Client, spaceID string, query *string, listPage listTagsPageFunc) ([]kibanaoapi.TagDetail, diag.Diagnostics) {
 	var (
 		collected []kibanaoapi.TagDetail
 		page      float32 = 1
@@ -70,7 +72,7 @@ func listAllTags(ctx context.Context, client *kibanaoapi.Client, spaceID string,
 			params.Query = query
 		}
 
-		result, diags := kibanaoapi.ListTags(ctx, client, spaceID, params)
+		result, diags := listPage(ctx, client, spaceID, params)
 		if diags.HasError() {
 			return nil, diags
 		}

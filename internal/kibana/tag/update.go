@@ -42,19 +42,13 @@ func updateTag(
 		return entitycore.KibanaWriteResult[tagModel]{}, diags
 	}
 
-	if existing == nil {
-		diags.AddError(
-			"Tag not found",
-			"The tag no longer exists in Kibana; Terraform will recreate it on the next apply.",
-		)
-		return entitycore.KibanaWriteResult[tagModel]{}, diags
+	if existing != nil {
+		if managedDiags := checkManagedTag(existing); managedDiags.HasError() {
+			return entitycore.KibanaWriteResult[tagModel]{}, managedDiags
+		}
 	}
 
-	if managedDiags := checkManagedTag(existing); managedDiags.HasError() {
-		return entitycore.KibanaWriteResult[tagModel]{}, managedDiags
-	}
-
-	body := plan.toAPIModel(true)
+	body := plan.toUpdateAPIModel(req.Prior)
 	_, upsertDiags := kibanaoapi.UpsertTag(ctx, oapiClient, req.SpaceID, req.WriteID, body)
 	diags.Append(upsertDiags...)
 	if diags.HasError() {

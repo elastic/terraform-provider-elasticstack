@@ -113,6 +113,63 @@ func TestTagModel_toAPIModel(t *testing.T) {
 	})
 }
 
+func TestTagModel_toUpdateAPIModel(t *testing.T) {
+	t.Parallel()
+
+	t.Run("preserves prior color when plan color is unknown", func(t *testing.T) {
+		plan := tagModel{
+			tagBaseModel: tagBaseModel{
+				Name:  types.StringValue("staging-v2"),
+				Color: types.StringUnknown(),
+			},
+		}
+		prior := &tagModel{
+			tagBaseModel: tagBaseModel{
+				Color: types.StringValue("#AABBCC"),
+			},
+		}
+
+		body := plan.toUpdateAPIModel(prior)
+		require.NotNil(t, body.Color)
+		assert.Equal(t, "#AABBCC", *body.Color)
+	})
+
+	t.Run("uses plan color when known", func(t *testing.T) {
+		plan := tagModel{
+			tagBaseModel: tagBaseModel{
+				Name:  types.StringValue("staging-v2"),
+				Color: types.StringValue("#112233"),
+			},
+		}
+		prior := &tagModel{
+			tagBaseModel: tagBaseModel{
+				Color: types.StringValue("#AABBCC"),
+			},
+		}
+
+		body := plan.toUpdateAPIModel(prior)
+		require.NotNil(t, body.Color)
+		assert.Equal(t, "#112233", *body.Color)
+	})
+
+	t.Run("omits color when plan and prior color are unknown", func(t *testing.T) {
+		plan := tagModel{
+			tagBaseModel: tagBaseModel{
+				Name:  types.StringValue("staging-v2"),
+				Color: types.StringUnknown(),
+			},
+		}
+		prior := &tagModel{
+			tagBaseModel: tagBaseModel{
+				Color: types.StringUnknown(),
+			},
+		}
+
+		body := plan.toUpdateAPIModel(prior)
+		assert.Nil(t, body.Color)
+	})
+}
+
 func TestTagModel_populateFromAPI(t *testing.T) {
 	t.Parallel()
 
