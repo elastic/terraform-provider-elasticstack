@@ -22,6 +22,7 @@ import (
 	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -132,7 +133,7 @@ func (m *osquerySavedQueryModel) managedOptionalAPIFields(ctx context.Context) (
 		result.description = &description
 	}
 
-	platform, platformDiags := platformToAPI(ctx, m.Platform)
+	platform, platformDiags := osquery.PlatformToAPI(ctx, m.Platform)
 	diags.Append(platformDiags...)
 	if diags.HasError() {
 		return result, diags

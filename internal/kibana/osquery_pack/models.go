@@ -20,7 +20,6 @@ package osquerypack
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -103,7 +102,7 @@ func (m *osqueryPackBaseModel) populateFromAPI(ctx context.Context, spaceID stri
 
 	m.setCompositeIdentity(spaceID, data.SavedObjectID)
 	m.Name = types.StringValue(data.Name)
-	m.Description = optionalStringishPointerValue(data.Description)
+	m.Description = typeutils.TrimmedStringishPointerValue(data.Description)
 	m.Enabled = types.BoolPointerValue(data.Enabled)
 
 	if data.PolicyIDs != nil && len(*data.PolicyIDs) > 0 {
@@ -121,14 +120,6 @@ func (m *osqueryPackBaseModel) populateFromAPI(ctx context.Context, spaceID stri
 	m.Queries = queries
 
 	return diags
-}
-
-func optionalStringishPointerValue[T ~string](value *T) types.String {
-	if value == nil || strings.TrimSpace(string(*value)) == "" {
-		return types.StringNull()
-	}
-
-	return types.StringValue(string(*value))
 }
 
 func shardsMapFromAPI(shards kibanaoapi.OsqueryPackShards) types.Map {
@@ -237,22 +228,6 @@ func (m queryModel) toAPIType(ctx context.Context) (kbapi.SecurityOsqueryAPIObje
 	item.EcsMapping = ecsMapping
 
 	return item, diags
-}
-
-func platformSetFromAPI(_ context.Context, platform *kbapi.SecurityOsqueryAPIPlatform) types.Set {
-	return osquery.PlatformSetFromAPI(platform)
-}
-
-func platformCommaStringFromSet(ctx context.Context, platform types.Set) (*kbapi.SecurityOsqueryAPIPlatform, diag.Diagnostics) {
-	return osquery.PlatformToAPI(ctx, platform)
-}
-
-func ecsMappingMapFromAPI(_ context.Context, mapping *kbapi.SecurityOsqueryAPIECSMapping) (types.Map, diag.Diagnostics) {
-	return osquery.ECSMappingMapFromAPI(mapping)
-}
-
-func ecsMappingMapToAPI(ctx context.Context, mapping types.Map) (*kbapi.SecurityOsqueryAPIECSMapping, diag.Diagnostics) {
-	return osquery.ECSMappingMapToAPI(ctx, mapping)
 }
 
 func queryAttrTypes() map[string]attr.Type {

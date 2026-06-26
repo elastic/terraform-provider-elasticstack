@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/assert"
@@ -74,7 +75,7 @@ func TestPlatformCommaStringSetRoundTrip(t *testing.T) {
 
 	t.Run("comma string to sorted set", func(t *testing.T) {
 		platform := kbapi.SecurityOsqueryAPIPlatform("darwin,linux")
-		set := platformSetFromAPI(ctx, &platform)
+		set := osquery.PlatformSetFromAPI(&platform)
 
 		require.False(t, set.IsNull())
 		var platforms []string
@@ -87,7 +88,7 @@ func TestPlatformCommaStringSetRoundTrip(t *testing.T) {
 		set, d := types.SetValueFrom(ctx, types.StringType, []string{"windows", "linux"})
 		require.False(t, d.HasError())
 
-		platform, diags := platformCommaStringFromSet(ctx, set)
+		platform, diags := osquery.PlatformToAPI(ctx, set)
 		require.False(t, diags.HasError())
 		require.NotNil(t, platform)
 		assert.Equal(t, kbapi.SecurityOsqueryAPIPlatform("linux,windows"), *platform)
@@ -95,27 +96,27 @@ func TestPlatformCommaStringSetRoundTrip(t *testing.T) {
 
 	t.Run("round trip", func(t *testing.T) {
 		initial := kbapi.SecurityOsqueryAPIPlatform("linux,darwin")
-		set := platformSetFromAPI(ctx, &initial)
+		set := osquery.PlatformSetFromAPI(&initial)
 
-		platform, diags := platformCommaStringFromSet(ctx, set)
+		platform, diags := osquery.PlatformToAPI(ctx, set)
 		require.False(t, diags.HasError())
 		assert.Equal(t, kbapi.SecurityOsqueryAPIPlatform("darwin,linux"), *platform)
 	})
 
 	t.Run("null platform stays null", func(t *testing.T) {
-		assert.True(t, platformSetFromAPI(ctx, nil).IsNull())
+		assert.True(t, osquery.PlatformSetFromAPI(nil).IsNull())
 
 		empty := kbapi.SecurityOsqueryAPIPlatform("")
-		assert.True(t, platformSetFromAPI(ctx, &empty).IsNull())
+		assert.True(t, osquery.PlatformSetFromAPI(&empty).IsNull())
 
-		platform, diags := platformCommaStringFromSet(ctx, types.SetNull(types.StringType))
+		platform, diags := osquery.PlatformToAPI(ctx, types.SetNull(types.StringType))
 		require.False(t, diags.HasError())
 		assert.Nil(t, platform)
 	})
 
 	t.Run("trims whitespace after comma", func(t *testing.T) {
 		platform := kbapi.SecurityOsqueryAPIPlatform("linux, darwin ,windows")
-		set := platformSetFromAPI(ctx, &platform)
+		set := osquery.PlatformSetFromAPI(&platform)
 
 		var platforms []string
 		diags := set.ElementsAs(ctx, &platforms, false)
@@ -133,7 +134,7 @@ func TestEcsMappingThreeShapes(t *testing.T) {
 			"process.name": {Field: new("cmdline")},
 		}
 
-		mapping, diags := ecsMappingMapFromAPI(ctx, &api)
+		mapping, diags := osquery.ECSMappingMapFromAPI(&api)
 		require.False(t, diags.HasError())
 
 		var m ecsMappingModel
@@ -143,7 +144,7 @@ func TestEcsMappingThreeShapes(t *testing.T) {
 		assert.True(t, m.Value.IsNull())
 		assert.True(t, m.Values.IsNull())
 
-		roundTrip, diags := ecsMappingMapToAPI(ctx, mapping)
+		roundTrip, diags := osquery.ECSMappingMapToAPI(ctx, mapping)
 		require.False(t, diags.HasError())
 		require.NotNil(t, roundTrip)
 		assert.Equal(t, new("cmdline"), (*roundTrip)["process.name"].Field)
@@ -157,7 +158,7 @@ func TestEcsMappingThreeShapes(t *testing.T) {
 			"host.name": {Value: &val},
 		}
 
-		mapping, diags := ecsMappingMapFromAPI(ctx, &api)
+		mapping, diags := osquery.ECSMappingMapFromAPI(&api)
 		require.False(t, diags.HasError())
 
 		var m ecsMappingModel
@@ -167,7 +168,7 @@ func TestEcsMappingThreeShapes(t *testing.T) {
 		assert.Equal(t, "literal", m.Value.ValueString())
 		assert.True(t, m.Values.IsNull())
 
-		roundTrip, diags := ecsMappingMapToAPI(ctx, mapping)
+		roundTrip, diags := osquery.ECSMappingMapToAPI(ctx, mapping)
 		require.False(t, diags.HasError())
 		require.NotNil(t, roundTrip)
 
@@ -184,7 +185,7 @@ func TestEcsMappingThreeShapes(t *testing.T) {
 			"tags": {Value: &val},
 		}
 
-		mapping, diags := ecsMappingMapFromAPI(ctx, &api)
+		mapping, diags := osquery.ECSMappingMapFromAPI(&api)
 		require.False(t, diags.HasError())
 
 		var m ecsMappingModel
@@ -198,7 +199,7 @@ func TestEcsMappingThreeShapes(t *testing.T) {
 		require.False(t, valueDiags.HasError())
 		assert.Equal(t, []string{"a", "b"}, values)
 
-		roundTrip, diags := ecsMappingMapToAPI(ctx, mapping)
+		roundTrip, diags := osquery.ECSMappingMapToAPI(ctx, mapping)
 		require.False(t, diags.HasError())
 		require.NotNil(t, roundTrip)
 
@@ -213,7 +214,7 @@ func TestEcsMappingThreeShapes(t *testing.T) {
 
 		api := kbapi.SecurityOsqueryAPIECSMapping{"bad.key": item}
 
-		_, diags := ecsMappingMapFromAPI(ctx, &api)
+		_, diags := osquery.ECSMappingMapFromAPI(&api)
 		require.True(t, diags.HasError())
 		assert.Contains(t, diags[0].Detail(), `ecs_mapping["bad.key"]`)
 	})
@@ -226,7 +227,7 @@ func TestEcsMappingThreeShapes(t *testing.T) {
 			"conflict": {Field: new("col"), Value: &val},
 		}
 
-		_, diags := ecsMappingMapFromAPI(ctx, &api)
+		_, diags := osquery.ECSMappingMapFromAPI(&api)
 		require.True(t, diags.HasError())
 		assert.Contains(t, diags[0].Detail(), `ecs_mapping["conflict"]`)
 		assert.Contains(t, diags[0].Detail(), "both field and value")

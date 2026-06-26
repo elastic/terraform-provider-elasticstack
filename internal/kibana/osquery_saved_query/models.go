@@ -156,7 +156,7 @@ func (m *osquerySavedQueryBaseModel) populateSharedFields(
 		m.SavedObjectID = types.StringValue(savedObjectID)
 	}
 	m.Query = typeutils.StringishPointerValue(query)
-	m.Description = optionalStringPointerValue(description)
+	m.Description = typeutils.TrimmedStringishPointerValue(description)
 	m.Platform = osquery.PlatformSetFromAPI(platform)
 	m.Interval = interval
 	m.Version = version
@@ -212,18 +212,6 @@ func (e ecsMapping) toAPIType() (kbapi.SecurityOsqueryAPIECSMappingItem, diag.Di
 func ecsMappingFromAPIType(item kbapi.SecurityOsqueryAPIECSMappingItem) (ecsMapping, diag.Diagnostics) {
 	result, diags := osquery.ECSMappingFromAPIType("", item)
 	return ecsMapping(result), diags
-}
-
-func ecsMappingMapFromAPI(_ context.Context, api *kbapi.SecurityOsqueryAPIECSMapping) (types.Map, diag.Diagnostics) {
-	return osquery.ECSMappingMapFromAPI(api)
-}
-
-func platformSetFromAPI(platform *kbapi.SecurityOsqueryAPIPlatform) types.Set {
-	return osquery.PlatformSetFromAPI(platform)
-}
-
-func platformToAPI(ctx context.Context, platform types.Set) (*kbapi.SecurityOsqueryAPIPlatform, diag.Diagnostics) {
-	return osquery.PlatformToAPI(ctx, platform)
 }
 
 func intervalFromCreateAPI(interval *kbapi.SecurityOsqueryAPICreateSavedQueryResponse_Data_Interval) (types.Int64, diag.Diagnostics) {
@@ -330,14 +318,6 @@ func versionStringValue(value string) types.String {
 	}
 
 	return types.StringValue(value)
-}
-
-func optionalStringPointerValue[T ~string](value *T) types.String {
-	if value == nil || strings.TrimSpace(string(*value)) == "" {
-		return types.StringNull()
-	}
-
-	return types.StringValue(string(*value))
 }
 
 func parseIntervalString(value string) (types.Int64, diag.Diagnostics) {
