@@ -1,6 +1,6 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
-### Requirement: Create behavior — omit id when unset (REQ-018 addendum)
+### Requirement: Create behavior — omit id when unset (REQ-038)
 
 When `policy_id` is not set in config (null or unknown), the resource SHALL omit the `id`
 field from the Fleet Create Agent Policy POST body entirely, allowing Fleet to auto-generate
@@ -28,13 +28,14 @@ A supplied `policy_id` value SHALL satisfy all of the following constraints:
 1. Length is between 1 and 255 characters (inclusive).
 2. Does not contain `/` (path separator).
 3. Does not contain `..` (traversal sequence).
-4. Is not equal to any of the reserved keys: `__proto__`, `constructor`, `prototype`.
+4. Does not contain any of the reserved keys as a substring: `__proto__`, `constructor`,
+   `prototype` (per Kibana's "must not contain" wording).
 
 When any constraint is violated, the resource SHALL surface a plan-time error diagnostic
 naming the violated constraint. The validator SHALL NOT produce an error for null or unknown
-values (those are treated as "not set" and the id field is omitted per REQ-018 addendum
-above). An explicit empty string (`policy_id = ""`) SHALL be rejected as a length-0
-violation of constraint 1.
+values (those are treated as "not set" and the id field is omitted per REQ-038 above). An
+explicit empty string (`policy_id = ""`) SHALL be rejected as a length-0 violation of
+constraint 1.
 
 #### Scenario: Valid explicit policy_id passes validation
 
@@ -53,7 +54,7 @@ violation of constraint 1.
 - GIVEN `policy_id` is not set in config (null or unknown)
 - WHEN a plan is generated
 - THEN the plan-time validator SHALL NOT produce an error
-- AND the `id` field SHALL be omitted from the POST body (per REQ-018 addendum)
+- AND the `id` field SHALL be omitted from the POST body (per REQ-038)
 
 #### Scenario: policy_id with path separator fails validation
 
@@ -73,8 +74,15 @@ violation of constraint 1.
 - WHEN a plan is generated
 - THEN a plan-time error diagnostic SHALL be produced indicating the length constraint
 
-#### Scenario: Reserved key policy_id fails validation
+#### Scenario: Reserved key policy_id fails validation (bare)
 
 - GIVEN `policy_id = "__proto__"` (or `"constructor"` or `"prototype"`) is set in config
+- WHEN a plan is generated
+- THEN a plan-time error diagnostic SHALL be produced indicating the reserved-key constraint
+
+#### Scenario: Reserved key as substring fails validation
+
+- GIVEN `policy_id = "my-__proto__-policy"` (or any value containing `constructor` or
+  `prototype` as a substring) is set in config
 - WHEN a plan is generated
 - THEN a plan-time error diagnostic SHALL be produced indicating the reserved-key constraint

@@ -48,7 +48,9 @@ The validator enforces the exact constraints from the Kibana 9.3.6 error message
 1. Length between 1 and 255 characters (inclusive).
 2. Does not contain `/` (path separator).
 3. Does not contain `..` (traversal sequence).
-4. Is not one of the reserved keys: `__proto__`, `constructor`, `prototype`.
+4. Does not contain any of the reserved keys as a substring: `__proto__`, `constructor`,
+   `prototype`. (Kibana's error message says "must not contain ... reserved keys", so the
+   check is `strings.Contains`, not equality.)
 
 The validator returns early (no error) for null or unknown values — those are not
 user-supplied IDs. An explicit empty string (`policy_id = ""`) is treated as a length-0
@@ -72,11 +74,25 @@ user sees the error before any infrastructure change occurs.
 
 The update request body does not include an `id` field; it uses `policy_id` from state in the request path (`PUT /api/fleet/agent_policies/{agentPolicyId}`). This bug is specific to the create payload (`toAPICreateModel`) and does not require a corresponding change for updates.
 
+### Decision 4: Defer the same fix for sibling ID fields
+
+`DataOutputId`, `DownloadSourceId`, `FleetServerHostId`, and `MonitoringOutputId` (also using
+raw `ValueStringPointer()` at `models.go:387–390`) are `Optional: true` only — no `Computed`,
+no `UseStateForUnknown`. They cannot reach the unknown state at create time, so they return
+`nil` (not `&""`) and are correctly omitted from the body. There is no current breakage.
+
+Converting them to `OptionalString` proactively was considered and **deferred**:
+
+- The only behavioral delta would be for `field = ""` in config, which would switch from
+  sending `"…": ""` to omitting the field. That edge case is unverified against Kibana and
+  is out of scope for a regression fix.
+- This PR is scoped to the Kibana 9.3.6 regression. Expanding to "harden other fields too"
+  enlarges the review and rollback surface.
+- If any of these four fields later gains `Computed: true` (or a `UseStateForUnknown` plan
+  modifier), it would hit the identical bug. At that point — not before — the conversion
+  should be done as part of the schema change.
+
 ## Open questions
 
-- Should `DataOutputId`, `DownloadSourceId`, `FleetServerHostId`, and `MonitoringOutputId`
-  (also using raw `ValueStringPointer()` at `models.go:387–390`) be audited? Those are null
-  (not unknown) at create time so there is no current breakage, but a follow-up audit may be
-  worth doing.
 - Is a unit test for `toAPICreateModel` with `PolicyID = types.StringUnknown()` in scope for
   this PR? Recommended to include to prevent regression.

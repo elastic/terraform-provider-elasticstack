@@ -4,10 +4,6 @@
   `Id: model.PolicyID.ValueStringPointer()` to `Id: typeutils.OptionalString(model.PolicyID)`.
   `typeutils` is already imported; no new import is required.
 
-- [ ] 1.2 Verify that `typeutils` is already imported in `models.go`
-  (it is, at `import` line). Confirm the generated `KibanaHTTPAPIsNewAgentPolicy.Id` field
-  carries `json:"id,omitempty"` (it does, at `generated/kbapi/kibana.gen.go:53172`).
-
 ## 2. Plan-time policy_id validator
 
 - [ ] 2.1 Create `internal/fleet/agentpolicy/validators.go` with a struct `policyIDValidator`
@@ -22,7 +18,8 @@
     Explicit empty string (`""`) is rejected here as a length-0 violation.
   - Return an error if the value contains `/`.
   - Return an error if the value contains `..`.
-  - Return an error if the value equals one of `__proto__`, `constructor`, `prototype`.
+  - Return an error if the value contains any of the substrings `__proto__`, `constructor`,
+    `prototype`. (Substring match, not equality — per Kibana's "must not contain" wording.)
   - Each check should produce an error diagnostic naming the violated constraint.
 
 - [ ] 2.4 In `internal/fleet/agentpolicy/schema.go`, add `Validators: []validator.String{policyIDValidator{}}`
@@ -42,9 +39,19 @@
   - Length 256 → error.
   - Contains `/` → error.
   - Contains `..` → error.
-  - Equals `__proto__` → error.
-  - Equals `constructor` → error.
-  - Equals `prototype` → error.
+  - Bare `__proto__`, `constructor`, `prototype` → error.
+  - Contains `__proto__`, `constructor`, or `prototype` as a substring (e.g.
+    `"my-__proto__-policy"`) → error.
+
+- [ ] 3.3 Add an acceptance test in `internal/fleet/agentpolicy/` (or extend an existing one)
+  that creates an `elasticstack_fleet_agent_policy` resource without setting `policy_id`,
+  applies against the running Kibana, and asserts the resource is created successfully with
+  `policy_id` populated by Fleet and an empty plan on re-plan. This exercises the
+  plan→apply→API round trip that the regression broke.
+
+- [ ] 3.4 Add a `PlanOnly` (or equivalent) acceptance test step asserting that
+  `policy_id = ""` and `policy_id = "bad/id"` each fail at plan time with the corresponding
+  validator error, confirming the validator is wired into the schema correctly.
 
 ## 4. Changelog entry
 
