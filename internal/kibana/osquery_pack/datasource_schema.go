@@ -20,6 +20,7 @@ package osquerypack
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -112,30 +113,6 @@ func queryDataSourceNestedAttributes() map[string]schema.Attribute {
 			MarkdownDescription: "References an `elasticstack_kibana_osquery_saved_query` resource.",
 			Computed:            true,
 		},
-		attrEcsMapping: ecsMappingDataSourceSchema(),
-	}
-}
-
-func ecsMappingDataSourceSchema() schema.MapNestedAttribute {
-	return schema.MapNestedAttribute{
-		MarkdownDescription: "Maps query result columns to ECS field paths.",
-		Computed:            true,
-		NestedObject: schema.NestedAttributeObject{
-			Attributes: map[string]schema.Attribute{
-				attrEcsMappingField: schema.StringAttribute{
-					MarkdownDescription: "Query result column name to map from.",
-					Computed:            true,
-				},
-				attrEcsMappingValue: schema.StringAttribute{
-					MarkdownDescription: "Static scalar ECS mapping value.",
-					Computed:            true,
-				},
-				attrEcsMappingValues: schema.SetAttribute{
-					MarkdownDescription: "Static array ECS mapping values.",
-					Computed:            true,
-					ElementType:         types.StringType,
-				},
-			},
-		},
+		attrEcsMapping: osquery.ECSMappingDataSourceSchema(),
 	}
 }
