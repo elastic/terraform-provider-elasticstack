@@ -29,6 +29,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestToAPICreateModel_PolicyIDUnknownOmitsID(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	model := &agentPolicyModel{
+		Name:      types.StringValue("test-policy"),
+		Namespace: types.StringValue("default"),
+		PolicyID:  types.StringUnknown(),
+	}
+
+	body, diags := model.toAPICreateModel(ctx, agentPolicyFeatures{})
+	assert.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+	assert.Nil(t, body.Id, "expected Id to be nil when PolicyID is unknown, got %v", body.Id)
+}
+
 func TestMergeAgentFeature(t *testing.T) {
 	tests := []struct {
 		name       string
