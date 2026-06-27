@@ -73,6 +73,9 @@ func getSchema() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
 				},
+				Validators: []validator.String{
+					policyIDValidator{},
+				},
 			},
 			"name": schema.StringAttribute{
 				Description: "The name of the agent policy.",
