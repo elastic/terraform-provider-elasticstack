@@ -18,14 +18,12 @@
 package securitydetectionrule
 
 import (
-	"context"
 	"regexp"
 	"sync"
 
 	kibanavalidators "github.com/elastic/terraform-provider-elasticstack/internal/kibana/validators"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -34,7 +32,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
@@ -1066,41 +1063,4 @@ func getThreatSubtechniqueElementType() attr.Type {
 	threatType := GetSchema().Attributes["threat"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
 	techniqueType := threatType.AttributeTypes()["technique"].(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
 	return techniqueType.AttributeTypes()["subtechnique"].(attr.TypeWithElementType).ElementType()
-}
-
-// ValidateConfig validates the configuration for a security detection rule resource.
-// It ensures that the configuration meets the following requirements:
-//
-// - For rule types "esql" and "machine_learning", no additional validation is performed
-// - For other rule types, exactly one of 'index' or 'data_view_id' must be specified
-// - Both 'index' and 'data_view_id' cannot be set simultaneously
-//
-// The function adds appropriate error diagnostics if validation fails.
-func (r securityDetectionRuleResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
-	var data Data
-
-	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if data.Type.ValueString() == ruleTypeESQL || data.Type.ValueString() == ruleTypeMachineLearning {
-		return
-	}
-
-	if typeutils.IsKnown(data.Index) && typeutils.IsKnown(data.DataViewID) {
-		resp.Diagnostics.AddError(
-			"Invalid Configuration",
-			"Both 'index' and 'data_view_id' cannot be set at the same time.",
-		)
-
-	}
-
-	if data.Index.IsNull() && data.DataViewID.IsNull() {
-		resp.Diagnostics.AddError(
-			"Invalid Configuration",
-			"One of 'index' or 'data_view_id' must be set.",
-		)
-	}
 }
