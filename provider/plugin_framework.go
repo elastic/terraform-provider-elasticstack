@@ -268,7 +268,6 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		logstash.NewLogstashPipelineResource,
 		maintenancewindow.NewResource,
 		osquerypack.NewResource,
-		kibanatag.NewResource,
 		osquerysavedquery.NewResource,
 		enrich.NewEnrichPolicyResource,
 		synonyms.NewSynonymSetResource,
@@ -313,7 +312,9 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 }
 
 func (p *Provider) experimentalResources(_ context.Context) []func() resource.Resource {
-	return []func() resource.Resource{}
+	return []func() resource.Resource{
+		kibanatag.NewResource,
+	}
 }
 
 func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource {
@@ -329,7 +330,6 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		securityentitystoreentities.NewDataSource,
 		connectors.NewDataSource,
 		osquerysavedquery.NewDataSource,
-		kibanatag.NewDataSource,
 		agentbuilderagent.NewDataSource,
 		agentbuilderskill.NewDataSource,
 		agentbuildertool.NewDataSource,
@@ -391,5 +391,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 }
 
 func (p *Provider) experimentalDataSources(_ context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{}
+	return []func() datasource.DataSource{
+		kibanatag.NewDataSource,
+	}
 }

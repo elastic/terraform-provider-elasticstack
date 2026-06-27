@@ -448,7 +448,9 @@ For Kibana-side behaviour of dashboard permissions, see [Kibana privileges](http
 tags = ["advanced", "production"]
 ```
 
-Tags are stored in Kibana's Saved Objects layer. IDs are typically UUIDs when created in the UI; **string names work** when they match existing tag labels in the space. For repeatable infrastructure across environments, manage tags with `elasticstack_kibana_tag` and reference the tag IDs in Terraform.
+Tags are stored in Kibana's Saved Objects layer. IDs are typically UUIDs when created in the UI; **string names work** when they match existing tag labels in the space. For repeatable infrastructure across environments, create tags consistently (Kibana UI, [Saved Objects API](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-saved-objects), or your organisation's tagging automation) and reference the same IDs in Terraform.
+
+The provider does not yet ship a dedicated `elasticstack_kibana_tag` resource; manage tag lifecycle through Kibana or the API, then reference tag IDs on the dashboard resource.
 
 ## Complete configuration
 
