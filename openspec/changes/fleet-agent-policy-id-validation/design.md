@@ -31,10 +31,11 @@ causes `encoding/json` to omit the field entirely — Fleet then auto-generates 
 pattern for this class of problem in the codebase (see `internal/utils/typeutils/tfsdk_primitives.go`).
 Using it keeps the fix one line and consistent with other optional-string fields.
 
-**Side effect:** if a user explicitly sets `policy_id = ""` in config, `OptionalString` will
-return `nil` and the field will be omitted (treated as "not set"). This is acceptable:
-the Kibana API rejects `"id": ""` anyway, and the plan-time validator (Decision 2) will catch
-this case and surface a clear error before any API call.
+**Interaction with the validator:** an explicit `policy_id = ""` is rejected by the plan-time
+validator (Decision 2) as a length-0 violation, so it never reaches `toAPICreateModel`.
+`OptionalString` also treats `""` as "not set" and returns `nil`, which acts as defense in depth
+should a future code path bypass the validator — but the user-visible behavior is the
+plan-time error, not silent field omission.
 
 ### Decision 2: Plan-time `policy_id` validator
 
@@ -49,8 +50,9 @@ The validator enforces the exact constraints from the Kibana 9.3.6 error message
 3. Does not contain `..` (traversal sequence).
 4. Is not one of the reserved keys: `__proto__`, `constructor`, `prototype`.
 
-The validator returns early (no error) for null, unknown, or empty-string values — those
-cases are handled by Decision 1 (nil-guard) or are not user-supplied IDs.
+The validator returns early (no error) for null or unknown values — those are not
+user-supplied IDs. An explicit empty string (`policy_id = ""`) is treated as a length-0
+violation and produces a plan-time error (constraint 1).
 
 The validator is attached to the `policy_id` attribute in `schema.go`:
 
@@ -72,12 +74,6 @@ The update request body does not include an `id` field; it uses `policy_id` from
 
 ## Open questions
 
-- Should `policy_id = ""` (explicit empty string) be a validator error rather than being
-  silently treated as "not set"? Current design treats it the same as unset via Decision 1
-  (consistent with `OptionalString`). The plan-time validator skips empty strings, so no
-  error is surfaced. This is consistent with the existing behavior: users who set
-  `policy_id = ""` almost certainly made a mistake, but the validator can be tightened in a
-  follow-up.
 - Should `DataOutputId`, `DownloadSourceId`, `FleetServerHostId`, and `MonitoringOutputId`
   (also using raw `ValueStringPointer()` at `models.go:387–390`) be audited? Those are null
   (not unknown) at create time so there is no current breakage, but a follow-up audit may be

@@ -17,8 +17,9 @@
   human-readable description of the constraint.
 
 - [ ] 2.3 Implement `ValidateString` on `policyIDValidator`:
-  - Return immediately (no error) if `req.ConfigValue` is null, unknown, or empty string.
-  - Return an error if the value is longer than 255 characters or has zero length.
+  - Return immediately (no error) if `req.ConfigValue` is null or unknown.
+  - Return an error if the value length is not between 1 and 255 characters (inclusive).
+    Explicit empty string (`""`) is rejected here as a length-0 violation.
   - Return an error if the value contains `/`.
   - Return an error if the value contains `..`.
   - Return an error if the value equals one of `__proto__`, `constructor`, `prototype`.
@@ -36,7 +37,7 @@
 - [ ] 3.2 Add unit tests for `policyIDValidator` covering:
   - Null value → no error.
   - Unknown value → no error.
-  - Empty string → no error (handled by nil-guard, not validator).
+  - Empty string → error (length-0 violates the 1–255 constraint).
   - Valid ID → no error.
   - Length 256 → error.
   - Contains `/` → error.

@@ -2,9 +2,10 @@
 
 ### Requirement: Create behavior — omit id when unset (REQ-018 addendum)
 
-When `policy_id` is not set in config (null, unknown, or empty string), the resource SHALL
-omit the `id` field from the Fleet Create Agent Policy POST body entirely, allowing Fleet to
-auto-generate a UUID. The resource SHALL NOT send `"id": ""` to the API.
+When `policy_id` is not set in config (null or unknown), the resource SHALL omit the `id`
+field from the Fleet Create Agent Policy POST body entirely, allowing Fleet to auto-generate
+a UUID. The resource SHALL NOT send `"id": ""` to the API. An explicit `policy_id = ""` in
+config is rejected at plan time by REQ-037 and therefore never reaches the create payload.
 
 #### Scenario: policy_id unset — id omitted from create body
 
@@ -30,9 +31,10 @@ A supplied `policy_id` value SHALL satisfy all of the following constraints:
 4. Is not equal to any of the reserved keys: `__proto__`, `constructor`, `prototype`.
 
 When any constraint is violated, the resource SHALL surface a plan-time error diagnostic
-naming the violated constraint. The validator SHALL NOT produce an error for null, unknown,
-or empty-string values (those are treated as "not set" and the id field is omitted per
-REQ-018 addendum above).
+naming the violated constraint. The validator SHALL NOT produce an error for null or unknown
+values (those are treated as "not set" and the id field is omitted per REQ-018 addendum
+above). An explicit empty string (`policy_id = ""`) SHALL be rejected as a length-0
+violation of constraint 1.
 
 #### Scenario: Valid explicit policy_id passes validation
 
@@ -40,12 +42,18 @@ REQ-018 addendum above).
 - WHEN a plan is generated
 - THEN no validation errors SHALL be produced
 
-#### Scenario: Empty policy_id is not a validator error
+#### Scenario: Explicit empty policy_id fails validation
 
-- GIVEN `policy_id = ""` is set in config (or policy_id is not set)
+- GIVEN `policy_id = ""` is set in config
+- WHEN a plan is generated
+- THEN a plan-time error diagnostic SHALL be produced indicating the length constraint
+
+#### Scenario: Unset policy_id passes validation
+
+- GIVEN `policy_id` is not set in config (null or unknown)
 - WHEN a plan is generated
 - THEN the plan-time validator SHALL NOT produce an error
-- AND the `id` field SHALL be omitted from the POST body (handled by create nil-guard)
+- AND the `id` field SHALL be omitted from the POST body (per REQ-018 addendum)
 
 #### Scenario: policy_id with path separator fails validation
 
