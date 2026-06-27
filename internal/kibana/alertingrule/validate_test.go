@@ -19,12 +19,19 @@ package alertingrule
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kibanacustomtypes"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateRuleParamsIndexThreshold(t *testing.T) {
@@ -944,4 +951,110 @@ func TestDiscriminatorValidationCoversAllKbapiRuleTypes(t *testing.T) {
 			t.Errorf("override table contains rule type %q that is not in ValueByDiscriminator()", ruleTypeID)
 		}
 	}
+}
+
+func TestValidateNotifyWhenThrottleFrequencyExclusivity_notifyWhenAndFrequency(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	data := alertingRuleModel{
+		NotifyWhen: types.StringValue("onActiveAlert"),
+		Actions:    testActionsList(ctx, t, true),
+	}
+	validateNotifyWhenThrottleFrequencyExclusivity(ctx, &data, &diags)
+	assert.True(t, diags.HasError())
+}
+
+func TestValidateNotifyWhenThrottleFrequencyExclusivity_throttleAndFrequency(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	data := alertingRuleModel{
+		Throttle: kibanacustomtypes.NewAlertingDurationValue("5m"),
+		Actions:  testActionsList(ctx, t, true),
+	}
+	validateNotifyWhenThrottleFrequencyExclusivity(ctx, &data, &diags)
+	assert.True(t, diags.HasError())
+}
+
+func TestValidateNotifyWhenThrottleFrequencyExclusivity_frequencyOnly(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	data := alertingRuleModel{
+		NotifyWhen: types.StringNull(),
+		Throttle:   kibanacustomtypes.NewAlertingDurationNull(),
+		Actions:    testActionsList(ctx, t, true),
+	}
+	validateNotifyWhenThrottleFrequencyExclusivity(ctx, &data, &diags)
+	assert.False(t, diags.HasError())
+}
+
+func TestValidateNotifyWhenThrottleFrequencyExclusivity_ruleLevelOnly(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	data := alertingRuleModel{
+		NotifyWhen: types.StringValue("onActiveAlert"),
+		Actions:    testActionsList(ctx, t, false),
+	}
+	validateNotifyWhenThrottleFrequencyExclusivity(ctx, &data, &diags)
+	assert.False(t, diags.HasError())
+}
+
+func TestValidateNotifyWhenThrottleFrequencyExclusivity_noFalsePositiveWhenFrequencyAbsent(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	data := alertingRuleModel{
+		NotifyWhen: types.StringValue("onActiveAlert"),
+		Throttle:   kibanacustomtypes.NewAlertingDurationValue("5m"),
+		Actions:    testActionsList(ctx, t, false),
+	}
+	validateNotifyWhenThrottleFrequencyExclusivity(ctx, &data, &diags)
+	assert.False(t, diags.HasError())
+}
+
+func TestValidateNotifyWhenThrottleFrequencyExclusivity_prefersNotifyWhenDiagnostic(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	data := alertingRuleModel{
+		NotifyWhen: types.StringValue("onActiveAlert"),
+		Throttle:   kibanacustomtypes.NewAlertingDurationValue("5m"),
+		Actions:    testActionsList(ctx, t, true),
+	}
+	validateNotifyWhenThrottleFrequencyExclusivity(ctx, &data, &diags)
+	require.True(t, diags.HasError())
+	if assert.Len(t, diags, 1) {
+		assert.Contains(t, diags[0].Summary(), "notify_when")
+	}
+}
+
+func TestValidateNotifyWhenThrottleFrequencyExclusivity_emptyRuleNotifyWhenIgnored(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	data := alertingRuleModel{
+		NotifyWhen: types.StringValue("   "),
+		Throttle:   kibanacustomtypes.NewAlertingDurationNull(),
+		Actions:    testActionsList(ctx, t, true),
+	}
+	validateNotifyWhenThrottleFrequencyExclusivity(ctx, &data, &diags)
+	assert.False(t, diags.HasError())
+}
+
+func TestConfigActionsIncludeKnownFrequencyBlock(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	assert.True(t, configActionsIncludeKnownFrequencyBlock(ctx, testActionsList(ctx, t, true), &diags))
+	assert.False(t, diags.HasError())
+
+	diags = nil
+	assert.False(t, configActionsIncludeKnownFrequencyBlock(ctx, testActionsList(ctx, t, false), &diags))
+	assert.False(t, diags.HasError())
+
+	diags = nil
+	assert.False(t, configActionsIncludeKnownFrequencyBlock(ctx, types.ListUnknown(types.ObjectType{AttrTypes: getActionsAttrTypes()}), &diags))
 }
