@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -48,7 +49,8 @@ func (policyIDValidator) ValidateString(_ context.Context, req validator.StringR
 	}
 
 	value := req.ConfigValue.ValueString()
-	if len(value) < 1 || len(value) > 255 {
+	runeCount := utf8.RuneCountInString(value)
+	if runeCount < 1 || runeCount > 255 {
 		resp.Diagnostics.Append(diag.NewAttributeErrorDiagnostic(
 			req.Path,
 			"Invalid policy_id length",

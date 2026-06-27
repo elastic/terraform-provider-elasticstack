@@ -78,7 +78,8 @@ func TestAccResourceAgentPolicyOmittedPolicyID(t *testing.T) {
 					"policy_name":  config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
 					"skip_destroy": config.BoolVariable(false),
 				},
-				PlanOnly: true,
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
 			},
 		},
 	})
