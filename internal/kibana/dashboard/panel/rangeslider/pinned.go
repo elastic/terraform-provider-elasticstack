@@ -18,59 +18,34 @@
 package rangeslider
 
 import (
-	"context"
-
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-type pinnedHandler struct{}
+type pinnedHandler = panelkit.ControlPinnedHandler[
+	kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl,
+	kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl,
+]
 
-func (pinnedHandler) FromAPI(ctx context.Context, prior *models.PinnedPanelModel, raw kbapi.DashboardPinnedPanels_Item) (models.PinnedPanelModel, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	group, err := raw.AsKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl()
-	if err != nil {
-		diags.AddError("Failed to parse pinned range slider control", err.Error())
-		return models.PinnedPanelModel{}, diags
+func newPinnedHandler() pinnedHandler {
+	return pinnedHandler{
+		PanelTypeDiscriminator: panelType,
+		AsGroup: func(raw kbapi.DashboardPinnedPanels_Item) (kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl, error) {
+			return raw.AsKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl()
+		},
+		BuildPanel: func() kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl {
+			return kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{
+				Grid: kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
+			}
+		},
+		PopulateFromAPI: PopulateFromAPI,
+		BuildConfig:     BuildConfig,
+		FromGroup: func(item *kbapi.DashboardPinnedPanels_Item, group kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl) error {
+			return item.FromKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl(group)
+		},
+		ParseErrSummary:     "Failed to parse pinned range slider control",
+		RemapFromErrSummary: "Failed to remap pinned range slider control from API",
+		RemapToErrSummary:   "Failed to remap pinned range slider control",
+		FromGroupErrSummary: "Failed to build pinned range slider control payload",
 	}
-	var rsPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl
-	if err := panelkit.RemapViaJSON(group, &rsPanel); err != nil {
-		diags.AddError("Failed to remap pinned range slider control from API", err.Error())
-		return models.PinnedPanelModel{}, diags
-	}
-
-	ppm, populateTf := models.SeedPinnedPanelForRead(prior, panelType)
-	pm := ppm.SyntheticPanel()
-	populateDiags := PopulateFromAPI(ctx, &pm, populateTf, &rsPanel)
-	diags.Append(populateDiags...)
-	if diags.HasError() {
-		return models.PinnedPanelModel{}, diags
-	}
-	models.ApplyPinnedSiblingControlConfig(&ppm, panelType, &pm)
-	return ppm, diags
-}
-
-func (pinnedHandler) ToAPI(ppm models.PinnedPanelModel) (kbapi.DashboardPinnedPanels_Item, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	pm := ppm.SyntheticPanel()
-	rsPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{
-		Grid: kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
-	}
-	diags.Append(BuildConfig(pm, &rsPanel)...)
-	if diags.HasError() {
-		return kbapi.DashboardPinnedPanels_Item{}, diags
-	}
-	var group kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl
-	if err := panelkit.RemapViaJSON(rsPanel, &group); err != nil {
-		diags.AddError("Failed to remap pinned range slider control", err.Error())
-		return kbapi.DashboardPinnedPanels_Item{}, diags
-	}
-	var item kbapi.DashboardPinnedPanels_Item
-	if err := item.FromKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl(group); err != nil {
-		diags.AddError("Failed to build pinned range slider control payload", err.Error())
-		return kbapi.DashboardPinnedPanels_Item{}, diags
-	}
-	return item, diags
 }

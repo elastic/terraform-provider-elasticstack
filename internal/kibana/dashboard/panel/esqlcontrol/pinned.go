@@ -26,50 +26,37 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-type pinnedHandler struct{}
+type pinnedHandler = panelkit.ControlPinnedHandler[
+	kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControl,
+	kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl,
+]
 
-func (pinnedHandler) FromAPI(ctx context.Context, prior *models.PinnedPanelModel, raw kbapi.DashboardPinnedPanels_Item) (models.PinnedPanelModel, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	group, err := raw.AsKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControl()
-	if err != nil {
-		diags.AddError("Failed to parse pinned ES|QL control", err.Error())
-		return models.PinnedPanelModel{}, diags
+func newPinnedHandler() pinnedHandler {
+	return pinnedHandler{
+		PanelTypeDiscriminator: panelType,
+		AsGroup: func(raw kbapi.DashboardPinnedPanels_Item) (kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControl, error) {
+			return raw.AsKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControl()
+		},
+		BuildPanel: func() kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl {
+			return kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl{
+				Grid: kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
+				Type: kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControlTypeEsqlControl,
+			}
+		},
+		PopulateFromAPI: func(_ context.Context, pm *models.PanelModel, prior *models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl) diag.Diagnostics {
+			PopulateFromAPI(pm, prior, panel.Config)
+			return nil
+		},
+		BuildConfig: BuildConfig,
+		AfterRemapToGroup: func(group *kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControl) {
+			group.Type = kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControlTypeEsqlControl
+		},
+		FromGroup: func(item *kbapi.DashboardPinnedPanels_Item, group kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControl) error {
+			return item.FromKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControl(group)
+		},
+		ParseErrSummary:     "Failed to parse pinned ES|QL control",
+		RemapFromErrSummary: "Failed to remap pinned ES|QL control from API",
+		RemapToErrSummary:   "Failed to remap pinned ES|QL control",
+		FromGroupErrSummary: "Failed to build pinned ES|QL control payload",
 	}
-	var esqlPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl
-	if err := panelkit.RemapViaJSON(group, &esqlPanel); err != nil {
-		diags.AddError("Failed to remap pinned ES|QL control from API", err.Error())
-		return models.PinnedPanelModel{}, diags
-	}
-
-	ppm, populateTf := models.SeedPinnedPanelForRead(prior, panelType)
-	pm := ppm.SyntheticPanel()
-	PopulateFromAPI(&pm, populateTf, esqlPanel.Config)
-	models.ApplyPinnedSiblingControlConfig(&ppm, panelType, &pm)
-	_ = ctx
-	return ppm, diags
-}
-
-func (pinnedHandler) ToAPI(ppm models.PinnedPanelModel) (kbapi.DashboardPinnedPanels_Item, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	pm := ppm.SyntheticPanel()
-	esqlPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl{
-		Grid: kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
-		Type: kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControlTypeEsqlControl,
-	}
-	diags.Append(BuildConfig(pm, &esqlPanel)...)
-	if diags.HasError() {
-		return kbapi.DashboardPinnedPanels_Item{}, diags
-	}
-	var group kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControl
-	if err := panelkit.RemapViaJSON(esqlPanel, &group); err != nil {
-		diags.AddError("Failed to remap pinned ES|QL control", err.Error())
-		return kbapi.DashboardPinnedPanels_Item{}, diags
-	}
-	group.Type = kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControlTypeEsqlControl
-	var item kbapi.DashboardPinnedPanels_Item
-	if err := item.FromKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControl(group); err != nil {
-		diags.AddError("Failed to build pinned ES|QL control payload", err.Error())
-		return kbapi.DashboardPinnedPanels_Item{}, diags
-	}
-	return item, diags
 }

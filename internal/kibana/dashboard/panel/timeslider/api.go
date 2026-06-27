@@ -41,7 +41,7 @@ func (Handler) PopulateJSONDefaults(config map[string]any) map[string]any {
 	return config
 }
 
-func (Handler) PinnedHandler() iface.PinnedHandler { return pinnedHandler{} }
+func (Handler) PinnedHandler() iface.PinnedHandler { return newPinnedHandler() }
 
 func (Handler) AlignStateFromPlan(ctx context.Context, plan, state *models.PanelModel) {
 	_, _, _ = ctx, plan, state
