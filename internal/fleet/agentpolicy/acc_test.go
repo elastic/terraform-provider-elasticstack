@@ -98,8 +98,8 @@ func TestAccResourceAgentPolicyExplicitPolicyID(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
-					"policy_id":   config.StringVariable(explicitPolicyID),
+					"policy_name":  config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+					"policy_id":    config.StringVariable(explicitPolicyID),
 					"skip_destroy": config.BoolVariable(false),
 				},
 				Check: resource.ComposeTestCheckFunc(
@@ -120,31 +120,31 @@ func TestAccResourceAgentPolicyPolicyIDValidation(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_policy_id"),
 				PlanOnly:                 true,
-				ExpectError: regexp.MustCompile(`policy_id must be between 1 and 255 characters`),
+				ExpectError:              regexp.MustCompile(`policy_id must be between 1 and 255 characters`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_policy_id"),
 				PlanOnly:                 true,
-				ExpectError: regexp.MustCompile(`policy_id must not contain path separators`),
+				ExpectError:              regexp.MustCompile(`policy_id must not contain path separators`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("traversal_policy_id"),
 				PlanOnly:                 true,
-				ExpectError: regexp.MustCompile(`policy_id must not contain traversal sequences`),
+				ExpectError:              regexp.MustCompile(`policy_id must not contain traversal sequences`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("long_policy_id"),
 				PlanOnly:                 true,
-				ExpectError: regexp.MustCompile(`policy_id must be between 1 and 255 characters`),
+				ExpectError:              regexp.MustCompile(`policy_id must be between 1 and 255 characters`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("reserved_substring_policy_id"),
 				PlanOnly:                 true,
-				ExpectError: regexp.MustCompile(`policy_id must not contain reserved keys \("__proto__"\)`),
+				ExpectError:              regexp.MustCompile(`policy_id must not contain reserved keys \("__proto__"\)`),
 			},
 		},
 	})
