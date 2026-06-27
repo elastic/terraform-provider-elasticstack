@@ -66,12 +66,15 @@ func getSchema() schema.Schema {
 				},
 			},
 			"policy_id": schema.StringAttribute{
-				Description: "Unique identifier of the agent policy.",
+				Description: policyIDDescription,
 				Computed:    true,
 				Optional:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
+				},
+				Validators: []validator.String{
+					policyIDValidator{},
 				},
 			},
 			"name": schema.StringAttribute{

@@ -44,6 +44,113 @@ var minVersionAgentPolicyTamperProtectionWithDefend = version.Must(version.NewVe
 //go:embed testdata/TestAccResourceAgentPolicyFromSDK/main.tf
 var sdkCreateTestConfig string
 
+func TestAccResourceAgentPolicyOmittedPolicyID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionAgentPolicy, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+					"skip_destroy": config.BoolVariable(false),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttrWith("elasticstack_fleet_agent_policy.test_policy", "policy_id", func(value string) error {
+						if len(value) == 0 {
+							return errors.New("expected Fleet to auto-generate a non-empty policy_id")
+						}
+						return nil
+					}),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+					"skip_destroy": config.BoolVariable(false),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+func TestAccResourceAgentPolicyExplicitPolicyID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionAgentPolicy, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	explicitPolicyID := "tf-acc-" + sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+					"policy_id":    config.StringVariable(explicitPolicyID),
+					"skip_destroy": config.BoolVariable(false),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "policy_id", explicitPolicyID),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceAgentPolicyPolicyIDValidation(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_policy_id"),
+				PlanOnly:                 true,
+				ExpectError:              regexp.MustCompile(`policy_id must be between 1 and 255 characters`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_policy_id"),
+				PlanOnly:                 true,
+				ExpectError:              regexp.MustCompile(`policy_id must not contain path separators`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("traversal_policy_id"),
+				PlanOnly:                 true,
+				ExpectError:              regexp.MustCompile(`policy_id must not contain traversal sequences`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("long_policy_id"),
+				PlanOnly:                 true,
+				ExpectError:              regexp.MustCompile(`policy_id must be between 1 and 255 characters`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("reserved_substring_policy_id"),
+				PlanOnly:                 true,
+				ExpectError:              regexp.MustCompile(`policy_id must not contain reserved keys \("__proto__"\)`),
+			},
+		},
+	})
+}
+
 func TestAccResourceAgentPolicyFromSDK(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionAgentPolicy, versionutils.FlavorAny)
 
