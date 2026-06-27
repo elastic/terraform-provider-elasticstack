@@ -19,7 +19,7 @@ auto-generate a UUID. The resource SHALL NOT send `"id": ""` to the API.
 - WHEN create runs and the Fleet Create API is called
 - THEN the POST body SHALL contain `"id": "my-policy-id"`
 
-### Requirement: policy_id plan-time validation (REQ-036)
+### Requirement: policy_id plan-time validation (REQ-037)
 
 The resource SHALL validate `policy_id` at plan time when an explicit value is provided.
 A supplied `policy_id` value SHALL satisfy all of the following constraints:

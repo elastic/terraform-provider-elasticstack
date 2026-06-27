@@ -68,10 +68,7 @@ user sees the error before any infrastructure change occurs.
 
 ### Decision 3: No changes to `toAPIUpdateModel`
 
-The update path also calls `ValueStringPointer()` for the `Id` field in `toAPIUpdateModel`,
-but at update time the `policy_id` is always known (it was read back from state after create).
-Unknown state cannot occur on update. The update path is therefore unaffected by this bug and
-does not need a corresponding fix.
+The update request body does not include an `id` field; it uses `policy_id` from state in the request path (`PUT /api/fleet/agent_policies/{agentPolicyId}`). This bug is specific to the create payload (`toAPICreateModel`) and does not require a corresponding change for updates.
 
 ## Open questions
 

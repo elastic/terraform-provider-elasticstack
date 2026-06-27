@@ -4,7 +4,7 @@
   `Id: model.PolicyID.ValueStringPointer()` to `Id: typeutils.OptionalString(model.PolicyID)`.
   `typeutils` is already imported; no new import is required.
 
-- [ ] 1.2 Verify that `typeutils.OptionalString` is already imported and used in `models.go`
+- [ ] 1.2 Verify that `typeutils` is already imported in `models.go`
   (it is, at `import` line). Confirm the generated `KibanaHTTPAPIsNewAgentPolicy.Id` field
   carries `json:"id,omitempty"` (it does, at `generated/kbapi/kibana.gen.go:53172`).
 
@@ -25,8 +25,7 @@
   - Each check should produce an error diagnostic naming the violated constraint.
 
 - [ ] 2.4 In `internal/fleet/agentpolicy/schema.go`, add `Validators: []validator.String{policyIDValidator{}}`
-  to the `policy_id` attribute. Add the `validator` import from
-  `github.com/hashicorp/terraform-plugin-framework/schema/validator`.
+  to the `policy_id` attribute.
 
 ## 3. Unit tests
 
