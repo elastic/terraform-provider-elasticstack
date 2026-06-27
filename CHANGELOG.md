@@ -2,6 +2,10 @@
 
 ### Changes
 
+- Fix component and index template state upgrade when SDK stored empty strings for mappings, settings, or metadata. ([#3914](https://github.com/elastic/terraform-provider-elasticstack/pull/3914))
+- Add `elasticstack_kibana_osquery_pack` resource and data source for managing user-defined Osquery query packs and reading packs (including prebuilt read-only packs). ([#3893](https://github.com/elastic/terraform-provider-elasticstack/pull/3893))
+- Document supported `check` and `response` sub-keys (including `check.response.status`) on the `elasticstack_kibana_synthetics_monitor` HTTP attribute. ([#3895](https://github.com/elastic/terraform-provider-elasticstack/pull/3895))
+- Fix empty string settings in snapshot repository blocks by preserving prior state when Elasticsearch omits those keys from the API response. ([#3719](https://github.com/elastic/terraform-provider-elasticstack/pull/3719))
 - Add advanced_settings map to elasticstack_fleet_elastic_defend_integration_policy for Elastic Defend advanced policy configuration. ([#3845](https://github.com/elastic/terraform-provider-elasticstack/pull/3845))
 - Add `elasticstack_kibana_osquery_saved_query` resource and data source for managing Kibana Osquery saved queries. ([#3883](https://github.com/elastic/terraform-provider-elasticstack/pull/3883))
 
