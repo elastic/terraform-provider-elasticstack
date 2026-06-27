@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -145,8 +146,8 @@ func TestSchema_ecsMappingNestedObjectValidatorsWired(t *testing.T) {
 	require.True(t, ok)
 	require.NotEmpty(t, fromGetSchema.NestedObject.Validators, "ecs_mapping from getSchema must attach nested object validators")
 
-	fromHelper := ecsMappingSchema()
-	require.NotEmpty(t, fromHelper.NestedObject.Validators, "ecsMappingSchema must attach nested object validators")
+	fromHelper := osquery.ECSMappingSchema()
+	require.NotEmpty(t, fromHelper.NestedObject.Validators, "osquery.ECSMappingSchema must attach nested object validators")
 }
 
 func TestSchema_ecsMappingNestedObjectValidators(t *testing.T) {
