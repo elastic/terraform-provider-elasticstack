@@ -315,3 +315,29 @@ func mustS3Object(ctx context.Context, t *testing.T, s3 S3Settings) types.Object
 	require.False(t, diags.HasError(), diags.Errors())
 	return obj
 }
+
+// TestSettingsToGcsAbsentFieldsAreNull verifies that optional string fields
+// absent in the API response are mapped to null (not empty string). This
+// prevents the "inconsistent result after apply" error described in issue #3709,
+// where the plan holds "" but the post-apply read returns null.
+func TestSettingsToGcsAbsentFieldsAreNull(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	repo := &esclients.SnapshotRepositoryInfo{
+		Type: "gcs",
+		Settings: map[string]any{
+			"bucket": "my-bucket",
+		},
+	}
+
+	obj, diags := settingsToGcs(ctx, repo)
+	require.False(t, diags.HasError(), diags.Errors())
+
+	var gcs GcsSettings
+	require.False(t, obj.As(ctx, &gcs, basetypes.ObjectAsOptions{}).HasError())
+
+	require.True(t, gcs.ChunkSize.IsNull(), "chunk_size should be null when absent from API")
+	require.True(t, gcs.MaxSnapshotBytesPerSec.IsNull(), "max_snapshot_bytes_per_sec should be null when absent from API")
+	require.True(t, gcs.MaxRestoreBytesPerSec.IsNull(), "max_restore_bytes_per_sec should be null when absent from API")
+}
