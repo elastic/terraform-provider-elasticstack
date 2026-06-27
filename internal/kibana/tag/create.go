@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -37,40 +36,36 @@ func createTag(
 	var diags diag.Diagnostics
 
 	oapiClient := client.GetKibanaOapiClient()
-	body := plan.toAPIModel(true)
+	body := plan.toAPIModel()
 	explicitTagID := typeutils.IsKnown(plan.TagID) && plan.TagID.ValueString() != ""
 
 	if explicitTagID {
 		tagID := plan.TagID.ValueString()
-		existing, getDiags := kibanaoapi.GetTag(ctx, oapiClient, req.SpaceID, tagID)
+		existing, getDiags := getTagAPI(ctx, oapiClient, req.SpaceID, tagID)
 		diags.Append(getDiags...)
 		if diags.HasError() {
 			return entitycore.KibanaWriteResult[tagModel]{}, diags
 		}
 
-		switch tagCreateActionForExisting(true, existing != nil) {
-		case tagCreateActionRejectExisting:
+		if existing != nil {
 			diags.AddError(
 				"Tag already exists",
 				fmt.Sprintf("A tag with ID %q already exists in space %q. Import it with: terraform import elasticstack_kibana_tag.<name> '%s/%s'",
 					tagID, req.SpaceID, req.SpaceID, tagID),
 			)
 			return entitycore.KibanaWriteResult[tagModel]{}, diags
-		case tagCreateActionPUT:
-			detail, upsertDiags := kibanaoapi.UpsertTag(ctx, oapiClient, req.SpaceID, tagID, body)
-			diags.Append(upsertDiags...)
-			if diags.HasError() {
-				return entitycore.KibanaWriteResult[tagModel]{}, diags
-			}
-			plan.setCompositeIdentity(req.SpaceID, detail.ID)
-			return entitycore.KibanaWriteResult[tagModel]{Model: plan}, diags
-		default:
-			diags.AddError("Invalid create action", "Internal error resolving tag create strategy.")
+		}
+
+		detail, upsertDiags := upsertTagAPI(ctx, oapiClient, req.SpaceID, tagID, body)
+		diags.Append(upsertDiags...)
+		if diags.HasError() {
 			return entitycore.KibanaWriteResult[tagModel]{}, diags
 		}
+		plan.setCompositeIdentity(req.SpaceID, detail.ID)
+		return entitycore.KibanaWriteResult[tagModel]{Model: plan}, diags
 	}
 
-	detail, createDiags := kibanaoapi.CreateTag(ctx, oapiClient, req.SpaceID, body)
+	detail, createDiags := createTagAPI(ctx, oapiClient, req.SpaceID, body)
 	diags.Append(createDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[tagModel]{}, diags

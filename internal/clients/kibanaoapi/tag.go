@@ -53,6 +53,20 @@ type TagListResult struct {
 	Page  float32
 }
 
+type tagAsCodeEntity struct {
+	Data kbapi.KibanaHTTPAPIsKbnTagsAttributes `json:"data"`
+	ID   string                                `json:"id"`
+	Meta kbapi.KibanaHTTPAPIsKbnAsCodeMeta     `json:"meta"`
+}
+
+func tagAsCodeEntityFromResponse(id string, data kbapi.KibanaHTTPAPIsKbnTagsAttributes, meta kbapi.KibanaHTTPAPIsKbnAsCodeMeta) *tagAsCodeEntity {
+	return &tagAsCodeEntity{
+		Data: data,
+		ID:   id,
+		Meta: meta,
+	}
+}
+
 // GetTag reads a tag by ID. Returns (nil, nil) on HTTP 404.
 func GetTag(ctx context.Context, client *Client, spaceID, id string) (*TagDetail, diag.Diagnostics) {
 	resp, err := client.API.GetTagsIdWithResponse(ctx, id, kibanautil.SpaceAwarePathRequestEditor(spaceID))
@@ -61,23 +75,11 @@ func GetTag(ctx context.Context, client *Client, spaceID, id string) (*TagDetail
 	}
 
 	tagResp, diags := HandleGetTypedResponse(resp.StatusCode(), resp.Body,
-		func() *struct {
-			Data kbapi.KibanaHTTPAPIsKbnTagsAttributes `json:"data"`
-			ID   string                                `json:"id"`
-			Meta kbapi.KibanaHTTPAPIsKbnAsCodeMeta     `json:"meta"`
-		} {
+		func() *tagAsCodeEntity {
 			if resp.JSON200 == nil {
 				return nil
 			}
-			return &struct {
-				Data kbapi.KibanaHTTPAPIsKbnTagsAttributes `json:"data"`
-				ID   string                                `json:"id"`
-				Meta kbapi.KibanaHTTPAPIsKbnAsCodeMeta     `json:"meta"`
-			}{
-				Data: resp.JSON200.Data,
-				ID:   resp.JSON200.Id,
-				Meta: resp.JSON200.Meta,
-			}
+			return tagAsCodeEntityFromResponse(resp.JSON200.Id, resp.JSON200.Data, resp.JSON200.Meta)
 		})
 	if diags.HasError() || tagResp == nil {
 		return nil, diags
@@ -94,23 +96,11 @@ func CreateTag(ctx context.Context, client *Client, spaceID string, body kbapi.P
 	}
 
 	createResp, diags := HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
-		func() *struct {
-			Data kbapi.KibanaHTTPAPIsKbnTagsAttributes `json:"data"`
-			ID   string                                `json:"id"`
-			Meta kbapi.KibanaHTTPAPIsKbnAsCodeMeta     `json:"meta"`
-		} {
+		func() *tagAsCodeEntity {
 			if resp.JSON201 == nil {
 				return nil
 			}
-			return &struct {
-				Data kbapi.KibanaHTTPAPIsKbnTagsAttributes `json:"data"`
-				ID   string                                `json:"id"`
-				Meta kbapi.KibanaHTTPAPIsKbnAsCodeMeta     `json:"meta"`
-			}{
-				Data: resp.JSON201.Data,
-				ID:   resp.JSON201.Id,
-				Meta: resp.JSON201.Meta,
-			}
+			return tagAsCodeEntityFromResponse(resp.JSON201.Id, resp.JSON201.Data, resp.JSON201.Meta)
 		}, http.StatusCreated)
 	if diags.HasError() {
 		return nil, diags
@@ -127,32 +117,12 @@ func UpsertTag(ctx context.Context, client *Client, spaceID, id string, body kba
 	}
 
 	upsertResp, diags := HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
-		func() *struct {
-			Data kbapi.KibanaHTTPAPIsKbnTagsAttributes `json:"data"`
-			ID   string                                `json:"id"`
-			Meta kbapi.KibanaHTTPAPIsKbnAsCodeMeta     `json:"meta"`
-		} {
+		func() *tagAsCodeEntity {
 			switch {
 			case resp.JSON200 != nil:
-				return &struct {
-					Data kbapi.KibanaHTTPAPIsKbnTagsAttributes `json:"data"`
-					ID   string                                `json:"id"`
-					Meta kbapi.KibanaHTTPAPIsKbnAsCodeMeta     `json:"meta"`
-				}{
-					Data: resp.JSON200.Data,
-					ID:   resp.JSON200.Id,
-					Meta: resp.JSON200.Meta,
-				}
+				return tagAsCodeEntityFromResponse(resp.JSON200.Id, resp.JSON200.Data, resp.JSON200.Meta)
 			case resp.JSON201 != nil:
-				return &struct {
-					Data kbapi.KibanaHTTPAPIsKbnTagsAttributes `json:"data"`
-					ID   string                                `json:"id"`
-					Meta kbapi.KibanaHTTPAPIsKbnAsCodeMeta     `json:"meta"`
-				}{
-					Data: resp.JSON201.Data,
-					ID:   resp.JSON201.Id,
-					Meta: resp.JSON201.Meta,
-				}
+				return tagAsCodeEntityFromResponse(resp.JSON201.Id, resp.JSON201.Data, resp.JSON201.Meta)
 			default:
 				return nil
 			}

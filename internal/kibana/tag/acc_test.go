@@ -73,6 +73,7 @@ func TestAccResourceKibanaTag_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(tagResourceAddr, "space_id", clients.DefaultSpaceID),
 					resource.TestCheckResourceAttr(tagResourceAddr, "name", fmt.Sprintf("tf-acc-tag-%s", suffix)),
 					resource.TestCheckResourceAttr(tagResourceAddr, "color", "#FF0000"),
+					resource.TestCheckResourceAttr(tagResourceAddr, "description", "initial description"),
 					resource.TestCheckResourceAttrSet(tagResourceAddr, "created_at"),
 					resource.TestCheckResourceAttrSet(tagResourceAddr, "updated_at"),
 				),
@@ -85,6 +86,7 @@ func TestAccResourceKibanaTag_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(tagResourceAddr, "name", fmt.Sprintf("tf-acc-tag-updated-%s", suffix)),
 					resource.TestCheckResourceAttr(tagResourceAddr, "color", "#FF0000"),
+					resource.TestCheckNoResourceAttr(tagResourceAddr, "description"),
 				),
 			},
 		},
@@ -161,6 +163,60 @@ func TestAccResourceKibanaTag_withTagID(t *testing.T) {
 				ImportStateId:            fmt.Sprintf("%s/%s", clients.DefaultSpaceID, tagID),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          vars,
+			},
+		},
+	})
+}
+
+func TestAccResourceKibanaTag_duplicateTagID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaTagAccTestVersion, versionutils.FlavorAny)
+
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	tagID := uuid.NewString()
+	vars := config.Variables{
+		"suffix": config.StringVariable(suffix),
+		"tag_id": config.StringVariable(tagID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkTagDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipKibanaTagUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipKibanaTagUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("duplicate"),
+				ConfigVariables:          vars,
+				ExpectError:              regexp.MustCompile("terraform import"),
+			},
+		},
+	})
+}
+
+func TestAccResourceKibanaTag_duplicateName(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaTagAccTestVersion, versionutils.FlavorAny)
+
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{
+		"suffix": config.StringVariable(suffix),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkTagDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipKibanaTagUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("duplicate"),
+				ConfigVariables:          vars,
+				ExpectError:              regexp.MustCompile("(?i)(conflict|duplicate|already exists)"),
 			},
 		},
 	})

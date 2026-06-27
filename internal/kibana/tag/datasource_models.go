@@ -19,7 +19,6 @@ package tag
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -47,13 +46,8 @@ type tagItemModel struct {
 
 var _ entitycore.WithVersionRequirements = (*tagsDataSourceModel)(nil)
 
-func (tagsDataSourceModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *tagMinVersion,
-			ErrorMessage: fmt.Sprintf("Kibana tags require Elastic Stack v%s or later (introduced in Kibana 9.5).", tagMinVersion),
-		},
-	}, nil
+func (tagsDataSourceModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return tagVersionRequirements(ctx)
 }
 
 func tagItemAttrTypes() map[string]attr.Type {

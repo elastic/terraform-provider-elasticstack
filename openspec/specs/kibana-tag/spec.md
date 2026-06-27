@@ -10,7 +10,7 @@ Define requirements for `elasticstack_kibana_tag` (resource) and `elasticstack_k
 
 The `elasticstack_kibana_tag` resource SHALL expose the following attributes:
 
-- `name` — Required string; the display name of the tag.
+- `name` — Required string; the display name of the tag. Length MUST be between 1 and 50 characters.
 - `tag_id` — Optional string, ForceNew; a client-specified UUID for the tag. When set, the provider uses `PUT /api/tags/{id}` semantics to create the tag. When absent, the provider uses `POST /api/tags` and stores the server-minted UUID.
 - `color` — Optional+Computed string; a hex color value (e.g. `#772299`). When absent from configuration, the server generates a random color and `UseStateForUnknown` prevents spurious diffs on subsequent plans. When set in configuration, the provider SHALL validate that `color` matches `#RRGGBB` (six hexadecimal digits).
 - `description` — Optional string; a free-text description of the tag.
@@ -24,6 +24,12 @@ The `managed` field from `meta.managed` SHALL NOT be exposed as a schema attribu
 #### Scenario: Required name enforced
 
 - GIVEN a resource configuration with no `name` attribute
+- WHEN Terraform validates the configuration
+- THEN the provider SHALL return a validation error
+
+#### Scenario: Name length enforced
+
+- GIVEN a resource configuration with `name` longer than 50 characters
 - WHEN Terraform validates the configuration
 - THEN the provider SHALL return a validation error
 
@@ -120,7 +126,7 @@ If the tag is not found (404), the provider SHALL remove the resource from state
 
 ### Requirement: Update path (REQ-007)
 
-On Update, the provider SHALL call `PUT /api/tags/{id}` with the configured `name` and the planned `color` value (preserving prior state when unknown via `UseStateForUnknown`) so that omitting `color` from configuration does not cause server-side color regeneration. The provider SHALL include `description` only when set in configuration. The provider SHALL apply the managed-tag guard (REQ-009) before calling the API.
+On Update, the provider SHALL call `PUT /api/tags/{id}` with the configured `name` and the planned `color` value (preserving prior state when unknown via `UseStateForUnknown`) so that omitting `color` from configuration does not cause server-side color regeneration. The provider SHALL include `description` when set in configuration, and SHALL send an explicit empty description when configuration removes a previously set description. The provider SHALL apply the managed-tag guard (REQ-009) before calling the API.
 
 Both `JSON200` (updated) and `JSON201` (upserted, in a race where the tag was deleted between plan and apply) responses SHALL be treated as success.
 
@@ -130,6 +136,13 @@ Both `JSON200` (updated) and `JSON201` (upserted, in a race where the tag was de
 - WHEN the practitioner updates `name = "staging-v2"` and applies
 - THEN the provider SHALL call `PUT /api/tags/{id}` with the new name
 - AND state SHALL reflect the updated name after apply
+
+#### Scenario: Update removes description
+
+- GIVEN a tag with `description = "initial"` in state
+- WHEN the practitioner removes `description` from configuration and applies
+- THEN the provider SHALL call `PUT /api/tags/{id}` with an explicit empty description
+- AND state SHALL reflect `description = null` after apply
 
 ### Requirement: Delete path (REQ-008)
 
@@ -212,7 +225,7 @@ All CRUD operations on `elasticstack_kibana_tag` and all Read operations on `ela
 The `elasticstack_kibana_tags` data source SHALL expose:
 
 - `query` — Optional string; an Elasticsearch `simple_query_string` expression applied to `name` and `description` fields. When absent or empty, all tags in the space are returned.
-- `space_id` — Optional string, default `"default"`.
+- `space_id` — Optional+Computed string, default `"default"`.
 - `tags` — Computed list of objects. Each element SHALL contain:
   - `id` (string) — the tag UUID
   - `name` (string)

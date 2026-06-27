@@ -46,10 +46,10 @@ func TestCheckManagedTag(t *testing.T) {
 
 	t.Run("managed true returns expected diagnostic", func(t *testing.T) {
 		managed := true
-		diags := checkManagedTag(&kibanaoapi.TagDetail{Managed: &managed})
+		diags := checkManagedTag(&kibanaoapi.TagDetail{ID: "tag-123", Managed: &managed})
 		require.True(t, diags.HasError())
 		require.Len(t, diags, 1)
 		assert.Equal(t, "Managed Kibana tag", diags[0].Summary())
-		assert.Equal(t, managedTagErrorDetail, diags[0].Detail())
+		assert.Contains(t, diags[0].Detail(), "tag-123")
 	})
 }

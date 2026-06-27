@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -36,7 +35,7 @@ func readTag(
 
 	oapiClient := client.GetKibanaOapiClient()
 
-	detail, readDiags := kibanaoapi.GetTag(ctx, oapiClient, spaceID, resourceID)
+	detail, readDiags := getTagAPI(ctx, oapiClient, spaceID, resourceID)
 	diags.Append(readDiags...)
 	if diags.HasError() {
 		return model, false, diags

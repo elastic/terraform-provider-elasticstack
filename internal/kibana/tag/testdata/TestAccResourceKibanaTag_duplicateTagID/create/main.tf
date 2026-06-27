@@ -2,13 +2,17 @@ variable "suffix" {
   type = string
 }
 
+variable "tag_id" {
+  type = string
+}
+
 provider "elasticstack" {
   elasticsearch {}
   kibana {}
 }
 
 resource "elasticstack_kibana_tag" "test" {
-  name        = "tf-acc-tag-${var.suffix}"
-  color       = "#FF0000"
-  description = "initial description"
+  tag_id = var.tag_id
+  name   = "tf-acc-tag-duplicate-id-${var.suffix}"
+  color  = "#FF0000"
 }

@@ -17,34 +17,11 @@
 
 package tag
 
-import (
-	"context"
+import kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+var (
+	getTagAPI    = kibanaoapi.GetTag
+	createTagAPI = kibanaoapi.CreateTag
+	upsertTagAPI = kibanaoapi.UpsertTag
+	deleteTagAPI = kibanaoapi.DeleteTag
 )
-
-func deleteTag(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	resourceID string,
-	spaceID string,
-	_ tagModel,
-) diag.Diagnostics {
-	oapiClient := client.GetKibanaOapiClient()
-
-	existing, getDiags := getTagAPI(ctx, oapiClient, spaceID, resourceID)
-	if getDiags.HasError() {
-		return getDiags
-	}
-
-	if existing == nil {
-		return nil
-	}
-
-	if managedDiags := checkManagedTag(existing); managedDiags.HasError() {
-		return managedDiags
-	}
-
-	return deleteTagAPI(ctx, oapiClient, spaceID, resourceID)
-}

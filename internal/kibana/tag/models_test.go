@@ -56,7 +56,7 @@ func TestTagModel_toAPIModel(t *testing.T) {
 			},
 		}
 
-		body := model.toAPIModel(true)
+		body := model.toAPIModel()
 		assert.Equal(t, "staging", body.Name)
 		assert.Nil(t, body.Color)
 		assert.Nil(t, body.Description)
@@ -70,7 +70,7 @@ func TestTagModel_toAPIModel(t *testing.T) {
 			},
 		}
 
-		body := model.toAPIModel(true)
+		body := model.toAPIModel()
 		require.NotNil(t, body.Color)
 		assert.Equal(t, "#FF0000", *body.Color)
 	})
@@ -83,7 +83,7 @@ func TestTagModel_toAPIModel(t *testing.T) {
 			},
 		}
 
-		body := model.toAPIModel(true)
+		body := model.toAPIModel()
 		assert.Nil(t, body.Description)
 	})
 
@@ -95,21 +95,9 @@ func TestTagModel_toAPIModel(t *testing.T) {
 			},
 		}
 
-		body := model.toAPIModel(true)
+		body := model.toAPIModel()
 		require.NotNil(t, body.Description)
 		assert.Equal(t, "prod workloads", *body.Description)
-	})
-
-	t.Run("skips description when includeDescription is false", func(t *testing.T) {
-		model := tagModel{
-			tagBaseModel: tagBaseModel{
-				Name:        types.StringValue("staging"),
-				Description: types.StringValue("prod workloads"),
-			},
-		}
-
-		body := model.toAPIModel(false)
-		assert.Nil(t, body.Description)
 	})
 }
 
@@ -168,6 +156,24 @@ func TestTagModel_toUpdateAPIModel(t *testing.T) {
 		body := plan.toUpdateAPIModel(prior)
 		assert.Nil(t, body.Color)
 	})
+
+	t.Run("clears prior description when plan omits description", func(t *testing.T) {
+		plan := tagModel{
+			tagBaseModel: tagBaseModel{
+				Name:        types.StringValue("staging-v2"),
+				Description: types.StringNull(),
+			},
+		}
+		prior := &tagModel{
+			tagBaseModel: tagBaseModel{
+				Description: types.StringValue("old description"),
+			},
+		}
+
+		body := plan.toUpdateAPIModel(prior)
+		require.NotNil(t, body.Description)
+		assert.Empty(t, *body.Description)
+	})
 }
 
 func TestTagModel_populateFromAPI(t *testing.T) {
@@ -213,15 +219,6 @@ func TestTagModel_populateFromAPI(t *testing.T) {
 		assert.True(t, model.CreatedAt.IsNull())
 		assert.True(t, model.UpdatedAt.IsNull())
 	})
-}
-
-func TestTagCreateActionForExisting(t *testing.T) {
-	t.Parallel()
-
-	assert.Equal(t, tagCreateActionPOST, tagCreateActionForExisting(false, false))
-	assert.Equal(t, tagCreateActionPOST, tagCreateActionForExisting(false, true))
-	assert.Equal(t, tagCreateActionPUT, tagCreateActionForExisting(true, false))
-	assert.Equal(t, tagCreateActionRejectExisting, tagCreateActionForExisting(true, true))
 }
 
 func TestTagItemFromAPI(t *testing.T) {

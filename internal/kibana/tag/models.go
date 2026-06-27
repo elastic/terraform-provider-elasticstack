@@ -55,6 +55,8 @@ var (
 	tagMinVersion = version.Must(version.NewVersion("9.5.0-SNAPSHOT"))
 )
 
+const tagMinVersionErrorMessage = "Kibana tags require Elastic Stack v9.5.0 or later (introduced in Kibana 9.5)."
+
 func (m tagBaseModel) GetID() types.String         { return m.ID }
 func (m tagBaseModel) GetResourceID() types.String { return m.TagID }
 func (m tagBaseModel) GetSpaceID() types.String    { return m.SpaceID }
@@ -65,11 +67,15 @@ func (m *tagBaseModel) setCompositeIdentity(spaceID, tagID string) {
 	m.SpaceID = types.StringValue(spaceID)
 }
 
-func (tagBaseModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (tagBaseModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return tagVersionRequirements(ctx)
+}
+
+func tagVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *tagMinVersion,
-			ErrorMessage: "Kibana tags require Elastic Stack v9.5.0 or later (introduced in Kibana 9.5).",
+			ErrorMessage: tagMinVersionErrorMessage,
 		},
 	}, nil
 }
@@ -91,6 +97,7 @@ func (m *tagBaseModel) populateFromAPI(spaceID string, detail *kibanaoapi.TagDet
 	m.UpdatedAt = types.StringPointerValue(detail.UpdatedAt)
 }
 
+// optionalStringPointerValue treats blank descriptions as absent to match write-side normalization.
 func optionalStringPointerValue(value *string) types.String {
 	if value == nil || strings.TrimSpace(*value) == "" {
 		return types.StringNull()
@@ -98,16 +105,17 @@ func optionalStringPointerValue(value *string) types.String {
 	return types.StringValue(*value)
 }
 
-func (m tagModel) toAPIModel(includeDescription bool) kbapi.KibanaHTTPAPIsKbnTagsRequestAttributes {
+func (m tagModel) toAPIModel() kbapi.KibanaHTTPAPIsKbnTagsRequestAttributes {
 	body := kbapi.KibanaHTTPAPIsKbnTagsRequestAttributes{
 		Name: m.Name.ValueString(),
 	}
 
-	if color, ok := m.resolvedColor(nil); ok {
+	if typeutils.IsKnown(m.Color) {
+		color := m.Color.ValueString()
 		body.Color = &color
 	}
 
-	if includeDescription && typeutils.IsKnown(m.Description) {
+	if typeutils.IsKnown(m.Description) {
 		desc := strings.TrimSpace(m.Description.ValueString())
 		if desc != "" {
 			body.Description = &desc
@@ -118,45 +126,18 @@ func (m tagModel) toAPIModel(includeDescription bool) kbapi.KibanaHTTPAPIsKbnTag
 }
 
 func (m tagModel) toUpdateAPIModel(prior *tagModel) kbapi.KibanaHTTPAPIsKbnTagsRequestAttributes {
-	return m.withResolvedColor(prior).toAPIModel(true)
+	if !typeutils.IsKnown(m.Color) && prior != nil && typeutils.IsKnown(prior.Color) {
+		// Preserve the server-generated color when config omits color on update.
+		m.Color = prior.Color
+	}
+	body := m.toAPIModel()
+	if prior != nil && typeutils.IsKnown(prior.Description) && !hasNonBlankDescription(m.Description) {
+		desc := ""
+		body.Description = &desc
+	}
+	return body
 }
 
-func (m tagModel) withResolvedColor(prior *tagModel) tagModel {
-	if typeutils.IsKnown(m.Color) || prior == nil {
-		return m
-	}
-
-	if !typeutils.IsKnown(prior.Color) {
-		return m
-	}
-
-	updated := m
-	updated.Color = prior.Color
-	return updated
-}
-
-func (m tagModel) resolvedColor(prior *tagModel) (string, bool) {
-	model := m.withResolvedColor(prior)
-	if !typeutils.IsKnown(model.Color) {
-		return "", false
-	}
-	return model.Color.ValueString(), true
-}
-
-type tagCreateAction int
-
-const (
-	tagCreateActionPOST tagCreateAction = iota
-	tagCreateActionPUT
-	tagCreateActionRejectExisting
-)
-
-func tagCreateActionForExisting(explicitTagID bool, exists bool) tagCreateAction {
-	if !explicitTagID {
-		return tagCreateActionPOST
-	}
-	if exists {
-		return tagCreateActionRejectExisting
-	}
-	return tagCreateActionPUT
+func hasNonBlankDescription(value types.String) bool {
+	return typeutils.IsKnown(value) && strings.TrimSpace(value.ValueString()) != ""
 }

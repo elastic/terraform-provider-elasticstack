@@ -6,7 +6,7 @@
 
 ## 2. Implementation
 
-- [x] 2.1 Add `internal/models/tag.go` with `Tag` struct: `ID`, `Name`, `Color`, `Description`, `SpaceID`, `CreatedAt`, `UpdatedAt` fields mapped from `KibanaHTTPAPIsKbnTagsAttributes` + `KibanaHTTPAPIsKbnAsCodeMeta`.
+- [x] 2.1 Use `internal/clients/kibanaoapi.TagDetail` as the tag domain model, with `ID`, `Name`, `Color`, `Description`, `CreatedAt`, `UpdatedAt`, and `Managed` fields mapped from `KibanaHTTPAPIsKbnTagsAttributes` + `KibanaHTTPAPIsKbnAsCodeMeta`.
 - [x] 2.2 Add `internal/clients/kibanaoapi/tag.go` wrapping the kbapi `Client` methods: `GetTag(ctx, spaceID, id)`, `CreateTag(ctx, spaceID, req)`, `UpsertTag(ctx, spaceID, id, req)`, `DeleteTag(ctx, spaceID, id)`, `ListTags(ctx, spaceID, params)`. Handle space-aware routing via the existing KibanaAPI client space mechanism.
 - [x] 2.3 Create `internal/kibana/tag/` package with the following files:
   - `resource.go` — Plugin Framework resource registration and CRUD methods

@@ -34,6 +34,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 			attrSpaceID: schema.StringAttribute{
 				MarkdownDescription: "Kibana space identifier. When omitted, the default space is used.",
 				Optional:            true,
+				Computed:            true,
 			},
 			attrTags: schema.ListNestedAttribute{
 				MarkdownDescription: "Tags matching the query in the configured space.",

@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -36,7 +35,7 @@ func updateTag(
 
 	oapiClient := client.GetKibanaOapiClient()
 
-	existing, getDiags := kibanaoapi.GetTag(ctx, oapiClient, req.SpaceID, req.WriteID)
+	existing, getDiags := getTagAPI(ctx, oapiClient, req.SpaceID, req.WriteID)
 	diags.Append(getDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[tagModel]{}, diags
@@ -49,7 +48,7 @@ func updateTag(
 	}
 
 	body := plan.toUpdateAPIModel(req.Prior)
-	_, upsertDiags := kibanaoapi.UpsertTag(ctx, oapiClient, req.SpaceID, req.WriteID, body)
+	_, upsertDiags := upsertTagAPI(ctx, oapiClient, req.SpaceID, req.WriteID, body)
 	diags.Append(upsertDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[tagModel]{}, diags

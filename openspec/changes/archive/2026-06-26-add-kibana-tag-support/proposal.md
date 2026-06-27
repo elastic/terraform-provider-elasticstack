@@ -78,4 +78,4 @@ Acceptance tests MUST be skipped when the connected Kibana version is below 9.5.
 ## Impact
 
 - **Specs**: Delta under `openspec/changes/add-kibana-tag-support/specs/kibana-tag/spec.md` until merged into canonical spec.
-- **Implementation** (future): new package `internal/kibana/tag/` (resource, data source, schema, models, CRUD); new `internal/clients/kibanaoapi/tag.go` (API wrapper); `internal/models/` (Tag type); provider registration; documentation; acceptance tests.
+- **Implementation** (future): new package `internal/kibana/tag/` (resource, data source, schema, models, CRUD); new `internal/clients/kibanaoapi/tag.go` (API wrapper and tag domain model); provider registration; documentation; acceptance tests.

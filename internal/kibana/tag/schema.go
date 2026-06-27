@@ -65,6 +65,9 @@ func getSchema(_ context.Context) schema.Schema {
 			attrName: schema.StringAttribute{
 				MarkdownDescription: "Display name of the tag.",
 				Required:            true,
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(1, 50),
+				},
 			},
 			attrColor: schema.StringAttribute{
 				MarkdownDescription: "Hex color for the tag (for example `#772299`). When omitted, the server generates a random color.",
