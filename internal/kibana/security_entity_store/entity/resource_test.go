@@ -20,10 +20,11 @@ package entity
 import (
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func TestBuildID(t *testing.T) {
+func TestCompositeIDForEntity(t *testing.T) {
 	tests := []struct {
 		name     string
 		spaceID  string
@@ -32,7 +33,7 @@ func TestBuildID(t *testing.T) {
 	}{
 		{
 			name:     "default space",
-			spaceID:  "",
+			spaceID:  clients.DefaultSpaceID,
 			entityID: "host:web-01",
 			want:     "default/host:web-01",
 		},
@@ -52,9 +53,9 @@ func TestBuildID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := buildID(tt.spaceID, tt.entityID)
+			got := (&clients.CompositeID{ClusterID: tt.spaceID, ResourceID: tt.entityID}).String()
 			if got != tt.want {
-				t.Errorf("buildID(%q, %q) = %q, want %q", tt.spaceID, tt.entityID, got, tt.want)
+				t.Errorf("(&CompositeID{%q, %q}).String() = %q, want %q", tt.spaceID, tt.entityID, got, tt.want)
 			}
 		})
 	}

@@ -62,17 +62,10 @@ func NewResource() resource.Resource {
 }
 
 func NormalizeSpaceID(v types.String) string {
-	if v.IsNull() || v.IsUnknown() || v.ValueString() == "" {
+	if v.IsNull() || v.IsUnknown() {
 		return clients.DefaultSpaceID
 	}
-	return v.ValueString()
-}
-
-func buildID(spaceID, entityID string) string {
-	if spaceID == "" {
-		spaceID = clients.DefaultSpaceID
-	}
-	return fmt.Sprintf("%s/%s", spaceID, entityID)
+	return clients.EffectiveSpaceID(v.ValueString())
 }
 
 // ValidateConfig implements resource.ResourceWithValidateConfig.
