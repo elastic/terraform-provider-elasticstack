@@ -125,21 +125,21 @@ jobs:
           - '8.7.1'
           - '8.8.2'
           - '8.9.2'
-          - '8.10.3'
+          - '8.10.4'
           - '8.11.4'
           - '8.12.2'
           - '8.13.4'
           - '8.14.3'
           - '8.15.5'
           - '8.16.6'
-          - '8.17.1'
+          - '8.17.10'
           - '8.18.8'
-          - '8.19.15'
+          - '8.19.17'
           - '9.0.8'
-          - '9.1.9'
-          - '9.2.3'
-          - '9.3.0'
-          - '9.4.0'
+          - '9.1.10'
+          - '9.2.8'
+          - '9.3.6'
+          - '9.4.2'
           - '9.5.0-SNAPSHOT'
         shard: [0, 1]
         include:
@@ -257,7 +257,7 @@ jobs:
 
       - id: setup-fleet
         name: Setup Fleet
-        if: matrix.version == '8.10.3' || matrix.version == '8.11.4' || matrix.version == '8.12.2' || matrix.version == '8.13.4' || matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.6' || matrix.version == '8.17.1' || matrix.version == '9.0.8' || matrix.version == '9.1.9' || matrix.version == '9.2.3' || matrix.version == '9.3.0' || endsWith(matrix.version, '-SNAPSHOT')
+        if: matrix.version == '8.10.4' || matrix.version == '8.11.4' || matrix.version == '8.12.2' || matrix.version == '8.13.4' || matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.6' || matrix.version == '8.17.10' || matrix.version == '9.0.8' || matrix.version == '9.1.10' || matrix.version == '9.2.8' || matrix.version == '9.3.6' || endsWith(matrix.version, '-SNAPSHOT')
         run: |-
           make setup-kibana-fleet
         env:
@@ -266,7 +266,7 @@ jobs:
 
       - id: force-install-synthetics
         name: Force install synthetics
-        if: matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.6' || matrix.version == '8.17.1'
+        if: matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.6' || matrix.version == '8.17.10'
         run: |-
           for i in {1..5}; do curl -s -H "Authorization: ApiKey ${{ steps.get-api-key.outputs.apikey }}" --header "Content-Type: application/json" --header "kbn-xsrf: true" --request POST --data '{ "force": true }' http://localhost:5601/api/fleet/epm/packages/synthetics/1.2.2 && break || sleep 15; done
 
