@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -70,4 +71,44 @@ func (v settingNameUniqueValidator) ValidateSet(_ context.Context, req validator
 		}
 		names[n] = struct{}{}
 	}
+}
+
+// validateConfigModel implements the rule that at least one of persistent or
+// transient must be a non-empty block. Extracted so it can be unit-tested
+// without constructing a tfsdk.Config.
+func validateConfigModel(config tfModel) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
+
+	if categoryBlockEmpty(config.Persistent) && categoryBlockEmpty(config.Transient) {
+		diags.AddError(
+			"No cluster settings configured",
+			`At least one of "persistent" or "transient" must contain at least one "setting" block.`,
+		)
+	}
+	return diags
+}
+
+// categoryBlockEmpty reports whether the given persistent/transient block is
+// effectively empty: null, or contains a setting set with no elements.
+// An unknown block (or unknown nested set) is NOT treated as empty,
+// because the value has not yet been evaluated at validate time.
+func categoryBlockEmpty(block types.Object) bool {
+	if block.IsNull() {
+		return true
+	}
+	if block.IsUnknown() {
+		return false
+	}
+	settingAttr, ok := block.Attributes()["setting"]
+	if !ok {
+		return true
+	}
+	settingSet, ok := settingAttr.(types.Set)
+	if !ok {
+		return true
+	}
+	if settingSet.IsUnknown() {
+		return false
+	}
+	return settingSet.IsNull() || len(settingSet.Elements()) == 0
 }
