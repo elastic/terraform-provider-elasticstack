@@ -23,14 +23,22 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 const policyIDValidatorDescription = `Must be 1-255 characters and must not contain path separators ("/"), traversal sequences (".."), or reserved keys ("__proto__", "constructor", "prototype").`
 
+const (
+	policyIDLengthErrorDetail    = "policy_id must be between 1 and 255 characters (inclusive)."
+	policyIDPathErrorDetail      = `policy_id must not contain path separators ("/").`
+	policyIDTraversalErrorDetail = `policy_id must not contain traversal sequences ("..").`
+)
+
 var (
 	_ validator.String = policyIDValidator{}
+
+	policyIDReservedSubstrings = [...]string{"__proto__", "constructor", "prototype"}
 )
 
 type policyIDValidator struct{}
@@ -44,47 +52,51 @@ func (v policyIDValidator) MarkdownDescription(ctx context.Context) string {
 }
 
 func (policyIDValidator) ValidateString(_ context.Context, req validator.StringRequest, resp *validator.StringResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+	if !typeutils.IsKnown(req.ConfigValue) {
 		return
 	}
 
 	value := req.ConfigValue.ValueString()
 	runeCount := utf8.RuneCountInString(value)
 	if runeCount < 1 || runeCount > 255 {
-		resp.Diagnostics.Append(diag.NewAttributeErrorDiagnostic(
+		resp.Diagnostics.AddAttributeError(
 			req.Path,
 			"Invalid policy_id length",
-			"policy_id must be between 1 and 255 characters (inclusive).",
-		))
+			policyIDLengthErrorDetail,
+		)
 		return
 	}
 
 	if strings.Contains(value, "/") {
-		resp.Diagnostics.Append(diag.NewAttributeErrorDiagnostic(
+		resp.Diagnostics.AddAttributeError(
 			req.Path,
 			"Invalid policy_id",
-			`policy_id must not contain path separators ("/").`,
-		))
+			policyIDPathErrorDetail,
+		)
 		return
 	}
 
 	if strings.Contains(value, "..") {
-		resp.Diagnostics.Append(diag.NewAttributeErrorDiagnostic(
+		resp.Diagnostics.AddAttributeError(
 			req.Path,
 			"Invalid policy_id",
-			`policy_id must not contain traversal sequences ("..").`,
-		))
+			policyIDTraversalErrorDetail,
+		)
 		return
 	}
 
-	for _, reserved := range []string{"__proto__", "constructor", "prototype"} {
+	for _, reserved := range policyIDReservedSubstrings {
 		if strings.Contains(value, reserved) {
-			resp.Diagnostics.Append(diag.NewAttributeErrorDiagnostic(
+			resp.Diagnostics.AddAttributeError(
 				req.Path,
 				"Invalid policy_id",
-				fmt.Sprintf(`policy_id must not contain reserved keys (%q).`, reserved),
-			))
+				policyIDReservedErrorDetail(reserved),
+			)
 			return
 		}
 	}
+}
+
+func policyIDReservedErrorDetail(reserved string) string {
+	return fmt.Sprintf(`policy_id must not contain reserved keys (%q).`, reserved)
 }
