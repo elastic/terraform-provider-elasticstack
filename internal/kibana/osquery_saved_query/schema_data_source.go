@@ -20,6 +20,7 @@ package osquerysavedquery
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -77,34 +78,10 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				MarkdownDescription: "Whether the saved query is marked removed.",
 				Computed:            true,
 			},
-			attrEcsMapping: ecsMappingDataSourceSchema(),
+			attrEcsMapping: osquery.ECSMappingDataSourceSchema(),
 			attrPrebuilt: dsschema.BoolAttribute{
 				MarkdownDescription: "Whether the saved query is prebuilt by the osquery_manager integration package.",
 				Computed:            true,
-			},
-		},
-	}
-}
-
-func ecsMappingDataSourceSchema() dsschema.MapNestedAttribute {
-	return dsschema.MapNestedAttribute{
-		MarkdownDescription: "Maps query result columns to ECS field paths.",
-		Computed:            true,
-		NestedObject: dsschema.NestedAttributeObject{
-			Attributes: map[string]dsschema.Attribute{
-				attrEcsMappingField: dsschema.StringAttribute{
-					MarkdownDescription: "Query result column name to map from.",
-					Computed:            true,
-				},
-				attrEcsMappingValue: dsschema.StringAttribute{
-					MarkdownDescription: "Static scalar ECS mapping value.",
-					Computed:            true,
-				},
-				attrEcsMappingValues: dsschema.SetAttribute{
-					MarkdownDescription: "Static array ECS mapping values.",
-					Computed:            true,
-					ElementType:         types.StringType,
-				},
 			},
 		},
 	}

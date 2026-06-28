@@ -135,43 +135,7 @@ func getSchema(_ context.Context) schema.Schema {
 					boolplanmodifier.UseStateForUnknown(),
 				},
 			},
-			attrEcsMapping: ecsMappingSchema(),
-		},
-	}
-}
-
-func ecsMappingSchema() schema.MapNestedAttribute {
-	return schema.MapNestedAttribute{
-		MarkdownDescription: "Maps query result columns to ECS field paths. Each map value must set exactly one of `field`, `value`, or `values`.",
-		Optional:            true,
-		NestedObject: schema.NestedAttributeObject{
-			Validators: []validator.Object{
-				osquery.ECSMappingExactlyOneOfValidator(),
-			},
-			Attributes: map[string]schema.Attribute{
-				attrEcsMappingField: schema.StringAttribute{
-					MarkdownDescription: "Query result column name to map from.",
-					Optional:            true,
-					Validators: []validator.String{
-						stringvalidator.LengthAtLeast(1),
-					},
-				},
-				attrEcsMappingValue: schema.StringAttribute{
-					MarkdownDescription: "Static scalar ECS mapping value.",
-					Optional:            true,
-					Validators: []validator.String{
-						stringvalidator.LengthAtLeast(1),
-					},
-				},
-				attrEcsMappingValues: schema.SetAttribute{
-					MarkdownDescription: "Static array ECS mapping values.",
-					Optional:            true,
-					ElementType:         types.StringType,
-					Validators: []validator.Set{
-						setvalidator.SizeAtLeast(1),
-					},
-				},
-			},
+			attrEcsMapping: osquery.ECSMappingSchema(),
 		},
 	}
 }
