@@ -76,13 +76,6 @@ func (v ConfigValue) StringSemanticEquals(ctx context.Context, newValuable baset
 	return v.JSONWithContextualDefaultsValue.StringSemanticEquals(ctx, other.JSONWithContextualDefaultsValue)
 }
 
-// NewConfigNull creates a ConfigValue with a null value. Determine whether the value is null via IsNull method.
-func NewConfigNull() ConfigValue {
-	return ConfigValue{
-		JSONWithContextualDefaultsValue: customtypes.NewJSONWithContextualDefaultsNull(),
-	}
-}
-
 // NewConfigUnknown creates a ConfigValue with an unknown value. Determine whether the value is unknown via IsUnknown method.
 func NewConfigUnknown() ConfigValue {
 	return ConfigValue{
