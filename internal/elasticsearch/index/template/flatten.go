@@ -20,11 +20,9 @@ package template
 import (
 	"context"
 	"encoding/json"
-	"sort"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -134,55 +132,18 @@ func flattenTemplateBody(ctx context.Context, t *models.Template) (types.Object,
 		return types.ObjectNull(TemplateAttrTypes()), diags
 	}
 
-	var aliasSet types.Set
-	if t.Aliases == nil {
-		aliasSet = types.SetNull(NewAliasObjectType())
-	} else {
-		names := make([]string, 0, len(t.Aliases))
-		for k := range t.Aliases {
-			names = append(names, k)
-		}
-		sort.Strings(names)
-		vals := make([]attr.Value, 0, len(names))
-		for _, name := range names {
-			alias := t.Aliases[name]
-			av, d := aliasutil.FlattenAliasElement(name, alias, nil, AliasAttributeTypes())
-			diags.Append(d...)
-			if diags.HasError() {
-				return types.ObjectUnknown(TemplateAttrTypes()), diags
-			}
-			vals = append(vals, av)
-		}
-		sv, d := types.SetValueFrom(ctx, NewAliasObjectType(), vals)
-		diags.Append(d...)
-		if diags.HasError() {
-			return types.ObjectUnknown(TemplateAttrTypes()), diags
-		}
-		aliasSet = sv
-	}
-
-	var mappings index.MappingsValue
-	if t.Mappings != nil {
-		b, err := json.Marshal(t.Mappings)
-		if err != nil {
-			diags.AddError("Failed to marshal template.mappings", err.Error())
-			return types.ObjectUnknown(TemplateAttrTypes()), diags
-		}
-		mappings = index.NewMappingsValue(string(b))
-	} else {
-		mappings = index.NewMappingsNull()
-	}
-
-	var settings customtypes.IndexSettingsValue
-	if t.Settings != nil {
-		b, err := json.Marshal(t.Settings)
-		if err != nil {
-			diags.AddError("Failed to marshal template.settings", err.Error())
-			return types.ObjectUnknown(TemplateAttrTypes()), diags
-		}
-		settings = customtypes.NewIndexSettingsValue(string(b))
-	} else {
-		settings = customtypes.NewIndexSettingsNull()
+	core, d := templateutil.FlattenTemplateCore(
+		ctx,
+		t,
+		index.NewMappingsNull(),
+		customtypes.NewIndexSettingsNull(),
+		nil,
+		NewAliasObjectType(),
+		AliasAttributeTypes(),
+	)
+	diags.Append(d...)
+	if diags.HasError() {
+		return types.ObjectUnknown(TemplateAttrTypes()), diags
 	}
 
 	var lcObj types.Object
@@ -194,9 +155,9 @@ func flattenTemplateBody(ctx context.Context, t *models.Template) (types.Object,
 		lcAttrs := map[string]attr.Value{
 			attrDataRetention: dataRetention,
 		}
-		var d diag.Diagnostics
-		lcObj, d = types.ObjectValue(LifecycleAttrTypes(), lcAttrs)
-		diags.Append(d...)
+		var lc diag.Diagnostics
+		lcObj, lc = types.ObjectValue(LifecycleAttrTypes(), lcAttrs)
+		diags.Append(lc...)
 		if diags.HasError() {
 			return types.ObjectUnknown(TemplateAttrTypes()), diags
 		}
@@ -204,24 +165,12 @@ func flattenTemplateBody(ctx context.Context, t *models.Template) (types.Object,
 		lcObj = types.ObjectNull(LifecycleAttrTypes())
 	}
 
-	var dsoObj types.Object
-	if t.DataStreamOptions != nil && t.DataStreamOptions.FailureStore != nil {
-		var dsoDiags diag.Diagnostics
-		dsoObj, dsoDiags = datastreamoptions.FlattenLocal(t.DataStreamOptions)
-		diags.Append(dsoDiags...)
-		if diags.HasError() {
-			return types.ObjectUnknown(TemplateAttrTypes()), diags
-		}
-	} else {
-		dsoObj = types.ObjectNull(datastreamoptions.AttrTypes())
-	}
-
 	tplAttrs := map[string]attr.Value{
-		attrAlias:             aliasSet,
-		attrMappings:          mappings,
-		attrSettings:          settings,
+		attrAlias:             core.AliasSet,
+		attrMappings:          core.Mappings,
+		attrSettings:          core.Settings,
 		attrLifecycle:         lcObj,
-		attrDataStreamOptions: dsoObj,
+		attrDataStreamOptions: core.DsoObj,
 	}
 	obj, d := types.ObjectValue(TemplateAttrTypes(), tplAttrs)
 	diags.Append(d...)

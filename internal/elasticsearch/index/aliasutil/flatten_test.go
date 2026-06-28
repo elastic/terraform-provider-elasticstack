@@ -18,6 +18,7 @@
 package aliasutil_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
@@ -285,5 +286,104 @@ func TestFlattenAliasElement_preservedRoutingIgnoredWhenAPIReturnsValue(t *testi
 	attrs := obj.Attributes()
 	if v := attrs["routing"].(types.String).ValueString(); v != "api_routing" {
 		t.Errorf("routing: got %q, want %q", v, "api_routing")
+	}
+}
+
+func TestFlattenAliasSet_nilAliasesReturnsNull(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	elemType := types.ObjectType{AttrTypes: testAliasAttrTypes()}
+	sv, diags := aliasutil.FlattenAliasSet(ctx, nil, nil, elemType, testAliasAttrTypes())
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	if !sv.IsNull() {
+		t.Fatalf("expected null set for nil aliases, got %#v", sv)
+	}
+}
+
+func TestFlattenAliasSet_emptyAliasesReturnsNull(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	elemType := types.ObjectType{AttrTypes: testAliasAttrTypes()}
+	sv, diags := aliasutil.FlattenAliasSet(ctx, map[string]models.IndexAlias{}, nil, elemType, testAliasAttrTypes())
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	if !sv.IsNull() {
+		t.Fatalf("expected null set for empty aliases, got %#v", sv)
+	}
+}
+
+func TestFlattenAliasSet_sortedOrder(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	attrTypes := testAliasAttrTypes()
+	elemType := types.ObjectType{AttrTypes: attrTypes}
+	aliases := map[string]models.IndexAlias{
+		"z-alias": {Routing: "r-z"},
+		"a-alias": {Routing: "r-a"},
+		"m-alias": {Routing: "r-m"},
+	}
+	sv, diags := aliasutil.FlattenAliasSet(ctx, aliases, nil, elemType, attrTypes)
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	if sv.IsNull() {
+		t.Fatal("expected non-null set")
+	}
+	elems := sv.Elements()
+	if len(elems) != 3 {
+		t.Fatalf("expected 3 elements, got %d", len(elems))
+	}
+	// Elements in a Set are not ordered the same way as insertion, but we
+	// verify all names are present and routing is correctly assigned.
+	names := make(map[string]string)
+	for _, el := range elems {
+		obj := el.(types.Object)
+		attrs := obj.Attributes()
+		name := attrs["name"].(types.String).ValueString()
+		routing := attrs["routing"].(types.String).ValueString()
+		names[name] = routing
+	}
+	if names["a-alias"] != "r-a" {
+		t.Errorf("a-alias routing: got %q, want %q", names["a-alias"], "r-a")
+	}
+	if names["m-alias"] != "r-m" {
+		t.Errorf("m-alias routing: got %q, want %q", names["m-alias"], "r-m")
+	}
+	if names["z-alias"] != "r-z" {
+		t.Errorf("z-alias routing: got %q, want %q", names["z-alias"], "r-z")
+	}
+}
+
+func TestFlattenAliasSet_routingPreservation(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	attrTypes := testAliasAttrTypes()
+	elemType := types.ObjectType{AttrTypes: attrTypes}
+	aliases := map[string]models.IndexAlias{
+		"a-alias": {Routing: ""},
+		"b-alias": {Routing: "api-routing"},
+	}
+	preservedRouting := map[string]string{"a-alias": "preserved-a"}
+	sv, diags := aliasutil.FlattenAliasSet(ctx, aliases, preservedRouting, elemType, attrTypes)
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	elems := sv.Elements()
+	routingMap := make(map[string]string)
+	for _, el := range elems {
+		obj := el.(types.Object)
+		attrs := obj.Attributes()
+		name := attrs["name"].(types.String).ValueString()
+		routing := attrs["routing"].(types.String).ValueString()
+		routingMap[name] = routing
+	}
+	if routingMap["a-alias"] != "preserved-a" {
+		t.Errorf("a-alias routing: got %q, want preserved-a", routingMap["a-alias"])
+	}
+	if routingMap["b-alias"] != "api-routing" {
+		t.Errorf("b-alias routing: got %q, want api-routing", routingMap["b-alias"])
 	}
 }
