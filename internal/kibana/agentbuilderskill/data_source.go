@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -71,11 +72,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				Required:            true,
 				MarkdownDescription: "The skill ID to look up. Accepts either a bare skill id or a composite `<space_id>/<skill_id>` string.",
 			},
-			"space_id": dsschema.StringAttribute{
-				MarkdownDescription: "An identifier for the Kibana space. If not provided, the default space is used unless the `skill_id` argument supplies a composite space.",
-				Optional:            true,
-				Computed:            true,
-			},
+			"space_id": kbschema.DataSourceSpaceIDAttribute(),
 			attrName: dsschema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "Human-readable name for the skill.",
