@@ -20,6 +20,7 @@ package security_entity_store
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 )
@@ -28,11 +29,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Description: "Reads Elastic Security Entity Store status for a Kibana space.",
 		Attributes: map[string]schema.Attribute{
-			"space_id": schema.StringAttribute{
-				Description: "An identifier for the Kibana space. If omitted, the default space is used.",
-				Optional:    true,
-				Computed:    true,
-			},
+			"space_id": kbschema.DataSourceSpaceIDAttribute(),
 			"include_components": schema.BoolAttribute{
 				Description: "If true, returns a detailed status of each engine including all its components.",
 				Optional:    true,

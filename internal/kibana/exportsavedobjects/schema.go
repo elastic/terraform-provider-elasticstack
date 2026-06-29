@@ -19,6 +19,8 @@ package exportsavedobjects
 
 import (
 	"context"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -32,10 +34,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 				Description: "Generated ID for the export.",
 				Computed:    true,
 			},
-			"space_id": schema.StringAttribute{
-				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
-				Optional:    true,
-			},
+			"space_id": kbschema.DataSourceSpaceIDAttribute(),
 			"objects": schema.ListNestedAttribute{
 				Description: "List of objects to export.",
 				Required:    true,

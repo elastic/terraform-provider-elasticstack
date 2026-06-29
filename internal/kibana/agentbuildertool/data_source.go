@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -41,10 +42,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				Description: "The tool ID to look up.",
 				Required:    true,
 			},
-			"space_id": dsschema.StringAttribute{
-				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
-				Optional:    true,
-			},
+			"space_id": kbschema.DataSourceSpaceIDAttribute(),
 			"tool_id": dsschema.StringAttribute{
 				Description: "The ID of the tool.",
 				Computed:    true,

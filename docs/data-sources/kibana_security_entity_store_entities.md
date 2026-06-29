@@ -30,7 +30,7 @@ Queries the Kibana Security Entity Store list/search endpoint.
 - `sort_field` (String) Field to sort results by in page mode.
 - `sort_order` (String) Sort order in page mode.
 - `source` (List of String) Fields to include in response _source.
-- `space_id` (String) An identifier for the Kibana space. If omitted, the default space is used.
+- `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 
 ### Read-Only
 

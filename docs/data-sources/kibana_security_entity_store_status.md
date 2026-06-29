@@ -19,7 +19,7 @@ Reads Elastic Security Entity Store status for a Kibana space.
 
 - `include_components` (Boolean) If true, returns a detailed status of each engine including all its components.
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
-- `space_id` (String) An identifier for the Kibana space. If omitted, the default space is used.
+- `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 
 ### Read-Only
 
