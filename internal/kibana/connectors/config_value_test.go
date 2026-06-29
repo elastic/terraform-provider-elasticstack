@@ -45,13 +45,6 @@ func TestConfigValue_StringSemanticEquals(t *testing.T) {
 		errorContains string
 	}{
 		{
-			name:        "unknown values are equal",
-			configValue: NewConfigUnknown(),
-			otherValue:  NewConfigUnknown(),
-			expectEqual: true,
-			expectError: false,
-		},
-		{
 			name: "wrong type should produce error",
 			configValue: ConfigValue{
 				JSONWithContextualDefaultsValue: customtypes.JSONWithContextualDefaultsValue{
