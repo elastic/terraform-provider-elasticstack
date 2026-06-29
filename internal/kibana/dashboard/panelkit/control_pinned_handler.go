@@ -76,6 +76,7 @@ func (h ControlPinnedHandler[G, P]) FromAPI(ctx context.Context, prior *models.P
 	}
 
 	group, err := h.AsGroup(raw)
+	if err != nil {
 		diags.AddError(h.ParseErrSummary, err.Error())
 		return models.PinnedPanelModel{}, diags
 	}
@@ -108,6 +109,7 @@ func (h ControlPinnedHandler[G, P]) ToAPI(ppm models.PinnedPanelModel) (kbapi.Da
 
 	pm := ppm.SyntheticPanel()
 	panel := h.BuildPanel()
+	diags.Append(h.BuildConfig(pm, &panel)...)
 	if diags.HasError() {
 		return kbapi.DashboardPinnedPanels_Item{}, diags
 	}
