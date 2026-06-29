@@ -32,8 +32,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-const indexNameAllowedCharsMessage = index.IndexNameAllowedCharsMessage
-
 func getDataSourceSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Description: "Retrieves information about existing Elasticsearch indices. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-get-index.html",
@@ -64,7 +62,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 								stringvalidator.RegexMatches(regexp.MustCompile(`^[^-_+]`), "cannot start with -, _, +"),
 								stringvalidator.RegexMatches(
 									regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`),
-									indexNameAllowedCharsMessage,
+									index.IndexNameAllowedCharsMessage,
 								),
 							},
 						},
