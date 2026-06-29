@@ -22,8 +22,6 @@ import (
 	"encoding/json"
 
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -103,107 +101,30 @@ func flattenTemplateBlock(
 		return types.ObjectNull(templateAttrTypes()), diags
 	}
 
-	mappings, mappingsDiags := flattenMappings(t.Mappings, priorMappings)
-	diags.Append(mappingsDiags...)
-	if diags.HasError() {
-		return types.ObjectNull(templateAttrTypes()), diags
-	}
-
-	settings, settingsDiags := flattenSettings(t.Settings, priorSettings)
-	diags.Append(settingsDiags...)
-	if diags.HasError() {
-		return types.ObjectNull(templateAttrTypes()), diags
-	}
-
-	aliasSet, d := flattenAliasSet(ctx, t.Aliases, preservedRouting)
+	core, d := templateutil.FlattenTemplateCore(
+		ctx,
+		t,
+		priorMappings,
+		priorSettings,
+		preservedRouting,
+		types.ObjectType{AttrTypes: aliasAttrTypes()},
+		aliasAttrTypes(),
+	)
 	diags.Append(d...)
 	if diags.HasError() {
 		return types.ObjectNull(templateAttrTypes()), diags
 	}
 
-	var dsoObj types.Object
-	if t.DataStreamOptions != nil && t.DataStreamOptions.FailureStore != nil {
-		var dsoDiags diag.Diagnostics
-		dsoObj, dsoDiags = datastreamoptions.FlattenLocal(t.DataStreamOptions)
-		diags.Append(dsoDiags...)
-		if diags.HasError() {
-			return types.ObjectNull(templateAttrTypes()), diags
-		}
-	} else {
-		dsoObj = types.ObjectNull(datastreamoptions.AttrTypes())
-	}
-
 	tplAttrs := map[string]attr.Value{
-		attrAlias:             aliasSet,
-		attrMappings:          mappings,
-		attrSettings:          settings,
-		attrDataStreamOptions: dsoObj,
+		attrAlias:             core.AliasSet,
+		attrMappings:          core.Mappings,
+		attrSettings:          core.Settings,
+		attrDataStreamOptions: core.DsoObj,
 	}
 
 	obj, d := types.ObjectValue(templateAttrTypes(), tplAttrs)
 	diags.Append(d...)
 	return obj, diags
-}
-
-// flattenAliasSet maps Elasticsearch alias API responses into a types.Set.
-// preservedRouting carries user-configured routing values to restore when the API omits them.
-func flattenAliasSet(ctx context.Context, aliases map[string]models.IndexAlias, preservedRouting map[string]string) (types.Set, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	aliasElemType := types.ObjectType{AttrTypes: aliasAttrTypes()}
-
-	if len(aliases) == 0 {
-		return types.SetNull(aliasElemType), diags
-	}
-
-	vals := make([]attr.Value, 0, len(aliases))
-	for name, alias := range aliases {
-		av, d := aliasutil.FlattenAliasElement(name, alias, preservedRouting, aliasAttrTypes())
-		diags.Append(d...)
-		if diags.HasError() {
-			return types.SetUnknown(aliasElemType), diags
-		}
-		vals = append(vals, av)
-	}
-
-	sv, d := types.SetValueFrom(ctx, aliasElemType, vals)
-	diags.Append(d...)
-	return sv, diags
-}
-
-// flattenMappings maps the API mappings response onto a MappingsValue, applying
-// the prior-preservation rule when the API returns no mappings.
-func flattenMappings(apiMappings map[string]any, prior esindex.MappingsValue) (esindex.MappingsValue, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if len(apiMappings) > 0 {
-		b, err := json.Marshal(apiMappings)
-		if err != nil {
-			diags.AddError("Failed to marshal template.mappings", err.Error())
-			return esindex.NewMappingsNull(), diags
-		}
-		return esindex.NewMappingsValue(string(b)), diags
-	}
-	if templateutil.IsKnownSemanticallyEmpty(prior) {
-		return prior, diags
-	}
-	return esindex.NewMappingsNull(), diags
-}
-
-// flattenSettings maps the API settings response onto an IndexSettingsValue,
-// applying the prior-preservation rule when the API returns no settings.
-func flattenSettings(apiSettings map[string]any, prior customtypes.IndexSettingsValue) (customtypes.IndexSettingsValue, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if len(apiSettings) > 0 {
-		b, err := json.Marshal(apiSettings)
-		if err != nil {
-			diags.AddError("Failed to marshal template.settings", err.Error())
-			return customtypes.NewIndexSettingsNull(), diags
-		}
-		return customtypes.NewIndexSettingsValue(string(b)), diags
-	}
-	if templateutil.IsKnownSemanticallyEmpty(prior) {
-		return prior, diags
-	}
-	return customtypes.NewIndexSettingsNull(), diags
 }
 
 // extractEmptyObjectOverridesFromData pulls the prior mappings and settings
