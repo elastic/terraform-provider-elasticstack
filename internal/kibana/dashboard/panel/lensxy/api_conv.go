@@ -58,18 +58,18 @@ func xyAxisFromAPI(m *models.XYAxisModel, apiAxis *kbapi.KibanaHTTPAPIsVisApiXyA
 
 	if apiAxis.Y != nil {
 		m.Y = &models.YAxisConfigModel{}
-		yDiags := YAxisConfigFromAPIY(m.Y, apiAxis.Y)
+		yDiags := yAxisConfigFromAPIY(m.Y, apiAxis.Y)
 		diags.Append(yDiags...)
-		if YAxisConfigIsEmpty(m.Y) {
+		if yAxisConfigIsEmpty(m.Y) {
 			m.Y = nil
 		}
 	}
 
 	if apiAxis.Y2 != nil {
 		m.Y2 = &models.YAxisConfigModel{}
-		y2Diags := YAxisConfigFromAPIY2(m.Y2, apiAxis.Y2)
+		y2Diags := yAxisConfigFromAPIY2(m.Y2, apiAxis.Y2)
 		diags.Append(y2Diags...)
-		if YAxisConfigIsEmpty(m.Y2) {
+		if yAxisConfigIsEmpty(m.Y2) {
 			m.Y2 = nil
 		}
 	}
@@ -118,13 +118,13 @@ func xyAxisToAPI(m *models.XYAxisModel) (*kbapi.KibanaHTTPAPIsVisApiXyAxisConfig
 	}
 
 	if m.Y != nil {
-		yAxis, yDiags := YAxisConfigToAPIY(m.Y)
+		yAxis, yDiags := yAxisConfigToAPIY(m.Y)
 		diags.Append(yDiags...)
 		axis.Y = yAxis
 	}
 
 	if m.Y2 != nil {
-		y2Axis, y2Diags := YAxisConfigToAPIY2(m.Y2)
+		y2Axis, y2Diags := yAxisConfigToAPIY2(m.Y2)
 		diags.Append(y2Diags...)
 		axis.Y2 = y2Axis
 	}
@@ -241,7 +241,7 @@ func xyAxisConfigToAPI(m *models.XYAxisConfigModel) (*xyAxisConfigAPIModel, diag
 	return xAxis, diags
 }
 
-func YAxisConfigIsEmpty(m *models.YAxisConfigModel) bool {
+func yAxisConfigIsEmpty(m *models.YAxisConfigModel) bool {
 	if m == nil {
 		return true
 	}
@@ -251,7 +251,7 @@ func YAxisConfigIsEmpty(m *models.YAxisConfigModel) bool {
 	return axisTitleIsDefault(m.Title)
 }
 
-func YAxisConfigFromAPIY(m *models.YAxisConfigModel, apiAxis *struct {
+func yAxisConfigFromAPIY(m *models.YAxisConfigModel, apiAxis *struct {
 	Domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain `json:"domain"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
@@ -303,7 +303,7 @@ func YAxisConfigFromAPIY(m *models.YAxisConfigModel, apiAxis *struct {
 	return diags
 }
 
-func YAxisConfigToAPIY(m *models.YAxisConfigModel) (*struct {
+func yAxisConfigToAPIY(m *models.YAxisConfigModel) (*struct {
 	Domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain `json:"domain"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
@@ -374,7 +374,7 @@ func YAxisConfigToAPIY(m *models.YAxisConfigModel) (*struct {
 	return yAxis, diags
 }
 
-func YAxisConfigFromAPIY2(m *models.YAxisConfigModel, apiAxis *struct {
+func yAxisConfigFromAPIY2(m *models.YAxisConfigModel, apiAxis *struct {
 	Domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain `json:"domain"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
@@ -426,7 +426,7 @@ func YAxisConfigFromAPIY2(m *models.YAxisConfigModel, apiAxis *struct {
 	return diags
 }
 
-func YAxisConfigToAPIY2(m *models.YAxisConfigModel) (*struct {
+func yAxisConfigToAPIY2(m *models.YAxisConfigModel) (*struct {
 	Domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain `json:"domain"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
@@ -1041,8 +1041,7 @@ func xyChartConfigStylingToAPI(m *models.XYChartConfigModel) *kbapi.KibanaHTTPAP
 	return s
 }
 
-// toAPINoESQL converts the XY chart config model to a non-ES|QL API payload.
-func XYChartConfigToAPINoESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPIsXyChartNoESQL, diag.Diagnostics) {
+func xyChartConfigToAPINoESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPIsXyChartNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	chart := kbapi.KibanaHTTPAPIsXyChartNoESQL{Type: kbapi.KibanaHTTPAPIsXyChartNoESQLTypeXy}
 
@@ -1314,7 +1313,7 @@ func xyChartConfigToAPI(m *models.XYChartConfigModel) (lenscommon.VisByValueConf
 		return attrs, diags
 	}
 
-	chart, xyDiags := XYChartConfigToAPINoESQL(&configModel)
+	chart, xyDiags := xyChartConfigToAPINoESQL(&configModel)
 	diags.Append(xyDiags...)
 	if diags.HasError() {
 		return attrs, diags
