@@ -244,7 +244,7 @@ func (model outputModel) buildCommonNewOutput(ctx context.Context, diags *diag.D
 		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
 		Hosts:                typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), diags),
-		ID:                   model.OutputID.ValueStringPointer(),
+		ID:                   typeutils.OptionalString(model.OutputID),
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueString(),

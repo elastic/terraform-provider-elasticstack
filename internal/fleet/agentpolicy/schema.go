@@ -20,6 +20,7 @@ package agentpolicy
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
@@ -66,12 +67,15 @@ func getSchema() schema.Schema {
 				},
 			},
 			"policy_id": schema.StringAttribute{
-				Description: "Unique identifier of the agent policy.",
+				Description: policyIDDescription,
 				Computed:    true,
 				Optional:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
+				},
+				Validators: []validator.String{
+					fleet.IDValidator("policy_id"),
 				},
 			},
 			"name": schema.StringAttribute{

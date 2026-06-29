@@ -388,7 +388,7 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat agentP
 		Description:        model.Description.ValueStringPointer(),
 		DownloadSourceId:   model.DownloadSourceID.ValueStringPointer(),
 		FleetServerHostId:  model.FleetServerHostID.ValueStringPointer(),
-		Id:                 model.PolicyID.ValueStringPointer(),
+		Id:                 typeutils.OptionalString(model.PolicyID),
 		MonitoringEnabled:  &monitoring,
 		MonitoringOutputId: model.MonitoringOutputID.ValueStringPointer(),
 		Name:               model.Name.ValueString(),
