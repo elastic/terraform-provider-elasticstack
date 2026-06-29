@@ -4,8 +4,7 @@
 
 Three SLO acceptance tests fail on Elastic Stack **8.10.4** because the Kibana SLO backend
 returns HTTP 500 (`illegal_argument_exception: must specify at least one document in [docs]`)
-when creating an SLO whose source index is empty. This is a known server-side constraint on
-8.10.x that was resolved in later patch releases. The provider code is not at fault.
+when creating an SLO whose source index is empty. This appears specific to 8.10.4 (other 8.10.x patch versions unconfirmed) and was resolved in later patch releases. The provider code is not at fault.
 
 The fix is to add `!=8.10.4` to the version-constraint strings for the three affected tests,
 following the existing pattern already established for 8.11.x Kibana SLO bugs.

@@ -18,8 +18,7 @@ var SLOKqlAccTestConstraints = mustKqlAccConstraint(">=8.9.0,!=8.10.4,!=8.11.0,!
 var SLOKqlFleetAccTestConstraints = mustKqlAccConstraint(">=8.10.0,!=8.10.4,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
 ```
 
-**Acceptance:** `go build ./internal/kibana/slo/...` succeeds; no test file references the
-old constant values.
+**Acceptance:** `go test ./internal/kibana/slo -run '^$'` succeeds (compiles tests); no test file references the old constant values.
 
 ---
 

@@ -6,8 +6,8 @@
 ## Purpose
 
 Kibana 8.10.4 returns HTTP 500 (`illegal_argument_exception: must specify at least one document
-in [docs]`) when creating an SLO against an empty source index. This server-side constraint
-is specific to 8.10.4 and was not present in prior or subsequent releases. The three SLO
+in [docs]`) when creating an SLO against an empty source index. This appears to be a regression in
+8.10.4; whether other 8.10.x patch versions are affected is unconfirmed. The three SLO
 acceptance tests that use freshly-created, empty indices must be skipped on 8.10.4, following
 the same version-exclusion pattern established for 8.11.x.
 
