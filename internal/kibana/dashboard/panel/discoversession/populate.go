@@ -503,82 +503,95 @@ func discoverSessionColumnSettingsFromAPI(ctx context.Context, api *map[string]s
 	return typeutils.MapValueFrom(ctx, elems, columnSettingObjectType(), path.Empty(), diags)
 }
 
-func discoverSessionDSLHeaderRowHeightFromAPI(h *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_HeaderRowHeight) types.String {
-	if h == nil {
+func rowHeightFromAPI(isNil bool, decodeInt func() (float32, error), decodeStr func() (string, error)) types.String {
+	if isNil {
 		return types.StringNull()
 	}
-	if v, err := h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeight0(); err == nil {
+	if v, err := decodeInt(); err == nil {
 		return types.StringValue(strconv.FormatInt(int64(v), 10))
 	}
-	if v, err := h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeight1(); err == nil {
-		return types.StringValue(string(v))
+	if v, err := decodeStr(); err == nil {
+		return types.StringValue(v)
 	}
 	return types.StringNull()
+}
+
+func discoverSessionDSLHeaderRowHeightFromAPI(h *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_HeaderRowHeight) types.String {
+	return rowHeightFromAPI(
+		h == nil,
+		func() (float32, error) {
+			return h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeight0()
+		},
+		func() (string, error) {
+			v, err := h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeight1()
+			return string(v), err
+		},
+	)
 }
 
 func discoverSessionDSLRowHeightFromAPI(h *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_RowHeight) types.String {
-	if h == nil {
-		return types.StringNull()
-	}
-	if v, err := h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0RowHeight0(); err == nil {
-		return types.StringValue(strconv.FormatInt(int64(v), 10))
-	}
-	if v, err := h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0RowHeight1(); err == nil {
-		return types.StringValue(string(v))
-	}
-	return types.StringNull()
+	return rowHeightFromAPI(
+		h == nil,
+		func() (float32, error) {
+			return h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0RowHeight0()
+		},
+		func() (string, error) {
+			v, err := h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0RowHeight1()
+			return string(v), err
+		},
+	)
 }
 
 func discoverSessionESQLHeaderRowHeightFromAPI(h *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_HeaderRowHeight) types.String {
-	if h == nil {
-		return types.StringNull()
-	}
-	if v, err := h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeight0(); err == nil {
-		return types.StringValue(strconv.FormatInt(int64(v), 10))
-	}
-	if v, err := h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeight1(); err == nil {
-		return types.StringValue(string(v))
-	}
-	return types.StringNull()
+	return rowHeightFromAPI(
+		h == nil,
+		func() (float32, error) {
+			return h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeight0()
+		},
+		func() (string, error) {
+			v, err := h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeight1()
+			return string(v), err
+		},
+	)
 }
 
 func discoverSessionESQLRowHeightFromAPI(h *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_RowHeight) types.String {
-	if h == nil {
-		return types.StringNull()
-	}
-	if v, err := h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1RowHeight0(); err == nil {
-		return types.StringValue(strconv.FormatInt(int64(v), 10))
-	}
-	if v, err := h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1RowHeight1(); err == nil {
-		return types.StringValue(string(v))
-	}
-	return types.StringNull()
+	return rowHeightFromAPI(
+		h == nil,
+		func() (float32, error) {
+			return h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1RowHeight0()
+		},
+		func() (string, error) {
+			v, err := h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1RowHeight1()
+			return string(v), err
+		},
+	)
 }
 
 func discoverSessionOverridesHeaderRowHeightFromAPI(h *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_HeaderRowHeight) types.String {
-	if h == nil {
-		return types.StringNull()
-	}
-	if v, err := h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesHeaderRowHeight0(); err == nil {
-		return types.StringValue(strconv.FormatInt(int64(v), 10))
-	}
-	if v, err := h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesHeaderRowHeight1(); err == nil {
-		return types.StringValue(string(v))
-	}
-	return types.StringNull()
+	return rowHeightFromAPI(
+		h == nil,
+		func() (float32, error) {
+			return h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesHeaderRowHeight0()
+		},
+		func() (string, error) {
+			v, err := h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesHeaderRowHeight1()
+			return string(v), err
+		},
+	)
 }
 
 func discoverSessionOverridesRowHeightFromAPI(h *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_RowHeight) types.String {
-	if h == nil {
-		return types.StringNull()
-	}
-	if v, err := h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesRowHeight0(); err == nil {
-		return types.StringValue(strconv.FormatInt(int64(v), 10))
-	}
-	if v, err := h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesRowHeight1(); err == nil {
-		return types.StringValue(string(v))
-	}
-	return types.StringNull()
+	return rowHeightFromAPI(
+		h == nil,
+		func() (float32, error) {
+			return h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesRowHeight0()
+		},
+		func() (string, error) {
+			v, err := h.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesRowHeight1()
+			return string(v), err
+		},
+	)
 }
 
 func readDiscoverSessionDrilldownsFromConfig0(

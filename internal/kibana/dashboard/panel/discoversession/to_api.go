@@ -559,172 +559,122 @@ func discoverSessionColumnSettingsToAPI(ctx context.Context, m types.Map, diags 
 	return &out
 }
 
-func discoverSessionDSLHeaderRowHeightToAPI(s types.String) (*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_HeaderRowHeight, diag.Diagnostics) {
-	return discoverSessionNumericOrAutoUnionToDSLHeaderHeight(s)
-}
-
-func discoverSessionDSLRowHeightToAPI(s types.String) (*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_RowHeight, diag.Diagnostics) {
-	return discoverSessionNumericOrAutoUnionToDSLRowHeight(s)
-}
-
-func discoverSessionESQLHeaderRowHeightToAPI(s types.String) (*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_HeaderRowHeight, diag.Diagnostics) {
+func rowHeightToAPIHelper(s types.String, errLabel string, fromAuto func() error, fromInt func(float32) error) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if !typeutils.IsKnown(s) || s.IsNull() {
-		return nil, diags
+		return false, diags
 	}
 	v := s.ValueString()
-	var out kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_HeaderRowHeight
 	switch v {
 	case valueAuto:
-		if err := out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeight1(
-			kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeight1Auto,
-		); err != nil {
-			diags.AddError("Invalid header_row_height", err.Error())
+		if err := fromAuto(); err != nil {
+			diags.AddError("Invalid "+errLabel, err.Error())
 		}
 	default:
 		n, err := strconv.Atoi(v)
 		if err != nil {
-			diags.AddError("Invalid header_row_height", err.Error())
-			return nil, diags
+			diags.AddError("Invalid "+errLabel, err.Error())
+			return false, diags
 		}
-		f := float32(n)
-		if err := out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeight0(f); err != nil {
-			diags.AddError("Invalid header_row_height", err.Error())
+		if err := fromInt(float32(n)); err != nil {
+			diags.AddError("Invalid "+errLabel, err.Error())
 		}
+	}
+	return true, diags
+}
+
+func discoverSessionDSLHeaderRowHeightToAPI(s types.String) (*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_HeaderRowHeight, diag.Diagnostics) {
+	var out kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_HeaderRowHeight
+	ok, diags := rowHeightToAPIHelper(s, "header_row_height",
+		func() error {
+			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeight1(kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeight1Auto)
+		},
+		func(f float32) error {
+			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeight0(f)
+		},
+	)
+	if !ok {
+		return nil, diags
+	}
+	return &out, diags
+}
+
+func discoverSessionDSLRowHeightToAPI(s types.String) (*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_RowHeight, diag.Diagnostics) {
+	var out kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_RowHeight
+	ok, diags := rowHeightToAPIHelper(s, "row_height",
+		func() error {
+			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0RowHeight1(kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0RowHeight1Auto)
+		},
+		func(f float32) error {
+			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0RowHeight0(f)
+		},
+	)
+	if !ok {
+		return nil, diags
+	}
+	return &out, diags
+}
+
+func discoverSessionESQLHeaderRowHeightToAPI(s types.String) (*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_HeaderRowHeight, diag.Diagnostics) {
+	var out kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_HeaderRowHeight
+	ok, diags := rowHeightToAPIHelper(s, "header_row_height",
+		func() error {
+			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeight1(kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeight1Auto)
+		},
+		func(f float32) error {
+			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeight0(f)
+		},
+	)
+	if !ok {
+		return nil, diags
 	}
 	return &out, diags
 }
 
 func discoverSessionESQLRowHeightToAPI(s types.String) (*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_RowHeight, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if !typeutils.IsKnown(s) || s.IsNull() {
-		return nil, diags
-	}
-	v := s.ValueString()
 	var out kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_RowHeight
-	switch v {
-	case valueAuto:
-		if err := out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1RowHeight1(kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1RowHeight1Auto); err != nil {
-			diags.AddError("Invalid row_height", err.Error())
-		}
-	default:
-		n, err := strconv.Atoi(v)
-		if err != nil {
-			diags.AddError("Invalid row_height", err.Error())
-			return nil, diags
-		}
-		f := float32(n)
-		if err := out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1RowHeight0(f); err != nil {
-			diags.AddError("Invalid row_height", err.Error())
-		}
+	ok, diags := rowHeightToAPIHelper(s, "row_height",
+		func() error {
+			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1RowHeight1(kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1RowHeight1Auto)
+		},
+		func(f float32) error {
+			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1RowHeight0(f)
+		},
+	)
+	if !ok {
+		return nil, diags
 	}
 	return &out, diags
 }
 
 func discoverSessionOverridesHeaderRowHeightToAPI(s types.String) (*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_HeaderRowHeight, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if !typeutils.IsKnown(s) || s.IsNull() {
-		return nil, diags
-	}
-	v := s.ValueString()
 	var out kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_HeaderRowHeight
-	switch v {
-	case valueAuto:
-		if err := out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesHeaderRowHeight1(
-			kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesHeaderRowHeight1Auto,
-		); err != nil {
-			diags.AddError("Invalid overrides.header_row_height", err.Error())
-		}
-	default:
-		n, err := strconv.Atoi(v)
-		if err != nil {
-			diags.AddError("Invalid overrides.header_row_height", err.Error())
-			return nil, diags
-		}
-		f := float32(n)
-		if err := out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesHeaderRowHeight0(f); err != nil {
-			diags.AddError("Invalid overrides.header_row_height", err.Error())
-		}
+	ok, diags := rowHeightToAPIHelper(s, "overrides.header_row_height",
+		func() error {
+			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesHeaderRowHeight1(kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesHeaderRowHeight1Auto)
+		},
+		func(f float32) error {
+			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesHeaderRowHeight0(f)
+		},
+	)
+	if !ok {
+		return nil, diags
 	}
 	return &out, diags
 }
 
 func discoverSessionOverridesRowHeightToAPI(s types.String) (*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_RowHeight, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if !typeutils.IsKnown(s) || s.IsNull() {
-		return nil, diags
-	}
-	v := s.ValueString()
 	var out kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_RowHeight
-	switch v {
-	case valueAuto:
-		if err := out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesRowHeight1(kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesRowHeight1Auto); err != nil {
-			diags.AddError("Invalid overrides.row_height", err.Error())
-		}
-	default:
-		n, err := strconv.Atoi(v)
-		if err != nil {
-			diags.AddError("Invalid overrides.row_height", err.Error())
-			return nil, diags
-		}
-		f := float32(n)
-		if err := out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesRowHeight0(f); err != nil {
-			diags.AddError("Invalid overrides.row_height", err.Error())
-		}
-	}
-	return &out, diags
-}
-
-func discoverSessionNumericOrAutoUnionToDSLHeaderHeight(s types.String) (*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_HeaderRowHeight, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if !typeutils.IsKnown(s) || s.IsNull() {
+	ok, diags := rowHeightToAPIHelper(s, "overrides.row_height",
+		func() error {
+			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesRowHeight1(kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesRowHeight1Auto)
+		},
+		func(f float32) error {
+			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesRowHeight0(f)
+		},
+	)
+	if !ok {
 		return nil, diags
-	}
-	v := s.ValueString()
-	var out kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_HeaderRowHeight
-	switch v {
-	case valueAuto:
-		if err := out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeight1(
-			kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeight1Auto,
-		); err != nil {
-			diags.AddError("Invalid header_row_height", err.Error())
-		}
-	default:
-		n, err := strconv.Atoi(v)
-		if err != nil {
-			diags.AddError("Invalid header_row_height", err.Error())
-			return nil, diags
-		}
-		f := float32(n)
-		if err := out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeight0(f); err != nil {
-			diags.AddError("Invalid header_row_height", err.Error())
-		}
-	}
-	return &out, diags
-}
-
-func discoverSessionNumericOrAutoUnionToDSLRowHeight(s types.String) (*kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_RowHeight, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if !typeutils.IsKnown(s) || s.IsNull() {
-		return nil, diags
-	}
-	v := s.ValueString()
-	var out kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_RowHeight
-	switch v {
-	case valueAuto:
-		if err := out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0RowHeight1(kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0RowHeight1Auto); err != nil {
-			diags.AddError("Invalid row_height", err.Error())
-		}
-	default:
-		n, err := strconv.Atoi(v)
-		if err != nil {
-			diags.AddError("Invalid row_height", err.Error())
-			return nil, diags
-		}
-		f := float32(n)
-		if err := out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0RowHeight0(f); err != nil {
-			diags.AddError("Invalid row_height", err.Error())
-		}
 	}
 	return &out, diags
 }
