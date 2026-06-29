@@ -564,6 +564,16 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors.NewConfigUnknown",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors",
+      "attemptedAt": "2026-06-29T04:39:37.578976867Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
