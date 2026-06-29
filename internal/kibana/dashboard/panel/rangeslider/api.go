@@ -28,7 +28,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 const panelConfigAttrsKeyPrefix = panelType + "_config"
@@ -90,31 +89,10 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	return panelItem, nil
 }
 
-func rangeSliderAttrsShape(attrs map[string]attr.Value) (flat bool, obj types.Object, shaped bool) {
-	if attrs == nil {
-		return false, types.Object{}, false
-	}
-	if _, dv := attrs["data_view_id"]; dv {
-		if _, fn := attrs["field_name"]; fn {
-			return true, types.Object{}, true
-		}
-		return false, types.Object{}, false
-	}
-	raw, nested := attrs[panelConfigAttrsKeyPrefix]
-	if !nested {
-		return false, types.Object{}, false
-	}
-	obj, ok := raw.(types.Object)
-	if !ok {
-		return false, types.Object{}, false
-	}
-	return false, obj, true
-}
-
 // ValidatePanelConfig enforces required range slider identifiers.
 func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
 	var out diag.Diagnostics
-	flat, obj, shaped := rangeSliderAttrsShape(attrs)
+	flat, obj, shaped := panelkit.ResolvePanelAttrsShape(attrs, panelConfigAttrsKeyPrefix, "data_view_id", "field_name")
 	if !shaped {
 		return out
 	}
