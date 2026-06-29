@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package agentpolicy
+package fleet
 
 import (
 	"context"
@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPolicyIDValidator(t *testing.T) {
+func TestIDValidator(t *testing.T) {
 	t.Parallel()
 
 	valid255 := strings.Repeat("a", 255)
@@ -53,17 +53,17 @@ func TestPolicyIDValidator(t *testing.T) {
 			name:      "empty string",
 			value:     types.StringValue(""),
 			wantError: true,
-			wantMatch: policyIDLengthErrorDetail,
+			wantMatch: idLengthErrorDetail("test_id"),
 		},
 		{
 			name:  "valid id",
-			value: types.StringValue("my-valid-policy"),
+			value: types.StringValue("my-valid-id"),
 		},
 		{
 			name:      "length 256",
 			value:     types.StringValue(tooLong),
 			wantError: true,
-			wantMatch: policyIDLengthErrorDetail,
+			wantMatch: idLengthErrorDetail("test_id"),
 		},
 		{
 			name:  "length 255",
@@ -73,49 +73,49 @@ func TestPolicyIDValidator(t *testing.T) {
 			name:      "contains slash",
 			value:     types.StringValue("bad/id"),
 			wantError: true,
-			wantMatch: policyIDPathErrorDetail,
+			wantMatch: idPathErrorDetail("test_id"),
 		},
 		{
 			name:      "contains traversal sequence",
-			value:     types.StringValue("my..policy"),
+			value:     types.StringValue("my..id"),
 			wantError: true,
-			wantMatch: policyIDTraversalErrorDetail,
+			wantMatch: idTraversalErrorDetail("test_id"),
 		},
 		{
 			name:      "bare __proto__",
 			value:     types.StringValue("__proto__"),
 			wantError: true,
-			wantMatch: policyIDReservedErrorDetail("__proto__"),
+			wantMatch: idReservedErrorDetail("test_id", "__proto__"),
 		},
 		{
 			name:      "bare constructor",
 			value:     types.StringValue("constructor"),
 			wantError: true,
-			wantMatch: policyIDReservedErrorDetail("constructor"),
+			wantMatch: idReservedErrorDetail("test_id", "constructor"),
 		},
 		{
 			name:      "bare prototype",
 			value:     types.StringValue("prototype"),
 			wantError: true,
-			wantMatch: policyIDReservedErrorDetail("prototype"),
+			wantMatch: idReservedErrorDetail("test_id", "prototype"),
 		},
 		{
 			name:      "contains __proto__ substring",
-			value:     types.StringValue("my-__proto__-policy"),
+			value:     types.StringValue("my-__proto__-id"),
 			wantError: true,
-			wantMatch: policyIDReservedErrorDetail("__proto__"),
+			wantMatch: idReservedErrorDetail("test_id", "__proto__"),
 		},
 		{
 			name:      "contains constructor substring",
-			value:     types.StringValue("my-constructor-policy"),
+			value:     types.StringValue("my-constructor-id"),
 			wantError: true,
-			wantMatch: policyIDReservedErrorDetail("constructor"),
+			wantMatch: idReservedErrorDetail("test_id", "constructor"),
 		},
 		{
 			name:      "contains prototype substring",
-			value:     types.StringValue("my-prototype-policy"),
+			value:     types.StringValue("my-prototype-id"),
 			wantError: true,
-			wantMatch: policyIDReservedErrorDetail("prototype"),
+			wantMatch: idReservedErrorDetail("test_id", "prototype"),
 		},
 	}
 
@@ -124,8 +124,8 @@ func TestPolicyIDValidator(t *testing.T) {
 			t.Parallel()
 
 			var resp validator.StringResponse
-			policyIDValidator{}.ValidateString(context.Background(), validator.StringRequest{
-				Path:        path.Root("policy_id"),
+			IDValidator("test_id").ValidateString(context.Background(), validator.StringRequest{
+				Path:        path.Root("test_id"),
 				ConfigValue: tc.value,
 			}, &resp)
 

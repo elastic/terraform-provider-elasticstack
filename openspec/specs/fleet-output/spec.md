@@ -121,6 +121,85 @@ The resource SHALL expose a computed `id` attribute that mirrors `output_id`. On
 - WHEN create completes successfully
 - THEN `output_id` and `id` SHALL both be set to the API-returned identifier
 
+### Requirement: Create behavior — omit id when unset
+
+When `output_id` is not set in config (null or unknown), the resource SHALL omit the `id` field from the Fleet Create Output request body entirely, allowing Fleet to auto-generate an ID. The resource SHALL NOT send `"id": ""` to the API. This behavior SHALL apply to all output create payload variants, including Elasticsearch, remote Elasticsearch, Logstash, and Kafka outputs.
+
+An explicit `output_id = ""` in config is rejected at plan time by the `output_id` validation requirement and therefore never reaches the create payload.
+
+#### Scenario: output_id unset — id omitted from create body
+
+- GIVEN `output_id` is not set in config
+- WHEN create runs and the Fleet Create Output API is called
+- THEN the request body SHALL NOT contain an `"id"` field
+- AND Fleet SHALL auto-assign an output ID which is stored in `output_id` state
+
+#### Scenario: output_id set — id sent in create body
+
+- GIVEN `output_id = "my-output-id"` is set in config
+- WHEN create runs and the Fleet Create Output API is called
+- THEN the request body SHALL contain `"id": "my-output-id"`
+
+### Requirement: output_id plan-time validation
+
+The resource SHALL validate `output_id` at plan time when an explicit value is provided. A supplied `output_id` value SHALL satisfy all of the following constraints:
+
+1. Length is between 1 and 255 characters (inclusive).
+2. Does not contain `/` (path separator).
+3. Does not contain `..` (traversal sequence).
+4. Does not contain any of the reserved keys as a substring: `__proto__`, `constructor`, `prototype`.
+
+When any constraint is violated, the resource SHALL surface a plan-time error diagnostic naming the violated constraint. The validator SHALL NOT produce an error for null or unknown values; those are treated as not set and the `id` field is omitted from the create payload. An explicit empty string (`output_id = ""`) SHALL be rejected as a length-0 violation.
+
+#### Scenario: Valid explicit output_id passes validation
+
+- GIVEN `output_id = "my-valid-output"` is set in config
+- WHEN a plan is generated
+- THEN no validation errors SHALL be produced
+
+#### Scenario: Explicit empty output_id fails validation
+
+- GIVEN `output_id = ""` is set in config
+- WHEN a plan is generated
+- THEN a plan-time error diagnostic SHALL be produced indicating the length constraint
+
+#### Scenario: Unset output_id passes validation
+
+- GIVEN `output_id` is not set in config (null or unknown)
+- WHEN a plan is generated
+- THEN the plan-time validator SHALL NOT produce an error
+- AND the `id` field SHALL be omitted from the create request body
+
+#### Scenario: output_id with path separator fails validation
+
+- GIVEN `output_id = "my/output"` is set in config
+- WHEN a plan is generated
+- THEN a plan-time error diagnostic SHALL be produced indicating the `/` constraint
+
+#### Scenario: output_id with traversal sequence fails validation
+
+- GIVEN `output_id = "my..output"` is set in config
+- WHEN a plan is generated
+- THEN a plan-time error diagnostic SHALL be produced indicating the `..` constraint
+
+#### Scenario: output_id exceeds maximum length fails validation
+
+- GIVEN `output_id` is set to a string of 256 or more characters
+- WHEN a plan is generated
+- THEN a plan-time error diagnostic SHALL be produced indicating the length constraint
+
+#### Scenario: Reserved key output_id fails validation
+
+- GIVEN `output_id = "__proto__"` (or `"constructor"` or `"prototype"`) is set in config
+- WHEN a plan is generated
+- THEN a plan-time error diagnostic SHALL be produced indicating the reserved-key constraint
+
+#### Scenario: Reserved key as substring fails validation
+
+- GIVEN `output_id = "my-__proto__-output"` (or any value containing `constructor` or `prototype` as a substring) is set in config
+- WHEN a plan is generated
+- THEN a plan-time error diagnostic SHALL be produced indicating the reserved-key constraint
+
 ### Requirement: Import (REQ-008)
 
 The resource SHALL support import with both plain and composite import IDs.

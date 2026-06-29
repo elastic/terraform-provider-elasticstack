@@ -321,7 +321,7 @@ func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOu
 		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
 		Hosts:                typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags),
-		Id:                   model.OutputID.ValueStringPointer(),
+		Id:                   typeutils.OptionalString(model.OutputID),
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueString(),

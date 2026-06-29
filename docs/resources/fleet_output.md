@@ -272,7 +272,7 @@ resource "elasticstack_fleet_output" "logstash" {
 - `default_monitoring` (Boolean) Make this output the default for agent monitoring.
 - `kafka` (Attributes) Kafka-specific configuration. (see [below for nested schema](#nestedatt--kafka))
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
-- `output_id` (String) Unique identifier of the output.
+- `output_id` (String) Unique identifier of the output. When omitted, Fleet auto-generates an ID. When set, the value must be 1-255 characters and must not contain path separators ("/"), traversal sequences (".."), or reserved keys ("__proto__", "constructor", "prototype"). Invalid explicit values fail at plan time.
 - `service_token` (String, Sensitive) Service token for remote Elasticsearch outputs.
 - `space_ids` (Set of String) The Kibana space IDs where this output is available. When set, the output will be created and managed within the specified space. Note: The order of space IDs does not matter as this is a set.
 - `ssl` (Attributes) SSL configuration. (see [below for nested schema](#nestedatt--ssl))

@@ -40,6 +40,85 @@ The resource SHALL expose a computed `id` attribute that mirrors `host_id`. On c
 - WHEN create completes successfully
 - THEN `host_id` and `id` SHALL both be set to the API-returned identifier
 
+### Requirement: Create behavior — omit id when unset
+
+When `host_id` is not set in config (null or unknown), the resource SHALL omit the `id` field from the Fleet Create Fleet Server Host request body entirely, allowing Fleet to auto-generate an ID. The resource SHALL NOT send `"id": ""` to the API.
+
+An explicit `host_id = ""` in config is rejected at plan time by the `host_id` validation requirement and therefore never reaches the create payload.
+
+#### Scenario: host_id unset — id omitted from create body
+
+- GIVEN `host_id` is not set in config
+- WHEN create runs and the Fleet Create Fleet Server Host API is called
+- THEN the request body SHALL NOT contain an `"id"` field
+- AND Fleet SHALL auto-assign a host ID which is stored in `host_id` state
+
+#### Scenario: host_id set — id sent in create body
+
+- GIVEN `host_id = "my-host-id"` is set in config
+- WHEN create runs and the Fleet Create Fleet Server Host API is called
+- THEN the request body SHALL contain `"id": "my-host-id"`
+
+### Requirement: host_id plan-time validation
+
+The resource SHALL validate `host_id` at plan time when an explicit value is provided. A supplied `host_id` value SHALL satisfy all of the following constraints:
+
+1. Length is between 1 and 255 characters (inclusive).
+2. Does not contain `/` (path separator).
+3. Does not contain `..` (traversal sequence).
+4. Does not contain any of the reserved keys as a substring: `__proto__`, `constructor`, `prototype`.
+
+When any constraint is violated, the resource SHALL surface a plan-time error diagnostic naming the violated constraint. The validator SHALL NOT produce an error for null or unknown values; those are treated as not set and the `id` field is omitted from the create payload. An explicit empty string (`host_id = ""`) SHALL be rejected as a length-0 violation.
+
+#### Scenario: Valid explicit host_id passes validation
+
+- GIVEN `host_id = "my-valid-host"` is set in config
+- WHEN a plan is generated
+- THEN no validation errors SHALL be produced
+
+#### Scenario: Explicit empty host_id fails validation
+
+- GIVEN `host_id = ""` is set in config
+- WHEN a plan is generated
+- THEN a plan-time error diagnostic SHALL be produced indicating the length constraint
+
+#### Scenario: Unset host_id passes validation
+
+- GIVEN `host_id` is not set in config (null or unknown)
+- WHEN a plan is generated
+- THEN the plan-time validator SHALL NOT produce an error
+- AND the `id` field SHALL be omitted from the create request body
+
+#### Scenario: host_id with path separator fails validation
+
+- GIVEN `host_id = "my/host"` is set in config
+- WHEN a plan is generated
+- THEN a plan-time error diagnostic SHALL be produced indicating the `/` constraint
+
+#### Scenario: host_id with traversal sequence fails validation
+
+- GIVEN `host_id = "my..host"` is set in config
+- WHEN a plan is generated
+- THEN a plan-time error diagnostic SHALL be produced indicating the `..` constraint
+
+#### Scenario: host_id exceeds maximum length fails validation
+
+- GIVEN `host_id` is set to a string of 256 or more characters
+- WHEN a plan is generated
+- THEN a plan-time error diagnostic SHALL be produced indicating the length constraint
+
+#### Scenario: Reserved key host_id fails validation
+
+- GIVEN `host_id = "__proto__"` (or `"constructor"` or `"prototype"`) is set in config
+- WHEN a plan is generated
+- THEN a plan-time error diagnostic SHALL be produced indicating the reserved-key constraint
+
+#### Scenario: Reserved key as substring fails validation
+
+- GIVEN `host_id = "my-__proto__-host"` (or any value containing `constructor` or `prototype` as a substring) is set in config
+- WHEN a plan is generated
+- THEN a plan-time error diagnostic SHALL be produced indicating the reserved-key constraint
+
 ### Requirement: Import (REQ-007)
 
 The resource SHALL support import with both plain and composite import IDs.
@@ -131,7 +210,7 @@ On read, the resource SHALL map `id`, `host_id`, `name`, `hosts`, and `default` 
 
 ### Requirement: Create API body (REQ-013)
 
-On create, the resource SHALL submit `host_urls` (from `hosts`), `name`, `is_default` (from `default`), and optionally `id` (from `output_id` when configured) in the create request body.
+On create, the resource SHALL submit `host_urls` (from `hosts`), `name`, `is_default` (from `default`), and optionally `id` (from `host_id` when configured) in the create request body.
 
 #### Scenario: Create with all fields
 
