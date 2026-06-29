@@ -71,7 +71,7 @@ resource "elasticstack_kibana_agentbuilder_skill" "incident_playbook" {
 
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `referenced_content` (Attributes List) Ordered list of referenced-content entries. Up to 100 entries; order is preserved. (see [below for nested schema](#nestedatt--referenced_content))
-- `space_id` (String) An identifier for the Kibana space. If not provided, the default space is used.
+- `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 - `tool_ids` (Set of String) Set of tool IDs from the tool registry that this skill references.
 

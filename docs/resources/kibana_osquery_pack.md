@@ -58,7 +58,7 @@ resource "elasticstack_kibana_osquery_pack" "example" {
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `policy_ids` (Set of String) Fleet agent policy IDs this pack is deployed to.
 - `shards` (Map of Number) Percent (1-100) of hosts per policy ID that receive the pack.
-- `space_id` (String) Kibana space identifier. When omitted, the default space is used.
+- `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only

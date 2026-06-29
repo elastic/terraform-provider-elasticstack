@@ -59,7 +59,7 @@ resource "elasticstack_kibana_osquery_saved_query" "list_processes" {
 - `platform` (Set of String) Target platforms for the query. Allowed values: `linux`, `darwin`, `windows`.
 - `removed` (Boolean) Whether the saved query is marked removed. Returned by the API and may be set explicitly in configuration. When omitted or unknown at plan time, the prior state value is preserved (`UseStateForUnknown`).
 - `snapshot` (Boolean) Whether the saved query is a snapshot. Returned by the API and may be set explicitly in configuration. When omitted or unknown at plan time, the prior state value is preserved (`UseStateForUnknown`).
-- `space_id` (String) Kibana space identifier. When omitted, the default space is used.
+- `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 - `version` (String) Saved query version string.
 

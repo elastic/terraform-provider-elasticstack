@@ -58,7 +58,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"space_id": kbschema.ResourceSpaceIDAttributeRequiresReplaceOnly(),
+			attrSpaceID: kbschema.ResourceSpaceIDAttributeRequiresReplaceOnly(),
 			"override": schema.BoolAttribute{
 				Description: "Overrides an existing data view if a data view with the provided title already exists.",
 				Optional:    true,
