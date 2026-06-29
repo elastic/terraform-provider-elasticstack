@@ -38,7 +38,7 @@ func (Handler) PanelType() string                 { return panelType }
 func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	return panelkit.SimpleFromAPI(ctx, pm, prior, item,
+	return panelkit.SimpleFromAPI(ctx, pm, prior,
 		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors,
 		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
 			return p.Grid, p.Id

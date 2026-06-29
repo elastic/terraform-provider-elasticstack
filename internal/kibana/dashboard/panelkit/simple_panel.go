@@ -34,7 +34,6 @@ import (
 func SimpleFromAPI[T any](
 	_ context.Context,
 	pm, prior *models.PanelModel,
-	item kbapi.DashboardPanelItem,
 	asPanel func() (T, error),
 	gridID func(T) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string),
 	populate func(pm *models.PanelModel, prior *models.PanelModel, panel T) diag.Diagnostics,
