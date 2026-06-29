@@ -94,7 +94,7 @@ func CreateDefendPackagePolicy(ctx context.Context, client *Client, spaceID stri
 // UpdatePackagePolicy updates an existing package policy.
 func UpdatePackagePolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	params := kbapi.PutFleetPackagePoliciesPackagepolicyidParams{
-		Format: new(kbapi.Simplified),
+		Format: new(kbapi.PutFleetPackagePoliciesPackagepolicyidParamsFormatSimplified),
 	}
 
 	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.PackagePolicy, int, diag.Diagnostics) {
