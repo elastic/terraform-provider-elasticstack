@@ -20,7 +20,7 @@ package osquerysavedquery
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
@@ -28,7 +28,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -83,16 +82,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			attrSpaceID: schema.StringAttribute{
-				MarkdownDescription: "Kibana space identifier. When omitted, the default space is used.",
-				Optional:            true,
-				Computed:            true,
-				Default:             stringdefault.StaticString(clients.DefaultSpaceID),
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
+			attrSpaceID: kbschema.ResourceSpaceIDAttribute(),
 			attrQuery: schema.StringAttribute{
 				MarkdownDescription: "Osquery SQL query text.",
 				Required:            true,

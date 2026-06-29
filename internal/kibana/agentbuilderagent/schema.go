@@ -20,10 +20,10 @@ package agentbuilderagent
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -50,16 +50,7 @@ func getResourceSchema(_ context.Context) schema.Schema {
 					stringvalidator.LengthAtLeast(1),
 				},
 			},
-			attrSpaceID: schema.StringAttribute{
-				Computed:            true,
-				Optional:            true,
-				Default:             stringdefault.StaticString("default"),
-				MarkdownDescription: "An identifier for the space. If not provided, the default space is used.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
+			attrSpaceID: kbschema.ResourceSpaceIDAttribute(),
 			attrName: schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The agent name.",
