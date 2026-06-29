@@ -33,7 +33,7 @@ Three stream types are supported:
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `queries` (Attributes List) ES|QL queries attached to this stream. (see [below for nested schema](#nestedatt--queries))
 - `query_config` (Attributes) Configuration for a query stream. Query streams are virtual streams defined by an ES|QL query. Mutually exclusive with `wired_config` and `classic_config`. (see [below for nested schema](#nestedatt--query_config))
-- `space_id` (String) An identifier for the space. If not provided, the default space is used.
+- `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 - `wired_config` (Attributes) Configuration for a wired stream. Wired streams are fully managed data streams with explicit field mappings and routing rules. Mutually exclusive with `classic_config` and `query_config`. (see [below for nested schema](#nestedatt--wired_config))
 

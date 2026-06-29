@@ -20,6 +20,7 @@ package osquerysavedquery
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -42,13 +43,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				MarkdownDescription: "Stable identifier for the saved query to look up.",
 				Required:            true,
 			},
-			attrSpaceID: dsschema.StringAttribute{
-				// Datasource schema (unlike resource schema) has no Default field; resolveDataSourceSpaceID
-				// applies clients.DefaultSpaceID at read time when space_id is omitted or empty.
-				MarkdownDescription: "Kibana space identifier. When omitted, the default space is used.",
-				Optional:            true,
-				Computed:            true,
-			},
+			attrSpaceID: kbschema.DataSourceSpaceIDAttribute(),
 			attrQuery: dsschema.StringAttribute{
 				MarkdownDescription: "Osquery SQL query text.",
 				Computed:            true,

@@ -72,7 +72,7 @@ resource "elasticstack_kibana_agentbuilder_agent" "space_agent" {
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `labels` (Set of String) Set of labels for the agent.
 - `skill_ids` (Set of String) Set of skill IDs to assign to the agent. Requires Elastic Stack 9.4.0 or later.
-- `space_id` (String) An identifier for the space. If not provided, the default space is used.
+- `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 - `tools` (Set of String) Set of tool IDs that the agent can use.
 

@@ -39,7 +39,7 @@ Manages a single entity record in the Kibana Security Entity Store.
 - `orchestrator_json` (String) JSON fallback for the orchestrator block.
 - `service` (Attributes) ECS service fields collected on the entity. (see [below for nested schema](#nestedatt--service))
 - `service_json` (String) JSON fallback for the service block.
-- `space_id` (String) An identifier for the Kibana space. If omitted, the default space is used.
+- `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `tags` (Set of String) Tags associated with the entity.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 - `timestamp` (String) The time the entity record was last updated. Maps to @timestamp in the API body.

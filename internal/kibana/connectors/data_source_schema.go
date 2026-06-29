@@ -20,6 +20,7 @@ package connectors
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 )
@@ -32,11 +33,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 				Description: "Internal identifier of the resource.",
 				Computed:    true,
 			},
-			"space_id": schema.StringAttribute{
-				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
-				Optional:    true,
-				Computed:    true,
-			},
+			"space_id": kbschema.DataSourceSpaceIDAttribute(),
 			attrName: schema.StringAttribute{
 				Description: "The name of the connector. While this name does not have to be unique, a distinctive name can help you identify a connector.",
 				Required:    true,

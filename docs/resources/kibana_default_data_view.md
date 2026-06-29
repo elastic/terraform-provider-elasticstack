@@ -42,7 +42,7 @@ resource "elasticstack_kibana_default_data_view" "default" {
 - `force` (Boolean) Update an existing default data view identifier. If set to false and a default data view already exists, the operation will fail.
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `skip_delete` (Boolean) If set to true, the default data view will not be unset when the resource is destroyed. The existing default data view will remain unchanged.
-- `space_id` (String) The Kibana space ID to set the default data view in. Defaults to `default`.
+- `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only

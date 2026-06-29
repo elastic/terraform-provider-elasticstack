@@ -23,6 +23,7 @@ import (
 
 	kibanavalidators "github.com/elastic/terraform-provider-elasticstack/internal/kibana/validators"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -55,15 +56,7 @@ func GetSchema() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"space_id": schema.StringAttribute{
-				MarkdownDescription: "An identifier for the space. If space_id is not provided, the default space is used.",
-				Optional:            true,
-				Computed:            true,
-				Default:             stringdefault.StaticString("default"),
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
+			"space_id": kbschema.ResourceSpaceIDAttributeRequiresReplaceOnly(),
 			"rule_id": schema.StringAttribute{
 				MarkdownDescription: "A stable unique identifier for the rule object. If omitted, a UUID is generated.",
 				Optional:            true,

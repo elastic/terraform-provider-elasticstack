@@ -23,6 +23,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
@@ -115,16 +116,7 @@ func sloSchema(_ context.Context) schema.Schema {
 				Required:    true,
 				Validators:  []validator.String{stringvalidator.OneOf("occurrences", "timeslices")},
 			},
-			"space_id": schema.StringAttribute{
-				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
-				Optional:    true,
-				Computed:    true,
-				Default:     stringdefault.StaticString("default"),
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
+			"space_id": kbschema.ResourceSpaceIDAttribute(),
 			"group_by": schema.ListAttribute{
 				Description: "Optional group by fields to use to generate an SLO per distinct value.",
 				Optional:    true,

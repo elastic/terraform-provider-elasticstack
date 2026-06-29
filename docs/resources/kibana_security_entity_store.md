@@ -21,7 +21,7 @@ Manages the Elastic Security Entity Store lifecycle within a Kibana space.
 - `history_snapshot` (Attributes) Install-only history snapshot settings. (see [below for nested schema](#nestedatt--history_snapshot))
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `log_extraction` (Attributes) Optional log extraction settings for the entity store. (see [below for nested schema](#nestedatt--log_extraction))
-- `space_id` (String) An identifier for the Kibana space. If omitted, the default space is used.
+- `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `started` (Boolean) Whether any managed entity engine should be running after reconciliation.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 

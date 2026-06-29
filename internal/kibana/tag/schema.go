@@ -20,11 +20,10 @@ package tag
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -52,16 +51,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			attrSpaceID: schema.StringAttribute{
-				MarkdownDescription: "Kibana space identifier. Defaults to `default`. Changing this value forces replacement.",
-				Optional:            true,
-				Computed:            true,
-				Default:             stringdefault.StaticString(clients.DefaultSpaceID),
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
+			attrSpaceID: kbschema.ResourceSpaceIDAttribute(),
 			attrName: schema.StringAttribute{
 				MarkdownDescription: "Display name of the tag.",
 				Required:            true,
