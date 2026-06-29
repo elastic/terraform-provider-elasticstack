@@ -21,6 +21,7 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -30,9 +31,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-const indexNameAllowedCharsMessage = "must contain lower case alphanumeric characters and selected punctuation, see: " +
-	"https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params"
 
 func getDataSourceSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
@@ -64,7 +62,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 								stringvalidator.RegexMatches(regexp.MustCompile(`^[^-_+]`), "cannot start with -, _, +"),
 								stringvalidator.RegexMatches(
 									regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`),
-									indexNameAllowedCharsMessage,
+									index.IndexNameAllowedCharsMessage,
 								),
 							},
 						},

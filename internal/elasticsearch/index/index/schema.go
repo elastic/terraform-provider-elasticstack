@@ -43,9 +43,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-const indexNameAllowedCharsMessage = "must contain lower case alphanumeric characters and selected punctuation, see: " +
-	"https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params"
-
 const dateMathIndexNameMessage = "must be a valid plain date math index name expression enclosed in angle brackets with at least one {…} section, e.g. <logs-{now/d}>"
 
 func getSchema(_ context.Context) schema.Schema {
@@ -113,7 +110,7 @@ func getSchema(_ context.Context) schema.Schema {
 							stringvalidator.RegexMatches(regexp.MustCompile(`^[^-_+]`), "cannot start with -, _, +"),
 							stringvalidator.RegexMatches(
 								regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`),
-								indexNameAllowedCharsMessage,
+								index.IndexNameAllowedCharsMessage,
 							),
 						),
 						stringvalidator.RegexMatches(
