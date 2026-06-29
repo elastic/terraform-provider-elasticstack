@@ -46,7 +46,7 @@ func TestBuildCommonNewOutput_OutputID(t *testing.T) {
 		{
 			name:   "explicit output_id",
 			value:  types.StringValue("my-output-id"),
-			wantID: stringPointer("my-output-id"),
+			wantID: new("my-output-id"),
 		},
 	}
 
@@ -66,10 +66,6 @@ func TestBuildCommonNewOutput_OutputID(t *testing.T) {
 			assert.Equal(t, tc.wantID, body.ID)
 		})
 	}
-}
-
-func stringPointer(value string) *string {
-	return &value
 }
 
 func outputSSLAttrTypes() map[string]attr.Type {

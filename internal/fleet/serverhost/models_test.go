@@ -45,7 +45,7 @@ func TestToAPICreateModel_HostID(t *testing.T) {
 		{
 			name:   "explicit host_id",
 			value:  types.StringValue("my-host-id"),
-			wantID: stringPointer("my-host-id"),
+			wantID: new("my-host-id"),
 		},
 	}
 
@@ -65,8 +65,4 @@ func TestToAPICreateModel_HostID(t *testing.T) {
 			assert.Equal(t, tc.wantID, body.Id)
 		})
 	}
-}
-
-func stringPointer(value string) *string {
-	return &value
 }
