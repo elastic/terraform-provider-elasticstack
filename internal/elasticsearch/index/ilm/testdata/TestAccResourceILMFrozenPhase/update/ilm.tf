@@ -20,7 +20,7 @@ resource "elasticstack_elasticsearch_snapshot_repository" "repo" {
   }
 }
 
-resource "elasticstack_elasticsearch_index_lifecycle" "test_searchable_snapshot" {
+resource "elasticstack_elasticsearch_index_lifecycle" "test_frozen" {
   name = var.policy_name
 
   hot {
@@ -29,12 +29,12 @@ resource "elasticstack_elasticsearch_index_lifecycle" "test_searchable_snapshot"
     }
   }
 
-  cold {
+  frozen {
     min_age = "30d"
 
     searchable_snapshot {
       snapshot_repository = elasticstack_elasticsearch_snapshot_repository.repo.name
-      force_merge_index   = false
+      force_merge_index   = true
     }
   }
 }
