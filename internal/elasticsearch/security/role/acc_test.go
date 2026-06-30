@@ -87,6 +87,12 @@ func TestAccResourceSecurityRole(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "run_as.*", "other_user"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "metadata", `{"version":1}`),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_security_role.test", "applications.*", map[string]string{
+						"application": "myapp",
+					}),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "applications.*.privileges.*", "admin"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "applications.*.privileges.*", "read"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "applications.*.resources.*", "*"),
 				),
 			},
 			{
@@ -157,6 +163,7 @@ func TestAccResourceSecurityRole(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.*.names.*", "sample"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.0.allow_restricted_indices", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.0.query", `{"match_all":{}}`),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.*.field_security.grant.*", "sample"),
 				),
 			},
 			{
@@ -245,6 +252,14 @@ func TestAccResourceSecurityRoleEmptySets(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "run_as.#", "0"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "global"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "metadata", `{}`),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.field_security.grant.*", "*"),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_security_role.test", "applications.*", map[string]string{
+						"application": "myapp",
+					}),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "applications.*.privileges.*", "admin"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "applications.*.privileges.*", "read"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "applications.*.resources.*", "*"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.*.field_security.grant.*", "sample"),
 				),
 			},
 		},
@@ -360,6 +375,41 @@ func TestAccResourceSecurityRoleDetectsOutOfBandDrift(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "description", "drifted description"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "metadata", `{"source":"console"}`),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSecurityRoleApplicationsUpdate(t *testing.T) {
+	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resourceName := "elasticstack_elasticsearch_security_role.test"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSecurityRoleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apps_initial"),
+				ConfigVariables:          config.Variables{"role_name": config.StringVariable(roleName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "applications.*", map[string]string{
+						"application": "myapp",
+					}),
+					resource.TestCheckTypeSetElemAttr(resourceName, "applications.*.privileges.*", "read"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apps_updated"),
+				ConfigVariables:          config.Variables{"role_name": config.StringVariable(roleName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "applications.*", map[string]string{
+						"application": "myapp",
+					}),
+					resource.TestCheckTypeSetElemAttr(resourceName, "applications.*.privileges.*", "admin"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "applications.*.privileges.*", "write"),
 				),
 			},
 		},
