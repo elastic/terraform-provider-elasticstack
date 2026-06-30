@@ -154,11 +154,11 @@ pinned_panels = [
 
 With only the control applied (and empty `panels`), open the dashboard in Kibana. The control appears in the pinned row; selecting a category does not change charts yet, but the filter is ready.
 
-![Dashboard with pinned Category control and no category selected](images/g2-01-full.png)
+![Dashboard with pinned Category control and no category selected](https://raw.githubusercontent.com/elastic/terraform-provider-elasticstack/main/docs/guides/images/g2-01-full.png)
 
 After you add the KPI and chart panels below, select a category (for example **Men's Clothing**). Every metric and chart updates together—the same global filter the UI would apply if you filtered from the query bar.
 
-![Dashboard with Category filter active; all panels reflect the selection](images/g2-02-filtered.png)
+![Dashboard with Category filter active; all panels reflect the selection](https://raw.githubusercontent.com/elastic/terraform-provider-elasticstack/main/docs/guides/images/g2-02-filtered.png)
 
 ## KPI row (Lens Metric panels)
 
@@ -391,7 +391,7 @@ This table lists the top 10 categories with **count** and **sum** of `taxful_tot
 
 **`rows`** defines the table's split dimension (category terms); **`metrics`** defines the numeric columns. The UI label is "Data Table"; the provider schema name is **`datatable_config`**.
 
-![Data Table panel showing top categories with counts and revenue](images/g2-04-table.png)
+![Data Table panel showing top categories with counts and revenue](https://raw.githubusercontent.com/elastic/terraform-provider-elasticstack/main/docs/guides/images/g2-04-table.png)
 
 ## Discover session panel
 
@@ -431,7 +431,7 @@ Embed **Discover** on the dashboard with a panel `type` of **`discover_session`*
 
 The embedded session inherits dashboard time range and pinned filters, so choosing a category narrows the order list the same way it narrows the charts.
 
-![Embedded Discover session showing recent orders](images/g2-03-discover.png)
+![Embedded Discover session showing recent orders](https://raw.githubusercontent.com/elastic/terraform-provider-elasticstack/main/docs/guides/images/g2-03-discover.png)
 
 ## Dashboard options
 

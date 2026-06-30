@@ -20,6 +20,7 @@ package entities
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	entity "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store/entity"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -39,11 +40,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 				Description: "Stable identifier computed as <space_id>/entity_store_entities.",
 				Computed:    true,
 			},
-			"space_id": schema.StringAttribute{
-				Description: "An identifier for the Kibana space. If omitted, the default space is used.",
-				Optional:    true,
-				Computed:    true,
-			},
+			"space_id": kbschema.DataSourceSpaceIDAttribute(),
 			"entity_id": schema.StringAttribute{
 				Description: "When set, the provider generates an implicit KQL filter for this entity id. Conflicts with filter and filter_query.",
 				Optional:    true,

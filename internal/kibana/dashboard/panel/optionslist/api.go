@@ -30,7 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 const panelConfigAttrsKeyPrefix = panelType + "_config"
@@ -44,13 +43,13 @@ func (Handler) PopulateJSONDefaults(config map[string]any) map[string]any {
 	return config
 }
 
-func (Handler) PinnedHandler() iface.PinnedHandler { return pinnedHandler{} }
+func (Handler) PinnedHandler() iface.PinnedHandler { return newPinnedHandler() }
 
 func (Handler) AlignStateFromPlan(ctx context.Context, plan, state *models.PanelModel) {
 	_, _, _ = ctx, plan, state
 }
 
-func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
+func (Handler) FromAPI(_ context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	olPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl()
 	if err != nil {
 		var d diag.Diagnostics
@@ -63,12 +62,11 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 	if configBytes, err := json.Marshal(olPanel.Config); err == nil {
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), panelkit.PanelJSONDefaultsFunc())
 	}
-	PopulateFromAPI(pm, prior, &olPanel)
-	_ = ctx
-	return nil
+	return PopulateFromAPI(pm, prior, &olPanel)
 }
 
 func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+	var diags diag.Diagnostics
 	_ = dashboard
 	grid := panelkit.GridToAPI(pm.Grid)
 	id := panelkit.IDToAPI(pm.ID)
@@ -76,41 +74,22 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 		Grid: grid,
 		Id:   id,
 	}
-	BuildConfig(pm, &panel)
+	diags.Append(BuildConfig(pm, &panel)...)
+	if diags.HasError() {
+		return kbapi.DashboardPanelItem{}, diags
+	}
 	var panelItem kbapi.DashboardPanelItem
 	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl(panel); err != nil {
-		var diags diag.Diagnostics
 		diags.AddError("Failed to create options list control panel", err.Error())
 		return panelItem, diags
 	}
-	return panelItem, nil
-}
-
-func optionsListAttrsShape(attrs map[string]attr.Value) (flat bool, obj types.Object, shaped bool) {
-	if attrs == nil {
-		return false, types.Object{}, false
-	}
-	if _, dv := attrs["data_view_id"]; dv {
-		if _, fn := attrs["field_name"]; fn {
-			return true, types.Object{}, true
-		}
-		return false, types.Object{}, false
-	}
-	raw, nested := attrs[panelConfigAttrsKeyPrefix]
-	if !nested {
-		return false, types.Object{}, false
-	}
-	obj, ok := raw.(types.Object)
-	if !ok {
-		return false, types.Object{}, false
-	}
-	return false, obj, true
+	return panelItem, diags
 }
 
 // ValidatePanelConfig enforces presence of DataViewID and FieldName for options_list panels.
 func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
 	var out diag.Diagnostics
-	flat, obj, shaped := optionsListAttrsShape(attrs)
+	flat, obj, shaped := panelkit.ResolvePanelAttrsShape(attrs, panelConfigAttrsKeyPrefix, "data_view_id", "field_name")
 	if !shaped {
 		return out
 	}

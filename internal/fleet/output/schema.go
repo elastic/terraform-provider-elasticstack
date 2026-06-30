@@ -20,6 +20,7 @@ package output
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -53,12 +54,18 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"output_id": schema.StringAttribute{
-				Description: "Unique identifier of the output.",
-				Computed:    true,
-				Optional:    true,
+				Description: `Unique identifier of the output. When omitted, Fleet auto-generates an ID. ` +
+					`When set, the value must be 1-255 characters and must not contain path separators ("/"), ` +
+					`traversal sequences (".."), or reserved keys ("__proto__", "constructor", "prototype"). ` +
+					`Invalid explicit values fail at plan time.`,
+				Computed: true,
+				Optional: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 					stringplanmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.String{
+					fleet.IDValidator("output_id"),
 				},
 			},
 			attrName: schema.StringAttribute{

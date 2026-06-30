@@ -58,27 +58,6 @@ func kibanaPrivilegeCounts(obj types.Object) (base, feature types.Set, baseLen, 
 	return
 }
 
-// validateKibanaPrivileges enforces the mutual-exclusion and at-least-one
-// rules for a kibana entry's `base` and `feature` privileges. Shared by the
-// resource-level config validator (validators.go) and the expand path so the
-// rule lives in exactly one place.
-func validateKibanaPrivileges(baseLen, featureLen int) diag.Diagnostics {
-	var diags diag.Diagnostics
-	switch {
-	case baseLen > 0 && featureLen > 0:
-		diags.AddError(
-			"Invalid kibana privileges",
-			"Only one of the `feature` or `base` privileges allowed!",
-		)
-	case baseLen == 0 && featureLen == 0:
-		diags.AddError(
-			"Invalid kibana privileges",
-			"Either one of the `feature` or `base` privileges must be set for kibana role!",
-		)
-	}
-	return diags
-}
-
 func expandFieldSecurity(ctx context.Context, obj types.Object) (map[string][]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if obj.IsNull() || obj.IsUnknown() {

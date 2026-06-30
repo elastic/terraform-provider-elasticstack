@@ -28,7 +28,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 const panelConfigAttrsKeyPrefix = panelType + "_config"
@@ -42,7 +41,7 @@ func (Handler) PopulateJSONDefaults(config map[string]any) map[string]any {
 	return config
 }
 
-func (Handler) PinnedHandler() iface.PinnedHandler { return pinnedHandler{} }
+func (Handler) PinnedHandler() iface.PinnedHandler { return newPinnedHandler() }
 
 func (Handler) AlignStateFromPlan(_ context.Context, plan, state *models.PanelModel) {
 	AlignEsqlPanels(plan, state)
@@ -85,31 +84,10 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	return panelItem, diags
 }
 
-func esqlAttrsShape(attrs map[string]attr.Value) (flat bool, nested types.Object, shaped bool) {
-	if attrs == nil {
-		return false, types.Object{}, false
-	}
-	if _, vn := attrs["variable_name"]; vn {
-		if _, eq := attrs["esql_query"]; eq {
-			return true, types.Object{}, true
-		}
-		return false, types.Object{}, false
-	}
-	raw, ok := attrs[panelConfigAttrsKeyPrefix]
-	if !ok || raw == nil {
-		return false, types.Object{}, false
-	}
-	obj, ok := raw.(types.Object)
-	if !ok {
-		return false, types.Object{}, false
-	}
-	return false, obj, true
-}
-
 // ValidatePanelConfig checks required shallow leaves for typed esql configs (covers contracttest flattened attrs).
 func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
 	var out diag.Diagnostics
-	flat, nested, shaped := esqlAttrsShape(attrs)
+	flat, nested, shaped := panelkit.ResolvePanelAttrsShape(attrs, panelConfigAttrsKeyPrefix, "variable_name", "esql_query")
 	if !shaped {
 		return out
 	}

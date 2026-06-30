@@ -20,6 +20,7 @@ package serverhost
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -38,12 +39,18 @@ func getSchema(_ context.Context) schema.Schema {
 				Computed:    true,
 			},
 			"host_id": schema.StringAttribute{
-				Description: "Unique identifier of the Fleet server host.",
-				Computed:    true,
-				Optional:    true,
+				Description: `Unique identifier of the Fleet server host. When omitted, Fleet auto-generates an ID. ` +
+					`When set, the value must be 1-255 characters and must not contain path separators ("/"), ` +
+					`traversal sequences (".."), or reserved keys ("__proto__", "constructor", "prototype"). ` +
+					`Invalid explicit values fail at plan time.`,
+				Computed: true,
+				Optional: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
+				},
+				Validators: []validator.String{
+					fleet.IDValidator("host_id"),
 				},
 			},
 			"name": schema.StringAttribute{

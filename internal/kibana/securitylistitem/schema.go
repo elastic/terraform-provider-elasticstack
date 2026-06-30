@@ -21,10 +21,10 @@ import (
 	"context"
 	_ "embed"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
 
@@ -47,15 +47,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"space_id": schema.StringAttribute{
-				MarkdownDescription: "An identifier for the space. If space_id is not provided, the default space is used.",
-				Optional:            true,
-				Computed:            true,
-				Default:             stringdefault.StaticString("default"),
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
+			"space_id": kbschema.ResourceSpaceIDAttributeRequiresReplaceOnly(),
 			"list_id": schema.StringAttribute{
 				MarkdownDescription: "The value list's identifier that this item belongs to.",
 				Required:            true,

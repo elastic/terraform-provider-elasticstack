@@ -34,6 +34,7 @@ resource "elasticstack_elasticsearch_index_lifecycle" "test_searchable_snapshot"
 
     searchable_snapshot {
       snapshot_repository = elasticstack_elasticsearch_snapshot_repository.repo.name
+      force_merge_index   = false
     }
   }
 }

@@ -85,7 +85,7 @@ func (m *serverHostModel) populateFromAPI(ctx context.Context, data *kbapi.Serve
 func (m serverHostModel) toAPICreateModel(ctx context.Context) (body kbapi.PostFleetFleetServerHostsJSONRequestBody, diags diag.Diagnostics) {
 	body = kbapi.PostFleetFleetServerHostsJSONRequestBody{
 		HostUrls:  typeutils.ListTypeToSliceString(ctx, m.Hosts, path.Root("hosts"), &diags),
-		Id:        m.HostID.ValueStringPointer(),
+		Id:        typeutils.OptionalString(m.HostID),
 		IsDefault: m.Default.ValueBoolPointer(),
 		Name:      m.Name.ValueString(),
 	}

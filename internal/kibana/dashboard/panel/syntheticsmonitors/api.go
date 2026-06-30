@@ -38,36 +38,27 @@ func (Handler) PanelType() string                 { return panelType }
 func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	apiPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors()
-	if err != nil {
-		var d diag.Diagnostics
-		d.AddError("Dashboard panel decode", err.Error())
-		return d
-	}
-
-	pm.Grid = panelkit.GridFromAPI(apiPanel.Grid.X, apiPanel.Grid.Y, apiPanel.Grid.W, apiPanel.Grid.H)
-	pm.ID = panelkit.IDFromAPI(apiPanel.Id)
-	pm.ConfigJSON = panelkit.PanelConfigJSONNull()
-	diags := PopulateFromAPI(pm, prior, apiPanel)
-	_ = ctx
-	return diags
+	return panelkit.SimpleFromAPI(ctx, pm, prior,
+		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors,
+		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
+			return p.Grid, p.Id
+		},
+		PopulateFromAPI,
+	)
 }
 
 func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	_ = dashboard
-	grid := panelkit.GridToAPI(pm.Grid)
-	id := panelkit.IDToAPI(pm.ID)
-	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors{
-		Grid: grid,
-		Id:   id,
-		Type: kbapi.SyntheticsMonitors,
-	}
-	diags := BuildConfig(pm, &panel)
-	var panelItem kbapi.DashboardPanelItem
-	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors(panel); err != nil {
-		diags.AddError("Failed to create synthetics monitors panel", err.Error())
-	}
-	return panelItem, diags
+	return panelkit.SimpleToAPI(pm,
+		func(grid kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, id *string) (kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors, diag.Diagnostics) {
+			panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors{Grid: grid, Id: id, Type: kbapi.SyntheticsMonitors}
+			return panel, BuildConfig(pm, &panel)
+		},
+		func(item *kbapi.DashboardPanelItem, panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors) error {
+			return item.FromKibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors(panel)
+		},
+		"Failed to create synthetics monitors panel",
+	)
 }
 
 func (Handler) ValidatePanelConfig(_ context.Context, _ map[string]attr.Value, _ path.Path) diag.Diagnostics {

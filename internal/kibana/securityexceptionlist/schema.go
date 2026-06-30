@@ -22,6 +22,7 @@ import (
 	_ "embed"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -57,15 +58,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"space_id": schema.StringAttribute{
-				MarkdownDescription: "An identifier for the space. If space_id is not provided, the default space is used.",
-				Optional:            true,
-				Computed:            true,
-				Default:             stringdefault.StaticString("default"),
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
+			"space_id": kbschema.ResourceSpaceIDAttributeRequiresReplaceOnly(),
 			"list_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,

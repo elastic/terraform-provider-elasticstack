@@ -1,0 +1,140 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package alertingrule
+
+import (
+	"context"
+	"testing"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kibanacustomtypes"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func testActionsList(ctx context.Context, t *testing.T, withFrequency bool) types.List {
+	t.Helper()
+
+	var freq types.Object
+	if withFrequency {
+		fm := frequencyModel{
+			Summary:    types.BoolValue(true),
+			NotifyWhen: types.StringValue("onActionGroupChange"),
+			Throttle:   kibanacustomtypes.NewAlertingDurationValue("10m"),
+		}
+		o, d := types.ObjectValueFrom(ctx, getFrequencyAttrTypes(), fm)
+		require.Empty(t, d)
+		freq = o
+	} else {
+		freq = types.ObjectNull(getFrequencyAttrTypes())
+	}
+
+	am := actionModel{
+		Group:        types.StringValue("default"),
+		ID:           types.StringValue("connector-id"),
+		Params:       jsontypes.NewNormalizedValue(`{}`),
+		Frequency:    freq,
+		AlertsFilter: types.ObjectNull(getAlertsFilterAttrTypes()),
+	}
+	actionObj, d := types.ObjectValueFrom(ctx, getActionsAttrTypes(), am)
+	require.Empty(t, d)
+
+	list, d := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getActionsAttrTypes()}, []attr.Value{actionObj})
+	require.Empty(t, d)
+	return list
+}
+
+func TestPlanNotifyWhenForActionFrequency_unknownWithFrequencyBecomesNull(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	actions := testActionsList(ctx, t, true)
+	out := planNotifyWhenForActionFrequency(ctx, types.StringUnknown(), actions, &diags)
+	assert.False(t, diags.HasError())
+	assert.True(t, out.IsNull())
+}
+
+func TestPlanNotifyWhenForActionFrequency_knownUnchanged(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	actions := testActionsList(ctx, t, true)
+	out := planNotifyWhenForActionFrequency(ctx, types.StringValue("onActiveAlert"), actions, &diags)
+	assert.False(t, diags.HasError())
+	assert.Equal(t, "onActiveAlert", out.ValueString())
+}
+
+func TestPlanNotifyWhenForActionFrequency_unknownWithoutFrequencyUnchanged(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	actions := testActionsList(ctx, t, false)
+	out := planNotifyWhenForActionFrequency(ctx, types.StringUnknown(), actions, &diags)
+	assert.False(t, diags.HasError())
+	assert.True(t, out.IsUnknown())
+}
+
+func TestActionFrequencyNewlyIntroduced_configHasFrequencyStateDoesNot(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	stateActions := testActionsList(ctx, t, false)
+	configActions := testActionsList(ctx, t, true)
+	assert.True(t, actionFrequencyNewlyIntroduced(ctx, stateActions, configActions, &diags))
+	assert.False(t, diags.HasError())
+}
+
+func TestActionFrequencyNewlyIntroduced_stateAlreadyHasFrequency(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	stateActions := testActionsList(ctx, t, true)
+	configActions := testActionsList(ctx, t, true)
+	assert.False(t, actionFrequencyNewlyIntroduced(ctx, stateActions, configActions, &diags), "must be idempotent once already in frequency mode")
+	assert.False(t, diags.HasError())
+}
+
+func TestActionFrequencyNewlyIntroduced_configWithoutFrequency(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	stateActions := testActionsList(ctx, t, false)
+	configActions := testActionsList(ctx, t, false)
+	assert.False(t, actionFrequencyNewlyIntroduced(ctx, stateActions, configActions, &diags))
+	assert.False(t, diags.HasError())
+}
+
+func TestActionFrequencyNewlyIntroduced_nullActions(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	var diags diag.Diagnostics
+	nullActions := types.ListNull(types.ObjectType{AttrTypes: getActionsAttrTypes()})
+	assert.False(t, actionFrequencyNewlyIntroduced(ctx, nullActions, nullActions, &diags))
+	assert.False(t, diags.HasError())
+}
+
+func TestThrottleSetUnknownIfActionsFrequencyConfigured_descriptions(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	m := throttleSetUnknownIfActionsFrequencyConfigured()
+	assert.NotEmpty(t, m.Description(ctx))
+	assert.NotEmpty(t, m.MarkdownDescription(ctx))
+}

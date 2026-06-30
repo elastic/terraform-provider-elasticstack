@@ -315,13 +315,13 @@ func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOu
 		}
 	}
 
-	body := kbapi.NewOutputKafka{
+	body := kbapi.KibanaHTTPAPIsNewOutputKafka{
 		Type:                 kbapi.KibanaHTTPAPIsNewOutputKafkaTypeKafka,
 		CaSha256:             model.CaSha256.ValueStringPointer(),
 		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
 		Hosts:                typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags),
-		Id:                   model.OutputID.ValueStringPointer(),
+		Id:                   typeutils.OptionalString(model.OutputID),
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueString(),
@@ -387,7 +387,7 @@ func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOu
 	}
 
 	var union kbapi.NewOutputUnion
-	err = union.FromNewOutputKafka(body)
+	err = union.FromKibanaHTTPAPIsNewOutputKafka(body)
 	if err != nil {
 		diags.AddError(err.Error(), "")
 		return kbapi.NewOutputUnion{}, diags
@@ -433,7 +433,7 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 		}
 	}
 
-	body := kbapi.UpdateOutputKafka{
+	body := kbapi.KibanaHTTPAPIsUpdateOutputKafka{
 		Type: func() *kbapi.KibanaHTTPAPIsUpdateOutputKafkaType {
 			outputType := kbapi.Kafka
 			return &outputType
@@ -506,7 +506,7 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 	}
 
 	var union kbapi.UpdateOutputUnion
-	err = union.FromUpdateOutputKafka(body)
+	err = union.FromKibanaHTTPAPIsUpdateOutputKafka(body)
 	if err != nil {
 		diags.AddError(err.Error(), "")
 		return kbapi.UpdateOutputUnion{}, diags
@@ -515,7 +515,7 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 	return union, diags
 }
 
-func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.OutputKafka) (diags diag.Diagnostics) {
+func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputKafka) (diags diag.Diagnostics) {
 	diags = model.fromAPICommonFields(ctx, commonOutputReadData{
 		id:                   data.Id,
 		name:                 data.Name,

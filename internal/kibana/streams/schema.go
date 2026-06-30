@@ -19,6 +19,8 @@ package streams
 
 import (
 	"context"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -47,15 +49,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"space_id": schema.StringAttribute{
-				MarkdownDescription: "An identifier for the space. If not provided, the default space is used.",
-				Optional:            true,
-				Computed:            true,
-				Default:             stringdefault.StaticString("default"),
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
+			"space_id": kbschema.ResourceSpaceIDAttributeRequiresReplaceOnly(),
 			"name": schema.StringAttribute{
 				MarkdownDescription: "The name of the stream. Stream names follow Elasticsearch data stream naming conventions (e.g. `logs.nginx`).",
 				Required:            true,

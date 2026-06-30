@@ -20,3 +20,12 @@ package clients
 // DefaultSpaceID is the Kibana default space identifier used when the resource
 // does not target a specific space.
 const DefaultSpaceID = "default"
+
+// EffectiveSpaceID returns spaceID when non-empty, or DefaultSpaceID as the
+// fallback for resources that do not target a specific space.
+func EffectiveSpaceID(spaceID string) string {
+	if spaceID == "" {
+		return DefaultSpaceID
+	}
+	return spaceID
+}

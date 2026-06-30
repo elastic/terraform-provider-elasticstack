@@ -20,6 +20,7 @@ package aliasutil
 import (
 	"context"
 	"encoding/json"
+	"sort"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -176,6 +177,39 @@ func AliasesFromAPI(ctx context.Context, apiAliases map[string]estypes.Alias, el
 	}
 
 	return modelAliases, nil
+}
+
+// FlattenAliasSet maps an Elasticsearch alias API response map into a types.Set.
+// Aliases are iterated in sorted name order for stable plan output.
+// preservedRouting carries user-configured routing values to restore when the API omits them (may be nil).
+// elemType is the element type for the resulting set (callers may pass a custom object type).
+// attrTypes is the attribute type map used when constructing each alias element object.
+func FlattenAliasSet(ctx context.Context, aliases map[string]models.IndexAlias, preservedRouting map[string]string, elemType attr.Type, attrTypes map[string]attr.Type) (types.Set, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if len(aliases) == 0 {
+		return types.SetNull(elemType), diags
+	}
+
+	names := make([]string, 0, len(aliases))
+	for name := range aliases {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	vals := make([]attr.Value, 0, len(names))
+	for _, name := range names {
+		alias := aliases[name]
+		av, d := FlattenAliasElement(name, alias, preservedRouting, attrTypes)
+		diags.Append(d...)
+		if diags.HasError() {
+			return types.SetUnknown(elemType), diags
+		}
+		vals = append(vals, av)
+	}
+
+	sv, d := types.SetValueFrom(ctx, elemType, vals)
+	diags.Append(d...)
+	return sv, diags
 }
 
 // normalizeQueryFilter recursively compacts expanded single-key query values

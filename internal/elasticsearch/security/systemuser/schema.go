@@ -22,6 +22,7 @@ import (
 	_ "embed"
 	"regexp"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -35,9 +36,6 @@ import (
 var systemUserResourceDescription string
 
 func GetSchema(_ context.Context) schema.Schema {
-	const usernameAllowedCharsError = "must contain alphanumeric characters (a-z, A-Z, 0-9), spaces, punctuation, and printable symbols " +
-		"in the Basic Latin (ASCII) block. Leading or trailing whitespace is not allowed"
-
 	return schema.Schema{
 		MarkdownDescription: systemUserResourceDescription,
 		Attributes: map[string]schema.Attribute{
@@ -55,7 +53,7 @@ func GetSchema(_ context.Context) schema.Schema {
 					stringvalidator.LengthBetween(1, 1024),
 					stringvalidator.RegexMatches(
 						regexp.MustCompile(`^[[:graph:]]+$`),
-						usernameAllowedCharsError,
+						security.UsernameAllowedCharsError,
 					),
 				},
 			},

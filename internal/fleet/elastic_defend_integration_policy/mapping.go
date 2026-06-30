@@ -53,12 +53,13 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 				"Not an Elastic Defend policy",
 				fmt.Sprintf("Package policy %q belongs to package %q, not %q. "+
 					"Only Elastic Defend package policies can be managed by elasticstack_fleet_elastic_defend_integration_policy.",
-					policy.Id, pkgName, endpointPackageName),
+					typeutils.Deref(policy.Id), pkgName, endpointPackageName),
 			),
 		}
 	}
 
-	model.PolicyID = types.StringValue(policy.Id)
+	policyID := typeutils.Deref(policy.Id)
+	model.PolicyID = types.StringValue(policyID)
 	model.Name = types.StringValue(policy.Name)
 	model.Namespace = types.StringPointerValue(policy.Namespace)
 	// Kibana retains an existing description when the field is omitted from
@@ -128,9 +129,9 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 
 	// Set composite ID: "<space_id>/<policy_id>" when a space is in use.
 	if operationalSpaceID != "" {
-		model.ID = types.StringValue(operationalSpaceID + "/" + policy.Id)
+		model.ID = types.StringValue(operationalSpaceID + "/" + policyID)
 	} else {
-		model.ID = types.StringValue(policy.Id)
+		model.ID = types.StringValue(policyID)
 	}
 
 	// Extract typed inputs from the union Inputs field
@@ -189,6 +190,14 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 	diags.Append(d...)
 	model.Policy = policyObj
 
+	originallySetAdvancedSettings := typeutils.IsKnown(model.AdvancedSettings)
+	if originallySetAdvancedSettings {
+		settings := advancedSettingsFromPolicyData(policyData)
+		advancedSettings, d := advancedSettingsMapToTerraform(settings)
+		diags.Append(d...)
+		model.AdvancedSettings = advancedSettings
+	}
+
 	return diags
 }
 
@@ -203,17 +212,17 @@ func mapPolicyFromAPI(ctx context.Context, policyData map[string]any) (types.Obj
 	}
 
 	var winData, macData, linuxData map[string]any
-	if w, ok := policyData["windows"]; ok {
+	if w, ok := policyData[policyOSWindows]; ok {
 		if wMap, ok := w.(map[string]any); ok {
 			winData = wMap
 		}
 	}
-	if m, ok := policyData["mac"]; ok {
+	if m, ok := policyData[policyOSMac]; ok {
 		if mMap, ok := m.(map[string]any); ok {
 			macData = mMap
 		}
 	}
-	if l, ok := policyData["linux"]; ok {
+	if l, ok := policyData[policyOSLinux]; ok {
 		if lMap, ok := l.(map[string]any); ok {
 			linuxData = lMap
 		}
@@ -808,8 +817,8 @@ func linuxAttrTypes() map[string]attr.Type {
 
 func policyAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"windows": types.ObjectType{AttrTypes: windowsAttrTypes()},
-		"mac":     types.ObjectType{AttrTypes: macAttrTypes()},
-		"linux":   types.ObjectType{AttrTypes: linuxAttrTypes()},
+		policyOSWindows: types.ObjectType{AttrTypes: windowsAttrTypes()},
+		policyOSMac:     types.ObjectType{AttrTypes: macAttrTypes()},
+		policyOSLinux:   types.ObjectType{AttrTypes: linuxAttrTypes()},
 	}
 }

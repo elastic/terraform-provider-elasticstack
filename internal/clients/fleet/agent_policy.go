@@ -28,41 +28,53 @@ import (
 )
 
 // GetAgentPolicy reads a specific agent policy from the API.
-func GetAgentPolicy(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.AgentPolicy, diag.Diagnostics) {
+func GetAgentPolicy(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.KibanaHTTPAPIsAgentPolicyResponse, diag.Diagnostics) {
 	resp, err := client.API.GetFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.AgentPolicy { return &resp.JSON200.Item })
+	return kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.KibanaHTTPAPIsAgentPolicyResponse { return &resp.JSON200.Item })
 }
 
 // CreateAgentPolicy creates a new agent policy.
-func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetAgentPoliciesJSONRequestBody, sysMonitoring bool, spaceID string) (*kbapi.AgentPolicy, diag.Diagnostics) {
+func CreateAgentPolicy(
+	ctx context.Context,
+	client *Client,
+	req kbapi.PostFleetAgentPoliciesJSONRequestBody,
+	sysMonitoring bool,
+	spaceID string,
+) (*kbapi.KibanaHTTPAPIsAgentPolicyResponse, diag.Diagnostics) {
 	params := kbapi.PostFleetAgentPoliciesParams{
 		SysMonitoring: new(sysMonitoring),
 	}
 
-	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.AgentPolicy, int, diag.Diagnostics) {
+	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.KibanaHTTPAPIsAgentPolicyResponse, int, diag.Diagnostics) {
 		resp, err := client.API.PostFleetAgentPoliciesWithResponse(ctx, &params, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 		if err != nil {
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.AgentPolicy { return &resp.JSON200.Item })
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.KibanaHTTPAPIsAgentPolicyResponse { return &resp.JSON200.Item })
 		return result, resp.StatusCode(), diags
 	})
 }
 
 // UpdateAgentPolicy updates an existing agent policy.
-func UpdateAgentPolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody) (*kbapi.AgentPolicy, diag.Diagnostics) {
-	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.AgentPolicy, int, diag.Diagnostics) {
+func UpdateAgentPolicy(
+	ctx context.Context,
+	client *Client,
+	id string,
+	spaceID string,
+	req kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody,
+) (*kbapi.KibanaHTTPAPIsAgentPolicyResponse, diag.Diagnostics) {
+	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.KibanaHTTPAPIsAgentPolicyResponse, int, diag.Diagnostics) {
 		resp, err := client.API.PutFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 		if err != nil {
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.AgentPolicy { return &resp.JSON200.Item })
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.KibanaHTTPAPIsAgentPolicyResponse { return &resp.JSON200.Item })
 		return result, resp.StatusCode(), diags
 	})
 }

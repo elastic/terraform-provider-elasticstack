@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -39,11 +40,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				Description: "The workflow ID to look up.",
 				Required:    true,
 			},
-			"space_id": dsschema.StringAttribute{
-				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
-				Optional:    true,
-				Computed:    true,
-			},
+			"space_id": kbschema.DataSourceSpaceIDAttribute(),
 			"workflow_id": dsschema.StringAttribute{
 				Description: "The ID of the workflow.",
 				Computed:    true,

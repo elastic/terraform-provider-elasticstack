@@ -174,6 +174,7 @@ func elasticsearchConnectionBlockType() tftypes.Type {
 			"insecure":                 tftypes.Bool,
 			"ca_file":                  tftypes.String,
 			"ca_data":                  tftypes.String,
+			"ca_fingerprint":           tftypes.String,
 			"cert_file":                tftypes.String,
 			"key_file":                 tftypes.String,
 			"cert_data":                tftypes.String,

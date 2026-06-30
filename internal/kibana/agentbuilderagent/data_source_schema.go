@@ -20,6 +20,7 @@ package agentbuilderagent
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -42,10 +43,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				Required:            true,
 				MarkdownDescription: "The agent ID.",
 			},
-			attrSpaceID: dsschema.StringAttribute{
-				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
-				Optional:    true,
-			},
+			attrSpaceID: kbschema.DataSourceSpaceIDAttribute(),
 			"include_dependencies": dsschema.BoolAttribute{
 				Description:         "If true, exports the agent along with its tools and workflows. If omitted, false is used (tool rows only list id, space_id, and tool_id unless this is true).",
 				MarkdownDescription: "If `true`, exports the agent along with its tools and workflows. If omitted, `false` is used (tool rows only list `id`, `space_id`, and `tool_id` unless this is `true`).",

@@ -24,8 +24,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *kbapi.OutputElasticsearch) (diags diag.Diagnostics) {
-	diags = model.fromAPICommonFields(ctx, commonOutputReadData{
+func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputElasticsearch) diag.Diagnostics {
+	return model.fromAPISimpleOutput(ctx, commonOutputReadData{
 		id:                   data.Id,
 		name:                 data.Name,
 		outputType:           string(data.Type),
@@ -37,68 +37,42 @@ func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *k
 		configYaml:           data.ConfigYaml,
 		ssl:                  data.Ssl,
 	})
-	clearRemoteElasticsearchOnlyFields(model)
-	return
 }
 
 func (model outputModel) toAPICreateElasticsearchModel(ctx context.Context) (kbapi.NewOutputUnion, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	f := model.buildCommonNewOutput(ctx, &diags)
-	if diags.HasError() {
-		return kbapi.NewOutputUnion{}, diags
-	}
-
-	body := kbapi.NewOutputElasticsearch{
-		Type:                 kbapi.KibanaHTTPAPIsNewOutputElasticsearchTypeElasticsearch,
-		CaSha256:             f.CaSha256,
-		CaTrustedFingerprint: f.CaTrustedFingerprint,
-		ConfigYaml:           f.ConfigYaml,
-		Hosts:                f.Hosts,
-		Id:                   f.ID,
-		IsDefault:            f.IsDefault,
-		IsDefaultMonitoring:  f.IsDefaultMonitoring,
-		Name:                 f.Name,
-		Ssl:                  f.Ssl,
-	}
-
-	var union kbapi.NewOutputUnion
-	err := union.FromNewOutputElasticsearch(body)
-	if err != nil {
-		diags.AddError(err.Error(), "")
-		return kbapi.NewOutputUnion{}, diags
-	}
-
-	return union, diags
+	return model.toAPICreateSimpleOutput(ctx, func(f commonNewOutputBody) (kbapi.NewOutputUnion, error) {
+		body := kbapi.KibanaHTTPAPIsNewOutputElasticsearch{
+			Type:                 kbapi.KibanaHTTPAPIsNewOutputElasticsearchTypeElasticsearch,
+			CaSha256:             f.CaSha256,
+			CaTrustedFingerprint: f.CaTrustedFingerprint,
+			ConfigYaml:           f.ConfigYaml,
+			Hosts:                f.Hosts,
+			Id:                   f.ID,
+			IsDefault:            f.IsDefault,
+			IsDefaultMonitoring:  f.IsDefaultMonitoring,
+			Name:                 f.Name,
+			Ssl:                  f.Ssl,
+		}
+		var union kbapi.NewOutputUnion
+		return union, union.FromKibanaHTTPAPIsNewOutputElasticsearch(body)
+	})
 }
 
 func (model outputModel) toAPIUpdateElasticsearchModel(ctx context.Context) (kbapi.UpdateOutputUnion, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	f := model.buildCommonUpdateOutput(ctx, &diags)
-	if diags.HasError() {
-		return kbapi.UpdateOutputUnion{}, diags
-	}
-
-	body := kbapi.UpdateOutputElasticsearch{
-		Type: func() *kbapi.KibanaHTTPAPIsUpdateOutputElasticsearchType {
-			outputType := kbapi.Elasticsearch
-			return &outputType
-		}(),
-		CaSha256:             f.CaSha256,
-		CaTrustedFingerprint: f.CaTrustedFingerprint,
-		ConfigYaml:           f.ConfigYaml,
-		Hosts:                f.Hosts,
-		IsDefault:            f.IsDefault,
-		IsDefaultMonitoring:  f.IsDefaultMonitoring,
-		Name:                 f.Name,
-		Ssl:                  f.Ssl,
-	}
-
-	var union kbapi.UpdateOutputUnion
-	err := union.FromUpdateOutputElasticsearch(body)
-	if err != nil {
-		diags.AddError(err.Error(), "")
-		return kbapi.UpdateOutputUnion{}, diags
-	}
-
-	return union, diags
+	return model.toAPIUpdateSimpleOutput(ctx, func(f commonUpdateOutputBody) (kbapi.UpdateOutputUnion, error) {
+		outputType := kbapi.Elasticsearch
+		body := kbapi.KibanaHTTPAPIsUpdateOutputElasticsearch{
+			Type:                 &outputType,
+			CaSha256:             f.CaSha256,
+			CaTrustedFingerprint: f.CaTrustedFingerprint,
+			ConfigYaml:           f.ConfigYaml,
+			Hosts:                f.Hosts,
+			IsDefault:            f.IsDefault,
+			IsDefaultMonitoring:  f.IsDefaultMonitoring,
+			Name:                 f.Name,
+			Ssl:                  f.Ssl,
+		}
+		var union kbapi.UpdateOutputUnion
+		return union, union.FromKibanaHTTPAPIsUpdateOutputElasticsearch(body)
+	})
 }

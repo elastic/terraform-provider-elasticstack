@@ -24,9 +24,9 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -38,8 +38,8 @@ const (
 )
 
 var (
-	minKibanaAgentBuilderAPIVersion         = version.Must(version.NewVersion("9.3.0"))
-	minKibanaAgentBuilderWorkflowAPIVersion = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
+	minKibanaAgentBuilderAPIVersion         = agentbuilder.MinCoreAPIVersion
+	minKibanaAgentBuilderWorkflowAPIVersion = agentbuilder.MinExtendedAPIVersion
 )
 
 func TestAccResourceAgentBuilderAgent(t *testing.T) {

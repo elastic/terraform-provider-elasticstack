@@ -1,0 +1,151 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package osquerypack
+
+import (
+	"context"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery"
+	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+var osqueryPlatformValues = osquery.PlatformValues
+
+func getSchema(_ context.Context) schema.Schema {
+	return schema.Schema{
+		MarkdownDescription: "Manages a user-defined Osquery query pack in Kibana. Requires Kibana 8.5.0 or later. " +
+			"Prebuilt packs shipped with the osquery_manager integration cannot be managed by this resource; " +
+			"use the `elasticstack_kibana_osquery_pack` data source to read them instead.",
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				MarkdownDescription: "Composite identifier in the form `<space_id>/<pack_id>`.",
+				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			attrPackID: schema.StringAttribute{
+				MarkdownDescription: "Server-generated Kibana saved object identifier for the pack (`saved_object_id`).",
+				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			attrSpaceID: kbschema.ResourceSpaceIDAttribute(),
+			attrName: schema.StringAttribute{
+				MarkdownDescription: "Human-readable name of the Osquery pack.",
+				Required:            true,
+			},
+			attrDescription: schema.StringAttribute{
+				MarkdownDescription: "Description of the Osquery pack.",
+				Optional:            true,
+			},
+			attrEnabled: schema.BoolAttribute{
+				MarkdownDescription: "Whether the pack is enabled.",
+				Optional:            true,
+				Computed:            true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
+			attrPolicyIDs: schema.SetAttribute{
+				MarkdownDescription: "Fleet agent policy IDs this pack is deployed to.",
+				Optional:            true,
+				ElementType:         types.StringType,
+			},
+			attrShards: schema.MapAttribute{
+				MarkdownDescription: "Percent (1-100) of hosts per policy ID that receive the pack.",
+				Optional:            true,
+				ElementType:         types.Float64Type,
+				Validators: []validator.Map{
+					mapvalidator.ValueFloat64sAre(
+						float64validator.Between(1, 100),
+					),
+				},
+			},
+			attrQueries: queriesSchema(),
+		},
+	}
+}
+
+func queriesSchema() schema.MapNestedAttribute {
+	return schema.MapNestedAttribute{
+		MarkdownDescription: "Osquery queries in the pack. Map keys are query names (canonical identifiers in Kibana).",
+		Required:            true,
+		Validators: []validator.Map{
+			mapvalidator.SizeAtLeast(1),
+		},
+		NestedObject: schema.NestedAttributeObject{
+			Attributes: queryNestedAttributes(),
+		},
+	}
+}
+
+func queryNestedAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		attrQuery: schema.StringAttribute{
+			MarkdownDescription: "Osquery SQL query text.",
+			Required:            true,
+		},
+		attrPlatform: schema.SetAttribute{
+			MarkdownDescription: "Target platforms for the query. Allowed values: `linux`, `darwin`, `windows`.",
+			Optional:            true,
+			ElementType:         types.StringType,
+			Validators: []validator.Set{
+				setvalidator.ValueStringsAre(stringvalidator.OneOf(osqueryPlatformValues...)),
+			},
+		},
+		attrVersion: schema.StringAttribute{
+			MarkdownDescription: "Query version string.",
+			Optional:            true,
+		},
+		attrSnapshot: schema.BoolAttribute{
+			MarkdownDescription: "Whether the query is a snapshot. Returned by the API and may be set explicitly in configuration. " +
+				"When omitted or unknown at plan time, the prior state value is preserved (`UseStateForUnknown`).",
+			Optional: true,
+			Computed: true,
+			PlanModifiers: []planmodifier.Bool{
+				boolplanmodifier.UseStateForUnknown(),
+			},
+		},
+		attrRemoved: schema.BoolAttribute{
+			MarkdownDescription: "Whether the query is marked removed. Returned by the API and may be set explicitly in configuration. " +
+				"When omitted or unknown at plan time, the prior state value is preserved (`UseStateForUnknown`).",
+			Optional: true,
+			Computed: true,
+			PlanModifiers: []planmodifier.Bool{
+				boolplanmodifier.UseStateForUnknown(),
+			},
+		},
+		attrSavedQueryID: schema.StringAttribute{
+			MarkdownDescription: "References an `elasticstack_kibana_osquery_saved_query` resource.",
+			Optional:            true,
+		},
+		attrEcsMapping: osquery.ECSMappingSchema(),
+	}
+}

@@ -174,7 +174,8 @@ func TestExpandTemplateCore(t *testing.T) {
 		require.False(t, diags.HasError())
 		require.NotNil(t, tpl.DataStreamOptions)
 		require.NotNil(t, tpl.DataStreamOptions.FailureStore)
-		assert.True(t, tpl.DataStreamOptions.FailureStore.Enabled)
+		require.NotNil(t, tpl.DataStreamOptions.FailureStore.Enabled)
+		assert.True(t, *tpl.DataStreamOptions.FailureStore.Enabled)
 	})
 
 	t.Run("data stream options null", func(t *testing.T) {
@@ -216,35 +217,6 @@ func TestExpandTemplateCore(t *testing.T) {
 		assert.Equal(t, map[string]any{"properties": map[string]any{"title": map[string]any{"type": "text"}}}, tpl.Mappings)
 		assert.Equal(t, map[string]any{"number_of_shards": float64(1)}, tpl.Settings)
 		assert.NotNil(t, tpl.DataStreamOptions)
-	})
-}
-
-func TestDecodeTemplateObject(t *testing.T) {
-	t.Run("null object returns empty diags", func(t *testing.T) {
-		var m testModel
-		diags := DecodeTemplateObject(ctx, types.ObjectNull(map[string]attr.Type{}), &m)
-		require.False(t, diags.HasError())
-		assert.True(t, m.Field.IsNull())
-	})
-
-	t.Run("unknown object returns empty diags", func(t *testing.T) {
-		var m testModel
-		diags := DecodeTemplateObject(ctx, types.ObjectUnknown(map[string]attr.Type{}), &m)
-		require.False(t, diags.HasError())
-		assert.True(t, m.Field.IsNull())
-	})
-
-	t.Run("valid object decodes into model", func(t *testing.T) {
-		attrTypes := map[string]attr.Type{
-			"field": types.StringType,
-		}
-		obj, d := types.ObjectValue(attrTypes, map[string]attr.Value{"field": types.StringValue("hello")})
-		require.False(t, d.HasError())
-
-		var m testModel
-		diags := DecodeTemplateObject(ctx, obj, &m)
-		require.False(t, diags.HasError())
-		assert.Equal(t, "hello", m.Field.ValueString())
 	})
 }
 
@@ -301,8 +273,4 @@ func TestExpandMetadataJSON(t *testing.T) {
 		assert.Nil(t, result)
 		assert.Equal(t, "Normalized JSON Unmarshal Error", diags.Errors()[0].Summary())
 	})
-}
-
-type testModel struct {
-	Field types.String `tfsdk:"field"`
 }

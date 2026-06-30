@@ -109,15 +109,15 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 	}
 
 	switch output := output.(type) {
-	case kbapi.OutputElasticsearch:
+	case kbapi.KibanaHTTPAPIsOutputElasticsearch:
 		diags.Append(model.fromAPIElasticsearchModel(ctx, &output)...)
 
-	case kbapi.OutputLogstash:
+	case kbapi.KibanaHTTPAPIsOutputLogstash:
 		diags.Append(model.fromAPILogstashModel(ctx, &output)...)
 
-	case kbapi.OutputKafka:
+	case kbapi.KibanaHTTPAPIsOutputKafka:
 		diags.Append(model.fromAPIKafkaModel(ctx, &output)...)
-	case kbapi.OutputRemoteElasticsearch:
+	case kbapi.KibanaHTTPAPIsOutputRemoteElasticsearch:
 		diags.Append(model.fromAPIRemoteElasticsearchModel(ctx, &output)...)
 	default:
 		diags.AddError(fmt.Sprintf("unhandled output type: %T", output), "")
@@ -244,7 +244,7 @@ func (model outputModel) buildCommonNewOutput(ctx context.Context, diags *diag.D
 		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
 		Hosts:                typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), diags),
-		ID:                   model.OutputID.ValueStringPointer(),
+		ID:                   typeutils.OptionalString(model.OutputID),
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueString(),
@@ -288,4 +288,53 @@ func configYamlFromAPI(value *string) customtypes.NormalizedYamlValue {
 		return customtypes.NewNormalizedYamlNull()
 	}
 	return customtypes.NewNormalizedYamlValue(*value)
+}
+
+// fromAPISimpleOutput populates a model from the common fields of a simple
+// (non-Kafka, non-RemoteElasticsearch) output type and clears the
+// remote-Elasticsearch-only fields.
+func (model *outputModel) fromAPISimpleOutput(ctx context.Context, d commonOutputReadData) diag.Diagnostics {
+	diags := model.fromAPICommonFields(ctx, d)
+	clearRemoteElasticsearchOnlyFields(model)
+	return diags
+}
+
+// toAPICreateSimpleOutput builds a NewOutputUnion for simple output types.
+// The caller supplies a buildUnion func that constructs the type-specific body
+// and calls the appropriate From* discriminator method.
+func (model outputModel) toAPICreateSimpleOutput(
+	ctx context.Context,
+	buildUnion func(f commonNewOutputBody) (kbapi.NewOutputUnion, error),
+) (kbapi.NewOutputUnion, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	f := model.buildCommonNewOutput(ctx, &diags)
+	if diags.HasError() {
+		return kbapi.NewOutputUnion{}, diags
+	}
+	union, err := buildUnion(f)
+	if err != nil {
+		diags.AddError(err.Error(), "")
+		return kbapi.NewOutputUnion{}, diags
+	}
+	return union, diags
+}
+
+// toAPIUpdateSimpleOutput builds an UpdateOutputUnion for simple output types.
+// The caller supplies a buildUnion func that constructs the type-specific body
+// and calls the appropriate From* discriminator method.
+func (model outputModel) toAPIUpdateSimpleOutput(
+	ctx context.Context,
+	buildUnion func(f commonUpdateOutputBody) (kbapi.UpdateOutputUnion, error),
+) (kbapi.UpdateOutputUnion, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	f := model.buildCommonUpdateOutput(ctx, &diags)
+	if diags.HasError() {
+		return kbapi.UpdateOutputUnion{}, diags
+	}
+	union, err := buildUnion(f)
+	if err != nil {
+		diags.AddError(err.Error(), "")
+		return kbapi.UpdateOutputUnion{}, diags
+	}
+	return union, diags
 }

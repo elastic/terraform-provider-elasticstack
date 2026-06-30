@@ -27,7 +27,60 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestToAPICreateModel_PolicyID(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	tests := []struct {
+		name      string
+		policyID  types.String
+		wantNilID bool
+		wantID    string
+	}{
+		{
+			name:      "unknown omits id",
+			policyID:  types.StringUnknown(),
+			wantNilID: true,
+		},
+		{
+			name:      "null omits id",
+			policyID:  types.StringNull(),
+			wantNilID: true,
+		},
+		{
+			name:     "explicit id is sent",
+			policyID: types.StringValue("my-policy-id"),
+			wantID:   "my-policy-id",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			model := &agentPolicyModel{
+				Name:      types.StringValue("test-policy"),
+				Namespace: types.StringValue("default"),
+				PolicyID:  tc.policyID,
+			}
+
+			body, diags := model.toAPICreateModel(ctx, agentPolicyFeatures{})
+			assert.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+
+			if tc.wantNilID {
+				assert.Nil(t, body.Id, "expected Id to be nil, got %v", body.Id)
+				return
+			}
+
+			require.NotNil(t, body.Id, "expected Id to be set")
+			assert.Equal(t, tc.wantID, *body.Id)
+		})
+	}
+}
 
 func TestMergeAgentFeature(t *testing.T) {
 	tests := []struct {
@@ -308,7 +361,7 @@ func TestPopulateFromAPI_Description_Null_vs_EmptyString(t *testing.T) {
 			model := &agentPolicyModel{
 				Description: tc.initial,
 			}
-			data := &kbapi.AgentPolicy{
+			data := &kbapi.KibanaHTTPAPIsAgentPolicyResponse{
 				Id:          "policy-id",
 				Description: tc.apiValue,
 			}
@@ -384,7 +437,7 @@ func TestPopulateFromAPI_SpaceIDs_Null_vs_EmptyList(t *testing.T) {
 			if tc.apiValue != nil {
 				apiSpaceIDs = &tc.apiValue
 			}
-			data := &kbapi.AgentPolicy{
+			data := &kbapi.KibanaHTTPAPIsAgentPolicyResponse{
 				Id:       "policy-id",
 				SpaceIds: apiSpaceIDs,
 			}

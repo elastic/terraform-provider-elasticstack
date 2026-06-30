@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -34,11 +35,23 @@ import (
 // empty/absent config, we leave OptionsListControlConfig as nil.
 //
 // tfPanel is the prior TF state/plan panel, or nil on import.
-func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, ol *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl) {
+func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, ol *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl) diag.Diagnostics {
 	if ol == nil {
-		return
+		return nil
 	}
-	apiConfig := &ol.Config
+	// The control config is a discriminated union (field-based vs ES|QL).
+	// The TF model only describes the field-based variant; a valid ES|QL config
+	// is left unchanged. If the config matches neither variant it is malformed
+	// and surfaced as an error.
+	apiConfig, err := ol.Config.AsKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField()
+	if err != nil {
+		if _, esqlErr := ol.Config.AsKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql(); esqlErr != nil {
+			var diags diag.Diagnostics
+			diags.AddError("Failed to decode options list control config", err.Error())
+			return diags
+		}
+		return nil
+	}
 	existing := pm.OptionsListControlConfig
 
 	if tfPanel == nil {
@@ -68,12 +81,12 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, ol *kbap
 		if apiConfig.DisplaySettings != nil {
 			existing.DisplaySettings = displaySettingsFromAPI(apiConfig.DisplaySettings)
 		}
-		return
+		return nil
 	}
 
 	if existing == nil {
 		if tfPanel == nil || tfPanel.OptionsListControlConfig == nil {
-			return
+			return nil
 		}
 		pm.OptionsListControlConfig = &models.OptionsListControlConfigModel{
 			DataViewID:      types.StringValue(apiConfig.DataViewId),
@@ -160,6 +173,7 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, ol *kbap
 	if tfPanel != nil && tfPanel.OptionsListControlConfig != nil {
 		optionsListPreserveNullIntentFromPrior(tfPanel.OptionsListControlConfig, existing)
 	}
+	return nil
 }
 
 func optionsListPreserveNullIntentFromPrior(prior, existing *models.OptionsListControlConfigModel) {
@@ -202,51 +216,52 @@ func optionsListPreserveNullIntentFromPrior(prior, existing *models.OptionsListC
 }
 
 // BuildConfig writes TF model fields into the API panel payload.
-func BuildConfig(pm models.PanelModel, olPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl) {
+func BuildConfig(pm models.PanelModel, olPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl) diag.Diagnostics {
 	cfg := pm.OptionsListControlConfig
 	if cfg == nil {
-		return
+		return nil
 	}
 
-	olPanel.Config.DataViewId = cfg.DataViewID.ValueString()
-	olPanel.Config.FieldName = cfg.FieldName.ValueString()
+	var c kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField
+	c.DataViewId = cfg.DataViewID.ValueString()
+	c.FieldName = cfg.FieldName.ValueString()
 
 	if typeutils.IsKnown(cfg.Title) {
-		olPanel.Config.Title = cfg.Title.ValueStringPointer()
+		c.Title = cfg.Title.ValueStringPointer()
 	}
 	if typeutils.IsKnown(cfg.UseGlobalFilters) {
-		olPanel.Config.UseGlobalFilters = cfg.UseGlobalFilters.ValueBoolPointer()
+		c.UseGlobalFilters = cfg.UseGlobalFilters.ValueBoolPointer()
 	}
 	if typeutils.IsKnown(cfg.IgnoreValidations) {
-		olPanel.Config.IgnoreValidations = cfg.IgnoreValidations.ValueBoolPointer()
+		c.IgnoreValidations = cfg.IgnoreValidations.ValueBoolPointer()
 	}
 	if typeutils.IsKnown(cfg.SingleSelect) {
-		olPanel.Config.SingleSelect = cfg.SingleSelect.ValueBoolPointer()
+		c.SingleSelect = cfg.SingleSelect.ValueBoolPointer()
 	}
 	if typeutils.IsKnown(cfg.Exclude) {
-		olPanel.Config.Exclude = cfg.Exclude.ValueBoolPointer()
+		c.Exclude = cfg.Exclude.ValueBoolPointer()
 	}
 	if typeutils.IsKnown(cfg.ExistsSelected) {
-		olPanel.Config.ExistsSelected = cfg.ExistsSelected.ValueBoolPointer()
+		c.ExistsSelected = cfg.ExistsSelected.ValueBoolPointer()
 	}
 	if typeutils.IsKnown(cfg.RunPastTimeout) {
-		olPanel.Config.RunPastTimeout = cfg.RunPastTimeout.ValueBoolPointer()
+		c.RunPastTimeout = cfg.RunPastTimeout.ValueBoolPointer()
 	}
 	if typeutils.IsKnown(cfg.SearchTechnique) {
-		st := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControlConfigSearchTechnique(cfg.SearchTechnique.ValueString())
-		olPanel.Config.SearchTechnique = &st
+		st := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSearchTechnique(cfg.SearchTechnique.ValueString())
+		c.SearchTechnique = &st
 	}
 	if !cfg.SelectedOptions.IsNull() && !cfg.SelectedOptions.IsUnknown() {
 		elems := cfg.SelectedOptions.Elements()
-		items := make([]kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config_SelectedOptions_Item, 0, len(elems))
+		items := make([]kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField_SelectedOptions_Item, 0, len(elems))
 		for _, e := range elems {
 			s := e.(types.String).ValueString()
-			var item kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config_SelectedOptions_Item
-			if err := item.FromKibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControlConfigSelectedOptions0(s); err == nil {
+			var item kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField_SelectedOptions_Item
+			if err := item.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSelectedOptions0(s); err == nil {
 				items = append(items, item)
 			}
 		}
-		olPanel.Config.SelectedOptions = &items
+		c.SelectedOptions = &items
 	}
 	if cfg.DisplaySettings != nil {
 		ds := cfg.DisplaySettings
@@ -272,27 +287,33 @@ func BuildConfig(pm models.PanelModel, olPanel *kbapi.KibanaHTTPAPIsKbnDashboard
 		if typeutils.IsKnown(ds.HideSort) {
 			apiDS.HideSort = ds.HideSort.ValueBoolPointer()
 		}
-		olPanel.Config.DisplaySettings = apiDS
+		c.DisplaySettings = apiDS
 	}
 	if cfg.Sort != nil {
-		olPanel.Config.Sort = &struct {
-			By        kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControlConfigSortBy        `json:"by"`
-			Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControlConfigSortDirection `json:"direction"`
+		c.Sort = &struct {
+			By        kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSortBy        `json:"by"`
+			Direction kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSortDirection `json:"direction"`
 		}{
-			By:        kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControlConfigSortBy(cfg.Sort.By.ValueString()),
-			Direction: kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControlConfigSortDirection(cfg.Sort.Direction.ValueString()),
+			By:        kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSortBy(cfg.Sort.By.ValueString()),
+			Direction: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSortDirection(cfg.Sort.Direction.ValueString()),
 		}
 	}
+	if err := olPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(c); err != nil {
+		var diags diag.Diagnostics
+		diags.AddError("Failed to build options list control config", err.Error())
+		return diags
+	}
+	return nil
 }
 
-func selectedOptionsToList(items []kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config_SelectedOptions_Item) types.List {
+func selectedOptionsToList(items []kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField_SelectedOptions_Item) types.List {
 	values := make([]attr.Value, 0, len(items))
 	for _, item := range items {
-		if s, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControlConfigSelectedOptions0(); err == nil {
+		if s, err := item.AsKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSelectedOptions0(); err == nil {
 			values = append(values, types.StringValue(s))
 			continue
 		}
-		if n, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControlConfigSelectedOptions1(); err == nil {
+		if n, err := item.AsKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSelectedOptions1(); err == nil {
 			values = append(values, types.StringValue(strconv.FormatFloat(float64(n), 'f', -1, 32)))
 		}
 	}

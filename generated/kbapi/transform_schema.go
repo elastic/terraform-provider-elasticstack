@@ -1202,35 +1202,18 @@ func transformFleetPaths(schema *Schema) {
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/agent_policy.ts
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/agent_policy.ts
 
-	agentPoliciesPath := schema.MustGetPath("/api/fleet/agent_policies")
-	agentPolicyPath := schema.MustGetPath("/api/fleet/agent_policies/{agentPolicyId}")
-
-	agentPoliciesPath.Get.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.items.items")
-	agentPoliciesPath.Post.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.item")
-	agentPolicyPath.Get.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.item")
-	agentPolicyPath.Put.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.item")
-
-	schema.Components.CreateRef(schema, "agent_policy_global_data_tags_item", "schemas.agent_policy.properties.global_data_tags.items")
-
-	// Define the value types for the GlobalDataTags
-	agentPoliciesPath.Post.Set("requestBody.content.application/json.schema.properties.global_data_tags.items.$ref", "#/components/schemas/agent_policy_global_data_tags_item")
-	agentPolicyPath.Put.Set("requestBody.content.application/json.schema.properties.global_data_tags.items.$ref", "#/components/schemas/agent_policy_global_data_tags_item")
-
-	// Enrollment api keys
-	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/enrollment_api_key.ts
-	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/enrollment_api_key.ts
+	// The agent_policy response is already a named component
+	// (Kibana_HTTP_APIs_agent_policy_response) so we don't alias it here;
+	// callers use that name directly. Lift the global_data_tags item out of
+	// that schema so it becomes a named component (anonymous nested struct
+	// otherwise), and point the new_agent_policy request body at it.
+	schema.Components.CreateRef(schema, "agent_policy_global_data_tags_item", "schemas.Kibana_HTTP_APIs_agent_policy_response.properties.global_data_tags.items")
+	schema.Components.Set("schemas.Kibana_HTTP_APIs_new_agent_policy.properties.global_data_tags.items", Map{
+		"$ref": "#/components/schemas/agent_policy_global_data_tags_item",
+	})
 
 	apiKeysPath := schema.MustGetPath("/api/fleet/enrollment_api_keys")
 	apiKeysPath.Get.CreateRef(schema, "enrollment_api_key", "responses.200.content.application/json.schema.properties.items.items")
-
-	// EPM
-	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/epm.ts
-	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/epm.ts
-
-	packagesPath := schema.MustGetPath("/api/fleet/epm/packages")
-	packagePath := schema.MustGetPath("/api/fleet/epm/packages/{pkgName}/{pkgVersion}")
-	packagesPath.Get.CreateRef(schema, "package_list_item", "responses.200.content.application/json.schema.properties.items.items")
-	packagePath.Get.CreateRef(schema, "package_info", "responses.200.content.application/json.schema.properties.item")
 
 	// Server hosts
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/fleet_server_policy_config.ts
@@ -1287,8 +1270,16 @@ func transformFleetPaths(schema *Schema) {
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/output.ts
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/output.ts
 
-	outputByIdPath := schema.MustGetPath("/api/fleet/outputs/{outputId}")
+	// The 4 output sub-types are already named components
+	// (Kibana_HTTP_APIs_{new_,update_,}output_{elasticsearch,kafka,logstash,remote_elasticsearch}).
+	// However the read/write unions are inlined at every endpoint with a
+	// oneOf + discriminator. Lift them into named components so consumers
+	// can refer to a single OutputUnion / NewOutputUnion / UpdateOutputUnion
+	// type. CreateRef de-duplicates identical inline schemas across the
+	// endpoints so subsequent calls just replace the inline schema with a
+	// $ref to the existing component.
 	outputsPath := schema.MustGetPath("/api/fleet/outputs")
+	outputByIdPath := schema.MustGetPath("/api/fleet/outputs/{outputId}")
 
 	outputsPath.Post.CreateRef(schema, "new_output_union", "requestBody.content.application/json.schema")
 	outputByIdPath.Put.CreateRef(schema, "update_output_union", "requestBody.content.application/json.schema")
@@ -1297,55 +1288,9 @@ func transformFleetPaths(schema *Schema) {
 	outputsPath.Post.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.item")
 	outputByIdPath.Put.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.item")
 
-	for _, name := range []string{"output", "new_output", "update_output"} {
-		// Ref each index in the anyOf union
-		kafkaComponent := fmt.Sprintf("%s_kafka", name)
-		schema.Components.CreateRef(schema, fmt.Sprintf("%s_elasticsearch", name), fmt.Sprintf("schemas.%s_union.anyOf.0", name))
-		schema.Components.CreateRef(schema, fmt.Sprintf("%s_remote_elasticsearch", name), fmt.Sprintf("schemas.%s_union.anyOf.1", name))
-		schema.Components.CreateRef(schema, fmt.Sprintf("%s_logstash", name), fmt.Sprintf("schemas.%s_union.anyOf.2", name))
-		schema.Components.CreateRef(schema, kafkaComponent, fmt.Sprintf("schemas.%s_union.anyOf.3", name))
-
-		// Ideally just remove the "anyOf", however then we would need to make
-		// refs for each of the "oneOf" options. So turn them into an "any" instead.
-		// See: https://github.com/elastic/kibana/issues/197153
-		/*
-			anyOf:
-			  - items: {}
-			    type: array
-			  - type: boolean
-			  - type: number
-			  - type: object
-			  - type: string
-			nullable: true
-			oneOf:
-			  - type: number
-			  - not: {}
-		*/
-	}
-
-	for _, componentName := range []string{
-		"schemas.Kibana_HTTP_APIs_new_output_kafka",
-		"schemas.Kibana_HTTP_APIs_output_kafka",
-		"schemas.update_output_kafka",
-	} {
-		kafkaComponent := schema.Components.MustGetMap(componentName)
-		kafkaComponent.Delete("properties.compression_level.oneOf")
-		kafkaComponent.Delete("properties.connection_type.oneOf")
-		kafkaComponent.Delete("properties.password.oneOf")
-		kafkaComponent.Delete("properties.username.oneOf")
-	}
-
-	// Add the missing discriminator to the response union
-	// See: https://github.com/elastic/kibana/issues/181994
-	schema.Components.Set("schemas.output_union.discriminator", Map{
-		"propertyName": "type",
-		"mapping": Map{
-			"elasticsearch":        "#/components/schemas/output_elasticsearch",
-			"remote_elasticsearch": "#/components/schemas/output_remote_elasticsearch",
-			"logstash":             "#/components/schemas/output_logstash",
-			"kafka":                "#/components/schemas/output_kafka",
-		},
-	})
+	// The previous kafka cleanups (compression_level/connection_type/
+	// password/username oneOf wrappers) are no longer needed - those
+	// properties are now plain typed fields in the upstream spec.
 
 	// Package policies
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/package_policy.ts
@@ -1355,7 +1300,6 @@ func transformFleetPaths(schema *Schema) {
 	epmPolicyPath := schema.MustGetPath("/api/fleet/package_policies/{packagePolicyId}")
 
 	epmPoliciesPath.Get.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.items.items")
-	epmPoliciesPath.Post.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
 
 	epmPolicyPath.Put.CreateRef(schema, "package_policy_request_typed_inputs", "requestBody.content.application/json.schema.anyOf.0")
 	epmPolicyPath.Put.CreateRef(schema, "package_policy_request_mapped_inputs", "requestBody.content.application/json.schema.anyOf.1")
@@ -1366,37 +1310,35 @@ func transformFleetPaths(schema *Schema) {
 	epmPolicyPath.Get.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
 	epmPolicyPath.Put.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
 
-	schema.Components.CreateRef(schema, "package_policy_secret_ref", "schemas.package_policy.properties.secret_references.items")
-	schema.Components.CreateRef(schema, "package_policy_typed_inputs", "schemas.package_policy.properties.inputs.anyOf.0")
-	schema.Components.CreateRef(schema, "package_policy_mapped_inputs", "schemas.package_policy.properties.inputs.anyOf.1")
+	// Lift the deeply nested package_policy response sub-schemas into named
+	// components so consumers can refer to them by name. The path-based
+	// CreateRefs above made `package_policy` and `package_policy_request*`
+	// chain-aliases of the underlying Kibana_HTTP_APIs_* components, so we
+	// must source these CreateRefs from the underlying component paths -
+	// CreateRef does not follow $refs.
+	schema.Components.CreateRef(schema, "package_policy_secret_ref", "schemas.Kibana_HTTP_APIs_package_policy_response.properties.secret_references.items")
+	schema.Components.CreateRef(schema, "package_policy_typed_inputs", "schemas.Kibana_HTTP_APIs_package_policy_response.properties.inputs.anyOf.0")
+	schema.Components.CreateRef(schema, "package_policy_mapped_inputs", "schemas.Kibana_HTTP_APIs_package_policy_response.properties.inputs.anyOf.1")
 	schema.Components.CreateRef(schema, "package_policy_typed_input", "schemas.package_policy_typed_inputs.items")
 	schema.Components.CreateRef(schema, "package_policy_mapped_input", "schemas.package_policy_mapped_inputs.additionalProperties")
 	schema.Components.CreateRef(schema, "package_policy_typed_input_stream", "schemas.package_policy_typed_input.properties.streams.items")
 	schema.Components.CreateRef(schema, "package_policy_mapped_input_stream", "schemas.package_policy_mapped_input.properties.streams.additionalProperties")
 
-	schema.Components.CreateRef(schema, "package_policy_request_package", "schemas.package_policy_request_mapped_inputs.properties.package")
-	schema.Components.CreateRef(schema, "package_policy_request_package", "schemas.package_policy_request_typed_inputs.properties.package")
+	// The package field on package policy requests is already named upstream
+	// (Kibana_HTTP_APIs_package_policy_package), but consumers expect the
+	// shorter package_policy_request_package alias. Set both request bodies
+	// to point at a single short-named ref via CreateRef.
+	schema.Components.CreateRef(schema, "package_policy_request_package", "schemas.Kibana_HTTP_APIs_simplified_create_package_policy_request.properties.package")
+	schema.Components.CreateRef(schema, "package_policy_request_package", "schemas.Kibana_HTTP_APIs_update_package_policy_request.properties.package")
 
-	schema.Components.CreateRef(schema, "package_policy_request_mapped_input", "schemas.package_policy_request_mapped_inputs.properties.inputs.additionalProperties")
+	// Request-side mapped (simplified) inputs/streams
+	schema.Components.CreateRef(schema, "package_policy_request_mapped_input", "schemas.Kibana_HTTP_APIs_simplified_create_package_policy_request.properties.inputs.additionalProperties")
 	schema.Components.CreateRef(schema, "package_policy_request_mapped_input_stream", "schemas.package_policy_request_mapped_input.properties.streams.additionalProperties")
 
-	schema.Components.CreateRef(schema, "package_policy_request_typed_input", "schemas.package_policy_request_typed_inputs.properties.inputs.items")
+	// Request-side typed inputs/streams (sourced from the underlying
+	// update_package_policy_request component for the same chain-ref reason).
+	schema.Components.CreateRef(schema, "package_policy_request_typed_input", "schemas.Kibana_HTTP_APIs_update_package_policy_request.properties.inputs.items")
 	schema.Components.CreateRef(schema, "package_policy_request_typed_input_stream", "schemas.package_policy_request_typed_input.properties.streams.items")
-
-	// Simplify all of the vars
-	schema.Components.Set("schemas.package_policy.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_typed_input.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_mapped_input.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_typed_input_stream.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_mapped_input_stream.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_request_mapped_inputs.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_request_mapped_input.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_request_mapped_input_stream.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_request_typed_inputs.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_request_typed_input.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_request_typed_input.properties.config", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_request_typed_input_stream.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_request_typed_input_stream.properties.config", Map{"type": "object"})
 }
 
 func setAllXOmitEmpty(key string, node Map) {

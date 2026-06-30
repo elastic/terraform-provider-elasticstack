@@ -28,7 +28,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 const panelConfigAttrsKeyPrefix = panelType + "_config"
@@ -42,7 +41,7 @@ func (Handler) PopulateJSONDefaults(config map[string]any) map[string]any {
 	return config
 }
 
-func (Handler) PinnedHandler() iface.PinnedHandler { return pinnedHandler{} }
+func (Handler) PinnedHandler() iface.PinnedHandler { return newPinnedHandler() }
 
 func (Handler) AlignStateFromPlan(ctx context.Context, plan, state *models.PanelModel) {
 	_, _, _ = ctx, plan, state
@@ -59,8 +58,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 	pm.Grid = panelkit.GridFromAPI(rsPanel.Grid.X, rsPanel.Grid.Y, rsPanel.Grid.W, rsPanel.Grid.H)
 	pm.ID = panelkit.IDFromAPI(rsPanel.Id)
 	pm.ConfigJSON = panelkit.PanelConfigJSONNull()
-	PopulateFromAPI(ctx, pm, prior, &rsPanel)
-	return nil
+	return PopulateFromAPI(ctx, pm, prior, &rsPanel)
 }
 
 func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
@@ -79,7 +77,10 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 		Grid: grid,
 		Id:   id,
 	}
-	BuildConfig(pm, &panel)
+	diags.Append(BuildConfig(pm, &panel)...)
+	if diags.HasError() {
+		return kbapi.DashboardPanelItem{}, diags
+	}
 	var panelItem kbapi.DashboardPanelItem
 	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl(panel); err != nil {
 		diags.AddError("Failed to create range slider control panel", err.Error())
@@ -88,31 +89,10 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	return panelItem, nil
 }
 
-func rangeSliderAttrsShape(attrs map[string]attr.Value) (flat bool, obj types.Object, shaped bool) {
-	if attrs == nil {
-		return false, types.Object{}, false
-	}
-	if _, dv := attrs["data_view_id"]; dv {
-		if _, fn := attrs["field_name"]; fn {
-			return true, types.Object{}, true
-		}
-		return false, types.Object{}, false
-	}
-	raw, nested := attrs[panelConfigAttrsKeyPrefix]
-	if !nested {
-		return false, types.Object{}, false
-	}
-	obj, ok := raw.(types.Object)
-	if !ok {
-		return false, types.Object{}, false
-	}
-	return false, obj, true
-}
-
 // ValidatePanelConfig enforces required range slider identifiers.
 func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
 	var out diag.Diagnostics
-	flat, obj, shaped := rangeSliderAttrsShape(attrs)
+	flat, obj, shaped := panelkit.ResolvePanelAttrsShape(attrs, panelConfigAttrsKeyPrefix, "data_view_id", "field_name")
 	if !shaped {
 		return out
 	}

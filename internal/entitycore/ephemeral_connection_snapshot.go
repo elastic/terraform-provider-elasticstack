@@ -46,6 +46,7 @@ type ephemeralESConnectionSnapshot struct {
 	Insecure               *bool             `json:"insecure,omitempty"`
 	CAFile                 string            `json:"ca_file,omitempty"`
 	CAData                 string            `json:"ca_data,omitempty"`
+	CAFingerprint          string            `json:"ca_fingerprint,omitempty"`
 	CertFile               string            `json:"cert_file,omitempty"`
 	CertData               string            `json:"cert_data,omitempty"`
 	KeyFile                string            `json:"key_file,omitempty"`
@@ -146,6 +147,7 @@ func snapshotFromElasticsearchConnection(ctx context.Context, conn clientconfig.
 		ESClientAuthentication: knownStringValue(conn.ESClientAuthentication),
 		CAFile:                 knownStringValue(conn.CAFile),
 		CAData:                 knownStringValue(conn.CAData),
+		CAFingerprint:          knownStringValue(conn.CAFingerprint),
 		CertFile:               knownStringValue(conn.CertFile),
 		CertData:               knownStringValue(conn.CertData),
 		KeyFile:                knownStringValue(conn.KeyFile),
@@ -199,6 +201,7 @@ func elasticsearchConnectionFromSnapshot(snapshot *ephemeralESConnectionSnapshot
 		Insecure:               types.BoolPointerValue(snapshot.Insecure),
 		CAFile:                 typeutils.NonEmptyStringishValue(snapshot.CAFile),
 		CAData:                 typeutils.NonEmptyStringishValue(snapshot.CAData),
+		CAFingerprint:          typeutils.NonEmptyStringishValue(snapshot.CAFingerprint),
 		CertFile:               typeutils.NonEmptyStringishValue(snapshot.CertFile),
 		CertData:               typeutils.NonEmptyStringishValue(snapshot.CertData),
 		KeyFile:                typeutils.NonEmptyStringishValue(snapshot.KeyFile),

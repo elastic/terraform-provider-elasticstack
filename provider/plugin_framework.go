@@ -96,6 +96,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportsavedobjects"
 	importsavedobjects "github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	maintenancewindow "github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
+	osquerypack "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_pack"
+	osquerysavedquery "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_saved_query"
 	prebuilt_rules "github.com/elastic/terraform-provider-elasticstack/internal/kibana/prebuilt_rules"
 	security_detection_rule "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
 	securityenablerule "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_enable_rule"
@@ -116,6 +118,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/monitor"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/parameter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/privatelocation"
+	kibanatag "github.com/elastic/terraform-provider-elasticstack/internal/kibana/tag"
 	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/action"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -264,6 +267,8 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		script.NewScriptResource,
 		logstash.NewLogstashPipelineResource,
 		maintenancewindow.NewResource,
+		osquerypack.NewResource,
+		osquerysavedquery.NewResource,
 		enrich.NewEnrichPolicyResource,
 		synonyms.NewSynonymSetResource,
 		connectorresource.NewContentConnectorResource,
@@ -307,7 +312,9 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 }
 
 func (p *Provider) experimentalResources(_ context.Context) []func() resource.Resource {
-	return []func() resource.Resource{}
+	return []func() resource.Resource{
+		kibanatag.NewResource,
+	}
 }
 
 func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource {
@@ -322,6 +329,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		securityentitystore.NewDataSource,
 		securityentitystoreentities.NewDataSource,
 		connectors.NewDataSource,
+		osquerysavedquery.NewDataSource,
 		agentbuilderagent.NewDataSource,
 		agentbuilderskill.NewDataSource,
 		agentbuildertool.NewDataSource,
@@ -337,6 +345,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		role.NewRoleDataSource,
 		securityuser.NewUserDataSource,
 		outputds.NewDataSource,
+		osquerypack.NewDataSource,
 		ingest.NewProcessorAppendDataSource,
 		ingest.NewProcessorBytesDataSource,
 		ingest.NewProcessorCircleDataSource,
@@ -382,5 +391,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 }
 
 func (p *Provider) experimentalDataSources(_ context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{}
+	return []func() datasource.DataSource{
+		kibanatag.NewDataSource,
+	}
 }

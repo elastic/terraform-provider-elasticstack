@@ -493,6 +493,45 @@ func TestAccResourceElasticDefendIntegrationPolicyKibanaConnection(t *testing.T)
 	})
 }
 
+// TestAccResourceElasticDefendIntegrationPolicy_advancedSettings verifies that
+// Elastic Defend advanced settings round-trip through create and update.
+func TestAccResourceElasticDefendIntegrationPolicy_advancedSettings(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefend, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "advanced_settings.linux.advanced.artifacts.global.base_url", "http://10.0.0.33"),
+					resource.TestCheckResourceAttr(resourceName, "advanced_settings.windows.advanced.artifacts.global.base_url", "http://10.0.0.33"),
+					resource.TestCheckResourceAttr(resourceName, "advanced_settings.mac.advanced.artifacts.global.base_url", "http://10.0.0.33"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "advanced_settings.linux.advanced.artifacts.global.base_url", "http://10.0.0.44"),
+					resource.TestCheckResourceAttr(resourceName, "advanced_settings.windows.advanced.artifacts.global.base_url", "http://10.0.0.44"),
+					resource.TestCheckResourceAttr(resourceName, "advanced_settings.mac.advanced.artifacts.global.base_url", "http://10.0.0.44"),
+				),
+			},
+		},
+	})
+}
+
 func testImportStateIDFunc(resourceName string) resource.ImportStateIdFunc {
 	return func(s *terraform.State) (string, error) {
 		rs, ok := s.RootModule().Resources[resourceName]

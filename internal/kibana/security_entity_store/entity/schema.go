@@ -20,7 +20,7 @@ package entity
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	jsontypes "github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -28,7 +28,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -43,13 +42,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Computed:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
-			"space_id": schema.StringAttribute{
-				Description:   "An identifier for the Kibana space. If omitted, the default space is used.",
-				Optional:      true,
-				Computed:      true,
-				Default:       stringdefault.StaticString(clients.DefaultSpaceID),
-				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
-			},
+			"space_id": kbschema.ResourceSpaceIDAttributeRequiresReplaceOnly(),
 			"entity_type": schema.StringAttribute{
 				Description:   "The type of entity. Must be one of: user, host, service, generic.",
 				Required:      true,

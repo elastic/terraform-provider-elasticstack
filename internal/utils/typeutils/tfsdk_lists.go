@@ -30,11 +30,7 @@ import (
 // NonEmptyListOrDefault returns the original list if slice is empty,
 // otherwise converts slice into a types.List.
 func NonEmptyListOrDefault[T any](ctx context.Context, original types.List, elemType attr.Type, slice []T) (types.List, diag.Diagnostics) {
-	if len(slice) == 0 {
-		return original, nil
-	}
-
-	return types.ListValueFrom(ctx, elemType, slice)
+	return nonEmptyCollectionOrDefault(ctx, original, elemType, slice, types.ListValueFrom)
 }
 
 // EnsureTypedList converts untyped zero-value lists to properly typed null lists.
@@ -116,7 +112,5 @@ func ListTypeAs[T any](ctx context.Context, value types.List, p path.Path, diags
 
 // ListValueFrom converts a tfsdk aware []T to a types.List.
 func ListValueFrom[T any](ctx context.Context, value []T, elemType attr.Type, p path.Path, diags *diag.Diagnostics) types.List {
-	list, d := types.ListValueFrom(ctx, elemType, value)
-	diags.Append(convertToAttrDiags(d, p)...)
-	return list
+	return collectionValueFrom(ctx, value, elemType, p, diags, types.ListValueFrom)
 }

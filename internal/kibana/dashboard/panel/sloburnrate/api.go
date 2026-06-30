@@ -92,35 +92,11 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	return panelItem, diags
 }
 
-// sloBurnRateAttrsShape detects the attrs map convention used by contracttest.ValidatePanelConfig
-// (flattened slo_id + duration keys) versus a full-panel attribute map keyed by slo_burn_rate_config.
-func sloBurnRateAttrsShape(attrs map[string]attr.Value) (flat bool, obj types.Object, ok bool) {
-	if attrs == nil {
-		return false, types.Object{}, false
-	}
-
-	if _, slo := attrs["slo_id"]; slo {
-		if _, dur := attrs["duration"]; dur {
-			return true, types.Object{}, true
-		}
-		return false, types.Object{}, false
-	}
-
-	if raw, nested := attrs[panelConfigAttrsKeyPrefix]; nested {
-		if obj, ok := raw.(types.Object); ok {
-			return false, obj, ok
-		}
-		return false, types.Object{}, false
-	}
-
-	return false, types.Object{}, false
-}
-
 // ValidatePanelConfig returns diagnostics only for this panel type when required fields inside
 // slo_burn_rate_config are absent and the validated attribute map targets that nested object.
 func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
 	var out diag.Diagnostics
-	flat, obj, shaped := sloBurnRateAttrsShape(attrs)
+	flat, obj, shaped := panelkit.ResolvePanelAttrsShape(attrs, panelConfigAttrsKeyPrefix, "slo_id", "duration")
 	if !shaped {
 		out.AddAttributeError(attrPath.AtName(panelConfigAttrsKeyPrefix), "Missing SLO burn rate panel configuration", "SLO burn rate panels require `slo_burn_rate_config`.")
 		return out

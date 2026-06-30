@@ -27,7 +27,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 const panelConfigAttrsKeyPrefix = panelType + "_config"
@@ -75,23 +74,9 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	return panelItem, diags
 }
 
-func sloErrorBudgetAttrsShape(attrs map[string]attr.Value) (flat bool, obj types.Object, ok bool) {
-	if attrs == nil {
-		return false, types.Object{}, false
-	}
-	if _, id := attrs["slo_id"]; id {
-		return true, types.Object{}, true
-	}
-	if raw, nested := attrs[panelConfigAttrsKeyPrefix]; nested {
-		obj, ok := raw.(types.Object)
-		return false, obj, ok
-	}
-	return false, types.Object{}, false
-}
-
 func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
 	var out diag.Diagnostics
-	flat, obj, shaped := sloErrorBudgetAttrsShape(attrs)
+	flat, obj, shaped := panelkit.ResolvePanelAttrsShape(attrs, panelConfigAttrsKeyPrefix, "slo_id")
 	if !shaped {
 		out.AddAttributeError(attrPath.AtName(panelConfigAttrsKeyPrefix), "Missing slo_error_budget panel configuration", "SLO error budget panels require `slo_error_budget_config`.")
 		return out

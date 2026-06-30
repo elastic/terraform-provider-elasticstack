@@ -114,7 +114,7 @@ func populateVarsJSONDefaults(ctxVal string, varsJSON string) (string, error) {
 	if !ok {
 		return varsJSON, nil
 	}
-	pkg, ok := value.(kbapi.PackageInfo)
+	pkg, ok := value.(kbapi.KibanaHTTPAPIsGetPackageInfo)
 	if !ok {
 		return varsJSON, fmt.Errorf("unexpected package cache value type for key %q", ctxVal)
 	}

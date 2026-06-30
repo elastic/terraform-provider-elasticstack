@@ -151,9 +151,9 @@ sections = [
 - **`collapsed`** — When `true`, the section starts collapsed; only the header is visible until the user expands it. Collapsed sections can improve initial load time because Kibana defers loading some panel content until expansion (see upstream docs).
 - **`grid.y`** — Row offset of the **section block** on the outer dashboard layout. Increase `y` so the second section sits below the first section's panels.
 
-![Full dashboard with both sections expanded](images/g3-01-full.png)
+![Full dashboard with both sections expanded](https://raw.githubusercontent.com/elastic/terraform-provider-elasticstack/main/docs/guides/images/g3-01-full.png)
 
-![Dashboard with the Goal tracking section collapsed](images/g3-02-collapsed.png)
+![Dashboard with the Goal tracking section collapsed](https://raw.githubusercontent.com/elastic/terraform-provider-elasticstack/main/docs/guides/images/g3-02-collapsed.png)
 
 ## Image panel (branding)
 
@@ -239,7 +239,7 @@ This example charts the **95th percentile of `bytes`** with a **static goal of 1
 
 Export gauge `metric_json` and `shape_json` from Lens **Inspect → Request → Response** like other chart types. Add this panel to the **Goal tracking** section.
 
-![Gauge panel showing 95th percentile bytes against a goal](images/g3-03-gauge.png)
+![Gauge panel showing 95th percentile bytes against a goal](https://raw.githubusercontent.com/elastic/terraform-provider-elasticstack/main/docs/guides/images/g3-03-gauge.png)
 
 ### Multi-layer area and line chart
 
@@ -330,7 +330,7 @@ Lens **heatmap** panels use `vis_config.by_value.heatmap_config`. The committed 
 
 A **day-of-week × hour** heatmap would need an extra field (for example a runtime field or scripted transform to extract weekday). That is outside this guide; the pattern above matches what the example actually renders.
 
-![Heatmap of requests by hour of day and response code](images/g3-04-heatmap.png)
+![Heatmap of requests by hour of day and response code](https://raw.githubusercontent.com/elastic/terraform-provider-elasticstack/main/docs/guides/images/g3-04-heatmap.png)
 
 ## ES|QL control and variable queries
 

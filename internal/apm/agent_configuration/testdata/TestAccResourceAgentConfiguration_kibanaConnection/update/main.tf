@@ -23,6 +23,16 @@ variable "password" {
   default = ""
 }
 
+variable "insecure" {
+  type    = bool
+  default = false
+}
+
+variable "ca_certs" {
+  type    = list(string)
+  default = []
+}
+
 provider "elasticstack" {
   elasticsearch {}
   kibana {}
@@ -43,5 +53,7 @@ resource "elasticstack_apm_agent_configuration" "test_config" {
     api_key   = var.api_key != "" ? var.api_key : null
     username  = var.username != "" ? var.username : null
     password  = var.password != "" ? var.password : null
+    insecure  = var.insecure
+    ca_certs  = var.ca_certs
   }
 }

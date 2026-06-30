@@ -24,8 +24,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.OutputLogstash) (diags diag.Diagnostics) {
-	diags = model.fromAPICommonFields(ctx, commonOutputReadData{
+func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputLogstash) diag.Diagnostics {
+	return model.fromAPISimpleOutput(ctx, commonOutputReadData{
 		id:                   data.Id,
 		name:                 data.Name,
 		outputType:           string(data.Type),
@@ -37,68 +37,42 @@ func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.
 		configYaml:           data.ConfigYaml,
 		ssl:                  data.Ssl,
 	})
-	clearRemoteElasticsearchOnlyFields(model)
-	return
 }
 
 func (model outputModel) toAPICreateLogstashModel(ctx context.Context) (kbapi.NewOutputUnion, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	f := model.buildCommonNewOutput(ctx, &diags)
-	if diags.HasError() {
-		return kbapi.NewOutputUnion{}, diags
-	}
-
-	body := kbapi.NewOutputLogstash{
-		Type:                 kbapi.KibanaHTTPAPIsNewOutputLogstashTypeLogstash,
-		CaSha256:             f.CaSha256,
-		CaTrustedFingerprint: f.CaTrustedFingerprint,
-		ConfigYaml:           f.ConfigYaml,
-		Hosts:                f.Hosts,
-		Id:                   f.ID,
-		IsDefault:            f.IsDefault,
-		IsDefaultMonitoring:  f.IsDefaultMonitoring,
-		Name:                 f.Name,
-		Ssl:                  f.Ssl,
-	}
-
-	var union kbapi.NewOutputUnion
-	err := union.FromNewOutputLogstash(body)
-	if err != nil {
-		diags.AddError(err.Error(), "")
-		return kbapi.NewOutputUnion{}, diags
-	}
-
-	return union, diags
+	return model.toAPICreateSimpleOutput(ctx, func(f commonNewOutputBody) (kbapi.NewOutputUnion, error) {
+		body := kbapi.KibanaHTTPAPIsNewOutputLogstash{
+			Type:                 kbapi.KibanaHTTPAPIsNewOutputLogstashTypeLogstash,
+			CaSha256:             f.CaSha256,
+			CaTrustedFingerprint: f.CaTrustedFingerprint,
+			ConfigYaml:           f.ConfigYaml,
+			Hosts:                f.Hosts,
+			Id:                   f.ID,
+			IsDefault:            f.IsDefault,
+			IsDefaultMonitoring:  f.IsDefaultMonitoring,
+			Name:                 f.Name,
+			Ssl:                  f.Ssl,
+		}
+		var union kbapi.NewOutputUnion
+		return union, union.FromKibanaHTTPAPIsNewOutputLogstash(body)
+	})
 }
 
 func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context) (kbapi.UpdateOutputUnion, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	f := model.buildCommonUpdateOutput(ctx, &diags)
-	if diags.HasError() {
-		return kbapi.UpdateOutputUnion{}, diags
-	}
-
-	body := kbapi.UpdateOutputLogstash{
-		Type: func() *kbapi.KibanaHTTPAPIsUpdateOutputLogstashType {
-			outputType := kbapi.Logstash
-			return &outputType
-		}(),
-		CaSha256:             f.CaSha256,
-		CaTrustedFingerprint: f.CaTrustedFingerprint,
-		ConfigYaml:           f.ConfigYaml,
-		Hosts:                f.Hosts,
-		IsDefault:            f.IsDefault,
-		IsDefaultMonitoring:  f.IsDefaultMonitoring,
-		Name:                 f.Name,
-		Ssl:                  f.Ssl,
-	}
-
-	var union kbapi.UpdateOutputUnion
-	err := union.FromUpdateOutputLogstash(body)
-	if err != nil {
-		diags.AddError(err.Error(), "")
-		return kbapi.UpdateOutputUnion{}, diags
-	}
-
-	return union, diags
+	return model.toAPIUpdateSimpleOutput(ctx, func(f commonUpdateOutputBody) (kbapi.UpdateOutputUnion, error) {
+		outputType := kbapi.Logstash
+		body := kbapi.KibanaHTTPAPIsUpdateOutputLogstash{
+			Type:                 &outputType,
+			CaSha256:             f.CaSha256,
+			CaTrustedFingerprint: f.CaTrustedFingerprint,
+			ConfigYaml:           f.ConfigYaml,
+			Hosts:                f.Hosts,
+			IsDefault:            f.IsDefault,
+			IsDefaultMonitoring:  f.IsDefaultMonitoring,
+			Name:                 f.Name,
+			Ssl:                  f.Ssl,
+		}
+		var union kbapi.UpdateOutputUnion
+		return union, union.FromKibanaHTTPAPIsUpdateOutputLogstash(body)
+	})
 }

@@ -41,7 +41,7 @@ data "elasticstack_kibana_agentbuilder_skill" "doc" {
 ### Optional
 
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
-- `space_id` (String) An identifier for the Kibana space. If not provided, the default space is used unless the `skill_id` argument supplies a composite space.
+- `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 
 ### Read-Only
 

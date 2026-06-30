@@ -21,7 +21,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -72,11 +71,4 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 		return
 	}
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-}
-
-func buildID(spaceID string) string {
-	if spaceID == "" {
-		spaceID = clients.DefaultSpaceID
-	}
-	return spaceID + "/" + resourceID
 }

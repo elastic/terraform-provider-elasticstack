@@ -413,6 +413,73 @@ func TestAccResourceWatch_redactedScriptHeaderPreserved(t *testing.T) {
 	})
 }
 
+// TestAccResourceWatch_redactedInputBasicAuthPreserved verifies that an HTTP
+// input with basic authentication whose password is redacted by Elasticsearch
+// on Get Watch does not produce perpetual drift. After the initial apply, the
+// concrete password is preserved from prior state on refresh; an unrelated
+// update (throttle_period_in_millis) applies cleanly and the input still
+// carries the concrete secret rather than the ::es_redacted:: sentinel.
+func TestAccResourceWatch_redactedInputBasicAuthPreserved(t *testing.T) {
+	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceWatchDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					resource.TestMatchResourceAttr(watchResourceName, "input", regexp.MustCompile(`acc-redacted-input-secret-4d7e`)),
+					resource.TestMatchResourceAttr(watchResourceName, "input", regexp.MustCompile(`127\.0\.0\.1`)),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_throttle"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "throttle_period_in_millis", "12000"),
+					resource.TestMatchResourceAttr(watchResourceName, "input", regexp.MustCompile(`acc-redacted-input-secret-4d7e`)),
+					resource.TestMatchResourceAttr(watchResourceName, "input", regexp.MustCompile(`127\.0\.0\.1`)),
+				),
+			},
+			{
+				// Re-running the same config must produce an empty plan. This is the core
+				// regression check: if the provider stored the ::es_redacted:: sentinel from
+				// the Get Watch response instead of preserving the prior concrete password,
+				// the plan would show a perpetual diff on input.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_throttle"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+			{
+				// Import after update: verify that non-redacted attributes round-trip correctly.
+				// The input attribute is excluded from import verification because Elasticsearch
+				// redacts secret values on Get Watch; there is no prior state to restore from.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_throttle"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ResourceName:             watchResourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"elasticsearch_connection", "input"},
+			},
+		},
+	})
+}
+
 // TestResourceWatch_watchIDReplace verifies that changing watch_id forces resource replacement.
 func TestResourceWatch_watchIDReplace(t *testing.T) {
 	watchID1 := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)

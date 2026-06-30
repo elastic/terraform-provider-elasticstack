@@ -324,11 +324,11 @@ func TestKibanaConnectionField_stateRoundTrip(t *testing.T) {
 // newMockKibanaStatusServer returns an httptest.Server that serves a minimal
 // Kibana status JSON payload for GET /api/status. The caller must close the
 // returned server.
-func newMockKibanaStatusServer(versionStr, buildFlavor string) *httptest.Server {
+func newMockKibanaStatusServer(versionStr string) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && r.URL.Path == "/api/status" {
 			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprintf(w, `{"version":{"number":%q,"build_flavor":%q}}`, versionStr, buildFlavor)
+			fmt.Fprintf(w, `{"version":{"number":%q,"build_flavor":"default"}}`, versionStr)
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
@@ -619,7 +619,7 @@ func TestKibanaDataSource_Read_versionReqDiagsStopRead(t *testing.T) {
 func TestKibanaDataSource_Read_supportedServer_invokesReadFunc(t *testing.T) {
 	ctx := context.Background()
 
-	srv := newMockKibanaStatusServer("8.19.0", "default")
+	srv := newMockKibanaStatusServer("8.19.0")
 	defer srv.Close()
 
 	readFuncCalled := false
@@ -667,7 +667,7 @@ func TestKibanaDataSource_Read_unsupportedServer_stopsBeforeReadFunc(t *testing.
 	ctx := context.Background()
 
 	// Server reports 7.17.0, which is below the required 8.0.0.
-	srv := newMockKibanaStatusServer("7.17.0", "default")
+	srv := newMockKibanaStatusServer("7.17.0")
 	defer srv.Close()
 
 	readFuncCalled := false

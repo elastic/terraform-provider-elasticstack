@@ -176,5 +176,10 @@ func (b *baseResourceEnvelope[T, C]) Delete(ctx context.Context, req resource.De
 		return
 	}
 
+	if vDiags := EnforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
+		resp.Diagnostics.Append(vDiags...)
+		return
+	}
+
 	resp.Diagnostics.Append(b.delete(ctx, client, resourceID, model)...)
 }

@@ -472,8 +472,14 @@ func httpMonitorFieldsSchema() schema.Attribute {
 				Computed:            true,
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
-			"response": jsonObjectSchema("Controls the indexing of the HTTP response body contents to the `http.response.body.contents` field."),
-			"check":    jsonObjectSchema("The check request settings."),
+			"response": jsonObjectSchema("Controls the indexing of the HTTP response body contents to the `http.response.body.contents` field. " +
+				"Supported sub-keys include `include_body` (`on_error`/`never`/`always`) and `include_body_max_bytes`. " +
+				"See [Heartbeat HTTP options](https://www.elastic.co/docs/reference/beats/heartbeat/monitor-http-options) for the full list"),
+			"check": jsonObjectSchema("HTTP request and response check settings. " +
+				"Supported sub-keys include `request.{method,headers,body}` and `response.{status,body,headers,json}`. " +
+				"For example, to assert an expected HTTP status: `check = jsonencode({ response = { status = [200, 201, 301] } })`. " +
+				"See [Heartbeat HTTP options](https://www.elastic.co/docs/reference/beats/heartbeat/monitor-http-options) for the full list of supported keys " +
+				"(note: the Heartbeat YAML uses dotted keys like `check.response.status`; here they are passed as nested JSON)"),
 		},
 	}
 }

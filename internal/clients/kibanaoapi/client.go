@@ -118,16 +118,13 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		req.Header.Add("kbn-xsrf", "true")
 	}
 
-	if t.Username != "" {
-		req.SetBasicAuth(t.Username, t.Password)
-	}
-
-	if t.APIKey != "" {
-		req.Header.Add("Authorization", "ApiKey "+t.APIKey)
-	}
-
-	if t.BearerToken != "" {
+	switch {
+	case t.BearerToken != "":
 		req.Header.Set("Authorization", "Bearer "+t.BearerToken)
+	case t.APIKey != "":
+		req.Header.Set("Authorization", "ApiKey "+t.APIKey)
+	case t.Username != "":
+		req.SetBasicAuth(t.Username, t.Password)
 	}
 
 	return t.next.RoundTrip(req)

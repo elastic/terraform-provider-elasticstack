@@ -93,6 +93,6 @@ func updateEntityStore(
 	}
 
 	plan.SpaceID = types.StringValue(spaceID)
-	plan.ID = types.StringValue(buildID(spaceID))
+	plan.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: resourceID}).String())
 	return entitycore.KibanaWriteResult[tfModel]{Model: plan}, nil
 }

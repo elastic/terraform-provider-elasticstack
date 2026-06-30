@@ -30,19 +30,22 @@ import (
 // Terraform object. Caller must verify dso != nil and dso.FailureStore != nil.
 func FlattenLocal(dso *models.DataStreamOptions) (types.Object, diag.Diagnostics) {
 	fs := dso.FailureStore
-	enabled := fs.Enabled
 	dataRetention := ""
 	hasLifecycle := fs.Lifecycle != nil
 	if hasLifecycle {
 		dataRetention = fs.Lifecycle.DataRetention
 	}
-	return flattenDataStreamOptions(enabled, dataRetention, hasLifecycle)
+	return flattenDataStreamOptions(fs.Enabled, dataRetention, hasLifecycle)
 }
 
-func flattenDataStreamOptions(enabled bool, dataRetention string, hasLifecycle bool) (types.Object, diag.Diagnostics) {
+func flattenDataStreamOptions(enabled *bool, dataRetention string, hasLifecycle bool) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	enabledVal := types.BoolNull()
+	if enabled != nil {
+		enabledVal = types.BoolValue(*enabled)
+	}
 	fsAttrs := map[string]attr.Value{
-		attrEnabled:   types.BoolValue(enabled),
+		attrEnabled:   enabledVal,
 		attrLifecycle: types.ObjectNull(FailureStoreLifecycleAttrTypes()),
 	}
 	if hasLifecycle {

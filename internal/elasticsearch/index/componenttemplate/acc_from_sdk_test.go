@@ -30,6 +30,9 @@ import (
 //go:embed testdata/TestAccResourceComponentTemplateFromSDK/config/main.tf
 var sdkComponentTemplateFromSDKConfig string
 
+//go:embed testdata/TestAccResourceComponentTemplateFromSDKSettingsOnly/config/main.tf
+var sdkComponentTemplateFromSDKSettingsOnlyConfig string
+
 // TestAccResourceComponentTemplateFromSDK upgrades state authored by the last Plugin SDK v2 release
 // (REQ-042). Step 1 uses registry provider 0.14.5; step 2 applies the Plugin Framework configuration;
 // step 3 asserts a no-op plan.
@@ -85,6 +88,62 @@ func TestAccResourceComponentTemplateFromSDK(t *testing.T) {
 						"template.alias.*",
 						map[string]string{"name": "my_alias"},
 					),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("config"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+// TestAccResourceComponentTemplateFromSDKSettingsOnly upgrades state for a settings-only template
+// authored by the last Plugin SDK v2 release (REQ-036). Step 1 uses registry provider 0.14.5 with
+// only settings; step 2 applies the Plugin Framework configuration; step 3 asserts a no-op plan.
+func TestAccResourceComponentTemplateFromSDKSettingsOnly(t *testing.T) {
+	acctest.PreCheck(t)
+
+	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceComponentTemplateDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.14.5",
+					},
+				},
+				Config: sdkComponentTemplateFromSDKSettingsOnlyConfig,
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.upgrade", "name", templateName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.upgrade", "version", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.upgrade", "template.0.settings", `{"index":{"number_of_replicas":"1"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.upgrade", "template.0.mappings", ""),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("config"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.upgrade", "name", templateName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.upgrade", "version", "1"),
+					testAccCheckResourceAttrIndexSettingsSemantic("elasticstack_elasticsearch_component_template.upgrade", `{"index":{"number_of_replicas":"1"}}`),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_component_template.upgrade", "template.mappings"),
 				),
 			},
 			{

@@ -38,7 +38,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -63,7 +63,7 @@ jobs:
           node-version: "24"
           cache: npm
           cache-dependency-path: package-lock.json
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -91,7 +91,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           persist-credentials: false
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -132,14 +132,15 @@ jobs:
           - '8.14.3'
           - '8.15.5'
           - '8.16.6'
-          - '8.17.1'
+          - '8.17.10'
           - '8.18.8'
-          - '8.19.15'
+          - '8.19.17'
           - '9.0.8'
-          - '9.1.9'
-          - '9.2.3'
-          - '9.3.0'
+          - '9.1.10'
+          - '9.2.8'
+          - '9.3.6'
           - '9.4.0'
+          - '9.5.0-SNAPSHOT'
         shard: [0, 1]
         include:
           - version: '8.0.1'
@@ -183,7 +184,7 @@ jobs:
           sudo rm -rf /usr/local/lib/android
 
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -256,7 +257,7 @@ jobs:
 
       - id: setup-fleet
         name: Setup Fleet
-        if: matrix.version == '8.10.3' || matrix.version == '8.11.4' || matrix.version == '8.12.2' || matrix.version == '8.13.4' || matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.6' || matrix.version == '8.17.1' || matrix.version == '9.0.8' || matrix.version == '9.1.9' || matrix.version == '9.2.3' || matrix.version == '9.3.0' || endsWith(matrix.version, '-SNAPSHOT')
+        if: matrix.version == '8.10.3' || matrix.version == '8.11.4' || matrix.version == '8.12.2' || matrix.version == '8.13.4' || matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.6' || matrix.version == '8.17.10' || matrix.version == '9.0.8' || matrix.version == '9.1.10' || matrix.version == '9.2.8' || matrix.version == '9.3.6' || endsWith(matrix.version, '-SNAPSHOT')
         run: |-
           make setup-kibana-fleet
         env:
@@ -265,7 +266,7 @@ jobs:
 
       - id: force-install-synthetics
         name: Force install synthetics
-        if: matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.6' || matrix.version == '8.17.1'
+        if: matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.6' || matrix.version == '8.17.10'
         run: |-
           for i in {1..5}; do curl -s -H "Authorization: ApiKey ${{ steps.get-api-key.outputs.apikey }}" --header "Content-Type: application/json" --header "kbn-xsrf: true" --request POST --data '{ "force": true }' http://localhost:5601/api/fleet/epm/packages/synthetics/1.2.2 && break || sleep 15; done
 
@@ -372,7 +373,7 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: go.mod
           cache: true

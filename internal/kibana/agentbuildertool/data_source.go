@@ -24,6 +24,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -40,10 +42,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				Description: "The tool ID to look up.",
 				Required:    true,
 			},
-			"space_id": dsschema.StringAttribute{
-				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
-				Optional:    true,
-			},
+			"space_id": kbschema.DataSourceSpaceIDAttribute(),
 			"tool_id": dsschema.StringAttribute{
 				Description: "The ID of the tool.",
 				Computed:    true,
@@ -112,7 +111,7 @@ func readToolDataSource(ctx context.Context, client *clients.KibanaScopedClient,
 	}
 
 	if config.IncludeWorkflow.ValueBool() {
-		supported, verDiags := client.EnforceMinVersion(ctx, minKibanaAgentBuilderWorkflowAPIVersion)
+		supported, verDiags := client.EnforceMinVersion(ctx, agentbuilder.MinExtendedAPIVersion)
 		diags.Append(verDiags...)
 		if diags.HasError() {
 			return config, diags
@@ -120,7 +119,7 @@ func readToolDataSource(ctx context.Context, client *clients.KibanaScopedClient,
 		if !supported {
 			diags.AddError(
 				"Unsupported server version",
-				fmt.Sprintf("Exporting workflow configuration requires Elastic Stack v%s or later.", minKibanaAgentBuilderWorkflowAPIVersion),
+				fmt.Sprintf("Exporting workflow configuration requires Elastic Stack v%s or later.", agentbuilder.MinExtendedAPIVersion),
 			)
 			return config, diags
 		}

@@ -20,10 +20,10 @@ package agentbuilderworkflow
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
 
@@ -47,16 +47,7 @@ func getResourceSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"space_id": schema.StringAttribute{
-				Computed:            true,
-				Optional:            true,
-				Default:             stringdefault.StaticString("default"),
-				MarkdownDescription: "An identifier for the Kibana space. If not provided, the default space is used.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
+			"space_id": kbschema.ResourceSpaceIDAttribute(),
 			"configuration_yaml": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The YAML configuration for the workflow.",

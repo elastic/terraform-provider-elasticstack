@@ -76,20 +76,6 @@ func (v ConfigValue) StringSemanticEquals(ctx context.Context, newValuable baset
 	return v.JSONWithContextualDefaultsValue.StringSemanticEquals(ctx, other.JSONWithContextualDefaultsValue)
 }
 
-// NewConfigNull creates a ConfigValue with a null value. Determine whether the value is null via IsNull method.
-func NewConfigNull() ConfigValue {
-	return ConfigValue{
-		JSONWithContextualDefaultsValue: customtypes.NewJSONWithContextualDefaultsNull(),
-	}
-}
-
-// NewConfigUnknown creates a ConfigValue with an unknown value. Determine whether the value is unknown via IsUnknown method.
-func NewConfigUnknown() ConfigValue {
-	return ConfigValue{
-		JSONWithContextualDefaultsValue: customtypes.NewJSONWithContextualDefaultsUnknown(),
-	}
-}
-
 // NewConfigValueWithConnectorID creates a ConfigValue with a known value and a connector type ID. Access the value via ValueString method.
 func NewConfigValueWithConnectorID(value string, connectorTypeID string) (ConfigValue, diag.Diagnostics) {
 	jsonWithContext, diags := customtypes.NewJSONWithContextualDefaultsValue(value, connectorTypeID, kibanaoapi.ConnectorConfigWithDefaults)
