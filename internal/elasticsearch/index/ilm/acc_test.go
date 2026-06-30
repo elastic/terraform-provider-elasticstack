@@ -41,6 +41,7 @@ import (
 var downsampleNoTimeoutVersionLimit = version.Must(version.NewVersion("8.5.0"))
 var downsampleVersionLimit = version.Must(version.NewVersion("8.10.0"))
 var allowWriteAfterShrinkVersionLimit = version.Must(version.NewVersion("8.14.0"))
+var searchableSnapshotForceMergeUpdateVersionLimit = version.Must(version.NewVersion("8.7.0"))
 
 func TestAccResourceILM(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
@@ -418,6 +419,7 @@ func TestAccResourceILMFrozenPhase(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(searchableSnapshotForceMergeUpdateVersionLimit),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name":     config.StringVariable(policyName),
