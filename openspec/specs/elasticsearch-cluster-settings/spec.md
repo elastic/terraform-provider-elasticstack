@@ -75,7 +75,7 @@ The resource SHALL expose a computed `id` in the format `<cluster_uuid>/cluster-
 
 ### Requirement: Import (REQ-006)
 
-The resource SHALL support import via `schema.ImportStatePassthroughContext`, persisting the imported `id` value directly to state. After import, the `id` SHALL end with `/cluster-settings`.
+The resource SHALL support import via `resource.ImportStatePassthroughID` on the `id` attribute, persisting the imported `id` value directly to state. After import, the `id` SHALL end with `/cluster-settings`.
 
 #### Scenario: Import passthrough
 
