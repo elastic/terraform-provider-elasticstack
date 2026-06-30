@@ -376,6 +376,7 @@ func TestAccResourceOutputRemoteElasticsearch(t *testing.T) {
 	require.NoError(t, err)
 	if resp == nil {
 		t.Skip("skipping remote output acceptance test: no response when creating remote service token")
+		return
 	}
 	if resp.JSON200 == nil || strings.TrimSpace(resp.JSON200.Value) == "" {
 		t.Skipf("skipping remote output acceptance test: unable to create remote service token (status=%d, body=%s)", resp.StatusCode(), string(resp.Body))

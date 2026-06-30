@@ -53,11 +53,11 @@ func skipKqlSLOOrSettingsSyncFieldUnsupported() (bool, error) {
 }
 
 func TestAccResourceSlo(t *testing.T) {
-	// This test exposes a bug in Kibana present in 8.11.x
-	slo8_9Constraints, err := version.NewConstraint(">=8.9.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
+	// This test exposes bugs in specific Kibana versions excluded by the constraints.
+	slo8_9Constraints, err := version.NewConstraint(">=8.9.0,!=8.10.4,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
 	require.NoError(t, err)
 
-	slo8_10Constraints, err := version.NewConstraint(">=8.10.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
+	slo8_10Constraints, err := version.NewConstraint(">=8.10.0,!=8.10.4,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
 	require.NoError(t, err)
 
 	for _, testWithDataViewID := range []bool{true, false} {
@@ -306,8 +306,8 @@ var singleElementConfig string
 func TestAccResourceSloGroupBy(t *testing.T) {
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	// The empty group_by step test exposes a bug in Kibana present in 8.11.x
-	slo8_10Constraints, err := version.NewConstraint(">=8.10.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
+	// The empty group_by step test exposes bugs in specific Kibana versions excluded by the constraint.
+	slo8_10Constraints, err := version.NewConstraint(">=8.10.0,!=8.10.4,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
 	require.NoError(t, err)
 
 	resource.Test(t, resource.TestCase{
@@ -762,10 +762,10 @@ func TestAccResourceSlo_kql_object_form_and_settings_enabled(t *testing.T) {
 	})
 }
 
-// TestAccResourceSlo_kql_custom_indicator_basic uses string KQL only (no timeslice indicator).
-// Step 1 skips with SLOKqlAccTestConstraints (8.9+, excluding 8.11.x). Step 2 (Fleet-style config
-// with group_by) requires SLOKqlFleetAccTestConstraints (8.10+, same 8.11 exclusions), not 8.12
-// timeslice.
+// TestAccResourceSlo_kql_custom_indicator_basic uses string KQL only (not timeslice indicator).
+// Step 1 skips with SLOKqlAccTestConstraints (8.9+, excluding known SLO-bug versions).
+// Step 2 (Fleet-style config with group_by) skips with SLOKqlFleetAccTestConstraints (8.10+,
+// same exclusions); timeslice indicators require 8.12 instead.
 func TestAccResourceSlo_kql_custom_indicator_basic(t *testing.T) {
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	skipKqlSLO := versionutils.CheckIfVersionMeetsConstraints(slo.SLOKqlAccTestConstraints)
@@ -819,8 +819,8 @@ func TestAccResourceSlo_kql_custom_indicator_basic(t *testing.T) {
 var sloFromSDKCreateConfig string
 
 func TestAccResourceSloFromSDK(t *testing.T) {
-	// This test exposes a bug in Kibana present in 8.11.x
-	sloConstraints, err := version.NewConstraint(">=8.9.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
+	// This test exposes bugs in specific Kibana versions excluded by the constraint.
+	sloConstraints, err := version.NewConstraint(">=8.9.0,!=8.10.4,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
 	require.NoError(t, err)
 
 	versionutils.SkipIfUnsupportedConstraints(t, sloConstraints, versionutils.FlavorAny)
@@ -983,7 +983,7 @@ func TestAccResourceSloHistogramFloatPrecision(t *testing.T) {
 }
 
 func TestAccResourceSloCalendarAligned(t *testing.T) {
-	slo8_9Constraints, err := version.NewConstraint(">=8.9.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
+	slo8_9Constraints, err := version.NewConstraint(">=8.9.0,!=8.10.4,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
 	require.NoError(t, err)
 
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
@@ -1079,7 +1079,7 @@ func TestAccResourceSlo_long_slo_id(t *testing.T) {
 
 func TestAccResourceSlo_36_char_slo_id(t *testing.T) {
 	// 36-character slo_id is the historic server-side limit on versions before 8.16.0.
-	slo36CharConstraints, err := version.NewConstraint(">=8.9.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4,<8.16.0")
+	slo36CharConstraints, err := version.NewConstraint(">=8.9.0,!=8.10.4,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4,<8.16.0")
 	require.NoError(t, err)
 	versionutils.SkipIfUnsupportedConstraints(t, slo36CharConstraints, versionutils.FlavorAny)
 

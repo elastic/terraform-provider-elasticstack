@@ -259,130 +259,125 @@ func getMap(m map[string]any, key string) map[string]any {
 	return nil
 }
 
+// mapOptionalObject maps a sub-section from data using getMap; returns
+// ObjectValueFrom when present, ObjectNull otherwise.
+func mapOptionalObject[M any](ctx context.Context, data map[string]any, key string, attrTypes map[string]attr.Type, build func(map[string]any) M) (types.Object, diag.Diagnostics) {
+	sub := getMap(data, key)
+	if sub == nil {
+		return types.ObjectNull(attrTypes), nil
+	}
+	return types.ObjectValueFrom(ctx, attrTypes, build(sub))
+}
+
+// commonPolicyFields holds the sub-sections shared identically by all three OS
+// policy types (Windows, Mac, Linux).
+type commonPolicyFields struct {
+	MemoryProtection   types.Object
+	BehaviorProtection types.Object
+	Logging            types.Object
+}
+
+// mapCommonPolicyFieldsFromAPI extracts memory_protection, behavior_protection,
+// and logging — blocks that are byte-for-byte identical across all three OS
+// mapping functions.
+func mapCommonPolicyFieldsFromAPI(ctx context.Context, data map[string]any) (commonPolicyFields, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	memProtObj, d := mapOptionalObject(ctx, data, "memory_protection", protectionModeAttrTypes(), func(m map[string]any) protectionModeModel {
+		return protectionModeModel{
+			Mode:      typeutils.StringFromMap(m, "mode"),
+			Supported: typeutils.BoolFromMap(m, attrSupported),
+		}
+	})
+	diags.Append(d...)
+
+	behProtObj, d := mapOptionalObject(ctx, data, "behavior_protection", behaviorProtectionAttrTypes(), func(m map[string]any) behaviorProtectionModel {
+		return behaviorProtectionModel{
+			Mode:              typeutils.StringFromMap(m, "mode"),
+			Supported:         typeutils.BoolFromMap(m, attrSupported),
+			ReputationService: typeutils.BoolFromMap(m, attrReputationService),
+		}
+	})
+	diags.Append(d...)
+
+	loggingObj, d := mapOptionalObject(ctx, data, "logging", loggingAttrTypes(), func(m map[string]any) loggingModel {
+		return loggingModel{
+			File: typeutils.StringFromMap(m, "file"),
+		}
+	})
+	diags.Append(d...)
+
+	return commonPolicyFields{
+		MemoryProtection:   memProtObj,
+		BehaviorProtection: behProtObj,
+		Logging:            loggingObj,
+	}, diags
+}
+
 func mapWindowsPolicyFromAPI(ctx context.Context, data map[string]any) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if data == nil {
 		return types.ObjectNull(windowsAttrTypes()), diags
 	}
 
-	eventsData := getMap(data, "events")
-	var eventsObj types.Object
-	if eventsData != nil {
-		var d diag.Diagnostics
-		eventsObj, d = types.ObjectValueFrom(ctx, windowsEventsAttrTypes(), windowsEventsModel{
-			Process:          typeutils.BoolFromMap(eventsData, attrProcess),
-			Network:          typeutils.BoolFromMap(eventsData, "network"),
-			File:             typeutils.BoolFromMap(eventsData, "file"),
-			DllAndDriverLoad: typeutils.BoolFromMap(eventsData, "dll_and_driver_load"),
-			DNS:              typeutils.BoolFromMap(eventsData, "dns"),
-			Registry:         typeutils.BoolFromMap(eventsData, "registry"),
-			Security:         typeutils.BoolFromMap(eventsData, "security"),
-			Authentication:   typeutils.BoolFromMap(eventsData, "authentication"),
-		})
-		diags.Append(d...)
-	} else {
-		eventsObj = types.ObjectNull(windowsEventsAttrTypes())
-	}
+	eventsObj, d := mapOptionalObject(ctx, data, "events", windowsEventsAttrTypes(), func(m map[string]any) windowsEventsModel {
+		return windowsEventsModel{
+			Process:          typeutils.BoolFromMap(m, attrProcess),
+			Network:          typeutils.BoolFromMap(m, "network"),
+			File:             typeutils.BoolFromMap(m, "file"),
+			DllAndDriverLoad: typeutils.BoolFromMap(m, "dll_and_driver_load"),
+			DNS:              typeutils.BoolFromMap(m, "dns"),
+			Registry:         typeutils.BoolFromMap(m, "registry"),
+			Security:         typeutils.BoolFromMap(m, "security"),
+			Authentication:   typeutils.BoolFromMap(m, "authentication"),
+		}
+	})
+	diags.Append(d...)
 
-	malwareData := getMap(data, "malware")
-	var malwareObj types.Object
-	if malwareData != nil {
-		var d diag.Diagnostics
-		malwareObj, d = types.ObjectValueFrom(ctx, malwareFullAttrTypes(), malwareFullModel{
-			Mode:        typeutils.StringFromMap(malwareData, "mode"),
-			Blocklist:   typeutils.BoolFromMap(malwareData, "blocklist"),
-			OnWriteScan: typeutils.BoolFromMap(malwareData, attrOnWriteScan),
-			NotifyUser:  typeutils.BoolFromMap(malwareData, attrNotifyUser),
-		})
-		diags.Append(d...)
-	} else {
-		malwareObj = types.ObjectNull(malwareFullAttrTypes())
-	}
+	malwareObj, d := mapOptionalObject(ctx, data, "malware", malwareFullAttrTypes(), func(m map[string]any) malwareFullModel {
+		return malwareFullModel{
+			Mode:        typeutils.StringFromMap(m, "mode"),
+			Blocklist:   typeutils.BoolFromMap(m, "blocklist"),
+			OnWriteScan: typeutils.BoolFromMap(m, attrOnWriteScan),
+			NotifyUser:  typeutils.BoolFromMap(m, attrNotifyUser),
+		}
+	})
+	diags.Append(d...)
 
-	ransomwareData := getMap(data, attrRansomware)
-	var ransomwareObj types.Object
-	if ransomwareData != nil {
-		var d diag.Diagnostics
-		ransomwareObj, d = types.ObjectValueFrom(ctx, protectionModeAttrTypes(), protectionModeModel{
-			Mode:      typeutils.StringFromMap(ransomwareData, "mode"),
-			Supported: typeutils.BoolFromMap(ransomwareData, attrSupported),
-		})
-		diags.Append(d...)
-	} else {
-		ransomwareObj = types.ObjectNull(protectionModeAttrTypes())
-	}
+	ransomwareObj, d := mapOptionalObject(ctx, data, attrRansomware, protectionModeAttrTypes(), func(m map[string]any) protectionModeModel {
+		return protectionModeModel{
+			Mode:      typeutils.StringFromMap(m, "mode"),
+			Supported: typeutils.BoolFromMap(m, attrSupported),
+		}
+	})
+	diags.Append(d...)
 
-	memProtData := getMap(data, "memory_protection")
-	var memProtObj types.Object
-	if memProtData != nil {
-		var d diag.Diagnostics
-		memProtObj, d = types.ObjectValueFrom(ctx, protectionModeAttrTypes(), protectionModeModel{
-			Mode:      typeutils.StringFromMap(memProtData, "mode"),
-			Supported: typeutils.BoolFromMap(memProtData, attrSupported),
-		})
-		diags.Append(d...)
-	} else {
-		memProtObj = types.ObjectNull(protectionModeAttrTypes())
-	}
-
-	behProtData := getMap(data, "behavior_protection")
-	var behProtObj types.Object
-	if behProtData != nil {
-		var d diag.Diagnostics
-		behProtObj, d = types.ObjectValueFrom(ctx, behaviorProtectionAttrTypes(), behaviorProtectionModel{
-			Mode:              typeutils.StringFromMap(behProtData, "mode"),
-			Supported:         typeutils.BoolFromMap(behProtData, attrSupported),
-			ReputationService: typeutils.BoolFromMap(behProtData, attrReputationService),
-		})
-		diags.Append(d...)
-	} else {
-		behProtObj = types.ObjectNull(behaviorProtectionAttrTypes())
-	}
+	common, d := mapCommonPolicyFieldsFromAPI(ctx, data)
+	diags.Append(d...)
 
 	popupData := getMap(data, attrPopup)
 	popupObj, d := mapWindowsPopupFromAPI(ctx, popupData)
 	diags.Append(d...)
 
-	loggingData := getMap(data, "logging")
-	var loggingObj types.Object
-	if loggingData != nil {
-		var d diag.Diagnostics
-		loggingObj, d = types.ObjectValueFrom(ctx, loggingAttrTypes(), loggingModel{
-			File: typeutils.StringFromMap(loggingData, "file"),
-		})
-		diags.Append(d...)
-	} else {
-		loggingObj = types.ObjectNull(loggingAttrTypes())
-	}
+	avrObj, d := mapOptionalObject(ctx, data, "antivirus_registration", antivirusRegistrationAttrTypes(), func(m map[string]any) antivirusRegistrationModel {
+		return antivirusRegistrationModel{
+			Mode:    typeutils.StringFromMap(m, "mode"),
+			Enabled: typeutils.BoolFromMap(m, "enabled"),
+		}
+	})
+	diags.Append(d...)
 
-	avrData := getMap(data, "antivirus_registration")
-	var avrObj types.Object
-	if avrData != nil {
-		var d diag.Diagnostics
-		avrObj, d = types.ObjectValueFrom(ctx, antivirusRegistrationAttrTypes(), antivirusRegistrationModel{
-			Mode:    typeutils.StringFromMap(avrData, "mode"),
-			Enabled: typeutils.BoolFromMap(avrData, "enabled"),
-		})
-		diags.Append(d...)
-	} else {
-		avrObj = types.ObjectNull(antivirusRegistrationAttrTypes())
-	}
-
+	// attack_surface_reduction contains a nested credential_hardening object,
+	// so it requires two levels of mapOptionalObject.
 	asrData := getMap(data, "attack_surface_reduction")
 	var asrObj types.Object
 	if asrData != nil {
-		chData := getMap(asrData, "credential_hardening")
-		var chObj types.Object
-		if chData != nil {
-			var d diag.Diagnostics
-			chObj, d = types.ObjectValueFrom(ctx, credentialHardeningAttrTypes(), credentialHardeningModel{
-				Enabled: typeutils.BoolFromMap(chData, "enabled"),
-			})
-			diags.Append(d...)
-		} else {
-			chObj = types.ObjectNull(credentialHardeningAttrTypes())
-		}
-		var d diag.Diagnostics
+		chObj, d := mapOptionalObject(ctx, asrData, "credential_hardening", credentialHardeningAttrTypes(), func(m map[string]any) credentialHardeningModel {
+			return credentialHardeningModel{
+				Enabled: typeutils.BoolFromMap(m, "enabled"),
+			}
+		})
+		diags.Append(d...)
 		asrObj, d = types.ObjectValueFrom(ctx, attackSurfaceReductionAttrTypes(), attackSurfaceReductionModel{
 			CredentialHardening: chObj,
 		})
@@ -395,10 +390,10 @@ func mapWindowsPolicyFromAPI(ctx context.Context, data map[string]any) (types.Ob
 		Events:                 eventsObj,
 		Malware:                malwareObj,
 		Ransomware:             ransomwareObj,
-		MemoryProtection:       memProtObj,
-		BehaviorProtection:     behProtObj,
+		MemoryProtection:       common.MemoryProtection,
+		BehaviorProtection:     common.BehaviorProtection,
 		Popup:                  popupObj,
-		Logging:                loggingObj,
+		Logging:                common.Logging,
 		AntivirusRegistration:  avrObj,
 		AttackSurfaceReduction: asrObj,
 	})
@@ -456,85 +451,39 @@ func mapMacPolicyFromAPI(ctx context.Context, data map[string]any) (types.Object
 		return types.ObjectNull(macAttrTypes()), diags
 	}
 
-	eventsData := getMap(data, "events")
-	var eventsObj types.Object
-	if eventsData != nil {
-		var d diag.Diagnostics
-		eventsObj, d = types.ObjectValueFrom(ctx, macEventsAttrTypes(), macEventsModel{
-			Process: typeutils.BoolFromMap(eventsData, attrProcess),
-			Network: typeutils.BoolFromMap(eventsData, "network"),
-			File:    typeutils.BoolFromMap(eventsData, "file"),
-		})
-		diags.Append(d...)
-	} else {
-		eventsObj = types.ObjectNull(macEventsAttrTypes())
-	}
+	eventsObj, d := mapOptionalObject(ctx, data, "events", macEventsAttrTypes(), func(m map[string]any) macEventsModel {
+		return macEventsModel{
+			Process: typeutils.BoolFromMap(m, attrProcess),
+			Network: typeutils.BoolFromMap(m, "network"),
+			File:    typeutils.BoolFromMap(m, "file"),
+		}
+	})
+	diags.Append(d...)
 
-	malwareData := getMap(data, "malware")
-	var malwareObj types.Object
-	if malwareData != nil {
-		var d diag.Diagnostics
-		malwareObj, d = types.ObjectValueFrom(ctx, malwareFullAttrTypes(), malwareFullModel{
-			Mode:        typeutils.StringFromMap(malwareData, "mode"),
-			Blocklist:   typeutils.BoolFromMap(malwareData, "blocklist"),
-			OnWriteScan: typeutils.BoolFromMap(malwareData, attrOnWriteScan),
-			NotifyUser:  typeutils.BoolFromMap(malwareData, attrNotifyUser),
-		})
-		diags.Append(d...)
-	} else {
-		malwareObj = types.ObjectNull(malwareFullAttrTypes())
-	}
+	malwareObj, d := mapOptionalObject(ctx, data, "malware", malwareFullAttrTypes(), func(m map[string]any) malwareFullModel {
+		return malwareFullModel{
+			Mode:        typeutils.StringFromMap(m, "mode"),
+			Blocklist:   typeutils.BoolFromMap(m, "blocklist"),
+			OnWriteScan: typeutils.BoolFromMap(m, attrOnWriteScan),
+			NotifyUser:  typeutils.BoolFromMap(m, attrNotifyUser),
+		}
+	})
+	diags.Append(d...)
 
-	memProtData := getMap(data, "memory_protection")
-	var memProtObj types.Object
-	if memProtData != nil {
-		var d diag.Diagnostics
-		memProtObj, d = types.ObjectValueFrom(ctx, protectionModeAttrTypes(), protectionModeModel{
-			Mode:      typeutils.StringFromMap(memProtData, "mode"),
-			Supported: typeutils.BoolFromMap(memProtData, attrSupported),
-		})
-		diags.Append(d...)
-	} else {
-		memProtObj = types.ObjectNull(protectionModeAttrTypes())
-	}
-
-	behProtData := getMap(data, "behavior_protection")
-	var behProtObj types.Object
-	if behProtData != nil {
-		var d diag.Diagnostics
-		behProtObj, d = types.ObjectValueFrom(ctx, behaviorProtectionAttrTypes(), behaviorProtectionModel{
-			Mode:              typeutils.StringFromMap(behProtData, "mode"),
-			Supported:         typeutils.BoolFromMap(behProtData, attrSupported),
-			ReputationService: typeutils.BoolFromMap(behProtData, attrReputationService),
-		})
-		diags.Append(d...)
-	} else {
-		behProtObj = types.ObjectNull(behaviorProtectionAttrTypes())
-	}
+	common, d := mapCommonPolicyFieldsFromAPI(ctx, data)
+	diags.Append(d...)
 
 	popupData := getMap(data, attrPopup)
 	popupObj, d := mapMacLinuxPopupFromAPI(ctx, popupData)
 	diags.Append(d...)
 
-	loggingData := getMap(data, "logging")
-	var loggingObj types.Object
-	if loggingData != nil {
-		var d diag.Diagnostics
-		loggingObj, d = types.ObjectValueFrom(ctx, loggingAttrTypes(), loggingModel{
-			File: typeutils.StringFromMap(loggingData, "file"),
-		})
-		diags.Append(d...)
-	} else {
-		loggingObj = types.ObjectNull(loggingAttrTypes())
-	}
-
 	macObj, d := types.ObjectValueFrom(ctx, macAttrTypes(), macPolicyModel{
 		Events:             eventsObj,
 		Malware:            malwareObj,
-		MemoryProtection:   memProtObj,
-		BehaviorProtection: behProtObj,
+		MemoryProtection:   common.MemoryProtection,
+		BehaviorProtection: common.BehaviorProtection,
 		Popup:              popupObj,
-		Logging:            loggingObj,
+		Logging:            common.Logging,
 	})
 	diags.Append(d...)
 	return macObj, diags
@@ -546,85 +495,39 @@ func mapLinuxPolicyFromAPI(ctx context.Context, data map[string]any) (types.Obje
 		return types.ObjectNull(linuxAttrTypes()), diags
 	}
 
-	eventsData := getMap(data, "events")
-	var eventsObj types.Object
-	if eventsData != nil {
-		var d diag.Diagnostics
-		eventsObj, d = types.ObjectValueFrom(ctx, linuxEventsAttrTypes(), linuxEventsModel{
-			Process:     typeutils.BoolFromMap(eventsData, attrProcess),
-			Network:     typeutils.BoolFromMap(eventsData, "network"),
-			File:        typeutils.BoolFromMap(eventsData, "file"),
-			SessionData: typeutils.BoolFromMap(eventsData, "session_data"),
-			TtyIO:       typeutils.BoolFromMap(eventsData, "tty_io"),
-		})
-		diags.Append(d...)
-	} else {
-		eventsObj = types.ObjectNull(linuxEventsAttrTypes())
-	}
+	eventsObj, d := mapOptionalObject(ctx, data, "events", linuxEventsAttrTypes(), func(m map[string]any) linuxEventsModel {
+		return linuxEventsModel{
+			Process:     typeutils.BoolFromMap(m, attrProcess),
+			Network:     typeutils.BoolFromMap(m, "network"),
+			File:        typeutils.BoolFromMap(m, "file"),
+			SessionData: typeutils.BoolFromMap(m, "session_data"),
+			TtyIO:       typeutils.BoolFromMap(m, "tty_io"),
+		}
+	})
+	diags.Append(d...)
 
-	malwareData := getMap(data, "malware")
-	var malwareObj types.Object
-	if malwareData != nil {
-		var d diag.Diagnostics
-		malwareObj, d = types.ObjectValueFrom(ctx, malwareLinuxAttrTypes(), malwareLinuxModel{
-			Mode:      typeutils.StringFromMap(malwareData, "mode"),
-			Blocklist: typeutils.BoolFromMap(malwareData, "blocklist"),
-		})
-		diags.Append(d...)
-	} else {
-		malwareObj = types.ObjectNull(malwareLinuxAttrTypes())
-	}
+	malwareObj, d := mapOptionalObject(ctx, data, "malware", malwareLinuxAttrTypes(), func(m map[string]any) malwareLinuxModel {
+		return malwareLinuxModel{
+			Mode:      typeutils.StringFromMap(m, "mode"),
+			Blocklist: typeutils.BoolFromMap(m, "blocklist"),
+		}
+	})
+	diags.Append(d...)
 
-	memProtData := getMap(data, "memory_protection")
-	var memProtObj types.Object
-	if memProtData != nil {
-		var d diag.Diagnostics
-		memProtObj, d = types.ObjectValueFrom(ctx, protectionModeAttrTypes(), protectionModeModel{
-			Mode:      typeutils.StringFromMap(memProtData, "mode"),
-			Supported: typeutils.BoolFromMap(memProtData, attrSupported),
-		})
-		diags.Append(d...)
-	} else {
-		memProtObj = types.ObjectNull(protectionModeAttrTypes())
-	}
-
-	behProtData := getMap(data, "behavior_protection")
-	var behProtObj types.Object
-	if behProtData != nil {
-		var d diag.Diagnostics
-		behProtObj, d = types.ObjectValueFrom(ctx, behaviorProtectionAttrTypes(), behaviorProtectionModel{
-			Mode:              typeutils.StringFromMap(behProtData, "mode"),
-			Supported:         typeutils.BoolFromMap(behProtData, attrSupported),
-			ReputationService: typeutils.BoolFromMap(behProtData, attrReputationService),
-		})
-		diags.Append(d...)
-	} else {
-		behProtObj = types.ObjectNull(behaviorProtectionAttrTypes())
-	}
+	common, d := mapCommonPolicyFieldsFromAPI(ctx, data)
+	diags.Append(d...)
 
 	popupData := getMap(data, attrPopup)
 	popupObj, d := mapMacLinuxPopupFromAPI(ctx, popupData)
 	diags.Append(d...)
 
-	loggingData := getMap(data, "logging")
-	var loggingObj types.Object
-	if loggingData != nil {
-		var d diag.Diagnostics
-		loggingObj, d = types.ObjectValueFrom(ctx, loggingAttrTypes(), loggingModel{
-			File: typeutils.StringFromMap(loggingData, "file"),
-		})
-		diags.Append(d...)
-	} else {
-		loggingObj = types.ObjectNull(loggingAttrTypes())
-	}
-
 	linuxObj, d := types.ObjectValueFrom(ctx, linuxAttrTypes(), linuxPolicyModel{
 		Events:             eventsObj,
 		Malware:            malwareObj,
-		MemoryProtection:   memProtObj,
-		BehaviorProtection: behProtObj,
+		MemoryProtection:   common.MemoryProtection,
+		BehaviorProtection: common.BehaviorProtection,
 		Popup:              popupObj,
-		Logging:            loggingObj,
+		Logging:            common.Logging,
 	})
 	diags.Append(d...)
 	return linuxObj, diags
