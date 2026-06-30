@@ -589,9 +589,7 @@ func discoverSessionDSLHeaderRowHeightToAPI(s types.String) (*kbapi.KibanaHTTPAP
 		func() error {
 			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeight1(kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeight1Auto)
 		},
-		func(f float32) error {
-			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeight0(f)
-		},
+		out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeight0,
 	)
 	if !ok {
 		return nil, diags
@@ -605,9 +603,7 @@ func discoverSessionDSLRowHeightToAPI(s types.String) (*kbapi.KibanaHTTPAPIsKbnD
 		func() error {
 			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0RowHeight1(kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0RowHeight1Auto)
 		},
-		func(f float32) error {
-			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0RowHeight0(f)
-		},
+		out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0RowHeight0,
 	)
 	if !ok {
 		return nil, diags
@@ -621,9 +617,7 @@ func discoverSessionESQLHeaderRowHeightToAPI(s types.String) (*kbapi.KibanaHTTPA
 		func() error {
 			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeight1(kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeight1Auto)
 		},
-		func(f float32) error {
-			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeight0(f)
-		},
+		out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeight0,
 	)
 	if !ok {
 		return nil, diags
@@ -637,9 +631,7 @@ func discoverSessionESQLRowHeightToAPI(s types.String) (*kbapi.KibanaHTTPAPIsKbn
 		func() error {
 			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1RowHeight1(kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1RowHeight1Auto)
 		},
-		func(f float32) error {
-			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1RowHeight0(f)
-		},
+		out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1RowHeight0,
 	)
 	if !ok {
 		return nil, diags
@@ -653,9 +645,7 @@ func discoverSessionOverridesHeaderRowHeightToAPI(s types.String) (*kbapi.Kibana
 		func() error {
 			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesHeaderRowHeight1(kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesHeaderRowHeight1Auto)
 		},
-		func(f float32) error {
-			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesHeaderRowHeight0(f)
-		},
+		out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesHeaderRowHeight0,
 	)
 	if !ok {
 		return nil, diags
@@ -669,9 +659,7 @@ func discoverSessionOverridesRowHeightToAPI(s types.String) (*kbapi.KibanaHTTPAP
 		func() error {
 			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesRowHeight1(kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesRowHeight1Auto)
 		},
-		func(f float32) error {
-			return out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesRowHeight0(f)
-		},
+		out.FromKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesRowHeight0,
 	)
 	if !ok {
 		return nil, diags
