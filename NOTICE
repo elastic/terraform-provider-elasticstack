@@ -5210,10 +5210,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --------------------------------------------------------------------------------
 
 Dependency : golang.org/x/tools
-Version: v0.46.0
+Version: v0.47.0
 Licence type (autodetected): BSD-3-Clause
 
-Contents of probable licence file $GOMODCACHE/golang.org/x/tools@v0.46.0/LICENSE:
+Contents of probable licence file $GOMODCACHE/golang.org/x/tools@v0.47.0/LICENSE:
 
 Copyright 2009 The Go Authors.
 
@@ -49735,10 +49735,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --------------------------------------------------------------------------------
 
 Dependency : golang.org/x/telemetry
-Version: v0.0.0-20260610154732-fb80ec83bdd9
+Version: v0.0.0-20260625142307-59b4966ccb57
 Licence type (autodetected): BSD-3-Clause
 
-Contents of probable licence file $GOMODCACHE/golang.org/x/telemetry@v0.0.0-20260610154732-fb80ec83bdd9/LICENSE:
+Contents of probable licence file $GOMODCACHE/golang.org/x/telemetry@v0.0.0-20260625142307-59b4966ccb57/LICENSE:
 
 Copyright 2009 The Go Authors.
 
