@@ -111,6 +111,8 @@ func TestAccResourceOsqueryPack(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr(osqueryPackResourceAddr, "queries.list_users.platform.*", "linux"),
 					resource.TestCheckTypeSetElemAttr(osqueryPackResourceAddr, "queries.list_users.platform.*", "windows"),
 					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.list_users.version", "2.0.0"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.list_users.removed", "false"),
+					resource.TestCheckNoResourceAttr(osqueryPackResourceAddr, "queries.list_users.ecs_mapping.%"),
 				),
 			},
 			{
@@ -153,6 +155,8 @@ func TestAccResourceOsqueryPack_omittedDescriptionUpdate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckNoResourceAttr(osqueryPackResourceAddr, "description"),
 					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "enabled", "true"),
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "queries.find_procs.platform.#", "0"),
+					resource.TestCheckResourceAttrSet(osqueryPackResourceAddr, "queries.find_procs.snapshot"),
 				),
 			},
 			{
@@ -163,6 +167,103 @@ func TestAccResourceOsqueryPack_omittedDescriptionUpdate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckNoResourceAttr(osqueryPackResourceAddr, "description"),
 					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "enabled", "false"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceOsqueryPack_descriptionRemoval(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
+
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{
+		"suffix": config.StringVariable(suffix),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkOsqueryPackDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("description_set"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "description", "initial description"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("description_unset"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(osqueryPackResourceAddr, "description"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceOsqueryPack_savedQueryID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
+
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{
+		"suffix": config.StringVariable(suffix),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkOsqueryPackDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("saved_query_create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(osqueryPackResourceAddr, "queries.find_procs.saved_query_id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("saved_query_clear"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(osqueryPackResourceAddr, "queries.find_procs.saved_query_id"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceOsqueryPack_policyIDsAndShards(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
+
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{
+		"suffix": config.StringVariable(suffix),
+	}
+
+	// policy_ids and shards require the osquery_manager Fleet integration to be
+	// installed on the referenced agent policies. The empty-set case exercises the
+	// schema path without that dependency.
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkOsqueryPackDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("policy_ids_empty"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(osqueryPackResourceAddr, "policy_ids.#", "0"),
+					resource.TestCheckNoResourceAttr(osqueryPackResourceAddr, "shards.%"),
 				),
 			},
 		},
