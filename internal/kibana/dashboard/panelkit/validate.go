@@ -21,6 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // ValidateDataViewFieldName validates that data_view_id and field_name are present in attrs,
@@ -54,4 +55,52 @@ func ValidateDataViewFieldName(attrs map[string]attr.Value, configKey, cfgLabel 
 		writeErr("field_name", "`field_name` is required.")
 	}
 	return out
+}
+
+// ResolveConfigBlock resolves a config block's path and shaped state, handling null/unknown guards.
+// It encodes the shared "shape resolution → missing-config error → null/unknown guard" pattern used
+// across SLO panel ValidatePanelConfig implementations.
+// Returns flat, obj, cfgPath, skip (true means caller should return immediately), and any diagnostics.
+func ResolveConfigBlock(attrs map[string]attr.Value, attrPath path.Path, cfgKey, missingErrSummary, missingErrDetail string, flatKeys ...string) (flat bool, obj types.Object, cfgPath path.Path, skip bool, diags diag.Diagnostics) {
+	cfgPath = attrPath
+	flat, obj, shaped := ResolvePanelAttrsShape(attrs, cfgKey, flatKeys...)
+	if !shaped {
+		diags.AddAttributeError(attrPath.AtName(cfgKey), missingErrSummary, missingErrDetail)
+		return false, types.Object{}, cfgPath, true, diags
+	}
+	if !flat {
+		cfgPath = attrPath.AtName(cfgKey)
+		nestedRaw := attrs[cfgKey]
+		if nestedRaw != nil {
+			switch {
+			case nestedRaw.IsUnknown():
+				return false, obj, cfgPath, true, diags
+			case nestedRaw.IsNull():
+				diags.AddAttributeError(cfgPath, missingErrSummary, missingErrDetail)
+				return false, obj, cfgPath, true, diags
+			}
+		}
+	}
+	return flat, obj, cfgPath, false, diags
+}
+
+// ValidateRequiredStringField validates that a required string attribute is present and known.
+// It looks up key from flat attrs or from obj.Attributes() based on flat, then applies
+// StringAttrDeferOrMissing. Returns deferred=true when validation should be skipped (value unknown),
+// and any error diagnostics when the value is missing.
+func ValidateRequiredStringField(attrs map[string]attr.Value, obj types.Object, flat bool, cfgPath path.Path, key, errSummary, errDetail string) (deferred bool, diags diag.Diagnostics) {
+	var v attr.Value
+	if flat {
+		v = attrs[key]
+	} else {
+		v = obj.Attributes()[key]
+	}
+	defer_, missing := StringAttrDeferOrMissing(v)
+	if defer_ {
+		return true, nil
+	}
+	if missing {
+		diags.AddAttributeError(cfgPath.AtName(key), errSummary, errDetail)
+	}
+	return false, diags
 }
