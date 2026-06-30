@@ -96,6 +96,7 @@ func TestPointerInterfaceMapFromAnyMap(t *testing.T) {
 		}
 		if ptr == nil {
 			t.Fatal("expected non-nil pointer, got nil")
+			return
 		}
 		if *ptr != nil {
 			t.Fatalf("expected dereferenced value to be nil, got %v", *ptr)

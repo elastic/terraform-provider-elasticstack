@@ -323,6 +323,7 @@ func TestCmdRecordPersistsTimestamp(t *testing.T) {
 	}
 	if ts == nil {
 		t.Fatal("timestamp should not be nil after record")
+		return
 	}
 	if ts.Before(before) || ts.After(after) {
 		t.Errorf("timestamp %v not in expected range [%v, %v]", *ts, before, after)
