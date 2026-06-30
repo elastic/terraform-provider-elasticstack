@@ -763,8 +763,9 @@ func TestAccResourceSlo_kql_object_form_and_settings_enabled(t *testing.T) {
 }
 
 // TestAccResourceSlo_kql_custom_indicator_basic uses string KQL only (no timeslice indicator).
-// Step 1 skips with SLOKqlAccTestConstraints (8.9+, excluding 8.11.x). Step 2 (Fleet-style config
-// with group_by) requires SLOKqlFleetAccTestConstraints (8.10+, same 8.11 exclusions), not 8.12
+// Step 1 skips with SLOKqlAccTestConstraints (8.9+, excluding known SLO-bug versions).
+// Step 2 (Fleet-style config with group_by) requires SLOKqlFleetAccTestConstraints (8.10+,
+// same exclusions), not 8.12
 // timeslice.
 func TestAccResourceSlo_kql_custom_indicator_basic(t *testing.T) {
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
@@ -819,8 +820,8 @@ func TestAccResourceSlo_kql_custom_indicator_basic(t *testing.T) {
 var sloFromSDKCreateConfig string
 
 func TestAccResourceSloFromSDK(t *testing.T) {
-	// This test exposes a bug in Kibana present in 8.11.x
-	sloConstraints, err := version.NewConstraint(">=8.9.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
+	// This test exposes bugs in specific Kibana versions excluded by the constraint.
+	sloConstraints, err := version.NewConstraint(">=8.9.0,!=8.10.4,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
 	require.NoError(t, err)
 
 	versionutils.SkipIfUnsupportedConstraints(t, sloConstraints, versionutils.FlavorAny)
@@ -1079,7 +1080,7 @@ func TestAccResourceSlo_long_slo_id(t *testing.T) {
 
 func TestAccResourceSlo_36_char_slo_id(t *testing.T) {
 	// 36-character slo_id is the historic server-side limit on versions before 8.16.0.
-	slo36CharConstraints, err := version.NewConstraint(">=8.9.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4,<8.16.0")
+	slo36CharConstraints, err := version.NewConstraint(">=8.9.0,!=8.10.4,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4,<8.16.0")
 	require.NoError(t, err)
 	versionutils.SkipIfUnsupportedConstraints(t, slo36CharConstraints, versionutils.FlavorAny)
 
