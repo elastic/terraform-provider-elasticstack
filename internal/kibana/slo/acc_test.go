@@ -53,11 +53,11 @@ func skipKqlSLOOrSettingsSyncFieldUnsupported() (bool, error) {
 }
 
 func TestAccResourceSlo(t *testing.T) {
-	// This test exposes a bug in Kibana present in 8.11.x
-	slo8_9Constraints, err := version.NewConstraint(">=8.9.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
+	// This test exposes bugs in specific Kibana versions excluded by the constraints.
+	slo8_9Constraints, err := version.NewConstraint(">=8.9.0,!=8.10.4,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
 	require.NoError(t, err)
 
-	slo8_10Constraints, err := version.NewConstraint(">=8.10.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
+	slo8_10Constraints, err := version.NewConstraint(">=8.10.0,!=8.10.4,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
 	require.NoError(t, err)
 
 	for _, testWithDataViewID := range []bool{true, false} {
@@ -306,8 +306,8 @@ var singleElementConfig string
 func TestAccResourceSloGroupBy(t *testing.T) {
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	// The empty group_by step test exposes a bug in Kibana present in 8.11.x
-	slo8_10Constraints, err := version.NewConstraint(">=8.10.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
+	// The empty group_by step test exposes bugs in specific Kibana versions excluded by the constraint.
+	slo8_10Constraints, err := version.NewConstraint(">=8.10.0,!=8.10.4,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
 	require.NoError(t, err)
 
 	resource.Test(t, resource.TestCase{
@@ -983,7 +983,7 @@ func TestAccResourceSloHistogramFloatPrecision(t *testing.T) {
 }
 
 func TestAccResourceSloCalendarAligned(t *testing.T) {
-	slo8_9Constraints, err := version.NewConstraint(">=8.9.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
+	slo8_9Constraints, err := version.NewConstraint(">=8.9.0,!=8.10.4,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
 	require.NoError(t, err)
 
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
