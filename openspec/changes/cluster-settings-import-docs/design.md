@@ -20,10 +20,7 @@ This resource is a **singleton**: exactly one instance exists per cluster, ident
 
 ## Decisions
 
-- **Approach A only.** The research comment's recommendation is unambiguous: Approach A (add `import.sh` + regenerate docs) is the correct, minimal fix. Approach B (full live-settings import) is out of scope for this change.
-- **`import.sh` comment content.** The file should explain: (1) the ID format `<cluster_uuid>/cluster-settings`; (2) how to discover `<cluster_uuid>` (via `elasticstack_elasticsearch_info` data source or `GET /`); (3) the post-import workflow (declare desired settings in configuration, then `terraform plan`/`terraform apply`). This is a documentation choice with no implementation impact.
-- **Spec sync.** The existing REQ-006 in the main spec covers import at a code level. REQ-020 is added to the delta spec to formally require the `import.sh` documentation example. This surfaces the documentation gap in the spec history.
-
+- **Spec sync.** The existing REQ-006 in the main spec covers import at a functional level, but it currently references the SDKv2 helper `schema.ImportStatePassthroughContext`; the implementation uses the Plugin Framework `resource.ImportStatePassthroughID`. REQ-020 is added to the delta spec to formally require the `import.sh` documentation example. This surfaces the documentation gap in the spec history.
 ## Risks / Trade-offs
 
 - None material. The change is additive (one new file) and the regenerated doc is deterministic from the existing Go source and example files. No Go code changes means no risk of regressions.

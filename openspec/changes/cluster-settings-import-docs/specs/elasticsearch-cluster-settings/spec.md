@@ -8,4 +8,4 @@ The resource SHALL provide an `examples/resources/elasticstack_elasticsearch_clu
 
 - GIVEN `examples/resources/elasticstack_elasticsearch_cluster_settings/import.sh` exists with the correct import command
 - WHEN `make docs-generate` runs
-- THEN `docs/resources/elasticsearch_cluster_settings.md` SHALL include a `## Import` section containing the import command `terraform import elasticstack_elasticsearch_cluster_settings.<name> <cluster_uuid>/cluster-settings`
+- THEN `docs/resources/elasticsearch_cluster_settings.md` SHALL include a `## Import` section containing the import command `terraform import elasticstack_elasticsearch_cluster_settings.my_cluster_settings <cluster_uuid>/cluster-settings`

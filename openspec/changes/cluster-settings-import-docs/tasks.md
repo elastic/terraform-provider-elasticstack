@@ -1,7 +1,7 @@
 ## 1. Add `import.sh` example
 
 - [ ] 1.1 Create `examples/resources/elasticstack_elasticsearch_cluster_settings/import.sh` with:
-  - The import command: `terraform import elasticstack_elasticsearch_cluster_settings.my_settings <cluster_uuid>/cluster-settings`
+  - The import command: `terraform import elasticstack_elasticsearch_cluster_settings.my_cluster_settings <cluster_uuid>/cluster-settings`
   - An inline comment explaining the singleton ID format: the composite ID is `<cluster_uuid>/cluster-settings`; `<cluster_uuid>` can be found via the `elasticstack_elasticsearch_info` data source or via `GET /` on the Elasticsearch API
   - An inline comment explaining the post-import workflow: after import, only the `id` is in state; the user must declare the desired `persistent` and/or `transient` setting blocks in their configuration and run `terraform plan` / `terraform apply` to bring them under management
 
