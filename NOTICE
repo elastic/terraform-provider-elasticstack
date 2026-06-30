@@ -249,7 +249,7 @@ Contents of probable licence file $GOMODCACHE/github.com/elastic/go-elasticsearc
 --------------------------------------------------------------------------------
 
 Dependency : github.com/elastic/terraform-provider-elasticstack/analysis/acctestconfigdirlintplugin
-Version: v0.16.1
+Version: v0.16.2
 Licence type (autodetected): Apache-2.0
 
 Contents of probable licence file LICENSE:
