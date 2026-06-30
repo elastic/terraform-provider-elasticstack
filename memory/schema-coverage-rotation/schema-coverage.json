@@ -62,7 +62,7 @@
     "elasticstack_kibana_import_saved_objects": "2026-05-24T07:01:13Z",
     "elasticstack_kibana_install_prebuilt_rules": "2026-05-24T07:01:13Z",
     "elasticstack_kibana_maintenance_window": "2026-05-25T07:24:59Z",
-    "elasticstack_kibana_osquery_pack": null,
+    "elasticstack_kibana_osquery_pack": "2026-06-30T07:13:08Z",
     "elasticstack_kibana_osquery_saved_query": null,
     "elasticstack_kibana_security_detection_rule": "2026-05-26T07:09:52Z",
     "elasticstack_kibana_security_enable_rule": "2026-06-19T07:41:20Z",
