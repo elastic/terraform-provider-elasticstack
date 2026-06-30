@@ -81,11 +81,12 @@ func TestStringNullIfEmpty(t *testing.T) {
 
 			modifier.PlanModifyString(ctx, req, resp)
 
-			if tc.wantNull {
+			switch {
+			case tc.wantNull:
 				require.True(t, resp.PlanValue.IsNull(), "expected null plan value")
-			} else if tc.configValue.IsUnknown() {
+			case tc.configValue.IsUnknown():
 				require.True(t, resp.PlanValue.IsUnknown(), "expected unknown plan value")
-			} else {
+			default:
 				require.Equal(t, tc.wantValue, resp.PlanValue.ValueString())
 			}
 		})
