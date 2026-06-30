@@ -41,11 +41,12 @@ func newResource() *Resource {
 			entitycore.ComponentKibana,
 			"osquery_pack",
 			entitycore.KibanaResourceOptions[osqueryPackModel]{
-				Schema: getSchema,
-				Read:   readOsqueryPack,
-				Delete: deleteOsqueryPack,
-				Create: createOsqueryPack,
-				Update: updateOsqueryPack,
+				Schema:   getSchema,
+				Read:     readOsqueryPack,
+				Delete:   deleteOsqueryPack,
+				Create:   createOsqueryPack,
+				Update:   updateOsqueryPack,
+				PostRead: postReadOsqueryPack,
 			},
 		),
 	}
