@@ -25,7 +25,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -79,12 +78,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 
 // ToAPI serializes Terraform discover_session panel state into kbapi (parity with legacy discoverSessionPanelToAPI).
 func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
-	if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
-		var diags diag.Diagnostics
-		diags.AddError(
-			"Unsupported panel type for config_json",
-			"Panel-level `config_json` is not supported for `discover_session` panels. Use `discover_session_config` instead.",
-		)
+	if diags := panelkit.RejectConfigJSON(pm, panelType); diags.HasError() {
 		return kbapi.DashboardPanelItem{}, diags
 	}
 
