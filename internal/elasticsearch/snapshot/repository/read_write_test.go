@@ -331,7 +331,7 @@ func TestSettingsToGcsAbsentFieldsAreNull(t *testing.T) {
 		},
 	}
 
-	obj, diags := settingsToGcs(ctx, repo)
+	obj, diags := settingsToGcs(ctx, repo, Data{})
 	require.False(t, diags.HasError(), diags.Errors())
 
 	var gcs GcsSettings
