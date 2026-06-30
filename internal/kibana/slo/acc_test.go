@@ -762,11 +762,10 @@ func TestAccResourceSlo_kql_object_form_and_settings_enabled(t *testing.T) {
 	})
 }
 
-// TestAccResourceSlo_kql_custom_indicator_basic uses string KQL only (no timeslice indicator).
+// TestAccResourceSlo_kql_custom_indicator_basic uses string KQL only (not timeslice indicator).
 // Step 1 skips with SLOKqlAccTestConstraints (8.9+, excluding known SLO-bug versions).
-// Step 2 (Fleet-style config with group_by) requires SLOKqlFleetAccTestConstraints (8.10+,
-// same exclusions), not 8.12
-// timeslice.
+// Step 2 (Fleet-style config with group_by) skips with SLOKqlFleetAccTestConstraints (8.10+,
+// same exclusions); timeslice indicators require 8.12 instead.
 func TestAccResourceSlo_kql_custom_indicator_basic(t *testing.T) {
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	skipKqlSLO := versionutils.CheckIfVersionMeetsConstraints(slo.SLOKqlAccTestConstraints)
