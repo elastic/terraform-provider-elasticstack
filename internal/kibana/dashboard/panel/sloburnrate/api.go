@@ -45,19 +45,15 @@ func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 
 // FromAPI fills pm from kbapi DashboardPanelItem for this panel discriminator.
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	apiPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate()
-	if err != nil {
-		var d diag.Diagnostics
-		d.AddError("Dashboard panel decode", err.Error())
-		return d
-	}
-
-	pm.Grid = panelkit.GridFromAPI(apiPanel.Grid.X, apiPanel.Grid.Y, apiPanel.Grid.W, apiPanel.Grid.H)
-	pm.ID = panelkit.IDFromAPI(apiPanel.Id)
-	pm.ConfigJSON = panelkit.PanelConfigJSONNull()
-	diags := PopulateFromAPI(pm, prior, apiPanel.Config)
-	_ = ctx
-	return diags
+	return panelkit.SimpleFromAPI(ctx, pm, prior,
+		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate,
+		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
+			return p.Grid, p.Id
+		},
+		func(pm *models.PanelModel, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate) diag.Diagnostics {
+			return PopulateFromAPI(pm, prior, p.Config)
+		},
+	)
 }
 
 // ToAPI serializes Terraform panel state into a kbapi union item.
