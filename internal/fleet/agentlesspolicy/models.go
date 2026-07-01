@@ -72,6 +72,7 @@ type agentlessPolicyModel struct {
 	CreateDatasetTemplates           types.Bool                `tfsdk:"create_dataset_templates"`
 	Force                            types.Bool                `tfsdk:"force"`
 	ForceDelete                      types.Bool                `tfsdk:"force_delete"`
+	SkipTopologyCheck                types.Bool                `tfsdk:"skip_topology_check"`
 	CreatedAt                        types.String              `tfsdk:"created_at"`
 	UpdatedAt                        types.String              `tfsdk:"updated_at"`
 }

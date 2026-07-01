@@ -83,6 +83,7 @@ The resource SHALL expose the following schema:
 
 - `force` — Optional bool (default `false`); passed to the create request only; not persisted in read state.
 - `force_delete` — Optional bool (default `false`); passed to the delete request as `?force=true` when true.
+- `skip_topology_check` — Optional bool (default `false`); client-side only, never sent to the API and never read back. When `true`, Create SHALL skip the deployment-topology preflight check entirely (see "Deployment topology preflight check"). Escape-hatch only; does not weaken version gating.
 
 **Server-populated:**
 
@@ -256,11 +257,12 @@ The resource SHALL enforce a minimum Kibana version of 9.3.0 using the existing 
 
 ### Requirement: Deployment topology preflight check
 
-The resource SHALL detect self-managed (non-cloud) Kibana deployments and refuse agentless policy operations with a clear error message directing users to Elastic Cloud Hosted or Serverless. The check SHALL run at Create time. If the topology heuristic cannot confidently classify the stack as self-managed or cloud-hosted, the resource SHALL **fail open**: it SHALL proceed with the operation rather than block potentially-legitimate cloud-hosted setups (see Decision 7).
+The resource SHALL detect self-managed (non-cloud) Kibana deployments and refuse agentless policy operations with a clear error message directing users to Elastic Cloud Hosted or Serverless. The check SHALL run at Create time. If the topology heuristic cannot confidently classify the stack as self-managed or cloud-hosted, the resource SHALL **fail open**: it SHALL proceed with the operation rather than block potentially-legitimate cloud-hosted setups (see Decision 7). The resource SHALL additionally expose a `skip_topology_check` opt-out (see "Schema attributes") that bypasses this preflight check entirely, for the narrow case where the heuristic itself cannot be resolved (see Open Question 6): a genuine Elastic Cloud Hosted or Serverless deployment whose networking (e.g. PrivateLink) never emits the cloud-proxy signal this check relies on.
 
 #### Scenario: Self-managed stack rejected
 
 - **WHEN** the resource is applied against a self-managed (on-premises) Kibana
+- **AND** `skip_topology_check` is not set (defaults to `false`)
 - **THEN** Create SHALL return an error diagnostic explaining agentless policies require Elastic Cloud Hosted or Serverless
 - **AND** no `POST /api/fleet/agentless_policies` call SHALL be made
 
@@ -274,6 +276,14 @@ The resource SHALL detect self-managed (non-cloud) Kibana deployments and refuse
 - **WHEN** the topology heuristic cannot confidently classify the stack as self-managed or cloud-hosted
 - **THEN** Create SHALL proceed (fail open) rather than return an error
 - **AND** if a subsequent API call fails for topology reasons, the surfaced error diagnostic SHALL direct the user to the cloud-hosted requirement
+
+#### Scenario: skip_topology_check bypasses a false-positive self-managed classification
+
+- **WHEN** `skip_topology_check = true` is set in config
+- **AND** the resource is applied against a Kibana that the topology heuristic would otherwise positively classify as self-managed (e.g. a Cloud Hosted deployment behind non-standard network routing that never emits the `X-Found-Handling-Cluster` / `X-Found-Handling-Instance` proxy headers)
+- **THEN** the deployment-topology preflight check SHALL NOT be performed at all (no `GET /api/status` probe SHALL be made for this purpose)
+- **AND** Create SHALL proceed to `POST /api/fleet/agentless_policies`
+- **AND** version gating (Kibana 9.3.0+) SHALL still be enforced regardless of `skip_topology_check`
 
 ### Requirement: Resource marked experimental
 

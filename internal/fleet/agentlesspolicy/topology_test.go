@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -47,16 +48,46 @@ import (
 func clearKibanaEnvOverrides(t *testing.T) {
 	t.Helper()
 	t.Setenv("TF_ELASTICSTACK_PREFER_CONFIGURED_KIBANA_ENDPOINT", "true")
-	// Deliberately NOT included: KIBANA_CA_CERTS / FLEET_CA_CERTS. Unlike the
-	// auth vars below (where an empty string is simply "no credential" and
-	// harmless against a plain-HTTP httptest server), an *empty but present*
-	// CA_CERTS var is treated as a one-element list containing a single
-	// empty file path, which config.withNonURLEnvironmentOverrides then
-	// tries to open -- turning "unset" into a hard error. Leaving these
-	// unset (LookupEnv ok=false) is the correct no-op.
+	// Deliberately NOT included in the blank-to-"" loop below: KIBANA_CA_CERTS /
+	// FLEET_CA_CERTS. Unlike the auth vars below (where an empty string is
+	// simply "no credential" and harmless against a plain-HTTP httptest
+	// server), an *empty but present* CA_CERTS var is treated as a
+	// one-element list containing a single empty file path, which
+	// config.withNonURLEnvironmentOverrides then tries to open -- turning
+	// "unset" into a hard error. Leaving these unset (LookupEnv ok=false) is
+	// the correct no-op.
+	//
+	// FLEET_ENDPOINT gets the same "leave genuinely unset, don't blank"
+	// treatment, but for a different and sharper reason: unlike Kibana,
+	// there is no TF_ELASTICSTACK_PREFER_CONFIGURED_FLEET_ENDPOINT escape
+	// valve, and fleetConfig.withEnvironmentOverrides
+	// (internal/clients/config/fleet.go) applies FLEET_ENDPOINT via
+	// `os.LookupEnv` -- i.e. on env-var *presence*, not on a non-empty
+	// value. Blanking it to "" (as this loop used to do) therefore
+	// unconditionally clobbers the Fleet client's URL -- inherited from the
+	// scoped Kibana endpoint when no Fleet block is configured -- with an
+	// empty string, breaking every request the Fleet client makes
+	// ("unsupported protocol scheme \"\""). This went unnoticed as long as
+	// every test in this file only exercised the Kibana OpenAPI client
+	// (checkDeploymentTopology's `/api/status` probe); it surfaced once
+	// create_test.go's TestCreateAgentlessPolicy_topologyGatesFleetCall
+	// started reusing this helper to also exercise a real Fleet POST. If
+	// FLEET_ENDPOINT happens to already be set in the ambient environment
+	// (it is not set by this repo's .env), it is force-unset for the
+	// duration of the test and restored afterwards, so these tests stay
+	// hermetic either way.
+	if orig, ok := os.LookupEnv("FLEET_ENDPOINT"); ok {
+		require.NoError(t, os.Unsetenv("FLEET_ENDPOINT"))
+		t.Cleanup(func() {
+			// t.Setenv cannot express "restore to fully unset" (it can only
+			// set a value), so this deliberately restores via the raw os
+			// package rather than t.Setenv.
+			require.NoError(t, os.Setenv("FLEET_ENDPOINT", orig)) //nolint:usetesting
+		})
+	}
 	for _, key := range []string{
 		"KIBANA_USERNAME", "KIBANA_PASSWORD", "KIBANA_API_KEY", "KIBANA_BEARER_TOKEN",
-		"FLEET_ENDPOINT", "FLEET_USERNAME", "FLEET_PASSWORD", "FLEET_API_KEY", "FLEET_BEARER_TOKEN",
+		"FLEET_USERNAME", "FLEET_PASSWORD", "FLEET_API_KEY", "FLEET_BEARER_TOKEN",
 	} {
 		t.Setenv(key, "")
 	}

@@ -262,6 +262,15 @@ func getSchema(_ context.Context) schema.Schema {
 				MarkdownDescription: "Force deletion of the policy, passed as `?force=true` on the delete request. " +
 					"Defaults to `false`.",
 			},
+			"skip_topology_check": schema.BoolAttribute{
+				Optional: true,
+				MarkdownDescription: "Skips the deployment-topology preflight check. Use only if you are certain " +
+					"this is running against a supported Elastic Cloud Hosted or Serverless deployment and the " +
+					"automatic detection is producing a false positive (e.g. due to non-standard network routing " +
+					"such as PrivateLink). Does not weaken version gating (Kibana 9.3.0+ is still enforced) -- it " +
+					"only bypasses the topology heuristic. Defaults to `false`. Create-only: consulted only during " +
+					"Create and not read back from the API.",
+			},
 			"created_at": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The creation timestamp of the agentless policy (ISO 8601).",

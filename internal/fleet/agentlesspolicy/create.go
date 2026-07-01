@@ -47,6 +47,19 @@ import (
 // and its tests in topology.go/topology_test.go, design.md Decision 7, and
 // specs/fleet-agentless-policy/spec.md's "Deployment topology preflight
 // check" requirement).
+//
+// design.md's Open Question 6 asked whether the fail-open heuristic should
+// additionally offer an explicit opt-out for legitimate Elastic Cloud
+// Hosted/Serverless deployments whose networking (e.g. PrivateLink) never
+// emits the cloud-proxy headers checkDeploymentTopology looks for and so get
+// permanently, incorrectly classified as self-managed with no
+// Terraform-native workaround. That question is now resolved: the
+// `skip_topology_check` schema attribute (schema.go) is the escape hatch.
+// When it is true, checkDeploymentTopology is not called at all -- the check
+// itself makes a live HTTP call to Kibana's status endpoint, so there is no
+// reason to pay for that call when the user has explicitly opted out of its
+// result. Version gating (GetVersionRequirements, enforced by the envelope
+// before this function even runs) is unaffected either way.
 func createAgentlessPolicy(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
@@ -55,9 +68,11 @@ func createAgentlessPolicy(
 	plan := req.Plan
 	var diags diag.Diagnostics
 
-	diags.Append(checkDeploymentTopology(ctx, client)...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
+	if !plan.SkipTopologyCheck.ValueBool() {
+		diags.Append(checkDeploymentTopology(ctx, client)...)
+		if diags.HasError() {
+			return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
+		}
 	}
 
 	fleetClient := client.GetFleetClient()

@@ -215,7 +215,8 @@ func TestGetSchema_cloudConnector(t *testing.T) {
 
 // TestGetSchema_extrasAndOperationFlags checks the remaining spec attributes:
 // global_data_tags, additional_datastreams_permissions,
-// create_dataset_templates, force, force_delete, created_at, updated_at.
+// create_dataset_templates, force, force_delete, skip_topology_check,
+// created_at, updated_at.
 func TestGetSchema_extrasAndOperationFlags(t *testing.T) {
 	t.Parallel()
 	s := getSchema(context.Background())
@@ -249,6 +250,12 @@ func TestGetSchema_extrasAndOperationFlags(t *testing.T) {
 	assert.True(t, forceDelete.Optional)
 	assert.True(t, forceDelete.Computed)
 	require.NotNil(t, forceDelete.Default)
+
+	skipTopologyCheck, ok := s.Attributes["skip_topology_check"].(schema.BoolAttribute)
+	require.True(t, ok)
+	assert.True(t, skipTopologyCheck.Optional)
+	assert.False(t, skipTopologyCheck.Computed, "skip_topology_check is a client-side preflight toggle, not API-persisted")
+	require.Empty(t, skipTopologyCheck.PlanModifiers, "skip_topology_check is not RequiresReplace")
 
 	createdAt, ok := s.Attributes["created_at"].(schema.StringAttribute)
 	require.True(t, ok)
