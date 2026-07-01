@@ -20,12 +20,9 @@ package template
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
@@ -62,73 +59,14 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 // Terraform would show a spurious diff: strict inequality but semantic equality (index settings
 // canonical form in state vs practitioner JSON in configuration).
 func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, state, config Model) (*Model, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if plan.Template.IsNull() || plan.Template.IsUnknown() || state.Template.IsNull() || state.Template.IsUnknown() {
-		return nil, diags
-	}
-
-	planAttrs := plan.Template.Attributes()
-	stateAttrs := state.Template.Attributes()
-	changed := false
-
-	if ps, ok := planAttrs[attrSettings]; ok && !ps.IsNull() && !ps.IsUnknown() {
-		if ss, ok := stateAttrs[attrSettings]; ok && !ss.IsNull() && !ss.IsUnknown() {
-			pSet, okP := ps.(customtypes.IndexSettingsValue)
-			sSet, okS := ss.(customtypes.IndexSettingsValue)
-			if okP && okS {
-				reconciled, settingsChanged, d := templateutil.ReconcileSettingsIfSemanticallyEqual(ctx, pSet, sSet)
-				diags.Append(d...)
-				if diags.HasError() {
-					return nil, diags
-				}
-				if settingsChanged {
-					planAttrs[attrSettings] = reconciled
-					changed = true
-				}
-			}
-		}
-	}
-
-	if pa, ok := planAttrs[attrAlias]; ok && !pa.IsNull() && !pa.IsUnknown() {
-		if sa, ok := stateAttrs[attrAlias]; ok && !sa.IsNull() && !sa.IsUnknown() {
-			newAlias, aliasChanged, d := aliasutil.MergePlanAliasSetWithPriorState(ctx, pa, sa)
-			diags.Append(d...)
-			if diags.HasError() {
-				return nil, diags
-			}
-			if !aliasChanged && !config.Template.IsNull() && !config.Template.IsUnknown() {
-				cfgAttrs := config.Template.Attributes()
-				if ca, ok := cfgAttrs[attrAlias]; ok && !ca.IsNull() && !ca.IsUnknown() {
-					// Use config encodings to match state (handles plan unknowns), but project
-					// the result back onto the plan's element set so plan-only aliases are
-					// preserved. mergePlanAliasSetWithPriorState alone would build the result
-					// from its first argument and drop any aliases present in plan but not config.
-					newAlias, aliasChanged, d = aliasutil.ProjectConfigAliasMatchesOntoPlan(ctx, pa, ca, sa)
-					diags.Append(d...)
-					if diags.HasError() {
-						return nil, diags
-					}
-				}
-			}
-			if aliasChanged {
-				canonAlias, d := aliasutil.CanonicalizeAliasSetElements(ctx, newAlias)
-				diags.Append(d...)
-				if diags.HasError() {
-					return nil, diags
-				}
-				planAttrs[attrAlias] = canonAlias
-				changed = true
-			}
-		}
-	}
-
-	if !changed {
-		return nil, diags
-	}
-
-	newTpl, d := types.ObjectValue(TemplateAttrTypes(), planAttrs)
-	diags.Append(d...)
-	if diags.HasError() {
+	newTpl, changed, diags := templateutil.ReconcileTemplateWithPriorStateForSemanticDrift(
+		ctx,
+		plan.Template,
+		state.Template,
+		config.Template,
+		TemplateAttrTypes(),
+	)
+	if diags.HasError() || !changed {
 		return nil, diags
 	}
 	out := plan
