@@ -86,7 +86,7 @@ The `ml_single_metric_viewer_config` block exposes the following attributes:
 | `job_ids` | list(string) | Required | Exactly one entry (length-1 validator). Maps to `config.job_ids`. |
 | `selected_detector_index` | float32 | Optional | Zero-based detector index within the job. Maps to `config.selected_detector_index`. |
 | `forecast_id` | string | Optional | Forecast identifier to overlay. Maps to `config.forecast_id`. |
-| `function_description` | string | Optional | For `metric` detectors: `"min"`, `"max"`, or `"mean"`. Maps to `config.function_description`. |
+| `function_description` | string | Optional | When set, MUST be one of `"min"`, `"max"`, or `"mean"` (plan-time validation). For `metric` detectors only; ignored for other detector functions. Maps to `config.function_description`. |
 | `selected_entities` | map(object) | Optional | Map keyed by partition/by/over field name. Each value has optional `string_value (string)` and optional `numeric_value (number)`, with a plan-time validator requiring exactly one. |
 | `title` | string | Optional | Panel title. |
 | `description` | string | Optional | Panel description. |
