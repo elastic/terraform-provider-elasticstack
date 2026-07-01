@@ -31,7 +31,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -146,59 +145,9 @@ func templateBlock() schema.SingleNestedBlock {
 			},
 		},
 		Blocks: map[string]schema.Block{
-			attrAlias:             templateAliasBlock(),
+			attrAlias:             aliasutil.AliasSetNestedBlock(),
 			attrLifecycle:         templateLifecycleBlock(),
 			attrDataStreamOptions: datastreamoptions.Block(),
-		},
-	}
-}
-
-func templateAliasBlock() schema.SetNestedBlock {
-	return schema.SetNestedBlock{
-		MarkdownDescription: descAliasBlock,
-		NestedObject: schema.NestedBlockObject{
-			CustomType: aliasutil.NewAliasObjectType(),
-			Attributes: map[string]schema.Attribute{
-				attrName: schema.StringAttribute{
-					MarkdownDescription: descAliasName,
-					Required:            true,
-				},
-				attrFilter: schema.StringAttribute{
-					MarkdownDescription: descAliasFilter,
-					Optional:            true,
-					CustomType:          jsontypes.NormalizedType{},
-				},
-				attrIndexRouting: schema.StringAttribute{
-					MarkdownDescription: descAliasIndexRouting,
-					Optional:            true,
-					Computed:            true,
-					Default:             stringdefault.StaticString(""),
-				},
-				attrIsHidden: schema.BoolAttribute{
-					MarkdownDescription: descAliasIsHidden,
-					Optional:            true,
-					Computed:            true,
-					Default:             booldefault.StaticBool(false),
-				},
-				attrIsWriteIndex: schema.BoolAttribute{
-					MarkdownDescription: descAliasIsWriteIndex,
-					Optional:            true,
-					Computed:            true,
-					Default:             booldefault.StaticBool(false),
-				},
-				attrRouting: schema.StringAttribute{
-					MarkdownDescription: descAliasRouting,
-					Optional:            true,
-					Computed:            true,
-					Default:             stringdefault.StaticString(""),
-				},
-				attrSearchRouting: schema.StringAttribute{
-					MarkdownDescription: descAliasSearchRouting,
-					Optional:            true,
-					Computed:            true,
-					Default:             stringdefault.StaticString(""),
-				},
-			},
 		},
 	}
 }
