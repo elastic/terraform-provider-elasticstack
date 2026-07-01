@@ -46,9 +46,11 @@ const attrName = "name"
 // ("4. Resource: schema"): the full schema described by
 // specs/fleet-agentless-policy/spec.md's "Schema attributes" requirement.
 //
-// CRUD population (Task 5), version gating and topology preflight wiring
-// (Task 6), and the "experimental" notice on the resource description
-// (Task 6.3) are intentionally not part of this schema definition yet.
+// CRUD population is Task 5's responsibility (models_convert.go / create.go /
+// read.go / update.go). Version gating and the deployment-topology preflight
+// (Task 6.1/6.2) live in models.go and create.go/topology.go respectively --
+// not in this schema definition. The "experimental" notice on the resource
+// description below is Task 6.3.
 //
 // Task 4.9 note on kibana_connection: unlike internal/fleet/integration_policy
 // and internal/fleet/agentpolicy (which implement resource.Resource's Schema
@@ -63,8 +65,13 @@ const attrName = "name"
 func getSchema(_ context.Context) schema.Schema {
 	varsAreSensitive := debugutils.IsSensitiveInSchema()
 	return schema.Schema{
-		MarkdownDescription: "Manages Fleet agentless policies. " +
-			"Skeleton only pending full implementation; see openspec/changes/fleet-agentless-policy.",
+		MarkdownDescription: "Manages Fleet agentless policies, which provision agent runtime capacity in Elastic's " +
+			"own cloud infrastructure instead of on a host running Elastic Agent. " +
+			"**This resource is experimental**: the underlying Fleet agentless policies API was added in Kibana " +
+			"9.3.0 and its behavior may change in future Kibana releases. " +
+			"It is only supported on **Elastic Cloud Hosted** and **Serverless** (Security or Observability) " +
+			"deployments; self-managed (on-premises) Kibana is not supported, and this resource refuses to run " +
+			"against a self-managed deployment it can positively identify as such.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
