@@ -25,9 +25,10 @@
 
 ## 3. Resource: skeleton, model, and spike
 
-- [ ] 3.1 Create `internal/fleet/agentlesspolicy/` directory mirroring `internal/fleet/proxy/` in structure: `resource.go`, `models.go`, `schema.go`, `create.go`, `read.go`, `update.go`, `delete.go`
-- [ ] 3.2 Implement `models.go` with `agentlessPolicyModel`, `GetID`, `GetResourceID`, `GetSpaceID`, `GetKibanaConnection`, `GetVersionRequirements` (MinVersion: 9.3.0)
-- [ ] 3.3 **Spike task:** Apply a test agentless policy in a cloud-hosted test environment, then call `PUT /api/fleet/package_policies/{id}` with each candidate in-place-updatable field (`description`, `vars_json`, `inputs`, `global_data_tags`, `additional_datastreams_permissions`, `var_group_selections`, `package.title`). Document which fields Kibana actually honors and which return errors. Record findings in a comment block in `update.go`. Adjust the RequiresReplace list if the spike contradicts the design. (`create_dataset_templates` is create-only and is intentionally excluded from this PUT probe.)
+- [x] 3.1 Create `internal/fleet/agentlesspolicy/` directory mirroring `internal/fleet/proxy/` in structure: `resource.go`, `models.go`, `schema.go`, `create.go`, `read.go`, `update.go`, `delete.go`
+- [x] 3.2 Implement `models.go` with `agentlessPolicyModel`, `GetID`, `GetResourceID`, `GetSpaceID`, `GetKibanaConnection`, `GetVersionRequirements` (MinVersion: 9.3.0)
+- [x] 3.3 **Spike task:** Apply a test agentless policy in a cloud-hosted test environment, then call `PUT /api/fleet/package_policies/{id}` with each candidate in-place-updatable field (`description`, `vars_json`, `inputs`, `global_data_tags`, `additional_datastreams_permissions`, `var_group_selections`, `package.title`). Document which fields Kibana actually honors and which return errors. Record findings in a comment block in `update.go`. Adjust the RequiresReplace list if the spike contradicts the design. (`create_dataset_templates` is create-only and is intentionally excluded from this PUT probe.)
+  - Done against a live Kibana 9.4.3 Cloud Hosted deployment; full findings recorded in `internal/fleet/agentlesspolicy/update.go`. All 7 in-place-updatable candidates confirmed accept+persist (with a caveat on `inputs[*].enabled`, see update.go). **Contradiction found and flagged:** `name`, `namespace`, and `package.version` (and, conditionally, `package.name`) are also accepted and persisted by PUT — not API-enforced immutable. RequiresReplace partitioning was kept unchanged (see design.md Decision 3 / Open Question 1) as a deliberate Terraform-side safety choice; flagged prominently for orchestrator review.
 
 ## 4. Resource: schema
 
