@@ -30,7 +30,7 @@ on:
     pull-requests: read
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v6.0.2
+      uses: actions/checkout@v7.0.0
       with:
         persist-credentials: false
         fetch-depth: 1
