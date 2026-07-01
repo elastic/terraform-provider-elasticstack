@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/apmservicemap"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -225,6 +226,21 @@ func Test_mapOrientationValidator_rejectsInvalidValue(t *testing.T) {
 	v.ValidateString(ctx, validator.StringRequest{
 		ConfigValue: types.StringValue("diagonal"),
 		Path:        path.Root("map_orientation"),
+	}, &resp)
+	require.True(t, resp.Diagnostics.HasError())
+}
+
+func Test_alertStatusFilterValidator_rejectsInvalidValue(t *testing.T) {
+	ctx := context.Background()
+	v := setvalidator.ValueStringsAre(
+		stringvalidator.OneOf("active", "delayed", "recovered", "untracked"),
+	)
+	var resp validator.SetResponse
+	v.ValidateSet(ctx, validator.SetRequest{
+		ConfigValue: types.SetValueMust(types.StringType, []attr.Value{
+			types.StringValue("invalid_value"),
+		}),
+		Path: path.Root("alert_status_filter"),
 	}, &resp)
 	require.True(t, resp.Diagnostics.HasError())
 }
