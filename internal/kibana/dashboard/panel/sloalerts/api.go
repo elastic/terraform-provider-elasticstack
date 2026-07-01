@@ -44,7 +44,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
 			return p.Grid, p.Id
 		},
-		func(pm *models.PanelModel, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts) diag.Diagnostics {
+		func(pm, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts) diag.Diagnostics {
 			PopulateFromAPI(pm, prior, p)
 			return nil
 		},
@@ -52,36 +52,30 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 }
 
 func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
-	if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
-		var diags diag.Diagnostics
-		diags.AddError(
-			"Unsupported panel type for config_json",
-			"Panel-level `config_json` is not supported for `slo_alerts` panels. Use `slo_alerts_config` instead.",
-		)
-		return kbapi.DashboardPanelItem{}, diags
-	}
-
-	var diags diag.Diagnostics
-	cfg := pm.SloAlertsConfig
-	if cfg == nil {
-		diags.AddError("Missing SLO alerts panel configuration", "SLO alerts panels require `slo_alerts_config`.")
-		return kbapi.DashboardPanelItem{}, diags
-	}
-
-	grid := panelkit.GridToAPI(pm.Grid)
-	id := panelkit.IDToAPI(pm.ID)
-	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts{
-		Grid: grid,
-		Id:   id,
-		Type: kbapi.SloAlerts,
-	}
-	BuildConfig(&pm, &panel)
-
-	var panelItem kbapi.DashboardPanelItem
-	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts(panel); err != nil {
-		diags.AddError("Failed to create SLO alerts panel", err.Error())
-	}
-	return panelItem, diags
+	return panelkit.SimpleToAPI(pm,
+		func(grid kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, id *string) (kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts, diag.Diagnostics) {
+			if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
+				var diags diag.Diagnostics
+				diags.AddError(
+					"Unsupported panel type for config_json",
+					"Panel-level `config_json` is not supported for `slo_alerts` panels. Use `slo_alerts_config` instead.",
+				)
+				return kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts{}, diags
+			}
+			if pm.SloAlertsConfig == nil {
+				var diags diag.Diagnostics
+				diags.AddError("Missing SLO alerts panel configuration", "SLO alerts panels require `slo_alerts_config`.")
+				return kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts{}, diags
+			}
+			panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts{Grid: grid, Id: id, Type: kbapi.SloAlerts}
+			BuildConfig(&pm, &panel)
+			return panel, nil
+		},
+		func(item *kbapi.DashboardPanelItem, panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts) error {
+			return item.FromKibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts(panel)
+		},
+		"Failed to create SLO alerts panel",
+	)
 }
 
 func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {

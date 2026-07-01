@@ -88,31 +88,5 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 
 // ValidatePanelConfig enforces presence of DataViewID and FieldName for options_list panels.
 func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
-	var out diag.Diagnostics
-	flat, obj, shaped := panelkit.ResolvePanelAttrsShape(attrs, panelConfigAttrsKeyPrefix, "data_view_id", "field_name")
-	if !shaped {
-		return out
-	}
-
-	cfgPath := attrPath
-	var dataViewAttr, fieldNameAttr attr.Value
-	switch {
-	case flat:
-		dataViewAttr, fieldNameAttr = attrs["data_view_id"], attrs["field_name"]
-	default:
-		at := obj.Attributes()
-		cfgPath = attrPath.AtName(panelConfigAttrsKeyPrefix)
-		dataViewAttr, fieldNameAttr = at["data_view_id"], at["field_name"]
-	}
-
-	writeErr := func(field, msg string) {
-		out.AddAttributeError(cfgPath.AtName(field), "Invalid options list control configuration", msg)
-	}
-	if deferDV, missDV := panelkit.StringAttrDeferOrMissing(dataViewAttr); !deferDV && missDV {
-		writeErr("data_view_id", "`data_view_id` is required.")
-	}
-	if deferFN, missFN := panelkit.StringAttrDeferOrMissing(fieldNameAttr); !deferFN && missFN {
-		writeErr("field_name", "`field_name` is required.")
-	}
-	return out
+	return panelkit.ValidateDataViewFieldName(attrs, panelConfigAttrsKeyPrefix, "Invalid options list control configuration", attrPath)
 }

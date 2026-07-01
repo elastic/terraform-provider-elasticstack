@@ -46,7 +46,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
 			return p.Grid, p.Id
 		},
-		func(pm *models.PanelModel, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget) diag.Diagnostics {
+		func(pm, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget) diag.Diagnostics {
 			return PopulateFromAPI(pm, prior, p.Config)
 		},
 	)
@@ -55,19 +55,16 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 // ToAPI serializes Terraform panel state into a kbapi union item.
 func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	_ = dashboard
-	grid := panelkit.GridToAPI(pm.Grid)
-	id := panelkit.IDToAPI(pm.ID)
-	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget{
-		Grid: grid,
-		Id:   id,
-		Type: kbapi.SloErrorBudget,
-	}
-	diags := BuildConfig(pm, &panel)
-	var panelItem kbapi.DashboardPanelItem
-	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget(panel); err != nil {
-		diags.AddError("Failed to create SLO error budget panel", err.Error())
-	}
-	return panelItem, diags
+	return panelkit.SimpleToAPI(pm,
+		func(grid kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, id *string) (kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget, diag.Diagnostics) {
+			panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget{Grid: grid, Id: id, Type: kbapi.SloErrorBudget}
+			return panel, BuildConfig(pm, &panel)
+		},
+		func(item *kbapi.DashboardPanelItem, panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget) error {
+			return item.FromKibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget(panel)
+		},
+		"Failed to create SLO error budget panel",
+	)
 }
 
 func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {

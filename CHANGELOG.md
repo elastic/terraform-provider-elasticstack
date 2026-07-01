@@ -1,11 +1,8 @@
 ## [Unreleased]
 
-### Bug Fixes
-
-- Fix `elasticstack_fleet_agent_policy` sending `"id": ""` to Kibana on create when `policy_id` is omitted, restoring compatibility with Kibana 9.3.6. Fleet auto-generates a policy ID when the field is omitted from the create request body. Invalid explicit `policy_id` values now fail during planning according to Kibana ID validation rules.
-
 ### Changes
 
+- Fix Fleet agent policy create when policy_id is omitted and add plan-time validation for explicit policy_id values ([#3937](https://github.com/elastic/terraform-provider-elasticstack/pull/3937))
 - Add `elasticstack_kibana_tag` resource and `elasticstack_kibana_tags` data source for managing Kibana tags and listing tags in a space. ([#3921](https://github.com/elastic/terraform-provider-elasticstack/pull/3921))
 - Fix component and index template state upgrade when SDK stored empty strings for mappings, settings, or metadata. ([#3914](https://github.com/elastic/terraform-provider-elasticstack/pull/3914))
 - Add `elasticstack_kibana_osquery_pack` resource and data source for managing user-defined Osquery query packs and reading packs (including prebuilt read-only packs). ([#3893](https://github.com/elastic/terraform-provider-elasticstack/pull/3893))
