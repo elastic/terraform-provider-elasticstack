@@ -34,9 +34,9 @@
 
 ## 5. Testing — `ml_single_metric_viewer`
 
-- [ ] 5.1 Add acceptance test: create/read/update round-trip with `selected_entities` containing both string and numeric entries, verify state matches.
-- [ ] 5.2 Add acceptance test: plan-time rejection when a `selected_entities` entry has both `string_value` and `numeric_value` set.
-- [ ] 5.3 Add acceptance test: plan-time rejection when a `selected_entities` entry has neither `string_value` nor `numeric_value` set.
-- [ ] 5.4 Add acceptance test: plan-time rejection when `job_ids` has more than one entry (length-1 validator).
-- [ ] 5.5 Add acceptance test: round-trip with `forecast_id` and `function_description` set.
-- [ ] 5.6 Add unit tests for `BuildConfig()` and `PopulateFromAPI()` covering `selected_entities` serialization/deserialization (string branch, numeric branch, null-preservation when key absent in prior state).
+- [x] 5.1 Add acceptance test: create/read/update round-trip with `selected_entities` containing both string and numeric entries, verify state matches.
+- [x] 5.2 Add acceptance test: plan-time rejection when a `selected_entities` entry has both `string_value` and `numeric_value` set.
+- [x] 5.3 Add acceptance test: plan-time rejection when a `selected_entities` entry has neither `string_value` nor `numeric_value` set.
+- [x] 5.4 Add acceptance test: plan-time rejection when `job_ids` has more than one entry (length-1 validator).
+- [x] 5.5 Add acceptance test: round-trip with `forecast_id` and `function_description` set.
+- [x] 5.6 Add unit tests for `BuildConfig()` and `PopulateFromAPI()` covering `selected_entities` serialization/deserialization (string branch, numeric branch, null-preservation when key absent in prior state).
