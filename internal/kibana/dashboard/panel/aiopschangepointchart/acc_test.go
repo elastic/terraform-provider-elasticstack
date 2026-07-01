@@ -74,6 +74,17 @@ func TestAccResourceDashboardAiopsChangePointChart(t *testing.T) {
 				ResourceName:      "elasticstack_kibana_dashboard.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				// Kibana returns server-side defaults for these optional enum/float fields even when the
+				// practitioner omits them. The create+read path null-preserves them (REQ-009), while import
+				// (no prior state) populates them from the API — so they legitimately differ and must be
+				// excluded from ImportStateVerify on the required-only import step.
+				ImportStateVerifyIgnore: []string{
+					"panels.0.aiops_change_point_chart_config.aggregation_function",
+					"panels.0.aiops_change_point_chart_config.split_field",
+					"panels.0.aiops_change_point_chart_config.partitions",
+					"panels.0.aiops_change_point_chart_config.max_series_to_plot",
+					"panels.0.aiops_change_point_chart_config.view_type",
+				},
 			},
 			// All optional fields.
 			{
