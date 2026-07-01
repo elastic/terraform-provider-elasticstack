@@ -81,7 +81,7 @@ Add a `force_delete` boolean attribute (default `false`) that passes `?force=tru
 
 The resource `id` is set to the composite string `"<space_id>/<policy_id>"`. `policy_id` is Optional+Computed with `UseStateForUnknown`; when omitted from config, the API-assigned ID is used. Import accepts both `"<space_id>/<policy_id>"` and bare `"<policy_id>"`.
 
-**Why:** Matches every other space-aware Fleet resource in the provider (`fleet_proxy`, `fleet_output`, `fleet_server_host`, `fleet_integration_policy`). The `SpaceImporter` helper in `internal/fleet/space_importer.go` already handles composite parsing.
+**Why:** Matches the existing space-aware Fleet import pattern used across the provider (via the `SpaceImporter` helper in `internal/fleet/space_importer.go`).
 
 ### Decision 7: Deployment topology preflight check
 

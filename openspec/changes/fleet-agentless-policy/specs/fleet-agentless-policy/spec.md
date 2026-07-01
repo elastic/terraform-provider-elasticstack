@@ -139,7 +139,7 @@ The resource SHALL call `POST /api/fleet/agentless_policies` (space-aware) with 
 - **THEN** the create request body SHALL include `"create_dataset_templates": true`
 - **AND** on the next Read the attribute SHALL NOT appear in the API response
 - **AND** state SHALL preserve the config value of `create_dataset_templates` (it is not read back)
-- **AND** changing `create_dataset_templates` after creation SHALL NOT produce a plan diff (no Update, no Replace)
+- **AND** changing `create_dataset_templates` after creation SHALL NOT make any API call; the provider SHALL persist the new value to state and it SHALL only take effect on the next Create (resource replacement).
 
 #### Scenario: API error on create
 
@@ -174,7 +174,7 @@ The resource SHALL call `GET /api/fleet/package_policies/{policy_id}` (space-awa
 - **WHEN** a resource with `force`, `force_delete`, and `create_dataset_templates` set in config is read
 - **THEN** none of `force`, `force_delete`, or `create_dataset_templates` SHALL be sourced from the API response
 - **AND** each SHALL retain its config value in state
-- **AND** changing any of them after creation SHALL NOT trigger an Update or Replace (they apply only on the next create)
+- **AND** changing any of them after creation SHALL NOT make any API call; the provider SHALL perform a state-only Update to persist the new values for future operations (e.g., `force_delete` on Delete, create-only flags on the next Create).
 
 ### Requirement: Update
 
