@@ -40,6 +40,9 @@ type PanelModel struct {
 	ImageConfig                   *ImagePanelConfigModel                            `tfsdk:"image_config"`
 	SloAlertsConfig               *SloAlertsPanelConfigModel                        `tfsdk:"slo_alerts_config"`
 	DiscoverSessionConfig         *DiscoverSessionPanelConfigModel                  `tfsdk:"discover_session_config"`
+	AiopsLogRateAnalysisConfig    *AiopsLogRateAnalysisConfigModel                  `tfsdk:"aiops_log_rate_analysis_config"`
+	AiopsPatternAnalysisConfig    *AiopsPatternAnalysisConfigModel                  `tfsdk:"aiops_pattern_analysis_config"`
+	AiopsChangePointChartConfig   *AiopsChangePointChartConfigModel                 `tfsdk:"aiops_change_point_chart_config"`
 	ConfigJSON                    customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 

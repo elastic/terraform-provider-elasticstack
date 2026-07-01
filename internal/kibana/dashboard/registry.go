@@ -20,6 +20,9 @@ package dashboard
 import (
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/aiopschangepointchart"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/aiopslograteanalysis"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/aiopspatternanalysis"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/discoversession"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/esqlcontrol"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
@@ -54,6 +57,9 @@ var panelHandlers = []iface.Handler{
 	sloalerts.Handler{},
 	visconfig.Handler{},
 	discoversession.Handler{},
+	aiopslograteanalysis.Handler{},
+	aiopspatternanalysis.Handler{},
+	aiopschangepointchart.Handler{},
 }
 
 var panelTypeToHandler map[string]iface.Handler
