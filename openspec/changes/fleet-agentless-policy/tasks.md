@@ -25,16 +25,16 @@
 
 - [ ] 3.1 Create `internal/fleet/agentlesspolicy/` directory mirroring `internal/fleet/proxy/` in structure: `resource.go`, `models.go`, `schema.go`, `create.go`, `read.go`, `update.go`, `delete.go`
 - [ ] 3.2 Implement `models.go` with `agentlessPolicyModel`, `GetID`, `GetResourceID`, `GetSpaceID`, `GetKibanaConnection`, `GetVersionRequirements` (MinVersion: 9.3.0)
-- [ ] 3.3 **Spike task:** Apply a test agentless policy in a cloud-hosted test environment, then call `PUT /api/fleet/package_policies/{id}` with each candidate in-place-updatable field (`description`, `vars`, `inputs`, `global_data_tags`, `additional_datastreams_permissions`, `create_dataset_templates`). Document which fields Kibana actually honors and which return errors. Record findings in a comment block in `update.go`. Adjust the RequiresReplace list if the spike contradicts the design.
+- [ ] 3.3 **Spike task:** Apply a test agentless policy in a cloud-hosted test environment, then call `PUT /api/fleet/package_policies/{id}` with each candidate in-place-updatable field (`description`, `vars_json`, `inputs`, `global_data_tags`, `additional_datastreams_permissions`, `var_group_selections`, `package.title`). Document which fields Kibana actually honors and which return errors. Record findings in a comment block in `update.go`. Adjust the RequiresReplace list if the spike contradicts the design. (`create_dataset_templates` is create-only and is intentionally excluded from this PUT probe.)
 
 ## 4. Resource: schema
 
 - [ ] 4.1 Implement `getSchema` in `schema.go` covering all identity attributes (`id`, `policy_id`, `name`, `description`, `namespace`, `space_ids`) with correct Optional/Computed/Required, `UseStateForUnknown`, and `RequiresReplace` plan modifiers per the spec
-- [ ] 4.2 Add schema for `package` (Required object: `name`, `version`, `title`) with `RequiresReplace` on `name` and `version`
+- [ ] 4.2 Add schema for `package` (Required object: `name` (Required, RequiresReplace), `version` (Required, RequiresReplace), `title` (Optional+Computed, in-place updatable, not RequiresReplace))
 - [ ] 4.3 Add schema for `policy_template` (Optional string, `RequiresReplace`)
 - [ ] 4.4 Add schema for `vars_json`, `var_group_selections`, and `inputs` (reusing `VarsJsonType` and `InputsType` from the shared package); `inputs` is Optional+Computed with `UseStateForUnknown`
 - [ ] 4.5 Add schema for `cloud_connector` (Optional object: `enabled`, `cloud_connector_id`, `name`, `target_csp`) with `RequiresReplace` on all sub-fields
-- [ ] 4.6 Add schema for `global_data_tags`, `additional_datastreams_permissions`, `create_dataset_templates` (all Optional, updatable in-place)
+- [ ] 4.6 Add schema for `global_data_tags` and `additional_datastreams_permissions` (both Optional, updatable in-place); add `create_dataset_templates` (Optional, create-only — not read back, not sent on Update, not RequiresReplace)
 - [ ] 4.7 Add schema for operation flags `force` (Optional bool, create-only, not read back from API) and `force_delete` (Optional bool, not read back from API)
 - [ ] 4.8 Add schema for computed fields `created_at` and `updated_at`
 - [ ] 4.9 Add `kibana_connection` block following the pattern of other Fleet resources

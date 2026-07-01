@@ -22,6 +22,7 @@ The in-flight `fleet-cloud-connector` change (`openspec/changes/fleet-cloud-conn
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Full lifecycle (Create, Read, Update, Delete) for agentless policies with import support.
 - Phase 1 extracts shared inputs/streams/vars modeling from `integration_policy` into `internal/fleet/policyshape/` so both resources share the implementation without code duplication.
 - Phase 2 implements `elasticstack_fleet_agentless_policy` using the shared package.
@@ -32,6 +33,7 @@ The in-flight `fleet-cloud-connector` change (`openspec/changes/fleet-cloud-conn
 - Import via `<space_id>/<policy_id>` composite form (and bare `<policy_id>` for default space).
 
 **Non-Goals:**
+
 - A dedicated data source for listing agentless policies (no dedicated list endpoint exists; the package_policies list endpoint does not filter by agentless origin).
 - Surfacing the hidden managed agent policy ID or its details.
 - Supporting self-managed Kibana deployments (not supported by the API).
@@ -57,8 +59,9 @@ Before implementing the agentless resource, extract `InputType`, `InputsType`, `
 
 Split the resource attributes into two groups:
 
-- **In-place updatable** (via `PUT /api/fleet/package_policies/{id}`): `description`, `vars_json`, `inputs`, `global_data_tags`, `additional_datastreams_permissions`, `var_group_selections`.
+- **In-place updatable** (via `PUT /api/fleet/package_policies/{id}`): `description`, `vars_json`, `inputs`, `global_data_tags`, `additional_datastreams_permissions`, `var_group_selections`, `package.title`.
 - **Replace-on-change** (`RequiresReplace`): `name`, `package.name`, `package.version`, `namespace`, `cloud_connector.*`, `policy_template`, `policy_id`, `space_ids`.
+- **Create-only** (sent on create only; not read back; not on PUT; not `RequiresReplace`): `force`, `force_delete`, `create_dataset_templates`. Post-create changes to these are no-ops.
 
 **Why:** The agentless endpoint has no PATCH semantics; the package_policies PUT endpoint is the only update path. However, the Kibana API behavior for hidden agentless-created policies under PUT is not fully documented. An explicit spike task (see Tasks §3) must probe which fields Kibana actually honors to validate or refine the in-place allowlist before shipping. The current partition is the expected behavior based on API design, not confirmed empirically.
 
@@ -86,6 +89,8 @@ Add a preflight check that queries the Kibana status or cluster info to detect s
 
 **Why:** The agentless API silently accepts requests on self-managed stacks (the endpoint exists) but the policy will never activate because Elastic's cloud infrastructure is not present. Failing fast with a clear error is better than a policy that appears created but never collects data. The check can use a heuristic similar to what Fleet itself uses (e.g., checking for the presence of the cloud metadata plugin or a Fleet server setup mode indicator).
 
+**Fallback when detection is inconclusive (fail-open):** If the preflight heuristic cannot reliably determine the topology (neither confidently cloud-hosted nor confidently self-managed), the resource SHALL **fail open** — it SHALL proceed with the operation rather than block potentially-legitimate cloud-hosted setups that the heuristic mis-classifies. This trades the risk of silently creating a non-functional policy on a mis-classified self-managed stack for fewer false-negatives on legitimate cloud setups. When the heuristic positively identifies a self-managed stack, the resource still fails closed per the primary rule. If a later API call fails for topology reasons, the surfaced error diagnostic SHALL still guide the user toward the cloud-hosted requirement.
+
 ### Decision 8: `vars_json`, not typed vars blocks
 
 Integration-level and input-level vars are encoded as JSON strings (`vars_json` attributes), not as typed Terraform map attributes.
@@ -103,3 +108,5 @@ Integration-level and input-level vars are encoded as JSON strings (`vars_json` 
 4. **Do `condition` and `deprecated` fields on inputs/streams become first-class schema attributes in `policyshape`, or stay as JSON-encoded pass-through?** The current `integration_policy` schema does not expose `condition` or `deprecated` directly. If `policyshape` extracts those types as-is, they remain unexposed. If the implementer promotes them to first-class attributes during Phase 1, it constitutes a schema addition to `integration_policy` and must be treated as an additive change (not a breaking change, but needs test coverage).
 
 5. **Deployment topology check implementation.** The precise mechanism for detecting cloud-hosted vs. self-managed is TBD. Possible approaches: (a) check for the `xpack.fleet.agentless.enabled` cluster setting via the ES cluster settings API; (b) check the Kibana status `buildSha` / `uuid` against known cloud patterns; (c) attempt a preflight `POST` with `dry_run: true` if such a parameter exists. This should be resolved early in Phase 2 implementation (Tasks §6).
+
+6. **Topology opt-in override.** Decision 7 specifies a **fail-open** fallback when detection is inconclusive (proceed rather than block). Should the resource additionally offer an explicit provider/resource-level opt-in (e.g. a `force_cloud_topology` / `skip_topology_check` flag) for users who run legitimately cloud-hosted stacks that the heuristic mis-classifies? If added, it must be documented as escape-hatch only and must not weaken the positive self-managed detection (fail-closed path). Deferred to Phase 2 implementation once the detection heuristic is known.

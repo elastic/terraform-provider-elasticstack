@@ -14,10 +14,11 @@ Two-phase delivery in a single OpenSpec change:
 
 - **Create** → `POST /api/fleet/agentless_policies` (bundled: hidden agent policy + package policy; response `id` is the package policy ID)
 - **Read** → `GET /api/fleet/package_policies/{id}` (no dedicated agentless GET endpoint; the underlying package policy is always readable)
-- **Update** → Hybrid: `PUT /api/fleet/package_policies/{id}` for an allowlist of mutable fields (`description`, `vars`, `inputs`, `global_data_tags`, `additional_datastreams_permissions`); `RequiresReplace` on identity/structural fields (`name`, `package.name`, `package.version`, `namespace`, `cloud_connector.*`, `policy_template`)
+- **Update** → Hybrid: `PUT /api/fleet/package_policies/{id}` for an allowlist of mutable fields (`description`, `vars`, `inputs`, `global_data_tags`, `additional_datastreams_permissions`, `var_group_selections`, `package.title`); `RequiresReplace` on identity/structural fields (`name`, `package.name`, `package.version`, `namespace`, `cloud_connector.*`, `policy_template`). `force`, `force_delete`, and `create_dataset_templates` are create-only (sent on create, not read back, not on PUT, not `RequiresReplace`).
 - **Delete** → `DELETE /api/fleet/agentless_policies/{id}` with optional `force=true`
 
 Additional capabilities in this change:
+
 - Resource gated behind minimum Kibana 9.3.0 (experimental API).
 - Preflight check refuses self-managed stacks with a clear error directing users to Elastic Cloud Hosted or Serverless.
 - Import via the composite `<space_id>/<policy_id>` form (or bare `<policy_id>` for the default space).
