@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -150,7 +151,9 @@ func TestUpdateAgentlessPolicyViaPackagePolicy(t *testing.T) {
 
 func TestDeleteAgentlessPolicy(t *testing.T) {
 	t.Run("success_no_error", func(t *testing.T) {
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		var capturedQuery string
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			capturedQuery = r.URL.RawQuery
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprint(w, `{"id":"pp-1"}`)
 		}))
@@ -160,6 +163,7 @@ func TestDeleteAgentlessPolicy(t *testing.T) {
 		diags := fleet.DeleteAgentlessPolicy(context.Background(), client, "", "pp-1", false)
 
 		require.False(t, diags.HasError())
+		require.NotContains(t, capturedQuery, "force")
 	})
 
 	t.Run("404_is_noop", func(t *testing.T) {
@@ -179,8 +183,8 @@ func TestDeleteAgentlessPolicy(t *testing.T) {
 	t.Run("non_2xx_returns_error", func(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusConflict)
-			fmt.Fprint(w, `{"statusCode":409,"error":"Conflict","message":"policy is managed"}`)
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, `{"statusCode":400,"error":"Bad Request","message":"invalid request"}`)
 		}))
 		defer srv.Close()
 
@@ -205,4 +209,47 @@ func TestDeleteAgentlessPolicy(t *testing.T) {
 		require.False(t, diags.HasError())
 		require.Contains(t, capturedQuery, "force=true")
 	})
+}
+
+func TestDeleteAgentlessPolicy_SpaceAwarePath(t *testing.T) {
+	tests := []struct {
+		name        string
+		spaceID     string
+		wantPathPfx string
+	}{
+		{
+			name:        "no space id uses default path",
+			spaceID:     "",
+			wantPathPfx: "/api/fleet/agentless_policies/pp-1",
+		},
+		{
+			name:        "default space uses default path",
+			spaceID:     "default",
+			wantPathPfx: "/api/fleet/agentless_policies/pp-1",
+		},
+		{
+			name:        "custom space id prefixes path with /s/{space_id}",
+			spaceID:     "my-space",
+			wantPathPfx: "/s/my-space/api/fleet/agentless_policies/pp-1",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var capturedPath string
+
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				capturedPath = r.URL.Path
+				w.Header().Set("Content-Type", "application/json")
+				fmt.Fprint(w, `{"id":"pp-1"}`)
+			}))
+			defer srv.Close()
+
+			client := newTestClient(t, srv)
+			diags := fleet.DeleteAgentlessPolicy(context.Background(), client, tc.spaceID, "pp-1", false)
+			require.False(t, diags.HasError())
+
+			require.True(t, strings.HasPrefix(capturedPath, tc.wantPathPfx), "request path = %q, want prefix %q", capturedPath, tc.wantPathPfx)
+		})
+	}
 }

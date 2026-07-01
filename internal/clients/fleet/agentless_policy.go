@@ -74,8 +74,10 @@ func UpdateAgentlessPolicyViaPackagePolicy(ctx context.Context, client *Client, 
 // When force is true, the request is sent with ?force=true to delete the
 // policy even if the underlying agent policy is managed.
 func DeleteAgentlessPolicy(ctx context.Context, client *Client, spaceID, policyID string, force bool) diag.Diagnostics {
-	params := kbapi.DeleteFleetAgentlessPoliciesPolicyidParams{
-		Force: &force,
+	params := kbapi.DeleteFleetAgentlessPoliciesPolicyidParams{}
+	if force {
+		t := true
+		params.Force = &t
 	}
 
 	_, diags := kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (struct{}, int, diag.Diagnostics) {
