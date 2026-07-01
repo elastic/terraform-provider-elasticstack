@@ -67,11 +67,11 @@ The resource SHALL expose the following schema:
 
 **Cloud connector (all force replacement on change):**
 
-- `cloud_connector` — Optional object with:
+- `cloud_connector` — Optional object; any change to the object (including to `enabled` or `name`) forces replacement, per the section heading. Sub-fields:
   - `enabled` — Optional bool.
-  - `cloud_connector_id` — Optional string; forces replacement on change.
+  - `cloud_connector_id` — Optional string.
   - `name` — Optional string.
-  - `target_csp` — Optional string; one of `"aws"`, `"azure"`, `"gcp"`; forces replacement on change.
+  - `target_csp` — Optional string; one of `"aws"`, `"azure"`, `"gcp"`.
 
 **Extras:**
 
