@@ -18,10 +18,32 @@
 package panelkit
 
 import (
+	"fmt"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 )
+
+// RejectConfigJSON returns an error diagnostic when pm.ConfigJSON is set (known and non-null),
+// which is unsupported for panel types that require a typed config block instead.
+// panelType is used solely for the human-readable error message (e.g. "discover_session").
+func RejectConfigJSON(pm models.PanelModel, panelType string) diag.Diagnostics {
+	if !typeutils.IsKnown(pm.ConfigJSON) || pm.ConfigJSON.IsNull() {
+		return nil
+	}
+	var diags diag.Diagnostics
+	diags.AddError(
+		"Unsupported panel type for config_json",
+		fmt.Sprintf(
+			"Panel-level `config_json` is not supported for `%s` panels. Use `%s_config` instead.",
+			panelType, panelType,
+		),
+	)
+	return diags
+}
 
 // ValidateDataViewFieldName validates that data_view_id and field_name are present in attrs,
 // using the flat or nested shape detected by ResolvePanelAttrsShape. cfgLabel is used as the

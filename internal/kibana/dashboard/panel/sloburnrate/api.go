@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -61,12 +60,7 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	_ = dashboard
 	return panelkit.SimpleToAPI(pm,
 		func(grid kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, id *string) (kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate, diag.Diagnostics) {
-			if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
-				var diags diag.Diagnostics
-				diags.AddError(
-					"Unsupported panel type for config_json",
-					"Panel-level `config_json` is not supported for `slo_burn_rate` panels. Use `slo_burn_rate_config` instead.",
-				)
+			if diags := panelkit.RejectConfigJSON(pm, panelType); diags.HasError() {
 				return kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate{}, diags
 			}
 			panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate{Grid: grid, Id: id, Type: kbapi.SloBurnRate}
