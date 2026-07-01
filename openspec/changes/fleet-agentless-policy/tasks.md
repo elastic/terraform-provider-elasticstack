@@ -14,13 +14,14 @@
 
 ## 2. kbapi client wrappers
 
-- [ ] 2.1 Create `internal/clients/fleet/agentless_policy.go` with thin wrappers mirroring the style of `proxy.go`:
-  - `CreateAgentlessPolicy(ctx, client, spaceID, body) (*AgentlessPolicyResponse, error)` wrapping `PostFleetAgentlessPolicies`
-  - `ReadAgentlessPolicyViaPackagePolicy(ctx, client, spaceID, policyID) (*PackagePolicyResponse, error)` wrapping `GetFleetPackagePoliciesPackagepolicyid` (returns nil on HTTP 404)
-  - `UpdateAgentlessPolicyViaPackagePolicy(ctx, client, spaceID, policyID, body) (*PackagePolicyResponse, error)` wrapping `PutFleetPackagePoliciesPackagepolicyid`
-  - `DeleteAgentlessPolicy(ctx, client, spaceID, policyID, force bool) error` wrapping `DeleteFleetAgentlessPoliciesPolicyid` (no-op on HTTP 404)
-- [ ] 2.2 Map kbapi non-2xx responses into provider diagnostics consistently with other Fleet clients
-- [ ] 2.3 Add unit tests for each wrapper's error-handling paths (404 → nil/no-op, non-2xx → error)
+- [x] 2.1 Create `internal/clients/fleet/agentless_policy.go` with thin wrappers mirroring the style of `proxy.go`:
+  - `CreateAgentlessPolicy(ctx, client, spaceID, body) (*kbapi.KibanaHTTPAPIsAgentlessPolicy, diag.Diagnostics)` wrapping `PostFleetAgentlessPolicies`
+  - `ReadAgentlessPolicyViaPackagePolicy(ctx, client, spaceID, policyID) (*kbapi.PackagePolicy, diag.Diagnostics)` wrapping `GetFleetPackagePoliciesPackagepolicyid` (returns nil on HTTP 404) — delegates to the existing `GetPackagePolicy` in `package_policy.go` to avoid duplicating the same generated call
+  - `UpdateAgentlessPolicyViaPackagePolicy(ctx, client, spaceID, policyID, body) (*kbapi.PackagePolicy, diag.Diagnostics)` wrapping `PutFleetPackagePoliciesPackagepolicyid` — delegates to the existing `UpdatePackagePolicy`
+  - `DeleteAgentlessPolicy(ctx, client, spaceID, policyID, force bool) diag.Diagnostics` wrapping `DeleteFleetAgentlessPoliciesPolicyid` (no-op on HTTP 404)
+  - Note: signatures return `diag.Diagnostics` (not `error`) to match every existing Fleet client wrapper (`proxy.go`, `agent_policy.go`, `package_policy.go`); the task's pseudocode used `error` but the codebase convention is Plugin Framework diagnostics end-to-end.
+- [x] 2.2 Map kbapi non-2xx responses into provider diagnostics consistently with other Fleet clients — reused `kibanaoapi.HandleMutateTypedResponse` for Create, and the package-private `handleDeleteResponse` (`internal/clients/fleet/responses.go`, backed by `diagutil.HandleStatusResponse`) for Delete, same as `proxy.go`/`agent_policy.go`.
+- [x] 2.3 Add unit tests for each wrapper's error-handling paths (404 → nil/no-op, non-2xx → error) — see `internal/clients/fleet/agentless_policy_test.go`.
 
 ## 3. Resource: skeleton, model, and spike
 
