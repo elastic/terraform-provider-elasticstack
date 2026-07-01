@@ -188,22 +188,6 @@ func expandObjectSet[T any](
 	return out, diags
 }
 
-// expandStringSlicePtr extracts a `*[]string` from an optional set
-// attribute, returning nil when the set is null/unknown/empty so the API
-// body omits the key.
-func expandStringSlicePtr(ctx context.Context, s types.Set) (*[]string, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if s.IsNull() || s.IsUnknown() || len(s.Elements()) == 0 {
-		return nil, diags
-	}
-	var out []string
-	diags.Append(s.ElementsAs(ctx, &out, false)...)
-	if diags.HasError() {
-		return nil, diags
-	}
-	return &out, diags
-}
-
 func expandElasticsearch(ctx context.Context, obj types.Object) (kibanaoapi.SecurityRoleES, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var out kibanaoapi.SecurityRoleES
@@ -211,19 +195,15 @@ func expandElasticsearch(ctx context.Context, obj types.Object) (kibanaoapi.Secu
 		return out, diags
 	}
 
-	cluster, d := expandStringSlicePtr(ctx, objAttrSet(obj, "cluster", types.StringType))
-	diags.Append(d...)
+	out.Cluster = typeutils.SetTypeToSliceStringPtr(ctx, objAttrSet(obj, "cluster", types.StringType), path.Empty(), &diags)
 	if diags.HasError() {
 		return out, diags
 	}
-	out.Cluster = cluster
 
-	runAs, d := expandStringSlicePtr(ctx, objAttrSet(obj, "run_as", types.StringType))
-	diags.Append(d...)
+	out.RunAs = typeutils.SetTypeToSliceStringPtr(ctx, objAttrSet(obj, "run_as", types.StringType), path.Empty(), &diags)
 	if diags.HasError() {
 		return out, diags
 	}
-	out.RunAs = runAs
 
 	indicesSet := objAttrSet(obj, "indices", types.ObjectType{AttrTypes: esIndexResourceAttrTypes()})
 	indices, d := expandObjectSet(ctx, indicesSet, expandIndexEntry, "Invalid indices entry")
@@ -300,12 +280,10 @@ func expandKibana(ctx context.Context, set types.Set) ([]kibanaoapi.SecurityRole
 			entry.Feature = &featureMap
 		}
 
-		spaces, d := expandStringSlicePtr(ctx, objAttrSet(obj, "spaces", types.StringType))
-		diags.Append(d...)
+		entry.Spaces = typeutils.SetTypeToSliceStringPtr(ctx, objAttrSet(obj, "spaces", types.StringType), path.Empty(), &diags)
 		if diags.HasError() {
 			return nil, diags
 		}
-		entry.Spaces = spaces
 		entries = append(entries, entry)
 	}
 	return entries, diags
