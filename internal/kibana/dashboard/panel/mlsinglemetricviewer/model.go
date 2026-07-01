@@ -19,6 +19,7 @@ package mlsinglemetricviewer
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -122,8 +123,7 @@ func PopulateFromAPI(ctx context.Context, pm *models.PanelModel, prior *models.P
 		return nil
 	}
 
-	mlSingleMetricViewerMergeFromAPI(ctx, existing, prior.MlSingleMetricViewerConfig, apiConfig)
-	return nil
+	return mlSingleMetricViewerMergeFromAPI(ctx, existing, prior.MlSingleMetricViewerConfig, apiConfig)
 }
 
 func mlSingleMetricViewerConfigFromAPIImport(ctx context.Context, apiConfig kbapi.KibanaHTTPAPIsMlSingleMetricViewer) (*models.MlSingleMetricViewerConfigModel, diag.Diagnostics) {
@@ -147,7 +147,7 @@ func mlSingleMetricViewerMergeFromAPI(
 	ctx context.Context,
 	existing, prior *models.MlSingleMetricViewerConfigModel,
 	apiConfig kbapi.KibanaHTTPAPIsMlSingleMetricViewer,
-) {
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	existing.JobIDs = mlSingleMetricViewerJobIDsFromAPI(apiConfig.JobIds)
@@ -167,6 +167,8 @@ func mlSingleMetricViewerMergeFromAPI(
 	if prior != nil {
 		mlSingleMetricViewerPreserveNullIntentFromPrior(prior, existing)
 	}
+
+	return diags
 }
 
 func mlSingleMetricViewerMergeTimeRange(
@@ -245,14 +247,25 @@ func mlSingleMetricViewerSelectedEntitiesToAPI(
 				return nil
 			}
 		case typeutils.IsKnown(v.NumericValue):
-			f64, _ := v.NumericValue.ValueBigFloat().Float64()
+			f64, acc := v.NumericValue.ValueBigFloat().Float64()
+			if acc == big.Above || acc == big.Below {
+				diags.AddError(
+					"Invalid ML single metric viewer configuration",
+					fmt.Sprintf("selected_entities[%q] numeric_value is out of float64 range.", k),
+				)
+				return nil
+			}
 			f := float32(f64)
 			if err := prop.FromKibanaHTTPAPIsMlSingleMetricViewerSelectedEntities1(f); err != nil {
 				diags.AddError("Invalid ML single metric viewer configuration", err.Error())
 				return nil
 			}
 		default:
-			continue
+			diags.AddError(
+				"Invalid ML single metric viewer configuration",
+				fmt.Sprintf("selected_entities[%q] must set exactly one of `string_value` or `numeric_value`.", k),
+			)
+			return nil
 		}
 		out[k] = prop
 	}
@@ -280,6 +293,11 @@ func mlSingleMetricViewerSelectedEntitiesFromAPI(
 			entity.StringValue = types.StringValue(s)
 		} else if n, err := v.AsKibanaHTTPAPIsMlSingleMetricViewerSelectedEntities1(); err == nil {
 			entity.NumericValue = types.NumberValue(big.NewFloat(float64(n)))
+		} else {
+			diags.AddError(
+				"Invalid ML single metric viewer panel configuration on read",
+				fmt.Sprintf("selected_entities[%q] has an unsupported value type.", k),
+			)
 		}
 		elems[k] = entity
 	}
