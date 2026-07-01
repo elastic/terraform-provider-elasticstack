@@ -21,6 +21,7 @@ import (
 	"context"
 
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
@@ -35,23 +36,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// aliasAttrTypes returns the attribute types for a single alias nested block element.
-func aliasAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		attrName:          types.StringType,
-		attrFilter:        jsontypes.NormalizedType{},
-		attrIndexRouting:  types.StringType,
-		attrIsHidden:      types.BoolType,
-		attrIsWriteIndex:  types.BoolType,
-		attrRouting:       types.StringType,
-		attrSearchRouting: types.StringType,
-	}
-}
-
 // templateAttrTypes returns the attribute types for the template block object.
 func templateAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		attrAlias:             types.SetType{ElemType: types.ObjectType{AttrTypes: aliasAttrTypes()}},
+		attrAlias:             types.SetType{ElemType: aliasutil.NewAliasObjectType()},
 		attrMappings:          esindex.MappingsType{},
 		attrSettings:          customtypes.IndexSettingsType{},
 		attrDataStreamOptions: types.ObjectType{AttrTypes: datastreamoptions.AttrTypes()},
@@ -120,6 +108,7 @@ func getSchema(_ context.Context) schema.Schema {
 					attrAlias: schema.SetNestedBlock{
 						MarkdownDescription: "Alias to add.",
 						NestedObject: schema.NestedBlockObject{
+							CustomType: aliasutil.NewAliasObjectType(),
 							Attributes: map[string]schema.Attribute{
 								attrName: schema.StringAttribute{
 									MarkdownDescription: "The alias name. Index alias names support date math. See the " +

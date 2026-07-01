@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -46,7 +47,7 @@ func TestData_GetVersionRequirements(t *testing.T) {
 	t.Run("template with null data_stream_options", func(t *testing.T) {
 		t.Parallel()
 		tplObj, diags := types.ObjectValue(templateAttrTypes(), map[string]attr.Value{
-			"alias":               types.SetNull(types.ObjectType{AttrTypes: aliasAttrTypes()}),
+			"alias":               types.SetNull(aliasutil.NewAliasObjectType()),
 			"mappings":            esindex.NewMappingsNull(),
 			"settings":            customtypes.NewIndexSettingsNull(),
 			"data_stream_options": types.ObjectNull(datastreamoptions.AttrTypes()),
@@ -80,7 +81,7 @@ func TestData_GetVersionRequirements(t *testing.T) {
 			t.Fatal(diags)
 		}
 		tplObj, diags := types.ObjectValue(templateAttrTypes(), map[string]attr.Value{
-			"alias":               types.SetNull(types.ObjectType{AttrTypes: aliasAttrTypes()}),
+			"alias":               types.SetNull(aliasutil.NewAliasObjectType()),
 			"mappings":            esindex.NewMappingsNull(),
 			"settings":            customtypes.NewIndexSettingsNull(),
 			"data_stream_options": dsoObj,

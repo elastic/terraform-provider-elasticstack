@@ -13,8 +13,8 @@
 
 ## 3. Adopt `aliasutil.AliasObjectType` in `component_template` schema
 
-- [ ] 3.1 In `internal/elasticsearch/index/componenttemplate/schema.go`, change the `alias` set nested block's element object type from plain `types.ObjectType{AttrTypes: aliasAttrTypes()}` to `aliasutil.AliasObjectType` (or `aliasutil.NewAliasObjectType()`)
-- [ ] 3.2 Verify `AttrTypes` map is identical between the old type and `aliasutil.AliasObjectType` — if any field differs, reconcile before proceeding
+- [x] 3.1 In `internal/elasticsearch/index/componenttemplate/schema.go`, change the `alias` set nested block's element object type from plain `types.ObjectType{AttrTypes: aliasAttrTypes()}` to `aliasutil.AliasObjectType` (or `aliasutil.NewAliasObjectType()`)
+- [x] 3.2 Verify `AttrTypes` map is identical between the old type and `aliasutil.AliasObjectType` — if any field differs, reconcile before proceeding
 
 ## 4. Add read-time alias reconciliation to `component_template`
 
