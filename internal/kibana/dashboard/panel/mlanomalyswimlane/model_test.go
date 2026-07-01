@@ -94,6 +94,32 @@ func withViewByPerPage(v float32) func(*kbapi.KibanaHTTPAPIsMlAnomalySwimlane1) 
 	return func(c *kbapi.KibanaHTTPAPIsMlAnomalySwimlane1) { c.PerPage = &v }
 }
 
+func withViewByTitle(title string) func(*kbapi.KibanaHTTPAPIsMlAnomalySwimlane1) {
+	return func(c *kbapi.KibanaHTTPAPIsMlAnomalySwimlane1) { c.Title = &title }
+}
+
+func withViewByDescription(desc string) func(*kbapi.KibanaHTTPAPIsMlAnomalySwimlane1) {
+	return func(c *kbapi.KibanaHTTPAPIsMlAnomalySwimlane1) { c.Description = &desc }
+}
+
+func withViewByHideTitle(v bool) func(*kbapi.KibanaHTTPAPIsMlAnomalySwimlane1) {
+	return func(c *kbapi.KibanaHTTPAPIsMlAnomalySwimlane1) { c.HideTitle = &v }
+}
+
+func withViewByHideBorder(v bool) func(*kbapi.KibanaHTTPAPIsMlAnomalySwimlane1) {
+	return func(c *kbapi.KibanaHTTPAPIsMlAnomalySwimlane1) { c.HideBorder = &v }
+}
+
+func withViewByTimeRange(from, to string, mode *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode) func(*kbapi.KibanaHTTPAPIsMlAnomalySwimlane1) {
+	return func(c *kbapi.KibanaHTTPAPIsMlAnomalySwimlane1) {
+		c.TimeRange = &kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
+			From: from,
+			To:   to,
+			Mode: mode,
+		}
+	}
+}
+
 func TestBuildConfig_overall_minimal(t *testing.T) {
 	pm := models.PanelModel{
 		MlAnomalySwimlaneConfig: &models.MlAnomalySwimlaneConfigModel{
@@ -290,7 +316,15 @@ func TestPopulateFromAPI_overall_nullPreservation(t *testing.T) {
 }
 
 func TestPopulateFromAPI_viewBy_nullPreservation(t *testing.T) {
-	apiCfg := makeViewByAPIUnion(withViewByPerPage(25))
+	mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaModeRelative
+	apiCfg := makeViewByAPIUnion(
+		withViewByPerPage(25),
+		withViewByTitle("API title"),
+		withViewByDescription("API desc"),
+		withViewByHideTitle(true),
+		withViewByHideBorder(false),
+		withViewByTimeRange("now-30d", "now", &mode),
+	)
 
 	pm := &models.PanelModel{
 		MlAnomalySwimlaneConfig: &models.MlAnomalySwimlaneConfigModel{
@@ -298,6 +332,11 @@ func TestPopulateFromAPI_viewBy_nullPreservation(t *testing.T) {
 			JobIDs:       []types.String{types.StringValue("job-a")},
 			ViewBy:       types.StringValue("host.name"),
 			PerPage:      types.Float32Null(),
+			Title:        types.StringNull(),
+			Description:  types.StringNull(),
+			HideTitle:    types.BoolNull(),
+			HideBorder:   types.BoolNull(),
+			TimeRange:    nil,
 		},
 	}
 	prior := &models.PanelModel{
@@ -306,6 +345,11 @@ func TestPopulateFromAPI_viewBy_nullPreservation(t *testing.T) {
 			JobIDs:       []types.String{types.StringValue("job-a")},
 			ViewBy:       types.StringValue("host.name"),
 			PerPage:      types.Float32Null(),
+			Title:        types.StringNull(),
+			Description:  types.StringNull(),
+			HideTitle:    types.BoolNull(),
+			HideBorder:   types.BoolNull(),
+			TimeRange:    nil,
 		},
 	}
 	diags := mlanomalyswimlane.PopulateFromAPI(pm, prior, apiCfg)
@@ -315,6 +359,11 @@ func TestPopulateFromAPI_viewBy_nullPreservation(t *testing.T) {
 	require.NotNil(t, cfg)
 	assert.Equal(t, "host.name", cfg.ViewBy.ValueString())
 	assert.True(t, cfg.PerPage.IsNull())
+	assert.True(t, cfg.Title.IsNull())
+	assert.True(t, cfg.Description.IsNull())
+	assert.True(t, cfg.HideTitle.IsNull())
+	assert.True(t, cfg.HideBorder.IsNull())
+	assert.Nil(t, cfg.TimeRange)
 }
 
 func TestPopulateFromAPI_timeRangeSubfields_nullPreservation(t *testing.T) {

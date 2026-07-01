@@ -24,14 +24,14 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit/contracttest"
 )
 
-func TestContract(t *testing.T) {
+func TestContract_overall(t *testing.T) {
 	t.Parallel()
 
 	contracttest.Run(t, mlanomalyswimlane.Handler{}, contracttest.Config{
 		FullAPIResponse: `{
 			"type": "ml_anomaly_swimlane",
 			"grid": {"x": 0, "y": 0, "w": 24, "h": 8},
-			"id": "ml-swim-contract",
+			"id": "ml-swim-contract-overall",
 			"config": {
 				"swimlane_type": "overall",
 				"job_ids": ["job-a"],
@@ -49,5 +49,35 @@ func TestContract(t *testing.T) {
 		}`,
 		// job_ids is a required list attribute; contracttest cannot synthesize list zero values yet.
 		OmitValidateRequiredZero: true,
+	})
+}
+
+func TestContract_viewBy(t *testing.T) {
+	t.Parallel()
+
+	contracttest.Run(t, mlanomalyswimlane.Handler{}, contracttest.Config{
+		FullAPIResponse: `{
+			"type": "ml_anomaly_swimlane",
+			"grid": {"x": 0, "y": 0, "w": 24, "h": 8},
+			"id": "ml-swim-contract-viewby",
+			"config": {
+				"swimlane_type": "viewBy",
+				"job_ids": ["job-a"],
+				"view_by": "host.name",
+				"per_page": 10,
+				"title": "Swim Lane",
+				"description": "Anomaly swim lane panel",
+				"hide_title": true,
+				"hide_border": false,
+				"time_range": {
+					"from": "now-7d",
+					"to": "now",
+					"mode": "relative"
+				}
+			}
+		}`,
+		OmitValidateRequiredZero: true,
+		// view_by is always refreshed from the API on the viewBy branch; null-preservation is not modeled.
+		SkipFields: []string{"view_by"},
 	})
 }
