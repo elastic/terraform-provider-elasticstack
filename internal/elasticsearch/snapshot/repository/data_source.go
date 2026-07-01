@@ -267,7 +267,7 @@ func buildDataSourceSchema() schema.Schema {
 					Attributes: mergeAttrMaps(commonSettings, commonStdSettings, urlSettings),
 				},
 			},
-			"gcs": schema.ListNestedAttribute{
+			repoTypeGCS: schema.ListNestedAttribute{
 				MarkdownDescription: "Google Cloud Storage service as a repository. Set only if the type of the fetched repo is `gcs`.",
 				Computed:            true,
 				NestedObject: schema.NestedAttributeObject{

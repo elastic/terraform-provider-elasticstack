@@ -44,46 +44,33 @@ func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 
 // FromAPI fills pm from kbapi DashboardPanelItem for this panel discriminator.
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	apiPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate()
-	if err != nil {
-		var d diag.Diagnostics
-		d.AddError("Dashboard panel decode", err.Error())
-		return d
-	}
-
-	pm.Grid = panelkit.GridFromAPI(apiPanel.Grid.X, apiPanel.Grid.Y, apiPanel.Grid.W, apiPanel.Grid.H)
-	pm.ID = panelkit.IDFromAPI(apiPanel.Id)
-	pm.ConfigJSON = panelkit.PanelConfigJSONNull()
-	diags := PopulateFromAPI(pm, prior, apiPanel.Config)
-	_ = ctx
-	return diags
+	return panelkit.SimpleFromAPI(ctx, pm, prior,
+		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate,
+		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
+			return p.Grid, p.Id
+		},
+		func(pm, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate) diag.Diagnostics {
+			return PopulateFromAPI(pm, prior, p.Config)
+		},
+	)
 }
 
 // ToAPI serializes Terraform panel state into a kbapi union item.
 func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	_ = dashboard
-	if diags := panelkit.RejectConfigJSON(pm, panelType); diags.HasError() {
-		return kbapi.DashboardPanelItem{}, diags
-	}
-	if pm.SloBurnRateConfig == nil {
-		var diags diag.Diagnostics
-		diags.AddError("Missing SLO burn rate panel configuration", "SLO burn rate panels require `slo_burn_rate_config`.")
-		return kbapi.DashboardPanelItem{}, diags
-	}
-
-	grid := panelkit.GridToAPI(pm.Grid)
-	id := panelkit.IDToAPI(pm.ID)
-	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate{
-		Grid: grid,
-		Id:   id,
-		Type: kbapi.SloBurnRate,
-	}
-	diags := BuildConfig(pm, &panel)
-	var panelItem kbapi.DashboardPanelItem
-	if err := panelItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate(panel); err != nil {
-		diags.AddError("Failed to create SLO burn rate panel", err.Error())
-	}
-	return panelItem, diags
+	return panelkit.SimpleToAPI(pm,
+		func(grid kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, id *string) (kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate, diag.Diagnostics) {
+			if diags := panelkit.RejectConfigJSON(pm, panelType); diags.HasError() {
+				return kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate{}, diags
+			}
+			panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate{Grid: grid, Id: id, Type: kbapi.SloBurnRate}
+			return panel, BuildConfig(pm, &panel)
+		},
+		func(item *kbapi.DashboardPanelItem, panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate) error {
+			return item.FromKibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate(panel)
+		},
+		"Failed to create SLO burn rate panel",
+	)
 }
 
 // ValidatePanelConfig returns diagnostics only for this panel type when required fields inside
