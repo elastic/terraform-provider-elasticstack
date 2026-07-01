@@ -157,28 +157,386 @@ package agentlesspolicy
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-// updateAgentlessPolicy is a stub for Task 3 of the fleet-agentless-policy
-// OpenSpec change. Full implementation -- calling
-// fleetclient.UpdateAgentlessPolicyViaPackagePolicy
-// (PUT /api/fleet/package_policies/{id}) with the in-place-updatable
-// allowlist from Decision 3, informed by the spike findings documented
-// above -- lands in Task 5.
+// varEntry mirrors the `{frozen, type, value}` shape used for `vars`
+// throughout the "typed" package-policy request/response family
+// (KibanaHTTPAPIsUpdatePackagePolicyRequest, PackagePolicyRequestTypedInput,
+// PackagePolicyRequestTypedInputStream, PackagePolicyTypedInput, and
+// PackagePolicyTypedInputStream). oapi-codegen gives each occurrence its own
+// anonymous map[string]struct{Frozen,Type,Value} Go type (structurally
+// identical, but not always assignable/convertible to each other -- see e.g.
+// PackagePolicyTypedInputStream.Release vs
+// PackagePolicyRequestTypedInputStream.Release, which alias the same
+// underlying string type via two distinct named types). This local named
+// type lets mergeVarsInto operate generically on all of them via a JSON
+// marshal/unmarshal round trip instead of hand-spelling each anonymous type.
+type varEntry struct {
+	Frozen *bool   `json:"frozen,omitempty"`
+	Type   *string `json:"type,omitempty"`
+	Value  any     `json:"value,omitempty"`
+}
+
+// mergeVarsInto overlays planVars (a flat map[string]any parsed from
+// vars_json or an input/stream's `vars`) onto *dst, an existing
+// `{frozen,type,value}`-shaped typed vars map (or nil), preserving each
+// existing entry's `type`/`frozen` metadata and only replacing `value`. New
+// keys not already present in *dst are added with only `value` set. Uses a
+// JSON round trip throughout so the anonymous `*map[string]struct{...}`
+// field type of the caller's choosing (see the type comment above) never
+// needs to be spelled out; V is inferred from the caller's argument.
+func mergeVarsInto[V any](dst **V, planVars map[string]any, diags *diag.Diagnostics) {
+	if len(planVars) == 0 {
+		return
+	}
+
+	existing := map[string]varEntry{}
+	if *dst != nil {
+		if b, err := json.Marshal(*dst); err == nil {
+			_ = json.Unmarshal(b, &existing)
+		}
+	}
+
+	for k, v := range planVars {
+		e := existing[k]
+		e.Value = v
+		existing[k] = e
+	}
+
+	b, err := json.Marshal(existing)
+	if err != nil {
+		diags.AddError("Failed to encode vars for the update request", err.Error())
+		return
+	}
+	if err := json.Unmarshal(b, dst); err != nil {
+		diags.AddError("Failed to encode vars for the update request", err.Error())
+	}
+}
+
+// clearVars sets *dst to a non-nil pointer to an empty vars map. Like
+// mergeVarsInto, `{}` is used rather than nil because these fields'
+// `omitempty` tag only treats a nil *pointer* as empty (see buildUpdateBody's
+// comment on why every allowlisted field must be sent explicitly, never
+// omitted, to actively clear a value Terraform's config no longer sets).
+// `vars` (at the top level, per-input, and per-stream) is Optional but not
+// Computed in schema.go, so a config that removes a `vars` block must clear
+// the corresponding API value, not silently echo back whatever `vars` the
+// fetched typed snapshot already had -- mergeVarsInto alone cannot do this
+// because it short-circuits on an empty planVars to avoid clobbering values
+// with an accidental no-op call.
+func clearVars[V any](dst **V) {
+	// json.Unmarshal decodes a JSON object into an *existing* non-nil map by
+	// merging keys, never removing ones absent from the new JSON (unlike
+	// mergeVarsInto, which is safe because it always seeds `existing` from
+	// *dst first, so *dst's key set is always a subset of what gets written
+	// back). *dst must be reset to nil here so json.Unmarshal allocates a
+	// genuinely fresh, empty map instead of merging `{}` into whatever *dst
+	// already pointed to (which would silently leave every existing key in
+	// place).
+	*dst = nil
+	b, err := json.Marshal(map[string]varEntry{})
+	if err != nil {
+		return
+	}
+	_ = json.Unmarshal(b, dst)
+}
+
+// updateAgentlessPolicy implements Task 5.3 of the fleet-agentless-policy
+// OpenSpec change: calls fleetclient.UpdateAgentlessPolicyViaPackagePolicy
+// (PUT /api/fleet/package_policies/{id}, space-aware) with only the
+// in-place-updatable allowlist fields from Decision 3 (description,
+// vars_json, var_group_selections, inputs, global_data_tags,
+// additional_datastreams_permissions, package.title), informed by the spike
+// findings in this file's header comment.
+//
+// The spike found that the "mapped"/simplified request body -- used
+// everywhere else in this resource (Create, Read) -- is NOT safe for
+// updating `inputs`: it silently reset every input's `enabled` flag, even
+// for inputs absent from the request. The "typed" (array) body is required
+// instead, built by fetching a fresh typed snapshot
+// (fleetclient.GetDefendPackagePolicy, which -- despite its Defend-specific
+// name -- is a generic helper already used generically: it is simply
+// GetFleetPackagePoliciesPackagepolicyidWithResponse without the
+// Format=Simplified query param) and echoing it back with only the
+// allowlisted fields overlaid, mirroring the spike's own "mutate a fresh
+// GET, PUT it back" methodology.
 func updateAgentlessPolicy(
-	_ context.Context,
-	_ *clients.KibanaScopedClient,
-	_ entitycore.KibanaWriteRequest[agentlessPolicyModel],
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[agentlessPolicyModel],
 ) (entitycore.KibanaWriteResult[agentlessPolicyModel], diag.Diagnostics) {
+	plan := req.Plan
 	var diags diag.Diagnostics
-	diags.AddError(
-		"Not yet implemented",
-		"The elasticstack_fleet_agentless_policy resource's Update operation is not yet implemented "+
-			"(see openspec/changes/fleet-agentless-policy, Task 5).",
-	)
-	return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
+
+	fleetClient := client.GetFleetClient()
+
+	current, getDiags := fleetclient.GetDefendPackagePolicy(ctx, fleetClient, req.WriteID, req.SpaceID)
+	diags.Append(getDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
+	}
+	if current == nil {
+		diags.AddError(
+			"Agentless policy not found",
+			fmt.Sprintf("Cannot update agentless policy %q: it was not found. It may have been deleted out of band; "+
+				"run terraform apply again to detect drift.", req.WriteID),
+		)
+		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
+	}
+
+	body, bodyDiags := buildUpdateBody(ctx, plan, current)
+	diags.Append(bodyDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
+	}
+
+	var unionBody kbapi.PackagePolicyRequest
+	if err := unionBody.FromPackagePolicyRequestTypedInputs(body); err != nil {
+		diags.AddError("Failed to build the package policy update request", err.Error())
+		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
+	}
+
+	updated, updateDiags := fleetclient.UpdateAgentlessPolicyViaPackagePolicy(ctx, fleetClient, req.SpaceID, req.WriteID, unionBody)
+	diags.Append(updateDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
+	}
+
+	diags.Append(plan.populateFromPackagePolicy(ctx, req.SpaceID, updated)...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
+	}
+
+	return entitycore.KibanaWriteResult[agentlessPolicyModel]{Model: plan}, diags
+}
+
+// buildUpdateBody builds the typed PUT body by echoing current (the fresh
+// typed GET) and overlaying only the in-place-updatable allowlist fields
+// from plan. name, namespace, policy_id/policy_ids, and package.name/version
+// are taken from current (never plan) since they are RequiresReplace and
+// must exactly match the existing policy -- the spike found that omitting
+// policy_id/policy_ids produces a 400 ("Cannot change agent policies of an
+// agentless integration"), even when not actually changing them.
+func buildUpdateBody(ctx context.Context, plan agentlessPolicyModel, current *kbapi.PackagePolicy) (kbapi.PackagePolicyRequestTypedInputs, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	name := current.Name
+	body := kbapi.PackagePolicyRequestTypedInputs{
+		Name:      &name,
+		Namespace: current.Namespace,
+		PolicyId:  current.PolicyId,
+		PolicyIds: current.PolicyIds,
+	}
+
+	if current.Package != nil {
+		pkg := kbapi.PackagePolicyRequestPackage{
+			Name:    current.Package.Name,
+			Version: current.Package.Version,
+			Title:   current.Package.Title,
+		}
+
+		var pkgModel packageModel
+		pkgDiags := plan.Package.As(ctx, &pkgModel, basetypes.ObjectAsOptions{})
+		diags.Append(pkgDiags...)
+		if !pkgDiags.HasError() && typeutils.IsKnown(pkgModel.Title) {
+			title := pkgModel.Title.ValueString()
+			pkg.Title = &title
+		}
+		body.Package = &pkg
+	}
+
+	// description, global_data_tags, additional_datastreams_permissions, and
+	// var_group_selections must always be sent (never omitted): the spike
+	// found that omitting a field from this typed PUT body PRESERVES its
+	// existing value rather than clearing it (empirically confirmed against
+	// a live Kibana 9.4.3 deployment: omitting `description` left the prior
+	// description untouched, while explicitly sending `description: ""`
+	// cleared it). Since these attributes are Optional but not Computed in
+	// schema.go, Terraform requires state to exactly mirror config, so a
+	// config value that was removed must actively clear the API value, not
+	// leave it stale.
+	description := plan.Description.ValueString()
+	body.Description = &description
+
+	tagsRaw := globalDataTagsRawFromModel(ctx, plan.GlobalDataTags, &diags)
+	if tagsRaw == nil {
+		tagsRaw = []map[string]any{}
+	}
+	if b, err := json.Marshal(tagsRaw); err != nil {
+		diags.AddAttributeError(path.Root("global_data_tags"), "Failed to encode global_data_tags", err.Error())
+	} else if err := json.Unmarshal(b, &body.GlobalDataTags); err != nil {
+		diags.AddAttributeError(path.Root("global_data_tags"), "Failed to encode global_data_tags for the update request", err.Error())
+	}
+
+	var perms []string
+	if typeutils.IsKnown(plan.AdditionalDatastreamsPermissions) {
+		diags.Append(plan.AdditionalDatastreamsPermissions.ElementsAs(ctx, &perms, false)...)
+	}
+	if perms == nil {
+		perms = []string{}
+	}
+	body.AdditionalDatastreamsPermissions = &perms
+
+	vgs := map[string]string{}
+	if typeutils.IsKnown(plan.VarGroupSelections) {
+		diags.Append(plan.VarGroupSelections.ElementsAs(ctx, &vgs, false)...)
+	}
+	body.VarGroupSelections = &vgs
+
+	// Top-level vars: seed from current's typed ({value,type}) representation
+	// (preserving each var's `type` metadata, which the plan's flat
+	// vars_json does not carry -- see the varEntry doc comment), then overlay
+	// the plan's values. vars_json is Optional+Computed (UseStateForUnknown),
+	// so it is only genuinely null here if a config explicitly sets
+	// `vars_json = null`; clearVars handles that edge case the same way the
+	// per-input/per-stream `vars` overlay does (see overlayInputFromPlan).
+	if b, err := json.Marshal(current.Vars); err == nil {
+		_ = json.Unmarshal(b, &body.Vars)
+	}
+	if typeutils.IsKnown(plan.VarsJSON) {
+		sanitized, sd := plan.VarsJSON.SanitizedValue()
+		diags.Append(sd...)
+		if !sd.HasError() {
+			planVars := typeutils.NormalizedTypeToMap[any](jsontypes.NewNormalizedValue(sanitized), path.Root("vars_json"), &diags)
+			mergeVarsInto(&body.Vars, planVars, &diags)
+		}
+	} else {
+		clearVars(&body.Vars)
+	}
+
+	inputs, inputDiags := buildUpdateInputs(ctx, current, plan)
+	diags.Append(inputDiags...)
+	body.Inputs = &inputs
+
+	return body, diags
+}
+
+// buildUpdateInputs fetches current's typed inputs and echoes each one back
+// (via a JSON round trip into the request's PackagePolicyRequestTypedInput
+// shape, dropping response-only fields like compiled_input/compiled_stream),
+// overlaying enabled/condition/vars from the plan's `inputs` map for any
+// input the plan configures. Inputs the plan doesn't mention (or the whole
+// `inputs` attribute being unknown) are echoed unchanged. See mappedInputKey
+// for how a typed input's (PolicyTemplate, Type) is matched against the
+// plan's "<policy_template>-<input_type>"-keyed inputs map.
+func buildUpdateInputs(ctx context.Context, current *kbapi.PackagePolicy, plan agentlessPolicyModel) ([]kbapi.PackagePolicyRequestTypedInput, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	typedInputs, err := current.Inputs.AsPackagePolicyTypedInputs()
+	if err != nil {
+		diags.AddError("Failed to decode the current policy's inputs", err.Error())
+		return nil, diags
+	}
+
+	var planInputs map[string]agentlessInputModel
+	if typeutils.IsKnown(plan.Inputs.MapValue) {
+		planInputs = typeutils.MapTypeAs[agentlessInputModel](ctx, plan.Inputs.MapValue, path.Root("inputs"), &diags)
+	}
+
+	result := make([]kbapi.PackagePolicyRequestTypedInput, 0, len(typedInputs))
+	for _, in := range typedInputs {
+		var reqIn kbapi.PackagePolicyRequestTypedInput
+		b, err := json.Marshal(in)
+		if err != nil {
+			diags.AddError("Failed to encode the current policy's input", err.Error())
+			continue
+		}
+		if err := json.Unmarshal(b, &reqIn); err != nil {
+			diags.AddError("Failed to encode the current policy's input for the update request", err.Error())
+			continue
+		}
+
+		if planIn, ok := planInputs[mappedInputKey(in.PolicyTemplate, in.Type)]; ok {
+			overlayInputFromPlan(ctx, &reqIn, planIn, &diags)
+		}
+
+		result = append(result, reqIn)
+	}
+
+	return result, diags
+}
+
+// overlayInputFromPlan mutates reqIn in place, applying the plan's
+// enabled/condition/vars for the input itself and, by matching each typed
+// stream's DataStream.Dataset against the plan's per-stream map key, for
+// each of its streams.
+func overlayInputFromPlan(ctx context.Context, reqIn *kbapi.PackagePolicyRequestTypedInput, planIn agentlessInputModel, diags *diag.Diagnostics) {
+	// NOTE (Decision 3 spike caveat, see this file's header comment): toggling
+	// `enabled` via this PUT endpoint was accepted (200) but NOT reliably
+	// persisted for the cloud_security_posture package under test -- it
+	// silently reverted to its prior value. We still send the plan's value
+	// here regardless (Kibana may honor it for other packages, and a
+	// no-op is harmless), and deliberately do NOT add a package-specific
+	// workaround: the entitycore envelope always performs a read-after-write
+	// refresh following Update (see kibana_resource_envelope.go's
+	// runKibanaWrite, which calls the Read callback with this function's
+	// caller's returned model before persisting state), so if `enabled`
+	// silently failed to persist, the immediately-following Read re-syncs
+	// state from the authoritative API response -- state never silently
+	// drifts from reality, it just reflects that the change didn't take,
+	// which is the correct, honest outcome for Terraform to show on the next
+	// plan.
+	if typeutils.IsKnown(planIn.Enabled) {
+		reqIn.Enabled = planIn.Enabled.ValueBool()
+	}
+
+	if typeutils.IsKnown(planIn.Condition) {
+		condition := planIn.Condition.ValueString()
+		reqIn.Condition = &condition
+	} else {
+		reqIn.Condition = nil
+	}
+
+	if typeutils.IsKnown(planIn.Vars) {
+		var planVars map[string]any
+		if err := planIn.Vars.Unmarshal(&planVars); err == nil {
+			mergeVarsInto(&reqIn.Vars, planVars, diags)
+		}
+	} else {
+		clearVars(&reqIn.Vars)
+	}
+
+	if reqIn.Streams == nil || !typeutils.IsKnown(planIn.Streams) {
+		return
+	}
+
+	planStreams := typeutils.MapTypeAs[policyshape.InputStreamModel](ctx, planIn.Streams, path.Root("inputs"), diags)
+	for i := range *reqIn.Streams {
+		s := &(*reqIn.Streams)[i]
+		planStream, ok := planStreams[s.DataStream.Dataset]
+		if !ok {
+			continue
+		}
+
+		if typeutils.IsKnown(planStream.Enabled) {
+			s.Enabled = planStream.Enabled.ValueBool()
+		}
+		if typeutils.IsKnown(planStream.Condition) {
+			condition := planStream.Condition.ValueString()
+			s.Condition = &condition
+		} else {
+			s.Condition = nil
+		}
+		if typeutils.IsKnown(planStream.Vars) {
+			var streamVars map[string]any
+			if err := planStream.Vars.Unmarshal(&streamVars); err == nil {
+				mergeVarsInto(&s.Vars, streamVars, diags)
+			}
+		} else {
+			clearVars(&s.Vars)
+		}
+	}
 }

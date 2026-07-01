@@ -83,10 +83,22 @@ func TestAgentlessPolicyModel_getSpaceID(t *testing.T) {
 
 	ctx := context.Background()
 
-	t.Run("null space_ids returns empty string", func(t *testing.T) {
+	t.Run("null space_ids defaults to \"default\"", func(t *testing.T) {
 		t.Parallel()
+		// space_ids has no schema-level Default plan modifier (matching
+		// internal/fleet/output and internal/fleet/serverhost), so Create
+		// must fall back to "default" here or every Create without an
+		// explicit space_ids would fail entitycore's validateSpaceID check
+		// (this resource is space-scoped, unlike output/serverhost, which
+		// opt out via KibanaUnscopedSpace). See the GetSpaceID doc comment.
 		m := agentlessPolicyModel{SpaceIDs: types.SetNull(types.StringType)}
-		require.Empty(t, m.GetSpaceID().ValueString())
+		require.Equal(t, "default", m.GetSpaceID().ValueString())
+	})
+
+	t.Run("unknown space_ids defaults to \"default\"", func(t *testing.T) {
+		t.Parallel()
+		m := agentlessPolicyModel{SpaceIDs: types.SetUnknown(types.StringType)}
+		require.Equal(t, "default", m.GetSpaceID().ValueString())
 	})
 
 	t.Run("returns first non-empty element", func(t *testing.T) {

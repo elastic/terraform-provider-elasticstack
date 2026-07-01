@@ -87,13 +87,33 @@ type agentlessPolicyModel struct {
 func (m agentlessPolicyModel) GetID() types.String         { return m.ID }
 func (m agentlessPolicyModel) GetResourceID() types.String { return m.PolicyID }
 
-// GetSpaceID returns the first non-empty space ID from SpaceIDs, or an empty
-// string if none is set. Mirrors the pattern used by other Fleet resources
-// with a space_ids set attribute (see internal/fleet/serverhost/models.go
-// and internal/fleet/output/models.go).
+// defaultSpaceID is the Kibana space used when space_ids is not configured.
+// See specs/fleet-agentless-policy/spec.md, "Resource identity and composite
+// ID": "space_ids SHALL be Optional+Computed defaulting to [\"default\"]".
+const defaultSpaceID = "default"
+
+// GetSpaceID returns the first non-empty space ID from SpaceIDs, or
+// defaultSpaceID if none is set (SpaceIDs is null, unknown, or contains only
+// empty/unknown elements).
+//
+// Task 5 note: this resource is genuinely space-scoped (unlike
+// internal/fleet/output and internal/fleet/serverhost, which opt out of the
+// space-required check entirely via KibanaUnscopedSpace/IsUnscopedSpace), so
+// entitycore's Create/Update path calls validateSpaceID, which errors when
+// GetSpaceID() returns an empty string for a non-unscoped model. Since
+// space_ids has no schema-level Default (Computed with no Default plan
+// modifier -- consistent with the same repo pattern in
+// internal/fleet/output/schema.go and internal/fleet/serverhost/schema.go),
+// omitting space_ids from config leaves it Unknown during Create; defaulting
+// here (rather than returning "") is what makes the spec's "Create with
+// auto-assigned policy_id" scenario -- which never mentions space_ids --
+// actually succeed. This is a deliberate behavior change from the Task 3
+// skeleton (which returned "" for null/unknown), made in Task 5 because
+// Create is the first caller that actually exercises this path end-to-end;
+// see the corresponding test update in schema_test.go/entitycore_contract_test.go.
 func (m agentlessPolicyModel) GetSpaceID() types.String {
 	if m.SpaceIDs.IsNull() || m.SpaceIDs.IsUnknown() {
-		return types.StringValue("")
+		return types.StringValue(defaultSpaceID)
 	}
 	for _, elem := range m.SpaceIDs.Elements() {
 		s, ok := elem.(types.String)
@@ -104,7 +124,7 @@ func (m agentlessPolicyModel) GetSpaceID() types.String {
 			return s
 		}
 	}
-	return types.StringValue("")
+	return types.StringValue(defaultSpaceID)
 }
 
 func (m agentlessPolicyModel) GetKibanaConnection() types.List { return m.KibanaConnection }
