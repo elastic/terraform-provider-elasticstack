@@ -18,8 +18,8 @@
 
 ## 4. Add read-time alias reconciliation to `component_template`
 
-- [ ] 4.1 In `internal/elasticsearch/index/componenttemplate/read.go` (or `flatten.go`), after `flattenToData`, call `aliasutil.ApplyTemplateAliasReconciliationFromReference` + `aliasutil.CanonicalizeTemplateAliasSetInModel` using the prior state's alias set as the reference — mirroring `internal/elasticsearch/index/template/read.go:47-54`
-- [ ] 4.2 Confirm `extractAliasRoutingFromData` is still used and the routing-preservation logic in `flattenTemplateBlock` remains compatible
+- [x] 4.1 In `internal/elasticsearch/index/componenttemplate/read.go` (or `flatten.go`), after `flattenToData`, call `aliasutil.ApplyTemplateAliasReconciliationFromReference` + `aliasutil.CanonicalizeTemplateAliasSetInModel` using the prior state's alias set as the reference — mirroring `internal/elasticsearch/index/template/read.go:47-54`
+- [x] 4.2 Confirm `extractAliasRoutingFromData` is still used and the routing-preservation logic in `flattenTemplateBlock` remains compatible
 
 ## 5. Add `ModifyPlan` to `component_template`
 
