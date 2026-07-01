@@ -1,0 +1,309 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package mlanomalyswimlane
+
+import (
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+// BuildConfig writes Terraform state from pm into panel's typed API config.
+func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMlAnomalySwimlane) diag.Diagnostics {
+	cfg := pm.MlAnomalySwimlaneConfig
+	if cfg == nil {
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Missing ML anomaly swim lane panel configuration",
+			"ML anomaly swim lane panels require `ml_anomaly_swimlane_config`.",
+		)
+		return diags
+	}
+
+	jobIDs := make([]string, len(cfg.JobIds))
+	for i, id := range cfg.JobIds {
+		jobIDs[i] = id.ValueString()
+	}
+
+	var union kbapi.KibanaHTTPAPIsMlAnomalySwimlane
+	switch cfg.SwimlaneType.ValueString() {
+	case swimlaneTypeViewBy:
+		branch := kbapi.KibanaHTTPAPIsMlAnomalySwimlane1{
+			SwimlaneType: kbapi.ViewBy,
+			JobIds:       jobIDs,
+			ViewBy:       cfg.ViewBy.ValueString(),
+		}
+		mlAnomalySwimlaneApplyOptionalFields(&branch.Description, &branch.HideBorder, &branch.HideTitle, &branch.PerPage, &branch.TimeRange, &branch.Title, cfg)
+		if err := union.FromKibanaHTTPAPIsMlAnomalySwimlane1(branch); err != nil {
+			var diags diag.Diagnostics
+			diags.AddError("Invalid ML anomaly swim lane configuration", err.Error())
+			return diags
+		}
+	default:
+		branch := kbapi.KibanaHTTPAPIsMlAnomalySwimlane0{
+			SwimlaneType: kbapi.Overall,
+			JobIds:       jobIDs,
+		}
+		mlAnomalySwimlaneApplyOptionalFields(&branch.Description, &branch.HideBorder, &branch.HideTitle, &branch.PerPage, &branch.TimeRange, &branch.Title, cfg)
+		if err := union.FromKibanaHTTPAPIsMlAnomalySwimlane0(branch); err != nil {
+			var diags diag.Diagnostics
+			diags.AddError("Invalid ML anomaly swim lane configuration", err.Error())
+			return diags
+		}
+	}
+
+	panel.Config = union
+	return nil
+}
+
+func mlAnomalySwimlaneApplyOptionalFields(
+	description **string,
+	hideBorder, hideTitle **bool,
+	perPage **float32,
+	timeRange **kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema,
+	title **string,
+	cfg *models.MlAnomalySwimlaneConfigModel,
+) {
+	if typeutils.IsKnown(cfg.Title) {
+		*title = cfg.Title.ValueStringPointer()
+	}
+	if typeutils.IsKnown(cfg.Description) {
+		*description = cfg.Description.ValueStringPointer()
+	}
+	if typeutils.IsKnown(cfg.HideTitle) {
+		*hideTitle = cfg.HideTitle.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(cfg.HideBorder) {
+		*hideBorder = cfg.HideBorder.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(cfg.PerPage) {
+		v := cfg.PerPage.ValueFloat32()
+		*perPage = &v
+	}
+	if cfg.TimeRange != nil {
+		*timeRange = lenscommon.TimeRangeModelToAPI(cfg.TimeRange)
+	}
+}
+
+// PopulateFromAPI maps Kibana ML anomaly swim lane config into Terraform panel state while preserving prior null intent.
+func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig kbapi.KibanaHTTPAPIsMlAnomalySwimlane) diag.Diagnostics {
+	if prior == nil {
+		cfg, diags := mlAnomalySwimlaneConfigFromAPIImport(apiConfig)
+		if diags.HasError() {
+			return diags
+		}
+		pm.MlAnomalySwimlaneConfig = cfg
+		return nil
+	}
+
+	if pm.MlAnomalySwimlaneConfig == nil && prior.MlAnomalySwimlaneConfig != nil {
+		cfg, diags := mlAnomalySwimlaneConfigFromAPIImport(apiConfig)
+		if diags.HasError() {
+			return diags
+		}
+		pm.MlAnomalySwimlaneConfig = cfg
+	}
+
+	existing := pm.MlAnomalySwimlaneConfig
+	if existing == nil {
+		return nil
+	}
+
+	if cfg1, err := apiConfig.AsKibanaHTTPAPIsMlAnomalySwimlane1(); err == nil && cfg1.SwimlaneType == kbapi.ViewBy {
+		mlAnomalySwimlaneMergeViewByFromAPI(existing, prior.MlAnomalySwimlaneConfig, cfg1)
+		return nil
+	}
+
+	cfg0, err := apiConfig.AsKibanaHTTPAPIsMlAnomalySwimlane0()
+	if err != nil {
+		var diags diag.Diagnostics
+		diags.AddError("Invalid ML anomaly swim lane panel configuration on read", err.Error())
+		return diags
+	}
+	mlAnomalySwimlaneMergeOverallFromAPI(existing, prior.MlAnomalySwimlaneConfig, cfg0)
+	return nil
+}
+
+func mlAnomalySwimlaneConfigFromAPIImport(apiConfig kbapi.KibanaHTTPAPIsMlAnomalySwimlane) (*models.MlAnomalySwimlaneConfigModel, diag.Diagnostics) {
+	if cfg1, err := apiConfig.AsKibanaHTTPAPIsMlAnomalySwimlane1(); err == nil && cfg1.SwimlaneType == kbapi.ViewBy {
+		return mlAnomalySwimlaneConfigFromViewByAPI(cfg1), nil
+	}
+
+	cfg0, err := apiConfig.AsKibanaHTTPAPIsMlAnomalySwimlane0()
+	if err != nil {
+		var diags diag.Diagnostics
+		diags.AddError("Invalid ML anomaly swim lane panel configuration on read", err.Error())
+		return nil, diags
+	}
+	return mlAnomalySwimlaneConfigFromOverallAPI(cfg0), nil
+}
+
+func mlAnomalySwimlaneConfigFromOverallAPI(cfg kbapi.KibanaHTTPAPIsMlAnomalySwimlane0) *models.MlAnomalySwimlaneConfigModel {
+	out := &models.MlAnomalySwimlaneConfigModel{
+		SwimlaneType: types.StringValue(string(cfg.SwimlaneType)),
+		JobIds:       mlAnomalySwimlaneJobIDsFromAPI(cfg.JobIds),
+		ViewBy:       types.StringNull(),
+		Title:        types.StringPointerValue(cfg.Title),
+		Description:  types.StringPointerValue(cfg.Description),
+		HideTitle:    types.BoolPointerValue(cfg.HideTitle),
+		HideBorder:   types.BoolPointerValue(cfg.HideBorder),
+		PerPage:      types.Float32PointerValue(cfg.PerPage),
+		TimeRange:    mlAnomalySwimlaneTimeRangeFromAPI(cfg.TimeRange, nil),
+	}
+	return out
+}
+
+func mlAnomalySwimlaneConfigFromViewByAPI(cfg kbapi.KibanaHTTPAPIsMlAnomalySwimlane1) *models.MlAnomalySwimlaneConfigModel {
+	out := &models.MlAnomalySwimlaneConfigModel{
+		SwimlaneType: types.StringValue(string(cfg.SwimlaneType)),
+		JobIds:       mlAnomalySwimlaneJobIDsFromAPI(cfg.JobIds),
+		ViewBy:       types.StringValue(cfg.ViewBy),
+		Title:        types.StringPointerValue(cfg.Title),
+		Description:  types.StringPointerValue(cfg.Description),
+		HideTitle:    types.BoolPointerValue(cfg.HideTitle),
+		HideBorder:   types.BoolPointerValue(cfg.HideBorder),
+		PerPage:      types.Float32PointerValue(cfg.PerPage),
+		TimeRange:    mlAnomalySwimlaneTimeRangeFromAPI(cfg.TimeRange, nil),
+	}
+	return out
+}
+
+func mlAnomalySwimlaneMergeOverallFromAPI(existing, prior *models.MlAnomalySwimlaneConfigModel, cfg kbapi.KibanaHTTPAPIsMlAnomalySwimlane0) {
+	existing.SwimlaneType = types.StringValue(string(cfg.SwimlaneType))
+	existing.JobIds = mlAnomalySwimlaneJobIDsFromAPI(cfg.JobIds)
+	existing.ViewBy = types.StringNull()
+	mlAnomalySwimlaneMergeOptionalFromAPI(existing, prior, cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder, cfg.PerPage, cfg.TimeRange)
+}
+
+func mlAnomalySwimlaneMergeViewByFromAPI(existing, prior *models.MlAnomalySwimlaneConfigModel, cfg kbapi.KibanaHTTPAPIsMlAnomalySwimlane1) {
+	existing.SwimlaneType = types.StringValue(string(cfg.SwimlaneType))
+	existing.JobIds = mlAnomalySwimlaneJobIDsFromAPI(cfg.JobIds)
+	existing.ViewBy = types.StringValue(cfg.ViewBy)
+	mlAnomalySwimlaneMergeOptionalFromAPI(existing, prior, cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder, cfg.PerPage, cfg.TimeRange)
+}
+
+func mlAnomalySwimlaneMergeOptionalFromAPI(
+	existing, prior *models.MlAnomalySwimlaneConfigModel,
+	title, description *string,
+	hideTitle, hideBorder *bool,
+	perPage *float32,
+	timeRange *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema,
+) {
+	existing.Title = panelkit.PreserveString(existing.Title, title)
+	existing.Description = panelkit.PreserveString(existing.Description, description)
+	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, hideTitle)
+	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, hideBorder)
+	existing.PerPage = panelkit.PreserveFloat32(existing.PerPage, perPage)
+	existing.TimeRange = mlAnomalySwimlaneMergeTimeRange(existing.TimeRange, timeRange, prior)
+
+	if prior != nil {
+		mlAnomalySwimlanePreserveNullIntentFromPrior(prior, existing)
+	}
+}
+
+func mlAnomalySwimlaneMergeTimeRange(
+	existing *models.TimeRangeModel,
+	api *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema,
+	prior *models.MlAnomalySwimlaneConfigModel,
+) *models.TimeRangeModel {
+	var priorTR *models.TimeRangeModel
+	if prior != nil {
+		priorTR = prior.TimeRange
+	}
+	if priorTR == nil {
+		return nil
+	}
+	if existing == nil {
+		return mlAnomalySwimlaneTimeRangeFromAPI(api, priorTR)
+	}
+	if !typeutils.IsKnown(existing.From) && !typeutils.IsKnown(existing.To) && !typeutils.IsKnown(existing.Mode) {
+		return existing
+	}
+	return mlAnomalySwimlaneTimeRangeFromAPI(api, priorTR)
+}
+
+func mlAnomalySwimlaneTimeRangeFromAPI(api *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, prior *models.TimeRangeModel) *models.TimeRangeModel {
+	if api == nil {
+		return nil
+	}
+	if api.From == "" && api.To == "" && (api.Mode == nil || string(*api.Mode) == "") {
+		return nil
+	}
+	out := &models.TimeRangeModel{
+		From: types.StringValue(api.From),
+		To:   types.StringValue(api.To),
+	}
+	switch {
+	case api.Mode != nil:
+		out.Mode = types.StringValue(string(*api.Mode))
+	case prior != nil && typeutils.IsKnown(prior.Mode):
+		out.Mode = prior.Mode
+	default:
+		out.Mode = types.StringNull()
+	}
+	return out
+}
+
+func mlAnomalySwimlaneJobIDsFromAPI(jobIDs []string) []types.String {
+	out := make([]types.String, len(jobIDs))
+	for i, id := range jobIDs {
+		out[i] = types.StringValue(id)
+	}
+	return out
+}
+
+func mlAnomalySwimlanePreserveNullIntentFromPrior(prior, existing *models.MlAnomalySwimlaneConfigModel) {
+	if prior == nil || existing == nil {
+		return
+	}
+	if !typeutils.IsKnown(prior.ViewBy) || prior.SwimlaneType.ValueString() == swimlaneTypeOverall {
+		existing.ViewBy = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.PerPage) {
+		existing.PerPage = types.Float32Null()
+	}
+	if !typeutils.IsKnown(prior.Title) {
+		existing.Title = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.Description) {
+		existing.Description = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.HideTitle) {
+		existing.HideTitle = types.BoolNull()
+	}
+	if !typeutils.IsKnown(prior.HideBorder) {
+		existing.HideBorder = types.BoolNull()
+	}
+	if prior.TimeRange == nil {
+		existing.TimeRange = nil
+	} else if existing.TimeRange != nil && prior.TimeRange != nil {
+		if !typeutils.IsKnown(prior.TimeRange.From) {
+			existing.TimeRange.From = types.StringNull()
+		}
+		if !typeutils.IsKnown(prior.TimeRange.To) {
+			existing.TimeRange.To = types.StringNull()
+		}
+		if !typeutils.IsKnown(prior.TimeRange.Mode) {
+			existing.TimeRange.Mode = types.StringNull()
+		}
+	}
+}
