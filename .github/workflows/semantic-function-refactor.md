@@ -8,7 +8,7 @@ on:
   - cron: daily
   steps:
   - name: Checkout repository
-    uses: actions/checkout@v6.0.2
+    uses: actions/checkout@v7.0.0
     with:
       fetch-depth: 1
       persist-credentials: false
