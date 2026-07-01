@@ -513,6 +513,51 @@ const typedFormatPackagePolicyJSON = `{
 	]
 }`
 
+// typedFormatPackagePolicyMultiVarsJSON is typedFormatPackagePolicyJSON with
+// a second per-input var (`input_var_a`/`input_var_b`) and a second
+// per-stream var (`aws.account_type`/`aws.other_var`) added to the cis_aws
+// input, so a plan that keeps only one of the two keys exercises *partial*
+// removal (a strict-subset plan) rather than full removal (see
+// TestBuildUpdateBody_partialVarsRemovalDropsOnlyMissingKeys). The top-level
+// `vars` object already has two keys (`posture`/`deployment`) in the base
+// fixture, so it is reused as-is.
+const typedFormatPackagePolicyMultiVarsJSON = `{
+	"id": "policy-1",
+	"name": "test-policy",
+	"namespace": "default",
+	"enabled": true,
+	"created_at": "2024-01-01T00:00:00.000Z",
+	"created_by": "elastic",
+	"updated_at": "2024-01-02T00:00:00.000Z",
+	"updated_by": "elastic",
+	"revision": 1,
+	"policy_id": "policy-1",
+	"policy_ids": ["policy-1"],
+	"spaceIds": ["default"],
+	"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "Security Posture Management"},
+	"vars": {"posture": {"value": "cspm", "type": "text"}, "deployment": {"value": "aws", "type": "text"}},
+	"description": "old description",
+	"inputs": [
+		{
+			"type": "cloudbeat/cis_aws",
+			"policy_template": "cspm",
+			"enabled": true,
+			"vars": {"input_var_a": {"value": "a", "type": "text"}, "input_var_b": {"value": "b", "type": "text"}},
+			"streams": [
+				{
+					"id": "cloudbeat/cis_aws-cloud_security_posture.findings-policy-1",
+					"enabled": true,
+					"data_stream": {"type": "logs", "dataset": "cloud_security_posture.findings"},
+					"vars": {
+						"aws.account_type": {"value": "single-account", "type": "text"},
+						"aws.other_var": {"value": "other", "type": "text"}
+					}
+				}
+			]
+		}
+	]
+}`
+
 func TestBuildUpdateBody(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -625,10 +670,8 @@ func TestBuildUpdateBody(t *testing.T) {
 // TestBuildUpdateBody_clearsVarsWhenPlanRemovesThem covers a bug found in
 // review: `vars` (top-level, per-input, and per-stream) is Optional but not
 // Computed in schema.go, so removing a `vars` block from config must clear
-// the corresponding API value, not silently echo back whatever the fetched
-// typed snapshot already had (mergeVarsInto alone cannot do this: it
-// short-circuits on an empty planVars to avoid clobbering values on an
-// accidental no-op call -- see clearVars).
+// the corresponding API value entirely, not silently echo back whatever the
+// fetched typed snapshot already had.
 func TestBuildUpdateBody_clearsVarsWhenPlanRemovesThem(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -688,6 +731,103 @@ func TestBuildUpdateBody_clearsVarsWhenPlanRemovesThem(t *testing.T) {
 	awsStream, ok := awsStreams[0].(map[string]any)
 	require.True(t, ok)
 	assert.Empty(t, awsStream["vars"], "removing a stream's vars block should clear it, not echo current's")
+}
+
+// TestBuildUpdateBody_partialVarsRemovalDropsOnlyMissingKeys covers the
+// [BLOCKER] regression found in review: mergeVarsInto used to seed its
+// result from *dst (the vars already on the policy) and only overlay keys
+// present in the plan, so a key present in existing vars but absent from a
+// non-empty plan survived forever -- users could never *reduce* the key set
+// of vars_json / an input's vars / a stream's vars via Update, only add to
+// or overwrite it. This is distinct from
+// TestBuildUpdateBody_clearsVarsWhenPlanRemovesThem, which covers *full*
+// removal (the whole vars block absent from the plan); here the plan sets a
+// non-empty vars object that is a strict subset of the existing keys, at all
+// three levels mergeVarsInto is used: top-level vars_json, per-input vars,
+// and per-stream vars.
+func TestBuildUpdateBody_partialVarsRemovalDropsOnlyMissingKeys(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	current := mustPackagePolicyFromJSON(t, typedFormatPackagePolicyMultiVarsJSON)
+
+	plan := baseTestModel(t)
+	plan.Description = types.StringValue("old description")
+
+	// Top-level: current has posture+deployment; plan keeps only posture.
+	varsJSON, diags := policyshape.NewVarsJSONWithIntegration(`{"posture":"cspm"}`, "cloud_security_posture", "3.4.0", lookupCachedPackageInfo)
+	require.False(t, diags.HasError())
+	plan.VarsJSON = varsJSON
+
+	// Stream-level: current has aws.account_type+aws.other_var; plan keeps
+	// only aws.account_type.
+	streamsMap, diags := types.MapValueFrom(ctx, policyshape.StreamType(), map[string]policyshape.InputStreamModel{
+		"cloud_security_posture.findings": {
+			Enabled: types.BoolValue(true),
+			Vars:    jsontypes.NewNormalizedValue(`{"aws.account_type":"single-account"}`),
+		},
+	})
+	require.False(t, diags.HasError())
+
+	// Input-level: current has input_var_a+input_var_b; plan keeps only
+	// input_var_a.
+	inputsValue, diags := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), map[string]agentlessInputModel{
+		"cspm-cloudbeat/cis_aws": {
+			Enabled: types.BoolValue(true),
+			Vars:    jsontypes.NewNormalizedValue(`{"input_var_a":"a"}`),
+			Streams: streamsMap,
+		},
+	})
+	require.False(t, diags.HasError())
+	plan.Inputs = inputsValue
+
+	body, bodyDiags := buildUpdateBody(ctx, plan, current)
+	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
+
+	decoded := decodeRequestJSON(t, body)
+
+	vars, ok := decoded["vars"].(map[string]any)
+	require.True(t, ok)
+	assert.Len(t, vars, 1, "top-level vars must contain exactly the plan's keys, not existing's")
+	assert.Contains(t, vars, "posture")
+	assert.NotContains(t, vars, "deployment", "deployment was dropped from the plan and must not survive the merge")
+	posture, ok := vars["posture"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "text", posture["type"], "surviving key's existing `type` metadata should be preserved")
+
+	inputs, ok := decoded["inputs"].([]any)
+	require.True(t, ok)
+
+	var awsInput map[string]any
+	for _, raw := range inputs {
+		in, ok := raw.(map[string]any)
+		require.True(t, ok)
+		if in["type"] == "cloudbeat/cis_aws" {
+			awsInput = in
+		}
+	}
+	require.NotNil(t, awsInput)
+
+	inputVars, ok := awsInput["vars"].(map[string]any)
+	require.True(t, ok)
+	assert.Len(t, inputVars, 1, "input vars must contain exactly the plan's keys, not existing's")
+	assert.Contains(t, inputVars, "input_var_a")
+	assert.NotContains(t, inputVars, "input_var_b", "input_var_b was dropped from the plan and must not survive the merge")
+
+	awsStreams, ok := awsInput["streams"].([]any)
+	require.True(t, ok)
+	require.Len(t, awsStreams, 1)
+	awsStream, ok := awsStreams[0].(map[string]any)
+	require.True(t, ok)
+
+	streamVars, ok := awsStream["vars"].(map[string]any)
+	require.True(t, ok)
+	assert.Len(t, streamVars, 1, "stream vars must contain exactly the plan's keys, not existing's")
+	assert.Contains(t, streamVars, "aws.account_type")
+	assert.NotContains(t, streamVars, "aws.other_var", "aws.other_var was dropped from the plan and must not survive the merge")
+	accountType, ok := streamVars["aws.account_type"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "text", accountType["type"], "surviving key's existing `type` metadata should be preserved")
 }
 
 func TestConflictHintDiagnostics(t *testing.T) {

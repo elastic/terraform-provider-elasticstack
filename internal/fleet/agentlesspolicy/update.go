@@ -190,19 +190,23 @@ type varEntry struct {
 	Value  any     `json:"value,omitempty"`
 }
 
-// mergeVarsInto overlays planVars (a flat map[string]any parsed from
-// vars_json or an input/stream's `vars`) onto *dst, an existing
-// `{frozen,type,value}`-shaped typed vars map (or nil), preserving each
-// existing entry's `type`/`frozen` metadata and only replacing `value`. New
-// keys not already present in *dst are added with only `value` set. Uses a
-// JSON round trip throughout so the anonymous `*map[string]struct{...}`
+// mergeVarsInto replaces *dst, an existing `{frozen,type,value}`-shaped typed
+// vars map (or nil), with a map containing exactly planVars's keys (a flat
+// map[string]any parsed from vars_json or an input/stream's `vars`,
+// including a nil or empty map). planVars is the authoritative desired key
+// set -- not an incremental overlay -- so any key present in *dst but absent
+// from planVars is dropped, matching this file's "send fields explicitly to
+// actively clear" design (see buildUpdateBody's comment). For each key that
+// does survive, *dst's existing entry (if any) supplies the `type`/`frozen`
+// metadata, which the plan's flat vars map does not carry; only `value` is
+// taken from planVars. A nil or empty planVars therefore correctly produces
+// an empty (non-nil) vars object, so callers no longer need a separate
+// "clear" path: passing a nil planVars here does the same thing.
+//
+// Uses a JSON round trip throughout so the anonymous `*map[string]struct{...}`
 // field type of the caller's choosing (see the type comment above) never
 // needs to be spelled out; V is inferred from the caller's argument.
 func mergeVarsInto[V any](dst **V, planVars map[string]any, diags *diag.Diagnostics) {
-	if len(planVars) == 0 {
-		return
-	}
-
 	existing := map[string]varEntry{}
 	if *dst != nil {
 		if b, err := json.Marshal(*dst); err == nil {
@@ -210,48 +214,28 @@ func mergeVarsInto[V any](dst **V, planVars map[string]any, diags *diag.Diagnost
 		}
 	}
 
+	result := make(map[string]varEntry, len(planVars))
 	for k, v := range planVars {
-		e := existing[k]
+		e := existing[k] // zero value (no type/frozen) if k is a brand new key
 		e.Value = v
-		existing[k] = e
+		result[k] = e
 	}
 
-	b, err := json.Marshal(existing)
+	b, err := json.Marshal(result)
 	if err != nil {
 		diags.AddError("Failed to encode vars for the update request", err.Error())
 		return
 	}
+
+	// *dst must be reset to nil before unmarshaling: json.Unmarshal decodes a
+	// JSON object into an *existing* non-nil map by merging keys, never
+	// removing ones absent from the new JSON. result's key set is now the
+	// complete desired key set, so *dst must be replaced wholesale rather
+	// than merged into, or keys dropped from planVars would silently survive.
+	*dst = nil
 	if err := json.Unmarshal(b, dst); err != nil {
 		diags.AddError("Failed to encode vars for the update request", err.Error())
 	}
-}
-
-// clearVars sets *dst to a non-nil pointer to an empty vars map. Like
-// mergeVarsInto, `{}` is used rather than nil because these fields'
-// `omitempty` tag only treats a nil *pointer* as empty (see buildUpdateBody's
-// comment on why every allowlisted field must be sent explicitly, never
-// omitted, to actively clear a value Terraform's config no longer sets).
-// `vars` (at the top level, per-input, and per-stream) is Optional but not
-// Computed in schema.go, so a config that removes a `vars` block must clear
-// the corresponding API value, not silently echo back whatever `vars` the
-// fetched typed snapshot already had -- mergeVarsInto alone cannot do this
-// because it short-circuits on an empty planVars to avoid clobbering values
-// with an accidental no-op call.
-func clearVars[V any](dst **V) {
-	// json.Unmarshal decodes a JSON object into an *existing* non-nil map by
-	// merging keys, never removing ones absent from the new JSON (unlike
-	// mergeVarsInto, which is safe because it always seeds `existing` from
-	// *dst first, so *dst's key set is always a subset of what gets written
-	// back). *dst must be reset to nil here so json.Unmarshal allocates a
-	// genuinely fresh, empty map instead of merging `{}` into whatever *dst
-	// already pointed to (which would silently leave every existing key in
-	// place).
-	*dst = nil
-	b, err := json.Marshal(map[string]varEntry{})
-	if err != nil {
-		return
-	}
-	_ = json.Unmarshal(b, dst)
 }
 
 // updateAgentlessPolicy implements Task 5.3 of the fleet-agentless-policy
@@ -398,11 +382,12 @@ func buildUpdateBody(ctx context.Context, plan agentlessPolicyModel, current *kb
 
 	// Top-level vars: seed from current's typed ({value,type}) representation
 	// (preserving each var's `type` metadata, which the plan's flat
-	// vars_json does not carry -- see the varEntry doc comment), then overlay
-	// the plan's values. vars_json is Optional+Computed (UseStateForUnknown),
-	// so it is only genuinely null here if a config explicitly sets
-	// `vars_json = null`; clearVars handles that edge case the same way the
-	// per-input/per-stream `vars` overlay does (see overlayInputFromPlan).
+	// vars_json does not carry -- see the varEntry doc comment), then let
+	// mergeVarsInto replace it with exactly the plan's key set. vars_json is
+	// Optional+Computed (UseStateForUnknown), so it is only genuinely null
+	// here if a config explicitly sets `vars_json = null`; mergeVarsInto
+	// with a nil planVars handles that the same way as a known-but-empty
+	// `vars_json = jsonencode({})` (both clear every existing key).
 	if b, err := json.Marshal(current.Vars); err == nil {
 		_ = json.Unmarshal(b, &body.Vars)
 	}
@@ -414,7 +399,7 @@ func buildUpdateBody(ctx context.Context, plan agentlessPolicyModel, current *kb
 			mergeVarsInto(&body.Vars, planVars, &diags)
 		}
 	} else {
-		clearVars(&body.Vars)
+		mergeVarsInto(&body.Vars, nil, &diags)
 	}
 
 	inputs, inputDiags := buildUpdateInputs(ctx, current, plan)
@@ -506,7 +491,7 @@ func overlayInputFromPlan(ctx context.Context, reqIn *kbapi.PackagePolicyRequest
 			mergeVarsInto(&reqIn.Vars, planVars, diags)
 		}
 	} else {
-		clearVars(&reqIn.Vars)
+		mergeVarsInto(&reqIn.Vars, nil, diags)
 	}
 
 	if reqIn.Streams == nil || !typeutils.IsKnown(planIn.Streams) {
@@ -536,7 +521,7 @@ func overlayInputFromPlan(ctx context.Context, reqIn *kbapi.PackagePolicyRequest
 				mergeVarsInto(&s.Vars, streamVars, diags)
 			}
 		} else {
-			clearVars(&s.Vars)
+			mergeVarsInto(&s.Vars, nil, diags)
 		}
 	}
 }
