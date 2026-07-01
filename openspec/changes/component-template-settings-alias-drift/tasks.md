@@ -1,10 +1,10 @@
 ## 1. Extract alias helpers into `aliasutil`
 
-- [ ] 1.1 Move `alias_type.go` from `internal/elasticsearch/index/template/` into `internal/elasticsearch/index/aliasutil/` — export `AliasObjectType`, `AliasObjectValue`, `NewAliasObjectValue`, `ObjectSemanticEquals`, `NewAliasObjectType`, `aliasObjectFromAttr`, `aliasElementModelsSemanticallyEqual`, `fillUnknownAliasModelFieldsFromOther` (capitalise as needed for export)
-- [ ] 1.2 Move `alias_canonicalize.go` into `aliasutil/` — export `CanonicalizeAliasObjectForState`, `CanonicalizeAliasSetElements`, `CanonicalizeTemplateAliasSetInModel` (or equivalent names)
-- [ ] 1.3 Move `alias_reconcile.go` into `aliasutil/` — export `MergePlanAliasSetWithPriorState`, `ProjectConfigAliasMatchesOntoPlan`, `MergeAliasSetPreferReferenceEncoding`, `ApplyTemplateAliasReconciliationFromReference`
-- [ ] 1.4 Update all existing callers in `internal/elasticsearch/index/template/` to reference the exported `aliasutil.*` symbols; remove or thin the original files (keep only thin shims if needed to avoid circular imports, otherwise delete)
-- [ ] 1.5 Ensure existing `alias_type_test.go` (if it references package-level symbols) still compiles; move or update as needed
+- [x] 1.1 Move `alias_type.go` from `internal/elasticsearch/index/template/` into `internal/elasticsearch/index/aliasutil/` — export `AliasObjectType`, `AliasObjectValue`, `NewAliasObjectValue`, `ObjectSemanticEquals`, `NewAliasObjectType`, `aliasObjectFromAttr`, `aliasElementModelsSemanticallyEqual`, `fillUnknownAliasModelFieldsFromOther` (capitalise as needed for export)
+- [x] 1.2 Move `alias_canonicalize.go` into `aliasutil/` — export `CanonicalizeAliasObjectForState`, `CanonicalizeAliasSetElements`, `CanonicalizeTemplateAliasSetInModel` (or equivalent names)
+- [x] 1.3 Move `alias_reconcile.go` into `aliasutil/` — export `MergePlanAliasSetWithPriorState`, `ProjectConfigAliasMatchesOntoPlan`, `MergeAliasSetPreferReferenceEncoding`, `ApplyTemplateAliasReconciliationFromReference`
+- [x] 1.4 Update all existing callers in `internal/elasticsearch/index/template/` to reference the exported `aliasutil.*` symbols; remove or thin the original files (keep only thin shims if needed to avoid circular imports, otherwise delete)
+- [x] 1.5 Ensure existing `alias_type_test.go` (if it references package-level symbols) still compiles; move or update as needed
 
 ## 2. Extract settings reconciliation into `templateutil`
 

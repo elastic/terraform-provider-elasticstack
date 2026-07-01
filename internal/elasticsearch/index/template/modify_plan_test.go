@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -36,7 +37,7 @@ func TestReconcilePlanWithPriorStateForSemanticDrift_settingsNestedPlanDottedSta
 	planSettings := customtypes.NewIndexSettingsValue(`{"index":{"number_of_shards":1}}`)
 	stateSettings := customtypes.NewIndexSettingsValue(`{"index.number_of_shards":"1"}`)
 
-	emptyAlias, diags := types.SetValueFrom(ctx, NewAliasObjectType(), []attr.Value{})
+	emptyAlias, diags := types.SetValueFrom(ctx, aliasutil.NewAliasObjectType(), []attr.Value{})
 	require.False(t, diags.HasError(), "%v", diags)
 
 	planTpl, diags := types.ObjectValue(TemplateAttrTypes(), map[string]attr.Value{
@@ -71,14 +72,14 @@ func TestReconcilePlanWithPriorStateForSemanticDrift_settingsNestedPlanDottedSta
 func TestApplyTemplateAliasReconciliationFromReference_routingOnlyVsSplitEcho(t *testing.T) {
 	ctx := context.Background()
 	filter := jsontypes.NewNormalizedNull()
-	refAlias, diags := NewAliasObjectValue(aliasAttrMap("routing_only_alias", strNull(), strAttr("shard_1"), strNull(), filter, false, false))
+	refAlias, diags := aliasutil.NewAliasObjectValue(testAliasAttrMap("routing_only_alias", testStrNull(), testStrAttr("shard_1"), testStrNull(), filter, false, false))
 	require.False(t, diags.HasError(), "%v", diags)
-	apiAlias, diags := NewAliasObjectValue(aliasAttrMap("routing_only_alias", strAttr("shard_1"), strAttr(""), strAttr("shard_1"), filter, false, false))
+	apiAlias, diags := aliasutil.NewAliasObjectValue(testAliasAttrMap("routing_only_alias", testStrAttr("shard_1"), testStrAttr(""), testStrAttr("shard_1"), filter, false, false))
 	require.False(t, diags.HasError(), "%v", diags)
 
-	refSet, diags := types.SetValue(NewAliasObjectType(), []attr.Value{refAlias})
+	refSet, diags := types.SetValue(aliasutil.NewAliasObjectType(), []attr.Value{refAlias})
 	require.False(t, diags.HasError(), "%v", diags)
-	apiSet, diags := types.SetValue(NewAliasObjectType(), []attr.Value{apiAlias})
+	apiSet, diags := types.SetValue(aliasutil.NewAliasObjectType(), []attr.Value{apiAlias})
 	require.False(t, diags.HasError(), "%v", diags)
 
 	refTpl, diags := types.ObjectValue(TemplateAttrTypes(), map[string]attr.Value{
@@ -101,9 +102,34 @@ func TestApplyTemplateAliasReconciliationFromReference_routingOnlyVsSplitEcho(t 
 	var out, ref Model
 	out.Template = apiTpl
 	ref.Template = refTpl
-	diags = applyTemplateAliasReconciliationFromReference(ctx, &out, &ref)
+	diags = aliasutil.ApplyTemplateAliasReconciliationFromReference(ctx, &out.Template, ref.Template, TemplateAttrTypes())
 	require.False(t, diags.HasError(), "%v", diags)
 	var mt TemplateBlockModel
 	require.False(t, out.Template.As(ctx, &mt, basetypes.ObjectAsOptions{}).HasError())
 	require.True(t, mt.Alias.Equal(refSet), "API echo should adopt reference (config) alias encoding when semantically equal")
+}
+
+func testStrAttr(s string) types.String {
+	return types.StringValue(s)
+}
+
+func testStrNull() types.String {
+	return types.StringNull()
+}
+
+func testAliasAttrMap(
+	name string,
+	indexRouting, routing, searchRouting types.String,
+	filter jsontypes.Normalized,
+	isHidden, isWriteIndex bool,
+) map[string]attr.Value {
+	return map[string]attr.Value{
+		"name":           types.StringValue(name),
+		"index_routing":  indexRouting,
+		"routing":        routing,
+		"search_routing": searchRouting,
+		"filter":         filter,
+		"is_hidden":      types.BoolValue(isHidden),
+		"is_write_index": types.BoolValue(isWriteIndex),
+	}
 }

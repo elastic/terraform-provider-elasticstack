@@ -20,6 +20,7 @@ package template
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -91,7 +92,7 @@ func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, stat
 
 	if pa, ok := planAttrs[attrAlias]; ok && !pa.IsNull() && !pa.IsUnknown() {
 		if sa, ok := stateAttrs[attrAlias]; ok && !sa.IsNull() && !sa.IsUnknown() {
-			newAlias, aliasChanged, d := mergePlanAliasSetWithPriorState(ctx, pa, sa)
+			newAlias, aliasChanged, d := aliasutil.MergePlanAliasSetWithPriorState(ctx, pa, sa)
 			diags.Append(d...)
 			if diags.HasError() {
 				return nil, diags
@@ -103,7 +104,7 @@ func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, stat
 					// the result back onto the plan's element set so plan-only aliases are
 					// preserved. mergePlanAliasSetWithPriorState alone would build the result
 					// from its first argument and drop any aliases present in plan but not config.
-					newAlias, aliasChanged, d = projectConfigAliasMatchesOntoPlan(ctx, pa, ca, sa)
+					newAlias, aliasChanged, d = aliasutil.ProjectConfigAliasMatchesOntoPlan(ctx, pa, ca, sa)
 					diags.Append(d...)
 					if diags.HasError() {
 						return nil, diags
@@ -111,7 +112,7 @@ func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, stat
 				}
 			}
 			if aliasChanged {
-				canonAlias, d := canonicalizeAliasSetElements(ctx, newAlias)
+				canonAlias, d := aliasutil.CanonicalizeAliasSetElements(ctx, newAlias)
 				diags.Append(d...)
 				if diags.HasError() {
 					return nil, diags

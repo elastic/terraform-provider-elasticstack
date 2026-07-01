@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -63,7 +64,7 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 			t.Fatal(diags)
 		}
 		tplObj, diags := types.ObjectValue(TemplateAttrTypes(), map[string]attr.Value{
-			"alias":               types.SetNull(NewAliasObjectType()),
+			"alias":               types.SetNull(aliasutil.NewAliasObjectType()),
 			"mappings":            esindex.NewMappingsNull(),
 			"settings":            customtypes.NewIndexSettingsNull(),
 			"lifecycle":           types.ObjectNull(LifecycleAttrTypes()),
@@ -124,7 +125,7 @@ func TestModel_GetVersionRequirements(t *testing.T) {
 			t.Fatal(diags)
 		}
 		tplObj, diags := types.ObjectValue(TemplateAttrTypes(), map[string]attr.Value{
-			"alias":               types.SetNull(NewAliasObjectType()),
+			"alias":               types.SetNull(aliasutil.NewAliasObjectType()),
 			"mappings":            esindex.NewMappingsNull(),
 			"settings":            customtypes.NewIndexSettingsNull(),
 			"lifecycle":           types.ObjectNull(LifecycleAttrTypes()),

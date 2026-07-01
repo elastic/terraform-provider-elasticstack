@@ -75,7 +75,7 @@ type FlattenTemplateCoreResult struct {
 // the API omits them. Pass nil to skip routing preservation.
 //
 // aliasElemType is the element type for the alias set (callers may supply a
-// custom object type such as template.AliasObjectType).
+// custom object type such as aliasutil.AliasObjectType).
 // aliasAttrTypes is the attribute type map used to construct each alias element.
 func FlattenTemplateCore(
 	ctx context.Context,

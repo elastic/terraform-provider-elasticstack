@@ -21,6 +21,7 @@ import (
 	"context"
 
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
@@ -156,7 +157,7 @@ func templateAliasBlock() schema.SetNestedBlock {
 	return schema.SetNestedBlock{
 		MarkdownDescription: descAliasBlock,
 		NestedObject: schema.NestedBlockObject{
-			CustomType: NewAliasObjectType(),
+			CustomType: aliasutil.NewAliasObjectType(),
 			Attributes: map[string]schema.Attribute{
 				attrName: schema.StringAttribute{
 					MarkdownDescription: descAliasName,

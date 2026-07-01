@@ -15,20 +15,19 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package template
+package aliasutil
 
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-// canonicalizeAliasSetElements applies [canonicalizeAliasObjectForState] to each element of a template.alias set.
-func canonicalizeAliasSetElements(ctx context.Context, set attr.Value) (attr.Value, diag.Diagnostics) {
+// CanonicalizeAliasSetElements applies [CanonicalizeAliasObjectForState] to each element of a template.alias set.
+func CanonicalizeAliasSetElements(ctx context.Context, set attr.Value) (attr.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	sSet, ok := set.(basetypes.SetValue)
 	if !ok {
@@ -49,7 +48,7 @@ func canonicalizeAliasSetElements(ctx context.Context, set attr.Value) (attr.Val
 			outElems[i] = el
 			continue
 		}
-		canon, d := canonicalizeAliasObjectForState(ctx, av)
+		canon, d := CanonicalizeAliasObjectForState(ctx, av)
 		diags.Append(d...)
 		if diags.HasError() {
 			return set, diags
@@ -64,17 +63,17 @@ func canonicalizeAliasSetElements(ctx context.Context, set attr.Value) (attr.Val
 	return newSet, diags
 }
 
-// canonicalizeTemplateAliasSetInModel rewrites template.alias so Optional+Computed attributes use the
+// CanonicalizeTemplateAliasSetInModel rewrites template.alias so Optional+Computed attributes use the
 // same known representations as schema defaults (empty string / false). Config and plan use those
 // defaults during non-refresh planning; prior state from config/plan reconciliation can still hold
 // null unknowns, which makes set elements hash differently and triggers perpetual diffs.
-func canonicalizeTemplateAliasSetInModel(ctx context.Context, m *Model) diag.Diagnostics {
+func CanonicalizeTemplateAliasSetInModel(ctx context.Context, templateBlock *types.Object, templateAttrTypes map[string]attr.Type) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if m.Template.IsNull() || m.Template.IsUnknown() {
+	if templateBlock.IsNull() || templateBlock.IsUnknown() {
 		return diags
 	}
-	attrs := m.Template.Attributes()
-	aliasVal, ok := attrs[attrAlias]
+	attrs := templateBlock.Attributes()
+	aliasVal, ok := attrs[templateAliasAttrKey]
 	if !ok || aliasVal.IsNull() || aliasVal.IsUnknown() {
 		return diags
 	}
@@ -94,7 +93,7 @@ func canonicalizeTemplateAliasSetInModel(ctx context.Context, m *Model) diag.Dia
 			outElems[i] = el
 			continue
 		}
-		canon, d := canonicalizeAliasObjectForState(ctx, av)
+		canon, d := CanonicalizeAliasObjectForState(ctx, av)
 		diags.Append(d...)
 		if diags.HasError() {
 			return diags
@@ -106,19 +105,20 @@ func canonicalizeTemplateAliasSetInModel(ctx context.Context, m *Model) diag.Dia
 	if diags.HasError() {
 		return diags
 	}
-	attrs[attrAlias] = newSet
-	newTpl, d := types.ObjectValue(TemplateAttrTypes(), attrs)
+	attrs[templateAliasAttrKey] = newSet
+	newTpl, d := types.ObjectValue(templateAttrTypes, attrs)
 	diags.Append(d...)
 	if diags.HasError() {
 		return diags
 	}
-	m.Template = newTpl
+	*templateBlock = newTpl
 	return diags
 }
 
-func canonicalizeAliasObjectForState(ctx context.Context, v AliasObjectValue) (AliasObjectValue, diag.Diagnostics) {
+// CanonicalizeAliasObjectForState normalizes optional alias fields to schema default encodings.
+func CanonicalizeAliasObjectForState(ctx context.Context, v AliasObjectValue) (AliasObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var m aliasutil.AliasModel
+	var m AliasModel
 	diags.Append(v.As(ctx, &m, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 	if diags.HasError() {
 		return v, diags
