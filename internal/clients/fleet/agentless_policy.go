@@ -19,6 +19,7 @@ package fleet
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
@@ -73,19 +74,29 @@ func UpdateAgentlessPolicyViaPackagePolicy(ctx context.Context, client *Client, 
 // package policy ID. HTTP 404 is treated as success (idempotent delete).
 // When force is true, the request is sent with ?force=true to delete the
 // policy even if the underlying agent policy is managed.
-func DeleteAgentlessPolicy(ctx context.Context, client *Client, spaceID, policyID string, force bool) diag.Diagnostics {
+//
+// The returned bool reports whether the (final, post-retry) response was an
+// HTTP 409 Conflict, so callers can offer a force_delete hint without having
+// to pattern-match diagutil's generated diagnostic summary text -- see
+// internal/fleet/agentlesspolicy/delete.go's conflictHintDiagnostics, which
+// used to do exactly that and was flagged in review as brittle against
+// wording changes or a switch to a different error-reporting helper.
+func DeleteAgentlessPolicy(ctx context.Context, client *Client, spaceID, policyID string, force bool) (isConflict bool, diags diag.Diagnostics) {
 	params := kbapi.DeleteFleetAgentlessPoliciesPolicyidParams{}
 	if force {
 		t := true
 		params.Force = &t
 	}
 
-	_, diags := kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (struct{}, int, diag.Diagnostics) {
+	var lastStatusCode int
+	_, diags = kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (struct{}, int, diag.Diagnostics) {
 		resp, err := client.API.DeleteFleetAgentlessPoliciesPolicyidWithResponse(ctx, policyID, &params, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 		if err != nil {
+			lastStatusCode = 0
 			return struct{}{}, 0, diagutil.FrameworkDiagFromError(err)
 		}
+		lastStatusCode = resp.StatusCode()
 		return struct{}{}, resp.StatusCode(), handleDeleteResponse(resp.StatusCode(), resp.Body)
 	})
-	return diags
+	return lastStatusCode == http.StatusConflict, diags
 }

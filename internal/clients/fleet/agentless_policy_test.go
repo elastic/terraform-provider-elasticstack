@@ -24,6 +24,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
@@ -160,9 +161,10 @@ func TestDeleteAgentlessPolicy(t *testing.T) {
 		defer srv.Close()
 
 		client := newTestClient(t, srv)
-		diags := fleet.DeleteAgentlessPolicy(context.Background(), client, "", "pp-1", false)
+		isConflict, diags := fleet.DeleteAgentlessPolicy(context.Background(), client, "", "pp-1", false)
 
 		require.False(t, diags.HasError())
+		require.False(t, isConflict)
 		require.NotContains(t, capturedQuery, "force")
 	})
 
@@ -175,9 +177,10 @@ func TestDeleteAgentlessPolicy(t *testing.T) {
 		defer srv.Close()
 
 		client := newTestClient(t, srv)
-		diags := fleet.DeleteAgentlessPolicy(context.Background(), client, "", "missing", false)
+		isConflict, diags := fleet.DeleteAgentlessPolicy(context.Background(), client, "", "missing", false)
 
 		require.False(t, diags.HasError())
+		require.False(t, isConflict)
 	})
 
 	t.Run("non_2xx_returns_error", func(t *testing.T) {
@@ -189,9 +192,40 @@ func TestDeleteAgentlessPolicy(t *testing.T) {
 		defer srv.Close()
 
 		client := newTestClient(t, srv)
-		diags := fleet.DeleteAgentlessPolicy(context.Background(), client, "", "pp-1", false)
+		isConflict, diags := fleet.DeleteAgentlessPolicy(context.Background(), client, "", "pp-1", false)
 
 		require.True(t, diags.HasError())
+		require.False(t, isConflict, "a non-409 error must not be reported as a conflict")
+	})
+
+	// 409_reports_conflict is the "real wiring" regression test for the
+	// review finding that delete.go's force_delete hint used to be triggered
+	// by pattern-matching diagutil's generated diagnostic summary text
+	// ("... HTTP 409 ..."), which would silently break on any wording change
+	// or a switch to a different error-reporting helper. DeleteAgentlessPolicy
+	// now derives isConflict from the actual (final, post-ConflictRetry) HTTP
+	// status code, which this test exercises against a real 409 response
+	// rather than a hand-built diagnostic. The context is given a short
+	// timeout so ConflictRetry's backoff-and-retry loop (see
+	// internal/clients/kibanautil/retry.go) aborts after its first real
+	// round trip against the test server instead of burning through the
+	// full multi-second retry schedule.
+	t.Run("409_reports_conflict", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			fmt.Fprint(w, `{"statusCode":409,"error":"Conflict","message":"agent policy is provisioning"}`)
+		}))
+		defer srv.Close()
+
+		client := newTestClient(t, srv)
+		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+		defer cancel()
+
+		isConflict, diags := fleet.DeleteAgentlessPolicy(ctx, client, "", "pp-1", false)
+
+		require.True(t, diags.HasError())
+		require.True(t, isConflict, "a 409 response must be reported as a conflict so delete.go can offer the force_delete hint")
 	})
 
 	t.Run("force_delete_sets_force_query_param", func(t *testing.T) {
@@ -204,9 +238,10 @@ func TestDeleteAgentlessPolicy(t *testing.T) {
 		defer srv.Close()
 
 		client := newTestClient(t, srv)
-		diags := fleet.DeleteAgentlessPolicy(context.Background(), client, "", "pp-1", true)
+		isConflict, diags := fleet.DeleteAgentlessPolicy(context.Background(), client, "", "pp-1", true)
 
 		require.False(t, diags.HasError())
+		require.False(t, isConflict)
 		require.Contains(t, capturedQuery, "force=true")
 	})
 }
@@ -246,7 +281,7 @@ func TestDeleteAgentlessPolicy_SpaceAwarePath(t *testing.T) {
 			defer srv.Close()
 
 			client := newTestClient(t, srv)
-			diags := fleet.DeleteAgentlessPolicy(context.Background(), client, tc.spaceID, "pp-1", false)
+			_, diags := fleet.DeleteAgentlessPolicy(context.Background(), client, tc.spaceID, "pp-1", false)
 			require.False(t, diags.HasError())
 
 			require.True(t, strings.HasPrefix(capturedPath, tc.wantPathPfx), "request path = %q, want prefix %q", capturedPath, tc.wantPathPfx)

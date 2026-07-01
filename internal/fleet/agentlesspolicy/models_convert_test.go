@@ -25,7 +25,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/assert"
@@ -864,32 +863,3 @@ func TestBuildUpdateBody_partialVarsRemovalDropsOnlyMissingKeys(t *testing.T) {
 	assert.Equal(t, "text", accountType["type"], "surviving key's existing `type` metadata should be preserved")
 }
 
-func TestConflictHintDiagnostics(t *testing.T) {
-	t.Parallel()
-
-	t.Run("409 produces a hint", func(t *testing.T) {
-		t.Parallel()
-		var diags diag.Diagnostics
-		diags.AddError("Unexpected status code from server: got HTTP 409", `{"message":"conflict"}`)
-
-		hint := conflictHintDiagnostics(diags)
-		require.Len(t, hint, 1)
-		assert.Contains(t, hint[0].Detail(), "force_delete")
-	})
-
-	t.Run("non-409 produces no hint", func(t *testing.T) {
-		t.Parallel()
-		var diags diag.Diagnostics
-		diags.AddError("Unexpected status code from server: got HTTP 500", `{"message":"boom"}`)
-
-		hint := conflictHintDiagnostics(diags)
-		assert.Empty(t, hint)
-	})
-
-	t.Run("no error produces no hint", func(t *testing.T) {
-		t.Parallel()
-		var diags diag.Diagnostics
-		hint := conflictHintDiagnostics(diags)
-		assert.Empty(t, hint)
-	})
-}
