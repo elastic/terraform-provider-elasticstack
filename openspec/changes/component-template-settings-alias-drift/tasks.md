@@ -31,7 +31,7 @@
 
 ## 6. Spec sync
 
-- [ ] 6.1 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec sync component-template-settings-alias-drift` (or equivalent) to merge REQ-037 and REQ-038 from the delta spec into `openspec/specs/elasticsearch-index-component-template/spec.md`
+- [x] 6.1 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec sync component-template-settings-alias-drift` (or equivalent) to merge REQ-037 and REQ-038 from the delta spec into `openspec/specs/elasticsearch-index-component-template/spec.md`
 
 ## 7. Tests
 
