@@ -20,6 +20,8 @@ The `ml_anomaly_swimlane_config` block exposes a **flat** schema with the follow
 
 The `ml_anomaly_swimlane_config` block SHALL conflict with all other typed panel config blocks and with practitioner-authored `config_json`, consistent with REQ-006.
 
+**Kibana version compatibility**: The underlying ML embeddable predates the Dashboard API used by this resource (introduced in Kibana 7.9.0), but no minimum Kibana version specific to its typed representation in the Dashboard API's panel schema could be confirmed from release notes. Since `ml_anomaly_swimlane` is already present in the generated `kbapi` client this resource depends on, and no other typed panel block in this resource carries a bespoke per-panel version gate, the provider does not add one for `ml_anomaly_swimlane_config` either; the Kibana Dashboard API SHALL reject the panel on incompatible stack versions.
+
 **Write path**: When `swimlane_type = "overall"`, the provider SHALL serialize the panel config using `KibanaHTTPAPIsMlAnomalySwimlane0` (omitting `view_by`). When `swimlane_type = "viewBy"`, the provider SHALL serialize using `KibanaHTTPAPIsMlAnomalySwimlane1` (including the required `view_by` field).
 
 **Read path**: The provider SHALL detect the union branch from the API response. For optional fields (`per_page`, `title`, `description`, `hide_title`, `hide_border`, `time_range`), the provider SHALL apply null-preservation: if a field is null in Terraform state, it SHALL remain null after read even if the API returns a value for it.
@@ -95,6 +97,8 @@ The `ml_single_metric_viewer_config` block exposes the following attributes:
 | `time_range` | object | Optional | Panel-level time range with required `from` and `to` and optional `mode`. |
 
 The `ml_single_metric_viewer_config` block SHALL conflict with all other typed panel config blocks and with practitioner-authored `config_json`.
+
+**Kibana version compatibility**: The underlying ML embeddable predates the Dashboard API used by this resource (introduced in Kibana 8.13.0), but no minimum Kibana version specific to its typed representation in the Dashboard API's panel schema could be confirmed from release notes. Since `ml_single_metric_viewer` is already present in the generated `kbapi` client this resource depends on, and no other typed panel block in this resource carries a bespoke per-panel version gate, the provider does not add one for `ml_single_metric_viewer_config` either; the Kibana Dashboard API SHALL reject the panel on incompatible stack versions.
 
 **`selected_entities` serialization**: The attribute is a `MapNestedAttribute` keyed by field name. Each value object carries two optional attributes: `string_value` (Terraform `String`) and `numeric_value` (Terraform `Number`). A plan-time object validator SHALL enforce that exactly one of `string_value` or `numeric_value` is set on each value entry. On write, if `string_value` is set, the provider SHALL emit the entity value as the string union branch (`KibanaHTTPAPIsMlSingleMetricViewerSelectedEntities0`); if `numeric_value` is set, it SHALL emit as the numeric union branch (`KibanaHTTPAPIsMlSingleMetricViewerSelectedEntities1`, a `float32`). On read, the provider SHALL detect the union branch and populate the corresponding attribute; the other attribute SHALL remain null.
 

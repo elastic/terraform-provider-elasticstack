@@ -1,7 +1,7 @@
 ## 1. Spec
 
-- [ ] 1.1 Keep delta spec aligned with `proposal.md` / `design.md`; run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate kibana-dashboard-ml-swimlane-smv --type change` (or `make check-openspec` after sync).
-- [ ] 1.2 Resolve open question on minimum Kibana version for `ml_anomaly_swimlane` and `ml_single_metric_viewer` panels (see `design.md`); update delta spec with a version compatibility note if confirmed.
+- [x] 1.1 Keep delta spec aligned with `proposal.md` / `design.md`; run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate kibana-dashboard-ml-swimlane-smv --type change` (or `make check-openspec` after sync).
+- [x] 1.2 Resolve open question on minimum Kibana version for `ml_anomaly_swimlane` and `ml_single_metric_viewer` panels (see `design.md`); update delta spec with a version compatibility note if confirmed.
 - [ ] 1.3 On completion of implementation, **sync** delta into `openspec/specs/kibana-dashboard/spec.md` or **archive** the change per project workflow.
 
 ## 2. Implementation — `ml_anomaly_swimlane`
