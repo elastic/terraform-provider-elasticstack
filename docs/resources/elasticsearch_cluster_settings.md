@@ -131,3 +131,17 @@ Optional:
 
 - `value` (String) The value of the setting to set and track.
 - `value_list` (List of String) The list of values to be set for the key, where the list is required.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# The cluster settings resource is a singleton identified by <cluster_uuid>/cluster-settings.
+# Find <cluster_uuid> with the elasticstack_elasticsearch_info data source or the Elasticsearch GET / API.
+# After import, only the id is stored in state. Declare the persistent and/or transient setting
+# blocks you want to manage before running terraform plan or terraform apply.
+terraform import elasticstack_elasticsearch_cluster_settings.my_cluster_settings <cluster_uuid>/cluster-settings
+```
