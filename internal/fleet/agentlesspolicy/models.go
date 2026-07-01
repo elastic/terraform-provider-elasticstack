@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -36,21 +37,52 @@ var MinVersion = version.Must(version.NewVersion("9.3.0"))
 // agentlessPolicyModel is the Plugin Framework model for the
 // elasticstack_fleet_agentless_policy resource.
 //
-// This is a skeleton for Task 3 of the fleet-agentless-policy OpenSpec
-// change (openspec/changes/fleet-agentless-policy/tasks.md, section "3.
-// Resource: skeleton, model, and spike"): it only carries the fields needed
-// to satisfy entitycore.KibanaResourceModel and version-requirement wiring.
-// The full schema-driven field set (package, inputs, vars_json,
-// cloud_connector, global_data_tags, etc. -- see
-// specs/fleet-agentless-policy/spec.md, "Schema attributes") is added in
-// Task 4, and CRUD population (populateFromAPI/toAPI*Model) in Task 5.
+// Task 4 of the fleet-agentless-policy OpenSpec change
+// (openspec/changes/fleet-agentless-policy/tasks.md, section "4. Resource:
+// schema") adds one field per schema attribute defined in schema.go (see
+// specs/fleet-agentless-policy/spec.md, "Schema attributes" requirement).
+// CRUD population (populateFromAPI/toAPI*Model conversion functions) is
+// Task 5's responsibility; this file only declares the struct shape.
+//
+// packageModel, cloudConnectorModel, and globalDataTagModel back the
+// `package`, `cloud_connector`, and `global_data_tags` nested attributes
+// respectively; they are plain (non-custom-type) nested objects decoded via
+// types.Object/types.List .As(), matching the convention used by
+// internal/fleet/agentpolicy's advanced_settings/global_data_tags fields.
+// `inputs` and `vars_json` reuse the shared policyshape custom types
+// directly (policyshape.InputsValue / policyshape.VarsJSONValue) -- no
+// local type duplication.
 type agentlessPolicyModel struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
-	PolicyID         types.String `tfsdk:"policy_id"`
-	SpaceIDs         types.Set    `tfsdk:"space_ids"` // > string
+	ID                               types.String              `tfsdk:"id"`
+	KibanaConnection                 types.List                `tfsdk:"kibana_connection"`
+	PolicyID                         types.String              `tfsdk:"policy_id"`
+	Name                             types.String              `tfsdk:"name"`
+	Description                      types.String              `tfsdk:"description"`
+	Namespace                        types.String              `tfsdk:"namespace"`
+	SpaceIDs                         types.Set                 `tfsdk:"space_ids"` // > string
+	Package                          types.Object              `tfsdk:"package"`   // > packageModel
+	PolicyTemplate                   types.String              `tfsdk:"policy_template"`
+	VarsJSON                         policyshape.VarsJSONValue `tfsdk:"vars_json"`
+	VarGroupSelections               types.Map                 `tfsdk:"var_group_selections"`               // > string
+	Inputs                           policyshape.InputsValue   `tfsdk:"inputs"`                             // > policyshape.InputModel
+	CloudConnector                   types.Object              `tfsdk:"cloud_connector"`                    // > cloudConnectorModel
+	GlobalDataTags                   types.List                `tfsdk:"global_data_tags"`                   // > globalDataTagModel
+	AdditionalDatastreamsPermissions types.List                `tfsdk:"additional_datastreams_permissions"` // > string
+	CreateDatasetTemplates           types.Bool                `tfsdk:"create_dataset_templates"`
+	Force                            types.Bool                `tfsdk:"force"`
+	ForceDelete                      types.Bool                `tfsdk:"force_delete"`
+	CreatedAt                        types.String              `tfsdk:"created_at"`
+	UpdatedAt                        types.String              `tfsdk:"updated_at"`
 }
+
+// Note: the Go representations of the `package`, `cloud_connector`, and
+// `global_data_tags` nested attributes (e.g. a packageModel with
+// Name/Version/Title fields) are intentionally not declared here. They are
+// pure conversion-layer plumbing consumed only by populateFromAPI/toAPI
+// model functions, which is Task 5's responsibility (see
+// openspec/changes/fleet-agentless-policy/tasks.md, section "5. Resource:
+// CRUD + import"); declaring them now with no caller would be dead code.
 
 func (m agentlessPolicyModel) GetID() types.String         { return m.ID }
 func (m agentlessPolicyModel) GetResourceID() types.String { return m.PolicyID }

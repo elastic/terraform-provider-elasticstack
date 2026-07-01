@@ -20,23 +20,48 @@ package agentlesspolicy
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// getSchema is a bare-minimum skeleton schema for Task 3 of the
-// fleet-agentless-policy OpenSpec change. Only the identity attributes
-// needed to back agentlessPolicyModel's entitycore.KibanaResourceModel
-// implementation are defined here. The full schema (package, inputs,
-// vars_json, cloud_connector, global_data_tags,
-// additional_datastreams_permissions, var_group_selections,
-// create_dataset_templates, force/force_delete, created_at/updated_at,
-// experimental notice -- see specs/fleet-agentless-policy/spec.md, "Schema
-// attributes") is added in Task 4.
+// attrName is the schema attribute key "name", reused across the top-level
+// identity attribute, the package object, the cloud_connector object, and
+// each global_data_tags element.
+const attrName = "name"
+
+// getSchema implements Task 4 of the fleet-agentless-policy OpenSpec change
+// ("4. Resource: schema"): the full schema described by
+// specs/fleet-agentless-policy/spec.md's "Schema attributes" requirement.
+//
+// CRUD population (Task 5), version gating and topology preflight wiring
+// (Task 6), and the "experimental" notice on the resource description
+// (Task 6.3) are intentionally not part of this schema definition yet.
+//
+// Task 4.9 note on kibana_connection: unlike internal/fleet/integration_policy
+// and internal/fleet/agentpolicy (which implement resource.Resource's Schema
+// method directly and so must add the `kibana_connection` block themselves),
+// this resource is built on the entitycore.KibanaResource[T] envelope (see
+// resource.go), which injects the `kibana_connection` block (and the
+// `timeouts` attribute) into whatever schema.Schema this factory returns --
+// see baseResourceEnvelope.Schema in internal/entitycore/base_envelope.go.
+// The canonical pattern to mirror here is therefore
+// internal/fleet/proxy/schema.go (also envelope-based), which likewise
+// defines no Blocks at all.
 func getSchema(_ context.Context) schema.Schema {
+	varsAreSensitive := debugutils.IsSensitiveInSchema()
 	return schema.Schema{
 		MarkdownDescription: "Manages Fleet agentless policies. " +
 			"Skeleton only pending full implementation; see openspec/changes/fleet-agentless-policy.",
@@ -57,14 +82,251 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			attrName: schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "The name of the agentless policy; forces replacement on change.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"description": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The description of the agentless policy; updatable in-place.",
+			},
+			"namespace": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				MarkdownDescription: "The namespace of the agentless policy; forces replacement on change.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
 			"space_ids": schema.SetAttribute{
 				Computed:            true,
 				Optional:            true,
 				ElementType:         types.StringType,
-				MarkdownDescription: "The list of spaces the agentless policy belongs to; forces replacement on change.",
+				MarkdownDescription: "The list of spaces the agentless policy belongs to; defaults to `[\"default\"]`; forces replacement on change.",
 				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.UseStateForUnknown(),
 					setplanmodifier.RequiresReplace(),
 				},
+			},
+			"package": schema.SingleNestedAttribute{
+				Required:            true,
+				MarkdownDescription: "The Fleet integration package this agentless policy is based on.",
+				Attributes: map[string]schema.Attribute{
+					attrName: schema.StringAttribute{
+						Required:            true,
+						MarkdownDescription: "The package name; forces replacement on change.",
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.RequiresReplace(),
+						},
+					},
+					"version": schema.StringAttribute{
+						Required:            true,
+						MarkdownDescription: "The package version; forces replacement on change.",
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.RequiresReplace(),
+						},
+					},
+					"title": schema.StringAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "The package title. If omitted, Kibana populates it from the package registry. " +
+							"Updatable in-place (not `RequiresReplace`).",
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseStateForUnknown(),
+						},
+					},
+				},
+			},
+			"policy_template": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The policy template within the package to use; forces replacement on change.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"vars_json": schema.StringAttribute{
+				Computed:   true,
+				Optional:   true,
+				Sensitive:  varsAreSensitive,
+				CustomType: policyshape.NewVarsJSONType(lookupCachedPackageInfo),
+				MarkdownDescription: customtypes.DescriptionWithContextWarning(
+					"Integration-level variables as JSON. Variables vary depending on the integration package. Updatable in-place.",
+				),
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"var_group_selections": schema.MapAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
+				MarkdownDescription: "Top-level variable group selections, mapping group name to selected option; updatable in-place. " +
+					"Modeled at the top level only in v1; per-stream var_group_selections is deferred to a follow-up change.",
+			},
+			"inputs": schema.MapNestedAttribute{
+				Computed:            true,
+				Optional:            true,
+				CustomType:          policyshape.NewInputsType(agentlessInputType()),
+				MarkdownDescription: "Policy inputs mapped by input type ID; updatable in-place.",
+				PlanModifiers: []planmodifier.Map{
+					mapplanmodifier.UseStateForUnknown(),
+				},
+				NestedObject: getInputsNestedObject(varsAreSensitive),
+			},
+			"cloud_connector": schema.SingleNestedAttribute{
+				Optional: true,
+				MarkdownDescription: "References an existing cloud connector for cross-account access. " +
+					"All sub-fields force replacement on change.",
+				PlanModifiers: []planmodifier.Object{
+					objectplanmodifier.RequiresReplace(),
+				},
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Optional:            true,
+						MarkdownDescription: "Whether the cloud connector is enabled for this policy.",
+					},
+					"cloud_connector_id": schema.StringAttribute{
+						Optional:            true,
+						MarkdownDescription: "The ID of an existing cloud connector to associate with this policy.",
+					},
+					attrName: schema.StringAttribute{
+						Optional:            true,
+						MarkdownDescription: "The name of the cloud connector.",
+					},
+					"target_csp": schema.StringAttribute{
+						Optional:            true,
+						MarkdownDescription: "The target cloud service provider for the cloud connector. One of `aws`, `azure`, or `gcp`.",
+						Validators: []validator.String{
+							stringvalidator.OneOf("aws", "azure", "gcp"),
+						},
+					},
+				},
+			},
+			"global_data_tags": schema.ListNestedAttribute{
+				Optional:            true,
+				MarkdownDescription: "Global data tags applied to the policy's data streams; updatable in-place.",
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						attrName: schema.StringAttribute{
+							Required:            true,
+							MarkdownDescription: "Tag name.",
+						},
+						"value": schema.StringAttribute{
+							Required:            true,
+							MarkdownDescription: "Tag value.",
+						},
+					},
+				},
+			},
+			"additional_datastreams_permissions": schema.ListAttribute{
+				Optional:            true,
+				ElementType:         types.StringType,
+				MarkdownDescription: "Additional data stream permissions to grant beyond the package's defaults; updatable in-place.",
+			},
+			"create_dataset_templates": schema.BoolAttribute{
+				Optional: true,
+				MarkdownDescription: "Whether to create dataset templates when creating the policy. Create-only: sent on the create " +
+					"request only, not read back from the API. Changes after creation are a no-op until the resource is recreated.",
+			},
+			"force": schema.BoolAttribute{
+				Optional: true,
+				MarkdownDescription: "Force the create operation. Create-only: sent on the create request only " +
+					"and not read back from the API.",
+			},
+			"force_delete": schema.BoolAttribute{
+				Computed: true,
+				Optional: true,
+				Default:  booldefault.StaticBool(false),
+				MarkdownDescription: "Force deletion of the policy, passed as `?force=true` on the delete request. " +
+					"Defaults to `false`.",
+			},
+			"created_at": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The creation timestamp of the agentless policy (ISO 8601).",
+			},
+			"updated_at": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The last-updated timestamp of the agentless policy (ISO 8601).",
+			},
+		},
+	}
+}
+
+// agentlessInputType returns the policyshape.InputType used as the element
+// type of the top-level `inputs` map. It reuses the shared package's
+// InputType/StreamType wrapper types and AttrXxx attribute-name constants,
+// but (unlike internal/fleet/integration_policy, which also surfaces a
+// package-computed `defaults` object) it deliberately omits `defaults`: the
+// spec for this resource (specs/fleet-agentless-policy/spec.md, "Schema
+// attributes") does not model package-defaults introspection for inputs, so
+// this uses a smaller attribute-types map made up entirely of shared
+// building blocks rather than policyshape.InputElementType()'s
+// defaults-inclusive map.
+func agentlessInputType() policyshape.InputType {
+	return policyshape.NewInputType(agentlessInputAttributeTypes())
+}
+
+func agentlessInputAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		policyshape.AttrEnabled:   types.BoolType,
+		policyshape.AttrCondition: types.StringType,
+		policyshape.AttrVars:      jsontypes.NormalizedType{},
+		policyshape.AttrStreams: types.MapType{
+			ElemType: policyshape.StreamType(),
+		},
+	}
+}
+
+func getInputsNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
+	return schema.NestedAttributeObject{
+		CustomType: agentlessInputType(),
+		Attributes: map[string]schema.Attribute{
+			policyshape.AttrEnabled: schema.BoolAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             booldefault.StaticBool(true),
+				MarkdownDescription: "Enable the input.",
+			},
+			policyshape.AttrCondition: schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Agent condition expression to evaluate whether to apply this input.",
+			},
+			policyshape.AttrVars: schema.StringAttribute{
+				Optional:            true,
+				CustomType:          jsontypes.NormalizedType{},
+				Sensitive:           varsAreSensitive,
+				MarkdownDescription: "Input-level variables as JSON.",
+			},
+			policyshape.AttrStreams: schema.MapNestedAttribute{
+				Optional:            true,
+				MarkdownDescription: "Input streams mapped by stream ID.",
+				NestedObject:        getInputStreamNestedObject(varsAreSensitive),
+			},
+		},
+	}
+}
+
+func getInputStreamNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
+	return schema.NestedAttributeObject{
+		Attributes: map[string]schema.Attribute{
+			policyshape.AttrEnabled: schema.BoolAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             booldefault.StaticBool(true),
+				MarkdownDescription: "Enable the stream.",
+			},
+			policyshape.AttrCondition: schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Agent condition expression to evaluate whether to apply this stream.",
+			},
+			policyshape.AttrVars: schema.StringAttribute{
+				Optional:            true,
+				CustomType:          jsontypes.NormalizedType{},
+				Sensitive:           varsAreSensitive,
+				MarkdownDescription: "Stream-level variables as JSON.",
 			},
 		},
 	}

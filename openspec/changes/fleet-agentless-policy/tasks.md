@@ -32,15 +32,16 @@
 
 ## 4. Resource: schema
 
-- [ ] 4.1 Implement `getSchema` in `schema.go` covering all identity attributes (`id`, `policy_id`, `name`, `description`, `namespace`, `space_ids`) with correct Optional/Computed/Required, `UseStateForUnknown`, and `RequiresReplace` plan modifiers per the spec
-- [ ] 4.2 Add schema for `package` (Required object: `name` (Required, RequiresReplace), `version` (Required, RequiresReplace), `title` (Optional+Computed, in-place updatable, not RequiresReplace))
-- [ ] 4.3 Add schema for `policy_template` (Optional string, `RequiresReplace`)
-- [ ] 4.4 Add schema for top-level `vars_json` (via shared `VarsJsonType`), `var_group_selections`, and `inputs` (reusing `InputsType`/`InputType` from the shared package); input/stream-level vars use the `vars` attribute key (matching `integration_policy`); `inputs` is Optional+Computed with `UseStateForUnknown`
-- [ ] 4.5 Add schema for `cloud_connector` (Optional object: `enabled`, `cloud_connector_id`, `name`, `target_csp`) with `RequiresReplace` on all sub-fields
-- [ ] 4.6 Add schema for `global_data_tags` and `additional_datastreams_permissions` (both Optional, updatable in-place); add `create_dataset_templates` (Optional, create-only — not read back, not sent on Update, not RequiresReplace)
-- [ ] 4.7 Add schema for operation flags `force` (Optional bool, create-only, not read back from API) and `force_delete` (Optional bool, not read back from API)
-- [ ] 4.8 Add schema for computed fields `created_at` and `updated_at`
-- [ ] 4.9 Add `kibana_connection` block following the pattern of other Fleet resources
+- [x] 4.1 Implement `getSchema` in `schema.go` covering all identity attributes (`id`, `policy_id`, `name`, `description`, `namespace`, `space_ids`) with correct Optional/Computed/Required, `UseStateForUnknown`, and `RequiresReplace` plan modifiers per the spec
+- [x] 4.2 Add schema for `package` (Required object: `name` (Required, RequiresReplace), `version` (Required, RequiresReplace), `title` (Optional+Computed, in-place updatable, not RequiresReplace))
+- [x] 4.3 Add schema for `policy_template` (Optional string, `RequiresReplace`)
+- [x] 4.4 Add schema for top-level `vars_json` (via shared `VarsJsonType`), `var_group_selections`, and `inputs` (reusing `InputsType`/`InputType` from the shared package); input/stream-level vars use the `vars` attribute key (matching `integration_policy`); `inputs` is Optional+Computed with `UseStateForUnknown`
+- [x] 4.5 Add schema for `cloud_connector` (Optional object: `enabled`, `cloud_connector_id`, `name`, `target_csp`) with `RequiresReplace` on all sub-fields
+- [x] 4.6 Add schema for `global_data_tags` and `additional_datastreams_permissions` (both Optional, updatable in-place); add `create_dataset_templates` (Optional, create-only — not read back, not sent on Update, not RequiresReplace)
+- [x] 4.7 Add schema for operation flags `force` (Optional bool, create-only, not read back from API) and `force_delete` (Optional bool, not read back from API)
+- [x] 4.8 Add schema for computed fields `created_at` and `updated_at`
+- [x] 4.9 Add `kibana_connection` block following the pattern of other Fleet resources
+  - Resolved: this resource is built on the `entitycore.KibanaResource[T]` envelope (see `resource.go`), which injects `kibana_connection` (and `timeouts`) into whatever schema `getSchema` returns (see `internal/entitycore/base_envelope.go`'s `Schema` method). The correct pattern to mirror is therefore `internal/fleet/proxy/schema.go` (also envelope-based), which likewise defines no `Blocks` at all -- not `integration_policy`/`agentpolicy`, which implement `Schema()` directly and so must add the block themselves. `schema.go` defines no `Blocks`; a unit test (`TestGetSchema_noKibanaConnectionBlock`) asserts this stays true.
 
 ## 5. Resource: CRUD + import
 
