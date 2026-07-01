@@ -251,7 +251,14 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "output_id"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.enabled", "true"),
+					// A resource that never sets `condition` must not have it
+					// present in state, guarding against Fleet echoing back
+					// `condition: ""` instead of omitting the field (which
+					// would otherwise surface as a perpetual diff for every
+					// pre-existing resource).
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.condition"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.streams.tcp.generic.enabled", "true"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.streams.tcp.generic.condition"),
 					resource.TestCheckResourceAttr(
 						"elasticstack_fleet_integration_policy.test_policy",
 						"inputs.tcp-tcp.streams.tcp.generic.vars",
@@ -274,7 +281,9 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "output_id"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.enabled", "false"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.condition"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.streams.tcp.generic.enabled", "false"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.streams.tcp.generic.condition"),
 					resource.TestCheckResourceAttr(
 						"elasticstack_fleet_integration_policy.test_policy",
 						"inputs.tcp-tcp.streams.tcp.generic.vars",
