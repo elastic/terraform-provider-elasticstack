@@ -114,6 +114,9 @@ func alignPlanTypedPanelConfigsWhenStateNil(plan, state *models.PanelModel) {
 	if plan.MlAnomalySwimlaneConfig != nil && state.MlAnomalySwimlaneConfig == nil {
 		state.MlAnomalySwimlaneConfig = panelkit.ShallowClonePtr(plan.MlAnomalySwimlaneConfig)
 	}
+	if plan.MlSingleMetricViewerConfig != nil && state.MlSingleMetricViewerConfig == nil {
+		state.MlSingleMetricViewerConfig = panelkit.ShallowClonePtr(plan.MlSingleMetricViewerConfig)
+	}
 }
 
 func alignPanelStateFromPlan(ctx context.Context, plan, state *models.PanelModel) {

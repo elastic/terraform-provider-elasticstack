@@ -41,6 +41,7 @@ type PanelModel struct {
 	SloAlertsConfig               *SloAlertsPanelConfigModel                        `tfsdk:"slo_alerts_config"`
 	DiscoverSessionConfig         *DiscoverSessionPanelConfigModel                  `tfsdk:"discover_session_config"`
 	MlAnomalySwimlaneConfig       *MlAnomalySwimlaneConfigModel                     `tfsdk:"ml_anomaly_swimlane_config"`
+	MlSingleMetricViewerConfig    *MlSingleMetricViewerConfigModel                  `tfsdk:"ml_single_metric_viewer_config"`
 	ConfigJSON                    customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
