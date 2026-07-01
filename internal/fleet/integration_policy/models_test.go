@@ -28,10 +28,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func boolPtr(v bool) *bool {
-	return &v
-}
-
 func TestOutputIdHandling(t *testing.T) {
 	t.Run("populateFromAPI", func(t *testing.T) {
 		model := &integrationPolicyModel{}
@@ -252,11 +248,11 @@ func TestConditionHandling(t *testing.T) {
 		respInputs := kbapi.PackagePolicyMappedInputs{
 			"test-input": {
 				Condition: &inputCondition,
-				Enabled:   boolPtr(true),
+				Enabled:   new(true),
 				Streams: &map[string]kbapi.PackagePolicyMappedInputStream{
 					"test.stream": {
 						Condition: &streamCondition,
-						Enabled:   boolPtr(true),
+						Enabled:   new(true),
 					},
 				},
 			},
@@ -296,7 +292,7 @@ func TestConditionHandling(t *testing.T) {
 
 		respInputs := kbapi.PackagePolicyMappedInputs{
 			"test-input": {
-				Enabled: boolPtr(true),
+				Enabled: new(true),
 			},
 		}
 
