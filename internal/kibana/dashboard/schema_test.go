@@ -27,9 +27,10 @@ import (
 
 // expectedPanelConfigs covers the design D9 set of top-level panel-config
 // branches: API panel kinds + universal config_json (plus image, slo_alerts,
-// discover_session, and the three AIOps panels). attrPanelType/attrPanelGrid/attrPanelID
-// are declared in constants.go so non-test code can share the same identifiers.
-const expectedPanelConfigs = 18
+// expectedPanelConfigs covers the design D9 set of top-level panel-config
+// branches: API panel kinds + universal config_json (plus image, slo_alerts,
+// discover_session, the two ML anomaly panels, and the three AIOps panels).
+const expectedPanelConfigs = 20
 
 func Test_panelConfigNames_matchesPanelSchemaAttributes(t *testing.T) {
 	names := panelConfigNames()

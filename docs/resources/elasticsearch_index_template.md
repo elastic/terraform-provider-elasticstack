@@ -116,12 +116,12 @@ Optional:
 
 Required:
 
-- `name` (String) The alias name.
+- `name` (String) The alias name. Index alias names support date math. See the [date math index names documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html) for more details.
 
 Optional:
 
 - `filter` (String) Query used to limit documents the alias can access.
-- `index_routing` (String) Value used to route indexing operations to a specific shard. If specified, this overwrites the `routing` value for indexing operations.
+- `index_routing` (String) Value used to route indexing operations to a specific shard. If specified, this overwrites the routing value for indexing operations.
 - `is_hidden` (Boolean) If true, the alias is hidden.
 - `is_write_index` (Boolean) If true, the index is the write index for the alias.
 - `routing` (String) Value used to route indexing and search operations to a specific shard.

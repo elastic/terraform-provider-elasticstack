@@ -19,6 +19,7 @@ package aiopschangepointchart
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -75,7 +76,7 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 	if typeutils.IsKnown(cfg.HideBorder) {
 		panel.Config.HideBorder = cfg.HideBorder.ValueBoolPointer()
 	}
-	panel.Config.TimeRange = panelkit.TimeRangeToAPI(cfg.TimeRange)
+	panel.Config.TimeRange = lenscommon.TimeRangeModelToAPI(cfg.TimeRange)
 
 	return nil
 }
@@ -168,7 +169,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 	if prior.AiopsChangePointChartConfig != nil {
 		priorTR = prior.AiopsChangePointChartConfig.TimeRange
 	}
-	existing.TimeRange = panelkit.TimeRangeFromAPI(priorTR, api.TimeRange)
+	existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, api.TimeRange, priorTR)
 
 	if prior.AiopsChangePointChartConfig != nil {
 		preserveNullIntentFromPrior(prior.AiopsChangePointChartConfig, existing)
