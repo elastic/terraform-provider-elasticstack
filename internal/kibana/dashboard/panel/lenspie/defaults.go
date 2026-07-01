@@ -21,11 +21,8 @@ import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashb
 
 // populatePieLensAttributes is the canonical opaque-attribute JSON defaulting for VizConverter.PopulateJSONDefaults.
 func populatePieLensAttributes(attrs map[string]any) map[string]any {
-	if attrs == nil {
+	if !lenscommon.InitLensAttrs(attrs) {
 		return attrs
-	}
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
 	}
 	if metrics, ok := attrs["metrics"].([]any); ok {
 		for i, m := range metrics {
