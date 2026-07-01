@@ -28,9 +28,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -105,58 +103,7 @@ func getSchema(_ context.Context) schema.Schema {
 					},
 				},
 				Blocks: map[string]schema.Block{
-					attrAlias: schema.SetNestedBlock{
-						MarkdownDescription: "Alias to add.",
-						NestedObject: schema.NestedBlockObject{
-							CustomType: aliasutil.NewAliasObjectType(),
-							Attributes: map[string]schema.Attribute{
-								attrName: schema.StringAttribute{
-									MarkdownDescription: "The alias name. Index alias names support date math. See the " +
-										"[date math index names documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html) " +
-										"for more details.",
-									Required: true,
-								},
-								attrFilter: schema.StringAttribute{
-									MarkdownDescription: "Query used to limit documents the alias can access.",
-									Optional:            true,
-									CustomType:          jsontypes.NormalizedType{},
-									Validators: []validator.String{
-										validators.StringIsJSONObject{},
-									},
-								},
-								attrIndexRouting: schema.StringAttribute{
-									MarkdownDescription: "Value used to route indexing operations to a specific shard. If specified, this overwrites the routing value for indexing operations.",
-									Optional:            true,
-									Computed:            true,
-									Default:             stringdefault.StaticString(""),
-								},
-								attrIsHidden: schema.BoolAttribute{
-									MarkdownDescription: "If true, the alias is hidden.",
-									Optional:            true,
-									Computed:            true,
-									Default:             booldefault.StaticBool(false),
-								},
-								attrIsWriteIndex: schema.BoolAttribute{
-									MarkdownDescription: "If true, the index is the write index for the alias.",
-									Optional:            true,
-									Computed:            true,
-									Default:             booldefault.StaticBool(false),
-								},
-								attrRouting: schema.StringAttribute{
-									MarkdownDescription: "Value used to route indexing and search operations to a specific shard.",
-									Optional:            true,
-									Computed:            true,
-									Default:             stringdefault.StaticString(""),
-								},
-								attrSearchRouting: schema.StringAttribute{
-									MarkdownDescription: "Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.",
-									Optional:            true,
-									Computed:            true,
-									Default:             stringdefault.StaticString(""),
-								},
-							},
-						},
-					},
+					attrAlias:             aliasutil.AliasSetNestedBlock(),
 					attrDataStreamOptions: datastreamoptions.Block(),
 				},
 			},
