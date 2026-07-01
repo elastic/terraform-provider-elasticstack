@@ -435,3 +435,29 @@ func TestPopulateFromAPI_perPage_float32RoundTrip(t *testing.T) {
 
 	require.Equal(t, math.Float32bits(perPage), math.Float32bits(pm.MlAnomalySwimlaneConfig.PerPage.ValueFloat32()))
 }
+
+func TestPopulateFromAPI_viewBy_nullPreservation_doesNotNullWhenSwimlaneTypeDriftsToViewBy(t *testing.T) {
+	apiCfg := makeViewByAPIUnion()
+
+	pm := &models.PanelModel{
+		MlAnomalySwimlaneConfig: &models.MlAnomalySwimlaneConfigModel{
+			SwimlaneType: types.StringValue("viewBy"),
+			JobIDs:       []types.String{types.StringValue("job-a")},
+			ViewBy:       types.StringNull(),
+		},
+	}
+	prior := &models.PanelModel{
+		MlAnomalySwimlaneConfig: &models.MlAnomalySwimlaneConfigModel{
+			SwimlaneType: types.StringValue("overall"),
+			JobIDs:       []types.String{types.StringValue("job-a")},
+			ViewBy:       types.StringNull(),
+		},
+	}
+	diags := mlanomalyswimlane.PopulateFromAPI(pm, prior, apiCfg)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	cfg := pm.MlAnomalySwimlaneConfig
+	require.NotNil(t, cfg)
+	assert.Equal(t, "viewBy", cfg.SwimlaneType.ValueString())
+	assert.Equal(t, "host.name", cfg.ViewBy.ValueString())
+}

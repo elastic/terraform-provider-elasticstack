@@ -173,6 +173,26 @@ func TestBuildConfig_selectedEntities_stringAndNumeric(t *testing.T) {
 	require.Equal(t, math.Float32bits(float32(4)), math.Float32bits(region))
 }
 
+func TestBuildConfig_selectedEntities_numericValueOutOfFloat32Range(t *testing.T) {
+	ctx := context.Background()
+	pm := models.PanelModel{
+		MlSingleMetricViewerConfig: &models.MlSingleMetricViewerConfigModel{
+			JobIDs: []types.String{types.StringValue("job-a")},
+			SelectedEntities: makeSelectedEntitiesMap(t, map[string]models.MlSingleMetricViewerEntityModel{
+				"region_code": {
+					StringValue:  types.StringNull(),
+					NumericValue: types.NumberValue(big.NewFloat(float64(math.MaxFloat32) * 2)),
+				},
+			}),
+		},
+	}
+	var panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMlSingleMetricViewer
+	diags := mlsinglemetricviewer.BuildConfig(ctx, pm, &panel)
+	require.True(t, diags.HasError())
+	assert.Contains(t, diags[0].Summary(), "Invalid ML single metric viewer configuration")
+	assert.Contains(t, diags[0].Detail(), "numeric_value is out of float32 range")
+}
+
 func TestBuildConfig_withOptionalFields(t *testing.T) {
 	ctx := context.Background()
 	pm := models.PanelModel{

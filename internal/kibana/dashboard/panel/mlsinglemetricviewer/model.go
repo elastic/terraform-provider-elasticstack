@@ -20,6 +20,7 @@ package mlsinglemetricviewer
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/big"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -252,6 +253,13 @@ func mlSingleMetricViewerSelectedEntitiesToAPI(
 				diags.AddError(
 					"Invalid ML single metric viewer configuration",
 					fmt.Sprintf("selected_entities[%q] numeric_value is out of float64 range.", k),
+				)
+				return nil
+			}
+			if math.IsNaN(f64) || f64 > math.MaxFloat32 || f64 < -math.MaxFloat32 {
+				diags.AddError(
+					"Invalid ML single metric viewer configuration",
+					fmt.Sprintf("selected_entities[%q] numeric_value is out of float32 range.", k),
 				)
 				return nil
 			}

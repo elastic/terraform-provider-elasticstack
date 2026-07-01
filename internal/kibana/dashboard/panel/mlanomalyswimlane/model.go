@@ -275,8 +275,13 @@ func mlAnomalySwimlanePreserveNullIntentFromPrior(prior, existing *models.MlAnom
 	if prior == nil || existing == nil {
 		return
 	}
-	if !typeutils.IsKnown(prior.ViewBy) || prior.SwimlaneType.ValueString() == swimlaneTypeOverall {
+	switch existing.SwimlaneType.ValueString() {
+	case swimlaneTypeOverall:
 		existing.ViewBy = types.StringNull()
+	case swimlaneTypeViewBy:
+		if prior.SwimlaneType.ValueString() == swimlaneTypeViewBy && !typeutils.IsKnown(prior.ViewBy) {
+			existing.ViewBy = types.StringNull()
+		}
 	}
 	if !typeutils.IsKnown(prior.PerPage) {
 		existing.PerPage = types.Float32Null()
