@@ -384,6 +384,19 @@ func TestPopulateFromAPI_timeRangeSubfields_nullPreservation(t *testing.T) {
 	assert.True(t, cfg.TimeRange.Mode.IsNull())
 }
 
+func TestPopulateFromAPI_import_selectedDetectorIndexDefault(t *testing.T) {
+	ctx := context.Background()
+	apiCfg := makeAPIConfig(withSelectedDetectorIndex(0))
+
+	pm := &models.PanelModel{}
+	diags := mlsinglemetricviewer.PopulateFromAPI(ctx, pm, nil, apiCfg)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	cfg := pm.MlSingleMetricViewerConfig
+	require.NotNil(t, cfg)
+	assert.Equal(t, float32(0), cfg.SelectedDetectorIndex.ValueFloat32())
+}
+
 func TestPopulateFromAPI_selectedDetectorIndex_float32RoundTrip(t *testing.T) {
 	ctx := context.Background()
 	const idx float32 = 2.5
