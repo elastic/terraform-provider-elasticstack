@@ -35,12 +35,18 @@ import (
 // envelope never calls resp.State.Set when this callback returns an error --
 // see kibana_resource_envelope.go's runKibanaWrite).
 //
-// TODO: Task 6 adds the deployment-topology preflight check here (self-managed
-// stacks must be rejected before the POST call below runs; see design.md
-// Decision 7 and specs/fleet-agentless-policy/spec.md's "Deployment topology
-// preflight check" requirement). Task 6 also wires the MinVersion 9.3.0 gate
-// via GetVersionRequirements (already implemented in models.go), which the
-// entitycore envelope enforces before this function is ever invoked.
+// The MinVersion 9.3.0 gate is wired via GetVersionRequirements (models.go)
+// and enforced by the entitycore envelope (entitycore.EnforceVersionRequirements,
+// called from kibana_resource_envelope.go's Create) before this function is
+// ever invoked -- see Task 6.1 and
+// TestAgentlessPolicyModel_versionGate_firesBeforeAPICall in
+// entitycore_contract_test.go.
+//
+// Task 6.2 adds the deployment-topology preflight check below (self-managed
+// stacks are rejected before the POST call runs; see checkDeploymentTopology
+// and its tests in topology.go/topology_test.go, design.md Decision 7, and
+// specs/fleet-agentless-policy/spec.md's "Deployment topology preflight
+// check" requirement).
 func createAgentlessPolicy(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
@@ -48,6 +54,11 @@ func createAgentlessPolicy(
 ) (entitycore.KibanaWriteResult[agentlessPolicyModel], diag.Diagnostics) {
 	plan := req.Plan
 	var diags diag.Diagnostics
+
+	diags.Append(checkDeploymentTopology(ctx, client)...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
+	}
 
 	fleetClient := client.GetFleetClient()
 
