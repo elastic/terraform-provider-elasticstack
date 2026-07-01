@@ -43,6 +43,6 @@
 
 ## 8. Pre-merge checklist
 
-- [ ] 8.1 State migration risk: if an old provider binary cannot read state written by the new binary (due to custom type wrapper on alias elements), bump `SchemaVersion` and add a state upgrader for the alias element type change; otherwise confirm no migration needed
-- [ ] 8.2 `templateilmattachment` sanity check: read `internal/elasticsearch/index/templateilmattachment/` code and confirm the new `ModifyPlan` path does not interact with ILM attachment operations
-- [ ] 8.3 Run `make check-openspec` (includes linting of spec files)
+- [x] 8.1 State migration risk: if an old provider binary cannot read state written by the new binary (due to custom type wrapper on alias elements), bump `SchemaVersion` and add a state upgrader for the alias element type change; otherwise confirm no migration needed
+- [x] 8.2 `templateilmattachment` sanity check: read `internal/elasticsearch/index/templateilmattachment/` code and confirm the new `ModifyPlan` path does not interact with ILM attachment operations
+- [x] 8.3 Run `make check-openspec` (includes linting of spec files)
