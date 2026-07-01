@@ -70,164 +70,82 @@ func ApplyTemplateAliasReconciliationFromReference(ctx context.Context, outTempl
 // planElt.ObjectSemanticEquals(stateElt), replace the plan element with the state's encoding so planned
 // values match stored state under Optional+Computed+Default nested sets.
 func MergePlanAliasSetWithPriorState(ctx context.Context, planAliases, stateAliases attr.Value) (attr.Value, bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	pSet, ok := planAliases.(basetypes.SetValue)
-	if !ok {
-		return planAliases, false, diags
-	}
-	sSet, ok := stateAliases.(basetypes.SetValue)
-	if !ok {
-		return planAliases, false, diags
-	}
-	if pSet.IsNull() || pSet.IsUnknown() || sSet.IsNull() || sSet.IsUnknown() {
-		return planAliases, false, diags
-	}
-
-	stateByName := make(map[string]AliasObjectValue)
-	for _, se := range sSet.Elements() {
-		sAlias, sOK, d := aliasObjectFromAttr(ctx, se)
-		diags.Append(d...)
-		if diags.HasError() {
-			return planAliases, false, diags
-		}
-		if !sOK || sAlias.IsNull() || sAlias.IsUnknown() {
-			continue
-		}
-		var sm AliasModel
-		diags.Append(sAlias.As(ctx, &sm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
-		if diags.HasError() {
-			return planAliases, false, diags
-		}
-		stateByName[sm.Name.ValueString()] = sAlias
-	}
-
-	planElems := pSet.Elements()
-	newElems := make([]attr.Value, len(planElems))
-	changed := false
-	for i, pe := range planElems {
-		pAlias, pOK, d := aliasObjectFromAttr(ctx, pe)
-		diags.Append(d...)
-		if diags.HasError() {
-			return planAliases, false, diags
-		}
-		if !pOK || pAlias.IsNull() || pAlias.IsUnknown() {
-			newElems[i] = pe
-			continue
-		}
-		var pm AliasModel
-		diags.Append(pAlias.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
-		if diags.HasError() {
-			return planAliases, false, diags
-		}
-		sAlias, ok := stateByName[pm.Name.ValueString()]
-		if !ok {
-			newElems[i] = pe
-			continue
-		}
-		eq, d := pAlias.ObjectSemanticEquals(ctx, sAlias)
-		diags.Append(d...)
-		if diags.HasError() {
-			return planAliases, false, diags
-		}
-		if eq && !pAlias.Equal(sAlias) {
-			newElems[i] = sAlias
-			changed = true
-			continue
-		}
-		newElems[i] = pe
-	}
-
-	if !changed {
-		return planAliases, false, diags
-	}
-
-	newSet, d := types.SetValue(NewAliasObjectType(), newElems)
-	diags.Append(d...)
-	if diags.HasError() {
-		return planAliases, false, diags
-	}
-	return newSet, true, diags
+	return mergeAliasSets(ctx, planAliases, stateAliases)
 }
 
 // MergeAliasSetPreferReferenceEncoding replaces API alias encodings with reference encodings when semantically equal.
 func MergeAliasSetPreferReferenceEncoding(ctx context.Context, apiSet, refSet attr.Value) (attr.Value, bool, diag.Diagnostics) {
+	return mergeAliasSets(ctx, apiSet, refSet)
+}
+
+// mergeAliasSets walks sourceSet elements; when lookupSet has a same-named element that is
+// semantically equal but not byte-equal, replaces the source element with the lookup element.
+// Returns (newSet, changed, diags).
+func mergeAliasSets(ctx context.Context, sourceSet, lookupSet attr.Value) (attr.Value, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	apiS, ok := apiSet.(basetypes.SetValue)
+	srcS, ok := sourceSet.(basetypes.SetValue)
 	if !ok {
-		return apiSet, false, diags
+		return sourceSet, false, diags
 	}
-	refS, ok := refSet.(basetypes.SetValue)
+	lkpS, ok := lookupSet.(basetypes.SetValue)
 	if !ok {
-		return apiSet, false, diags
+		return sourceSet, false, diags
 	}
-	if apiS.IsNull() || apiS.IsUnknown() || refS.IsNull() || refS.IsUnknown() {
-		return apiSet, false, diags
+	if srcS.IsNull() || srcS.IsUnknown() || lkpS.IsNull() || lkpS.IsUnknown() {
+		return sourceSet, false, diags
 	}
 
-	refByName := make(map[string]AliasObjectValue)
-	for _, re := range refS.Elements() {
-		refAlias, refOK, d := aliasObjectFromAttr(ctx, re)
-		diags.Append(d...)
-		if diags.HasError() {
-			return apiSet, false, diags
-		}
-		if !refOK || refAlias.IsNull() || refAlias.IsUnknown() {
-			continue
-		}
-		var m AliasModel
-		diags.Append(refAlias.As(ctx, &m, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
-		if diags.HasError() {
-			return apiSet, false, diags
-		}
-		refByName[m.Name.ValueString()] = refAlias
+	lookupByName, d := aliasObjectsByName(ctx, lkpS)
+	diags.Append(d...)
+	if diags.HasError() {
+		return sourceSet, false, diags
 	}
 
-	apiElems := apiS.Elements()
-	newElems := make([]attr.Value, 0, len(apiElems))
+	srcElems := srcS.Elements()
+	newElems := make([]attr.Value, len(srcElems))
 	changed := false
-	for _, ae := range apiElems {
-		apiAlias, apiOK, d := aliasObjectFromAttr(ctx, ae)
+	for i, se := range srcElems {
+		srcAlias, srcOK, d := aliasObjectFromAttr(ctx, se)
 		diags.Append(d...)
 		if diags.HasError() {
-			return apiSet, false, diags
+			return sourceSet, false, diags
 		}
-		if !apiOK || apiAlias.IsNull() || apiAlias.IsUnknown() {
-			newElems = append(newElems, ae)
+		if !srcOK || srcAlias.IsNull() || srcAlias.IsUnknown() {
+			newElems[i] = se
 			continue
 		}
-		var am AliasModel
-		diags.Append(apiAlias.As(ctx, &am, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
+		var sm AliasModel
+		diags.Append(srcAlias.As(ctx, &sm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 		if diags.HasError() {
-			return apiSet, false, diags
+			return sourceSet, false, diags
 		}
-		refAlias, ok := refByName[am.Name.ValueString()]
+		lkpAlias, ok := lookupByName[sm.Name.ValueString()]
 		if !ok {
-			newElems = append(newElems, ae)
+			newElems[i] = se
 			continue
 		}
-		eq, d := refAlias.ObjectSemanticEquals(ctx, apiAlias)
+		eq, d := srcAlias.ObjectSemanticEquals(ctx, lkpAlias)
 		diags.Append(d...)
 		if diags.HasError() {
-			return apiSet, false, diags
+			return sourceSet, false, diags
 		}
-		if eq && !refAlias.Equal(apiAlias) {
-			newElems = append(newElems, refAlias)
+		if eq && !srcAlias.Equal(lkpAlias) {
+			newElems[i] = lkpAlias
 			changed = true
 			continue
 		}
-		newElems = append(newElems, ae)
+		newElems[i] = se
 	}
 
 	if !changed {
-		return apiSet, false, diags
+		return sourceSet, false, diags
 	}
 
 	newSet, d := types.SetValue(NewAliasObjectType(), newElems)
 	diags.Append(d...)
 	if diags.HasError() {
-		return apiSet, false, diags
+		return sourceSet, false, diags
 	}
 	return newSet, true, diags
 }
