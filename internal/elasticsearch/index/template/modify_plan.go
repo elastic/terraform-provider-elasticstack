@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -72,19 +73,17 @@ func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, stat
 
 	if ps, ok := planAttrs[attrSettings]; ok && !ps.IsNull() && !ps.IsUnknown() {
 		if ss, ok := stateAttrs[attrSettings]; ok && !ss.IsNull() && !ss.IsUnknown() {
-			if !ps.Equal(ss) {
-				pSet, okP := ps.(customtypes.IndexSettingsValue)
-				sSet, okS := ss.(customtypes.IndexSettingsValue)
-				if okP && okS {
-					eq, d := sSet.SemanticallyEqual(ctx, pSet)
-					diags.Append(d...)
-					if diags.HasError() {
-						return nil, diags
-					}
-					if eq {
-						planAttrs[attrSettings] = ss
-						changed = true
-					}
+			pSet, okP := ps.(customtypes.IndexSettingsValue)
+			sSet, okS := ss.(customtypes.IndexSettingsValue)
+			if okP && okS {
+				reconciled, settingsChanged, d := templateutil.ReconcileSettingsIfSemanticallyEqual(ctx, pSet, sSet)
+				diags.Append(d...)
+				if diags.HasError() {
+					return nil, diags
+				}
+				if settingsChanged {
+					planAttrs[attrSettings] = reconciled
+					changed = true
 				}
 			}
 		}

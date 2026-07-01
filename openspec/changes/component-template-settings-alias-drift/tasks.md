@@ -8,8 +8,8 @@
 
 ## 2. Extract settings reconciliation into `templateutil`
 
-- [ ] 2.1 Add `ReconcileSettingsIfSemanticallyEqual` (or equivalent) to `internal/elasticsearch/index/templateutil/` — takes `(ctx, planSettings, stateSettings customtypes.IndexSettingsValue)` and returns the canonical value to use in the plan plus a `changed bool` plus diagnostics
-- [ ] 2.2 Update `internal/elasticsearch/index/template/modify_plan.go` to call the shared helper instead of the inline logic; remove duplicated code
+- [x] 2.1 Add `ReconcileSettingsIfSemanticallyEqual` (or equivalent) to `internal/elasticsearch/index/templateutil/` — takes `(ctx, planSettings, stateSettings customtypes.IndexSettingsValue)` and returns the canonical value to use in the plan plus a `changed bool` plus diagnostics
+- [x] 2.2 Update `internal/elasticsearch/index/template/modify_plan.go` to call the shared helper instead of the inline logic; remove duplicated code
 
 ## 3. Adopt `aliasutil.AliasObjectType` in `component_template` schema
 
