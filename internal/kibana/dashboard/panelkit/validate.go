@@ -61,7 +61,12 @@ func ValidateDataViewFieldName(attrs map[string]attr.Value, configKey, cfgLabel 
 // It encodes the shared "shape resolution → missing-config error → null/unknown guard" pattern used
 // across SLO panel ValidatePanelConfig implementations.
 // Returns flat, obj, cfgPath, skip (true means caller should return immediately), and any diagnostics.
-func ResolveConfigBlock(attrs map[string]attr.Value, attrPath path.Path, cfgKey, missingErrSummary, missingErrDetail string, flatKeys ...string) (flat bool, obj types.Object, cfgPath path.Path, skip bool, diags diag.Diagnostics) {
+func ResolveConfigBlock(
+	attrs map[string]attr.Value,
+	attrPath path.Path,
+	cfgKey, missingErrSummary, missingErrDetail string,
+	flatKeys ...string,
+) (flat bool, obj types.Object, cfgPath path.Path, skip bool, diags diag.Diagnostics) {
 	cfgPath = attrPath
 	flat, obj, shaped := ResolvePanelAttrsShape(attrs, cfgKey, flatKeys...)
 	if !shaped {
@@ -95,8 +100,8 @@ func ValidateRequiredStringField(attrs map[string]attr.Value, obj types.Object, 
 	} else {
 		v = obj.Attributes()[key]
 	}
-	defer_, missing := StringAttrDeferOrMissing(v)
-	if defer_ {
+	deferred, missing := StringAttrDeferOrMissing(v)
+	if deferred {
 		return true, nil
 	}
 	if missing {
