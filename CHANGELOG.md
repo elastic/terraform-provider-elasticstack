@@ -2,6 +2,7 @@
 
 ### Changes
 
+- Prevent "Provider produced inconsistent result after apply" errors when optional string attributes (chunk_size, max_snapshot_bytes_per_sec, max_restore_bytes_per_sec) are set to empty string in the snapshot repository resource. ([#3832](https://github.com/elastic/terraform-provider-elasticstack/pull/3832))
 - Fix Fleet agent policy create when policy_id is omitted and add plan-time validation for explicit policy_id values ([#3937](https://github.com/elastic/terraform-provider-elasticstack/pull/3937))
 - Add `elasticstack_kibana_tag` resource and `elasticstack_kibana_tags` data source for managing Kibana tags and listing tags in a space. ([#3921](https://github.com/elastic/terraform-provider-elasticstack/pull/3921))
 - Fix component and index template state upgrade when SDK stored empty strings for mappings, settings, or metadata. ([#3914](https://github.com/elastic/terraform-provider-elasticstack/pull/3914))
