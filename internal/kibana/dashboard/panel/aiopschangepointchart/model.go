@@ -55,7 +55,7 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 		}
 	}
 	if typeutils.IsKnown(cfg.MaxSeriesToPlot) {
-		v := float32(cfg.MaxSeriesToPlot.ValueFloat64())
+		v := cfg.MaxSeriesToPlot.ValueFloat32()
 		panel.Config.MaxSeriesToPlot = &v
 	}
 	if typeutils.IsKnown(cfg.ViewType) {
@@ -98,9 +98,9 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 			HideBorder:          types.BoolPointerValue(api.HideBorder),
 		}
 		if api.MaxSeriesToPlot != nil {
-			pm.AiopsChangePointChartConfig.MaxSeriesToPlot = types.Float64Value(float64(*api.MaxSeriesToPlot))
+			pm.AiopsChangePointChartConfig.MaxSeriesToPlot = types.Float32Value(*api.MaxSeriesToPlot)
 		} else {
-			pm.AiopsChangePointChartConfig.MaxSeriesToPlot = types.Float64Null()
+			pm.AiopsChangePointChartConfig.MaxSeriesToPlot = types.Float32Null()
 		}
 		if api.TimeRange != nil {
 			pm.AiopsChangePointChartConfig.TimeRange = &models.TimeRangeModel{
@@ -128,9 +128,9 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 			HideBorder:          types.BoolPointerValue(api.HideBorder),
 		}
 		if api.MaxSeriesToPlot != nil {
-			pm.AiopsChangePointChartConfig.MaxSeriesToPlot = types.Float64Value(float64(*api.MaxSeriesToPlot))
+			pm.AiopsChangePointChartConfig.MaxSeriesToPlot = types.Float32Value(*api.MaxSeriesToPlot)
 		} else {
-			pm.AiopsChangePointChartConfig.MaxSeriesToPlot = types.Float64Null()
+			pm.AiopsChangePointChartConfig.MaxSeriesToPlot = types.Float32Null()
 		}
 	}
 
@@ -151,7 +151,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 	if typeutils.IsKnown(existing.ViewType) {
 		existing.ViewType = changePointViewTypeValue(api.ViewType)
 	}
-	existing.MaxSeriesToPlot = panelkit.PreserveFloat64(existing.MaxSeriesToPlot, float32PtrToFloat64Ptr(api.MaxSeriesToPlot))
+	existing.MaxSeriesToPlot = panelkit.PreserveFloat32(existing.MaxSeriesToPlot, api.MaxSeriesToPlot)
 
 	// Partitions set: null-preserve. When the practitioner omitted it (null/unknown in state), keep null
 	// regardless of API-returned values; otherwise refresh from the API set (order-insensitive).
@@ -190,7 +190,7 @@ func preserveNullIntentFromPrior(prior, existing *models.AiopsChangePointChartCo
 		existing.Partitions = types.SetNull(types.StringType)
 	}
 	if !typeutils.IsKnown(prior.MaxSeriesToPlot) {
-		existing.MaxSeriesToPlot = types.Float64Null()
+		existing.MaxSeriesToPlot = types.Float32Null()
 	}
 	if !typeutils.IsKnown(prior.ViewType) {
 		existing.ViewType = types.StringNull()
@@ -243,12 +243,4 @@ func changePointPartitionsFromAPI(v *[]string) types.Set {
 	return s
 }
 
-// float32PtrToFloat64Ptr converts a *float32 API field to a *float64 so it can be used with
-// panelkit.PreserveFloat64 (which takes *float64). Returns nil when the input is nil.
-func float32PtrToFloat64Ptr(v *float32) *float64 {
-	if v == nil {
-		return nil
-	}
-	f := float64(*v)
-	return &f
-}
+// (float32PtrToFloat64Ptr removed: float32 API fields now stored as types.Float32.)

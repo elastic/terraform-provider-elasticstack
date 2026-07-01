@@ -55,8 +55,8 @@ func SchemaAttribute() schema.Attribute {
 		Optional:    true,
 		ElementType: types.StringType,
 	}
-	attrs["max_series_to_plot"] = schema.Float64Attribute{
-		MarkdownDescription: "Maximum number of change points to visualise. Kibana default is `6`.",
+	attrs["max_series_to_plot"] = schema.Float32Attribute{
+		MarkdownDescription: "Maximum number of change points to visualise. Kibana default is `6`. Float32 in state matches the Kibana API and avoids refresh drift.",
 		Optional:            true,
 	}
 	attrs["view_type"] = schema.StringAttribute{

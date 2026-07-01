@@ -37,7 +37,7 @@ type AiopsPatternAnalysisConfigModel struct {
 	FieldName                types.String    `tfsdk:"field_name"`
 	MinimumTimeRange         types.String    `tfsdk:"minimum_time_range"`
 	RandomSamplerMode        types.String    `tfsdk:"random_sampler_mode"`
-	RandomSamplerProbability types.Float64   `tfsdk:"random_sampler_probability"`
+	RandomSamplerProbability types.Float32   `tfsdk:"random_sampler_probability"`
 	Title                    types.String    `tfsdk:"title"`
 	Description              types.String    `tfsdk:"description"`
 	HideTitle                types.Bool      `tfsdk:"hide_title"`
@@ -52,7 +52,7 @@ type AiopsChangePointChartConfigModel struct {
 	AggregationFunction types.String    `tfsdk:"aggregation_function"`
 	SplitField          types.String    `tfsdk:"split_field"`
 	Partitions          types.Set       `tfsdk:"partitions"`
-	MaxSeriesToPlot     types.Float64   `tfsdk:"max_series_to_plot"`
+	MaxSeriesToPlot     types.Float32   `tfsdk:"max_series_to_plot"`
 	ViewType            types.String    `tfsdk:"view_type"`
 	Title               types.String    `tfsdk:"title"`
 	Description         types.String    `tfsdk:"description"`

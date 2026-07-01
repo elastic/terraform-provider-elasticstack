@@ -35,12 +35,12 @@ import (
 
 func stringVal(s string) types.String { return types.StringValue(s) }
 func boolVal(b bool) types.Bool       { return types.BoolValue(b) }
-func float64Val(f float64) types.Float64 {
-	return types.Float64Value(f)
+func float32Val(f float32) types.Float32 {
+	return types.Float32Value(f)
 }
 func stringNull() types.String { return types.StringNull() }
-func float64Null() types.Float64 {
-	return types.Float64Null()
+func float32Null() types.Float32 {
+	return types.Float32Null()
 }
 
 func configJSONSet(s string) customtypes.JSONWithDefaultsValue[map[string]any] {
@@ -132,7 +132,7 @@ func TestBuildConfig_allOptional(t *testing.T) {
 			FieldName:                stringVal("message"),
 			MinimumTimeRange:         stringVal("1_week"),
 			RandomSamplerMode:        stringVal("on_manual"),
-			RandomSamplerProbability: float64Val(0.01),
+			RandomSamplerProbability: float32Val(0.01),
 			Title:                    stringVal("Patterns"),
 			Description:              stringVal("Pattern panel"),
 			HideTitle:                boolVal(true),
@@ -179,7 +179,7 @@ func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 			FieldName:                stringVal("message"),
 			MinimumTimeRange:         stringNull(),
 			RandomSamplerMode:        stringNull(),
-			RandomSamplerProbability: float64Null(),
+			RandomSamplerProbability: float32Null(),
 			TimeRange:                nil,
 		},
 	}
@@ -189,11 +189,10 @@ func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 			FieldName:                stringVal("message"),
 			MinimumTimeRange:         stringNull(),
 			RandomSamplerMode:        stringNull(),
-			RandomSamplerProbability: float64Null(),
+			RandomSamplerProbability: float32Null(),
 			TimeRange:                nil,
 		},
 	}
-
 	diags := aiopspatternanalysis.PopulateFromAPI(pm, prior, api)
 	require.False(t, diags.HasError(), "%s", diags)
 

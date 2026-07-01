@@ -19,7 +19,7 @@ package aiopspatternanalysis
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -52,12 +52,12 @@ func SchemaAttribute() schema.Attribute {
 			stringvalidator.OneOf("off", "on_automatic", "on_manual"),
 		},
 	}
-	attrs["random_sampler_probability"] = schema.Float64Attribute{
+	attrs["random_sampler_probability"] = schema.Float32Attribute{
 		MarkdownDescription: "Sampling probability, only meaningful when `random_sampler_mode = on_manual`. " +
-			"Must be between `0.00001` and `0.5`.",
+			"Must be between `0.00001` and `0.5`. Float32 in state matches the Kibana API and avoids refresh drift.",
 		Optional: true,
-		Validators: []validator.Float64{
-			float64validator.Between(0.00001, 0.5),
+		Validators: []validator.Float32{
+			float32validator.Between(0.00001, 0.5),
 		},
 	}
 	attrs["time_range"] = panelkit.TimeRangeSchema(

@@ -45,7 +45,7 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 		panel.Config.RandomSamplerMode = &v
 	}
 	if typeutils.IsKnown(cfg.RandomSamplerProbability) {
-		v := float32(cfg.RandomSamplerProbability.ValueFloat64())
+		v := cfg.RandomSamplerProbability.ValueFloat32()
 		panel.Config.RandomSamplerProbability = &v
 	}
 
@@ -82,9 +82,9 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 			HideBorder:        types.BoolPointerValue(api.HideBorder),
 		}
 		if api.RandomSamplerProbability != nil {
-			pm.AiopsPatternAnalysisConfig.RandomSamplerProbability = types.Float64Value(float64(*api.RandomSamplerProbability))
+			pm.AiopsPatternAnalysisConfig.RandomSamplerProbability = types.Float32Value(*api.RandomSamplerProbability)
 		} else {
-			pm.AiopsPatternAnalysisConfig.RandomSamplerProbability = types.Float64Null()
+			pm.AiopsPatternAnalysisConfig.RandomSamplerProbability = types.Float32Null()
 		}
 		if api.TimeRange != nil {
 			pm.AiopsPatternAnalysisConfig.TimeRange = &models.TimeRangeModel{
@@ -110,9 +110,9 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 			HideBorder:        types.BoolPointerValue(api.HideBorder),
 		}
 		if api.RandomSamplerProbability != nil {
-			pm.AiopsPatternAnalysisConfig.RandomSamplerProbability = types.Float64Value(float64(*api.RandomSamplerProbability))
+			pm.AiopsPatternAnalysisConfig.RandomSamplerProbability = types.Float32Value(*api.RandomSamplerProbability)
 		} else {
-			pm.AiopsPatternAnalysisConfig.RandomSamplerProbability = types.Float64Null()
+			pm.AiopsPatternAnalysisConfig.RandomSamplerProbability = types.Float32Null()
 		}
 	}
 
@@ -132,7 +132,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 	if typeutils.IsKnown(existing.RandomSamplerMode) {
 		existing.RandomSamplerMode = patternAnalysisRandomSamplerModeValue(api.RandomSamplerMode)
 	}
-	existing.RandomSamplerProbability = panelkit.PreserveFloat64(existing.RandomSamplerProbability, float32PtrToFloat64Ptr(api.RandomSamplerProbability))
+	existing.RandomSamplerProbability = panelkit.PreserveFloat32(existing.RandomSamplerProbability, api.RandomSamplerProbability)
 
 	existing.Title = panelkit.PreserveString(existing.Title, api.Title)
 	existing.Description = panelkit.PreserveString(existing.Description, api.Description)
@@ -162,7 +162,7 @@ func preserveNullIntentFromPrior(prior, existing *models.AiopsPatternAnalysisCon
 		existing.RandomSamplerMode = types.StringNull()
 	}
 	if !typeutils.IsKnown(prior.RandomSamplerProbability) {
-		existing.RandomSamplerProbability = types.Float64Null()
+		existing.RandomSamplerProbability = types.Float32Null()
 	}
 	if !typeutils.IsKnown(prior.Title) {
 		existing.Title = types.StringNull()
@@ -193,14 +193,4 @@ func patternAnalysisRandomSamplerModeValue(v *kbapi.KibanaHTTPAPIsAiopsPatternAn
 		return types.StringNull()
 	}
 	return types.StringValue(string(*v))
-}
-
-// float32PtrToFloat64Ptr converts a *float32 API field to a *float64 so it can be used with
-// panelkit.PreserveFloat64 (which takes *float64). Returns nil when the input is nil.
-func float32PtrToFloat64Ptr(v *float32) *float64 {
-	if v == nil {
-		return nil
-	}
-	f := float64(*v)
-	return &f
 }

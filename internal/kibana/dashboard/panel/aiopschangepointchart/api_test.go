@@ -36,12 +36,12 @@ import (
 
 func stringVal(s string) types.String { return types.StringValue(s) }
 func boolVal(b bool) types.Bool       { return types.BoolValue(b) }
-func float64Val(f float64) types.Float64 {
-	return types.Float64Value(f)
+func float32Val(f float32) types.Float32 {
+	return types.Float32Value(f)
 }
 func stringNull() types.String { return types.StringNull() }
-func float64Null() types.Float64 {
-	return types.Float64Null()
+func float32Null() types.Float32 {
+	return types.Float32Null()
 }
 
 func stringSet(values ...string) types.Set {
@@ -150,7 +150,7 @@ func TestBuildConfig_allOptional(t *testing.T) {
 			AggregationFunction: stringVal("avg"),
 			SplitField:          stringVal("host.name"),
 			Partitions:          stringSet("host-a", "host-b"),
-			MaxSeriesToPlot:     float64Val(6),
+			MaxSeriesToPlot:     float32Val(6),
 			ViewType:            stringVal("charts"),
 			Title:               stringVal("Change points"),
 			HideBorder:          boolVal(true),
@@ -197,7 +197,7 @@ func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 			AggregationFunction: stringNull(),
 			SplitField:          stringNull(),
 			Partitions:          types.SetNull(types.StringType),
-			MaxSeriesToPlot:     float64Null(),
+			MaxSeriesToPlot:     float32Null(),
 			ViewType:            stringNull(),
 			TimeRange:           nil,
 		},
@@ -209,7 +209,7 @@ func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 			AggregationFunction: stringNull(),
 			SplitField:          stringNull(),
 			Partitions:          types.SetNull(types.StringType),
-			MaxSeriesToPlot:     float64Null(),
+			MaxSeriesToPlot:     float32Null(),
 			ViewType:            stringNull(),
 			TimeRange:           nil,
 		},

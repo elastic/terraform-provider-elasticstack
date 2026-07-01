@@ -57,16 +57,13 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.KibanaHTTPAPIsAiopsLogRateAnalysis) diag.Diagnostics {
 	// On import (prior == nil): populate required fields unconditionally; optional fields only when API non-nil.
 	if prior == nil {
-		var priorTR *models.TimeRangeModel
 		pm.AiopsLogRateAnalysisConfig = &models.AiopsLogRateAnalysisConfigModel{
 			DataViewID:  types.StringValue(api.DataViewId),
 			Title:       types.StringPointerValue(api.Title),
 			Description: types.StringPointerValue(api.Description),
 			HideTitle:   types.BoolPointerValue(api.HideTitle),
 			HideBorder:  types.BoolPointerValue(api.HideBorder),
-			TimeRange:   panelkit.TimeRangeFromAPI(priorTR, api.TimeRange),
 		}
-		// On import with no prior, populate time_range directly from the API when present.
 		if api.TimeRange != nil {
 			pm.AiopsLogRateAnalysisConfig.TimeRange = &models.TimeRangeModel{
 				From: types.StringValue(api.TimeRange.From),
