@@ -39,8 +39,8 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 		return diags
 	}
 
-	jobIDs := make([]string, len(cfg.JobIds))
-	for i, id := range cfg.JobIds {
+	jobIDs := make([]string, len(cfg.JobIDs))
+	for i, id := range cfg.JobIDs {
 		jobIDs[i] = id.ValueString()
 	}
 
@@ -160,7 +160,7 @@ func mlAnomalySwimlaneConfigFromAPIImport(apiConfig kbapi.KibanaHTTPAPIsMlAnomal
 func mlAnomalySwimlaneConfigFromOverallAPI(cfg kbapi.KibanaHTTPAPIsMlAnomalySwimlane0) *models.MlAnomalySwimlaneConfigModel {
 	out := &models.MlAnomalySwimlaneConfigModel{
 		SwimlaneType: types.StringValue(string(cfg.SwimlaneType)),
-		JobIds:       mlAnomalySwimlaneJobIDsFromAPI(cfg.JobIds),
+		JobIDs:       mlAnomalySwimlaneJobIDsFromAPI(cfg.JobIds),
 		ViewBy:       types.StringNull(),
 		Title:        types.StringPointerValue(cfg.Title),
 		Description:  types.StringPointerValue(cfg.Description),
@@ -175,7 +175,7 @@ func mlAnomalySwimlaneConfigFromOverallAPI(cfg kbapi.KibanaHTTPAPIsMlAnomalySwim
 func mlAnomalySwimlaneConfigFromViewByAPI(cfg kbapi.KibanaHTTPAPIsMlAnomalySwimlane1) *models.MlAnomalySwimlaneConfigModel {
 	out := &models.MlAnomalySwimlaneConfigModel{
 		SwimlaneType: types.StringValue(string(cfg.SwimlaneType)),
-		JobIds:       mlAnomalySwimlaneJobIDsFromAPI(cfg.JobIds),
+		JobIDs:       mlAnomalySwimlaneJobIDsFromAPI(cfg.JobIds),
 		ViewBy:       types.StringValue(cfg.ViewBy),
 		Title:        types.StringPointerValue(cfg.Title),
 		Description:  types.StringPointerValue(cfg.Description),
@@ -189,14 +189,14 @@ func mlAnomalySwimlaneConfigFromViewByAPI(cfg kbapi.KibanaHTTPAPIsMlAnomalySwiml
 
 func mlAnomalySwimlaneMergeOverallFromAPI(existing, prior *models.MlAnomalySwimlaneConfigModel, cfg kbapi.KibanaHTTPAPIsMlAnomalySwimlane0) {
 	existing.SwimlaneType = types.StringValue(string(cfg.SwimlaneType))
-	existing.JobIds = mlAnomalySwimlaneJobIDsFromAPI(cfg.JobIds)
+	existing.JobIDs = mlAnomalySwimlaneJobIDsFromAPI(cfg.JobIds)
 	existing.ViewBy = types.StringNull()
 	mlAnomalySwimlaneMergeOptionalFromAPI(existing, prior, cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder, cfg.PerPage, cfg.TimeRange)
 }
 
 func mlAnomalySwimlaneMergeViewByFromAPI(existing, prior *models.MlAnomalySwimlaneConfigModel, cfg kbapi.KibanaHTTPAPIsMlAnomalySwimlane1) {
 	existing.SwimlaneType = types.StringValue(string(cfg.SwimlaneType))
-	existing.JobIds = mlAnomalySwimlaneJobIDsFromAPI(cfg.JobIds)
+	existing.JobIDs = mlAnomalySwimlaneJobIDsFromAPI(cfg.JobIds)
 	existing.ViewBy = types.StringValue(cfg.ViewBy)
 	mlAnomalySwimlaneMergeOptionalFromAPI(existing, prior, cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder, cfg.PerPage, cfg.TimeRange)
 }

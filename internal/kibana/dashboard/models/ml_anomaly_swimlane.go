@@ -23,7 +23,7 @@ import (
 
 type MlAnomalySwimlaneConfigModel struct {
 	SwimlaneType types.String    `tfsdk:"swimlane_type"`
-	JobIds       []types.String  `tfsdk:"job_ids"`
+	JobIDs       []types.String  `tfsdk:"job_ids"`
 	ViewBy       types.String    `tfsdk:"view_by"`
 	PerPage      types.Float32   `tfsdk:"per_page"`
 	Title        types.String    `tfsdk:"title"`
