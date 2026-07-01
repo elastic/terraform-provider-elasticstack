@@ -862,4 +862,3 @@ func TestBuildUpdateBody_partialVarsRemovalDropsOnlyMissingKeys(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "text", accountType["type"], "surviving key's existing `type` metadata should be preserved")
 }
-
