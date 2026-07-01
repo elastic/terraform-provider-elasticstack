@@ -39,10 +39,7 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 		return diags
 	}
 
-	jobIDs := make([]string, len(cfg.JobIDs))
-	for i, id := range cfg.JobIDs {
-		jobIDs[i] = id.ValueString()
-	}
+	jobIDs := typeutils.ValueStringSlice(cfg.JobIDs)
 
 	var union kbapi.KibanaHTTPAPIsMlAnomalySwimlane
 	switch cfg.SwimlaneType.ValueString() {
@@ -160,14 +157,14 @@ func mlAnomalySwimlaneConfigFromAPIImport(apiConfig kbapi.KibanaHTTPAPIsMlAnomal
 func mlAnomalySwimlaneConfigFromOverallAPI(cfg kbapi.KibanaHTTPAPIsMlAnomalySwimlane0) *models.MlAnomalySwimlaneConfigModel {
 	out := &models.MlAnomalySwimlaneConfigModel{
 		SwimlaneType: types.StringValue(string(cfg.SwimlaneType)),
-		JobIDs:       mlAnomalySwimlaneJobIDsFromAPI(cfg.JobIds),
+		JobIDs:       typeutils.StringSliceValue(cfg.JobIds),
 		ViewBy:       types.StringNull(),
 		Title:        types.StringPointerValue(cfg.Title),
 		Description:  types.StringPointerValue(cfg.Description),
 		HideTitle:    types.BoolPointerValue(cfg.HideTitle),
 		HideBorder:   types.BoolPointerValue(cfg.HideBorder),
 		PerPage:      types.Float32PointerValue(cfg.PerPage),
-		TimeRange:    mlAnomalySwimlaneTimeRangeFromAPI(cfg.TimeRange, nil),
+		TimeRange:    panelkit.TimeRangeFromAPI(cfg.TimeRange, nil),
 	}
 	return out
 }
@@ -175,28 +172,28 @@ func mlAnomalySwimlaneConfigFromOverallAPI(cfg kbapi.KibanaHTTPAPIsMlAnomalySwim
 func mlAnomalySwimlaneConfigFromViewByAPI(cfg kbapi.KibanaHTTPAPIsMlAnomalySwimlane1) *models.MlAnomalySwimlaneConfigModel {
 	out := &models.MlAnomalySwimlaneConfigModel{
 		SwimlaneType: types.StringValue(string(cfg.SwimlaneType)),
-		JobIDs:       mlAnomalySwimlaneJobIDsFromAPI(cfg.JobIds),
+		JobIDs:       typeutils.StringSliceValue(cfg.JobIds),
 		ViewBy:       types.StringValue(cfg.ViewBy),
 		Title:        types.StringPointerValue(cfg.Title),
 		Description:  types.StringPointerValue(cfg.Description),
 		HideTitle:    types.BoolPointerValue(cfg.HideTitle),
 		HideBorder:   types.BoolPointerValue(cfg.HideBorder),
 		PerPage:      types.Float32PointerValue(cfg.PerPage),
-		TimeRange:    mlAnomalySwimlaneTimeRangeFromAPI(cfg.TimeRange, nil),
+		TimeRange:    panelkit.TimeRangeFromAPI(cfg.TimeRange, nil),
 	}
 	return out
 }
 
 func mlAnomalySwimlaneMergeOverallFromAPI(existing, prior *models.MlAnomalySwimlaneConfigModel, cfg kbapi.KibanaHTTPAPIsMlAnomalySwimlane0) {
 	existing.SwimlaneType = types.StringValue(string(cfg.SwimlaneType))
-	existing.JobIDs = mlAnomalySwimlaneJobIDsFromAPI(cfg.JobIds)
+	existing.JobIDs = typeutils.StringSliceValue(cfg.JobIds)
 	existing.ViewBy = types.StringNull()
 	mlAnomalySwimlaneMergeOptionalFromAPI(existing, prior, cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder, cfg.PerPage, cfg.TimeRange)
 }
 
 func mlAnomalySwimlaneMergeViewByFromAPI(existing, prior *models.MlAnomalySwimlaneConfigModel, cfg kbapi.KibanaHTTPAPIsMlAnomalySwimlane1) {
 	existing.SwimlaneType = types.StringValue(string(cfg.SwimlaneType))
-	existing.JobIDs = mlAnomalySwimlaneJobIDsFromAPI(cfg.JobIds)
+	existing.JobIDs = typeutils.StringSliceValue(cfg.JobIds)
 	existing.ViewBy = types.StringValue(cfg.ViewBy)
 	mlAnomalySwimlaneMergeOptionalFromAPI(existing, prior, cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder, cfg.PerPage, cfg.TimeRange)
 }
@@ -213,62 +210,16 @@ func mlAnomalySwimlaneMergeOptionalFromAPI(
 	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, hideTitle)
 	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, hideBorder)
 	existing.PerPage = panelkit.PreserveFloat32(existing.PerPage, perPage)
-	existing.TimeRange = mlAnomalySwimlaneMergeTimeRange(existing.TimeRange, timeRange, prior)
 
-	if prior != nil {
-		mlAnomalySwimlanePreserveNullIntentFromPrior(prior, existing)
-	}
-}
-
-func mlAnomalySwimlaneMergeTimeRange(
-	existing *models.TimeRangeModel,
-	api *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema,
-	prior *models.MlAnomalySwimlaneConfigModel,
-) *models.TimeRangeModel {
 	var priorTR *models.TimeRangeModel
 	if prior != nil {
 		priorTR = prior.TimeRange
 	}
-	if priorTR == nil {
-		return nil
-	}
-	if existing == nil {
-		return mlAnomalySwimlaneTimeRangeFromAPI(api, priorTR)
-	}
-	if !typeutils.IsKnown(existing.From) && !typeutils.IsKnown(existing.To) && !typeutils.IsKnown(existing.Mode) {
-		return existing
-	}
-	return mlAnomalySwimlaneTimeRangeFromAPI(api, priorTR)
-}
+	existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, timeRange, priorTR)
 
-func mlAnomalySwimlaneTimeRangeFromAPI(api *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, prior *models.TimeRangeModel) *models.TimeRangeModel {
-	if api == nil {
-		return nil
+	if prior != nil {
+		mlAnomalySwimlanePreserveNullIntentFromPrior(prior, existing)
 	}
-	if api.From == "" && api.To == "" && (api.Mode == nil || string(*api.Mode) == "") {
-		return nil
-	}
-	out := &models.TimeRangeModel{
-		From: types.StringValue(api.From),
-		To:   types.StringValue(api.To),
-	}
-	switch {
-	case api.Mode != nil:
-		out.Mode = types.StringValue(string(*api.Mode))
-	case prior != nil && typeutils.IsKnown(prior.Mode):
-		out.Mode = prior.Mode
-	default:
-		out.Mode = types.StringNull()
-	}
-	return out
-}
-
-func mlAnomalySwimlaneJobIDsFromAPI(jobIDs []string) []types.String {
-	out := make([]types.String, len(jobIDs))
-	for i, id := range jobIDs {
-		out[i] = types.StringValue(id)
-	}
-	return out
 }
 
 func mlAnomalySwimlanePreserveNullIntentFromPrior(prior, existing *models.MlAnomalySwimlaneConfigModel) {

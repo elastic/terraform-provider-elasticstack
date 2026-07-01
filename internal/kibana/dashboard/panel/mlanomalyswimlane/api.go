@@ -27,7 +27,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // Handler implements iface.Handler for the ml_anomaly_swimlane dashboard panel discriminator.
@@ -82,21 +81,10 @@ func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Valu
 		out.Append(d...)
 	}
 
-	var jobIDsVal attr.Value
-	if flat {
-		jobIDsVal = attrs["job_ids"]
-	} else {
-		jobIDsVal = obj.Attributes()["job_ids"]
-	}
-	switch {
-	case jobIDsVal == nil || jobIDsVal.IsUnknown():
-	case jobIDsVal.IsNull():
-		out.AddAttributeError(cfgPath.AtName("job_ids"), "Invalid ML anomaly swim lane configuration", "`job_ids` is required.")
-	default:
-		if list, ok := jobIDsVal.(types.List); ok && (list.IsNull() || list.IsUnknown() || len(list.Elements()) == 0) {
-			out.AddAttributeError(cfgPath.AtName("job_ids"), "Invalid ML anomaly swim lane configuration", "`job_ids` must contain at least one entry.")
-		}
-	}
+	out.Append(panelkit.ValidateRequiredListField(attrs, obj, flat, cfgPath, "job_ids", 1, 0,
+		"Invalid ML anomaly swim lane configuration",
+		"`job_ids` is required.",
+		"`job_ids` must contain at least one entry.")...)
 
 	return out
 }

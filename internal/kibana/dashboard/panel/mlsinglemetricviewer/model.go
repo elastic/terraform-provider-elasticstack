@@ -34,13 +34,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func entityObjectType() types.ObjectType {
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			entityAttrStringValue:  types.StringType,
-			entityAttrNumericValue: types.NumberType,
-		},
-	}
+var mlSingleMetricViewerEntityObjectType = types.ObjectType{
+	AttrTypes: map[string]attr.Type{
+		entityAttrStringValue:  types.StringType,
+		entityAttrNumericValue: types.NumberType,
+	},
 }
 
 // BuildConfig writes Terraform state from pm into panel's typed API config.
@@ -55,13 +53,8 @@ func BuildConfig(ctx context.Context, pm models.PanelModel, panel *kbapi.KibanaH
 		return diags
 	}
 
-	jobIDs := make([]string, len(cfg.JobIDs))
-	for i, id := range cfg.JobIDs {
-		jobIDs[i] = id.ValueString()
-	}
-
 	apiCfg := kbapi.KibanaHTTPAPIsMlSingleMetricViewer{
-		JobIds: jobIDs,
+		JobIds: typeutils.ValueStringSlice(cfg.JobIDs),
 	}
 
 	if typeutils.IsKnown(cfg.Title) {
@@ -130,7 +123,7 @@ func PopulateFromAPI(ctx context.Context, pm *models.PanelModel, prior *models.P
 func mlSingleMetricViewerConfigFromAPIImport(ctx context.Context, apiConfig kbapi.KibanaHTTPAPIsMlSingleMetricViewer) (*models.MlSingleMetricViewerConfigModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	out := &models.MlSingleMetricViewerConfigModel{
-		JobIDs:                mlSingleMetricViewerJobIDsFromAPI(apiConfig.JobIds),
+		JobIDs:                typeutils.StringSliceValue(apiConfig.JobIds),
 		SelectedDetectorIndex: types.Float32PointerValue(apiConfig.SelectedDetectorIndex),
 		ForecastID:            types.StringPointerValue(apiConfig.ForecastId),
 		FunctionDescription:   types.StringPointerValue(apiConfig.FunctionDescription),
@@ -139,7 +132,7 @@ func mlSingleMetricViewerConfigFromAPIImport(ctx context.Context, apiConfig kbap
 		Description:           types.StringPointerValue(apiConfig.Description),
 		HideTitle:             types.BoolPointerValue(apiConfig.HideTitle),
 		HideBorder:            types.BoolPointerValue(apiConfig.HideBorder),
-		TimeRange:             mlSingleMetricViewerTimeRangeFromAPI(apiConfig.TimeRange, nil),
+		TimeRange:             panelkit.TimeRangeFromAPI(apiConfig.TimeRange, nil),
 	}
 	return out, diags
 }
@@ -151,7 +144,7 @@ func mlSingleMetricViewerMergeFromAPI(
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	existing.JobIDs = mlSingleMetricViewerJobIDsFromAPI(apiConfig.JobIds)
+	existing.JobIDs = typeutils.StringSliceValue(apiConfig.JobIds)
 	existing.SelectedDetectorIndex = panelkit.PreserveFloat32(existing.SelectedDetectorIndex, apiConfig.SelectedDetectorIndex)
 	existing.ForecastID = panelkit.PreserveString(existing.ForecastID, apiConfig.ForecastId)
 	existing.FunctionDescription = panelkit.PreserveString(existing.FunctionDescription, apiConfig.FunctionDescription)
@@ -159,7 +152,12 @@ func mlSingleMetricViewerMergeFromAPI(
 	existing.Description = panelkit.PreserveString(existing.Description, apiConfig.Description)
 	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, apiConfig.HideTitle)
 	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, apiConfig.HideBorder)
-	existing.TimeRange = mlSingleMetricViewerMergeTimeRange(existing.TimeRange, apiConfig.TimeRange, prior)
+
+	var priorTR *models.TimeRangeModel
+	if prior != nil {
+		priorTR = prior.TimeRange
+	}
+	existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, apiConfig.TimeRange, priorTR)
 
 	if prior != nil && typeutils.IsKnown(prior.SelectedEntities) {
 		existing.SelectedEntities = mlSingleMetricViewerSelectedEntitiesFromAPI(ctx, apiConfig.SelectedEntities, &diags)
@@ -170,57 +168,6 @@ func mlSingleMetricViewerMergeFromAPI(
 	}
 
 	return diags
-}
-
-func mlSingleMetricViewerMergeTimeRange(
-	existing *models.TimeRangeModel,
-	api *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema,
-	prior *models.MlSingleMetricViewerConfigModel,
-) *models.TimeRangeModel {
-	var priorTR *models.TimeRangeModel
-	if prior != nil {
-		priorTR = prior.TimeRange
-	}
-	if priorTR == nil {
-		return nil
-	}
-	if existing == nil {
-		return mlSingleMetricViewerTimeRangeFromAPI(api, priorTR)
-	}
-	if !typeutils.IsKnown(existing.From) && !typeutils.IsKnown(existing.To) && !typeutils.IsKnown(existing.Mode) {
-		return existing
-	}
-	return mlSingleMetricViewerTimeRangeFromAPI(api, priorTR)
-}
-
-func mlSingleMetricViewerTimeRangeFromAPI(api *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, prior *models.TimeRangeModel) *models.TimeRangeModel {
-	if api == nil {
-		return nil
-	}
-	if api.From == "" && api.To == "" && (api.Mode == nil || string(*api.Mode) == "") {
-		return nil
-	}
-	out := &models.TimeRangeModel{
-		From: types.StringValue(api.From),
-		To:   types.StringValue(api.To),
-	}
-	switch {
-	case api.Mode != nil:
-		out.Mode = types.StringValue(string(*api.Mode))
-	case prior != nil && typeutils.IsKnown(prior.Mode):
-		out.Mode = prior.Mode
-	default:
-		out.Mode = types.StringNull()
-	}
-	return out
-}
-
-func mlSingleMetricViewerJobIDsFromAPI(jobIDs []string) []types.String {
-	out := make([]types.String, len(jobIDs))
-	for i, id := range jobIDs {
-		out[i] = types.StringValue(id)
-	}
-	return out
 }
 
 func mlSingleMetricViewerSelectedEntitiesToAPI(
@@ -289,7 +236,7 @@ func mlSingleMetricViewerSelectedEntitiesFromAPI(
 	diags *diag.Diagnostics,
 ) types.Map {
 	if api == nil || len(*api) == 0 {
-		return types.MapNull(entityObjectType())
+		return types.MapNull(mlSingleMetricViewerEntityObjectType)
 	}
 	elems := make(map[string]models.MlSingleMetricViewerEntityModel, len(*api))
 	for k, v := range *api {
@@ -309,7 +256,7 @@ func mlSingleMetricViewerSelectedEntitiesFromAPI(
 		}
 		elems[k] = entity
 	}
-	return typeutils.MapValueFrom(ctx, elems, entityObjectType(), path.Empty(), diags)
+	return typeutils.MapValueFrom(ctx, elems, mlSingleMetricViewerEntityObjectType, path.Empty(), diags)
 }
 
 func mlSingleMetricViewerPreserveNullIntentFromPrior(prior, existing *models.MlSingleMetricViewerConfigModel) {

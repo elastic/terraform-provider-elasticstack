@@ -131,3 +131,34 @@ func ValidateRequiredStringField(attrs map[string]attr.Value, obj types.Object, 
 	}
 	return false, diags
 }
+
+// ValidateRequiredListField validates that a required list attribute (looked up from flat attrs or
+// obj.Attributes() based on flat) is present and has an element count within [minSize, maxSize]. A
+// maxSize of 0 means no upper bound. requiredMsg is used when the list is null; sizeMsg is used when
+// the element count is out of range. Unknown values defer validation to a later plan.
+func ValidateRequiredListField(
+	attrs map[string]attr.Value, obj types.Object, flat bool, cfgPath path.Path, key string,
+	minSize, maxSize int, errSummary, requiredMsg, sizeMsg string,
+) diag.Diagnostics {
+	var out diag.Diagnostics
+	var v attr.Value
+	if flat {
+		v = attrs[key]
+	} else {
+		v = obj.Attributes()[key]
+	}
+	switch {
+	case v == nil || v.IsUnknown():
+	case v.IsNull():
+		out.AddAttributeError(cfgPath.AtName(key), errSummary, requiredMsg)
+	default:
+		list, ok := v.(types.List)
+		if !ok || list.IsNull() || list.IsUnknown() {
+			return out
+		}
+		if n := len(list.Elements()); n < minSize || (maxSize > 0 && n > maxSize) {
+			out.AddAttributeError(cfgPath.AtName(key), errSummary, sizeMsg)
+		}
+	}
+	return out
+}
