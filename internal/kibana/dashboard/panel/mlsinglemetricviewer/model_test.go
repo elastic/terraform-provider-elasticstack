@@ -414,7 +414,7 @@ func TestPopulateFromAPI_import_selectedDetectorIndexDefault(t *testing.T) {
 
 	cfg := pm.MlSingleMetricViewerConfig
 	require.NotNil(t, cfg)
-	assert.InEpsilon(t, float32(0), cfg.SelectedDetectorIndex.ValueFloat32(), 1e-6)
+	assert.InDelta(t, float32(0), cfg.SelectedDetectorIndex.ValueFloat32(), 1e-6)
 }
 
 func TestPopulateFromAPI_selectedDetectorIndex_float32RoundTrip(t *testing.T) {
