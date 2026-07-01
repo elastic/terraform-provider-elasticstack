@@ -2280,7 +2280,7 @@ The `ml_single_metric_viewer_config` block SHALL conflict with all other typed p
 - WHEN Terraform validates the resource schema
 - THEN the provider SHALL return a plan-time error diagnostic
 
-### Requirement: APM service map panel support (REQ-047)
+### Requirement: APM service map panel support (REQ-049)
 
 The `elasticstack_kibana_dashboard` resource SHALL support `type = "apm_service_map"` panels through a typed `apm_service_map_config` block. The block exposes the full flat configuration surface of `KibanaHTTPAPIsApmServiceMapEmbeddable`.
 
