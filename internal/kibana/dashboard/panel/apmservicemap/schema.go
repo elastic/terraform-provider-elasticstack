@@ -58,46 +58,22 @@ func SchemaAttribute() schema.Attribute {
 		MarkdownDescription: "When set, the panel follows dashboard-level filters.",
 		Optional:            true,
 	}
-	attrs["alert_status_filter"] = schema.SetAttribute{
-		MarkdownDescription: "Filter services by alert status.",
-		Optional:            true,
-		ElementType:         types.StringType,
-		Validators: []validator.Set{
-			setvalidator.ValueStringsAre(
-				stringvalidator.OneOf("active", "delayed", "recovered", "untracked"),
-			),
-		},
-	}
-	attrs["anomaly_severity_filter"] = schema.SetAttribute{
-		MarkdownDescription: "Filter services by anomaly severity.",
-		Optional:            true,
-		ElementType:         types.StringType,
-		Validators: []validator.Set{
-			setvalidator.ValueStringsAre(
-				stringvalidator.OneOf("low", "warning", "minor", "major", "critical", "unknown"),
-			),
-		},
-	}
-	attrs["connection_filter"] = schema.SetAttribute{
-		MarkdownDescription: "Filter services by connection state.",
-		Optional:            true,
-		ElementType:         types.StringType,
-		Validators: []validator.Set{
-			setvalidator.ValueStringsAre(
-				stringvalidator.OneOf("connected", "orphaned"),
-			),
-		},
-	}
-	attrs["slo_status_filter"] = schema.SetAttribute{
-		MarkdownDescription: "Filter services by SLO status.",
-		Optional:            true,
-		ElementType:         types.StringType,
-		Validators: []validator.Set{
-			setvalidator.ValueStringsAre(
-				stringvalidator.OneOf("degrading", "healthy", "noData", "violated"),
-			),
-		},
-	}
+	attrs["alert_status_filter"] = enumSetAttribute(
+		"Filter services by alert status.",
+		"active", "delayed", "recovered", "untracked",
+	)
+	attrs["anomaly_severity_filter"] = enumSetAttribute(
+		"Filter services by anomaly severity.",
+		"low", "warning", "minor", "major", "critical", "unknown",
+	)
+	attrs["connection_filter"] = enumSetAttribute(
+		"Filter services by connection state.",
+		"connected", "orphaned",
+	)
+	attrs["slo_status_filter"] = enumSetAttribute(
+		"Filter services by SLO status.",
+		"degrading", "healthy", "noData", "violated",
+	)
 	attrs["time_range"] = panelkit.TimeRangeSchema(
 		"Optional panel time range (`from`, `to`, and optional `mode`).",
 	)
@@ -108,4 +84,17 @@ func SchemaAttribute() schema.Attribute {
 		PanelType:   panelType,
 		Attributes:  attrs,
 	})
+}
+
+// enumSetAttribute returns an optional SetAttribute of strings restricted to allowed, used for the
+// panel's membership filter attributes (order does not affect plan stability for a Set).
+func enumSetAttribute(markdownDescription string, allowed ...string) schema.SetAttribute {
+	return schema.SetAttribute{
+		MarkdownDescription: markdownDescription,
+		Optional:            true,
+		ElementType:         types.StringType,
+		Validators: []validator.Set{
+			setvalidator.ValueStringsAre(stringvalidator.OneOf(allowed...)),
+		},
+	}
 }

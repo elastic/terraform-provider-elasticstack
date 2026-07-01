@@ -39,7 +39,7 @@ func TestBuildConfig_nilConfig(t *testing.T) {
 	var panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap
 	diags := apmservicemap.BuildConfig(pm, &panel)
 	require.False(t, diags.HasError(), "%v", diags)
-	assert.False(t, apmservicemapHasAnyField(panel.Config))
+	assert.Equal(t, kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{}, panel.Config)
 }
 
 func TestBuildConfig_allOptionalFields(t *testing.T) {
@@ -183,14 +183,9 @@ func TestPopulateFromAPI_filterSet_reordering(t *testing.T) {
 		types.StringValue("active"),
 		types.StringValue("delayed"),
 	})
-	pm := &models.PanelModel{
-		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
-			AlertStatusFilter: types.SetValueMust(types.StringType, []attr.Value{
-				types.StringValue("active"),
-				types.StringValue("delayed"),
-			}),
-		},
-	}
+	// pm starts empty, matching the real dashboardMapPanelFromAPI flow: it is never
+	// pre-populated with a value to merge against, only `prior` (the plan) carries intent.
+	pm := &models.PanelModel{}
 	prior := &models.PanelModel{
 		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
 			AlertStatusFilter: types.SetValueMust(types.StringType, []attr.Value{
@@ -216,11 +211,8 @@ func TestPopulateFromAPI_filterSet_reordering(t *testing.T) {
 }
 
 func TestPopulateFromAPI_filterSet_nullPreservation(t *testing.T) {
-	pm := &models.PanelModel{
-		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
-			AlertStatusFilter: types.SetNull(types.StringType),
-		},
-	}
+	// pm starts empty, matching the real dashboardMapPanelFromAPI flow.
+	pm := &models.PanelModel{}
 	prior := &models.PanelModel{
 		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
 			AlertStatusFilter: types.SetNull(types.StringType),
@@ -238,7 +230,42 @@ func TestPopulateFromAPI_filterSet_nullPreservation(t *testing.T) {
 	require.False(t, diags.HasError(), "%v", diags)
 
 	require.NotNil(t, pm.ApmServiceMapConfig)
-	assert.True(t, pm.ApmServiceMapConfig.AlertStatusFilter.IsNull())
+	assert.True(t, pm.ApmServiceMapConfig.AlertStatusFilter.IsNull(),
+		"an unconfigured filter must stay null even if the API reports a value (e.g. out-of-band drift)")
+}
+
+// TestPopulateFromAPI_filterSet_emptySetPreservedAcrossRead is a regression test for a bug where a
+// practitioner-configured empty set (e.g. `alert_status_filter = []`) drifted to null on every
+// subsequent read. BuildConfig omits both null and empty sets from the API payload identically, so
+// the API response alone cannot tell them apart; PopulateFromAPI must fall back to the prior
+// (plan/state) set, not to a value derived only from the API, to preserve the distinction.
+func TestPopulateFromAPI_filterSet_emptySetPreservedAcrossRead(t *testing.T) {
+	// pm starts empty, matching the real dashboardMapPanelFromAPI flow.
+	pm := &models.PanelModel{}
+	prior := &models.PanelModel{
+		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
+			Environment:       types.StringValue("production"),
+			AlertStatusFilter: types.SetValueMust(types.StringType, []attr.Value{}),
+		},
+	}
+
+	env := "production"
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+		Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+			Environment: &env,
+			// AlertStatusFilter omitted entirely, exactly as BuildConfig would send it for an
+			// empty set (see stringSetToEnumSlice).
+		},
+	}
+	diags := apmservicemap.PopulateFromAPI(pm, prior, panel)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	require.NotNil(t, pm.ApmServiceMapConfig)
+	assert.False(t, pm.ApmServiceMapConfig.AlertStatusFilter.IsNull(),
+		"a known-empty filter set must not drift to null across a read")
+	assert.False(t, pm.ApmServiceMapConfig.AlertStatusFilter.IsUnknown())
+	elems := pm.ApmServiceMapConfig.AlertStatusFilter.Elements()
+	assert.Empty(t, elems)
 }
 
 func TestPopulateFromAPI_timeRange_nullPreservation(t *testing.T) {
@@ -304,12 +331,4 @@ func enumStrings[T ~string](vals []T) []string {
 		out[i] = string(v)
 	}
 	return out
-}
-
-func apmservicemapHasAnyField(cfg kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable) bool {
-	return cfg.Title != nil || cfg.Description != nil || cfg.Environment != nil || cfg.ServiceName != nil ||
-		cfg.ServiceGroupId != nil || cfg.Kuery != nil || cfg.MapOrientation != nil ||
-		cfg.SyncWithDashboardFilters != nil || cfg.HideTitle != nil || cfg.HideBorder != nil ||
-		cfg.AlertStatusFilter != nil || cfg.AnomalySeverityFilter != nil ||
-		cfg.ConnectionFilter != nil || cfg.SloStatusFilter != nil || cfg.TimeRange != nil
 }

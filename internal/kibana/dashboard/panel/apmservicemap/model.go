@@ -70,40 +70,16 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 	}
 
 	if typeutils.IsKnown(cfg.AlertStatusFilter) {
-		if vals := typeutils.StringSetElements(cfg.AlertStatusFilter, &diags); len(vals) > 0 {
-			out := make([]kbapi.KibanaHTTPAPIsApmServiceMapEmbeddableAlertStatusFilter, len(vals))
-			for i, v := range vals {
-				out[i] = kbapi.KibanaHTTPAPIsApmServiceMapEmbeddableAlertStatusFilter(v)
-			}
-			panel.Config.AlertStatusFilter = &out
-		}
+		panel.Config.AlertStatusFilter = stringSetToEnumSlice[kbapi.KibanaHTTPAPIsApmServiceMapEmbeddableAlertStatusFilter](cfg.AlertStatusFilter, &diags)
 	}
 	if typeutils.IsKnown(cfg.AnomalySeverityFilter) {
-		if vals := typeutils.StringSetElements(cfg.AnomalySeverityFilter, &diags); len(vals) > 0 {
-			out := make([]kbapi.KibanaHTTPAPIsApmServiceMapEmbeddableAnomalySeverityFilter, len(vals))
-			for i, v := range vals {
-				out[i] = kbapi.KibanaHTTPAPIsApmServiceMapEmbeddableAnomalySeverityFilter(v)
-			}
-			panel.Config.AnomalySeverityFilter = &out
-		}
+		panel.Config.AnomalySeverityFilter = stringSetToEnumSlice[kbapi.KibanaHTTPAPIsApmServiceMapEmbeddableAnomalySeverityFilter](cfg.AnomalySeverityFilter, &diags)
 	}
 	if typeutils.IsKnown(cfg.ConnectionFilter) {
-		if vals := typeutils.StringSetElements(cfg.ConnectionFilter, &diags); len(vals) > 0 {
-			out := make([]kbapi.KibanaHTTPAPIsApmServiceMapEmbeddableConnectionFilter, len(vals))
-			for i, v := range vals {
-				out[i] = kbapi.KibanaHTTPAPIsApmServiceMapEmbeddableConnectionFilter(v)
-			}
-			panel.Config.ConnectionFilter = &out
-		}
+		panel.Config.ConnectionFilter = stringSetToEnumSlice[kbapi.KibanaHTTPAPIsApmServiceMapEmbeddableConnectionFilter](cfg.ConnectionFilter, &diags)
 	}
 	if typeutils.IsKnown(cfg.SloStatusFilter) {
-		if vals := typeutils.StringSetElements(cfg.SloStatusFilter, &diags); len(vals) > 0 {
-			out := make([]kbapi.KibanaHTTPAPIsApmServiceMapEmbeddableSloStatusFilter, len(vals))
-			for i, v := range vals {
-				out[i] = kbapi.KibanaHTTPAPIsApmServiceMapEmbeddableSloStatusFilter(v)
-			}
-			panel.Config.SloStatusFilter = &out
-		}
+		panel.Config.SloStatusFilter = stringSetToEnumSlice[kbapi.KibanaHTTPAPIsApmServiceMapEmbeddableSloStatusFilter](cfg.SloStatusFilter, &diags)
 	}
 	if cfg.TimeRange != nil {
 		panel.Config.TimeRange = lenscommon.TimeRangeModelToAPI(cfg.TimeRange)
@@ -145,18 +121,34 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 	existing.Kuery = panelkit.PreserveString(existing.Kuery, cfg.Kuery)
 	existing.MapOrientation = preserveMapOrientation(existing.MapOrientation, cfg.MapOrientation)
 	existing.SyncWithDashboardFilters = panelkit.PreserveBool(existing.SyncWithDashboardFilters, cfg.SyncWithDashboardFilters)
-	existing.AlertStatusFilter = preserveStringSetFromEnum(existing.AlertStatusFilter, cfg.AlertStatusFilter)
-	existing.AnomalySeverityFilter = preserveStringSetFromEnum(existing.AnomalySeverityFilter, cfg.AnomalySeverityFilter)
-	existing.ConnectionFilter = preserveStringSetFromEnum(existing.ConnectionFilter, cfg.ConnectionFilter)
-	existing.SloStatusFilter = preserveStringSetFromEnum(existing.SloStatusFilter, cfg.SloStatusFilter)
+
+	// BuildConfig omits both null and empty filter sets from the API payload (the API cannot
+	// distinguish the two), so an empty-but-known prior set must be threaded through explicitly
+	// here rather than derived from the freshly re-imported `existing` value; otherwise a
+	// practitioner-configured `= []` would drift to null on every subsequent read/plan.
+	priorCfg := prior.ApmServiceMapConfig
+	priorAlertStatusFilter := types.SetNull(types.StringType)
+	priorAnomalySeverityFilter := types.SetNull(types.StringType)
+	priorConnectionFilter := types.SetNull(types.StringType)
+	priorSloStatusFilter := types.SetNull(types.StringType)
+	if priorCfg != nil {
+		priorAlertStatusFilter = priorCfg.AlertStatusFilter
+		priorAnomalySeverityFilter = priorCfg.AnomalySeverityFilter
+		priorConnectionFilter = priorCfg.ConnectionFilter
+		priorSloStatusFilter = priorCfg.SloStatusFilter
+	}
+	existing.AlertStatusFilter = mergeStringSetFromEnum(cfg.AlertStatusFilter, priorAlertStatusFilter)
+	existing.AnomalySeverityFilter = mergeStringSetFromEnum(cfg.AnomalySeverityFilter, priorAnomalySeverityFilter)
+	existing.ConnectionFilter = mergeStringSetFromEnum(cfg.ConnectionFilter, priorConnectionFilter)
+	existing.SloStatusFilter = mergeStringSetFromEnum(cfg.SloStatusFilter, priorSloStatusFilter)
 
 	var priorTR *models.TimeRangeModel
-	if prior.ApmServiceMapConfig != nil {
-		priorTR = prior.ApmServiceMapConfig.TimeRange
+	if priorCfg != nil {
+		priorTR = priorCfg.TimeRange
 	}
 	existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, cfg.TimeRange, priorTR)
-	if prior.ApmServiceMapConfig != nil {
-		apmServiceMapPreserveNullIntentFromPrior(prior.ApmServiceMapConfig, existing)
+	if priorCfg != nil {
+		apmServiceMapPreserveNullIntentFromPrior(priorCfg, existing)
 	}
 
 	return nil
@@ -210,21 +202,36 @@ func apmServiceMapConfigHasAnyField(cfg kbapi.KibanaHTTPAPIsApmServiceMapEmbedda
 	return false
 }
 
-func mapOrientationFromAPI(v *kbapi.KibanaHTTPAPIsApmServiceMapEmbeddableMapOrientation) types.String {
+// enumStringPointer converts a typed enum pointer to a *string, matching the pointer semantics
+// (nil in, nil out) expected by types.StringPointerValue and panelkit.PreserveString.
+func enumStringPointer[T ~string](v *T) *string {
 	if v == nil {
-		return types.StringNull()
+		return nil
 	}
-	return types.StringValue(string(*v))
+	s := string(*v)
+	return &s
+}
+
+func mapOrientationFromAPI(v *kbapi.KibanaHTTPAPIsApmServiceMapEmbeddableMapOrientation) types.String {
+	return types.StringPointerValue(enumStringPointer(v))
 }
 
 func preserveMapOrientation(existing types.String, api *kbapi.KibanaHTTPAPIsApmServiceMapEmbeddableMapOrientation) types.String {
-	if !typeutils.IsKnown(existing) {
-		return existing
+	return panelkit.PreserveString(existing, enumStringPointer(api))
+}
+
+// stringSetToEnumSlice converts a validated Set of strings into a slice of the API's enum type,
+// returning nil when the set has no elements (so the field is omitted from the API payload).
+func stringSetToEnumSlice[T ~string](set types.Set, diags *diag.Diagnostics) *[]T {
+	vals := typeutils.StringSetElements(set, diags)
+	if len(vals) == 0 {
+		return nil
 	}
-	if api == nil {
-		return types.StringNull()
+	out := make([]T, len(vals))
+	for i, v := range vals {
+		out[i] = T(v)
 	}
-	return types.StringValue(string(*api))
+	return &out
 }
 
 func enumSliceToStringSet[T ~string](slice *[]T) types.Set {
@@ -238,14 +245,15 @@ func enumSliceToStringSet[T ~string](slice *[]T) types.Set {
 	return types.SetValueMust(types.StringType, elems)
 }
 
-func preserveStringSetFromEnum[T ~string](existing types.Set, api *[]T) types.Set {
-	if !typeutils.IsKnown(existing) {
-		return existing
+// mergeStringSetFromEnum reflects the API's values when it returns any (drift detection), and
+// otherwise carries the prior config's set forward unchanged. The API cannot distinguish "unset"
+// from "explicitly empty" (BuildConfig omits both), so falling back to the prior set — rather than
+// to a value derived from the API alone — is what allows a known-empty set to round-trip correctly.
+func mergeStringSetFromEnum[T ~string](api *[]T, priorSet types.Set) types.Set {
+	if api != nil && len(*api) > 0 {
+		return enumSliceToStringSet(api)
 	}
-	if api == nil || len(*api) == 0 {
-		return types.SetValueMust(types.StringType, []attr.Value{})
-	}
-	return enumSliceToStringSet(api)
+	return priorSet
 }
 
 func apmServiceMapPreserveNullIntentFromPrior(prior, existing *models.ApmServiceMapConfigModel) {
@@ -294,17 +302,5 @@ func apmServiceMapPreserveNullIntentFromPrior(prior, existing *models.ApmService
 	if !typeutils.IsKnown(prior.SloStatusFilter) {
 		existing.SloStatusFilter = types.SetNull(types.StringType)
 	}
-	if prior.TimeRange == nil {
-		existing.TimeRange = nil
-	} else if existing.TimeRange != nil && prior.TimeRange != nil {
-		if !typeutils.IsKnown(prior.TimeRange.From) {
-			existing.TimeRange.From = types.StringNull()
-		}
-		if !typeutils.IsKnown(prior.TimeRange.To) {
-			existing.TimeRange.To = types.StringNull()
-		}
-		if !typeutils.IsKnown(prior.TimeRange.Mode) {
-			existing.TimeRange.Mode = types.StringNull()
-		}
-	}
+	existing.TimeRange = panelkit.PreserveTimeRangeNullIntentFromPrior(prior.TimeRange, existing.TimeRange)
 }
