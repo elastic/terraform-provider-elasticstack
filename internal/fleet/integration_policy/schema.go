@@ -235,12 +235,12 @@ func getInputStreamNestedObject(varsAreSensitive bool) schema.NestedAttributeObj
 	}
 }
 
-// getInputsElementType, getInputsAttributeTypes, getInputStreamType,
-// getInputDefaultsType, and getInputDefaultsAttrTypes delegate to the shared
-// policyshape package, which owns the canonical inputs/streams/defaults
-// attribute-type structure (see internal/fleet/policyshape/attribute_types.go).
-// They are kept here under their original names so schema.go, models.go, and
-// this package's tests don't need a mechanical rename.
+// getInputsElementType, getInputsAttributeTypes, getInputStreamType, and
+// getInputDefaultsAttrTypes delegate to the shared policyshape package,
+// which owns the canonical inputs/streams/defaults attribute-type structure
+// (see internal/fleet/policyshape/attribute_types.go). They are kept here
+// under their original names so schema.go, models.go, and this package's
+// tests don't need a mechanical rename.
 
 func getInputsElementType() InputType {
 	return policyshape.InputElementType()
@@ -252,10 +252,6 @@ func getInputsAttributeTypes() map[string]attr.Type {
 
 func getInputStreamType() attr.Type {
 	return policyshape.StreamType()
-}
-
-func getInputDefaultsType() attr.Type {
-	return policyshape.InputDefaultsType()
 }
 
 func getInputDefaultsAttrTypes() map[string]attr.Type {

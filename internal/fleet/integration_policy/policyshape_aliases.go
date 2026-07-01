@@ -54,10 +54,12 @@ type (
 	integrationPolicyInputsModel      = policyshape.InputModel
 	integrationPolicyInputStreamModel = policyshape.InputStreamModel
 
-	// inputDefaultsModel/inputDefaultsStreamModel are the Go representations
-	// of the package-computed `defaults` object nested under an input.
-	inputDefaultsModel       = policyshape.InputDefaultsModel
-	inputDefaultsStreamModel = policyshape.InputDefaultsStreamModel
+	// inputDefaultsModel is the Go representation of the package-computed
+	// `defaults` object nested under an input. Its per-stream counterpart,
+	// policyshape.InputDefaultsStreamModel, has no local alias here: it isn't
+	// referenced directly by this package (only nested inside
+	// policyshape.InputDefaultsModel.Streams).
+	inputDefaultsModel = policyshape.InputDefaultsModel
 )
 
 var (
@@ -86,19 +88,16 @@ func NewVarsJSONWithIntegration(value string, name, version string) (VarsJSONVal
 	return policyshape.NewVarsJSONWithIntegration(value, name, version, lookupCachedPackageInfo)
 }
 
-// varsAnyToMap, varsMapToTypedMap, and varsMapToUnionWrapper are generic (or
-// need not be, but are kept as thin wrappers for symmetry), so they can't be
-// aliased via a package-level var; see the file comment above.
+// varsAnyToMap and varsMapToTypedMap are generic (or need not be, but are
+// kept as thin wrappers for symmetry), so they can't be aliased via a
+// package-level var; see the file comment above. (policyshape.VarsMapToUnionWrapper
+// has no local wrapper: this package has no caller for it.)
 func varsAnyToMap(v any) map[string]any {
 	return policyshape.VarsAnyToMap(v)
 }
 
 func varsMapToTypedMap[T any](m map[string]any) *map[string]*T {
 	return policyshape.VarsMapToTypedMap[T](m)
-}
-
-func varsMapToUnionWrapper[T any](m map[string]any) *T {
-	return policyshape.VarsMapToUnionWrapper[T](m)
 }
 
 // packageInfoToDefaults derives per-input default values from Fleet package
