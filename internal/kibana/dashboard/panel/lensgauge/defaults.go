@@ -20,11 +20,8 @@ package lensgauge
 import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 
 func populateGaugeLensAttributes(attrs map[string]any) map[string]any {
-	if attrs == nil {
+	if !lenscommon.InitLensAttrs(attrs) {
 		return attrs
-	}
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
 	}
 	if metric, ok := attrs["metric"].(map[string]any); ok {
 		attrs["metric"] = lenscommon.PopulateGaugeMetricDefaults(metric)
