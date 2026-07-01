@@ -69,3 +69,21 @@ This is an additive, non-breaking schema change. Existing configs and state are 
 - **THEN** no plan diff SHALL appear
 - **AND** `condition` SHALL be null in state
 - **AND** the request body SHALL omit `condition`
+
+### Requirement: Version gating for `condition`
+
+The Fleet package policy API rejects the `condition` field with an "Additional properties are not allowed" HTTP 400 on Kibana 9.4.0 and 9.4.3 (both released versions at time of writing); it was confirmed empirically to work correctly (round-trips through create/read) on a 9.5.0-SNAPSHOT Kibana. The resource SHALL therefore enforce a minimum Kibana version of 9.5.0 for `condition` using the existing `EnforceMinVersion` pattern (see `internal/fleet/integration_policy/capabilities.go`, mirroring `SupportsPolicyIDs`/`SupportsOutputID`). This is a soft, attribute-scoped gate: it SHALL NOT affect any request that does not set `condition` on any input or stream, regardless of the connected Kibana version.
+
+#### Scenario: Kibana version too old for condition
+
+- **WHEN** the connected Kibana is older than 9.5.0
+- **AND** `condition` is set on an input or a stream in the configuration
+- **THEN** Create or Update SHALL return an attribute-scoped error diagnostic naming the minimum version (9.5.0)
+- **AND** no API call SHALL be made
+
+#### Scenario: Kibana version too old but condition unset
+
+- **WHEN** the connected Kibana is older than 9.5.0
+- **AND** no input or stream sets `condition`
+- **THEN** Create or Update SHALL proceed normally with no error
+- **AND** the request body SHALL omit `condition`, matching pre-existing behavior

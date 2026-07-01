@@ -27,6 +27,7 @@ import (
 type integrationPolicyFeatures struct {
 	SupportsPolicyIDs bool
 	SupportsOutputID  bool
+	SupportsCondition bool
 }
 
 func resolveIntegrationPolicyFeatures(ctx context.Context, client *clients.KibanaScopedClient) (integrationPolicyFeatures, diag.Diagnostics) {
@@ -37,6 +38,8 @@ func resolveIntegrationPolicyFeatures(ctx context.Context, client *clients.Kiban
 	f.SupportsPolicyIDs, bitDiags = client.EnforceMinVersion(ctx, MinVersionPolicyIDs)
 	diags.Append(bitDiags...)
 	f.SupportsOutputID, bitDiags = client.EnforceMinVersion(ctx, MinVersionOutputID)
+	diags.Append(bitDiags...)
+	f.SupportsCondition, bitDiags = client.EnforceMinVersion(ctx, MinVersionCondition)
 	diags.Append(bitDiags...)
 
 	return f, diags

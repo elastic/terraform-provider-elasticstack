@@ -242,6 +242,11 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integra
 		}
 	}
 
+	// Check if any input/stream condition is configured and version supports it
+	if condDiags := model.validateConditionSupport(ctx, feat); condDiags.HasError() {
+		return kbapi.PackagePolicyRequest{}, condDiags
+	}
+
 	mappedBody := kbapi.PackagePolicyRequestMappedInputs{
 		Description: model.Description.ValueStringPointer(),
 		Force:       model.Force.ValueBoolPointer(),
@@ -306,6 +311,56 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integra
 		return kbapi.PackagePolicyRequest{}, diags
 	}
 	return body, diags
+}
+
+// validateConditionSupport returns an attribute-scoped error diagnostic for
+// every input/stream `condition` value that is set when the connected Kibana
+// version does not support the `condition` field on package-policy
+// inputs/streams (added in Kibana 9.5.0; see MinVersionCondition). It is a
+// no-op when the version supports condition or when no inputs are configured.
+func (model integrationPolicyModel) validateConditionSupport(ctx context.Context, feat integrationPolicyFeatures) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if feat.SupportsCondition {
+		return diags
+	}
+	if !typeutils.IsKnown(model.Inputs.MapValue) {
+		return diags
+	}
+
+	inputsMap := typeutils.MapTypeAs[integrationPolicyInputsModel](ctx, model.Inputs.MapValue, path.Root("inputs"), &diags)
+	if diags.HasError() || inputsMap == nil {
+		return diags
+	}
+
+	for inputID, inputModel := range inputsMap {
+		inputPath := path.Root("inputs").AtMapKey(inputID)
+
+		if typeutils.IsKnown(inputModel.Condition) {
+			diags.AddAttributeError(
+				inputPath.AtName("condition"),
+				"Unsupported Elasticsearch version",
+				fmt.Sprintf("Input condition is only supported in Elastic Stack %s and above", MinVersionCondition),
+			)
+		}
+
+		if !typeutils.IsKnown(inputModel.Streams) {
+			continue
+		}
+
+		streamsMap := typeutils.MapTypeAs[integrationPolicyInputStreamModel](ctx, inputModel.Streams, inputPath.AtName("streams"), &diags)
+		for streamID, streamModel := range streamsMap {
+			if typeutils.IsKnown(streamModel.Condition) {
+				diags.AddAttributeError(
+					inputPath.AtName("streams").AtMapKey(streamID).AtName("condition"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Stream condition is only supported in Elastic Stack %s and above", MinVersionCondition),
+				)
+			}
+		}
+	}
+
+	return diags
 }
 
 // toAPIInputsFromInputsAttribute converts the 'inputs' attribute to the API model format

@@ -43,6 +43,12 @@ var (
 var (
 	MinVersionPolicyIDs = version.Must(version.NewVersion("8.15.0"))
 	MinVersionOutputID  = version.Must(version.NewVersion("8.16.0"))
+	// MinVersionCondition is the minimum Kibana version that accepts the
+	// `condition` field on package-policy inputs/streams. Verified empirically
+	// against a 9.5.0-SNAPSHOT Kibana: 9.4.0 and 9.4.3 both reject it with an
+	// "Additional properties are not allowed" 400. See design.md Open Question
+	// 4 resolution.
+	MinVersionCondition = version.Must(version.NewVersion("9.5.0"))
 )
 
 type integrationPolicyResource struct {

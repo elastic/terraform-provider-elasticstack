@@ -148,7 +148,7 @@ func TestConditionHandling(t *testing.T) {
 			Inputs:             newInputsWithCondition(t, "host.os.family == 'linux'", "data_stream.dataset == 'audit'"),
 		}
 
-		body, diags := model.toAPIModel(ctx, integrationPolicyFeatures{SupportsPolicyIDs: true, SupportsOutputID: true})
+		body, diags := model.toAPIModel(ctx, integrationPolicyFeatures{SupportsPolicyIDs: true, SupportsOutputID: true, SupportsCondition: true})
 		require.False(t, diags.HasError())
 
 		raw, err := body.MarshalJSON()
@@ -175,7 +175,7 @@ func TestConditionHandling(t *testing.T) {
 			Inputs:             newInputsWithCondition(t, "", ""),
 		}
 
-		body, diags := model.toAPIModel(ctx, integrationPolicyFeatures{SupportsPolicyIDs: true, SupportsOutputID: true})
+		body, diags := model.toAPIModel(ctx, integrationPolicyFeatures{SupportsPolicyIDs: true, SupportsOutputID: true, SupportsCondition: true})
 		require.False(t, diags.HasError())
 
 		raw, err := body.MarshalJSON()
@@ -193,6 +193,55 @@ func TestConditionHandling(t *testing.T) {
 		stream := streams["test.stream"].(map[string]any)
 		_, hasStreamCondition := stream["condition"]
 		require.False(t, hasStreamCondition, "stream condition should be omitted from the request body when unset")
+	})
+
+	// The condition field is gated behind MinVersionCondition (Kibana 9.5.0):
+	// it is rejected by Kibana 9.4.x and earlier ("Additional properties are
+	// not allowed" 400), confirmed empirically against a 9.5.0-SNAPSHOT
+	// Kibana. See design.md Open Question 4 resolution and MinVersionCondition.
+	t.Run("toAPIModel rejects input condition when version unsupported", func(t *testing.T) {
+		model := integrationPolicyModel{
+			Name:               types.StringValue("test-policy"),
+			IntegrationName:    types.StringValue("test-integration"),
+			IntegrationVersion: types.StringValue("1.0.0"),
+			AgentPolicyIDs:     types.ListNull(types.StringType),
+			Inputs:             newInputsWithCondition(t, "host.os.family == 'linux'", ""),
+		}
+
+		_, diags := model.toAPIModel(ctx, integrationPolicyFeatures{SupportsPolicyIDs: true, SupportsOutputID: true, SupportsCondition: false})
+		require.True(t, diags.HasError())
+		require.Equal(t, "Unsupported Elasticsearch version", diags[0].Summary())
+		require.Contains(t, diags[0].Detail(), "Input condition is only supported in Elastic Stack")
+		require.Contains(t, diags[0].Detail(), MinVersionCondition.String())
+	})
+
+	t.Run("toAPIModel rejects stream condition when version unsupported", func(t *testing.T) {
+		model := integrationPolicyModel{
+			Name:               types.StringValue("test-policy"),
+			IntegrationName:    types.StringValue("test-integration"),
+			IntegrationVersion: types.StringValue("1.0.0"),
+			AgentPolicyIDs:     types.ListNull(types.StringType),
+			Inputs:             newInputsWithCondition(t, "", "data_stream.dataset == 'audit'"),
+		}
+
+		_, diags := model.toAPIModel(ctx, integrationPolicyFeatures{SupportsPolicyIDs: true, SupportsOutputID: true, SupportsCondition: false})
+		require.True(t, diags.HasError())
+		require.Equal(t, "Unsupported Elasticsearch version", diags[0].Summary())
+		require.Contains(t, diags[0].Detail(), "Stream condition is only supported in Elastic Stack")
+		require.Contains(t, diags[0].Detail(), MinVersionCondition.String())
+	})
+
+	t.Run("toAPIModel allows unset condition when version unsupported", func(t *testing.T) {
+		model := integrationPolicyModel{
+			Name:               types.StringValue("test-policy"),
+			IntegrationName:    types.StringValue("test-integration"),
+			IntegrationVersion: types.StringValue("1.0.0"),
+			AgentPolicyIDs:     types.ListNull(types.StringType),
+			Inputs:             newInputsWithCondition(t, "", ""),
+		}
+
+		_, diags := model.toAPIModel(ctx, integrationPolicyFeatures{SupportsPolicyIDs: true, SupportsOutputID: true, SupportsCondition: false})
+		require.False(t, diags.HasError(), "condition gating must not affect requests that never set condition")
 	})
 
 	t.Run("populateFromAPI reads condition back into state", func(t *testing.T) {
