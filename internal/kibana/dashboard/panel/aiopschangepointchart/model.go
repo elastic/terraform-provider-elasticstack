@@ -51,9 +51,7 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 		for _, e := range elems {
 			items = append(items, e.(types.String).ValueString())
 		}
-		if len(items) > 0 {
-			panel.Config.Partitions = &items
-		}
+		panel.Config.Partitions = &items
 	}
 	if typeutils.IsKnown(cfg.MaxSeriesToPlot) {
 		v := cfg.MaxSeriesToPlot.ValueFloat32()

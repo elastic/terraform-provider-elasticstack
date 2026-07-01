@@ -303,7 +303,9 @@ Notes:
 - The resource is marked as technical preview in its schema description; sections are also marked as technical preview.
 - The resource uses only the provider-level Kibana OpenAPI client; there is no resource-local Kibana connection override block.
 - The resource does not declare a schema version, custom state upgrader, or resource-level compatibility gate in CRUD logic.
+
 ## Requirements
+
 ### Requirement: Kibana Dashboard APIs and request shaping (REQ-001)
 
 The resource SHALL manage dashboards through Kibana's Dashboard HTTP APIs for create, get, update, and delete. For non-default spaces it SHALL call those APIs through a space-aware path rooted at `/s/<space_id>`, and for the default space it SHALL use the base dashboard path. Dashboard API requests SHALL include the request shaping used by the implementation: query parameter `allowUnmappedKeys=true`.
@@ -567,6 +569,7 @@ For XY chart `decorations` round-trips on bar-style layers (e.g. `bar`, `bar_sta
 For every Lens chart block that exposes `data_source_json` (legacy_metric, region_map, gauge, heatmap, tagcloud, pie, treemap, mosaic, waffle, datatable, and XY data/reference-line layers), Kibana injects `"time_field":"@timestamp"` into the read-back payload when the practitioner omits it. When the practitioner-authored `data_source_json` does not include `time_field`, the resource SHALL strip that injected key from state before semantic comparison and SHALL preserve the practitioner's original JSON payload.
 
 For each Lens chart panel listed below, Kibana materializes hard-coded server defaults for optional fields when the practitioner omits them. The resource SHALL preserve the practitioner's null/unset plan value in state when the API read-back matches the documented default. The known defaults are:
+
 - `gauge_config.styling.shape_json` defaults to `{"type":"bullet","orientation":"horizontal"}`.
 - `tagcloud_config.orientation` defaults to `"horizontal"`.
 - `tagcloud_config.font_size` defaults to `{min=18, max=72}` (whole block).
@@ -1224,11 +1227,13 @@ The `range_slider_control_config` block is valid only when `type = "range_slider
 The resource SHALL support `type = "slo_overview"` panels through the typed `slo_overview_config` block. The block SHALL carry exactly one of two mutually exclusive nested blocks: `single` (for single-SLO overview) or `groups` (for grouped SLO overview). On write, the provider SHALL use the presence of the `single` block to select the `slo-single-overview-embeddable` API embeddable type, and the presence of the `groups` block to select the `slo-group-overview-embeddable` API embeddable type. The `overview_mode` discriminant field in the API payload SHALL be set to `"single"` or `"groups"` accordingly and SHALL NOT be exposed as a direct Terraform attribute.
 
 For `single` mode:
+
 - `slo_id` SHALL be required and SHALL be sent as the SLO identifier in the API payload.
 - `slo_instance_id` SHALL be optional. When configured, it SHALL be sent; when not configured, the field SHALL be omitted from the write payload. On read, if the prior state value was null and Kibana returns `"*"`, the provider SHALL preserve null rather than force `"*"` into state.
 - `remote_name` SHALL be optional and SHALL be sent when configured.
 
 For `groups` mode:
+
 - All fields SHALL be optional.
 - `group_filters` SHALL be an optional nested block with the following attributes:
   - `group_by`: optional string, enum-validated as one of `"slo.tags"`, `"status"`, `"slo.indicator.type"`, `"_index"`.
@@ -1237,12 +1242,14 @@ For `groups` mode:
   - `filters_json`: optional normalized JSON string representing the AS-code filter array; the provider SHALL normalize this field for semantic equality on refresh.
 
 Both modes SHALL support the following shared optional display attributes within their respective nested blocks:
+
 - `title`: optional string.
 - `description`: optional string.
 - `hide_title`: optional bool.
 - `hide_border`: optional bool.
 
 Both modes SHALL support a `drilldowns` optional list of objects with the following attributes:
+
 - `url`: required string.
 - `label`: required string.
 - `trigger`: required string.
@@ -2458,7 +2465,7 @@ The `elasticstack_kibana_dashboard` resource SHALL support a panel of `type = "a
 - `metric_field` (required string): the metric field used by the aggregation function.
 - `aggregation_function` (optional string, enum): one of `avg`, `max`, `min`, `sum`. Invalid values SHALL be rejected at plan time.
 - `split_field` (optional string): the optional field used to split change-point results.
-- `partitions` (optional set of strings): optional split field values to include in the panel. Modelled as a set to prevent plan drift from API-returned ordering. Semantically a filter set; duplicate entries are silently deduplicated.
+- `partitions` (optional set of strings): optional split field values to include in the panel. Modelled as a set to prevent plan drift from API-returned ordering. Semantically a filter set; duplicate entries are silently deduplicated. An empty set is not meaningful (omit the attribute to disable filtering); a non-null set SHALL contain at least one entry and SHALL be rejected at plan time otherwise.
 - `max_series_to_plot` (optional float64): maximum number of change points to visualise. Kibana default is 6. The resource SHALL null-preserve this field when the user omitted it.
 - `view_type` (optional string, enum): one of `charts`, `table`. Invalid values SHALL be rejected at plan time.
 - Standard panelkit presentation passthroughs (all optional): `title`, `description`, `hide_title`, `hide_border`, `time_range`.
@@ -2479,6 +2486,12 @@ The resource SHALL reject simultaneous `aiops_change_point_chart_config` and `co
 - GIVEN `aiops_change_point_chart_config` with `partitions = ["host-b", "host-a", "host-c"]`
 - WHEN the resource creates the dashboard and Kibana returns the partitions in a different order
 - THEN state SHALL reflect the set (regardless of order) and a plan SHALL show no changes
+
+#### Scenario: Empty partitions set rejected at plan time
+
+- GIVEN `aiops_change_point_chart_config` with `partitions = []`
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating `partitions` must contain at least one entry; the user SHALL omit the attribute instead
 
 #### Scenario: All optional fields round-trip
 

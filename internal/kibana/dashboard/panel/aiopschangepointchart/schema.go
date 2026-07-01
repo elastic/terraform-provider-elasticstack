@@ -19,6 +19,7 @@ package aiopschangepointchart
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -51,9 +52,13 @@ func SchemaAttribute() schema.Attribute {
 	}
 	attrs["partitions"] = schema.SetAttribute{
 		MarkdownDescription: "Optional split field values to include in the panel. Modelled as a set to prevent " +
-			"plan drift from API-returned ordering; duplicate entries are silently deduplicated.",
+			"plan drift from API-returned ordering; duplicate entries are silently deduplicated. " +
+			"An empty set is not meaningful (omit the attribute to disable filtering); a non-null set must contain at least one entry.",
 		Optional:    true,
 		ElementType: types.StringType,
+		Validators: []validator.Set{
+			setvalidator.SizeAtLeast(1),
+		},
 	}
 	attrs["max_series_to_plot"] = schema.Float32Attribute{
 		MarkdownDescription: "Maximum number of change points to visualise. Kibana default is `6`. Float32 in state matches the Kibana API and avoids refresh drift.",

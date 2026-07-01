@@ -106,7 +106,7 @@ The `elasticstack_kibana_dashboard` resource SHALL support a panel of `type = "a
 - `metric_field` (required string): the metric field used by the aggregation function.
 - `aggregation_function` (optional string, enum): one of `avg`, `max`, `min`, `sum`. Invalid values SHALL be rejected at plan time.
 - `split_field` (optional string): the optional field used to split change-point results.
-- `partitions` (optional set of strings): optional split field values to include in the panel. Modelled as a set to prevent plan drift from API-returned ordering. Semantically a filter set; duplicate entries are silently deduplicated.
+- `partitions` (optional set of strings): optional split field values to include in the panel. Modelled as a set to prevent plan drift from API-returned ordering. Semantically a filter set; duplicate entries are silently deduplicated. An empty set is not meaningful (omit the attribute to disable filtering); a non-null set SHALL contain at least one entry and SHALL be rejected at plan time otherwise.
 - `max_series_to_plot` (optional float64): maximum number of change points to visualise. Kibana default is 6. The resource SHALL null-preserve this field when the user omitted it.
 - `view_type` (optional string, enum): one of `charts`, `table`. Invalid values SHALL be rejected at plan time.
 - Standard panelkit presentation passthroughs (all optional): `title`, `description`, `hide_title`, `hide_border`, `time_range`.
@@ -127,6 +127,12 @@ The resource SHALL reject simultaneous `aiops_change_point_chart_config` and `co
 - GIVEN `aiops_change_point_chart_config` with `partitions = ["host-b", "host-a", "host-c"]`
 - WHEN the resource creates the dashboard and Kibana returns the partitions in a different order
 - THEN state SHALL reflect the set (regardless of order) and a plan SHALL show no changes
+
+#### Scenario: Empty partitions set rejected at plan time
+
+- GIVEN `aiops_change_point_chart_config` with `partitions = []`
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating `partitions` must contain at least one entry; the user SHALL omit the attribute instead
 
 #### Scenario: All optional fields round-trip
 

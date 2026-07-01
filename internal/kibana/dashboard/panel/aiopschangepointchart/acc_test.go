@@ -161,6 +161,15 @@ func TestAccResourceDashboardAiopsChangePointChartInvalidConfig(t *testing.T) {
 				},
 				ExpectError: regexp.MustCompile(`Invalid Configuration`),
 			},
+			// An empty partitions set is rejected (SizeAtLeast(1)); omit the attribute instead.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_empty_partitions"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable("unused"),
+				},
+				ExpectError: regexp.MustCompile(`partitions`),
+			},
 		},
 	})
 }

@@ -336,7 +336,7 @@ Optional:
 - `hide_border` (Boolean) When true, hides the panel border.
 - `hide_title` (Boolean) When true, hides the panel title.
 - `max_series_to_plot` (Number) Maximum number of change points to visualise. Kibana default is `6`. Float32 in state matches the Kibana API and avoids refresh drift.
-- `partitions` (Set of String) Optional split field values to include in the panel. Modelled as a set to prevent plan drift from API-returned ordering; duplicate entries are silently deduplicated.
+- `partitions` (Set of String) Optional split field values to include in the panel. Modelled as a set to prevent plan drift from API-returned ordering; duplicate entries are silently deduplicated. An empty set is not meaningful (omit the attribute to disable filtering); a non-null set must contain at least one entry.
 - `split_field` (String) The optional field used to split change-point results.
 - `time_range` (Attributes) Optional panel time range (`from`, `to`, optional `mode`). When omitted, the panel inherits the dashboard `time_range` and this attribute stays null in state (REQ-009). (see [below for nested schema](#nestedatt--panels--aiops_change_point_chart_config--time_range))
 - `title` (String) Optional panel title shown in the panel header.
@@ -3940,7 +3940,7 @@ Optional:
 - `hide_border` (Boolean) When true, hides the panel border.
 - `hide_title` (Boolean) When true, hides the panel title.
 - `max_series_to_plot` (Number) Maximum number of change points to visualise. Kibana default is `6`. Float32 in state matches the Kibana API and avoids refresh drift.
-- `partitions` (Set of String) Optional split field values to include in the panel. Modelled as a set to prevent plan drift from API-returned ordering; duplicate entries are silently deduplicated.
+- `partitions` (Set of String) Optional split field values to include in the panel. Modelled as a set to prevent plan drift from API-returned ordering; duplicate entries are silently deduplicated. An empty set is not meaningful (omit the attribute to disable filtering); a non-null set must contain at least one entry.
 - `split_field` (String) The optional field used to split change-point results.
 - `time_range` (Attributes) Optional panel time range (`from`, `to`, optional `mode`). When omitted, the panel inherits the dashboard `time_range` and this attribute stays null in state (REQ-009). (see [below for nested schema](#nestedatt--sections--panels--aiops_change_point_chart_config--time_range))
 - `title` (String) Optional panel title shown in the panel header.
