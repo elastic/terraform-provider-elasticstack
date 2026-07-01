@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -107,8 +108,8 @@ func flattenTemplateBlock(
 		priorMappings,
 		priorSettings,
 		preservedRouting,
-		types.ObjectType{AttrTypes: aliasAttrTypes()},
-		aliasAttrTypes(),
+		aliasutil.NewAliasObjectType(),
+		aliasutil.AliasAttributeTypes(),
 	)
 	diags.Append(d...)
 	if diags.HasError() {
@@ -170,11 +171,15 @@ func extractAliasRoutingFromData(prior Data) map[string]string {
 	}
 
 	for _, el := range aliasSet.Elements() {
-		obj, ok := el.(types.Object)
-		if !ok {
+		var attrs map[string]attr.Value
+		switch obj := el.(type) {
+		case aliasutil.AliasObjectValue:
+			attrs = obj.Attributes()
+		case types.Object:
+			attrs = obj.Attributes()
+		default:
 			continue
 		}
-		attrs := obj.Attributes()
 		nameAttr, ok := attrs[attrName].(types.String)
 		if !ok || nameAttr.IsNull() || nameAttr.IsUnknown() {
 			continue

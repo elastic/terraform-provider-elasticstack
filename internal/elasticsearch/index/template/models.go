@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -124,7 +125,7 @@ func LifecycleAttrTypes() map[string]attr.Type {
 //nolint:revive // Name matches OpenSpec task wording (template block attribute types).
 func TemplateAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		attrAlias:             types.SetType{ElemType: NewAliasObjectType()},
+		attrAlias:             types.SetType{ElemType: aliasutil.NewAliasObjectType()},
 		attrMappings:          index.MappingsType{},
 		attrSettings:          customtypes.IndexSettingsType{},
 		attrLifecycle:         types.ObjectType{AttrTypes: LifecycleAttrTypes()},

@@ -20,6 +20,7 @@ package template
 import (
 	"context"
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -122,7 +123,7 @@ func dataSourceTemplateAliasBlock() dschema.SetNestedBlock {
 	return dschema.SetNestedBlock{
 		MarkdownDescription: descAliasBlock,
 		NestedObject: dschema.NestedBlockObject{
-			CustomType: NewAliasObjectType(),
+			CustomType: aliasutil.NewAliasObjectType(),
 			Attributes: map[string]dschema.Attribute{
 				attrName: dschema.StringAttribute{
 					MarkdownDescription: descAliasName,

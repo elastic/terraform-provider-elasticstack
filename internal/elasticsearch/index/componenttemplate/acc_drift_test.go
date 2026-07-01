@@ -67,6 +67,146 @@ func TestAccResourceComponentTemplateBooleanMappingNoDrift(t *testing.T) {
 	})
 }
 
+// TestAccResourceComponentTemplateDottedSettingsNoDrift verifies that a component template
+// whose template.settings uses dotted Elasticsearch keys does not produce spurious plan changes
+// after apply or import. Elasticsearch normalises stored settings to nested JSON; ModifyPlan
+// must reconcile the plan to the state's canonical encoding when values are semantically equal
+// (REQ-037).
+func TestAccResourceComponentTemplateDottedSettingsNoDrift(t *testing.T) {
+	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceComponentTemplateDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				ResourceName:             "elasticstack_elasticsearch_component_template.test",
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"template.settings"},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+		},
+	})
+}
+
+// TestAccResourceComponentTemplateAliasRoutingNoDrift verifies that a component template with a
+// routing-only alias block applies without post-apply consistency errors and does not produce
+// spurious plan changes on subsequent plans. Elasticsearch splits routing into index_routing and
+// search_routing on read; alias reconciliation must prevent perpetual drift (REQ-038).
+func TestAccResourceComponentTemplateAliasRoutingNoDrift(t *testing.T) {
+	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceComponentTemplateDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.alias.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs(
+						"elasticstack_elasticsearch_component_template.test",
+						"template.alias.*",
+						map[string]string{
+							"name":    "routing_only_alias",
+							"routing": "shard_1",
+						},
+					),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+		},
+	})
+}
+
+// TestAccResourceComponentTemplateAliasRoutingUpdate verifies that ModifyPlan reconciles
+// semantically equal alias routing without suppressing a genuine routing change on update.
+func TestAccResourceComponentTemplateAliasRoutingUpdate(t *testing.T) {
+	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceComponentTemplateDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.alias.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs(
+						"elasticstack_elasticsearch_component_template.test",
+						"template.alias.*",
+						map[string]string{
+							"name":    "routing_only_alias",
+							"routing": "shard_1",
+						},
+					),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.alias.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs(
+						"elasticstack_elasticsearch_component_template.test",
+						"template.alias.*",
+						map[string]string{
+							"name":    "routing_only_alias",
+							"routing": "shard_2",
+						},
+					),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+		},
+	})
+}
+
 // TestAccResourceComponentTemplateNullSettingsNoDrift verifies that a component template
 // whose template.settings contains a JSON null value does not produce spurious plan changes
 // after the initial apply. Elasticsearch echoes null as the string "null"; the settings custom

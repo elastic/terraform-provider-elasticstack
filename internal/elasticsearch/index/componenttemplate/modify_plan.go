@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package template
+package componenttemplate
 
 import (
 	"context"
@@ -33,7 +33,7 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 		return
 	}
 
-	var plan, state, config Model
+	var plan, state, config Data
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -61,7 +61,7 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 // reconcilePlanWithPriorStateForSemanticDrift aligns planned template.settings with prior state when
 // Terraform would show a spurious diff: strict inequality but semantic equality (index settings
 // canonical form in state vs practitioner JSON in configuration).
-func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, state, config Model) (*Model, diag.Diagnostics) {
+func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, state, config Data) (*Data, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if plan.Template.IsNull() || plan.Template.IsUnknown() || state.Template.IsNull() || state.Template.IsUnknown() {
 		return nil, diags
@@ -126,7 +126,7 @@ func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, stat
 		return nil, diags
 	}
 
-	newTpl, d := types.ObjectValue(TemplateAttrTypes(), planAttrs)
+	newTpl, d := types.ObjectValue(templateAttrTypes(), planAttrs)
 	diags.Append(d...)
 	if diags.HasError() {
 		return nil, diags

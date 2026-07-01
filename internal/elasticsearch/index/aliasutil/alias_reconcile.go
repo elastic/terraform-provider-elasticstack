@@ -15,35 +15,34 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package template
+package aliasutil
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-// applyTemplateAliasReconciliationFromReference replaces template.alias elements read from the API
+// ApplyTemplateAliasReconciliationFromReference replaces template.alias elements read from the API
 // with the reference encoding when ObjectSemanticEquals matches. Use configuration on Create and
 // Update (req.Plan can leave Optional+Computed nested attributes unknown); use prior state on Read.
-func applyTemplateAliasReconciliationFromReference(ctx context.Context, out *Model, ref *Model) diag.Diagnostics {
+func ApplyTemplateAliasReconciliationFromReference(ctx context.Context, outTemplate *types.Object, refTemplate types.Object, templateAttrTypes map[string]attr.Type) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if out.Template.IsNull() || out.Template.IsUnknown() {
+	if outTemplate.IsNull() || outTemplate.IsUnknown() {
 		return diags
 	}
-	if ref.Template.IsNull() || ref.Template.IsUnknown() {
+	if refTemplate.IsNull() || refTemplate.IsUnknown() {
 		return diags
 	}
 
-	outAttrs := out.Template.Attributes()
-	refAttrs := ref.Template.Attributes()
-	apiAliasVal := outAttrs[attrAlias]
-	refAliasVal := refAttrs[attrAlias]
+	outAttrs := outTemplate.Attributes()
+	refAttrs := refTemplate.Attributes()
+	apiAliasVal := outAttrs[templateAliasAttrKey]
+	refAliasVal := refAttrs[templateAliasAttrKey]
 	if apiAliasVal.IsNull() || apiAliasVal.IsUnknown() {
 		return diags
 	}
@@ -51,26 +50,26 @@ func applyTemplateAliasReconciliationFromReference(ctx context.Context, out *Mod
 		return diags
 	}
 
-	merged, changed, d := mergeAliasSetPreferReferenceEncoding(ctx, apiAliasVal, refAliasVal)
+	merged, changed, d := MergeAliasSetPreferReferenceEncoding(ctx, apiAliasVal, refAliasVal)
 	diags.Append(d...)
 	if diags.HasError() || !changed {
 		return diags
 	}
 
-	outAttrs[attrAlias] = merged
-	newTpl, d := types.ObjectValue(TemplateAttrTypes(), outAttrs)
+	outAttrs[templateAliasAttrKey] = merged
+	newTpl, d := types.ObjectValue(templateAttrTypes, outAttrs)
 	diags.Append(d...)
 	if diags.HasError() {
 		return diags
 	}
-	out.Template = newTpl
+	*outTemplate = newTpl
 	return diags
 }
 
-// mergePlanAliasSetWithPriorState walks planned alias elements; when prior state has the same name and
+// MergePlanAliasSetWithPriorState walks planned alias elements; when prior state has the same name and
 // planElt.ObjectSemanticEquals(stateElt), replace the plan element with the state's encoding so planned
 // values match stored state under Optional+Computed+Default nested sets.
-func mergePlanAliasSetWithPriorState(ctx context.Context, planAliases, stateAliases attr.Value) (attr.Value, bool, diag.Diagnostics) {
+func MergePlanAliasSetWithPriorState(ctx context.Context, planAliases, stateAliases attr.Value) (attr.Value, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	pSet, ok := planAliases.(basetypes.SetValue)
@@ -95,7 +94,7 @@ func mergePlanAliasSetWithPriorState(ctx context.Context, planAliases, stateAlia
 		if !sOK || sAlias.IsNull() || sAlias.IsUnknown() {
 			continue
 		}
-		var sm aliasutil.AliasModel
+		var sm AliasModel
 		diags.Append(sAlias.As(ctx, &sm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 		if diags.HasError() {
 			return planAliases, false, diags
@@ -116,7 +115,7 @@ func mergePlanAliasSetWithPriorState(ctx context.Context, planAliases, stateAlia
 			newElems[i] = pe
 			continue
 		}
-		var pm aliasutil.AliasModel
+		var pm AliasModel
 		diags.Append(pAlias.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 		if diags.HasError() {
 			return planAliases, false, diags
@@ -151,7 +150,8 @@ func mergePlanAliasSetWithPriorState(ctx context.Context, planAliases, stateAlia
 	return newSet, true, diags
 }
 
-func mergeAliasSetPreferReferenceEncoding(ctx context.Context, apiSet, refSet attr.Value) (attr.Value, bool, diag.Diagnostics) {
+// MergeAliasSetPreferReferenceEncoding replaces API alias encodings with reference encodings when semantically equal.
+func MergeAliasSetPreferReferenceEncoding(ctx context.Context, apiSet, refSet attr.Value) (attr.Value, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	apiS, ok := apiSet.(basetypes.SetValue)
@@ -176,7 +176,7 @@ func mergeAliasSetPreferReferenceEncoding(ctx context.Context, apiSet, refSet at
 		if !refOK || refAlias.IsNull() || refAlias.IsUnknown() {
 			continue
 		}
-		var m aliasutil.AliasModel
+		var m AliasModel
 		diags.Append(refAlias.As(ctx, &m, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 		if diags.HasError() {
 			return apiSet, false, diags
@@ -197,7 +197,7 @@ func mergeAliasSetPreferReferenceEncoding(ctx context.Context, apiSet, refSet at
 			newElems = append(newElems, ae)
 			continue
 		}
-		var am aliasutil.AliasModel
+		var am AliasModel
 		diags.Append(apiAlias.As(ctx, &am, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 		if diags.HasError() {
 			return apiSet, false, diags
@@ -232,12 +232,12 @@ func mergeAliasSetPreferReferenceEncoding(ctx context.Context, apiSet, refSet at
 	return newSet, true, diags
 }
 
-// projectConfigAliasMatchesOntoPlan walks the plan's alias elements and, for each one, looks up
+// ProjectConfigAliasMatchesOntoPlan walks the plan's alias elements and, for each one, looks up
 // the same-named config alias and the same-named state alias. When the config encoding semantically
 // equals the state encoding, the plan element is replaced with the state encoding (so the planned
 // value matches stored state under Optional+Computed+Default nested sets, even when the plan
 // element carries unknowns). Plan elements with no config counterpart are preserved unchanged.
-func projectConfigAliasMatchesOntoPlan(ctx context.Context, planAliases, configAliases, stateAliases attr.Value) (attr.Value, bool, diag.Diagnostics) {
+func ProjectConfigAliasMatchesOntoPlan(ctx context.Context, planAliases, configAliases, stateAliases attr.Value) (attr.Value, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	pSet, ok := planAliases.(basetypes.SetValue)
@@ -280,7 +280,7 @@ func projectConfigAliasMatchesOntoPlan(ctx context.Context, planAliases, configA
 			newElems[i] = pe
 			continue
 		}
-		var pm aliasutil.AliasModel
+		var pm AliasModel
 		diags.Append(pAlias.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 		if diags.HasError() {
 			return planAliases, false, diags
@@ -329,7 +329,7 @@ func aliasObjectsByName(ctx context.Context, set basetypes.SetValue) (map[string
 		if !ok || av.IsNull() || av.IsUnknown() {
 			continue
 		}
-		var m aliasutil.AliasModel
+		var m AliasModel
 		diags.Append(av.As(ctx, &m, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 		if diags.HasError() {
 			return nil, diags

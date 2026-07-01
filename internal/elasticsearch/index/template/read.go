@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -44,11 +45,11 @@ func readIndexTemplate(ctx context.Context, client *clients.ElasticsearchScopedC
 		return Model{}, false, diags
 	}
 
-	diags.Append(applyTemplateAliasReconciliationFromReference(ctx, &out, &prior)...)
+	diags.Append(aliasutil.ApplyTemplateAliasReconciliationFromReference(ctx, &out.Template, prior.Template, TemplateAttrTypes())...)
 	if diags.HasError() {
 		return Model{}, false, diags
 	}
-	diags.Append(canonicalizeTemplateAliasSetInModel(ctx, &out)...)
+	diags.Append(aliasutil.CanonicalizeTemplateAliasSetInModel(ctx, &out.Template, TemplateAttrTypes())...)
 	if diags.HasError() {
 		return Model{}, false, diags
 	}

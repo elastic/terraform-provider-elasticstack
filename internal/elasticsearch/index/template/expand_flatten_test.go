@@ -260,7 +260,7 @@ func TestModel_GetVersionRequirements_dataStreamOptions(t *testing.T) {
 		t.Fatal(diags)
 	}
 	tplObj, diags := types.ObjectValue(TemplateAttrTypes(), map[string]attr.Value{
-		"alias":               types.SetNull(NewAliasObjectType()),
+		"alias":               types.SetNull(aliasutil.NewAliasObjectType()),
 		"mappings":            esindex.NewMappingsNull(),
 		"settings":            customtypes.NewIndexSettingsNull(),
 		"lifecycle":           types.ObjectNull(LifecycleAttrTypes()),
@@ -278,7 +278,7 @@ func TestModel_GetVersionRequirements_dataStreamOptions(t *testing.T) {
 		t.Fatalf("expected 1 requirement, got %d", len(reqs))
 	}
 	noDsoTpl, diags := types.ObjectValue(TemplateAttrTypes(), map[string]attr.Value{
-		"alias":               types.SetNull(NewAliasObjectType()),
+		"alias":               types.SetNull(aliasutil.NewAliasObjectType()),
 		"mappings":            esindex.NewMappingsNull(),
 		"settings":            customtypes.NewIndexSettingsNull(),
 		"lifecycle":           types.ObjectNull(LifecycleAttrTypes()),
@@ -305,7 +305,7 @@ func TestFlattenAliasElement_emptyFilterMapIsNull(t *testing.T) {
 		IndexRouting:  "ir",
 		Routing:       "r",
 		SearchRouting: "sr",
-	}, nil, AliasAttributeTypes())
+	}, nil, aliasutil.AliasAttributeTypes())
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
@@ -313,13 +313,13 @@ func TestFlattenAliasElement_emptyFilterMapIsNull(t *testing.T) {
 	if !ok {
 		t.Fatalf("got %T", av)
 	}
-	alias, d := NewAliasObjectType().ValueFromObject(ctx, objVal)
+	alias, d := aliasutil.NewAliasObjectType().ValueFromObject(ctx, objVal)
 	diags.Append(d...)
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
 	var am aliasutil.AliasModel
-	diags = alias.(AliasObjectValue).As(ctx, &am, basetypes.ObjectAsOptions{})
+	diags = alias.(aliasutil.AliasObjectValue).As(ctx, &am, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		t.Fatal(diags)
 	}

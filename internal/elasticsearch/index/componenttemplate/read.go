@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -47,6 +48,15 @@ func readComponentTemplate(ctx context.Context, client *clients.ElasticsearchSco
 
 	result, d := flattenToData(ctx, tpl, state)
 	diags.Append(d...)
+	if diags.HasError() {
+		return state, false, diags
+	}
+
+	diags.Append(aliasutil.ApplyTemplateAliasReconciliationFromReference(ctx, &result.Template, state.Template, templateAttrTypes())...)
+	if diags.HasError() {
+		return state, false, diags
+	}
+	diags.Append(aliasutil.CanonicalizeTemplateAliasSetInModel(ctx, &result.Template, templateAttrTypes())...)
 	if diags.HasError() {
 		return state, false, diags
 	}

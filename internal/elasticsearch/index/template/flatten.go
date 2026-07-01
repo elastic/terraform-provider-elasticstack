@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -33,7 +34,7 @@ import (
 
 // fromAPIModel maps an API index template into this model.
 // It does not set id or elasticsearch_connection; the caller merges those as needed.
-// Alias routing echo shapes vs practitioner config are aligned in applyTemplateAliasReconciliationFromReference
+// Alias routing echo shapes vs practitioner config are aligned in aliasutil.ApplyTemplateAliasReconciliationFromReference
 // after read (managed resource only); the data source preserves the API shape.
 //
 // The input is the locally-defined models.IndexTemplate populated by the raw GET
@@ -138,8 +139,8 @@ func flattenTemplateBody(ctx context.Context, t *models.Template) (types.Object,
 		index.NewMappingsNull(),
 		customtypes.NewIndexSettingsNull(),
 		nil,
-		NewAliasObjectType(),
-		AliasAttributeTypes(),
+		aliasutil.NewAliasObjectType(),
+		aliasutil.AliasAttributeTypes(),
 	)
 	diags.Append(d...)
 	if diags.HasError() {

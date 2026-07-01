@@ -15,19 +15,30 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package template
+package aliasutil
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+const templateAliasAttrKey = "alias"
+
+const (
+	attrName          = "name"
+	attrFilter        = "filter"
+	attrIndexRouting  = "index_routing"
+	attrIsHidden      = "is_hidden"
+	attrIsWriteIndex  = "is_write_index"
+	attrRouting       = "routing"
+	attrSearchRouting = "search_routing"
 )
 
 var (
@@ -65,7 +76,7 @@ func NewAliasObjectType() AliasObjectType {
 
 // String returns a human readable string of the type name.
 func (t AliasObjectType) String() string {
-	return "template.AliasObjectType"
+	return "aliasutil.AliasObjectType"
 }
 
 // ValueType returns the Value type.
@@ -144,7 +155,7 @@ func (v AliasObjectValue) ObjectSemanticEquals(ctx context.Context, newValuable 
 		return false, diags
 	}
 
-	var a aliasutil.AliasModel
+	var a AliasModel
 	d := v.As(ctx, &a, basetypes.ObjectAsOptions{
 		UnhandledNullAsEmpty: true,
 	})
@@ -153,7 +164,7 @@ func (v AliasObjectValue) ObjectSemanticEquals(ctx context.Context, newValuable 
 		return false, diags
 	}
 
-	var b aliasutil.AliasModel
+	var b AliasModel
 	d = newValue.As(ctx, &b, basetypes.ObjectAsOptions{
 		UnhandledNullAsEmpty: true,
 	})
@@ -196,7 +207,7 @@ func (v AliasObjectValue) Equal(o attr.Value) bool {
 	return v.ObjectValue.Equal(other.ObjectValue)
 }
 
-func fillUnknownAliasModelFieldsFromOther(m, other aliasutil.AliasModel) aliasutil.AliasModel {
+func fillUnknownAliasModelFieldsFromOther(m, other AliasModel) AliasModel {
 	out := m
 	if m.IndexRouting.IsUnknown() {
 		out.IndexRouting = other.IndexRouting
@@ -221,7 +232,7 @@ func fillUnknownAliasModelFieldsFromOther(m, other aliasutil.AliasModel) aliasut
 
 // aliasElementModelsSemanticallyEqual is the directed comparison: prior is the configuration or older
 // state side; incoming is the API/refreshed side for the rules in design.md §2.
-func aliasElementModelsSemanticallyEqual(ctx context.Context, prior, incoming aliasutil.AliasModel) (bool, diag.Diagnostics) {
+func aliasElementModelsSemanticallyEqual(ctx context.Context, prior, incoming AliasModel) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if !prior.Name.Equal(incoming.Name) ||
@@ -291,7 +302,7 @@ func aliasRoutingFieldStringsSemanticallyEqual(a, b types.String) bool {
 
 // aliasEsIndexRoutingEchoesPriorMainRouting handles GET responses where Elasticsearch omits routing and
 // sets index_routing to the configured generic routing value even when index_routing was distinct in the template.
-func aliasEsIndexRoutingEchoesPriorMainRouting(prior, incoming aliasutil.AliasModel) bool {
+func aliasEsIndexRoutingEchoesPriorMainRouting(prior, incoming AliasModel) bool {
 	if !incoming.Routing.IsNull() && incoming.Routing.ValueString() != "" {
 		return false
 	}
