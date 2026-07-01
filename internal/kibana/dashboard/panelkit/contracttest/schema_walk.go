@@ -71,6 +71,8 @@ func walkAttributes(a schema.Attribute, parent []string, insideListNested bool, 
 		recordScalarLeaf(parent, at.Required, at.Optional, at.Computed, insideListNested, out)
 	case schema.BoolAttribute:
 		recordScalarLeaf(parent, at.Required, at.Optional, at.Computed, insideListNested, out)
+	case schema.Float32Attribute:
+		recordScalarLeaf(parent, at.Required, at.Optional, at.Computed, insideListNested, out)
 	case schema.Float64Attribute:
 		recordScalarLeaf(parent, at.Required, at.Optional, at.Computed, insideListNested, out)
 	case schema.Int64Attribute:

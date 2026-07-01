@@ -326,6 +326,17 @@ func attrsComparableEqual(a, b attr.Value) bool {
 		}
 		return ab.Equal(bb)
 	}
+	aF32, ok1 := a.(types.Float32)
+	bF32, ok2 := b.(types.Float32)
+	if ok1 && ok2 {
+		switch {
+		case aF32.IsUnknown() || bF32.IsUnknown():
+			return true
+		case aF32.IsNull() && bF32.IsNull():
+			return true
+		}
+		return aF32.Equal(bF32)
+	}
 	aF, ok1 := a.(types.Float64)
 	bF, ok2 := b.(types.Float64)
 	if ok1 && ok2 {

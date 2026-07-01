@@ -95,13 +95,16 @@ func appendNullPreserveIssues(ctx context.Context, handler iface.Handler, fixtur
 						return false
 					}
 					switch schemaLeaf.(type) {
-					case schema.StringAttribute, schema.BoolAttribute, schema.Float64Attribute, schema.Int64Attribute:
+					case schema.StringAttribute, schema.BoolAttribute, schema.Float32Attribute, schema.Float64Attribute, schema.Int64Attribute:
 						if av, conv := attrFromReflectLeaf(got); conv {
 							if s, ok := av.(types.String); ok {
 								return s.IsNull()
 							}
 							if b, ok := av.(types.Bool); ok {
 								return b.IsNull()
+							}
+							if f, ok := av.(types.Float32); ok {
+								return f.IsNull()
 							}
 							if f, ok := av.(types.Float64); ok {
 								return f.IsNull()
@@ -119,7 +122,7 @@ func appendNullPreserveIssues(ctx context.Context, handler iface.Handler, fixtur
 
 		if priorKnownApplicable(schemaLeaf, leaf) {
 			switch schemaLeaf.(type) {
-			case schema.StringAttribute, schema.BoolAttribute, schema.Float64Attribute, schema.Int64Attribute:
+			case schema.StringAttribute, schema.BoolAttribute, schema.Float32Attribute, schema.Float64Attribute, schema.Int64Attribute:
 				if p := clonePanelStaleScalarLeaf(&baseline, block, leaf, schemaLeaf); p != nil {
 					assertFromAPI(ctx, handler, fixture, issues, "[NullPreserve] prior_known/"+dotted, p,
 						func(out *models.PanelModel) bool {
@@ -169,7 +172,7 @@ func sliceOrMapLooksUnset(v reflect.Value) bool {
 
 func priorKnownApplicable(sch schema.Attribute, leaf []string) bool {
 	switch sch.(type) {
-	case schema.StringAttribute, schema.BoolAttribute, schema.Float64Attribute, schema.Int64Attribute:
+	case schema.StringAttribute, schema.BoolAttribute, schema.Float32Attribute, schema.Float64Attribute, schema.Int64Attribute:
 		return true
 	case schema.ListNestedAttribute, schema.ListAttribute, schema.MapAttribute:
 		return len(leaf) > 0
@@ -191,6 +194,8 @@ func clonePanelBaselineWithNullLeaf(baseline *models.PanelModel, block string, l
 		setStructLeaf(p, block, leaf, types.StringNull())
 	case schema.BoolAttribute:
 		setStructLeaf(p, block, leaf, types.BoolNull())
+	case schema.Float32Attribute:
+		setStructLeaf(p, block, leaf, types.Float32Null())
 	case schema.Float64Attribute:
 		setStructLeaf(p, block, leaf, types.Float64Null())
 	case schema.Int64Attribute:
@@ -228,6 +233,9 @@ func clonePanelStaleScalarLeaf(baseline *models.PanelModel, block string, leaf [
 			}
 		}
 		setStructLeaf(p, block, leaf, types.BoolValue(true))
+		return p
+	case schema.Float32Attribute:
+		setStructLeaf(p, block, leaf, types.Float32Value(-9.876543))
 		return p
 	case schema.Float64Attribute:
 		setStructLeaf(p, block, leaf, types.Float64Value(-9.87654321))
@@ -335,6 +343,8 @@ func attrFromReflectLeaf(rv reflect.Value) (attr.Value, bool) {
 	case types.String:
 		return v, true
 	case types.Bool:
+		return v, true
+	case types.Float32:
 		return v, true
 	case types.Float64:
 		return v, true
