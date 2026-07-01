@@ -63,4 +63,4 @@ Design decisions (agreed in issue #4005):
 - `internal/kibana/dashboard/panel/aiopslograteanalysis/` — new package.
 - `internal/kibana/dashboard/panel/aiopspatternanalysis/` — new package.
 - `internal/kibana/dashboard/panel/aiopschangepointchart/` — new package.
-- `openspec/specs/kibana-dashboard/spec.md` — new REQ-047, REQ-048, REQ-049.
+- `openspec/changes/dashboard-aiops-panels/specs/kibana-dashboard/spec.md` — delta spec adding REQ-047, REQ-048, REQ-049.

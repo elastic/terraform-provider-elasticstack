@@ -119,7 +119,7 @@ The resource SHALL reject simultaneous `aiops_change_point_chart_config` and `co
 
 - GIVEN `aiops_change_point_chart_config = { data_view_id = "metrics-*", metric_field = "system.cpu.total.pct" }`
 - WHEN the resource creates and reads state
-- THEN `data_view_id` and `metric_field` SHALL be present in state; all optional fields SHALL be null or empty set
+- THEN `data_view_id` and `metric_field` SHALL be present in state; all optional fields (including `partitions`) SHALL be null
 - AND a subsequent plan SHALL show no changes
 
 #### Scenario: Partitions set is order-insensitive
