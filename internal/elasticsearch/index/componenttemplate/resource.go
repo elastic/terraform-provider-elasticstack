@@ -30,6 +30,7 @@ var (
 	_ resource.Resource                 = newResource()
 	_ resource.ResourceWithConfigure    = newResource()
 	_ resource.ResourceWithImportState  = newResource()
+	_ resource.ResourceWithModifyPlan   = newResource()
 	_ resource.ResourceWithUpgradeState = newResource()
 )
 

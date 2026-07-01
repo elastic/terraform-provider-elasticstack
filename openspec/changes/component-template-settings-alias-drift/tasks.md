@@ -23,11 +23,11 @@
 
 ## 5. Add `ModifyPlan` to `component_template`
 
-- [ ] 5.1 Create `internal/elasticsearch/index/componenttemplate/modify_plan.go`
-- [ ] 5.2 Implement `func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse)` — guard on null plan/state (create/destroy paths), load plan/state/config into `Data` models
-- [ ] 5.3 Call `templateutil.ReconcileSettingsIfSemanticallyEqual` for `template.settings`; if the settings differ only in encoding, replace plan settings with the state's canonical value
-- [ ] 5.4 Call `aliasutil.MergePlanAliasSetWithPriorState` + `aliasutil.ProjectConfigAliasMatchesOntoPlan` + `aliasutil.CanonicalizeAliasSetElements` for `template.alias` — mirroring the index_template `ModifyPlan` alias section
-- [ ] 5.5 Register `resource.ResourceWithModifyPlan` in the `var _ ...` block in `internal/elasticsearch/index/componenttemplate/resource.go`
+- [x] 5.1 Create `internal/elasticsearch/index/componenttemplate/modify_plan.go`
+- [x] 5.2 Implement `func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse)` — guard on null plan/state (create/destroy paths), load plan/state/config into `Data` models
+- [x] 5.3 Call `templateutil.ReconcileSettingsIfSemanticallyEqual` for `template.settings`; if the settings differ only in encoding, replace plan settings with the state's canonical value
+- [x] 5.4 Call `aliasutil.MergePlanAliasSetWithPriorState` + `aliasutil.ProjectConfigAliasMatchesOntoPlan` + `aliasutil.CanonicalizeAliasSetElements` for `template.alias` — mirroring the index_template `ModifyPlan` alias section
+- [x] 5.5 Register `resource.ResourceWithModifyPlan` in the `var _ ...` block in `internal/elasticsearch/index/componenttemplate/resource.go`
 
 ## 6. Spec sync
 
