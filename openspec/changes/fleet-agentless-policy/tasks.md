@@ -54,7 +54,7 @@
 
 ## 6. Resource: version gating and deployment check
 
-- [ ] 6.1 Wire `GetVersionRequirements` in `models.go` to enforce Kibana ≥ 9.3.0 using the existing `EnforceMinVersion` pattern; add a test asserting the version check fires before any API call
+- [x] 6.1 Wire `GetVersionRequirements` in `models.go` to enforce Kibana ≥ 9.3.0 using the existing `EnforceMinVersion` pattern; add a test asserting the version check fires before any API call
 - [ ] 6.2 Implement the deployment topology preflight check in `create.go` that detects self-managed stacks and returns a clear diagnostic; investigate the available detection mechanism (e.g., checking `xpack.fleet.agentless.enabled` via the Fleet settings endpoint or a stack capability check) and document the chosen approach in a code comment
 - [ ] 6.3 Add the "experimental" notice to the resource description in `schema.go`
 
