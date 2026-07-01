@@ -67,3 +67,23 @@ func MergeTimeRange(
 	}
 	return TimeRangeFromAPI(api, priorTR)
 }
+
+// PreserveTimeRangeNullIntentFromPrior returns the time range to keep on existing, per REQ-009: if
+// the prior config omitted `time_range` entirely, the block is cleared; otherwise each sub-field of
+// existing is nulled out wherever the prior config left it unknown/null, and known prior fields are
+// left as existing already computed them.
+func PreserveTimeRangeNullIntentFromPrior(prior, existing *models.TimeRangeModel) *models.TimeRangeModel {
+	if prior == nil || existing == nil {
+		return nil
+	}
+	if !typeutils.IsKnown(prior.From) {
+		existing.From = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.To) {
+		existing.To = types.StringNull()
+	}
+	if !typeutils.IsKnown(prior.Mode) {
+		existing.Mode = types.StringNull()
+	}
+	return existing
+}
