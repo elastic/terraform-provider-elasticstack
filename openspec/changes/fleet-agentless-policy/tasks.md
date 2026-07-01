@@ -1,16 +1,16 @@
 ## 1. Phase 1 preparation: shared modeling package
 
-- [ ] 1.1 Identify all types and functions in `internal/fleet/integration_policy/` that are candidates for extraction into the shared package: `InputType`, `InputsType`, `VarsJsonType`, and associated value types, defaults merging (`models_defaults.go`), canonical JSON normalization, and secret helpers (`secrets.go`)
-- [ ] 1.2 Decide final package name for the shared package (working name: `internal/fleet/policyshape/`); document the decision as a comment in `resource.go` of the new package
-- [ ] 1.3 Create the shared package directory and move (not copy) each candidate type/function, updating all import paths in `integration_policy/`
-- [ ] 1.4 Verify `go build ./...` passes with no import cycles after the extraction
-- [ ] 1.5 Update all unit tests in `integration_policy/` that previously tested the now-shared code to import from the new package
-- [ ] 1.6 Add or migrate unit tests for `VarsJsonType` normalization: semantically equivalent JSON → no diff; changed JSON → diff
-- [ ] 1.7 Add or migrate unit tests for defaults merging: user value overrides default; missing user value uses default
-- [ ] 1.8 Add or migrate unit tests for secret helpers: secret reference preserved on update; raw value does not appear in state
-- [ ] 1.9 **Additive schema change:** add an Optional `condition` string attribute to input and stream elements in the shared `InputType`, surfaced in both `integration_policy` and `agentless_policy`. Wire it to the API `condition` field on create/update and read it back. Non-breaking (no state upgrader); verify existing resources plan without diff.
-- [ ] 1.10 Run `make check-lint` and fix any linting issues from the extraction
-- [ ] 1.11 Run integration_policy acceptance tests to confirm Phase 1 parity: `go test -v -run TestAcc ./internal/fleet/integration_policy/ -timeout 30m`
+- [x] 1.1 Identify all types and functions in `internal/fleet/integration_policy/` that are candidates for extraction into the shared package: `InputType`, `InputsType`, `VarsJsonType`, and associated value types, defaults merging (`models_defaults.go`), canonical JSON normalization, and secret helpers (`secrets.go`)
+- [x] 1.2 Decide final package name for the shared package (working name: `internal/fleet/policyshape/`); document the decision as a comment in `resource.go` of the new package
+- [x] 1.3 Create the shared package directory and move (not copy) each candidate type/function, updating all import paths in `integration_policy/`
+- [x] 1.4 Verify `go build ./...` passes with no import cycles after the extraction
+- [x] 1.5 Update all unit tests in `integration_policy/` that previously tested the now-shared code to import from the new package
+- [x] 1.6 Add or migrate unit tests for `VarsJsonType` normalization: semantically equivalent JSON → no diff; changed JSON → diff
+- [x] 1.7 Add or migrate unit tests for defaults merging: user value overrides default; missing user value uses default
+- [x] 1.8 Add or migrate unit tests for secret helpers: secret reference preserved on update; raw value does not appear in state
+- [x] 1.9 **Additive schema change:** add an Optional `condition` string attribute to input and stream elements in the shared `InputType`, surfaced in both `integration_policy` and `agentless_policy`. Wire it to the API `condition` field on create/update and read it back. Non-breaking (no state upgrader); verify existing resources plan without diff.
+- [x] 1.10 Run `make check-lint` and fix any linting issues from the extraction
+- [x] 1.11 Run integration_policy acceptance tests to confirm Phase 1 parity: `go test -v -run TestAcc ./internal/fleet/integration_policy/ -timeout 30m`
 
 ## 2. kbapi client wrappers
 

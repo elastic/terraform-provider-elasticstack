@@ -114,6 +114,7 @@ The provider injects the '__tf_provider_context' property into this JSON object.
 
 Optional:
 
+- `condition` (String) Agent condition expression to evaluate whether to apply this input.
 - `enabled` (Boolean) Enable the input.
 - `streams` (Attributes Map) Input streams mapped by stream ID. (see [below for nested schema](#nestedatt--inputs--streams))
 - `vars` (String, Sensitive) Input-level variables as JSON.
@@ -127,6 +128,7 @@ Read-Only:
 
 Optional:
 
+- `condition` (String) Agent condition expression to evaluate whether to apply this stream.
 - `enabled` (Boolean) Enable the stream.
 - `vars` (String, Sensitive) Stream-level variables as JSON.
 
