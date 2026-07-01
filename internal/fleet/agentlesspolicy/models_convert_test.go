@@ -608,8 +608,11 @@ func TestBuildUpdateBody(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "cloud_security_posture", pkg["name"])
 	assert.Equal(t, "3.4.0", pkg["version"])
-	// package.title falls back to current's title when the plan's package
-	// object (built by baseTestModel) already carries the same title.
+	// Here the plan's package object (built by baseTestModel) happens to
+	// carry the same title as current's, so this assertion alone can't tell
+	// a correct plan-overlay apart from a bug that always falls back to
+	// current's title -- see TestBuildUpdateBody_packageTitleOverlay for a
+	// case where the two differ.
 	assert.Equal(t, "Security Posture Management", pkg["title"])
 
 	tags, ok := decoded["global_data_tags"].([]any)
@@ -665,6 +668,37 @@ func TestBuildUpdateBody(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "organization-account", accountType["value"])
 	assert.Equal(t, "text", accountType["type"], "existing stream var `type` metadata should be preserved across the merge")
+}
+
+// TestBuildUpdateBody_packageTitleOverlay closes the test gap left by
+// TestBuildUpdateBody's package.title assertion: there, baseTestModel's plan
+// title and current's fixture title happen to be identical
+// ("Security Posture Management"), so that assertion alone can't distinguish
+// a correct plan-overlay from a bug that always falls back to current's
+// title. Here the two differ, so the PUT body must carry the plan's value.
+func TestBuildUpdateBody_packageTitleOverlay(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	current := mustPackagePolicyFromJSON(t, typedFormatPackagePolicyJSON)
+
+	plan := baseTestModel(t)
+	pkgObj, diags := types.ObjectValueFrom(ctx, packageAttrTypes(), packageModel{
+		Name:    types.StringValue("cloud_security_posture"),
+		Version: types.StringValue("3.4.0"),
+		Title:   types.StringValue("Custom CSPM Title"),
+	})
+	require.False(t, diags.HasError())
+	plan.Package = pkgObj
+
+	body, bodyDiags := buildUpdateBody(ctx, plan, current)
+	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
+
+	decoded := decodeRequestJSON(t, body)
+
+	pkg, ok := decoded["package"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "Custom CSPM Title", pkg["title"], "package.title must come from the plan, not fall back to current's title")
 }
 
 // TestBuildUpdateBody_clearsVarsWhenPlanRemovesThem covers a bug found in
