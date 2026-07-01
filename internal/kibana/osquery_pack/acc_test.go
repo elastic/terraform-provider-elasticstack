@@ -241,6 +241,39 @@ func TestAccResourceOsqueryPack_savedQueryID(t *testing.T) {
 	})
 }
 
+// TestAccDataSourceOsqueryPack_savedQueryID verifies the data source behaviour for
+// saved_query_id. The Kibana API does not return saved_query_id in GET responses;
+// the resource works around this via post-read state merging, but the data source
+// has no prior state to merge from. The correct and expected result is therefore
+// that saved_query_id is not set on the data source read.
+func TestAccDataSourceOsqueryPack_savedQueryID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
+
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{
+		"suffix": config.StringVariable(suffix),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkOsqueryPackDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipOsqueryPackUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("saved_query_read"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					// The resource preserves saved_query_id via post-read state merging.
+					resource.TestCheckResourceAttrSet(osqueryPackResourceAddr, "queries.find_procs.saved_query_id"),
+					// The data source has no prior state; saved_query_id is not returned by the API.
+					resource.TestCheckNoResourceAttr(osqueryPackDataSourceAddr, "queries.find_procs.saved_query_id"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceOsqueryPack_policyIDsAndShards(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minOsqueryPackAccTestVersion, versionutils.FlavorAny)
 
@@ -357,6 +390,8 @@ func TestAccPrebuiltOsqueryPack(t *testing.T) {
 					resource.TestCheckResourceAttr(osqueryPackDataSourceAddr, "pack_id", prebuiltPackID),
 					resource.TestCheckResourceAttr(osqueryPackDataSourceAddr, "read_only", "true"),
 					resource.TestCheckResourceAttrSet(osqueryPackDataSourceAddr, "name"),
+					resource.TestCheckResourceAttrSet(osqueryPackDataSourceAddr, "queries.%"),
+					resource.TestCheckResourceAttrSet(osqueryPackDataSourceAddr, "enabled"),
 				),
 			},
 		},
@@ -606,6 +641,9 @@ func osqueryPackV1DataSourceParityChecks() []resource.TestCheckFunc {
 		resource.TestCheckTypeSetElemAttr(osqueryPackDataSourceAddr, "queries.find_procs.ecs_mapping.host.name.values.*", "host-b"),
 		resource.TestCheckTypeSetElemAttr(osqueryPackResourceAddr, "queries.find_procs.ecs_mapping.host.name.values.*", "host-a"),
 		resource.TestCheckTypeSetElemAttr(osqueryPackResourceAddr, "queries.find_procs.ecs_mapping.host.name.values.*", "host-b"),
+		resource.TestCheckResourceAttrPair(osqueryPackDataSourceAddr, "queries.%", osqueryPackResourceAddr, "queries.%"),
+		resource.TestCheckResourceAttr(osqueryPackDataSourceAddr, "policy_ids.#", "0"),
+		resource.TestCheckResourceAttr(osqueryPackDataSourceAddr, "shards.%", "0"),
 	}
 }
 
