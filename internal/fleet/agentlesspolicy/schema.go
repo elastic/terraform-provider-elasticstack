@@ -90,16 +90,28 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"description": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "The description of the agentless policy; updatable in-place.",
+				Optional: true,
+				MarkdownDescription: "The description of the agentless policy; updatable in-place. " +
+					"An explicit empty string is rejected: it is indistinguishable from \"unset\" once " +
+					"round-tripped through the API (Kibana returns an omitted/empty description as `\"\"`, " +
+					"which this provider folds back to null), so setting `description = \"\"` would otherwise " +
+					"produce a permanent, non-converging diff. Omit the attribute instead of setting it to `\"\"`.",
+				Validators: []validator.String{
+					stringvalidator.LengthAtLeast(1),
+				},
 			},
 			"namespace": schema.StringAttribute{
-				Computed:            true,
-				Optional:            true,
-				MarkdownDescription: "The namespace of the agentless policy; forces replacement on change.",
+				Computed: true,
+				Optional: true,
+				MarkdownDescription: "The namespace of the agentless policy; forces replacement on change. " +
+					"An explicit empty string is rejected for the same reason as `description`: it is " +
+					"indistinguishable from \"unset\" once round-tripped through the API.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
+				},
+				Validators: []validator.String{
+					stringvalidator.LengthAtLeast(1),
 				},
 			},
 			"space_ids": schema.SetAttribute{

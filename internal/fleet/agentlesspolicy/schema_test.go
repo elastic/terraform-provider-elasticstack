@@ -22,6 +22,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -300,4 +302,41 @@ func hasStringRequiresReplace(mods []planmodifier.String) bool {
 		}
 	}
 	return false
+}
+
+// TestGetSchema_descriptionAndNamespaceRejectEmptyString covers a review
+// finding: populateFromPackagePolicy/populateFromCreateResponse fold the
+// API's `""` back to null for both description and namespace (see
+// typeutils.NonEmptyStringOrNull in models_convert.go), because Kibana
+// returns an explicit "" (not an omitted field) once a description has been
+// cleared. Without a validator, a config that explicitly sets
+// `description = ""` or `namespace = ""` would be indistinguishable from
+// "unset" after the first apply's Read, producing a permanent,
+// non-converging diff. A LengthAtLeast(1) validator rejects the empty
+// string upfront instead.
+func TestGetSchema_descriptionAndNamespaceRejectEmptyString(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	s := getSchema(ctx)
+
+	description, ok := s.Attributes["description"].(schema.StringAttribute)
+	require.True(t, ok)
+	diags := validateStringValidators(ctx, description.Validators, types.StringValue(""), path.Root("description"))
+	assert.True(t, diags.HasError(), "description = \"\" should be rejected by a validator, not silently accepted")
+
+	namespace, ok := s.Attributes["namespace"].(schema.StringAttribute)
+	require.True(t, ok)
+	diags = validateStringValidators(ctx, namespace.Validators, types.StringValue(""), path.Root("namespace"))
+	assert.True(t, diags.HasError(), "namespace = \"\" should be rejected by a validator, not silently accepted")
+}
+
+func validateStringValidators(ctx context.Context, validators []validator.String, value types.String, p path.Path) diag.Diagnostics {
+	var diags diag.Diagnostics
+	req := validator.StringRequest{ConfigValue: value, Path: p}
+	for _, v := range validators {
+		var resp validator.StringResponse
+		v.ValidateString(ctx, req, &resp)
+		diags.Append(resp.Diagnostics...)
+	}
+	return diags
 }
