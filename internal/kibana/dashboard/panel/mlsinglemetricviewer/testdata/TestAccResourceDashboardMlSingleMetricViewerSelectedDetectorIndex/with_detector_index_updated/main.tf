@@ -27,8 +27,8 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 8
     }
     ml_single_metric_viewer_config = {
-      job_ids                   = ["fake-job-alpha"]
-      selected_detector_index   = 5
+      job_ids                 = ["fake-job-alpha"]
+      selected_detector_index = 5
     }
   }]
 }

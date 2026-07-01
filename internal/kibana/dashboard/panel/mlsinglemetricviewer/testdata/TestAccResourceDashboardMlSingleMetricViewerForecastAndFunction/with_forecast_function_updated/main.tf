@@ -27,9 +27,9 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 8
     }
     ml_single_metric_viewer_config = {
-      job_ids               = ["fake-job-alpha"]
-      forecast_id           = "another-fake-forecast-id"
-      function_description  = "max"
+      job_ids              = ["fake-job-alpha"]
+      forecast_id          = "another-fake-forecast-id"
+      function_description = "max"
     }
   }]
 }
