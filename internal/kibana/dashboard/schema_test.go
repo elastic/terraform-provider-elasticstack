@@ -27,8 +27,6 @@ import (
 
 // expectedPanelConfigs covers the design D9 set of top-level panel-config
 // branches: API panel kinds + universal config_json (plus image, slo_alerts,
-// expectedPanelConfigs covers the design D9 set of top-level panel-config
-// branches: API panel kinds + universal config_json (plus image, slo_alerts,
 // discover_session, the two ML anomaly panels, and the three AIOps panels).
 const expectedPanelConfigs = 20
 

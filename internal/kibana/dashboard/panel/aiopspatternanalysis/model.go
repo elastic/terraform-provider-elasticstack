@@ -82,20 +82,8 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 			HideTitle:         types.BoolPointerValue(api.HideTitle),
 			HideBorder:        types.BoolPointerValue(api.HideBorder),
 		}
-		if api.RandomSamplerProbability != nil {
-			pm.AiopsPatternAnalysisConfig.RandomSamplerProbability = types.Float32Value(*api.RandomSamplerProbability)
-		} else {
-			pm.AiopsPatternAnalysisConfig.RandomSamplerProbability = types.Float32Null()
-		}
-		if api.TimeRange != nil {
-			pm.AiopsPatternAnalysisConfig.TimeRange = &models.TimeRangeModel{
-				From: types.StringValue(api.TimeRange.From),
-				To:   types.StringValue(api.TimeRange.To),
-			}
-			if api.TimeRange.Mode != nil {
-				pm.AiopsPatternAnalysisConfig.TimeRange.Mode = types.StringValue(string(*api.TimeRange.Mode))
-			}
-		}
+		pm.AiopsPatternAnalysisConfig.RandomSamplerProbability = types.Float32PointerValue(api.RandomSamplerProbability)
+		pm.AiopsPatternAnalysisConfig.TimeRange = panelkit.TimeRangeFromAPI(api.TimeRange, nil)
 		return nil
 	}
 
@@ -110,11 +98,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 			HideTitle:         types.BoolPointerValue(api.HideTitle),
 			HideBorder:        types.BoolPointerValue(api.HideBorder),
 		}
-		if api.RandomSamplerProbability != nil {
-			pm.AiopsPatternAnalysisConfig.RandomSamplerProbability = types.Float32Value(*api.RandomSamplerProbability)
-		} else {
-			pm.AiopsPatternAnalysisConfig.RandomSamplerProbability = types.Float32Null()
-		}
+		pm.AiopsPatternAnalysisConfig.RandomSamplerProbability = types.Float32PointerValue(api.RandomSamplerProbability)
 	}
 
 	existing := pm.AiopsPatternAnalysisConfig

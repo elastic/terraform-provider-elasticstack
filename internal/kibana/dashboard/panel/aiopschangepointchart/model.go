@@ -45,7 +45,7 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 	if typeutils.IsKnown(cfg.SplitField) {
 		panel.Config.SplitField = cfg.SplitField.ValueStringPointer()
 	}
-	if !cfg.Partitions.IsNull() && !cfg.Partitions.IsUnknown() {
+	if typeutils.IsKnown(cfg.Partitions) {
 		elems := cfg.Partitions.Elements()
 		items := make([]string, 0, len(elems))
 		for _, e := range elems {
@@ -98,20 +98,8 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 			HideTitle:           types.BoolPointerValue(api.HideTitle),
 			HideBorder:          types.BoolPointerValue(api.HideBorder),
 		}
-		if api.MaxSeriesToPlot != nil {
-			pm.AiopsChangePointChartConfig.MaxSeriesToPlot = types.Float32Value(*api.MaxSeriesToPlot)
-		} else {
-			pm.AiopsChangePointChartConfig.MaxSeriesToPlot = types.Float32Null()
-		}
-		if api.TimeRange != nil {
-			pm.AiopsChangePointChartConfig.TimeRange = &models.TimeRangeModel{
-				From: types.StringValue(api.TimeRange.From),
-				To:   types.StringValue(api.TimeRange.To),
-			}
-			if api.TimeRange.Mode != nil {
-				pm.AiopsChangePointChartConfig.TimeRange.Mode = types.StringValue(string(*api.TimeRange.Mode))
-			}
-		}
+		pm.AiopsChangePointChartConfig.MaxSeriesToPlot = types.Float32PointerValue(api.MaxSeriesToPlot)
+		pm.AiopsChangePointChartConfig.TimeRange = panelkit.TimeRangeFromAPI(api.TimeRange, nil)
 		return nil
 	}
 
@@ -128,11 +116,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 			HideTitle:           types.BoolPointerValue(api.HideTitle),
 			HideBorder:          types.BoolPointerValue(api.HideBorder),
 		}
-		if api.MaxSeriesToPlot != nil {
-			pm.AiopsChangePointChartConfig.MaxSeriesToPlot = types.Float32Value(*api.MaxSeriesToPlot)
-		} else {
-			pm.AiopsChangePointChartConfig.MaxSeriesToPlot = types.Float32Null()
-		}
+		pm.AiopsChangePointChartConfig.MaxSeriesToPlot = types.Float32PointerValue(api.MaxSeriesToPlot)
 	}
 
 	existing := pm.AiopsChangePointChartConfig
@@ -243,5 +227,3 @@ func changePointPartitionsFromAPI(v *[]string) types.Set {
 	}
 	return s
 }
-
-// (float32PtrToFloat64Ptr removed: float32 API fields now stored as types.Float32.)

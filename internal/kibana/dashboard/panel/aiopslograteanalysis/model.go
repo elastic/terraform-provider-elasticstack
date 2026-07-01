@@ -65,15 +65,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 			HideTitle:   types.BoolPointerValue(api.HideTitle),
 			HideBorder:  types.BoolPointerValue(api.HideBorder),
 		}
-		if api.TimeRange != nil {
-			pm.AiopsLogRateAnalysisConfig.TimeRange = &models.TimeRangeModel{
-				From: types.StringValue(api.TimeRange.From),
-				To:   types.StringValue(api.TimeRange.To),
-			}
-			if api.TimeRange.Mode != nil {
-				pm.AiopsLogRateAnalysisConfig.TimeRange.Mode = types.StringValue(string(*api.TimeRange.Mode))
-			}
-		}
+		pm.AiopsLogRateAnalysisConfig.TimeRange = panelkit.TimeRangeFromAPI(api.TimeRange, nil)
 		return nil
 	}
 
