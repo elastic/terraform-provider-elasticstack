@@ -40,6 +40,7 @@ func SchemaAttribute() schema.Attribute {
 			"the remaining fields are the standard optional panel presentation passthroughs.",
 		BlockName:  "aiops_log_rate_analysis_config",
 		PanelType:  panelType,
+		Required:   true,
 		Attributes: attrs,
 	})
 }

@@ -75,6 +75,7 @@ func SchemaAttribute() schema.Attribute {
 			"optional aggregation, split, partitions, and view controls follow the API-documented enums.",
 		BlockName:  "aiops_change_point_chart_config",
 		PanelType:  panelType,
+		Required:   true,
 		Attributes: attrs,
 	})
 }

@@ -69,6 +69,7 @@ func SchemaAttribute() schema.Attribute {
 			"optional sampling and time-range controls follow the API-documented bounds.",
 		BlockName:  "aiops_pattern_analysis_config",
 		PanelType:  panelType,
+		Required:   true,
 		Attributes: attrs,
 	})
 }
