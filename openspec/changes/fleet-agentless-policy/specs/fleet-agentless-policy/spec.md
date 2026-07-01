@@ -57,11 +57,11 @@ The resource SHALL expose the following schema:
 - `inputs` — Optional+Computed map(object) keyed by input type ID; updatable in-place. Each element:
   - `enabled` — Optional+Computed bool.
   - `condition` — Optional string.
-  - `vars_json` — Optional sensitive JSON string; input-level variables.
+  - `vars` — Optional sensitive JSON string; input-level variables. (Named `vars`, not `vars_json`, to match the existing `elasticstack_fleet_integration_policy` schema, where input/stream-level vars use the `vars` key. Both map to the API field `vars`.)
   - `streams` — Optional map(object) keyed by stream ID. Each element:
     - `enabled` — Optional+Computed bool.
     - `condition` — Optional string (agent condition expression for the stream).
-    - `vars_json` — Optional sensitive JSON string.
+    - `vars` — Optional sensitive JSON string (stream-level variables; maps to API field `vars`).
 
 > **Note on var_group_selections nesting (v1 scope):** the resource models `var_group_selections` at the **top level only** in v1. The Fleet API also supports `var_group_selections` per-stream (in the simplified request format this provider uses), but per-stream modeling is **deferred** to a follow-up change to avoid a schema change to the shared `policyshape` `InputType` (which `integration_policy` also consumes under the Phase 1 behaviour-preserving guarantee). Per-input `var_group_selections` is not supported by the simplified format at all (legacy typed-input format only) and is not modeled.
 
@@ -188,7 +188,7 @@ The resource SHALL call `PUT /api/fleet/package_policies/{policy_id}` (space-awa
 
 #### Scenario: inputs updated in-place
 
-- **WHEN** an input's `vars_json` is changed in config
+- **WHEN** an input's `vars` is changed in config
 - **THEN** `PUT /api/fleet/package_policies/{policy_id}` SHALL be called with the updated inputs
 - **AND** the resource SHALL NOT be replaced
 

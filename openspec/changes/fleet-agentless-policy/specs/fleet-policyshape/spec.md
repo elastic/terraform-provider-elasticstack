@@ -11,12 +11,16 @@ The shared package `internal/fleet/policyshape/` (working name; final name at im
 
 ### Requirement: VarsJsonType — JSON-encoded vars
 
-The package SHALL provide `VarsJsonType`, a Plugin Framework custom type for JSON-encoded vars attributes. It SHALL:
+The package SHALL provide `VarsJsonType`, a Plugin Framework custom type for the top-level (integration-level) JSON-encoded vars attribute (`vars_json`). It SHALL:
 
 - Accept any valid JSON object string in config.
 - Normalize the JSON on read (stable key ordering, no extra whitespace) so that semantically equivalent JSON strings produce no plan diff.
 - Be marked `Sensitive` so values are redacted from plan output.
 - Support `UseStateForUnknown` so computed values are preserved across plan/apply cycles.
+
+Input-level and stream-level vars use the `vars` attribute key (matching the existing `integration_policy` schema) with a normalized JSON string type; they do not use the contextual-defaults `VarsJsonType`.
+
+> **Naming note:** the API field is `vars` at all levels. The Terraform top-level attribute is named `vars_json` to signal JSON encoding; input/stream attributes keep the existing `vars` name used by `integration_policy` so the shared type is behaviour-preserving for that resource.
 
 #### Scenario: Semantically equivalent JSON produces no diff
 
@@ -35,8 +39,8 @@ The package SHALL provide `InputType`, a Plugin Framework custom type representi
 
 - `enabled` — Optional+Computed bool (default true).
 - `condition` — Optional string (agent condition expression).
-- `vars_json` — Optional sensitive JSON string (input-level variables via `VarsJsonType`).
-- `streams` — Optional map of stream objects, each with `enabled`, optionally `condition`, and `vars_json`.
+- `vars` — Optional sensitive JSON string (input-level variables; normalized on read). Named `vars` to match the existing `integration_policy` schema.
+- `streams` — Optional map of stream objects, each with `enabled`, optionally `condition`, and `vars`.
 
 > **Note:** `var_group_selections` is modeled at the top level (on the package policy) only. Per-stream `var_group_selections` is API-supported but intentionally **not** modeled in v1 (deferred); per-input is not supported by the simplified request format this provider uses (legacy typed-input format only).
 
@@ -48,7 +52,7 @@ The package SHALL provide `InputType`, a Plugin Framework custom type representi
 
 #### Scenario: Nested stream vars round-trip
 
-- **WHEN** `inputs["my/input"].streams["my.stream"].vars_json = jsonencode({key = "val"})` is set
+- **WHEN** `inputs["my/input"].streams["my.stream"].vars = jsonencode({key = "val"})` is set
 - **THEN** the API request SHALL include the stream vars
 - **AND** the normalized value SHALL be preserved in state after read
 

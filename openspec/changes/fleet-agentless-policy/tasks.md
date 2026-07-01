@@ -8,8 +8,9 @@
 - [ ] 1.6 Add or migrate unit tests for `VarsJsonType` normalization: semantically equivalent JSON → no diff; changed JSON → diff
 - [ ] 1.7 Add or migrate unit tests for defaults merging: user value overrides default; missing user value uses default
 - [ ] 1.8 Add or migrate unit tests for secret helpers: secret reference preserved on update; raw value does not appear in state
-- [ ] 1.9 Run `make check-lint` and fix any linting issues from the extraction
-- [ ] 1.10 Run integration_policy acceptance tests to confirm Phase 1 parity: `go test -v -run TestAcc ./internal/fleet/integration_policy/ -timeout 30m`
+- [ ] 1.9 **Additive schema change:** add an Optional `condition` string attribute to input and stream elements in the shared `InputType`, surfaced in both `integration_policy` and `agentless_policy`. Wire it to the API `condition` field on create/update and read it back. Non-breaking (no state upgrader); verify existing resources plan without diff.
+- [ ] 1.10 Run `make check-lint` and fix any linting issues from the extraction
+- [ ] 1.11 Run integration_policy acceptance tests to confirm Phase 1 parity: `go test -v -run TestAcc ./internal/fleet/integration_policy/ -timeout 30m`
 
 ## 2. kbapi client wrappers
 
@@ -32,7 +33,7 @@
 - [ ] 4.1 Implement `getSchema` in `schema.go` covering all identity attributes (`id`, `policy_id`, `name`, `description`, `namespace`, `space_ids`) with correct Optional/Computed/Required, `UseStateForUnknown`, and `RequiresReplace` plan modifiers per the spec
 - [ ] 4.2 Add schema for `package` (Required object: `name` (Required, RequiresReplace), `version` (Required, RequiresReplace), `title` (Optional+Computed, in-place updatable, not RequiresReplace))
 - [ ] 4.3 Add schema for `policy_template` (Optional string, `RequiresReplace`)
-- [ ] 4.4 Add schema for `vars_json`, `var_group_selections`, and `inputs` (reusing `VarsJsonType` and `InputsType` from the shared package); `inputs` is Optional+Computed with `UseStateForUnknown`
+- [ ] 4.4 Add schema for top-level `vars_json` (via shared `VarsJsonType`), `var_group_selections`, and `inputs` (reusing `InputsType`/`InputType` from the shared package); input/stream-level vars use the `vars` attribute key (matching `integration_policy`); `inputs` is Optional+Computed with `UseStateForUnknown`
 - [ ] 4.5 Add schema for `cloud_connector` (Optional object: `enabled`, `cloud_connector_id`, `name`, `target_csp`) with `RequiresReplace` on all sub-fields
 - [ ] 4.6 Add schema for `global_data_tags` and `additional_datastreams_permissions` (both Optional, updatable in-place); add `create_dataset_templates` (Optional, create-only — not read back, not sent on Update, not RequiresReplace)
 - [ ] 4.7 Add schema for operation flags `force` (Optional bool, create-only, not read back from API) and `force_delete` (Optional bool, not read back from API)
@@ -66,7 +67,7 @@
 - [ ] 8.4 Add coverage for version-skip gating: when Kibana < 9.3.0, the test is skipped (not failed)
 - [ ] 8.5 Add coverage for cloud connector reference: create policy with `cloud_connector.cloud_connector_id` set to an existing connector ID, verify it round-trips
 - [ ] 8.6 Add coverage for RequiresReplace fields: change `name` in config and verify the plan shows destroy+create (not in-place update)
-- [ ] 8.7 Add coverage for `inputs` update in-place: change `vars_json` on an input and verify the plan shows an update (not destroy+create)
+- [ ] 8.7 Add coverage for `inputs` update in-place: change an input's `vars` and verify the plan shows an update (not destroy+create)
 
 ## 9. Documentation and examples
 
