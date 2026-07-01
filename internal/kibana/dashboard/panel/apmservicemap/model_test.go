@@ -224,13 +224,13 @@ func TestPopulateFromAPI_timeRange_nullPreservation(t *testing.T) {
 	pm := &models.PanelModel{
 		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
 			Environment: types.StringNull(),
-			TimeRange:    nil,
+			TimeRange:   nil,
 		},
 	}
 	prior := &models.PanelModel{
 		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
 			Environment: types.StringNull(),
-			TimeRange:    nil,
+			TimeRange:   nil,
 		},
 	}
 

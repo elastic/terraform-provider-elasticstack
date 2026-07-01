@@ -27,10 +27,10 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 8
     }
     apm_service_map_config = {
-      alert_status_filter = ["active", "delayed"]
+      alert_status_filter     = ["active", "delayed"]
       anomaly_severity_filter = ["major", "critical"]
-      connection_filter = ["connected", "orphaned"]
-      slo_status_filter = ["healthy", "noData"]
+      connection_filter       = ["connected", "orphaned"]
+      slo_status_filter       = ["healthy", "noData"]
     }
   }]
 }

@@ -28,8 +28,8 @@ resource "elasticstack_kibana_dashboard" "test" {
     }
     apm_service_map_config = {
       environment      = "staging"
-      service_name       = "checkout"
-      service_group_id   = "group-abc"
+      service_name     = "checkout"
+      service_group_id = "group-abc"
     }
   }]
 }
