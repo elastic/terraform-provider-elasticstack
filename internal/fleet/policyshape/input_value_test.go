@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package integrationpolicy
+package policyshape
 
 import (
 	"context"
@@ -40,117 +40,117 @@ func TestInputValue_ObjectSemanticEquals(t *testing.T) {
 	}{
 		{
 			name: "same inputs without defaults are equal",
-			value1: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
+			value1: mustNewInputValue(ctx, t, InputModel{
 				Enabled:  types.BoolValue(true),
 				Vars:     jsontypes.NewNormalizedValue(`{"key": "value"}`),
-				Defaults: types.ObjectNull(getInputDefaultsAttrTypes()),
-				Streams:  types.MapNull(getInputStreamType()),
+				Defaults: types.ObjectNull(InputDefaultsAttributeTypes()),
+				Streams:  types.MapNull(StreamType()),
 			}),
-			value2: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
+			value2: mustNewInputValue(ctx, t, InputModel{
 				Enabled:  types.BoolValue(true),
 				Vars:     jsontypes.NewNormalizedValue(`{"key": "value"}`),
-				Defaults: types.ObjectNull(getInputDefaultsAttrTypes()),
-				Streams:  types.MapNull(getInputStreamType()),
+				Defaults: types.ObjectNull(InputDefaultsAttributeTypes()),
+				Streams:  types.MapNull(StreamType()),
 			}),
 			expected: true,
 		},
 		{
 			name: "different vars are not equal",
-			value1: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
+			value1: mustNewInputValue(ctx, t, InputModel{
 				Enabled:  types.BoolValue(true),
 				Vars:     jsontypes.NewNormalizedValue(`{"key": "value1"}`),
-				Defaults: types.ObjectNull(getInputDefaultsAttrTypes()),
-				Streams:  types.MapNull(getInputStreamType()),
+				Defaults: types.ObjectNull(InputDefaultsAttributeTypes()),
+				Streams:  types.MapNull(StreamType()),
 			}),
-			value2: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
+			value2: mustNewInputValue(ctx, t, InputModel{
 				Enabled:  types.BoolValue(true),
 				Vars:     jsontypes.NewNormalizedValue(`{"key": "value2"}`),
-				Defaults: types.ObjectNull(getInputDefaultsAttrTypes()),
-				Streams:  types.MapNull(getInputStreamType()),
+				Defaults: types.ObjectNull(InputDefaultsAttributeTypes()),
+				Streams:  types.MapNull(StreamType()),
 			}),
 			expected: false,
 		},
 		{
 			name: "unset vars use defaults - equal when defaults match",
-			value1: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
+			value1: mustNewInputValue(ctx, t, InputModel{
 				Enabled: types.BoolValue(true),
 				Vars:    jsontypes.NewNormalizedNull(),
-				Defaults: mustNewInputDefaults(ctx, t, inputDefaultsModel{
+				Defaults: mustNewInputDefaults(ctx, t, InputDefaultsModel{
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "default_value"}`),
 					Streams: nil,
 				}),
-				Streams: types.MapNull(getInputStreamType()),
+				Streams: types.MapNull(StreamType()),
 			}),
-			value2: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
+			value2: mustNewInputValue(ctx, t, InputModel{
 				Enabled:  types.BoolValue(true),
 				Vars:     jsontypes.NewNormalizedValue(`{"key": "default_value"}`),
-				Defaults: types.ObjectNull(getInputDefaultsAttrTypes()),
-				Streams:  types.MapNull(getInputStreamType()),
+				Defaults: types.ObjectNull(InputDefaultsAttributeTypes()),
+				Streams:  types.MapNull(StreamType()),
 			}),
 			expected: true,
 		},
 		{
 			name: "unset vars use defaults - not equal when different from defaults",
-			value1: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
+			value1: mustNewInputValue(ctx, t, InputModel{
 				Enabled: types.BoolValue(true),
 				Vars:    jsontypes.NewNormalizedNull(),
-				Defaults: mustNewInputDefaults(ctx, t, inputDefaultsModel{
+				Defaults: mustNewInputDefaults(ctx, t, InputDefaultsModel{
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "default_value"}`),
 					Streams: nil,
 				}),
-				Streams: types.MapNull(getInputStreamType()),
+				Streams: types.MapNull(StreamType()),
 			}),
-			value2: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
+			value2: mustNewInputValue(ctx, t, InputModel{
 				Enabled:  types.BoolValue(true),
 				Vars:     jsontypes.NewNormalizedValue(`{"key": "other_value"}`),
-				Defaults: types.ObjectNull(getInputDefaultsAttrTypes()),
-				Streams:  types.MapNull(getInputStreamType()),
+				Defaults: types.ObjectNull(InputDefaultsAttributeTypes()),
+				Streams:  types.MapNull(StreamType()),
 			}),
 			expected: false,
 		},
 		{
 			name: "both unset vars use same defaults - equal",
-			value1: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
+			value1: mustNewInputValue(ctx, t, InputModel{
 				Enabled: types.BoolValue(true),
 				Vars:    jsontypes.NewNormalizedNull(),
-				Defaults: mustNewInputDefaults(ctx, t, inputDefaultsModel{
+				Defaults: mustNewInputDefaults(ctx, t, InputDefaultsModel{
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "default_value"}`),
 					Streams: nil,
 				}),
-				Streams: types.MapNull(getInputStreamType()),
+				Streams: types.MapNull(StreamType()),
 			}),
-			value2: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
+			value2: mustNewInputValue(ctx, t, InputModel{
 				Enabled: types.BoolValue(true),
 				Vars:    jsontypes.NewNormalizedNull(),
-				Defaults: mustNewInputDefaults(ctx, t, inputDefaultsModel{
+				Defaults: mustNewInputDefaults(ctx, t, InputDefaultsModel{
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "default_value"}`),
 					Streams: nil,
 				}),
-				Streams: types.MapNull(getInputStreamType()),
+				Streams: types.MapNull(StreamType()),
 			}),
 			expected: true,
 		},
 		{
 			name: "unset streams use defaults - equal when defaults match",
-			value1: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
+			value1: mustNewInputValue(ctx, t, InputModel{
 				Enabled: types.BoolValue(true),
 				Vars:    jsontypes.NewNormalizedValue(`{"key": "value"}`),
-				Defaults: mustNewInputDefaults(ctx, t, inputDefaultsModel{
+				Defaults: mustNewInputDefaults(ctx, t, InputDefaultsModel{
 					Vars: jsontypes.NewNormalizedNull(),
-					Streams: map[string]inputDefaultsStreamModel{
+					Streams: map[string]InputDefaultsStreamModel{
 						"stream1": {
 							Enabled: types.BoolValue(true),
 							Vars:    jsontypes.NewNormalizedValue(`{"stream_key": "default_stream"}`),
 						},
 					},
 				}),
-				Streams: types.MapNull(getInputStreamType()),
+				Streams: types.MapNull(StreamType()),
 			}),
-			value2: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
+			value2: mustNewInputValue(ctx, t, InputModel{
 				Enabled:  types.BoolValue(true),
 				Vars:     jsontypes.NewNormalizedValue(`{"key": "value"}`),
-				Defaults: types.ObjectNull(getInputDefaultsAttrTypes()),
-				Streams: mustNewStreamsMap(ctx, t, map[string]integrationPolicyInputStreamModel{
+				Defaults: types.ObjectNull(InputDefaultsAttributeTypes()),
+				Streams: mustNewStreamsMap(ctx, t, map[string]InputStreamModel{
 					"stream1": {
 						Enabled: types.BoolValue(true),
 						Vars:    jsontypes.NewNormalizedValue(`{"stream_key": "default_stream"}`),
@@ -161,30 +161,30 @@ func TestInputValue_ObjectSemanticEquals(t *testing.T) {
 		},
 		{
 			name: "stream vars use defaults - equal when defaults match",
-			value1: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
+			value1: mustNewInputValue(ctx, t, InputModel{
 				Enabled: types.BoolValue(true),
 				Vars:    jsontypes.NewNormalizedValue(`{"key": "value"}`),
-				Defaults: mustNewInputDefaults(ctx, t, inputDefaultsModel{
+				Defaults: mustNewInputDefaults(ctx, t, InputDefaultsModel{
 					Vars: jsontypes.NewNormalizedNull(),
-					Streams: map[string]inputDefaultsStreamModel{
+					Streams: map[string]InputDefaultsStreamModel{
 						"stream1": {
 							Enabled: types.BoolValue(true),
 							Vars:    jsontypes.NewNormalizedValue(`{"stream_key": "default_stream"}`),
 						},
 					},
 				}),
-				Streams: mustNewStreamsMap(ctx, t, map[string]integrationPolicyInputStreamModel{
+				Streams: mustNewStreamsMap(ctx, t, map[string]InputStreamModel{
 					"stream1": {
 						Enabled: types.BoolValue(true),
 						Vars:    jsontypes.NewNormalizedNull(),
 					},
 				}),
 			}),
-			value2: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
+			value2: mustNewInputValue(ctx, t, InputModel{
 				Enabled:  types.BoolValue(true),
 				Vars:     jsontypes.NewNormalizedValue(`{"key": "value"}`),
-				Defaults: types.ObjectNull(getInputDefaultsAttrTypes()),
-				Streams: mustNewStreamsMap(ctx, t, map[string]integrationPolicyInputStreamModel{
+				Defaults: types.ObjectNull(InputDefaultsAttributeTypes()),
+				Streams: mustNewStreamsMap(ctx, t, map[string]InputStreamModel{
 					"stream1": {
 						Enabled: types.BoolValue(true),
 						Vars:    jsontypes.NewNormalizedValue(`{"stream_key": "default_stream"}`),
@@ -195,11 +195,11 @@ func TestInputValue_ObjectSemanticEquals(t *testing.T) {
 		},
 		{
 			name: "disabled streams are ignored",
-			value1: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
+			value1: mustNewInputValue(ctx, t, InputModel{
 				Enabled:  types.BoolValue(true),
 				Vars:     jsontypes.NewNormalizedValue(`{"key": "value"}`),
-				Defaults: types.ObjectNull(getInputDefaultsAttrTypes()),
-				Streams: mustNewStreamsMap(ctx, t, map[string]integrationPolicyInputStreamModel{
+				Defaults: types.ObjectNull(InputDefaultsAttributeTypes()),
+				Streams: mustNewStreamsMap(ctx, t, map[string]InputStreamModel{
 					"stream1": {
 						Enabled: types.BoolValue(true),
 						Vars:    jsontypes.NewNormalizedValue(`{"stream_key": "stream_value"}`),
@@ -210,11 +210,11 @@ func TestInputValue_ObjectSemanticEquals(t *testing.T) {
 					},
 				}),
 			}),
-			value2: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
+			value2: mustNewInputValue(ctx, t, InputModel{
 				Enabled:  types.BoolValue(true),
 				Vars:     jsontypes.NewNormalizedValue(`{"key": "value"}`),
-				Defaults: types.ObjectNull(getInputDefaultsAttrTypes()),
-				Streams: mustNewStreamsMap(ctx, t, map[string]integrationPolicyInputStreamModel{
+				Defaults: types.ObjectNull(InputDefaultsAttributeTypes()),
+				Streams: mustNewStreamsMap(ctx, t, map[string]InputStreamModel{
 					"stream1": {
 						Enabled: types.BoolValue(true),
 						Vars:    jsontypes.NewNormalizedValue(`{"stream_key": "stream_value"}`),
@@ -229,17 +229,17 @@ func TestInputValue_ObjectSemanticEquals(t *testing.T) {
 		},
 		{
 			name: "vars use semantic equality - whitespace differences ignored",
-			value1: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
+			value1: mustNewInputValue(ctx, t, InputModel{
 				Enabled:  types.BoolValue(true),
 				Vars:     jsontypes.NewNormalizedValue(`{"key":"value"}`),
-				Defaults: types.ObjectNull(getInputDefaultsAttrTypes()),
-				Streams:  types.MapNull(getInputStreamType()),
+				Defaults: types.ObjectNull(InputDefaultsAttributeTypes()),
+				Streams:  types.MapNull(StreamType()),
 			}),
-			value2: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
+			value2: mustNewInputValue(ctx, t, InputModel{
 				Enabled:  types.BoolValue(true),
 				Vars:     jsontypes.NewNormalizedValue(`{"key": "value"}`),
-				Defaults: types.ObjectNull(getInputDefaultsAttrTypes()),
-				Streams:  types.MapNull(getInputStreamType()),
+				Defaults: types.ObjectNull(InputDefaultsAttributeTypes()),
+				Streams:  types.MapNull(StreamType()),
 			}),
 			expected: true,
 		},
@@ -259,16 +259,16 @@ func TestInputValue_ObjectSemanticEquals(t *testing.T) {
 	}
 }
 
-func mustNewInputValue(ctx context.Context, t *testing.T, input integrationPolicyInputsModel) InputValue {
+func mustNewInputValue(ctx context.Context, t *testing.T, input InputModel) InputValue {
 	t.Helper()
-	value, diags := basetypes.NewObjectValueFrom(ctx, getInputsAttributeTypes(), input)
+	value, diags := basetypes.NewObjectValueFrom(ctx, InputAttributeTypes(), input)
 	require.False(t, diags.HasError(), "Failed to create InputValue: %v", diags)
 	return InputValue{ObjectValue: value}
 }
 
-func mustNewInputDefaults(ctx context.Context, t *testing.T, defaults inputDefaultsModel) types.Object {
+func mustNewInputDefaults(ctx context.Context, t *testing.T, defaults InputDefaultsModel) types.Object {
 	t.Helper()
-	value, diags := types.ObjectValueFrom(ctx, getInputDefaultsAttrTypes(), defaults)
+	value, diags := types.ObjectValueFrom(ctx, InputDefaultsAttributeTypes(), defaults)
 	require.False(t, diags.HasError(), "Failed to create defaults object: %v", diags)
 	return value
 }

@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package integrationpolicy
+package policyshape
 
 import (
 	"encoding/json"
@@ -26,16 +26,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-type inputDefaultsModel struct {
-	Vars    jsontypes.Normalized                `tfsdk:"vars"`
-	Streams map[string]inputDefaultsStreamModel `tfsdk:"streams"`
-}
-
-type inputDefaultsStreamModel struct {
-	Enabled types.Bool           `tfsdk:"enabled"`
-	Vars    jsontypes.Normalized `tfsdk:"vars"`
-}
 
 type apiPolicyTemplates []apiPolicyTemplate
 type apiPolicyTemplate struct {
@@ -67,8 +57,8 @@ func streamID(pkgName, templateName string) string {
 	return fmt.Sprintf("%s.%s", pkgName, templateName)
 }
 
-func (policyTemplates apiPolicyTemplates) defaults(pkgName string) (map[string]inputDefaultsModel, diag.Diagnostics) {
-	defaults := map[string]inputDefaultsModel{}
+func (policyTemplates apiPolicyTemplates) defaults(pkgName string) (map[string]InputDefaultsModel, diag.Diagnostics) {
+	defaults := map[string]InputDefaultsModel{}
 
 	if len(policyTemplates) == 0 {
 		return defaults, nil
@@ -83,7 +73,7 @@ func (policyTemplates apiPolicyTemplates) defaults(pkgName string) (map[string]i
 				return nil, diags
 			}
 
-			defaults[id] = inputDefaultsModel{
+			defaults[id] = InputDefaultsModel{
 				Vars: varDefaults,
 			}
 		}
@@ -101,12 +91,12 @@ func (policyTemplates apiPolicyTemplates) defaults(pkgName string) (map[string]i
 			existing, ok := defaults[id]
 			if !ok {
 				existing.Vars = jsontypes.NewNormalizedNull()
-				existing.Streams = map[string]inputDefaultsStreamModel{}
+				existing.Streams = map[string]InputDefaultsStreamModel{}
 			} else if existing.Streams == nil {
-				existing.Streams = map[string]inputDefaultsStreamModel{}
+				existing.Streams = map[string]InputDefaultsStreamModel{}
 			}
 
-			existing.Streams[sid] = inputDefaultsStreamModel{
+			existing.Streams[sid] = InputDefaultsStreamModel{
 				Enabled: types.BoolValue(true),
 				Vars:    varDefaults,
 			}
@@ -130,8 +120,8 @@ type apiDatastreamStream struct {
 	Enabled bool    `json:"enabled"`
 }
 
-func (dataStreams apiDatastreams) defaults() (map[string]map[string]inputDefaultsStreamModel, diag.Diagnostics) {
-	defaults := map[string]map[string]inputDefaultsStreamModel{}
+func (dataStreams apiDatastreams) defaults() (map[string]map[string]InputDefaultsStreamModel, diag.Diagnostics) {
+	defaults := map[string]map[string]InputDefaultsStreamModel{}
 
 	if dataStreams == nil {
 		return defaults, nil
@@ -146,9 +136,9 @@ func (dataStreams apiDatastreams) defaults() (map[string]map[string]inputDefault
 
 			d := defaults[stream.Input]
 			if d == nil {
-				d = map[string]inputDefaultsStreamModel{}
+				d = map[string]InputDefaultsStreamModel{}
 			}
-			d[dataStream.Dataset] = inputDefaultsStreamModel{
+			d[dataStream.Dataset] = InputDefaultsStreamModel{
 				Enabled: types.BoolValue(stream.Enabled),
 				Vars:    varDefaults,
 			}
@@ -190,7 +180,13 @@ func (v apiVars) defaults() (jsontypes.Normalized, diag.Diagnostics) {
 	return jsontypes.NewNormalizedValue(string(varDefaultsBytes)), nil
 }
 
-func packageInfoToDefaults(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo) (map[string]inputDefaultsModel, diag.Diagnostics) {
+// PackageInfoToDefaults derives the per-input default values (vars and
+// per-stream vars/enabled state) declared by a Fleet package's metadata
+// (policy templates and data streams), keyed by input ID. Callers merge the
+// result into user-supplied input/stream config via applyDefaultsToInput (or
+// equivalent) so that an unset var falls back to the package's declared
+// default without ever writing that default into the request body.
+func PackageInfoToDefaults(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo) (map[string]InputDefaultsModel, diag.Diagnostics) {
 	policyTemplates, datastreams, diags := policyTemplateAndDataStreamsFromPackageInfo(pkg)
 	if diags.HasError() {
 		return nil, diags
@@ -232,8 +228,8 @@ func packageInfoToDefaults(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo) (map[string]
 				// Input-type packages: merge datastream streams with policy-template
 				// stream defaults. Datastream vars take precedence, but missing keys
 				// are filled from policy-template defaults.
-				for streamID, stream := range streams {
-					if existingStream, present := inputDefaults.Streams[streamID]; present {
+				for sID, stream := range streams {
+					if existingStream, present := inputDefaults.Streams[sID]; present {
 						varsWithDefaults, streamVarDiags := applyDefaultsToVars(stream.Vars, existingStream.Vars)
 						diags.Append(streamVarDiags...)
 						if diags.HasError() {
@@ -241,9 +237,9 @@ func packageInfoToDefaults(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo) (map[string]
 						}
 						existingStream.Vars = varsWithDefaults
 						existingStream.Enabled = stream.Enabled
-						inputDefaults.Streams[streamID] = existingStream
+						inputDefaults.Streams[sID] = existingStream
 					} else {
-						inputDefaults.Streams[streamID] = stream
+						inputDefaults.Streams[sID] = stream
 					}
 				}
 			}

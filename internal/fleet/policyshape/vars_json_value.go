@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package integrationpolicy
+package policyshape
 
 import (
 	"context"
@@ -40,6 +40,13 @@ var (
 type VarsJSONValue struct {
 	customtypes.JSONWithContextualDefaultsValue
 }
+
+// PackageInfoLookupFunc resolves cached Fleet package metadata by cache key
+// (see PackageCacheKey). Each resource that uses VarsJSONType owns its own
+// package-info cache (e.g. a sync.Map keyed by "<name>-<version>", populated
+// from a Fleet API call) and passes a lookup adapter into this package,
+// rather than this package owning shared cache state across resources.
+type PackageInfoLookupFunc func(cacheKey string) (kbapi.KibanaHTTPAPIsGetPackageInfo, bool)
 
 // Type returns a VarsJSONType.
 func (v VarsJSONValue) Type(ctx context.Context) attr.Type {
@@ -92,10 +99,20 @@ func NewVarsJSONUnknown() VarsJSONValue {
 	}
 }
 
-// NewVarsJSONWithIntegration creates a VarsJSONValue with a known value and a integration context. Access the value via ValueString method.
-func NewVarsJSONWithIntegration(value string, name, version string) (VarsJSONValue, diag.Diagnostics) {
-	integrationContext := getPackageCacheKey(name, version)
-	jsonWithContext, diags := customtypes.NewJSONWithContextualDefaultsValue(value, integrationContext, populateVarsJSONDefaults)
+// PackageCacheKey builds the cache key a caller's package-info cache is
+// expected to be keyed by: "<name>-<version>".
+func PackageCacheKey(name, version string) string {
+	return fmt.Sprintf("%s-%s", name, version)
+}
+
+// NewVarsJSONWithIntegration creates a VarsJSONValue with a known value and
+// an integration context, so that reading the value back later (via the
+// PopulateDefaultsFunc wired through lookup) can fill in package-declared
+// defaults for any var the value doesn't already set. Access the value via
+// the ValueString method.
+func NewVarsJSONWithIntegration(value string, name, version string, lookup PackageInfoLookupFunc) (VarsJSONValue, diag.Diagnostics) {
+	integrationContext := PackageCacheKey(name, version)
+	jsonWithContext, diags := customtypes.NewJSONWithContextualDefaultsValue(value, integrationContext, populateVarsJSONDefaults(lookup))
 	if diags.HasError() {
 		return VarsJSONValue{}, diags
 	}
@@ -105,51 +122,60 @@ func NewVarsJSONWithIntegration(value string, name, version string) (VarsJSONVal
 	}, nil
 }
 
-func populateVarsJSONDefaults(ctxVal string, varsJSON string) (string, error) {
-	if ctxVal == "" {
-		return varsJSON, nil
+// NewVarsJSONType builds a VarsJSONType whose defaults are populated via the
+// given lookup callback.
+func NewVarsJSONType(lookup PackageInfoLookupFunc) VarsJSONType {
+	return VarsJSONType{
+		JSONWithContextualDefaultsType: customtypes.NewJSONWithContextualDefaultsType(populateVarsJSONDefaults(lookup)),
 	}
+}
 
-	value, ok := knownPackages.Load(ctxVal)
-	if !ok {
-		return varsJSON, nil
-	}
-	pkg, ok := value.(kbapi.KibanaHTTPAPIsGetPackageInfo)
-	if !ok {
-		return varsJSON, fmt.Errorf("unexpected package cache value type for key %q", ctxVal)
-	}
-
-	pkgVars, diags := varsFromPackageInfo(&pkg)
-	if diags.HasError() {
-		return varsJSON, diagutil.FwDiagsAsError(diags)
-	}
-
-	defaults, diags := pkgVars.defaults()
-	if diags.HasError() {
-		return varsJSON, diagutil.FwDiagsAsError(diags)
-	}
-
-	var vars map[string]any
-	if err := json.Unmarshal([]byte(varsJSON), &vars); err != nil {
-		return varsJSON, err
-	}
-
-	var defaultsMap map[string]any
-	diags = defaults.Unmarshal(&defaultsMap)
-	if diags.HasError() {
-		return varsJSON, diagutil.FwDiagsAsError(diags)
-	}
-
-	for k, v := range defaultsMap {
-		if _, ok := vars[k]; !ok {
-			vars[k] = v
+// populateVarsJSONDefaults returns a customtypes.PopulateDefaultsFunc bound
+// to the given lookup callback. ctxVal is the integration context (a
+// PackageCacheKey) stashed on the value by NewVarsJSONWithIntegration.
+func populateVarsJSONDefaults(lookup PackageInfoLookupFunc) func(ctxVal string, varsJSON string) (string, error) {
+	return func(ctxVal string, varsJSON string) (string, error) {
+		if ctxVal == "" || lookup == nil {
+			return varsJSON, nil
 		}
-	}
 
-	varsBytes, err := json.Marshal(vars)
-	if err != nil {
-		return varsJSON, err
-	}
+		pkg, ok := lookup(ctxVal)
+		if !ok {
+			return varsJSON, nil
+		}
 
-	return string(varsBytes), nil
+		pkgVars, diags := varsFromPackageInfo(&pkg)
+		if diags.HasError() {
+			return varsJSON, diagutil.FwDiagsAsError(diags)
+		}
+
+		defaults, diags := pkgVars.defaults()
+		if diags.HasError() {
+			return varsJSON, diagutil.FwDiagsAsError(diags)
+		}
+
+		var vars map[string]any
+		if err := json.Unmarshal([]byte(varsJSON), &vars); err != nil {
+			return varsJSON, err
+		}
+
+		var defaultsMap map[string]any
+		diags = defaults.Unmarshal(&defaultsMap)
+		if diags.HasError() {
+			return varsJSON, diagutil.FwDiagsAsError(diags)
+		}
+
+		for k, v := range defaultsMap {
+			if _, ok := vars[k]; !ok {
+				vars[k] = v
+			}
+		}
+
+		varsBytes, err := json.Marshal(vars)
+		if err != nil {
+			return varsJSON, err
+		}
+
+		return string(varsBytes), nil
+	}
 }

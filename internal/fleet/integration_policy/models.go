@@ -48,17 +48,9 @@ type integrationPolicyModel struct {
 	SpaceIDs           types.Set     `tfsdk:"space_ids"`
 }
 
-type integrationPolicyInputsModel struct {
-	Enabled  types.Bool           `tfsdk:"enabled"`
-	Vars     jsontypes.Normalized `tfsdk:"vars"`
-	Defaults types.Object         `tfsdk:"defaults"` // > inputDefaultsModel
-	Streams  types.Map            `tfsdk:"streams"`  // > integrationPolicyInputStreamModel
-}
-
-type integrationPolicyInputStreamModel struct {
-	Enabled types.Bool           `tfsdk:"enabled"`
-	Vars    jsontypes.Normalized `tfsdk:"vars"`
-}
+// integrationPolicyInputsModel and integrationPolicyInputStreamModel are
+// aliases of the shared policyshape.InputModel/InputStreamModel types; see
+// policyshape_aliases.go.
 
 func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, data *kbapi.PackagePolicy) diag.Diagnostics {
 	if data == nil {
@@ -179,8 +171,9 @@ func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, 
 	newInputs := make(map[string]integrationPolicyInputsModel)
 	for inputID, inputData := range inputs {
 		inputModel := integrationPolicyInputsModel{
-			Enabled: types.BoolPointerValue(inputData.Enabled),
-			Vars:    typeutils.MarshalToNormalized(typeutils.Deref(inputData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("vars"), diags),
+			Enabled:   types.BoolPointerValue(inputData.Enabled),
+			Condition: types.StringPointerValue(inputData.Condition),
+			Vars:      typeutils.MarshalToNormalized(typeutils.Deref(inputData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("vars"), diags),
 		}
 
 		// Populate streams
@@ -188,8 +181,9 @@ func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, 
 			streams := make(map[string]integrationPolicyInputStreamModel)
 			for streamID, streamData := range *inputData.Streams {
 				streamModel := integrationPolicyInputStreamModel{
-					Enabled: types.BoolPointerValue(streamData.Enabled),
-					Vars:    typeutils.MarshalToNormalized(typeutils.Deref(streamData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("streams").AtMapKey(streamID).AtName("vars"), diags),
+					Enabled:   types.BoolPointerValue(streamData.Enabled),
+					Condition: types.StringPointerValue(streamData.Condition),
+					Vars:      typeutils.MarshalToNormalized(typeutils.Deref(streamData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("streams").AtMapKey(streamID).AtName("vars"), diags),
 				}
 
 				streams[streamID] = streamModel
@@ -330,8 +324,9 @@ func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(ctx context.C
 		inputPath := path.Root("inputs").AtMapKey(inputID)
 
 		apiInput := kbapi.PackagePolicyRequestMappedInput{
-			Enabled: inputModel.Enabled.ValueBoolPointer(),
-			Vars:    varsMapToTypedMap[kbapi.PackagePolicyRequestMappedInput_Vars_AdditionalProperties](typeutils.NormalizedTypeToMap[any](inputModel.Vars, inputPath.AtName("vars"), diags)),
+			Enabled:   inputModel.Enabled.ValueBoolPointer(),
+			Condition: inputModel.Condition.ValueStringPointer(),
+			Vars:      varsMapToTypedMap[kbapi.PackagePolicyRequestMappedInput_Vars_AdditionalProperties](typeutils.NormalizedTypeToMap[any](inputModel.Vars, inputPath.AtName("vars"), diags)),
 		}
 
 		// Convert streams if present
@@ -343,8 +338,9 @@ func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(ctx context.C
 					streamVarsPath := inputPath.AtName("streams").AtMapKey(streamID).AtName("vars")
 					streamVars := typeutils.NormalizedTypeToMap[any](streamModel.Vars, streamVarsPath, diags)
 					streams[streamID] = kbapi.PackagePolicyRequestMappedInputStream{
-						Enabled: streamModel.Enabled.ValueBoolPointer(),
-						Vars:    varsMapToTypedMap[kbapi.PackagePolicyRequestMappedInputStream_Vars_AdditionalProperties](streamVars),
+						Enabled:   streamModel.Enabled.ValueBoolPointer(),
+						Condition: streamModel.Condition.ValueStringPointer(),
+						Vars:      varsMapToTypedMap[kbapi.PackagePolicyRequestMappedInputStream_Vars_AdditionalProperties](streamVars),
 					}
 				}
 				apiInput.Streams = &streams

@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package integrationpolicy
+package policyshape
 
 import (
 	"context"
@@ -33,7 +33,9 @@ type InputsValue struct {
 	basetypes.MapValue
 }
 
-func inputsConfigured(inputs InputsValue) bool {
+// InputsConfigured reports whether inputs has at least one known, non-null
+// element (i.e. the user configured the `inputs` attribute at all).
+func InputsConfigured(inputs InputsValue) bool {
 	return typeutils.IsKnown(inputs) && !inputs.IsNull() && len(inputs.Elements()) > 0
 }
 
@@ -43,7 +45,7 @@ func (v InputsValue) Type(ctx context.Context) attr.Type {
 	inputType, ok := elemType.(InputType)
 	if !ok {
 		// Fallback for when ElementType is not InputType (shouldn't happen in practice)
-		return NewInputsType(NewInputType(getInputsAttributeTypes()))
+		return NewInputsType(NewInputType(InputAttributeTypes()))
 	}
 	return NewInputsType(inputType)
 }
@@ -145,12 +147,12 @@ func (v InputsValue) MapSemanticEquals(ctx context.Context, priorValuable basety
 }
 
 // filterEnabledStreams returns a map of only the enabled streams
-func filterEnabledStreams(streams map[string]integrationPolicyInputStreamModel) map[string]integrationPolicyInputStreamModel {
+func filterEnabledStreams(streams map[string]InputStreamModel) map[string]InputStreamModel {
 	if streams == nil {
 		return nil
 	}
 
-	enabled := make(map[string]integrationPolicyInputStreamModel)
+	enabled := make(map[string]InputStreamModel)
 	for streamID, stream := range streams {
 		// Only include streams that are explicitly enabled or unknown
 		// Disabled streams (enabled=false) are excluded

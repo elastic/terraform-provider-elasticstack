@@ -63,9 +63,13 @@ func TestUpgradeV2ToV3_DropsEnabled(t *testing.T) {
 				IntegrationName:    types.StringValue("tcp"),
 				IntegrationVersion: types.StringValue("1.16.0"),
 				OutputID:           types.StringNull(),
-				Inputs:             NewInputsNull(getInputsElementType()),
-				VarsJSON:           NewVarsJSONNull(),
-				SpaceIDs:           types.SetNull(types.StringType),
+				// V2's frozen inputs element type predates the `condition`
+				// attribute added to the live schema; use the frozen V2 type
+				// here so this fixture matches what real V2 state looked
+				// like on the wire.
+				Inputs:   NewInputsNull(NewInputType(getInputsAttributeTypesV2())),
+				VarsJSON: NewVarsJSONNull(),
+				SpaceIDs: types.SetNull(types.StringType),
 			}
 
 			rawState := tfsdk.State{Schema: priorSchema}

@@ -15,11 +15,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package integrationpolicy
+package policyshape
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -28,65 +27,65 @@ import (
 )
 
 var (
-	_ basetypes.MapTypable                    = (*InputsType)(nil)
-	_ basetypes.MapValuableWithSemanticEquals = (*InputsValue)(nil)
+	_ basetypes.ObjectTypable                    = (*InputType)(nil)
+	_ basetypes.ObjectValuableWithSemanticEquals = (*InputValue)(nil)
 )
 
-// InputsType is a custom type for the inputs map that supports semantic equality
-type InputsType struct {
-	basetypes.MapType
+// InputType is a custom type for an individual input that supports semantic equality
+type InputType struct {
+	basetypes.ObjectType
 }
 
 // String returns a human readable string of the type name.
-func (t InputsType) String() string {
-	return "integrationpolicy.InputsType"
+func (t InputType) String() string {
+	return "policyshape.InputType"
 }
 
 // ValueType returns the Value type.
-func (t InputsType) ValueType(_ context.Context) attr.Value {
-	return InputsValue{
-		MapValue: basetypes.NewMapUnknown(t.ElementType()),
+func (t InputType) ValueType(_ context.Context) attr.Value {
+	return InputValue{
+		ObjectValue: basetypes.NewObjectUnknown(t.AttributeTypes()),
 	}
 }
 
 // Equal returns true if the given type is equivalent.
-func (t InputsType) Equal(o attr.Type) bool {
-	other, ok := o.(InputsType)
+func (t InputType) Equal(o attr.Type) bool {
+	other, ok := o.(InputType)
 	if !ok {
 		return false
 	}
-	return t.MapType.Equal(other.MapType)
+	return t.ObjectType.Equal(other.ObjectType)
 }
 
-// ValueFromMap returns a MapValuable type given a basetypes.MapValue.
-func (t InputsType) ValueFromMap(_ context.Context, in basetypes.MapValue) (basetypes.MapValuable, diag.Diagnostics) {
-	return InputsValue{
-		MapValue: in,
+// ValueFromObject returns an ObjectValuable type given a basetypes.ObjectValue.
+func (t InputType) ValueFromObject(_ context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	return InputValue{
+		ObjectValue: in,
 	}, nil
 }
 
 // ValueFromTerraform returns a Value given a tftypes.Value.
-func (t InputsType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
-	attrValue, err := t.MapType.ValueFromTerraform(ctx, in)
+func (t InputType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	attrValue, err := t.ObjectType.ValueFromTerraform(ctx, in)
 	if err != nil {
 		return nil, err
 	}
 
-	mapValue, ok := attrValue.(basetypes.MapValue)
+	objectValue, ok := attrValue.(basetypes.ObjectValue)
 	if !ok {
-		return nil, fmt.Errorf("unexpected type %T, expected basetypes.MapValue", attrValue)
+		return nil, err
 	}
 
-	return InputsValue{
-		MapValue: mapValue,
+	return InputValue{
+		ObjectValue: objectValue,
 	}, nil
 }
 
-// NewInputsType creates a new InputsType with the given element type
-func NewInputsType(elemType InputType) InputsType {
-	return InputsType{
-		MapType: basetypes.MapType{
-			ElemType: elemType,
+// NewInputType creates a new InputType with the given attribute types
+func NewInputType(attrTypes map[string]attr.Type) InputType {
+	return InputType{
+		ObjectType: basetypes.ObjectType{
+			AttrTypes: attrTypes,
 		},
 	}
 }

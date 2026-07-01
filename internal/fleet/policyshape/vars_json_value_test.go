@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package integrationpolicy
+package policyshape
 
 import (
 	"context"
@@ -30,7 +30,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// mapLookup adapts a plain map to a PackageInfoLookupFunc for tests, so each
+// test owns its own isolated "cache" instead of sharing global state.
+func mapLookup(m map[string]kbapi.KibanaHTTPAPIsGetPackageInfo) PackageInfoLookupFunc {
+	return func(cacheKey string) (kbapi.KibanaHTTPAPIsGetPackageInfo, bool) {
+		pkg, ok := m[cacheKey]
+		return pkg, ok
+	}
+}
+
 func TestVarsJSONValue_StringSemanticEquals(t *testing.T) {
+	lookup := mapLookup(nil)
+
 	tests := []struct {
 		name          string
 		configValue   VarsJSONValue
@@ -113,7 +124,7 @@ func TestVarsJSONValue_StringSemanticEquals(t *testing.T) {
 				}
 			}(),
 			otherValue: func() VarsJSONValue {
-				val, _ := NewVarsJSONWithIntegration(`{"key": "value"}`, "apm", "1.0.0")
+				val, _ := NewVarsJSONWithIntegration(`{"key": "value"}`, "apm", "1.0.0", lookup)
 				return val
 			}(),
 			expectEqual:   false,
@@ -123,7 +134,7 @@ func TestVarsJSONValue_StringSemanticEquals(t *testing.T) {
 		{
 			name: "invalid JSON in second value should cause error",
 			configValue: func() VarsJSONValue {
-				val, _ := NewVarsJSONWithIntegration(`{"key": "value"}`, "apm", "1.0.0")
+				val, _ := NewVarsJSONWithIntegration(`{"key": "value"}`, "apm", "1.0.0", lookup)
 				return val
 			}(),
 			otherValue: func() VarsJSONValue {
@@ -177,10 +188,9 @@ func TestVarsJSONValue_StringSemanticEquals(t *testing.T) {
 }
 
 func TestNewVarsJSONWithIntegration(t *testing.T) {
-	// Store test package in cache
 	pkgName := "test-pkg"
 	pkgVersion := "1.0.0"
-	cacheKey := getPackageCacheKey(pkgName, pkgVersion)
+	cacheKey := PackageCacheKey(pkgName, pkgVersion)
 
 	// Setup mock package with defaults
 	vars := packageInfoVarsFromAnyMaps([]map[string]any{
@@ -196,12 +206,7 @@ func TestNewVarsJSONWithIntegration(t *testing.T) {
 	pkg := kbapi.KibanaHTTPAPIsGetPackageInfo{
 		Vars: &vars,
 	}
-	knownPackages.Store(cacheKey, pkg)
-
-	// Cleanup: remove test data from cache
-	t.Cleanup(func() {
-		knownPackages.Delete(cacheKey)
-	})
+	lookup := mapLookup(map[string]kbapi.KibanaHTTPAPIsGetPackageInfo{cacheKey: pkg})
 
 	tests := []struct {
 		name          string
@@ -239,7 +244,7 @@ func TestNewVarsJSONWithIntegration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, diags := NewVarsJSONWithIntegration(tt.value, tt.pkgName, tt.pkgVersion)
+			val, diags := NewVarsJSONWithIntegration(tt.value, tt.pkgName, tt.pkgVersion, lookup)
 
 			if tt.expectError {
 				require.True(t, diags.HasError())
@@ -259,10 +264,9 @@ func TestNewVarsJSONWithIntegration(t *testing.T) {
 }
 
 func TestPopulateVarsJSONDefaults(t *testing.T) {
-	// Store test package in cache
 	pkgName := "test-pkg"
 	pkgVersion := "1.0.0"
-	cacheKey := getPackageCacheKey(pkgName, pkgVersion)
+	cacheKey := PackageCacheKey(pkgName, pkgVersion)
 
 	// Setup mock package with defaults
 	vars := packageInfoVarsFromAnyMaps([]map[string]any{
@@ -282,12 +286,8 @@ func TestPopulateVarsJSONDefaults(t *testing.T) {
 	pkg := kbapi.KibanaHTTPAPIsGetPackageInfo{
 		Vars: &vars,
 	}
-	knownPackages.Store(cacheKey, pkg)
-
-	// Cleanup: remove test data from cache
-	t.Cleanup(func() {
-		knownPackages.Delete(cacheKey)
-	})
+	lookup := mapLookup(map[string]kbapi.KibanaHTTPAPIsGetPackageInfo{cacheKey: pkg})
+	populate := populateVarsJSONDefaults(lookup)
 
 	tests := []struct {
 		name           string
@@ -335,7 +335,7 @@ func TestPopulateVarsJSONDefaults(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := populateVarsJSONDefaults(tt.ctxVal, tt.varsJSON)
+			res, err := populate(tt.ctxVal, tt.varsJSON)
 
 			if tt.expectError {
 				require.Error(t, err)

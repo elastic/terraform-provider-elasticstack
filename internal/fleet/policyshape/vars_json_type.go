@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package integrationpolicy
+package policyshape
 
 import (
 	"context"
@@ -38,7 +38,7 @@ type VarsJSONType struct {
 
 // String returns a human readable string of the type name.
 func (t VarsJSONType) String() string {
-	return "integration_policy.VarsJSONType"
+	return "policyshape.VarsJSONType"
 }
 
 // ValueType returns the Value type.

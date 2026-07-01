@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package integrationpolicy
+package policyshape
 
 import (
 	"context"
@@ -29,7 +29,7 @@ import (
 
 func TestInputsValue_MapSemanticEquals(t *testing.T) {
 	ctx := context.Background()
-	elemType := getInputsElementType()
+	elemType := InputElementType()
 
 	tests := []struct {
 		name        string
@@ -46,121 +46,121 @@ func TestInputsValue_MapSemanticEquals(t *testing.T) {
 		},
 		{
 			name: "same enabled inputs are equal",
-			value1: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
+			value1: mustNewInputsValue(ctx, t, map[string]InputModel{
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(StreamType()),
 				},
 			}),
-			value2: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
+			value2: mustNewInputsValue(ctx, t, map[string]InputModel{
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(StreamType()),
 				},
 			}),
 			expected: true,
 		},
 		{
 			name: "disabled inputs are ignored - input disabled in first value",
-			value1: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
+			value1: mustNewInputsValue(ctx, t, map[string]InputModel{
 				"input1": {
 					Enabled: types.BoolValue(false),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "old_value"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(StreamType()),
 				},
 				"input2": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value2"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(StreamType()),
 				},
 			}),
-			value2: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
+			value2: mustNewInputsValue(ctx, t, map[string]InputModel{
 				"input2": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value2"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(StreamType()),
 				},
 			}),
 			expected: true,
 		},
 		{
 			name: "disabled inputs are ignored - input disabled in second value",
-			value1: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
+			value1: mustNewInputsValue(ctx, t, map[string]InputModel{
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value1"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(StreamType()),
 				},
 			}),
-			value2: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
+			value2: mustNewInputsValue(ctx, t, map[string]InputModel{
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value1"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(StreamType()),
 				},
 				"input2": {
 					Enabled: types.BoolValue(false),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "ignored"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(StreamType()),
 				},
 			}),
 			expected: true,
 		},
 		{
 			name: "disabled inputs are ignored - both have different disabled inputs",
-			value1: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
+			value1: mustNewInputsValue(ctx, t, map[string]InputModel{
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value1"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(StreamType()),
 				},
 				"input2": {
 					Enabled: types.BoolValue(false),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "disabled_old"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(StreamType()),
 				},
 			}),
-			value2: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
+			value2: mustNewInputsValue(ctx, t, map[string]InputModel{
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value1"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(StreamType()),
 				},
 				"input3": {
 					Enabled: types.BoolValue(false),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "disabled_new"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(StreamType()),
 				},
 			}),
 			expected: true,
 		},
 		{
 			name: "different enabled inputs are not equal",
-			value1: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
+			value1: mustNewInputsValue(ctx, t, map[string]InputModel{
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value1"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(StreamType()),
 				},
 			}),
-			value2: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
+			value2: mustNewInputsValue(ctx, t, map[string]InputModel{
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value2"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(StreamType()),
 				},
 			}),
 			expected: false,
 		},
 		{
 			name: "disabled streams are ignored",
-			value1: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
+			value1: mustNewInputsValue(ctx, t, map[string]InputModel{
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value1"}`),
-					Streams: mustNewStreamsMap(ctx, t, map[string]integrationPolicyInputStreamModel{
+					Streams: mustNewStreamsMap(ctx, t, map[string]InputStreamModel{
 						"stream1": {
 							Enabled: types.BoolValue(true),
 							Vars:    jsontypes.NewNormalizedValue(`{"stream_key": "stream_value"}`),
@@ -172,11 +172,11 @@ func TestInputsValue_MapSemanticEquals(t *testing.T) {
 					}),
 				},
 			}),
-			value2: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
+			value2: mustNewInputsValue(ctx, t, map[string]InputModel{
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value1"}`),
-					Streams: mustNewStreamsMap(ctx, t, map[string]integrationPolicyInputStreamModel{
+					Streams: mustNewStreamsMap(ctx, t, map[string]InputStreamModel{
 						"stream1": {
 							Enabled: types.BoolValue(true),
 							Vars:    jsontypes.NewNormalizedValue(`{"stream_key": "stream_value"}`),
@@ -192,18 +192,18 @@ func TestInputsValue_MapSemanticEquals(t *testing.T) {
 		},
 		{
 			name: "vars use semantic equality - whitespace differences ignored",
-			value1: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
+			value1: mustNewInputsValue(ctx, t, map[string]InputModel{
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key":"value"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(StreamType()),
 				},
 			}),
-			value2: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
+			value2: mustNewInputsValue(ctx, t, map[string]InputModel{
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(StreamType()),
 				},
 			}),
 			expected: true,
@@ -224,25 +224,25 @@ func TestInputsValue_MapSemanticEquals(t *testing.T) {
 	}
 }
 
-func mustNewInputsValue(ctx context.Context, t *testing.T, inputs map[string]integrationPolicyInputsModel) InputsValue {
+func mustNewInputsValue(ctx context.Context, t *testing.T, inputs map[string]InputModel) InputsValue {
 	t.Helper()
 
 	// Set defaults to null for all inputs if not already set
 	for key, input := range inputs {
 		if input.Defaults.IsNull() || input.Defaults.IsUnknown() {
-			input.Defaults = types.ObjectNull(getInputDefaultsAttrTypes())
+			input.Defaults = types.ObjectNull(InputDefaultsAttributeTypes())
 			inputs[key] = input
 		}
 	}
 
-	value, diags := NewInputsValueFrom(ctx, getInputsElementType(), inputs)
+	value, diags := NewInputsValueFrom(ctx, InputElementType(), inputs)
 	require.False(t, diags.HasError(), "Failed to create InputsValue: %v", diags)
 	return value
 }
 
-func mustNewStreamsMap(ctx context.Context, t *testing.T, streams map[string]integrationPolicyInputStreamModel) types.Map {
+func mustNewStreamsMap(ctx context.Context, t *testing.T, streams map[string]InputStreamModel) types.Map {
 	t.Helper()
-	value, diags := types.MapValueFrom(ctx, getInputStreamType(), streams)
+	value, diags := types.MapValueFrom(ctx, StreamType(), streams)
 	require.False(t, diags.HasError(), "Failed to create streams map: %v", diags)
 	return value
 }

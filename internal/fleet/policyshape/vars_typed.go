@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package integrationpolicy
+package policyshape
 
 import "encoding/json"
 
@@ -24,16 +24,16 @@ import "encoding/json"
 // generates a distinct wrapper struct per endpoint
 // (e.g. KibanaHTTPAPIsPackagePolicyResponse_Vars,
 // PackagePolicyMappedInput_Vars_AdditionalProperties, etc.) all with the same
-// JSON representation. The provider treats vars as opaque JSON (vars_json), so
-// the helpers below convert between any of those generated wrappers and a flat
+// JSON representation. Callers treat vars as opaque JSON (vars_json), so the
+// helpers below convert between any of those generated wrappers and a flat
 // map[string]any via JSON round-trip. Marshalling a typed map of unions yields
 // {var_name: <raw_value>}; unmarshalling a flat map back into the typed map
 // dispatches each value through the union's UnmarshalJSON.
 
-// varsAnyToMap marshals any vars-shaped value (a *struct wrapper or a typed
+// VarsAnyToMap marshals any vars-shaped value (a *struct wrapper or a typed
 // map of wrappers) to a flat map[string]any. Returns nil when the input is
 // nil, empty, or serialises to JSON null.
-func varsAnyToMap(v any) map[string]any {
+func VarsAnyToMap(v any) map[string]any {
 	if v == nil {
 		return nil
 	}
@@ -48,10 +48,10 @@ func varsAnyToMap(v any) map[string]any {
 	return out
 }
 
-// varsMapToTypedMap converts a flat map[string]any to a typed
+// VarsMapToTypedMap converts a flat map[string]any to a typed
 // map[string]*T pointer expected by request bodies. Returns nil when m is
 // empty so the wire payload omits the `vars` field entirely.
-func varsMapToTypedMap[T any](m map[string]any) *map[string]*T {
+func VarsMapToTypedMap[T any](m map[string]any) *map[string]*T {
 	if len(m) == 0 {
 		return nil
 	}
@@ -66,10 +66,10 @@ func varsMapToTypedMap[T any](m map[string]any) *map[string]*T {
 	return &out
 }
 
-// varsMapToUnionWrapper packs a flat map[string]any into a struct wrapper
+// VarsMapToUnionWrapper packs a flat map[string]any into a struct wrapper
 // (e.g. KibanaHTTPAPIsPackagePolicyResponse_Vars) by JSON round-trip. Returns
 // nil when m is empty.
-func varsMapToUnionWrapper[T any](m map[string]any) *T {
+func VarsMapToUnionWrapper[T any](m map[string]any) *T {
 	if len(m) == 0 {
 		return nil
 	}

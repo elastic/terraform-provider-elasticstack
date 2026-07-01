@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package integrationpolicy
+package policyshape
 
 import (
 	_ "embed"
@@ -528,7 +528,7 @@ func TestPackageInfoToDefaults(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, diags := packageInfoToDefaults(tt.pkg)
+			result, diags := PackageInfoToDefaults(tt.pkg)
 
 			if tt.expectError {
 				require.True(t, diags.HasError(), "Expected error but got none")
@@ -555,7 +555,7 @@ func TestPackageInfoToDefaults_Kafka(t *testing.T) {
 	pkg := &wrapper.Item
 
 	// Test with the full Kafka package
-	result, diags := packageInfoToDefaults(pkg)
+	result, diags := PackageInfoToDefaults(pkg)
 	require.False(t, diags.HasError(), "Expected no error but got: %v", diags)
 
 	// Verify expected input types exist
@@ -848,7 +848,7 @@ func TestPackageInfoToDefaults_InputPackage(t *testing.T) {
 	var pkg kbapi.KibanaHTTPAPIsGetPackageInfo
 	require.NoError(t, json.Unmarshal(gcpPubSubIntegrationJSON, &pkg))
 
-	result, diags := packageInfoToDefaults(&pkg)
+	result, diags := PackageInfoToDefaults(&pkg)
 	require.False(t, diags.HasError(), "Expected no error but got: %v", diags)
 
 	inputDefaults, ok := result["gcp-gcp-pubsub"]
@@ -872,7 +872,7 @@ func TestPackageInfoToDefaults_InputPackage_WithDataStreams(t *testing.T) {
 	var pkg kbapi.KibanaHTTPAPIsGetPackageInfo
 	require.NoError(t, json.Unmarshal(gcpPubSubWithDataStreamsIntegrationJSON, &pkg))
 
-	result, diags := packageInfoToDefaults(&pkg)
+	result, diags := PackageInfoToDefaults(&pkg)
 	require.False(t, diags.HasError(), "Expected no error but got: %v", diags)
 
 	inputDefaults, ok := result["gcp-gcp-pubsub"]
@@ -901,10 +901,10 @@ func TestInputDefaultsModel_Integration(t *testing.T) {
 	// This test ensures that the defaults model structure correctly represents
 	// the data needed for integration policies
 
-	defaults := map[string]inputDefaultsModel{
+	defaults := map[string]InputDefaultsModel{
 		"kafka/metrics": {
 			Vars: jsontypes.NewNormalizedValue(`{"hosts":["localhost:9092"],"period":"10s"}`),
-			Streams: map[string]inputDefaultsStreamModel{
+			Streams: map[string]InputDefaultsStreamModel{
 				"kafka.broker": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"jolokia_hosts":["localhost:8778"]}`),

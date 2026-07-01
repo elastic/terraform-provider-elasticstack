@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package integrationpolicy
+package policyshape
 
 import (
 	"context"
@@ -132,23 +132,23 @@ func HandleRespSecrets(ctx context.Context, resp *kbapi.PackagePolicy, private p
 	// Vars are now typed unions per endpoint. We round-trip them through a flat
 	// map[string]any so handleVars can keep operating on untyped values, then
 	// pack the (possibly mutated) result back into the typed wrapper.
-	if respVars := varsAnyToMap(resp.Vars); len(respVars) > 0 {
+	if respVars := VarsAnyToMap(resp.Vars); len(respVars) > 0 {
 		handleVars(respVars)
-		resp.Vars = varsMapToUnionWrapper[kbapi.KibanaHTTPAPIsPackagePolicyResponse_Vars](respVars)
+		resp.Vars = VarsMapToUnionWrapper[kbapi.KibanaHTTPAPIsPackagePolicyResponse_Vars](respVars)
 	}
 	respInputs, err := resp.Inputs.AsPackagePolicyMappedInputs()
 	if err != nil {
 		respInputs = kbapi.PackagePolicyMappedInputs{}
 	}
 	for inputID, input := range respInputs {
-		if inputVars := varsAnyToMap(input.Vars); len(inputVars) > 0 {
+		if inputVars := VarsAnyToMap(input.Vars); len(inputVars) > 0 {
 			handleVars(inputVars)
-			input.Vars = varsMapToTypedMap[kbapi.PackagePolicyMappedInput_Vars_AdditionalProperties](inputVars)
+			input.Vars = VarsMapToTypedMap[kbapi.PackagePolicyMappedInput_Vars_AdditionalProperties](inputVars)
 		}
 		for streamID, stream := range typeutils.Deref(input.Streams) {
-			if streamVars := varsAnyToMap(stream.Vars); len(streamVars) > 0 {
+			if streamVars := VarsAnyToMap(stream.Vars); len(streamVars) > 0 {
 				handleVars(streamVars)
-				stream.Vars = varsMapToTypedMap[kbapi.PackagePolicyMappedInputStream_Vars_AdditionalProperties](streamVars)
+				stream.Vars = VarsMapToTypedMap[kbapi.PackagePolicyMappedInputStream_Vars_AdditionalProperties](streamVars)
 			}
 			// write back modified stream
 			if input.Streams != nil {
@@ -249,25 +249,25 @@ func HandleReqRespSecrets(ctx context.Context, req kbapi.PackagePolicyRequest, r
 	// keep operating on untyped values, then pack any mutations back into the
 	// typed response wrapper. The request side is read-only here, so we don't
 	// need to write it back.
-	reqVarsMap := varsAnyToMap(reqMapped.Vars)
-	if respVarsMap := varsAnyToMap(resp.Vars); len(respVarsMap) > 0 {
+	reqVarsMap := VarsAnyToMap(reqMapped.Vars)
+	if respVarsMap := VarsAnyToMap(resp.Vars); len(respVarsMap) > 0 {
 		handleVars(reqVarsMap, respVarsMap)
-		resp.Vars = varsMapToUnionWrapper[kbapi.KibanaHTTPAPIsPackagePolicyResponse_Vars](respVarsMap)
+		resp.Vars = VarsMapToUnionWrapper[kbapi.KibanaHTTPAPIsPackagePolicyResponse_Vars](respVarsMap)
 	}
 	for inputID, inputReq := range typeutils.Deref(reqMapped.Inputs) {
 		inputResp := respMapped[inputID]
-		inputReqVars := varsAnyToMap(inputReq.Vars)
-		if inputRespVars := varsAnyToMap(inputResp.Vars); len(inputRespVars) > 0 {
+		inputReqVars := VarsAnyToMap(inputReq.Vars)
+		if inputRespVars := VarsAnyToMap(inputResp.Vars); len(inputRespVars) > 0 {
 			handleVars(inputReqVars, inputRespVars)
-			inputResp.Vars = varsMapToTypedMap[kbapi.PackagePolicyMappedInput_Vars_AdditionalProperties](inputRespVars)
+			inputResp.Vars = VarsMapToTypedMap[kbapi.PackagePolicyMappedInput_Vars_AdditionalProperties](inputRespVars)
 		}
 		streamsResp := typeutils.Deref(inputResp.Streams)
 		for streamID, streamReq := range typeutils.Deref(inputReq.Streams) {
 			streamResp := streamsResp[streamID]
-			streamReqVars := varsAnyToMap(streamReq.Vars)
-			if streamRespVars := varsAnyToMap(streamResp.Vars); len(streamRespVars) > 0 {
+			streamReqVars := VarsAnyToMap(streamReq.Vars)
+			if streamRespVars := VarsAnyToMap(streamResp.Vars); len(streamRespVars) > 0 {
 				handleVars(streamReqVars, streamRespVars)
-				streamResp.Vars = varsMapToTypedMap[kbapi.PackagePolicyMappedInputStream_Vars_AdditionalProperties](streamRespVars)
+				streamResp.Vars = VarsMapToTypedMap[kbapi.PackagePolicyMappedInputStream_Vars_AdditionalProperties](streamRespVars)
 			}
 			// write back modified stream
 			if inputResp.Streams != nil {

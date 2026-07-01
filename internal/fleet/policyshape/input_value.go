@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package integrationpolicy
+package policyshape
 
 import (
 	"context"
@@ -56,7 +56,7 @@ func (v InputValue) EnabledByDefault(ctx context.Context) (bool, diag.Diagnostic
 		return false, nil
 	}
 
-	var input integrationPolicyInputsModel
+	var input InputModel
 	diags := v.As(ctx, &input, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return false, diags
@@ -67,7 +67,7 @@ func (v InputValue) EnabledByDefault(ctx context.Context) (bool, diag.Diagnostic
 	}
 
 	// Extract defaults model
-	var defaults inputDefaultsModel
+	var defaults InputDefaultsModel
 	d := input.Defaults.As(ctx, &defaults, basetypes.ObjectAsOptions{})
 	diags.Append(d...)
 	if diags.HasError() {
@@ -88,7 +88,7 @@ func (v InputValue) MaybeEnabled(ctx context.Context) (bool, diag.Diagnostics) {
 		return false, nil
 	}
 
-	var input integrationPolicyInputsModel
+	var input InputModel
 	diags := v.As(ctx, &input, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return false, diags
@@ -106,7 +106,7 @@ func (v InputValue) MaybeEnabled(ctx context.Context) (bool, diag.Diagnostics) {
 
 	// The input will be treated as disabled unless at least one stream is enabled
 	for _, stream := range input.Streams.Elements() {
-		streamModel := integrationPolicyInputStreamModel{}
+		streamModel := InputStreamModel{}
 		d := stream.(types.Object).As(ctx, &streamModel, basetypes.ObjectAsOptions{})
 		diags.Append(d...)
 		if diags.HasError() {
@@ -139,7 +139,7 @@ func (v InputValue) ObjectSemanticEquals(ctx context.Context, newValuable basety
 	}
 
 	// Convert both values to the model
-	var oldInput integrationPolicyInputsModel
+	var oldInput InputModel
 	d := v.As(ctx, &oldInput, basetypes.ObjectAsOptions{
 		UnhandledNullAsEmpty:    true,
 		UnhandledUnknownAsEmpty: true,
@@ -149,7 +149,7 @@ func (v InputValue) ObjectSemanticEquals(ctx context.Context, newValuable basety
 		return false, diags
 	}
 
-	var newInput integrationPolicyInputsModel
+	var newInput InputModel
 	d = newValue.As(ctx, &newInput, basetypes.ObjectAsOptions{
 		UnhandledNullAsEmpty:    true,
 		UnhandledUnknownAsEmpty: true,
@@ -180,6 +180,12 @@ func (v InputValue) ObjectSemanticEquals(ctx context.Context, newValuable basety
 	// Ignore the disabled attribute in equality checks.
 	// Disabled inputs are handled at the InputsValue level.
 
+	// Condition has no package-supplied default, so a plain comparison is
+	// sufficient (unlike Vars, it is never implicitly filled in).
+	if !oldInputWithDefaults.Condition.Equal(newInputWithDefaults.Condition) {
+		return false, diags
+	}
+
 	// Compare vars using semantic equality if both are known
 	if typeutils.IsKnown(oldInputWithDefaults.Vars) && typeutils.IsKnown(newInputWithDefaults.Vars) {
 		varsEqual, d := oldInputWithDefaults.Vars.StringSemanticEquals(ctx, newInputWithDefaults.Vars)
@@ -209,7 +215,7 @@ func (v InputValue) ObjectSemanticEquals(ctx context.Context, newValuable basety
 }
 
 // applyDefaultsToInput applies defaults from the defaults attribute to the input
-func applyDefaultsToInput(ctx context.Context, input integrationPolicyInputsModel, defaultsObj types.Object) (integrationPolicyInputsModel, diag.Diagnostics) {
+func applyDefaultsToInput(ctx context.Context, input InputModel, defaultsObj types.Object) (InputModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// If defaults is null or unknown, return input as-is
@@ -218,7 +224,7 @@ func applyDefaultsToInput(ctx context.Context, input integrationPolicyInputsMode
 	}
 
 	// Extract defaults model
-	var defaults inputDefaultsModel
+	var defaults InputDefaultsModel
 	d := defaultsObj.As(ctx, &defaults, basetypes.ObjectAsOptions{})
 	diags.Append(d...)
 	if diags.HasError() {
@@ -282,23 +288,29 @@ func applyDefaultsToVars(vars jsontypes.Normalized, defaults jsontypes.Normalize
 }
 
 // applyDefaultsToStreams applies defaults to streams
-func applyDefaultsToStreams(ctx context.Context, streams basetypes.MapValue, defaultStreams map[string]inputDefaultsStreamModel) (basetypes.MapValue, diag.Diagnostics) {
+func applyDefaultsToStreams(ctx context.Context, streams basetypes.MapValue, defaultStreams map[string]InputDefaultsStreamModel) (basetypes.MapValue, diag.Diagnostics) {
 	if len(defaultStreams) == 0 {
 		return streams, nil
 	}
 
 	// If streams is not known, create new streams from defaults
 	if !typeutils.IsKnown(streams) {
-		streamsMap := make(map[string]integrationPolicyInputStreamModel)
+		streamsMap := make(map[string]InputStreamModel)
 		for streamID, streamDefaults := range defaultStreams {
-			streamsMap[streamID] = integrationPolicyInputStreamModel(streamDefaults)
+			// InputDefaultsStreamModel has no Condition field (the package
+			// registry does not publish default condition expressions), so
+			// build the InputStreamModel explicitly rather than converting.
+			streamsMap[streamID] = InputStreamModel{
+				Enabled: streamDefaults.Enabled,
+				Vars:    streamDefaults.Vars,
+			}
 		}
-		return types.MapValueFrom(ctx, getInputStreamType(), streamsMap)
+		return types.MapValueFrom(ctx, StreamType(), streamsMap)
 	}
 
 	// Convert streams to model
 	var diags diag.Diagnostics
-	streamsMap := typeutils.MapTypeAs[integrationPolicyInputStreamModel](ctx, streams, path.Root("streams"), &diags)
+	streamsMap := typeutils.MapTypeAs[InputStreamModel](ctx, streams, path.Root("streams"), &diags)
 	if diags.HasError() {
 		return streams, diags
 	}
@@ -308,7 +320,10 @@ func applyDefaultsToStreams(ctx context.Context, streams basetypes.MapValue, def
 		stream, exists := streamsMap[streamID]
 		if !exists {
 			// Stream not configured, use defaults
-			streamsMap[streamID] = integrationPolicyInputStreamModel(streamDefaults)
+			streamsMap[streamID] = InputStreamModel{
+				Enabled: streamDefaults.Enabled,
+				Vars:    streamDefaults.Vars,
+			}
 			continue
 		}
 
@@ -325,11 +340,11 @@ func applyDefaultsToStreams(ctx context.Context, streams basetypes.MapValue, def
 		streamsMap[streamID] = stream
 	}
 
-	return types.MapValueFrom(ctx, getInputStreamType(), streamsMap)
+	return types.MapValueFrom(ctx, StreamType(), streamsMap)
 }
 
 // compareStreams compares two inputs' streams after defaults have been applied
-func compareStreams(ctx context.Context, oldInput, newInput integrationPolicyInputsModel) (bool, diag.Diagnostics) {
+func compareStreams(ctx context.Context, oldInput, newInput InputModel) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Handle null/unknown cases
@@ -344,12 +359,12 @@ func compareStreams(ctx context.Context, oldInput, newInput integrationPolicyInp
 	}
 
 	// Convert both maps to model
-	oldStreamsMap := typeutils.MapTypeAs[integrationPolicyInputStreamModel](ctx, oldInput.Streams, path.Root("streams"), &diags)
+	oldStreamsMap := typeutils.MapTypeAs[InputStreamModel](ctx, oldInput.Streams, path.Root("streams"), &diags)
 	if diags.HasError() {
 		return false, diags
 	}
 
-	newStreamsMap := typeutils.MapTypeAs[integrationPolicyInputStreamModel](ctx, newInput.Streams, path.Root("streams"), &diags)
+	newStreamsMap := typeutils.MapTypeAs[InputStreamModel](ctx, newInput.Streams, path.Root("streams"), &diags)
 	if diags.HasError() {
 		return false, diags
 	}
@@ -367,6 +382,10 @@ func compareStreams(ctx context.Context, oldInput, newInput integrationPolicyInp
 	for streamID, oldStream := range enabledOldStreams {
 		newStream, exists := enabledNewStreams[streamID]
 		if !exists {
+			return false, diags
+		}
+
+		if !oldStream.Condition.Equal(newStream.Condition) {
 			return false, diags
 		}
 

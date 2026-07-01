@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package integrationpolicy_test
+package policyshape_test
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	integrationpolicy "github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/stretchr/testify/require"
 )
@@ -53,7 +53,7 @@ func buildPackagePolicyWithMappedInputs(t *testing.T, secretRefs *[]kbapi.Packag
 		SecretReferences: secretRefs,
 	}
 	if vars != nil {
-		p.Vars = integrationpolicy.VarsMapToUnionWrapper[kbapi.KibanaHTTPAPIsPackagePolicyResponse_Vars](*vars)
+		p.Vars = policyshape.VarsMapToUnionWrapper[kbapi.KibanaHTTPAPIsPackagePolicyResponse_Vars](*vars)
 	}
 	require.NoError(t, p.Inputs.FromPackagePolicyMappedInputs(inputs))
 	return p
@@ -68,7 +68,7 @@ func buildPackagePolicyRequestMapped(t *testing.T, inputs *map[string]kbapi.Pack
 		Inputs:  inputs,
 	}
 	if vars != nil {
-		mapped.Vars = integrationpolicy.VarsMapToTypedMap[kbapi.KibanaHTTPAPIsSimplifiedCreatePackagePolicyRequest_Vars_AdditionalProperties](*vars)
+		mapped.Vars = policyshape.VarsMapToTypedMap[kbapi.KibanaHTTPAPIsSimplifiedCreatePackagePolicyRequest_Vars_AdditionalProperties](*vars)
 	}
 	var req kbapi.PackagePolicyRequest
 	require.NoError(t, req.FromPackagePolicyRequestMappedInputs(mapped))
@@ -137,29 +137,29 @@ func TestHandleRespSecrets(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			inputStreams := map[string]kbapi.PackagePolicyMappedInputStream{
-				"stream1": {Vars: integrationpolicy.VarsMapToTypedMap[kbapi.PackagePolicyMappedInputStream_Vars_AdditionalProperties](maps.Clone(tt.input))},
+				"stream1": {Vars: policyshape.VarsMapToTypedMap[kbapi.PackagePolicyMappedInputStream_Vars_AdditionalProperties](maps.Clone(tt.input))},
 			}
 			mappedInputs := kbapi.PackagePolicyMappedInputs{
 				"input1": {
 					Streams: &inputStreams,
-					Vars:    integrationpolicy.VarsMapToTypedMap[kbapi.PackagePolicyMappedInput_Vars_AdditionalProperties](maps.Clone(tt.input)),
+					Vars:    policyshape.VarsMapToTypedMap[kbapi.PackagePolicyMappedInput_Vars_AdditionalProperties](maps.Clone(tt.input)),
 				},
 			}
 			cloned := maps.Clone(tt.input)
 			resp := buildPackagePolicyWithMappedInputs(t, secretRefs, mappedInputs, &cloned)
 
 			wantInputStreams := map[string]kbapi.PackagePolicyMappedInputStream{
-				"stream1": {Vars: integrationpolicy.VarsMapToTypedMap[kbapi.PackagePolicyMappedInputStream_Vars_AdditionalProperties](tt.want)},
+				"stream1": {Vars: policyshape.VarsMapToTypedMap[kbapi.PackagePolicyMappedInputStream_Vars_AdditionalProperties](tt.want)},
 			}
 			wantMappedInputs := kbapi.PackagePolicyMappedInputs{
 				"input1": {
 					Streams: &wantInputStreams,
-					Vars:    integrationpolicy.VarsMapToTypedMap[kbapi.PackagePolicyMappedInput_Vars_AdditionalProperties](tt.want),
+					Vars:    policyshape.VarsMapToTypedMap[kbapi.PackagePolicyMappedInput_Vars_AdditionalProperties](tt.want),
 				},
 			}
 			wants := buildPackagePolicyWithMappedInputs(t, nil, wantMappedInputs, &tt.want)
 
-			diags := integrationpolicy.HandleRespSecrets(ctx, &resp, &private)
+			diags := policyshape.HandleRespSecrets(ctx, &resp, &private)
 			require.Empty(t, diags)
 			// The typed Vars wrappers differ across endpoints (policy / input /
 			// stream) so use a JSON-equal comparison to avoid threading three
@@ -263,42 +263,42 @@ func TestHandleReqRespSecrets(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			reqInputStreams := map[string]kbapi.PackagePolicyRequestMappedInputStream{
-				"stream1": {Vars: integrationpolicy.VarsMapToTypedMap[kbapi.PackagePolicyRequestMappedInputStream_Vars_AdditionalProperties](maps.Clone(tt.reqInput))},
+				"stream1": {Vars: policyshape.VarsMapToTypedMap[kbapi.PackagePolicyRequestMappedInputStream_Vars_AdditionalProperties](maps.Clone(tt.reqInput))},
 			}
 			reqInputs := &map[string]kbapi.PackagePolicyRequestMappedInput{
 				"input1": {
 					Streams: &reqInputStreams,
-					Vars:    integrationpolicy.VarsMapToTypedMap[kbapi.PackagePolicyRequestMappedInput_Vars_AdditionalProperties](maps.Clone(tt.reqInput)),
+					Vars:    policyshape.VarsMapToTypedMap[kbapi.PackagePolicyRequestMappedInput_Vars_AdditionalProperties](maps.Clone(tt.reqInput)),
 				},
 			}
 			reqVars := maps.Clone(tt.reqInput)
 			req := buildPackagePolicyRequestMapped(t, reqInputs, &reqVars)
 
 			respInputStreams := map[string]kbapi.PackagePolicyMappedInputStream{
-				"stream1": {Vars: integrationpolicy.VarsMapToTypedMap[kbapi.PackagePolicyMappedInputStream_Vars_AdditionalProperties](maps.Clone(tt.respInput))},
+				"stream1": {Vars: policyshape.VarsMapToTypedMap[kbapi.PackagePolicyMappedInputStream_Vars_AdditionalProperties](maps.Clone(tt.respInput))},
 			}
 			respMappedInputs := kbapi.PackagePolicyMappedInputs{
 				"input1": {
 					Streams: &respInputStreams,
-					Vars:    integrationpolicy.VarsMapToTypedMap[kbapi.PackagePolicyMappedInput_Vars_AdditionalProperties](maps.Clone(tt.respInput)),
+					Vars:    policyshape.VarsMapToTypedMap[kbapi.PackagePolicyMappedInput_Vars_AdditionalProperties](maps.Clone(tt.respInput)),
 				},
 			}
 			respVars := maps.Clone(tt.respInput)
 			resp := buildPackagePolicyWithMappedInputs(t, secretRefs, respMappedInputs, &respVars)
 
 			wantInputStreams := map[string]kbapi.PackagePolicyMappedInputStream{
-				"stream1": {Vars: integrationpolicy.VarsMapToTypedMap[kbapi.PackagePolicyMappedInputStream_Vars_AdditionalProperties](tt.want)},
+				"stream1": {Vars: policyshape.VarsMapToTypedMap[kbapi.PackagePolicyMappedInputStream_Vars_AdditionalProperties](tt.want)},
 			}
 			wantMappedInputs := kbapi.PackagePolicyMappedInputs{
 				"input1": {
 					Streams: &wantInputStreams,
-					Vars:    integrationpolicy.VarsMapToTypedMap[kbapi.PackagePolicyMappedInput_Vars_AdditionalProperties](tt.want),
+					Vars:    policyshape.VarsMapToTypedMap[kbapi.PackagePolicyMappedInput_Vars_AdditionalProperties](tt.want),
 				},
 			}
 			wants := buildPackagePolicyWithMappedInputs(t, nil, wantMappedInputs, &tt.want)
 
 			private := privateData{}
-			diags := integrationpolicy.HandleReqRespSecrets(ctx, req, &resp, &private)
+			diags := policyshape.HandleReqRespSecrets(ctx, req, &resp, &private)
 			require.Empty(t, diags)
 
 			// The typed Vars wrappers differ across endpoints (policy / input /

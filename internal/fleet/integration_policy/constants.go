@@ -36,4 +36,5 @@ const (
 	attrVars               = "vars"
 	attrDefaults           = "defaults"
 	attrStreams            = "streams"
+	attrCondition          = "condition"
 )

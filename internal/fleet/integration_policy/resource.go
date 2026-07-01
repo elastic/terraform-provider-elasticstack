@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fleetpkg "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -73,7 +74,25 @@ func (r *integrationPolicyResource) UpgradeState(context.Context) map[int64]reso
 var knownPackages sync.Map
 
 func getPackageCacheKey(name, version string) string {
-	return fmt.Sprintf("%s-%s", name, version)
+	return policyshape.PackageCacheKey(name, version)
+}
+
+// lookupCachedPackageInfo adapts the knownPackages cache to
+// policyshape.PackageInfoLookupFunc, so VarsJSONType's default-population
+// logic (owned by the shared policyshape package) can read from this
+// resource's package-info cache without policyshape owning any cache state
+// itself. cacheKey is already a policyshape.PackageCacheKey (i.e. the
+// "<name>-<version>" string produced by getPackageCacheKey).
+func lookupCachedPackageInfo(cacheKey string) (kbapi.KibanaHTTPAPIsGetPackageInfo, bool) {
+	value, ok := knownPackages.Load(cacheKey)
+	if !ok {
+		return kbapi.KibanaHTTPAPIsGetPackageInfo{}, false
+	}
+	pkg, ok := value.(kbapi.KibanaHTTPAPIsGetPackageInfo)
+	if !ok {
+		return kbapi.KibanaHTTPAPIsGetPackageInfo{}, false
+	}
+	return pkg, true
 }
 
 func getPackageInfo(ctx context.Context, client *fleet.Client, name, version, spaceID string) (*kbapi.KibanaHTTPAPIsGetPackageInfo, diag.Diagnostics) {
