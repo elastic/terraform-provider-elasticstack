@@ -63,7 +63,8 @@ func TestResolveConfigBlock_flat_noError(t *testing.T) {
 
 func TestResolveConfigBlock_nestedUnknown_skipsNoError(t *testing.T) {
 	t.Parallel()
-	attrs := map[string]attr.Value{"my_config": types.StringUnknown()}
+	objType := types.ObjectType{AttrTypes: map[string]attr.Type{"slo_id": types.StringType}}
+	attrs := map[string]attr.Value{"my_config": types.ObjectUnknown(objType.AttrTypes)}
 	_, _, _, skip, diags := panelkit.ResolveConfigBlock(attrs, path.Empty(), "my_config",
 		"Missing config", "Config is required.", "slo_id")
 	assert.True(t, skip)
