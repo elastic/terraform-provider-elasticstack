@@ -30,6 +30,9 @@ import (
 const (
 	panelType        = "ml_single_metric_viewer"
 	panelConfigBlock = panelType + "_config"
+
+	entityAttrStringValue  = "string_value"
+	entityAttrNumericValue = "numeric_value"
 )
 
 // SchemaAttribute returns the ml_single_metric_viewer_config SingleNestedAttribute definition.
@@ -64,18 +67,18 @@ func SchemaAttribute() schema.Attribute {
 		Optional:            true,
 		NestedObject: schema.NestedAttributeObject{
 			Attributes: map[string]schema.Attribute{
-				"string_value": schema.StringAttribute{
+				entityAttrStringValue: schema.StringAttribute{
 					MarkdownDescription: "String entity value for the field.",
 					Optional:            true,
 				},
-				"numeric_value": schema.NumberAttribute{
+				entityAttrNumericValue: schema.NumberAttribute{
 					MarkdownDescription: "Numeric entity value for the field.",
 					Optional:            true,
 				},
 			},
 			Validators: []validator.Object{
 				validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
-					AttrNames:     []string{"string_value", "numeric_value"},
+					AttrNames:     []string{entityAttrStringValue, entityAttrNumericValue},
 					Summary:       "Invalid selected_entities entry",
 					MissingDetail: "Exactly one of `string_value` or `numeric_value` must be set for each `selected_entities` entry.",
 					TooManyDetail: "Exactly one of `string_value` or `numeric_value` must be set for each `selected_entities` entry, not both.",

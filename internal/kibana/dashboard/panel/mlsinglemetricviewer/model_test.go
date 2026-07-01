@@ -272,7 +272,7 @@ func TestPopulateFromAPI_import_numericEntity(t *testing.T) {
 	assert.True(t, raw["region_code"].StringValue.IsNull())
 	f64, acc := raw["region_code"].NumericValue.ValueBigFloat().Float64()
 	require.Equal(t, big.Exact, acc)
-	assert.Equal(t, float64(4), f64)
+	assert.InEpsilon(t, float64(4), f64, 1e-6)
 }
 
 func TestPopulateFromAPI_nullPreservation(t *testing.T) {
@@ -414,7 +414,7 @@ func TestPopulateFromAPI_import_selectedDetectorIndexDefault(t *testing.T) {
 
 	cfg := pm.MlSingleMetricViewerConfig
 	require.NotNil(t, cfg)
-	assert.Equal(t, float32(0), cfg.SelectedDetectorIndex.ValueFloat32())
+	assert.InEpsilon(t, float32(0), cfg.SelectedDetectorIndex.ValueFloat32(), 1e-6)
 }
 
 func TestPopulateFromAPI_selectedDetectorIndex_float32RoundTrip(t *testing.T) {

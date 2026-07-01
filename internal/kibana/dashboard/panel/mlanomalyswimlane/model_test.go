@@ -248,7 +248,7 @@ func TestPopulateFromAPI_import_overall(t *testing.T) {
 	assert.Equal(t, "job-a", cfg.JobIDs[0].ValueString())
 	assert.True(t, cfg.ViewBy.IsNull())
 	assert.Equal(t, "title", cfg.Title.ValueString())
-	assert.Equal(t, float32(10), cfg.PerPage.ValueFloat32())
+	assert.InEpsilon(t, float32(10), cfg.PerPage.ValueFloat32(), 1e-6)
 }
 
 func TestPopulateFromAPI_import_viewBy(t *testing.T) {
@@ -261,7 +261,7 @@ func TestPopulateFromAPI_import_viewBy(t *testing.T) {
 	require.NotNil(t, cfg)
 	assert.Equal(t, "viewBy", cfg.SwimlaneType.ValueString())
 	assert.Equal(t, "host.name", cfg.ViewBy.ValueString())
-	assert.Equal(t, float32(15), cfg.PerPage.ValueFloat32())
+	assert.InEpsilon(t, float32(15), cfg.PerPage.ValueFloat32(), 1e-6)
 }
 
 func TestPopulateFromAPI_overall_nullPreservation(t *testing.T) {

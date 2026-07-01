@@ -37,8 +37,8 @@ import (
 func entityObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"string_value":  types.StringType,
-			"numeric_value": types.NumberType,
+			entityAttrStringValue:  types.StringType,
+			entityAttrNumericValue: types.NumberType,
 		},
 	}
 }
