@@ -72,6 +72,24 @@ func TestAccResourceDashboardMlAnomalySwimlaneOverall(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("overall"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.view_by"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.per_page"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.title"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.description"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.hide_title"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.hide_border"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.time_range"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("overall_updated"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -82,23 +100,6 @@ func TestAccResourceDashboardMlAnomalySwimlaneOverall(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.job_ids.0", "fake-job-alpha"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.job_ids.1", "fake-job-beta"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.view_by"),
-				),
-			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("overall"),
-				ConfigVariables: config.Variables{
-					"dashboard_title": config.StringVariable(dashboardTitle),
-				},
-				PlanOnly: true,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.view_by"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.per_page"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.title"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.description"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.hide_title"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.hide_border"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.time_range"),
 				),
 			},
 		},
