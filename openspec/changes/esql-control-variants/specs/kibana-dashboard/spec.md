@@ -53,10 +53,7 @@ The `by_esql` nested block represents a control sourced from an ES|QL query:
 
 #### Null-preservation and import semantics
 
-The null-preservation semantics from REQ-009 continue to apply to optional boolean attributes within both branches (`use_global_filters`, `ignore_validations`, `single_select`, `exclude`, `exists_selected`, `run_past_timeout`) and the `sort` block. On read, when prior state had an attribute null, the provider SHALL keep it null even if Kibana returns a server-side default.
-
-During import (no prior state), the provider SHALL populate `data_view_id` (or `esql_query`) and `field_name`, `title`, `search_technique`, `selected_options`, and `display_settings` where present in the API response; optional booleans and `sort` SHALL be left null.
-
+During import (no prior state), the provider SHALL populate the branch-specific required identifiers from the API response: for `by_field`, populate `data_view_id` and `field_name`; for `by_esql`, populate `esql_query` and `values_source`. In both branches, `title`, `search_technique`, `selected_options`, and `display_settings` SHALL be populated where present in the API response; optional booleans and `sort` SHALL be left null.
 #### Mutual exclusion and conflict guards
 
 - Exactly one of `by_field` or `by_esql` MUST be set in `options_list_control_config`.
@@ -146,10 +143,7 @@ The `by_esql` nested block represents a range slider sourced from an ES|QL query
 - `value` (optional, list of string) — same as `by_field` (2-element list constraint applies).
 - `step` (optional, number) — same as `by_field`.
 
-#### Null-preservation and import semantics
-
-Null-preservation semantics (REQ-009) apply to optional boolean attributes (`use_global_filters`, `ignore_validations`) within both branches. On import, `data_view_id` (or `esql_query`) and `field_name` SHALL be populated; optional booleans SHALL be left null.
-
+Null-preservation semantics (REQ-009) apply to optional boolean attributes (`use_global_filters`, `ignore_validations`) within both branches. On import, the provider SHALL populate the branch-specific required identifiers from the API response: for `by_field`, `data_view_id` and `field_name`; for `by_esql`, `esql_query` and `values_source`. Optional booleans SHALL be left null.
 #### Mutual exclusion and conflict guards
 
 - Exactly one of `by_field` or `by_esql` MUST be set in `range_slider_control_config`.
