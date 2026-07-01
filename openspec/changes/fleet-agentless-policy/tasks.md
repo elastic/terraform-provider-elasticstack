@@ -45,11 +45,12 @@
 
 ## 5. Resource: CRUD + import
 
-- [ ] 5.1 Implement `create.go`: compile config model to `PostFleetAgentlessPoliciesJSONRequestBody`, call `CreateAgentlessPolicy`, decode response into model, set state
-- [ ] 5.2 Implement `read.go`: call `ReadAgentlessPolicyViaPackagePolicy`, handle nil (404 → remove from state), decode response into model, set state; preserve `force`, `force_delete`, and `create_dataset_templates` from plan (not returned by API)
-- [ ] 5.3 Implement `update.go` (based on spike findings from 3.3): call `UpdateAgentlessPolicyViaPackagePolicy` with the in-place-updatable allowlist fields only; decode response into model; set state
-- [ ] 5.4 Implement `delete.go`: call `DeleteAgentlessPolicy` with `force = force_delete`; handle 404 as no-op; surface helpful error for conflict when `force_delete = false`
-- [ ] 5.5 Implement `ImportState` accepting composite `"<space_id>/<policy_id>"` form and plain `"<policy_id>"` form using `SpaceImporter`
+- [x] 5.1 Implement `create.go`: compile config model to `PostFleetAgentlessPoliciesJSONRequestBody`, call `CreateAgentlessPolicy`, decode response into model, set state
+- [x] 5.2 Implement `read.go`: call `ReadAgentlessPolicyViaPackagePolicy`, handle nil (404 → remove from state), decode response into model, set state; preserve `force`, `force_delete`, and `create_dataset_templates` from plan (not returned by API)
+- [x] 5.3 Implement `update.go` (based on spike findings from 3.3): call `UpdateAgentlessPolicyViaPackagePolicy` with the in-place-updatable allowlist fields only; decode response into model; set state
+- [x] 5.4 Implement `delete.go`: call `DeleteAgentlessPolicy` with `force = force_delete`; handle 404 as no-op; surface helpful error for conflict when `force_delete = false`
+- [x] 5.5 Implement `ImportState` accepting composite `"<space_id>/<policy_id>"` form and plain `"<policy_id>"` form using `SpaceImporter`
+  - Verified only: Task 3 already wired `fleet.NewSpaceImporter(path.Root("policy_id"))` in `resource.go`, and `entitycore_contract_test.go`'s `TestResource_importState_customCompositeID` already covers the composite-ID path end to end (policy_id + space_ids populated, no diagnostics). No additional import logic was needed: SpaceImporter sets `policy_id` (and `space_ids` for the composite form) directly into state, and the framework's post-import Read (wired to `readAgentlessPolicy`, implemented in 5.2) populates every other attribute from the Fleet API via the same code path used by a plain refresh.
 
 ## 6. Resource: version gating and deployment check
 
