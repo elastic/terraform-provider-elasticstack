@@ -11,11 +11,11 @@
   - `kuery` — optional `StringAttribute`
   - `map_orientation` — optional `StringAttribute` with `stringvalidator.OneOf("horizontal", "vertical")`
   - `sync_with_dashboard_filters` — optional `BoolAttribute`
-  - `alert_status_filter` — optional `SetAttribute(stringvalidator.OneOf("active", "delayed", "recovered", "untracked"))` on element type
-  - `anomaly_severity_filter` — optional `SetAttribute(stringvalidator.OneOf("low", "warning", "minor", "major", "critical", "unknown"))` on element type
-  - `connection_filter` — optional `SetAttribute(stringvalidator.OneOf("connected", "orphaned"))` on element type
-  - `slo_status_filter` — optional `SetAttribute(stringvalidator.OneOf("degrading", "healthy", "noData", "violated"))` on element type
-  - `time_range` — optional `SingleNestedAttribute` with `from` and `to` string attributes (reuse existing `panelkit.TimeRangeAttributes()` or equivalent helper)
+  - `alert_status_filter` — optional `SetAttribute` (`ElementType: types.StringType`) with `setvalidator.ValueStringsAre(stringvalidator.OneOf("active", "delayed", "recovered", "untracked"))`
+  - `anomaly_severity_filter` — optional `SetAttribute` (`ElementType: types.StringType`) with `setvalidator.ValueStringsAre(stringvalidator.OneOf("low", "warning", "minor", "major", "critical", "unknown"))`
+  - `connection_filter` — optional `SetAttribute` (`ElementType: types.StringType`) with `setvalidator.ValueStringsAre(stringvalidator.OneOf("connected", "orphaned"))`
+  - `slo_status_filter` — optional `SetAttribute` (`ElementType: types.StringType`) with `setvalidator.ValueStringsAre(stringvalidator.OneOf("degrading", "healthy", "noData", "violated"))`
+  - `time_range` — optional `SingleNestedAttribute` with required `from` and `to` string attributes and optional `mode` (`absolute` | `relative`) (reuse existing `panelkit.TimeRangeSchema(...)` / `panelkit.TimeRangeAttributes()`)
 - [ ] 2.2 Wrap all attributes in `panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{BlockName: "apm_service_map_config", PanelType: "apm_service_map", ...})`
 
 ## 3. Model

@@ -32,7 +32,7 @@ Invalid values for any filter set attribute SHALL produce an error diagnostic at
 - `title`, `description`, `hide_title`, `hide_border`
 
 **Time range**:
-- `time_range` — Optional sub-block `{ from: string, to: string }`.
+- `time_range` — Optional sub-block `{ from: string, to: string, mode: optional string ("absolute" | "relative") }`.
 
 #### Write (ToAPI) behaviour
 
@@ -139,10 +139,9 @@ The `apm_service_map_config` block SHALL be mutually exclusive with all other ty
 
 ## MODIFIED Requirements
 
-### Requirement: Panel type routing and config_json guard (REQ-002, REQ-005 extension)
+### Requirement: Panel type routing and config_json guard (REQ-010 extension)
 
-The list of panel types that SHALL NOT accept practitioner-authored `config_json` is extended to include `apm_service_map`. The `apm_service_map` panel type SHALL be managed exclusively through the `apm_service_map_config` block. This extension follows the same enforcement pattern as existing entries in REQ-044A (the registry-driven simple panel handler architecture).
-
+The list of panel types that SHALL NOT accept practitioner-authored `config_json` (REQ-010) is extended to include `apm_service_map`. The `apm_service_map` panel type SHALL be managed exclusively through the `apm_service_map_config` block. This extension follows the same enforcement pattern as existing entries in REQ-044A (the registry-driven simple panel handler architecture).
 #### Scenario: apm_service_map_config routed by type discriminant
 
 - GIVEN a dashboard API response containing a panel with `"type": "apm_service_map"` and a non-empty config object
