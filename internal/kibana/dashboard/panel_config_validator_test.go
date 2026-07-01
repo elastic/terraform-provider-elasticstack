@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/discoversession"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/image"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/markdown"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/mlanomalyswimlane"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloalerts"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloburnrate"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloerrorbudget"
@@ -168,6 +169,42 @@ func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
 			"config_json": types.StringUnknown(),
 		})
 		require.False(t, diags.HasError())
+	})
+}
+
+func Test_mlAnomalySwimlaneHandler_ValidatePanelConfig(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("accepts ml_anomaly_swimlane_config via flat attrs", func(t *testing.T) {
+		diags := mlanomalyswimlane.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{
+			"swimlane_type": types.StringValue("overall"),
+			"job_ids":       types.ListValueMust(types.StringType, []attr.Value{types.StringValue("job-a")}),
+		}, testAttrPathPanel)
+		require.False(t, diags.HasError())
+	})
+
+	t.Run("rejects missing config block on full-panel attrs shape", func(t *testing.T) {
+		diags := mlanomalyswimlane.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{}, testAttrPathPanel)
+		require.True(t, diags.HasError())
+		require.Equal(t, "Missing ML anomaly swim lane panel configuration", diags[0].Summary())
+	})
+
+	t.Run("rejects empty job_ids list", func(t *testing.T) {
+		diags := mlanomalyswimlane.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{
+			"swimlane_type": types.StringValue("overall"),
+			"job_ids":       types.ListValueMust(types.StringType, []attr.Value{}),
+		}, testAttrPathPanel)
+		require.True(t, diags.HasError())
+		require.Contains(t, diags[0].Summary(), "Invalid ML anomaly swim lane configuration")
+	})
+
+	t.Run("rejects null job_ids list", func(t *testing.T) {
+		diags := mlanomalyswimlane.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{
+			"swimlane_type": types.StringValue("overall"),
+			"job_ids":       types.ListNull(types.StringType),
+		}, testAttrPathPanel)
+		require.True(t, diags.HasError())
+		require.Contains(t, diags[0].Summary(), "Invalid ML anomaly swim lane configuration")
 	})
 }
 

@@ -26,11 +26,11 @@
 
 ## 4. Testing — `ml_anomaly_swimlane`
 
-- [ ] 4.1 Add acceptance test (`internal/kibana/dashboard/panel/mlanomalyswimlane/acc_test.go`): create/read/update round-trip with `swimlane_type = "overall"`, verify state matches.
-- [ ] 4.2 Add acceptance test: create/read/update round-trip with `swimlane_type = "viewBy"` and `view_by` set, verify state matches.
-- [ ] 4.3 Add acceptance test: plan-time rejection when `swimlane_type = "viewBy"` and `view_by` is absent (expect diagnostic).
-- [ ] 4.4 Add acceptance test: plan-time rejection when `swimlane_type = "overall"` and `view_by` is set (expect diagnostic).
-- [ ] 4.5 Add unit tests for `BuildConfig()` and `PopulateFromAPI()` covering both branches, null-preservation on optional fields, and `per_page` float32 round-trip.
+- [x] 4.1 Add acceptance test (`internal/kibana/dashboard/panel/mlanomalyswimlane/acc_test.go`): create/read/update round-trip with `swimlane_type = "overall"`, verify state matches.
+- [x] 4.2 Add acceptance test: create/read/update round-trip with `swimlane_type = "viewBy"` and `view_by` set, verify state matches.
+- [x] 4.3 Add acceptance test: plan-time rejection when `swimlane_type = "viewBy"` and `view_by` is absent (expect diagnostic).
+- [x] 4.4 Add acceptance test: plan-time rejection when `swimlane_type = "overall"` and `view_by` is set (expect diagnostic).
+- [x] 4.5 Add unit tests for `BuildConfig()` and `PopulateFromAPI()` covering both branches, null-preservation on optional fields, and `per_page` float32 round-trip.
 
 ## 5. Testing — `ml_single_metric_viewer`
 
