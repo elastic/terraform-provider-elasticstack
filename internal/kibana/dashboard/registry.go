@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/image"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/markdown"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/mlanomalyswimlane"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/optionslist"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/rangeslider"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloalerts"
@@ -50,6 +51,7 @@ var panelHandlers = []iface.Handler{
 	rangeslider.Handler{},
 	esqlcontrol.Handler{},
 	markdown.Handler{},
+	mlanomalyswimlane.Handler{},
 	image.Handler{},
 	sloalerts.Handler{},
 	visconfig.Handler{},

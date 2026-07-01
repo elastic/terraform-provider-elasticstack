@@ -111,6 +111,9 @@ func alignPlanTypedPanelConfigsWhenStateNil(plan, state *models.PanelModel) {
 	if plan.DiscoverSessionConfig != nil && state.DiscoverSessionConfig == nil {
 		state.DiscoverSessionConfig = panelkit.ShallowClonePtr(plan.DiscoverSessionConfig)
 	}
+	if plan.MlAnomalySwimlaneConfig != nil && state.MlAnomalySwimlaneConfig == nil {
+		state.MlAnomalySwimlaneConfig = panelkit.ShallowClonePtr(plan.MlAnomalySwimlaneConfig)
+	}
 }
 
 func alignPanelStateFromPlan(ctx context.Context, plan, state *models.PanelModel) {
