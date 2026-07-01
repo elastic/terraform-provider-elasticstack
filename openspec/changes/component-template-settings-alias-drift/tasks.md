@@ -35,11 +35,11 @@
 
 ## 7. Tests
 
-- [ ] 7.1 Confirm whether `TestAccResourceComponentTemplateDottedSettingsNoDrift` already exists in `internal/elasticsearch/index/componenttemplate/acc_drift_test.go`; if so keep it as the regression guard for REQ-037; if not, write it: apply with dotted-key settings → plan-only step expecting no diff → import step with `ImportStateVerify: true`
-- [ ] 7.2 Add `TestAccResourceComponentTemplateAliasRoutingNoDrift` (or similar): apply a component template with a `routing`-only alias, verify no `Provider produced inconsistent result after apply` and no perpetual diff on subsequent plan (guards REQ-038)
-- [ ] 7.3 Add unit tests for new `aliasutil` exported helpers, porting the existing `TestReconcilePlanWithPriorStateForSemanticDrift_settingsNestedPlanDottedState` from `internal/elasticsearch/index/template/modify_plan_test.go` to exercise both the shared `templateutil` helper and the component_template `ModifyPlan`
-- [ ] 7.4 Run `make build` and `go vet ./...` to confirm compilation; run `go test ./internal/elasticsearch/index/...` (unit tests only, no `TF_ACC`) to confirm no regressions
-- [ ] 7.5 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate component-template-settings-alias-drift --type change` and resolve any reported errors
+- [x] 7.1 Confirm whether `TestAccResourceComponentTemplateDottedSettingsNoDrift` already exists in `internal/elasticsearch/index/componenttemplate/acc_drift_test.go`; if so keep it as the regression guard for REQ-037; if not, write it: apply with dotted-key settings → plan-only step expecting no diff → import step with `ImportStateVerify: true`
+- [x] 7.2 Add `TestAccResourceComponentTemplateAliasRoutingNoDrift` (or similar): apply a component template with a `routing`-only alias, verify no `Provider produced inconsistent result after apply` and no perpetual diff on subsequent plan (guards REQ-038)
+- [x] 7.3 Add unit tests for new `aliasutil` exported helpers, porting the existing `TestReconcilePlanWithPriorStateForSemanticDrift_settingsNestedPlanDottedState` from `internal/elasticsearch/index/template/modify_plan_test.go` to exercise both the shared `templateutil` helper and the component_template `ModifyPlan`
+- [x] 7.4 Run `make build` and `go vet ./...` to confirm compilation; run `go test ./internal/elasticsearch/index/...` (unit tests only, no `TF_ACC`) to confirm no regressions
+- [x] 7.5 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate component-template-settings-alias-drift --type change` and resolve any reported errors
 
 ## 8. Pre-merge checklist
 
