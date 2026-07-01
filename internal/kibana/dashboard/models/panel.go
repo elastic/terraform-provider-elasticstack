@@ -42,6 +42,7 @@ type PanelModel struct {
 	DiscoverSessionConfig         *DiscoverSessionPanelConfigModel                  `tfsdk:"discover_session_config"`
 	MlAnomalySwimlaneConfig       *MlAnomalySwimlaneConfigModel                     `tfsdk:"ml_anomaly_swimlane_config"`
 	MlSingleMetricViewerConfig    *MlSingleMetricViewerConfigModel                  `tfsdk:"ml_single_metric_viewer_config"`
+	ApmServiceMapConfig           *ApmServiceMapConfigModel                         `tfsdk:"apm_service_map_config"`
 	ConfigJSON                    customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
