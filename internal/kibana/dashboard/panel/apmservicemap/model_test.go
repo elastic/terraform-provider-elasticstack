@@ -154,11 +154,16 @@ func TestPopulateFromAPI_import_withFields(t *testing.T) {
 }
 
 func TestPopulateFromAPI_nullPreservation_scalars(t *testing.T) {
-	existing := &models.ApmServiceMapConfigModel{
-		Environment: types.StringNull(),
+	pm := &models.PanelModel{
+		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
+			Environment: types.StringNull(),
+		},
 	}
-	pm := &models.PanelModel{ApmServiceMapConfig: existing}
-	prior := &models.PanelModel{ApmServiceMapConfig: existing}
+	prior := &models.PanelModel{
+		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
+			Environment: types.StringNull(),
+		},
+	}
 
 	env := "production"
 	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
@@ -174,14 +179,26 @@ func TestPopulateFromAPI_nullPreservation_scalars(t *testing.T) {
 }
 
 func TestPopulateFromAPI_filterSet_reordering(t *testing.T) {
-	existing := &models.ApmServiceMapConfigModel{
-		AlertStatusFilter: types.SetValueMust(types.StringType, []attr.Value{
-			types.StringValue("active"),
-			types.StringValue("delayed"),
-		}),
+	expectedFilter := types.SetValueMust(types.StringType, []attr.Value{
+		types.StringValue("active"),
+		types.StringValue("delayed"),
+	})
+	pm := &models.PanelModel{
+		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
+			AlertStatusFilter: types.SetValueMust(types.StringType, []attr.Value{
+				types.StringValue("active"),
+				types.StringValue("delayed"),
+			}),
+		},
 	}
-	pm := &models.PanelModel{ApmServiceMapConfig: existing}
-	prior := &models.PanelModel{ApmServiceMapConfig: existing}
+	prior := &models.PanelModel{
+		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
+			AlertStatusFilter: types.SetValueMust(types.StringType, []attr.Value{
+				types.StringValue("active"),
+				types.StringValue("delayed"),
+			}),
+		},
+	}
 
 	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
 		Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
@@ -195,15 +212,20 @@ func TestPopulateFromAPI_filterSet_reordering(t *testing.T) {
 	require.False(t, diags.HasError(), "%v", diags)
 
 	require.NotNil(t, pm.ApmServiceMapConfig)
-	assert.True(t, pm.ApmServiceMapConfig.AlertStatusFilter.Equal(existing.AlertStatusFilter))
+	assert.True(t, pm.ApmServiceMapConfig.AlertStatusFilter.Equal(expectedFilter))
 }
 
 func TestPopulateFromAPI_filterSet_nullPreservation(t *testing.T) {
-	existing := &models.ApmServiceMapConfigModel{
-		AlertStatusFilter: types.SetNull(types.StringType),
+	pm := &models.PanelModel{
+		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
+			AlertStatusFilter: types.SetNull(types.StringType),
+		},
 	}
-	pm := &models.PanelModel{ApmServiceMapConfig: existing}
-	prior := &models.PanelModel{ApmServiceMapConfig: existing}
+	prior := &models.PanelModel{
+		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
+			AlertStatusFilter: types.SetNull(types.StringType),
+		},
+	}
 
 	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
 		Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
