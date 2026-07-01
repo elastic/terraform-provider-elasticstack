@@ -219,6 +219,37 @@ func TestPopulateFromAPI_filterSet_nullPreservation(t *testing.T) {
 	assert.True(t, pm.ApmServiceMapConfig.AlertStatusFilter.IsNull())
 }
 
+func TestPopulateFromAPI_timeRange_nullPreservation(t *testing.T) {
+	mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaModeRelative
+	pm := &models.PanelModel{
+		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
+			Environment: types.StringNull(),
+			TimeRange:    nil,
+		},
+	}
+	prior := &models.PanelModel{
+		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
+			Environment: types.StringNull(),
+			TimeRange:    nil,
+		},
+	}
+
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+		Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+			TimeRange: &kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
+				From: "now-30d",
+				To:   "now",
+				Mode: &mode,
+			},
+		},
+	}
+	diags := apmservicemap.PopulateFromAPI(pm, prior, panel)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	require.NotNil(t, pm.ApmServiceMapConfig)
+	assert.Nil(t, pm.ApmServiceMapConfig.TimeRange)
+}
+
 func Test_mapOrientationValidator_rejectsInvalidValue(t *testing.T) {
 	ctx := context.Background()
 	v := stringvalidator.OneOf("horizontal", "vertical")
