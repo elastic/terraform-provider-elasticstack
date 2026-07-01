@@ -41,3 +41,19 @@ func Test_alignPlanTypedPanelConfigsWhenStateNil_clonesEsqlControl(t *testing.T)
 	require.NotNil(t, state.EsqlControlConfig)
 	assert.Equal(t, "response_code", state.EsqlControlConfig.VariableName.ValueString())
 }
+
+func Test_alignPlanTypedPanelConfigsWhenStateNil_clonesApmServiceMap(t *testing.T) {
+	t.Parallel()
+
+	plan := &models.PanelModel{
+		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
+			Environment: types.StringValue("production"),
+		},
+	}
+	state := &models.PanelModel{}
+
+	alignPlanTypedPanelConfigsWhenStateNil(plan, state)
+
+	require.NotNil(t, state.ApmServiceMapConfig)
+	assert.Equal(t, "production", state.ApmServiceMapConfig.Environment.ValueString())
+}
