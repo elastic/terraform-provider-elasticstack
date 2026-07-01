@@ -69,36 +69,15 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 
 func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
 	var out diag.Diagnostics
-	flat, obj, shaped := panelkit.ResolvePanelAttrsShape(attrs, panelConfigAttrsKeyPrefix, "slo_id")
-	if !shaped {
-		out.AddAttributeError(attrPath.AtName(panelConfigAttrsKeyPrefix), "Missing slo_error_budget panel configuration", "SLO error budget panels require `slo_error_budget_config`.")
+	flat, obj, cfgPath, skip, diags := panelkit.ResolveConfigBlock(attrs, attrPath, panelConfigAttrsKeyPrefix,
+		"Missing slo_error_budget panel configuration", "SLO error budget panels require `slo_error_budget_config`.",
+		"slo_id")
+	out.Append(diags...)
+	if skip {
 		return out
 	}
-
-	cfgPath := attrPath
-	if !flat {
-		cfgPath = attrPath.AtName(panelConfigAttrsKeyPrefix)
-		nestedRaw := attrs[panelConfigAttrsKeyPrefix]
-		if nestedRaw != nil {
-			switch {
-			case nestedRaw.IsUnknown():
-				return out
-			case nestedRaw.IsNull():
-				out.AddAttributeError(cfgPath, "Missing slo_error_budget panel configuration", "SLO error budget panels require `slo_error_budget_config`.")
-				return out
-			}
-		}
-	}
-
-	var sloVal attr.Value
-	if flat {
-		sloVal = attrs["slo_id"]
-	} else {
-		sloVal = obj.Attributes()["slo_id"]
-	}
-
-	if deferSLO, missSLO := panelkit.StringAttrDeferOrMissing(sloVal); !deferSLO && missSLO {
-		out.AddAttributeError(cfgPath.AtName("slo_id"), `Invalid SLO error budget configuration`, "`slo_id` is required.")
+	if deferred, d := panelkit.ValidateRequiredStringField(attrs, obj, flat, cfgPath, "slo_id", `Invalid SLO error budget configuration`, "`slo_id` is required."); !deferred {
+		out.Append(d...)
 	}
 	return out
 }

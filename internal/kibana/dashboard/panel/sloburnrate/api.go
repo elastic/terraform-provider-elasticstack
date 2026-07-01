@@ -77,43 +77,24 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 // slo_burn_rate_config are absent and the validated attribute map targets that nested object.
 func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
 	var out diag.Diagnostics
-	flat, obj, shaped := panelkit.ResolvePanelAttrsShape(attrs, panelConfigAttrsKeyPrefix, "slo_id", "duration")
-	if !shaped {
-		out.AddAttributeError(attrPath.AtName(panelConfigAttrsKeyPrefix), "Missing SLO burn rate panel configuration", "SLO burn rate panels require `slo_burn_rate_config`.")
+	flat, obj, cfgPath, skip, diags := panelkit.ResolveConfigBlock(attrs, attrPath, panelConfigAttrsKeyPrefix,
+		"Missing SLO burn rate panel configuration", "SLO burn rate panels require `slo_burn_rate_config`.",
+		"slo_id", "duration")
+	out.Append(diags...)
+	if skip {
 		return out
 	}
 
-	cfgPath := attrPath
-	if !flat {
-		cfgPath = attrPath.AtName(panelConfigAttrsKeyPrefix)
-		nestedRaw := attrs[panelConfigAttrsKeyPrefix]
-		if nestedRaw != nil {
-			switch {
-			case nestedRaw.IsUnknown():
-				return out
-			case nestedRaw.IsNull():
-				out.AddAttributeError(cfgPath, "Missing SLO burn rate panel configuration", "SLO burn rate panels require `slo_burn_rate_config`.")
-				return out
-			}
-		}
+	if deferred, d := panelkit.ValidateRequiredStringField(attrs, obj, flat, cfgPath, "slo_id", `Invalid SLO burn rate configuration`, "`slo_id` is required."); !deferred {
+		out.Append(d...)
 	}
 
-	var sloVal, durVal attr.Value
-
-	switch {
-	case flat:
-		sloVal, durVal = attrs["slo_id"], attrs["duration"]
-	default:
-		objAttrs := obj.Attributes()
-		sloVal = objAttrs["slo_id"]
-		durVal = objAttrs["duration"]
+	var durVal attr.Value
+	if flat {
+		durVal = attrs["duration"]
+	} else {
+		durVal = obj.Attributes()["duration"]
 	}
-
-	deferSLO, missSLO := panelkit.StringAttrDeferOrMissing(sloVal)
-	if !deferSLO && missSLO {
-		out.AddAttributeError(cfgPath.AtName("slo_id"), `Invalid SLO burn rate configuration`, "`slo_id` is required.")
-	}
-
 	deferDur, missDur := panelkit.StringAttrDeferOrMissing(durVal)
 	switch {
 	case deferDur:
