@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
@@ -64,16 +63,15 @@ func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Valu
 
 // FromAPI maps a kbapi discover_session panel into Terraform panel models (parity with legacy populateDiscoverSessionPanelFromAPI).
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	dsPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	pm.Grid = panelkit.GridFromAPI(dsPanel.Grid.X, dsPanel.Grid.Y, dsPanel.Grid.W, dsPanel.Grid.H)
-	pm.ID = panelkit.IDFromAPI(dsPanel.Id)
-	pm.ConfigJSON = panelkit.PanelConfigJSONNull()
-
-	return populateDiscoverSessionPanelFromAPI(ctx, pm, prior, dsPanel)
+	return panelkit.SimpleFromAPI(ctx, pm, prior,
+		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession,
+		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
+			return p.Grid, p.Id
+		},
+		func(pm *models.PanelModel, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession) diag.Diagnostics {
+			return populateDiscoverSessionPanelFromAPI(ctx, pm, prior, p)
+		},
+	)
 }
 
 // ToAPI serializes Terraform discover_session panel state into kbapi (parity with legacy discoverSessionPanelToAPI).

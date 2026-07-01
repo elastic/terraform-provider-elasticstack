@@ -48,19 +48,16 @@ func (Handler) AlignStateFromPlan(_ context.Context, plan, state *models.PanelMo
 }
 
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	esqlPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl()
-	if err != nil {
-		var d diag.Diagnostics
-		d.AddError("Dashboard panel decode", err.Error())
-		return d
-	}
-
-	pm.Grid = panelkit.GridFromAPI(esqlPanel.Grid.X, esqlPanel.Grid.Y, esqlPanel.Grid.W, esqlPanel.Grid.H)
-	pm.ID = panelkit.IDFromAPI(esqlPanel.Id)
-	pm.ConfigJSON = panelkit.PanelConfigJSONNull()
-	PopulateFromAPI(pm, prior, esqlPanel.Config)
-	_ = ctx
-	return nil
+	return panelkit.SimpleFromAPI(ctx, pm, prior,
+		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl,
+		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
+			return p.Grid, p.Id
+		},
+		func(pm *models.PanelModel, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl) diag.Diagnostics {
+			PopulateFromAPI(pm, prior, p.Config)
+			return nil
+		},
+	)
 }
 
 func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
