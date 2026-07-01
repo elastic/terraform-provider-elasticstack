@@ -26,9 +26,6 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 15
     }
-    aiops_log_rate_analysis_config = {
-      data_view_id = "logs-*"
-    }
     config_json = "{}"
   }]
 }

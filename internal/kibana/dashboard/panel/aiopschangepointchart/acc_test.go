@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/aiopschangepointchart"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -33,7 +34,7 @@ import (
 func TestAccResourceDashboardAiopsChangePointChart(t *testing.T) {
 	dashboardTitle := "Test Dashboard AIOps Change Point Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, aiopschangepointchart.MinKibanaAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -138,7 +139,7 @@ func TestAccResourceDashboardAiopsChangePointChartInvalidConfig(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
 				},
-				ExpectError: regexp.MustCompile(`Unsupported panel type for config_json`),
+				ExpectError: regexp.MustCompile(`Invalid Configuration`),
 			},
 			// aiops_change_point_chart_config on a non-aiops panel is rejected.
 			{
@@ -159,7 +160,7 @@ func TestAccResourceDashboardAiopsChangePointChartInvalidConfig(t *testing.T) {
 func TestAccResourceDashboardAiopsMultiPanel(t *testing.T) {
 	dashboardTitle := "Test Dashboard AIOps Multi Panel " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, aiopschangepointchart.MinKibanaAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },

@@ -26,10 +26,6 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 15
     }
-    aiops_pattern_analysis_config = {
-      data_view_id = "logs-*"
-      field_name   = "message"
-    }
     config_json = "{}"
   }]
 }

@@ -26,10 +26,6 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 15
     }
-    aiops_change_point_chart_config = {
-      data_view_id = "metrics-*"
-      metric_field = "system.cpu.total.pct"
-    }
     config_json = "{}"
   }]
 }

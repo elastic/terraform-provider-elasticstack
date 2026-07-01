@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/aiopslograteanalysis"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -34,7 +35,7 @@ import (
 func TestAccResourceDashboardAiopsLogRateAnalysis(t *testing.T) {
 	dashboardTitle := "Test Dashboard AIOps Log Rate Analysis " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, aiopslograteanalysis.MinKibanaAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -133,7 +134,7 @@ func TestAccResourceDashboardAiopsLogRateAnalysisInvalidConfig(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
 				},
-				ExpectError: regexp.MustCompile(`Unsupported panel type for config_json`),
+				ExpectError: regexp.MustCompile(`Invalid Configuration`),
 			},
 		},
 	})
