@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/mlanomalyswimlane"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -32,7 +33,7 @@ import (
 func TestAccResourceDashboardMlAnomalySwimlaneOverall(t *testing.T) {
 	dashboardTitle := "Test Dashboard ML Anomaly Swimlane Overall " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, mlanomalyswimlane.MinKibanaAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -109,7 +110,7 @@ func TestAccResourceDashboardMlAnomalySwimlaneOverall(t *testing.T) {
 func TestAccResourceDashboardMlAnomalySwimlaneViewBy(t *testing.T) {
 	dashboardTitle := "Test Dashboard ML Anomaly Swimlane ViewBy " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, mlanomalyswimlane.MinKibanaAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -140,6 +141,23 @@ func TestAccResourceDashboardMlAnomalySwimlaneViewBy(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("view_by"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.per_page"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.title"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.description"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.hide_title"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.hide_border"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.time_range"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("view_by_updated"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -159,7 +177,7 @@ func TestAccResourceDashboardMlAnomalySwimlaneViewBy(t *testing.T) {
 func TestAccResourceDashboardMlAnomalySwimlaneOptionalFields(t *testing.T) {
 	dashboardTitle := "Test Dashboard ML Anomaly Swimlane Optionals " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, mlanomalyswimlane.MinKibanaAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -219,6 +237,16 @@ func TestAccResourceDashboardMlAnomalySwimlaneOptionalFields(t *testing.T) {
 				},
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.per_page", "25"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.title", "Updated Swim Lane"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.description", "Updated description"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.hide_title", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.hide_border", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.time_range.from", "now-30d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.time_range.to", "now"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_swimlane_config.time_range.mode", "absolute"),
+				),
 			},
 		},
 	})
@@ -236,7 +264,7 @@ func TestAccResourceDashboardMlAnomalySwimlaneInvalidSwimlaneType(t *testing.T) 
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
 				},
-				ExpectError: regexp.MustCompile(`(?s)view_by`),
+				ExpectError: regexp.MustCompile(`(?s)must be set when\s+dependent field equals "viewBy"`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -244,7 +272,7 @@ func TestAccResourceDashboardMlAnomalySwimlaneInvalidSwimlaneType(t *testing.T) 
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
 				},
-				ExpectError: regexp.MustCompile(`(?s)view_by`),
+				ExpectError: regexp.MustCompile(`(?s)cannot be set when\s+dependent field equals "overall"`),
 			},
 		},
 	})
@@ -294,7 +322,7 @@ func TestAccResourceDashboardMlAnomalySwimlaneInvalidConfig(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
 				},
-				ExpectError: regexp.MustCompile(`(?s)job_ids`),
+				ExpectError: regexp.MustCompile(`(?s)` + "`job_ids` must contain at least one entry"),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -302,7 +330,7 @@ func TestAccResourceDashboardMlAnomalySwimlaneInvalidConfig(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
 				},
-				ExpectError: regexp.MustCompile(`(?s)job_ids`),
+				ExpectError: regexp.MustCompile(`(?s)attribute "job_ids" is required`),
 			},
 		},
 	})
