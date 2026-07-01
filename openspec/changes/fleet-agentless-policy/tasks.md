@@ -60,8 +60,10 @@
 
 ## 7. Resource: registration
 
-- [ ] 7.1 Register `agentlesspolicy.NewResource()` in the Plugin Framework provider's resource list
-- [ ] 7.2 Run `make build` and confirm the resource appears in `terraform providers schema -json` output
+- [x] 7.1 Register `agentlesspolicy.NewResource()` in the Plugin Framework provider's resource list
+  - Registered unconditionally in `provider/plugin_framework.go`'s `resources()` (next to `proxy.NewResource`), not in `experimentalResources()`. `experimentalResources()` gates resources that are not yet part of the standard provider surface (currently only `kibanatag.NewResource`; see the archived `graduate-kibana-dashboard` change's design.md for the documented graduation pattern) -- it is unrelated to whether the underlying Kibana API itself is labeled experimental. The agentless policy resource's own "experimental" wording (Task 6.3) is a schema-description-level notice about Kibana API stability, matching how other Fleet resources (e.g. `agentpolicy`'s `monitoring_runtime_experimental` field) document experimental *API* behavior while still being registered on the standard surface. Neither `proposal.md`/`design.md` nor any sibling capability spec calls for `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL` gating here.
+- [x] 7.2 Run `make build` and confirm the resource appears in `terraform providers schema -json` output
+  - Verified by building the provider binary, installing it into the local Terraform plugin cache, and running `terraform init` + `terraform providers schema -json` against a scratch config requiring `elastic/elasticstack 0.16.2`. `elasticstack_fleet_agentless_policy` is present in `resource_schemas` with the full attribute set (`id`, `policy_id`, `name`, `description`, `namespace`, `space_ids`, `package`, `policy_template`, `vars_json`, `var_group_selections`, `inputs`, `cloud_connector`, `global_data_tags`, `additional_datastreams_permissions`, `create_dataset_templates`, `force`, `force_delete`, `skip_topology_check`, `created_at`, `updated_at`, `timeouts`) and a `kibana_connection` block, with no `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL` env var set.
 
 ## 8. Acceptance tests
 
