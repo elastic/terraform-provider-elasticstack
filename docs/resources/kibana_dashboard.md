@@ -333,7 +333,7 @@ Optional:
 - `description` (String) Optional panel description.
 - `hide_border` (Boolean) When true, hides the panel border.
 - `hide_title` (Boolean) When true, hides the panel title.
-- `max_series_to_plot` (Number) Maximum number of change points to visualise. Kibana default is `6`.
+- `max_series_to_plot` (Number) Maximum number of change points to visualise. Kibana default is `6`. Float32 in state matches the Kibana API and avoids refresh drift.
 - `partitions` (Set of String) Optional split field values to include in the panel. Modelled as a set to prevent plan drift from API-returned ordering; duplicate entries are silently deduplicated.
 - `split_field` (String) The optional field used to split change-point results.
 - `time_range` (Attributes) Optional panel time range (`from`, `to`, optional `mode`). When omitted, the panel inherits the dashboard `time_range` and this attribute stays null in state (REQ-009). (see [below for nested schema](#nestedatt--panels--aiops_change_point_chart_config--time_range))
@@ -398,7 +398,7 @@ Optional:
 - `hide_title` (Boolean) When true, hides the panel title.
 - `minimum_time_range` (String) Minimum time range for pattern analysis. One of `no_minimum`, `1_week`, `1_month`, `3_months`, `6_months`.
 - `random_sampler_mode` (String) The random sampler mode. One of `off`, `on_automatic`, `on_manual`.
-- `random_sampler_probability` (Number) Sampling probability, only meaningful when `random_sampler_mode = on_manual`. Must be between `0.00001` and `0.5`.
+- `random_sampler_probability` (Number) Sampling probability, only meaningful when `random_sampler_mode = on_manual`. Must be between `0.00001` and `0.5`. Float32 in state matches the Kibana API and avoids refresh drift.
 - `time_range` (Attributes) Optional panel time range (`from`, `to`, optional `mode`). When omitted, the panel inherits the dashboard `time_range` and this attribute stays null in state (REQ-009). (see [below for nested schema](#nestedatt--panels--aiops_pattern_analysis_config--time_range))
 - `title` (String) Optional panel title shown in the panel header.
 
@@ -3861,7 +3861,7 @@ Optional:
 - `description` (String) Optional panel description.
 - `hide_border` (Boolean) When true, hides the panel border.
 - `hide_title` (Boolean) When true, hides the panel title.
-- `max_series_to_plot` (Number) Maximum number of change points to visualise. Kibana default is `6`.
+- `max_series_to_plot` (Number) Maximum number of change points to visualise. Kibana default is `6`. Float32 in state matches the Kibana API and avoids refresh drift.
 - `partitions` (Set of String) Optional split field values to include in the panel. Modelled as a set to prevent plan drift from API-returned ordering; duplicate entries are silently deduplicated.
 - `split_field` (String) The optional field used to split change-point results.
 - `time_range` (Attributes) Optional panel time range (`from`, `to`, optional `mode`). When omitted, the panel inherits the dashboard `time_range` and this attribute stays null in state (REQ-009). (see [below for nested schema](#nestedatt--sections--panels--aiops_change_point_chart_config--time_range))
@@ -3926,7 +3926,7 @@ Optional:
 - `hide_title` (Boolean) When true, hides the panel title.
 - `minimum_time_range` (String) Minimum time range for pattern analysis. One of `no_minimum`, `1_week`, `1_month`, `3_months`, `6_months`.
 - `random_sampler_mode` (String) The random sampler mode. One of `off`, `on_automatic`, `on_manual`.
-- `random_sampler_probability` (Number) Sampling probability, only meaningful when `random_sampler_mode = on_manual`. Must be between `0.00001` and `0.5`.
+- `random_sampler_probability` (Number) Sampling probability, only meaningful when `random_sampler_mode = on_manual`. Must be between `0.00001` and `0.5`. Float32 in state matches the Kibana API and avoids refresh drift.
 - `time_range` (Attributes) Optional panel time range (`from`, `to`, optional `mode`). When omitted, the panel inherits the dashboard `time_range` and this attribute stays null in state (REQ-009). (see [below for nested schema](#nestedatt--sections--panels--aiops_pattern_analysis_config--time_range))
 - `title` (String) Optional panel title shown in the panel header.
 
