@@ -64,9 +64,11 @@ func TestAccResourceDashboardMlSingleMetricViewerSelectedEntities(t *testing.T) 
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
-				ResourceName:            "elasticstack_kibana_dashboard.test",
-				ImportState:             true,
-				ImportStateVerify:       true,
+				ResourceName:      "elasticstack_kibana_dashboard.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				// Kibana returns selected_detector_index=0 when unset; import has no prior
+				// Terraform state to null-preserve against, so the default surfaces as 0.
 				ImportStateVerifyIgnore: []string{"panels.0.ml_single_metric_viewer_config.selected_detector_index"},
 			},
 			{
@@ -141,7 +143,7 @@ func TestAccResourceDashboardMlSingleMetricViewerInvalidJobIds(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
 				},
-				ExpectError: regexp.MustCompile(`(?s)` + "`job_ids` must contain exactly one entry"),
+				ExpectError: regexp.MustCompile(`(?s)at most 1 elements, got: 2`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -149,7 +151,7 @@ func TestAccResourceDashboardMlSingleMetricViewerInvalidJobIds(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
 				},
-				ExpectError: regexp.MustCompile(`(?s)` + "`job_ids` must contain exactly one entry"),
+				ExpectError: regexp.MustCompile(`(?s)at least 1 elements, got: 0`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -188,9 +190,11 @@ func TestAccResourceDashboardMlSingleMetricViewerForecastAndFunction(t *testing.
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
-				ResourceName:            "elasticstack_kibana_dashboard.test",
-				ImportState:             true,
-				ImportStateVerify:       true,
+				ResourceName:      "elasticstack_kibana_dashboard.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				// Kibana returns selected_detector_index=0 when unset; import has no prior
+				// Terraform state to null-preserve against, so the default surfaces as 0.
 				ImportStateVerifyIgnore: []string{"panels.0.ml_single_metric_viewer_config.selected_detector_index"},
 			},
 			{
@@ -199,6 +203,19 @@ func TestAccResourceDashboardMlSingleMetricViewerForecastAndFunction(t *testing.
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.forecast_id", "another-fake-forecast-id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.function_description", "max"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_forecast_function_updated"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.forecast_id", "another-fake-forecast-id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.function_description", "max"),
@@ -258,6 +275,11 @@ func TestAccResourceDashboardMlSingleMetricViewerNullPreservation(t *testing.T) 
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.selected_detector_index"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.forecast_id"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.function_description"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.title"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.description"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.hide_title"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.hide_border"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.time_range"),
 				),
 			},
 		},
@@ -300,6 +322,94 @@ func TestAccResourceDashboardMlSingleMetricViewerSelectedDetectorIndex(t *testin
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.selected_detector_index", "5"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_detector_index_updated"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.selected_detector_index", "5"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardMlSingleMetricViewerOptionalFields(t *testing.T) {
+	dashboardTitle := "Test Dashboard ML SMV Optionals " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, mlsinglemetricviewer.MinKibanaAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_optionals"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.job_ids.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.title", "Single Metric Viewer"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.description", "SMV panel"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.hide_title", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.hide_border", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.time_range.from", "now-7d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.time_range.to", "now"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.time_range.mode", "relative"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_optionals"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ResourceName:      "elasticstack_kibana_dashboard.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				// Kibana returns selected_detector_index=0 when unset; import has no prior
+				// Terraform state to null-preserve against, so the default surfaces as 0.
+				ImportStateVerifyIgnore: []string{"panels.0.ml_single_metric_viewer_config.selected_detector_index"},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_optionals_updated"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.title", "Updated SMV"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.description", "Updated description"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.hide_title", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.hide_border", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.time_range.from", "now-30d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.time_range.to", "now"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.time_range.mode", "absolute"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_optionals_updated"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.title", "Updated SMV"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.description", "Updated description"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.hide_title", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.hide_border", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.time_range.from", "now-30d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.time_range.to", "now"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_single_metric_viewer_config.time_range.mode", "absolute"),
 				),
 			},
 		},
