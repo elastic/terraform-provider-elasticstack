@@ -234,9 +234,17 @@ func TestAccDashboardPanelApmServiceMap_allFilters(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.alert_status_filter.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.alert_status_filter.*", "active"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.alert_status_filter.*", "delayed"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.anomaly_severity_filter.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.anomaly_severity_filter.*", "major"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.anomaly_severity_filter.*", "critical"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.connection_filter.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.connection_filter.*", "connected"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.connection_filter.*", "orphaned"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.slo_status_filter.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.slo_status_filter.*", "healthy"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.slo_status_filter.*", "noData"),
 				),
 			},
 			{
@@ -290,6 +298,17 @@ func TestAccDashboardPanelApmServiceMap_full(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.time_range.from", "now-7d"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.time_range.to", "now"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.time_range.mode", "relative"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.alert_status_filter.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.alert_status_filter.*", "active"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.alert_status_filter.*", "recovered"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.anomaly_severity_filter.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.anomaly_severity_filter.*", "warning"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.anomaly_severity_filter.*", "minor"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.connection_filter.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.connection_filter.*", "connected"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.slo_status_filter.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.slo_status_filter.*", "degrading"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.slo_status_filter.*", "violated"),
 				),
 			},
 			{
@@ -310,6 +329,40 @@ func TestAccDashboardPanelApmServiceMap_full(t *testing.T) {
 				},
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+func TestAccDashboardPanelApmServiceMap_noConfig(t *testing.T) {
+	dashboardTitle := "Test Dashboard APM Service Map No Config " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, apmservicemap.MinKibanaAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_config"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "apm_service_map"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_config"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ResourceName:      "elasticstack_kibana_dashboard.test",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
