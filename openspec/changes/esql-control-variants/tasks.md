@@ -47,9 +47,9 @@
 - [x] 8.2 Unit tests: options_list ES|QL branch round-trip, `values_source` validator.
 - [x] 8.3 Unit tests: range_slider Field branch and ES|QL branch round-trips.
 - [x] 8.4 State upgrade tests (task 7.3 above).
-- [ ] 8.5 Acceptance test for `options_list_control` demonstrating `by_field` and (in a separate step) `by_esql` config.
-- [ ] 8.6 Acceptance test for `range_slider_control` demonstrating both branches.
-- [ ] 8.7 Acceptance test verifying that a pre-upgrade (v0 flat) state is successfully migrated on plan/apply.
+- [x] 8.5 Acceptance test for `options_list_control` demonstrating `by_field` and (in a separate step) `by_esql` config.
+- [x] 8.6 Acceptance test for `range_slider_control` demonstrating both branches.
+- [x] 8.7 Acceptance test verifying that a pre-upgrade (v0 flat) state is successfully migrated on plan/apply.
 
 ## 9. Documentation and CHANGELOG
 
