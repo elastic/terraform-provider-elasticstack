@@ -24,16 +24,18 @@ The Kibana Dashboard API defines a first-class `ml_anomaly_charts` panel type wh
 | `major`    | `{min: 50, max: 74}` |
 | `critical` | `{min: 75}` (open-ended) |
 
-- On read, the provider maps the API response back to the named severity shortcut when the `{min, max}` pair matches a canonical band; otherwise it records the raw numeric range.
+- On read, the provider preserves the practitioner-chosen form of each `severity_threshold` item — storing the named `severity` when the practitioner configured a named severity, and the raw `min`/`max` when they configured limits — recovered from prior state so a stable configuration produces no plan diff. Normalization to the named form is permitted only on import, where no prior form exists to preserve.
 - Apply REQ-009 null-preservation semantics on all optional fields (consistent with every other flat-config panel).
 - `config_json` is rejected for `ml_anomaly_charts` panels (consistent with REQ-010 policy).
 
 ## Capabilities
 
 ### New Capabilities
+
 None.
 
 ### Modified Capabilities
+
 - `kibana-dashboard`: extend the dashboard panel registry with a new `ml_anomaly_charts` panel handler (REQ-047).
 
 ## Impact

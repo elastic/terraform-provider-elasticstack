@@ -10,7 +10,7 @@ The block accepts the following attributes:
 - `max_series_to_plot` (optional float64): maximum number of anomaly series to plot. When null in state, the attribute is omitted from the API request.
 - `severity_threshold` (optional list of objects, min 1 item when present): filters which severity bands are displayed. Each list item is a union — exactly one of the following must be set per item:
   - `severity` (string, one of `low`, `warning`, `minor`, `major`, `critical`): a named severity shortcut. The model layer SHALL expand named severities to their canonical `{min, max}` API pairs at write time.
-  - `min` (int64) plus optional `max` (int64): a raw numeric range. `max` MAY be set only when `min` is set (and `severity` is unset). Setting `severity` together with `min` or `max` on the same item SHALL produce an error diagnostic at plan time.
+  - `min` (int64) plus optional `max` (int64): a raw numeric range. `max` may be set only when `min` is set and `severity` is unset; when `max` is set, `min` must also be set. Setting both `severity` and `min` on the same item SHALL produce an error diagnostic at plan time. Setting `severity` together with `max` SHALL produce an error diagnostic at plan time.
 - `title` (optional string): panel title. Subject to REQ-009 null-preservation.
 - `description` (optional string): panel description. Subject to REQ-009 null-preservation.
 - `hide_title` (optional bool): when true, hides the panel title. Subject to REQ-009 null-preservation.
@@ -29,7 +29,13 @@ The model layer SHALL expand named severity values to the following canonical `{
 
 On write, the provider SHALL map `ml_anomaly_charts_config` to the `config` object in the `KibanaHTTPAPIsKbnDashboardPanelTypeMlAnomalyCharts` API schema. Optional fields SHALL be included only when set in state; absent optional fields SHALL NOT be sent to the API.
 
-On read, the provider SHALL repopulate `ml_anomaly_charts_config` from the API response using REQ-009 null-preservation. For `severity_threshold` items: if the API returns a `{min, max}` pair that matches a canonical band, the provider SHALL store it as the named `severity` string; otherwise it SHALL store the raw `min`/`max` integers. The `critical` band (API: `{min: 75}`, no `max` field) SHALL map to `severity = "critical"` on read.
+On read, the provider SHALL repopulate `ml_anomaly_charts_config` from the API response using REQ-009 null-preservation, extended to the **representation form** of `severity_threshold` items. The API encodes `severity_threshold` as `{min, max}` pairs only; it conveys no information about whether the practitioner authored a named `severity` or a raw numeric range. Therefore the chosen form is recovered from prior state, not inferred by normalizing:
+
+- When the prior item holds a named `severity` (and `min`/`max` are null), the provider SHALL store the named form, deriving the label from the API `{min, max}` pair via the canonical-band table. The `critical` band (API: `{min: 75}`, no `max` field) SHALL map to `severity = "critical"`. If the API value no longer matches any canonical band, the provider SHALL fall back to the raw `min`/`max` form (surfacing as drift).
+- When the prior item holds raw `min`/`max` (and `severity` is null), the provider SHALL store the raw `min`/`max` verbatim from the API, even when the pair coincidentally equals a canonical band.
+- On import (no prior state), the provider SHALL default to the named form when the API `{min, max}` matches a canonical band, and to the raw form otherwise.
+
+The provider SHALL NOT normalize a practitioner-authored raw range into a named `severity` on read. While the configured values match current state, a subsequent plan SHALL show no changes.
 
 `config_json` SHALL NOT be supported for `ml_anomaly_charts` panels; using `config_json` with `type = "ml_anomaly_charts"` SHALL return an error diagnostic (per REQ-010 policy).
 
@@ -57,12 +63,39 @@ Implementation: new package `internal/kibana/dashboard/panel/mlanomalycharts/` w
 - THEN state SHALL contain `min = 10` and `max = 20` (not coerced to a named severity)
 - AND a subsequent plan SHALL show no changes
 
-#### Scenario: Named severity collision round-trip
+#### Scenario: Raw range coinciding with a canonical band is preserved (no diff)
 
-- GIVEN a panel where the practitioner set `severity_threshold = [{ min = 3, max = 24 }]` (matches `warning` canonical band)
-- WHEN the post-apply read occurs
-- THEN the provider SHALL store `severity = "warning"` in state (canonical form preferred)
-- AND a subsequent plan against the original `{ min = 3, max = 24 }` configuration MAY show a diff (the read normalizes to named form)
+- GIVEN a panel where the practitioner set `severity_threshold = [{ min = 3, max = 24 }]` (coincides with the `warning` canonical band)
+- WHEN create runs and the post-apply read returns `{min: 3, max: 24}`
+- THEN the provider SHALL store `min = 3` and `max = 24` in state (NOT coerced to `severity = "warning"`)
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: severity_threshold form is preserved across refresh
+
+- GIVEN state holds `severity_threshold = [{ severity = "major" }, { min = 10, max = 20 }]`
+- WHEN a refresh runs and the API returns `[{min: 50, max: 74}, {min: 10, max: 20}]`
+- THEN state SHALL retain the first item as `severity = "major"` and the second as `min = 10, max = 20`
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: critical severity preserved in raw form when authored raw
+
+- GIVEN a panel where the practitioner set `severity_threshold = [{ min = 75 }]` (raw form, coincides with the `critical` canonical band)
+- WHEN create runs and the post-apply read returns `{min: 75}` (no `max` field)
+- THEN the provider SHALL store `min = 75` with `max` null in state (NOT coerced to `severity = "critical"`)
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Switching severity form is a configuration change
+
+- GIVEN state holds `severity_threshold = [{ severity = "warning" }]`
+- WHEN the configuration changes to `{ min = 3, max = 24 }` (same band, raw form)
+- THEN the plan SHALL report a change for that item
+- AND after apply the state SHALL settle to `{ min = 3, max = 24 }` with a subsequent plan showing no changes
+
+#### Scenario: Import defaults to named form for canonical bands
+
+- GIVEN an existing panel whose API `severity_threshold` is `[{min: 3, max: 24}]` and no prior Terraform state
+- WHEN the panel is imported
+- THEN state SHALL store `severity = "warning"` (named form preferred only on import, where no practitioner form exists to preserve)
 
 #### Scenario: Plan-time validation — both severity and min set
 
