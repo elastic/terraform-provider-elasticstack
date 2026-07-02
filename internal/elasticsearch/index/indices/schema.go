@@ -19,9 +19,8 @@ package indices
 
 import (
 	"context"
-	"regexp"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indexname"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -56,15 +55,13 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 						"name": schema.StringAttribute{
 							Description: "Name of the index.",
 							Required:    true,
-							Validators: []validator.String{
-								stringvalidator.LengthBetween(1, 255),
-								stringvalidator.NoneOf(".", ".."),
-								stringvalidator.RegexMatches(regexp.MustCompile(`^[^-_+]`), "cannot start with -, _, +"),
-								stringvalidator.RegexMatches(
-									regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`),
-									index.IndexNameAllowedCharsMessage,
-								),
-							},
+							Validators: append(
+								[]validator.String{
+									stringvalidator.LengthBetween(1, 255),
+									stringvalidator.NoneOf(".", ".."),
+								},
+								indexname.NameValidators()...,
+							),
 						},
 						// Static settings that can only be set on creation
 						"number_of_shards": schema.Int64Attribute{
