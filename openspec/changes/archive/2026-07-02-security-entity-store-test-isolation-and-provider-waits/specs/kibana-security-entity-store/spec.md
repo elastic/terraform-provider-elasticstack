@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: Delete waits for uninstall completion (REQ-WAIT-001)
 
@@ -55,8 +55,6 @@ hard error), to avoid breaking `terraform refresh` on a slow stack.
 - THEN the provider SHALL emit a warning diagnostic
 - AND SHALL continue reading with whatever engine data is available
 - AND SHALL NOT fail the read with a hard error
-
-## ADDED Requirements
 
 ### Requirement: Install retries on HTTP 500 within the configured timeout (REQ-WAIT-003)
 
