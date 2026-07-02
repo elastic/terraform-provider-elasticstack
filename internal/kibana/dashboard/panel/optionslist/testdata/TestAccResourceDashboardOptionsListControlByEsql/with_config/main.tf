@@ -28,9 +28,11 @@ resource "elasticstack_kibana_dashboard" "test" {
     }
     options_list_control_config = {
       by_esql = {
-        esql_query    = "FROM logs-* | STATS BY host.name"
-        values_source = "esql_query"
-        title         = "Host name"
+        esql_query       = "FROM logs-* | STATS BY host.name"
+        values_source    = "esql_query"
+        title            = "Host name"
+        search_technique = "prefix"
+        single_select    = true
       }
     }
   }]

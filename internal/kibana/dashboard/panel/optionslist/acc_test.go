@@ -126,6 +126,8 @@ func TestAccResourceDashboardOptionsListControlByEsql(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_esql.esql_query", "FROM logs-* | STATS BY host.name"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_esql.values_source", "esql_query"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_esql.title", "Host name"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_esql.search_technique", "prefix"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_esql.single_select", "true"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_field"),
 				),
 			},
