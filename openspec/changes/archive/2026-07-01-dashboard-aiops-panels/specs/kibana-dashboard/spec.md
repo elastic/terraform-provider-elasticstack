@@ -1,6 +1,6 @@
 ## ADDED Requirements
 
-### Requirement: AIOps log rate analysis panel behavior (REQ-047)
+### Requirement: AIOps log rate analysis panel behavior (REQ-050)
 
 The `elasticstack_kibana_dashboard` resource SHALL support a panel of `type = "aiops_log_rate_analysis"` via an `aiops_log_rate_analysis_config` block. The config block SHALL accept:
 
@@ -50,7 +50,7 @@ No drilldowns are supported on this panel type (the API model does not expose th
 
 ---
 
-### Requirement: AIOps pattern analysis panel behavior (REQ-048)
+### Requirement: AIOps pattern analysis panel behavior (REQ-051)
 
 The `elasticstack_kibana_dashboard` resource SHALL support a panel of `type = "aiops_pattern_analysis"` via an `aiops_pattern_analysis_config` block. The config block SHALL accept:
 
@@ -58,7 +58,7 @@ The `elasticstack_kibana_dashboard` resource SHALL support a panel of `type = "a
 - `field_name` (required string): the text field on which to run pattern analysis.
 - `minimum_time_range` (optional string, enum): one of `no_minimum`, `1_week`, `1_month`, `3_months`, `6_months`. Invalid values SHALL be rejected at plan time.
 - `random_sampler_mode` (optional string, enum): one of `off`, `on_automatic`, `on_manual`. Invalid values SHALL be rejected at plan time.
-- `random_sampler_probability` (optional float64): the sampling probability, bounded to `[0.00001, 0.5]`. Values outside this range SHALL be rejected at plan time. This field is only meaningful when `random_sampler_mode = "on_manual"`.
+- `random_sampler_probability` (optional float32): the sampling probability, bounded to `[0.00001, 0.5]`. Values outside this range SHALL be rejected at plan time. This field is only meaningful when `random_sampler_mode = "on_manual"`.
 - Standard panelkit presentation passthroughs (all optional): `title`, `description`, `hide_title`, `hide_border`, `time_range`.
 
 On create and update the resource SHALL serialize non-null optional enum and float fields into the `KibanaHTTPAPIsKbnDashboardPanelTypeAiopsPatternAnalysis` API panel type. On read the resource SHALL apply REQ-009 null-preservation. On import the resource SHALL populate `data_view_id` and `field_name` from the API.
@@ -98,7 +98,7 @@ The resource SHALL reject simultaneous `aiops_pattern_analysis_config` and `conf
 
 ---
 
-### Requirement: AIOps change point chart panel behavior (REQ-049)
+### Requirement: AIOps change point chart panel behavior (REQ-052)
 
 The `elasticstack_kibana_dashboard` resource SHALL support a panel of `type = "aiops_change_point_chart"` via an `aiops_change_point_chart_config` block. The config block SHALL accept:
 
@@ -106,8 +106,8 @@ The `elasticstack_kibana_dashboard` resource SHALL support a panel of `type = "a
 - `metric_field` (required string): the metric field used by the aggregation function.
 - `aggregation_function` (optional string, enum): one of `avg`, `max`, `min`, `sum`. Invalid values SHALL be rejected at plan time.
 - `split_field` (optional string): the optional field used to split change-point results.
-- `partitions` (optional set of strings): optional split field values to include in the panel. Modelled as a set to prevent plan drift from API-returned ordering. Semantically a filter set; duplicate entries are silently deduplicated.
-- `max_series_to_plot` (optional float64): maximum number of change points to visualise. Kibana default is 6. The resource SHALL null-preserve this field when the user omitted it.
+- `partitions` (optional set of strings): optional split field values to include in the panel. Modelled as a set to prevent plan drift from API-returned ordering. Semantically a filter set; duplicate entries are silently deduplicated. An empty set is not meaningful (omit the attribute to disable filtering); a non-null set SHALL contain at least one entry and SHALL be rejected at plan time otherwise.
+- `max_series_to_plot` (optional float32): maximum number of change points to visualise. Kibana default is 6. The resource SHALL null-preserve this field when the user omitted it.
 - `view_type` (optional string, enum): one of `charts`, `table`. Invalid values SHALL be rejected at plan time.
 - Standard panelkit presentation passthroughs (all optional): `title`, `description`, `hide_title`, `hide_border`, `time_range`.
 
@@ -127,6 +127,12 @@ The resource SHALL reject simultaneous `aiops_change_point_chart_config` and `co
 - GIVEN `aiops_change_point_chart_config` with `partitions = ["host-b", "host-a", "host-c"]`
 - WHEN the resource creates the dashboard and Kibana returns the partitions in a different order
 - THEN state SHALL reflect the set (regardless of order) and a plan SHALL show no changes
+
+#### Scenario: Empty partitions set rejected at plan time
+
+- GIVEN `aiops_change_point_chart_config` with `partitions = []`
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating `partitions` must contain at least one entry; the user SHALL omit the attribute instead
 
 #### Scenario: All optional fields round-trip
 

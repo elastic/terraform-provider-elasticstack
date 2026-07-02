@@ -43,6 +43,9 @@ type PanelModel struct {
 	MlAnomalySwimlaneConfig       *MlAnomalySwimlaneConfigModel                     `tfsdk:"ml_anomaly_swimlane_config"`
 	MlSingleMetricViewerConfig    *MlSingleMetricViewerConfigModel                  `tfsdk:"ml_single_metric_viewer_config"`
 	ApmServiceMapConfig           *ApmServiceMapConfigModel                         `tfsdk:"apm_service_map_config"`
+	AiopsLogRateAnalysisConfig    *AiopsLogRateAnalysisConfigModel                  `tfsdk:"aiops_log_rate_analysis_config"`
+	AiopsPatternAnalysisConfig    *AiopsPatternAnalysisConfigModel                  `tfsdk:"aiops_pattern_analysis_config"`
+	AiopsChangePointChartConfig   *AiopsChangePointChartConfigModel                 `tfsdk:"aiops_change_point_chart_config"`
 	ConfigJSON                    customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
