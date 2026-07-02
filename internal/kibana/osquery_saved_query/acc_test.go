@@ -143,7 +143,10 @@ func TestAccResourceOsquerySavedQuery(t *testing.T) {
 						if got == "" {
 							return fmt.Errorf("saved_object_id is empty after update")
 						}
-						if initialSavedObjectID != "" && got != initialSavedObjectID {
+						if initialSavedObjectID == "" {
+							return fmt.Errorf("initial saved_object_id was not captured")
+						}
+						if got != initialSavedObjectID {
 							return fmt.Errorf("saved_object_id changed unexpectedly: was %q, now %q", initialSavedObjectID, got)
 						}
 						return nil
