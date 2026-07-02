@@ -76,6 +76,15 @@ func Int64Pointer(v types.Int64) *int64 {
 	return &val
 }
 
+// Int64ToFloat32Ptr converts a types.Int64 to a *float32, returning nil when null or unknown.
+func Int64ToFloat32Ptr(v types.Int64) *float32 {
+	if p := Int64Pointer(v); p != nil {
+		val := float32(*p)
+		return &val
+	}
+	return nil
+}
+
 // IntPointerToInt64Value converts a *int to a types.Int64, returning types.Int64Null() when the pointer is nil.
 func IntPointerToInt64Value(v *int) types.Int64 {
 	return types.Int64PointerValue(Itol(v))
