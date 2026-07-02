@@ -24,15 +24,27 @@
 // self-managed stacks ("supports_agentless is only allowed in serverless and
 // cloud environments"), and the resource's own topology preflight
 // (topology.go) additionally refuses self-managed stacks it can positively
-// identify. There is no environment-variable-based "this is definitely
-// cloud" signal elsewhere in the repo's acctest package to gate on, so these
-// tests rely on the operator running them against a supported environment
-// (as design.md's Open Question 2 anticipates) -- exactly as the resource
-// itself behaves in production. versionutils.SkipIfUnsupported still
-// provides the Kibana-version part of the gate (see
-// TestAgentlessPolicy_VersionSkipGating below for why no separate
-// TestAcc-level version-gate test is added on top of that and the existing
-// entitycore_contract_test.go unit coverage).
+// identify. versionutils.SkipIfUnsupported still provides the Kibana-version
+// part of the gate (see TestAgentlessPolicy_VersionSkipGating below for why
+// no separate TestAcc-level version-gate test is added on top of that and
+// the existing entitycore_contract_test.go unit coverage).
+//
+// This repo's CI (.github/workflows/provider.yml) runs every
+// acceptance-test matrix job against a self-managed stack (`make
+// docker-fleet`) -- there is no Cloud Hosted/Serverless CI lane -- so
+// topology.go's own preflight correctly, but unhelpfully, rejects it,
+// which would FAIL these tests in CI rather than SKIP them. Every TestAcc*
+// function below that requires a working agentless policy therefore calls
+// skipUnlessConfirmedCloud(t) (acc_helpers_test.go) right after its
+// versionutils.SkipIfUnsupported call: it makes the same GET /api/status
+// probe as topology.go, but -- unlike topology.go, which fails open on
+// ambiguity to protect a real cloud user's apply -- fails closed, skipping
+// the test unless Cloud Hosted/Serverless is positively confirmed. This
+// resolves what was previously an open gap here (no environment signal for
+// "this is definitely cloud" existed in the repo's acctest package): the
+// gap is closed by a test-only, fail-closed mirror of topology.go's
+// detection signal, not by new CI infrastructure or a manual opt-in env
+// var (both considered and rejected -- see PR #4034).
 //
 // The golden-path package is cloud_security_posture (CSPM), per design.md's
 // Open Question 2. Every fixture here uses the "cspm" policy_template with
@@ -103,6 +115,7 @@ var regexpDefaultSpacePrefix = regexp.MustCompile(`^default/`)
 // pattern.
 func TestAccResourceAgentlessPolicy(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, agentlesspolicy.MinVersion, versionutils.FlavorAny)
+	skipUnlessConfirmedCloud(t)
 
 	policyName := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
 
@@ -269,6 +282,7 @@ func TestAccResourceAgentlessPolicy(t *testing.T) {
 // is exactly "<space_id>/<policy_id>".
 func TestAccResourceAgentlessPolicy_NonDefaultSpace(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, agentlesspolicy.MinVersion, versionutils.FlavorAny)
+	skipUnlessConfirmedCloud(t)
 
 	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
 	policyName := fmt.Sprintf("agentless-policy-%s", suffix)
@@ -343,6 +357,7 @@ func TestAccResourceAgentlessPolicy_NonDefaultSpace(t *testing.T) {
 // TestConflictHintDiagnostics in delete_test.go.
 func TestAccResourceAgentlessPolicy_ForceDelete(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, agentlesspolicy.MinVersion, versionutils.FlavorAny)
+	skipUnlessConfirmedCloud(t)
 
 	policyName := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
 
@@ -407,6 +422,7 @@ func TestAccResourceAgentlessPolicy_ForceDelete(t *testing.T) {
 // which is this test's actual point.
 func TestAccResourceAgentlessPolicy_CloudConnector(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, agentlesspolicy.MinVersion, versionutils.FlavorAny)
+	skipUnlessConfirmedCloud(t)
 	acctest.PreCheck(t)
 
 	secretRefID := mintExternalIDSecretRef(context.Background(), t, mustFleetClient(t))
@@ -460,6 +476,7 @@ func mustFleetClient(t *testing.T) *fleetclient.Client {
 // in-place rename -- see update.go's header comment).
 func TestAccResourceAgentlessPolicy_RequiresReplace(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, agentlesspolicy.MinVersion, versionutils.FlavorAny)
+	skipUnlessConfirmedCloud(t)
 
 	suffix := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
 	firstName := "agentless-" + suffix
@@ -505,6 +522,7 @@ func TestAccResourceAgentlessPolicy_RequiresReplace(t *testing.T) {
 // persisted by PUT /api/fleet/package_policies/{id}.
 func TestAccResourceAgentlessPolicy_InputsUpdateInPlace(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, agentlesspolicy.MinVersion, versionutils.FlavorAny)
+	skipUnlessConfirmedCloud(t)
 
 	policyName := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
 
