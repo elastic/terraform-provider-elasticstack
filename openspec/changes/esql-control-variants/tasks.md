@@ -7,9 +7,9 @@
 
 ## 2. Schema restructure — range_slider_control
 
-- [ ] 2.1 In `internal/kibana/dashboard/panel/rangeslider/schema.go`, apply the same two-branch restructure: `by_field` and `by_esql`, with `ExactlyOneOf` validator.
-- [ ] 2.2 `by_field` block: move `data_view_id` (required), `field_name` (required), `title`, `use_global_filters`, `ignore_validations`, `value`, `step` into the nested attribute.
-- [ ] 2.3 `by_esql` block: add `esql_query` (required), `values_source` (required, validator: `OneOf("esql_query")`), `title`, `use_global_filters`, `ignore_validations`, `value`, `step`.
+- [x] 2.1 In `internal/kibana/dashboard/panel/rangeslider/schema.go`, apply the same two-branch restructure: `by_field` and `by_esql`, with `ExactlyOneOf` validator.
+- [x] 2.2 `by_field` block: move `data_view_id` (required), `field_name` (required), `title`, `use_global_filters`, `ignore_validations`, `value`, `step` into the nested attribute.
+- [x] 2.3 `by_esql` block: add `esql_query` (required), `values_source` (required, validator: `OneOf("esql_query")`), `title`, `use_global_filters`, `ignore_validations`, `value`, `step`.
 
 ## 3. Model updates — options_list_control
 
@@ -20,9 +20,9 @@
 
 ## 4. Model updates — range_slider_control
 
-- [ ] 4.1 In `internal/kibana/dashboard/panel/rangeslider/model.go`, apply the same model restructure.
-- [ ] 4.2 Define `ByFieldModel` (`DataViewId`, `FieldName`, shared) and `ByEsqlModel` (`EsqlQuery`, `ValuesSource`, shared).
-- [ ] 4.3 Update `model_test.go`.
+- [x] 4.1 In `internal/kibana/dashboard/panel/rangeslider/model.go`, apply the same model restructure.
+- [x] 4.2 Define `ByFieldModel` (`DataViewId`, `FieldName`, shared) and `ByEsqlModel` (`EsqlQuery`, `ValuesSource`, shared).
+- [x] 4.3 Update `model_test.go`.
 
 ## 5. API converter — options_list_control
 
@@ -32,8 +32,8 @@
 
 ## 6. API converter — range_slider_control
 
-- [ ] 6.1 Same dual-branch ToAPI / FromAPI update for `internal/kibana/dashboard/panel/rangeslider/api.go`.
-- [ ] 6.2 Update `api_test.go`.
+- [x] 6.1 Same dual-branch ToAPI / FromAPI update for `internal/kibana/dashboard/panel/rangeslider/api.go`.
+- [x] 6.2 Update `api_test.go`.
 
 ## 7. State upgrader (v0 → v1)
 
@@ -45,7 +45,7 @@
 
 - [ ] 8.1 Unit tests: options_list Field branch round-trip (model ↔ API), null-preservation, validator reject of missing/both branches.
 - [ ] 8.2 Unit tests: options_list ES|QL branch round-trip, `values_source` validator.
-- [ ] 8.3 Unit tests: range_slider Field branch and ES|QL branch round-trips.
+- [x] 8.3 Unit tests: range_slider Field branch and ES|QL branch round-trips.
 - [ ] 8.4 State upgrade tests (task 7.3 above).
 - [ ] 8.5 Acceptance test for `options_list_control` demonstrating `by_field` and (in a separate step) `by_esql` config.
 - [ ] 8.6 Acceptance test for `range_slider_control` demonstrating both branches.
