@@ -15,7 +15,7 @@ The block accepts exactly one of two branches:
 - `ref_id` (required string, non-empty)
 - `title`, `description`, `hide_title`, `hide_border` (all optional)
 
-Setting both `by_value` and `by_reference`, or neither, SHALL produce a plan-time error (REQ-LINKS-002).
+Setting both `by_value` and `by_reference`, or neither, SHALL produce a plan-time error.
 
 Each item in `by_value.links[]` is a flat object with:
 - `type` (required string, enum `"dashboard"` | `"external"`)
@@ -28,7 +28,7 @@ Each item in `by_value.links[]` is a flat object with:
 
 The `"dashboard"` type maps to the API discriminator `"dashboardLink"`; `"external"` maps to `"externalLink"`.
 
-Optional display fields (`title`, `description`, `hide_title`, `hide_border`) on both branches and optional link item fields SHALL follow REQ-009 null-preservation: they remain null in state when omitted by the user, even if Kibana echoes server-side defaults.
+Optional display fields (`title`, `description`, `hide_title`, `hide_border`) on both branches and optional link item fields SHALL follow REQ-009 null-preservation on refresh/read after a user-managed apply: they remain null in state when omitted by the user, even if Kibana echoes server-side defaults. On import, these fields SHALL be left null in state when Kibana returns only server-side defaults, so practitioners are not forced to manage those defaults in HCL.
 
 #### Scenario: `by_value` panel with dashboard and external links
 
@@ -94,10 +94,16 @@ Optional display fields (`title`, `description`, `hide_title`, `hide_border`) on
 
 - GIVEN an existing Kibana dashboard with a `links` panel in `by_value` configuration
 - WHEN the resource imports the dashboard
-- THEN the `links_config.by_value` block SHALL be populated correctly and a subsequent plan (against a matching configuration) SHALL show no changes
+- THEN the `links_config.by_value` block SHALL be populated from the API response — including `layout`, all `links[]` items, and any optional display fields returned by Kibana — and a subsequent plan against a matching configuration SHALL show no changes
 
 #### Scenario: Import — `by_reference` panel
 
 - GIVEN an existing Kibana dashboard with a `links` panel in `by_reference` configuration
 - WHEN the resource imports the dashboard
-- THEN the `links_config.by_reference` block SHALL be populated with `ref_id` and optional display fields reflected from state
+- THEN the `links_config.by_reference` block SHALL be populated from the API response — including `ref_id` and any optional display fields returned by Kibana — and a subsequent plan against a matching configuration SHALL show no changes
+
+#### Scenario: Optional display fields null on import
+
+- GIVEN an existing Kibana dashboard whose `links` panel has server-side defaults for `hide_title` (`false`) and `hide_border` (`false`)
+- WHEN the resource imports the dashboard and the user's configuration omits those attributes
+- THEN `hide_title` and `hide_border` SHALL remain null in state and a subsequent plan against a matching configuration SHALL show no changes
