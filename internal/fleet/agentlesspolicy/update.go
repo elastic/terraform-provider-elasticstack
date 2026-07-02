@@ -219,7 +219,17 @@ func updateAgentlessPolicy(
 		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
 	}
 
-	body, bodyDiags := buildUpdateBody(ctx, plan, current)
+	// Resolve version-gated capabilities (currently just `condition` support,
+	// added in Kibana 9.5.0) before building the request body: see
+	// capabilities.go's resolveAgentlessPolicyFeatures and
+	// models_convert.go's validateInputConditionSupport.
+	feat, featDiags := resolveAgentlessPolicyFeatures(ctx, client)
+	diags.Append(featDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
+	}
+
+	body, bodyDiags := buildUpdateBody(ctx, plan, current, feat)
 	diags.Append(bodyDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
@@ -252,8 +262,19 @@ func updateAgentlessPolicy(
 // must exactly match the existing policy -- the spike found that omitting
 // policy_id/policy_ids produces a 400 ("Cannot change agent policies of an
 // agentless integration"), even when not actually changing them.
-func buildUpdateBody(ctx context.Context, plan agentlessPolicyModel, current *kbapi.PackagePolicy) (kbapi.PackagePolicyRequestTypedInputs, diag.Diagnostics) {
+func buildUpdateBody(ctx context.Context, plan agentlessPolicyModel, current *kbapi.PackagePolicy, feat agentlessPolicyFeatures) (kbapi.PackagePolicyRequestTypedInputs, diag.Diagnostics) {
 	var diags diag.Diagnostics
+
+	// Decode `inputs` (and each input's nested `streams`) exactly once, and
+	// validate `condition` support against the connected Kibana's version
+	// before doing any further work -- see validateInputConditionSupport's
+	// doc comment (models_convert.go) and capabilities.go's
+	// resolveAgentlessPolicyFeatures.
+	decodedInputs := plan.decodeInputs(ctx, &diags)
+	if condDiags := validateInputConditionSupport(decodedInputs, feat.SupportsCondition); condDiags.HasError() {
+		diags.Append(condDiags...)
+		return kbapi.PackagePolicyRequestTypedInputs{}, diags
+	}
 
 	name := current.Name
 	body := kbapi.PackagePolicyRequestTypedInputs{
@@ -339,7 +360,7 @@ func buildUpdateBody(ctx context.Context, plan agentlessPolicyModel, current *kb
 	}
 	mergeVarsInto(&body.Vars, planVars, &diags)
 
-	inputs, inputDiags := buildUpdateInputs(ctx, current, plan)
+	inputs, inputDiags := buildUpdateInputs(current, decodedInputs)
 	diags.Append(inputDiags...)
 	body.Inputs = &inputs
 
@@ -349,23 +370,19 @@ func buildUpdateBody(ctx context.Context, plan agentlessPolicyModel, current *kb
 // buildUpdateInputs fetches current's typed inputs and echoes each one back
 // (via a JSON round trip into the request's PackagePolicyRequestTypedInput
 // shape, dropping response-only fields like compiled_input/compiled_stream),
-// overlaying enabled/condition/vars from the plan's `inputs` map for any
-// input the plan configures. Inputs the plan doesn't mention (or the whole
-// `inputs` attribute being unknown) are echoed unchanged. See mappedInputKey
-// for how a typed input's (PolicyTemplate, Type) is matched against the
-// plan's "<policy_template>-<input_type>"-keyed inputs map.
-func buildUpdateInputs(ctx context.Context, current *kbapi.PackagePolicy, plan agentlessPolicyModel) ([]kbapi.PackagePolicyRequestTypedInput, diag.Diagnostics) {
+// overlaying enabled/condition/vars from the plan's already-decoded `inputs`
+// map (see decodeInputs) for any input the plan configures. Inputs the plan
+// doesn't mention (or the whole `inputs` attribute being unknown, i.e.
+// planInputs is nil) are echoed unchanged. See mappedInputKey for how a typed
+// input's (PolicyTemplate, Type) is matched against the plan's
+// "<policy_template>-<input_type>"-keyed inputs map.
+func buildUpdateInputs(current *kbapi.PackagePolicy, planInputs map[string]decodedAgentlessInput) ([]kbapi.PackagePolicyRequestTypedInput, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	typedInputs, err := current.Inputs.AsPackagePolicyTypedInputs()
 	if err != nil {
 		diags.AddError("Failed to decode the current policy's inputs", err.Error())
 		return nil, diags
-	}
-
-	var planInputs map[string]agentlessInputModel
-	if typeutils.IsKnown(plan.Inputs.MapValue) {
-		planInputs = typeutils.MapTypeAs[agentlessInputModel](ctx, plan.Inputs.MapValue, path.Root("inputs"), &diags)
 	}
 
 	result := make([]kbapi.PackagePolicyRequestTypedInput, 0, len(typedInputs))
@@ -382,7 +399,7 @@ func buildUpdateInputs(ctx context.Context, current *kbapi.PackagePolicy, plan a
 		}
 
 		if planIn, ok := planInputs[mappedInputKey(in.PolicyTemplate, in.Type)]; ok {
-			overlayInputFromPlan(ctx, &reqIn, planIn, &diags)
+			overlayInputFromPlan(&reqIn, planIn, &diags)
 		}
 
 		result = append(result, reqIn)
@@ -394,8 +411,9 @@ func buildUpdateInputs(ctx context.Context, current *kbapi.PackagePolicy, plan a
 // overlayInputFromPlan mutates reqIn in place, applying the plan's
 // enabled/condition/vars for the input itself and, by matching each typed
 // stream's DataStream.Dataset against the plan's per-stream map key, for
-// each of its streams.
-func overlayInputFromPlan(ctx context.Context, reqIn *kbapi.PackagePolicyRequestTypedInput, planIn agentlessInputModel, diags *diag.Diagnostics) {
+// each of its streams (already decoded onto planIn.streams by decodeInputs).
+func overlayInputFromPlan(reqIn *kbapi.PackagePolicyRequestTypedInput, planIn decodedAgentlessInput, diags *diag.Diagnostics) {
+	in := planIn.model
 	// NOTE (Decision 3 spike caveat, see this file's header comment): toggling
 	// `enabled` via this PUT endpoint was accepted (200) but NOT reliably
 	// persisted for the cloud_security_posture package under test -- it
@@ -411,26 +429,25 @@ func overlayInputFromPlan(ctx context.Context, reqIn *kbapi.PackagePolicyRequest
 	// drifts from reality, it just reflects that the change didn't take,
 	// which is the correct, honest outcome for Terraform to show on the next
 	// plan.
-	if typeutils.IsKnown(planIn.Enabled) {
-		reqIn.Enabled = planIn.Enabled.ValueBool()
+	if typeutils.IsKnown(in.Enabled) {
+		reqIn.Enabled = in.Enabled.ValueBool()
 	}
 
-	reqIn.Condition = planIn.Condition.ValueStringPointer()
+	reqIn.Condition = in.Condition.ValueStringPointer()
 
 	var planVars map[string]any
-	if typeutils.IsKnown(planIn.Vars) {
-		diags.Append(planIn.Vars.Unmarshal(&planVars)...)
+	if typeutils.IsKnown(in.Vars) {
+		diags.Append(in.Vars.Unmarshal(&planVars)...)
 	}
 	mergeVarsInto(&reqIn.Vars, planVars, diags)
 
-	if reqIn.Streams == nil || !typeutils.IsKnown(planIn.Streams) {
+	if reqIn.Streams == nil || planIn.streams == nil {
 		return
 	}
 
-	planStreams := typeutils.MapTypeAs[policyshape.InputStreamModel](ctx, planIn.Streams, path.Root("inputs"), diags)
 	for i := range *reqIn.Streams {
 		s := &(*reqIn.Streams)[i]
-		planStream, ok := planStreams[s.DataStream.Dataset]
+		planStream, ok := planIn.streams[s.DataStream.Dataset]
 		if !ok {
 			continue
 		}
