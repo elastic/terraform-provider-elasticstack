@@ -783,9 +783,9 @@ func TestAccResourceDashboardDescriptionNormalization(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
-				ResourceName:       "elasticstack_kibana_dashboard.test",
-				ImportState:        true,
-				ImportStateVerify:  true,
+				ResourceName:      "elasticstack_kibana_dashboard.test",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				// Same omitted config, plan only — must show no changes.
@@ -818,9 +818,9 @@ func TestAccResourceDashboardDescriptionNormalization(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle + " (empty)"),
 				},
-				ResourceName:       "elasticstack_kibana_dashboard.test",
-				ImportState:        true,
-				ImportStateVerify:  true,
+				ResourceName:            "elasticstack_kibana_dashboard.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"description"},
 			},
 			{
