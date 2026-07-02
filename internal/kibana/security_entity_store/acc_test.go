@@ -29,6 +29,7 @@ import (
 
 func TestAccResourceKibanaSecurityEntityStore_basic(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -55,6 +56,7 @@ func TestAccResourceKibanaSecurityEntityStore_basic(t *testing.T) {
 
 func TestAccResourceKibanaSecurityEntityStore_singleType(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -63,7 +65,6 @@ func TestAccResourceKibanaSecurityEntityStore_singleType(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("single_type"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "entity_types.#", "1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store.test", "entity_types.*", "host"),
 				),
 			},
@@ -78,6 +79,7 @@ func TestAccResourceKibanaSecurityEntityStore_singleType(t *testing.T) {
 
 func TestAccResourceKibanaSecurityEntityStore_updateLogExtraction(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -103,6 +105,7 @@ func TestAccResourceKibanaSecurityEntityStore_updateLogExtraction(t *testing.T) 
 
 func TestAccResourceKibanaSecurityEntityStore_import(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -125,6 +128,7 @@ func TestAccResourceKibanaSecurityEntityStore_import(t *testing.T) {
 
 func TestAccResourceKibanaSecurityEntityStore_shrinkGuardFails(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -144,6 +148,7 @@ func TestAccResourceKibanaSecurityEntityStore_shrinkGuardFails(t *testing.T) {
 
 func TestAccResourceKibanaSecurityEntityStore_shrinkWithFlag(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -152,7 +157,6 @@ func TestAccResourceKibanaSecurityEntityStore_shrinkWithFlag(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("shrink_with_flag"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "entity_types.#", "1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store.test", "entity_types.*", "host"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store.test", "allow_entity_type_shrink", "true"),
 				),
@@ -168,6 +172,7 @@ func TestAccResourceKibanaSecurityEntityStore_shrinkWithFlag(t *testing.T) {
 
 func TestAccResourceKibanaSecurityEntityStore_startedFalse(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -188,6 +193,7 @@ func TestAccResourceKibanaSecurityEntityStore_startedFalse(t *testing.T) {
 
 func TestAccResourceKibanaSecurityEntityStore_historySnapshot(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -208,6 +214,7 @@ func TestAccResourceKibanaSecurityEntityStore_historySnapshot(t *testing.T) {
 
 func TestAccDataSourceKibanaSecurityEntityStoreStatus_basic(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },

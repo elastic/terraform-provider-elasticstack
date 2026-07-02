@@ -52,7 +52,7 @@
 
 ## 4. Tests: add `t.Cleanup` with full uninstall wait
 
-- [ ] 4.1 Add a shared `cleanupEntityStore(t *testing.T, spaceID string)` function in
+- [x] 4.1 Add a shared `cleanupEntityStore(t *testing.T, spaceID string)` function in
       `internal/acctest` (non-`_test.go`, so it can be reused across packages). The function MUST:
       - Call `POST /api/security/entity_store/uninstall` (all types) via the Kibana API client
         accessible from the test environment.
@@ -60,7 +60,7 @@
         with a test-local `context.WithTimeout` of 5 minutes (test code has no resource `ctx`),
         `asyncutils.WithPollInterval(5*time.Second)`.
       - Call `t.Log` with progress messages so CI logs show what the cleanup is doing.
-- [ ] 4.2 Register `t.Cleanup(func() { cleanupEntityStore(t, "default") })` at the top of every
+- [x] 4.2 Register `t.Cleanup(func() { cleanupEntityStore(t, "default") })` at the top of every
       acceptance test in `internal/kibana/security_entity_store/acc_test.go`, including:
       - `TestAccResourceKibanaSecurityEntityStore_basic`
       - `TestAccResourceKibanaSecurityEntityStore_singleType`
@@ -68,20 +68,20 @@
       - `TestAccResourceKibanaSecurityEntityStore_startedFalse`
       - `TestAccResourceKibanaSecurityEntityStore_historySnapshot`
       - `TestAccDataSourceKibanaSecurityEntityStoreStatus_basic`
-- [ ] 4.3 Register the same cleanup in acceptance tests in related packages:
+- [x] 4.3 Register the same cleanup in acceptance tests in related packages:
       - `internal/kibana/security_entity_store/entity/acc_test.go` — all `TestAccResourceKibanaSecurityEntityStoreEntity_*` tests
       - `internal/kibana/security_entity_store_entity_link/acc_test.go` — `TestAccResourceSecurityEntityStoreEntityLink`, `TestAccResourceSecurityEntityStoreEntityLink_SingleElement`
       - `internal/kibana/security_entity_store_resolution_group/acc_test.go` — `TestAccDataSourceSecurityEntityStoreResolutionGroup`
-- [ ] 4.4 Ensure the cleanup helper is idempotent (a `not_installed` store does not cause an error).
+- [x] 4.4 Ensure the cleanup helper is idempotent (a `not_installed` store does not cause an error).
 
 ## 5. Tests: loosen `entity_types` assertions to superset containment
 
-- [ ] 5.1 In `internal/kibana/security_entity_store/acc_test.go`:
+- [x] 5.1 In `internal/kibana/security_entity_store/acc_test.go`:
       - Replace `TestCheckResourceAttr("…", "entity_types.#", "1")` (cardinality exact match)
         with `TestCheckTypeSetElemAttr` confirming the expected single type is present.
       - Specifically: `TestAccResourceKibanaSecurityEntityStore_singleType` asserts
         `entity_types.# == 1` — loosen this to "contains `host`" without enforcing exact count.
-- [ ] 5.2 Apply the same loosening in entity-link and entity-store-entity tests where
+- [x] 5.2 Apply the same loosening in entity-link and entity-store-entity tests where
       `entity_types` cardinality is asserted against the plan value.
 
 ## 6. Validate and integrate
