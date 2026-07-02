@@ -18,6 +18,7 @@
 package ingest_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -34,14 +35,27 @@ func TestAccDataSourceIngestProcessorAppend(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_append.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "field", "tags"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "value.#", "3"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "value.0", "production"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "allow_duplicates", "true"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "media_type"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_append.test", "json", expectedJSONAppend),
 				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_value"),
+				PlanOnly:                 true,
+				ExpectError:              regexp.MustCompile(`at least 1`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_append.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "field", "tags"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "value.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "allow_duplicates", "false"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "media_type", "application/json"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "if", "ctx.error != null"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "tag", "append-tag"),
