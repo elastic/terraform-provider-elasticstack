@@ -60,7 +60,7 @@ func fleetPackagePolicyCallRecorder(t *testing.T) (http.Handler, *bool) {
 // via newTopologyTestClient, which calls clearKibanaEnvOverrides -> t.Setenv,
 // and t.Setenv is documented as incompatible with parallel tests (matching
 // the non-parallel style already used by TestCheckDeploymentTopology in
-// entitycore_contract_test.go and TestCreateAgentlessPolicy_topologyGatesFleetCall
+// topology_test.go and TestCreateAgentlessPolicy_topologyGatesFleetCall
 // in create_test.go, for the same reason).
 func TestUpdateAgentlessPolicy_createOnlyFlags(t *testing.T) {
 	newPriorAndPlan := func(t *testing.T) (prior, plan agentlessPolicyModel) {

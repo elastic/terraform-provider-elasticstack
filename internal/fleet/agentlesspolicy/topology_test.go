@@ -96,8 +96,21 @@ func clearKibanaEnvOverrides(t *testing.T) {
 // newTopologyTestClient builds a real *clients.KibanaScopedClient (via the
 // same public ProviderClientFactory path the provider's own Configure method
 // uses) backed by an httptest.Server, so checkDeploymentTopology exercises
-// its real HTTP call path rather than a hand-rolled fake.
+// its real HTTP call path rather than a hand-rolled fake. Most call sites
+// only need the client; see newTopologyTestClientWithServer for the one
+// subtest that also needs to control the server's lifecycle (closing it
+// early to simulate an unreachable Kibana).
 func newTopologyTestClient(t *testing.T, handler http.Handler) *clients.KibanaScopedClient {
+	t.Helper()
+	client, _ := newTopologyTestClientWithServer(t, handler)
+	return client
+}
+
+// newTopologyTestClientWithServer is newTopologyTestClient, additionally
+// returning the underlying *httptest.Server so a caller can control its
+// lifecycle directly (e.g. closing it early to simulate an unreachable
+// Kibana) instead of relying on the t.Cleanup-deferred close.
+func newTopologyTestClientWithServer(t *testing.T, handler http.Handler) (*clients.KibanaScopedClient, *httptest.Server) {
 	t.Helper()
 	clearKibanaEnvOverrides(t)
 
@@ -118,7 +131,7 @@ func newTopologyTestClient(t *testing.T, handler http.Handler) *clients.KibanaSc
 	scoped, diags := factory.GetKibanaClient(context.Background(), types.ListNull(types.ObjectType{}))
 	require.False(t, diags.HasError(), "scoped client build failed: %v", diags)
 
-	return scoped
+	return scoped, srv
 }
 
 func statusHandler(body string, extraHeaders map[string]string, statusCode int) http.HandlerFunc {
@@ -200,23 +213,10 @@ func TestCheckDeploymentTopology(t *testing.T) {
 	})
 
 	t.Run("unreachable Kibana is inconclusive and fails open", func(t *testing.T) {
-		clearKibanaEnvOverrides(t)
-		srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
-		cfg := config.ProviderConfiguration{
-			Kibana: []config.KibanaConnection{
-				{
-					Endpoints: types.ListValueMust(types.StringType, []attr.Value{types.StringValue(srv.URL)}),
-					CACerts:   types.ListNull(types.StringType),
-				},
-			},
-		}
-		factory, diags := clients.NewProviderClientFactoryFromFramework(context.Background(), cfg, "test")
-		require.False(t, diags.HasError())
-		client, diags := factory.GetKibanaClient(context.Background(), types.ListNull(types.ObjectType{}))
-		require.False(t, diags.HasError())
+		client, srv := newTopologyTestClientWithServer(t, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 		srv.Close() // Make the endpoint unreachable before the probe runs.
 
-		diags = checkDeploymentTopology(context.Background(), client)
+		diags := checkDeploymentTopology(context.Background(), client)
 		require.False(t, diags.HasError(), "a failed status probe must fail open, not block Create")
 	})
 }

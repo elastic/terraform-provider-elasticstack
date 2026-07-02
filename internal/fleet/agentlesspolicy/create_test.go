@@ -44,7 +44,7 @@ const minimalAgentlessPolicyCreateResponse = `{"item":{` +
 // fleetCreateCallRecorder builds an http.Handler that serves both the
 // `/api/status` topology probe and the `/api/fleet/agentless_policies`
 // create endpoint from a single httptest server (see
-// newTopologyTestClient in entitycore_contract_test.go, which this reuses
+// newTopologyTestClient in topology_test.go, which this reuses
 // unmodified -- it already accepts any http.Handler). The returned
 // *bool reports whether the fleet create endpoint was ever hit, which is
 // the thing these tests care about: did checkDeploymentTopology's verdict
@@ -69,7 +69,7 @@ func fleetCreateCallRecorder(statusBody string, statusHeaders map[string]string)
 }
 
 // selfManagedStatusBody and cloudStatusBody mirror the fixtures already used
-// by TestCheckDeploymentTopology in entitycore_contract_test.go: a
+// by TestCheckDeploymentTopology in topology_test.go: a
 // "traditional" build_flavor with no Elastic Cloud proxy header is
 // classified self-managed (fail closed); the same flavor with the proxy
 // header present is classified Elastic Cloud Hosted (fail open, i.e. not
@@ -98,7 +98,7 @@ var cloudProxyHeader = map[string]string{cloudProxyResponseHeaders[0]: "abc123"}
 // via newTopologyTestClient, which calls clearKibanaEnvOverrides -> t.Setenv,
 // and t.Setenv is documented as incompatible with parallel tests (matching
 // the non-parallel style already used by TestCheckDeploymentTopology in
-// entitycore_contract_test.go, for the same reason).
+// topology_test.go, for the same reason).
 func TestCreateAgentlessPolicy_topologyGatesFleetCall(t *testing.T) {
 	t.Run("self-managed topology and skip_topology_check=false (default) blocks the fleet POST", func(t *testing.T) {
 		handler, fleetPostCalled := fleetCreateCallRecorder(selfManagedStatusBody, nil)
