@@ -90,6 +90,7 @@ func TestAccResourceEmptyDashboard(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle+" with Options"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "description", "Test dashboard with options"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_range.from", "2024-01-01T00:00:00.000Z"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_range.to", "2024-01-01T01:00:00.000Z"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_range.mode", "absolute"),
@@ -774,6 +775,19 @@ func TestAccResourceDashboardDescriptionNormalization(t *testing.T) {
 				),
 			},
 			{
+				// Import the omitted-description dashboard: on import there is no
+				// prior state to guide the intent check, so the freshly-built model
+				// is null and the normalization must keep description null.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omitted"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ResourceName:       "elasticstack_kibana_dashboard.test",
+				ImportState:        true,
+				ImportStateVerify:  true,
+			},
+			{
 				// Same omitted config, plan only — must show no changes.
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("omitted"),
@@ -794,6 +808,20 @@ func TestAccResourceDashboardDescriptionNormalization(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle+" (empty)"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "description", ""),
 				),
+			},
+			{
+				// Import the explicit-empty-description dashboard: import must
+				// round-trip description as null (import cannot know prior intent
+				// was an explicit ""), consistent with REQ-009 for other fields.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle + " (empty)"),
+				},
+				ResourceName:       "elasticstack_kibana_dashboard.test",
+				ImportState:        true,
+				ImportStateVerify:  true,
+				ImportStateVerifyIgnore: []string{"description"},
 			},
 			{
 				// Same empty config, plan only — must show no changes.

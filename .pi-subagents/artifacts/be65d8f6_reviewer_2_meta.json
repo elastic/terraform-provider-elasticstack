@@ -1,0 +1,39 @@
+{
+  "runId": "be65d8f6",
+  "agent": "reviewer",
+  "task": "[Read from: /Users/tobio/Projects/terraform-provider-elasticstack/dashboard-description-null-normalization/plan.md, /Users/tobio/Projects/terraform-provider-elasticstack/dashboard-description-null-normalization/progress.md]\n\nRun the schema-coverage skill/process for the elasticstack_kibana_dashboard resource, focused on the `description` attribute, in the repo at /Users/tobio/Projects/terraform-provider-elasticstack/dashboard-description-null-normalization.\n\nContext: OpenSpec change `dashboard-description-null-normalization` adds intent-preserving null normalization for the dashboard root-level `description` attribute. New acceptance test TestAccResourceDashboardDescriptionNormalization in internal/kibana/dashboard/acc_test.go (testdata in testdata/TestAccResourceDashboardDescriptionNormalization/{omitted,empty}) covers omitted-description (null) and explicit description=\"\" round-trips. The schema for `description` is in internal/kibana/dashboard/schema.go (Optional StringAttribute, not Computed).\n\nAnalyze the description attribute coverage: is the null/empty/non-empty matrix adequately covered? Are there set-only assertions, missing unset/empty cases, or missing update coverage for description? Identify high-risk untested behaviors. Return a prioritized report of missing or weak coverage with evidence (file:line) and recommended additions. Do not edit files.\n\n---\n**Output:**\nWrite your findings to exactly this path: /tmp/review-coverage.md\nThis path is authoritative for this run.\nIgnore any other output filename or output path mentioned elsewhere, including output destinations in the base agent prompt, system prompt, or task instructions.",
+  "exitCode": 0,
+  "usage": {
+    "input": 46719,
+    "output": 10962,
+    "cacheRead": 420736,
+    "cacheWrite": 0,
+    "cost": 0.15206714999999998,
+    "turns": 17
+  },
+  "model": "openrouter/z-ai/glm-5.2:high",
+  "attemptedModels": [
+    "openrouter/z-ai/glm-5.2:high"
+  ],
+  "modelAttempts": [
+    {
+      "model": "openrouter/z-ai/glm-5.2:high",
+      "success": true,
+      "exitCode": 0,
+      "usage": {
+        "input": 46719,
+        "output": 10962,
+        "cacheRead": 420736,
+        "cacheWrite": 0,
+        "cost": 0.15206714999999998,
+        "turns": 17
+      }
+    }
+  ],
+  "durationMs": 393900,
+  "toolCount": 26,
+  "skills": [
+    "schema-coverage"
+  ],
+  "timestamp": 1782973773010
+}
