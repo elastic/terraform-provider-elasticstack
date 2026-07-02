@@ -20,7 +20,6 @@ package systemuser
 import (
 	"context"
 	_ "embed"
-	"regexp"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -50,11 +49,7 @@ func GetSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 1024),
-					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[[:graph:]]+$`),
-						security.UsernameAllowedCharsError,
-					),
+					security.UsernameValidator(),
 				},
 			},
 			"password": schema.StringAttribute{
