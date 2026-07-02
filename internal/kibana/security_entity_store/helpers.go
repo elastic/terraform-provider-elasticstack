@@ -427,3 +427,70 @@ func uninstallWaitDiagsFromError(err error) diag.Diagnostics {
 		),
 	}
 }
+
+// waitForStarted performs an initial synchronous status read and, if the store
+// is still installing, polls until it leaves the installing state (running,
+// stopped, error, or not_installed). It is bounded by the Read ctx deadline
+// (carried in from the resource timeouts block); no separate timeout is
+// imposed. If the deadline is exceeded while still installing, it returns the
+// last-observed status together with a warning diagnostic so that Read can
+// proceed with a degraded read rather than failing.
+func waitForStarted(ctx context.Context, client *clients.KibanaScopedClient, spaceID string) (*entityStoreStatus, []byte, diag.Diagnostics) {
+	return waitForStartedFromStatusFunc(ctx, func(ctx context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
+		return getEntityStoreStatus(ctx, client, spaceID, false)
+	}, spaceID, asyncutils.WithPollInterval(3*time.Second))
+}
+
+// waitForStartedFromStatusFunc is the internal implementation of waitForStarted,
+// exposed with a swappable status reader so unit tests can exercise it without a
+// real Kibana client.
+func waitForStartedFromStatusFunc(ctx context.Context, getStatus entityStoreStatusFunc, spaceID string, opts ...asyncutils.Option) (*entityStoreStatus, []byte, diag.Diagnostics) {
+	status, rawBody, diags := getStatus(ctx)
+	if diags.HasError() {
+		return nil, nil, diags
+	}
+	if status.Status != kbapi.SecurityEntityAnalyticsAPIStoreStatusInstalling {
+		return status, rawBody, nil
+	}
+
+	checker := makeStartedStateChecker(getStatus, func(s *entityStoreStatus, b []byte) {
+		status, rawBody = s, b
+	})
+
+	err := asyncutils.WaitForStateTransition(ctx, "security entity store", spaceID, checker, opts...)
+	return status, rawBody, startedWaitDiagsFromError(err)
+}
+
+// makeStartedStateChecker builds a StateChecker that returns true once the entity
+// store status is no longer "installing" (i.e. running, stopped, error, or
+// not_installed). Errors reading the status are treated as transient and retried.
+// The capture callback, if non-nil, receives the latest successful status read so
+// the caller can return the last-observed data on timeout.
+func makeStartedStateChecker(getStatus entityStoreStatusFunc, capture func(*entityStoreStatus, []byte)) asyncutils.StateChecker {
+	return func(ctx context.Context) (bool, error) {
+		status, rawBody, diags := getStatus(ctx)
+		if diags.HasError() {
+			tflog.Debug(ctx, fmt.Sprintf("transient error reading entity store status during started wait: %v", diags.Errors()))
+			return false, nil
+		}
+		if capture != nil {
+			capture(status, rawBody)
+		}
+		return status.Status != kbapi.SecurityEntityAnalyticsAPIStoreStatusInstalling, nil
+	}
+}
+
+// startedWaitDiagsFromError converts a WaitForStateTransition error into a warning
+// diagnostic. A nil error yields nil diagnostics. Read intentionally degrades
+// rather than failing when the store is still installing after the deadline.
+func startedWaitDiagsFromError(err error) diag.Diagnostics {
+	if err == nil {
+		return nil
+	}
+	return diag.Diagnostics{
+		diag.NewWarningDiagnostic(
+			"Security Entity Store is still installing; returning partial read data",
+			err.Error(),
+		),
+	}
+}

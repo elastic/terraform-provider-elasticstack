@@ -17,7 +17,7 @@
 
 ## 2. Provider: wait for started-state in Read
 
-- [ ] 2.1 Add `waitForStarted(ctx, client, spaceID string) (*entityStoreStatus, []byte, diag.Diagnostics)`
+- [x] 2.1 Add `waitForStarted(ctx, client, spaceID string) (*entityStoreStatus, []byte, diag.Diagnostics)`
       to `internal/kibana/security_entity_store/helpers.go`. Perform an initial synchronous
       `getEntityStoreStatus`; if the overall status is not `"installing"`, return immediately.
       Otherwise poll via `asyncutils.WaitForStateTransition(ctx, ..., asyncutils.WithPollInterval(
@@ -25,11 +25,11 @@
       `"installing"` (e.g. `"running"`, `"stopped"`, `"error"`) or `"not_installed"`. Bound by the
       Read `ctx` deadline (default 5m via `entitycore.DefaultResourceReadTimeout`); do NOT pass a
       timeout parameter.
-- [ ] 2.2 Replace the single `getEntityStoreStatus` call in `internal/kibana/security_entity_store/read.go`
+- [x] 2.2 Replace the single `getEntityStoreStatus` call in `internal/kibana/security_entity_store/read.go`
       with a `waitForStarted` call, so that `Read` does not return a partial engine list while the
       store is still `installing`. On `ctx` deadline expiry, downgrade to a **warning** diagnostic
       and proceed with the last-observed engine data (degraded read), not a hard error.
-- [ ] 2.3 Add a unit test covering the `installing`→`running` transition path, the
+- [x] 2.3 Add a unit test covering the `installing`→`running` transition path, the
       `not_installed` early-exit path, and the deadline-expiry → warning + degraded-read path.
 
 ## 3. Provider: retry HTTP 500 in entity-link and entity Create
