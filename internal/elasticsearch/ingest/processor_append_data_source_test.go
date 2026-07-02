@@ -44,13 +44,9 @@ func TestAccDataSourceIngestProcessorAppend(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config: `
-data "elasticstack_elasticsearch_ingest_processor_append" "test" {
-  field = "f"
-  value = []
-}`,
-				PlanOnly:    true,
-				ExpectError: regexp.MustCompile(`at least 1`),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_value"),
+				PlanOnly:                 true,
+				ExpectError:              regexp.MustCompile(`at least 1`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
